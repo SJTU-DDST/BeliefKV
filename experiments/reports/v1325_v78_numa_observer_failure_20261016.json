@@ -1,0 +1,61 @@
+{
+  "at": "2026-10-16T17:57:30.929404-07:00",
+  "state": {
+    "status": "stopped_for_diagnosis",
+    "supervisor": {
+      "pid": 230068,
+      "state": "R",
+      "ppid": 1,
+      "start_ticks": "636843838",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/BeliefKV/scripts/resume_v78_after_complete_v77_20261016.py",
+        "--watch"
+      ]
+    },
+    "registration": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1282_v78_native_order_registration_20261016.json",
+      "sha256": "01270e4eddc65ed66eeffd6407d9ccfa23d926ee978eb641ab369ccc9d897c9d"
+    },
+    "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78_native_order",
+    "started_at": "2026-10-16T17:49:35.710971-07:00",
+    "observed_at": "2026-10-16T17:52:56.335012-07:00",
+    "previous_status": "completed",
+    "wait_supervisor_live": false,
+    "wait_driver_live": false,
+    "driver": {
+      "pid": 230265,
+      "state": "R",
+      "ppid": 230068,
+      "start_ticks": "636843929",
+      "argv": [
+        "bash",
+        "/home/longhao/experiment/.worktrees/beliefkv-v1278-native-order-gpu-20261016/scripts/run_qwen35_semantic_h2d_ab.sh"
+      ]
+    },
+    "launched_at": "2026-10-16T17:49:36.198407-07:00",
+    "prefill_ordering_mode": "native",
+    "error": "CalledProcessError(2, ['/home/longhao/miniconda3/envs/beliefkv-next/bin/python', '/home/longhao/experiment/ops/observe_v55_numa_placement.py', '--run-root', '/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78_native_order', '--arm', 'reactive', '--output', '/home/longhao/experiment/BeliefKV/experiments/reports/v1286_v78_native_order_actual_placement_20261016.json'])",
+    "finished_at": "2026-10-16T17:53:01.336325-07:00",
+    "collection_recovery_continuation": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1322_v78_recovered_continuation_20261016.json",
+      "sha256": "ce4ae76ece2e08be41b564c759ba03c0522588041f5509a740ebcd0840d51818"
+    }
+  },
+  "inputs": [
+    {
+      "path": "/home/longhao/experiment/ops/v78_native_order_recovered_20261016.state.json",
+      "sha256": "0249c05f38e0f921838ef9ab4ba323d3be5c8b8728efb8aa926a1856a542e140"
+    },
+    {
+      "path": "/home/longhao/experiment/ops/v78_native_order_recovered_20261016.log",
+      "sha256": "e3856b23bf8a1528114779a07d979d9b8c3740f5cfe68935b7615f0e7a2d86e8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1322_v78_recovered_continuation_20261016.json",
+      "sha256": "ce4ae76ece2e08be41b564c759ba03c0522588041f5509a740ebcd0840d51818"
+    }
+  ],
+  "diagnosis": "Legacy NUMA observer rejects reactive at argument parsing. The frozen watcher terminated the attempt; preserve its partial raw data.",
+  "retry_scope": "Same frozen app, engine, plan and environment except fresh RUN_ROOT; replace only the placement observer."
+}

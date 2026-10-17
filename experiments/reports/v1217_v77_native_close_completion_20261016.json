@@ -1,0 +1,35 @@
+{
+  "at": "2026-10-16T17:48:57.070418-07:00",
+  "status": "complete_development_collection_quality_ungraded",
+  "summary": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/summary.json",
+    "sha256": "d14c04e0c80c79acbcd118ad5fc6f0721d933f1b4a4538eea34c66e32a8d97e7"
+  },
+  "outcomes": {
+    "completed": 155,
+    "incomplete": 1
+  },
+  "native_session_close_reclaim": {
+    "counts": {
+      "attempted_nodes": 12461,
+      "close_calls": 1875,
+      "discarded_nodes": 9009,
+      "freed_device_full_tokens": 17314800,
+      "freed_device_mamba_slots": 5751,
+      "freed_host_full_tokens": 274903,
+      "freed_host_mamba_slots": 130,
+      "late_finished_requests": 0,
+      "reclaim_batches": 1878,
+      "stale_generations_skipped": 0,
+      "unknown_or_duplicate_closes": 0
+    },
+    "enabled": true,
+    "pending_sessions": 0
+  },
+  "physical_reclamation_observed": true,
+  "comparison": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native_reference_comparison.json",
+    "sha256": "625a849993c4495563b7664d743b7573a16982502d12b64ff170b657015ebe54"
+  },
+  "scope": "Historical development baseline. Keep all tasks, incomplete and guard labels; quality and causal gains unproven."
+}

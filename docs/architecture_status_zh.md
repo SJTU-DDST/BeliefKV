@@ -2,6 +2,28 @@
 
 更新日期：2026-10-16（PDT）。
 
+2026-10-16 V77完整采集为155 completed、1 incomplete，全部156个runner结束；
+native JCT合格148项，其余guard/语义终态标签保留。全终态原始均值1814.634s，
+native1665.374s，尚无质量匹配收益。V77 D2H1672.269GB低于native1935.037GB，
+但H2D184.587GB高于13.610GB。原native gate导致exit1，冻结监督因此停在后处理前；
+V1321通过独立入口核实全任务/干净遥测/实际退出后调用原postprocess，生成完整
+HTML与同池对照，不改原失败state、exit1或验收门槛。V1324的33项CPU检查通过。
+V1322/V1323恢复的V78于17:52因旧NUMA观测器拒绝reactive而停止，原记录保留。
+V1326/V1327于17:57 PDT启动新目录V78b，监督243510/start_ticks636892226；
+冻结56f2c5e/53020ce3及原运行helper不改，独立入口只换观测器和RUN_ROOT。
+V1332的39项CPU检查通过；V1328于18:00 PDT验证首服、native排序正计数、额外
+排序/预取为零及同到达/容量，V1330记录实际NUMA。scheduler244015真实存活，
+source/env复核通过，不把这一启动资格当作完整性能收益。
+V1319/V1320新读写上界审计：native前6000s FULL/Mamba写回806.130/1071.564GB，
+全部完成读取仅3.952/9.658GB，可能充当完整读取来源的不同写副本最多0.490%/
+0.901%。这是保守数量界，非命中率、在线可丢弃集合或JCT节省。Marconi和
+EfficientAgent已覆盖checkpoint/Host写入准入，单做少写不能宣称新颖性。
+详见研究筛选4.37–4.39；质量队列继续，论文机制和完整收益仍未验收。
+V75 native官方评分新完成：95 resolved、59 unresolved、2空patch，完整156项，
+无评分器error/incomplete；冻结评分器correctly_completed_ids为90项，measurement
+仍为false。原队列worker231698正在评分V75 predictive，V77继续等待。
+下文按各次观察时刻保留，不以早期“运行/等待”状态覆盖本段。
+
 2026-10-16 V1310完成选批与物理传输区间核对，5项新审计CPU检查通过。V77
 11个正FULL Host短prefill样本，选批内D2H为43批/590节点/6.372GB，全部
 ACK在选批结束前；11批H2D共5.614GB的ACK均在选批之后。原生容量驱逐中的

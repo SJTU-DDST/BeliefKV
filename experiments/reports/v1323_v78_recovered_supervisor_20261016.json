@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-16T17:49:35.288482-07:00",
+  "supervisor": {
+    "pid": 230068,
+    "state": "R",
+    "ppid": 230001,
+    "start_ticks": "636843838",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/BeliefKV/scripts/resume_v78_after_complete_v77_20261016.py",
+      "--watch"
+    ]
+  },
+  "registration": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1322_v78_recovered_continuation_20261016.json",
+    "sha256": "ce4ae76ece2e08be41b564c759ba03c0522588041f5509a740ebcd0840d51818"
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "at": "2026-10-16T18:00:31.933624-07:00",
+  "status": "actual_native_order_source_service_arrivals_capacity_verified",
+  "scheduler": {
+    "pid": 244015,
+    "state": "R",
+    "ppid": 243839,
+    "start_ticks": "636893629",
+    "argv": [
+      "sglang::scheduler"
+    ]
+  },
+  "driver": {
+    "pid": 243802,
+    "state": "R",
+    "ppid": 243510,
+    "start_ticks": "636892336",
+    "argv": [
+      "bash",
+      "/home/longhao/experiment/.worktrees/beliefkv-v1278-native-order-gpu-20261016/scripts/run_qwen35_semantic_h2d_ab.sh"
+    ]
+  },
+  "first_actual_service": [
+    {
+      "event": "gpu_service_sample",
+      "ts_ms": 1792198823452.3816,
+      "forward_iter": 3,
+      "sample_id": "native-service-000000001",
+      "phase": "prefill",
+      "batch_size": 1,
+      "cuda_graph_replayed": true,
+      "request_samples": [
+        {
+          "request_id": "beliefkv:01a1475f-cb57-7f40-9551-9e0f24a2d91c",
+          "workflow_id": "deepagents:autonomous:pydata__xarray-7229:5d945f3f7125",
+          "invocation_id": "deepagents:autonomous:pydata__xarray-7229:5d945f3f7125:root",
+          "context_id": "deepagents:autonomous:pydata__xarray-7229:5d945f3f7125:context:root",
+          "context_epoch": 0,
+          "phase": "prefill",
+          "sequence_tokens_before": 0,
+          "output_tokens_before": 0,
+          "token_delta": 4096,
+          "token_delta_semantics": "prefill_extend_input_len",
+          "prefill_geometry_source": "native_batch"
+        }
+      ],
+      "service_start_ts_ms": 1792198822939.5723,
+      "complete_ts_ms": 1792198823452.3816,
+      "launch_monotonic_ms": 6369086040.1503,
+      "launch_timestamp_semantics": "scheduler.run_batch entry; not CUDA submission or kernel start",
+      "service_start_monotonic_ms": 6369086040.1503,
+      "complete_monotonic_ms": 6369086552.959608,
+      "monotonic_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec",
+      "service_elapsed_ms": 512.8093082457781,
+      "timing_semantics_version": "gpu_service_interval_v1",
+      "timing_boundary": "scheduler/worker interval, not CUDA kernel time"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/server/runtime_audit.jsonl",
+      "bytes": 10797,
+      "sha256": "ce685b8706de855f0e62cd953b9e60a8c58c814d48508625742d251dfb9bf7bc"
+    }
+  ],
+  "settings": {
+    "status": "ready",
+    "max_running_requests": 48,
+    "context_length": 131072,
+    "chunked_prefill_size": 4096,
+    "prefill_decode_interval": 0,
+    "enable_mixed_chunk": false,
+    "enable_prefill_delayer": false,
+    "min_free_slots_delay": null,
+    "enable_beliefkv_admission": true
+  },
+  "runtime_configuration": {
+    "physical_disabled": false,
+    "prepare_host": true,
+    "resident_first": true,
+    "final_stage_priority": true,
+    "final_stage_prefetch": false,
+    "tool_prefetch": false,
+    "semantic_worker_configured": false,
+    "tool_timing_only": true,
+    "tool_predictor_configured": true,
+    "execution_handoff": false,
+    "h2d_opportunity_sampling": false,
+    "prefill_ordering_mode": "native"
+  },
+  "native_prefill_order_plans": 9,
+  "configured_priorities_are_not_effective_ordering": true,
+  "capacity": {
+    "device_full_bytes": 36843376640,
+    "device_full_tokens": 1798992,
+    "device_mamba_bytes": 33096007680,
+    "device_mamba_slots": 513,
+    "device_total_bytes": 69939384320,
+    "host_full_bytes": 160000020480,
+    "host_full_tokens": 7812501,
+    "host_mamba_bytes": 40050032640,
+    "host_mamba_slots": 622,
+    "host_total_bytes": 200050053120,
+    "pool_layout": "static_separate_full_mamba"
+  },
+  "plan": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/ab_plan.json",
+    "sha256": "63b5e342ec5883c93d19b415ed46184924663477ed84615cb6105c0a81e9b0e2"
+  },
+  "placement": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1330_v78b_native_order_actual_placement_20261016.json",
+    "sha256": "cf7b19d0ad96c2864b727058b4078c7ca901cc8083d00b67ba6a7cf3cd12b6a1"
+  },
+  "cpu_quality_state": {
+    "status": "running_official_cpu_grading",
+    "supervisor": {
+      "pid": 3806721,
+      "state": "R",
+      "ppid": 1,
+      "start_ticks": "634129312",
+      "argv": [
+        "/home/longhao/experiment/ops/quality_eval/venv/bin/python",
+        "/home/longhao/experiment/ops/quality_eval/run_v75_v76_quality_cpu_20261016.py",
+        "--watch"
+      ]
+    },
+    "started_at": "2026-10-16T10:17:10.077963-07:00",
+    "registration": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1185_v75_v76_quality_registration_20261016.json",
+      "sha256": "45ada3946d1ffbb744198f820881e260547e12cdee0126c7e9269ee4c0a1ab85"
+    },
+    "arms": {
+      "v76_reactive": {
+        "worker_returncode": 0,
+        "finished_at": "2026-10-16T16:28:41.430508-07:00",
+        "score": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1181_v76_quality_inputs_20261016/official_quality_summary.json",
+          "sha256": "e67eae48a6934fbe2c7e48b539ae20cf183c5f89c0a02d009a29ee7e02e46e95"
+        },
+        "complete_official_grading": true,
+        "resolved": 101,
+        "unresolved": 54,
+        "evaluator_errors": [],
+        "evaluator_incomplete": [],
+        "native_non_completed": []
+      },
+      "v75_native": {
+        "worker_returncode": 0,
+        "finished_at": "2026-10-16T17:50:37.304297-07:00",
+        "score": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1182_v75_native_quality_inputs_20261016/official_quality_summary.json",
+          "sha256": "f25b72acc3e61ee2dbb9eddb0e63b66a022d32411363a14227d0e5975f07502a"
+        },
+        "complete_official_grading": true,
+        "resolved": 95,
+        "unresolved": 59,
+        "evaluator_errors": [],
+        "evaluator_incomplete": [],
+        "native_non_completed": [
+          "pytest-dev__pytest-6197",
+          "django__django-11179",
+          "django__django-13089"
+        ]
+      }
+    },
+    "gpu_work": false,
+    "grading_started": true,
+    "observed_at": "2026-10-16T18:00:27.490866-07:00",
+    "environment": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1184_v75_v76_quality_environment_20261016.json",
+      "sha256": "aea32dd7c5762e3211ec1a607f6a8bbb81b35b219872ab83576c2d9c656c2fd2"
+    },
+    "current_arm": "v75_predictive",
+    "worker": {
+      "pid": 231698,
+      "state": "R",
+      "ppid": 3806721,
+      "start_ticks": "636850048",
+      "argv": [
+        "/home/longhao/experiment/ops/quality_eval/venv/bin/python",
+        "/home/longhao/experiment/ops/quality_eval/run_v75_v76_quality_cpu_20261016.py",
+        "--worker",
+        "v75_predictive"
+      ]
+    }
+  },
+  "scope": "Actual startup only; no final performance or quality conclusion."
+}

@@ -1,0 +1,745 @@
+{
+  "at": "2026-10-16T17:48:57.371502-07:00",
+  "status": "complete_collection_with_failed_native_gate",
+  "workflow_count": 156,
+  "outcomes": {
+    "completed": 155,
+    "incomplete": 1
+  },
+  "native_agent_jct_eligible_workflows": 148,
+  "native_gate_passed": false,
+  "original_driver_exit_code": 1,
+  "scope": "Collection completeness only. Preserve incomplete, guard, quality and JCT eligibility labels; no native-gate or performance acceptance.",
+  "original_state": {
+    "status": "stopped_for_diagnosis",
+    "supervisor": {
+      "pid": 2645733,
+      "state": "R",
+      "ppid": 1,
+      "start_ticks": "635951139",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/ops/resume_v77_after_v76_postprocess_20261016.py",
+        "--watch"
+      ]
+    },
+    "registration": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1215_v77_native_close_registration_20261016.json",
+      "sha256": "be5995c755d7cb78b9a98ffd3c3f830383b0d669c27729eb81b877504fbda86b"
+    },
+    "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77",
+    "started_at": "2026-10-16T15:20:48.885632-07:00",
+    "observed_at": "2026-10-16T17:42:02.761299-07:00",
+    "previous_status": "completed",
+    "wait_supervisor_live": false,
+    "wait_driver_live": false,
+    "driver": {
+      "pid": 2646017,
+      "state": "R",
+      "ppid": 2645733,
+      "start_ticks": "635951275",
+      "argv": [
+        "bash",
+        "/home/longhao/experiment/.worktrees/beliefkv-v1213-native-close-gpu-20261016/scripts/run_qwen35_native_regime_probe.sh"
+      ]
+    },
+    "launched_at": "2026-10-16T15:20:49.650628-07:00",
+    "native_session_close_reclaim": {
+      "counts": {
+        "attempted_nodes": 12461,
+        "close_calls": 1875,
+        "discarded_nodes": 9009,
+        "freed_device_full_tokens": 17314800,
+        "freed_device_mamba_slots": 5751,
+        "freed_host_full_tokens": 274903,
+        "freed_host_mamba_slots": 130,
+        "late_finished_requests": 0,
+        "reclaim_batches": 1878,
+        "stale_generations_skipped": 0,
+        "unknown_or_duplicate_closes": 0
+      },
+      "enabled": true,
+      "pending_sessions": 0
+    },
+    "startup": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1216_v77_native_close_actual_startup_20261016.json",
+      "sha256": "a8c2fc76711898182640de6f136c5fc414f9da3701dbf26fd32bcbfb36a4942a"
+    },
+    "error": "ValueError('native-close collection/startup failed: exit=1')",
+    "finished_at": "2026-10-16T17:42:12.762686-07:00",
+    "postprocessing_recovery_continuation": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1268_v77_recovered_continuation_20261016.json",
+      "sha256": "ed2c0d5817cb8d92c8445ff59a828ef4bfc415d68f4da86c5a69876253fc2251"
+    }
+  },
+  "inputs": [
+    {
+      "path": "/home/longhao/experiment/ops/v77_native_close_20261016.state.json",
+      "sha256": "07b1bf564571f2ce1f155dcda51daf35c7eae18bc086304c41aefa8afc20d810"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/summary.json",
+      "sha256": "d14c04e0c80c79acbcd118ad5fc6f0721d933f1b4a4538eea34c66e32a8d97e7"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflow_arrivals.jsonl",
+      "sha256": "1d73950035477ad143bfc413c3ae43bea9b519154198b1e928afb5e39cab9815"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/server/native_telemetry_status.json",
+      "sha256": "b0272a62b4f4571831362a5314acda70e56bdc2ad81639428ab68991ec058cc4"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/ab_plan.json",
+      "sha256": "6f56700ec880ec3f4f245f4d67ffc493c72ac7b137d602dfd6cf652f6d90c65d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native.launch.log",
+      "sha256": "13eca4700aa89f58f37d564a6686d75d12cd4d1e501e84b8770bf3251688323c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1216_v77_native_close_actual_startup_20261016.json",
+      "sha256": "a8c2fc76711898182640de6f136c5fc414f9da3701dbf26fd32bcbfb36a4942a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-10097/result.json",
+      "sha256": "c2bf2f0893b97779638bd43e327e8b2cc91978a0e8aea16d8e334fbfa39e822e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-10554/result.json",
+      "sha256": "0afc50fad1cb8d4b0799a92c9a7b44ba14021e151b0ec68a7668705df26e1974"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-10880/result.json",
+      "sha256": "c0d3e83d2d970b9eeee3722f4bb11396d85f7a4e39e21f7a216e74f19fb087d1"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-10914/result.json",
+      "sha256": "e05e8b302812501912b2cbb1867f17e373cdeadd92efc421a0ffe2c10fa8fc8e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-10973/result.json",
+      "sha256": "8251277503c31799ca4fd348c03610d5eb121bb045c61ae0ae5ead1db25324b6"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-10999/result.json",
+      "sha256": "e3769213890b9e016723259c8abe95d1a34f5c11b6c604a61b85eed6aba05dc3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11066/result.json",
+      "sha256": "781ef017b6ce4457b6711494accc39408db00fd8daf3214562b907eb24faeadc"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11087/result.json",
+      "sha256": "169713e53735b6472d79e70ef8c318a0c61d8828a3e1347df4a24db5ab6f4c36"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11095/result.json",
+      "sha256": "ceaaa20f2d1e764cb0edf080e01cd737fab9af8d98cc8d90f6da454f80680f00"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11099/result.json",
+      "sha256": "65454dec050745021d41baa21b9b95d939cac2ab298ea1e51e2c78ad2d5b48ad"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11119/result.json",
+      "sha256": "675fccd4630eaaf13dbb629c886cb3c803528b51b0c1dcae37587cfabce54c16"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11133/result.json",
+      "sha256": "85bb2bb723b49a43c3251f35bfc7dbff3816e010c369ccee81dc1a0023126a5b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11138/result.json",
+      "sha256": "7c785f8345e4a050f07dd288db995bb246e427ac06af0286b91f005b0dbf6928"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11141/result.json",
+      "sha256": "80098ea810bca309c2b4d4f796141a31a6d1ab90661ebe886a0037096efef9f3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11149/result.json",
+      "sha256": "f31535a375e39e3b0d484ff64f9227f31e3c13667d726cc061649e6a5f1c4d84"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11163/result.json",
+      "sha256": "66a9960a57f3eb389a4412daf8f3f2e261cb41d2724d152eaa1099d83cad1dea"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11179/result.json",
+      "sha256": "8f0c00f05cbf9afba82b2553917074b093df0161dadaf2e9fff3778b7f5d0f6a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11206/result.json",
+      "sha256": "80039d2ad872cb2ed3ef62cbb97b3941d989861745a5673618c82cb9f8523d8a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11211/result.json",
+      "sha256": "0b68825491af96c7649d912dc7e7fd14c6c5dc77d26c716956164fa4a6f23eba"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11239/result.json",
+      "sha256": "3624f028f0809cb98f13df73f7b937c0b5555a46ea5bf1d77e73d03ccf67eb71"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11265/result.json",
+      "sha256": "1191ccad908511dd7a33846e85416010e9f73e94612c38663a1effcbfc8e8cb0"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11276/result.json",
+      "sha256": "4c795a7432757848ba0808a53450b9132480622da1d5176ccb2d163ccc4ad6f1"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11292/result.json",
+      "sha256": "7fcef6d0d84db549f5c7f99e0ca769f2c5dafeb657d85321aedb52256e83f858"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11299/result.json",
+      "sha256": "f768079eb139325d8ecff5d82056f7daae0c0bb6ed27939950ab16ba243635ed"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11333/result.json",
+      "sha256": "c16707a0e939e96af531f318455a05612cb2900c81b34837ebcd47ac7a7edff9"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11400/result.json",
+      "sha256": "3462fdcda9db86e19399ae3c0939de4998c6f813e2f92a1a6b329a31c09ec6c3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11433/result.json",
+      "sha256": "3db19568561842f6803e71640fb130bd7deef6f3015717e3501a141fdd2f86a1"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11451/result.json",
+      "sha256": "0a998bb53a8ae9f86376a9fe9a0e755a8b3973eef0ea99cc36c8a25a7057c7a3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11477/result.json",
+      "sha256": "36d81ebef2963534364332aba902201da0412527bea06a2635eea9debe25218b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11490/result.json",
+      "sha256": "93d386f408124bcd236fb061029d22360d4de776bf1fb7bcb05c79d49fd23f61"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11532/result.json",
+      "sha256": "ba8b09b5632aa7e686851d478805b56662ef97b135474518a4c196baef8a77b8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11551/result.json",
+      "sha256": "ff580dcad234e331d66a441283b4bd8c917eac6c3c41e44cd44a327a5c916a13"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11555/result.json",
+      "sha256": "9fef75332df0fdae333a321db3ec36b55b34ccab9d6db4c3c140b6411d557c2d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11603/result.json",
+      "sha256": "9269954dc75c37c3e970fb30586a98ab0a4957985fbdaa315feb20f2717be8f7"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11728/result.json",
+      "sha256": "e7a33e27a3d92f3f36c1c5ac7b4540850b1622bcfb978748aeebf083229610d5"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11734/result.json",
+      "sha256": "8835749f83a5889e799ae3c52aa13b3b5aa6ee1228f58e0ab8432139159738a2"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11740/result.json",
+      "sha256": "693df12024f51e973a5eaad0b2a0aa07447656ed866c82a88b40070c272eb343"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11749/result.json",
+      "sha256": "816a03a715bc18cb91c97568a19b56fd0e1451d257f70e0c6b673149b71b85d9"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11790/result.json",
+      "sha256": "8c0889f622021b072ee6cac692374e4e5004d5df5df25b2e7c5cd53dc72f49c6"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11815/result.json",
+      "sha256": "7832b0659da6db194f2ab2aed3dc683fdaa72f77b5ec1c92f46410b1a905ce09"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11820/result.json",
+      "sha256": "d231e70b349b20cab91421f022e28306cfe2108595c676d8ecc792cca00a55e8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11848/result.json",
+      "sha256": "a5e8cee58e76a14f10a58bfca37fa43a04e19c7c256e67bfa277af059692e610"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11880/result.json",
+      "sha256": "0689c78faeab6b48f9e4c4433dc9f6eb5347d9c3add6263b7d15beed7d585499"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11885/result.json",
+      "sha256": "3c9ce7bd79b45956f86bffb9fa6432041f4cff653340a5a967bb70bbaf587419"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11951/result.json",
+      "sha256": "3fdfb194f9f046d6298b89e784b9e483ee6e38780b8e3cef59d42f0a39f3633c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11964/result.json",
+      "sha256": "d2eba80691661270b392b927e2e05a91357dafd9895e7bf3ccb4b76aca836448"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11999/result.json",
+      "sha256": "d7f76a8fccbb4ebc2c14aa47ef189f5a3e6221aa61512ea89433e4f01051e834"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12039/result.json",
+      "sha256": "0d3229188ab9beda2a4a29619fac559bf72c8fbcd7070b5d2275e219e69317d4"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12050/result.json",
+      "sha256": "03f692882aa73e26ba08d901459babe2367bd1b33b9550aa07af1381970bb781"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12125/result.json",
+      "sha256": "2fa143289607e501a8d4f567df9b268d833b638171d4daa750adbb9768aac788"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12143/result.json",
+      "sha256": "5431651faafe832f3537cf385e2d9e8563650e1e2d3a0656cc111ed1ad4d49fc"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12155/result.json",
+      "sha256": "d919040035326c5d07f4aeabf9bab61c8921b2f5927d076ffafed6fed4d5e934"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12193/result.json",
+      "sha256": "7fee11178e8b69266ed1eaf9a3639142ffeb337f1438577ce8c0f18654984411"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12209/result.json",
+      "sha256": "9385b2eb038ec17ba0bce14d8a461806a13b089230eb9fb9ca1f9b58832e34cf"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12262/result.json",
+      "sha256": "ce84382ddee11e1289b46c832b42dcb31cca99cccec6f9dc57d4823551a130be"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12273/result.json",
+      "sha256": "b7650136628103169e76eb51d6bef315628dfa5969c450044ece7d75e09e3f46"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12276/result.json",
+      "sha256": "6631c98a70870ae366c6bd5b84bff7bb07fd9049bf6209e60dbcc32fea5b1d6f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12304/result.json",
+      "sha256": "01101f52544848d904e0c6c98fecd664dac68d094216b784f6beb3f9ad6ffa9b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12308/result.json",
+      "sha256": "35cabb0acfbc4877c8e2c89b78265e8e6b95ca671c0ada8625d689d9f5ad0ac4"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12325/result.json",
+      "sha256": "9361d3c989146d16f4d2e86e4d0f98c6d975c8fdca417723d51109ad34f40296"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12406/result.json",
+      "sha256": "0b4941a2e91d894ed47dc0f541cae33329ec9cdad4846a12dc25edbe03a0c7ac"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12419/result.json",
+      "sha256": "e1f45f585716a71bc5ea639170aef5d0d53f5015757f6672c101e932f2190010"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12663/result.json",
+      "sha256": "dc039f80dd2e620eb60e5fc9584f392231e67bb8c2c563bb9115b695c27b2701"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12708/result.json",
+      "sha256": "6a1b6088b2d6792220e713cb62371be513a10f323a49f578a724fbe266d78b8d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12713/result.json",
+      "sha256": "f4f897e1207410176ef4eaa9aa0c6d15d2e9b402745fc6ab63469827449a7b14"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12741/result.json",
+      "sha256": "fb5ac73b0cac88011f7ca684f30b65e1bd55d1456647492d64ca2ae33bbef892"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12754/result.json",
+      "sha256": "1829ae0c7bcf918bb3115b415a5dec4b85272c7f2f6a3ee863c78d9bda053683"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12774/result.json",
+      "sha256": "c9e9d9d98ab0fbea4011134a7243123e8d8e5d5f3c8bbfed1116144e583939ed"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12858/result.json",
+      "sha256": "989d569f60b76e176b7aa9fda9271b269fe4e53ad3047973a490e689e8123e3b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12965/result.json",
+      "sha256": "d434d059694026395b63217b75bfbb037f8db926cbea10d820b25cd26fac1945"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-13012/result.json",
+      "sha256": "f374198387277a2af99301e1255a69058712b3822dd17402dfb5dbe8d9a9d760"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-13023/result.json",
+      "sha256": "c0c4f4cdf6f8917acd18f16d3ee5fda17b8d0325f6366466fe56e03ff5caa124"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-13028/result.json",
+      "sha256": "892deb370bbc3018cd9ca5e142a98aaed19503db9aeea706a70628a24c281079"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-13033/result.json",
+      "sha256": "a5b5619c5f8284ef1c7fcb7589ca0a1baa5e9f03bd982c4ee9acf84df10a9434"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-13089/result.json",
+      "sha256": "d79598009c133a457100712417a2eb0a75a169da6f47de14d6723f57517139e8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-13109/result.json",
+      "sha256": "bfafa2a70164f126ea9a6df8a95a1dcf0c6cb9a13e990e7f29fe3c9400d1d539"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-13112/result.json",
+      "sha256": "4dd7fa65d7b46601ca4685e731aa2aaa29844647a5c7185e66dc3dd54b271419"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-13121/result.json",
+      "sha256": "2bda42b4b4cd2788894772910313595ddbee5444d6ac45343d78cc5c50523c7a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-13128/result.json",
+      "sha256": "1c9c2b9c5f787da98b74857340d244d7c3ba6b4f9189b2a57b37239229994732"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-13158/result.json",
+      "sha256": "362d582f547e8f027e931969224e94bfb2df796f75cebe7d8d9adeb925636173"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-13195/result.json",
+      "sha256": "1468bd7225ae54b057d353288872dd860f8dfe4ffd4fdc04a14b87573ef3079f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-13212/result.json",
+      "sha256": "03cd884e8eab87002bcad3891f76996344ac8d9dfdf6a299e5ae83460555d554"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-13279/result.json",
+      "sha256": "fa9cb4d77fedfaea179a3d66bd519f394a704620e8b07596205c345b9f942d98"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-13964/result.json",
+      "sha256": "351ff22de00e618f3c95da9986123d16d95027a4000a815400c654fd605e66ef"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-14349/result.json",
+      "sha256": "0506868dc4a86453b5eef266064b4b5cdde2dd9a322c3dc9b64c7dd093913bfd"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-14500/result.json",
+      "sha256": "ed18e2f3d6a02d3e607fe3c22782fd5c7d76ebe27c8a0768402b56c0813bdf3b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-14631/result.json",
+      "sha256": "041640732edea96a2f7e5716de8196313b69205d22e336a22fc160aa7abd5610"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-15103/result.json",
+      "sha256": "b8afdae2221e70c377a10cb4cd03a3d741efe1bb13548c3bdbb035e288dd0aa1"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-15315/result.json",
+      "sha256": "a69338d2f343d001bd25567d2a2607c0a164a4bcef43c5e791ee479010712b8a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-15368/result.json",
+      "sha256": "6b085a15630957e504310ddb07574482a37d04ec033baebe0b5a864b3a8353cf"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-16255/result.json",
+      "sha256": "48d103e3b262ee4f45a3954c63ab126d5086d408e5918dc28fea9ec3d90b0e4f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-16502/result.json",
+      "sha256": "050e2b3c107a42612d363b94b93fa1fc567c4f02d534125c3d9b6bcb31dd4c81"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-16667/result.json",
+      "sha256": "3331e178648ad63a836949cd0e9d6ff23a7ff8e6e4d3dc20da42d9eefedf991e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-16877/result.json",
+      "sha256": "d204a6075c719991b2d9a05c701a53f01f314736360a9a36f470d9e1099415ee"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-16938/result.json",
+      "sha256": "c3233c441fee884338b026b377d7c479ac26284da741563620c63ae4827da3a1"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/mwaskom__seaborn-3069/result.json",
+      "sha256": "35e234c1e86c15b6bd2fbfb2049e023944537cc3627543b5e56c65b858749b77"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/mwaskom__seaborn-3187/result.json",
+      "sha256": "070d4f1ccf8e40aa0f0bf0a26408190665a519e51e156e85a69e51c848f1af9b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pallets__flask-5014/result.json",
+      "sha256": "ecbb2b81bfe8bae2eaed624643d584e8171f84c9e4245934ecf2cac1fdbf3025"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/psf__requests-1142/result.json",
+      "sha256": "e67ce27b4c9b7188e721e23082c7f6f7e498a0a3b29834057bc96693e3203d79"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/psf__requests-1724/result.json",
+      "sha256": "e1888b9fc93e5acf3507328e11158a94031869fce756c7702d75d6609a60e252"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/psf__requests-1766/result.json",
+      "sha256": "1028174e081bfc456c9c40b20c17df6dd3ee9135a431925ac4aeae620435279e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/psf__requests-1921/result.json",
+      "sha256": "9138fcd69727d4338ae6262c6bbb6cb42d1138bfd5097141044d183262346c2c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/psf__requests-2317/result.json",
+      "sha256": "b5d051c800babcdb26dd77052756012d70e95a6348b3d7d28dda457da02609c5"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/psf__requests-2931/result.json",
+      "sha256": "a3030c3c5e25c615887a04e3c76307446dc1ab9388b5a2a75be647da3cb877f5"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/psf__requests-5414/result.json",
+      "sha256": "330116c2daa4779c71e6c7bb730f4edb4027381f84ed8f558b774405c2baebbf"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/psf__requests-6028/result.json",
+      "sha256": "7bb5c8e132014f8714cc6f263f879bb23002397a524f5c144dbb8b926c98bf29"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-2905/result.json",
+      "sha256": "c95038c9691f175df9fc03ed9144ad263223e34bfa8ef021294256151d304796"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-3095/result.json",
+      "sha256": "c1616f62ead928a511aa2f304bf2bb5163d6cd6ffcc27c8035af0c2770d2207e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-3151/result.json",
+      "sha256": "87f0b23f6794e628db1d33e61a40f654bd62064a8bc333a8104ca4fb9fd9f6c3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-3305/result.json",
+      "sha256": "3dc759b2849117ca03df82ad2554682232a61fef407b8bac01e6af52ad322bd8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-3677/result.json",
+      "sha256": "f8257e74dbd7937207aa8b898552eff64fb136368422d63563f1c978c5100132"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-3993/result.json",
+      "sha256": "de7b58389e4e5078e434f48e81055c87a4c9c0c5983e5f9952be94696a89f7aa"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-4075/result.json",
+      "sha256": "b99e2d407eb965a8475fa0b5c8e064263b40119ffa39b693dba9d6392d2474b9"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-4094/result.json",
+      "sha256": "0e553ab14386770329c247b3d979168515c6e2c5542633e71ec5234836b140f3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-4356/result.json",
+      "sha256": "36361704c4e31a0c10f310978bfc50c79d79c7dabda7f8e3be78c1b6adfce965"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-4629/result.json",
+      "sha256": "7334f51df058f614f1702b9bd52d1c2cb2fa2488966175e58e0f7a9a62eaa84f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-4687/result.json",
+      "sha256": "9459a093366292ccb0f7399d4cb2a1dc37ab568f7a5ca172e273e0b1c8249687"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-4966/result.json",
+      "sha256": "494867f5d4691b186b22e7db5d7adae4799017f750faf39fe29409f8ffb81c04"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-6461/result.json",
+      "sha256": "dc146225b2029824a3bcf2aeb67192c82fbf6fd625cda352b1b55346e952497c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-6599/result.json",
+      "sha256": "deeeb87b31d64feb8bdb27fcb90dec09a4739054aa3440517fd56a23a0b05cba"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-6721/result.json",
+      "sha256": "c9a1eb7ffa4ca3858e462a2d4c555b9546822172e1bb87cbf4bccd56295f28ff"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-6744/result.json",
+      "sha256": "6e61e1cf6ca6d3f5602a732d263104b5e1d4573cd3f506262e78dbc5048910dc"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-6938/result.json",
+      "sha256": "63674953c5bd1ad56f3a1e7cd327ea49ef2d559299cac88fa8e1569a8b64bc51"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-6992/result.json",
+      "sha256": "b97a887d9178b95101d6bd021058f32b48851f55ef2b7c12cad90121eb5d594b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-7229/result.json",
+      "sha256": "ef827b3f5b08ba6027a648fa28a923d47469765fdd73df33ae93d7057dae59e3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-7233/result.json",
+      "sha256": "7bc20cde57053478ef413cbd7bdf0968887b48143abd8151c59c37f09532dd4e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-7393/result.json",
+      "sha256": "4ebe0afc57dd16fa3384d4c80d47452bdb45a8f3e797b2c1a5ba38740ed69d69"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pylint-dev__pylint-4551/result.json",
+      "sha256": "7c52c95a631ec30535b6de4f1228430bc9d97e90f152fd7f989aac112a67d2d1"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pylint-dev__pylint-4604/result.json",
+      "sha256": "1bd1446bf4d490ab6a6e5ab7b576f5af966dc89fa40a8b4a67215cf33d39b8f8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pylint-dev__pylint-4661/result.json",
+      "sha256": "0fa9caadaaa8e62ca6c34bbf57b1e99ef0aa04c6f97a4e69e71864e1f9f4f587"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pylint-dev__pylint-4970/result.json",
+      "sha256": "6110560f6eff4d8eeb1327dae208ef8d3513653f57b1c0ea9e236231ca2420c2"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pylint-dev__pylint-6386/result.json",
+      "sha256": "bfdffaa9c41ace95c55fa8714563490b4910ac4fae7cb22ffb38042cc255cd1d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pylint-dev__pylint-6528/result.json",
+      "sha256": "a22b8b1ebfa58cb6e960df9d972b00255766529ee5c4f08f4fde359bfd1729a4"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pylint-dev__pylint-6903/result.json",
+      "sha256": "5fcb8bcb94faf376e210afdf8e1a9b3a371e4377dee294fd19210728b4b35723"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pylint-dev__pylint-7080/result.json",
+      "sha256": "fe994dc29084749104521086fbe728ef4ba80d99247eca8a2c5dfcd70ead3870"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pylint-dev__pylint-7277/result.json",
+      "sha256": "1175096592cfce555ceebee7a7c1068b93b3cab11d52d96bfc64a6d9b4b65210"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pylint-dev__pylint-8898/result.json",
+      "sha256": "5dda7f42563a97f101079b228051a3f127e1fcb7489eb4a05352b46e94b6e677"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-10051/result.json",
+      "sha256": "4e51eb35bfa85edf6476b5ac5ffae06672f2fe7418efe6e7e347eab32ad50589"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-10081/result.json",
+      "sha256": "9819a0f4ea79a9b6e3124893f32ffa5814eb822583d26480efe51743dfdf1690"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-10356/result.json",
+      "sha256": "b8f793aea9e041ad5e261d075cf7fea3ec27745d52b400ee37ec6b7daa0080c2"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-5262/result.json",
+      "sha256": "d9576584d2a4616a046b54d33468552fa1b6941cb63155d8aef00c480ac26c38"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-5631/result.json",
+      "sha256": "fbb56cac8fc7b253b82b9af34d5a3c938cdd812de401836ef794ea4998044ff8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-5787/result.json",
+      "sha256": "3afa4d6413a1ac2083ee77e8121eb84806b7733ebf405adb8333975ef3b68b6f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-5809/result.json",
+      "sha256": "6e8d8000baca8814cfdef088e884d91a91bf89409ad7f8e4c1568a056a191106"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-5840/result.json",
+      "sha256": "25853850d71d283abb40f0cb05af30cdf1970cb3a756da0222b4a3b24b6c84ad"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-6197/result.json",
+      "sha256": "4e122b703f5a71fbe7a0127124c9522dc7387264c10c6ee34b5be849de759cfe"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-6202/result.json",
+      "sha256": "2330ee7a39493a9bbf244bbd6fecf1eb552d0cc5ce27b91d4e204adf1017210d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-7205/result.json",
+      "sha256": "816d44b6529a5e2bf5cfd0f38d0e5838eeac4a26820fbc7ca3591948187c50a5"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-7236/result.json",
+      "sha256": "b064e55eae40f85756c3ed462cc18aa813e1a085ec505dc4570e858e705368a3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-7324/result.json",
+      "sha256": "d1a865d1482dcf1d560742ccad5f7e0eb58a97dfd145317d5b7fc85cef1211fe"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-7432/result.json",
+      "sha256": "5a5b965652f7bd1023a2cde9dea186b194bcc9597a791c249ac0dd95e8e1b3ca"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-7490/result.json",
+      "sha256": "3d282a944ed89a034d2cbf77730ac149e056eea0a0b8070fbcbc59e6043c5a69"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-7521/result.json",
+      "sha256": "d40fa3b29e4ad5bffc9d1f56b461a66afe6981af4b6e67db3487352806f8b92a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-7571/result.json",
+      "sha256": "9a259cd3c58db39607dc697fa668957c59ad8bc4872bdbec147a11b26de3e107"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-7982/result.json",
+      "sha256": "8018d8f07904d1f03ab0c3aed7138f511c1c7d3043389965ef6a4391ada8de0a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-8399/result.json",
+      "sha256": "1890bdd55e628b23204f20093a83594074e46cf08be77087386a64c6efc4e31a"
+    }
+  ],
+  "postprocessing": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1217_v77_native_close_completion_20261016.json",
+    "sha256": "e61048539462b5914e17b52cd3e4567befb6d6bf3b785724f49275f997dcabe1"
+  },
+  "frozen_helper": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v1213-native-close-gpu-20261016/scripts/start_v77_native_close_20261016.py",
+    "sha256": "25193c17452ea4eba3e3df7122b819061408d11207bab617ffea2ca7160ba4f4"
+  },
+  "wrapper": {
+    "path": "/home/longhao/experiment/BeliefKV/scripts/resume_v78_after_complete_v77_20261016.py",
+    "sha256": "750c246a87d4172a3c59e7f1afb06d2c1a11a88a904ff2adef4121a9df26e1d7"
+  },
+  "cpu_receipt": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1324_v77_v78_collection_recovery_cpu_20261016.xml",
+    "sha256": "063a0ab3e978b1602b3273f5100c96054cf629f8b8444d6080acdd18e7296156"
+  }
+}

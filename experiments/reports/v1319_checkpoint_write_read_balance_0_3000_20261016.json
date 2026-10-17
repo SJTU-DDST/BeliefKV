@@ -1,0 +1,358 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-17T00:39:29.945542+00:00",
+  "clock_source": {
+    "path": "experiments/reports/v1294_v77_service_window_reference_basis_2400_3000_20261016.json",
+    "bytes": 23882,
+    "sha256": "a9183c048b2a463ae0082cae8833ae8359780713ad918ade0191ca60ed2de244"
+  },
+  "write_start_seconds": 0.0,
+  "write_end_seconds": 3000.0,
+  "arms": {
+    "native_close": {
+      "cohort_submit_window_ms": [
+        1792189420651.0,
+        1792192420651.0
+      ],
+      "receipt_observed_through_ts_ms": 1792197566347.1497,
+      "non_completed_records_not_credited": 0,
+      "totals": {
+        "cohort_d2h": {
+          "batches": 17743,
+          "actual_bytes": 941679554560,
+          "copy_units": {
+            "kv": 18426431,
+            "mamba": 8764
+          },
+          "bytes_by_pool": {
+            "kv": 377373306880,
+            "mamba": 564306247680
+          },
+          "measured_stream_ms": 142497.81555673014,
+          "unmeasured_stream_batches": 0
+        },
+        "all_observed_d2h": {
+          "batches": 32248,
+          "actual_bytes": 1669780787200,
+          "copy_units": {
+            "kv": 31256561,
+            "mamba": 15991
+          },
+          "bytes_by_pool": {
+            "kv": 640134369280,
+            "mamba": 1029646417920
+          },
+          "measured_stream_ms": 234323.06471934821,
+          "unmeasured_stream_batches": 0
+        },
+        "all_observed_h2d": {
+          "batches": 444,
+          "actual_bytes": 184586997760,
+          "copy_units": {
+            "kv": 6026237,
+            "mamba": 950
+          },
+          "bytes_by_pool": {
+            "kv": 123417333760,
+            "mamba": 61169664000
+          },
+          "measured_stream_ms": 5575.7468428611755,
+          "unmeasured_stream_batches": 0
+        }
+      },
+      "completed_read_source_bounds": {
+        "kv": {
+          "cohort_completed_write_copy_units": 18426431,
+          "all_observed_completed_read_copy_units": 6026237,
+          "maximum_write_copy_units_that_can_back_completed_reads": 6026237,
+          "maximum_fraction_that_can_back_completed_reads": 0.32704309369513823,
+          "minimum_write_copy_units_not_needed_as_distinct_sources_of_completed_reads": 12400194,
+          "read_copy_units_per_cohort_write_copy_unit": 0.32704309369513823
+        },
+        "mamba": {
+          "cohort_completed_write_copy_units": 8764,
+          "all_observed_completed_read_copy_units": 950,
+          "maximum_write_copy_units_that_can_back_completed_reads": 950,
+          "maximum_fraction_that_can_back_completed_reads": 0.10839799178457325,
+          "minimum_write_copy_units_not_needed_as_distinct_sources_of_completed_reads": 7814,
+          "read_copy_units_per_cohort_write_copy_unit": 0.10839799178457325
+        }
+      },
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native",
+      "pool_bytes_per_unit": {
+        "kv": 20480,
+        "mamba": 64389120
+      },
+      "input_jsonl_prefixes": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/server/transfer_telemetry.jsonl": {
+          "complete_prefix_bytes": 22930654,
+          "complete_prefix_sha256": "3479df039053234d7322c5a9abfb5d0161f125376e262b627efda0ce3e737b60",
+          "first_read_limit_bytes": 22930654
+        }
+      }
+    },
+    "native": {
+      "cohort_submit_window_ms": [
+        1792172235085.0,
+        1792175235085.0
+      ],
+      "receipt_observed_through_ts_ms": 1792179039003.1387,
+      "non_completed_records_not_credited": 0,
+      "totals": {
+        "cohort_d2h": {
+          "batches": 20408,
+          "actual_bytes": 1023939174400,
+          "copy_units": {
+            "kv": 20625782,
+            "mamba": 9342
+          },
+          "bytes_by_pool": {
+            "kv": 422416015360,
+            "mamba": 601523159040
+          },
+          "measured_stream_ms": 149003.51642764267,
+          "unmeasured_stream_batches": 0
+        },
+        "all_observed_d2h": {
+          "batches": 37086,
+          "actual_bytes": 1935036805120,
+          "copy_units": {
+            "kv": 40658939,
+            "mamba": 17120
+          },
+          "bytes_by_pool": {
+            "kv": 832695070720,
+            "mamba": 1102341734400
+          },
+          "measured_stream_ms": 276723.3001533281,
+          "unmeasured_stream_batches": 0
+        },
+        "all_observed_h2d": {
+          "batches": 75,
+          "actual_bytes": 13610455040,
+          "copy_units": {
+            "kv": 192973,
+            "mamba": 150
+          },
+          "bytes_by_pool": {
+            "kv": 3952087040,
+            "mamba": 9658368000
+          },
+          "measured_stream_ms": 661.4988813400269,
+          "unmeasured_stream_batches": 0
+        }
+      },
+      "completed_read_source_bounds": {
+        "kv": {
+          "cohort_completed_write_copy_units": 20625782,
+          "all_observed_completed_read_copy_units": 192973,
+          "maximum_write_copy_units_that_can_back_completed_reads": 192973,
+          "maximum_fraction_that_can_back_completed_reads": 0.009355911935848057,
+          "minimum_write_copy_units_not_needed_as_distinct_sources_of_completed_reads": 20432809,
+          "read_copy_units_per_cohort_write_copy_unit": 0.009355911935848057
+        },
+        "mamba": {
+          "cohort_completed_write_copy_units": 9342,
+          "all_observed_completed_read_copy_units": 150,
+          "maximum_write_copy_units_that_can_back_completed_reads": 150,
+          "maximum_fraction_that_can_back_completed_reads": 0.01605651894669236,
+          "minimum_write_copy_units_not_needed_as_distinct_sources_of_completed_reads": 9192,
+          "read_copy_units_per_cohort_write_copy_unit": 0.01605651894669236
+        }
+      },
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native",
+      "pool_bytes_per_unit": {
+        "kv": 20480,
+        "mamba": 64389120
+      },
+      "input_jsonl_prefixes": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/server/transfer_telemetry.jsonl": {
+          "complete_prefix_bytes": 25954698,
+          "complete_prefix_sha256": "41074f93362c40684d9e7548c0586419eb9ae83e4915e92ecb89055495bbf7e2",
+          "first_read_limit_bytes": 25954698
+        }
+      }
+    },
+    "reactive": {
+      "cohort_submit_window_ms": [
+        1792179421503.0,
+        1792182421503.0
+      ],
+      "receipt_observed_through_ts_ms": 1792188154564.9668,
+      "non_completed_records_not_credited": 0,
+      "totals": {
+        "cohort_d2h": {
+          "batches": 20751,
+          "actual_bytes": 1382987632640,
+          "copy_units": {
+            "kv": 34815373,
+            "mamba": 10405
+          },
+          "bytes_by_pool": {
+            "kv": 713018839040,
+            "mamba": 669968793600
+          },
+          "measured_stream_ms": 212028.61184611078,
+          "unmeasured_stream_batches": 0
+        },
+        "all_observed_d2h": {
+          "batches": 38441,
+          "actual_bytes": 2549151272960,
+          "copy_units": {
+            "kv": 63508117,
+            "mamba": 19390
+          },
+          "bytes_by_pool": {
+            "kv": 1300646236160,
+            "mamba": 1248505036800
+          },
+          "measured_stream_ms": 379484.61450827867,
+          "unmeasured_stream_batches": 0
+        },
+        "all_observed_h2d": {
+          "batches": 2266,
+          "actual_bytes": 1110272389120,
+          "copy_units": {
+            "kv": 37857431,
+            "mamba": 5202
+          },
+          "bytes_by_pool": {
+            "kv": 775320186880,
+            "mamba": 334952202240
+          },
+          "measured_stream_ms": 32443.62530517578,
+          "unmeasured_stream_batches": 0
+        }
+      },
+      "completed_read_source_bounds": {
+        "kv": {
+          "cohort_completed_write_copy_units": 34815373,
+          "all_observed_completed_read_copy_units": 37857431,
+          "maximum_write_copy_units_that_can_back_completed_reads": 34815373,
+          "maximum_fraction_that_can_back_completed_reads": 1.0,
+          "minimum_write_copy_units_not_needed_as_distinct_sources_of_completed_reads": 0,
+          "read_copy_units_per_cohort_write_copy_unit": 1.0873768607907777
+        },
+        "mamba": {
+          "cohort_completed_write_copy_units": 10405,
+          "all_observed_completed_read_copy_units": 5202,
+          "maximum_write_copy_units_that_can_back_completed_reads": 5202,
+          "maximum_fraction_that_can_back_completed_reads": 0.4999519461797213,
+          "minimum_write_copy_units_not_needed_as_distinct_sources_of_completed_reads": 5203,
+          "read_copy_units_per_cohort_write_copy_unit": 0.4999519461797213
+        }
+      },
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive",
+      "pool_bytes_per_unit": {
+        "kv": 20480,
+        "mamba": 64389120
+      },
+      "input_jsonl_prefixes": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/server/transfer_telemetry.jsonl": {
+          "complete_prefix_bytes": 29375184,
+          "complete_prefix_sha256": "2ffadb5e97bcd8203c212dae46208ae8ff326a5d5b197a6290f47a2dd0b5c4b8",
+          "first_read_limit_bytes": 29375184
+        }
+      }
+    },
+    "predictive": {
+      "cohort_submit_window_ms": [
+        1792163915952.0,
+        1792166915952.0
+      ],
+      "receipt_observed_through_ts_ms": 1792171791949.7285,
+      "non_completed_records_not_credited": 0,
+      "totals": {
+        "cohort_d2h": {
+          "batches": 17960,
+          "actual_bytes": 902169313280,
+          "copy_units": {
+            "kv": 16616692,
+            "mamba": 8726
+          },
+          "bytes_by_pool": {
+            "kv": 340309852160,
+            "mamba": 561859461120
+          },
+          "measured_stream_ms": 117129.16725572478,
+          "unmeasured_stream_batches": 0
+        },
+        "all_observed_d2h": {
+          "batches": 35082,
+          "actual_bytes": 1749251461120,
+          "copy_units": {
+            "kv": 30826541,
+            "mamba": 17362
+          },
+          "bytes_by_pool": {
+            "kv": 631327559680,
+            "mamba": 1117923901440
+          },
+          "measured_stream_ms": 213983.57419149205,
+          "unmeasured_stream_batches": 0
+        },
+        "all_observed_h2d": {
+          "batches": 556,
+          "actual_bytes": 127358443520,
+          "copy_units": {
+            "kv": 3606010,
+            "mamba": 831
+          },
+          "bytes_by_pool": {
+            "kv": 73851084800,
+            "mamba": 53507358720
+          },
+          "measured_stream_ms": 4624.482527375221,
+          "unmeasured_stream_batches": 0
+        }
+      },
+      "completed_read_source_bounds": {
+        "kv": {
+          "cohort_completed_write_copy_units": 16616692,
+          "all_observed_completed_read_copy_units": 3606010,
+          "maximum_write_copy_units_that_can_back_completed_reads": 3606010,
+          "maximum_fraction_that_can_back_completed_reads": 0.21701130405498278,
+          "minimum_write_copy_units_not_needed_as_distinct_sources_of_completed_reads": 13010682,
+          "read_copy_units_per_cohort_write_copy_unit": 0.21701130405498278
+        },
+        "mamba": {
+          "cohort_completed_write_copy_units": 8726,
+          "all_observed_completed_read_copy_units": 831,
+          "maximum_write_copy_units_that_can_back_completed_reads": 831,
+          "maximum_fraction_that_can_back_completed_reads": 0.09523263809305524,
+          "minimum_write_copy_units_not_needed_as_distinct_sources_of_completed_reads": 7895,
+          "read_copy_units_per_cohort_write_copy_unit": 0.09523263809305524
+        }
+      },
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d",
+      "pool_bytes_per_unit": {
+        "kv": 20480,
+        "mamba": 64389120
+      },
+      "input_jsonl_prefixes": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/server/transfer_telemetry.jsonl": {
+          "complete_prefix_bytes": 25696190,
+          "complete_prefix_sha256": "9ee7518d44786a25f27170ca6d151f1ff10084be5efda0a170946d915e8e5228",
+          "first_read_limit_bytes": 25696190
+        }
+      }
+    }
+  },
+  "auditor_sources": {
+    "scripts/audit_checkpoint_write_read_balance.py": "bb0e80d8d6ac22c4c5f3d03cc8f3bf87183350481f753adfe8a01e93fe6f2bd2",
+    "scripts/audit_native_system_costs.py": "a9262996530573c11cc2bbdaf6184a87443b30e02fbd8f983c74e5bbbb862952",
+    "scripts/audit_sealed_wait_prefetch.py": "1bb8064854266d012423ce3bf4eea5b3aa1865a1fcc59308642ee645e7361db3"
+  },
+  "bound_assumptions": [
+    "Each reported D2H unit writes a complete immutable KV cell or checkpoint state copy; a later Host read uses one version of a source cell, not several overwritten copies at once.",
+    "H2D copy units include every reported destination copy, including duplicate source state copies for cache and request CoW. They overcount distinct read sources, making the source bound conservative.",
+    "All H2D receipts in the observed prefix are allowed as potential reads, even those preceding or outside the write cohort. No node-ID or physical-generation association is assumed."
+  ],
+  "semantics": [
+    "An upper bound on distinct completed D2H copies needed as sources of observed completed restorations, not a measured cache-hit rate, exact reuse identity or online-safe discard set.",
+    "Uncompleted receipts, ongoing partial-layer consumption and future restores after the observed prefix are not credited. The bound is expressly limited to completed-read sources.",
+    "A low bound does not prove a write lacked capacity-release or protection value, nor that an online policy can safely predict which writes to decline.",
+    "Bytes and transfer-stream sums do not identify exposed GPU stalls or removable JCT. Runtime quality, recomputation and end-to-end effects need a separate matched experiment.",
+    "One stat-bounded complete-line transfer prefix per arm; cross-arm observation horizons differ and this is not a causal performance comparison."
+  ]
+}

@@ -2,6 +2,47 @@
 
 Status date: 2026-10-16 (PDT).
 
+2026-10-16 V77 is fully collected: 156 runner finishes, 155 completed and one
+incomplete, no workflow exceptions, and 148 native-JCT-eligible tasks. Preserve
+all guard/semantic labels and the failed native gate. Its all-terminal raw mean
+is1814.634s versus1665.374s native; official quality is still pending. D2H falls
+from1935.037 to1672.269GB, while H2D rises from13.610 to184.587GB. This is not a
+causal or quality-matched gain.
+
+The frozen harness correctly returns1 when its native gate fails; the V77
+supervisor incorrectly conflates that with incomplete collection. An independent
+recovery checks all156 results/finishes, clean drained telemetry, verified source/
+startup and actual process exit, then runs the original postprocessing. V1321
+preserves original exit1 and failed states, with full HTML/comparison. V1324
+passes33 CPU cases, including18 recovery cases. V1322/V1323 resume the original
+frozen V78 through a separate recovered state; supervisor230068 is live at17:49
+PDT, but the legacy NUMA observer rejects the reactive arm and the frozen watcher
+then terminates that attempt. Preserve all failed/partial artifacts. V1326/V1327
+start a fresh V78b at17:57 PDT with application56f2c5e, engine53020ce3, arrival
+stream and policy unchanged; only RUN_ROOT and the read-only NUMA observer differ.
+V1332 passes39 CPU cases. V1328 at18:00 PDT verifies actual workflow service,
+positive native ordering, zero extra ordering/prefetch and matched arrivals/
+capacity; V1330 records actual NUMA. Scheduler244015 is live and frozen source/
+environment checks pass again. This is startup qualification, not performance
+acceptance. Official grading queues remain unchanged. Screening4.39 records
+the observer failure and fresh retry.
+
+V1319/V1320 bound completed-read sources using physical per-pool copy units,
+without assuming node IDs establish generations. Native writes806.130GB FULL
+and1071.564GB Mamba in0-6000s, with only3.952/9.658GB completed H2D in the entire
+observed prefix. At most0.490%/0.901% of those distinct write copies can source
+these reads, conservatively allowing earlier reads and duplicate CoW targets.
+This is neither a hit rate, an online-safe discard set, nor removable JCT.
+Marconi and EfficientAgent already cover the obvious checkpoint/Host admission
+ideas. First identify online-recognizable boundaries and compare their reasonable
+composition before selecting a new mechanism. Continue the V78 ordering ablation;
+do not substitute a new GPU candidate or restore the withdrawn three-mechanism
+agenda. Screening4.37-4.39 records the evidence and limits.
+Native official grading now covers95 resolved,59 unresolved and2 empty patches,
+with no evaluator error/incomplete. Preserve all156 tasks; the frozen scorer
+has90 correctly_completed_ids and measurement_complete=false. The actual prior
+queue worker231698 is grading V75 predictive; V77 quality continues waiting.
+
 2026-10-16 V1310 narrows the sampled restore transition: all 11 positive-FULL-
 Host V77 short-prefill selection intervals contain D2H acknowledged before
 selection ends, totaling 43 batches/590 nodes/6.372GB. Their H2D ACKs all

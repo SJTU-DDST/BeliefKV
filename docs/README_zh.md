@@ -7,6 +7,20 @@ write-back 补丁、当前研究文档和只读审计器。日常查看和后续
 实验仍使用各自登记的独立 worktree 固定版本。V75/V76 的运行源码、引擎和
 helper 保持冻结，不随 `main` 的新提交变化。
 
+最新V77已完整收集156项，155 completed、1 incomplete，148项native JCT合格。
+原native gate返回exit1，独立V1321恢复仅补齐采集后处理，不改终态或门槛；
+完整HTML及同池对照已生成，原始均值1814.634/1665.374s仍未超过native。
+V1322/V1323在17:49 PDT恢复的V78因旧NUMA观测器拒绝reactive而停止，部分数据
+保留。V1326/V1327于17:57 PDT在新目录启动V78b，只换观测器与RUN_ROOT；
+冻结运行时代码、引擎、到达和参数不变。39项相关CPU检查通过，V1328于18:00
+PDT核验实际首服、native排序、同到达/池容量及预取关闭，V1330记录实际NUMA；
+原始源码再次验证未改，官方质量仍在原队列。
+新V1320显示native前6000s Mamba写回1071.564GB而全部H2D读取仅9.658GB；
+保守来源份数上界0.901%，不等于命中率或可减JCT。已有checkpoint/Host准入工作
+须作为强对照，不能仅凭少搬状态宣称创新。详见研究筛选4.37–4.39。
+V75 native官方评分现为95 resolved、59 unresolved、2空patch，评分器无错误；
+全156项保留且measurement_complete仍为false。原队列正在评分V75 predictive。
+
 最新V1310逐选批区间核对传输：V77的11个正FULL Host短prefill样本均含同步完成
 的D2H，共43批/590节点/6.372GB；H2D均已提交但ACK在选批后。独立跨分支写回
 合并候选98b2670/treec8424eb3保留原生设备victim顺序，默认关闭，196项引擎CPU

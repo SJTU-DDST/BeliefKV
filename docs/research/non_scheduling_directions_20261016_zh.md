@@ -1444,6 +1444,121 @@ V77质量等待器1121673继续。分别从两份冻结检出执行verify_source
 原app、engine、plan、helper和CPU凭据均保持。下一GPU仍按原V78登记，
 不得在等待期间偷偷替换为跨分支候选。研究及完整性能/质量目标继续未验收。
 
+### 4.37 写回与完整恢复读取之间的数量边界
+
+V1319/V1320新增独立只读审计，分别选取前3000/6000s提交、已完成的D2H，
+再把同一臂封存前缀内的全部已完成H2D都算作可能读取，即使读取早于写入、
+位于cohort之外，或是同一Host源向cache和request CoW的重复目标复制。
+按direction/command ID拒绝重复receipt，验证时间、pool单位数与实际字节
+完全一致。8项专用检查及7项既有依赖检查通过；来源、时钟和完整行前缀摘要
+保存在报告中。表中GB均为十进制，读取范围是各臂完整观测前缀，并非6000s窗。
+
+| 臂 | 前6000s FULL写回GB | 前6000s Mamba写回GB | 全部FULL读取GB | 全部Mamba读取GB | FULL来源份数上界 | Mamba来源份数上界 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| V75 native | 806.130 | 1071.564 | 3.952 | 9.658 | 0.490% | 0.901% |
+| V77 native-close | 599.404 | 956.694 | 123.417 | 61.170 | 20.590% | 6.394% |
+| V76 reactive | 1258.966 | 1185.919 | 775.320 | 334.952 | 61.584% | 28.244% |
+| V75 predictive | 581.635 | 1017.284 | 73.851 | 53.507 | 12.697% | 5.260% |
+
+边界的对象是已完成物理写副本：设某池cohort写入W份、全部读取目标为R份，
+最多min(W,R)份不同写副本能作为这些读取的来源。每次Host读只使用一个确定
+版本，重复目标只能放宽这一上界。规范Mamba源码BACKUP_HOST复制完整状态，
+LOAD_BACK可从同一Host源复制到cache和request两个目标，因此按目标计数尤其
+保守。它不需要假定node ID等于物理generation，也没有给具体checkpoint贴上
+“未复用”标签。FULL单位20480字节，Mamba单位64389120字节。
+
+这些比例不是cache hit rate、逐页复用率或在线可安全丢弃集合。正在传输的
+部分层、未完成读取与封存之后的未来读取不计；低比例也不能否定释放HBM、
+保护未来恢复的价值。流时间含依赖/dispatch，写入GB不能直接换算可减JCT。
+V75/V76/V77的实际模型路径与工作集不同，不能由表中差额宣称策略因果收益。
+
+文献重新核对收紧了新颖性边界：Marconi [R6]已明确报告其测量中仅0.4%的
+SSM缓存状态被复用，并按输入共享/最终输出前缀做checkpoint准入；EfficientAgent
+[R10]已有Host reuse-working-set估计与容量条件写入准入。因此“大量Mamba写后
+未读”“少备份”“只留有用checkpoint”均不足以成为新贡献。当前源码也已经保留
+安全输入session leaf，不能把这一既有功能再当新机制实现。
+
+后续先回答两个可证伪问题：哪些写入在当时已有可识别的失效/续接依据，以及
+Marconi式checkpoint准入与EfficientAgent式Host准入的合理组合能否拿到全部收益。
+若简单组合已足够，作为共用工程对照收尾；若仍有可观的动态fork/join独有成本，
+再据精确身份、消费和关键路径证据选择机制。暂不添加新的GPU候选，不把减少
+传输量本身当论文验收，也不恢复已撤回的旧三机制为既定方向。
+
+### 4.38 V77完整终态、native门槛与V78接续恢复
+
+2026-10-16 17:40 PDT附近，V77最后一个django-16938结束，runner的submitted/
+started/finished均为156。最终summary为155 completed、1 incomplete，无workflow
+异常；原始均值1814.634s，对照native1665.374s，采集时长8276.154/6841.743s。
+这仍是包含全部终态的原始耗时，不是官方质量匹配JCT。两侧实际多轮workflow为
+31/30个。完整V77的D2H/H2D为1672.269/184.587GB，native为1935.037/13.610GB；
+少写约262.768GB没有转成该口径性能优势，不能证明关闭回收已成功。
+
+唯一incomplete为django-12708：children和JOIN均完整，root仍在解释修复与测试
+矛盾，既有graph-budget finalization/guard介入；最后正文未形成语义完成。
+deadline未到期，无取消，不将该任务改记自然RETURN或从分母移除。V77中native
+JCT合格共148项，另7个completed同样保留既有guard/语义终态不合格标签。
+
+原`run_deepagents_swebench.py --gate native`在合格数不等于156时返回exit1。
+冻结V77监督将此当作采集失败，在执行后处理前停止；原V78随后按原规则停止。
+这是“完整采集”和“native验收通过”的接线混淆，不能靠放宽论文/质量门槛恢复。
+V1324的33项CPU检查含18项恢复用例、8项读写审计及7项依赖检查，保留不同
+终态/资格，拒绝缺任务、重复finish、异常、缺startup、未知退出和未排空遥测。
+
+独立`resume_v78_after_complete_v77_20261016.py`逐项核对156份result与summary、
+全部runner结束、真实进程退出、已冻结源码和startup、遥测零drop/failed及队列
+排空，再调用原V77 postprocess。V1321封存原始失败state、exit1、全部标签及
+独立恢复来源；原失败state不覆盖。完整HTML和同任务/同物理容量比较均已生成，
+原V1217完成凭据只表示完整开发采集和质量未评分，native_gate_passed仍为false。
+
+V1322/V1323登记独立接续，17:49 PDT启动监督230068/start_ticks636843838，
+driver230265/start_ticks636843929真实存活。新动态state为
+`ops/v78_native_order_recovered_20261016.state.json`；旧停止state原样保留。
+仍由原冻结V78 helper验证原56f2c5e应用、53020ce3引擎、参数、来源与资源，
+只替换等待的已验证collection状态和监督输出路径。没有修改运行源码、策略、
+工具、到达表、质量门槛或V77/V78冻结文件。该次尝试随后因独立观测器参数错误
+被原监督终止，未生成V1283；下节记录新目录重试，不能将旧尝试视为完整实验。
+
+### 4.39 NUMA观测器的reactive兼容与V78b新目录重试
+
+V78实际原生排序已出现，但首服验证调用旧`observe_v55_numa_placement.py`时，
+argparse的choices只含native/predictive_h2d，拒绝reactive并返回2。冻结监督
+按原错误分支停止其driver。17:52后的旧监督/driver均已退出，V1325封存失败
+state/log及关联V1322来源；原V78部分raw不删除、不覆盖、不冒充全量完成。
+这属于观测/启动接线缺陷，不是GPU策略错误或新颖性证明。
+
+独立`observe_owned_scheduler_numa.py`要求显式run-root，支持三种实际臂名，
+继续验证同用户scheduler PID/start_ticks、容量census与读取前后进程存活，
+记录原始/proc NUMA文本摘要和实际驻留字节。它不迁移内存，也不把large map
+当作准确pool身份或带宽证明。旧已登记observer文件保持不变。
+
+V1332最终39项CPU检查通过，含6项新observer/重试检查及前述33项。先前V1331
+的同39项通过记录保留；首次prepare的Path类型接线在注册前修正，未启动GPU，
+最终凭据只绑定修正后的源码，不把两个重叠suite相加。
+
+V1326登记新run目录`qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order`。
+原应用56f2c5e、引擎53020ce3、原V78计划的全部字段和环境逐项一致，唯一允许的
+环境差异为RUN_ROOT。独立入口继续调用原冻结helper的资源、启动、监控和后处理；
+只把其只读NUMA观测命令定向到新增observer，注册并校验两层helper及新observer
+的来源摘要。它没有跳过startup、弱化容量/实际排序条件或修改runtime/harness。
+
+V1327于17:57 PDT启动监督243510/start_ticks636892226，新state是
+`ops/v78b_native_order_20261016.state.json`。V1328于18:00:31 PDT核验真实首服、
+正native排序计数9、全部到达表/物理容量和PREPARE/工具时长保留、预取关闭；
+V1330完成实际NUMA观察。18:01再次验证冻结来源与环境，native排序累计370，
+额外排序/预取计数均0，physical_disabled=false。scheduler244015/
+start_ticks636893629及driver243802/start_ticks636892336真实存活。该证据
+证明启动配置，不能外推完整性能或因果收益；V1329仍留给完整结束。原官方
+质量队列继续，原始负结果与研究目标均未改判。
+
+原质量队列于17:50 PDT完成V75 native官方评分，原摘要
+`v1182_v75_native_quality_inputs_20261016/official_quality_summary.json`保留
+全156项：95 resolved、59 unresolved、2空patch，无evaluator error/incomplete。
+空patch为django-11490/13028。冻结评分器的correctly_completed_ids为90项，
+measurement_complete=false、有效完成吞吐为null；原3个native incomplete及
+resolved但未正常完成任务均保留。V76为101 resolved、54 unresolved、1空patch，
+不能仅比较resolved个数宣称性能或质量匹配JCT优势。真实worker231698/
+start_ticks636850048正在评分V75 predictive，V77质量等待器1121673继续。
+
 ## 5. 既有候选一：降低上下文摘要和重建的计算量
 
 这是目前最有规模证据的性能对象。当前 `_summary_input` 把历史消息转成 XML，

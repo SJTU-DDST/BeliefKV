@@ -4,6 +4,30 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+2026-10-16 V77暴露采集/验收接线问题：原`--gate native`按JCT资格返回exit1，
+并非只有进程异常才返回非零。完整156任务/runner终态不等于native门槛通过，
+也不能仅凭exit1否定采集完整。不得更改原失败state、exit或任务标签来继续实验。
+V1321独立恢复严格检查156份result/summary、完整finish、真实进程退出、原源码/
+startup，以及遥测零drop/failed、无writer错误、队列排空，然后执行原后处理；
+V1324的33项CPU检查通过。缺任务、未知退出、异常或未排空仍拒绝恢复。
+原native_gate_passed保持false；完整HTML/开发比较不是官方质量/JCT验收。
+V1322/V1323的V78恢复使用原冻结helper、APP、engine、计划/参数与资源检查，
+新state是`ops/v78_native_order_recovered_20261016.state.json`，原停止state保留。
+该尝试随后因NUMA观测器的arm choices不含reactive而被监督终止，不能当作完成
+实验或复用其部分trace补成完整结果。V1325保留错误与原始数据，V1326/V1327
+以新目录V78b重启；新state为`ops/v78b_native_order_20261016.state.json`。
+旧冻结observer不编辑，独立只读observer支持native/predictive_h2d/reactive并
+保留实际进程身份、容量和/proc NUMA校验。39项最终CPU检查通过；严格环境比较
+只允许RUN_ROOT变化，服务、应用和引擎不变。不得用旧state推断新监督已停止，
+也不得由新监督PID替代V1328实际首服/配置检查。原质量队列不改，V77的
+incomplete和全部guard/语义终态资格都保留。详见研究筛选4.38/4.39。
+
+V1319/V1320写读审计以完整物理copy单位计数，拒绝重复身份、时钟或字节不一致；
+写入cohort和全部读取前缀分别封存。来源上界允许较早读取和重复CoW目标，故
+不能把它称为精确命中率、逐版本浪费或在线可丢弃集合。低读取量不否定容量释放
+与未来保护价值，不能从GB/stream累计推算可减JCT，也不能把Host写入准入本身
+当作区别于Marconi/EfficientAgent的创新。进一步结论见研究筛选4.37/4.38。
+
 2026-10-16 新跨分支写回候选仅CPU资格：独立引擎98b2670基于精确53020ce3，
 patches/sglang-v0.5.20-frontier-writeback.incremental.patch只能叠加在该完整
 基线上，不可当作从原生94602c9直接应用的完整patch。V1316已用独立临时index
