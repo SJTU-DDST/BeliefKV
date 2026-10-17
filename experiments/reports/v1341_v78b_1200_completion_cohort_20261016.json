@@ -1,0 +1,3574 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-17T01:22:22.016146+00:00",
+  "arms": {
+    "native_order": {
+      "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive",
+      "arrival_schedule_sha256": "00e1d626e23f619c00a8238bd08bbb94e55ceded2c8cf48b0a181127f47a4552",
+      "planned_workflows": 156,
+      "all_planned_runner_finishes_observed": false,
+      "arrival_or_finish_observed_through_seconds": 1309.330738414079,
+      "missing_finished_results_in_requested_horizons": [],
+      "source_json_bindings": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/manifest.json": {
+          "bytes": 25535,
+          "sha256": "4962e6a8ef76118e8d3af5c0ae08ccf3250e43425c65394475e3d479e9ea41e6"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/pydata__xarray-7233/result.json": {
+          "bytes": 6717,
+          "sha256": "96d9cc7c2534e43be05bc9157f00102fcc281de1b5d865aaf75b2c8d0510f6fe"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/pylint-dev__pylint-4551/result.json": {
+          "bytes": 6430,
+          "sha256": "f4f49947615f6fe02efd80d2ab90931b128796f07436c2505053719914152c73"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/pylint-dev__pylint-4661/result.json": {
+          "bytes": 6772,
+          "sha256": "66af2455cd0b8cdbd53a89052bd38f8713c63e19e9a8aca870e2bd25dbbc0aea"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/pylint-dev__pylint-6386/result.json": {
+          "bytes": 6224,
+          "sha256": "3d943071f25c781274b0602207105062808d14fc45d86842ecba82602adde58b"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/pylint-dev__pylint-8898/result.json": {
+          "bytes": 6625,
+          "sha256": "fe72cd0dfd28df79e81bcb1b07515fdb5ea384af37f19f206e25a3ae21a63b17"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/django__django-11400/result.json": {
+          "bytes": 5883,
+          "sha256": "25df028b76636a281c2aeec05fb45d83d06e8793c47ab6a0c449aff04bd5d914"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/django__django-14631/result.json": {
+          "bytes": 6798,
+          "sha256": "b44244c63bfe9c1e0f9a0efacfd916658ecaef132431fa8c61dcfb5e16690adf"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/pallets__flask-5014/result.json": {
+          "bytes": 6231,
+          "sha256": "854cf3c37a9128b59f1b701fac19e170c4cf6ee3606b34eefb169a293a9434c7"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/psf__requests-1766/result.json": {
+          "bytes": 5741,
+          "sha256": "c54150d5f48ce2ca328981096e67d7904a3096704ee53c3d5b4a72bd13d96cc3"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/psf__requests-6028/result.json": {
+          "bytes": 6557,
+          "sha256": "f94a60d3f6f936e15d06404b273d0397d89298370cd6d67e0aad6f9b4715000d"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/pydata__xarray-3993/result.json": {
+          "bytes": 6519,
+          "sha256": "41c03d9d7de3979317fde1178ab9a64e3c371f95fc3f3d5862355f0c363af9cc"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/pytest-dev__pytest-10051/result.json": {
+          "bytes": 6430,
+          "sha256": "1803aadfec19a0770668e1f2f5cca98e2ed5f691a014bd2f4b317a020cd129ce"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/pytest-dev__pytest-5262/result.json": {
+          "bytes": 6366,
+          "sha256": "dbab0ec9689892c09b8b9407d909bf9928be2899e899ad5d6b1a7045f3f35f06"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/pytest-dev__pytest-5840/result.json": {
+          "bytes": 6533,
+          "sha256": "193b4f8b9518d193e0d9ca746cc329cfcdffec0c6339e7049edce75fbc8faf18"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/pytest-dev__pytest-7236/result.json": {
+          "bytes": 7123,
+          "sha256": "da970dac08aa79a6556046aaff2c2b11fd06c1090fc7aab225989f27f813364b"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/pylint-dev__pylint-4970/result.json": {
+          "bytes": 6325,
+          "sha256": "d464b5f098001431eec9c6d4d84ec74667217e6fa5ef9ec478b2c9325802c2ba"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/pylint-dev__pylint-6903/result.json": {
+          "bytes": 6174,
+          "sha256": "3996fa5116c364a939c08aeebf2a3a80408a1ae9927232bc9524d31c250f3cd4"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/pydata__xarray-3305/result.json": {
+          "bytes": 5981,
+          "sha256": "a60700e9147aa80cb990c8d521ebbb9d67b3f16f6c276a8373c6655f5b836155"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/django__django-16877/result.json": {
+          "bytes": 6317,
+          "sha256": "bce7bfe81975ac634cdd8bfc1d4209518048eaf25cb64401f671dbae7403419f"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/django__django-13023/result.json": {
+          "bytes": 6033,
+          "sha256": "c3c6754b175e7c40d25ad0be095cd72136c71c397e5df94999c66f2e04d67a1c"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/django__django-12741/result.json": {
+          "bytes": 6262,
+          "sha256": "a407ab2e98290463a64760840d3fb220b6b23b10b601493770b2b97769f793ce"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/django__django-15103/result.json": {
+          "bytes": 5873,
+          "sha256": "2622dd7ce4a6ee0066459c956fac578c8e05d31a18be3654aefea56a7bdf660c"
+        }
+      },
+      "input_jsonl_prefixes": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflow_arrivals.jsonl": {
+          "complete_prefix_bytes": 43407,
+          "complete_prefix_sha256": "1171dc2a015e5ac4fdeb7a0bf7aa97a19c7a5aaa967eaadaae40a570c6c7e247",
+          "first_read_limit_bytes": 43407
+        }
+      },
+      "snapshots": [
+        {
+          "horizon_seconds": 1200.0,
+          "counts": {
+            "due_workflows": 75,
+            "submitted": 75,
+            "started": 75,
+            "runner_finished": 22,
+            "due_submission_unobserved": 0,
+            "runner_unfinished": 53,
+            "recorded_completed": 22,
+            "explicitly_jct_eligible_completed": 22
+          },
+          "finished_outcomes": {
+            "completed": 22
+          },
+          "finished_native_jct_eligibility": {
+            "True": 22
+          },
+          "finished_task_correctness_valid": {
+            "None": 22
+          },
+          "capped_sojourn_sum_seconds": {
+            "runner_finish_capped_seconds": 38611.819877683316,
+            "recorded_completed_capped_seconds": 38611.819877683316,
+            "eligible_completed_capped_seconds": 38611.819877683316
+          },
+          "capped_sojourn_mean_seconds": {
+            "runner_finish_capped_seconds": 514.8242650357776,
+            "recorded_completed_capped_seconds": 514.8242650357776,
+            "eligible_completed_capped_seconds": 514.8242650357776
+          },
+          "recorded_completions_per_collection_hour": 66.0,
+          "submission_jitter_seconds": {
+            "count": 75,
+            "sum": 0.21165606019368832,
+            "min": 6.227891071830527e-05,
+            "p50": 8.757165460338001e-05,
+            "p90": 0.00646051867370261,
+            "p99": 0.03910201894214441,
+            "max": 0.06430648871287303
+          },
+          "submission_to_worker_start_seconds": {
+            "count": 75,
+            "sum": 0.9145093355327845,
+            "min": 0.0001165103167295456,
+            "p50": 0.0004409048706293106,
+            "p90": 0.015131285600364254,
+            "p99": 0.22665920149535002,
+            "max": 0.31375867035239935
+          },
+          "rows": [
+            {
+              "instance_id": "pydata__xarray-7229",
+              "scheduled_arrival_seconds": 2.7039457915162664,
+              "actual_submitted_seconds": 2.7040367145091295,
+              "actual_started_seconds": 2.7046136716380715,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 1197.2960542084838,
+              "recorded_completed_capped_seconds": 1197.2960542084838,
+              "eligible_completed_capped_seconds": 1197.2960542084838
+            },
+            {
+              "instance_id": "pydata__xarray-7233",
+              "scheduled_arrival_seconds": 20.26041689116747,
+              "actual_submitted_seconds": 20.260504063218832,
+              "actual_started_seconds": 20.260956443846226,
+              "observed_runner_finish_seconds": 935.9931359440088,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 915.7327190528414,
+              "recorded_completed_capped_seconds": 915.7327190528414,
+              "eligible_completed_capped_seconds": 915.7327190528414
+            },
+            {
+              "instance_id": "pydata__xarray-7393",
+              "scheduled_arrival_seconds": 35.37828332304129,
+              "actual_submitted_seconds": 35.37840521149337,
+              "actual_started_seconds": 35.37889447249472,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 1164.6217166769586,
+              "recorded_completed_capped_seconds": 1164.6217166769586,
+              "eligible_completed_capped_seconds": 1164.6217166769586
+            },
+            {
+              "instance_id": "pylint-dev__pylint-4551",
+              "scheduled_arrival_seconds": 45.16125483002694,
+              "actual_submitted_seconds": 45.1614623516798,
+              "actual_started_seconds": 45.161925164051354,
+              "observed_runner_finish_seconds": 463.65295575466007,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 418.4917009246331,
+              "recorded_completed_capped_seconds": 418.4917009246331,
+              "eligible_completed_capped_seconds": 418.4917009246331
+            },
+            {
+              "instance_id": "pylint-dev__pylint-4661",
+              "scheduled_arrival_seconds": 48.81172322529103,
+              "actual_submitted_seconds": 48.811809269711375,
+              "actual_started_seconds": 48.812245355919,
+              "observed_runner_finish_seconds": 462.39499588124454,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 413.5832726559535,
+              "recorded_completed_capped_seconds": 413.5832726559535,
+              "eligible_completed_capped_seconds": 413.5832726559535
+            },
+            {
+              "instance_id": "pylint-dev__pylint-6386",
+              "scheduled_arrival_seconds": 72.41072576599424,
+              "actual_submitted_seconds": 72.41079809516668,
+              "actual_started_seconds": 72.41108056157827,
+              "observed_runner_finish_seconds": 465.59664945397526,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 393.185923687981,
+              "recorded_completed_capped_seconds": 393.185923687981,
+              "eligible_completed_capped_seconds": 393.185923687981
+            },
+            {
+              "instance_id": "pylint-dev__pylint-7080",
+              "scheduled_arrival_seconds": 97.15324602706902,
+              "actual_submitted_seconds": 97.15332855284214,
+              "actual_started_seconds": 97.15373584162444,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 1102.846753972931,
+              "recorded_completed_capped_seconds": 1102.846753972931,
+              "eligible_completed_capped_seconds": 1102.846753972931
+            },
+            {
+              "instance_id": "pylint-dev__pylint-8898",
+              "scheduled_arrival_seconds": 107.92887444297244,
+              "actual_submitted_seconds": 107.92895720619708,
+              "actual_started_seconds": 107.92933095246553,
+              "observed_runner_finish_seconds": 1043.206733668223,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 935.2778592252506,
+              "recorded_completed_capped_seconds": 935.2778592252506,
+              "eligible_completed_capped_seconds": 935.2778592252506
+            },
+            {
+              "instance_id": "django__django-10554",
+              "scheduled_arrival_seconds": 118.47938751111846,
+              "actual_submitted_seconds": 118.48085812758654,
+              "actual_started_seconds": 118.48159590456635,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 1081.5206124888816,
+              "recorded_completed_capped_seconds": 1081.5206124888816,
+              "eligible_completed_capped_seconds": 1081.5206124888816
+            },
+            {
+              "instance_id": "django__django-11400",
+              "scheduled_arrival_seconds": 122.51830651231997,
+              "actual_submitted_seconds": 122.51838944666088,
+              "actual_started_seconds": 122.5188440689817,
+              "observed_runner_finish_seconds": 515.479705253616,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 392.961398741296,
+              "recorded_completed_capped_seconds": 392.961398741296,
+              "eligible_completed_capped_seconds": 392.961398741296
+            },
+            {
+              "instance_id": "django__django-14631",
+              "scheduled_arrival_seconds": 122.56609200582511,
+              "actual_submitted_seconds": 122.56703916098922,
+              "actual_started_seconds": 122.5673941001296,
+              "observed_runner_finish_seconds": 491.22341539897025,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 368.65732339314513,
+              "recorded_completed_capped_seconds": 368.65732339314513,
+              "eligible_completed_capped_seconds": 368.65732339314513
+            },
+            {
+              "instance_id": "pallets__flask-5014",
+              "scheduled_arrival_seconds": 129.52156585432374,
+              "actual_submitted_seconds": 129.52164387051016,
+              "actual_started_seconds": 129.5222637001425,
+              "observed_runner_finish_seconds": 443.1962917149067,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 313.67472586058295,
+              "recorded_completed_capped_seconds": 313.67472586058295,
+              "eligible_completed_capped_seconds": 313.67472586058295
+            },
+            {
+              "instance_id": "psf__requests-1766",
+              "scheduled_arrival_seconds": 142.72682526906638,
+              "actual_submitted_seconds": 142.73002352099866,
+              "actual_started_seconds": 142.73312295414507,
+              "observed_runner_finish_seconds": 298.8193973330781,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 156.0925720640117,
+              "recorded_completed_capped_seconds": 156.0925720640117,
+              "eligible_completed_capped_seconds": 156.0925720640117
+            },
+            {
+              "instance_id": "psf__requests-1921",
+              "scheduled_arrival_seconds": 143.80353168837865,
+              "actual_submitted_seconds": 143.80359878763556,
+              "actual_started_seconds": 143.8038730621338,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 1056.1964683116214,
+              "recorded_completed_capped_seconds": 1056.1964683116214,
+              "eligible_completed_capped_seconds": 1056.1964683116214
+            },
+            {
+              "instance_id": "psf__requests-2317",
+              "scheduled_arrival_seconds": 167.48359981194315,
+              "actual_submitted_seconds": 167.48368292022496,
+              "actual_started_seconds": 167.48418764863163,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 1032.5164001880569,
+              "recorded_completed_capped_seconds": 1032.5164001880569,
+              "eligible_completed_capped_seconds": 1032.5164001880569
+            },
+            {
+              "instance_id": "psf__requests-6028",
+              "scheduled_arrival_seconds": 171.4480196795677,
+              "actual_submitted_seconds": 171.45085022225976,
+              "actual_started_seconds": 171.46153866313398,
+              "observed_runner_finish_seconds": 930.9691811129451,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 759.5211614333774,
+              "recorded_completed_capped_seconds": 759.5211614333774,
+              "eligible_completed_capped_seconds": 759.5211614333774
+            },
+            {
+              "instance_id": "pydata__xarray-3993",
+              "scheduled_arrival_seconds": 175.4210822814359,
+              "actual_submitted_seconds": 175.42117023002356,
+              "actual_started_seconds": 175.42164200823754,
+              "observed_runner_finish_seconds": 629.0226215198636,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 453.6015392384277,
+              "recorded_completed_capped_seconds": 453.6015392384277,
+              "eligible_completed_capped_seconds": 453.6015392384277
+            },
+            {
+              "instance_id": "pydata__xarray-6461",
+              "scheduled_arrival_seconds": 176.06994754268908,
+              "actual_submitted_seconds": 176.07648530229926,
+              "actual_started_seconds": 176.08485565148294,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 1023.9300524573109,
+              "recorded_completed_capped_seconds": 1023.9300524573109,
+              "eligible_completed_capped_seconds": 1023.9300524573109
+            },
+            {
+              "instance_id": "pydata__xarray-6599",
+              "scheduled_arrival_seconds": 266.31373955305816,
+              "actual_submitted_seconds": 266.3139679711312,
+              "actual_started_seconds": 266.3144312174991,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 933.6862604469418,
+              "recorded_completed_capped_seconds": 933.6862604469418,
+              "eligible_completed_capped_seconds": 933.6862604469418
+            },
+            {
+              "instance_id": "pydata__xarray-6721",
+              "scheduled_arrival_seconds": 286.4443280647026,
+              "actual_submitted_seconds": 286.45238402020186,
+              "actual_started_seconds": 286.45477134920657,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 913.5556719352974,
+              "recorded_completed_capped_seconds": 913.5556719352974,
+              "eligible_completed_capped_seconds": 913.5556719352974
+            },
+            {
+              "instance_id": "pydata__xarray-6744",
+              "scheduled_arrival_seconds": 317.6406944489895,
+              "actual_submitted_seconds": 317.6407785117626,
+              "actual_started_seconds": 317.64091237355024,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 882.3593055510105,
+              "recorded_completed_capped_seconds": 882.3593055510105,
+              "eligible_completed_capped_seconds": 882.3593055510105
+            },
+            {
+              "instance_id": "pydata__xarray-6938",
+              "scheduled_arrival_seconds": 331.9930925603692,
+              "actual_submitted_seconds": 331.9931893432513,
+              "actual_started_seconds": 331.9936302481219,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 868.0069074396308,
+              "recorded_completed_capped_seconds": 868.0069074396308,
+              "eligible_completed_capped_seconds": 868.0069074396308
+            },
+            {
+              "instance_id": "pytest-dev__pytest-10051",
+              "scheduled_arrival_seconds": 332.51305214923696,
+              "actual_submitted_seconds": 332.5131144281477,
+              "actual_started_seconds": 332.51344737410545,
+              "observed_runner_finish_seconds": 1033.4661167459562,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 700.9530645967193,
+              "recorded_completed_capped_seconds": 700.9530645967193,
+              "eligible_completed_capped_seconds": 700.9530645967193
+            },
+            {
+              "instance_id": "pytest-dev__pytest-5262",
+              "scheduled_arrival_seconds": 338.49626492187014,
+              "actual_submitted_seconds": 338.5000922298059,
+              "actual_started_seconds": 338.5054970216006,
+              "observed_runner_finish_seconds": 1039.0460841441527,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 700.5498192222826,
+              "recorded_completed_capped_seconds": 700.5498192222826,
+              "eligible_completed_capped_seconds": 700.5498192222826
+            },
+            {
+              "instance_id": "pytest-dev__pytest-5787",
+              "scheduled_arrival_seconds": 348.8202213226599,
+              "actual_submitted_seconds": 348.8270694464445,
+              "actual_started_seconds": 348.8275050204247,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 851.1797786773401,
+              "recorded_completed_capped_seconds": 851.1797786773401,
+              "eligible_completed_capped_seconds": 851.1797786773401
+            },
+            {
+              "instance_id": "pytest-dev__pytest-5840",
+              "scheduled_arrival_seconds": 350.66646771796866,
+              "actual_submitted_seconds": 350.6665388280526,
+              "actual_started_seconds": 350.66696910653263,
+              "observed_runner_finish_seconds": 1131.8174986178055,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 781.1510308998369,
+              "recorded_completed_capped_seconds": 781.1510308998369,
+              "eligible_completed_capped_seconds": 781.1510308998369
+            },
+            {
+              "instance_id": "pytest-dev__pytest-6202",
+              "scheduled_arrival_seconds": 396.20357252959195,
+              "actual_submitted_seconds": 396.20364511664957,
+              "actual_started_seconds": 396.2039674250409,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 803.796427470408,
+              "recorded_completed_capped_seconds": 803.796427470408,
+              "eligible_completed_capped_seconds": 803.796427470408
+            },
+            {
+              "instance_id": "pytest-dev__pytest-7236",
+              "scheduled_arrival_seconds": 403.09716520260883,
+              "actual_submitted_seconds": 403.0972423730418,
+              "actual_started_seconds": 403.09754943381995,
+              "observed_runner_finish_seconds": 1083.5708375545219,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 680.473672351913,
+              "recorded_completed_capped_seconds": 680.473672351913,
+              "eligible_completed_capped_seconds": 680.473672351913
+            },
+            {
+              "instance_id": "pytest-dev__pytest-7324",
+              "scheduled_arrival_seconds": 405.6201268246917,
+              "actual_submitted_seconds": 405.62448059860617,
+              "actual_started_seconds": 405.6309538958594,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 794.3798731753084,
+              "recorded_completed_capped_seconds": 794.3798731753084,
+              "eligible_completed_capped_seconds": 794.3798731753084
+            },
+            {
+              "instance_id": "pytest-dev__pytest-7571",
+              "scheduled_arrival_seconds": 431.1359795898051,
+              "actual_submitted_seconds": 431.1360531458631,
+              "actual_started_seconds": 431.13634844496846,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 768.8640204101948,
+              "recorded_completed_capped_seconds": 768.8640204101948,
+              "eligible_completed_capped_seconds": 768.8640204101948
+            },
+            {
+              "instance_id": "pylint-dev__pylint-4970",
+              "scheduled_arrival_seconds": 433.13684379135384,
+              "actual_submitted_seconds": 433.1431884486228,
+              "actual_started_seconds": 433.143511146307,
+              "observed_runner_finish_seconds": 964.3561231372878,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 531.219279345934,
+              "recorded_completed_capped_seconds": 531.219279345934,
+              "eligible_completed_capped_seconds": 531.219279345934
+            },
+            {
+              "instance_id": "pylint-dev__pylint-6528",
+              "scheduled_arrival_seconds": 472.59149056444926,
+              "actual_submitted_seconds": 472.59155880473554,
+              "actual_started_seconds": 472.59169435687363,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 727.4085094355507,
+              "recorded_completed_capped_seconds": 727.4085094355507,
+              "eligible_completed_capped_seconds": 727.4085094355507
+            },
+            {
+              "instance_id": "pylint-dev__pylint-6903",
+              "scheduled_arrival_seconds": 481.6445870424499,
+              "actual_submitted_seconds": 481.6462035244331,
+              "actual_started_seconds": 481.6468912400305,
+              "observed_runner_finish_seconds": 886.4848449751735,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 404.84025793272355,
+              "recorded_completed_capped_seconds": 404.84025793272355,
+              "eligible_completed_capped_seconds": 404.84025793272355
+            },
+            {
+              "instance_id": "pytest-dev__pytest-5631",
+              "scheduled_arrival_seconds": 493.6891140015512,
+              "actual_submitted_seconds": 493.6891809338704,
+              "actual_started_seconds": 493.68932022713125,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 706.3108859984488,
+              "recorded_completed_capped_seconds": 706.3108859984488,
+              "eligible_completed_capped_seconds": 706.3108859984488
+            },
+            {
+              "instance_id": "pydata__xarray-4356",
+              "scheduled_arrival_seconds": 499.9883890419014,
+              "actual_submitted_seconds": 500.0029513258487,
+              "actual_started_seconds": 500.12807982508093,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 700.0116109580986,
+              "recorded_completed_capped_seconds": 700.0116109580986,
+              "eligible_completed_capped_seconds": 700.0116109580986
+            },
+            {
+              "instance_id": "pydata__xarray-3305",
+              "scheduled_arrival_seconds": 509.93358531933075,
+              "actual_submitted_seconds": 509.9336540810764,
+              "actual_started_seconds": 509.9338170075789,
+              "observed_runner_finish_seconds": 1012.327912716195,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 502.39432739686424,
+              "recorded_completed_capped_seconds": 502.39432739686424,
+              "eligible_completed_capped_seconds": 502.39432739686424
+            },
+            {
+              "instance_id": "pydata__xarray-4966",
+              "scheduled_arrival_seconds": 513.037264636696,
+              "actual_submitted_seconds": 513.0373286074027,
+              "actual_started_seconds": 513.0376242119819,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 686.962735363304,
+              "recorded_completed_capped_seconds": 686.962735363304,
+              "eligible_completed_capped_seconds": 686.962735363304
+            },
+            {
+              "instance_id": "psf__requests-2931",
+              "scheduled_arrival_seconds": 513.6049665302106,
+              "actual_submitted_seconds": 513.6123888371512,
+              "actual_started_seconds": 513.6232771426439,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 686.3950334697894,
+              "recorded_completed_capped_seconds": 686.3950334697894,
+              "eligible_completed_capped_seconds": 686.3950334697894
+            },
+            {
+              "instance_id": "pytest-dev__pytest-7205",
+              "scheduled_arrival_seconds": 543.7408964424246,
+              "actual_submitted_seconds": 543.740979465656,
+              "actual_started_seconds": 543.7412641439587,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 656.2591035575754,
+              "recorded_completed_capped_seconds": 656.2591035575754,
+              "eligible_completed_capped_seconds": 656.2591035575754
+            },
+            {
+              "instance_id": "django__django-15368",
+              "scheduled_arrival_seconds": 547.7564632607524,
+              "actual_submitted_seconds": 547.7625092398375,
+              "actual_started_seconds": 547.7798180999234,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 652.2435367392476,
+              "recorded_completed_capped_seconds": 652.2435367392476,
+              "eligible_completed_capped_seconds": 652.2435367392476
+            },
+            {
+              "instance_id": "django__django-16877",
+              "scheduled_arrival_seconds": 570.4860726305603,
+              "actual_submitted_seconds": 570.4909160016105,
+              "actual_started_seconds": 570.5159633206204,
+              "observed_runner_finish_seconds": 829.1359075382352,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 258.64983490767486,
+              "recorded_completed_capped_seconds": 258.64983490767486,
+              "eligible_completed_capped_seconds": 258.64983490767486
+            },
+            {
+              "instance_id": "psf__requests-1724",
+              "scheduled_arrival_seconds": 573.994632734782,
+              "actual_submitted_seconds": 573.9947122279555,
+              "actual_started_seconds": 573.9951617745683,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 626.005367265218,
+              "recorded_completed_capped_seconds": 626.005367265218,
+              "eligible_completed_capped_seconds": 626.005367265218
+            },
+            {
+              "instance_id": "django__django-11141",
+              "scheduled_arrival_seconds": 625.9897928554705,
+              "actual_submitted_seconds": 626.0036469083279,
+              "actual_started_seconds": 626.0155118322,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 574.0102071445295,
+              "recorded_completed_capped_seconds": 574.0102071445295,
+              "eligible_completed_capped_seconds": 574.0102071445295
+            },
+            {
+              "instance_id": "mwaskom__seaborn-3069",
+              "scheduled_arrival_seconds": 659.6497010785899,
+              "actual_submitted_seconds": 659.6497740466148,
+              "actual_started_seconds": 659.6498905569315,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 540.3502989214101,
+              "recorded_completed_capped_seconds": 540.3502989214101,
+              "eligible_completed_capped_seconds": 540.3502989214101
+            },
+            {
+              "instance_id": "pylint-dev__pylint-7277",
+              "scheduled_arrival_seconds": 680.7344554322248,
+              "actual_submitted_seconds": 680.7345377504826,
+              "actual_started_seconds": 680.7348527945578,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 519.2655445677752,
+              "recorded_completed_capped_seconds": 519.2655445677752,
+              "eligible_completed_capped_seconds": 519.2655445677752
+            },
+            {
+              "instance_id": "django__django-14500",
+              "scheduled_arrival_seconds": 702.3167645743378,
+              "actual_submitted_seconds": 702.3168583214283,
+              "actual_started_seconds": 702.3173106787726,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 497.68323542566225,
+              "recorded_completed_capped_seconds": 497.68323542566225,
+              "eligible_completed_capped_seconds": 497.68323542566225
+            },
+            {
+              "instance_id": "pytest-dev__pytest-7521",
+              "scheduled_arrival_seconds": 715.3566448054783,
+              "actual_submitted_seconds": 715.356842472218,
+              "actual_started_seconds": 715.3578904522583,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 484.64335519452175,
+              "recorded_completed_capped_seconds": 484.64335519452175,
+              "eligible_completed_capped_seconds": 484.64335519452175
+            },
+            {
+              "instance_id": "pytest-dev__pytest-8399",
+              "scheduled_arrival_seconds": 734.9831715768871,
+              "actual_submitted_seconds": 734.9832494743168,
+              "actual_started_seconds": 734.9836376970634,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 465.0168284231129,
+              "recorded_completed_capped_seconds": 465.0168284231129,
+              "eligible_completed_capped_seconds": 465.0168284231129
+            },
+            {
+              "instance_id": "pydata__xarray-3151",
+              "scheduled_arrival_seconds": 736.9429681607753,
+              "actual_submitted_seconds": 736.9459411818534,
+              "actual_started_seconds": 736.9558992758393,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 463.0570318392247,
+              "recorded_completed_capped_seconds": 463.0570318392247,
+              "eligible_completed_capped_seconds": 463.0570318392247
+            },
+            {
+              "instance_id": "django__django-13023",
+              "scheduled_arrival_seconds": 746.6462395570569,
+              "actual_submitted_seconds": 746.6463173348457,
+              "actual_started_seconds": 746.6468292986974,
+              "observed_runner_finish_seconds": 1075.0241128010675,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 328.37787324401063,
+              "recorded_completed_capped_seconds": 328.37787324401063,
+              "eligible_completed_capped_seconds": 328.37787324401063
+            },
+            {
+              "instance_id": "django__django-12741",
+              "scheduled_arrival_seconds": 772.9647629727143,
+              "actual_submitted_seconds": 772.9648320470005,
+              "actual_started_seconds": 772.9651941042393,
+              "observed_runner_finish_seconds": 940.5278612673283,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 167.56309829461395,
+              "recorded_completed_capped_seconds": 167.56309829461395,
+              "eligible_completed_capped_seconds": 167.56309829461395
+            },
+            {
+              "instance_id": "django__django-14349",
+              "scheduled_arrival_seconds": 776.3321690955231,
+              "actual_submitted_seconds": 776.3322549993172,
+              "actual_started_seconds": 776.3326857890934,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 423.6678309044769,
+              "recorded_completed_capped_seconds": 423.6678309044769,
+              "eligible_completed_capped_seconds": 423.6678309044769
+            },
+            {
+              "instance_id": "pydata__xarray-2905",
+              "scheduled_arrival_seconds": 814.8240717935931,
+              "actual_submitted_seconds": 814.8243796229362,
+              "actual_started_seconds": 814.8247218541801,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 385.17592820640687,
+              "recorded_completed_capped_seconds": 385.17592820640687,
+              "eligible_completed_capped_seconds": 385.17592820640687
+            },
+            {
+              "instance_id": "django__django-15315",
+              "scheduled_arrival_seconds": 847.6040668909636,
+              "actual_submitted_seconds": 847.6046669390053,
+              "actual_started_seconds": 847.6134797232226,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 352.3959331090364,
+              "recorded_completed_capped_seconds": 352.3959331090364,
+              "eligible_completed_capped_seconds": 352.3959331090364
+            },
+            {
+              "instance_id": "django__django-16938",
+              "scheduled_arrival_seconds": 855.508434927695,
+              "actual_submitted_seconds": 855.5085010984913,
+              "actual_started_seconds": 855.5088363811374,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 344.491565072305,
+              "recorded_completed_capped_seconds": 344.491565072305,
+              "eligible_completed_capped_seconds": 344.491565072305
+            },
+            {
+              "instance_id": "django__django-16255",
+              "scheduled_arrival_seconds": 862.3255997910551,
+              "actual_submitted_seconds": 862.3256685798988,
+              "actual_started_seconds": 862.3259713342413,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 337.6744002089449,
+              "recorded_completed_capped_seconds": 337.6744002089449,
+              "eligible_completed_capped_seconds": 337.6744002089449
+            },
+            {
+              "instance_id": "django__django-11734",
+              "scheduled_arrival_seconds": 871.3292425772979,
+              "actual_submitted_seconds": 871.3293166458607,
+              "actual_started_seconds": 871.3295985385776,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 328.6707574227021,
+              "recorded_completed_capped_seconds": 328.6707574227021,
+              "eligible_completed_capped_seconds": 328.6707574227021
+            },
+            {
+              "instance_id": "django__django-10097",
+              "scheduled_arrival_seconds": 878.6402176608221,
+              "actual_submitted_seconds": 878.6402945024893,
+              "actual_started_seconds": 878.6407931512222,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 321.35978233917785,
+              "recorded_completed_capped_seconds": 321.35978233917785,
+              "eligible_completed_capped_seconds": 321.35978233917785
+            },
+            {
+              "instance_id": "django__django-12754",
+              "scheduled_arrival_seconds": 957.650426473124,
+              "actual_submitted_seconds": 957.6541440403089,
+              "actual_started_seconds": 957.7001557508484,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 242.34957352687604,
+              "recorded_completed_capped_seconds": 242.34957352687604,
+              "eligible_completed_capped_seconds": 242.34957352687604
+            },
+            {
+              "instance_id": "django__django-15103",
+              "scheduled_arrival_seconds": 964.9813324741601,
+              "actual_submitted_seconds": 964.9813983729109,
+              "actual_started_seconds": 964.9817870212719,
+              "observed_runner_finish_seconds": 1179.8423168184236,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 214.86098434426344,
+              "recorded_completed_capped_seconds": 214.86098434426344,
+              "eligible_completed_capped_seconds": 214.86098434426344
+            },
+            {
+              "instance_id": "django__django-11820",
+              "scheduled_arrival_seconds": 965.3893671950723,
+              "actual_submitted_seconds": 965.3894448243082,
+              "actual_started_seconds": 965.3896326050162,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 234.61063280492772,
+              "recorded_completed_capped_seconds": 234.61063280492772,
+              "eligible_completed_capped_seconds": 234.61063280492772
+            },
+            {
+              "instance_id": "django__django-13964",
+              "scheduled_arrival_seconds": 966.8579020214056,
+              "actual_submitted_seconds": 966.8881484158337,
+              "actual_started_seconds": 966.9264084324241,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 233.1420979785944,
+              "recorded_completed_capped_seconds": 233.1420979785944,
+              "eligible_completed_capped_seconds": 233.1420979785944
+            },
+            {
+              "instance_id": "django__django-16667",
+              "scheduled_arrival_seconds": 985.8505496792149,
+              "actual_submitted_seconds": 985.8506251014769,
+              "actual_started_seconds": 985.8508134549484,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 214.14945032078515,
+              "recorded_completed_capped_seconds": 214.14945032078515,
+              "eligible_completed_capped_seconds": 214.14945032078515
+            },
+            {
+              "instance_id": "django__django-16502",
+              "scheduled_arrival_seconds": 1059.904507333868,
+              "actual_submitted_seconds": 1059.9048213828355,
+              "actual_started_seconds": 1060.218580053188,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 140.09549266613203,
+              "recorded_completed_capped_seconds": 140.09549266613203,
+              "eligible_completed_capped_seconds": 140.09549266613203
+            },
+            {
+              "instance_id": "django__django-10880",
+              "scheduled_arrival_seconds": 1070.1825129013803,
+              "actual_submitted_seconds": 1070.1825827751309,
+              "actual_started_seconds": 1070.182712012902,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 129.81748709861972,
+              "recorded_completed_capped_seconds": 129.81748709861972,
+              "eligible_completed_capped_seconds": 129.81748709861972
+            },
+            {
+              "instance_id": "mwaskom__seaborn-3187",
+              "scheduled_arrival_seconds": 1080.3280322026544,
+              "actual_submitted_seconds": 1080.3281209645793,
+              "actual_started_seconds": 1080.3283438486978,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 119.67196779734559,
+              "recorded_completed_capped_seconds": 119.67196779734559,
+              "eligible_completed_capped_seconds": 119.67196779734559
+            },
+            {
+              "instance_id": "psf__requests-1142",
+              "scheduled_arrival_seconds": 1092.3200178058976,
+              "actual_submitted_seconds": 1092.323108627461,
+              "actual_started_seconds": 1092.3665973665193,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 107.67998219410242,
+              "recorded_completed_capped_seconds": 107.67998219410242,
+              "eligible_completed_capped_seconds": 107.67998219410242
+            },
+            {
+              "instance_id": "pydata__xarray-3095",
+              "scheduled_arrival_seconds": 1113.005391708123,
+              "actual_submitted_seconds": 1113.0696981968358,
+              "actual_started_seconds": 1113.2657548822463,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 86.99460829187706,
+              "recorded_completed_capped_seconds": 86.99460829187706,
+              "eligible_completed_capped_seconds": 86.99460829187706
+            },
+            {
+              "instance_id": "pylint-dev__pylint-4604",
+              "scheduled_arrival_seconds": 1116.7714596884548,
+              "actual_submitted_seconds": 1116.7734191799536,
+              "actual_started_seconds": 1116.7795008672401,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 83.2285403115452,
+              "recorded_completed_capped_seconds": 83.2285403115452,
+              "eligible_completed_capped_seconds": 83.2285403115452
+            },
+            {
+              "instance_id": "pytest-dev__pytest-10081",
+              "scheduled_arrival_seconds": 1130.8533930085546,
+              "actual_submitted_seconds": 1130.8559456709772,
+              "actual_started_seconds": 1130.8578221602365,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 69.14660699144542,
+              "recorded_completed_capped_seconds": 69.14660699144542,
+              "eligible_completed_capped_seconds": 69.14660699144542
+            },
+            {
+              "instance_id": "django__django-10914",
+              "scheduled_arrival_seconds": 1143.0488155341259,
+              "actual_submitted_seconds": 1143.0489031057805,
+              "actual_started_seconds": 1143.0491820015013,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 56.95118446587412,
+              "recorded_completed_capped_seconds": 56.95118446587412,
+              "eligible_completed_capped_seconds": 56.95118446587412
+            },
+            {
+              "instance_id": "psf__requests-5414",
+              "scheduled_arrival_seconds": 1157.666463341732,
+              "actual_submitted_seconds": 1157.6665693474934,
+              "actual_started_seconds": 1157.6668771421537,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 42.33353665826803,
+              "recorded_completed_capped_seconds": 42.33353665826803,
+              "eligible_completed_capped_seconds": 42.33353665826803
+            },
+            {
+              "instance_id": "pydata__xarray-3677",
+              "scheduled_arrival_seconds": 1160.6556232624384,
+              "actual_submitted_seconds": 1160.6556934658438,
+              "actual_started_seconds": 1160.656118415296,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 39.34437673756156,
+              "recorded_completed_capped_seconds": 39.34437673756156,
+              "eligible_completed_capped_seconds": 39.34437673756156
+            },
+            {
+              "instance_id": "pytest-dev__pytest-10356",
+              "scheduled_arrival_seconds": 1163.4522269626384,
+              "actual_submitted_seconds": 1163.452292154543,
+              "actual_started_seconds": 1163.4526642356068,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 36.547773037361594,
+              "recorded_completed_capped_seconds": 36.547773037361594,
+              "eligible_completed_capped_seconds": 36.547773037361594
+            },
+            {
+              "instance_id": "django__django-10973",
+              "scheduled_arrival_seconds": 1169.8726569892387,
+              "actual_submitted_seconds": 1169.8773096119985,
+              "actual_started_seconds": 1169.8804277190939,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 30.12734301076125,
+              "recorded_completed_capped_seconds": 30.12734301076125,
+              "eligible_completed_capped_seconds": 30.12734301076125
+            }
+          ]
+        }
+      ]
+    },
+    "reactive": {
+      "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive",
+      "arrival_schedule_sha256": "00e1d626e23f619c00a8238bd08bbb94e55ceded2c8cf48b0a181127f47a4552",
+      "planned_workflows": 156,
+      "all_planned_runner_finishes_observed": true,
+      "arrival_or_finish_observed_through_seconds": 8736.537818071432,
+      "missing_finished_results_in_requested_horizons": [],
+      "source_json_bindings": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/manifest.json": {
+          "bytes": 25480,
+          "sha256": "dddffb0e64c5d43cec2ae98cdd7e6809202bff503fabbe8f1a34385bd8e0a2f1"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pylint-dev__pylint-4661/result.json": {
+          "bytes": 7153,
+          "sha256": "d81c44ab21cb7341d38aedf2c409a84b0e9572b442fd49fc25051952b8c0ec1b"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pylint-dev__pylint-6386/result.json": {
+          "bytes": 5898,
+          "sha256": "114173300957b60da1ad83f03b6c20710272f4613614194589ab39162091851c"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pylint-dev__pylint-7080/result.json": {
+          "bytes": 6506,
+          "sha256": "b8ee4f89df057602a9293cd74e4865bc88d11807f543a148fba14cd8f9046d64"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pylint-dev__pylint-8898/result.json": {
+          "bytes": 6660,
+          "sha256": "7a7498c4922a78841f36c1aaa02694756ec053dc442cdb0d3d90d6b01eff338b"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-10554/result.json": {
+          "bytes": 6472,
+          "sha256": "beba303afc202e4ec32c5dbe1d1640ad4ca7b8889940dc987dd3ef4f603d696e"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11400/result.json": {
+          "bytes": 6503,
+          "sha256": "bd5cf7d7dbd07b4ae3ca0bbe32698d9a4565996d0fc4e45159d7627d3c106d92"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-14631/result.json": {
+          "bytes": 6526,
+          "sha256": "f1f6df36bde1e89a8deed9bf3fd62ed7731f79c20d5a939686c2a5d81c44bbd6"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pallets__flask-5014/result.json": {
+          "bytes": 6019,
+          "sha256": "07f3d0ed3419036c42b9685e5ddfa71a3d242d08c3fffae687f7f92045633576"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/psf__requests-1766/result.json": {
+          "bytes": 5969,
+          "sha256": "c031dd34958f0a516bc41eac737c3961685ba9b8c1f78fe408eae2d4ab6b3e3c"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/psf__requests-1921/result.json": {
+          "bytes": 5924,
+          "sha256": "2cb39f607237b62b21a10b625ccb1c4533ca4f646194a37872e4068d21b3dfa4"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/psf__requests-2317/result.json": {
+          "bytes": 6572,
+          "sha256": "11db339ebb5d749a94a18be8ff58c088bd7974d1765e857abae028898565d0f8"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-3993/result.json": {
+          "bytes": 6063,
+          "sha256": "3bde3d575dc73ca2ef3c57d7caa18d72c34c2496216f28fb61fdcddb690a35ae"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pytest-dev__pytest-5262/result.json": {
+          "bytes": 6699,
+          "sha256": "6c94fab481cfeac46d0612e4ebc9e1e6208099849200987fa2b40d92c2cf291b"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-4966/result.json": {
+          "bytes": 6738,
+          "sha256": "34b4c6c9af68b23b7c48828bf4c59dd4b7043f783d3d5b8e2fa6fe5846d0664d"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/psf__requests-2931/result.json": {
+          "bytes": 6192,
+          "sha256": "8f0797e3f8a502317f8df67cb6f9788eff67cdd857e02d8b517b73f00bf8dd07"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pytest-dev__pytest-7205/result.json": {
+          "bytes": 6654,
+          "sha256": "7f85783e8ddc128343d5e97c98807afcc1833a11dae605cd2d1e7edf4a08fa6a"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-16877/result.json": {
+          "bytes": 6178,
+          "sha256": "878756750e827089c0501570ffcd4519bf0eae1a6851e7b351a174fbf41e2ca5"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/psf__requests-1724/result.json": {
+          "bytes": 6579,
+          "sha256": "dcdc015e8acc8e4326f269e3c1294d5dae95dd9a3a5de4efba5063f309bd117a"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11141/result.json": {
+          "bytes": 6587,
+          "sha256": "7779626baab2d666ef6188180ec6fd816eb1d9424e1bb4f77c6977ab3102f1a2"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-13023/result.json": {
+          "bytes": 6192,
+          "sha256": "a3e818965b539e8eaa08e3547f843d60eb4baf0a982a70073a707339d91c5525"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12741/result.json": {
+          "bytes": 6244,
+          "sha256": "296d1cdcea002f456658370fd979c1383337f07d53065fdea4dbed56ee3bbc3f"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-15103/result.json": {
+          "bytes": 6187,
+          "sha256": "5f5ab1ee5bca903bc06049511a53f717d0c29053c280db35d270e033d92b40f2"
+        }
+      },
+      "input_jsonl_prefixes": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflow_arrivals.jsonl": {
+          "complete_prefix_bytes": 99319,
+          "complete_prefix_sha256": "ebaac23d0537031d1a745c5d5472959e98174f15e7dc4223e6b6404cb25eba2a",
+          "first_read_limit_bytes": 99319
+        }
+      },
+      "snapshots": [
+        {
+          "horizon_seconds": 1200.0,
+          "counts": {
+            "due_workflows": 75,
+            "submitted": 75,
+            "started": 75,
+            "runner_finished": 22,
+            "due_submission_unobserved": 0,
+            "runner_unfinished": 53,
+            "recorded_completed": 22,
+            "explicitly_jct_eligible_completed": 22
+          },
+          "finished_outcomes": {
+            "completed": 22
+          },
+          "finished_native_jct_eligibility": {
+            "True": 22
+          },
+          "finished_task_correctness_valid": {
+            "None": 22
+          },
+          "capped_sojourn_sum_seconds": {
+            "runner_finish_capped_seconds": 39653.93376442896,
+            "recorded_completed_capped_seconds": 39653.93376442896,
+            "eligible_completed_capped_seconds": 39653.93376442896
+          },
+          "capped_sojourn_mean_seconds": {
+            "runner_finish_capped_seconds": 528.7191168590529,
+            "recorded_completed_capped_seconds": 528.7191168590529,
+            "eligible_completed_capped_seconds": 528.7191168590529
+          },
+          "recorded_completions_per_collection_hour": 66.0,
+          "submission_jitter_seconds": {
+            "count": 75,
+            "sum": 0.13759787765613263,
+            "min": 5.855043013980321e-05,
+            "p50": 8.11645943485928e-05,
+            "p90": 0.005126214341180458,
+            "p99": 0.017628723748216613,
+            "max": 0.02759005992186303
+          },
+          "submission_to_worker_start_seconds": {
+            "count": 75,
+            "sum": 0.17923251260071993,
+            "min": 0.00011251028627157211,
+            "p50": 0.0004053618758916855,
+            "p90": 0.00548793487250805,
+            "p99": 0.02588537270203235,
+            "max": 0.02907424047589302
+          },
+          "rows": [
+            {
+              "instance_id": "pydata__xarray-7229",
+              "scheduled_arrival_seconds": 2.7039457915162664,
+              "actual_submitted_seconds": 2.704020479694009,
+              "actual_started_seconds": 2.7045292649418116,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 1197.2960542084838,
+              "recorded_completed_capped_seconds": 1197.2960542084838,
+              "eligible_completed_capped_seconds": 1197.2960542084838
+            },
+            {
+              "instance_id": "pydata__xarray-7233",
+              "scheduled_arrival_seconds": 20.26041689116747,
+              "actual_submitted_seconds": 20.260505107231438,
+              "actual_started_seconds": 20.260923070833087,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 1179.7395831088324,
+              "recorded_completed_capped_seconds": 1179.7395831088324,
+              "eligible_completed_capped_seconds": 1179.7395831088324
+            },
+            {
+              "instance_id": "pydata__xarray-7393",
+              "scheduled_arrival_seconds": 35.37828332304129,
+              "actual_submitted_seconds": 35.37835409771651,
+              "actual_started_seconds": 35.37860615924001,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 1164.6217166769586,
+              "recorded_completed_capped_seconds": 1164.6217166769586,
+              "eligible_completed_capped_seconds": 1164.6217166769586
+            },
+            {
+              "instance_id": "pylint-dev__pylint-4551",
+              "scheduled_arrival_seconds": 45.16125483002694,
+              "actual_submitted_seconds": 45.161405333317816,
+              "actual_started_seconds": 45.16181069519371,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 1154.838745169973,
+              "recorded_completed_capped_seconds": 1154.838745169973,
+              "eligible_completed_capped_seconds": 1154.838745169973
+            },
+            {
+              "instance_id": "pylint-dev__pylint-4661",
+              "scheduled_arrival_seconds": 48.81172322529103,
+              "actual_submitted_seconds": 48.81179344467819,
+              "actual_started_seconds": 48.81218842510134,
+              "observed_runner_finish_seconds": 735.3511593919247,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 686.5394361666337,
+              "recorded_completed_capped_seconds": 686.5394361666337,
+              "eligible_completed_capped_seconds": 686.5394361666337
+            },
+            {
+              "instance_id": "pylint-dev__pylint-6386",
+              "scheduled_arrival_seconds": 72.41072576599424,
+              "actual_submitted_seconds": 72.41081628203392,
+              "actual_started_seconds": 72.41112758312374,
+              "observed_runner_finish_seconds": 694.167307020165,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 621.7565812541708,
+              "recorded_completed_capped_seconds": 621.7565812541708,
+              "eligible_completed_capped_seconds": 621.7565812541708
+            },
+            {
+              "instance_id": "pylint-dev__pylint-7080",
+              "scheduled_arrival_seconds": 97.15324602706902,
+              "actual_submitted_seconds": 97.1533303707838,
+              "actual_started_seconds": 97.15371522121131,
+              "observed_runner_finish_seconds": 895.9512809999287,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 798.7980349728597,
+              "recorded_completed_capped_seconds": 798.7980349728597,
+              "eligible_completed_capped_seconds": 798.7980349728597
+            },
+            {
+              "instance_id": "pylint-dev__pylint-8898",
+              "scheduled_arrival_seconds": 107.92887444297244,
+              "actual_submitted_seconds": 107.9293270688504,
+              "actual_started_seconds": 107.92958053108305,
+              "observed_runner_finish_seconds": 563.9029017519206,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 455.97402730894817,
+              "recorded_completed_capped_seconds": 455.97402730894817,
+              "eligible_completed_capped_seconds": 455.97402730894817
+            },
+            {
+              "instance_id": "django__django-10554",
+              "scheduled_arrival_seconds": 118.47938751111846,
+              "actual_submitted_seconds": 118.47946992237121,
+              "actual_started_seconds": 118.47975810524076,
+              "observed_runner_finish_seconds": 762.1944648809731,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 643.7150773698546,
+              "recorded_completed_capped_seconds": 643.7150773698546,
+              "eligible_completed_capped_seconds": 643.7150773698546
+            },
+            {
+              "instance_id": "django__django-11400",
+              "scheduled_arrival_seconds": 122.51830651231997,
+              "actual_submitted_seconds": 122.51837046165019,
+              "actual_started_seconds": 122.51888704672456,
+              "observed_runner_finish_seconds": 598.8932873699814,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 476.37498085766146,
+              "recorded_completed_capped_seconds": 476.37498085766146,
+              "eligible_completed_capped_seconds": 476.37498085766146
+            },
+            {
+              "instance_id": "django__django-14631",
+              "scheduled_arrival_seconds": 122.56609200582511,
+              "actual_submitted_seconds": 122.56615870818496,
+              "actual_started_seconds": 122.56651535630226,
+              "observed_runner_finish_seconds": 652.4129696218297,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 529.8468776160046,
+              "recorded_completed_capped_seconds": 529.8468776160046,
+              "eligible_completed_capped_seconds": 529.8468776160046
+            },
+            {
+              "instance_id": "pallets__flask-5014",
+              "scheduled_arrival_seconds": 129.52156585432374,
+              "actual_submitted_seconds": 129.52162644825876,
+              "actual_started_seconds": 129.5218979474157,
+              "observed_runner_finish_seconds": 275.8989544501528,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 146.37738859582907,
+              "recorded_completed_capped_seconds": 146.37738859582907,
+              "eligible_completed_capped_seconds": 146.37738859582907
+            },
+            {
+              "instance_id": "psf__requests-1766",
+              "scheduled_arrival_seconds": 142.72682526906638,
+              "actual_submitted_seconds": 142.72692422475666,
+              "actual_started_seconds": 142.72741403616965,
+              "observed_runner_finish_seconds": 315.96290542092174,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 173.23608015185536,
+              "recorded_completed_capped_seconds": 173.23608015185536,
+              "eligible_completed_capped_seconds": 173.23608015185536
+            },
+            {
+              "instance_id": "psf__requests-1921",
+              "scheduled_arrival_seconds": 143.80353168837865,
+              "actual_submitted_seconds": 143.81713442318141,
+              "actual_started_seconds": 143.8182143168524,
+              "observed_runner_finish_seconds": 1045.3762342389673,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 901.5727025505887,
+              "recorded_completed_capped_seconds": 901.5727025505887,
+              "eligible_completed_capped_seconds": 901.5727025505887
+            },
+            {
+              "instance_id": "psf__requests-2317",
+              "scheduled_arrival_seconds": 167.48359981194315,
+              "actual_submitted_seconds": 167.48414430301636,
+              "actual_started_seconds": 167.48457628581673,
+              "observed_runner_finish_seconds": 1122.360628590919,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 954.877028778976,
+              "recorded_completed_capped_seconds": 954.877028778976,
+              "eligible_completed_capped_seconds": 954.877028778976
+            },
+            {
+              "instance_id": "psf__requests-6028",
+              "scheduled_arrival_seconds": 171.4480196795677,
+              "actual_submitted_seconds": 171.448101461865,
+              "actual_started_seconds": 171.44858374539763,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 1028.5519803204322,
+              "recorded_completed_capped_seconds": 1028.5519803204322,
+              "eligible_completed_capped_seconds": 1028.5519803204322
+            },
+            {
+              "instance_id": "pydata__xarray-3993",
+              "scheduled_arrival_seconds": 175.4210822814359,
+              "actual_submitted_seconds": 175.42261091899127,
+              "actual_started_seconds": 175.42296627163887,
+              "observed_runner_finish_seconds": 400.56292211730033,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 225.14183983586443,
+              "recorded_completed_capped_seconds": 225.14183983586443,
+              "eligible_completed_capped_seconds": 225.14183983586443
+            },
+            {
+              "instance_id": "pydata__xarray-6461",
+              "scheduled_arrival_seconds": 176.06994754268908,
+              "actual_submitted_seconds": 176.07951409369707,
+              "actual_started_seconds": 176.08858311921358,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 1023.9300524573109,
+              "recorded_completed_capped_seconds": 1023.9300524573109,
+              "eligible_completed_capped_seconds": 1023.9300524573109
+            },
+            {
+              "instance_id": "pydata__xarray-6599",
+              "scheduled_arrival_seconds": 266.31373955305816,
+              "actual_submitted_seconds": 266.3140715137124,
+              "actual_started_seconds": 266.31459872517735,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 933.6862604469418,
+              "recorded_completed_capped_seconds": 933.6862604469418,
+              "eligible_completed_capped_seconds": 933.6862604469418
+            },
+            {
+              "instance_id": "pydata__xarray-6721",
+              "scheduled_arrival_seconds": 286.4443280647026,
+              "actual_submitted_seconds": 286.4444025279954,
+              "actual_started_seconds": 286.4446379551664,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 913.5556719352974,
+              "recorded_completed_capped_seconds": 913.5556719352974,
+              "eligible_completed_capped_seconds": 913.5556719352974
+            },
+            {
+              "instance_id": "pydata__xarray-6744",
+              "scheduled_arrival_seconds": 317.6406944489895,
+              "actual_submitted_seconds": 317.6407729750499,
+              "actual_started_seconds": 317.6410258160904,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 882.3593055510105,
+              "recorded_completed_capped_seconds": 882.3593055510105,
+              "eligible_completed_capped_seconds": 882.3593055510105
+            },
+            {
+              "instance_id": "pydata__xarray-6938",
+              "scheduled_arrival_seconds": 331.9930925603692,
+              "actual_submitted_seconds": 331.99316309485584,
+              "actual_started_seconds": 331.99349159002304,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 868.0069074396308,
+              "recorded_completed_capped_seconds": 868.0069074396308,
+              "eligible_completed_capped_seconds": 868.0069074396308
+            },
+            {
+              "instance_id": "pytest-dev__pytest-10051",
+              "scheduled_arrival_seconds": 332.51305214923696,
+              "actual_submitted_seconds": 332.519686835818,
+              "actual_started_seconds": 332.5323852840811,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 867.486947850763,
+              "recorded_completed_capped_seconds": 867.486947850763,
+              "eligible_completed_capped_seconds": 867.486947850763
+            },
+            {
+              "instance_id": "pytest-dev__pytest-5262",
+              "scheduled_arrival_seconds": 338.49626492187014,
+              "actual_submitted_seconds": 338.4988237284124,
+              "actual_started_seconds": 338.4996554357931,
+              "observed_runner_finish_seconds": 1154.7533426126465,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 816.2570776907764,
+              "recorded_completed_capped_seconds": 816.2570776907764,
+              "eligible_completed_capped_seconds": 816.2570776907764
+            },
+            {
+              "instance_id": "pytest-dev__pytest-5787",
+              "scheduled_arrival_seconds": 348.8202213226599,
+              "actual_submitted_seconds": 348.83435011748224,
+              "actual_started_seconds": 348.8347897930071,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 851.1797786773401,
+              "recorded_completed_capped_seconds": 851.1797786773401,
+              "eligible_completed_capped_seconds": 851.1797786773401
+            },
+            {
+              "instance_id": "pytest-dev__pytest-5840",
+              "scheduled_arrival_seconds": 350.66646771796866,
+              "actual_submitted_seconds": 350.66654877271503,
+              "actual_started_seconds": 350.66705294232816,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 849.3335322820313,
+              "recorded_completed_capped_seconds": 849.3335322820313,
+              "eligible_completed_capped_seconds": 849.3335322820313
+            },
+            {
+              "instance_id": "pytest-dev__pytest-6202",
+              "scheduled_arrival_seconds": 396.20357252959195,
+              "actual_submitted_seconds": 396.2036461113021,
+              "actual_started_seconds": 396.20400070305914,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 803.796427470408,
+              "recorded_completed_capped_seconds": 803.796427470408,
+              "eligible_completed_capped_seconds": 803.796427470408
+            },
+            {
+              "instance_id": "pytest-dev__pytest-7236",
+              "scheduled_arrival_seconds": 403.09716520260883,
+              "actual_submitted_seconds": 403.09724213462323,
+              "actual_started_seconds": 403.0974283050746,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 796.9028347973912,
+              "recorded_completed_capped_seconds": 796.9028347973912,
+              "eligible_completed_capped_seconds": 796.9028347973912
+            },
+            {
+              "instance_id": "pytest-dev__pytest-7324",
+              "scheduled_arrival_seconds": 405.6201268246917,
+              "actual_submitted_seconds": 405.62020136229694,
+              "actual_started_seconds": 405.6205534758046,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 794.3798731753084,
+              "recorded_completed_capped_seconds": 794.3798731753084,
+              "eligible_completed_capped_seconds": 794.3798731753084
+            },
+            {
+              "instance_id": "pytest-dev__pytest-7571",
+              "scheduled_arrival_seconds": 431.1359795898051,
+              "actual_submitted_seconds": 431.136056618765,
+              "actual_started_seconds": 431.13637844938785,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 768.8640204101948,
+              "recorded_completed_capped_seconds": 768.8640204101948,
+              "eligible_completed_capped_seconds": 768.8640204101948
+            },
+            {
+              "instance_id": "pylint-dev__pylint-4970",
+              "scheduled_arrival_seconds": 433.13684379135384,
+              "actual_submitted_seconds": 433.1423122929409,
+              "actual_started_seconds": 433.1477215429768,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 766.8631562086462,
+              "recorded_completed_capped_seconds": 766.8631562086462,
+              "eligible_completed_capped_seconds": 766.8631562086462
+            },
+            {
+              "instance_id": "pylint-dev__pylint-6528",
+              "scheduled_arrival_seconds": 472.59149056444926,
+              "actual_submitted_seconds": 472.59157934691757,
+              "actual_started_seconds": 472.5920488797128,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 727.4085094355507,
+              "recorded_completed_capped_seconds": 727.4085094355507,
+              "eligible_completed_capped_seconds": 727.4085094355507
+            },
+            {
+              "instance_id": "pylint-dev__pylint-6903",
+              "scheduled_arrival_seconds": 481.6445870424499,
+              "actual_submitted_seconds": 481.64467235282063,
+              "actual_started_seconds": 481.6451118811965,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 718.35541295755,
+              "recorded_completed_capped_seconds": 718.35541295755,
+              "eligible_completed_capped_seconds": 718.35541295755
+            },
+            {
+              "instance_id": "pytest-dev__pytest-5631",
+              "scheduled_arrival_seconds": 493.6891140015512,
+              "actual_submitted_seconds": 493.694317757152,
+              "actual_started_seconds": 493.69517892599106,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 706.3108859984488,
+              "recorded_completed_capped_seconds": 706.3108859984488,
+              "eligible_completed_capped_seconds": 706.3108859984488
+            },
+            {
+              "instance_id": "pydata__xarray-4356",
+              "scheduled_arrival_seconds": 499.9883890419014,
+              "actual_submitted_seconds": 499.9884615717456,
+              "actual_started_seconds": 499.98894161824137,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 700.0116109580986,
+              "recorded_completed_capped_seconds": 700.0116109580986,
+              "eligible_completed_capped_seconds": 700.0116109580986
+            },
+            {
+              "instance_id": "pydata__xarray-3305",
+              "scheduled_arrival_seconds": 509.93358531933075,
+              "actual_submitted_seconds": 509.93364971503615,
+              "actual_started_seconds": 509.93389633018523,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 690.0664146806693,
+              "recorded_completed_capped_seconds": 690.0664146806693,
+              "eligible_completed_capped_seconds": 690.0664146806693
+            },
+            {
+              "instance_id": "pydata__xarray-4966",
+              "scheduled_arrival_seconds": 513.037264636696,
+              "actual_submitted_seconds": 513.0373277543113,
+              "actual_started_seconds": 513.0376575086266,
+              "observed_runner_finish_seconds": 1172.6938865017146,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 659.6566218650186,
+              "recorded_completed_capped_seconds": 659.6566218650186,
+              "eligible_completed_capped_seconds": 659.6566218650186
+            },
+            {
+              "instance_id": "psf__requests-2931",
+              "scheduled_arrival_seconds": 513.6049665302106,
+              "actual_submitted_seconds": 513.6050323918462,
+              "actual_started_seconds": 513.6053187213838,
+              "observed_runner_finish_seconds": 1000.9777669813484,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 487.3728004511378,
+              "recorded_completed_capped_seconds": 487.3728004511378,
+              "eligible_completed_capped_seconds": 487.3728004511378
+            },
+            {
+              "instance_id": "pytest-dev__pytest-7205",
+              "scheduled_arrival_seconds": 543.7408964424246,
+              "actual_submitted_seconds": 543.741986008361,
+              "actual_started_seconds": 543.7427598740906,
+              "observed_runner_finish_seconds": 987.2545138886198,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 443.5136174461952,
+              "recorded_completed_capped_seconds": 443.5136174461952,
+              "eligible_completed_capped_seconds": 443.5136174461952
+            },
+            {
+              "instance_id": "django__django-15368",
+              "scheduled_arrival_seconds": 547.7564632607524,
+              "actual_submitted_seconds": 547.7570258779451,
+              "actual_started_seconds": 547.7625662693754,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 652.2435367392476,
+              "recorded_completed_capped_seconds": 652.2435367392476,
+              "eligible_completed_capped_seconds": 652.2435367392476
+            },
+            {
+              "instance_id": "django__django-16877",
+              "scheduled_arrival_seconds": 570.4860726305603,
+              "actual_submitted_seconds": 570.4869896154851,
+              "actual_started_seconds": 570.4871836183593,
+              "observed_runner_finish_seconds": 786.1393016111106,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 215.65322898055024,
+              "recorded_completed_capped_seconds": 215.65322898055024,
+              "eligible_completed_capped_seconds": 215.65322898055024
+            },
+            {
+              "instance_id": "psf__requests-1724",
+              "scheduled_arrival_seconds": 573.994632734782,
+              "actual_submitted_seconds": 573.994704561308,
+              "actual_started_seconds": 573.9952202886343,
+              "observed_runner_finish_seconds": 1155.4148501353338,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 581.4202174005518,
+              "recorded_completed_capped_seconds": 581.4202174005518,
+              "eligible_completed_capped_seconds": 581.4202174005518
+            },
+            {
+              "instance_id": "django__django-11141",
+              "scheduled_arrival_seconds": 625.9897928554705,
+              "actual_submitted_seconds": 625.9898611111566,
+              "actual_started_seconds": 625.9899856634438,
+              "observed_runner_finish_seconds": 1167.4097009096295,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 541.419908054159,
+              "recorded_completed_capped_seconds": 541.419908054159,
+              "eligible_completed_capped_seconds": 541.419908054159
+            },
+            {
+              "instance_id": "mwaskom__seaborn-3069",
+              "scheduled_arrival_seconds": 659.6497010785899,
+              "actual_submitted_seconds": 659.6548108551651,
+              "actual_started_seconds": 659.6566666131839,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 540.3502989214101,
+              "recorded_completed_capped_seconds": 540.3502989214101,
+              "eligible_completed_capped_seconds": 540.3502989214101
+            },
+            {
+              "instance_id": "pylint-dev__pylint-7277",
+              "scheduled_arrival_seconds": 680.7344554322248,
+              "actual_submitted_seconds": 680.7345347199589,
+              "actual_started_seconds": 680.7348372321576,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 519.2655445677752,
+              "recorded_completed_capped_seconds": 519.2655445677752,
+              "eligible_completed_capped_seconds": 519.2655445677752
+            },
+            {
+              "instance_id": "django__django-14500",
+              "scheduled_arrival_seconds": 702.3167645743378,
+              "actual_submitted_seconds": 702.3217874839902,
+              "actual_started_seconds": 702.3465524436906,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 497.68323542566225,
+              "recorded_completed_capped_seconds": 497.68323542566225,
+              "eligible_completed_capped_seconds": 497.68323542566225
+            },
+            {
+              "instance_id": "pytest-dev__pytest-7521",
+              "scheduled_arrival_seconds": 715.3566448054783,
+              "actual_submitted_seconds": 715.3567033559084,
+              "actual_started_seconds": 715.3570306506008,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 484.64335519452175,
+              "recorded_completed_capped_seconds": 484.64335519452175,
+              "eligible_completed_capped_seconds": 484.64335519452175
+            },
+            {
+              "instance_id": "pytest-dev__pytest-8399",
+              "scheduled_arrival_seconds": 734.9831715768871,
+              "actual_submitted_seconds": 734.9832385703921,
+              "actual_started_seconds": 734.9836599696428,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 465.0168284231129,
+              "recorded_completed_capped_seconds": 465.0168284231129,
+              "eligible_completed_capped_seconds": 465.0168284231129
+            },
+            {
+              "instance_id": "pydata__xarray-3151",
+              "scheduled_arrival_seconds": 736.9429681607753,
+              "actual_submitted_seconds": 736.9461964620277,
+              "actual_started_seconds": 736.9464865103364,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 463.0570318392247,
+              "recorded_completed_capped_seconds": 463.0570318392247,
+              "eligible_completed_capped_seconds": 463.0570318392247
+            },
+            {
+              "instance_id": "django__django-13023",
+              "scheduled_arrival_seconds": 746.6462395570569,
+              "actual_submitted_seconds": 746.6738296169788,
+              "actual_started_seconds": 746.6953326100484,
+              "observed_runner_finish_seconds": 1051.858506414108,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 305.2122668570511,
+              "recorded_completed_capped_seconds": 305.2122668570511,
+              "eligible_completed_capped_seconds": 305.2122668570511
+            },
+            {
+              "instance_id": "django__django-12741",
+              "scheduled_arrival_seconds": 772.9647629727143,
+              "actual_submitted_seconds": 772.9675586773083,
+              "actual_started_seconds": 772.9725309601054,
+              "observed_runner_finish_seconds": 1167.2637583371252,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 394.29899536441087,
+              "recorded_completed_capped_seconds": 394.29899536441087,
+              "eligible_completed_capped_seconds": 394.29899536441087
+            },
+            {
+              "instance_id": "django__django-14349",
+              "scheduled_arrival_seconds": 776.3321690955231,
+              "actual_submitted_seconds": 776.3372398642823,
+              "actual_started_seconds": 776.3417533440515,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 423.6678309044769,
+              "recorded_completed_capped_seconds": 423.6678309044769,
+              "eligible_completed_capped_seconds": 423.6678309044769
+            },
+            {
+              "instance_id": "pydata__xarray-2905",
+              "scheduled_arrival_seconds": 814.8240717935931,
+              "actual_submitted_seconds": 814.8273121118546,
+              "actual_started_seconds": 814.8317175069824,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 385.17592820640687,
+              "recorded_completed_capped_seconds": 385.17592820640687,
+              "eligible_completed_capped_seconds": 385.17592820640687
+            },
+            {
+              "instance_id": "django__django-15315",
+              "scheduled_arrival_seconds": 847.6040668909636,
+              "actual_submitted_seconds": 847.6041376776993,
+              "actual_started_seconds": 847.6046666502953,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 352.3959331090364,
+              "recorded_completed_capped_seconds": 352.3959331090364,
+              "eligible_completed_capped_seconds": 352.3959331090364
+            },
+            {
+              "instance_id": "django__django-16938",
+              "scheduled_arrival_seconds": 855.508434927695,
+              "actual_submitted_seconds": 855.5111901592463,
+              "actual_started_seconds": 855.5156210102141,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 344.491565072305,
+              "recorded_completed_capped_seconds": 344.491565072305,
+              "eligible_completed_capped_seconds": 344.491565072305
+            },
+            {
+              "instance_id": "django__django-16255",
+              "scheduled_arrival_seconds": 862.3255997910551,
+              "actual_submitted_seconds": 862.3256730139256,
+              "actual_started_seconds": 862.3260814128444,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 337.6744002089449,
+              "recorded_completed_capped_seconds": 337.6744002089449,
+              "eligible_completed_capped_seconds": 337.6744002089449
+            },
+            {
+              "instance_id": "django__django-11734",
+              "scheduled_arrival_seconds": 871.3292425772979,
+              "actual_submitted_seconds": 871.3325919192284,
+              "actual_started_seconds": 871.3423507651314,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 328.6707574227021,
+              "recorded_completed_capped_seconds": 328.6707574227021,
+              "eligible_completed_capped_seconds": 328.6707574227021
+            },
+            {
+              "instance_id": "django__django-10097",
+              "scheduled_arrival_seconds": 878.6402176608221,
+              "actual_submitted_seconds": 878.640292789787,
+              "actual_started_seconds": 878.6406692396849,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 321.35978233917785,
+              "recorded_completed_capped_seconds": 321.35978233917785,
+              "eligible_completed_capped_seconds": 321.35978233917785
+            },
+            {
+              "instance_id": "django__django-12754",
+              "scheduled_arrival_seconds": 957.650426473124,
+              "actual_submitted_seconds": 957.6528736269102,
+              "actual_started_seconds": 957.670114162378,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 242.34957352687604,
+              "recorded_completed_capped_seconds": 242.34957352687604,
+              "eligible_completed_capped_seconds": 242.34957352687604
+            },
+            {
+              "instance_id": "django__django-15103",
+              "scheduled_arrival_seconds": 964.9813324741601,
+              "actual_submitted_seconds": 964.9850954581052,
+              "actual_started_seconds": 965.0141696985811,
+              "observed_runner_finish_seconds": 1190.4679428506643,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 225.48661037650413,
+              "recorded_completed_capped_seconds": 225.48661037650413,
+              "eligible_completed_capped_seconds": 225.48661037650413
+            },
+            {
+              "instance_id": "django__django-11820",
+              "scheduled_arrival_seconds": 965.3893671950723,
+              "actual_submitted_seconds": 965.3896694201976,
+              "actual_started_seconds": 965.3900576708838,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 234.61063280492772,
+              "recorded_completed_capped_seconds": 234.61063280492772,
+              "eligible_completed_capped_seconds": 234.61063280492772
+            },
+            {
+              "instance_id": "django__django-13964",
+              "scheduled_arrival_seconds": 966.8579020214056,
+              "actual_submitted_seconds": 966.8579656556249,
+              "actual_started_seconds": 966.8582188496366,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 233.1420979785944,
+              "recorded_completed_capped_seconds": 233.1420979785944,
+              "eligible_completed_capped_seconds": 233.1420979785944
+            },
+            {
+              "instance_id": "django__django-16667",
+              "scheduled_arrival_seconds": 985.8505496792149,
+              "actual_submitted_seconds": 985.8506287802011,
+              "actual_started_seconds": 985.8518968587741,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 214.14945032078515,
+              "recorded_completed_capped_seconds": 214.14945032078515,
+              "eligible_completed_capped_seconds": 214.14945032078515
+            },
+            {
+              "instance_id": "django__django-16502",
+              "scheduled_arrival_seconds": 1059.904507333868,
+              "actual_submitted_seconds": 1059.9045748859644,
+              "actual_started_seconds": 1059.9046873962507,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 140.09549266613203,
+              "recorded_completed_capped_seconds": 140.09549266613203,
+              "eligible_completed_capped_seconds": 140.09549266613203
+            },
+            {
+              "instance_id": "django__django-10880",
+              "scheduled_arrival_seconds": 1070.1825129013803,
+              "actual_submitted_seconds": 1070.1825882336125,
+              "actual_started_seconds": 1070.1827851440758,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 129.81748709861972,
+              "recorded_completed_capped_seconds": 129.81748709861972,
+              "eligible_completed_capped_seconds": 129.81748709861972
+            },
+            {
+              "instance_id": "mwaskom__seaborn-3187",
+              "scheduled_arrival_seconds": 1080.3280322026544,
+              "actual_submitted_seconds": 1080.3280969522893,
+              "actual_started_seconds": 1080.3282676208764,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 119.67196779734559,
+              "recorded_completed_capped_seconds": 119.67196779734559,
+              "eligible_completed_capped_seconds": 119.67196779734559
+            },
+            {
+              "instance_id": "psf__requests-1142",
+              "scheduled_arrival_seconds": 1092.3200178058976,
+              "actual_submitted_seconds": 1092.3200835539028,
+              "actual_started_seconds": 1092.320236490108,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 107.67998219410242,
+              "recorded_completed_capped_seconds": 107.67998219410242,
+              "eligible_completed_capped_seconds": 107.67998219410242
+            },
+            {
+              "instance_id": "pydata__xarray-3095",
+              "scheduled_arrival_seconds": 1113.005391708123,
+              "actual_submitted_seconds": 1113.0054558739066,
+              "actual_started_seconds": 1113.0057759834453,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 86.99460829187706,
+              "recorded_completed_capped_seconds": 86.99460829187706,
+              "eligible_completed_capped_seconds": 86.99460829187706
+            },
+            {
+              "instance_id": "pylint-dev__pylint-4604",
+              "scheduled_arrival_seconds": 1116.7714596884548,
+              "actual_submitted_seconds": 1116.771532362327,
+              "actual_started_seconds": 1116.7718656230718,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 83.2285403115452,
+              "recorded_completed_capped_seconds": 83.2285403115452,
+              "eligible_completed_capped_seconds": 83.2285403115452
+            },
+            {
+              "instance_id": "pytest-dev__pytest-10081",
+              "scheduled_arrival_seconds": 1130.8533930085546,
+              "actual_submitted_seconds": 1130.8534690355882,
+              "actual_started_seconds": 1130.8536330824718,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 69.14660699144542,
+              "recorded_completed_capped_seconds": 69.14660699144542,
+              "eligible_completed_capped_seconds": 69.14660699144542
+            },
+            {
+              "instance_id": "django__django-10914",
+              "scheduled_arrival_seconds": 1143.0488155341259,
+              "actual_submitted_seconds": 1143.0539527069777,
+              "actual_started_seconds": 1143.0547158382833,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 56.95118446587412,
+              "recorded_completed_capped_seconds": 56.95118446587412,
+              "eligible_completed_capped_seconds": 56.95118446587412
+            },
+            {
+              "instance_id": "psf__requests-5414",
+              "scheduled_arrival_seconds": 1157.666463341732,
+              "actual_submitted_seconds": 1157.6665445063263,
+              "actual_started_seconds": 1157.6667600646615,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 42.33353665826803,
+              "recorded_completed_capped_seconds": 42.33353665826803,
+              "eligible_completed_capped_seconds": 42.33353665826803
+            },
+            {
+              "instance_id": "pydata__xarray-3677",
+              "scheduled_arrival_seconds": 1160.6556232624384,
+              "actual_submitted_seconds": 1160.6556974789128,
+              "actual_started_seconds": 1160.6558211175725,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 39.34437673756156,
+              "recorded_completed_capped_seconds": 39.34437673756156,
+              "eligible_completed_capped_seconds": 39.34437673756156
+            },
+            {
+              "instance_id": "pytest-dev__pytest-10356",
+              "scheduled_arrival_seconds": 1163.4522269626384,
+              "actual_submitted_seconds": 1163.4538702396676,
+              "actual_started_seconds": 1163.4543722318485,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 36.547773037361594,
+              "recorded_completed_capped_seconds": 36.547773037361594,
+              "eligible_completed_capped_seconds": 36.547773037361594
+            },
+            {
+              "instance_id": "django__django-10973",
+              "scheduled_arrival_seconds": 1169.8726569892387,
+              "actual_submitted_seconds": 1169.872730197385,
+              "actual_started_seconds": 1169.8728505279869,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 30.12734301076125,
+              "recorded_completed_capped_seconds": 30.12734301076125,
+              "eligible_completed_capped_seconds": 30.12734301076125
+            }
+          ]
+        }
+      ]
+    },
+    "native": {
+      "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native",
+      "arrival_schedule_sha256": "00e1d626e23f619c00a8238bd08bbb94e55ceded2c8cf48b0a181127f47a4552",
+      "planned_workflows": 156,
+      "all_planned_runner_finishes_observed": true,
+      "arrival_or_finish_observed_through_seconds": 6805.090097690001,
+      "missing_finished_results_in_requested_horizons": [],
+      "source_json_bindings": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/manifest.json": {
+          "bytes": 25495,
+          "sha256": "4114eba9f08f1a9b48f766b3d9cf2cb5ffdd5dbae5b1d84247789d975218158b"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/pydata__xarray-7229/result.json": {
+          "bytes": 6055,
+          "sha256": "3e2691f4f7fc9716d1701a3e79902d65384b0f9f66acdb121e847723d3b520b6"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/pydata__xarray-7233/result.json": {
+          "bytes": 5378,
+          "sha256": "790c1d589f7073eca3b512d4777e76242b6a5510a6cf0fb9b6d58fbc6c110dba"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/pydata__xarray-7393/result.json": {
+          "bytes": 6026,
+          "sha256": "c855d1abbae0aee8be4a447ae168f4fb3666aebaf61e8f21b77e13e068878231"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/pylint-dev__pylint-4551/result.json": {
+          "bytes": 6265,
+          "sha256": "2851f9b5b3e980148c0d701c24dbbf19aad7a24cb3c75670135a00720ee8403c"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/pylint-dev__pylint-4661/result.json": {
+          "bytes": 5803,
+          "sha256": "4155d1186c53187f1e80d4e97ce6396b0da06760f038c003d774a01f1fa1a302"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/pylint-dev__pylint-6386/result.json": {
+          "bytes": 5854,
+          "sha256": "96d6bbef1ca244ed286d618120ac2c851d3d4f92cc2bbc4e34910e07f7f317ab"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/pylint-dev__pylint-7080/result.json": {
+          "bytes": 5455,
+          "sha256": "0a1a5aec6021dcb56db2289a7b2bf23c8fb5d229299ff234264fbd68a96eb77f"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/pylint-dev__pylint-8898/result.json": {
+          "bytes": 5779,
+          "sha256": "b6468a2174e93982e4b0b18b521e4b092ec4c324adc069df7129feae4b48ec8d"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/django__django-11400/result.json": {
+          "bytes": 5346,
+          "sha256": "e985b44ae7f7ff7ccbc08fa7652f3b5a05e08f3b1feba5713334080f28c2ecce"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/django__django-14631/result.json": {
+          "bytes": 6294,
+          "sha256": "898fad6b5ed3ce4f6c6cfef9e0e49d827317dc509131b37e48f78da252b8ca22"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/pallets__flask-5014/result.json": {
+          "bytes": 5199,
+          "sha256": "8ae49495adcdcb39236fe5e283183d09440aec6133cf397ac599319a3ae1442d"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/psf__requests-1766/result.json": {
+          "bytes": 5122,
+          "sha256": "9ac483ee52825fd620c164068ec6b4eeec293683d7605705989125f5ff0df340"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/psf__requests-2317/result.json": {
+          "bytes": 5606,
+          "sha256": "2fcd64fa6a26ca9749b6684a5d102ef649d3f5f67a50033b491d48259088ee00"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/psf__requests-6028/result.json": {
+          "bytes": 5961,
+          "sha256": "a97b5cc47abe0fc6ae55cd0c390a041308e3da55bb5ce7b02982d9d72315153f"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/pydata__xarray-3993/result.json": {
+          "bytes": 5821,
+          "sha256": "80b85089a16288e67e753a987a861aa81d2dc5607b06427bef5d46b301bcb047"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/pydata__xarray-6461/result.json": {
+          "bytes": 5627,
+          "sha256": "90979d7c2389ae2b4c2953b5190e021cbf271a2ebe65d42f633062a96b5b4ec1"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/pytest-dev__pytest-10051/result.json": {
+          "bytes": 5341,
+          "sha256": "c6fc7dc0ca47ad58157e0d1f98d55804fbf4a058c3a5a53fa20a565c4123af26"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/pytest-dev__pytest-7324/result.json": {
+          "bytes": 5751,
+          "sha256": "a10ea99a4d167e6b6562b3ec161ed06c2178296e9fcf7f03c352e585002426d0"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/pylint-dev__pylint-4970/result.json": {
+          "bytes": 6065,
+          "sha256": "f65371e5e61b95330a88a983d22c168b99b749edc334ec8e3246fab375c3f545"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/pytest-dev__pytest-5631/result.json": {
+          "bytes": 5577,
+          "sha256": "2b432fe09ef885c4502fdc8afaafad368e77ab2c3217021cd8854cc3b114ed08"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/pydata__xarray-3305/result.json": {
+          "bytes": 5910,
+          "sha256": "01024340aab8958c460b834420cfd1aa09553ef9eed9e7ab687176f8511bcf03"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/pydata__xarray-4966/result.json": {
+          "bytes": 5556,
+          "sha256": "d9b0859619cf203c3e05c7c5c844886a1a7634f84c00794956419695b6d0dfe5"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/psf__requests-2931/result.json": {
+          "bytes": 5538,
+          "sha256": "60f2ae48bb81b8e3c60442b58aa9926aba316d7331a595dbad1dea8c5442db4b"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/pytest-dev__pytest-7205/result.json": {
+          "bytes": 5425,
+          "sha256": "5c3cddd7f71f18c33885e69bee18b1db0aac970a7221e403beadb73fae8a71f9"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/django__django-16877/result.json": {
+          "bytes": 6005,
+          "sha256": "5663c822512e9c2f7251c46e6a271c5bbe0cb46f40a2fd322855e7c27b287e7e"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/django__django-13023/result.json": {
+          "bytes": 5570,
+          "sha256": "d7bd890e2bd64f21a56cbcd2b798c4d9c39aa1a7782b46919e34e5004b3f3fb1"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/django__django-12741/result.json": {
+          "bytes": 5699,
+          "sha256": "d80e11a43e54e1654acf8a6e611d60181f6942a19a3ab3a631beece4e47fb25e"
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflows/django__django-16255/result.json": {
+          "bytes": 5765,
+          "sha256": "f649f5ec634d905e63c3bd3e68e9bf7ef18faa9098c30c7be1d0d5ab887710de"
+        }
+      },
+      "input_jsonl_prefixes": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/workflow_arrivals.jsonl": {
+          "complete_prefix_bytes": 99320,
+          "complete_prefix_sha256": "f5b4339ce20657f0fd3440e642cfaa783dcb218b34df43e9402894a04c16cd38",
+          "first_read_limit_bytes": 99320
+        }
+      },
+      "snapshots": [
+        {
+          "horizon_seconds": 1200.0,
+          "counts": {
+            "due_workflows": 75,
+            "submitted": 75,
+            "started": 75,
+            "runner_finished": 28,
+            "due_submission_unobserved": 0,
+            "runner_unfinished": 47,
+            "recorded_completed": 28,
+            "explicitly_jct_eligible_completed": 28
+          },
+          "finished_outcomes": {
+            "completed": 28
+          },
+          "finished_native_jct_eligibility": {
+            "True": 28
+          },
+          "finished_task_correctness_valid": {
+            "None": 28
+          },
+          "capped_sojourn_sum_seconds": {
+            "runner_finish_capped_seconds": 36319.07760698453,
+            "recorded_completed_capped_seconds": 36319.07760698453,
+            "eligible_completed_capped_seconds": 36319.07760698453
+          },
+          "capped_sojourn_mean_seconds": {
+            "runner_finish_capped_seconds": 484.2543680931271,
+            "recorded_completed_capped_seconds": 484.2543680931271,
+            "eligible_completed_capped_seconds": 484.2543680931271
+          },
+          "recorded_completions_per_collection_hour": 84.0,
+          "submission_jitter_seconds": {
+            "count": 75,
+            "sum": 0.17252039176693623,
+            "min": 5.490914202255226e-05,
+            "p50": 8.168563007515672e-05,
+            "p90": 0.005063140543643385,
+            "p99": 0.03147784355908483,
+            "max": 0.05025087569720199
+          },
+          "submission_to_worker_start_seconds": {
+            "count": 75,
+            "sum": 0.4682431509718299,
+            "min": 9.334459900856018e-05,
+            "p50": 0.00035833753645420074,
+            "p90": 0.015922001376748145,
+            "p99": 0.08300281839445266,
+            "max": 0.12910466082394123
+          },
+          "rows": [
+            {
+              "instance_id": "pydata__xarray-7229",
+              "scheduled_arrival_seconds": 2.7039457915162664,
+              "actual_submitted_seconds": 2.7040184875950217,
+              "actual_started_seconds": 2.7045702384784818,
+              "observed_runner_finish_seconds": 1065.39250356704,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 1062.6885577755238,
+              "recorded_completed_capped_seconds": 1062.6885577755238,
+              "eligible_completed_capped_seconds": 1062.6885577755238
+            },
+            {
+              "instance_id": "pydata__xarray-7233",
+              "scheduled_arrival_seconds": 20.26041689116747,
+              "actual_submitted_seconds": 20.260498576797545,
+              "actual_started_seconds": 20.260952279902995,
+              "observed_runner_finish_seconds": 256.7694375971332,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 236.50902070596575,
+              "recorded_completed_capped_seconds": 236.50902070596575,
+              "eligible_completed_capped_seconds": 236.50902070596575
+            },
+            {
+              "instance_id": "pydata__xarray-7393",
+              "scheduled_arrival_seconds": 35.37828332304129,
+              "actual_submitted_seconds": 35.378354541026056,
+              "actual_started_seconds": 35.37865292560309,
+              "observed_runner_finish_seconds": 995.3782809497789,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 959.9999976267376,
+              "recorded_completed_capped_seconds": 959.9999976267376,
+              "eligible_completed_capped_seconds": 959.9999976267376
+            },
+            {
+              "instance_id": "pylint-dev__pylint-4551",
+              "scheduled_arrival_seconds": 45.16125483002694,
+              "actual_submitted_seconds": 45.16147438343614,
+              "actual_started_seconds": 45.16203817911446,
+              "observed_runner_finish_seconds": 690.4398928955197,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 645.2786380654928,
+              "recorded_completed_capped_seconds": 645.2786380654928,
+              "eligible_completed_capped_seconds": 645.2786380654928
+            },
+            {
+              "instance_id": "pylint-dev__pylint-4661",
+              "scheduled_arrival_seconds": 48.81172322529103,
+              "actual_submitted_seconds": 48.81180438864976,
+              "actual_started_seconds": 48.81216372922063,
+              "observed_runner_finish_seconds": 1024.6988134682178,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 975.8870902429268,
+              "recorded_completed_capped_seconds": 975.8870902429268,
+              "eligible_completed_capped_seconds": 975.8870902429268
+            },
+            {
+              "instance_id": "pylint-dev__pylint-6386",
+              "scheduled_arrival_seconds": 72.41072576599424,
+              "actual_submitted_seconds": 72.41093223262578,
+              "actual_started_seconds": 72.41149002686143,
+              "observed_runner_finish_seconds": 329.0276690730825,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 256.61694330708826,
+              "recorded_completed_capped_seconds": 256.61694330708826,
+              "eligible_completed_capped_seconds": 256.61694330708826
+            },
+            {
+              "instance_id": "pylint-dev__pylint-7080",
+              "scheduled_arrival_seconds": 97.15324602706902,
+              "actual_submitted_seconds": 97.15334728267044,
+              "actual_started_seconds": 97.1536997994408,
+              "observed_runner_finish_seconds": 713.5452058678493,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 616.3919598407803,
+              "recorded_completed_capped_seconds": 616.3919598407803,
+              "eligible_completed_capped_seconds": 616.3919598407803
+            },
+            {
+              "instance_id": "pylint-dev__pylint-8898",
+              "scheduled_arrival_seconds": 107.92887444297244,
+              "actual_submitted_seconds": 107.93057266622782,
+              "actual_started_seconds": 107.94225934613496,
+              "observed_runner_finish_seconds": 496.7318102745339,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 388.8029358315615,
+              "recorded_completed_capped_seconds": 388.8029358315615,
+              "eligible_completed_capped_seconds": 388.8029358315615
+            },
+            {
+              "instance_id": "django__django-10554",
+              "scheduled_arrival_seconds": 118.47938751111846,
+              "actual_submitted_seconds": 118.47945842519403,
+              "actual_started_seconds": 118.47978580184281,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 1081.5206124888816,
+              "recorded_completed_capped_seconds": 1081.5206124888816,
+              "eligible_completed_capped_seconds": 1081.5206124888816
+            },
+            {
+              "instance_id": "django__django-11400",
+              "scheduled_arrival_seconds": 122.51830651231997,
+              "actual_submitted_seconds": 122.51836496591568,
+              "actual_started_seconds": 122.51894920505583,
+              "observed_runner_finish_seconds": 974.6506777023897,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 852.1323711900696,
+              "recorded_completed_capped_seconds": 852.1323711900696,
+              "eligible_completed_capped_seconds": 852.1323711900696
+            },
+            {
+              "instance_id": "django__django-14631",
+              "scheduled_arrival_seconds": 122.56609200582511,
+              "actual_submitted_seconds": 122.5661620143801,
+              "actual_started_seconds": 122.5665093138814,
+              "observed_runner_finish_seconds": 788.3078064415604,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 665.7417144357353,
+              "recorded_completed_capped_seconds": 665.7417144357353,
+              "eligible_completed_capped_seconds": 665.7417144357353
+            },
+            {
+              "instance_id": "pallets__flask-5014",
+              "scheduled_arrival_seconds": 129.52156585432374,
+              "actual_submitted_seconds": 129.52162076346576,
+              "actual_started_seconds": 129.52193078026175,
+              "observed_runner_finish_seconds": 271.26153390016407,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 141.73996804584033,
+              "recorded_completed_capped_seconds": 141.73996804584033,
+              "eligible_completed_capped_seconds": 141.73996804584033
+            },
+            {
+              "instance_id": "psf__requests-1766",
+              "scheduled_arrival_seconds": 142.72682526906638,
+              "actual_submitted_seconds": 142.73492134176195,
+              "actual_started_seconds": 142.73755542002618,
+              "observed_runner_finish_seconds": 304.75701290741563,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 162.03018763834925,
+              "recorded_completed_capped_seconds": 162.03018763834925,
+              "eligible_completed_capped_seconds": 162.03018763834925
+            },
+            {
+              "instance_id": "psf__requests-1921",
+              "scheduled_arrival_seconds": 143.80353168837865,
+              "actual_submitted_seconds": 143.80360064003617,
+              "actual_started_seconds": 143.80387591198087,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 1056.1964683116214,
+              "recorded_completed_capped_seconds": 1056.1964683116214,
+              "eligible_completed_capped_seconds": 1056.1964683116214
+            },
+            {
+              "instance_id": "psf__requests-2317",
+              "scheduled_arrival_seconds": 167.48359981194315,
+              "actual_submitted_seconds": 167.48368041124195,
+              "actual_started_seconds": 167.48776309471577,
+              "observed_runner_finish_seconds": 487.3906718334183,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 319.9070720214752,
+              "recorded_completed_capped_seconds": 319.9070720214752,
+              "eligible_completed_capped_seconds": 319.9070720214752
+            },
+            {
+              "instance_id": "psf__requests-6028",
+              "scheduled_arrival_seconds": 171.4480196795677,
+              "actual_submitted_seconds": 171.44811281375587,
+              "actual_started_seconds": 171.4485360207036,
+              "observed_runner_finish_seconds": 1057.139234656468,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 885.6912149769004,
+              "recorded_completed_capped_seconds": 885.6912149769004,
+              "eligible_completed_capped_seconds": 885.6912149769004
+            },
+            {
+              "instance_id": "pydata__xarray-3993",
+              "scheduled_arrival_seconds": 175.4210822814359,
+              "actual_submitted_seconds": 175.42476737499237,
+              "actual_started_seconds": 175.44351292401552,
+              "observed_runner_finish_seconds": 618.1010093698278,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 442.6799270883919,
+              "recorded_completed_capped_seconds": 442.6799270883919,
+              "eligible_completed_capped_seconds": 442.6799270883919
+            },
+            {
+              "instance_id": "pydata__xarray-6461",
+              "scheduled_arrival_seconds": 176.06994754268908,
+              "actual_submitted_seconds": 176.12019841838628,
+              "actual_started_seconds": 176.14381722547114,
+              "observed_runner_finish_seconds": 793.3765910854563,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 617.3066435427672,
+              "recorded_completed_capped_seconds": 617.3066435427672,
+              "eligible_completed_capped_seconds": 617.3066435427672
+            },
+            {
+              "instance_id": "pydata__xarray-6599",
+              "scheduled_arrival_seconds": 266.31373955305816,
+              "actual_submitted_seconds": 266.32578010763973,
+              "actual_started_seconds": 266.33638168592006,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 933.6862604469418,
+              "recorded_completed_capped_seconds": 933.6862604469418,
+              "eligible_completed_capped_seconds": 933.6862604469418
+            },
+            {
+              "instance_id": "pydata__xarray-6721",
+              "scheduled_arrival_seconds": 286.4443280647026,
+              "actual_submitted_seconds": 286.44440284371376,
+              "actual_started_seconds": 286.4445565054193,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 913.5556719352974,
+              "recorded_completed_capped_seconds": 913.5556719352974,
+              "eligible_completed_capped_seconds": 913.5556719352974
+            },
+            {
+              "instance_id": "pydata__xarray-6744",
+              "scheduled_arrival_seconds": 317.6406944489895,
+              "actual_submitted_seconds": 317.64076602179557,
+              "actual_started_seconds": 317.6409130319953,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 882.3593055510105,
+              "recorded_completed_capped_seconds": 882.3593055510105,
+              "eligible_completed_capped_seconds": 882.3593055510105
+            },
+            {
+              "instance_id": "pydata__xarray-6938",
+              "scheduled_arrival_seconds": 331.9930925603692,
+              "actual_submitted_seconds": 331.99316165875643,
+              "actual_started_seconds": 331.99331705924124,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 868.0069074396308,
+              "recorded_completed_capped_seconds": 868.0069074396308,
+              "eligible_completed_capped_seconds": 868.0069074396308
+            },
+            {
+              "instance_id": "pytest-dev__pytest-10051",
+              "scheduled_arrival_seconds": 332.51305214923696,
+              "actual_submitted_seconds": 332.5153435729444,
+              "actual_started_seconds": 332.51558481901884,
+              "observed_runner_finish_seconds": 582.1717896237969,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 249.65873747455998,
+              "recorded_completed_capped_seconds": 249.65873747455998,
+              "eligible_completed_capped_seconds": 249.65873747455998
+            },
+            {
+              "instance_id": "pytest-dev__pytest-5262",
+              "scheduled_arrival_seconds": 338.49626492187014,
+              "actual_submitted_seconds": 338.49632486887276,
+              "actual_started_seconds": 338.4966832064092,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 861.5037350781299,
+              "recorded_completed_capped_seconds": 861.5037350781299,
+              "eligible_completed_capped_seconds": 861.5037350781299
+            },
+            {
+              "instance_id": "pytest-dev__pytest-5787",
+              "scheduled_arrival_seconds": 348.8202213226599,
+              "actual_submitted_seconds": 348.8202881887555,
+              "actual_started_seconds": 348.8205755567178,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 851.1797786773401,
+              "recorded_completed_capped_seconds": 851.1797786773401,
+              "eligible_completed_capped_seconds": 851.1797786773401
+            },
+            {
+              "instance_id": "pytest-dev__pytest-5840",
+              "scheduled_arrival_seconds": 350.66646771796866,
+              "actual_submitted_seconds": 350.6665368117392,
+              "actual_started_seconds": 350.66689480654895,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 849.3335322820313,
+              "recorded_completed_capped_seconds": 849.3335322820313,
+              "eligible_completed_capped_seconds": 849.3335322820313
+            },
+            {
+              "instance_id": "pytest-dev__pytest-6202",
+              "scheduled_arrival_seconds": 396.20357252959195,
+              "actual_submitted_seconds": 396.20363851077855,
+              "actual_started_seconds": 396.20390660781413,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 803.796427470408,
+              "recorded_completed_capped_seconds": 803.796427470408,
+              "eligible_completed_capped_seconds": 803.796427470408
+            },
+            {
+              "instance_id": "pytest-dev__pytest-7236",
+              "scheduled_arrival_seconds": 403.09716520260883,
+              "actual_submitted_seconds": 403.0972378589213,
+              "actual_started_seconds": 403.0975545719266,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 796.9028347973912,
+              "recorded_completed_capped_seconds": 796.9028347973912,
+              "eligible_completed_capped_seconds": 796.9028347973912
+            },
+            {
+              "instance_id": "pytest-dev__pytest-7324",
+              "scheduled_arrival_seconds": 405.6201268246917,
+              "actual_submitted_seconds": 405.6201973790303,
+              "actual_started_seconds": 405.62046532705426,
+              "observed_runner_finish_seconds": 941.6677105762064,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 536.0475837515148,
+              "recorded_completed_capped_seconds": 536.0475837515148,
+              "eligible_completed_capped_seconds": 536.0475837515148
+            },
+            {
+              "instance_id": "pytest-dev__pytest-7571",
+              "scheduled_arrival_seconds": 431.1359795898051,
+              "actual_submitted_seconds": 431.1360462354496,
+              "actual_started_seconds": 431.1365158883855,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 768.8640204101948,
+              "recorded_completed_capped_seconds": 768.8640204101948,
+              "eligible_completed_capped_seconds": 768.8640204101948
+            },
+            {
+              "instance_id": "pylint-dev__pylint-4970",
+              "scheduled_arrival_seconds": 433.13684379135384,
+              "actual_submitted_seconds": 433.13691912870854,
+              "actual_started_seconds": 433.13733572140336,
+              "observed_runner_finish_seconds": 1115.6497911475599,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 682.512947356206,
+              "recorded_completed_capped_seconds": 682.512947356206,
+              "eligible_completed_capped_seconds": 682.512947356206
+            },
+            {
+              "instance_id": "pylint-dev__pylint-6528",
+              "scheduled_arrival_seconds": 472.59149056444926,
+              "actual_submitted_seconds": 472.5954012274742,
+              "actual_started_seconds": 472.59603033866733,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 727.4085094355507,
+              "recorded_completed_capped_seconds": 727.4085094355507,
+              "eligible_completed_capped_seconds": 727.4085094355507
+            },
+            {
+              "instance_id": "pylint-dev__pylint-6903",
+              "scheduled_arrival_seconds": 481.6445870424499,
+              "actual_submitted_seconds": 481.6509743789211,
+              "actual_started_seconds": 481.66093178559095,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 718.35541295755,
+              "recorded_completed_capped_seconds": 718.35541295755,
+              "eligible_completed_capped_seconds": 718.35541295755
+            },
+            {
+              "instance_id": "pytest-dev__pytest-5631",
+              "scheduled_arrival_seconds": 493.6891140015512,
+              "actual_submitted_seconds": 493.68920568656176,
+              "actual_started_seconds": 493.6892990311608,
+              "observed_runner_finish_seconds": 1052.634523395449,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 558.9454093938978,
+              "recorded_completed_capped_seconds": 558.9454093938978,
+              "eligible_completed_capped_seconds": 558.9454093938978
+            },
+            {
+              "instance_id": "pydata__xarray-4356",
+              "scheduled_arrival_seconds": 499.9883890419014,
+              "actual_submitted_seconds": 499.9889322211966,
+              "actual_started_seconds": 499.9891223469749,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 700.0116109580986,
+              "recorded_completed_capped_seconds": 700.0116109580986,
+              "eligible_completed_capped_seconds": 700.0116109580986
+            },
+            {
+              "instance_id": "pydata__xarray-3305",
+              "scheduled_arrival_seconds": 509.93358531933075,
+              "actual_submitted_seconds": 509.9336620364338,
+              "actual_started_seconds": 509.93398595787585,
+              "observed_runner_finish_seconds": 1085.1926432978362,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 575.2590579785054,
+              "recorded_completed_capped_seconds": 575.2590579785054,
+              "eligible_completed_capped_seconds": 575.2590579785054
+            },
+            {
+              "instance_id": "pydata__xarray-4966",
+              "scheduled_arrival_seconds": 513.037264636696,
+              "actual_submitted_seconds": 513.0621465500444,
+              "actual_started_seconds": 513.1912512108684,
+              "observed_runner_finish_seconds": 1072.9817459946498,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 559.9444813579538,
+              "recorded_completed_capped_seconds": 559.9444813579538,
+              "eligible_completed_capped_seconds": 559.9444813579538
+            },
+            {
+              "instance_id": "psf__requests-2931",
+              "scheduled_arrival_seconds": 513.6049665302106,
+              "actual_submitted_seconds": 513.605050675571,
+              "actual_started_seconds": 513.605321242474,
+              "observed_runner_finish_seconds": 988.7915280209854,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 475.1865614907748,
+              "recorded_completed_capped_seconds": 475.1865614907748,
+              "eligible_completed_capped_seconds": 475.1865614907748
+            },
+            {
+              "instance_id": "pytest-dev__pytest-7205",
+              "scheduled_arrival_seconds": 543.7408964424246,
+              "actual_submitted_seconds": 543.7411136738956,
+              "actual_started_seconds": 543.7413800442591,
+              "observed_runner_finish_seconds": 933.3377346964553,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 389.5968382540307,
+              "recorded_completed_capped_seconds": 389.5968382540307,
+              "eligible_completed_capped_seconds": 389.5968382540307
+            },
+            {
+              "instance_id": "django__django-15368",
+              "scheduled_arrival_seconds": 547.7564632607524,
+              "actual_submitted_seconds": 547.756528926082,
+              "actual_started_seconds": 547.7568220458925,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 652.2435367392476,
+              "recorded_completed_capped_seconds": 652.2435367392476,
+              "eligible_completed_capped_seconds": 652.2435367392476
+            },
+            {
+              "instance_id": "django__django-16877",
+              "scheduled_arrival_seconds": 570.4860726305603,
+              "actual_submitted_seconds": 570.4861524505541,
+              "actual_started_seconds": 570.486638979055,
+              "observed_runner_finish_seconds": 933.7427715035155,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 363.2566988729552,
+              "recorded_completed_capped_seconds": 363.2566988729552,
+              "eligible_completed_capped_seconds": 363.2566988729552
+            },
+            {
+              "instance_id": "psf__requests-1724",
+              "scheduled_arrival_seconds": 573.994632734782,
+              "actual_submitted_seconds": 573.9947192175314,
+              "actual_started_seconds": 573.9950931109488,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 626.005367265218,
+              "recorded_completed_capped_seconds": 626.005367265218,
+              "eligible_completed_capped_seconds": 626.005367265218
+            },
+            {
+              "instance_id": "django__django-11141",
+              "scheduled_arrival_seconds": 625.9897928554705,
+              "actual_submitted_seconds": 626.0047702556476,
+              "actual_started_seconds": 626.0050899460912,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 574.0102071445295,
+              "recorded_completed_capped_seconds": 574.0102071445295,
+              "eligible_completed_capped_seconds": 574.0102071445295
+            },
+            {
+              "instance_id": "mwaskom__seaborn-3069",
+              "scheduled_arrival_seconds": 659.6497010785899,
+              "actual_submitted_seconds": 659.6497818445787,
+              "actual_started_seconds": 659.6500265197828,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 540.3502989214101,
+              "recorded_completed_capped_seconds": 540.3502989214101,
+              "eligible_completed_capped_seconds": 540.3502989214101
+            },
+            {
+              "instance_id": "pylint-dev__pylint-7277",
+              "scheduled_arrival_seconds": 680.7344554322248,
+              "actual_submitted_seconds": 680.7345495522022,
+              "actual_started_seconds": 680.7350836601108,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 519.2655445677752,
+              "recorded_completed_capped_seconds": 519.2655445677752,
+              "eligible_completed_capped_seconds": 519.2655445677752
+            },
+            {
+              "instance_id": "django__django-14500",
+              "scheduled_arrival_seconds": 702.3167645743378,
+              "actual_submitted_seconds": 702.3168501975015,
+              "actual_started_seconds": 702.3170645972714,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 497.68323542566225,
+              "recorded_completed_capped_seconds": 497.68323542566225,
+              "eligible_completed_capped_seconds": 497.68323542566225
+            },
+            {
+              "instance_id": "pytest-dev__pytest-7521",
+              "scheduled_arrival_seconds": 715.3566448054783,
+              "actual_submitted_seconds": 715.3567201280966,
+              "actual_started_seconds": 715.3568333676085,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 484.64335519452175,
+              "recorded_completed_capped_seconds": 484.64335519452175,
+              "eligible_completed_capped_seconds": 484.64335519452175
+            },
+            {
+              "instance_id": "pytest-dev__pytest-8399",
+              "scheduled_arrival_seconds": 734.9831715768871,
+              "actual_submitted_seconds": 734.9874682258815,
+              "actual_started_seconds": 734.9921140894294,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 465.0168284231129,
+              "recorded_completed_capped_seconds": 465.0168284231129,
+              "eligible_completed_capped_seconds": 465.0168284231129
+            },
+            {
+              "instance_id": "pydata__xarray-3151",
+              "scheduled_arrival_seconds": 736.9429681607753,
+              "actual_submitted_seconds": 736.9445195551962,
+              "actual_started_seconds": 736.9451459478587,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 463.0570318392247,
+              "recorded_completed_capped_seconds": 463.0570318392247,
+              "eligible_completed_capped_seconds": 463.0570318392247
+            },
+            {
+              "instance_id": "django__django-13023",
+              "scheduled_arrival_seconds": 746.6462395570569,
+              "actual_submitted_seconds": 746.6463160375133,
+              "actual_started_seconds": 746.6466359617189,
+              "observed_runner_finish_seconds": 1052.5219842549413,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 305.87574469788444,
+              "recorded_completed_capped_seconds": 305.87574469788444,
+              "eligible_completed_capped_seconds": 305.87574469788444
+            },
+            {
+              "instance_id": "django__django-12741",
+              "scheduled_arrival_seconds": 772.9647629727143,
+              "actual_submitted_seconds": 772.9648477658629,
+              "actual_started_seconds": 772.9652828527614,
+              "observed_runner_finish_seconds": 957.2985061844811,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 184.33374321176677,
+              "recorded_completed_capped_seconds": 184.33374321176677,
+              "eligible_completed_capped_seconds": 184.33374321176677
+            },
+            {
+              "instance_id": "django__django-14349",
+              "scheduled_arrival_seconds": 776.3321690955231,
+              "actual_submitted_seconds": 776.3322339029983,
+              "actual_started_seconds": 776.3325213398784,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 423.6678309044769,
+              "recorded_completed_capped_seconds": 423.6678309044769,
+              "eligible_completed_capped_seconds": 423.6678309044769
+            },
+            {
+              "instance_id": "pydata__xarray-2905",
+              "scheduled_arrival_seconds": 814.8240717935931,
+              "actual_submitted_seconds": 814.824148231186,
+              "actual_started_seconds": 814.8242704542354,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 385.17592820640687,
+              "recorded_completed_capped_seconds": 385.17592820640687,
+              "eligible_completed_capped_seconds": 385.17592820640687
+            },
+            {
+              "instance_id": "django__django-15315",
+              "scheduled_arrival_seconds": 847.6040668909636,
+              "actual_submitted_seconds": 847.6041363421828,
+              "actual_started_seconds": 847.6043395651504,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 352.3959331090364,
+              "recorded_completed_capped_seconds": 352.3959331090364,
+              "eligible_completed_capped_seconds": 352.3959331090364
+            },
+            {
+              "instance_id": "django__django-16938",
+              "scheduled_arrival_seconds": 855.508434927695,
+              "actual_submitted_seconds": 855.5098761301488,
+              "actual_started_seconds": 855.5114605380222,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 344.491565072305,
+              "recorded_completed_capped_seconds": 344.491565072305,
+              "eligible_completed_capped_seconds": 344.491565072305
+            },
+            {
+              "instance_id": "django__django-16255",
+              "scheduled_arrival_seconds": 862.3255997910551,
+              "actual_submitted_seconds": 862.3256821427494,
+              "actual_started_seconds": 862.3262017210945,
+              "observed_runner_finish_seconds": 1179.4535483671352,
+              "recorded_outcome_by_horizon": "completed",
+              "explicit_native_jct_eligibility": true,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 317.12794857608014,
+              "recorded_completed_capped_seconds": 317.12794857608014,
+              "eligible_completed_capped_seconds": 317.12794857608014
+            },
+            {
+              "instance_id": "django__django-11734",
+              "scheduled_arrival_seconds": 871.3292425772979,
+              "actual_submitted_seconds": 871.3293148102239,
+              "actual_started_seconds": 871.3297578217462,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 328.6707574227021,
+              "recorded_completed_capped_seconds": 328.6707574227021,
+              "eligible_completed_capped_seconds": 328.6707574227021
+            },
+            {
+              "instance_id": "django__django-10097",
+              "scheduled_arrival_seconds": 878.6402176608221,
+              "actual_submitted_seconds": 878.6403039610013,
+              "actual_started_seconds": 878.6408318476751,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 321.35978233917785,
+              "recorded_completed_capped_seconds": 321.35978233917785,
+              "eligible_completed_capped_seconds": 321.35978233917785
+            },
+            {
+              "instance_id": "django__django-12754",
+              "scheduled_arrival_seconds": 957.650426473124,
+              "actual_submitted_seconds": 957.6505285166204,
+              "actual_started_seconds": 957.7173333903775,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 242.34957352687604,
+              "recorded_completed_capped_seconds": 242.34957352687604,
+              "eligible_completed_capped_seconds": 242.34957352687604
+            },
+            {
+              "instance_id": "django__django-15103",
+              "scheduled_arrival_seconds": 964.9813324741601,
+              "actual_submitted_seconds": 964.9822808736935,
+              "actual_started_seconds": 965.0130986208096,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 235.01866752583987,
+              "recorded_completed_capped_seconds": 235.01866752583987,
+              "eligible_completed_capped_seconds": 235.01866752583987
+            },
+            {
+              "instance_id": "django__django-11820",
+              "scheduled_arrival_seconds": 965.3893671950723,
+              "actual_submitted_seconds": 965.389431245625,
+              "actual_started_seconds": 965.3895712215453,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 234.61063280492772,
+              "recorded_completed_capped_seconds": 234.61063280492772,
+              "eligible_completed_capped_seconds": 234.61063280492772
+            },
+            {
+              "instance_id": "django__django-13964",
+              "scheduled_arrival_seconds": 966.8579020214056,
+              "actual_submitted_seconds": 966.8579665087163,
+              "actual_started_seconds": 966.8581112809479,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 233.1420979785944,
+              "recorded_completed_capped_seconds": 233.1420979785944,
+              "eligible_completed_capped_seconds": 233.1420979785944
+            },
+            {
+              "instance_id": "django__django-16667",
+              "scheduled_arrival_seconds": 985.8505496792149,
+              "actual_submitted_seconds": 985.8506329236552,
+              "actual_started_seconds": 985.8508723666891,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 214.14945032078515,
+              "recorded_completed_capped_seconds": 214.14945032078515,
+              "eligible_completed_capped_seconds": 214.14945032078515
+            },
+            {
+              "instance_id": "django__django-16502",
+              "scheduled_arrival_seconds": 1059.904507333868,
+              "actual_submitted_seconds": 1059.9046388911083,
+              "actual_started_seconds": 1059.904868141748,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 140.09549266613203,
+              "recorded_completed_capped_seconds": 140.09549266613203,
+              "eligible_completed_capped_seconds": 140.09549266613203
+            },
+            {
+              "instance_id": "django__django-10880",
+              "scheduled_arrival_seconds": 1070.1825129013803,
+              "actual_submitted_seconds": 1070.1825850354508,
+              "actual_started_seconds": 1070.1827163184062,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 129.81748709861972,
+              "recorded_completed_capped_seconds": 129.81748709861972,
+              "eligible_completed_capped_seconds": 129.81748709861972
+            },
+            {
+              "instance_id": "mwaskom__seaborn-3187",
+              "scheduled_arrival_seconds": 1080.3280322026544,
+              "actual_submitted_seconds": 1080.3331227172166,
+              "actual_started_seconds": 1080.3775181537494,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 119.67196779734559,
+              "recorded_completed_capped_seconds": 119.67196779734559,
+              "eligible_completed_capped_seconds": 119.67196779734559
+            },
+            {
+              "instance_id": "psf__requests-1142",
+              "scheduled_arrival_seconds": 1092.3200178058976,
+              "actual_submitted_seconds": 1092.3240258842707,
+              "actual_started_seconds": 1092.3303281888366,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 107.67998219410242,
+              "recorded_completed_capped_seconds": 107.67998219410242,
+              "eligible_completed_capped_seconds": 107.67998219410242
+            },
+            {
+              "instance_id": "pydata__xarray-3095",
+              "scheduled_arrival_seconds": 1113.005391708123,
+              "actual_submitted_seconds": 1113.0054669892415,
+              "actual_started_seconds": 1113.00562662445,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 86.99460829187706,
+              "recorded_completed_capped_seconds": 86.99460829187706,
+              "eligible_completed_capped_seconds": 86.99460829187706
+            },
+            {
+              "instance_id": "pylint-dev__pylint-4604",
+              "scheduled_arrival_seconds": 1116.7714596884548,
+              "actual_submitted_seconds": 1116.771523464471,
+              "actual_started_seconds": 1116.819303370081,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 83.2285403115452,
+              "recorded_completed_capped_seconds": 83.2285403115452,
+              "eligible_completed_capped_seconds": 83.2285403115452
+            },
+            {
+              "instance_id": "pytest-dev__pytest-10081",
+              "scheduled_arrival_seconds": 1130.8533930085546,
+              "actual_submitted_seconds": 1130.8580474564806,
+              "actual_started_seconds": 1130.866924194619,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 69.14660699144542,
+              "recorded_completed_capped_seconds": 69.14660699144542,
+              "eligible_completed_capped_seconds": 69.14660699144542
+            },
+            {
+              "instance_id": "django__django-10914",
+              "scheduled_arrival_seconds": 1143.0488155341259,
+              "actual_submitted_seconds": 1143.0488802399486,
+              "actual_started_seconds": 1143.0490601565689,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 56.95118446587412,
+              "recorded_completed_capped_seconds": 56.95118446587412,
+              "eligible_completed_capped_seconds": 56.95118446587412
+            },
+            {
+              "instance_id": "psf__requests-5414",
+              "scheduled_arrival_seconds": 1157.666463341732,
+              "actual_submitted_seconds": 1157.6714854212478,
+              "actual_started_seconds": 1157.6758493240923,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 42.33353665826803,
+              "recorded_completed_capped_seconds": 42.33353665826803,
+              "eligible_completed_capped_seconds": 42.33353665826803
+            },
+            {
+              "instance_id": "pydata__xarray-3677",
+              "scheduled_arrival_seconds": 1160.6556232624384,
+              "actual_submitted_seconds": 1160.6557013085112,
+              "actual_started_seconds": 1160.6558804912493,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 39.34437673756156,
+              "recorded_completed_capped_seconds": 39.34437673756156,
+              "eligible_completed_capped_seconds": 39.34437673756156
+            },
+            {
+              "instance_id": "pytest-dev__pytest-10356",
+              "scheduled_arrival_seconds": 1163.4522269626384,
+              "actual_submitted_seconds": 1163.4643451599404,
+              "actual_started_seconds": 1163.4880273891613,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 36.547773037361594,
+              "recorded_completed_capped_seconds": 36.547773037361594,
+              "eligible_completed_capped_seconds": 36.547773037361594
+            },
+            {
+              "instance_id": "django__django-10973",
+              "scheduled_arrival_seconds": 1169.8726569892387,
+              "actual_submitted_seconds": 1169.8727403813973,
+              "actual_started_seconds": 1169.8732126429677,
+              "observed_runner_finish_seconds": null,
+              "recorded_outcome_by_horizon": null,
+              "explicit_native_jct_eligibility": null,
+              "task_correctness_valid": null,
+              "runner_finish_capped_seconds": 30.12734301076125,
+              "recorded_completed_capped_seconds": 30.12734301076125,
+              "eligible_completed_capped_seconds": 30.12734301076125
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "comparisons": [
+    {
+      "left": "native_order",
+      "right": "reactive",
+      "horizon_seconds": 1200.0,
+      "due_workflows": 75,
+      "left_minus_right_recorded_completions": 0,
+      "left_minus_right_capped_mean_seconds": {
+        "runner_finish_capped_seconds": -13.894851823275303,
+        "recorded_completed_capped_seconds": -13.894851823275303,
+        "eligible_completed_capped_seconds": -13.894851823275303
+      }
+    },
+    {
+      "left": "native_order",
+      "right": "native",
+      "horizon_seconds": 1200.0,
+      "due_workflows": 75,
+      "left_minus_right_recorded_completions": -6,
+      "left_minus_right_capped_mean_seconds": {
+        "runner_finish_capped_seconds": 30.569896942650473,
+        "recorded_completed_capped_seconds": 30.569896942650473,
+        "eligible_completed_capped_seconds": 30.569896942650473
+      }
+    },
+    {
+      "left": "reactive",
+      "right": "native",
+      "horizon_seconds": 1200.0,
+      "due_workflows": 75,
+      "left_minus_right_recorded_completions": -6,
+      "left_minus_right_capped_mean_seconds": {
+        "runner_finish_capped_seconds": 44.464748765925776,
+        "recorded_completed_capped_seconds": 44.464748765925776,
+        "eligible_completed_capped_seconds": 44.464748765925776
+      }
+    }
+  ],
+  "native_reference_metadata": {
+    "native_order": {
+      "kind": "historical_native_reference",
+      "selection": "fixed reference recorded in collection plan",
+      "reference_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback",
+      "reference_code_commit": "2ad32d097dae169ff437ecb9f66098a2dc6ffea4",
+      "current_code_commit": "56f2c5e5ff399ee2ce4a930574a5abaee917657c",
+      "reference_plan_sha256": "f5f64b2e20bf2f50bbb24583a9a2764c7c27007768f975e848696f33e3c741ea",
+      "same_engine_patch": true,
+      "matched_configuration_fields": [
+        "workload_sha256",
+        "root_count",
+        "arrival_schedule",
+        "server_running",
+        "context_tokens",
+        "max_completion_tokens",
+        "host_gb",
+        "host_split",
+        "mamba_full_memory_ratio",
+        "mem_fraction_static",
+        "native_write_policy",
+        "fanout_profile",
+        "sampling_seed",
+        "temperature",
+        "sandbox_command_timeout_s",
+        "activation_wall_clock_seconds",
+        "child_final_report_shadow",
+        "host_numa_node",
+        "host_numa_memory_policy"
+      ],
+      "configuration_differences": {},
+      "unrecorded_configuration_fields": [],
+      "formal_paired_evidence": false,
+      "semantics": "Development comparison against a preselected historical native run; task pairing does not match live trajectories. Patch equality alone does not prove every native/client path unchanged."
+    },
+    "reactive": {
+      "kind": "historical_native_reference",
+      "selection": "fixed reference recorded in collection plan",
+      "reference_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback",
+      "reference_code_commit": "2ad32d097dae169ff437ecb9f66098a2dc6ffea4",
+      "current_code_commit": "b2adf481a3c8d7cc004fff8ebf74cb6425e9a183",
+      "reference_plan_sha256": "f5f64b2e20bf2f50bbb24583a9a2764c7c27007768f975e848696f33e3c741ea",
+      "same_engine_patch": true,
+      "matched_configuration_fields": [
+        "workload_sha256",
+        "root_count",
+        "arrival_schedule",
+        "server_running",
+        "context_tokens",
+        "max_completion_tokens",
+        "host_gb",
+        "host_split",
+        "mamba_full_memory_ratio",
+        "mem_fraction_static",
+        "native_write_policy",
+        "fanout_profile",
+        "sampling_seed",
+        "temperature",
+        "sandbox_command_timeout_s",
+        "activation_wall_clock_seconds",
+        "child_final_report_shadow",
+        "host_numa_node",
+        "host_numa_memory_policy"
+      ],
+      "configuration_differences": {},
+      "unrecorded_configuration_fields": [],
+      "formal_paired_evidence": false,
+      "semantics": "Development comparison against a preselected historical native run; task pairing does not match live trajectories. Patch equality alone does not prove every native/client path unchanged."
+    }
+  },
+  "auditor_sources": {
+    "scripts/audit_online_completion_windows.py": "c7dcaff4214522d3e5d0b3d315e9e70a73b4535c6b543ff1ba1d5cd9182c5087",
+    "scripts/audit_sealed_wait_prefetch.py": "1bb8064854266d012423ce3bf4eea5b3aa1865a1fcc59308642ee645e7361db3",
+    "scripts/compare_native_policy_runs.py": "a526b7e177ac10132bf1d50834d6e7ac8fc2c97392dbe247dd0aa9d3ac4e004a",
+    "beliefkv/experiments/arrival_schedule.py": "748392b1888dd21958e3cb19af76af19ef28a37555832a29b601c54469e0d8ea"
+  },
+  "semantics": [
+    "The fixed cohort contains every planned workflow due by the horizon, including missing submissions, unfinished runs, failures and unknown results.",
+    "Offsets are the runner's recorded collection-relative monotonic values; no server/client wall-clock conversion is used.",
+    "Endpoint is workflow_finished after run_one returns, including setup and artifact collection; it differs from result.duration_seconds.",
+    "Runner-finish capped sojourn is min(runner_finish, horizon) minus planned arrival; incomplete/error endpoints are explicitly retained.",
+    "Recorded-completed capped sojourn uses a completed endpoint only; failed, incomplete, unknown and unfinished workflows accrue age until the horizon.",
+    "Eligible-completed additionally requires explicit native_agent_jct_eligible=true. No global eligibility filter removes tasks from the denominator.",
+    "Means divide capped sums by all due tasks. Late arrivals have less follow-up; these are finite-horizon sojourn areas, not Kaplan-Meier RMST or eventual JCT means.",
+    "Completed outcome, JCT eligibility and task correctness are different. Ungraded outcomes cannot establish quality-matched completion or useful throughput.",
+    "Arrival tables match; realized model/tool work can differ. Historical references and single development runs do not establish causal speedup.",
+    "JSONL uses complete stat-bounded prefixes. Results are read only for runner-finished tasks within the requested horizons; missing metadata stays unknown.",
+    "A cohort with every planned runner finish observed covers later comparison horizons without fabricating log timestamps. Failed or unknown outcomes continue to accrue age under completed-only metrics."
+  ]
+}

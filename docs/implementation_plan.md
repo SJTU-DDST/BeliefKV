@@ -2,6 +2,40 @@
 
 Status date: 2026-10-16 (PDT).
 
+2026-10-16 V1334 narrows write-admission evidence. Of16642 native Mamba copies
+written in0-6000s,16298 are single-node assignable; only369/23.760GB are prior
+safe anchors superseded by an observed new anchor. Another14888 were not
+previously observed as safe anchors. Treat them as unknown, not unused output
+states or safe discard candidates. Multi-node identity and future coverage stay
+separate; the latter is never an online feature or action label.
+
+An opt-in completion-path diagnostic now records node creation identity, prefix
+role and scalar references, without tensor reads or cache/scheduler changes.
+BELIEFKV_CHECKPOINT_PATH_SHADOW defaults to0 and is not deployed in V78b or
+registered for GPU work. V1338 passes187 CPU cases; V1339 binds the candidate
+and original fixture failure receipt. Sampling is synchronous at completion,
+writing remains asynchronous, and actual overhead is unmeasured. Next establish
+write-time state, exact compatibility and consumption before selecting a policy;
+compare a reasonable Marconi/EfficientAgent composition first.
+
+V1335's complete0-600s window has V78b/V76/native decode950.070/1001.397/932.722
+token/s with weighted batches24.185/25.683/23.655 and H2D0.566/0.758/0GB.
+This lightly queued phase does not isolate later restore/ordering pressure.
+V1336 retains all42 due tasks:7/5/7 completed, capped runner means282.809/
+287.924/272.993s. Continue frozen V78b and official grading; do not infer a
+quality-matched gain or replace the run from early rates. Source/environment
+and live supervisor/driver/scheduler were revalidated at18:19 PDT.
+V1340's next complete600-1200s window has decode1286.643/1323.358/1212.875
+token/s with weighted batches46.575/46.514/44.270 and H2D4.744/4.171/0GB.
+V1341 keeps all75 due tasks at1200s:22/22/28 completed and514.824/528.719/
+484.254s capped runner means. Extra ordering is not necessary for the observed
+early restores, but their full cause and later scale remain unisolated.
+V1342 confirms comparable context lengths and full Host Mamba pools; reported
+resident_pressure still cannot establish free HBM. The source already skips
+parent-first demotion when the oldest unlocked component is unreferenced.
+Do not blindly implement that existing condition again. Screening4.40/4.41
+records the evidence and remaining conditions.
+
 2026-10-16 V77 is fully collected: 156 runner finishes, 155 completed and one
 incomplete, no workflow exceptions, and 148 native-JCT-eligible tasks. Preserve
 all guard/semantic labels and the failed native gate. Its all-terminal raw mean

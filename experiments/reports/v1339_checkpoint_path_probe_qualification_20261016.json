@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-16T18:19:36-07:00",
+  "status": "cpu_qualified_default_off_checkpoint_path_diagnostic",
+  "base_main_commit": "0251de0",
+  "source_sha256": {
+    "beliefkv/runtime/checkpoint_path_probe.py": "bcfa448a770058889b223b2cd13fcc66eafcc3825856987c31d60d2b6a7d4b7a",
+    "beliefkv/runtime/v0520_native_telemetry.py": "feb11cd4dd288c500ceb5964a53e21a48d42ad0086c6ec19b74c2a8f72e2afbc",
+    "scripts/audit_checkpoint_write_roles.py": "cb75d242621d32e17e6b7f1c1a47f0157e539bccd20e7a9818e36740a0fdb42c",
+    "tests/test_checkpoint_path_probe.py": "8d5cad9deaf3f25ac02a9eb6c75ed53982b5d5d252751593e4b3312f0c67a52f",
+    "tests/test_checkpoint_write_roles.py": "3d4a9d788763d837b9df35dfb4521730f9fcb7eca162d668aeee50d35d778092"
+  },
+  "final_cpu": {
+    "path": "experiments/reports/v1338_checkpoint_path_probe_final_cpu_20261016.xml",
+    "sha256": "634dd2765e54fd151c3a2d23817a698a948b1b67c4c267f6ae820744a0df4291",
+    "cases": 187,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "role_audit_cpu": {
+    "path": "experiments/reports/v1333_checkpoint_roles_cpu_20261016.xml",
+    "sha256": "e84e3d9377b10d10ab3856c9456d4572b1bdf3665c6a72fa8ca0cddb26c4c7c7",
+    "cases": 26,
+    "overlaps_final_suite": true
+  },
+  "initial_cpu": {
+    "path": "experiments/reports/v1337_checkpoint_path_probe_cpu_20261016.xml",
+    "sha256": "1941e087b5cea59d6b0e069553beab8f62309a45e80b213e76013d799f33bee8",
+    "passed": 185,
+    "failed": 2,
+    "diagnosis": "The new integration fixture omitted mamba_forward_candidates from its hand-built launch descriptor. Corrected the fixture without changing production conditions."
+  },
+  "candidate": {
+    "switch": "BELIEFKV_CHECKPOINT_PATH_SHADOW",
+    "default": "0",
+    "sampling_boundary": "finished_request_last_node_path_after_cache_insertion",
+    "path_node_limit": 256,
+    "captures": [
+      "node ID and normalized creation time",
+      "prefix length relative to request input",
+      "input-prefix, input-boundary or generated-output-tail role",
+      "scalar session/device/Host lock references and radix child count",
+      "device/Host state presence",
+      "probe wall and thread CPU nanoseconds"
+    ],
+    "does_not_read_tensor_contents": true,
+    "does_not_mutate_cache_or_scheduler": true,
+    "gpu_qualified": false,
+    "registered_for_gpu": false
+  },
+  "frozen_run_verification": {
+    "run": "qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order",
+    "frozen_helper_verification": "passed",
+    "supervisor": {
+      "pid": 243510,
+      "start_ticks": "636892226"
+    },
+    "driver": {
+      "pid": 243802,
+      "start_ticks": "636892336"
+    },
+    "scheduler": {
+      "pid": 244015,
+      "start_ticks": "636893629"
+    },
+    "all_three_confirmed_live": true,
+    "prefill_ordering_mode": "native",
+    "native_prefill_order_plans": 9035,
+    "extra_ordering_and_predictive_h2d_counts": 0,
+    "physical_disabled": false,
+    "new_path_probe_deployed": false
+  },
+  "limits": [
+    "CPU read-only fixtures and disabled-path checks do not establish GPU overhead or end-to-end improvement.",
+    "Completion-time roles and node creation identity do not establish per-transfer source generations or write-time reference state.",
+    "This diagnostic closes an attribution gap; it is not a new cache policy or a selected paper contribution.",
+    "Preserve the existing V78b frozen app, engine, helpers, workload and quality queues."
+  ]
+}

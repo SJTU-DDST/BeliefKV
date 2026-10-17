@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from beliefkv.runtime.clock_evidence import local_monotonic_clock_domain
+from beliefkv.runtime.checkpoint_path_probe import checkpoint_path_evidence
 from beliefkv.runtime.restore_wait_probe import RestoreWaitProbe
 from beliefkv.runtime.prefill_turnover_probe import PrefillTurnoverProbe
 from beliefkv.runtime.writer_timing import SampledWriterTiming
@@ -50,6 +51,10 @@ class NativeReactiveTelemetry:
         if token_evidence not in ("0", "1"):
             raise ValueError("BELIEFKV_RECORD_OUTPUT_TOKEN_IDS must be 0 or 1")
         self._record_output_token_ids = token_evidence == "1"
+        checkpoint_shadow = os.environ.get("BELIEFKV_CHECKPOINT_PATH_SHADOW", "0")
+        if checkpoint_shadow not in ("0", "1"):
+            raise ValueError("BELIEFKV_CHECKPOINT_PATH_SHADOW must be 0 or 1")
+        self._checkpoint_path_shadow = checkpoint_shadow == "1"
         self.collection_mode = collection_mode
         self.directory = Path(directory).resolve()
         self.scheduler_path = (
@@ -1486,6 +1491,10 @@ class NativeReactiveTelemetry:
                     "monotonic_clock_domain": local_monotonic_clock_domain(),
                     "reentry_checkpoint": self._reentry_checkpoint_evidence(req),
                 }
+                if self._checkpoint_path_shadow:
+                    attributes["checkpoint_path_evidence"] = checkpoint_path_evidence(
+                        req, self._cache,
+                    )
                 if self._record_output_token_ids:
                     attributes["output_token_evidence"] = {
                         "schema_version": 1,
@@ -1979,6 +1988,7 @@ class NativeReactiveTelemetry:
                         "source": "native_sglang_v0520",
                         "collection_mode": self.collection_mode,
                         "record_output_token_ids": self._record_output_token_ids,
+                        "checkpoint_path_shadow": self._checkpoint_path_shadow,
                         "scheduler_pid": os.getpid(),
                         "scheduler_path": (
                             str(self.scheduler_path) if self.scheduler_path else None
@@ -2115,6 +2125,7 @@ class NativeReactiveTelemetry:
             "source": "native_sglang_v0520",
             "collection_mode": self.collection_mode,
             "record_output_token_ids": self._record_output_token_ids,
+            "checkpoint_path_shadow": self._checkpoint_path_shadow,
             "record_counts": dict(self._counts),
             "pending_request_count": len(self._pending) + len(self._active),
             "pending_batch_count": len(self._launched),

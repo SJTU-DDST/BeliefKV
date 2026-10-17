@@ -1,0 +1,1769 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-17T01:11:11.352361+00:00",
+  "balance_source": {
+    "path": "experiments/reports/v1320_checkpoint_write_read_balance_0_6000_20261016.json",
+    "bytes": 14644,
+    "sha256": "ebd141b268c8e653646d15093f0163ec16de144316d2e33fca27cf79a9476299"
+  },
+  "arms": {
+    "native_close": {
+      "counts": {
+        "result_snapshot_observed": 38845,
+        "cohort_mamba_copy_units": 14858,
+        "assignable_single_node_mamba_copies": 13842,
+        "single_node_ever_observed_safe_including_future": 99,
+        "unassignable_mamba_copy_units": 1016
+      },
+      "roles": {
+        "last_observed_current_safe_anchor": {
+          "copy_units": 37,
+          "mamba_bytes": 2382397440
+        },
+        "not_previously_observed_as_safe_anchor": {
+          "copy_units": 13743,
+          "mamba_bytes": 884899676160
+        },
+        "prior_safe_anchor_current_state_unknown": {
+          "copy_units": 38,
+          "mamba_bytes": 2446786560
+        },
+        "prior_safe_anchor_superseded_in_observed_contexts": {
+          "copy_units": 24,
+          "mamba_bytes": 1545338880
+        }
+      },
+      "samples_by_role": {
+        "not_previously_observed_as_safe_anchor": [
+          {
+            "command_id": "native-hicache-000000001",
+            "submit_ts_ms": 1792189500709.1296,
+            "node_id": 39,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000002",
+            "submit_ts_ms": 1792189501301.9211,
+            "node_id": 43,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000003",
+            "submit_ts_ms": 1792189502374.371,
+            "node_id": 55,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000004",
+            "submit_ts_ms": 1792189502870.875,
+            "node_id": 62,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000005",
+            "submit_ts_ms": 1792189502969.3262,
+            "node_id": 63,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000006",
+            "submit_ts_ms": 1792189502972.1035,
+            "node_id": 68,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000007",
+            "submit_ts_ms": 1792189503592.9248,
+            "node_id": 69,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000008",
+            "submit_ts_ms": 1792189504735.9841,
+            "node_id": 76,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000009",
+            "submit_ts_ms": 1792189504889.0557,
+            "node_id": 77,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000010",
+            "submit_ts_ms": 1792189504892.2856,
+            "node_id": 83,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000011",
+            "submit_ts_ms": 1792189505256.1484,
+            "node_id": 85,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000012",
+            "submit_ts_ms": 1792189505382.3909,
+            "node_id": 90,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000013",
+            "submit_ts_ms": 1792189506216.4358,
+            "node_id": 102,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000014",
+            "submit_ts_ms": 1792189506389.2,
+            "node_id": 107,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000015",
+            "submit_ts_ms": 1792189506954.7686,
+            "node_id": 113,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000016",
+            "submit_ts_ms": 1792189507043.8706,
+            "node_id": 114,
+            "observed_prefix_tokens": null
+          }
+        ],
+        "prior_safe_anchor_superseded_in_observed_contexts": [
+          {
+            "command_id": "native-hicache-000003182",
+            "submit_ts_ms": 1792190254497.5134,
+            "node_id": 10098,
+            "observed_prefix_tokens": 5760
+          },
+          {
+            "command_id": "native-hicache-000013678",
+            "submit_ts_ms": 1792191837029.3223,
+            "node_id": 34279,
+            "observed_prefix_tokens": 25792
+          },
+          {
+            "command_id": "native-hicache-000014304",
+            "submit_ts_ms": 1792191955338.7505,
+            "node_id": 35508,
+            "observed_prefix_tokens": 18496
+          },
+          {
+            "command_id": "native-hicache-000015537",
+            "submit_ts_ms": 1792192128056.3792,
+            "node_id": 38556,
+            "observed_prefix_tokens": 27904
+          },
+          {
+            "command_id": "native-hicache-000015680",
+            "submit_ts_ms": 1792192141583.548,
+            "node_id": 38823,
+            "observed_prefix_tokens": 18176
+          },
+          {
+            "command_id": "native-hicache-000015721",
+            "submit_ts_ms": 1792192144839.779,
+            "node_id": 38562,
+            "observed_prefix_tokens": 30080
+          },
+          {
+            "command_id": "native-hicache-000015722",
+            "submit_ts_ms": 1792192144905.7795,
+            "node_id": 38397,
+            "observed_prefix_tokens": 29952
+          },
+          {
+            "command_id": "native-hicache-000016053",
+            "submit_ts_ms": 1792192171195.8066,
+            "node_id": 38338,
+            "observed_prefix_tokens": 30208
+          },
+          {
+            "command_id": "native-hicache-000016509",
+            "submit_ts_ms": 1792192210443.4426,
+            "node_id": 39376,
+            "observed_prefix_tokens": 29637
+          },
+          {
+            "command_id": "native-hicache-000016969",
+            "submit_ts_ms": 1792192251385.6199,
+            "node_id": 39397,
+            "observed_prefix_tokens": 25536
+          },
+          {
+            "command_id": "native-hicache-000017472",
+            "submit_ts_ms": 1792192311043.5957,
+            "node_id": 40198,
+            "observed_prefix_tokens": 32320
+          },
+          {
+            "command_id": "native-hicache-000018397",
+            "submit_ts_ms": 1792192464364.126,
+            "node_id": 41686,
+            "observed_prefix_tokens": 13952
+          },
+          {
+            "command_id": "native-hicache-000018407",
+            "submit_ts_ms": 1792192466066.4653,
+            "node_id": 42388,
+            "observed_prefix_tokens": 31360
+          },
+          {
+            "command_id": "native-hicache-000018408",
+            "submit_ts_ms": 1792192466133.0085,
+            "node_id": 42274,
+            "observed_prefix_tokens": 31296
+          },
+          {
+            "command_id": "native-hicache-000018529",
+            "submit_ts_ms": 1792192487118.7378,
+            "node_id": 42687,
+            "observed_prefix_tokens": 31872
+          },
+          {
+            "command_id": "native-hicache-000018530",
+            "submit_ts_ms": 1792192487218.1147,
+            "node_id": 42491,
+            "observed_prefix_tokens": 30592
+          }
+        ],
+        "last_observed_current_safe_anchor": [
+          {
+            "command_id": "native-hicache-000013129",
+            "submit_ts_ms": 1792191761972.7263,
+            "node_id": 15873,
+            "observed_prefix_tokens": 9728
+          },
+          {
+            "command_id": "native-hicache-000013132",
+            "submit_ts_ms": 1792191762094.1597,
+            "node_id": 16699,
+            "observed_prefix_tokens": 8768
+          },
+          {
+            "command_id": "native-hicache-000013133",
+            "submit_ts_ms": 1792191762296.5427,
+            "node_id": 4594,
+            "observed_prefix_tokens": 9216
+          },
+          {
+            "command_id": "native-hicache-000013134",
+            "submit_ts_ms": 1792191762379.335,
+            "node_id": 17232,
+            "observed_prefix_tokens": 16128
+          },
+          {
+            "command_id": "native-hicache-000013389",
+            "submit_ts_ms": 1792191799567.2397,
+            "node_id": 3753,
+            "observed_prefix_tokens": 9472
+          },
+          {
+            "command_id": "native-hicache-000013405",
+            "submit_ts_ms": 1792191800704.1064,
+            "node_id": 24436,
+            "observed_prefix_tokens": 8832
+          },
+          {
+            "command_id": "native-hicache-000013408",
+            "submit_ts_ms": 1792191801001.0762,
+            "node_id": 24448,
+            "observed_prefix_tokens": 8640
+          },
+          {
+            "command_id": "native-hicache-000013412",
+            "submit_ts_ms": 1792191801226.9856,
+            "node_id": 24571,
+            "observed_prefix_tokens": 8576
+          },
+          {
+            "command_id": "native-hicache-000013413",
+            "submit_ts_ms": 1792191801231.8503,
+            "node_id": 24791,
+            "observed_prefix_tokens": 8704
+          },
+          {
+            "command_id": "native-hicache-000013418",
+            "submit_ts_ms": 1792191801441.1304,
+            "node_id": 25404,
+            "observed_prefix_tokens": 8704
+          },
+          {
+            "command_id": "native-hicache-000013421",
+            "submit_ts_ms": 1792191801564.977,
+            "node_id": 26297,
+            "observed_prefix_tokens": 8576
+          },
+          {
+            "command_id": "native-hicache-000013431",
+            "submit_ts_ms": 1792191802214.362,
+            "node_id": 29237,
+            "observed_prefix_tokens": 8679
+          },
+          {
+            "command_id": "native-hicache-000013435",
+            "submit_ts_ms": 1792191802540.6597,
+            "node_id": 29218,
+            "observed_prefix_tokens": 9792
+          },
+          {
+            "command_id": "native-hicache-000013461",
+            "submit_ts_ms": 1792191807061.4668,
+            "node_id": 30236,
+            "observed_prefix_tokens": 8704
+          },
+          {
+            "command_id": "native-hicache-000013463",
+            "submit_ts_ms": 1792191807074.1614,
+            "node_id": 30393,
+            "observed_prefix_tokens": 8704
+          },
+          {
+            "command_id": "native-hicache-000013508",
+            "submit_ts_ms": 1792191811158.8171,
+            "node_id": 32644,
+            "observed_prefix_tokens": 8704
+          }
+        ],
+        "prior_safe_anchor_current_state_unknown": [
+          {
+            "command_id": "native-hicache-000013783",
+            "submit_ts_ms": 1792191861921.7632,
+            "node_id": 33633,
+            "observed_prefix_tokens": 32169
+          },
+          {
+            "command_id": "native-hicache-000014660",
+            "submit_ts_ms": 1792192011069.087,
+            "node_id": 36012,
+            "observed_prefix_tokens": 26944
+          },
+          {
+            "command_id": "native-hicache-000015456",
+            "submit_ts_ms": 1792192120547.333,
+            "node_id": 38738,
+            "observed_prefix_tokens": 22866
+          },
+          {
+            "command_id": "native-hicache-000015624",
+            "submit_ts_ms": 1792192137120.4072,
+            "node_id": 38925,
+            "observed_prefix_tokens": 18304
+          },
+          {
+            "command_id": "native-hicache-000015678",
+            "submit_ts_ms": 1792192141501.4026,
+            "node_id": 38952,
+            "observed_prefix_tokens": 18944
+          },
+          {
+            "command_id": "native-hicache-000015712",
+            "submit_ts_ms": 1792192143619.4556,
+            "node_id": 38989,
+            "observed_prefix_tokens": 30272
+          },
+          {
+            "command_id": "native-hicache-000015918",
+            "submit_ts_ms": 1792192160258.725,
+            "node_id": 39122,
+            "observed_prefix_tokens": 28928
+          },
+          {
+            "command_id": "native-hicache-000015938",
+            "submit_ts_ms": 1792192162023.6685,
+            "node_id": 39140,
+            "observed_prefix_tokens": 28288
+          },
+          {
+            "command_id": "native-hicache-000016026",
+            "submit_ts_ms": 1792192169004.504,
+            "node_id": 39196,
+            "observed_prefix_tokens": 14912
+          },
+          {
+            "command_id": "native-hicache-000016134",
+            "submit_ts_ms": 1792192179140.187,
+            "node_id": 39279,
+            "observed_prefix_tokens": 22016
+          },
+          {
+            "command_id": "native-hicache-000016151",
+            "submit_ts_ms": 1792192180217.3757,
+            "node_id": 39288,
+            "observed_prefix_tokens": 31872
+          },
+          {
+            "command_id": "native-hicache-000016218",
+            "submit_ts_ms": 1792192184946.0784,
+            "node_id": 39334,
+            "observed_prefix_tokens": 36864
+          },
+          {
+            "command_id": "native-hicache-000016233",
+            "submit_ts_ms": 1792192186373.4905,
+            "node_id": 39340,
+            "observed_prefix_tokens": 27235
+          },
+          {
+            "command_id": "native-hicache-000016299",
+            "submit_ts_ms": 1792192191582.265,
+            "node_id": 39383,
+            "observed_prefix_tokens": 13824
+          },
+          {
+            "command_id": "native-hicache-000016313",
+            "submit_ts_ms": 1792192192632.277,
+            "node_id": 39398,
+            "observed_prefix_tokens": 22849
+          },
+          {
+            "command_id": "native-hicache-000016483",
+            "submit_ts_ms": 1792192208545.779,
+            "node_id": 39521,
+            "observed_prefix_tokens": 15772
+          }
+        ]
+      },
+      "observed_safe_node_count_including_future": 38197,
+      "prefix_identity_conflicts_before_observed_transfers": 0,
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native",
+      "input_jsonl_prefixes": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/server/transfer_telemetry.jsonl": {
+          "complete_prefix_bytes": 22974002,
+          "complete_prefix_sha256": "447c56574a4f0eff9f7367a8a994c9767e60ee670b9dc4c936747e584fc973f1",
+          "first_read_limit_bytes": 22974002
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/server/runtime_events.sglang.jsonl": {
+          "complete_prefix_bytes": 66365088,
+          "complete_prefix_sha256": "638f9992ab67ffa6e474e3b0bcc1dffe7ff8c17244b8c07a535bd3ad40c7a402",
+          "first_read_limit_bytes": 66365088
+        }
+      }
+    },
+    "native": {
+      "counts": {
+        "result_snapshot_observed": 36786,
+        "cohort_mamba_copy_units": 16642,
+        "assignable_single_node_mamba_copies": 16298,
+        "single_node_ever_observed_safe_including_future": 1410,
+        "unassignable_mamba_copy_units": 344
+      },
+      "roles": {
+        "last_observed_current_safe_anchor": {
+          "copy_units": 1014,
+          "mamba_bytes": 65290567680
+        },
+        "not_previously_observed_as_safe_anchor": {
+          "copy_units": 14888,
+          "mamba_bytes": 958625218560
+        },
+        "prior_safe_anchor_current_state_unknown": {
+          "copy_units": 27,
+          "mamba_bytes": 1738506240
+        },
+        "prior_safe_anchor_superseded_in_observed_contexts": {
+          "copy_units": 369,
+          "mamba_bytes": 23759585280
+        }
+      },
+      "samples_by_role": {
+        "not_previously_observed_as_safe_anchor": [
+          {
+            "command_id": "native-hicache-000000001",
+            "submit_ts_ms": 1792172317929.0483,
+            "node_id": 39,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000002",
+            "submit_ts_ms": 1792172318149.3354,
+            "node_id": 43,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000003",
+            "submit_ts_ms": 1792172320299.763,
+            "node_id": 55,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000004",
+            "submit_ts_ms": 1792172320356.0376,
+            "node_id": 62,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000005",
+            "submit_ts_ms": 1792172321486.4758,
+            "node_id": 66,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000006",
+            "submit_ts_ms": 1792172321585.95,
+            "node_id": 70,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000007",
+            "submit_ts_ms": 1792172322599.6418,
+            "node_id": 77,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000008",
+            "submit_ts_ms": 1792172323920.9421,
+            "node_id": 84,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000009",
+            "submit_ts_ms": 1792172324631.5173,
+            "node_id": 90,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000010",
+            "submit_ts_ms": 1792172325045.8538,
+            "node_id": 93,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000011",
+            "submit_ts_ms": 1792172325469.881,
+            "node_id": 106,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000012",
+            "submit_ts_ms": 1792172325622.3074,
+            "node_id": 111,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000013",
+            "submit_ts_ms": 1792172325751.0662,
+            "node_id": 112,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000014",
+            "submit_ts_ms": 1792172325934.0933,
+            "node_id": 113,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000015",
+            "submit_ts_ms": 1792172326046.42,
+            "node_id": 121,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000016",
+            "submit_ts_ms": 1792172327532.2466,
+            "node_id": 131,
+            "observed_prefix_tokens": null
+          }
+        ],
+        "last_observed_current_safe_anchor": [
+          {
+            "command_id": "native-hicache-000000142",
+            "submit_ts_ms": 1792172375112.381,
+            "node_id": 640,
+            "observed_prefix_tokens": 25408
+          },
+          {
+            "command_id": "native-hicache-000000147",
+            "submit_ts_ms": 1792172376587.4941,
+            "node_id": 700,
+            "observed_prefix_tokens": 8320
+          },
+          {
+            "command_id": "native-hicache-000000183",
+            "submit_ts_ms": 1792172387133.2964,
+            "node_id": 717,
+            "observed_prefix_tokens": 24832
+          },
+          {
+            "command_id": "native-hicache-000000198",
+            "submit_ts_ms": 1792172389621.0647,
+            "node_id": 851,
+            "observed_prefix_tokens": 27136
+          },
+          {
+            "command_id": "native-hicache-000000204",
+            "submit_ts_ms": 1792172392671.525,
+            "node_id": 921,
+            "observed_prefix_tokens": 13120
+          },
+          {
+            "command_id": "native-hicache-000000228",
+            "submit_ts_ms": 1792172399703.498,
+            "node_id": 1040,
+            "observed_prefix_tokens": 23744
+          },
+          {
+            "command_id": "native-hicache-000000256",
+            "submit_ts_ms": 1792172409326.1646,
+            "node_id": 1028,
+            "observed_prefix_tokens": 26560
+          },
+          {
+            "command_id": "native-hicache-000000266",
+            "submit_ts_ms": 1792172412650.9404,
+            "node_id": 1107,
+            "observed_prefix_tokens": 26560
+          },
+          {
+            "command_id": "native-hicache-000000284",
+            "submit_ts_ms": 1792172417851.9038,
+            "node_id": 1054,
+            "observed_prefix_tokens": 24896
+          },
+          {
+            "command_id": "native-hicache-000000289",
+            "submit_ts_ms": 1792172419337.9016,
+            "node_id": 1262,
+            "observed_prefix_tokens": 12224
+          },
+          {
+            "command_id": "native-hicache-000000341",
+            "submit_ts_ms": 1792172441102.4294,
+            "node_id": 1549,
+            "observed_prefix_tokens": 21056
+          },
+          {
+            "command_id": "native-hicache-000000344",
+            "submit_ts_ms": 1792172441449.592,
+            "node_id": 1376,
+            "observed_prefix_tokens": 24256
+          },
+          {
+            "command_id": "native-hicache-000000354",
+            "submit_ts_ms": 1792172443746.9893,
+            "node_id": 1503,
+            "observed_prefix_tokens": 21952
+          },
+          {
+            "command_id": "native-hicache-000000359",
+            "submit_ts_ms": 1792172445746.93,
+            "node_id": 1536,
+            "observed_prefix_tokens": 12032
+          },
+          {
+            "command_id": "native-hicache-000000365",
+            "submit_ts_ms": 1792172447458.5776,
+            "node_id": 1637,
+            "observed_prefix_tokens": 17024
+          },
+          {
+            "command_id": "native-hicache-000000399",
+            "submit_ts_ms": 1792172458684.289,
+            "node_id": 1767,
+            "observed_prefix_tokens": 12224
+          }
+        ],
+        "prior_safe_anchor_superseded_in_observed_contexts": [
+          {
+            "command_id": "native-hicache-000000143",
+            "submit_ts_ms": 1792172375117.7046,
+            "node_id": 475,
+            "observed_prefix_tokens": 35648
+          },
+          {
+            "command_id": "native-hicache-000000184",
+            "submit_ts_ms": 1792172387143.7473,
+            "node_id": 672,
+            "observed_prefix_tokens": 35264
+          },
+          {
+            "command_id": "native-hicache-000000257",
+            "submit_ts_ms": 1792172409372.4207,
+            "node_id": 1006,
+            "observed_prefix_tokens": 38464
+          },
+          {
+            "command_id": "native-hicache-000000283",
+            "submit_ts_ms": 1792172417802.3428,
+            "node_id": 1005,
+            "observed_prefix_tokens": 35968
+          },
+          {
+            "command_id": "native-hicache-000000340",
+            "submit_ts_ms": 1792172441096.9768,
+            "node_id": 1490,
+            "observed_prefix_tokens": 30720
+          },
+          {
+            "command_id": "native-hicache-000000343",
+            "submit_ts_ms": 1792172441400.4548,
+            "node_id": 1339,
+            "observed_prefix_tokens": 34752
+          },
+          {
+            "command_id": "native-hicache-000000353",
+            "submit_ts_ms": 1792172443733.3408,
+            "node_id": 1446,
+            "observed_prefix_tokens": 32512
+          },
+          {
+            "command_id": "native-hicache-000000411",
+            "submit_ts_ms": 1792172461157.3672,
+            "node_id": 1628,
+            "observed_prefix_tokens": 35136
+          },
+          {
+            "command_id": "native-hicache-000000608",
+            "submit_ts_ms": 1792172530049.504,
+            "node_id": 2551,
+            "observed_prefix_tokens": 37952
+          },
+          {
+            "command_id": "native-hicache-000000613",
+            "submit_ts_ms": 1792172532125.0386,
+            "node_id": 2305,
+            "observed_prefix_tokens": 35328
+          },
+          {
+            "command_id": "native-hicache-000000723",
+            "submit_ts_ms": 1792172561246.4622,
+            "node_id": 2892,
+            "observed_prefix_tokens": 32768
+          },
+          {
+            "command_id": "native-hicache-000000753",
+            "submit_ts_ms": 1792172571828.1282,
+            "node_id": 2961,
+            "observed_prefix_tokens": 33920
+          },
+          {
+            "command_id": "native-hicache-000000791",
+            "submit_ts_ms": 1792172582100.504,
+            "node_id": 3057,
+            "observed_prefix_tokens": 35136
+          },
+          {
+            "command_id": "native-hicache-000000825",
+            "submit_ts_ms": 1792172591523.9927,
+            "node_id": 3248,
+            "observed_prefix_tokens": 32000
+          },
+          {
+            "command_id": "native-hicache-000001051",
+            "submit_ts_ms": 1792172623524.1736,
+            "node_id": 3788,
+            "observed_prefix_tokens": 34496
+          },
+          {
+            "command_id": "native-hicache-000001114",
+            "submit_ts_ms": 1792172635477.3562,
+            "node_id": 3869,
+            "observed_prefix_tokens": 37888
+          }
+        ],
+        "prior_safe_anchor_current_state_unknown": [
+          {
+            "command_id": "native-hicache-000009850",
+            "submit_ts_ms": 1792173804241.1584,
+            "node_id": 21394,
+            "observed_prefix_tokens": 34688
+          },
+          {
+            "command_id": "native-hicache-000013062",
+            "submit_ts_ms": 1792174239496.9055,
+            "node_id": 27546,
+            "observed_prefix_tokens": 29184
+          },
+          {
+            "command_id": "native-hicache-000013282",
+            "submit_ts_ms": 1792174270032.4731,
+            "node_id": 28360,
+            "observed_prefix_tokens": 31872
+          },
+          {
+            "command_id": "native-hicache-000015553",
+            "submit_ts_ms": 1792174571306.8735,
+            "node_id": 32267,
+            "observed_prefix_tokens": 30336
+          },
+          {
+            "command_id": "native-hicache-000015592",
+            "submit_ts_ms": 1792174576077.2344,
+            "node_id": 33154,
+            "observed_prefix_tokens": 34378
+          },
+          {
+            "command_id": "native-hicache-000015645",
+            "submit_ts_ms": 1792174582878.2307,
+            "node_id": 32941,
+            "observed_prefix_tokens": 33088
+          },
+          {
+            "command_id": "native-hicache-000015691",
+            "submit_ts_ms": 1792174591154.767,
+            "node_id": 33176,
+            "observed_prefix_tokens": 32832
+          },
+          {
+            "command_id": "native-hicache-000016215",
+            "submit_ts_ms": 1792174658465.9546,
+            "node_id": 34479,
+            "observed_prefix_tokens": 33600
+          },
+          {
+            "command_id": "native-hicache-000016370",
+            "submit_ts_ms": 1792174676127.5164,
+            "node_id": 33203,
+            "observed_prefix_tokens": 27392
+          },
+          {
+            "command_id": "native-hicache-000016380",
+            "submit_ts_ms": 1792174678261.8694,
+            "node_id": 34511,
+            "observed_prefix_tokens": 31744
+          },
+          {
+            "command_id": "native-hicache-000016690",
+            "submit_ts_ms": 1792174723045.0122,
+            "node_id": 35430,
+            "observed_prefix_tokens": 36480
+          },
+          {
+            "command_id": "native-hicache-000016732",
+            "submit_ts_ms": 1792174729409.3223,
+            "node_id": 35089,
+            "observed_prefix_tokens": 31360
+          },
+          {
+            "command_id": "native-hicache-000016839",
+            "submit_ts_ms": 1792174747759.8376,
+            "node_id": 34167,
+            "observed_prefix_tokens": 28352
+          },
+          {
+            "command_id": "native-hicache-000016941",
+            "submit_ts_ms": 1792174761431.9834,
+            "node_id": 34679,
+            "observed_prefix_tokens": 29440
+          },
+          {
+            "command_id": "native-hicache-000017228",
+            "submit_ts_ms": 1792174801127.3652,
+            "node_id": 36237,
+            "observed_prefix_tokens": 29952
+          },
+          {
+            "command_id": "native-hicache-000017449",
+            "submit_ts_ms": 1792174828454.1628,
+            "node_id": 36790,
+            "observed_prefix_tokens": 32352
+          }
+        ]
+      },
+      "observed_safe_node_count_including_future": 36148,
+      "prefix_identity_conflicts_before_observed_transfers": 0,
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native",
+      "input_jsonl_prefixes": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/server/transfer_telemetry.jsonl": {
+          "complete_prefix_bytes": 25954698,
+          "complete_prefix_sha256": "41074f93362c40684d9e7548c0586419eb9ae83e4915e92ecb89055495bbf7e2",
+          "first_read_limit_bytes": 25954698
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/server/runtime_events.sglang.jsonl": {
+          "complete_prefix_bytes": 61695327,
+          "complete_prefix_sha256": "a2cc76a6d3130d20325ed204068129118d3da7da8fcb6ac9f4abaac7868445cd",
+          "first_read_limit_bytes": 61695327
+        }
+      }
+    },
+    "reactive": {
+      "counts": {
+        "result_snapshot_observed": 38412,
+        "cohort_mamba_copy_units": 18418,
+        "assignable_single_node_mamba_copies": 14202,
+        "single_node_ever_observed_safe_including_future": 682,
+        "unassignable_mamba_copy_units": 4216
+      },
+      "roles": {
+        "last_observed_current_safe_anchor": {
+          "copy_units": 173,
+          "mamba_bytes": 11139317760
+        },
+        "not_previously_observed_as_safe_anchor": {
+          "copy_units": 13520,
+          "mamba_bytes": 870540902400
+        },
+        "prior_safe_anchor_current_state_unknown": {
+          "copy_units": 164,
+          "mamba_bytes": 10559815680
+        },
+        "prior_safe_anchor_superseded_in_observed_contexts": {
+          "copy_units": 345,
+          "mamba_bytes": 22214246400
+        }
+      },
+      "samples_by_role": {
+        "not_previously_observed_as_safe_anchor": [
+          {
+            "command_id": "native-hicache-000000001",
+            "submit_ts_ms": 1792179505355.594,
+            "node_id": 39,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000002",
+            "submit_ts_ms": 1792179505739.3223,
+            "node_id": 43,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000003",
+            "submit_ts_ms": 1792179506233.6694,
+            "node_id": 46,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000004",
+            "submit_ts_ms": 1792179506316.5005,
+            "node_id": 49,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000005",
+            "submit_ts_ms": 1792179507176.9768,
+            "node_id": 52,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000006",
+            "submit_ts_ms": 1792179508123.556,
+            "node_id": 57,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000007",
+            "submit_ts_ms": 1792179508484.022,
+            "node_id": 65,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000008",
+            "submit_ts_ms": 1792179508486.3767,
+            "node_id": 66,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000009",
+            "submit_ts_ms": 1792179509993.4338,
+            "node_id": 74,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000010",
+            "submit_ts_ms": 1792179511787.5195,
+            "node_id": 81,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000011",
+            "submit_ts_ms": 1792179511856.7068,
+            "node_id": 86,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000012",
+            "submit_ts_ms": 1792179511932.3843,
+            "node_id": 91,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000013",
+            "submit_ts_ms": 1792179512062.0598,
+            "node_id": 97,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000014",
+            "submit_ts_ms": 1792179512945.226,
+            "node_id": 106,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000015",
+            "submit_ts_ms": 1792179513304.5847,
+            "node_id": 111,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000016",
+            "submit_ts_ms": 1792179513808.4111,
+            "node_id": 120,
+            "observed_prefix_tokens": null
+          }
+        ],
+        "prior_safe_anchor_superseded_in_observed_contexts": [
+          {
+            "command_id": "native-hicache-000000118",
+            "submit_ts_ms": 1792179555592.1567,
+            "node_id": 348,
+            "observed_prefix_tokens": 35968
+          },
+          {
+            "command_id": "native-hicache-000000213",
+            "submit_ts_ms": 1792179584199.1233,
+            "node_id": 750,
+            "observed_prefix_tokens": 36608
+          },
+          {
+            "command_id": "native-hicache-000000274",
+            "submit_ts_ms": 1792179604440.8203,
+            "node_id": 1099,
+            "observed_prefix_tokens": 37184
+          },
+          {
+            "command_id": "native-hicache-000000277",
+            "submit_ts_ms": 1792179605203.8188,
+            "node_id": 907,
+            "observed_prefix_tokens": 35008
+          },
+          {
+            "command_id": "native-hicache-000000293",
+            "submit_ts_ms": 1792179610954.812,
+            "node_id": 1060,
+            "observed_prefix_tokens": 33728
+          },
+          {
+            "command_id": "native-hicache-000000338",
+            "submit_ts_ms": 1792179625668.8882,
+            "node_id": 1546,
+            "observed_prefix_tokens": 26304
+          },
+          {
+            "command_id": "native-hicache-000000452",
+            "submit_ts_ms": 1792179669898.0745,
+            "node_id": 1825,
+            "observed_prefix_tokens": 33920
+          },
+          {
+            "command_id": "native-hicache-000000460",
+            "submit_ts_ms": 1792179673672.0847,
+            "node_id": 1843,
+            "observed_prefix_tokens": 33216
+          },
+          {
+            "command_id": "native-hicache-000000512",
+            "submit_ts_ms": 1792179694972.0186,
+            "node_id": 1897,
+            "observed_prefix_tokens": 34048
+          },
+          {
+            "command_id": "native-hicache-000000538",
+            "submit_ts_ms": 1792179704205.9072,
+            "node_id": 2077,
+            "observed_prefix_tokens": 33216
+          },
+          {
+            "command_id": "native-hicache-000000618",
+            "submit_ts_ms": 1792179730456.2266,
+            "node_id": 2582,
+            "observed_prefix_tokens": 34624
+          },
+          {
+            "command_id": "native-hicache-000000632",
+            "submit_ts_ms": 1792179735631.1636,
+            "node_id": 2551,
+            "observed_prefix_tokens": 36160
+          },
+          {
+            "command_id": "native-hicache-000000636",
+            "submit_ts_ms": 1792179738042.1233,
+            "node_id": 2760,
+            "observed_prefix_tokens": 35712
+          },
+          {
+            "command_id": "native-hicache-000000682",
+            "submit_ts_ms": 1792179754057.7334,
+            "node_id": 2834,
+            "observed_prefix_tokens": 36288
+          },
+          {
+            "command_id": "native-hicache-000000686",
+            "submit_ts_ms": 1792179754401.4155,
+            "node_id": 2832,
+            "observed_prefix_tokens": 34816
+          },
+          {
+            "command_id": "native-hicache-000000738",
+            "submit_ts_ms": 1792179769278.7964,
+            "node_id": 3066,
+            "observed_prefix_tokens": 43328
+          }
+        ],
+        "prior_safe_anchor_current_state_unknown": [
+          {
+            "command_id": "native-hicache-000000670",
+            "submit_ts_ms": 1792179749508.288,
+            "node_id": 2475,
+            "observed_prefix_tokens": 35712
+          },
+          {
+            "command_id": "native-hicache-000003802",
+            "submit_ts_ms": 1792180297124.0835,
+            "node_id": 10237,
+            "observed_prefix_tokens": 33472
+          },
+          {
+            "command_id": "native-hicache-000008315",
+            "submit_ts_ms": 1792180944287.5002,
+            "node_id": 20790,
+            "observed_prefix_tokens": 40192
+          },
+          {
+            "command_id": "native-hicache-000009376",
+            "submit_ts_ms": 1792181092613.6973,
+            "node_id": 23012,
+            "observed_prefix_tokens": 32320
+          },
+          {
+            "command_id": "native-hicache-000009835",
+            "submit_ts_ms": 1792181183001.6433,
+            "node_id": 24373,
+            "observed_prefix_tokens": 35392
+          },
+          {
+            "command_id": "native-hicache-000010524",
+            "submit_ts_ms": 1792181289582.4683,
+            "node_id": 26016,
+            "observed_prefix_tokens": 34624
+          },
+          {
+            "command_id": "native-hicache-000011473",
+            "submit_ts_ms": 1792181429762.6284,
+            "node_id": 28050,
+            "observed_prefix_tokens": 29248
+          },
+          {
+            "command_id": "native-hicache-000012551",
+            "submit_ts_ms": 1792181597201.8242,
+            "node_id": 30698,
+            "observed_prefix_tokens": 30976
+          },
+          {
+            "command_id": "native-hicache-000012786",
+            "submit_ts_ms": 1792181628086.8206,
+            "node_id": 31242,
+            "observed_prefix_tokens": 34176
+          },
+          {
+            "command_id": "native-hicache-000013247",
+            "submit_ts_ms": 1792181685486.4841,
+            "node_id": 32216,
+            "observed_prefix_tokens": 30272
+          },
+          {
+            "command_id": "native-hicache-000014681",
+            "submit_ts_ms": 1792181909124.8132,
+            "node_id": 35475,
+            "observed_prefix_tokens": 30208
+          },
+          {
+            "command_id": "native-hicache-000015530",
+            "submit_ts_ms": 1792182019332.7732,
+            "node_id": 37998,
+            "observed_prefix_tokens": 8768
+          },
+          {
+            "command_id": "native-hicache-000015537",
+            "submit_ts_ms": 1792182019569.0784,
+            "node_id": 38006,
+            "observed_prefix_tokens": 16448
+          },
+          {
+            "command_id": "native-hicache-000015547",
+            "submit_ts_ms": 1792182020370.9915,
+            "node_id": 38008,
+            "observed_prefix_tokens": 10112
+          },
+          {
+            "command_id": "native-hicache-000015554",
+            "submit_ts_ms": 1792182020650.1833,
+            "node_id": 38014,
+            "observed_prefix_tokens": 25472
+          },
+          {
+            "command_id": "native-hicache-000015684",
+            "submit_ts_ms": 1792182034254.5627,
+            "node_id": 38216,
+            "observed_prefix_tokens": 13696
+          }
+        ],
+        "last_observed_current_safe_anchor": [
+          {
+            "command_id": "native-hicache-000001000",
+            "submit_ts_ms": 1792179850704.0125,
+            "node_id": 28,
+            "observed_prefix_tokens": 9472
+          },
+          {
+            "command_id": "native-hicache-000001007",
+            "submit_ts_ms": 1792179852487.2588,
+            "node_id": 1716,
+            "observed_prefix_tokens": 8768
+          },
+          {
+            "command_id": "native-hicache-000001012",
+            "submit_ts_ms": 1792179852597.7998,
+            "node_id": 2841,
+            "observed_prefix_tokens": 10624
+          },
+          {
+            "command_id": "native-hicache-000001017",
+            "submit_ts_ms": 1792179852958.4927,
+            "node_id": 3679,
+            "observed_prefix_tokens": 9472
+          },
+          {
+            "command_id": "native-hicache-000001020",
+            "submit_ts_ms": 1792179853183.497,
+            "node_id": 3688,
+            "observed_prefix_tokens": 8896
+          },
+          {
+            "command_id": "native-hicache-000001033",
+            "submit_ts_ms": 1792179856759.7007,
+            "node_id": 4444,
+            "observed_prefix_tokens": 11200
+          },
+          {
+            "command_id": "native-hicache-000001047",
+            "submit_ts_ms": 1792179857468.4182,
+            "node_id": 4588,
+            "observed_prefix_tokens": 9216
+          },
+          {
+            "command_id": "native-hicache-000001048",
+            "submit_ts_ms": 1792179857683.7922,
+            "node_id": 95,
+            "observed_prefix_tokens": 9088
+          },
+          {
+            "command_id": "native-hicache-000001049",
+            "submit_ts_ms": 1792179857910.207,
+            "node_id": 3769,
+            "observed_prefix_tokens": 9664
+          },
+          {
+            "command_id": "native-hicache-000001052",
+            "submit_ts_ms": 1792179858790.1848,
+            "node_id": 3084,
+            "observed_prefix_tokens": 11456
+          },
+          {
+            "command_id": "native-hicache-000001074",
+            "submit_ts_ms": 1792179860413.4075,
+            "node_id": 3905,
+            "observed_prefix_tokens": 9344
+          },
+          {
+            "command_id": "native-hicache-000001082",
+            "submit_ts_ms": 1792179860742.4646,
+            "node_id": 3507,
+            "observed_prefix_tokens": 8896
+          },
+          {
+            "command_id": "native-hicache-000001100",
+            "submit_ts_ms": 1792179864210.728,
+            "node_id": 3930,
+            "observed_prefix_tokens": 8640
+          },
+          {
+            "command_id": "native-hicache-000001103",
+            "submit_ts_ms": 1792179864330.3013,
+            "node_id": 4674,
+            "observed_prefix_tokens": 9152
+          },
+          {
+            "command_id": "native-hicache-000001104",
+            "submit_ts_ms": 1792179864647.0974,
+            "node_id": 292,
+            "observed_prefix_tokens": 8704
+          },
+          {
+            "command_id": "native-hicache-000001106",
+            "submit_ts_ms": 1792179864842.6711,
+            "node_id": 4709,
+            "observed_prefix_tokens": 8576
+          }
+        ]
+      },
+      "observed_safe_node_count_including_future": 37871,
+      "prefix_identity_conflicts_before_observed_transfers": 0,
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive",
+      "input_jsonl_prefixes": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/server/transfer_telemetry.jsonl": {
+          "complete_prefix_bytes": 29375184,
+          "complete_prefix_sha256": "2ffadb5e97bcd8203c212dae46208ae8ff326a5d5b197a6290f47a2dd0b5c4b8",
+          "first_read_limit_bytes": 29375184
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/server/runtime_events.sglang.jsonl": {
+          "complete_prefix_bytes": 72522513,
+          "complete_prefix_sha256": "34dad62558d8938c537a109e847bd60185c7f27da508ce2674b7dceb7dfd5976",
+          "first_read_limit_bytes": 72522513
+        }
+      }
+    },
+    "predictive": {
+      "counts": {
+        "result_snapshot_observed": 39919,
+        "cohort_mamba_copy_units": 15799,
+        "assignable_single_node_mamba_copies": 15158,
+        "single_node_ever_observed_safe_including_future": 636,
+        "unassignable_mamba_copy_units": 641
+      },
+      "roles": {
+        "last_observed_current_safe_anchor": {
+          "copy_units": 174,
+          "mamba_bytes": 11203706880
+        },
+        "not_previously_observed_as_safe_anchor": {
+          "copy_units": 14522,
+          "mamba_bytes": 935058800640
+        },
+        "prior_safe_anchor_current_state_unknown": {
+          "copy_units": 43,
+          "mamba_bytes": 2768732160
+        },
+        "prior_safe_anchor_superseded_in_observed_contexts": {
+          "copy_units": 419,
+          "mamba_bytes": 26979041280
+        }
+      },
+      "samples_by_role": {
+        "not_previously_observed_as_safe_anchor": [
+          {
+            "command_id": "native-hicache-000000001",
+            "submit_ts_ms": 1792163995153.5325,
+            "node_id": 39,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000002",
+            "submit_ts_ms": 1792163995216.3442,
+            "node_id": 43,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000003",
+            "submit_ts_ms": 1792163995218.7551,
+            "node_id": 44,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000004",
+            "submit_ts_ms": 1792163996038.567,
+            "node_id": 49,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000005",
+            "submit_ts_ms": 1792163996219.6265,
+            "node_id": 55,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000006",
+            "submit_ts_ms": 1792163996659.1777,
+            "node_id": 63,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000007",
+            "submit_ts_ms": 1792163997799.849,
+            "node_id": 68,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000008",
+            "submit_ts_ms": 1792163997802.1172,
+            "node_id": 71,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000009",
+            "submit_ts_ms": 1792163998587.964,
+            "node_id": 75,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000010",
+            "submit_ts_ms": 1792163998674.6785,
+            "node_id": 78,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000011",
+            "submit_ts_ms": 1792163998680.374,
+            "node_id": 81,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000012",
+            "submit_ts_ms": 1792163998859.543,
+            "node_id": 84,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000013",
+            "submit_ts_ms": 1792163999620.041,
+            "node_id": 91,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000014",
+            "submit_ts_ms": 1792164000658.9463,
+            "node_id": 98,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000015",
+            "submit_ts_ms": 1792164000942.0212,
+            "node_id": 106,
+            "observed_prefix_tokens": null
+          },
+          {
+            "command_id": "native-hicache-000000016",
+            "submit_ts_ms": 1792164000945.0774,
+            "node_id": 112,
+            "observed_prefix_tokens": null
+          }
+        ],
+        "prior_safe_anchor_superseded_in_observed_contexts": [
+          {
+            "command_id": "native-hicache-000000076",
+            "submit_ts_ms": 1792164025998.9268,
+            "node_id": 254,
+            "observed_prefix_tokens": 36928
+          },
+          {
+            "command_id": "native-hicache-000000098",
+            "submit_ts_ms": 1792164036735.5713,
+            "node_id": 375,
+            "observed_prefix_tokens": 35648
+          },
+          {
+            "command_id": "native-hicache-000000138",
+            "submit_ts_ms": 1792164049767.0208,
+            "node_id": 592,
+            "observed_prefix_tokens": 36928
+          },
+          {
+            "command_id": "native-hicache-000000200",
+            "submit_ts_ms": 1792164068655.9885,
+            "node_id": 894,
+            "observed_prefix_tokens": 34432
+          },
+          {
+            "command_id": "native-hicache-000000205",
+            "submit_ts_ms": 1792164070063.0425,
+            "node_id": 933,
+            "observed_prefix_tokens": 39168
+          },
+          {
+            "command_id": "native-hicache-000000311",
+            "submit_ts_ms": 1792164108440.643,
+            "node_id": 1162,
+            "observed_prefix_tokens": 34038
+          },
+          {
+            "command_id": "native-hicache-000000345",
+            "submit_ts_ms": 1792164122493.6958,
+            "node_id": 1498,
+            "observed_prefix_tokens": 31744
+          },
+          {
+            "command_id": "native-hicache-000000394",
+            "submit_ts_ms": 1792164144399.4067,
+            "node_id": 1597,
+            "observed_prefix_tokens": 34624
+          },
+          {
+            "command_id": "native-hicache-000000413",
+            "submit_ts_ms": 1792164152097.171,
+            "node_id": 1914,
+            "observed_prefix_tokens": 36352
+          },
+          {
+            "command_id": "native-hicache-000000430",
+            "submit_ts_ms": 1792164158439.2932,
+            "node_id": 1955,
+            "observed_prefix_tokens": 34048
+          },
+          {
+            "command_id": "native-hicache-000000467",
+            "submit_ts_ms": 1792164174844.3313,
+            "node_id": 2199,
+            "observed_prefix_tokens": 36352
+          },
+          {
+            "command_id": "native-hicache-000000468",
+            "submit_ts_ms": 1792164176528.8828,
+            "node_id": 2013,
+            "observed_prefix_tokens": 35392
+          },
+          {
+            "command_id": "native-hicache-000000475",
+            "submit_ts_ms": 1792164178854.5342,
+            "node_id": 2051,
+            "observed_prefix_tokens": 33024
+          },
+          {
+            "command_id": "native-hicache-000000513",
+            "submit_ts_ms": 1792164195295.8945,
+            "node_id": 2287,
+            "observed_prefix_tokens": 33152
+          },
+          {
+            "command_id": "native-hicache-000000683",
+            "submit_ts_ms": 1792164261862.3984,
+            "node_id": 3076,
+            "observed_prefix_tokens": 36224
+          },
+          {
+            "command_id": "native-hicache-000000690",
+            "submit_ts_ms": 1792164263970.2117,
+            "node_id": 3253,
+            "observed_prefix_tokens": 35911
+          }
+        ],
+        "last_observed_current_safe_anchor": [
+          {
+            "command_id": "native-hicache-000000918",
+            "submit_ts_ms": 1792164336283.567,
+            "node_id": 28,
+            "observed_prefix_tokens": 9472
+          },
+          {
+            "command_id": "native-hicache-000000957",
+            "submit_ts_ms": 1792164341051.5356,
+            "node_id": 1130,
+            "observed_prefix_tokens": 9408
+          },
+          {
+            "command_id": "native-hicache-000000966",
+            "submit_ts_ms": 1792164342914.4702,
+            "node_id": 3837,
+            "observed_prefix_tokens": 9472
+          },
+          {
+            "command_id": "native-hicache-000000973",
+            "submit_ts_ms": 1792164343540.1138,
+            "node_id": 3084,
+            "observed_prefix_tokens": 10624
+          },
+          {
+            "command_id": "native-hicache-000000986",
+            "submit_ts_ms": 1792164345285.0955,
+            "node_id": 3659,
+            "observed_prefix_tokens": 8896
+          },
+          {
+            "command_id": "native-hicache-000001014",
+            "submit_ts_ms": 1792164348886.5044,
+            "node_id": 1891,
+            "observed_prefix_tokens": 8768
+          },
+          {
+            "command_id": "native-hicache-000001021",
+            "submit_ts_ms": 1792164349794.6975,
+            "node_id": 3300,
+            "observed_prefix_tokens": 11456
+          },
+          {
+            "command_id": "native-hicache-000001063",
+            "submit_ts_ms": 1792164358813.0798,
+            "node_id": 3908,
+            "observed_prefix_tokens": 9664
+          },
+          {
+            "command_id": "native-hicache-000001074",
+            "submit_ts_ms": 1792164360133.148,
+            "node_id": 4038,
+            "observed_prefix_tokens": 9344
+          },
+          {
+            "command_id": "native-hicache-000001093",
+            "submit_ts_ms": 1792164362457.3003,
+            "node_id": 4684,
+            "observed_prefix_tokens": 9216
+          },
+          {
+            "command_id": "native-hicache-000001124",
+            "submit_ts_ms": 1792164366297.681,
+            "node_id": 3754,
+            "observed_prefix_tokens": 18304
+          },
+          {
+            "command_id": "native-hicache-000001140",
+            "submit_ts_ms": 1792164367061.9746,
+            "node_id": 310,
+            "observed_prefix_tokens": 8704
+          },
+          {
+            "command_id": "native-hicache-000001145",
+            "submit_ts_ms": 1792164368773.0286,
+            "node_id": 887,
+            "observed_prefix_tokens": 16384
+          },
+          {
+            "command_id": "native-hicache-000001155",
+            "submit_ts_ms": 1792164370277.9312,
+            "node_id": 4065,
+            "observed_prefix_tokens": 8640
+          },
+          {
+            "command_id": "native-hicache-000001157",
+            "submit_ts_ms": 1792164370772.8977,
+            "node_id": 5205,
+            "observed_prefix_tokens": 8576
+          },
+          {
+            "command_id": "native-hicache-000001160",
+            "submit_ts_ms": 1792164371749.1814,
+            "node_id": 1825,
+            "observed_prefix_tokens": 8896
+          }
+        ],
+        "prior_safe_anchor_current_state_unknown": [
+          {
+            "command_id": "native-hicache-000008231",
+            "submit_ts_ms": 1792165440501.5386,
+            "node_id": 20315,
+            "observed_prefix_tokens": 33664
+          },
+          {
+            "command_id": "native-hicache-000009812",
+            "submit_ts_ms": 1792165694457.4067,
+            "node_id": 24174,
+            "observed_prefix_tokens": 33536
+          },
+          {
+            "command_id": "native-hicache-000010801",
+            "submit_ts_ms": 1792165840807.5781,
+            "node_id": 26350,
+            "observed_prefix_tokens": 30224
+          },
+          {
+            "command_id": "native-hicache-000010987",
+            "submit_ts_ms": 1792165876139.5718,
+            "node_id": 26707,
+            "observed_prefix_tokens": 31488
+          },
+          {
+            "command_id": "native-hicache-000013262",
+            "submit_ts_ms": 1792166231388.621,
+            "node_id": 31653,
+            "observed_prefix_tokens": 32384
+          },
+          {
+            "command_id": "native-hicache-000013535",
+            "submit_ts_ms": 1792166272260.6604,
+            "node_id": 32669,
+            "observed_prefix_tokens": 37760
+          },
+          {
+            "command_id": "native-hicache-000014073",
+            "submit_ts_ms": 1792166355273.9731,
+            "node_id": 34023,
+            "observed_prefix_tokens": 34974
+          },
+          {
+            "command_id": "native-hicache-000014157",
+            "submit_ts_ms": 1792166372026.274,
+            "node_id": 34059,
+            "observed_prefix_tokens": 33152
+          },
+          {
+            "command_id": "native-hicache-000014390",
+            "submit_ts_ms": 1792166402682.724,
+            "node_id": 34227,
+            "observed_prefix_tokens": 28288
+          },
+          {
+            "command_id": "native-hicache-000015113",
+            "submit_ts_ms": 1792166498910.6516,
+            "node_id": 36627,
+            "observed_prefix_tokens": 12800
+          },
+          {
+            "command_id": "native-hicache-000015122",
+            "submit_ts_ms": 1792166500216.971,
+            "node_id": 36634,
+            "observed_prefix_tokens": 12032
+          },
+          {
+            "command_id": "native-hicache-000015254",
+            "submit_ts_ms": 1792166518033.7942,
+            "node_id": 36890,
+            "observed_prefix_tokens": 16448
+          },
+          {
+            "command_id": "native-hicache-000015331",
+            "submit_ts_ms": 1792166523846.7654,
+            "node_id": 36999,
+            "observed_prefix_tokens": 21641
+          },
+          {
+            "command_id": "native-hicache-000015392",
+            "submit_ts_ms": 1792166528347.724,
+            "node_id": 37059,
+            "observed_prefix_tokens": 31616
+          },
+          {
+            "command_id": "native-hicache-000015432",
+            "submit_ts_ms": 1792166531537.2983,
+            "node_id": 37109,
+            "observed_prefix_tokens": 25163
+          },
+          {
+            "command_id": "native-hicache-000015451",
+            "submit_ts_ms": 1792166532454.6401,
+            "node_id": 37138,
+            "observed_prefix_tokens": 17717
+          }
+        ]
+      },
+      "observed_safe_node_count_including_future": 39323,
+      "prefix_identity_conflicts_before_observed_transfers": 0,
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d",
+      "input_jsonl_prefixes": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/server/transfer_telemetry.jsonl": {
+          "complete_prefix_bytes": 25696190,
+          "complete_prefix_sha256": "9ee7518d44786a25f27170ca6d151f1ff10084be5efda0a170946d915e8e5228",
+          "first_read_limit_bytes": 25696190
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/server/runtime_events.sglang.jsonl": {
+          "complete_prefix_bytes": 67763267,
+          "complete_prefix_sha256": "fc4a8c839293f350ce5de79864b69823c47024781de15ed6d790d092e8e3f190",
+          "first_read_limit_bytes": 67763267
+        }
+      }
+    }
+  },
+  "auditor_sources": {
+    "scripts/audit_checkpoint_write_roles.py": "cb75d242621d32e17e6b7f1c1a47f0157e539bccd20e7a9818e36740a0fdb42c",
+    "scripts/audit_checkpoint_write_read_balance.py": "bb0e80d8d6ac22c4c5f3d03cc8f3bf87183350481f753adfe8a01e93fe6f2bd2",
+    "scripts/audit_native_system_costs.py": "a9262996530573c11cc2bbdaf6184a87443b30e02fbd8f983c74e5bbbb862952",
+    "scripts/audit_sealed_wait_prefetch.py": "1bb8064854266d012423ce3bf4eea5b3aa1865a1fcc59308642ee645e7361db3"
+  },
+  "semantics": [
+    "Roles use only checkpoint/request events strictly before each physical D2H submission. A new request or unknown snapshot makes the prior anchor's current status unknown.",
+    "The separate ever-observed coverage count includes future snapshots; it is not an online input, policy label or evidence of physical use.",
+    "Only single-node, one-Mamba-copy receipts are assigned. Aggregate batches without per-node pool identity remain unassignable.",
+    "These are observations of logical node IDs and prefixes, not physical copy generations, per-node consumption, session-reference counts or safe discard permissions.",
+    "Not previously observed does not mean unused, output-tail, invalid or safe to drop. Superseded in observed contexts does not exclude other shared or future users.",
+    "Unknown/empty snapshots retain uncertainty. Prefix conflicts are reported rather than treated as stable identity. Receipt and request files are sealed independently."
+  ]
+}
