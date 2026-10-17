@@ -9,20 +9,21 @@ V1421 retains211.325GB of aggregate Mamba writes as unassignable; no proportiona
 role attribution or global useless-state claim is allowed. V1410/V1411/V1420/V1421
 bind the new windows. Diagnostic overhead and changed realized work remain open.
 
-The independent V80 no-Host native engineering control is CPU prepared, not
-registered or GPU started. V1423 passes301 cases, including actual shell argument
+The independent V80 no-Host native engineering control is registered at21:25 PDT,
+not GPU started. V1423 passes301 cases, including actual shell argument
 capture for fixed FULL1798992/Mamba513 device limits, no-Host telemetry, NUMA,
 and rejection of mixed policy/capacity/arrival configurations. V1412 preserves
 an initial test-field-name failure; V1413/V1422's301 passes are intermediate and
 overlap V1423. The final source preserves legacy no-Host admission-only launch;
 only the new no-Host experiment selector is native-only. No receipt is overwritten.
-Freeze a separate application and the unchanged53020ce3 engine; wait for complete
-V79b and actual resource release. Preserve its full156 tasks, arrivals, session,
+V1414-V1416 bind a clean separate application3700fa4 and unchanged53020ce3 engine.
+Supervisor3176720/start_ticks638138015 is actually live at nice0, waiting for
+complete V79b and actual resource release. Preserve full156 tasks, arrivals, session,
 HBM and task limits; Host allocation0 is the intentional variable under the same
 200GB available Host budget. Disable all extra diagnostics/policies. Verify
 actual service, zero Host allocation, physical HBM and NUMA before accepting
 startup. This control may reveal useful-recompute cost; retain all outcomes.
-Screening4.59 records the scope. The actual-successor cache policy remains
+Screening4.59/4.60 records the scope. The actual-successor cache policy remains
 unimplemented and novelty/performance goals remain unachieved.
 
 V79b now has three complete600s compatibility windows through1800s.
