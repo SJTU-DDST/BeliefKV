@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "status": "cpu_qualified_read_only_audit_with_corrected_epoch_cohorts",
+  "base_main_commit": "796fa4e",
+  "source_sha256": {
+    "scripts/audit_continuation_service_competition.py": "2e7668e28ee28451c2c8569b481701c98926c7ccf7ebe6f414aae6ccc3349676",
+    "tests/test_continuation_service_competition.py": "d183a77fee5cbacc15f7691d878333bf06ff72da3c098b9b40f748633d0e8d1e",
+    "scripts/audit_native_system_costs.py": "a9262996530573c11cc2bbdaf6184a87443b30e02fbd8f983c74e5bbbb862952",
+    "scripts/audit_sealed_wait_prefetch.py": "1bb8064854266d012423ce3bf4eea5b3aa1865a1fcc59308642ee645e7361db3"
+  },
+  "cpu": {
+    "path": "experiments/reports/v1382_continuation_epoch_cohort_cpu_20261016.xml",
+    "sha256": "c0f6e8ab631af904fde90479fa395891ccb19d1473290121deb905c42160cc21",
+    "command": "python -m pytest -q tests/test_continuation_service_competition.py tests/test_native_system_costs.py --junitxml=experiments/reports/v1382_continuation_epoch_cohort_cpu_20261016.xml",
+    "cuda_visible_devices": "999",
+    "nice": 10,
+    "cases": 20,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "preserved_initial_evidence": {
+    "cpu_path": "experiments/reports/v1380_continuation_service_competition_cpu_20261016.xml",
+    "cpu_sha256": "588964f848f71563c60b93a5b681433e424fd971922bb7751d6384f0ceeb12e8",
+    "cases": 18,
+    "report_path": "experiments/reports/v1381_v78b_continuation_service_competition_20261016.json.gz",
+    "report_sha256": "430312d4da759d632a3494f03a40d5e04e9da97e07d05d33fd42b7cc2d9695e1",
+    "uncompressed_sha256": "615d22f32f387966495b7b5cbf3417c6951f0c6d5425d995d28a257582c7ade2",
+    "correction": "Equal-epoch filtering produced empty rapid cohorts because observed completed predecessors advance epochs. Preserve the original result; schema 2 includes logical continuations and reports epoch transitions separately. CPU receipts overlap and are not additive."
+  },
+  "corrected_audit": {
+    "path": "experiments/reports/v1383_v78b_continuation_competition_epoch_cohorts_20261016.json.gz",
+    "sha256": "84a6a43f10e3a14f0826a45550cfcf9ec132c472f80e14538cba8abe07855fab",
+    "uncompressed_sha256": "136e20e69170ef9309c653542214055fbb039926a252d0f50ed3e0f6bf582e38",
+    "start_seconds": 2400,
+    "end_seconds": 3000,
+    "independent_reference": "experiments/reports/v1356_v78b_2400_3000_host_demand_20261016.json",
+    "all_three_rapid_request_counts_match_reference": true,
+    "all_three_positive_full_host_counts_match_reference": true,
+    "all_three_reported_full_host_byte_counts_match_reference": true
+  },
+  "final_task_cohort": {
+    "path": "experiments/reports/v1385_v78b_final_task_cohort_20261016.json",
+    "sha256": "b1734b555182d21303d75520990c37f9172855eb5c0119cd314eec2d94327c41",
+    "tasks_per_arm": 156,
+    "horizon_seconds": 9000,
+    "all_planned_runner_finishes_observed_per_arm": true,
+    "native_order_runner_mean_seconds": 1764.122760529326,
+    "native_runner_mean_seconds": 1666.3242609058627,
+    "native_order_raw_mean_slowdown_percent": 5.869115748833731
+  },
+  "scope": {
+    "runtime_policy_changed": false,
+    "frozen_experiments_modified": false,
+    "new_gpu_run_registered": false,
+    "quality_matched_performance_goal_achieved": false
+  },
+  "limits": [
+    "Serialized native first-service observations are not physical-page LRU accesses, deduplicated working-set size or exposed restoration latency.",
+    "Rapid cohorts include served requests queued in the window; still-unserved requests are absent.",
+    "Epoch changes are not automatically compaction or physical cache invalidation.",
+    "Logical identity and equal epochs do not establish namespace, session or physical-copy generation.",
+    "Conditional historical Host-hit rates retain workflow clustering and confounding; they do not establish cache-policy causality.",
+    "Final raw runner means and result.duration means have different endpoints, and neither is quality-matched JCT.",
+    "V79 is the previously registered diagnostic continuation, not a policy selected from this association."
+  ]
+}

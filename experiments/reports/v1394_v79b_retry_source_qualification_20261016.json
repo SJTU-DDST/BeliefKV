@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "status": "cpu_source_qualified_external_observer_retry",
+  "source_sha256": {
+    "scripts/observe_owned_scheduler_numa.py": "4173dd25e3aa416211546dc3eb01643f40434e7035bf73abfbe75e88085ab87d",
+    "scripts/start_v79b_checkpoint_observer_retry_20261016.py": "ad35ee02c9f87ebf123f129b927dbf75d24dd5e7f3ea143d1854c8edaaa9c373",
+    "tests/test_v79b_observer_retry.py": "fc0b166def4bce6fdc015696e56c62e284967bc7e7c87a5bf960b616495f7d5b"
+  },
+  "failure": {
+    "path": "experiments/reports/v1386_v79_observer_import_failure_20261016.json",
+    "sha256": "953f64e426144d82b494e954254756c1291909b162a4068879171fc7db239fce",
+    "diagnosis": "Frozen observer imports ops relative to its .worktrees location, causing ModuleNotFoundError for server_reservation before startup qualification. Preserve the original stopped state and partial trace."
+  },
+  "cpu": {
+    "path": "experiments/reports/v1393_v79b_retry_final_cpu_20261016.xml",
+    "sha256": "02e393fa6877fc7969eb59bd1f5537d4b1efb73fbdaaeb378ab54695d5f81a92",
+    "cases": 56,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "cuda_visible_devices": "999",
+    "nice": 10
+  },
+  "initial_cpu": {
+    "path": "experiments/reports/v1392_v79b_observer_retry_cpu_20261016.xml",
+    "sha256": "df8bfd2d9357ce0aec8e7fa147dbe217fa5d9dd45466af788f0d15c2f5ff38ff",
+    "cases": 55,
+    "overlaps_final": true,
+    "subsequent_prepare": "Strict environment comparison rejected the newly derived arrival-file location before artifacts or GPU launch. Final code retains the original registered arrival path; the final CPU receipt covers configured derivation."
+  },
+  "registration": {
+    "path": "experiments/reports/v1387_v79b_checkpoint_observer_retry_registration_20261016.json",
+    "sha256": "6f320dff29a3f44df42af6cf9630add181926adc99b66025441c9cc75f71434b"
+  },
+  "supervisor": {
+    "path": "experiments/reports/v1388_v79b_checkpoint_observer_retry_supervisor_20261016.json",
+    "sha256": "654cb627d42c9b6efc0358bf777e4a53c24dc08bdc2122135cf1c7bab380a957",
+    "pid": 2048213,
+    "start_ticks": "637731046",
+    "observed_nice": 0
+  },
+  "frozen_app_commit": "c40d2f6072be7689c12bc92b5b8686abe350bb60",
+  "unchanged_engine_actual_tree": "53020ce3efef3ed362e9af0db77147b39070f064",
+  "runtime_configuration": {
+    "only_environment_change": "RUN_ROOT",
+    "original_arrival_file_retained": true,
+    "original_and_retry_plan_content_equal": true,
+    "observer_command_redirected_to_registered_main_file": true,
+    "frozen_application_or_engine_edited": false
+  },
+  "archived_v78b_comparison": {
+    "path": "experiments/reports/v1395_v78b_complete_native_comparison_20261016.json.gz",
+    "sha256": "cbd2b89d242f45baeea5e52fdfc302262408b468b6036803fdf9fdb2594e7e0c",
+    "uncompressed_sha256": "09cc5a398f17c8ebf8d85f648e0a789445639dbbcc062af4c6262cb8ffa9844a"
+  },
+  "scope": {
+    "actual_startup_qualification_in_this_receipt": false,
+    "startup_receipt_reserved": "v1389",
+    "placement_receipt_reserved": "v1391",
+    "quality_matched_performance_or_novelty_accepted": false
+  }
+}

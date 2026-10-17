@@ -1,0 +1,19 @@
+{
+  "at": "2026-10-16T20:05:54.743907-07:00",
+  "status": "complete_development_collection_quality_ungraded",
+  "summary": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/summary.json",
+    "sha256": "f6e9ab72af2f64ec14ab1e1c87a9beb53dd505461a5b6f7dcf3b9c279406db64"
+  },
+  "outcomes": {
+    "completed": 155,
+    "incomplete": 1
+  },
+  "comparison": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/native_reference_comparison.json",
+    "sha256": "09cc5a398f17c8ebf8d85f648e0a789445639dbbcc062af4c6262cb8ffa9844a"
+  },
+  "prefill_ordering_mode": "native",
+  "native_prefill_order_plans": 36924,
+  "scope": "Keep all outcomes and guard labels; official quality and causal gains remain unproven."
+}

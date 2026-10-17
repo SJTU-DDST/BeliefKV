@@ -2,6 +2,46 @@
 
 Status date: 2026-10-16 (PDT).
 
+Current continuation is V79b, not the stopped original V79. The original had
+actual service/probe observations but failed NUMA qualification because the
+observer resolved ops relative to a .worktrees source location. V1386 preserves
+the failure and partial data. Main now resolves operations helpers from the
+run-root ancestry; the frozen application/engine/helper are unchanged.
+
+V1387/V1388 register the external observer retry in fresh output, preserving
+the exact original arrival-file reference and every setting except RUN_ROOT.
+V1393 passes56 CPU cases, including configured environment derivation; the
+initial55-case receipt V1392 is retained and overlapping. V1394 binds sources
+and receipts. Supervisor2048213 runs at nice0; driver2048545 launched at20:17 PDT.
+At20:20:30 PDT V1389/V1391 verify actual probe/service, matching capacity and
+NUMA; scheduler2048787 is running, and frozen source is revalidated. Retain the
+original failed state and never append partial V79 traces into V79b. This is
+operational repair, not performance evidence or a newly selected paper mechanism.
+Screening4.55 records this supersession of earlier V79-started snapshots.
+
+V78b completed collection at20:05 PDT:155 completed,one incomplete,all156 runner
+finishes and146 explicitly native-JCT-eligible tasks. V1385's final raw runner
+mean is1764.123s versus1666.324s native,5.87% slower. Preserve this negative
+result and the distinct result.duration mean1763.135/1665.374s. Native H2D
+is339.650/13.610GB; predictive/handoff transfers are zero.
+
+V1383 measures observed intervening logical contexts by serialized first-service
+order, not backdated queue timestamps. All rapid same-context continuations
+remain in the cohort when epochs advance; the original empty equal-epoch cohort
+is preserved in V1381. V1382 passes20 CPU cases. Rapid positive FULL Host
+counts match V1356 exactly:569/3229 V78b,1328/3243 V76,7/3475 native.
+Prompt-length/competition cells still differ, but these are historical
+associations, not physical LRU distance, deduplicated working sets or causal
+cache-policy evidence. Do not tune a capacity threshold from these bins.
+
+V79 automatically launched driver2032542 at20:06 PDT after verified complete
+V78b collection and resource release. Retain its frozen candidate and validate
+actual continuation-probe service, capacity and NUMA through V1370/V1372.
+Next identify real prefix/checkpoint compatibility and restoration provenance
+before selecting a cache policy; the systems contribution remains unchosen.
+Screening4.53/4.54 and V1384 preserve sources, corrected cohorts and full results.
+Older waiting/insufficient6000s coverage notes below are historical snapshots.
+
 2026-10-16 V79 is now independently registered, still waiting, not GPU started.
 V1367/V1368 bind clean candidatec40d2f6, unchanged engine53020ce3, exact native
 tasks/arrivals/resources and257 CPU cases. V1369 binds supervisor1906740/

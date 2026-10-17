@@ -41,7 +41,7 @@ def test_first_service_order_and_repeated_contexts_are_not_queue_order():
     assert row["other_request_starts"] == 2
     assert row["completion_to_queue_ms"] == 1
     assert result["rapid_same_epoch"]["positive_full_host_fraction_of_known"] == 1
-    assert result["rapid_same_epoch_by_competition"]["0_to_15"]["requests"] == 1
+    assert result["rapid_same_context_by_competition"]["0_to_15"]["requests"] == 1
 
 
 def test_unknown_predecessor_is_not_skipped_in_favor_of_an_older_completed_one():
@@ -60,6 +60,25 @@ def test_epoch_change_is_observed_but_not_in_same_epoch_subcohort():
     assert result["rows"][0]["same_context_epoch"] is False
     assert result["rows"][0]["distinct_known_other_contexts"] == 1
     assert result["rapid_same_epoch"]["requests"] == 0
+    assert result["rapid_same_context"]["requests"] == 1
+    assert result["rows"][0]["previous_context_epoch"] == 0
+    assert result["context_epoch_transition_counts"] == {"advanced": 1}
+
+
+@pytest.mark.parametrize(
+    ("previous_epoch", "epoch", "transition"),
+    [(0, None, "unknown"), (2, 1, "regressed")],
+)
+def test_epoch_transition_never_drops_a_logical_continuation(
+    previous_epoch, epoch, transition
+):
+    rows = observations()
+    rows[0]["context_epoch"] = previous_epoch
+    rows[6]["context_epoch"] = epoch
+    result = service_competition(rows, 11, 12)
+    assert result["rapid_same_context"]["requests"] == 1
+    assert result["rapid_same_epoch"]["requests"] == 0
+    assert result["context_epoch_transition_counts"] == {transition: 1}
 
 
 def test_unknown_competing_identity_is_not_a_known_zero():
@@ -68,7 +87,7 @@ def test_unknown_competing_identity_is_not_a_known_zero():
     result = service_competition(rows, 11, 12)
     assert result["rows"][0]["unknown_context_request_starts"] == 1
     assert result["rapid_same_epoch"]["requests"] == 1
-    assert result["rapid_same_epoch_known_competition"]["requests"] == 0
+    assert result["rapid_same_context_known_competition"]["requests"] == 0
 
 
 def test_completion_timestamp_cannot_be_future_information_at_queue_time():

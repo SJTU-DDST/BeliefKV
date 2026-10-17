@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-16T20:17:27.362115-07:00",
+  "supervisor": {
+    "pid": 2048213,
+    "state": "R",
+    "ppid": 2048083,
+    "start_ticks": "637731046",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/BeliefKV/scripts/start_v79b_checkpoint_observer_retry_20261016.py",
+      "--watch"
+    ]
+  },
+  "registration": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1387_v79b_checkpoint_observer_retry_registration_20261016.json",
+    "sha256": "6f320dff29a3f44df42af6cf9630add181926adc99b66025441c9cc75f71434b"
+  }
+}

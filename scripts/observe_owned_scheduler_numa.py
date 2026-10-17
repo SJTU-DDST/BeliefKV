@@ -48,11 +48,19 @@ def resident_pages(text, page_bytes):
     }
 
 
+def operations_directory(run_root):
+    for ancestor in run_root.resolve().parents:
+        candidate = ancestor / "ops"
+        if (candidate / "server_reservation.py").is_file():
+            return candidate
+    raise ValueError("the experiment's operations helpers cannot be located")
+
+
 def main(argv=None):
     args = arguments(argv)
     if args.output.exists():
         raise FileExistsError("preserve an existing placement observation")
-    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "ops"))
+    sys.path.insert(0, str(operations_directory(args.run_root)))
     import server_reservation as reservation
 
     run = args.run_root.resolve()

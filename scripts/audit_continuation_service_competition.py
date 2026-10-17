@@ -104,10 +104,15 @@ def service_competition(events, begin, end):
             if value is not None and (type(value) is not int or value < 0):
                 raise ValueError("invalid native token accounting")
         epoch = event.get("context_epoch")
+        previous_epoch = previous["context_epoch"] if previous is not None else None
         same_epoch = (
-            epoch == previous["context_epoch"]
-            if previous is not None and type(epoch) is int
-            and type(previous["context_epoch"]) is int else None
+            epoch == previous_epoch
+            if type(epoch) is int and type(previous_epoch) is int else None
+        )
+        epoch_transition = (
+            "unknown" if same_epoch is None else
+            "same" if same_epoch else
+            "advanced" if epoch > previous_epoch else "regressed"
         )
         if begin <= timestamp < end:
             rows.append({
@@ -116,8 +121,10 @@ def service_competition(events, begin, end):
                 "native_queue_ts_ms": timestamp,
                 "first_service_observation_ordinal": ordinal,
                 "previous_request_id": previous["request_id"] if previous is not None else None,
+                "previous_context_epoch": previous_epoch,
                 "preceding_status": status,
                 "same_context_epoch": same_epoch,
+                "context_epoch_transition": epoch_transition,
                 "previous_output_tokens": previous.get("output_tokens") if previous is not None else None,
                 "completion_to_queue_ms": gap,
                 "distinct_known_other_contexts": distance,
@@ -144,7 +151,6 @@ def service_competition(events, begin, end):
     rapid = [
         row for row in rows
         if row["preceding_status"] == "previous_completed_request"
-        and row["same_context_epoch"] is True
         and row["completion_to_queue_ms"] <= 1000
     ]
     known_competition = [row for row in rapid if row["unknown_context_request_starts"] == 0]
@@ -158,12 +164,18 @@ def service_competition(events, begin, end):
     return {
         "summary": cohort_summary(rows),
         "preceding_status_counts": dict(Counter(row["preceding_status"] for row in rows)),
-        "rapid_same_epoch": cohort_summary(rapid),
-        "rapid_same_epoch_known_competition": cohort_summary(known_competition),
-        "rapid_same_epoch_by_competition": {
+        "context_epoch_transition_counts": dict(
+            Counter(row["context_epoch_transition"] for row in rows)
+        ),
+        "rapid_same_context": cohort_summary(rapid),
+        "rapid_same_epoch": cohort_summary(
+            [row for row in rapid if row["same_context_epoch"] is True]
+        ),
+        "rapid_same_context_known_competition": cohort_summary(known_competition),
+        "rapid_same_context_by_competition": {
             key: cohort_summary(value) for key, value in sorted(bands.items())
         },
-        "rapid_same_epoch_by_prompt_and_competition": {
+        "rapid_same_context_by_prompt_and_competition": {
             key: cohort_summary(value) for key, value in sorted(matched.items())
         },
         "native_completion_observed_through_ts_ms": completed_through,
@@ -202,7 +214,7 @@ def main():
         )
         arms[name] = {**result, "run": run["run"], "input_jsonl_prefixes": reader.prefixes}
     report = {
-        "schema_version": 1, "created_at": datetime.now(timezone.utc).isoformat(),
+        "schema_version": 2, "created_at": datetime.now(timezone.utc).isoformat(),
         "start_seconds": args.start_seconds, "end_seconds": args.end_seconds,
         "window_source": {
             "path": str(args.window_report), "bytes": len(raw),
@@ -222,6 +234,7 @@ def main():
             "Context competition counts distinct known workflow/invocation/context identities started after the immediately preceding observed generation completed and before this first-service observation.",
             "This is not physical-page LRU reuse distance, allocated HBM, a deduplicated working-set size, per-layer forward reuse or exposed restoration latency. Decode accesses, eviction and shared prefixes are unobserved.",
             "Same context/epoch does not establish the same native session, namespace or physical copy generation. Epoch changes are not automatically compaction.",
+            "Rapid continuations include all observed immediately preceding completions of the same logical context within 1000 ms of queue registration. Equal epochs are a separate diagnostic subset, never a condition for including a logical continuation.",
             "Unknown competing contexts are counted separately and excluded from known-competition subcohorts, not treated as zero. Unfinished predecessors remain unknown.",
             "Conditional Host-hit fractions across historical single runs are associations; requests are clustered within workflows. They do not establish cache-policy causality or performance gains.",
         ],
@@ -231,8 +244,8 @@ def main():
     print(json.dumps({
         "output": str(args.output),
         "arms": {name: {
-            "rapid_same_epoch": arm["rapid_same_epoch"],
-            "by_competition": arm["rapid_same_epoch_by_competition"],
+            "rapid_same_context": arm["rapid_same_context"],
+            "by_competition": arm["rapid_same_context_by_competition"],
         } for name, arm in arms.items()},
     }, indent=2))
 

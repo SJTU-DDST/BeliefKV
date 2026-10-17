@@ -1,0 +1,170 @@
+{
+  "at": "2026-10-16T20:20:30.451750-07:00",
+  "status": "actual_native_service_and_continuation_probe_verified",
+  "scheduler": {
+    "pid": 2048787,
+    "state": "R",
+    "ppid": 2048555,
+    "start_ticks": "637732486",
+    "argv": [
+      "sglang::scheduler"
+    ]
+  },
+  "driver": {
+    "pid": 2048545,
+    "state": "R",
+    "ppid": 2048213,
+    "start_ticks": "637731177",
+    "argv": [
+      "bash",
+      "/home/longhao/experiment/.worktrees/beliefkv-v1366-checkpoint-diagnostic-gpu-20261016/scripts/run_qwen35_native_regime_probe.sh"
+    ]
+  },
+  "first_actual_service": [
+    {
+      "event": "gpu_service_sample",
+      "ts_ms": 1792207218299.254,
+      "forward_iter": 3,
+      "sample_id": "native-service-000000001",
+      "phase": "prefill",
+      "batch_size": 1,
+      "cuda_graph_replayed": true,
+      "request_samples": [
+        {
+          "request_id": "beliefkv:01a147df-e3df-7423-896e-93de664696f9",
+          "workflow_id": "deepagents:autonomous:pydata__xarray-7229:5d945f3f7125",
+          "invocation_id": "deepagents:autonomous:pydata__xarray-7229:5d945f3f7125:root",
+          "context_id": "deepagents:autonomous:pydata__xarray-7229:5d945f3f7125:context:root",
+          "context_epoch": 0,
+          "phase": "prefill",
+          "sequence_tokens_before": 0,
+          "output_tokens_before": 0,
+          "token_delta": 4096,
+          "token_delta_semantics": "prefill_extend_input_len",
+          "prefill_geometry_source": "native_batch"
+        }
+      ],
+      "service_start_ts_ms": 1792207217826.6292,
+      "complete_ts_ms": 1792207218299.254,
+      "launch_monotonic_ms": 6377480927.207249,
+      "launch_timestamp_semantics": "scheduler.run_batch entry; not CUDA submission or kernel start",
+      "service_start_monotonic_ms": 6377480927.207249,
+      "complete_monotonic_ms": 6377481399.831983,
+      "monotonic_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec",
+      "service_elapsed_ms": 472.624734044075,
+      "timing_semantics_version": "gpu_service_interval_v1",
+      "timing_boundary": "scheduler/worker interval, not CUDA kernel time"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_checkpoint_diagnostic_online_poisson_156root_20261016_v79b/native/server/runtime_audit.jsonl",
+      "bytes": 10795,
+      "sha256": "a1b07512809fe97c82a4bac57553212f98df47c64b605518256d55fa83879719"
+    }
+  ],
+  "first_continuation_probe": {
+    "event": "generation_continuation_prefix_probe",
+    "ts_ms": 1792207223430.9734,
+    "workflow_id": "deepagents:autonomous:pydata__xarray-7229:5d945f3f7125",
+    "invocation_id": "deepagents-invocation:7bc220d442538a66",
+    "context_id": "deepagents-context:7bc220d442538a66",
+    "context_epoch": 1,
+    "request_id": "beliefkv:01a147df-fa5d-7232-8fce-ca3908981aaf",
+    "prior_request_id": "beliefkv:01a147df-f843-7192-9bea-c69a71cdd48d",
+    "prior_input_tokens": 5489,
+    "prior_generated_output_tokens": 76,
+    "current_input_tokens": 5721,
+    "common_prior_input_prefix_tokens": 5488,
+    "common_generated_output_prefix_tokens": 0,
+    "common_prior_transcript_prefix_tokens": 5488,
+    "checkpoint_path_observed": true,
+    "checkpoint_compatibility": [
+      {
+        "node_id": 30,
+        "creation_time": 57.0,
+        "prefix_tokens": 3584,
+        "role": "input_prefix",
+        "prefix_compatibility": "exact_prefix_compatible"
+      },
+      {
+        "node_id": 33,
+        "creation_time": 97.0,
+        "prefix_tokens": 5440,
+        "role": "input_prefix",
+        "prefix_compatibility": "exact_prefix_compatible"
+      }
+    ],
+    "semantics": "Exact token-prefix compatibility with the next observed same-session input. Not cache residency, forward consumption, physical-copy reuse or safe global discard permission; token mismatch does not identify its formatting cause."
+  },
+  "settings": {
+    "status": "ready",
+    "max_running_requests": 48,
+    "context_length": 131072,
+    "chunked_prefill_size": 4096,
+    "prefill_decode_interval": 0,
+    "enable_mixed_chunk": false,
+    "enable_prefill_delayer": false,
+    "min_free_slots_delay": null,
+    "enable_beliefkv_admission": false,
+    "mamba_max_states_per_path": -1,
+    "mamba_full_memory_ratio": 0.9,
+    "mamba_radix_cache_strategy": "extra_buffer"
+  },
+  "capacity": {
+    "device_full_bytes": 36843376640,
+    "device_full_tokens": 1798992,
+    "device_mamba_bytes": 33096007680,
+    "device_mamba_slots": 513,
+    "device_total_bytes": 69939384320,
+    "host_full_bytes": 160000020480,
+    "host_full_tokens": 7812501,
+    "host_mamba_bytes": 40050032640,
+    "host_mamba_slots": 622,
+    "host_total_bytes": 200050053120,
+    "pool_layout": "static_separate_full_mamba"
+  },
+  "placement": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1391_v79b_checkpoint_diagnostic_placement_20261016.json",
+    "sha256": "6de7a03865d43771b348f3b2d6b51d865d7f4ec65742b535b45b5c5b368c74e5"
+  },
+  "cpu_quality_state": {
+    "status": "running_official_cpu_grading",
+    "supervisor": {
+      "pid": 1121673,
+      "state": "R",
+      "ppid": 1,
+      "start_ticks": "634983330",
+      "argv": [
+        "/home/longhao/experiment/ops/quality_eval/venv/bin/python",
+        "/home/longhao/experiment/ops/quality_eval/run_v77_quality_cpu_20261016.py",
+        "--watch"
+      ]
+    },
+    "started_at": "2026-10-16T12:39:30.252016-07:00",
+    "registration": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1223_v77_quality_registration_20261016.json",
+      "sha256": "81cfb74281424d5be27de6af460e2c5e4621ec5e3ddec982887ae69802bb0b52"
+    },
+    "arms": {},
+    "gpu_work": false,
+    "grading_started": true,
+    "observed_at": "2026-10-16T20:20:26.864393-07:00",
+    "environment": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1224_v77_quality_environment_20261016.json",
+      "sha256": "c553c91b588ca448d38ef5dd7a036f274a08c35d84824413b900f3198eb3abc7"
+    },
+    "current_arm": "v77_native_close",
+    "worker": {
+      "pid": 1604042,
+      "state": "R",
+      "ppid": 1121673,
+      "start_ticks": "637354434",
+      "argv": [
+        "/home/longhao/experiment/ops/quality_eval/venv/bin/python",
+        "/home/longhao/experiment/ops/quality_eval/run_v77_quality_cpu_20261016.py",
+        "--worker",
+        "v77_native_close"
+      ]
+    }
+  },
+  "scope": "Diagnostic startup only; no performance or checkpoint policy acceptance."
+}
