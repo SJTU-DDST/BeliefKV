@@ -2,6 +2,27 @@
 
 Status date: 2026-10-16 (PDT).
 
+Next workload candidate: shorten the Poisson mean interval from15s to10s,
+rate0.1 root/s, retaining the156 distinct tasks, exact task order and seed21.
+The profile is configs/migration/qwen35_native_poisson_156root_mean10s_2026-10-16.json.
+V1446 binds the reference/profile and the generated arrival table; the existing
+client loader verifies all156 identities and its digest. No GPU launch or
+automatic continuation is registered. V79b keeps its original15s frozen input.
+
+First qualify this offered load with native and the same device/Host budgets,
+running48, context/output limits and task behavior. Measure useful FULL writes
+and later restores, cache eviction/recomputation, queue/service delay and time
+spent under migration pressure. Historical native has1.935TB D2H but only13.610GB
+H2D, including3.952GB FULL; increasing backup volume alone does not meet the need.
+Do not use old15s native as a matched10s performance control. No new predictor,
+PREPARE or policy is mixed into workload qualification.
+
+This is one development candidate, not an established optimum or a rate sweep.
+The final scheduled arrival moves from2477.769s to1651.846s; a finite compressed
+trace may have a longer drain fraction. If sustained pressure is still absent,
+extend the supply of distinct real tasks before further shrinking the interval.
+Screening4.62 records exact arrival counts and interpretation constraints.
+
 Current steering supersedes the hybrid-state candidate below. Withdraw
 actual-successor-prefix Host admission/retirement as the research direction;
 do not substitute another Mamba-only policy or restore the withdrawn

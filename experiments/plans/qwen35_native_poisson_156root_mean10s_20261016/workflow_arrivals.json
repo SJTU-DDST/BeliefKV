@@ -1,0 +1,645 @@
+{
+  "schema_version": 1,
+  "scope": "Next development workload candidate; prepared without launching GPU collection.",
+  "profile": {
+    "path": "/home/longhao/experiment/BeliefKV/configs/migration/qwen35_native_poisson_156root_mean10s_2026-10-16.json",
+    "sha256": "f24e151930aa07d84b85936c58165d75afc971259579a94032a719e7cd1fb7ae"
+  },
+  "reference_plan": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/ab_plan.json",
+    "sha256": "f5f64b2e20bf2f50bbb24583a9a2764c7c27007768f975e848696f33e3c741ea"
+  },
+  "root_count": 156,
+  "workload_manifest": "/home/longhao/experiment/BeliefKV/configs/migration/qwen35_native_predictive_replenished_108plus48_2026-10-09.json",
+  "workload_sha256": "3dffa3f8a10867d342fad8184b02364f91a9e4a92fac8b9e7d42c75fa45e82a0",
+  "workflow_arrival_mode": "poisson",
+  "workflow_arrival_rate_per_second": 0.1,
+  "workflow_arrival_seed": 21,
+  "arrival_schedule": [
+    {
+      "instance_id": "pydata__xarray-7229",
+      "offset_seconds": 1.8026305276775108
+    },
+    {
+      "instance_id": "pydata__xarray-7233",
+      "offset_seconds": 13.506944594111646
+    },
+    {
+      "instance_id": "pydata__xarray-7393",
+      "offset_seconds": 23.585522215360854
+    },
+    {
+      "instance_id": "pylint-dev__pylint-4551",
+      "offset_seconds": 30.107503220017954
+    },
+    {
+      "instance_id": "pylint-dev__pylint-4661",
+      "offset_seconds": 32.54114881686068
+    },
+    {
+      "instance_id": "pylint-dev__pylint-6386",
+      "offset_seconds": 48.27381717732948
+    },
+    {
+      "instance_id": "pylint-dev__pylint-7080",
+      "offset_seconds": 64.76883068471265
+    },
+    {
+      "instance_id": "pylint-dev__pylint-8898",
+      "offset_seconds": 71.9525829619816
+    },
+    {
+      "instance_id": "django__django-10554",
+      "offset_seconds": 78.98625834074562
+    },
+    {
+      "instance_id": "django__django-11400",
+      "offset_seconds": 81.67887100821329
+    },
+    {
+      "instance_id": "django__django-14631",
+      "offset_seconds": 81.71072800388339
+    },
+    {
+      "instance_id": "pallets__flask-5014",
+      "offset_seconds": 86.34771056954915
+    },
+    {
+      "instance_id": "psf__requests-1766",
+      "offset_seconds": 95.15121684604424
+    },
+    {
+      "instance_id": "psf__requests-1921",
+      "offset_seconds": 95.86902112558576
+    },
+    {
+      "instance_id": "psf__requests-2317",
+      "offset_seconds": 111.65573320796209
+    },
+    {
+      "instance_id": "psf__requests-6028",
+      "offset_seconds": 114.29867978637844
+    },
+    {
+      "instance_id": "pydata__xarray-3993",
+      "offset_seconds": 116.94738818762391
+    },
+    {
+      "instance_id": "pydata__xarray-6461",
+      "offset_seconds": 117.37996502845937
+    },
+    {
+      "instance_id": "pydata__xarray-6599",
+      "offset_seconds": 177.54249303537208
+    },
+    {
+      "instance_id": "pydata__xarray-6721",
+      "offset_seconds": 190.96288537646836
+    },
+    {
+      "instance_id": "pydata__xarray-6744",
+      "offset_seconds": 211.76046296599299
+    },
+    {
+      "instance_id": "pydata__xarray-6938",
+      "offset_seconds": 221.32872837357945
+    },
+    {
+      "instance_id": "pytest-dev__pytest-10051",
+      "offset_seconds": 221.6753680994913
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5262",
+      "offset_seconds": 225.66417661458007
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5787",
+      "offset_seconds": 232.5468142151066
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5840",
+      "offset_seconds": 233.77764514531242
+    },
+    {
+      "instance_id": "pytest-dev__pytest-6202",
+      "offset_seconds": 264.13571501972797
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7236",
+      "offset_seconds": 268.73144346840587
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7324",
+      "offset_seconds": 270.4134178831278
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7571",
+      "offset_seconds": 287.42398639320345
+    },
+    {
+      "instance_id": "pylint-dev__pylint-4970",
+      "offset_seconds": 288.7578958609026
+    },
+    {
+      "instance_id": "pylint-dev__pylint-6528",
+      "offset_seconds": 315.06099370963284
+    },
+    {
+      "instance_id": "pylint-dev__pylint-6903",
+      "offset_seconds": 321.0963913616333
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5631",
+      "offset_seconds": 329.12607600103416
+    },
+    {
+      "instance_id": "pydata__xarray-4356",
+      "offset_seconds": 333.32559269460097
+    },
+    {
+      "instance_id": "pydata__xarray-3305",
+      "offset_seconds": 339.9557235462205
+    },
+    {
+      "instance_id": "pydata__xarray-4966",
+      "offset_seconds": 342.02484309113066
+    },
+    {
+      "instance_id": "psf__requests-2931",
+      "offset_seconds": 342.40331102014045
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7205",
+      "offset_seconds": 362.49393096161646
+    },
+    {
+      "instance_id": "django__django-15368",
+      "offset_seconds": 365.1709755071683
+    },
+    {
+      "instance_id": "django__django-16877",
+      "offset_seconds": 380.3240484203736
+    },
+    {
+      "instance_id": "psf__requests-1724",
+      "offset_seconds": 382.66308848985466
+    },
+    {
+      "instance_id": "django__django-11141",
+      "offset_seconds": 417.3265285703136
+    },
+    {
+      "instance_id": "mwaskom__seaborn-3069",
+      "offset_seconds": 439.7664673857266
+    },
+    {
+      "instance_id": "pylint-dev__pylint-7277",
+      "offset_seconds": 453.8229702881498
+    },
+    {
+      "instance_id": "django__django-14500",
+      "offset_seconds": 468.2111763828918
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7521",
+      "offset_seconds": 476.9044298703188
+    },
+    {
+      "instance_id": "pytest-dev__pytest-8399",
+      "offset_seconds": 489.98878105125806
+    },
+    {
+      "instance_id": "pydata__xarray-3151",
+      "offset_seconds": 491.29531210718346
+    },
+    {
+      "instance_id": "django__django-13023",
+      "offset_seconds": 497.7641597047046
+    },
+    {
+      "instance_id": "django__django-12741",
+      "offset_seconds": 515.3098419818095
+    },
+    {
+      "instance_id": "django__django-14349",
+      "offset_seconds": 517.5547793970154
+    },
+    {
+      "instance_id": "pydata__xarray-2905",
+      "offset_seconds": 543.2160478623954
+    },
+    {
+      "instance_id": "django__django-15315",
+      "offset_seconds": 565.069377927309
+    },
+    {
+      "instance_id": "django__django-16938",
+      "offset_seconds": 570.3389566184633
+    },
+    {
+      "instance_id": "django__django-16255",
+      "offset_seconds": 574.8837331940367
+    },
+    {
+      "instance_id": "django__django-11734",
+      "offset_seconds": 580.8861617181987
+    },
+    {
+      "instance_id": "django__django-10097",
+      "offset_seconds": 585.7601451072148
+    },
+    {
+      "instance_id": "django__django-12754",
+      "offset_seconds": 638.4336176487494
+    },
+    {
+      "instance_id": "django__django-15103",
+      "offset_seconds": 643.3208883161068
+    },
+    {
+      "instance_id": "django__django-11820",
+      "offset_seconds": 643.5929114633816
+    },
+    {
+      "instance_id": "django__django-13964",
+      "offset_seconds": 644.5719346809371
+    },
+    {
+      "instance_id": "django__django-16667",
+      "offset_seconds": 657.2336997861433
+    },
+    {
+      "instance_id": "django__django-16502",
+      "offset_seconds": 706.6030048892454
+    },
+    {
+      "instance_id": "django__django-10880",
+      "offset_seconds": 713.4550086009203
+    },
+    {
+      "instance_id": "mwaskom__seaborn-3187",
+      "offset_seconds": 720.2186881351031
+    },
+    {
+      "instance_id": "psf__requests-1142",
+      "offset_seconds": 728.2133452039318
+    },
+    {
+      "instance_id": "pydata__xarray-3095",
+      "offset_seconds": 742.0035944720821
+    },
+    {
+      "instance_id": "pylint-dev__pylint-4604",
+      "offset_seconds": 744.5143064589699
+    },
+    {
+      "instance_id": "pytest-dev__pytest-10081",
+      "offset_seconds": 753.9022620057032
+    },
+    {
+      "instance_id": "django__django-10914",
+      "offset_seconds": 762.0325436894174
+    },
+    {
+      "instance_id": "psf__requests-5414",
+      "offset_seconds": 771.7776422278214
+    },
+    {
+      "instance_id": "pydata__xarray-3677",
+      "offset_seconds": 773.7704155082923
+    },
+    {
+      "instance_id": "pytest-dev__pytest-10356",
+      "offset_seconds": 775.6348179750922
+    },
+    {
+      "instance_id": "django__django-10973",
+      "offset_seconds": 779.9151046594925
+    },
+    {
+      "instance_id": "pydata__xarray-4075",
+      "offset_seconds": 806.0981513899316
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5809",
+      "offset_seconds": 810.3540145814052
+    },
+    {
+      "instance_id": "django__django-10999",
+      "offset_seconds": 819.448073777501
+    },
+    {
+      "instance_id": "pydata__xarray-4094",
+      "offset_seconds": 823.1097574735348
+    },
+    {
+      "instance_id": "pytest-dev__pytest-6197",
+      "offset_seconds": 824.1997981387481
+    },
+    {
+      "instance_id": "django__django-11066",
+      "offset_seconds": 824.8787751022093
+    },
+    {
+      "instance_id": "pydata__xarray-4629",
+      "offset_seconds": 841.6825219211344
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7432",
+      "offset_seconds": 856.6891905515063
+    },
+    {
+      "instance_id": "django__django-11087",
+      "offset_seconds": 861.3872359084644
+    },
+    {
+      "instance_id": "pydata__xarray-4687",
+      "offset_seconds": 872.8868746823865
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7490",
+      "offset_seconds": 884.1539613512637
+    },
+    {
+      "instance_id": "django__django-11095",
+      "offset_seconds": 907.0504165143151
+    },
+    {
+      "instance_id": "pydata__xarray-6992",
+      "offset_seconds": 938.8181913152589
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7982",
+      "offset_seconds": 944.0440473344268
+    },
+    {
+      "instance_id": "django__django-11099",
+      "offset_seconds": 989.2428101890603
+    },
+    {
+      "instance_id": "django__django-11119",
+      "offset_seconds": 1021.7955544291059
+    },
+    {
+      "instance_id": "django__django-11138",
+      "offset_seconds": 1030.7241971723556
+    },
+    {
+      "instance_id": "django__django-11149",
+      "offset_seconds": 1052.1945214462046
+    },
+    {
+      "instance_id": "django__django-11163",
+      "offset_seconds": 1058.9458625910527
+    },
+    {
+      "instance_id": "django__django-11179",
+      "offset_seconds": 1063.6548652552026
+    },
+    {
+      "instance_id": "django__django-11206",
+      "offset_seconds": 1066.4945256450274
+    },
+    {
+      "instance_id": "django__django-11211",
+      "offset_seconds": 1087.3809312553244
+    },
+    {
+      "instance_id": "django__django-11239",
+      "offset_seconds": 1089.151794898249
+    },
+    {
+      "instance_id": "django__django-11265",
+      "offset_seconds": 1089.8703554668682
+    },
+    {
+      "instance_id": "django__django-11276",
+      "offset_seconds": 1106.2323731852052
+    },
+    {
+      "instance_id": "django__django-11292",
+      "offset_seconds": 1121.1008873954065
+    },
+    {
+      "instance_id": "django__django-11299",
+      "offset_seconds": 1127.701356753107
+    },
+    {
+      "instance_id": "django__django-11333",
+      "offset_seconds": 1145.8413343786456
+    },
+    {
+      "instance_id": "django__django-11433",
+      "offset_seconds": 1146.37717383592
+    },
+    {
+      "instance_id": "django__django-11451",
+      "offset_seconds": 1149.3609189887104
+    },
+    {
+      "instance_id": "django__django-11477",
+      "offset_seconds": 1152.7840568571924
+    },
+    {
+      "instance_id": "django__django-11490",
+      "offset_seconds": 1158.2235960352468
+    },
+    {
+      "instance_id": "django__django-11532",
+      "offset_seconds": 1160.094481149893
+    },
+    {
+      "instance_id": "django__django-11133",
+      "offset_seconds": 1160.8142894319553
+    },
+    {
+      "instance_id": "django__django-11551",
+      "offset_seconds": 1164.9404312323238
+    },
+    {
+      "instance_id": "django__django-11555",
+      "offset_seconds": 1187.8811656271614
+    },
+    {
+      "instance_id": "django__django-11603",
+      "offset_seconds": 1228.8930817953692
+    },
+    {
+      "instance_id": "django__django-11728",
+      "offset_seconds": 1242.5912988216808
+    },
+    {
+      "instance_id": "django__django-11740",
+      "offset_seconds": 1249.1108367220752
+    },
+    {
+      "instance_id": "django__django-11749",
+      "offset_seconds": 1252.0172317739707
+    },
+    {
+      "instance_id": "django__django-11790",
+      "offset_seconds": 1283.929239761042
+    },
+    {
+      "instance_id": "django__django-11815",
+      "offset_seconds": 1291.3868702236462
+    },
+    {
+      "instance_id": "django__django-11848",
+      "offset_seconds": 1304.428798737307
+    },
+    {
+      "instance_id": "django__django-11880",
+      "offset_seconds": 1304.715874493847
+    },
+    {
+      "instance_id": "django__django-11885",
+      "offset_seconds": 1307.0996075861062
+    },
+    {
+      "instance_id": "django__django-11951",
+      "offset_seconds": 1325.3174940926983
+    },
+    {
+      "instance_id": "django__django-11964",
+      "offset_seconds": 1341.1756017869957
+    },
+    {
+      "instance_id": "django__django-11999",
+      "offset_seconds": 1362.5000427759503
+    },
+    {
+      "instance_id": "django__django-12039",
+      "offset_seconds": 1371.6969022155497
+    },
+    {
+      "instance_id": "django__django-12050",
+      "offset_seconds": 1377.2495983490203
+    },
+    {
+      "instance_id": "django__django-12125",
+      "offset_seconds": 1385.9517721273437
+    },
+    {
+      "instance_id": "django__django-12143",
+      "offset_seconds": 1404.8792046763142
+    },
+    {
+      "instance_id": "django__django-12155",
+      "offset_seconds": 1408.5605695207607
+    },
+    {
+      "instance_id": "django__django-12193",
+      "offset_seconds": 1416.203453059379
+    },
+    {
+      "instance_id": "django__django-12209",
+      "offset_seconds": 1419.4328406475136
+    },
+    {
+      "instance_id": "django__django-12262",
+      "offset_seconds": 1434.054050933299
+    },
+    {
+      "instance_id": "django__django-12273",
+      "offset_seconds": 1434.1569137026042
+    },
+    {
+      "instance_id": "django__django-12276",
+      "offset_seconds": 1445.7182282341707
+    },
+    {
+      "instance_id": "django__django-12304",
+      "offset_seconds": 1476.503811771049
+    },
+    {
+      "instance_id": "django__django-12308",
+      "offset_seconds": 1476.7416238220862
+    },
+    {
+      "instance_id": "django__django-12325",
+      "offset_seconds": 1485.7479272653975
+    },
+    {
+      "instance_id": "django__django-12406",
+      "offset_seconds": 1496.0722099524012
+    },
+    {
+      "instance_id": "django__django-12419",
+      "offset_seconds": 1515.1561815603645
+    },
+    {
+      "instance_id": "django__django-12663",
+      "offset_seconds": 1523.9350626907549
+    },
+    {
+      "instance_id": "django__django-12708",
+      "offset_seconds": 1526.9083036581198
+    },
+    {
+      "instance_id": "django__django-12713",
+      "offset_seconds": 1532.110437717186
+    },
+    {
+      "instance_id": "django__django-12774",
+      "offset_seconds": 1563.982497728602
+    },
+    {
+      "instance_id": "django__django-12858",
+      "offset_seconds": 1587.5853640835367
+    },
+    {
+      "instance_id": "django__django-12965",
+      "offset_seconds": 1589.01873177314
+    },
+    {
+      "instance_id": "django__django-13012",
+      "offset_seconds": 1590.015157701936
+    },
+    {
+      "instance_id": "django__django-13028",
+      "offset_seconds": 1591.0016422764766
+    },
+    {
+      "instance_id": "django__django-13033",
+      "offset_seconds": 1591.2580721992822
+    },
+    {
+      "instance_id": "django__django-13089",
+      "offset_seconds": 1597.1794315991976
+    },
+    {
+      "instance_id": "django__django-13109",
+      "offset_seconds": 1598.697269269578
+    },
+    {
+      "instance_id": "django__django-13112",
+      "offset_seconds": 1618.896638135847
+    },
+    {
+      "instance_id": "django__django-13121",
+      "offset_seconds": 1629.548121266292
+    },
+    {
+      "instance_id": "django__django-13128",
+      "offset_seconds": 1630.9009137940288
+    },
+    {
+      "instance_id": "django__django-13158",
+      "offset_seconds": 1638.6370836557005
+    },
+    {
+      "instance_id": "django__django-13195",
+      "offset_seconds": 1642.5568024173683
+    },
+    {
+      "instance_id": "django__django-13212",
+      "offset_seconds": 1649.3663557220755
+    },
+    {
+      "instance_id": "django__django-13279",
+      "offset_seconds": 1651.8459439636579
+    }
+  ],
+  "arrival_schedule_sha256": "a6790c8bec97b449b7e53c9297b3a390be83814db325a06c64b9096693d9b47e"
+}

@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "name": "qwen35_native_poisson_156root_mean10s_20261016",
+  "scope": "Next development workload candidate; prepared without launching GPU collection.",
+  "reference_plan": "experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/ab_plan.json",
+  "reference_plan_sha256": "f5f64b2e20bf2f50bbb24583a9a2764c7c27007768f975e848696f33e3c741ea",
+  "arrival_schedule_output": "experiments/plans/qwen35_native_poisson_156root_mean10s_20261016/workflow_arrivals.json",
+  "root_count": 156,
+  "workflow_arrival_mode": "poisson",
+  "workflow_arrival_mean_interval_seconds": 10.0,
+  "workflow_arrival_rate_per_second": 0.1,
+  "workflow_arrival_seed": 21,
+  "workflow_arrival_batch_size": 0,
+  "workflow_arrival_batch_interval_ms": 0,
+  "preserve_reference_task_order": true,
+  "first_qualification_arm": "native",
+  "reference_native_policy": {
+    "control": false,
+    "resident_first": false,
+    "final_stage_priority": false,
+    "prepare_host": false,
+    "predictive_h2d": false,
+    "execution_handoff": false
+  },
+  "server_running": 48,
+  "host_gb": 200,
+  "host_split": "80:20",
+  "context_tokens": 131072,
+  "max_completion_tokens": 8192,
+  "sandbox_command_timeout_s": 180,
+  "activation_wall_clock_seconds": 14400.0,
+  "qualification_metrics": [
+    "FULL D2H and subsequent demand H2D by time window",
+    "Resident working set, cache eviction and useful recomputation",
+    "Queued requests, first-service delay and active workflow count",
+    "GPU service, workflow outcomes, JCT and effective completion throughput"
+  ],
+  "interpretation": "Higher arrival rate is a workload selection variable, not a performance improvement. Historical 15-second native results are contextual references, not a matched control.",
+  "finite_trace_limit": "A fixed 156-root stream ends sooner at the higher rate; sustained pressure may require a longer supply of distinct tasks rather than further compressing arrivals."
+}

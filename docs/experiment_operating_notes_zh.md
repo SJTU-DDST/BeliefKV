@@ -4,6 +4,15 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+下一轮10秒Poisson候选与正在运行的15秒V79b分开。V1446保存原plan/profile
+哈希、新到达表及现有loader的156项验证；准备不是GPU启动或性能结果。
+实际新轮必须把生成表传给WORKFLOW_ARRIVAL_SCHEDULE，batch参数仍为0，
+rate0.1/seed21与计划一致；仅修改一个环境变量不能证明客户端用了新到达流。
+旧V77–V80 helper固定15秒的核对保留，不能热改或放宽旧登记去装载新负载。
+新负载先用同资源native确认有效FULL迁移、重算及排队，旧15秒native不能
+充当匹配对照。没有增加模型guard、输出上限或强制KV驱逐。
+固定156项压缩到达会缩短供给时段，不能仅据峰值或总迁移GB判断持续压力。
+
 研究候选撤回时同时检查未启动的自动队列。V80在21:53:57 PDT取消前核验
 waiting_for_complete_v79b、无driver、无子进程及PID/start_ticks一致，只向
 该等待监督发送SIGTERM，随后确认进程不存在。V1442保留取消前完整state、

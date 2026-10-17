@@ -2,6 +2,12 @@
 
 更新日期：2026-10-16（PDT）
 
+下一轮workload候选改为Poisson平均10秒/root（原15秒），156任务、顺序及
+seed21不变。配置为configs/migration/qwen35_native_poisson_156root_mean10s_2026-10-16.json，
+V1446已生成并用现有客户端加载全部156项到达表；尚未登记或启动新GPU。
+先以native确认有效FULL迁移和重算情况，旧15秒native仅作背景参考。
+有限任务流会更早结束到达，不保证高压持续更久；详见研究筛选4.62。
+
 当前研究调整：撤下“后继 token 前缀反馈的混合状态 Host 准入/回收”候选，
 不再以 Mamba checkpoint 为新主线。下一项研究筛选转向模型通用的迁移阻塞：
 一次续接的 KV 写回/腾空间，是否拖住其他已可执行请求；先量化正确配置 native
