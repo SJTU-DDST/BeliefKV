@@ -2,6 +2,24 @@
 
 Status date: 2026-10-16 (PDT).
 
+2026-10-16 V79 is now independently registered, still waiting, not GPU started.
+V1367/V1368 bind clean candidatec40d2f6, unchanged engine53020ce3, exact native
+tasks/arrivals/resources and257 CPU cases. V1369 binds supervisor1906740/
+start_ticks637518375; actual ps confirms nice0 and waiting_for_complete_v78b.
+V79 source/environment passes revalidation at19:45 PDT. V78b's three processes
+and original V77 grading worker remain live; no frozen sources or gates changed.
+
+V1377 retains all156 tasks at5400s: V78b143 completed/one incomplete, native140
+completed, runner-capped means1708.632/1613.809s. Native's fully observed runner
+mean is1666.324s, so the V78b final raw runner mean cannot outperform it. This is
+not a quality-matched metric or the result.duration mean; do not mix them.
+V1375 covers5400-6000s service with small weighted batches6.687/9.209 and only
+0.148/0GB H2D. The6000s task audit correctly refuses insufficient arrival/finish
+coverage; V1376 is unwritten. Keep5400s task evidence and continue full collection
+rather than stopping a slower experiment. Screening4.51/4.52 and V1378 preserve
+registration, the raw lower bound and their limits. Overall novelty, quality and
+performance acceptance remain open.
+
 2026-10-16 V79 full native diagnostic is CPU prepared, not yet GPU registered.
 V1374 passes257 cases, including the existing203 probe/auditor cases,39 driver
 cases and15 lifecycle-window cases. Earlier V1366/V1373 pass253/256 cases;

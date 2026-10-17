@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-16T19:42:00.656021-07:00",
+  "supervisor": {
+    "pid": 1906740,
+    "state": "R",
+    "ppid": 1906612,
+    "start_ticks": "637518375",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-v1366-checkpoint-diagnostic-gpu-20261016/scripts/start_v79_checkpoint_diagnostic_20261016.py",
+      "--watch"
+    ]
+  },
+  "registration": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1368_v79_checkpoint_diagnostic_registration_20261016.json",
+    "sha256": "7cb021b29db740a934c3a5d6fa19d1c8a7f7491088d09173970d88d302ff1382"
+  }
+}

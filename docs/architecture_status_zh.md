@@ -2,6 +2,19 @@
 
 更新日期：2026-10-16（PDT）。
 
+2026-10-16 19:42 PDT V79独立native诊断已登记：应用c40d2f6、完整原引擎
+53020ce3、257项CPU凭据由V1367/V1368绑定；新worktree保持干净。
+监督1906740/start_ticks637518375以nice0真实存活，状态waiting_for_complete_v78b，
+无V79 driver/GPU服务。19:45再次核验其来源/环境，V78b三进程与V77评分worker
+1604042仍存活。当前登记只开启路径/前缀观测，不是新缓存策略或性能证明。
+V1377全156项5400s时，V78b为143 completed/1 incomplete，native140 completed；
+runner截断逗留1708.632/1613.809s。native完整runner均值为1666.324s，故
+V78b最终该原始指标不可能反超，不混同result.duration均值1665.374s或质量
+匹配JCT。V1375的5400–6000s已进入小batch：V78b/native H2D0.148/0GB，
+加权batch6.687/9.209、decode687.300/778.060token/s。6000s任务窗口因真实
+finish日志覆盖不足而拒绝，V1376未写出；保留5400s可验证任务截面。
+详见研究筛选4.51/4.52；此前“尚未登记”保留为准备阶段记录。
+
 2026-10-16 V1364/V1365补齐V78b至4800s观察：全156项中132 completed、
 1 incomplete，native为131 completed；runner截断逗留1643.987/1533.602s，
 completed端点口径1663.087/1533.602s，仍无质量匹配优势。4200–4800s的

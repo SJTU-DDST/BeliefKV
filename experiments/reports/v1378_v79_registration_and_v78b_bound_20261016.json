@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-16T19:45:35-07:00",
+  "status": "v79_registered_waiting_and_v78b_raw_runner_negative_bound",
+  "v79": {
+    "candidate_commit": "c40d2f6072be7689c12bc92b5b8686abe350bb60",
+    "candidate_dirty": false,
+    "engine_actual_tree": "53020ce3efef3ed362e9af0db77147b39070f064",
+    "qualification": {
+      "path": "experiments/reports/v1367_v79_checkpoint_diagnostic_candidate_20261016.json",
+      "sha256": "e59dedff6aed8e5946a75a54071a7460f458c8a088b2685b95f9c0a9e0c5a0e4"
+    },
+    "registration": {
+      "path": "experiments/reports/v1368_v79_checkpoint_diagnostic_registration_20261016.json",
+      "sha256": "7cb021b29db740a934c3a5d6fa19d1c8a7f7491088d09173970d88d302ff1382"
+    },
+    "supervisor_receipt": {
+      "path": "experiments/reports/v1369_v79_checkpoint_diagnostic_supervisor_20261016.json",
+      "sha256": "3287ada6bd5ee658dbe9bad58ad0abe3497f0087534b1579f6b53cfab53d3958"
+    },
+    "supervisor_pid": 1906740,
+    "supervisor_start_ticks": "637518375",
+    "supervisor_confirmed_live": true,
+    "supervisor_nice": 0,
+    "observed_state": "waiting_for_complete_v78b",
+    "source_and_environment_verification": "passed",
+    "new_gpu_service_observed": false,
+    "passing_cpu_cases": 257,
+    "diagnostic_only": true
+  },
+  "v78b_bound": {
+    "candidate_cohort": {
+      "path": "experiments/reports/v1377_v78b_5400_completion_cohort_20261016.json",
+      "sha256": "2838fb162ae19022aabe09abb98fba431ce52107a918eec0ab6c4db3f1ff35ba"
+    },
+    "native_complete_cohort": {
+      "path": "experiments/reports/v1259_v76_completion_windows_7000s_20261016.json",
+      "sha256": "10bb279c91dbe5c794c99d928d97ed996f48b171c035e0fe8d74abe56597403a"
+    },
+    "planned_tasks": 156,
+    "candidate_horizon_seconds": 5400,
+    "candidate_raw_runner_mean_lower_bound_seconds": 1708.6321880355517,
+    "native_all_runner_finishes_observed": true,
+    "native_final_raw_runner_mean_seconds": 1666.3242609058627,
+    "candidate_cannot_outperform_native_on_this_raw_runner_mean": true,
+    "metric": "All planned tasks; runner workflow_finished endpoint minus scheduled arrival, capped only for unfinished tasks.",
+    "quality_matched_jct_claim": false
+  },
+  "coverage_refusal": {
+    "requested_task_horizon_seconds": 6000,
+    "following_observed_finish_offset_seconds": 5921.662487901747,
+    "error": "arrival/finish log has not covered the requested horizon",
+    "v1376_written": false,
+    "rules_relaxed_or_heartbeat_fabricated": false,
+    "verified_task_horizon_used_seconds": 5400
+  },
+  "existing_work": {
+    "v78b_supervisor_driver_scheduler_confirmed_live": [243510, 243802, 244015],
+    "v77_quality_worker_confirmed_live": 1604042,
+    "frozen_run_or_quality_gate_modified": false,
+    "experiment_stopped_for_being_slower": false
+  },
+  "limits": [
+    "Registration and a live wait supervisor do not establish actual GPU startup, captured diagnostic data or performance gain.",
+    "The monotone raw runner bound is not a result.duration mean, a quality-matched JCT result or a causal policy comparison.",
+    "Keep all incomplete, guard and ungraded task labels and all 156 planned tasks.",
+    "The full systems contribution, quality and performance goal remains unachieved."
+  ]
+}
