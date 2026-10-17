@@ -2,12 +2,35 @@
 
 Status date: 2026-10-16 (PDT).
 
+V81 launched at22:21:51 PDT after complete V79b collection and resource release.
+V1450/V1451 verify actual GPU service, all planned arrivals, matching physical
+pools and NUMA at22:24:43. Frozen app87ce506 and unchanged engine53020ce3 use
+one native10s-Poisson workload,200GB Host and the original device limits.
+Supervisor3592377/start_ticks638458271, driver3595930 and scheduler3596344
+are actually live at nice0. Preserve source, plan and helpers. V1447/V1448
+remain configuration/loader qualifications, not a new policy test suite.
+V1452 is still reserved for complete collection; startup is not workload or
+performance acceptance. V1455 binds source revalidation and live identities.
+
+V1453 adds complete3600-4200s and4200-4800s windows: V79b FULL H2D totals0.894GB
+while D2H totals404.086GB. Queue pressure falls sharply after the earlier
+restore spike. Different realized trajectories and observation overhead remain;
+this is not performance evidence for a new cache mechanism. Qualify persistent
+useful FULL recovery and native exposed stalls in V81 before implementation.
+V79b finished at22:21:43:156 completed,145 native-JCT eligible,11 guard-assisted
+completions including3 also missing semantic completion. Preserve exit1,
+every task and original eligibility; official quality is not yet scored.
+V1454 raw all-terminal mean1910.675s versus1665.374s native is not a matched
+quality result. Native H2D879.088/13.610GB and differing realized work do not
+prove an observation-overhead cause or a new policy benefit. Screening4.63
+records complete collection, phase evidence and remaining acceptance work.
+
 Next workload candidate: shorten the Poisson mean interval from15s to10s,
 rate0.1 root/s, retaining the156 distinct tasks, exact task order and seed21.
 The profile is configs/migration/qwen35_native_poisson_156root_mean10s_2026-10-16.json.
 V1446 binds the reference/profile and the generated arrival table; the existing
-client loader verifies all156 identities and its digest. No GPU launch or
-automatic continuation is registered. V79b keeps its original15s frozen input.
+client loader verifies all156 identities and its digest. That candidate now
+runs as V81; V79b retained its original15s input through complete collection.
 
 First qualify this offered load with native and the same device/Host budgets,
 running48, context/output limits and task behavior. Measure useful FULL writes

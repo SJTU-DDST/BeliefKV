@@ -4,7 +4,17 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
-下一轮10秒Poisson候选与正在运行的15秒V79b分开。V1446保存原plan/profile
+V81于22:21:51 PDT启动，22:24:43通过V1450/V1451实际首服、到达表、同池及
+NUMA核验。冻结应用87ce506/引擎53020ce3及V1448绑定的helper、计划、到达表
+保留不改。监督3592377/start_ticks638458271、driver3595930、scheduler3596344
+均nice0；V1449是历史等待凭据，不能代替后来的实际启动。接续已核验原V79b
+完整收尾、原进程退出和资源释放，V1455再次绑定来源及新轮真实进程。
+变更到达率没有新增agent门禁或策略测试；准备验证只覆盖来源、配置和loader。
+此轮保留完整Host200GB，显式固定同一FULL/Mamba设备容量，关闭额外前缀诊断。
+原native未显式传容量参数时server_info可为null，实际池容量以census为准；
+新轮显式传参须同时核对参数及物理census，不由参数单独认定容量相等。
+
+V81的10秒Poisson负载与已完成的15秒V79b分开。V1446保存原plan/profile
 哈希、新到达表及现有loader的156项验证；准备不是GPU启动或性能结果。
 实际新轮必须把生成表传给WORKFLOW_ARRIVAL_SCHEDULE，batch参数仍为0，
 rate0.1/seed21与计划一致；仅修改一个环境变量不能证明客户端用了新到达流。
@@ -12,6 +22,9 @@ rate0.1/seed21与计划一致；仅修改一个环境变量不能证明客户端
 新负载先用同资源native确认有效FULL迁移、重算及排队，旧15秒native不能
 充当匹配对照。没有增加模型guard、输出上限或强制KV驱逐。
 固定156项压缩到达会缩短供给时段，不能仅据峰值或总迁移GB判断持续压力。
+V79b虽156 completed，仍有11项guard_intervened_completion，其中3项另缺
+semantic completion；原生JCT合格145项、原exit1及分母156均保留。
+官方任务正确率尚未评分，不把全completed或全终态均值改称质量匹配结果。
 
 研究候选撤回时同时检查未启动的自动队列。V80在21:53:57 PDT取消前核验
 waiting_for_complete_v79b、无driver、无子进程及PID/start_ticks一致，只向
