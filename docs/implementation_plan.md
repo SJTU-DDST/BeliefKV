@@ -2,6 +2,38 @@
 
 Status date: 2026-10-16 (PDT).
 
+2026-10-16 latest V78b evidence takes priority over old V77 snapshots. V1353's
+2400-3000s native-order/V76/native H2D is275.811/637.786/7.190GB despite
+disabled extra ordering and prefetch. Full48, context-matched graph cohorts
+remain close; short-prefill selection CPU is concentrated in positive Host
+requests. V1357 has15 positive samples averaging94.150ms, versus4.551ms for77
+known-zero samples. This identifies an association, not exclusive function cost.
+
+The new read-only lifecycle auditor requires complete runtime-state coverage,
+retains exact event windows separately from preceding snapshot deltas, and passes
+15 CPU cases. V1359 records no new waiting demotion in this interval on either
+arm, with prior cumulative counts457/516 preserved. Do not rewrite a supposed
+contemporaneous demotion bug without actual victim evidence. Earlier actions,
+ordinary eviction, reference release and terminal reclamation remain possible
+contributors; observed accounting does not establish physical-copy generations.
+
+At4200s V1361 keeps all156 due tasks:120/115/124 recorded completions, with
+1542.452/1704.592/1426.191s capped runner means. The one V78b incomplete,
+pylint-7080, has final finish_reason=length and an unexpired workflow deadline;
+retain the outcome, output8192 and all task denominators. Frozen V78b source/env
+and live experiment/grading processes pass revalidation at19:13 PDT.
+V1360's complete3600-4200s window then has only2.246/5.197/1.108GB H2D.
+Native-order decode1311.798token/s exceeds native1212.677 with a larger
+weighted batch43.413 versus38.553; this does not establish workflow gain or
+permit ignoring the earlier restore burst.
+
+Continue isolating useful native work and compatibility before selecting a new
+policy. Existing path caps, Marconi, EfficientAgent and suffix replay must remain
+strong comparators; do not present generic sparse checkpoint admission, common
+write-back engineering, or repairing our own overhead as the paper contribution.
+Screening4.45-4.47 records current necessary conditions and falsified explanations.
+Full quality-matched performance and novelty requirements remain unachieved.
+
 2026-10-16 main integration adds exact generated-prefix compatibility to the
 default-off checkpoint-path diagnostic. Compare the prior actual input plus
 generated output with the next same-scope input, then classify observed

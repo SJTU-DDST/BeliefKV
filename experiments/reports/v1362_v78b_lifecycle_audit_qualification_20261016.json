@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-16T19:13:18-07:00",
+  "status": "cpu_qualified_read_only_lifecycle_audit",
+  "base_main_commit": "f88ddab4db4cf9d7b33cfca786766973c8e72fca",
+  "source_sha256": {
+    "scripts/audit_runtime_lifecycle_window.py": "75420c66a4a19ce98f952903a0da1ce73d05a5314fba85b235d6f84d0b492239",
+    "tests/test_runtime_lifecycle_window.py": "edae7b5ba95058b0b933f0e98b5c645ad74107f2374a1a973dcc2c78214c0bc4",
+    "scripts/audit_native_system_costs.py": "a9262996530573c11cc2bbdaf6184a87443b30e02fbd8f983c74e5bbbb862952",
+    "scripts/audit_sealed_wait_prefetch.py": "1bb8064854266d012423ce3bf4eea5b3aa1865a1fcc59308642ee645e7361db3"
+  },
+  "cpu": {
+    "path": "experiments/reports/v1358_runtime_lifecycle_window_cpu_20261016.xml",
+    "sha256": "4bcee14b85c7eb2d1c8db0d237bca2f110cc620e605461629b092215ba27bc56",
+    "cases": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "lifecycle_report": {
+    "path": "experiments/reports/v1359_v78b_2400_3000_runtime_lifecycle_20261016.json",
+    "sha256": "20e762248226f1df3a3699b4f348eb782d1b356427e7d8f3e53faa6f913139a4",
+    "native_order_window_waiting_demotions": 0,
+    "reactive_window_waiting_demotions": 0,
+    "native_order_prior_cumulative_waiting_demotions": 457,
+    "reactive_prior_cumulative_waiting_demotions": 516
+  },
+  "incomplete_evidence": {
+    "instance_id": "pylint-dev__pylint-7080",
+    "result_path": "experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/pylint-dev__pylint-7080/result.json",
+    "result_sha256": "7f441208fbaa66708594fa39a4706285666c0993bfe7917fe558d3c413346fee",
+    "events_path": "experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78b_native_order/reactive/client_156/workflows/pylint-dev__pylint-7080/runtime_events.deepagents.jsonl",
+    "events_complete_prefix_bytes": 2224615,
+    "events_complete_prefix_sha256": "7f0b87d77839aa8dba504b66885a590915a456440247424fc2a5f2384bd8fe6f",
+    "last_root_request_id": "beliefkv:01a14776-f396-7551-a473-0bc85e345a03",
+    "last_root_finish_reason": "length",
+    "last_root_output_chars": 32216,
+    "workflow_deadline_expired": false,
+    "patch_chars": 0,
+    "original_outcome": "incomplete",
+    "output_limit_increased": false
+  },
+  "live_revalidation": {
+    "v78b_source_and_environment_verification": "passed",
+    "supervisor_pid": 243510,
+    "driver_pid": 243802,
+    "scheduler_pid": 244015,
+    "all_experiment_processes_observed_live": true,
+    "quality_supervisor_pid": 3806721,
+    "quality_worker_pid": 231698,
+    "quality_worker_arm": "v75_predictive",
+    "v77_quality_waiter_pid": 1121673,
+    "quality_processes_observed_live": true
+  },
+  "scope": {
+    "production_policy_changed": false,
+    "frozen_run_changed": false,
+    "new_gpu_experiment_registered": false,
+    "quality_gate_changed": false,
+    "quality_matched_performance_goal_achieved": false
+  },
+  "limits": [
+    "No new waiting demotion in this window does not exclude earlier actions, indirect effects, ordinary eviction or terminal reclamation.",
+    "Host request accounting and logical checkpoint joins do not establish identical physical pages or avoidable restoration.",
+    "Selection-thread CPU associations and worker intervals are not removable JCT or pure CUDA kernel timings.",
+    "Keep all failed, incomplete, guard and ungraded outcomes in their original denominators."
+  ]
+}

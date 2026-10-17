@@ -4,6 +4,17 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+2026-10-16 生命周期窗口审计须验证runtime/client时钟和完整服务窗口，再用
+admission_runtime_state覆盖起止边界；事件按半开精确时间窗计数，累计计数则
+按边界前最近快照求差，两种区间不可混用。无文件、缺失边界和非法字段必须
+拒绝，不能填0。Counter已发出的字典未包含某键时按其生产语义取0，负增量
+拒绝作为有效窗口。V1358的15项CPU检查覆盖这些边界和异步写入乱序。
+V1359的窗口内0次新增卸载不否定此前V78b/V76已累计457/516次，也不能排除
+普通驱逐、终态回收或间接影响。定向卸载计数不是所有缓存迁移的总量。
+V78b pylint-7080的incomplete保持原标签：最终llm_result为length、无语义
+完成且空patch，deadline.expired=false。不得增大输出上限、改标成功或从
+4200s的156项任务分母排除。历史单轮时点比较仍非质量匹配或因果收益。
+
 2026-10-16 主线整合后的前缀诊断仍由BELIEFKV_CHECKPOINT_PATH_SHADOW显式开启，
 默认0。只比较同workflow/context/namespace/session/generation的真实输入；
 epoch倒退或历史缺失时保持未知。生成token仅在内存有界历史中保存，不写入
