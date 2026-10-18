@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 from collections import Counter
 import cProfile
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import datetime
 import hashlib
 import json
@@ -252,6 +252,103 @@ def measure_selection(baseline, *, depth, remaining_ms, samples):
             runtime.close()
 
 
+def measure_prefill_check(baseline, *, depth, matching, ready, legacy, samples):
+    variants = {
+        name: dispatch_fixture(
+            cls, source="join_ticket", depth=max(4, depth), native_budget=True,
+        )
+        for name, cls in (("baseline", baseline), ("candidate", NativeAdmissionRuntime))
+    }
+    callbacks, outputs, before, native_checks = {}, {}, {}, {}
+    try:
+        for name, (runtime, key, cache, _, actions, _, _, dispatch, now) in variants.items():
+            if depth:
+                with patch("time.monotonic", lambda: now):
+                    dispatch()
+                if runtime.physical_ledger.pending_count != depth:
+                    raise AssertionError("prefill check needs actual pending reservations")
+            if legacy:
+                key = replace(key, session_id=None, session_generation=None)
+                expectations = [
+                    runtime.physical_ledger.pending_expectation(command)
+                    for command in runtime._prefetch_steps
+                ]
+                runtime.physical_ledger = type(runtime.physical_ledger)()
+                for expected in expectations:
+                    step, source, started = runtime._prefetch_steps[expected.command_id]
+                    runtime._prefetch_steps[expected.command_id] = (
+                        replace(step, key=key), source, started,
+                    )
+                    runtime.physical_ledger.register(replace(
+                        expected, session_id=None, session_generation=None,
+                    ))
+            if not matching:
+                key = replace(key, context_id="unrelated", session_id="unrelated")
+            runtime.visible[key.request_id] = key
+            request = NS(
+                rid=key.request_id,
+                beliefkv_metadata={
+                    "root_workflow_id": key.root_workflow_id,
+                    "invocation_id": key.invocation_id,
+                    "context_id": key.context_id, "context_epoch": key.context_epoch,
+                },
+                cache_request_handle=NS(attempt_id=key.attempt_id),
+                session_id=key.session_id, session_generation=key.session_generation,
+            )
+            checked = {"calls": 0, "nodes": ()}
+
+            def can_admit(commands, *, runtime=runtime, checked=checked):
+                checked["calls"] += 1
+                checked["nodes"] = tuple(
+                    runtime._prefetch_steps[command][0].node_id for command in commands
+                )
+                return ready
+
+            cache.beliefkv_prefetch_can_admit = can_admit
+            native_checks[name] = checked
+            callbacks[name] = lambda runtime=runtime, request=request: (
+                runtime.defer_prefill_for_prefetch(request)
+            )
+            before[name] = state_signature(runtime, actions)
+            outputs[name] = callbacks[name]()
+        if (
+            outputs["baseline"] != outputs["candidate"]
+            or outputs["candidate"] != bool(depth and matching and not ready)
+            or before["baseline"] != before["candidate"]
+        ):
+            raise AssertionError("prefill dependencies or physical state changed")
+        costs = {name: [] for name in variants}
+        calls = 100
+        for sample in range(samples + 10):
+            order = list(variants)
+            if sample % 2:
+                order.reverse()
+            for name in order:
+                started = time.thread_time_ns()
+                for _ in range(calls):
+                    callbacks[name]()
+                elapsed = (time.thread_time_ns() - started) / calls / 1000.
+                if sample >= 10:
+                    costs[name].append(elapsed)
+        if native_checks["baseline"] != native_checks["candidate"]:
+            raise AssertionError("native readiness checks changed targets or frequency")
+        for name, (runtime, _, _, _, actions, *_) in variants.items():
+            if state_signature(runtime, actions) != before[name]:
+                raise AssertionError("prefill check changed pending physical reservations")
+        return {
+            "case": "prefill_restore_dependency_check",
+            "pending_commands": depth, "matching_context": matching,
+            "native_state_ready": ready, "legacy_session": legacy,
+            "deferred": outputs["candidate"], "calls_per_sample": calls,
+            "costs": {name: distribution(values) for name, values in costs.items()},
+            "native_checks": native_checks["candidate"],
+            "native_checks_and_pending_physical_state_equal": True,
+        }
+    finally:
+        for runtime, *_ in variants.values():
+            runtime.close()
+
+
 def measure(baseline, *, source, depth, diagnostics, native_budget, samples):
     variants = {
         name: dispatch_fixture(
@@ -322,12 +419,15 @@ def main():
     parser.add_argument("--baseline", default="7f1509e")
     parser.add_argument("--samples", type=int, default=31)
     parser.add_argument("--include-selection", action="store_true")
+    parser.add_argument("--include-prefill-checks", action="store_true")
+    parser.add_argument("--prefill-checks-only", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.samples < 1 or args.output.exists():
         parser.error("use positive samples and a fresh output path")
     paths = (
         "beliefkv/runtime/sglang_v0520_runtime.py",
+        "beliefkv/runtime/sglang_v0520_admission.py",
         "beliefkv/runtime/sglang_v0520_physical.py",
         "beliefkv/runtime/sglang_v0520_observer.py",
         "scripts/benchmark_wait_prefetch_dispatch_cpu.py",
@@ -335,7 +435,7 @@ def main():
     )
     digests = {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in paths}
     baseline, baseline_sources = baseline_runtime(args.baseline)
-    cases = [
+    cases = [] if args.prefill_checks_only else [
         measure(
             baseline, source=source, depth=depth, diagnostics=diagnostics,
             native_budget=native_budget, samples=args.samples,
@@ -348,6 +448,19 @@ def main():
             baseline, depth=depth, remaining_ms=remaining, samples=args.samples,
         ) for depth in (4, 16, 64) for remaining in (500., 1500.)
     ] if args.include_selection else []
+    prefill_cases = [
+        measure_prefill_check(
+            baseline, depth=depth, matching=matching, ready=ready,
+            legacy=legacy, samples=args.samples,
+        )
+        for depth, matching, ready, legacy in (
+            (0, False, True, False),
+            (4, False, False, False), (64, False, False, False),
+            (4, True, True, False), (4, True, False, False),
+            (64, True, True, False), (64, True, False, False),
+            (4, True, True, True), (4, True, False, True),
+        )
+    ] if args.include_prefill_checks or args.prefill_checks_only else []
     if any(hashlib.sha256((ROOT / path).read_bytes()).hexdigest() != digest
            for path, digest in digests.items()):
         raise RuntimeError("CPU benchmark sources changed during measurement")
@@ -358,6 +471,7 @@ def main():
         "head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
         "candidate_source_sha256": digests, "samples": args.samples, "warmup_samples": 10,
         "cases": cases, "selection_cases": selection_cases,
+        "prefill_check_cases": prefill_cases,
         "limitations": [
             "The CPU native enqueue uses scalar index stand-ins, not the real native allocator or controller.",
             "Plans have real positive Host-only prefixes and causal identities in both sources.",
@@ -378,7 +492,7 @@ def main():
             "candidate_p50_us": case["costs"]["candidate"]["p50_us"],
         }
         for case in cases
-    ] + selection_cases, indent=2), flush=True)
+    ] + selection_cases + prefill_cases, indent=2), flush=True)
 
 
 if __name__ == "__main__":

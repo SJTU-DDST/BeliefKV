@@ -2,6 +2,17 @@
 
 更新日期：2026-10-18（PDT）。
 
+**短 prefill 前的无关恢复检查降本，仅 main。**没有在途预取、handoff 或
+admission-prefetch 时直接返回；有在途预取时，先用现有事务 owner 索引
+排除无关 context/session/generation，再检查目标节点。请求身份仍逐字段
+复核，未变化时复用 visible key；无完整 session 身份的旧请求保留原遍历。
+目标请求的 Mamba 就绪、FULL 原生流水线、跨提交 epoch 和失效事务语义不变。
+V1819 的 1038 项相关 CPU 检查通过。V1818 对照 2ed2220、41 次交错样本：
+无在途动作的 P50 为 2.771→0.217us，64 个无关节点为 6.403→1.495us；
+9 组场景的原生就绪回调和在途物理状态一致。这是微秒级局部改善，不能
+解释毫秒级短 prefill 差距或证明 JCT 收益。冻结 V82b 和 b698a34 候选均
+不包含本次修改；未来冷启动须重新冻结最新 main 并验证。
+
 **时间线策略标注修正。**`native_v0520` 是两侧共用的遥测格式，原导出器
 误将现代 predictive 图表也注明为 native baseline。现改为共用格式说明；
 V82b 原导出保留，校正副本为 `timelines/predictive_h2d.qualified.html`。

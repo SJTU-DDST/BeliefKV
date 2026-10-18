@@ -7,6 +7,14 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 后续开发固定在主目录 `/home/longhao/experiment/BeliefKV` 的 `main` 分支。
 历史实验 worktree 保留其冻结来源；新代码修改、验证与提交在主目录进行。
 
+**prefill 恢复依赖的快速返回。**仅在没有在途步骤、handoff 和 admission
+预取时跳过身份解析；其余请求继续复核身份。完整 session 请求可用现有
+事务 owner 索引排除无关节点；无 session 的旧路径仍遍历，目标 Mamba
+就绪及 FULL 流水线回调不能省略。V1819 的 1038 项相关 CPU 检查通过，
+V1818 的 9 组基准保持回调目标/次数和在途物理状态相同。局部改善是
+微秒量级，不外推短 prefill 的毫秒差距或吞吐。V82b 和旧 b698a34 候选
+仍未部署此修改，不能把 main 的检查回填为运行中版本的 GPU 验收。
+
 **遥测格式不是策略身份。**不能因时间线是 native_v0520 格式就称其为
 native baseline；predictive 也使用这套服务/HiCache 记录。V1814/V1816
 修正文案并核对除 diagnostic_note 外全部载荷相同，保留原导出及独立

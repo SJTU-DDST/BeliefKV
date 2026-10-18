@@ -1,3 +1,4 @@
+from dataclasses import replace
 from types import SimpleNamespace as NS
 import time
 from unittest.mock import Mock, patch
@@ -11,7 +12,8 @@ from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from beliefkv.runtime.sglang_v0520_runtime import _ExecutionHandoffTicket
 from beliefkv.runtime.sglang_v0520_runtime import _PrefetchServiceLease
 from beliefkv.runtime.sglang_v0520_physical import (
-    PrefetchLoadStep, PhysicalActionCompleted, PhysicalReceiptError,
+    PrefetchLoadStep, PhysicalActionCompleted, PhysicalActionExpectation,
+    PhysicalChildExpectation, PhysicalReceiptError,
 )
 from beliefkv.runtime.sglang_v0520_observer import (
     StaticPoolHeadroomObservation, UnifiedNodeSummary,
@@ -1160,20 +1162,98 @@ def test_handoff_burst_reserves_each_extent_and_uses_native_pipeline(monkeypatch
     assert len(runtime._prefetch_first_services) == 2
 
 
+def _register_pending_join_prefetch(runtime, key):
+    runtime._prefetch_steps["join"] = (
+        PrefetchLoadStep(key, 1, 2, 1, 2), "join_ticket", 0.,
+    )
+    runtime.physical_ledger.register(PhysicalActionExpectation(
+        "join", "PREFETCH_GPU", key.context_id, key.context_epoch,
+        (PhysicalChildExpectation(1, (1,), (("kv", 10), ("mamba", 20)), 30),),
+        (("kv", 10), ("mamba", 20)),
+        session_id=key.session_id, session_generation=key.session_generation,
+    ))
+
+
 def test_join_prefetch_checks_state_before_cow_across_submit_epoch(monkeypatch):
     runtime, (cold, _, _), cache = runtime_with_requests(monkeypatch)
     key = runtime.visible["cold"]
-    step = PrefetchLoadStep(key, 1, 2, 1, 2)
-    runtime._prefetch_steps["join"] = (step, "join_ticket", 0.)
+    _register_pending_join_prefetch(runtime, key)
     cache.beliefkv_prefetch_can_admit = Mock(return_value=False)
-    with patch.object(runtime.physical_ledger, "is_pending", return_value=True):
-        cold.beliefkv_metadata["context_epoch"] += 1
-        assert runtime.defer_prefill_for_prefetch(cold)
-        cache.beliefkv_prefetch_can_admit.return_value = True
-        assert not runtime.defer_prefill_for_prefetch(cold)
-        cold.session_generation += 1
-        assert not runtime.defer_prefill_for_prefetch(cold)
+    cold.beliefkv_metadata["context_epoch"] += 1
+    assert runtime.defer_prefill_for_prefetch(cold)
+    cache.beliefkv_prefetch_can_admit.return_value = True
+    assert not runtime.defer_prefill_for_prefetch(cold)
+    cold.session_generation += 1
+    assert not runtime.defer_prefill_for_prefetch(cold)
     assert cache.beliefkv_prefetch_can_admit.call_count == 2
+
+
+def test_prefill_without_restores_or_admission_does_not_parse_identity(monkeypatch):
+    runtime, (cold, _, _), _ = runtime_with_requests(monkeypatch)
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime._request_key",
+        side_effect=AssertionError("no restore dependency needs an identity"),
+    ):
+        assert not runtime.defer_prefill_for_prefetch(cold)
+
+
+def test_prefill_skips_unrelated_context_restore_nodes(monkeypatch):
+    runtime, (cold, warm, _), cache = runtime_with_requests(monkeypatch)
+    _register_pending_join_prefetch(runtime, runtime.visible["cold"])
+
+    class UnvisitedSteps(dict):
+        def items(self):
+            raise AssertionError("unrelated pending nodes should not be scanned")
+
+    runtime._prefetch_steps = UnvisitedSteps(runtime._prefetch_steps)
+    cache.beliefkv_prefetch_can_admit = Mock(return_value=False)
+    assert not runtime.defer_prefill_for_prefetch(warm)
+    cache.beliefkv_prefetch_can_admit.assert_not_called()
+    assert runtime.physical_ledger.pending_count == 1
+
+
+@pytest.mark.parametrize("field,value", (
+    ("root_workflow_id", "other-wf"),
+    ("invocation_id", "other-invocation"),
+    ("context_id", "other-context"),
+    ("context_epoch", 2),
+    ("session_id", "other-session"),
+    ("session_generation", 2),
+))
+def test_prefill_rechecks_mutated_request_identity(monkeypatch, field, value):
+    runtime, (cold, _, _), cache = runtime_with_requests(monkeypatch)
+    _register_pending_join_prefetch(runtime, runtime.visible["cold"])
+    cache.beliefkv_prefetch_can_admit = Mock(return_value=False)
+    if field.startswith("session_"):
+        setattr(cold, field, value)
+    else:
+        cold.beliefkv_metadata[field] = value
+    assert not runtime.defer_prefill_for_prefetch(cold)
+    cache.beliefkv_prefetch_can_admit.assert_not_called()
+    assert runtime.physical_ledger.pending_count == 1
+
+
+def test_prefill_keeps_legacy_unindexed_state_dependency(monkeypatch):
+    runtime, (cold, _, _), cache = runtime_with_requests(monkeypatch)
+    key = replace(runtime.visible["cold"], session_id=None, session_generation=None)
+    cold.session_id = cold.session_generation = None
+    _register_pending_join_prefetch(runtime, key)
+    assert not runtime.physical_ledger.pending_h2d_contexts
+    cache.beliefkv_prefetch_can_admit = Mock(return_value=False)
+    assert runtime.defer_prefill_for_prefetch(cold)
+    cache.beliefkv_prefetch_can_admit.return_value = True
+    assert not runtime.defer_prefill_for_prefetch(cold)
+    assert cache.beliefkv_prefetch_can_admit.call_count == 2
+
+
+def test_prefill_does_not_wait_for_cancelled_restore(monkeypatch):
+    runtime, (cold, _, _), cache = runtime_with_requests(monkeypatch)
+    _register_pending_join_prefetch(runtime, runtime.visible["cold"])
+    runtime.physical_ledger.cancel_unsubmitted("join")
+    cache.beliefkv_prefetch_can_admit = Mock(return_value=False)
+    assert not runtime.defer_prefill_for_prefetch(cold)
+    cache.beliefkv_prefetch_can_admit.assert_not_called()
+    assert not runtime.physical_ledger.pending_h2d_contexts
 
 
 def test_service_before_software_ack_does_not_acquire_a_late_residency_lock(monkeypatch):

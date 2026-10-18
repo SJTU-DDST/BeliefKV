@@ -8219,19 +8219,30 @@ class NativeAdmissionRuntime:
         """
         if self.physical_disabled:
             return False
-        key = _request_key(req)
+        if (
+            not self._prefetch_steps and self._execution_handoff is None
+            and not self.enable_admission_prefetch
+        ):
+            return False
+        key = _request_key(req, known_keys=self.visible)
         if key is None:
             return False
-        pending_commands = tuple(
-            command for command, (step, source, _) in self._prefetch_steps.items()
-            if step.key.context_id == key.context_id
-            and step.key.invocation_id == key.invocation_id
-            and step.key.root_workflow_id == key.root_workflow_id
-            and (step.key.session_id, step.key.session_generation)
-            == (key.session_id, key.session_generation)
-            and key.context_epoch in (step.key.context_epoch, step.key.context_epoch + 1)
-            and self.physical_ledger.is_pending(command)
-        )
+        pending_commands = ()
+        if self._prefetch_steps and (
+            key.session_id is None or key.session_generation is None
+            or (key.context_id, key.session_id, key.session_generation)
+            in self.physical_ledger.pending_h2d_contexts
+        ):
+            pending_commands = tuple(
+                command for command, (step, source, _) in self._prefetch_steps.items()
+                if step.key.context_id == key.context_id
+                and step.key.invocation_id == key.invocation_id
+                and step.key.root_workflow_id == key.root_workflow_id
+                and (step.key.session_id, step.key.session_generation)
+                == (key.session_id, key.session_generation)
+                and key.context_epoch in (step.key.context_epoch, step.key.context_epoch + 1)
+                and self.physical_ledger.is_pending(command)
+            )
         if pending_commands:
             can_admit = getattr(self._native_cache, "beliefkv_prefetch_can_admit", None)
             if callable(can_admit):

@@ -5,6 +5,16 @@ Status date: 2026-10-18 (PDT).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Main additionally skips prefill dependency parsing when no restore/admission
+work exists, and uses the existing transaction owner index before scanning
+unrelated steps. Live request fields, legacy sessions, target state readiness
+and the native FULL pipeline remain checked. V1819 passes 1038 related CPU
+tests; V1818 preserves callback targets/counts and physical state in nine cases.
+The empty-path P50 is 2.771 to 0.217us and the unrelated-64-node path is 6.403
+to 1.495us against 2ed2220. This microsecond saving is not an explanation for
+the measured millisecond short-prefill gap. It is outside both frozen V82b and
+the b698a34 candidate below; refreeze current main before any later cold run.
+
 The run-only candidate `beliefkv-v83-main-control-candidate-20261018` now freezes
 committed main at b698a34. V1813 binds 33 local test modules and native action
 fences: 1978 unique test items plus 27 native subtests pass. The two original
