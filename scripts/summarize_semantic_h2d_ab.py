@@ -76,6 +76,17 @@ def records(path: Path):
                     yield json.loads(line)
 
 
+def runtime_clock_offset(row: dict) -> float | None:
+    """Read a paired scheduler clock without requiring opportunity sampling."""
+    if row.get("event") not in ("safe_point_census", "admission_runtime_state"):
+        return None
+    wall, monotonic = row.get("ts_ms"), row.get("monotonic_ms")
+    if any(type(value) not in (int, float) or not math.isfinite(value)
+           for value in (wall, monotonic)):
+        return None
+    return wall - monotonic
+
+
 def cleanup_workspaces(
     arm: Path, *, include_clean_planned_children: bool = False,
     stopped_collection: bool = False,

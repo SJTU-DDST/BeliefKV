@@ -1199,9 +1199,11 @@ def test_safe_point_rotates_through_more_candidates_than_per_tick_limit(tmp_path
     requests = [req(str(index)) for index in range(20)]
     for request in requests:
         assert runtime.register_visible_request(request)
+    clock = [1.0]
     with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
-               side_effect=(1.0, 2.1)):
+               side_effect=lambda: clock[0]):
         runtime.scheduler_step(waiting_queue=requests)
+        clock[0] = 2.1
         runtime.scheduler_step(waiting_queue=requests)
     runtime.close()
     rows = [

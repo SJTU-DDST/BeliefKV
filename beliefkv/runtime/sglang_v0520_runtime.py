@@ -573,6 +573,7 @@ class NativeAdmissionRuntime:
         ] = {}
         self._tool_metadata_by_run: dict[str, dict[str, tuple]] = {}
         self._tool_ticket: _ToolPrefetchTicket | None = None
+        self._tool_inflight_tickets: dict[PrefillCandidateKey, _ToolPrefetchTicket] = {}
         self._tool_prefetch_budget: Counter[PrefillCandidateKey] = Counter()
         self._wait_prefetch_records: OrderedDict[tuple, tuple[float, tuple]] = OrderedDict()
         self._wait_capacity_probe_next_ms = 0.
@@ -750,6 +751,7 @@ class NativeAdmissionRuntime:
         self._residency_hint_admissions.clear()
         self._discard_join_ticket("shutdown")
         self._confirmed_join_tickets.clear()
+        self._tool_inflight_tickets.clear()
         self._final_stages.clear()
         self._final_request_stages.clear()
         self._terminal_cache_watches.clear()
@@ -855,7 +857,7 @@ class NativeAdmissionRuntime:
             )
         ):
             self.dispatch_join_prefetch()
-        if self._tool_ticket is not None or (
+        if self._tool_ticket is not None or self._tool_inflight_tickets or (
             self.enable_tool_prefetch and self.tool_wait_hints
         ):
             if (
@@ -1958,8 +1960,13 @@ class NativeAdmissionRuntime:
 
     def _record_runtime_state(self, *, final: bool = False) -> None:
         if self._opportunity_writer is not None:
+            before_ms = time.monotonic() * 1000.
+            wall_ms = time.time() * 1000.
+            after_ms = time.monotonic() * 1000.
             self._opportunity_writer.record({
-                "event": "admission_runtime_state", "ts_ms": time.time() * 1000,
+                "event": "admission_runtime_state", "ts_ms": wall_ms,
+                "monotonic_ms": (before_ms + after_ms) / 2.,
+                "clock_sample_span_ms": after_ms - before_ms,
                 "final": final, "counts": dict(self.counts),
                 "physical_disabled": self.physical_disabled,
                 "final_stage_prefetch": self.enable_final_stage_prefetch,
@@ -2003,6 +2010,7 @@ class NativeAdmissionRuntime:
                 "tool_prefetch_min_advance_ms": self.tool_prefetch_min_advance_ms,
                 "parallel_wait_prefetch": self._parallel_wait_prefetch,
                 "wait_prefetch_contexts": self._wait_prefetch_contexts,
+                "tool_inflight_contexts": len(self._tool_inflight_tickets),
                 "prediction_maintenance_interval_ms": self._prediction_maintenance_interval_ms,
                 "semantic_work_statistic": self.semantic_work_statistic,
                 "final_admission_policy": "remaining_report_work",
@@ -6025,27 +6033,42 @@ class NativeAdmissionRuntime:
             self._prepare_probe_after_ms[step.key] = now_ms + 250.
         self._publish_parent_pressure_candidates()
 
+    def _reconcile_tool_prefetch_ticket(self, ticket: _ToolPrefetchTicket) -> bool | None:
+        commands = ticket.command_ids or (ticket.command_id,)
+        if any(self.physical_ledger.is_pending(command) for command in commands):
+            return None
+        completed = {
+            action.command_id for action in self.completed_physical_actions
+            if action.action == "PREFETCH_GPU"
+        }
+        self._tool_opportunity_cache.pop(ticket.key, None)
+        self._tool_prefetch_next_ms = 0.
+        if not set(commands).issubset(completed):
+            self.counts["tool_prefetch_lost_ack"] += 1
+            return False
+        self.counts["tool_prefetch_acked"] += len(commands)
+        return True
+
     def _roll_tool_prefetch(self) -> SessionH2DOpportunity | None:
         if not self.enable_tool_prefetch or self.physical_disabled:
             return
+        for key, pending in tuple(self._tool_inflight_tickets.items()):
+            if self._reconcile_tool_prefetch_ticket(pending) is not None:
+                del self._tool_inflight_tickets[key]
         ticket = self._tool_ticket
         if ticket is not None:
             if ticket.command_id is not None:
-                commands = ticket.command_ids or (ticket.command_id,)
-                if any(self.physical_ledger.is_pending(command) for command in commands):
-                    return
-                completed = {
-                    action.command_id
-                    for action in self.completed_physical_actions
-                    if action.action == "PREFETCH_GPU"
-                }
-                self._tool_opportunity_cache.pop(ticket.key, None)
+                reconciled = self._reconcile_tool_prefetch_ticket(ticket)
+                if reconciled is None:
+                    if not self._parallel_wait_prefetch or not self.can_prefetch_during_overlap():
+                        return
+                    # Retain ACK reconciliation without serializing a different
+                    # context. The ledger still owns all bytes and native nodes.
+                    self._tool_inflight_tickets[ticket.key] = ticket
                 self._tool_ticket = None
                 self._tool_prefetch_next_ms = 0.
-                if not set(commands).issubset(completed):
-                    self.counts["tool_prefetch_lost_ack"] += 1
+                if reconciled is False:
                     return
-                self.counts["tool_prefetch_acked"] += len(commands)
                 ticket = None
         if ticket is not None:
             hint = self._live_tool_hint(ticket.key)
@@ -6070,7 +6093,12 @@ class NativeAdmissionRuntime:
         candidates = []
         outside_window = deferred = 0
         next_possible_window_ms = math.inf
+        inflight_contexts = self.physical_ledger.pending_h2d_contexts
         for hint in self.tool_wait_hints.values():
+            if hint.key in self._tool_inflight_tickets or (
+                hint.key.context_id, hint.key.session_id, hint.key.session_generation,
+            ) in inflight_contexts:
+                continue
             if self._live_tool_hint(hint.key, now_ms=now_ms) is None:
                 self._tool_survival_probes.pop(hint.key.context_id, None)
                 continue

@@ -12,9 +12,10 @@ def write_rows(path, rows):
     path.write_text("".join(json.dumps(row) + "\n" for row in rows))
 
 
-def test_tool_transfer_audit_uses_tool_completion_not_first_gpu_service(tmp_path):
+@pytest.mark.parametrize("clock_event", ("safe_point_census", "admission_runtime_state"))
+def test_tool_transfer_audit_uses_tool_completion_not_first_gpu_service(tmp_path, clock_event):
     write_rows(tmp_path / "opportunities/admission_opportunities.jsonl", [
-        {"event": "safe_point_census", "ts_ms": 1000., "monotonic_ms": 0.},
+        {"event": clock_event, "ts_ms": 1000., "monotonic_ms": 0.},
         {"event": "prefetch_native_issued", "source": "tool_wait",
          "command_id": "c1", "context_id": "ctx", "invocation_id": "child",
          "active_tool_ids": ["a", "b"]},

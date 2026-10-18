@@ -1708,6 +1708,35 @@ def test_stale_context_epoch_and_replay_do_not_credit():
         )
 
 
+@pytest.mark.parametrize("transition", ("pending", "partial_ack", "invalidated", "cancelled", "completed"))
+def test_untagged_ack_overlap_follows_entire_pending_command_lifetime(transition):
+    ledger = PhysicalTransactionLedger()
+    ledger.register(expected(children=(
+        child(11, (11, 12), 20, 5, 32),
+        child(13, (13,), 10, 0, 10),
+    )))
+    if transition in ("partial_ack", "completed"):
+        assert ledger.observe(ack(receipt()), live_context_epochs={"ctx": 3}) == ()
+    if transition == "completed":
+        ledger.observe(ack(
+            receipt(anchor=13, published=(13,), kv=1, mamba=0, total=10),
+            nodes=(13,), kv=1, mamba=0,
+        ), live_context_epochs={"ctx": 3})
+    elif transition == "cancelled":
+        ledger.cancel_unsubmitted("cmd")
+    elif transition == "invalidated":
+        ledger.invalidate_context("ctx")
+    unrelated = ack(nodes=(99,), kv=1, mamba=0)
+    assert ledger.observe(unrelated, live_context_epochs={"ctx": 3}) == ()
+    overlap = ack(nodes=(99, 12), kv=2, mamba=0)
+    if transition in ("cancelled", "completed"):
+        assert ledger.observe(overlap, live_context_epochs={"ctx": 3}) == ()
+    else:
+        with pytest.raises(PhysicalReceiptError, match="missing child credit"):
+            ledger.observe(overlap, live_context_epochs={"ctx": 3})
+    assert ledger.pending_count == 0
+
+
 def test_session_generation_must_still_match_at_ack():
     from dataclasses import replace
 

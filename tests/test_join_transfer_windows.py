@@ -12,9 +12,10 @@ def _run(
     tmp_path, *, native_epoch=1, client_tool_calls=0, stream_timing=False,
     close_timing=False, close_epoch=1, close_elapsed=10.,
     service_timing=True, service_epoch=3, prefetch_launch=False,
+    clock_event="safe_point_census",
 ):
     _write(tmp_path / "opportunities/admission_opportunities.jsonl", [
-        {"event": "safe_point_census", "ts_ms": 1000., "monotonic_ms": 0.},
+        {"event": clock_event, "ts_ms": 1000., "monotonic_ms": 0.},
         {"event": "prefetch_native_issued", "source": "join_ticket",
          "command_id": "prefetch", "context_id": "parent", "node_id": 10,
          "join_id": "join", "child_invocation_id": "child",
@@ -95,6 +96,10 @@ def _run(
              "close_elapsed_ms": close_elapsed, "enqueue_to_close_start_ms": 4.},
         ])
     return audit(tmp_path)
+
+
+def test_join_audit_works_with_sampling_disabled_runtime_clock(tmp_path):
+    assert _run(tmp_path, clock_event="admission_runtime_state") == _run(tmp_path)
 
 
 def test_join_audit_separates_native_completion_callback_return_and_parent(tmp_path):

@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.summarize_semantic_h2d_ab import records
+from scripts.summarize_semantic_h2d_ab import records, runtime_clock_offset
 
 
 def distribution(values) -> dict:
@@ -1589,8 +1589,8 @@ def audit(arm: Path) -> dict:
         elif event in ("wait_prefetch_plan", "session_h2d_opportunity"):
             if row.get("source") in ("join_wait", "join_ticket", "tool_wait"):
                 wait_observations.append(row)
-        elif event == "safe_point_census" and clock_offset is None:
-            clock_offset = row["ts_ms"] - row["monotonic_ms"]
+        elif clock_offset is None:
+            clock_offset = runtime_clock_offset(row)
     transfers = list(records(arm / "server/transfer_telemetry.jsonl"))
     native_loads = defaultdict(list)
     for transfer in transfers:

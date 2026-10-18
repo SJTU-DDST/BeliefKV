@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.summarize_semantic_h2d_ab import records
+from scripts.summarize_semantic_h2d_ab import records, runtime_clock_offset
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 
 
@@ -107,8 +107,8 @@ def audit(arm: Path, threshold: float, *, sample_max_age_ms: float = 1500.) -> d
     latest_starts = defaultdict(list)
     clock = None
     for row in records(arm / "opportunities/admission_opportunities.jsonl"):
-        if row["event"] == "safe_point_census" and clock is None:
-            clock = row["ts_ms"] - row["monotonic_ms"]
+        if clock is None and (offset := runtime_clock_offset(row)) is not None:
+            clock = offset
         elif row["event"] == "session_h2d_opportunity":
             if row.get("invocation_state") == "wait_join":
                 opportunities[row["invocation_id"]].append(row)

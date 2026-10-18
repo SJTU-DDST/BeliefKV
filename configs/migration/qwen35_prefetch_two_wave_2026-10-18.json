@@ -1,9 +1,13 @@
 {
   "schema_version": 1,
   "kind": "development_candidate_not_a_frozen_execution_plan",
-  "not_before": "2026-10-19T08:00:00+08:00",
+  "not_before": null,
+  "gpu_authorization": "User confirmed GPU is free on 2026-10-18; supersedes the previous October 19 08:00 Asia/Shanghai reservation.",
   "timezone": "Asia/Shanghai",
-  "gpu_experiment_started": false,
+  "gpu_experiment_started": true,
+  "registered_run": "experiments/raw/qwen35_nested_prefetch_two_wave_156root_20261018_v82b",
+  "superseded_partial_run": "experiments/raw/qwen35_nested_prefetch_two_wave_156root_20261018_v82",
+  "execution_plan": "experiments/raw/qwen35_nested_prefetch_two_wave_156root_20261018_v82b/ab_plan.json",
   "workload": {
     "manifest": "configs/migration/qwen35_native_predictive_replenished_108plus48_2026-10-09.json",
     "root_count": 156,

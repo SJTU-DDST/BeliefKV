@@ -5,6 +5,28 @@ Status date: 2026-10-18 (PDT).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Current GPU collection: the user's 2026-10-18 "GPU is free" instruction supersedes
+the prior October 19 08:00 Asia/Shanghai reservation. V82 was launched at
+08:25 PDT from frozen application `44c802f` and qualified engine tree `53020ce3`.
+Run predictive first, then native on the same 156-task nested 108+48/3600s
+contract. Fix device capacities to 1,798,992 FULL tokens and 513 Mamba slots;
+retain 200GB Host/80:20 and existing limits. Verify actual service/settings,
+early FULL reuse, ACK-to-service, useful-prefix loss and quality/performance.
+Continue CPU control/conversion work on main without modifying frozen V82.
+Actual layer mode is native_all_layers. Startup is not performance acceptance.
+Run: experiments/raw/qwen35_nested_prefetch_two_wave_156root_20261018_v82.
+
+V82b candidate supersedes V82's partial collection without hot-editing it.
+Release the single tool selection ticket while retaining independent in-flight
+ACK reconciliation so two legal tool contexts can overlap. Keep capacity,
+causal/session checks, per-node receipts and same-context exclusion. Reuse the
+pending-node index for unrelated native ACKs. Preserve a small paired clock in
+runtime state so sampling-off JOIN/tool reports cannot block the next native arm.
+V1686: 1114 CPU checks pass. V1687: 64-pending/32-node ACK P50 55.42 to 4.83us;
+two fitting tool contexts select 8 rather than 4 nodes before any ACK. No online
+coverage, DMA throughput or JCT gain is established. Freeze this candidate for
+V82b, preserving all V82 partial evidence and the matched nested task contract.
+
 Latest CPU phase (V1676-V1678), relative to `52656d3`: filter unbound/unserviced
 stages before graph validation, preserve observed no-tool EOS outside running
 batches, and reject predictions beyond the configured lead before checkpoint

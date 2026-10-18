@@ -1,8 +1,51 @@
 # 自适应分层预取与两批负载
 
 更新：2026-10-18。此文优先解释当前开发方向；此前研究筛选结论保留为历史。
-用户明确 GPU 被占用至北京时间 2026-10-19 08:00，此前只执行 CPU 工作，
-不启动 GPU 实验，也不恢复已经停止的 Poisson V81。
+用户于2026-10-18确认GPU已空闲，覆盖此前北京时间2026-10-19 08:00的
+占用约定。V82于08:25 PDT发起并通过真实服务核对；发现新的串行化与审计
+问题后准备V82b冷启动，predictive先行、随后相同合同的native。V81不恢复。
+
+## 在途恢复与审计修复
+
+V82运行期间，在主目录main完成两项修复，V82原执行源码保持冻结：
+
+- 原有单一tool ticket在等待ACK时直接返回，两个并行context的配置无法
+  用于两个tool。现在将在途tool票据单独保留并独立核对ACK，选择器可以
+  继续选择另一context；同一context仍禁止重复恢复，实际槽数、在途字节、
+  FULL/Mamba容量、因果重检及原生依赖保持有效。无overlap或关闭并行时
+  继续串行。JOIN票据的并行扩展尚未在本次修改中实现。
+- 无tag的原生ACK用已有在途节点集合核对冲突，不再为每笔在途事务重新
+  建集合。部分ACK和失效context仍保留整笔所有权，直到完整核对或退休。
+
+同时修复低观测配置的报表阻断：额外机会采样关闭后没有safe_point_census，
+旧JOIN/tool审计却强制依赖它。已有每秒runtime状态现在保存带采样跨度的
+wall/monotonic锚点；四个审计路径接受该锚点。没有机会样本仍保持未知，
+不恢复重型机会扫描，也不制造机会频率或未来RETURN证据。
+
+[V1686回归](../experiments/reports/v1686_prefetch_conversion_final_cpu_20261018.xml)
+1114项通过，覆盖两tool并行、容量限制、无overlap、乱序ACK、超时不计
+完成、原生冲突、已有预取语义和无机会采样时的审计。
+[V1687基准](../experiments/reports/v1687_parallel_prefetch_control_final_cpu_20261018.json)
+以44c802f为基线，101样本/20预热；64笔在途、32个原生ACK节点的
+单次核对P50为55.42→4.83us。受控两context选择从1组/4节点变为
+2组/8节点，均未伪造ACK或复用。其他空路径与JOIN扫描没有同等改善，
+不能外推整轮控制成本、DMA吞吐或JCT。V82b用于实际验证新代码。
+
+## 当前 GPU 对照
+
+V82使用冻结应用`44c802f`、合格引擎tree `53020ce3`，开发继续在主目录
+`main`。156 root按108+48、t=0/3600s到达，共享四轮root目标、
+每轮2–4 child、最大深度2的委派合同。两侧固定FULL 1,798,992 token、
+Mamba 513 slot；Host 200GB、80:20，工具180s、workflow14400s。
+predictive开启JOIN/tool H2D、FULL-only PREPARE及恢复/准入协同，
+需求恢复走原生路径；native关闭BeliefKV策略。详细CPU诊断关闭但真实
+submit、ACK和首次复用仍记录。实际层模式为`native_all_layers`。
+
+V82目录保留为部分实验，不作为完整对照。V82b使用同一工作负载、容量、
+模型产物和原生引擎，应用包含上述修复；两侧均从新的固定源码冷启动。
+V82b目录为
+`experiments/raw/qwen35_nested_prefetch_two_wave_156root_20261018_v82b`，
+精确应用提交以该目录ab_plan.json为准。启动与端到端性能分别核验。
 
 ## 最新控制路径与预取目标
 
@@ -72,8 +115,8 @@ context 在逐节点提交途中变化、已驻留前驱/扩展尾部、必要�
 下一阶段继续检查真正完成前提交且被下一请求消费的 FULL、ACK→服务、
 重复需求加载、嵌套压力下有用 KV 丢失/重算及质量。完整前缀捕获、
 逐节点 payload 与原生依赖仍有成本，不直接删除这些正确性检查。
-真实按层 prefix/tail 仍未接入，当前为 `native_all_layers`；GPU在
-北京时间2026-10-19 08:00前不启动，不安排自动 GPU 排队任务。
+真实按层prefix/tail仍未接入，当前为`native_all_layers`；原GPU占用约定
+已由用户最新授权覆盖，本轮GPU状态以上方V82记录为准。
 
 ## 有效恢复的 CPU 阶段验收
 

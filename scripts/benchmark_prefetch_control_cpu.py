@@ -22,7 +22,7 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
 from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
 from beliefkv.runtime.sglang_v0520_physical import (
-    PhysicalActionExpectation, PhysicalChildExpectation,
+    PhysicalActionExpectation, PhysicalChildExpectation, PhysicalTransactionLedger,
 )
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime, _ChildFinalStage
 from beliefkv.policy.causal_frontier import CausalFrontierScheduler
@@ -131,6 +131,75 @@ def pending_case(baseline, *, samples, pending):
     finally:
         for runtime in variants.values():
             runtime.close()
+
+
+def native_ack_case(baseline, *, samples, pending, node_count):
+    baseline_ledger = baseline._roll_tool_prefetch.__globals__["PhysicalTransactionLedger"]
+    variants = {}
+    commit = NS(node_ids=tuple(range(10_000, 10_000 + node_count)), child_commits=())
+    for name, cls in (("baseline", baseline_ledger), ("candidate", PhysicalTransactionLedger)):
+        ledger = cls(max_age_s=3600.)
+        for index in range(pending):
+            ledger.register(PhysicalActionExpectation(
+                f"cmd-{index}", "PREFETCH_GPU", f"context-{index % 2}", 0,
+                (PhysicalChildExpectation(index, (index,), (("kv", 20),), 20),),
+                (("kv", 10),),
+            ))
+        variants[name] = ledger
+        if ledger.observe(commit, live_context_epochs={}) != ():
+            raise AssertionError("an unrelated native ACK received predictive credit")
+    costs = compare({
+        name: lambda ledger=ledger: ledger.observe(commit, live_context_epochs={})
+        for name, ledger in variants.items()
+    }, samples=samples, calls=10)
+    if any(ledger.pending_count != pending for ledger in variants.values()):
+        raise AssertionError("an unrelated ACK changed pending ownership")
+    return {
+        "case": "unrelated_native_ack", "pending_commands": pending,
+        "native_ack_nodes": node_count, "costs": costs,
+        "pending_ownership_unchanged_and_no_credit": True,
+    }
+
+
+def parallel_tool_conversion_case(baseline):
+    from types import MethodType
+    from beliefkv.runtime.native_transfer_policy import TransferStartWindow
+    from tests.test_wait_prefetch_batch import parallel_tool_batch_fixture
+
+    results = {}
+    for name in ("baseline_selector", "candidate_selector"):
+        runtime, _, _, plans, _, _ = parallel_tool_batch_fixture()
+        if name == "baseline_selector":
+            runtime._roll_tool_prefetch = MethodType(baseline._roll_tool_prefetch, runtime)
+        try:
+            with patch.object(runtime, "inspect_context_h2d_opportunity",
+                              side_effect=lambda **kwargs: plans[kwargs["context_id"]]), \
+                 patch.object(runtime, "_h2d_start_window",
+                              return_value=TransferStartWindow(200., 0., 1000.)):
+                runtime.dispatch_tool_prefetch()
+                runtime.dispatch_tool_prefetch()
+                runtime.dispatch_tool_prefetch()
+            results[name] = {
+                "pending_contexts": len(runtime.physical_ledger.pending_h2d_contexts),
+                "pending_commands": runtime.physical_ledger.pending_count,
+                "pending_bytes": runtime.physical_ledger.pending_action_bytes("PREFETCH_GPU"),
+                "acked_commands": runtime.counts["tool_prefetch_acked"],
+                "completed_actions": len(runtime.completed_physical_actions),
+                "physical_disabled": runtime.physical_disabled,
+            }
+        finally:
+            runtime.close()
+    if results["baseline_selector"]["pending_contexts"] != 1 or (
+        results["candidate_selector"]["pending_contexts"] != 2
+    ):
+        raise AssertionError("two fitting tool contexts did not distinguish selector serialization")
+    return {
+        "scope": (
+            "Selector-only differential: both versions use current CPU dispatcher and native "
+            "stand-ins with identical two-context budgets. No DMA, ACK or reuse is fabricated."
+        ),
+        "results": results,
+    }
 
 
 def repeated_plan_case(baseline, *, samples, depth):
@@ -285,6 +354,8 @@ def main():
           for enabled in (False, True)),
         *(pending_case(baseline, samples=args.samples, pending=pending)
           for pending in (0, 16, 64)),
+        *(native_ack_case(baseline, samples=args.samples, pending=pending, node_count=nodes)
+          for pending in (0, 16, 64) for nodes in (1, 32, 128)),
         *(repeated_plan_case(baseline, samples=args.samples, depth=depth)
           for depth in (16, 128)),
         *(join_scan_case(
@@ -307,6 +378,7 @@ def main():
         "candidate_source_sha256": sources,
         "samples": args.samples, "warmup_samples": 20,
         "cases": cases,
+        "parallel_tool_conversion": parallel_tool_conversion_case(baseline),
         "limitations": [
             "Fixture frequency and pending populations are controlled, not replayed online frequencies.",
             "Both runtimes use the same profiling setting in each timing case.",

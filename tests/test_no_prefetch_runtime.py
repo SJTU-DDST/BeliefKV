@@ -27,7 +27,9 @@ def test_no_prefetch_dispatch_keeps_both_prepare_sources(monkeypatch):
         runtime.close()
 
 
-@pytest.mark.parametrize("ticket_field", ("_join_ticket", "_confirmed_join_tickets", "_tool_ticket"))
+@pytest.mark.parametrize("ticket_field", (
+    "_join_ticket", "_confirmed_join_tickets", "_tool_ticket", "_tool_inflight_tickets",
+))
 def test_pending_transfer_bookkeeping_is_not_skipped(ticket_field):
     runtime = NativeAdmissionRuntime()
     try:
@@ -37,7 +39,7 @@ def test_pending_transfer_bookkeeping_is_not_skipped(ticket_field):
         runtime.dispatch_tool_prepare = Mock()
         setattr(runtime, ticket_field, {"pending": object()} if ticket_field.endswith("tickets") else object())
         runtime.dispatch_after_forward()
-        if ticket_field == "_tool_ticket":
+        if ticket_field in ("_tool_ticket", "_tool_inflight_tickets"):
             runtime.dispatch_tool_prefetch.assert_called_once()
         else:
             runtime.dispatch_join_prefetch.assert_called_once()
@@ -61,6 +63,8 @@ def test_no_opportunity_scan_keeps_runtime_and_terminal_observations(monkeypatch
         runtime._sample_terminal_cache.assert_called_once_with(now_ms=1000.)
         state = writer.record.call_args.args[0]
         assert state["event"] == "admission_runtime_state"
+        assert state["monotonic_ms"] > 0
+        assert state["clock_sample_span_ms"] >= 0
         assert state["h2d_opportunity_sampling"] is False
         assert state["prepare_host"] is True
         assert not state["semantic_worker_configured"]

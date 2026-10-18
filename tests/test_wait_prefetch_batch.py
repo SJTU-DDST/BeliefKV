@@ -522,6 +522,158 @@ def test_wait_burst_restores_checkpoint_once_and_cancels_only_unsubmitted_tail(s
     )
 
 
+def parallel_tool_batch_fixture(*, parallel=True, overlap=True, contexts=2):
+    runtime, first_key, first, cache, _ = batch_fixture("tool_wait")
+    runtime._parallel_wait_prefetch = parallel
+    runtime._wait_prefetch_contexts = contexts
+    cache.supports_beliefkv_overlap_prefetch = lambda: overlap
+    other = req("other")
+    other.session_id, other.session_generation = "other-session", 1
+    runtime.register_visible_request(other)
+    from tests.test_tool_predictive_transfers import event as tool_event
+    runtime.on_events((
+        tool_event(3, RuntimeEventKind.INVOCATION_CREATE, invocation_id="other",
+                   context_id="ctx-other", agent_definition_id="child", agent_instance_id="other"),
+        tool_event(4, RuntimeEventKind.TOOL_START, invocation_id="other",
+                   attributes={"tool_family": "shell", "tool_run_id": "other-tool"}),
+    ))
+    key = runtime.context_sessions["ctx-other"]
+    runtime.tool_wait_hints[key.context_id] = replace(
+        runtime.tool_wait_hints[first_key.context_id], key=key,
+        wait_p50_ms=350., invocation_revision_ts_ms=4.,
+    )
+    anchors = replace(
+        first.anchors, key=key,
+        component_leaves=tuple(
+            (component, tuple((node + 20, created) for node, created in leaves))
+            for component, leaves in first.anchors.component_leaves
+        ),
+    )
+    candidate = replace(first.candidate, anchors=anchors, nodes=tuple(
+        NS(**{
+            **vars(node), "node_id": node.node_id + 20,
+            "parent_id": node.parent_id + 20 if node.parent_id is not None else None,
+        })
+        for node in first.candidate.nodes
+    ))
+    steps = plan_prefetch_gpu_steps(candidate)
+    second = replace(first, anchors=anchors, candidate=candidate, step=steps[0], steps=steps)
+    plans = {first_key.context_id: first, key.context_id: second}
+    issued = {}
+
+    def native_burst(**kwargs):
+        outcomes = []
+        for node, created, state, command in kwargs["nodes"]:
+            operation = NS(
+                beliefkv_command_id=command, node_ids=[node],
+                host_indices=(1, 2, 3, 4), device_indices=(5, 6, 7, 8),
+                pool_transfers=[NS(
+                    name="mamba", indices_from_pool=None,
+                    host_indices=(10,), device_indices=(11,),
+                )] if state else None,
+            )
+            if not kwargs["beliefkv_before_enqueue"](operation):
+                break
+            issued[command] = node, state
+            outcomes.append(NS(issued=True, node_id=node, load_started=True))
+        return tuple(outcomes)
+
+    cache.prefetch_gpu_session_nodes = Mock(side_effect=native_burst)
+
+    def acknowledge(commands):
+        for command in commands:
+            node, state = issued[command]
+            units = (("kv", 4),) + ((("mamba", 1),) if state else ())
+            runtime.on_native_transfer_commit(NS(
+                direction="h2d", status="completed", node_ids=(node,),
+                num_tokens_by_pool=units,
+                child_commits=(NS(
+                    command_id=command, anchor_node_id=node, published_node_ids=(node,),
+                    num_tokens_by_pool=units, num_bytes=40 + 20 * state,
+                ),),
+            ))
+
+    return runtime, first_key, key, plans, cache, acknowledge
+
+
+@pytest.mark.parametrize("parallel,overlap,contexts,expected_contexts", (
+    (False, True, 2, 1), (True, False, 2, 1),
+    (True, True, 1, 1), (True, True, 2, 2),
+))
+def test_parallel_tool_restores_fill_available_context_slots_without_waiting_for_ack(
+    parallel, overlap, contexts, expected_contexts,
+):
+    runtime, first, second, plans, cache, _ = parallel_tool_batch_fixture(
+        parallel=parallel, overlap=overlap, contexts=contexts,
+    )
+    try:
+        with patch.object(runtime, "inspect_context_h2d_opportunity",
+                          side_effect=lambda **kwargs: plans[kwargs["context_id"]]), \
+             patch.object(runtime, "_h2d_start_window",
+                          return_value=TransferStartWindow(200., 0., 1000.)):
+            runtime.dispatch_tool_prefetch()
+            runtime.dispatch_tool_prefetch()
+            runtime.dispatch_tool_prefetch()
+        assert cache.prefetch_gpu_session_nodes.call_count == expected_contexts
+        owners = set(runtime.physical_ledger.pending_h2d_contexts)
+        assert owners == {
+            (key.context_id, key.session_id, key.session_generation)
+            for key in (first, second)[:expected_contexts]
+        }
+        assert runtime.physical_ledger.pending_count == 4 * expected_contexts
+        assert runtime.counts["tool_prefetch_issued"] == 4 * expected_contexts
+        assert runtime.counts["tool_prefetch_acked"] == 0
+        assert not runtime.completed_physical_actions
+        assert not runtime.physical_disabled
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("finish", ("out_of_order_ack", "expiry"))
+def test_parallel_tool_tickets_keep_independent_ack_and_loss_accounting(finish):
+    runtime, first, second, plans, _, acknowledge = parallel_tool_batch_fixture()
+    try:
+        with patch.object(runtime, "inspect_context_h2d_opportunity",
+                          side_effect=lambda **kwargs: plans[kwargs["context_id"]]), \
+             patch.object(runtime, "_h2d_start_window",
+                          return_value=TransferStartWindow(200., 0., 1000.)):
+            runtime.dispatch_tool_prefetch()
+            runtime.dispatch_tool_prefetch()
+        first_commands = tuple(
+            command for command, (step, _, _) in runtime._prefetch_steps.items()
+            if step.key == first
+        )
+        second_commands = tuple(
+            command for command, (step, _, _) in runtime._prefetch_steps.items()
+            if step.key == second
+        )
+        assert len(first_commands) == len(second_commands) == 4
+        with patch.object(runtime, "_wait_prefetch_opportunity", return_value=None):
+            if finish == "out_of_order_ack":
+                acknowledge(second_commands)
+                runtime.dispatch_tool_prefetch()
+                assert runtime.counts["tool_prefetch_acked"] == 4
+                assert runtime.physical_ledger.pending_count == 4
+                assert first in runtime._tool_inflight_tickets
+                acknowledge(first_commands)
+            else:
+                runtime.physical_ledger.max_age_s = 1e-9
+                assert set(runtime.physical_ledger.expire()) == set(
+                    first_commands + second_commands
+                )
+            runtime.dispatch_tool_prefetch()
+            runtime.dispatch_tool_prefetch()
+        assert not runtime._tool_inflight_tickets
+        assert runtime.physical_ledger.pending_count == 0
+        assert runtime.counts["tool_prefetch_acked"] == (
+            8 if finish == "out_of_order_ack" else 0
+        )
+        assert runtime.counts["tool_prefetch_lost_ack"] == (0 if finish == "out_of_order_ack" else 2)
+        assert not runtime.physical_disabled
+    finally:
+        runtime.close()
+
+
 @pytest.mark.parametrize("partial", [False, True])
 @pytest.mark.parametrize("slots", [0, 1])
 def test_handoff_burst_keeps_one_issue_allowance_and_cleans_unsubmitted_tail(partial, slots):

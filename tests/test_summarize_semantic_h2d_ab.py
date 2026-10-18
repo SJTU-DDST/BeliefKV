@@ -7,8 +7,26 @@ import pytest
 
 from scripts.summarize_semantic_h2d_ab import (
     capacity_pressure_watch, cleanup_workspaces, main, paired_trajectory_report, summarize,
-    verify_frozen_execution_source, workflow_trajectory_audit, workload_balance,
+    runtime_clock_offset, verify_frozen_execution_source, workflow_trajectory_audit, workload_balance,
 )
+
+
+@pytest.mark.parametrize("event", ("safe_point_census", "admission_runtime_state"))
+def test_runtime_clock_alignment_does_not_require_opportunity_sampling(event):
+    assert runtime_clock_offset({
+        "event": event, "ts_ms": 1500., "monotonic_ms": 1000.,
+    }) == 500.
+
+
+@pytest.mark.parametrize("row", (
+    {"event": "admission_runtime_state", "ts_ms": 1500.},
+    {"event": "admission_runtime_state", "ts_ms": True, "monotonic_ms": 1000.},
+    {"event": "admission_runtime_state", "ts_ms": 1500., "monotonic_ms": float("nan")},
+    {"event": "admission_runtime_state", "ts_ms": float("inf"), "monotonic_ms": 1000.},
+    {"event": "tool_wait_forecast", "ts_ms": 1500., "monotonic_ms": 1000.},
+))
+def test_runtime_clock_alignment_keeps_unpaired_or_invalid_observations_unknown(row):
+    assert runtime_clock_offset(row) is None
 
 
 def test_capacity_watch_keeps_loss_populations_and_missing_evidence_separate():

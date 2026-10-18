@@ -1706,11 +1706,7 @@ class PhysicalTransactionLedger:
         if len(set(nodes)) != len(nodes):
             self._reject("duplicate merged ACK node")
         if not receipts:
-            if any(
-                set(nodes).intersection(child.published_node_ids)
-                for expected, _, _ in self._pending.values()
-                for child in expected.children
-            ):
+            if self._pending_nodes and not self._pending_nodes.isdisjoint(nodes):
                 self._reject("missing child credit for expected node")
             return ()
         if type(receipts) not in (tuple, list) or getattr(commit, "status", None) != "completed":

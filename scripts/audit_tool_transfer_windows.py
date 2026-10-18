@@ -13,7 +13,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from scripts.summarize_semantic_h2d_ab import records
+from scripts.summarize_semantic_h2d_ab import records, runtime_clock_offset
 
 
 def history_physical_opportunity(snapshot: dict, candidate: dict, clock_offset: float) -> dict | None:
@@ -123,8 +123,8 @@ def history_forecast_audit(arm: Path, artifact: Path) -> dict:
     groups, accepted_history = {}, {}
     physical, clock_offset = [], None
     for forecast in records(arm / "opportunities/admission_opportunities.jsonl"):
-        if forecast["event"] == "safe_point_census" and clock_offset is None:
-            clock_offset = forecast["ts_ms"] - forecast["monotonic_ms"]
+        if clock_offset is None:
+            clock_offset = runtime_clock_offset(forecast)
         context_scope = (
             forecast.get("workflow_id"), forecast.get("invocation_id"),
             forecast.get("context_id"), forecast.get("context_epoch"),
@@ -314,11 +314,14 @@ def history_forecast_audit(arm: Path, artifact: Path) -> dict:
 def audit(arm: Path, *, artifact: Path | None = None) -> dict:
     ops = [
         row for row in records(arm / "opportunities/admission_opportunities.jsonl")
-        if row["event"] == "safe_point_census"
+        if row["event"] in ("safe_point_census", "admission_runtime_state")
         or row["event"] == "prefetch_native_issued" and row.get("source") == "tool_wait"
     ]
-    census = next(row for row in ops if row["event"] == "safe_point_census")
-    offset = census["ts_ms"] - census["monotonic_ms"]
+    offset = next(
+        (value for row in ops if (value := runtime_clock_offset(row)) is not None), None,
+    )
+    if offset is None:
+        raise ValueError("missing paired scheduler wall/monotonic clock")
     ends = {}
     legacy_ends = defaultdict(list)
     for path in arm.glob("client_*/workflows/*/runtime_events.deepagents.jsonl"):

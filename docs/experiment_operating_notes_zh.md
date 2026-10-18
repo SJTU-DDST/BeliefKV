@@ -7,6 +7,20 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 后续开发固定在主目录 `/home/longhao/experiment/BeliefKV` 的 `main` 分支。
 历史实验 worktree 保留其冻结来源；新代码修改、验证与提交在主目录进行。
 
+**当前GPU授权与V82。**2026-10-18用户确认GPU已空闲，覆盖下方旧的
+2026-10-19 08:00占用约定。V82已从冻结`44c802f`发起predictive→native；
+同一嵌套156任务/108+48到达合同，固定FULL/Mamba物理容量和Host比例。
+开发可继续在main，不能修改本轮冻结应用、引擎或模型产物。
+运行目录为`experiments/raw/qwen35_nested_prefetch_two_wave_156root_20261018_v82`。
+V81保持用户停止状态；启动进程不等于性能验收通过。
+
+**V82b修复约定。**V82保留部分数据，新冷启动验证独立在途tool票据与
+原生ACK索引核对；不热改V82。关闭机会采样时仍须保留廉价成对时钟，
+否则旧JOIN/tool审计会在predictive结束后阻断native。时钟不是物理机会，
+不将缺少均匀机会样本解释为零机会。1114项CPU通过，两个合法tool恢复
+可在首笔ACK前提交；容量/会话/原生依赖与ACK/首次复用口径保持不变。
+下一对目录为`experiments/raw/qwen35_nested_prefetch_two_wave_156root_20261018_v82b`。
+
 **最新 CPU 执行约定（V1676–V1678）。**JOIN 的服务资格/最大提前量检查
 先于完整物理规划，但有效无工具 EOS 不要求 child 仍在 running batch。
 `final_stage_service_filter_skipped` 是廉价筛除次数，未逐项核对完整图，

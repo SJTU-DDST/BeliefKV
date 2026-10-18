@@ -11,7 +11,7 @@ from statistics import median
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from scripts.summarize_semantic_h2d_ab import records
+from scripts.summarize_semantic_h2d_ab import records, runtime_clock_offset
 
 
 def _latencies(rows: list[dict], field: str) -> dict:
@@ -34,13 +34,13 @@ def audit(arm: Path) -> dict:
     clock = None
     issued = {}
     for row in records(arm / "opportunities/admission_opportunities.jsonl"):
-        if clock is None and row["event"] == "safe_point_census":
-            clock = row
+        if clock is None:
+            clock = runtime_clock_offset(row)
         if row["event"] == "prefetch_native_issued" and row.get("source") == "join_ticket":
             issued[row["command_id"]] = row
     if clock is None:
         raise ValueError("missing paired native wall/monotonic clock")
-    offset = clock["ts_ms"] - clock["monotonic_ms"]
+    offset = clock
     child_requests = {
         issue["child_request_id"] for issue in issued.values()
         if issue.get("child_request_id")

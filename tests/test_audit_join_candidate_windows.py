@@ -1,9 +1,12 @@
 import json
 
+import pytest
+
 from scripts.audit_join_candidate_windows import audit, latest_start_bias
 
 
-def test_join_candidates_use_pre_eos_acceptance_and_same_waiting_parent(tmp_path):
+@pytest.mark.parametrize("clock_event", ("safe_point_census", "admission_runtime_state"))
+def test_join_candidates_use_pre_eos_acceptance_and_same_waiting_parent(tmp_path, clock_event):
     workflow = tmp_path / "client_64/workflows/task"
     server = tmp_path / "server"
     opportunities = tmp_path / "opportunities"
@@ -29,7 +32,7 @@ def test_join_candidates_use_pre_eos_acceptance_and_same_waiting_parent(tmp_path
         "attributes": {"request_id": "final"},
     }) + "\n")
     samples = [
-        {"event": "safe_point_census", "ts_ms": 100, "monotonic_ms": 0},
+        {"event": clock_event, "ts_ms": 100, "monotonic_ms": 0},
         {"event": "session_h2d_opportunity", "ts_ms": 140,
          "invocation_id": "parent", "invocation_state": "wait_join",
          "node_id": 1, "fits_current_free_lists": True, "reason": "fits_current_free_lists"},
