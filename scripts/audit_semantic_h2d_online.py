@@ -5,17 +5,125 @@ from __future__ import annotations
 
 import argparse
 from bisect import bisect_right
-from collections import defaultdict
+from collections import Counter, defaultdict
+import hashlib
 import json
 import math
 from pathlib import Path
 from statistics import median
 import sys
 import time
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
+from scripts.audit_sealed_wait_prefetch import SealedRecords
+from scripts.summarize_semantic_h2d_ab import runtime_clock_offset
+
+
+class RequestStructure:
+    """Capture only workflow structure already observed at request submission."""
+
+    def __init__(self):
+        self.invocations = {}
+        self.delegating = set()
+        self.joins = {}
+        self.rounds = Counter()
+        self.requests = {}
+
+    def observe(self, row):
+        kind, invocation = row["kind"], row.get("invocation_id")
+        attrs = row.get("attributes") or {}
+        if kind == "invocation_create":
+            self.invocations[invocation] = {
+                name: row.get(name) for name in (
+                    "relation_type", "parent_invocation_id", "join_id",
+                )
+            }
+        elif kind == "spawn":
+            self.delegating.add(invocation)
+        elif kind == "join_wait" and row.get("join_id") not in self.joins:
+            self.rounds[invocation] += 1
+            self.joins[row["join_id"]] = (invocation, self.rounds[invocation])
+        elif (
+            kind == "llm_submit" and attrs.get("request_id")
+            and not attrs.get("runtime_internal")
+        ):
+            chain, seen, current = [], set(), invocation
+            while current in self.invocations and current not in seen:
+                seen.add(current)
+                node = self.invocations[current]
+                chain.append((current, node))
+                if node["relation_type"] == "root":
+                    break
+                if node["relation_type"] != "spawn":
+                    chain = []
+                    break
+                current = node["parent_invocation_id"]
+            known = bool(chain and chain[-1][1]["relation_type"] == "root")
+            depth = len(chain) - 1 if known else None
+            root_round = None
+            if known and depth:
+                parent_round = self.joins.get(chain[-2][1]["join_id"])
+                if parent_round is not None and parent_round[0] == chain[-1][0]:
+                    root_round = parent_round[1]
+            self.requests[attrs["request_id"]] = {
+                "spawn_depth": depth,
+                "role_at_submit": (
+                    "unknown" if not known else
+                    "root" if depth == 0 else
+                    "coordinator" if invocation in self.delegating else "leaf_child"
+                ),
+                "root_delegation_round": root_round,
+            }
+
+
+def structure_groups(requests, values):
+    grouped = {
+        name: defaultdict(list)
+        for name in ("spawn_depth", "role_at_submit", "root_delegation_round")
+    }
+    for rid, value in values:
+        metadata = requests.get(rid, {})
+        for name, groups in grouped.items():
+            raw = metadata.get(name)
+            group = (
+                "unknown" if raw is None else
+                "2+" if name == "root_delegation_round" and raw >= 2 else str(raw)
+            )
+            groups[group].append(value)
+    return grouped
+
+
+def structure_diagnostics(requests, errors, selected, terminals, other):
+    selection = structure_groups(requests, (
+        (rid, "natural_final" if rid in terminals else
+         "confirmed_other" if rid in other else "unresolved")
+        for rid in selected
+    ))
+    return {
+        "scope": (
+            "Observed structure at each non-internal request submission, never a future "
+            "delegation or final graph. Errors cover delivered forecasts on natural "
+            "RETURN requests only; role/round differences are descriptive, not causal "
+            "workload-shift attribution or independent model validation. Missing lineage "
+            "remains unknown. The root round follows the ancestor's observed JOIN wait."
+        ),
+        "first_crossing_by_structure": {
+            name: {group: dict(Counter(values)) for group, values in groups.items()}
+            for name, groups in selection.items()
+        },
+        "work_errors_by_structure": {
+            series: {
+                name: {group: error_summary(values) for group, values in groups.items()}
+                for name, groups in structure_groups(requests, rows).items()
+            }
+            for series, rows in errors.items()
+        },
+    }
+
 
 def snapshot_records(path: Path, *, allow_partial: bool):
     """Read a fixed byte snapshot without treating a live trailing row as corruption."""
@@ -35,10 +143,14 @@ def snapshot_records(path: Path, *, allow_partial: bool):
 
 
 def error_summary(rows: list[tuple[float, int, float]]) -> dict:
+    absolute = sorted(abs(row[0]) for row in rows)
     return {
         "request_count": len(rows),
         "median_signed_error_tokens": median(row[0] for row in rows) if rows else None,
-        "median_absolute_error_tokens": median(abs(row[0]) for row in rows) if rows else None,
+        "median_absolute_error_tokens": median(absolute) if rows else None,
+        "p90_absolute_error_tokens": (
+            absolute[min(len(absolute) - 1, int(.9 * len(absolute)))] if rows else None
+        ),
         "median_actual_remaining_tokens": median(row[1] for row in rows) if rows else None,
         "median_forecast_remaining_tokens": median(row[2] for row in rows) if rows else None,
     }
@@ -150,7 +262,7 @@ def notice_feature_alignment(
     return {
         "scope": (
             "Client announcement history versus delivered model inputs; clock conversion "
-            "uses the first census offset. Delivery ordering is not atomically observed. "
+            "uses the first recorded paired scheduler clock. Delivery ordering is not atomically observed. "
             "A missing input is not proof of a usable H2D opportunity."
         ),
         "snapshot_counts": dict(counts), "unmatched_snapshot_count": unmatched,
@@ -275,7 +387,7 @@ def trigger_diagnostics(
             "Native EOS and child RETURN are evaluation labels only. Work error "
             "at the trigger rate and the remaining rate gap decompose the EOS "
             "time error algebraically; the rate gap is not measured GPU queue time. "
-            "Client RETURN uses the first census wall-minus-monotonic clock offset; "
+            "Client RETURN uses the first recorded scheduler wall-minus-monotonic clock offset; "
             "missing clocks or labels remain unknown. A future forecast is never matched."
         ),
         "rows": rows,
@@ -354,8 +466,11 @@ def audit(arm: Path, threshold: float, *, allow_partial: bool = False) -> dict:
     requests_by_invocation = defaultdict(set)
     notice_events = defaultdict(list)
     join_events = []
+    request_structure = {}
     for path in sorted((clients[0] / "workflows").glob("*/runtime_events.deepagents.jsonl")):
+        structure = RequestStructure()
         for row in snapshot_records(path, allow_partial=allow_partial):
+            structure.observe(row)
             attrs = row.get("attributes") or {}
             invocation = row.get("invocation_id")
             if row["kind"] == "join_create" and type(row.get("ts_ms")) in (int, float):
@@ -386,6 +501,9 @@ def audit(arm: Path, threshold: float, *, allow_partial: bool = False) -> dict:
                 nonterminal.update(requests_by_invocation[invocation] - terminals)
             elif row["kind"] == "invocation_cancel":
                 nonterminal.update(requests_by_invocation[invocation] - terminals)
+        if request_structure.keys() & structure.requests.keys():
+            raise ValueError("request identity reused across workflow traces")
+        request_structure.update(structure.requests)
     native = {
         row["attributes"]["request_id"]: row
         for row in snapshot_records(arm / "server/runtime_events.sglang.jsonl", allow_partial=allow_partial)
@@ -407,20 +525,19 @@ def audit(arm: Path, threshold: float, *, allow_partial: bool = False) -> dict:
             accepted_stages.add((
                 row.get("child_invocation_id"), row.get("join_id"), row.get("context_epoch"),
             ))
-        elif row["event"] == "safe_point_census" and clock_offset_ms is None:
-            if type(row.get("monotonic_ms")) in (int, float):
-                clock_offset_ms = row["ts_ms"] - row["monotonic_ms"]
+        elif clock_offset_ms is None:
+            clock_offset_ms = runtime_clock_offset(row)
     selected = {
         rid: match for rid, rows in forecasts.items()
         if (match := next((row for row in rows if row["score"] >= threshold), None))
         is not None
     }
-    work_errors = {}
+    work_errors, structured_errors = {}, {}
     for name in (
         "first_threshold_crossing", "last_accepted_snapshot",
         "last_pre_native_result_snapshot",
     ):
-        errors = []
+        errors, identified = [], []
         for rid in terminals & forecasts.keys() & native.keys():
             if name == "first_threshold_crossing":
                 snapshot = selected.get(rid)
@@ -437,7 +554,10 @@ def audit(arm: Path, threshold: float, *, allow_partial: bool = False) -> dict:
             if actual < 0:
                 continue
             prediction = snapshot["remaining_tokens"]
-            errors.append((prediction - actual, actual, prediction))
+            error = (prediction - actual, actual, prediction)
+            errors.append(error)
+            identified.append((rid, error))
+        structured_errors[name] = identified
         work_errors[name] = error_summary(errors)
         work_errors[name]["within_100_actual_remaining_tokens"] = error_summary(
             [row for row in errors if row[1] <= 100]
@@ -485,6 +605,10 @@ def audit(arm: Path, threshold: float, *, allow_partial: bool = False) -> dict:
         "latest_start_at_or_after_native_result_count": after_eos,
         "latest_start_missing_native_result_count": unknown_eos,
         "estimated_work_trigger_diagnostics": diagnostics,
+        "request_structure_diagnostics": structure_diagnostics(
+            request_structure, structured_errors, selected, terminals, confirmed_other,
+        ),
+        "clock_offset_ms": clock_offset_ms,
         "notice_input_alignment": notice_feature_alignment(
             notice_events, forecasts, clock_offset_ms,
             accepted_stages=accepted_stages, join_events=join_events,
@@ -499,12 +623,37 @@ def main() -> None:
     parser.add_argument("--artifact", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--allow-partial", action="store_true")
+    parser.add_argument("--sealed-prefix-report", type=Path)
     args = parser.parse_args()
     report = json.loads((args.artifact.resolve().parent / "report.json").read_text())
     threshold = report["calibration"]["semantic_event"]["request_operating_point"]["threshold"]
     if type(threshold) not in (int, float) or not 0 <= threshold <= 1:
         raise ValueError("invalid frozen model threshold")
-    result = audit(args.arm, float(threshold), allow_partial=args.allow_partial)
+    if args.output.exists():
+        parser.error("output exists; use a new observation filename")
+    if args.sealed_prefix_report is None:
+        result = audit(args.arm, float(threshold), allow_partial=args.allow_partial)
+    else:
+        payload = args.sealed_prefix_report.read_bytes()
+        evidence = json.loads(payload)
+        sealed = SealedRecords()
+        sealed.prefixes = evidence["input_jsonl_prefixes"]
+
+        def observed_records(path, *, allow_partial):
+            if str(Path(path)) not in sealed.prefixes:
+                raise ValueError(f"input absent from sealed report: {path}")
+            yield from sealed(path)
+
+        with patch.dict(globals(), snapshot_records=observed_records):
+            result = audit(args.arm, float(threshold), allow_partial=args.allow_partial)
+        result["sealed_prefix_report"] = {
+            "path": str(args.sealed_prefix_report.resolve()),
+            "sha256": hashlib.sha256(payload).hexdigest(),
+            "collection_code_commit": evidence["collection_code_commit"],
+            "input_jsonl_prefixes": sealed.prefixes,
+        }
+    result["auditor_sha256"] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(result, indent=2))
 

@@ -1,5 +1,6 @@
 import hashlib
 import json
+from pathlib import Path
 import pytest
 
 from scripts.export_delivered_semantic_work_samples import collect, normalized_seals, reconstruct
@@ -86,13 +87,17 @@ def test_missing_seals_are_rejected():
         normalized_seals({})
 
 
-def test_collect_keeps_sealed_text_and_excludes_intervened_workflow(tmp_path):
+@pytest.mark.parametrize("clock_kind", ["safe_point_census", "admission_runtime_state"])
+@pytest.mark.parametrize("relative_seals", [False, True])
+def test_collect_keeps_sealed_text_and_excludes_intervened_workflow(
+    tmp_path, clock_kind, relative_seals,
+):
     arm = tmp_path / "arm"
     workflow = arm / "client_1/workflows/psf__requests-1"
     forecast, text, native = sample_inputs()
     sources = {
         arm / "opportunities/admission_opportunities.jsonl": [
-            {"event": "safe_point_census", "ts_ms": 2000., "monotonic_ms": 1000.},
+            {"event": clock_kind, "ts_ms": 2000., "monotonic_ms": 1000.},
             {"event": "semantic_child_forecast", **forecast},
         ],
         arm / "server/runtime_events.sglang.jsonl": [
@@ -124,18 +129,33 @@ def test_collect_keeps_sealed_text_and_excludes_intervened_workflow(tmp_path):
     audit = workflow / "sandbox_audit.jsonl"
     audit.write_text("")
     report = tmp_path / "sealed.json"
-    report.write_text(json.dumps({"verified_input_prefixes": seals}))
+    report.write_text(json.dumps({"verified_input_prefixes": {
+        str(Path(name).relative_to(tmp_path)) if relative_seals else name: seal
+        for name, seal in seals.items()
+    }}))
     content = workflow / "child_stream_content.jsonl"
     with content.open("a") as stream:
         stream.write(json.dumps({"event": "child_stream_content", **text, "ts_ms": 3000.}) + "\n")
-    rows, coverage, verified, excluded = collect(report, arm)
+    rows, coverage, verified, excluded = collect(report, arm, source_root=tmp_path)
     assert len(rows) == 1
     assert coverage["notice_active_snapshot_count"] == 1
     assert excluded == []
     assert verified[str(content)]["read_complete_prefix_bytes"] == seals[str(content)]["complete_prefix_bytes"]
     assert verified[str(audit)]["sha256"] == hashlib.sha256(b"").hexdigest()
     audit.write_text(json.dumps({"event": "agent_protocol_repair_attempt"}) + "\n")
-    rows, coverage, _, excluded = collect(report, arm)
+    rows, coverage, _, excluded = collect(report, arm, source_root=tmp_path)
     assert rows == []
     assert excluded == ["psf__requests-1"]
     assert coverage["omitted_snapshot_counts"]["intervened_or_missing_intervention_audit"] == 1
+
+
+def test_relative_seals_require_an_explicit_root_and_cannot_escape_it(tmp_path):
+    seal = {"complete_prefix_bytes": 0, "complete_prefix_sha256": hashlib.sha256(b"").hexdigest()}
+    report = {"input_jsonl_prefixes": {"trace.jsonl": seal}}
+    with pytest.raises(ValueError, match="explicit source root"):
+        normalized_seals(report)
+    assert str(tmp_path / "trace.jsonl") in normalized_seals(report, source_root=tmp_path)
+    with pytest.raises(ValueError, match="escapes"):
+        normalized_seals(
+            {"input_jsonl_prefixes": {"../trace.jsonl": seal}}, source_root=tmp_path,
+        )

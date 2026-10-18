@@ -48,6 +48,16 @@ def test_forecasts_use_recorded_mass_conditioned_at_acceptance():
     assert result["single_tool_round_forecast_timing"]["rounds_with_last_second_forecasts"] == 1
 
 
+def test_sampling_off_runtime_clock_matches_the_census_clock():
+    result = evaluate(labels(), [
+        {"event": "admission_runtime_state", "ts_ms": 1100., "monotonic_ms": 1000.},
+        forecast(),
+    ])
+    assert result["scheduler_wall_minus_monotonic_ms"] == 100.
+    assert result["rows"] == evaluate(labels(), records(forecast()))["rows"]
+    assert "forecasts_without_clock_anchor" not in result["counts"]
+
+
 def test_missing_boundaries_expired_and_later_forecasts_are_not_accuracy_labels():
     result = evaluate(labels(), records(
         forecast(ts_ms=1900., observed_monotonic_ms=-4000.),

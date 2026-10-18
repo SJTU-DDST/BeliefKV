@@ -16,6 +16,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.replay_semantic_work_prefix import prefix_records
+from scripts.summarize_semantic_h2d_ab import runtime_clock_offset
 
 INTERVENTIONS = frozenset({
     "agent_graph_budget_finalization", "agent_guard_finalization_attempt",
@@ -28,7 +29,7 @@ def read_json(path: Path) -> dict:
     return json.loads(gzip.decompress(payload) if path.suffix == ".gz" else payload)
 
 
-def normalized_seals(report: dict) -> dict:
+def normalized_seals(report: dict, *, source_root: Path | None = None) -> dict:
     sources = next((
         report[name] for name in (
             "verified_input_prefixes", "source_prefix_seals", "input_jsonl_prefixes",
@@ -40,7 +41,11 @@ def normalized_seals(report: dict) -> dict:
     for name, seal in sources.items():
         path = Path(name)
         if not path.is_absolute():
-            raise ValueError("source seals require absolute paths")
+            if source_root is None:
+                raise ValueError("source seals require absolute paths or an explicit source root")
+            path = (source_root / path).resolve()
+            if not path.is_relative_to(source_root.resolve()):
+                raise ValueError("relative source seal escapes the source root")
         size = seal.get("read_complete_prefix_bytes", seal.get("complete_prefix_bytes"))
         digest = seal.get("sha256", seal.get("complete_prefix_sha256"))
         if type(size) is not int or size < 0 or not isinstance(digest, str) or len(digest) != 64:
@@ -91,8 +96,10 @@ def reconstruct(observation: dict, text: dict, native: dict, return_ts_ms: float
     }
 
 
-def collect(sealed: Path, arm: Path) -> tuple[list[dict], dict, dict, list[str]]:
-    seals = normalized_seals(read_json(sealed))
+def collect(
+    sealed: Path, arm: Path, *, source_root: Path | None = None,
+) -> tuple[list[dict], dict, dict, list[str]]:
+    seals = normalized_seals(read_json(sealed), source_root=source_root)
     verified = {}
 
     def records(path):
@@ -106,8 +113,8 @@ def collect(sealed: Path, arm: Path) -> tuple[list[dict], dict, dict, list[str]]
     for row in records(arm / "opportunities/admission_opportunities.jsonl"):
         if row["event"] == "semantic_child_forecast":
             forecasts.append(row)
-        elif row["event"] == "safe_point_census" and offset is None:
-            offset = row["ts_ms"] - row["monotonic_ms"]
+        elif offset is None:
+            offset = runtime_clock_offset(row)
     if offset is None:
         raise ValueError("missing wall/monotonic clock alignment")
     native = {}
@@ -219,7 +226,9 @@ def main():
     plan = read_json(args.plan)
     if plan["training_runs"] + plan["calibration_evaluation_runs"] != [run]:
         raise ValueError("export source differs from frozen work plan")
-    samples, coverage, verified, excluded = collect(args.sealed, arm)
+    samples, coverage, verified, excluded = collect(
+        args.sealed, arm, source_root=source_root,
+    )
     if plan["snapshot_policy"] != coverage["snapshot_policy"]:
         raise ValueError("sample policy differs from frozen work plan")
     args.output.mkdir(parents=True)

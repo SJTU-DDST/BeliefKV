@@ -5,6 +5,30 @@ Status date: 2026-10-18 (PDT).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+V1729 freezes an independent10:26 PDT Host-status observation. Both pools reached
+capacity, but cumulative FULL retirement265.19GB is not distinct useful loss.
+Exact-prefix reaccess attributes3896 FULL tokens/79.79MB to recomputation;
+pending/expired records and Mamba hit locations remain unknown. V1726 observes
+203 closed JOIN waits,160 positive FULL plans,95 early submissions and84 early
+reuse events/3.180GB. Overlapping reasons include111 HBM-capacity refusals and40
+empty Host-backed missing-copy observations; the latter also includes device
+residency and does not identify Host-eviction causality.
+
+V1732 adds causal role/depth/root-round grouping. Among161 natural final requests,
+last-pre-EOS work MAE P50 is44.92 tokens for128 first-round requests and56.75 for33
+later-round requests. Only7 depth2 and4 coordinator requests are observed; keep
+generalization unknown. Of74 first estimated-work triggers,56 remain more than2s
+before native EOS. Notice-input alignment has no observed missing inputs.
+V1731 passes94 CPU cases for sealed analysis, sampling-off paired clocks and sample
+export. V1733 exports19546 delivered snapshots from159 natural requests.
+V1735 repairs the corresponding tool-audit clock path:12597 rounds with last-second
+forecasts have round-weighted absolute error P50/P90 of110.22/576.90ms;
+432 multi-tool rounds yield163.71/622.98ms. This is selected trace diagnostics,
+not all-tool or independent generalization proof. V1736 passes105 CPU cases.
+Fit a work-only candidate on the fixed project split, leaving phase/encoder and
+running V82b artifacts untouched. Report held-development work and trigger metrics
+before any later deployment; neither a refit nor local tests close GPU acceptance.
+
 At09:55 PDT V82b's second48-root wave is in actual GPU service: V1715 observes
 all156 workflow starts,22 roots with multiple rounds and9 nested workflows/depth2;
 86 terminal results are completed, with correctness not independently graded.

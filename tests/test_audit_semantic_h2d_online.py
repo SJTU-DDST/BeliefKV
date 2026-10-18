@@ -1,9 +1,11 @@
 import json
+import hashlib
 
 import pytest
 
 from scripts.audit_semantic_h2d_online import (
-    audit, notice_feature_alignment, sampled_trigger_replay, snapshot_records,
+    RequestStructure, audit, notice_feature_alignment, sampled_trigger_replay,
+    snapshot_records, structure_diagnostics,
 )
 
 
@@ -52,6 +54,8 @@ def test_audit_groups_requests_and_keeps_native_eos_separate(tmp_path):
     assert result["work_errors"]["last_pre_native_result_snapshot"]["median_signed_error_tokens"] == -10
     assert result["latest_start_before_native_result_count"] == 1
     assert result["latest_start_at_or_after_native_result_count"] == 1
+    unknown = result["request_structure_diagnostics"]["work_errors_by_structure"]
+    assert unknown["first_threshold_crossing"]["spawn_depth"]["unknown"]["request_count"] == 1
 
 
 def write_rows(path, rows):
@@ -142,6 +146,143 @@ def test_missing_native_result_and_mismatched_forecast_remain_unknown(tmp_path):
     assert result["work_error_summary"]["request_count"] == 0
     assert result["rows"][0]["lead_to_native_eos_ms"] is None
     assert result["rows"][0]["projected_remaining_tokens"] is None
+
+
+def test_request_structure_does_not_use_a_later_delegation_or_round():
+    structure = RequestStructure()
+    rows = [
+        {"kind": "invocation_create", "invocation_id": "root", "relation_type": "root"},
+        {"kind": "invocation_create", "invocation_id": "child", "relation_type": "spawn",
+         "parent_invocation_id": "root", "join_id": "first"},
+        {"kind": "join_wait", "invocation_id": "root", "join_id": "first"},
+        {"kind": "llm_submit", "invocation_id": "child",
+         "attributes": {"request_id": "before_nested"}},
+        {"kind": "invocation_create", "invocation_id": "grandchild", "relation_type": "spawn",
+         "parent_invocation_id": "child", "join_id": "nested"},
+        {"kind": "spawn", "invocation_id": "child", "target_invocation_id": "grandchild"},
+        {"kind": "join_wait", "invocation_id": "child", "join_id": "nested"},
+        {"kind": "llm_submit", "invocation_id": "grandchild",
+         "attributes": {"request_id": "leaf"}},
+        {"kind": "llm_submit", "invocation_id": "child",
+         "attributes": {"request_id": "coordinator"}},
+        {"kind": "join_wait", "invocation_id": "root", "join_id": "first"},
+        {"kind": "invocation_create", "invocation_id": "later", "relation_type": "spawn",
+         "parent_invocation_id": "root", "join_id": "second"},
+        {"kind": "join_wait", "invocation_id": "root", "join_id": "second"},
+        {"kind": "llm_submit", "invocation_id": "later",
+         "attributes": {"request_id": "round_two"}},
+        {"kind": "llm_submit", "invocation_id": "child",
+         "attributes": {"request_id": "summary", "runtime_internal": True}},
+    ]
+    for row in rows:
+        structure.observe(row)
+    requests = structure.requests
+    assert requests["before_nested"] == {
+        "spawn_depth": 1, "role_at_submit": "leaf_child", "root_delegation_round": 1,
+    }
+    assert requests["coordinator"] == {
+        "spawn_depth": 1, "role_at_submit": "coordinator", "root_delegation_round": 1,
+    }
+    assert requests["leaf"] == {
+        "spawn_depth": 2, "role_at_submit": "leaf_child", "root_delegation_round": 1,
+    }
+    assert requests["round_two"]["root_delegation_round"] == 2
+    assert "summary" not in requests
+
+
+@pytest.mark.parametrize("parent", ["absent", "child"])
+def test_missing_or_cyclic_lineage_stays_unknown(parent):
+    structure = RequestStructure()
+    structure.observe({
+        "kind": "invocation_create", "invocation_id": "child", "relation_type": "spawn",
+        "parent_invocation_id": parent, "join_id": "join",
+    })
+    structure.observe({
+        "kind": "llm_submit", "invocation_id": "child", "attributes": {"request_id": "rid"},
+    })
+    assert structure.requests["rid"]["spawn_depth"] is None
+    assert structure.requests["rid"]["role_at_submit"] == "unknown"
+
+
+def test_structured_errors_keep_pending_requests_separate_from_false_positives():
+    requests = {
+        rid: {"spawn_depth": 2, "role_at_submit": "leaf_child", "root_delegation_round": 3}
+        for rid in ("final", "tool", "pending")
+    }
+    result = structure_diagnostics(
+        requests, {"pre_eos": [("final", (-3., 10, 7.))]},
+        requests.keys(), {"final"}, {"tool"},
+    )
+    assert result["first_crossing_by_structure"]["root_delegation_round"]["2+"] == {
+        "natural_final": 1, "confirmed_other": 1, "unresolved": 1,
+    }
+    errors = result["work_errors_by_structure"]["pre_eos"]["spawn_depth"]["2"]
+    assert errors["request_count"] == 1
+    assert errors["median_signed_error_tokens"] == -3.
+
+
+def test_sampling_off_state_clock_preserves_return_timing(tmp_path):
+    write_rows(tmp_path / "client_36/workflows/task/runtime_events.deepagents.jsonl", [
+        {"kind": "llm_result", "invocation_id": "child",
+         "attributes": {"request_id": "final"}},
+        {"kind": "return", "invocation_id": "child", "ts_ms": 800,
+         "attributes": {"source": "deepagents_task", "outcome": "completed"}},
+    ])
+    write_rows(tmp_path / "opportunities/admission_opportunities.jsonl", [
+        {"event": "admission_runtime_state", "ts_ms": 1100, "monotonic_ms": 100},
+        {"event": "final_stage_latest_start", "child_request_id": "final", "ts_ms": 1500,
+         "trigger_kind": "estimated_work", "generated_tokens": 30, "remaining_ms": 100},
+    ])
+    result = audit(tmp_path, .6, allow_partial=True)
+    assert result["clock_offset_ms"] == 1000.
+    assert result["estimated_work_trigger_diagnostics"]["rows"][0]["lead_to_child_return_ms"] == 300.
+
+
+def test_sealed_audit_ignores_appends_and_verifies_original_prefixes(tmp_path, monkeypatch, capsys):
+    from scripts.audit_semantic_h2d_online import main
+
+    paths = [
+        tmp_path / "client_36/workflows/task/runtime_events.deepagents.jsonl",
+        tmp_path / "server/runtime_events.sglang.jsonl",
+        tmp_path / "opportunities/admission_opportunities.jsonl",
+    ]
+    for path in paths[:2]:
+        write_rows(path, [])
+    write_rows(paths[2], [{
+        "event": "semantic_child_forecast", "request_id": "original",
+        "score": .9, "observed_output_tokens": 1, "remaining_tokens": 2,
+    }])
+    seals = {
+        str(path): {
+            "complete_prefix_bytes": path.stat().st_size,
+            "complete_prefix_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "first_read_limit_bytes": path.stat().st_size,
+        } for path in paths
+    }
+    evidence = tmp_path / "sealed.json"
+    evidence.write_text(json.dumps({"input_jsonl_prefixes": seals, "collection_code_commit": "frozen"}))
+    with paths[2].open("a") as stream:
+        stream.write(json.dumps({
+            "event": "semantic_child_forecast", "request_id": "new",
+            "score": .9, "observed_output_tokens": 1, "remaining_tokens": 2,
+        }) + "\n")
+    artifact = tmp_path / "model/artifact.json"
+    write_rows(artifact.parent / "report.json", [{
+        "calibration": {"semantic_event": {"request_operating_point": {"threshold": .6}}},
+    }])
+    output = tmp_path / "result.json"
+    monkeypatch.setattr("sys.argv", [
+        "audit", "--arm", str(tmp_path), "--artifact", str(artifact),
+        "--output", str(output), "--allow-partial",
+        "--sealed-prefix-report", str(evidence),
+    ])
+    main()
+    capsys.readouterr()
+    result = json.loads(output.read_text())
+    assert result["forecast_request_count"] == 1
+    assert result["first_crossing_unresolved_count"] == 1
+    assert result["sealed_prefix_report"]["collection_code_commit"] == "frozen"
+    assert result["sealed_prefix_report"]["input_jsonl_prefixes"] == seals
 
 
 def test_work_update_replay_reports_early_triggers_without_using_future_labels():

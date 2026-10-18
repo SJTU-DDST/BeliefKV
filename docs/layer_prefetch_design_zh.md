@@ -6,6 +6,45 @@
 问题后停止并保留部分数据。V82b于08:50 PDT从`ab951b9`冷启动，
 08:55通过真实服务核对，predictive先行、随后相同合同的native。V81不恢复。
 
+## Host压力与预测迁移
+
+[V1729状态快照](../experiments/reports/v1729_v82b_host_status_20261018.json)
+截至10:26 PDT，Host FULL/Mamba高水位约160/40.05GB，FULL累计驱逐
+265.19GB。精确前缀再访问中1173条仍命中device、20条命中Host，
+74条涉及3896 token/79.79MB重算。累计驱逐可能重复；未再访问、观察索引
+过期以及Mamba命中位置未知不能算安全备份，也不能算已确认损失。
+公共已服务输入回退代理另为1079001 token，包含边界及其他因素，
+不与前述物理归因相加，不将79.79MB当所有重算上界。
+
+[V1726密封前缀](../experiments/reports/v1726_v82b_host_predictor_question_prefix_20261018_summary.json)
+有203个闭合JOIN、160个正FULL计划、95个提前提交，84个提前且被下一请求
+确认复用，FULL为3.180GB；tool提前复用6.400GB。111个JOIN曾遇device容量
+预算限制，40个曾无Host-backed缺失副本；原因可以重叠。后一个快捷检查
+不观察全部缺副本节点，也会在HBM已驻留时返回，不能当Host驱逐人口。
+展开闭包中的无Host且无device FULL节点与必要Mamba缺失须另计。
+
+[V1732预测分组](../experiments/reports/v1732_v82b_nested_forecast_final_diagnostics_20261018.json)
+以llm_submit时已见的父子链和JOIN轮次分组，内部摘要不混入普通请求。
+EOS前最后快照共161个自然最终请求：第1轮128个的剩余token绝对误差P50
+44.92，后续33个56.75；depth2仅7个、coordinator仅4个，统计推广未知。
+74个首次work触发有56个离EOS超过2s，且末段仍存在剩余工作高估；
+不以统一时间偏置解释所有阶段。完成通知的已观察输入未发现丢失。
+模型仍只估计阶段和剩余工作，runtime决定目标、预算与传输时机。
+
+[V1731 CPU检查](../experiments/reports/v1731_nested_work_export_cpu_20261018.xml)
+94项通过。离线误差审计与样本导出可在关闭机会采样时读取现有成对时钟；
+密封前缀长度/哈希继续核对，分组不使用未来结构，不增加在线埋点。
+V1733导出19546个实际已交付快照/159个自然请求，按项目隔离重拟合
+剩余工作头；phase/encoder不变。候选与本轮运行模型分开，V82b继续冻结
+ab951b9，不能将CPU开发集改进称为整轮吞吐或未见项目验证。
+
+[V1735工具时序](../experiments/reports/v1735_v82b_tool_forecast_sealed_prefix_20261018_summary.json)
+从同一V1726前缀重新核对现有成对时钟；12597个有末秒预测的工具轮次，
+逐轮末秒绝对误差P50/P90为110.22/576.90ms，多工具轮次432个为
+163.71/622.98ms。数据支持工具时序仍有可用信息，不能证明所有轮次精确、
+实际Host机会存在或已取得吞吐收益。工具侧时钟修复后的V1736共105项CPU
+检查通过；不增加在线采样。
+
 ## JOIN并行与最新消费诊断
 
 [V1715第二批形状](../experiments/reports/v1715_v82b_second_wave_workflow_shape_20261018.json)

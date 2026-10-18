@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
 from beliefkv.runtime.sglang_v0520_prediction import NativeToolWaitHint
+from scripts.summarize_semantic_h2d_ab import runtime_clock_offset
 
 
 def identity(row: dict) -> tuple:
@@ -74,10 +75,8 @@ def evaluate(lifecycle: dict, records) -> dict:
     offset = None
     for row in records:
         event = row.get("event")
-        if event == "safe_point_census" and offset is None:
-            if finite(row.get("ts_ms")) and finite(row.get("monotonic_ms")):
-                offset = row["ts_ms"] - row["monotonic_ms"]
-            continue
+        if offset is None:
+            offset = runtime_clock_offset(row)
         if event not in ("tool_wait_forecast", "wait_prefetch_plan"):
             continue
         if event == "wait_prefetch_plan" and row.get("source") != "tool_wait":

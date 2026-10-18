@@ -1,0 +1,32 @@
+{
+  "plan_id": "child-semantic-work-nested-v82b-development",
+  "snapshot_policy": "sealed_delivered_online_forecasts",
+  "encoder": {
+    "repository": "sentence-transformers/all-MiniLM-L6-v2",
+    "revision": "962c85140d46c4a811a4d05c3a120af2918bf85c3de67d8f478891abd039471d",
+    "max_tokens": 256,
+    "local_snapshot": "experiments/models/child_semantic_work_stage2_adapted_20260930_v1/adapted_encoder",
+    "initialization": "reuse_frozen_train_only_stage2_adapter"
+  },
+  "training_runs": [
+    "experiments/raw/qwen35_nested_prefetch_two_wave_156root_20261018_v82b/predictive_h2d"
+  ],
+  "calibration_evaluation_runs": [],
+  "training_projects": [
+    "django",
+    "pylint-dev",
+    "pytest-dev",
+    "mwaskom",
+    "pallets"
+  ],
+  "calibration_projects": [
+    "pydata"
+  ],
+  "evaluation_projects": [
+    "psf"
+  ],
+  "calibration_workflow_assignment": "sorted_sha256_task_even_selector_odd_interval",
+  "nominal_workflow_interval_coverage": 0.8,
+  "exclude_runtime_interventions": true,
+  "scope": "CPU development work-only refit on a sealed V82b prefix. Keep phase, encoder, causal input schema and running GPU artifacts frozen. Split new work-head data by project and all snapshots by workflow. These projects appeared in historical development, so this is not an unseen-project test of the complete model. Nested-role sample size must be reported separately. Runtime alone decides migration utility."
+}
