@@ -8663,7 +8663,7 @@ class NativeAdmissionRuntime:
         )
         signature = (
             self.semantic_revision, self.graph.graph_version, width,
-            tuple((index, id(req), keys[index]) for index, req in ordered),
+            tuple((index, id(req), keys[index]) for index, req in ordered) if width else (),
         )
         cached = self._prefill_residency_scan
         if self._prefill_cycle_active and cached is not None and cached[0] == signature:

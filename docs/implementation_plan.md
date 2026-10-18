@@ -5,6 +5,14 @@ Status date: 2026-10-18 (PDT).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Main skips the full waiting-queue identity fingerprint when the residency scan
+width is zero: an empty target list is independent of queue contents. Positive
+widths retain full fingerprints, rotation and live rechecks. V1770 passes 573
+CPU cases using the qualified engine path, including a 512-entry non-iterable
+queue and refreshed queue selection across 0/1-slot transitions. This is a
+local work-elimination result, not measured whole-run control or GPU speedup.
+Frozen V82b remains unchanged.
+
 V1769 reconstructs40000 closed native request lifetimes from V1754's sealed
 prefix; all18663 next-request targets bind. No service sequence is missing.
 The2 unbound and1 unclosed requests start after every target launch.

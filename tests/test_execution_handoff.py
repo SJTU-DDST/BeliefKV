@@ -1361,6 +1361,54 @@ def test_residency_scan_rechecks_slot_changes_within_one_cycle(monkeypatch):
     runtime.close()
 
 
+def test_zero_width_residency_scan_does_not_walk_waiters_or_read_request_keys(monkeypatch):
+    runtime, (cold, _, _), cache = runtime_with_requests(monkeypatch)
+    runtime._prefill_cycle_active = True
+    runtime._residency_scan_cursor = 8
+
+    class NoIteration(list):
+        def __iter__(self):
+            raise AssertionError("zero-width scan must not traverse waiters")
+
+    class NoKeyLookup(dict):
+        def __getitem__(self, index):
+            raise AssertionError("zero-width scan must not bind request keys")
+
+    with patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+        0, 1024 ** 3, source="native_next_prefill",
+    )):
+        first = runtime._resident_prefill_scan(NoIteration([(0, cold)] * 512), NoKeyLookup())
+        assert first == []
+        assert runtime._resident_prefill_scan(NoIteration([(1, cold)]), NoKeyLookup()) is first
+    assert runtime._residency_scan_cursor == 8
+    assert runtime.counts["admission_residency_scan_targets"] == 0
+    assert runtime.counts["admission_residency_scan_reused"] == 1
+    cache.inspect_beliefkv_reentry.assert_not_called()
+    runtime.close()
+
+
+def test_zero_width_residency_cache_rechecks_new_queue_when_slots_return(monkeypatch):
+    runtime, (cold, warm, _), _ = runtime_with_requests(monkeypatch)
+    runtime._prefill_cycle_active = True
+    ordered = [(index, cold if index % 2 else warm) for index in range(32)]
+    reversed_queue = list(reversed(ordered))
+    keys = {index: runtime.visible[request.rid] for index, request in ordered}
+    budgets = [
+        PrefetchResidencyBudget(slots, 1024 ** 3, source="native_next_prefill")
+        for slots in (0, 1, 0, 1)
+    ]
+    with patch.object(runtime, "_current_residency_budget", side_effect=budgets):
+        assert runtime._resident_prefill_scan(ordered, keys) == []
+        first = runtime._resident_prefill_scan(reversed_queue, keys)
+        assert first[0] == reversed_queue[0]
+        assert len(first) == 9
+        assert runtime._resident_prefill_scan(reversed_queue, keys) == []
+        second = runtime._resident_prefill_scan(ordered, keys)
+        assert second[0] == ordered[0]
+        assert len(second) == 9
+    runtime.close()
+
+
 @pytest.mark.parametrize("source", ("native_next_prefill", "fallback"))
 def test_full_width_residency_scan_retains_existing_rotation_and_read_counts(
     monkeypatch, source,
