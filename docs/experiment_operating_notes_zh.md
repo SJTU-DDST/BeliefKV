@@ -7,6 +7,14 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 后续开发固定在主目录 `/home/longhao/experiment/BeliefKV` 的 `main` 分支。
 历史实验 worktree 保留其冻结来源；新代码修改、验证与提交在主目录进行。
 
+**native第二批与不完整结果。**V1797于13:26 PDT逐请求核对第二批48个
+root的首prefill/正token decode及实际CUDA scheduler；全156已到达，
+该截面93 completed、2 incomplete，strict92。V1798的django-10554/
+11206均有原生8192输出与client finish_reason=length，不能解释为工具/
+workflow超时或JOIN未结束。pytest-6202的原图预算收尾保留为strict排除。
+沿用用户既定输出上限，不能只改一侧、用新guard凑完成数或静默删除失败。
+当前native继续收集，冻结来源与全程性能/正确性验收口径不变。
+
 **预测worker退出轮询。**结果pipe和进程sentinel共用poller，不增加交付
 周期；同轮退出/结果都就绪时继续优先失效，semantic须用零等待join回收。
 提交/关闭检查与启动、推理超时保留。V1790有1178项相关CPU通过，不包含

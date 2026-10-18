@@ -5,6 +5,16 @@ Status date: 2026-10-18 (PDT).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+At13:26 PDT, V1797 verifies native second-wave first prefill and positive decode
+for all48 root requests, matching live actor start ticks and CUDA scheduler2390962.
+All156 roots have arrived; the terminal prefix is93 completed/2 incomplete,
+with93 system-valid/92 strict-valid and no error. V1798 binds both incomplete
+roots (django-10554/11206) to8192 native output tokens and client finish_reason
+length, completed child/JOIN dependencies and unexpired workflow deadlines.
+pytest-6202 is completed but has one original graph-budget finalization.
+Preserve shared frozen budgets and these outcomes; do not restart for output
+truncation or label the partial comparison complete.
+
 Main now shares result-pipe and process-exit readiness in both predictor workers.
 It removes repeated idle is_alive/waitpid checks without adding a result-delivery
 timer; exit wins over queued results, semantic exit is reaped with join(timeout=0),

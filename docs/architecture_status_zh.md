@@ -2,6 +2,16 @@
 
 更新日期：2026-10-18（PDT）。
 
+**13:26 PDT native第二批核验。**V1797逐任务绑定第二批48个root的首次
+模型请求，全部有真实prefill及正token decode；driver/server/scheduler/
+client的start ticks匹配，scheduler2390962仍关联CUDA。156个root均已到达，
+该截面有93 completed、2 incomplete，无error；system有效93、strict92。
+V1798确认django-10554/11206的末次root请求均为client finish_reason=length、
+原生输出8192 token，child/JOIN均完成且workflow deadline未过期。
+pytest-6202为completed，但原图预算收尾介入1次，严格口径排除。
+保持两侧冻结输出/图预算，不新增guard或自动重启；后续全程比较须保留
+这些不完整/介入结果。原predictive/native完整对照仍未结束。
+
 **worker结果/退出合并轮询，仅main。**两个预测worker将子进程sentinel
 登记到已有result poller，省去空轮询中的重复Process.is_alive/waitpid，
 不增加结果交付间隔。退出优先于同轮已入队结果；semantic退出后用零等待
