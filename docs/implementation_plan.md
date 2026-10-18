@@ -23,6 +23,9 @@ JCT. Two64.53/47.81s tool-to-next-submit gaps contain paired internal-summary
 requests lasting64.41/47.75s. Do not attribute them to ordinary client handoff.
 Next inspect actual JOIN admission eligibility/leases and summary-induced lost
 consumption; keep the second wave and full matched performance/quality pending.
+V1714 matches actual commands in all12 long-ACK JOINs to pre-completion lease
+expiry. Unlocking does not prove eviction. Improve early timing and actual
+post-arrival readiness/cost before extending residency or claiming removable waits.
 
 Current GPU collection is V82b: application ab951b9, predictive then matched native,
 launched at08:50 PDT and actual workflow GPU service verified at08:55. V1693
