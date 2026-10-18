@@ -5,7 +5,17 @@ Status date: 2026-10-18 (PDT).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-Current GPU collection: the user's 2026-10-18 "GPU is free" instruction supersedes
+Current GPU collection is V82b: application ab951b9, predictive then matched native,
+launched at08:50 PDT and actual workflow GPU service verified at08:55. V1693
+binds actual capacities/settings, frozen app/engine/artifacts, arrivals and shared
+delegation contract. Three sampling-off audit paths succeed on sealed live prefixes.
+physical_disabled=false and overlap support are verified; no performance or quality
+acceptance yet. V82's interrupted prefix has9/108 roots entering a second round
+and no nested spawn. Four rounds/depth2 remain configured targets, not results.
+JOIN ACK-to-service P90 is still19.94s in that partial prefix; retain it as a next
+optimization priority alongside useful FULL coverage and low control cost.
+
+The user's 2026-10-18 "GPU is free" instruction supersedes
 the prior October 19 08:00 Asia/Shanghai reservation. V82 was launched at
 08:25 PDT from frozen application `44c802f` and qualified engine tree `53020ce3`.
 Run predictive first, then native on the same 156-task nested 108+48/3600s

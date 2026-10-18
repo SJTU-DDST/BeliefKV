@@ -3,7 +3,8 @@
 更新：2026-10-18。此文优先解释当前开发方向；此前研究筛选结论保留为历史。
 用户于2026-10-18确认GPU已空闲，覆盖此前北京时间2026-10-19 08:00的
 占用约定。V82于08:25 PDT发起并通过真实服务核对；发现新的串行化与审计
-问题后准备V82b冷启动，predictive先行、随后相同合同的native。V81不恢复。
+问题后停止并保留部分数据。V82b于08:50 PDT从`ab951b9`冷启动，
+08:55通过真实服务核对，predictive先行、随后相同合同的native。V81不恢复。
 
 ## 在途恢复与审计修复
 
@@ -31,6 +32,25 @@ wall/monotonic锚点；四个审计路径接受该锚点。没有机会样本仍
 2组/8节点，均未伪造ACK或复用。其他空路径与JOIN扫描没有同等改善，
 不能外推整轮控制成本、DMA吞吐或JCT。V82b用于实际验证新代码。
 
+## 当前观测与待验证项
+
+[V1693启动回执](../experiments/reports/v1693_v82b_actual_service_and_clock_20261018.json)
+核对V82b的真实工作流GPU服务、固定物理容量、委派合同、到达表、冻结
+应用/引擎/模型产物，physical_disabled=false、overlap支持、两个context
+和各开关均符合计划。在未开启机会采样的新trace前缀上，JOIN传输、
+JOIN候选、tool传输三个审计已成功执行；这不是完整对照或性能验收。
+
+V82停止前的[V1690迁移审计](../experiments/reports/v1690_v82_partial_native_h2d_sources_20261018.json)
+和[V1691生命周期审计](../experiments/reports/v1691_v82_partial_prefetch_lifecycle_20261018.json)
+记录JOIN/tool所传FULL为0.995/14.963GB，下一请求确认复用0.521/12.891GB；
+不能在缺少旧成对时钟时将它们都算作完成边界前的预取收益。
+JOIN/tool的ACK→首次服务P90为19.943/1.866s，后续仍须重点检查JOIN
+恢复后的准入等待、重复加载及有用状态丢失。
+[V1692实际形状](../experiments/reports/v1692_v82_partial_workflow_shape_20261018.json)
+仅覆盖第一批108个root的未完成前缀：9个进入第二轮，尚无coordinator/
+嵌套spawn。代码与合同支持深度2不等于模型已执行嵌套或四轮；本轮继续
+如实统计，不能将配置目标作为workload已经达标的结果。
+
 ## 当前 GPU 对照
 
 V82使用冻结应用`44c802f`、合格引擎tree `53020ce3`，开发继续在主目录
@@ -47,9 +67,9 @@ V82b目录为
 `experiments/raw/qwen35_nested_prefetch_two_wave_156root_20261018_v82b`，
 精确应用提交以该目录ab_plan.json为准。启动与端到端性能分别核验。
 
-## 最新控制路径与预取目标
+## 上一轮控制路径与预取目标
 
-开发检出固定为 `/home/longhao/experiment/BeliefKV` 的 `main`；本轮
+开发检出固定为 `/home/longhao/experiment/BeliefKV` 的 `main`；上一CPU阶段
 `/goal` 基于 `52656d3`，完成高候选规模的重复工作削减和安全预取机会
 修复，验收仍限定 CPU。下方 V1670/V1671 是上一轮结果，不代表新一轮
 整体控制成本或 GPU 吞吐已经达标。

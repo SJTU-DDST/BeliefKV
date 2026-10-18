@@ -19,7 +19,10 @@ V81保持用户停止状态；启动进程不等于性能验收通过。
 否则旧JOIN/tool审计会在predictive结束后阻断native。时钟不是物理机会，
 不将缺少均匀机会样本解释为零机会。1114项CPU通过，两个合法tool恢复
 可在首笔ACK前提交；容量/会话/原生依赖与ACK/首次复用口径保持不变。
-下一对目录为`experiments/raw/qwen35_nested_prefetch_two_wave_156root_20261018_v82b`。
+当前目录为`experiments/raw/qwen35_nested_prefetch_two_wave_156root_20261018_v82b`。
+08:50从ab951b9启动，08:55已核对真实GPU服务和三个关闭采样的审计路径，
+见V1693；native仍按同一冻结版本接续。V82的108个root部分前缀仅9个
+进入第二轮、无实际嵌套，不把四轮/深度2配置当作实际达标或吞吐结果。
 
 **最新 CPU 执行约定（V1676–V1678）。**JOIN 的服务资格/最大提前量检查
 先于完整物理规划，但有效无工具 EOS 不要求 child 仍在 running batch。
