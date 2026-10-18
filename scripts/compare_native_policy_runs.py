@@ -888,9 +888,10 @@ def compare_run(arm: Path, timeline_path: Path, bin_seconds: int) -> dict:
         },
         "shared_path_cpu_profile": {
             **cpu_profile,
+            "available": bool(cpu_profile and cpu_profile.get("enabled", True)),
             "instrumented_exclusive_sum_ms": sum(
                 phase["self_ms"] for phase in cpu_profile.get("phases", {}).values()
-            ) if cpu_profile else None,
+            ) if cpu_profile and cpu_profile.get("enabled", True) else None,
             "semantics": "Instrumented Python wall intervals, not CPU cycles or total GPU idle time.",
         },
         "milestones": milestones, "bands": bands,

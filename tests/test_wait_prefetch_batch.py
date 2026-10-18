@@ -709,9 +709,10 @@ def test_wait_plan_reports_remaining_full_and_state_without_implying_ready():
                 replace(partial, host_backed_full_missing_device_tokens=None),
                 reason="submitted",
             )
-        assert [row["unplanned_host_backed_full_tokens"] for row in records] == [12, 8, 0, None]
+        assert [row["unplanned_host_backed_full_tokens"] for row in records] == [12, 12, 8, 0, None]
         assert [row["restore_batch_scope"] for row in records] == [
             "partial_observed_host_backed_full", "partial_observed_host_backed_full",
+            "partial_observed_host_backed_full",
             "all_observed_host_backed_full", "unobservable",
         ]
         assert all(row["host_backed_mamba_missing_device_nodes"] == 1 for row in records)
@@ -794,6 +795,7 @@ def test_cold_reclaim_excludes_every_node_in_the_target_prefix():
 @pytest.mark.parametrize("source", ["join_ticket", "tool_wait"])
 def test_wait_restore_keeps_native_reserve_from_planning_through_enqueue(source):
     runtime, key, opportunity, cache, _ = batch_fixture(source)
+    runtime.enable_h2d_opportunity_sampling = True
     headroom = [
         replace(opportunity.headroom, device_full_free_tokens=20, device_mamba_free_slots=1)
     ]
@@ -1184,6 +1186,7 @@ def test_uncertain_tool_window_reaches_reclaim_and_revalidated_batch_submission(
     requires_reclaim,
 ):
     runtime, key, opportunity, cache, _ = batch_fixture("tool_wait")
+    runtime.enable_h2d_opportunity_sampling = True
     hint = runtime.tool_wait_hints[key.context_id]
     runtime._h2d_samples.extend(((180, 15.),) * 3)
     budget = PrefetchResidencyBudget(

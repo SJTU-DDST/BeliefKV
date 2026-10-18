@@ -39,6 +39,7 @@
     "PREDICTION_MAINTENANCE_INTERVAL_MS": "100",
     "H2D_OPPORTUNITY_SAMPLING": "0",
     "TERMINAL_CACHE_DIAGNOSTICS": "0",
+    "PROFILE_SHARED_PATH": "0",
     "CHILD_FINAL_REPORT_SHADOW": "1",
     "BELIEFKV_CHECKPOINT_PATH_SHADOW": "0",
     "BELIEFKV_WORKFLOW_ATTAINED_WORK": "0",
@@ -51,7 +52,10 @@
     "verify identical nested delegation contracts in both client manifests and summaries",
     "report actual root rounds, nested rounds, successful JOINs and spawn depths rather than configured targets",
     "count early submit and next-request FULL reuse separately from demand restoration",
-    "report useful recompute, duplicate loading, PREPARE consumption and control cost",
+    "separate terminal private KV reclamation, Host-backed HBM eviction, loss of recoverable copies and subsequent useful-prefix recomputation",
+    "report Host eviction reaccess, cached input/device/Host tokens, same-session common-input loss, native dropped-token and retraction evidence with coverage; absent evidence is unknown",
+    "report useful recompute, duplicate loading, PREPARE consumption and control cost; detailed CPU scopes are opt-in and disabled scopes are unmeasured",
+    "if nested agents increase useful-prefix loss or retraction while restore opportunities shrink, adjust offered load or concurrency rather than count destructive churn as useful migration",
     "report all workflow outcomes, quality, mean JCT, tail and high-pressure throughput",
     "do not infer complete later-layer overlap or oracle throughput from layer counts"
   ]

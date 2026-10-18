@@ -6,9 +6,37 @@ import sys
 import pytest
 
 from scripts.summarize_semantic_h2d_ab import (
-    cleanup_workspaces, main, paired_trajectory_report, summarize,
+    capacity_pressure_watch, cleanup_workspaces, main, paired_trajectory_report, summarize,
     verify_frozen_execution_source, workflow_trajectory_audit, workload_balance,
 )
+
+
+def test_capacity_watch_keeps_loss_populations_and_missing_evidence_separate():
+    missing = capacity_pressure_watch({})
+    assert missing["same_session_common_input"]["missing_fraction"] is None
+    assert missing["evicted_host_full_reaccess"]["recomputed_units"] is None
+    native = {
+        "context_prefix_reuse_evidence": {"counts": {
+            "with_prior_served_prompt": 4,
+            "previously_served_common_prefix_tokens": 100,
+            "previously_served_prefix_recompute_proxy_tokens": 25,
+            "requests_with_prefix_recompute_proxy": 1,
+        }},
+        "host_block_eviction_attribution": {
+            "available": True, "reused_full_units": 40, "recomputed_full_units": 10,
+            "pending_blocks_by_pool": {"full": 3}, "probe_prefix_length_overflow": 2,
+        },
+    }
+    watch = capacity_pressure_watch(native)
+    assert watch["same_session_common_input"]["missing_fraction"] == .25
+    assert watch["evicted_host_full_reaccess"]["recomputed_fraction_of_matched_units"] == .2
+    assert watch["evicted_host_full_reaccess"]["pending_blocks_by_pool"] == {"full": 3}
+    assert watch["evicted_host_full_reaccess"]["probe_prefix_length_overflow"] == 2
+    native["context_prefix_reuse_evidence"]["counts"].update(
+        previously_served_common_prefix_tokens=0,
+        previously_served_prefix_recompute_proxy_tokens=0,
+    )
+    assert capacity_pressure_watch(native)["same_session_common_input"]["missing_fraction"] is None
 
 
 @pytest.mark.parametrize("committed", (False, True))
@@ -343,6 +371,7 @@ def test_native_pair_freezes_disjoint_108_plus_48_fixed_arrivals(tmp_path, monke
         "--semantic-artifact", str(artifact), "--workload-manifest", str(manifest),
         "--arrival-batch-size", "108", "--arrival-batch-interval-ms", "3600000",
         "--prepare-host", "1", "--host-split", "80:20",
+        "--h2d-opportunity-sampling", "1",
     ])
     main()
     plan = json.loads((tmp_path / "ab_plan.json").read_text())
@@ -382,6 +411,8 @@ def test_optimized_prefetch_configuration_survives_plan_environment_roundtrip(tm
     assert env["WAIT_PREFETCH_CONTEXTS"] == "2"
     assert env["PREDICTION_MAINTENANCE_INTERVAL_MS"] == "100.0"
     assert env["H2D_OPPORTUNITY_SAMPLING"] == env["TERMINAL_CACHE_DIAGNOSTICS"] == "0"
+    assert plan["profile_shared_path"] is False
+    assert env["PROFILE_SHARED_PATH"] == "0"
 
 def test_actual_runtime_must_match_the_registered_parallel_restore_setting(tmp_path, monkeypatch):
     arm = tmp_path / "predictive_h2d"

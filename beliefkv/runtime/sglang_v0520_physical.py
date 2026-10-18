@@ -12,7 +12,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from math import isfinite
 from time import monotonic
-from typing import Callable, Mapping
+from typing import Callable, KeysView, Mapping
 
 from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
 from beliefkv.runtime.sglang_v0520_observer import (
@@ -1365,6 +1365,8 @@ class PhysicalTransactionLedger:
         self.max_age_s = max_age_s
         self._pending: dict[str, tuple[PhysicalActionExpectation, float, set[int]]] = {}
         self._pending_action_counts: dict[str, int] = {}
+        self._pending_action_bytes: dict[str, int] = {}
+        self._pending_h2d_contexts: dict[tuple[str, str, int], int] = {}
         self._context_invalidated_commands: set[str] = set()
         self._history: deque[str] = deque()
         self._seen: set[str] = set()
@@ -1380,12 +1382,12 @@ class PhysicalTransactionLedger:
         return self._pending_action_counts.get(action, 0)
 
     def pending_action_bytes(self, action: str) -> int:
-        return sum(
-            child.num_bytes
-            for expected, _, _ in self._pending.values()
-            if expected.action == action
-            for child in expected.children
-        )
+        return self._pending_action_bytes.get(action, 0)
+
+    @property
+    def pending_h2d_contexts(self) -> KeysView[tuple[str, str, int]]:
+        """Physical restore owners, including commands without runtime tickets."""
+        return self._pending_h2d_contexts.keys()
 
     def is_pending(self, command_id: str) -> bool:
         return command_id in self._pending
@@ -1430,15 +1432,32 @@ class PhysicalTransactionLedger:
     def _retire(self, command_id: str) -> None:
         expected, _, _ = self._pending.pop(command_id)
         self._context_invalidated_commands.discard(command_id)
+        size = self._pending_action_bytes[expected.action] - sum(
+            child.num_bytes for child in expected.children
+        )
         remaining = self._pending_action_counts[expected.action] - 1
         if remaining:
             self._pending_action_counts[expected.action] = remaining
+            self._pending_action_bytes[expected.action] = size
         else:
             del self._pending_action_counts[expected.action]
+            del self._pending_action_bytes[expected.action]
+        if (
+            expected.action == "PREFETCH_GPU" and expected.session_id is not None
+            and expected.session_generation is not None
+        ):
+            owner = (expected.context_id, expected.session_id, expected.session_generation)
+            refs = self._pending_h2d_contexts[owner] - 1
+            if refs:
+                self._pending_h2d_contexts[owner] = refs
+            else:
+                del self._pending_h2d_contexts[owner]
         self._remember(command_id)
 
     def expire(self) -> tuple[str, ...]:
         """Drop timed-out commands without issuing any completion credit."""
+        if not self._pending:
+            return ()
         now = monotonic()
         expired = tuple(
             command_id
@@ -1520,6 +1539,16 @@ class PhysicalTransactionLedger:
         self._pending_action_counts[expected.action] = (
             self._pending_action_counts.get(expected.action, 0) + 1
         )
+        self._pending_action_bytes[expected.action] = (
+            self._pending_action_bytes.get(expected.action, 0)
+            + sum(child.num_bytes for child in expected.children)
+        )
+        if (
+            expected.action == "PREFETCH_GPU" and expected.session_id is not None
+            and expected.session_generation is not None
+        ):
+            owner = (expected.context_id, expected.session_id, expected.session_generation)
+            self._pending_h2d_contexts[owner] = self._pending_h2d_contexts.get(owner, 0) + 1
 
     def cancel_unsubmitted(self, command_id: str) -> None:
         """Release a reservation only when native confirms nothing was queued.

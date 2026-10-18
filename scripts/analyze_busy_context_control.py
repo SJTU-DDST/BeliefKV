@@ -519,20 +519,27 @@ def control_profile(arm: Path, begin: float, end: float) -> dict:
             boundary[index], selected_lines[index] = state, line
     if not covered or any(state is None for state in boundary):
         raise ValueError(f"control profile has not covered the requested window: {path}")
+    profiles = [state.get("shared_path_timing") or {} for state in boundary]
+    available = all(profile and profile.get("enabled", True) for profile in profiles)
     phases = {}
-    for phase, upper in boundary[1]["shared_path_timing"]["phases"].items():
-        lower = boundary[0]["shared_path_timing"]["phases"].get(phase, {})
-        phases[phase] = {
-            metric: upper[metric] - lower.get(metric, 0)
-            for metric in ("count", "self_ms", "total_ms")
-        }
+    if available:
+        for phase, upper in profiles[1]["phases"].items():
+            lower = profiles[0]["phases"].get(phase, {})
+            phases[phase] = {
+                metric: upper[metric] - lower.get(metric, 0)
+                for metric in ("count", "self_ms", "total_ms")
+            }
     return {
+        "available": available,
+        **({"reason": "shared_path_profiling_disabled_or_not_collected"} if not available else {}),
         "source": str(path), "read_prefix_bytes": bytes_read,
         "read_prefix_sha256": prefix.hexdigest(),
         "boundary_state_ts_ms": [state["ts_ms"] for state in boundary],
         "raw_boundary_line_sha256": [hashlib.sha256(line).hexdigest() for line in selected_lines],
         "observed_duration_ms": boundary[1]["ts_ms"] - boundary[0]["ts_ms"],
-        "summed_python_self_ms": sum(item["self_ms"] for item in phases.values()),
+        "summed_python_self_ms": (
+            sum(item["self_ms"] for item in phases.values()) if available else None
+        ),
         "background_writer_timing": writer.summary(),
         "phases": dict(sorted(phases.items(), key=lambda item: item[1]["self_ms"], reverse=True)),
     }

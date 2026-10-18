@@ -507,7 +507,7 @@ class NativeAdmissionRuntime:
             None if priority_setting is None else priority_setting == "1"
         )
         self.enable_prepare_host = os.environ.get("BELIEFKV_ENABLE_PREPARE_HOST", "1") == "1"
-        sampling_setting = os.environ.get("BELIEFKV_H2D_OPPORTUNITY_SAMPLING", "1")
+        sampling_setting = os.environ.get("BELIEFKV_H2D_OPPORTUNITY_SAMPLING", "0")
         if sampling_setting not in ("0", "1"):
             raise ValueError("H2D opportunity sampling setting must be 0 or 1")
         self.enable_h2d_opportunity_sampling = sampling_setting == "1"
@@ -679,7 +679,7 @@ class NativeAdmissionRuntime:
         )
         self._hotpath_timing = HotpathTiming(enabled=bool(
             self._opportunity_writer is not None
-            and os.environ.get("BELIEFKV_PROFILE_SHARED_PATH", "1") == "1"
+            and os.environ.get("BELIEFKV_PROFILE_SHARED_PATH", "0") == "1"
         ))
         self._opportunity_next_ms = 0.0
         self._opportunity_cursor = 0
@@ -847,12 +847,16 @@ class NativeAdmissionRuntime:
             self._observe_native_admission_capacity(running_batch=running_batch, adder=None)
         self.counts["physical_planning_after_forward"] += 1
         if (
-            self.enable_final_stage_prefetch or self.enable_admission_prefetch
-            or self.enable_confirmed_join_canary or self._join_ticket is not None
-            or self._confirmed_join_tickets
+            self._join_ticket is not None or self._confirmed_join_tickets
+            or (
+                (self.enable_final_stage_prefetch or self.enable_admission_prefetch)
+                and (self._final_stages or self._semantic_eos_proofs)
+            )
         ):
             self.dispatch_join_prefetch()
-        if self.enable_tool_prefetch or self._tool_ticket is not None:
+        if self._tool_ticket is not None or (
+            self.enable_tool_prefetch and self.tool_wait_hints
+        ):
             if (
                 self.enable_tool_prefetch and not self.physical_disabled
                 and self._tool_ticket is None
@@ -863,10 +867,11 @@ class NativeAdmissionRuntime:
                 self.dispatch_tool_prefetch()
         # Earlier handlers can cross a deadline or rearm another source.
         # Read each existing deadline at its original dispatch position.
-        if time.monotonic() * 1000. >= self._join_prepare_next_ms:
-            self.dispatch_join_prepare(waiting_queue, running_batch=running_batch)
-        if time.monotonic() * 1000. >= self._tool_prepare_next_ms:
-            self.dispatch_tool_prepare(waiting_queue, running_batch=running_batch)
+        if self.enable_prepare_host:
+            if time.monotonic() * 1000. >= self._join_prepare_next_ms:
+                self.dispatch_join_prepare(waiting_queue, running_batch=running_batch)
+            if time.monotonic() * 1000. >= self._tool_prepare_next_ms:
+                self.dispatch_tool_prepare(waiting_queue, running_batch=running_batch)
 
     def predictor_fileno(self) -> int | None:
         if self._semantic_worker is not None:
@@ -1030,7 +1035,10 @@ class NativeAdmissionRuntime:
                 break
             changed_rank_invocations.add(event.invocation_id)
         try:
-            with self._hotpath_timing.measure("graph_apply"):
+            if self._hotpath_timing.enabled:
+                with self._hotpath_timing.measure("graph_apply"):
+                    deltas = self.graph.apply_batch(events, atomic=False)
+            else:
                 deltas = self.graph.apply_batch(events, atomic=False)
         except Exception:
             # A partially applied batch cannot remain a scheduling authority.
@@ -1793,7 +1801,10 @@ class NativeAdmissionRuntime:
         self._prefill_cycle_active = True
         self._prefill_residency_scan = None
         if self.event_server is not None:
-            with self._hotpath_timing.measure("control_drain"):
+            if self._hotpath_timing.enabled:
+                with self._hotpath_timing.measure("control_drain"):
+                    self.event_server.drain(max_messages=128)
+            else:
                 self.event_server.drain(max_messages=128)
         self._refresh_prefetch_service_leases()
         now_ms = time.monotonic() * 1000
@@ -1997,6 +2008,7 @@ class NativeAdmissionRuntime:
                 "eos_protocol_window_ms": self.eos_protocol_window_ms,
                 "eos_prefetch_evidence_window_ms": self.eos_prefetch_evidence_window_ms,
                 "terminal_cache_diagnostics": self._terminal_cache_diagnostics,
+                "profile_shared_path": self._hotpath_timing.enabled,
                 "h2d_seed_samples": self._h2d_seed_count,
                 "h2d_service_samples": len(self._h2d_samples),
                 "prefetch_residency_budget": asdict(self._residency_budget),
@@ -2801,6 +2813,11 @@ class NativeAdmissionRuntime:
         for rid, valid in tuple(self._semantic_eos_proofs.items()):
             if valid and (key := self._semantic_keys.get(rid)) is not None:
                 self._ensure_observed_final_stage(key)
+        batch = self._native_running_batch
+        running_ids = (
+            {getattr(req, "rid", None) for req in getattr(batch, "reqs", ())}
+            if batch is not None and self._final_stages else None
+        )
         for stage in tuple(self._final_stages.values()):
             if self._semantic_worker is not None and stage.request_id is not None:
                 progress = self._semantic_progress.get(stage.request_id, ())
@@ -2812,7 +2829,9 @@ class NativeAdmissionRuntime:
             ):
                 continue
             observed_eos = self._semantic_eos_proofs.get(stage.request_id) is True
-            if not observed_eos and not self._final_stage_service_available(stage):
+            if not observed_eos and not self._final_stage_service_available(
+                stage, running_ids=running_ids,
+            ):
                 self.counts["semantic_h2d_child_waiting_for_service"] += 1
                 continue
             if not observed_eos and (
@@ -3021,13 +3040,19 @@ class NativeAdmissionRuntime:
                 })
             return observation
 
-    def _final_stage_service_available(self, stage: _ChildFinalStage) -> bool:
+    def _final_stage_service_available(
+        self, stage: _ChildFinalStage, *, running_ids: set[str] | None = None,
+    ) -> bool:
         batch = self._native_running_batch
-        if batch is not None and not any(
-            getattr(req, "rid", None) == stage.request_id
-            for req in getattr(batch, "reqs", ())
-        ):
-            return False
+        if batch is not None:
+            if running_ids is not None:
+                if stage.request_id not in running_ids:
+                    return False
+            elif not any(
+                getattr(req, "rid", None) == stage.request_id
+                for req in getattr(batch, "reqs", ())
+            ):
+                return False
         progress = self._semantic_progress.get(stage.request_id, ())
         if progress and time.monotonic() * 1000. - progress[-1][0] > max(
             2 * SEMANTIC_FRAME_INTERVAL_MS, min(250., self.prefetch_lead_ms),
@@ -4644,12 +4669,33 @@ class NativeAdmissionRuntime:
                 for node in observed_candidate.nodes)
             if observed_candidate is not None else None
         )
+        fingerprint = (
+            reason, getattr(opportunity, "no_step_reason", None),
+            getattr(opportunity, "blocked_detail", None), full, mamba,
+            tuple((item.node_id, item.creation_time, item.include_mamba) for item in steps),
+            getattr(opportunity, "partial_full_tokens", 0),
+            getattr(opportunity, "capacity_reclaim_probe", False),
+            missing_full, missing_mamba, unbacked_full, unbacked_mamba,
+            host_only_mamba,
+        )
+        now = time.monotonic()
+        previous = self._wait_prefetch_records.get(identity)
+        if reason not in ("submitted", "submitted_partial") and (
+            previous is not None and previous[1] == fingerprint
+        ) and (
+            not self.enable_h2d_opportunity_sampling or now - previous[0] < .5
+        ):
+            return
+        self._wait_prefetch_records[identity] = (now, fingerprint)
+        self._wait_prefetch_records.move_to_end(identity)
+        if len(self._wait_prefetch_records) > 512:
+            self._wait_prefetch_records.popitem(last=False)
         unplanned_full = (
             max(0, missing_full - full)
             if type(missing_full) is int and type(full) is int else None
         )
-        # A burst covering observed FULL still does not prove state readiness,
-        # completed DMA, or that the next request reuses this checkpoint.
+        # Covering observed FULL does not prove state readiness, completed DMA,
+        # or that the next request reuses this checkpoint.
         restore_scope = (
             "unobservable" if unplanned_full is None
             else "no_full_payload" if full == 0
@@ -4665,23 +4711,6 @@ class NativeAdmissionRuntime:
             for pool, amount in (("kv", full), ("mamba", mamba))
             if type(amount) is int and (entry := entries.get(pool)) is not None
         }
-        fingerprint = (
-            reason, getattr(opportunity, "no_step_reason", None),
-            getattr(opportunity, "blocked_detail", None), full, mamba,
-            tuple((item.node_id, item.creation_time, item.include_mamba) for item in steps),
-            getattr(opportunity, "partial_full_tokens", 0),
-            getattr(opportunity, "capacity_reclaim_probe", False),
-            missing_full, missing_mamba, unbacked_full, unbacked_mamba,
-            host_only_mamba,
-        )
-        now = time.monotonic()
-        previous = self._wait_prefetch_records.get(identity)
-        if previous is not None and previous[1] == fingerprint and now - previous[0] < .5:
-            return
-        self._wait_prefetch_records[identity] = (now, fingerprint)
-        self._wait_prefetch_records.move_to_end(identity)
-        if len(self._wait_prefetch_records) > 512:
-            self._wait_prefetch_records.popitem(last=False)
         writer.record({
             "event": "wait_prefetch_plan", "ts_ms": time.time() * 1000.,
             "source": source, "workflow_id": key.root_workflow_id,
@@ -4847,6 +4876,9 @@ class NativeAdmissionRuntime:
         excluded = tuple(node.node_id for node in candidate.nodes)
         budget = self._current_residency_budget(include_evictable=True)
         freed, diagnosis = {}, None
+        collect_diagnostics = (
+            self._opportunity_writer is not None and self.enable_h2d_opportunity_sampling
+        )
         if callable(reclaim):
             if opportunity.capacity_reclaim_probe:
                 self._wait_capacity_probe_next_ms = (
@@ -4858,12 +4890,12 @@ class NativeAdmissionRuntime:
                 full_tokens=opportunity.required_full_tokens + budget.reserve_full_tokens,
                 mamba_slots=opportunity.required_mamba_slots + budget.reserve_mamba_slots,
                 exclude_node_ids=excluded,
-                **({"collect_diagnostics": True} if self._opportunity_writer is not None else {}),
+                **({"collect_diagnostics": True} if collect_diagnostics else {}),
             )
             observed = getattr(
                 self._native_cache, "beliefkv_handoff_last_capacity", None,
             )
-            if isinstance(observed, dict):
+            if collect_diagnostics and isinstance(observed, dict):
                 checks = []
                 for check in observed.get("waiting_candidate_checks", ()):
                     owner = self._parent_pressure_candidates.get(check["node_id"])
@@ -4893,7 +4925,9 @@ class NativeAdmissionRuntime:
             and not opportunity.capacity_reclaim_probe
             and (headroom := observe_static_full_mamba_headroom(self._native_cache)).observable
         ):
-            budget = self._current_residency_budget(include_evictable=True)
+            budget = self._current_residency_budget(
+                include_evictable=True, headroom=headroom,
+            )
             allowance = self._prefetch_byte_allowance(budget)
             entries = self._native_cache.cache_controller.mem_pool_host.entry_map
             planned_bytes = (
@@ -6730,10 +6764,7 @@ class NativeAdmissionRuntime:
             return bool(self.physical_ledger.pending_action_count("PREFETCH_GPU"))
         if self.physical_ledger.pending_count >= self.physical_ledger.max_pending:
             return True
-        sessions = {
-            (context, session, generation)
-            for context, _, session, generation in self.physical_ledger.pending_h2d_sessions
-        }
+        sessions = self.physical_ledger.pending_h2d_contexts
         if len(sessions) >= self._wait_prefetch_contexts:
             return True
         return key is not None and (
@@ -6862,7 +6893,9 @@ class NativeAdmissionRuntime:
             if source == "join_ticket":
                 self._discard_join_ticket("enqueue_start_window_changed")
             return ()
-        issue_budget = self._current_residency_budget(include_evictable=True)
+        issue_budget = self._current_residency_budget(
+            include_evictable=True, headroom=getattr(fresh, "headroom", None),
+        )
         if not self._prefetch_slot_available(key, budget=issue_budget):
             self.counts["prefetch_slot_lost_before_enqueue"] += 1
             self._record_wait_prefetch_plan(
@@ -7621,8 +7654,7 @@ class NativeAdmissionRuntime:
                 (item.context_id, item.session_id, item.session_generation) for item in occupied
             }
             sessions.update(
-                (context, session, generation)
-                for context, _, session, generation in self.physical_ledger.pending_h2d_sessions
+                self.physical_ledger.pending_h2d_contexts
             )
             return (
                 key.context_id, key.session_id, key.session_generation,

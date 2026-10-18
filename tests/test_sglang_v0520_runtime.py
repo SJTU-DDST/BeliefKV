@@ -525,6 +525,8 @@ def test_after_forward_planning_retains_existing_waiting_context_handlers():
     runtime = NativeAdmissionRuntime()
     runtime.enable_final_stage_prefetch = True
     runtime.enable_tool_prefetch = True
+    runtime._final_stages["pending"] = object()
+    runtime.tool_wait_hints["pending"] = object()
     runtime._hotpath_timing.enabled = True
     calls = []
     runtime.dispatch_join_prefetch = lambda: calls.append("join")
@@ -548,6 +550,8 @@ def test_after_forward_skips_only_existing_backoff_work():
     runtime = NativeAdmissionRuntime()
     runtime.enable_final_stage_prefetch = True
     runtime.enable_tool_prefetch = True
+    runtime._final_stages["pending"] = object()
+    runtime.tool_wait_hints["pending"] = object()
     runtime._hotpath_timing.enabled = True
     runtime._tool_prefetch_next_ms = 1050.
     runtime._join_prepare_next_ms = runtime._tool_prepare_next_ms = 1050.
@@ -593,16 +597,19 @@ def test_after_forward_rechecks_clock_after_prior_handler_crosses_deadline():
     runtime = NativeAdmissionRuntime()
     runtime.enable_final_stage_prefetch = True
     runtime.enable_tool_prefetch = True
+    runtime._final_stages["pending"] = object()
+    runtime.tool_wait_hints["pending"] = object()
     runtime._tool_prefetch_next_ms = 1050.
     runtime._join_prepare_next_ms = runtime._tool_prepare_next_ms = 1050.
     clock = [1.]
     runtime.dispatch_join_prefetch = lambda: clock.__setitem__(0, 1.05)
+    runtime.dispatch_tool_prefetch = Mock()
     runtime.dispatch_join_prepare = Mock()
     runtime.dispatch_tool_prepare = Mock()
     queue, running = [object()], object()
     with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", lambda: clock[0]):
         runtime.dispatch_after_forward(queue, running_batch=running)
-    assert runtime.counts["tool_prefetch_scans"] == 1
+    runtime.dispatch_tool_prefetch.assert_called_once_with()
     assert runtime.counts["tool_prefetch_scan_deferred"] == 0
     runtime.dispatch_join_prepare.assert_called_once_with(queue, running_batch=running)
     runtime.dispatch_tool_prepare.assert_called_once_with(queue, running_batch=running)
@@ -613,12 +620,15 @@ def test_after_forward_prior_handler_can_rearm_tool_scan_immediately():
     runtime = NativeAdmissionRuntime()
     runtime.enable_final_stage_prefetch = True
     runtime.enable_tool_prefetch = True
+    runtime._final_stages["pending"] = object()
+    runtime.tool_wait_hints["pending"] = object()
     runtime._tool_prefetch_next_ms = 5000.
     runtime._join_prepare_next_ms = runtime._tool_prepare_next_ms = 5000.
     runtime.dispatch_join_prefetch = lambda: setattr(runtime, "_tool_prefetch_next_ms", 0.)
+    runtime.dispatch_tool_prefetch = Mock()
     with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.):
         runtime.dispatch_after_forward()
-    assert runtime.counts["tool_prefetch_scans"] == 1
+    runtime.dispatch_tool_prefetch.assert_called_once_with()
     assert runtime.counts["tool_prefetch_scan_deferred"] == 0
     runtime.close()
 
@@ -909,8 +919,9 @@ def test_context_opportunity_requires_live_wait_or_ready_session_epoch():
 
 @pytest.mark.parametrize("defer_observations", (False, True))
 def test_safe_point_persists_bounded_wait_and_admission_opportunities(
-    tmp_path, defer_observations,
+    tmp_path, defer_observations, monkeypatch,
 ):
+    monkeypatch.setenv("BELIEFKV_H2D_OPPORTUNITY_SAMPLING", "1")
     runtime = NativeAdmissionRuntime(opportunity_dir=str(tmp_path))
     waiting, tool = req("waiting"), req("tool")
     for request in (waiting, tool):
@@ -994,8 +1005,9 @@ def test_safe_point_persists_bounded_wait_and_admission_opportunities(
 @pytest.mark.parametrize("source", ("tool_wait", "join_wait"))
 @pytest.mark.parametrize("write_back", (False, True))
 def test_wait_prepare_probe_requires_native_prerequisites_and_host_space(
-    tmp_path, source, write_back,
+    tmp_path, source, write_back, monkeypatch,
 ):
+    monkeypatch.setenv("BELIEFKV_H2D_OPPORTUNITY_SAMPLING", "1")
     runtime = NativeAdmissionRuntime(opportunity_dir=str(tmp_path))
     request = req("tool")
     request.session_id = "session-tool"
@@ -1109,7 +1121,8 @@ def test_prepare_probe_reuses_current_h2d_closure_failure_without_caching_it():
         runtime.close()
 
 
-def test_safe_point_records_missing_session_and_bounded_queue_scan(tmp_path):
+def test_safe_point_records_missing_session_and_bounded_queue_scan(tmp_path, monkeypatch):
+    monkeypatch.setenv("BELIEFKV_H2D_OPPORTUNITY_SAMPLING", "1")
     runtime = NativeAdmissionRuntime(opportunity_dir=str(tmp_path))
     no_session = req("unbound")
     assert runtime.register_visible_request(no_session)
@@ -1127,7 +1140,8 @@ def test_safe_point_records_missing_session_and_bounded_queue_scan(tmp_path):
     assert candidate["reason"] == "no_bound_session"
 
 
-def test_safe_point_distinguishes_missing_anchors_from_stale_context(tmp_path):
+def test_safe_point_distinguishes_missing_anchors_from_stale_context(tmp_path, monkeypatch):
+    monkeypatch.setenv("BELIEFKV_H2D_OPPORTUNITY_SAMPLING", "1")
     runtime = NativeAdmissionRuntime(opportunity_dir=str(tmp_path))
     request = req("root")
     request.session_id = "session-root"
@@ -1179,7 +1193,8 @@ def test_safe_point_distinguishes_missing_anchors_from_stale_context(tmp_path):
     ) == "context_binding_changed"
 
 
-def test_safe_point_rotates_through_more_candidates_than_per_tick_limit(tmp_path):
+def test_safe_point_rotates_through_more_candidates_than_per_tick_limit(tmp_path, monkeypatch):
+    monkeypatch.setenv("BELIEFKV_H2D_OPPORTUNITY_SAMPLING", "1")
     runtime = NativeAdmissionRuntime(opportunity_dir=str(tmp_path))
     requests = [req(str(index)) for index in range(20)]
     for request in requests:
@@ -4819,7 +4834,8 @@ def test_prefill_final_authorization_rechecks_changes_after_classification(trans
         runtime.close()
 
 
-def test_shared_path_timing_is_persisted_without_per_call_rows(tmp_path):
+def test_shared_path_timing_is_persisted_without_per_call_rows(tmp_path, monkeypatch):
+    monkeypatch.setenv("BELIEFKV_PROFILE_SHARED_PATH", "1")
     runtime = NativeAdmissionRuntime(opportunity_dir=str(tmp_path))
     runtime.on_events((event(0, RuntimeEventKind.WORKFLOW_START),))
     runtime.scheduler_step()

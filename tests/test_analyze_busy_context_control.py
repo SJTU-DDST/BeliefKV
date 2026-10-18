@@ -118,6 +118,27 @@ def test_opportunity_writer_window_uses_write_clock_instead_of_producer_clock(tm
     assert writer["end_snapshot_lag_ms"] == 50.
 
 
+@pytest.mark.parametrize("enabled", [False, None])
+def test_disabled_or_missing_shared_scopes_preserve_unmeasured_cost(tmp_path, enabled):
+    directory = tmp_path / "opportunities"
+    directory.mkdir()
+    rows = [
+        {
+            "event": "admission_runtime_state", "ts_ms": timestamp,
+            **({"shared_path_timing": {"enabled": enabled, "phases": {}}}
+               if enabled is not None else {}),
+        } for timestamp in (90., 150., 210.)
+    ]
+    (directory / "admission_opportunities.jsonl").write_bytes(
+        b"".join(encoded(row) for row in rows),
+    )
+    result = control_profile(tmp_path, 100., 200.)
+    assert result["available"] is False
+    assert result["summed_python_self_ms"] is None
+    assert result["phases"] == {}
+    assert result["background_writer_timing"]["available"] is False
+
+
 @pytest.mark.parametrize("collect_writer", [False, True])
 @pytest.mark.parametrize("graph_replayed", [None, False, True])
 def test_native_writer_coverage_can_follow_the_last_gpu_row(tmp_path, collect_writer, graph_replayed):

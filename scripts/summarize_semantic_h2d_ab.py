@@ -271,6 +271,55 @@ def paired_trajectory_report(
     }
 
 
+def capacity_pressure_watch(native: dict) -> dict:
+    """Expose existing reuse evidence without adding scheduler observations."""
+    prefix = native.get("context_prefix_reuse_evidence") or {}
+    counts = prefix.get("counts") or {}
+    common = counts.get("previously_served_common_prefix_tokens")
+    lost = counts.get("previously_served_prefix_recompute_proxy_tokens")
+    host = native.get("host_block_eviction_attribution") or {}
+    reused, recomputed = host.get("reused_full_units"), host.get("recomputed_full_units")
+    matched = (
+        reused + recomputed if type(reused) is int and type(recomputed) is int else None
+    )
+    return {
+        "same_session_common_input": {
+            "matched_requests": counts.get("with_prior_served_prompt"),
+            "common_tokens": common, "missing_from_cache_tokens": lost,
+            "missing_fraction": (
+                lost / common if type(lost) is int and type(common) is int and common > 0
+                else None
+            ),
+            "requests_with_missing_prefix": counts.get("requests_with_prefix_recompute_proxy"),
+            "semantics": (
+                "Previously served same-session common input absent from first-service "
+                "cache-hit counters; excludes new input. Not proof of capacity eviction "
+                "or per-layer FULL/Mamba recomputation."
+            ),
+        },
+        "evicted_host_full_reaccess": {
+            "identity_available": host.get("available"),
+            "reused_units": reused, "recomputed_units": recomputed,
+            "recomputed_fraction_of_matched_units": (
+                recomputed / matched if matched is not None and matched > 0 else None
+            ),
+            "pending_blocks_by_pool": host.get("pending_blocks_by_pool"),
+            "probe_prefix_length_overflow": host.get("probe_prefix_length_overflow"),
+            "semantics": (
+                "Exact evicted Host-prefix reaccess attribution; overlapping eviction "
+                "episodes are not unique lost bytes. Unmatched blocks remain unknown."
+            ),
+        },
+        "native_session_close_reclaim": native.get("native_session_close_reclaim"),
+        "scope": (
+            "Offline summary of existing counters. Terminal private-state reclamation "
+            "and Host-backed HBM eviction are not useful-KV loss. The two loss views "
+            "overlap and must not be added. Missing/zero-denominator evidence is unknown; "
+            "this does not count every irreversible device drop or decode retraction."
+        ),
+    }
+
+
 def summarize(arm: Path) -> dict | None:
     clients = list(arm.glob("client_*/summary.json"))
     if not clients:
@@ -386,6 +435,7 @@ def summarize(arm: Path) -> dict | None:
         "cache_evidence": (native.get("request_cache_evidence") or {}).get("all"),
         "host_eviction_attribution": native.get("host_block_eviction_attribution"),
         "context_prefix_reuse_evidence": native.get("context_prefix_reuse_evidence"),
+        "capacity_pressure_watch": capacity_pressure_watch(native),
         "telemetry_status": {
             name: native.get(name) for name in
             ("dropped_records", "failed_records", "writer_error")
@@ -472,8 +522,9 @@ def main() -> None:
     parser.add_argument("--parallel-wait-prefetch", type=int, choices=(0, 1), default=0)
     parser.add_argument("--wait-prefetch-contexts", type=int, choices=(1, 2), default=1)
     parser.add_argument("--prediction-maintenance-interval-ms", type=float, default=0.)
-    parser.add_argument("--h2d-opportunity-sampling", type=int, choices=(0, 1), default=1)
-    parser.add_argument("--terminal-cache-diagnostics", type=int, choices=(0, 1), default=1)
+    parser.add_argument("--h2d-opportunity-sampling", type=int, choices=(0, 1), default=0)
+    parser.add_argument("--terminal-cache-diagnostics", type=int, choices=(0, 1), default=0)
+    parser.add_argument("--profile-shared-path", type=int, choices=(0, 1), default=0)
     parser.add_argument("--native-reference-run", type=Path)
     parser.add_argument("--native-reference-timeline", type=Path)
     parser.add_argument("--native-reference-cache", type=Path)
@@ -605,6 +656,7 @@ def main() -> None:
             "wait_prefetch_contexts": args.wait_prefetch_contexts,
             "prediction_maintenance_interval_ms": args.prediction_maintenance_interval_ms,
             "terminal_cache_diagnostics": bool(args.terminal_cache_diagnostics),
+            "profile_shared_path": bool(args.profile_shared_path),
             "semantic_work_statistic": args.semantic_work_statistic,
             "eos_protocol_window_ms": args.eos_protocol_window_ms,
             "eos_prefetch_evidence_window_ms": max(
@@ -749,7 +801,10 @@ def main() -> None:
                 "reconciled_native_per_operation_pool_receipts;"
                 "latest_node_pool_writer_to_H2D;restore_is_not_forward_use"
             ),
-            "shared_path_profiling": "aggregated CPU inclusive/exclusive scopes; no CUDA synchronization",
+            "shared_path_profiling": (
+                "opt-in aggregated CPU inclusive/exclusive scopes; no CUDA synchronization; "
+                "disabled scopes are unmeasured, not zero cost"
+            ),
             "restore_wait_profiling": (
                 "one in 16 load-consuming prefills; asynchronous CUDA events "
                 "around per-layer dependencies in both arms; includes event overhead"
@@ -872,6 +927,7 @@ def main() -> None:
             "join_prefetch_min_advance_ms", "tool_prefetch_min_advance_ms",
             "parallel_wait_prefetch", "wait_prefetch_contexts",
             "prediction_maintenance_interval_ms", "terminal_cache_diagnostics",
+            "profile_shared_path",
         ):
             if setting in plan and state.get(setting) != plan[setting]:
                 raise ValueError(f"{name}: mismatched {setting}")
