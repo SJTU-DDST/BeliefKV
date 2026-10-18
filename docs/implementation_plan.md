@@ -5,6 +5,25 @@ Status date: 2026-10-18 (PDT).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Current V82b stage: matched native is running. Predictive finishes with 156
+completed/system-valid workflows, 148 strict native-agent-eligible workflows,
+12185.49s duration, 466 dynamic children, 39 multi-round roots and 17 nested
+workflows/depth 2. Eight workflows have graph-budget finalization; the original
+native gate returns 1 and is not reinterpreted as a pass. Correctness is ungraded.
+Native cold-starts at 12:19:45 PDT; V1773 verifies actual task prefill/decode and
+positive completion at 12:27, scheduler 2390962, frozen ab951b9/tree 53020ce3,
+matching tasks/arrivals/delegation/shared client settings and fixed pools.
+Native policy admission is off and native overlap remains on. Full comparison
+is pending; subsequent main-only CPU changes stay outside both frozen arms.
+
+The work-window score probe is rejected. On the same 19546 delivered inputs/
+159 natural final requests, phase/encoder remain frozen; selector coverage is
+at least the baseline 8 triggers. For the reused 15-request development evaluation,
+baseline 6/candidate 10 first triggers are all premature for 32 remaining tokens;
+median RETURN lead worsens from 4.552s to 5.997s. Five CPU evaluator tests pass.
+The new artifact remains offline at child_semantic_work_window_score_v82b_20261018_v1;
+there is no nonfinal false-alarm, unseen-project or GPU acceptance claim.
+
 Main skips the full waiting-queue identity fingerprint when the residency scan
 width is zero: an empty target list is independent of queue contents. Positive
 widths retain full fingerprints, rotation and live rechecks. V1770 passes 573
@@ -35,7 +54,8 @@ the actual /bin/sh wrapper. Main preserves GNU timeout's --verbose signal
 diagnostic without changing command limits or execution/termination policy.
 V1765 passes181 CPU cases; one explicit-image integration case is skipped.
 The actual container supports --verbose. Model retry reduction remains unproven;
-neither frozen V82b arm is hot-patched and matched native remains pending.
+neither frozen V82b arm is hot-patched. Native was pending at that observation;
+its current verified service is recorded above in V1773.
 
 Main now excludes historical-only Mamba misses from empty restore planning when
 FULL has no Host-only extent and the deepest safe input checkpoint is resident or

@@ -2,6 +2,15 @@
 
 更新日期：2026-10-18（PDT）。
 
+**剩余工作窗口判别头未采用。**在原19546个已送达输入/159个自然最终请求
+上，冻结phase/encoder，用现有Torch拟合“剩余≤32 token”的轻量线性分数。
+只在selector选择模型/阈值，并保持旧头8个首次触发的覆盖下限。开发评估
+仍为15个请求：旧头6次首次触发、新头10次，均早于32-token范围；RETURN
+提前量P50由4.552s变为5.997s。因此不部署，不用覆盖增加代替时机改善。
+5项首次触发/覆盖/权重检查通过；这是条件自然最终请求的重复开发集，
+没有验证工具轮次误报、未见项目或GPU收益。产物为
+`experiments/models/child_semantic_work_window_score_v82b_20261018_v1/report.json`。
+
 **零宽度驻留扫描降本。**近期扫描名额为0时，空目标不依赖等待队列内容，
 main不再遍历全队列构建请求身份指纹；名额为正时仍保留原指纹、轮转和现场
 重检。V1770在合格引擎Python路径下有573项CPU通过，含512等待项不可遍历/
@@ -27,7 +36,7 @@ GNU timeout主动KILL却只返回Killed；137本身还可能是其他SIGKILL。
 main保留timeout --verbose的信号说明，实际容器也支持该选项；180s上限、
 模型显式120s请求和执行/终态策略保持原样。V1765有181项通过、1项需显式
 指定镜像的集成检查跳过。未验证这会消除模型重试，未热改V82b任一侧；
-matched native仍待当前predictive结束，原始尾部成本继续保留。
+当时native尚未开始，现以“当前GPU实验V82b”和V1773为准，原尾部成本保留。
 
 **安全输入空规划降本，仍待GPU验收。**main的廉价检查只在FULL没有
 Host-only缺页时，进一步排除旧Mamba状态：安全输入范围内最深checkpoint
@@ -128,13 +137,19 @@ V1721的10:07 PDT密封前缀更新为170个闭合JOIN、133个进入窗口、
 81个提前提交，JOIN/tool提前且确认复用FULL为2.995/6.400GB；
 仍未完成整组predictive，native尚未开始，不作吞吐结论。
 
-**当前GPU实验V82b。**08:50 PDT从`ab951b9`冷启动，08:55真实服务、
-冻结来源、固定容量与委派合同核对通过；physical_disabled=false，
-原生overlap支持，JOIN/tool H2D、PREPARE和两个context配置启用。
-新状态中的廉价成对时钟已让关闭机会采样的三条审计成功读取真实前缀。
-predictive结束后由同一驱动运行匹配native；吞吐、JCT与质量尚无结论。
-V1693为实际启动回执。V82部分前缀的JOIN ACK→服务P90仍19.94s；
-108个root中9个进入第二轮、尚无实际嵌套，不能将四轮/深度2配置当结果。
+**当前GPU实验V82b。**predictive已结束：156个completed、156个system
+JCT有效，严格native-agent口径148个；8个workflow有原图预算收尾介入，
+因此原`--gate native`返回1，不能称严格门槛通过。总时长12185.49s，
+466个动态child，39个root实际多轮、17个workflow实际嵌套，最大深度2；
+四轮目标尚未普遍达到。任务修复正确性未独立评分。
+同一驱动于12:19:45 PDT冷启动匹配native，12:27实际服务核验通过：
+新scheduler2390962，真实任务prefill/decode及182-token完成输出均已记录，
+首个任务缓存命中为0。V1773核对冻结应用ab951b9、引擎tree53020ce3、
+两侧任务/到达/委派合同与共享client配置，差异仅为baseline开关和输出/
+控制路径。native关闭BeliefKV准入、保留原生overlap；FULL1798992 token、
+Mamba513 slot、Host200GB/80:20均与predictive相同。native仍运行，
+全程吞吐/JCT比较尚未完成。predictive审计、HTML及workspace清理已生成；
+V1693保留predictive原始启动回执，main后续修复未混入本轮。
 
 **运行期间CPU修复，尚未部署到V82b。**原生prefill会先占request row，
 随后才进入decode running列表。47个running加1个在途prefill占满48行时，
