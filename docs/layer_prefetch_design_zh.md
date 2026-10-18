@@ -8,6 +8,14 @@
 
 ## 确认JOIN并行与最新消费诊断
 
+[V1715第二批形状](../experiments/reports/v1715_v82b_second_wave_workflow_shape_20261018.json)
+观测全部156个workflow启动、第二批48个均开始；22个root多轮、
+9个workflow嵌套，最大深度2，归档86个completed。终态不等于正确性评分。
+[V1716真实服务](../experiments/reports/v1716_v82b_second_wave_actual_service_20261018.json)
+从固定完整audit尾部核对全部48个第二批root的prefill样本，并绑定实际
+driver/scheduler/client的start ticks。不是仅凭计划或状态文件判断在运行。
+predictive仍在采集，native尚未开始；完整对照与质量/性能验收仍待完成。
+
 main新增确认JOIN的有界并行，尚未部署到冻结的V82b。此前即使context
 配置为2，确认parent的单一选择票据也在等ACK时阻塞另一parent。现在
 已有确认表继续拥有各自的票据、ACK及绑定消费身份，选择器可处理另一

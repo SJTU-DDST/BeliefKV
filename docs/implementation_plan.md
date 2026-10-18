@@ -5,6 +5,13 @@ Status date: 2026-10-18 (PDT).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+At09:55 PDT V82b's second48-root wave is in actual GPU service: V1715 observes
+all156 workflow starts,22 roots with multiple rounds and9 nested workflows/depth2;
+86 terminal results are completed, with correctness not independently graded.
+V1716 binds actual prefill samples for all48 second-wave roots and live driver/
+scheduler/client start ticks. Continue the same frozen predictive then native pair.
+Native has not started; keep full performance, quality and completion acceptance open.
+
 Latest main-only CPU change allows two confirmed JOIN parents to restore without
 serializing on the first burst's ACK. The confirmation map retains independent
 ownership/consumer identities; shared live byte/context and native pool budgets

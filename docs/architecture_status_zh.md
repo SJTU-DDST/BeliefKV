@@ -2,6 +2,13 @@
 
 更新日期：2026-10-18（PDT）。
 
+**09:55 PDT实际第二批。**V1715已观测156个workflow启动，第二批48个
+全部开始；22个root有多轮spawn、9个workflow嵌套、最大深度2。已归档
+86个completed、无其他终态，正确性未独立评分。V1716从固定audit尾部
+逐task核对全部48个第二批root的真实prefill服务，且driver/scheduler/
+client进程start ticks仍匹配。predictive继续运行，native尚未开始；
+两侧保持ab951b9冻结，不将main后续CPU修复或部分结果算入本轮收益。
+
 **最新main修复，未部署到V82b。**确认JOIN不再因一个parent等待ACK而
 串行阻塞另一个合法parent：现有确认表保留各自票据与消费身份，受同一
 在途字节/context、FULL/Mamba和原生容量约束。关闭并行或无overlap时
