@@ -48,9 +48,62 @@ def percentile(values: list[float], probability: float) -> float | None:
     return ordered[lower] + (ordered[upper] - ordered[lower]) * (position - lower)
 
 
+def jct_eligibility_counts(workflows: list[dict]) -> dict:
+    return {
+        field: {
+            state: sum(
+                ("true" if row.get(field) is True else
+                 "false" if row.get(field) is False else "unknown") == state
+                for row in workflows
+            )
+            for state in ("true", "false", "unknown")
+        }
+        for field in (
+            "measurement_valid", "system_jct_eligible",
+            "native_agent_jct_eligible", "task_correctness_valid",
+        )
+    }
+
+
+def _paired_jct_statistics(rows: list[dict]) -> dict:
+    deltas = [row["delta_seconds"] for row in rows]
+    durations = {}
+    for name in ("left", "right"):
+        values = [row[f"{name}_seconds"] for row in rows]
+        durations[name] = {
+            "mean": mean(values) if values else None,
+            "p50": percentile(values, .5),
+            "p95": percentile(values, .95),
+        }
+    return {
+        "paired_completed_workflows": len(rows),
+        "duration_seconds": durations,
+        "mean_delta_seconds": mean(deltas) if deltas else None,
+        "p50_delta_seconds": percentile(deltas, .5),
+        "p95_delta_seconds": percentile(deltas, .95),
+        "left_shorter_workflows": sum(delta < 0 for delta in deltas),
+        "right_shorter_workflows": sum(delta > 0 for delta in deltas),
+        "tied_workflows": sum(delta == 0 for delta in deltas),
+    }
+
+
 def paired_workflow_jct(left_summary: dict, right_summary: dict) -> dict:
-    left = {row["instance_id"]: row for row in left_summary["workflows"]}
-    right = {row["instance_id"]: row for row in right_summary["workflows"]}
+    indexed = []
+    for summary in (left_summary, right_summary):
+        workflows = {}
+        for row in summary["workflows"]:
+            instance = row.get("instance_id")
+            if not isinstance(instance, str) or not instance or instance in workflows:
+                raise ValueError("missing or duplicate workflow instance")
+            duration = row.get("duration_seconds")
+            if row["outcome"] == "completed" and (
+                type(duration) not in (int, float)
+                or not math.isfinite(duration) or duration < 0
+            ):
+                raise ValueError("invalid completed workflow JCT")
+            workflows[instance] = row
+        indexed.append(workflows)
+    left, right = indexed
     shared = left.keys() & right.keys()
     completed = sorted(
         instance for instance in shared
@@ -67,27 +120,40 @@ def paired_workflow_jct(left_summary: dict, right_summary: dict) -> dict:
             "left_jct_eligible": before.get("native_agent_jct_eligible"),
             "right_jct_eligible": after.get("native_agent_jct_eligible"),
             **{
+                f"{name}_{field}": source.get(field)
+                for name, source in (("left", before), ("right", after))
+                for field in (
+                    "system_jct_eligible", "system_jct_exclusion_reasons",
+                    "native_agent_jct_exclusion_reasons",
+                )
+            },
+            **{
                 f"{name}_{metric}": (source.get("trace") or {}).get(metric)
                 for name, source in (("left", before), ("right", after))
                 for metric in ("llm_request_count", "tool_call_count", "delegation_round_count")
             },
         })
-    deltas = [row["delta_seconds"] for row in rows]
-    durations = {}
-    for name in ("left", "right"):
-        values = [row[f"{name}_seconds"] for row in rows]
-        durations[name] = {
-            "mean": mean(values) if values else None,
-            "p50": percentile(values, .5),
-            "p95": percentile(values, .95),
+    cohorts = {}
+    for name, field in (
+        ("system_jct_common_eligible", "system_jct_eligible"),
+        ("native_agent_jct_common_eligible", "jct_eligible"),
+    ):
+        selected = [
+            row for row in rows
+            if row[f"left_{field}"] is True and row[f"right_{field}"] is True
+        ]
+        cohorts[name] = {
+            **_paired_jct_statistics(selected),
+            "instances": [row["instance_id"] for row in selected],
+            "excluded_paired_completed_workflows": len(rows) - len(selected),
         }
     return {
+        **_paired_jct_statistics(rows),
         "shared_instances": len(shared),
         "shared_outcome_pairs": dict(sorted(Counter(
             f'{left[instance]["outcome"]}/{right[instance]["outcome"]}'
             for instance in shared
         ).items())),
-        "paired_completed_workflows": len(rows),
         "paired_completed_with_explicit_jct_eligibility": sum(
             row["left_jct_eligible"] is True and row["right_jct_eligible"] is True
             for row in rows
@@ -99,13 +165,19 @@ def paired_workflow_jct(left_summary: dict, right_summary: dict) -> dict:
             )
             for name, source in (("left", left), ("right", right))
         },
-        "duration_seconds": durations,
-        "mean_delta_seconds": mean(deltas) if deltas else None,
-        "p50_delta_seconds": percentile(deltas, .5),
-        "p95_delta_seconds": percentile(deltas, .95),
-        "left_shorter_workflows": sum(delta < 0 for delta in deltas),
-        "right_shorter_workflows": sum(delta > 0 for delta in deltas),
-        "tied_workflows": sum(delta == 0 for delta in deltas),
+        "eligibility_counts": {
+            name: jct_eligibility_counts(summary["workflows"])
+            for name, summary in (("left", left_summary), ("right", right_summary))
+        },
+        "eligibility_cohorts": cohorts,
+        "eligibility_cohort_semantics": (
+            "Additional descriptive cohorts require explicit True eligibility in "
+            "both arms and completion in both arms. Missing or non-boolean flags "
+            "remain unknown; measurement validity and task correctness are not "
+            "inferred from completion. The outcome-based headline remains unchanged. "
+            "Intervention-dependent filtering may select different realized work "
+            "and is not an unbiased causal KV-policy effect or formal gate pass."
+        ),
         "rows": rows,
         "semantics": (
             "The same instances completed in both arms; negative deltas favor left. "

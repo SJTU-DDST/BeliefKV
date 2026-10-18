@@ -8,7 +8,7 @@ import pytest
 from scripts.compare_native_policy_runs import (
     acknowledged_prefetch_sources, busy_window_statistics, h2d_source_parts,
     interval_milliseconds, last_runtime_state, percentile,
-    paired_workflow_jct, phase_statistics, transfer_parts, restore_wait_statistics,
+    jct_eligibility_counts, paired_workflow_jct, phase_statistics, transfer_parts, restore_wait_statistics,
     aligned_native_clock, cached_native_reference, native_reference_metadata,
     historical_reference_current_run,
 )
@@ -269,6 +269,94 @@ def test_empty_paired_jct_cohort_remains_unknown_instead_of_zero_latency():
     assert result["mean_delta_seconds"] is None
     assert result["rows"] == []
     assert result["unpaired_completed_instances"]["right"] == ["a"]
+
+
+def test_system_and_natural_cohorts_keep_budget_intervention_in_the_headline():
+    left = {"workflows": [
+        {"instance_id": "natural", "outcome": "completed", "duration_seconds": 10.,
+         "system_jct_eligible": True, "native_agent_jct_eligible": True},
+        {"instance_id": "budget", "outcome": "completed", "duration_seconds": 100.,
+         "system_jct_eligible": True, "native_agent_jct_eligible": False,
+         "native_agent_jct_exclusion_reasons": ["guard_intervened_completion"]},
+    ]}
+    right = {"workflows": [
+        {**row, "duration_seconds": 20., "native_agent_jct_eligible": True,
+         "native_agent_jct_exclusion_reasons": []}
+        for row in left["workflows"]
+    ]}
+    report = paired_workflow_jct(left, right)
+    assert report["paired_completed_workflows"] == 2
+    assert report["duration_seconds"]["left"]["mean"] == 55.
+    system = report["eligibility_cohorts"]["system_jct_common_eligible"]
+    natural = report["eligibility_cohorts"]["native_agent_jct_common_eligible"]
+    assert system["paired_completed_workflows"] == 2
+    assert system["duration_seconds"] == report["duration_seconds"]
+    assert natural["instances"] == ["natural"]
+    assert natural["excluded_paired_completed_workflows"] == 1
+    assert natural["duration_seconds"]["left"]["mean"] == 10.
+    assert natural["mean_delta_seconds"] == -10.
+    assert report["rows"][0]["left_native_agent_jct_exclusion_reasons"] == [
+        "guard_intervened_completion",
+    ]
+    assert report["eligibility_counts"]["left"]["task_correctness_valid"] == {
+        "true": 0, "false": 0, "unknown": 2,
+    }
+
+
+@pytest.mark.parametrize("flag", [None, False, 0, 1, "true"])
+def test_eligibility_requires_boolean_true_in_both_arms(flag):
+    workflow = {
+        "instance_id": "task", "outcome": "completed", "duration_seconds": 10.,
+        "measurement_valid": True,
+        "system_jct_eligible": True, "native_agent_jct_eligible": True,
+    }
+    report = paired_workflow_jct(
+        {"workflows": [workflow]},
+        {"workflows": [{
+            **workflow, "system_jct_eligible": flag, "native_agent_jct_eligible": flag,
+        }]},
+    )
+    assert report["paired_completed_workflows"] == 1
+    for cohort in report["eligibility_cohorts"].values():
+        assert cohort["paired_completed_workflows"] == 0
+        assert cohort["duration_seconds"]["left"]["mean"] is None
+    counts = report["eligibility_counts"]["right"]["native_agent_jct_eligible"]
+    assert counts["false" if flag is False else "unknown"] == 1
+
+
+def test_eligible_counts_are_not_a_substitute_for_the_same_task_intersection():
+    left = {"workflows": [
+        {"instance_id": name, "outcome": "completed", "duration_seconds": 1.,
+         "system_jct_eligible": name == "a", "native_agent_jct_eligible": name == "a"}
+        for name in ("a", "b")
+    ]}
+    right = {"workflows": [
+        {**row, "system_jct_eligible": row["instance_id"] == "b",
+         "native_agent_jct_eligible": row["instance_id"] == "b"}
+        for row in left["workflows"]
+    ]}
+    report = paired_workflow_jct(left, right)
+    for name in ("left", "right"):
+        assert report["eligibility_counts"][name]["native_agent_jct_eligible"]["true"] == 1
+    assert all(cohort["instances"] == [] for cohort in report["eligibility_cohorts"].values())
+
+
+@pytest.mark.parametrize("duration", [True, None, -1., float("inf"), float("nan")])
+def test_paired_jct_rejects_invalid_completed_durations(duration):
+    summary = {"workflows": [{
+        "instance_id": "task", "outcome": "completed", "duration_seconds": duration,
+    }]}
+    with pytest.raises(ValueError, match="invalid completed workflow JCT"):
+        paired_workflow_jct(summary, summary)
+
+
+def test_paired_jct_rejects_duplicate_instances_instead_of_silently_dropping_them():
+    row = {"instance_id": "task", "outcome": "completed", "duration_seconds": 1.}
+    with pytest.raises(ValueError, match="duplicate workflow instance"):
+        paired_workflow_jct({"workflows": [row, row]}, {"workflows": [row]})
+    assert jct_eligibility_counts([])["system_jct_eligible"] == {
+        "true": 0, "false": 0, "unknown": 0,
+    }
 
 
 def test_restore_dependency_wait_summary_never_counts_transfer_ack_as_stall():
