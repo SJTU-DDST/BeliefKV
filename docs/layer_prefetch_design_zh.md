@@ -6,6 +6,39 @@
 问题后停止并保留部分数据。V82b于08:50 PDT从`ab951b9`冷启动，
 08:55通过真实服务核对，predictive先行、随后相同合同的native。V81不恢复。
 
+## 确认JOIN并行与最新消费诊断
+
+main新增确认JOIN的有界并行，尚未部署到冻结的V82b。此前即使context
+配置为2，确认parent的单一选择票据也在等ACK时阻塞另一parent。现在
+已有确认表继续拥有各自的票据、ACK及绑定消费身份，选择器可处理另一
+合法context；共用原有在途字节/context与原生FULL/Mamba预算。未收到
+完整回执不计ACK，部分回执保留占用；取消不提前释放在途物理所有权。
+关闭并行或无原生overlap时仍串行；RETURN前的provisional票据仍串行。
+满恢复前沿直接返回，不在每个decode步遍历确认队列。
+
+[V1710 CPU回归](../experiments/reports/v1710_parallel_confirmed_join_final_cpu_20261018.xml)
+1329项通过，覆盖部分/乱序ACK、超时不计完成、取消独立性、槽数与在途
+字节限制、无overlap及满前沿无队列遍历。
+[V1712 CPU基准](../experiments/reports/v1712_parallel_confirmed_join_final_control_cpu_20261018.json)
+对照f06c03c，201样本/20预热。相同可容纳两个context的CPU替身中，
+首个ACK前从1组/4节点变为2组/8节点；已满前沿选择P50从2.258降至
+0.746us。确认JOIN本身发生在RETURN之后，不能称为完成前预测覆盖增加。
+该局部计时也不是整轮CPU、DMA、GPU服务或JCT测量。
+
+[V1711更新前缀](../experiments/reports/v1711_v82b_prefetch_live_prefix_20261018_summary.json)
+观测128个闭合JOIN：114个进入窗口、71个提前提交，JOIN/tool提前且被
+下一请求确认复用FULL为2.634/6.400GB。该前缀仍在第二批到达之前，
+不是完整对照；不能用节点命令量替代独立事件或吞吐。
+
+[V1713等待分段](../experiments/reports/v1713_v82b_ack_wait_stage_partition_20261018.json)
+从同一密封报告将89个JOIN与93个tool的最后ACK→首次服务逐段切分，
+每行各段和复现原区间；使用相同分位算法。12个JOIN超过5s，其到达
+原生队列→服务累计148.77s，占这组213.16s观察间隔的69.79%，不是
+独占GPU时间或可省JCT。两例tool后继提交前的64.53/47.81s空档中，
+都有配对的内部context-summary模型请求，span为64.41/47.75s；不将
+这些必要模型服务归为普通客户端移交。接下来沿真实准入资格、驻留与
+摘要失效继续核查；当前GPU对照仍使用ab951b9，不热改应用或引擎。
+
 ## 在途恢复与审计修复
 
 V82运行期间，在主目录main完成两项修复，V82原执行源码保持冻结：

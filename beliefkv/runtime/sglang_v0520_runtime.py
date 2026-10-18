@@ -3382,27 +3382,59 @@ class NativeAdmissionRuntime:
         ticket = self._pending_confirmed_join_ticket(key.context_id, key.context_epoch)
         return ticket is not None and ticket.key == key
 
+    def _reconcile_join_prefetch_ticket(self, ticket: _JoinPrefetchTicket) -> bool | None:
+        commands = ticket.command_ids or (ticket.command_id,)
+        if any(self.physical_ledger.is_pending(command) for command in commands):
+            return None
+        completed = {
+            action.command_id for action in self.completed_physical_actions
+            if action.action == "PREFETCH_GPU"
+        }
+        if not set(commands).issubset(completed):
+            self._discard_join_ticket("action_ack_missing", ticket=ticket)
+            self.counts["join_prefetch_lost_ack"] += 1
+            return False
+        ticket.command_id = None
+        ticket.command_ids = ()
+        self.counts["join_prefetch_acked"] += len(commands)
+        return True
+
     def _select_confirmed_join_ticket(self) -> None:
         if not self._confirmed_join_tickets:
+            return
+        parallel = self._parallel_wait_prefetch and self.can_prefetch_during_overlap()
+        if parallel and self._wait_prefetch_transfer_busy():
             return
         ticket = self._join_ticket
         if ticket is not None and not ticket.restoration_complete and self._live_join_ticket(ticket) and (
             ticket.phase == "confirmed" or ticket.command_id is not None
         ):
-            return
+            if (
+                ticket.phase != "confirmed" or ticket.command_id is None
+                or not parallel
+            ):
+                return
+            # The confirmation map owns this burst while the selector services
+            # another parent. The ledger still owns its bytes and native nodes.
+            self._join_ticket = None
         if ticket is not None and ticket.restoration_complete:
             self._join_ticket = None
         for pending in tuple(self._confirmed_join_tickets.values()):
             if self._live_join_ticket(pending):
-                if not pending.restoration_complete:
-                    self._join_ticket = pending
-                    return
-                continue
-            self._discard_join_ticket(
-                "expired" if time.monotonic() >= pending.expires_at
-                else "confirmed_reentry_invalidated",
-                ticket=pending,
-            )
+                if pending.command_id is not None and (
+                    self._reconcile_join_prefetch_ticket(pending) is not True
+                ):
+                    continue
+                if pending.restoration_complete:
+                    continue
+                self._join_ticket = pending
+                return
+            else:
+                self._discard_join_ticket(
+                    "expired" if time.monotonic() >= pending.expires_at
+                    else "confirmed_reentry_invalidated",
+                    ticket=pending,
+                )
 
     def _yield_confirmed_join_ticket(self) -> None:
         ticket = self._join_ticket
@@ -3428,20 +3460,8 @@ class NativeAdmissionRuntime:
                 )
             return
         if ticket.command_id is not None:
-            commands = ticket.command_ids or (ticket.command_id,)
-            if any(self.physical_ledger.is_pending(command) for command in commands):
+            if self._reconcile_join_prefetch_ticket(ticket) is not True:
                 return
-            completed = {
-                action.command_id for action in self.completed_physical_actions
-                if action.action == "PREFETCH_GPU"
-            }
-            if not set(commands).issubset(completed):
-                self._discard_join_ticket("action_ack_missing")
-                self.counts["join_prefetch_lost_ack"] += 1
-                return
-            ticket.command_id = None
-            ticket.command_ids = ()
-            self.counts["join_prefetch_acked"] += len(commands)
         ticket.issued_nodes = max(
             ticket.issued_nodes, self._issued_join_nodes(ticket.join_id, ticket.key),
         )

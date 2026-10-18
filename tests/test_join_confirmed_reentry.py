@@ -1,11 +1,13 @@
 from dataclasses import replace
 import time
 from types import SimpleNamespace as NS
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 
 from beliefkv.core.events import RuntimeEventKind
+from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
+from beliefkv.runtime.sglang_v0520_physical import plan_prefetch_gpu_steps
 from tests.test_sglang_v0520_runtime import event, req
 from tests.test_wait_prefetch_batch import (
     batch_fixture,
@@ -54,6 +56,238 @@ def add_second_join(runtime, *, continuing=None):
         event(13, RuntimeEventKind.JOIN_WAIT, invocation_id="parent2", join_id="join2"),
     ))
     return runtime.context_sessions["ctx-parent2"]
+
+
+def parallel_confirmed_join_fixture(*, parallel=True, overlap=True, contexts=2):
+    runtime, first_key, first, cache, _ = normal_join_fixture()
+    second_key = add_second_join(runtime)
+    runtime._parallel_wait_prefetch = parallel
+    runtime._wait_prefetch_contexts = contexts
+    runtime._residency_budget = PrefetchResidencyBudget(2, 360)
+    cache.supports_beliefkv_overlap_prefetch = lambda: overlap
+    anchors = replace(
+        first.anchors, key=second_key,
+        component_leaves=tuple(
+            (component, tuple((node + 20, created) for node, created in leaves))
+            for component, leaves in first.anchors.component_leaves
+        ),
+    )
+    candidate = replace(
+        first.candidate, anchors=anchors, nodes=tuple(
+            NS(**{
+                **vars(node), "node_id": node.node_id + 20,
+                "parent_id": node.parent_id + 20 if node.parent_id is not None else None,
+            }) for node in first.candidate.nodes
+        ),
+    )
+    steps = plan_prefetch_gpu_steps(candidate)
+    second = replace(first, anchors=anchors, candidate=candidate, step=steps[0], steps=steps)
+    plans = {first_key.context_id: first, second_key.context_id: second}
+    issued = {}
+
+    def native_burst(**kwargs):
+        outcomes = []
+        for node, created, state, command in kwargs["nodes"]:
+            operation = NS(
+                beliefkv_command_id=command, node_ids=[node],
+                host_indices=(1, 2, 3, 4), device_indices=(5, 6, 7, 8),
+                pool_transfers=[NS(
+                    name="mamba", indices_from_pool=None,
+                    host_indices=(10,), device_indices=(11,),
+                )] if state else None,
+            )
+            if not kwargs["beliefkv_before_enqueue"](operation):
+                break
+            issued[command] = node, state
+            outcomes.append(NS(issued=True, node_id=node, load_started=True))
+        return tuple(outcomes)
+
+    cache.prefetch_gpu_session_nodes = Mock(side_effect=native_burst)
+
+    def acknowledge(commands):
+        for command in commands:
+            node, state = issued[command]
+            units = (("kv", 4),) + ((("mamba", 1),) if state else ())
+            runtime.on_native_transfer_commit(NS(
+                direction="h2d", status="completed", node_ids=(node,),
+                num_tokens_by_pool=units,
+                child_commits=(NS(
+                    command_id=command, anchor_node_id=node, published_node_ids=(node,),
+                    num_tokens_by_pool=units, num_bytes=40 + 20 * state,
+                ),),
+            ))
+
+    complete_join(runtime)
+    complete_join(runtime, sequence=22, child="child2", join="join2")
+    return runtime, first_key, second_key, plans, cache, acknowledge
+
+
+@pytest.mark.parametrize("parallel,overlap,contexts,expected_contexts", (
+    (False, True, 2, 1), (True, False, 2, 1),
+    (True, True, 1, 1), (True, True, 2, 2),
+))
+def test_confirmed_joins_fill_legal_context_slots_before_the_first_ack(
+    parallel, overlap, contexts, expected_contexts,
+):
+    runtime, first, second, plans, cache, _ = parallel_confirmed_join_fixture(
+        parallel=parallel, overlap=overlap, contexts=contexts,
+    )
+    try:
+        with patch.object(
+            runtime, "inspect_context_h2d_opportunity",
+            side_effect=lambda **kwargs: plans[kwargs["context_id"]],
+        ):
+            for _ in range(3):
+                runtime.dispatch_join_prefetch()
+        assert cache.prefetch_gpu_session_nodes.call_count == expected_contexts
+        assert set(runtime.physical_ledger.pending_h2d_contexts) == {
+            (key.context_id, key.session_id, key.session_generation)
+            for key in (first, second)[:expected_contexts]
+        }
+        assert runtime.physical_ledger.pending_count == 4 * expected_contexts
+        assert runtime.counts["join_prefetch_confirmed_issued"] == 4 * expected_contexts
+        assert runtime.counts["join_prefetch_acked"] == 0
+        assert not runtime.completed_physical_actions
+        assert not runtime.physical_disabled
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("request_slots,byte_limit,expected_nodes", (
+    (0, 360, 0), (1, 360, 4), (2, 180, 4), (2, 360, 8),
+))
+def test_parallel_confirmed_joins_share_the_actual_slot_and_inflight_byte_budget(
+    request_slots, byte_limit, expected_nodes,
+):
+    runtime, _, _, plans, _, _ = parallel_confirmed_join_fixture()
+    runtime._residency_budget = PrefetchResidencyBudget(request_slots, byte_limit)
+    try:
+        with patch.object(
+            runtime, "inspect_context_h2d_opportunity",
+            side_effect=lambda **kwargs: plans[kwargs["context_id"]],
+        ):
+            for _ in range(3):
+                runtime.dispatch_join_prefetch()
+        assert runtime.physical_ledger.pending_count == expected_nodes
+        assert runtime.physical_ledger.pending_action_bytes("PREFETCH_GPU") == (
+            180 * (expected_nodes // 4)
+        )
+        assert not runtime.physical_disabled
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("partial_first_ack", (False, True))
+def test_parallel_confirmed_joins_reconcile_out_of_order_acks_independently(partial_first_ack):
+    runtime, first, second, plans, _, acknowledge = parallel_confirmed_join_fixture()
+    try:
+        with patch.object(
+            runtime, "inspect_context_h2d_opportunity",
+            side_effect=lambda **kwargs: plans[kwargs["context_id"]],
+        ):
+            runtime.dispatch_join_prefetch()
+            runtime.dispatch_join_prefetch()
+        tickets = dict(runtime._confirmed_join_tickets)
+        first_commands = tickets["join"].command_ids
+        second_commands = tickets["join2"].command_ids
+        assert len(first_commands) == len(second_commands) == 4
+        with patch.object(runtime, "_wait_prefetch_opportunity", return_value=None):
+            if partial_first_ack:
+                acknowledge(first_commands[:2])
+                runtime.dispatch_join_prefetch()
+                assert runtime.counts["join_prefetch_acked"] == 0
+                assert runtime.physical_ledger.pending_count == 6
+            acknowledge(second_commands)
+            runtime.dispatch_join_prefetch()
+            assert runtime.counts["join_prefetch_acked"] == 4
+            assert runtime.physical_ledger.pending_count == (2 if partial_first_ack else 4)
+            assert tickets["join"].key == first
+            assert tickets["join"].command_ids == first_commands
+            assert "join" in runtime._confirmed_join_tickets
+            assert "join2" not in runtime._confirmed_join_tickets
+            acknowledge(first_commands[2:] if partial_first_ack else first_commands)
+            runtime.dispatch_join_prefetch()
+        assert runtime.counts["join_prefetch_acked"] == 8
+        assert runtime.counts["join_prefetch_lost_ack"] == 0
+        assert not runtime._confirmed_join_tickets
+        assert not runtime.physical_ledger.pending_count
+        assert not runtime.physical_disabled
+    finally:
+        runtime.close()
+
+
+def test_expired_parallel_join_bursts_never_receive_ack_credit():
+    runtime, _, _, plans, _, _ = parallel_confirmed_join_fixture()
+    try:
+        with patch.object(
+            runtime, "inspect_context_h2d_opportunity",
+            side_effect=lambda **kwargs: plans[kwargs["context_id"]],
+        ):
+            runtime.dispatch_join_prefetch()
+            runtime.dispatch_join_prefetch()
+        runtime.physical_ledger.max_age_s = 1e-9
+        assert len(runtime.physical_ledger.expire()) == 8
+        runtime.dispatch_join_prefetch()
+        assert runtime.counts["join_prefetch_acked"] == 0
+        assert runtime.counts["join_prefetch_lost_ack"] == 2
+        assert not runtime._confirmed_join_tickets
+        assert not runtime.physical_ledger.pending_count
+        assert not runtime.completed_physical_actions
+        assert not runtime.physical_disabled
+    finally:
+        runtime.close()
+
+
+def test_one_canceled_parallel_join_keeps_other_ack_and_pending_ownership_separate():
+    runtime, _, _, plans, _, acknowledge = parallel_confirmed_join_fixture()
+    try:
+        with patch.object(
+            runtime, "inspect_context_h2d_opportunity",
+            side_effect=lambda **kwargs: plans[kwargs["context_id"]],
+        ):
+            runtime.dispatch_join_prefetch()
+            runtime.dispatch_join_prefetch()
+        first = runtime._confirmed_join_tickets["join"]
+        second = runtime._confirmed_join_tickets["join2"]
+        runtime.on_events((event(
+            24, RuntimeEventKind.INVOCATION_CANCEL, invocation_id="parent",
+        ),))
+        assert "join" not in runtime._confirmed_join_tickets
+        assert all(runtime.physical_ledger.is_pending(command) for command in first.command_ids)
+        assert runtime._confirmed_join_tickets["join2"] is second
+        with patch.object(runtime, "_wait_prefetch_opportunity", return_value=None):
+            acknowledge(second.command_ids)
+            runtime.dispatch_join_prefetch()
+        assert runtime.counts["join_prefetch_acked"] == 4
+        assert runtime.physical_ledger.pending_count == 4
+        assert not runtime._confirmed_join_tickets
+        assert not runtime.physical_disabled
+    finally:
+        runtime.close()
+
+
+def test_saturated_join_frontier_does_not_scan_confirmed_waiters():
+    runtime, _, _, plans, _, _ = parallel_confirmed_join_fixture()
+    try:
+        with patch.object(
+            runtime, "inspect_context_h2d_opportunity",
+            side_effect=lambda **kwargs: plans[kwargs["context_id"]],
+        ):
+            runtime.dispatch_join_prefetch()
+            runtime.dispatch_join_prefetch()
+
+        class NoWaiterScan(dict):
+            def values(self):
+                raise AssertionError("a saturated restore frontier must not scan waiters")
+
+        runtime._confirmed_join_tickets = NoWaiterScan(runtime._confirmed_join_tickets)
+        runtime.dispatch_join_prefetch()
+        assert runtime.physical_ledger.pending_count == 8
+        assert runtime.counts["join_prefetch_confirmed_issued"] == 8
+        assert runtime.counts["join_prefetch_acked"] == 0
+        assert not runtime.physical_disabled
+    finally:
+        runtime.close()
 
 
 def test_normal_mode_restores_confirmed_join_without_a_forecast():

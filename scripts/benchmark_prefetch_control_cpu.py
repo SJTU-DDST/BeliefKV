@@ -192,7 +192,7 @@ def parallel_tool_conversion_case(baseline):
     if results["baseline_selector"]["pending_contexts"] not in (1, 2) or (
         results["candidate_selector"]["pending_contexts"] != 2
     ):
-        raise AssertionError("two fitting tool contexts did not distinguish selector serialization")
+        raise AssertionError("two fitting tool contexts did not respect expected selector capacity")
     return {
         "scope": (
             "Selector-only differential: both versions use current CPU dispatcher and native "
@@ -200,6 +200,91 @@ def parallel_tool_conversion_case(baseline):
         ),
         "results": results,
     }
+
+
+def parallel_confirmed_join_conversion_case(baseline):
+    from types import MethodType
+    from tests.test_join_confirmed_reentry import parallel_confirmed_join_fixture
+
+    results = {}
+    for name in ("baseline_selector", "candidate_selector"):
+        runtime, _, _, plans, _, _ = parallel_confirmed_join_fixture()
+        if name == "baseline_selector":
+            runtime._select_confirmed_join_ticket = MethodType(
+                baseline._select_confirmed_join_ticket, runtime,
+            )
+        try:
+            with patch.object(
+                runtime, "inspect_context_h2d_opportunity",
+                side_effect=lambda **kwargs: plans[kwargs["context_id"]],
+            ):
+                runtime.dispatch_join_prefetch()
+                runtime.dispatch_join_prefetch()
+                runtime.dispatch_join_prefetch()
+            results[name] = {
+                "pending_contexts": len(runtime.physical_ledger.pending_h2d_contexts),
+                "pending_commands": runtime.physical_ledger.pending_count,
+                "pending_bytes": runtime.physical_ledger.pending_action_bytes("PREFETCH_GPU"),
+                "acked_commands": runtime.counts["join_prefetch_acked"],
+                "completed_actions": len(runtime.completed_physical_actions),
+                "physical_disabled": runtime.physical_disabled,
+            }
+        finally:
+            runtime.close()
+    if results["baseline_selector"]["pending_contexts"] not in (1, 2) or (
+        results["candidate_selector"]["pending_contexts"] != 2
+    ):
+        raise AssertionError("two fitting confirmed JOINs did not respect expected selector capacity")
+    return {
+        "scope": (
+            "Confirmed-JOIN selector differential on shared current CPU dispatcher/native "
+            "stand-ins and identical live budgets. Both JOINs are already satisfied; "
+            "no pre-RETURN prediction, DMA, ACK, reuse or throughput is fabricated."
+        ),
+        "results": results,
+    }
+
+
+def saturated_join_case(baseline, *, samples):
+    from types import MethodType
+    from tests.test_join_confirmed_reentry import parallel_confirmed_join_fixture
+
+    variants = {}
+    for name in ("baseline", "candidate"):
+        runtime, _, _, plans, _, _ = parallel_confirmed_join_fixture()
+        with patch.object(
+            runtime, "inspect_context_h2d_opportunity",
+            side_effect=lambda **kwargs: plans[kwargs["context_id"]],
+        ):
+            runtime.dispatch_join_prefetch()
+            runtime.dispatch_join_prefetch()
+        if runtime.physical_ledger.pending_count != 8:
+            raise AssertionError("saturated JOIN timing requires the same two pending bursts")
+        if name == "baseline":
+            runtime._select_confirmed_join_ticket = MethodType(
+                baseline._select_confirmed_join_ticket, runtime,
+            )
+        variants[name] = runtime
+    try:
+        costs = compare({
+            name: runtime._select_confirmed_join_ticket
+            for name, runtime in variants.items()
+        }, samples=samples)
+        if any(runtime.physical_ledger.pending_count != 8
+               or runtime._join_ticket.join_id != "join2"
+               or runtime.counts["join_prefetch_acked"]
+               or runtime.completed_physical_actions
+               for runtime in variants.values()):
+            raise AssertionError("saturated JOIN selection changed physical state")
+        return {
+            "case": "saturated_confirmed_join_selector", "costs": costs,
+            "pending_contexts": 2, "pending_commands": 8,
+            "physical_state_unchanged": True,
+            "scope": "Selector only on identical already-full CPU frontiers; not decode CPU or GPU time",
+        }
+    finally:
+        for runtime in variants.values():
+            runtime.close()
 
 
 def inflight_prefill_conversion_case(baseline):
@@ -250,7 +335,7 @@ def inflight_prefill_conversion_case(baseline):
             }
         finally:
             runtime.close()
-    if results["baseline_budget"]["pending_contexts"] != 0 or (
+    if results["baseline_budget"]["pending_contexts"] not in (0, 2) or (
         results["candidate_budget"]["pending_contexts"] != 2
     ):
         raise AssertionError("occupied prefill rows did not preserve the bounded cache frontier")
@@ -454,6 +539,7 @@ def main():
         "scripts/benchmark_native_prepare_path.py",
         "scripts/benchmark_native_shared_path.py",
         "tests/test_wait_prefetch_batch.py",
+        "tests/test_join_confirmed_reentry.py",
     )
     sources = {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in paths}
     baseline, baseline_sources = baseline_runtime(args.baseline)
@@ -465,6 +551,7 @@ def main():
         *(native_budget_case(
             baseline, samples=args.samples, running=running, free_rows=free_rows,
         ) for running, free_rows in ((40, 8), (47, 0), (48, 0))),
+        saturated_join_case(baseline, samples=args.samples),
         *(native_ack_case(baseline, samples=args.samples, pending=pending, node_count=nodes)
           for pending in (0, 16, 64) for nodes in (1, 32, 128)),
         *(repeated_plan_case(baseline, samples=args.samples, depth=depth)
@@ -490,6 +577,7 @@ def main():
         "samples": args.samples, "warmup_samples": 20,
         "cases": cases,
         "parallel_tool_conversion": parallel_tool_conversion_case(baseline),
+        "parallel_confirmed_join_conversion": parallel_confirmed_join_conversion_case(baseline),
         "inflight_prefill_conversion": inflight_prefill_conversion_case(baseline),
         "limitations": [
             "Fixture frequency and pending populations are controlled, not replayed online frequencies.",

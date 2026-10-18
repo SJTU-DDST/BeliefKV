@@ -5,6 +5,25 @@ Status date: 2026-10-18 (PDT).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Latest main-only CPU change allows two confirmed JOIN parents to restore without
+serializing on the first burst's ACK. The confirmation map retains independent
+ownership/consumer identities; shared live byte/context and native pool budgets
+remain authoritative. Disabled parallelism/no native overlap stays serial, and
+pre-completion provisional tickets are not yet parallelized. A saturated frontier
+returns without scanning confirmed waiters. V1710 passes1329 CPU cases; V1712's
+controlled selector changes1 context/4 nodes to2/8 before ACK, with saturated
+selector P50 2.258 to0.746us. This is not whole-run control, DMA or JCT evidence.
+Frozen V82b remains ab951b9 on both arms; do not hot-deploy this change.
+
+V1711's09:40 PDT prefix observes128 closed JOINs,114 start windows and71 early
+submissions; early-and-reused JOIN/tool FULL is2.634/6.400GB. V1713 partitions
+ACK-to-service using ordered actual boundaries. In12 JOIN episodes over5s,
+native-arrival-to-service totals148.77s of213.16s observed intervals, not removable
+JCT. Two64.53/47.81s tool-to-next-submit gaps contain paired internal-summary
+requests lasting64.41/47.75s. Do not attribute them to ordinary client handoff.
+Next inspect actual JOIN admission eligibility/leases and summary-induced lost
+consumption; keep the second wave and full matched performance/quality pending.
+
 Current GPU collection is V82b: application ab951b9, predictive then matched native,
 launched at08:50 PDT and actual workflow GPU service verified at08:55. V1693
 binds actual capacities/settings, frozen app/engine/artifacts, arrivals and shared
