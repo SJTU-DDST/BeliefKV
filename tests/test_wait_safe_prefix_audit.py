@@ -3,7 +3,7 @@ from copy import deepcopy
 import pytest
 
 from scripts.audit_wait_safe_prefix import (
-    audit_safe_prefix, host_interval_at_safe_cap, native_lifetimes,
+    audit_safe_prefix, handoff_dispatch_exposure, host_interval_at_safe_cap, native_lifetimes,
     queue_lifetime_exposure, wait_occupancy_targets,
 )
 
@@ -212,3 +212,115 @@ def test_occupancy_targets_deduplicate_requests_within_overlapping_views():
     targets = wait_occupancy_targets([row, deepcopy(row)])
     assert all(ids == {"request"} for ids in targets.values())
     assert len(targets) == 3
+
+
+def dispatch_fixture():
+    wait, _, native = fixture()
+    wait.update(
+        completion_ts_ms=210, client_submit_ts_ms=220, native_arrival_ts_ms=230,
+        host_interval={"host_hit_tokens_at_service": 10},
+        last_pre_completion_no_step_reason="prefetch_capacity_budget",
+    )
+    native["ts_ms"] = 230
+    lifetimes = {"request": {"queue": 130, "launch": 150, "finish": 160}}
+    natives = [native]
+    for index, (when, workflow) in enumerate((
+        (110, "other"), (115, "workflow"), (120, "other"),
+        (125, "other"), (130, "other"), (145, "workflow"), (150, "other"),
+    )):
+        rid = f"other-{index}"
+        lifetimes[rid] = {"queue": when, "launch": when, "finish": when + 5}
+        natives.append({
+            **native, "workflow_id": workflow,
+            "attributes": {"request_id": rid},
+        })
+    return wait, lifetimes, natives
+
+
+def test_handoff_counts_half_open_windows_and_excludes_target_and_decode_redispatches():
+    wait, lifetimes, natives = dispatch_fixture()
+    result = handoff_dispatch_exposure(lifetimes, [wait], natives)
+    intervals = result["rows"][0]["intervals"]
+    assert intervals["completion_to_client_submit"] == {
+        "elapsed_ms": 10, "other_requests_first_launched": 2,
+        "same_workflow_requests_first_launched": 1,
+        "other_workflow_requests_first_launched": 1,
+    }
+    assert intervals["client_submit_to_native_arrival"]["other_requests_first_launched"] == 2
+    assert intervals["native_arrival_to_first_launch"]["other_requests_first_launched"] == 2
+    assert intervals["native_arrival_to_first_launch"]["elapsed_ms"] == 20
+    assert result["groups"]["all_observed_next_requests"]["observed_wait_events"] == 1
+    assert "join_ticket:prefetch_capacity_budget:later_host_hit" in result["groups"]
+
+
+def test_zero_handoff_and_zero_queue_have_observed_zero_counts():
+    wait, lifetimes, natives = dispatch_fixture()
+    wait.update(completion_ts_ms=230, client_submit_ts_ms=230)
+    lifetimes["request"]["launch"] = 130
+    result = handoff_dispatch_exposure(lifetimes, [wait], natives)
+    assert all(stage["elapsed_ms"] == stage["other_requests_first_launched"] == 0
+               for stage in result["rows"][0]["intervals"].values())
+
+
+@pytest.mark.parametrize(
+    "changes,reason",
+    [
+        ({"completion_ts_ms": None}, "missing_or_invalid_boundary"),
+        ({"client_submit_ts_ms": float("nan")}, "missing_or_invalid_boundary"),
+        ({"completion_ts_ms": 225}, "unordered_boundaries"),
+        ({"client_submit_ts_ms": 235}, "unordered_boundaries"),
+    ],
+)
+def test_unknown_or_unordered_handoff_is_not_a_zero_wait(changes, reason):
+    wait, lifetimes, natives = dispatch_fixture()
+    wait.update(changes)
+    result = handoff_dispatch_exposure(lifetimes, [wait], natives)
+    group = result["groups"]["all_observed_next_requests"]
+    assert group["observed_wait_events"] == 0
+    assert group["excluded_wait_events"] == {reason: 1}
+    assert result["rows"] == []
+
+
+def test_open_native_lifetime_handoff_remains_unknown():
+    wait, lifetimes, natives = dispatch_fixture()
+    del lifetimes["request"]
+    result = handoff_dispatch_exposure(lifetimes, [wait], natives)
+    assert result["groups"]["all_observed_next_requests"]["excluded_wait_events"] == {
+        "missing_closed_lifetime": 1,
+    }
+
+
+def test_handoff_rejects_arrival_or_identity_mismatch():
+    wait, lifetimes, natives = dispatch_fixture()
+    wait["native_arrival_ts_ms"] += 1
+    with pytest.raises(ValueError, match="arrival mismatch"):
+        handoff_dispatch_exposure(lifetimes, [wait], natives)
+    wait["native_arrival_ts_ms"] -= 1
+    wait["workflow_id"] = "wrong"
+    with pytest.raises(ValueError, match="identity mismatch"):
+        handoff_dispatch_exposure(lifetimes, [wait], natives)
+
+
+def test_handoff_rejects_unbound_lifetime_and_duplicate_registration():
+    wait, lifetimes, natives = dispatch_fixture()
+    with pytest.raises(ValueError, match="without native registration"):
+        handoff_dispatch_exposure(lifetimes, [wait], natives[:-1])
+    with pytest.raises(ValueError, match="duplicate native registration"):
+        handoff_dispatch_exposure(lifetimes, [wait], [*natives, deepcopy(natives[0])])
+
+
+def test_distinct_waits_sharing_a_request_do_not_borrow_each_others_cohort():
+    wait, lifetimes, natives = dispatch_fixture()
+    other_wait = {
+        **wait, "source": "tool_wait", "join_id": None,
+        "last_pre_completion_no_step_reason": "no_reusable_input_restore_step",
+        "early_started_and_reused_full_bytes": 100,
+    }
+    groups = handoff_dispatch_exposure(lifetimes, [wait, other_wait], natives)["groups"]
+    assert groups["all_observed_next_requests"]["observed_wait_events"] == 2
+    for name in (
+        "join_ticket:prefetch_capacity_budget:later_host_hit",
+        "tool_wait:no_reusable_input_restore_step:later_host_hit",
+        "tool_wait:early_reused_full",
+    ):
+        assert groups[name]["observed_wait_events"] == 1

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from bisect import bisect_left
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 import gzip
@@ -89,7 +90,7 @@ def audit_safe_prefix(waits, plans, native_requests):
             **{key: wait.get(key) for key in (
                 "source", "workflow_id", "context_id", "context_epoch", "join_id",
                 "invocation_id", "next_request_id", "first_service_ts_ms",
-                "native_arrival_ts_ms", "completion_ts_ms",
+                "native_arrival_ts_ms", "completion_ts_ms", "client_submit_ts_ms",
                 "early_started_and_reused_full_bytes",
             )},
             "last_pre_completion_plan_ts_ms": plan["ts_ms"] if plan else None,
@@ -349,25 +350,160 @@ def queue_lifetime_exposure(lifetimes, targets, *, request_limit):
     }
 
 
+def wait_occupancy_cohorts(row):
+    if row.get("next_request_id") is None:
+        return ()
+    names = ["all_observed_next_requests"]
+    host = (row.get("host_interval") or {}).get("host_hit_tokens_at_service", 0)
+    reason = row.get("last_pre_completion_no_step_reason")
+    source = row["source"]
+    if host > 0 and (source, reason) in (
+        ("tool_wait", "no_reusable_input_restore_step"),
+        ("tool_wait", "no_host_backed_missing_copy"),
+        ("join_ticket", "prefetch_capacity_budget"),
+    ):
+        names.append(f"{source}:{reason}:later_host_hit")
+    if (row.get("early_started_and_reused_full_bytes") or 0) > 0:
+        names.append(f"{source}:early_reused_full")
+    return names
+
+
 def wait_occupancy_targets(rows):
     groups = defaultdict(set)
     for row in rows:
-        rid = row["next_request_id"]
-        if rid is None:
-            continue
-        groups["all_observed_next_requests"].add(rid)
-        host = (row.get("host_interval") or {}).get("host_hit_tokens_at_service", 0)
-        reason = row.get("last_pre_completion_no_step_reason")
-        source = row["source"]
-        if host > 0 and (source, reason) in (
-            ("tool_wait", "no_reusable_input_restore_step"),
-            ("tool_wait", "no_host_backed_missing_copy"),
-            ("join_ticket", "prefetch_capacity_budget"),
-        ):
-            groups[f"{source}:{reason}:later_host_hit"].add(rid)
-        if (row.get("early_started_and_reused_full_bytes") or 0) > 0:
-            groups[f"{source}:early_reused_full"].add(rid)
+        for name in wait_occupancy_cohorts(row):
+            groups[name].add(row["next_request_id"])
     return groups
+
+
+def handoff_dispatch_exposure(lifetimes, rows, native_events):
+    """Count first launches across aligned handoff and queue intervals."""
+    registrations = {}
+    for event in native_events:
+        if event.get("kind") != "llm_submit":
+            continue
+        rid = (event.get("attributes") or {}).get("request_id")
+        if rid is None or rid in registrations:
+            raise ValueError("missing or duplicate native registration")
+        registrations[rid] = event
+    launches, workflow_launches = [], defaultdict(list)
+    for rid, lifetime in lifetimes.items():
+        native = registrations.get(rid)
+        if native is None:
+            raise ValueError("lifetime without native registration")
+        launches.append(lifetime["launch"])
+        workflow_launches[native.get("workflow_id")].append(lifetime["launch"])
+    launches.sort()
+    for values in workflow_launches.values():
+        values.sort()
+    targets = wait_occupancy_targets(rows)
+    observed, excluded = defaultdict(list), defaultdict(Counter)
+    details = []
+    for row in rows:
+        rid = row.get("next_request_id")
+        names = wait_occupancy_cohorts(row)
+        if not names:
+            continue
+        lifetime, native = lifetimes.get(rid), registrations.get(rid)
+        reason = None
+        boundaries = [row.get(key) for key in (
+            "completion_ts_ms", "client_submit_ts_ms", "native_arrival_ts_ms",
+        )]
+        if lifetime is None or native is None:
+            reason = "missing_closed_lifetime"
+        elif any(type(value) not in (int, float) or not math.isfinite(value)
+                 for value in boundaries):
+            reason = "missing_or_invalid_boundary"
+        else:
+            if not math.isclose(boundaries[-1], native["ts_ms"], abs_tol=1e-3, rel_tol=0):
+                raise ValueError("handoff native arrival mismatch")
+            if any(native.get(key) != row.get(key) for key in (
+                "workflow_id", "context_id", "invocation_id",
+            )):
+                raise ValueError("handoff request identity mismatch")
+            if boundaries != sorted(boundaries):
+                reason = "unordered_boundaries"
+        if reason:
+            for name in names:
+                excluded[name][reason] += 1
+            continue
+        offset = native["ts_ms"] - lifetime["queue"]
+        monotonic = [value - offset for value in boundaries] + [lifetime["launch"]]
+        intervals = {}
+        for stage, start, end in zip((
+            "completion_to_client_submit", "client_submit_to_native_arrival",
+            "native_arrival_to_first_launch",
+        ), monotonic, monotonic[1:]):
+            all_count = bisect_left(launches, end) - bisect_left(launches, start)
+            same = workflow_launches[row["workflow_id"]]
+            same_count = bisect_left(same, end) - bisect_left(same, start)
+            intervals[stage] = {
+                "elapsed_ms": end - start,
+                "other_requests_first_launched": all_count,
+                "same_workflow_requests_first_launched": same_count,
+                "other_workflow_requests_first_launched": all_count - same_count,
+            }
+        detail = {
+            **{key: row.get(key) for key in (
+                "source", "workflow_id", "context_id", "invocation_id",
+                "context_epoch", "join_id", "next_request_id",
+            )},
+            "intervals": intervals,
+        }
+        details.append(detail)
+        for name in names:
+            observed[name].append(detail)
+    return {
+        "groups": {
+            name: {
+                "observed_wait_events": len(observed[name]),
+                "excluded_wait_events": dict(excluded[name]),
+                "intervals": {
+                    stage: {
+                        "elapsed_ms": distribution(
+                            detail["intervals"][stage]["elapsed_ms"]
+                            for detail in observed[name]
+                        ),
+                        "events_with_other_requests_first_launched": sum(
+                            detail["intervals"][stage]["other_requests_first_launched"] > 0
+                            for detail in observed[name]
+                        ),
+                        "events_with_other_workflows_first_launched": sum(
+                            detail["intervals"][stage]["other_workflow_requests_first_launched"] > 0
+                            for detail in observed[name]
+                        ),
+                        **{
+                            key: distribution(detail["intervals"][stage][key]
+                                              for detail in observed[name])
+                            for key in (
+                                "other_requests_first_launched",
+                                "same_workflow_requests_first_launched",
+                                "other_workflow_requests_first_launched",
+                            )
+                        },
+                    }
+                    for stage in (
+                        "completion_to_client_submit",
+                        "client_submit_to_native_arrival",
+                        "native_arrival_to_first_launch",
+                    )
+                },
+            }
+            for name in targets
+        },
+        "rows": details,
+        "scope": (
+            "Half-open intervals count each other closed observed request's first "
+            "scheduler launch once, excluding decode redispatches and the target's "
+            "own first launch. Completion and client submission use the lifecycle "
+            "auditor's paired wall-clock alignment; native arrival maps them into "
+            "the target's service monotonic clock. Unknown or unordered boundaries "
+            "are excluded, not zero waits. Cohorts and independent wait intervals "
+            "can overlap. Open or missing lifetimes may lower counts. A launch "
+            "does not establish free allocator capacity, a displaced runnable "
+            "parent, CUDA kernel start, or benefit from reserving service slots."
+        ),
+    }
 
 
 def main():
@@ -375,8 +511,11 @@ def main():
     parser.add_argument("--sealed-report", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--queue-occupancy", action="store_true")
+    parser.add_argument("--handoff-dispatch", action="store_true")
     parser.add_argument("--request-limit", type=int, default=48)
     args = parser.parse_args()
+    if args.handoff_dispatch and not args.queue_occupancy:
+        parser.error("--handoff-dispatch requires --queue-occupancy")
     if args.output.exists():
         parser.error("--output already exists")
     payload = gzip.decompress(args.sealed_report.read_bytes())
@@ -409,6 +548,10 @@ def main():
             ),
             "coverage": counts,
         }
+        if args.handoff_dispatch:
+            report["handoff_dispatch"] = handoff_dispatch_exposure(
+                lifetimes, report["rows"], native_events,
+            )
         input_paths.append(service_path)
     report.update({
         "scope": (
@@ -433,6 +576,10 @@ def main():
     args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
     print(json.dumps({
         "output": str(args.output),
+        **({"handoff_dispatch": {
+            key: value for key, value in report["handoff_dispatch"].items()
+            if key != "rows"
+        }} if args.handoff_dispatch else {}),
         **({"queue_occupancy": report["queue_occupancy"]} if args.queue_occupancy
            else {"by_source": report["by_source"]}),
     }, indent=2))

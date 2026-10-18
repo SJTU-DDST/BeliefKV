@@ -5,6 +5,38 @@ Status date: 2026-10-18 (PDT).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+V1774 seals the completed predictive inputs. V1780 binds all 40354 native
+lifetimes and 18902 distinct successor requests/18904 independent waits, without
+missing service sequence numbers or open/unbound requests. Final Host FULL/Mamba
+high water is 160/40.05GB; cumulative FULL eviction 379.93GB is not distinct useful
+loss. Exact reaccess confirms 95 FULL recompute records, 5720 tokens/117.15MB;
+unvisited/expired attribution and Mamba locations remain unknown. None of the
+177 JOIN/3776 tool expanded last-pre-completion closures shows unbacked FULL;
+shortcut observations cannot establish that population's backing.
+
+For 1788 tool no-input-plan/later-Host-hit successors, completion-to-client-submit
+P50 is 11.317ms, client-to-native 191.625ms, and queue-to-first-launch 14.060s.
+Other request first-launch counts across those windows have medians 0/1/105.
+For 68 JOIN capacity-refusal/later-Host-hit requests the values are 14.055ms/
+100.747ms/6.768s and 0/1/43. These do not establish displaced eligible parents
+or a benefit from service-slot reservation. Keep restoring/residency/near-term
+admission coordination ahead of an unvalidated reservation policy. V1779 has
+126 passing offline audit checks, including distinct waits sharing a successor;
+wait cohorts and deduplicated request populations remain separate.
+
+V1777 re-evaluates the completed run without relabeling sealed live prefixes:
+174 natural final requests have work-error snapshots among 466 natural child
+returns. Last-pre-EOS absolute error P50 is 45.621 tokens for 139 first-round
+requests and 56.750 for 35 later-round requests. There are only 7 depth2/
+5 coordinator cases. Of 228 first phase crossings, 173 are natural-final and
+55 are other requests; 59 of 78 first estimated-work triggers precede native
+EOS by more than 2s.
+No missing notice inputs are observed. Do not treat structural graph support
+as model calibration. Require role/depth/round diagnostics, first-trigger timing,
+coverage and false alarms before adopting a work-head candidate. Continue the
+same matched native, then evaluate existing main-only runtime fixes in a future
+freeze; no online scans or hot model/code changes are added by this audit.
+
 Current V82b stage: matched native is running. Predictive finishes with 156
 completed/system-valid workflows, 148 strict native-agent-eligible workflows,
 12185.49s duration, 466 dynamic children, 39 multi-round roots and 17 nested
