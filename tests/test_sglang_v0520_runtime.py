@@ -3917,8 +3917,9 @@ def test_semantic_eos_window_creates_only_h2d_candidate_not_final_priority():
     ("length", True, False, False), ("abort", True, False, False),
     ("stop", True, True, False),
 ])
+@pytest.mark.parametrize("running", (False, True))
 def test_observed_native_final_body_does_not_require_a_model_forecast(
-    monkeypatch, reason, body, tools, should_issue,
+    monkeypatch, reason, body, tools, should_issue, running,
 ):
     monkeypatch.setenv("BELIEFKV_EOS_PROTOCOL_WINDOW_MS", "250")
     runtime = final_stage_runtime()
@@ -3932,6 +3933,7 @@ def test_observed_native_final_body_does_not_require_a_model_forecast(
         attributes={"request_id": "child"},
     ),))
     runtime.register_visible_request(child)
+    runtime._native_running_batch = NS(reqs=[child] if running else [])
     key = runtime.visible["child"]
     now = time.monotonic() * 1000
     runtime._semantic_worker = NS()

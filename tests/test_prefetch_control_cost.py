@@ -1,4 +1,4 @@
-from dataclasses import replace
+from dataclasses import asdict, replace
 import json
 from types import SimpleNamespace as NS
 from unittest.mock import Mock, patch
@@ -10,8 +10,9 @@ from beliefkv.runtime.sglang_v0520_physical import PhysicalReceiptError, Physica
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from tests.test_sglang_v0520_physical import ack, child, expected, receipt
 from tests.test_sglang_v0520_runtime import event
-from tests.test_wait_prefetch_batch import batch_fixture
+from tests.test_wait_prefetch_batch import batch_fixture, semantic_join_batch_fixture
 from scripts.benchmark_prefetch_control_cpu import join_scan_fixture
+from scripts.benchmark_wait_prefetch_dispatch_cpu import dispatch_fixture
 
 
 def assert_pending_indexes(ledger):
@@ -197,14 +198,64 @@ def test_unchanged_plan_only_has_a_periodic_heartbeat_with_diagnostic_sampling(
 def test_many_live_join_stages_only_read_the_running_batch_once_per_scan():
     runtime, reads = join_scan_fixture(NativeAdmissionRuntime, workflows=156)
     try:
-        assert runtime._roll_final_stage() is None
+        with patch.object(runtime, "_live_final_stage", wraps=runtime._live_final_stage) as live:
+            assert runtime._roll_final_stage() is None
+        assert live.call_count == 48
         assert reads[0] == 48
-        assert runtime.counts["semantic_h2d_child_waiting_for_service"] == 108
+        assert runtime.counts["final_stage_service_filter_skipped"] == 108
         assert runtime._join_ticket is None
         assert not runtime.physical_ledger.pending_count
         runtime._native_running_batch.reqs.clear()
-        assert runtime._roll_final_stage() is None
-        assert runtime.counts["semantic_h2d_child_waiting_for_service"] == 264
+        with patch.object(runtime, "_live_final_stage", wraps=runtime._live_final_stage) as live:
+            assert runtime._roll_final_stage() is None
+        assert live.call_count == 0
+        assert runtime.counts["final_stage_service_filter_skipped"] == 264
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("lead_ms,remaining_tokens,plans", (
+    (1000., 60., False), (4000., 120., True),
+))
+def test_join_uses_configured_lead_before_building_a_physical_plan(
+    lead_ms, remaining_tokens, plans,
+):
+    runtime, _, opportunity, _, _ = semantic_join_batch_fixture(
+        center_tokens=remaining_tokens, lower_tokens=0., lead_ms=lead_ms,
+    )
+    now = runtime._semantic_forecasts["child"].observation.observed_ts_ms / 1000.
+    try:
+        with patch("time.monotonic", lambda: now), \
+            patch.object(runtime, "_wait_prefetch_opportunity",
+                         return_value=opportunity) as inspect:
+            result = runtime._roll_final_stage()
+        assert inspect.call_count == int(plans)
+        assert (result is opportunity) is plans
+        assert (runtime._join_ticket is not None) is plans
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("source", ("join_ticket", "tool_wait"))
+def test_each_submission_record_keeps_its_own_unchanged_scalar_budget(source):
+    runtime, _, _, _, _, rows, _, dispatch, now = dispatch_fixture(
+        NativeAdmissionRuntime, source=source, depth=4, diagnostics=True, native_budget=True,
+    )
+    try:
+        with patch("time.monotonic", lambda: now):
+            dispatch()
+        submitted = [row for row in rows if row["event"] == "prefetch_native_issued"]
+        assert len(submitted) == 4
+        for row in submitted:
+            assert row["residency_issue_budget"] == asdict(
+                runtime._prefetch_issue_budgets[row["command_id"]],
+            )
+        original = submitted[1]["residency_issue_budget"]["byte_limit"]
+        submitted[0]["residency_issue_budget"]["byte_limit"] = -1
+        assert submitted[1]["residency_issue_budget"]["byte_limit"] == original
+        assert runtime._prefetch_issue_budgets[submitted[0]["command_id"]].byte_limit == original
+        assert not runtime.completed_physical_actions
     finally:
         runtime.close()
 

@@ -764,8 +764,20 @@ def revalidate_prefetch_subset(
     result = []
     previous_position = -1
     full = mamba = deferred = 0
-    for current in current_steps:
+    for offset, current in enumerate(current_steps):
         position = selected_positions.get(current.node_id)
+        if position is None and previous_position == len(selected) - 1:
+            # Fresh planning can extend past the original frontier after an
+            # earlier selected extent becomes resident. Keep only that frontier.
+            for tail in current_steps[offset:]:
+                node = nodes.get(tail.node_id)
+                if node is None or node.creation_time != tail.creation_time:
+                    return None
+                deferred += int(
+                    tail.include_mamba and node.mamba_host_present
+                    and not node.mamba_device_present
+                )
+            break
         if position is None or position <= previous_position:
             return None
         for skipped in selected[previous_position + 1:position]:

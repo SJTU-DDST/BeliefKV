@@ -2012,7 +2012,7 @@ class NativeAdmissionRuntime:
                 "profile_shared_path": self._hotpath_timing.enabled,
                 "h2d_seed_samples": self._h2d_seed_count,
                 "h2d_service_samples": len(self._h2d_samples),
-                "prefetch_residency_budget": asdict(self._residency_budget),
+                "prefetch_residency_budget": vars(self._residency_budget).copy(),
                 "prefetch_residency_headroom": (
                     asdict(self._residency_headroom)
                     if self._residency_headroom is not None else None
@@ -2820,21 +2820,21 @@ class NativeAdmissionRuntime:
             if batch is not None and self._final_stages else None
         )
         for stage in tuple(self._final_stages.values()):
-            if self._semantic_worker is not None and stage.request_id is not None:
+            observed_eos = self._semantic_eos_proofs.get(stage.request_id) is True
+            if stage.request_id is None or (
+                not observed_eos and not self._final_stage_service_available(
+                    stage, running_ids=running_ids,
+                )
+            ):
+                self.counts["final_stage_service_filter_skipped"] += 1
+                continue
+            if not self._live_final_stage(stage):
+                continue
+            if self._semantic_worker is not None:
                 progress = self._semantic_progress.get(stage.request_id, ())
                 if progress:
                     stage.generated_tokens = progress[-1][1]
                     stage.tokens_per_second = self._semantic_rate(stage.request_id)
-            if (
-                not self._live_final_stage(stage) or stage.request_id is None
-            ):
-                continue
-            observed_eos = self._semantic_eos_proofs.get(stage.request_id) is True
-            if not observed_eos and not self._final_stage_service_available(
-                stage, running_ids=running_ids,
-            ):
-                self.counts["semantic_h2d_child_waiting_for_service"] += 1
-                continue
             if not observed_eos and (
                 stage.generated_tokens < 16 or stage.tokens_per_second is None
             ):
@@ -2904,7 +2904,7 @@ class NativeAdmissionRuntime:
                 if remaining < 4:
                     continue
                 remaining_ms = remaining * 1000 / stage.tokens_per_second
-            if remaining_ms > 2_000:
+            if remaining_ms > self.prefetch_lead_ms:
                 if self._semantic_worker is not None:
                     self.counts["semantic_h2d_too_early"] += 1
                 continue
@@ -2969,7 +2969,9 @@ class NativeAdmissionRuntime:
                 )
                 continue
             if not self._prefetch_slot_available(
-                stage.key, budget=self._current_residency_budget(include_evictable=True),
+                stage.key, budget=self._current_residency_budget(
+                    include_evictable=True, headroom=getattr(observation, "headroom", None),
+                ),
             ):
                 self.counts["semantic_h2d_admission_budget_busy"] += 1
                 self._record_wait_prefetch_plan(
@@ -4751,7 +4753,7 @@ class NativeAdmissionRuntime:
             ],
             "fits_current_free_lists": getattr(opportunity, "fits_current_free_lists", None),
             "restore_frontier": {
-                "budget": asdict(self._residency_budget),
+                "budget": vars(self._residency_budget).copy(),
                 "locked_contexts_by_role": {
                     role: len({
                         lease.key for lease in self._prefetch_service_leases.values()
@@ -6703,7 +6705,8 @@ class NativeAdmissionRuntime:
                 "node_creation_time": step.creation_time,
                 "include_mamba": step.include_mamba,
                 "residency_issue_budget": (
-                    asdict(self._prefetch_issue_budgets[command_id])
+                    # Frozen budget fields are scalars; no recursive copy is needed.
+                    vars(self._prefetch_issue_budgets[command_id]).copy()
                     if command_id in self._prefetch_issue_budgets else None
                 ),
                 "reusable_input_tokens": (
@@ -6783,7 +6786,8 @@ class NativeAdmissionRuntime:
         return max(0, budget.byte_limit - occupied)
 
     def _live_wait_prefetch(self, key: PrefillCandidateKey, source: str) -> bool:
-        if self.physical_disabled or (
+        context = self.graph.contexts.get(key.context_id)
+        if self.physical_disabled or context is None or context.epoch != key.context_epoch or (
             self.context_sessions.get(key.context_id) != key and not (
                 source == "join_ticket" and self._pending_confirmed_join_submit(key)
             )
@@ -6896,7 +6900,7 @@ class NativeAdmissionRuntime:
             nonlocal reserved_bytes
             command = getattr(operation, "beliefkv_command_id", None)
             step = planned.get(command)
-            if step is None or not self._live_wait_prefetch(key, source):
+            if step is None:
                 self.counts["prefetch_causal_invalidated_before_enqueue"] += 1
                 return False
             try:
@@ -6907,7 +6911,12 @@ class NativeAdmissionRuntime:
                 if reserved_bytes + size > byte_allowance:
                     self.counts["prefetch_burst_byte_budget_lost"] += 1
                     return False
-                self.register_physical_action(expected)
+                # The source proof includes registration's live context/session
+                # check. Validate once, immediately before reserving this node.
+                if not self._live_wait_prefetch(key, source):
+                    self.counts["prefetch_causal_invalidated_before_enqueue"] += 1
+                    return False
+                self.physical_ledger.register(expected)
             except (PhysicalReceiptError, AttributeError, TypeError, ValueError):
                 self.counts["prefetch_reservation_rejected"] += 1
                 return False
@@ -7501,8 +7510,8 @@ class NativeAdmissionRuntime:
                 "protected_bytes": protected_bytes,
                 "protection_reason": protection_reason,
                 "protected_by_command_id": protected_by_command_id,
-                "budget": asdict(budget),
-                "residency_issue_budget": asdict(issue_budget) if issue_budget is not None else None,
+                "budget": vars(budget).copy(),
+                "residency_issue_budget": vars(issue_budget).copy() if issue_budget is not None else None,
                 "protection_request_slots": protection_slots,
                 "protection_slot_role": (
                     "demand" if lease.demand_ready else "speculative"

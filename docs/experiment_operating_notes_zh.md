@@ -4,6 +4,20 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+后续开发固定在主目录 `/home/longhao/experiment/BeliefKV` 的 `main` 分支。
+历史实验 worktree 保留其冻结来源；新代码修改、验证与提交在主目录进行。
+
+**最新 CPU 执行约定（V1676–V1678）。**JOIN 的服务资格/最大提前量检查
+先于完整物理规划，但有效无工具 EOS 不要求 child 仍在 running batch。
+`final_stage_service_filter_skipped` 是廉价筛除次数，未逐项核对完整图，
+不能当作活跃 JOIN 或可恢复机会人口；取代旧的等待服务计数。
+超过最大提前量的候选不再生成物理计划行；缺行不等于没有 Host-only KV。
+fresh plan 在原选末端之后延伸时可截断尾部，只发送原选安全目标，
+不跳过未就绪祖先、不扩大 Mamba payload、不把部分恢复当作执行许可。
+1343项CPU回归和2个subtest通过。局部扫描/提交改善与全running场景的小幅
+回退均保留；不外推整轮控制成本或JCT。GPU预约、池比例、任务限额、
+108+48两批嵌套负载和 `native_all_layers` 标签保持原约定。
+
 **当前 CPU 验收补充（V1670/V1671）。**最终重检可以缩小为原选目标中
 仍安全的完整 FULL extent，或延后必要 Mamba；不添加未选目标、不跳过
 缺失祖先，不把部分恢复当作可执行或按层预取。只剩部分最后节点时，

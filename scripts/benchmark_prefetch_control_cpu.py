@@ -222,16 +222,22 @@ def join_scan_fixture(cls, *, workflows):
     return runtime, reads
 
 
-def join_scan_case(baseline, *, samples, workflows):
+def join_scan_case(baseline, *, samples, workflows, running_requests=48):
     variants = {
         name: join_scan_fixture(cls, workflows=workflows)
         for name, cls in (("baseline", baseline), ("candidate", NativeAdmissionRuntime))
     }
     try:
-        membership_reads = {}
+        membership_reads, graph_checks = {}, {}
         for name, (runtime, reads) in variants.items():
-            if runtime._roll_final_stage() is not None:
-                raise AssertionError("long report phase unexpectedly produced a restore plan")
+            runtime._native_running_batch.reqs = (
+                runtime._native_running_batch.reqs[:running_requests]
+            )
+            with patch.object(runtime, "_live_final_stage",
+                              wraps=runtime._live_final_stage) as checked:
+                if runtime._roll_final_stage() is not None:
+                    raise AssertionError("long report phase unexpectedly produced a restore plan")
+            graph_checks[name] = checked.call_count
             membership_reads[name] = reads[0]
             runtime._native_running_batch = NS(reqs=[
                 NS(rid=request.request_id) for request in runtime._native_running_batch.reqs
@@ -244,8 +250,9 @@ def join_scan_case(baseline, *, samples, workflows):
             raise AssertionError("JOIN candidate scan issued a physical action")
         return {
             "case": "live_join_final_stage_scan", "workflows": workflows,
-            "running_requests": min(48, workflows), "costs": costs,
+            "running_requests": min(running_requests, 48, workflows), "costs": costs,
             "running_membership_reads_per_scan": membership_reads,
+            "full_graph_checks_per_scan": graph_checks,
             "membership_counts_measured_separately": True,
             "live_graph_dependencies_checked": True, "physical_actions": 0,
         }
@@ -280,8 +287,9 @@ def main():
           for pending in (0, 16, 64)),
         *(repeated_plan_case(baseline, samples=args.samples, depth=depth)
           for depth in (16, 128)),
-        *(join_scan_case(baseline, samples=args.samples, workflows=workflows)
-          for workflows in (48, 156)),
+        *(join_scan_case(
+            baseline, samples=args.samples, workflows=workflows, running_requests=running,
+        ) for workflows, running in ((48, 48), (156, 48), (512, 48), (156, 0))),
     ]
     for case in cases:
         costs = case["costs"]

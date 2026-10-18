@@ -200,11 +200,17 @@ def test_join_work_interval_reaches_final_batch_enqueue_with_residency_bound(
     try:
         with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
                    return_value=forecast.observation.observed_ts_ms / 1000.), \
-            patch.object(runtime, "inspect_context_h2d_opportunity", return_value=opportunity):
+            patch.object(runtime, "inspect_context_h2d_opportunity",
+                         return_value=opportunity) as inspect:
             runtime.dispatch_join_prefetch()
         assert runtime.physical_ledger.pending_count == expected_nodes
         assert cache.prefetch_gpu_session_nodes.call_count == int(expected_nodes > 0)
         assert not runtime.graph.joins["join"].satisfied
+        if lead_ms < 1200.:
+            inspect.assert_not_called()
+            assert runtime.counts["semantic_h2d_too_early"] == 1
+            assert not any(row["event"] == "wait_prefetch_plan" for row in records)
+            return
         plan = next(row for row in records if row["event"] == "wait_prefetch_plan")
         assert plan["predicted_remaining_ms"] == 1200.
         assert plan["prediction_early_ms"] == (48. - lower_tokens) * 25.

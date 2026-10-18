@@ -170,6 +170,88 @@ def state_signature(runtime, actions):
     }
 
 
+def selection_fixture(cls, *, depth, remaining_ms):
+    runtime, key, _, reads, actions, _, reset, _, now = dispatch_fixture(
+        cls, source="join_ticket", depth=depth, native_budget=True,
+    )
+    names = cls._roll_final_stage.__globals__
+    parent = runtime.graph.invocations[key.invocation_id]
+    join = runtime.graph.joins[parent.join_id]
+    child_id = max(join.member_invocation_ids, key=lambda value: int(value.rsplit("-", 1)[1]))
+    child_key = next(item for item in runtime.visible.values() if item.invocation_id == child_id)
+    parent.state = InvocationState.WAIT_JOIN
+    join.satisfied = False
+    join.completed_member_ids = join.member_invocation_ids - {child_id}
+    runtime._native_running_batch.reqs[0] = NS(rid=child_key.request_id)
+    runtime.join_prefetch_min_advance_ms = 1000.
+    stage = names["_ChildFinalStage"](
+        key, join.join_id, child_id, child_key.context_epoch,
+        100 + int(remaining_ms / 10.), now + 3600.,
+        request_id=child_key.request_id, generated_tokens=100, tokens_per_second=100.,
+    )
+    runtime._final_stages[join.join_id] = stage
+    runtime._final_request_stages[child_key.request_id] = stage
+    if not runtime._live_final_stage(stage):
+        raise AssertionError("selection fixture has an invalid JOIN")
+
+    def reset_selection():
+        reset()
+        runtime._join_ticket = None
+
+    reset_selection()
+    return runtime, reads, actions, reset_selection, now
+
+
+def measure_selection(baseline, *, depth, remaining_ms, samples):
+    variants = {
+        name: selection_fixture(cls, depth=depth, remaining_ms=remaining_ms)
+        for name, cls in (("baseline", baseline), ("candidate", NativeAdmissionRuntime))
+    }
+    costs = {name: [] for name in variants}
+    native_reads = {name: Counter() for name in variants}
+    try:
+        for sample in range(samples + 10):
+            signatures = {}
+            order = list(variants)
+            if sample % 2:
+                order.reverse()
+            for name in order:
+                runtime, reads, actions, reset, now = variants[name]
+                reset()
+                with patch("time.monotonic", lambda: now):
+                    started = time.thread_time_ns()
+                    result = runtime._roll_final_stage()
+                    elapsed = (time.thread_time_ns() - started) / 1000.
+                if (
+                    (result is not None) != (remaining_ms <= 1000.)
+                    or actions or runtime.physical_ledger.pending_count or runtime.physical_disabled
+                ):
+                    raise AssertionError((name, remaining_ms, dict(runtime.counts)))
+                signatures[name] = (
+                    ([asdict(step) for step in result.steps],
+                     result.required_full_tokens, result.required_mamba_slots)
+                    if result is not None else None
+                )
+                if sample >= 10:
+                    costs[name].append(elapsed)
+                    native_reads[name].update(reads)
+            if signatures["baseline"] != signatures["candidate"]:
+                raise AssertionError("the selection target changed")
+        return {
+            "case": "provisional_join_selection", "depth": depth,
+            "remaining_ms": remaining_ms, "lead_ms": 1000.,
+            "costs": {name: distribution(values) for name, values in costs.items()},
+            "native_reads_per_scan": {
+                name: {key: value / samples for key, value in reads.items()}
+                for name, reads in native_reads.items()
+            },
+            "selected_target_and_no_physical_actions_equal": True,
+        }
+    finally:
+        for runtime, *_ in variants.values():
+            runtime.close()
+
+
 def measure(baseline, *, source, depth, diagnostics, native_budget, samples):
     variants = {
         name: dispatch_fixture(
@@ -239,6 +321,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline", default="7f1509e")
     parser.add_argument("--samples", type=int, default=31)
+    parser.add_argument("--include-selection", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.samples < 1 or args.output.exists():
@@ -260,6 +343,11 @@ def main():
         for source in ("join_ticket", "tool_wait") for depth in (4, 16, 64)
         for diagnostics in (False, True) for native_budget in (False, True)
     ]
+    selection_cases = [
+        measure_selection(
+            baseline, depth=depth, remaining_ms=remaining, samples=args.samples,
+        ) for depth in (4, 16, 64) for remaining in (500., 1500.)
+    ] if args.include_selection else []
     if any(hashlib.sha256((ROOT / path).read_bytes()).hexdigest() != digest
            for path, digest in digests.items()):
         raise RuntimeError("CPU benchmark sources changed during measurement")
@@ -269,7 +357,7 @@ def main():
         "baseline_revision": args.baseline, "baseline_source_sha256": baseline_sources,
         "head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
         "candidate_source_sha256": digests, "samples": args.samples, "warmup_samples": 10,
-        "cases": cases,
+        "cases": cases, "selection_cases": selection_cases,
         "limitations": [
             "The CPU native enqueue uses scalar index stand-ins, not the real native allocator or controller.",
             "Plans have real positive Host-only prefixes and causal identities in both sources.",
@@ -290,7 +378,7 @@ def main():
             "candidate_p50_us": case["costs"]["candidate"]["p50_us"],
         }
         for case in cases
-    ], indent=2), flush=True)
+    ] + selection_cases, indent=2), flush=True)
 
 
 if __name__ == "__main__":

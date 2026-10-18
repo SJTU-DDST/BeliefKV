@@ -2,6 +2,28 @@
 
 Status date: 2026-10-18 (PDT).
 
+Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
+Make subsequent code changes, validation and commits in this checkout.
+
+Latest CPU phase (V1676-V1678), relative to `52656d3`: filter unbound/unserviced
+stages before graph validation, preserve observed no-tool EOS outside running
+batches, and reject predictions beyond the configured lead before checkpoint
+planning. Merge duplicate per-node source/context authorization immediately
+before registration. Copy flat scalar budget records without recursive copying.
+When fresh planning extends beyond the original frontier after resident ancestors,
+trim only that tail and retain safe originally selected targets; never transfer
+new targets or treat a partial prefix as executable.
+
+1343 cases plus two subtests pass. The 156-JOIN/48-running scan P50 changes from
+286.68 to 130.19 us. With an in-memory writer, 64-node JOIN/tool dispatch P50
+changes from 4.422/4.332 to 3.516/3.707 ms; the all-running 48-stage scan is
+about 4.6 us slower. Report that limitation. These fixtures are not online
+frequencies, real DMA, whole-run control cost, RETURN accuracy or JCT evidence.
+Next GPU acceptance remains early FULL reuse, ACK-to-service, repeated demand
+loads, useful KV loss/recomputation and end-to-end quality/performance on the
+shared nested 108+48 task contract. The one-second candidate lead and reservation
+remain unchanged; engine layer prefix/tail is still unimplemented.
+
 Current CPU phase (V1670/V1671) supersedes historical research-only goals.
 Against `7f1509e`, remove repeated registration work and retain safe originally
 selected JOIN/tool targets after final capacity/residency changes. Node ownership

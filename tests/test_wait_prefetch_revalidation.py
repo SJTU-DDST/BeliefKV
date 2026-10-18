@@ -4,7 +4,9 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from beliefkv.control.causal_graph import InvocationState
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
+from beliefkv.runtime.native_transfer_service import NativeServiceSample
 from beliefkv.runtime.sglang_v0520_physical import revalidate_prefetch_subset
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from scripts.benchmark_wait_prefetch_dispatch_cpu import dispatch_fixture
@@ -167,5 +169,109 @@ def test_confirmed_parent_registration_does_not_walk_unrelated_visible_requests(
             dispatch()
         assert len(actions) == 4
         assert runtime.physical_ledger.pending_count == 4
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("source", ("join_ticket", "tool_wait"))
+@pytest.mark.parametrize("native_budget", (False, True))
+@pytest.mark.parametrize("depth", (3, 4))
+def test_final_plan_keeps_selected_work_when_resident_ancestor_exposes_unselected_tail(
+    source, native_budget, depth,
+):
+    runtime, key, cache, _, actions, rows, _, dispatch, now = dispatch_fixture(
+        NativeAdmissionRuntime, source=source, depth=depth, diagnostics=True,
+        native_budget=native_budget,
+    )
+    reserve = runtime._current_residency_budget().reserve_full_tokens
+    cache.token_to_kv_pool_allocator.available_size = lambda: 256 + reserve
+    runtime._native_service_samples.extend(
+        NativeServiceSample(256 * 20, 10., shape="full") for _ in range(3)
+    )
+
+    def drain(**kwargs):
+        first = cache.tree_core.node_by_id(1)
+        first.component_data[0].value = first.component_data[0].host_value
+        cache.token_to_kv_pool_allocator.available_size = lambda: 384 + reserve
+
+    runtime.event_server = NS(drain=drain, close=lambda: None)
+    try:
+        with patch("time.monotonic", lambda: now):
+            dispatch()
+        assert [item[0] for item in actions] == [2]
+        assert not actions[0][2]
+        assert runtime.physical_ledger.pending_count == 1
+        assert not runtime.completed_physical_actions
+        submitted = next(row for row in rows if row.get("reason") == "submitted_partial")
+        assert submitted["planned_full_tokens"] == 128
+        assert submitted["planned_mamba_slots"] == 0
+        assert submitted["deferred_mamba_slots"] == int(depth == 3)
+        assert not runtime.physical_disabled
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("invalid", ("unknown_node", "replaced_node"))
+def test_unselected_tail_with_invalid_native_identity_cannot_validate_a_subset(invalid):
+    runtime, key, _, _, _, _, _, _, _ = dispatch_fixture(
+        NativeAdmissionRuntime, source="tool_wait", depth=4,
+    )
+    try:
+        observed = runtime._wait_prefetch_opportunity(key)
+        original = observed.steps[:2]
+        tail = replace(
+            observed.steps[2], **(
+                {"node_id": 99} if invalid == "unknown_node" else {"creation_time": 999.}
+            ),
+        )
+        fresh = replace(observed, steps=(*original, tail))
+        assert revalidate_prefetch_subset(fresh, original) is None
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("source", ("join_ticket", "tool_wait"))
+@pytest.mark.parametrize("change,stop_at,issued", (
+    ("missing_context", 1, ()),
+    ("context_advanced", 1, ()),
+    ("context_advanced", 2, (1,)),
+    ("source_completed", 2, (1,)),
+))
+def test_each_native_node_rechecks_context_and_source_before_reserving(
+    source, change, stop_at, issued,
+):
+    runtime, key, cache, _, actions, _, _, dispatch, now = dispatch_fixture(
+        NativeAdmissionRuntime, source=source, depth=4,
+    )
+    native = cache.prefetch_gpu_session_nodes
+
+    def interrupting_native(**kwargs):
+        reserve = kwargs["beliefkv_before_enqueue"]
+
+        def before_enqueue(operation):
+            if operation.node_ids == [stop_at]:
+                if change == "missing_context":
+                    del runtime.graph.contexts[key.context_id]
+                elif change == "context_advanced":
+                    runtime.graph.contexts[key.context_id].epoch += 1
+                elif source == "tool_wait":
+                    runtime.graph.invocations[key.invocation_id].state = InvocationState.READY
+                else:
+                    runtime.graph.joins[
+                        runtime.graph.invocations[key.invocation_id].join_id
+                    ].satisfied = False
+            return reserve(operation)
+
+        return native(**{**kwargs, "beliefkv_before_enqueue": before_enqueue})
+
+    cache.prefetch_gpu_session_nodes = interrupting_native
+    try:
+        with patch("time.monotonic", lambda: now):
+            dispatch()
+        assert tuple(item[0] for item in actions) == issued
+        assert runtime.physical_ledger.pending_count == len(issued)
+        assert not runtime.completed_physical_actions
+        assert not runtime.physical_disabled
     finally:
         runtime.close()
