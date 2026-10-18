@@ -2,7 +2,25 @@
 
 更新日期：2026-10-18（PDT）
 
-**最新 CPU 阶段（V1676–V1678，以本段为准）。**后续开发固定在主目录
+**最新完整结果（V82b，以本段为准）。**108+48 两批多轮嵌套 workflow 的
+predictive→native 对照已结束；两侧冻结 ab951b9/引擎树 53020ce3。
+predictive 156 completed、native 153 completed/3 incomplete，原 gate
+失败及全部任务保留，正确性未评分。共同 system 合格 153 个任务的平均
+JCT 为 2591.814/2105.767s（predictive/native）；共同 strict 合格
+141 个为 2386.965/1937.292s。本轮 predictive 未超过 native。
+提前且由下一请求确认复用的 FULL 为 JOIN 3.665GB、tool 6.400GB；
+不能用 ACK 数量或完成后的恢复宣称预取收益。完整结论和未解决问题见
+[架构状态](architecture_status_zh.md)，执行边界见
+[实验注意事项](experiment_operating_notes_zh.md)，数据见
+[共同资格对照](../experiments/reports/v1822_v82b_completed_common_eligible_comparison_20261018.json)
+及[完整证据](../experiments/reports/v1825_v82b_completed_pair_evidence_20261018.json)。
+
+最新 main 代码的只读 CPU 候选固定 bd3e58f，1999 项检查及 27 子项通过，
+未注册/启动 GPU；详见[执行计划](implementation_plan.md)。开发仍在 main，
+真实 layer prefix/tail 未接入。GPU 空闲授权已用于本轮实验；下文旧的
+CPU 阶段、GPU 暂停或研究-only 描述均为历史记录，不覆盖本段当前状态。
+
+**历史 CPU 阶段（V1676–V1678）。**后续开发固定在主目录
 `/home/longhao/experiment/BeliefKV` 的 `main`。以 `52656d3` 为基线，
 先排除未获服务/早于提前量的候选，再做完整图和物理规划；保留离开 running
 batch 的有效 EOS。逐节点因果核对合并为一次，平坦预算记录改为独立浅拷贝。

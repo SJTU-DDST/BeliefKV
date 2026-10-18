@@ -7,6 +7,26 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 后续开发固定在主目录 `/home/longhao/experiment/BeliefKV` 的 `main` 分支。
 历史实验 worktree 保留其冻结来源；新代码修改、验证与提交在主目录进行。
 
+**V82b 已完整收尾，后续比较使用完整口径。**V1822/V1825 记录
+predictive 156 completed、148 strict 合格，native 153 completed、
+3 incomplete、145 strict 合格。共同 system/strict 合格任务数分别为
+153/141，平均 JCT 为 2591.814/2105.767s 和 2386.965/1937.292s
+（predictive/native）；本轮性能未达标。两侧原 exit=1、各 8 个图预算介入
+workflow（介入事件数为 10/9，不能与 workflow 数混用）、
+全部轨迹差异及未评分正确性保留，不能把配置可比较当 gate 或质量通过。
+native 三个 incomplete（django-10554/11206/12273）均有有效 parser、
+已完成 child/JOIN、未过期 deadline，以及末次 root 原生输出 8192 token/
+client length 证据；继续保留用户指定上限。成功 workspace 已清理，
+三个失败 workspace 保留，不为整理实验删除异常。
+
+两侧原 HTML 与 qualified HTML 均存在；V1816/V1823 分别确认校正文案外
+载荷相同。使用 main 新报告器的共同资格交集，原冻结报告不能覆盖
+新增分组。V1824 的新 bd3e58f 只读候选通过 1999 项 CPU 检查及 27 子项，
+无跳过，9 份模型/种子及外部 encoder 另行绑定；它未注册、未启动，
+不能回填为 V82b 的源码或 GPU 验收。旧 b698a34 候选及其证据仍保留。
+GPU 空闲授权已用于完成本轮对照；历史暂停时间不再代表当前规则，
+当前无后续自动启动任务，未来冷启动须重新核对可用资源与来源。
+
 **prefill 恢复依赖的快速返回。**仅在没有在途步骤、handoff 和 admission
 预取时跳过身份解析；其余请求继续复核身份。完整 session 请求可用现有
 事务 owner 索引排除无关节点；无 session 的旧路径仍遍历，目标 Mamba

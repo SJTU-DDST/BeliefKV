@@ -2,6 +2,56 @@
 
 更新日期：2026-10-18（PDT）。
 
+**V82b 完整对照已结束，性能未达标。**V1822/V1825 绑定两侧各 156 个
+终态、相同任务/物理池、冻结应用 ab951b9 和引擎树 53020ce3。
+predictive 为 156 completed、148 strict 合格；native 为 153 completed、
+3 incomplete、145 strict 合格。两侧各保留 8 个原图预算介入完成的 workflow；
+原 `exit=1` 均保留，配置可比较不等于原 gate 通过，正确性均未评分。
+native 的 django-10554/11206/12273 均为末次 root 请求达到原生 8192
+输出 token、client `finish_reason=length`；parser 有效、JOIN/child 已完成、
+workflow deadline 未过期。不提高用户保留的输出上限。
+
+共同 system 合格的 153 个任务，平均 JCT 为 2591.814/2105.767s
+（predictive/native，前者高 23.08%），42/111 个分别由 predictive/native
+更快。共同 strict 合格的 141 个任务为 2386.965/1937.292s，高 23.21%，
+37/104 个分别更快。全程耗时 12185.490/8204.871s，完成吞吐
+46.088/67.131 workflow/h。两侧全部任务的观测轨迹均不同，predictive
+请求/工具调用多 4.44%/5.66%，输出 token 少 0.47%；不将其称为隔离策略
+因果效应，也不靠删除长尾或不完整结果宣称获益。
+
+600–2400s 忙碌窗口 decode 为 1102.72/1263.33 token/s，GPU 利用率
+84.385/95.071%，时间加权 decode batch 为 47.338/46.532。
+短 prefill/周转差距仍存在；已有 16-token 工作量/前缀匹配的 worker
+区间比 1.402，不是独占 CUDA forward，也不能直接换算成可省 JCT。
+当前源代码剖析不足以分摊全部线上 selection/run_batch 差距。
+
+完整 predictive 的 JOIN/tool 预测 ACK 为 497/795 个节点命令，
+所传 FULL 为 5.716/7.323GB，确认首次复用 5.021/6.400GB。
+按独立等待及完成边界归因，真正提前且被下一请求复用的是
+91 个 JOIN/3.6645888GB、89 个 tool/6.40032768GB；完成后的 JOIN
+恢复另列，需求 handoff 为零。FULL 首次服务前重复原生加载仍有
+20/1 个命令关联。节点命令 ACK→首次服务 P90 为 18.05/42.21s，
+不能与独立等待的最后 ACK 分位混用。总 H2D 为 2.850/2.648TB，
+predictive 未证明降低恢复总量；PREPARE 为 2135 次/20.102GB FULL，
+604 次关联后续恢复，806 次同节点再写均有中间 Host 驱逐。
+
+实际多轮 root 为 39/34 个，含嵌套委派的总轮数超过一轮的 workflow
+为 39/35 个；这两种口径不混用。嵌套 workflow 为 17/13 个，
+grandchild 为 54/45 个，均达到深度 2；四轮目标不等于实际四轮，
+其余自然结束结果仍保留。当前层模式仍为 `native_all_layers`，
+自适应 prefix/tail 执行未实现。V1823 验证 native 校正时间线除说明文案外
+与原载荷相同，原导出和 `timelines/{arm}.qualified.html` 均保留。
+成功 workspace 已按原流程清理，native 三个不完整 workspace 保留。
+
+**最新 main 组合候选已核验，未启 GPU。**V1824 固定只读快照
+`beliefkv-v83b-main-control-candidate-20261018` 的 bd3e58f；35 个本地模块
+及 48 个原生动作身份合计 1999 个测试项、27 个子项通过，无跳过。
+覆盖此前全部 1978 个身份、真实 pinned 模型 worker 和现有 pytest 镜像。
+9 份模型/种子、外部 encoder 和引擎树与既有来源一致。旧 b698a34
+候选保留供复核；V82b 不含后续 main 降本。此候选未注册、无启动 waiter，
+CPU 合格不代表 GPU/JCT 合格；后续优先验证短 prefill/恢复后的实际消费，
+并减少无 Host-only 机会时的高频控制，不能将本轮对照结束写成性能目标达成。
+
 **短 prefill 前的无关恢复检查降本，仅 main。**没有在途预取、handoff 或
 admission-prefetch 时直接返回；有在途预取时，先用现有事务 owner 索引
 排除无关 context/session/generation，再检查目标节点。请求身份仍逐字段

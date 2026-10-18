@@ -5,6 +5,37 @@ Status date: 2026-10-18 (PDT).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+The V82b predictive/native pair is complete. V1822/V1825 bind identical task
+sets, physical capacity, application ab951b9 and engine tree53020ce3, all 156
+terminal outcomes per arm, final audits, cleanup and both timeline exports.
+Predictive has 156 completed/148 strict eligible; native has 153 completed/
+3 incomplete/145 strict eligible. Both original exit=1 statuses and eight
+workflows with graph-budget intervention per arm remain (10/9 completion
+events; event counts are not workflow counts). Native's three incomplete
+roots reach 8192 output tokens with valid parsers, satisfied dependencies and
+unexpired deadlines. Keep the user's unchanged output cap and ungraded quality.
+
+Common system-eligible JCT is 2591.814/2105.767s on 153 tasks; common strict
+JCT is 2386.965/1937.292s on 141 tasks (predictive/native), both about 23% worse
+for predictive. Full durations are 12185.490/8204.871s. The complete 600-2400s
+window also favors native, so a tool/model tail does not explain all the gap.
+All realized trajectories differ; preserve workload drift and all exclusions.
+Early next-request-confirmed FULL reuse is 91 JOIN waits/3.6645888GB and
+89 tool waits/6.40032768GB, with post-boundary recovery kept separate.
+The collection/comparison objective is complete; throughput/JCT improvement
+and adaptive layer-prefix/tail execution have not been established.
+
+The newer run-only candidate `beliefkv-v83b-main-control-candidate-20261018`
+freezes bd3e58f. V1824 binds 35 local modules and the 48 native action identities:
+1999 test items plus 27 subtests pass with no skips, including the actual pinned
+semantic worker and cached pytest sandbox image. Nine model/seed files, external
+encoder inputs and tree53020ce3 match inherited sources. It is not registered,
+not launched, and has no launch waiter. The older b698a34 candidate below is
+historical qualification evidence. Next GPU work should verify the combined
+main fixes against the measured short-prefill/turnover and restore-consumption
+gaps; CPU savings cannot be credited to frozen V82b or treated as performance
+acceptance. Continue development on main; preserve the frozen pair and reports.
+
 Main additionally skips prefill dependency parsing when no restore/admission
 work exists, and uses the existing transaction owner index before scanning
 unrelated steps. Live request fields, legacy sessions, target state readiness
