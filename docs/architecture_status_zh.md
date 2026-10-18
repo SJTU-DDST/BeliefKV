@@ -2,6 +2,12 @@
 
 更新日期：2026-10-18（PDT）。
 
+**时间线策略标注修正。**`native_v0520` 是两侧共用的遥测格式，原导出器
+误将现代 predictive 图表也注明为 native baseline。现改为共用格式说明；
+V82b 原导出保留，校正副本为 `timelines/predictive_h2d.qualified.html`。
+V1814 的 11 项时间线检查通过，V1816 验证新旧 JSON 除 diagnostic_note
+外逐字段相等，HTML 显示新文案；不改变冻结采集或任何性能数据。
+
 **最新 main 的冷启动候选已作 CPU 组合核验。**只读运行快照
 `beliefkv-v83-main-control-candidate-20261018` 固定 b698a34，开发仍在 main。
 V1813 绑定 33 个本地测试模块及原生动作检查，共 1978 个不同测试项和

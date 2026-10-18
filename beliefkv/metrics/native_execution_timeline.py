@@ -156,8 +156,10 @@ def load_native_execution_timeline(
             "Development diagnostic: first-service records and transfer ACKs do not "
             "prove KV reuse or end-to-end speedup."
             if "v8d" in str(run_dir) else
-            "Native FCFS/HiCache policy baseline with shared session/NUMA compatibility "
-            "patches and read-only telemetry; not an unpatched upstream wheel."
+            "SGLang service/HiCache telemetry with shared session/NUMA compatibility "
+            "patches; not an unpatched upstream wheel. This telemetry format is used "
+            "by baseline and BeliefKV runs. Transfer ACKs and service records alone "
+            "do not establish useful prefetch or a causal speedup."
         ),
     })
     return ExecutionTimeline(
