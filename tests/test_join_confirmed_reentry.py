@@ -58,8 +58,8 @@ def add_second_join(runtime, *, continuing=None):
     return runtime.context_sessions["ctx-parent2"]
 
 
-def parallel_confirmed_join_fixture(*, parallel=True, overlap=True, contexts=2):
-    runtime, first_key, first, cache, _ = normal_join_fixture()
+def parallel_join_fixture(*, parallel=True, overlap=True, contexts=2, provisional=False):
+    runtime, first_key, first, cache, _ = normal_join_fixture(provisional=provisional)
     second_key = add_second_join(runtime)
     runtime._parallel_wait_prefetch = parallel
     runtime._wait_prefetch_contexts = contexts
@@ -117,8 +117,24 @@ def parallel_confirmed_join_fixture(*, parallel=True, overlap=True, contexts=2):
                 ),),
             ))
 
-    complete_join(runtime)
-    complete_join(runtime, sequence=22, child="child2", join="join2")
+    if provisional:
+        runtime.on_events((event(
+            14, RuntimeEventKind.LLM_SUBMIT, invocation_id="child2",
+            context_id="ctx-child2", context_epoch=1,
+            attributes={"request_id": "child2"},
+        ),))
+        child = req("child2")
+        child.session_id, child.session_generation = "child2-session", 1
+        child.beliefkv_metadata["context_epoch"] = 1
+        runtime.register_visible_request(child)
+        runtime._semantic_keys["child2"] = runtime.visible["child2"]
+        runtime._semantic_eos_proofs["child2"] = True
+        now_ms = time.monotonic() * 1000.
+        runtime._semantic_finished["child2"] = (now_ms, 3)
+        runtime._semantic_finished["child"] = (now_ms, 3)
+    else:
+        complete_join(runtime)
+        complete_join(runtime, sequence=22, child="child2", join="join2")
     return runtime, first_key, second_key, plans, cache, acknowledge
 
 
@@ -129,7 +145,7 @@ def parallel_confirmed_join_fixture(*, parallel=True, overlap=True, contexts=2):
 def test_confirmed_joins_fill_legal_context_slots_before_the_first_ack(
     parallel, overlap, contexts, expected_contexts,
 ):
-    runtime, first, second, plans, cache, _ = parallel_confirmed_join_fixture(
+    runtime, first, second, plans, cache, _ = parallel_join_fixture(
         parallel=parallel, overlap=overlap, contexts=contexts,
     )
     try:
@@ -159,7 +175,7 @@ def test_confirmed_joins_fill_legal_context_slots_before_the_first_ack(
 def test_parallel_confirmed_joins_share_the_actual_slot_and_inflight_byte_budget(
     request_slots, byte_limit, expected_nodes,
 ):
-    runtime, _, _, plans, _, _ = parallel_confirmed_join_fixture()
+    runtime, _, _, plans, _, _ = parallel_join_fixture()
     runtime._residency_budget = PrefetchResidencyBudget(request_slots, byte_limit)
     try:
         with patch.object(
@@ -179,7 +195,7 @@ def test_parallel_confirmed_joins_share_the_actual_slot_and_inflight_byte_budget
 
 @pytest.mark.parametrize("partial_first_ack", (False, True))
 def test_parallel_confirmed_joins_reconcile_out_of_order_acks_independently(partial_first_ack):
-    runtime, first, second, plans, _, acknowledge = parallel_confirmed_join_fixture()
+    runtime, first, second, plans, _, acknowledge = parallel_join_fixture()
     try:
         with patch.object(
             runtime, "inspect_context_h2d_opportunity",
@@ -217,7 +233,7 @@ def test_parallel_confirmed_joins_reconcile_out_of_order_acks_independently(part
 
 
 def test_expired_parallel_join_bursts_never_receive_ack_credit():
-    runtime, _, _, plans, _, _ = parallel_confirmed_join_fixture()
+    runtime, _, _, plans, _, _ = parallel_join_fixture()
     try:
         with patch.object(
             runtime, "inspect_context_h2d_opportunity",
@@ -239,7 +255,7 @@ def test_expired_parallel_join_bursts_never_receive_ack_credit():
 
 
 def test_one_canceled_parallel_join_keeps_other_ack_and_pending_ownership_separate():
-    runtime, _, _, plans, _, acknowledge = parallel_confirmed_join_fixture()
+    runtime, _, _, plans, _, acknowledge = parallel_join_fixture()
     try:
         with patch.object(
             runtime, "inspect_context_h2d_opportunity",
@@ -267,7 +283,7 @@ def test_one_canceled_parallel_join_keeps_other_ack_and_pending_ownership_separa
 
 
 def test_saturated_join_frontier_does_not_scan_confirmed_waiters():
-    runtime, _, _, plans, _, _ = parallel_confirmed_join_fixture()
+    runtime, _, _, plans, _, _ = parallel_join_fixture()
     try:
         with patch.object(
             runtime, "inspect_context_h2d_opportunity",

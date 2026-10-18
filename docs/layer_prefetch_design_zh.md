@@ -6,7 +6,7 @@
 问题后停止并保留部分数据。V82b于08:50 PDT从`ab951b9`冷启动，
 08:55通过真实服务核对，predictive先行、随后相同合同的native。V81不恢复。
 
-## 确认JOIN并行与最新消费诊断
+## JOIN并行与最新消费诊断
 
 [V1715第二批形状](../experiments/reports/v1715_v82b_second_wave_workflow_shape_20261018.json)
 观测全部156个workflow启动、第二批48个均开始；22个root多轮、
@@ -21,8 +21,31 @@ main新增确认JOIN的有界并行，尚未部署到冻结的V82b。此前即�
 已有确认表继续拥有各自的票据、ACK及绑定消费身份，选择器可处理另一
 合法context；共用原有在途字节/context与原生FULL/Mamba预算。未收到
 完整回执不计ACK，部分回执保留占用；取消不提前释放在途物理所有权。
-关闭并行或无原生overlap时仍串行；RETURN前的provisional票据仍串行。
+关闭并行或无原生overlap时仍串行；此处V1710阶段的provisional仍串行，
+后续V1724实现如下。
 满恢复前沿直接返回，不在每个decode步遍历确认队列。
+
+后续在途表补齐RETURN前provisional JOIN的并行，支持语义剩余工作和
+已观测正常EOS两种原有信号。第一笔仍在等待ACK时，选择器可处理另一个
+合法parent；共用原来的context/在途字节及原生分池容量。选取同一context
+仍受在途排斥。RETURN和同批后继client提交将原票据升级到确认态，保留
+命令与安全checkpoint身份；部分ACK保留所有权，取消不提前回收在途页。
+满前沿不遍历在途表，旧probabilistic票据保持原串行行为。
+
+[V1724最终CPU回归](../experiments/reports/v1724_provisional_join_parallel_final_cpu_20261018.xml)
+1352项通过，含两种阶段信号、部分/乱序ACK、RETURN与client提交合并、
+取消/compact/timeout、预算限制、无overlap及满前沿不遍历。
+[V1725控制基准](../experiments/reports/v1725_provisional_join_parallel_final_control_cpu_20261018.json)
+对照1e0bb50，201样本/20预热；同一CPU替身、真实runtime分派和相同
+合法预算下，EOS与work两种场景均在RETURN/ACK前从1组/4节点变为
+2组/8节点。已满前沿分派P50为16.661→0.643us；完成前信号是受控输入，
+不是在线预测精度或机会频率，亦不包含GPU allocator、DMA、复用或JCT。
+上述修复只在main，V82b两组继续固定ab951b9。
+
+[V1721最新迁移前缀](../experiments/reports/v1721_v82b_second_wave_prefetch_prefix_20261018_summary.json)
+截至10:07 PDT有170个闭合JOIN、133个进入窗口、81个提前提交；
+JOIN/tool提前且确认复用FULL为2.995/6.400GB。predictive未结束，
+native尚未开始；不能把局部字节或CPU基准当作整轮收益。
 
 [V1710 CPU回归](../experiments/reports/v1710_parallel_confirmed_join_final_cpu_20261018.xml)
 1329项通过，覆盖部分/乱序ACK、超时不计完成、取消独立性、槽数与在途

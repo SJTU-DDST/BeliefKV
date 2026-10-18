@@ -497,6 +497,7 @@ class NativeAdmissionRuntime:
         self._final_priority_native_rank: int | None = None
         self._join_ticket: _JoinPrefetchTicket | None = None
         self._confirmed_join_tickets: dict[str, _JoinPrefetchTicket] = {}
+        self._join_inflight_tickets: dict[str, _JoinPrefetchTicket] = {}
         self._join_prefetch_issued: Counter[_JoinPrefetchIdentity] = Counter()
         self.enable_admission_prefetch = enable_admission_prefetch
         self.enable_final_stage_prefetch = enable_final_stage_prefetch
@@ -752,6 +753,7 @@ class NativeAdmissionRuntime:
         self._residency_hint_admissions.clear()
         self._discard_join_ticket("shutdown")
         self._confirmed_join_tickets.clear()
+        self._join_inflight_tickets.clear()
         self._tool_inflight_tickets.clear()
         self._final_stages.clear()
         self._final_request_stages.clear()
@@ -811,6 +813,8 @@ class NativeAdmissionRuntime:
             })
         if ticket is not None and self._confirmed_join_tickets.get(ticket.join_id) is ticket:
             del self._confirmed_join_tickets[ticket.join_id]
+        if ticket is not None and self._join_inflight_tickets.get(ticket.join_id) is ticket:
+            del self._join_inflight_tickets[ticket.join_id]
         if self._join_ticket is ticket:
             self._join_ticket = None
 
@@ -852,6 +856,7 @@ class NativeAdmissionRuntime:
         self.counts["physical_planning_after_forward"] += 1
         if (
             self._join_ticket is not None or self._confirmed_join_tickets
+            or self._join_inflight_tickets
             or (
                 (self.enable_final_stage_prefetch or self.enable_admission_prefetch)
                 and (self._final_stages or self._semantic_eos_proofs)
@@ -1071,6 +1076,7 @@ class NativeAdmissionRuntime:
             self._child_report_notices.clear()
             self._discard_join_ticket("causal_mirror_discarded")
             self._confirmed_join_tickets.clear()
+            self._join_inflight_tickets.clear()
             self._admission_lease = None
             self.shadow_candidate = None
             self._context_tokens.clear()
@@ -2012,6 +2018,7 @@ class NativeAdmissionRuntime:
                 "parallel_wait_prefetch": self._parallel_wait_prefetch,
                 "wait_prefetch_contexts": self._wait_prefetch_contexts,
                 "tool_inflight_contexts": len(self._tool_inflight_tickets),
+                "join_inflight_contexts": len(self._join_inflight_tickets),
                 "prediction_maintenance_interval_ms": self._prediction_maintenance_interval_ms,
                 "semantic_work_statistic": self.semantic_work_statistic,
                 "final_admission_policy": "remaining_report_work",
@@ -2693,7 +2700,7 @@ class NativeAdmissionRuntime:
             # The explicit stage is governed by service progress, not a
             # second, unconditional two-second completion-intent lease.
             return
-        ticket = self._join_ticket
+        ticket = self._join_inflight_tickets.get(join_id) or self._join_ticket
         if ticket is None or (ticket.key, ticket.join_id) != (key, join_id):
             ticket = _JoinPrefetchTicket(
                 key, join_id, join.mode.value,
@@ -2842,6 +2849,8 @@ class NativeAdmissionRuntime:
                 )
             ):
                 self.counts["final_stage_service_filter_skipped"] += 1
+                continue
+            if stage.join_id in self._join_inflight_tickets:
                 continue
             if not self._live_final_stage(stage):
                 continue
@@ -3128,8 +3137,10 @@ class NativeAdmissionRuntime:
             RuntimeEventKind.CONTEXT_COMPACT, RuntimeEventKind.CONTEXT_ADVANCE,
         ):
             candidates = list(self._confirmed_join_tickets.values())
+            candidates.extend(self._join_inflight_tickets.values())
             if ticket is not None and self._confirmed_join_tickets.get(ticket.join_id) is not ticket:
-                candidates.append(ticket)
+                if self._join_inflight_tickets.get(ticket.join_id) is not ticket:
+                    candidates.append(ticket)
             for pending in candidates:
                 if event.kind is RuntimeEventKind.JOIN_TIMEOUT and event.join_id == pending.join_id:
                     self._discard_join_ticket("join_timeout", ticket=pending)
@@ -3182,9 +3193,10 @@ class NativeAdmissionRuntime:
                 pending = self._confirmed_join_tickets.get(join_id)
                 if pending is not None and pending.key == key:
                     continue
+                inflight = self._join_inflight_tickets.get(join_id)
                 pending = (
-                    ticket if ticket is not None
-                    and (ticket.join_id, ticket.key) == (join_id, key)
+                    inflight if inflight is not None and inflight.key == key else
+                    ticket if ticket is not None and (ticket.join_id, ticket.key) == (join_id, key)
                     else _JoinPrefetchTicket(
                         key, join_id, join.mode.value,
                         tuple(sorted(join.member_invocation_ids)),
@@ -3195,6 +3207,8 @@ class NativeAdmissionRuntime:
                 # Keep any issued burst and its ACK identity across RETURN.
                 pending.phase = "confirmed"
                 pending.expires_at = time.monotonic() + 2.0
+                if self._join_inflight_tickets.get(join_id) is pending:
+                    del self._join_inflight_tickets[join_id]
                 self._confirmed_join_tickets[join_id] = pending
                 if self._join_ticket is None:
                     self._join_ticket = pending
@@ -3268,11 +3282,17 @@ class NativeAdmissionRuntime:
         if pending is None:
             if join.join_id not in confirmed_in_batch:
                 return
-            pending = _JoinPrefetchTicket(
-                key, join.join_id, join.mode.value, tuple(sorted(join.member_invocation_ids)),
-                "confirmed", time.monotonic() + 2.,
-                issued_nodes=self._issued_join_nodes(join.join_id, key),
-            )
+            pending = self._join_inflight_tickets.get(join.join_id)
+            if pending is not None and pending.key == key:
+                del self._join_inflight_tickets[join.join_id]
+                pending.phase = "confirmed"
+                pending.expires_at = time.monotonic() + 2.
+            else:
+                pending = _JoinPrefetchTicket(
+                    key, join.join_id, join.mode.value, tuple(sorted(join.member_invocation_ids)),
+                    "confirmed", time.monotonic() + 2.,
+                    issued_nodes=self._issued_join_nodes(join.join_id, key),
+                )
             self._confirmed_join_tickets[join.join_id] = pending
             self.counts["join_reentry_confirmed"] += 1
         if pending.phase != "confirmed" or pending.key != key:
@@ -3449,6 +3469,23 @@ class NativeAdmissionRuntime:
     @timed_runtime("join_prefetch")
     def dispatch_join_prefetch(self) -> None:
         """Restore a bounded reusable prefix burst, without granting admission."""
+        if self._join_inflight_tickets:
+            if self._wait_prefetch_transfer_busy():
+                return
+            for join_id, pending in tuple(self._join_inflight_tickets.items()):
+                if self._reconcile_join_prefetch_ticket(pending) is not None:
+                    self._join_inflight_tickets.pop(join_id, None)
+        ticket = self._join_ticket
+        if (
+            ticket is not None and ticket.phase == "provisional"
+            and ticket.command_id is not None
+            and self._parallel_wait_prefetch and self.can_prefetch_during_overlap()
+            and any(self.physical_ledger.is_pending(command) for command in (
+                ticket.command_ids or (ticket.command_id,)
+            ))
+        ):
+            self._join_inflight_tickets[ticket.join_id] = ticket
+            self._join_ticket = None
         self._select_confirmed_join_ticket()
         observation = self._roll_final_stage()
         ticket = self._join_ticket

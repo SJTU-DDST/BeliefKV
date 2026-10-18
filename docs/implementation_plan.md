@@ -12,11 +12,21 @@ V1716 binds actual prefill samples for all48 second-wave roots and live driver/
 scheduler/client start ticks. Continue the same frozen predictive then native pair.
 Native has not started; keep full performance, quality and completion acceptance open.
 
-Latest main-only CPU change allows two confirmed JOIN parents to restore without
+Latest main-only CPU change also parallelizes pre-completion provisional JOINs.
+An in-flight ticket map retains independent ACK ownership while selecting another
+legal context; RETURN and coalesced next-client submission preserve the original
+commands/checkpoint. Cancellation never releases in-flight native ownership early.
+Disabled parallelism/no native overlap and legacy probabilistic tickets stay serial.
+V1724 passes1352 CPU cases. V1725 compares1e0bb50: controlled EOS/work signals
+both select2 contexts/8 nodes rather than1/4 before RETURN or ACK. Full-frontier
+dispatch P50 changes16.661 to0.643us. No online frequency, DMA, reuse or JCT gain
+is established. Frozen V82b remains unchanged.
+
+The prior main-only CPU change allows two confirmed JOIN parents to restore without
 serializing on the first burst's ACK. The confirmation map retains independent
 ownership/consumer identities; shared live byte/context and native pool budgets
 remain authoritative. Disabled parallelism/no native overlap stays serial, and
-pre-completion provisional tickets are not yet parallelized. A saturated frontier
+provisional support was added afterward in V1724 above. A saturated frontier
 returns without scanning confirmed waiters. V1710 passes1329 CPU cases; V1712's
 controlled selector changes1 context/4 nodes to2/8 before ACK, with saturated
 selector P50 2.258 to0.746us. This is not whole-run control, DMA or JCT evidence.
@@ -33,6 +43,9 @@ consumption; keep the second wave and full matched performance/quality pending.
 V1714 matches actual commands in all12 long-ACK JOINs to pre-completion lease
 expiry. Unlocking does not prove eviction. Improve early timing and actual
 post-arrival readiness/cost before extending residency or claiming removable waits.
+V1721's10:07 PDT sealed prefix observes170 closed JOINs,133 recorded start windows
+and81 pre-completion submissions; early-and-reused JOIN/tool FULL is2.995/6.400GB.
+The predictive arm is still collecting and matched native has not started.
 
 Current GPU collection is V82b: application ab951b9, predictive then matched native,
 launched at08:50 PDT and actual workflow GPU service verified at08:55. V1693

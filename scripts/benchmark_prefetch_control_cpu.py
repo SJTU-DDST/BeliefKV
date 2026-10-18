@@ -204,11 +204,11 @@ def parallel_tool_conversion_case(baseline):
 
 def parallel_confirmed_join_conversion_case(baseline):
     from types import MethodType
-    from tests.test_join_confirmed_reentry import parallel_confirmed_join_fixture
+    from tests.test_join_confirmed_reentry import parallel_join_fixture
 
     results = {}
     for name in ("baseline_selector", "candidate_selector"):
-        runtime, _, _, plans, _, _ = parallel_confirmed_join_fixture()
+        runtime, _, _, plans, _, _ = parallel_join_fixture()
         if name == "baseline_selector":
             runtime._select_confirmed_join_ticket = MethodType(
                 baseline._select_confirmed_join_ticket, runtime,
@@ -247,11 +247,11 @@ def parallel_confirmed_join_conversion_case(baseline):
 
 def saturated_join_case(baseline, *, samples):
     from types import MethodType
-    from tests.test_join_confirmed_reentry import parallel_confirmed_join_fixture
+    from tests.test_join_confirmed_reentry import parallel_join_fixture
 
     variants = {}
     for name in ("baseline", "candidate"):
-        runtime, _, _, plans, _, _ = parallel_confirmed_join_fixture()
+        runtime, _, _, plans, _, _ = parallel_join_fixture()
         with patch.object(
             runtime, "inspect_context_h2d_opportunity",
             side_effect=lambda **kwargs: plans[kwargs["context_id"]],
@@ -281,6 +281,98 @@ def saturated_join_case(baseline, *, samples):
             "pending_contexts": 2, "pending_commands": 8,
             "physical_state_unchanged": True,
             "scope": "Selector only on identical already-full CPU frontiers; not decode CPU or GPU time",
+        }
+    finally:
+        for runtime in variants.values():
+            runtime.close()
+
+
+def provisional_join_conversion_case(baseline, *, signal):
+    from types import MethodType
+    from tests.test_join_parallel_prefetch import provisional_fixture
+
+    results = {}
+    for name in ("baseline_dispatch", "candidate_dispatch"):
+        runtime, _, _, plans, _, _ = provisional_fixture(signal=signal)
+        if name == "baseline_dispatch":
+            runtime.dispatch_join_prefetch = MethodType(
+                baseline.dispatch_join_prefetch, runtime,
+            )
+        try:
+            with patch.object(
+                runtime, "inspect_context_h2d_opportunity",
+                side_effect=lambda **kwargs: plans[kwargs["context_id"]],
+            ):
+                for _ in range(3):
+                    runtime.dispatch_join_prefetch()
+            results[name] = {
+                "pending_contexts": len(runtime.physical_ledger.pending_h2d_contexts),
+                "pending_commands": runtime.physical_ledger.pending_count,
+                "pending_bytes": runtime.physical_ledger.pending_action_bytes("PREFETCH_GPU"),
+                "provisional_issued_nodes": runtime.counts["join_prefetch_provisional_issued"],
+                "confirmed_issued_nodes": runtime.counts["join_prefetch_confirmed_issued"],
+                "acked_commands": runtime.counts["join_prefetch_acked"],
+                "completed_actions": len(runtime.completed_physical_actions),
+                "satisfied_joins": sum(join.satisfied for join in runtime.graph.joins.values()),
+                "physical_disabled": runtime.physical_disabled,
+            }
+        finally:
+            runtime.close()
+    if results["baseline_dispatch"]["pending_contexts"] not in (1, 2) or (
+        results["candidate_dispatch"]["pending_contexts"] != 2
+    ):
+        raise AssertionError("two provisional JOINs did not respect expected selector capacity")
+    return {
+        "signal": signal,
+        "scope": (
+            "Dispatch-method differential on shared current CPU fixtures and legal budgets. "
+            "Both JOINs remain unsatisfied. Controlled observed-EOS/work signals do not "
+            "measure prediction accuracy, online opportunity frequency, DMA, ACK or reuse."
+        ),
+        "results": results,
+    }
+
+
+def saturated_provisional_join_case(baseline, *, samples):
+    from types import MethodType
+    from tests.test_join_parallel_prefetch import provisional_fixture
+
+    variants = {}
+    for name in ("baseline", "candidate"):
+        runtime, _, _, plans, _, _ = provisional_fixture()
+        with patch.object(
+            runtime, "inspect_context_h2d_opportunity",
+            side_effect=lambda **kwargs: plans[kwargs["context_id"]],
+        ):
+            runtime.dispatch_join_prefetch()
+            runtime.dispatch_join_prefetch()
+        if runtime.physical_ledger.pending_count != 8:
+            raise AssertionError("timing requires the same two provisional bursts")
+        if name == "baseline":
+            runtime.dispatch_join_prefetch = MethodType(
+                baseline.dispatch_join_prefetch, runtime,
+            )
+        variants[name] = runtime
+    try:
+        # Keep the same live semantic clock in both controlled pending states.
+        now = time.monotonic()
+        with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=now):
+            costs = compare({
+                name: runtime.dispatch_join_prefetch for name, runtime in variants.items()
+            }, samples=samples)
+        if any(
+            runtime.physical_ledger.pending_count != 8
+            or runtime.counts["join_prefetch_acked"]
+            or runtime.completed_physical_actions
+            or any(join.satisfied for join in runtime.graph.joins.values())
+            for runtime in variants.values()
+        ):
+            raise AssertionError("pending provisional dispatch changed physical state")
+        return {
+            "case": "saturated_provisional_join_dispatch", "costs": costs,
+            "pending_contexts": 2, "pending_commands": 8,
+            "physical_state_unchanged": True,
+            "scope": "CPU dispatch on identical full frontiers; no service or online frequency evidence",
         }
     finally:
         for runtime in variants.values():
@@ -540,6 +632,7 @@ def main():
         "scripts/benchmark_native_shared_path.py",
         "tests/test_wait_prefetch_batch.py",
         "tests/test_join_confirmed_reentry.py",
+        "tests/test_join_parallel_prefetch.py",
     )
     sources = {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in paths}
     baseline, baseline_sources = baseline_runtime(args.baseline)
@@ -552,6 +645,7 @@ def main():
             baseline, samples=args.samples, running=running, free_rows=free_rows,
         ) for running, free_rows in ((40, 8), (47, 0), (48, 0))),
         saturated_join_case(baseline, samples=args.samples),
+        saturated_provisional_join_case(baseline, samples=args.samples),
         *(native_ack_case(baseline, samples=args.samples, pending=pending, node_count=nodes)
           for pending in (0, 16, 64) for nodes in (1, 32, 128)),
         *(repeated_plan_case(baseline, samples=args.samples, depth=depth)
@@ -578,6 +672,10 @@ def main():
         "cases": cases,
         "parallel_tool_conversion": parallel_tool_conversion_case(baseline),
         "parallel_confirmed_join_conversion": parallel_confirmed_join_conversion_case(baseline),
+        "parallel_provisional_join_conversion": [
+            provisional_join_conversion_case(baseline, signal=signal)
+            for signal in ("eos", "work")
+        ],
         "inflight_prefill_conversion": inflight_prefill_conversion_case(baseline),
         "limitations": [
             "Fixture frequency and pending populations are controlled, not replayed online frequencies.",
