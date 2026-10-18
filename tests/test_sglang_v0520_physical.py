@@ -3,6 +3,7 @@
 from dataclasses import replace
 from types import SimpleNamespace as NS
 from enum import Enum
+from itertools import product
 from unittest.mock import patch
 
 import pytest
@@ -207,6 +208,70 @@ def test_empty_restore_shortcut_skips_summary_allocation_without_hiding_unknown_
     assert result.host_backed_full_missing_device_tokens == 0
     assert result.unbacked_full_nodes is None
     assert result.candidate is None
+
+
+@pytest.mark.parametrize("input_tokens", (0, 2, 4, 7, 8))
+@pytest.mark.parametrize("second_leaf", (False, True))
+def test_input_state_shortcut_preserves_mixed_checkpoint_restore_plans(
+    input_tokens, second_leaf,
+):
+    for states in product(("device", "host", "absent"), repeat=4 if second_leaf else 3):
+        cache, anchors, nodes = prepare_prefix_fixture(
+            backed=True, second_leaf=second_leaf, input_tokens=input_tokens,
+        )
+        for node_id, state in enumerate(states, 1):
+            data = nodes[node_id].component_data[2]
+            data.value = (0,) if state == "device" else None
+            data.host_value = (0,) if state == "host" else None
+        normal = inspect_session_h2d_opportunity(cache, anchors, max_steps=8)
+        optimized = inspect_session_h2d_opportunity(
+            cache, anchors, max_steps=8, skip_empty_restore=True,
+        )
+        assert optimized.steps == normal.steps, (input_tokens, second_leaf, states)
+        if normal.step is not None:
+            assert optimized == normal
+
+
+def test_input_state_shortcut_ignores_older_and_generated_states_without_claiming_their_absence():
+    cache, anchors, nodes = prepare_prefix_fixture(backed=True)
+    for node_id in (1, 3):
+        state = nodes[node_id].component_data[2]
+        state.host_value, state.value = state.value, None
+    assert has_host_backed_missing_copy(cache, anchors) is True
+    assert has_host_backed_missing_copy(cache, anchors, input_checkpoint_only=True) is False
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.capture_action_local_shadow",
+        side_effect=AssertionError("historical state should not expand a closure"),
+    ):
+        result = inspect_session_h2d_opportunity(cache, anchors, skip_empty_restore=True)
+    assert result.step is None
+    assert result.host_backed_full_missing_device_tokens == 0
+    assert result.host_backed_mamba_missing_device_nodes is None
+    assert result.unbacked_full_nodes is None
+
+
+def test_input_state_shortcut_refreshes_after_selected_state_demoted():
+    cache, anchors, nodes = prepare_prefix_fixture(backed=True)
+    state = nodes[1].component_data[2]
+    state.host_value, state.value = state.value, None
+    assert has_host_backed_missing_copy(cache, anchors, input_checkpoint_only=True) is False
+    selected = nodes[2].component_data[2]
+    selected.host_value, selected.value = selected.value, None
+    assert has_host_backed_missing_copy(cache, anchors, input_checkpoint_only=True) is True
+    result = inspect_session_h2d_opportunity(cache, anchors, skip_empty_restore=True)
+    assert [step.node_id for step in result.steps] == [2]
+    assert result.required_mamba_slots == 1
+
+
+def test_input_state_shortcut_keeps_uncapped_mode_and_unknown_geometry_conservative():
+    cache, anchors, nodes = prepare_prefix_fixture(backed=True)
+    state = nodes[1].component_data[2]
+    state.host_value, state.value = state.value, None
+    assert has_host_backed_missing_copy(
+        cache, replace(anchors, reusable_input_tokens=None), input_checkpoint_only=True,
+    ) is True
+    nodes[2].key = None
+    assert has_host_backed_missing_copy(cache, anchors, input_checkpoint_only=True) is None
 
 
 @pytest.mark.parametrize("enum_pool_name", (False, True))

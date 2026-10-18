@@ -5,6 +5,26 @@ Status date: 2026-10-18 (PDT).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Main now excludes historical-only Mamba misses from empty restore planning when
+FULL has no Host-only extent and the deepest safe input checkpoint is resident or
+absent. Necessary state/FULL restores and unknown geometry retain authoritative
+validation; historical Mamba counts remain null rather than falsely zero.
+V1761 passes1382 related CPU cases. V1760's depth64 CPU fixture changes historical
+empty-plan P50 from450.036 to52.439us, necessary Mamba restore472.132 to491.368us,
+and FULL restore478.299 to480.717us. Preserve regressions and GPU acceptance.
+This main-only change is not deployed into frozen V82b.
+
+V1756 uses V1754's11:15-11:16 PDT sealed prefix. Of3616 tool waits whose last
+pre-completion plan has no reusable input restore step,3539 expanded closures
+have no Host-only FULL then.1788 successor requests later show native Host hits
+almost entirely within the original safe cap. Plan-to-service P50 is14.731s,
+native-arrival-to-service14.114s, and completion-to-client-submit11.317ms.
+Later Host-hit counters are neither earlier restore opportunities nor physical
+DMA attribution. Next inspect queue-time residency and eligible consumption;
+do not extend unverified output prefixes or infer a Host-capacity cause.
+At11:37 PDT155 workflows are completed;django-13112 still executes tools.
+Matched native and full performance/quality acceptance remain pending.
+
 Main removes fresh capacity/slot/byte planning when an ACK is already covered by
 the same-session native lock. No new protection is allocated; covered records keep
 receipt/owner/expiry/use identity and explicitly omit an allocation budget/slot role.

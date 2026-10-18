@@ -152,12 +152,15 @@ def inspect_session_h2d_opportunity(
     skip_empty_restore: bool = False,
 ) -> SessionH2DOpportunity:
     headroom = observe_static_full_mamba_headroom(cache)
-    if skip_empty_restore and has_host_backed_missing_copy(cache, anchors) is False:
+    if skip_empty_restore and has_host_backed_missing_copy(
+        cache, anchors, input_checkpoint_only=True,
+    ) is False:
         return SessionH2DOpportunity(
             anchors, headroom, None, 0, 0, None,
             no_step_reason="no_host_backed_missing_copy",
             host_backed_full_missing_device_tokens=0,
-            host_backed_mamba_missing_device_nodes=0,
+            # Historical states may still be Host-only outside the selected input.
+            host_backed_mamba_missing_device_nodes=None,
         )
     capture_failures = []
     candidate = capture_action_local_shadow(
@@ -421,10 +424,16 @@ def inspect_session_residency_hint(cache: object, request: object) -> dict | Non
 
 
 def has_host_backed_missing_copy(
-    cache: object, anchors: ContextSessionAnchors,
+    cache: object, anchors: ContextSessionAnchors, *,
+    input_checkpoint_only: bool = False,
 ) -> bool | None:
-    """Reject empty restores using live ancestry; a positive hint is not a plan."""
+    """Reject empty restores; optionally ignore unselected historical states."""
+    if type(input_checkpoint_only) is not bool:
+        return None
     try:
+        input_limit = anchors.reusable_input_tokens if input_checkpoint_only else None
+        if input_limit is not None and (type(input_limit) is not int or input_limit < 0):
+            return None
         components = dict(anchors.component_leaves)
         if (
             len(components) != len(anchors.component_leaves)
@@ -448,7 +457,10 @@ def has_host_backed_missing_copy(
                     return None
                 leaves[node_id] = node
         checked = {}
-        for node in leaves.values():
+        missing_state = False
+        single_leaf = components[0][0][0] if len(components[0]) == 1 else None
+        single_path_nodes = None
+        for leaf_id, node in leaves.items():
             path = set()
             while node is not None:
                 node_id = node.id
@@ -464,14 +476,51 @@ def has_host_backed_missing_copy(
                     break
                 path.add(node_id)
                 full, state = node.component_data[0], node.component_data[2]
-                if (
-                    (full.value is None or len(full.value) == 0)
-                    and full.host_value is not None and len(full.host_value) > 0
-                    or state.value is None and state.host_value is not None
+                if (full.value is None or len(full.value) == 0) and (
+                    full.host_value is not None and len(full.host_value) > 0
                 ):
                     return True
+                if state.value is None and state.host_value is not None:
+                    if not input_checkpoint_only or input_limit is None:
+                        return True
+                    missing_state = True
                 checked[node_id] = node
                 node = node.parent
+            if leaf_id == single_leaf:
+                single_path_nodes = len(checked)
+        if not missing_state:
+            return False
+        # FULL is resident everywhere. Only the deepest input-compatible state
+        # on each FULL path can produce a restore; older states are irrelevant.
+        if single_path_nodes == len(checked):
+            prefix, selected_missing = 0, False
+            for node in reversed(checked.values()):
+                prefix += len(node.key)
+                if prefix > input_limit:
+                    break
+                state = node.component_data[2]
+                if node.parent is not None and (
+                    state.value is not None or state.host_value is not None
+                ):
+                    selected_missing = state.value is None
+            return selected_missing
+        checkpoints = {}
+        for leaf_id, _ in components[0]:
+            chain, node = [], checked[leaf_id]
+            while node is not None and node.id not in checkpoints:
+                chain.append(node)
+                node = node.parent
+            prefix, selected_missing = checkpoints[node.id] if node is not None else (0, False)
+            for node in reversed(chain):
+                prefix += len(node.key)
+                state = node.component_data[2]
+                if node.parent is not None and prefix <= input_limit and (
+                    state.value is not None or state.host_value is not None
+                ):
+                    selected_missing = state.value is None
+                checkpoints[node.id] = prefix, selected_missing
+            if selected_missing:
+                return True
         return False
     except (AttributeError, IndexError, KeyError, TypeError, ValueError, RuntimeError):
         return None
