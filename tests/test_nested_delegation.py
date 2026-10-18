@@ -236,7 +236,8 @@ def test_shape_contract_and_future_candidate_are_explicit():
     ):
         assert candidate["workload"][key] == contract[key]
     assert candidate["environment"]["FANOUT_PROFILE"] == NESTED_IN_GRAPH_PROFILE
-    assert candidate["not_before"] == "2026-10-19T08:00:00+08:00"
+    assert candidate["not_before"] is None
+    assert candidate["gpu_experiment_started"] is True
 
 
 def test_four_round_guidance_preserves_early_natural_return(tmp_path):

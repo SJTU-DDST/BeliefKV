@@ -566,6 +566,7 @@ class NativeAdmissionRuntime:
         self.shadow_candidate: ActionLocalShadowCandidate | None = None
         self._native_cache: object | None = None
         self._residency_pool_bytes: tuple[int, int] | None = None
+        self._residency_request_counts: tuple[int, int, int | None] | None = None
         self._context_tokens: dict[str, tuple[int, int, int, bool]] = {}
         self._boundary_history: dict[str, deque[str]] = {}
         self._tool_metadata: dict[
@@ -2021,6 +2022,12 @@ class NativeAdmissionRuntime:
                 "h2d_seed_samples": self._h2d_seed_count,
                 "h2d_service_samples": len(self._h2d_samples),
                 "prefetch_residency_budget": vars(self._residency_budget).copy(),
+                "prefetch_request_counts_at_budget": (
+                    dict(zip(
+                        ("running_requests", "free_request_rows", "request_row_capacity"),
+                        self._residency_request_counts,
+                    )) if self._residency_request_counts is not None else None
+                ),
                 "prefetch_residency_headroom": (
                     asdict(self._residency_headroom)
                     if self._residency_headroom is not None else None
@@ -7585,6 +7592,7 @@ class NativeAdmissionRuntime:
         self, *, include_evictable: bool = False,
         headroom: StaticPoolHeadroomObservation | None = None,
     ) -> PrefetchResidencyBudget:
+        self._residency_request_counts = None
         if self._native_max_running is None or self._native_prefill_slots is None:
             return self._residency_budget
         cache = self._native_cache
@@ -7606,6 +7614,14 @@ class NativeAdmissionRuntime:
                 self._residency_budget = PrefetchResidencyBudget(4, 1024 ** 3)
                 return self._residency_budget
             running = len(getattr(self._native_running_batch, "reqs", ()))
+            row_capacity = getattr(cache.req_to_token_pool, "size", None)
+            occupied_rows = (
+                row_capacity - rows
+                if type(row_capacity) is int and 0 <= rows <= row_capacity else None
+            )
+            self._residency_request_counts = (
+                running, rows, row_capacity if type(row_capacity) is int else None,
+            )
             full_evictable, mamba_evictable = 0, 0
             if include_evictable:
                 # Demand handoff pins existing pages for the next native batch;
@@ -7641,6 +7657,7 @@ class NativeAdmissionRuntime:
                 restore_frontier_slots=(
                     self._wait_prefetch_contexts if self._parallel_wait_prefetch else 1
                 ),
+                occupied_request_rows=occupied_rows,
             )
         except (AttributeError, KeyError, TypeError, ValueError, RuntimeError):
             self._residency_budget = PrefetchResidencyBudget(4, 1024 ** 3)

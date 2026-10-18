@@ -62,6 +62,29 @@ def test_budget_preserves_running_growth_and_new_prefill_space():
     assert budget.byte_limit == 4096
 
 
+@pytest.mark.parametrize("running", (1, 40, 46, 47, 48))
+@pytest.mark.parametrize("frontier", (1, 2))
+def test_inflight_prefill_rows_keep_the_bounded_cache_restore_frontier(running, frontier):
+    budget = native_residency_budget(**capacity(
+        running_requests=running, available_request_rows=0,
+        occupied_request_rows=48, restore_frontier_slots=frontier,
+    ))
+    assert budget.request_slots == frontier
+    assert budget.reserve_full_tokens == 8192 + 16 * (48 + frontier)
+    assert budget.reserve_mamba_slots == frontier
+
+
+@pytest.mark.parametrize("running,occupied,slots", (
+    (47, None, 0), (47, True, 0), (47, 47, 0), (47, 49, 0),
+    (47, 46, 0), (0, 48, 0),
+))
+def test_rowless_restore_requires_trusted_occupied_rows_and_running_work(running, occupied, slots):
+    assert native_residency_budget(**capacity(
+        running_requests=running, available_request_rows=0,
+        occupied_request_rows=occupied, restore_frontier_slots=2,
+    )).request_slots == slots
+
+
 def test_demand_residency_can_pin_existing_cache_without_spending_prefill_reserve():
     values = capacity(
         full_free_tokens=10, mamba_free_slots=1,

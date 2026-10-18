@@ -34,6 +34,27 @@ wall/monotonic锚点；四个审计路径接受该锚点。没有机会样本仍
 
 ## 当前观测与待验证项
 
+运行期间新增CPU修复尚未部署到V82b：原生prefill在加入decode列表前
+已分配request row，47 running加1在途prefill会让旧预算错误归零。
+cache H2D不占request row，现用已有池容量/空闲行恢复有界前沿，同时
+按全部占用行预留FULL增长；原生模型请求仍等待真实空闲行。
+[V1699原生方法验证](../experiments/reports/v1699_native_inflight_row_allocator_cpu_20261018.json)
+用冻结引擎实际行分配方法重现；新预算不改变alloc_rows拒绝/释放条件。
+[V1700 CPU回归](../experiments/reports/v1700_inflight_prefill_final_cpu_20261018.xml)
+1314项通过，受控两个context从0提交变为2，但没有GPU收益结论。
+每秒状态增加行数解释字段，不引入新树扫描；V82b缺该字段，实际频率未知。
+[V1702预算计时](../experiments/reports/v1702_inflight_prefill_budget_final_cpu_20261018.json)
+使用201样本/20预热，与f06c03c对照；三种行占用下预算查询P50增加
+0.24–0.32us，47 running/48占用时为3.220→3.535us。这是机会修复
+带来的小额新增CPU成本，不将其描述为控制路径降本或端到端收益。
+
+[V1701最新密封前缀](../experiments/reports/v1701_v82b_prefetch_live_prefix_20261018_summary.json)
+56个已闭合JOIN中51个进入过窗口、24个在RETURN前提交、15个确认提前
+复用；tool的54个窗口均提交、50个确认提前复用。提前且复用FULL为
+0.187/4.391GB；JOIN仍需优化计划转提交与恢复后消费。观测理由可重叠，
+不能把未转换全部归于行预算，也不能将原生Host命中字节全部算作可预取。
+当前V82b继续从ab951b9执行匹配对照，新的CPU修复留待后续冻结验证。
+
 [V1693启动回执](../experiments/reports/v1693_v82b_actual_service_and_clock_20261018.json)
 核对V82b的真实工作流GPU服务、固定物理容量、委派合同、到达表、冻结
 应用/引擎/模型产物，physical_disabled=false、overlap支持、两个context

@@ -108,11 +108,13 @@ def provisional_join_batch_fixture():
 
 
 @pytest.mark.parametrize("source", ["join_ticket", "tool_wait"])
-@pytest.mark.parametrize("running_count,free_full,expected_nodes", [
-    (48, 100, 4), (47, 100, 0), (48, 64, 0),
+@pytest.mark.parametrize("running_count,row_capacity,free_full,expected_nodes", [
+    (48, None, 100, 4), (47, None, 100, 0), (48, None, 64, 0),
+    (47, 48, 100, 4), (46, 48, 100, 4), (47, 48, 64, 0),
+    (0, 48, 100, 0), (47, 47, 100, 0),
 ])
 def test_full_decode_batch_can_restore_one_waiting_context_without_a_request_row(
-    source, running_count, free_full, expected_nodes,
+    source, running_count, row_capacity, free_full, expected_nodes,
 ):
     fixture = (
         provisional_join_batch_fixture()
@@ -122,6 +124,7 @@ def test_full_decode_batch_can_restore_one_waiting_context_without_a_request_row
     cache.req_to_token_pool = NS(
         available_size=Mock(return_value=0), alloc=Mock(),
         mamba_pool=NS(size=8),
+        size=row_capacity,
     )
     cache.host_pool_group = cache.cache_controller.mem_pool_host
     cache.token_to_kv_pool_allocator = NS(size=1024)
@@ -155,6 +158,7 @@ def test_full_decode_batch_can_restore_one_waiting_context_without_a_request_row
         assert cache.prefetch_gpu_session_nodes.call_count == int(expected_nodes > 0)
         assert cache.req_to_token_pool.available_size() == 0
         cache.req_to_token_pool.alloc.assert_not_called()
+        assert runtime._residency_request_counts == (running_count, 0, row_capacity)
         assert not runtime.physical_disabled
         if expected_nodes:
             assert runtime._residency_budget.request_slots == 1

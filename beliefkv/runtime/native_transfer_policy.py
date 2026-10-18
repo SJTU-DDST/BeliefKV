@@ -76,19 +76,26 @@ def native_residency_budget(
     evictable_full_tokens: int = 0,
     evictable_mamba_slots: int = 0,
     restore_frontier_slots: int = 1,
+    occupied_request_rows: int | None = None,
 ) -> PrefetchResidencyBudget:
-    # Cache restoration does not allocate a request row. A full decode batch
-    # may overlap a bounded number of restores with its next completions, even
-    # while all rows are occupied. Native admission still requires an actual row.
+    # Prefill rows are allocated before joining the decode running list. Count
+    # those rows in growth reserves and the bounded rowless cache frontier;
+    # native request admission still needs a real free row.
+    active = running_requests
+    if (
+        running_requests > 0 and type(occupied_request_rows) is int
+        and running_requests <= occupied_request_rows <= max_running_requests
+    ):
+        active = occupied_request_rows
     rows = max(0, available_request_rows)
-    if rows == 0 and running_requests >= max_running_requests > 0:
+    if rows == 0 and active >= max_running_requests > 0:
         rows = restore_frontier_slots
     slots = max(0, min(
         rows, prefill_slots,
-        max(restore_frontier_slots, max_running_requests - running_requests),
+        max(restore_frontier_slots, max_running_requests - active),
     ))
     full_reserve = max(0, input_token_reserve) + max(1, page_size) * (
-        running_requests + slots
+        active + slots
     )
     mamba_reserve = slots
     byte_limit = max(0, protected_bytes) + (

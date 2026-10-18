@@ -189,7 +189,7 @@ def parallel_tool_conversion_case(baseline):
             }
         finally:
             runtime.close()
-    if results["baseline_selector"]["pending_contexts"] != 1 or (
+    if results["baseline_selector"]["pending_contexts"] not in (1, 2) or (
         results["candidate_selector"]["pending_contexts"] != 2
     ):
         raise AssertionError("two fitting tool contexts did not distinguish selector serialization")
@@ -200,6 +200,113 @@ def parallel_tool_conversion_case(baseline):
         ),
         "results": results,
     }
+
+
+def inflight_prefill_conversion_case(baseline):
+    from types import MethodType
+    from beliefkv.runtime.native_transfer_policy import TransferStartWindow
+    from tests.test_wait_prefetch_batch import parallel_tool_batch_fixture
+
+    results = {}
+    for name in ("baseline_budget", "candidate_budget"):
+        runtime, _, _, plans, cache, _ = parallel_tool_batch_fixture()
+        pool = NS(size=48, available_size=lambda: 0, mamba_pool=NS(size=8))
+        cache.req_to_token_pool = pool
+        cache.host_pool_group = cache.cache_controller.mem_pool_host
+        cache.token_to_kv_pool_allocator = NS(size=1024)
+        cache.full_evictable_size = cache.mamba_evictable_size = lambda: 0
+        runtime._observe_native_admission_capacity(
+            running_batch=NS(reqs=[NS(rid=f"running-{index}") for index in range(47)]),
+            adder=NS(max_running_requests=48, max_prefill_bs=4,
+                     page_size=1, rem_input_tokens=16),
+        )
+        if name == "baseline_budget":
+            runtime._current_residency_budget = MethodType(
+                baseline._current_residency_budget, runtime,
+            )
+        try:
+            with patch(
+                "beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+                return_value=next(iter(plans.values())).headroom,
+            ), patch.object(
+                runtime, "inspect_context_h2d_opportunity",
+                side_effect=lambda **kwargs: plans[kwargs["context_id"]],
+            ), patch.object(
+                runtime, "_h2d_start_window",
+                return_value=TransferStartWindow(200., 0., 1000.),
+            ):
+                runtime.dispatch_tool_prefetch()
+                runtime.dispatch_tool_prefetch()
+                runtime.dispatch_tool_prefetch()
+            results[name] = {
+                "running_requests": 47, "occupied_request_rows": pool.size,
+                "free_request_rows": pool.available_size(),
+                "pending_contexts": len(runtime.physical_ledger.pending_h2d_contexts),
+                "pending_commands": runtime.physical_ledger.pending_count,
+                "pending_bytes": runtime.physical_ledger.pending_action_bytes("PREFETCH_GPU"),
+                "residency_budget": asdict(runtime._residency_budget),
+                "completed_actions": len(runtime.completed_physical_actions),
+                "physical_disabled": runtime.physical_disabled,
+            }
+        finally:
+            runtime.close()
+    if results["baseline_budget"]["pending_contexts"] != 0 or (
+        results["candidate_budget"]["pending_contexts"] != 2
+    ):
+        raise AssertionError("occupied prefill rows did not preserve the bounded cache frontier")
+    return {
+        "scope": (
+            "Budget-method differential on one CPU fixture: 47 running plus one occupied "
+            "prefill row. The old method supplies no occupied-row count, preserving its "
+            "original budget behavior. Current selector/native stand-ins are shared; "
+            "no request row, DMA completion, ACK, reuse or throughput is fabricated."
+        ),
+        "results": results,
+    }
+
+
+def native_budget_case(baseline, *, samples, running, free_rows):
+    from types import MethodType
+    from tests.test_wait_prefetch_batch import parallel_tool_batch_fixture
+
+    variants = {}
+    for name in ("baseline", "candidate"):
+        runtime, _, _, plans, cache, _ = parallel_tool_batch_fixture()
+        cache.req_to_token_pool = NS(
+            size=48, available_size=lambda: free_rows, mamba_pool=NS(size=8),
+        )
+        cache.host_pool_group = cache.cache_controller.mem_pool_host
+        cache.token_to_kv_pool_allocator = NS(size=1024)
+        runtime._observe_native_admission_capacity(
+            running_batch=NS(reqs=[NS(rid=f"running-{index}") for index in range(running)]),
+            adder=NS(max_running_requests=48, max_prefill_bs=4,
+                     page_size=1, rem_input_tokens=16),
+        )
+        if name == "baseline":
+            runtime._current_residency_budget = MethodType(
+                baseline._current_residency_budget, runtime,
+            )
+        variants[name] = (runtime, next(iter(plans.values())).headroom)
+    try:
+        budgets = {
+            name: asdict(runtime._current_residency_budget(headroom=headroom))
+            for name, (runtime, headroom) in variants.items()
+        }
+        return {
+            "case": "native_restore_budget",
+            "running_requests": running, "free_request_rows": free_rows,
+            "occupied_request_rows": 48 - free_rows,
+            "budgets": budgets,
+            "costs": compare({
+                name: lambda runtime=runtime, headroom=headroom: (
+                    runtime._current_residency_budget(headroom=headroom)
+                ) for name, (runtime, headroom) in variants.items()
+            }, samples=samples),
+            "scope": "CPU budget methods with shared native pool stand-ins; no request admission",
+        }
+    finally:
+        for runtime, _ in variants.values():
+            runtime.close()
 
 
 def repeated_plan_case(baseline, *, samples, depth):
@@ -341,6 +448,7 @@ def main():
     paths = (
         "beliefkv/runtime/sglang_v0520_runtime.py",
         "beliefkv/runtime/sglang_v0520_physical.py",
+        "beliefkv/runtime/native_transfer_policy.py",
         "beliefkv/runtime/hotpath_timing.py",
         "scripts/benchmark_prefetch_control_cpu.py",
         "scripts/benchmark_native_prepare_path.py",
@@ -354,6 +462,9 @@ def main():
           for enabled in (False, True)),
         *(pending_case(baseline, samples=args.samples, pending=pending)
           for pending in (0, 16, 64)),
+        *(native_budget_case(
+            baseline, samples=args.samples, running=running, free_rows=free_rows,
+        ) for running, free_rows in ((40, 8), (47, 0), (48, 0))),
         *(native_ack_case(baseline, samples=args.samples, pending=pending, node_count=nodes)
           for pending in (0, 16, 64) for nodes in (1, 32, 128)),
         *(repeated_plan_case(baseline, samples=args.samples, depth=depth)
@@ -379,6 +490,7 @@ def main():
         "samples": args.samples, "warmup_samples": 20,
         "cases": cases,
         "parallel_tool_conversion": parallel_tool_conversion_case(baseline),
+        "inflight_prefill_conversion": inflight_prefill_conversion_case(baseline),
         "limitations": [
             "Fixture frequency and pending populations are controlled, not replayed online frequencies.",
             "Both runtimes use the same profiling setting in each timing case.",

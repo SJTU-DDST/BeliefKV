@@ -15,6 +15,21 @@ and no nested spawn. Four rounds/depth2 remain configured targets, not results.
 JOIN ACK-to-service P90 is still19.94s in that partial prefix; retain it as a next
 optimization priority alongside useful FULL coverage and low control cost.
 
+CPU work during V82b fixes a row-accounting opportunity loss: native prefill
+allocates request rows before joining the decode running list. With47 running
+and one occupied prefill row, the old budget incorrectly suppresses rowless
+cache restoration. Count trusted occupied rows in both the bounded restore
+frontier and FULL growth reserves; do not bypass native model-request admission.
+V1699 executes the frozen native row allocator on CPU; V1700 passes1314 cases.
+V1698's controlled dispatch changes from0 to2 pending contexts without ACKs.
+The new once-per-second row-count fields add no tree scan. This is not deployed
+to frozen V82b, and its online frequency/performance is not yet established.
+V1701's latest sealed prefix has56 closed JOINs:51 observed start windows,
+24 pre-completion submissions,15 early reuse events/0.187GB FULL. Tool has
+54 start/submissions and50 early reuse events/4.391GB. Reasons overlap; do not
+attribute the entire conversion gap to row accounting. Keep the matched pair
+running and continue CPU diagnosis of JOIN ticket selection and consumption.
+
 The user's 2026-10-18 "GPU is free" instruction supersedes
 the prior October 19 08:00 Asia/Shanghai reservation. V82 was launched at
 08:25 PDT from frozen application `44c802f` and qualified engine tree `53020ce3`.
