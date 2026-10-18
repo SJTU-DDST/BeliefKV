@@ -14,6 +14,147 @@ from scripts.benchmark_wait_prefetch_dispatch_cpu import dispatch_fixture
 
 @pytest.mark.parametrize("source", ("join_ticket", "tool_wait"))
 @pytest.mark.parametrize("native_budget", (False, True))
+@pytest.mark.parametrize("drain_result,expected_reads", (
+    ("no_server", 1), ("empty_tuple", 1), ("delivered", 2),
+    ("empty_list", 2), ("unknown", 2),
+))
+def test_only_an_empty_causal_drain_reuses_the_synchronous_selection(
+    source, native_budget, drain_result, expected_reads,
+):
+    runtime, key, cache, _, actions, _, _, dispatch, now = dispatch_fixture(
+        NativeAdmissionRuntime, source=source, depth=4, native_budget=native_budget,
+    )
+    if drain_result != "no_server":
+        result = {
+            "empty_tuple": (), "delivered": (NS(),), "empty_list": [], "unknown": None,
+        }[drain_result]
+        runtime.event_server = NS(drain=Mock(return_value=result), close=lambda: None)
+    try:
+        with patch("time.monotonic", lambda: now), patch.object(
+            runtime, "inspect_context_h2d_opportunity",
+            wraps=runtime.inspect_context_h2d_opportunity,
+        ) as inspect:
+            dispatch()
+        assert inspect.call_count == expected_reads
+        assert runtime.counts["wait_prefetch_selection_plan_reused"] == int(expected_reads == 1)
+        assert tuple(item[0] for item in actions) == (1, 2, 3, 4)
+        assert runtime.physical_ledger.pending_count == 4
+        assert all(
+            runtime.physical_ledger.pending_expectation(command).context_id == key.context_id
+            for command in runtime._prefetch_steps
+        )
+        assert not runtime.completed_physical_actions
+        assert not runtime.physical_disabled
+        if drain_result != "no_server":
+            runtime.event_server.drain.assert_called_once_with(max_messages=128)
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("source", ("join_ticket", "tool_wait"))
+@pytest.mark.parametrize("change", (
+    "no_selection", "foreign_context", "different_steps", "unfitted", "partial_extent",
+    "closure_predates_reclaim",
+))
+def test_uncertain_or_mismatched_selections_require_a_fresh_plan(source, change):
+    runtime, key, _, _, actions, _, _, _, now = dispatch_fixture(
+        NativeAdmissionRuntime, source=source, depth=4,
+    )
+    try:
+        with patch("time.monotonic", lambda: now):
+            if source == "tool_wait":
+                runtime._roll_tool_prefetch()
+            selected = runtime._wait_prefetch_opportunity(key)
+            selection = selected
+            if change == "no_selection":
+                selection = None
+            elif change == "foreign_context":
+                selection = replace(
+                    selected, anchors=replace(
+                        selected.anchors, key=replace(key, context_id="foreign"),
+                    ),
+                )
+            elif change == "different_steps":
+                selection = replace(selected, steps=selected.steps[:-1])
+            elif change == "unfitted":
+                selection = replace(selected, fits_current_free_lists=False)
+            elif change == "partial_extent":
+                selection = replace(
+                    selected, partial_full_step=selected.steps[-1], partial_full_tokens=64,
+                )
+            else:
+                selection = replace(selected, enqueue_refresh_required=True)
+            with patch.object(
+                runtime, "_wait_prefetch_opportunity",
+                wraps=runtime._wait_prefetch_opportunity,
+            ) as inspect:
+                commands = runtime._issue_wait_prefetch_steps(
+                    key, selected.steps, source=source, _selection_opportunity=selection,
+                )
+        inspect.assert_called_once_with(key, max_steps=4, fit_current_capacity=True)
+        assert runtime.counts["wait_prefetch_selection_plan_reused"] == 0
+        assert tuple(item[0] for item in actions) == (1, 2, 3, 4)
+        assert runtime.physical_ledger.pending_count == len(commands) == 4
+        assert not runtime.completed_physical_actions
+        assert not runtime.physical_disabled
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("source", ("join_ticket", "tool_wait"))
+def test_event_delivery_cannot_reuse_a_plan_captured_from_a_replaced_cache(source):
+    runtime, _, cache, _, actions, _, _, dispatch, now = dispatch_fixture(
+        NativeAdmissionRuntime, source=source, depth=4, diagnostics=True,
+    )
+
+    def drain(**kwargs):
+        runtime._native_cache = NS()
+        return ()
+
+    runtime.event_server = NS(drain=drain, close=lambda: None)
+    try:
+        with patch("time.monotonic", lambda: now):
+            dispatch()
+        assert not actions
+        assert not runtime.physical_ledger.pending_count
+        assert runtime.counts["wait_prefetch_selection_plan_reused"] == 0
+        assert not runtime.physical_disabled
+    finally:
+        runtime._native_cache = cache
+        runtime.close()
+
+
+@pytest.mark.parametrize("selection_source", ("cached", "previous_call"))
+def test_tool_selection_from_an_earlier_call_is_recaptured_before_reuse(selection_source):
+    runtime, key, cache, _, actions, _, _, dispatch, now = dispatch_fixture(
+        NativeAdmissionRuntime, source="tool_wait", depth=4,
+    )
+    try:
+        with patch("time.monotonic", lambda: now):
+            if selection_source == "cached":
+                selected = runtime._wait_prefetch_opportunity(key)
+                runtime._tool_opportunity_cache[key] = (now * 1000. + 100., selected)
+            else:
+                assert runtime._roll_tool_prefetch() is not None
+            first = cache.tree_core.node_by_id(1)
+            first.component_data[0].value = first.component_data[0].host_value
+            with patch.object(
+                runtime, "inspect_context_h2d_opportunity",
+                wraps=runtime.inspect_context_h2d_opportunity,
+            ) as inspect:
+                dispatch()
+        inspect.assert_called_once()
+        assert tuple(item[0] for item in actions) == (2, 3, 4)
+        assert runtime.physical_ledger.pending_count == 3
+        assert runtime.counts["wait_prefetch_selection_plan_reused"] == 1
+        assert not runtime.completed_physical_actions
+        assert not runtime.physical_disabled
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("source", ("join_ticket", "tool_wait"))
+@pytest.mark.parametrize("native_budget", (False, True))
 @pytest.mark.parametrize("change,expected_nodes,expected_mamba", [
     ("stable", (1, 2, 3, 4), True),
     ("capacity_shrank", (1, 2), False),
@@ -88,6 +229,7 @@ def test_final_live_plan_preserves_safe_selected_work_without_issuing_other_targ
                 ),))
             else:
                 runtime.graph.contexts[key.context_id].epoch += 1
+        return (NS(),)
 
     runtime.event_server = NS(drain=Mock(side_effect=drain), close=lambda: None)
     try:
@@ -193,6 +335,7 @@ def test_final_plan_keeps_selected_work_when_resident_ancestor_exposes_unselecte
         first = cache.tree_core.node_by_id(1)
         first.component_data[0].value = first.component_data[0].host_value
         cache.token_to_kv_pool_allocator.available_size = lambda: 384 + reserve
+        return (NS(),)
 
     runtime.event_server = NS(drain=drain, close=lambda: None)
     try:

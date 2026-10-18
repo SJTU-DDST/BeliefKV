@@ -374,13 +374,14 @@ def test_join_latest_work_can_shorten_endpoint_or_use_live_upper_after_center_ov
         runtime.close()
 
 
-def test_provisional_join_dispatch_reuses_current_plan_and_rechecks_before_enqueue():
+def test_provisional_join_dispatch_reuses_current_plan_for_the_synchronous_enqueue():
     runtime, key, opportunity, cache, _ = provisional_join_batch_fixture()
     try:
         with patch.object(runtime, "inspect_context_h2d_opportunity",
                           return_value=opportunity) as inspect:
             runtime.dispatch_join_prefetch()
-        assert inspect.call_count == 2
+        inspect.assert_called_once()
+        assert runtime.counts["wait_prefetch_selection_plan_reused"] == 1
         assert runtime._join_ticket.phase == "provisional"
         assert runtime._join_ticket.key == key
         assert runtime.physical_ledger.pending_count == 4

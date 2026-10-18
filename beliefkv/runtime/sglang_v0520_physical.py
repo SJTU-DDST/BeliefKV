@@ -99,6 +99,7 @@ class SessionH2DOpportunity:
     capacity_reclaim: dict | None = field(
         default=None, compare=False, repr=False,
     )
+    enqueue_refresh_required: bool = field(default=False, compare=False, repr=False)
 
 
 def _prefetch_block_detail(candidate: ActionLocalPrefetchCandidate) -> str:

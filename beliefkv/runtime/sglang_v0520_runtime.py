@@ -3516,8 +3516,7 @@ class NativeAdmissionRuntime:
             )
             if remaining_p10_ms > 1_000:
                 return
-        # Reuse only this call's plan; enqueue still drains causal events and
-        # rechecks the current native prefix, capacity and timing.
+        # Only this synchronous call's plan may be reused after an empty drain.
         if observation is None:
             observation = self._wait_prefetch_opportunity(ticket.key)
         service_shape = (
@@ -3601,6 +3600,7 @@ class NativeAdmissionRuntime:
         commands = self._issue_wait_prefetch_steps(
             ticket.key, getattr(observation, "steps", ()) or (step,),
             source="join_ticket", service_shape=service_shape,
+            _selection_opportunity=observation,
         )
         if commands:
             ticket.command_id = commands[-1]
@@ -5016,8 +5016,8 @@ class NativeAdmissionRuntime:
                 <= headroom.device_mamba_free_slots
                 and planned_bytes <= allowance
             ):
-                # Reclaim excludes this closure. Reuse its selected burst only
-                # as a plan; enqueue still recaptures the complete live target.
+                # Keep the pre-reclaim selection for planning, but recapture
+                # its target before enqueue even if the causal drain is empty.
                 self.counts["wait_prefetch_reclaim_plan_reused"] += 1
                 capacity = opportunity.capacity_budget
                 if capacity is not None:
@@ -5040,6 +5040,7 @@ class NativeAdmissionRuntime:
                 return replace(
                     opportunity, headroom=headroom, fits_current_free_lists=True,
                     capacity_budget=capacity, capacity_reclaim=diagnosis,
+                    enqueue_refresh_required=True,
                 )
         # Bounded reclaim need not fit the whole checkpoint. Restore the
         # continuous prefix that fits now and leave the tail for a later load.
@@ -6530,8 +6531,7 @@ class NativeAdmissionRuntime:
         ):
             self._tool_ticket = None
             return
-        # Only a plan read during this call can skip the redundant dispatch read.
-        # Enqueue still drains causal events and revalidates the native burst.
+        # Cached plans are recaptured here before the synchronous enqueue.
         if opportunity is None:
             opportunity = self._wait_prefetch_opportunity(ticket.key)
         if (
@@ -6564,6 +6564,7 @@ class NativeAdmissionRuntime:
         commands = self._issue_wait_prefetch_steps(
             ticket.key, getattr(opportunity, "steps", ()) or (step,),
             source="tool_wait", service_shape=ticket.service_shape,
+            _selection_opportunity=opportunity,
         )
         if commands:
             self._remember_tool_prefetch_survival(hint)
@@ -6905,6 +6906,7 @@ class NativeAdmissionRuntime:
         self, key: PrefillCandidateKey, steps: tuple[PrefetchLoadStep, ...], *,
         source: str,
         service_shape: _WaitPrefetchServiceShape | None = None,
+        _selection_opportunity: SessionH2DOpportunity | None = None,
     ) -> tuple[str, ...]:
         cache = self._native_cache
         if not callable(getattr(cache, "prefetch_gpu_session_nodes", None)):
@@ -6914,8 +6916,10 @@ class NativeAdmissionRuntime:
             getattr(self._join_ticket, "join_id", None)
             if source == "join_ticket" and self._opportunity_writer is not None else None
         )
-        if self.event_server is not None:
+        deliveries = (
             self.event_server.drain(max_messages=128)
+            if self.event_server is not None else ()
+        )
         if not steps:
             return ()
         if not self._live_wait_prefetch(key, source):
@@ -6930,6 +6934,12 @@ class NativeAdmissionRuntime:
                 join_id_override=join_id,
             )
             return ()
+        if cache is not self._native_cache:
+            self._record_wait_prefetch_plan(
+                source, key, None, reason="enqueue_cache_changed",
+                join_id_override=join_id,
+            )
+            return ()
         if any(step.key != key for step in steps) or len({
             (step.leaf_node_id, step.leaf_creation_time) for step in steps
         }) != 1:
@@ -6938,12 +6948,24 @@ class NativeAdmissionRuntime:
                 join_id_override=join_id,
             )
             return ()
-        # Capture once after draining causal events. Native rechecks allocation,
-        # ancestry and generation for every node in this same ordered burst.
+        # No scheduler/cache mutation can interleave with this synchronous
+        # selection except event delivery. Older or uncertain plans are recaptured.
         selected_count = len(steps)
-        fresh = self._wait_prefetch_opportunity(
-            key, max_steps=len(steps), fit_current_capacity=True,
-        )
+        if (
+            type(deliveries) is tuple and not deliveries
+            and isinstance(_selection_opportunity, SessionH2DOpportunity)
+            and _selection_opportunity.anchors.key == key
+            and _selection_opportunity.steps == steps
+            and _selection_opportunity.fits_current_free_lists is True
+            and _selection_opportunity.partial_full_step is None
+            and not _selection_opportunity.enqueue_refresh_required
+        ):
+            fresh = _selection_opportunity
+            self.counts["wait_prefetch_selection_plan_reused"] += 1
+        else:
+            fresh = self._wait_prefetch_opportunity(
+                key, max_steps=len(steps), fit_current_capacity=True,
+            )
         if (
             fresh is not None and (
                 fresh.steps != steps or fresh.partial_full_step is not None

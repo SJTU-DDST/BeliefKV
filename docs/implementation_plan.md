@@ -5,6 +5,28 @@ Status date: 2026-10-18 (PDT).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Main now removes the second closure observation for a fitting JOIN/tool plan
+selected in the same synchronous dispatch, only after an explicitly empty tuple
+from the event drain and with unchanged cache/target identity. Cached and
+previous-call tool plans are recaptured. A closure reused across reclamation is
+marked for enqueue refresh; causal/timing/current budget and native per-node
+allocation, ancestry, generation and transaction checks remain.
+V1801 caught two reclaim-boundary failures before this qualification.
+Final V1803 passes 1062 runtime CPU tests; V1805 passes 48 native action tests
+and 27 subtests. V1806 binds final source and validation artifacts.
+
+V1799 found no positive-dispatch improvement between frozen V82b and the prior
+main. V1804 compares this change against 4c452ad with 31 alternating CPU samples:
+diagnostics-off/native-budget JOIN/tool P50 at depth4 changes from
+605.870/555.325us to 444.178/418.017us; depth64 changes from
+3324.834/3358.770us to 2605.831/2615.925us. All 24 dispatch cases preserve
+physical targets and pending credit, with one rather than two session snapshots
+on stable paths. Selection-only costs still vary. Scalar native enqueue,
+pending actions and synthetic frequencies do not establish DMA, reuse or JCT.
+Keep both V82b arms frozen at ab951b9; finish the matched native collection,
+compare common eligible tasks with main's updated reporter, then qualify a
+future cold GPU run for main's combined fixes. Performance acceptance stays open.
+
 At13:26 PDT, V1797 verifies native second-wave first prefill and positive decode
 for all48 root requests, matching live actor start ticks and CUDA scheduler2390962.
 All156 roots have arrived; the terminal prefix is93 completed/2 incomplete,
