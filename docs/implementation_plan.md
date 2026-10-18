@@ -5,6 +5,18 @@ Status date: 2026-10-18 (PDT).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Main removes fresh capacity/slot/byte planning when an ACK is already covered by
+the same-session native lock. No new protection is allocated; covered records keep
+receipt/owner/expiry/use identity and explicitly omit an allocation budget/slot role.
+New/deeper locks retain live budget and native lock checks. V1752 passes1352 runtime
+cases; V1748 passes239 budget/lifecycle-audit cases. V1751's24 complete CPU fixtures
+preserve physical/lock/lifecycle outputs; native-budget/depth64 same-node coverage
+P50 is49.884 to17.115us, ancestor coverage57.670 to24.125us. New/deeper paths do not
+show comparable gains; this is not online frequency or GPU performance evidence.
+V1753 records two legacy adapter-interface failures reproducing on the frozen engine;
+do not call that broad suite green or alter frozen collection to hide them.
+V82b stays on ab951b9 for both arms. Full pair and performance acceptance remain open.
+
 At10:51 PDT V1743 binds151 completed results:35 multi-round roots,15 nested
 workflows, depth2,425 reported child returns and21 nested JOIN completions in that
 completed subset. Five unfinished workflows are not zero-round or error results.

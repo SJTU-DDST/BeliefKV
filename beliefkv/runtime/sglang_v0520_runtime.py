@@ -7508,25 +7508,26 @@ class NativeAdmissionRuntime:
                     if existing.key == step.key and existing.lock_params is not None
                     and (existing.node_id, existing.creation_time) in ancestors
                 ]
-            budget = self._current_residency_budget(
-                include_evictable=True,
-            )
-            protection_slots = budget.request_slots
-            if (
-                issue_budget is not None
-                and issue_budget.source == budget.source == "native_next_prefill"
-            ):
-                # A completed restore uses its issued protection allowance,
-                # while bytes and actual request admission remain live.
-                protection_slots = max(protection_slots, issue_budget.request_slots)
-            protection_slot_available = self._prefetch_slot_available(
-                step.key, budget=replace(budget, request_slots=protection_slots),
-                demand_ready=lease.demand_ready,
-            )
-            protection_bytes_fit = (
-                protected_bytes - sum(item.protected_bytes for item in superseded)
-                <= self._prefetch_byte_allowance(budget)
-            )
+            if not already_protected:
+                budget = self._current_residency_budget(
+                    include_evictable=True,
+                )
+                protection_slots = budget.request_slots
+                if (
+                    issue_budget is not None
+                    and issue_budget.source == budget.source == "native_next_prefill"
+                ):
+                    # A completed restore uses its issued protection allowance,
+                    # while bytes and actual request admission remain live.
+                    protection_slots = max(protection_slots, issue_budget.request_slots)
+                protection_slot_available = self._prefetch_slot_available(
+                    step.key, budget=replace(budget, request_slots=protection_slots),
+                    demand_ready=lease.demand_ready,
+                )
+                protection_bytes_fit = (
+                    protected_bytes - sum(item.protected_bytes for item in superseded)
+                    <= self._prefetch_byte_allowance(budget)
+                )
             if already_protected:
                 protection_reason = "covered_by_existing_lock"
             elif (
@@ -7605,12 +7606,14 @@ class NativeAdmissionRuntime:
                 "protected_bytes": protected_bytes,
                 "protection_reason": protection_reason,
                 "protected_by_command_id": protected_by_command_id,
-                "budget": vars(budget).copy(),
+                "budget": None if already_protected else vars(budget).copy(),
                 "residency_issue_budget": vars(issue_budget).copy() if issue_budget is not None else None,
-                "protection_request_slots": protection_slots,
+                "protection_request_slots": None if already_protected else protection_slots,
                 "protection_slot_role": (
-                    "demand" if lease.demand_ready else "speculative"
-                ) if budget.source == "native_next_prefill" else "combined",
+                    None if already_protected else
+                    ("demand" if lease.demand_ready else "speculative")
+                    if budget.source == "native_next_prefill" else "combined"
+                ),
                 "scope": "bounded restore protection; native admission remains authoritative",
             })
 

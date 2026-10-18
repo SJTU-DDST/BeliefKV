@@ -861,7 +861,7 @@ def test_descendant_lock_covers_restored_ancestor_without_recapturing_closure(mo
     with patch.object(
         runtime, "_current_residency_budget",
         return_value=PrefetchResidencyBudget(1, 1024 ** 3),
-    ), patch(
+    ) as budget, patch(
         "beliefkv.runtime.sglang_v0520_observer.observe_unified_node_closure",
         return_value=observation,
     ) as capture:
@@ -874,9 +874,13 @@ def test_descendant_lock_covers_restored_ancestor_without_recapturing_closure(mo
             runtime._prefetch_steps[command] = (step, "execution_handoff", None)
             runtime._register_prefetch_service_lease(action)
     capture.assert_called_once_with(cache, 2)
+    budget.assert_called_once_with(include_evictable=True)
     cache.tree_core.inc_lock_ref.assert_called_once_with(2)
     assert records[-1]["protection_reason"] == "covered_by_existing_lock"
     assert records[-1]["protected_by_command_id"] == "leaf"
+    assert records[-1]["budget"] is None
+    assert records[-1]["protection_request_slots"] is None
+    assert records[-1]["protection_slot_role"] is None
     assert runtime._prefetch_service_leases["ancestor"].protected_bytes == 0
     runtime._release_prefetch_service_lease("ancestor", "first_gpu_service")
     cache.tree_core.dec_lock_ref.assert_not_called()
@@ -933,13 +937,17 @@ def test_restore_reports_unprotected_capacity_without_changing_native_admission(
             500 if condition == "bytes" else 1024 ** 3,
             source="native_next_prefill",
         ),
-    ), patch(
+    ) as budget, patch(
         "beliefkv.runtime.sglang_v0520_observer.observe_unified_node_closure",
         return_value=NS(observable=condition != "unobservable", nodes=(
             NS(node_id=1, creation_time=2, full_device_tokens=100, mamba_device_present=True),
         )),
     ):
         runtime._register_prefetch_service_lease(action)
+        if condition == "covered":
+            budget.assert_not_called()
+        else:
+            budget.assert_called_once_with(include_evictable=True)
     cache.tree_core.inc_lock_ref.assert_not_called()
     assert records[-1]["event"] == "prefetch_residency_registered"
     assert records[-1]["native_locked"] is False

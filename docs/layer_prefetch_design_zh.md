@@ -6,6 +6,30 @@
 问题后停止并保留部分数据。V82b于08:50 PDT从`ab951b9`冷启动，
 08:55通过真实服务核对，predictive先行、随后相同合同的native。V81不恢复。
 
+## 已有保护的ACK降本
+
+main在同会话原生锁已覆盖本次恢复节点时跳过零新增保护的容量/字节/槽位
+计算；仍核对节点/祖先创建身份，保留每个命令的回执、覆盖锁、过期及消费。
+budget、保护槽位和角色为null，表示未做新分配检查，不是假造零容量。
+新锁及更深锁继续现场预算、原生加锁和祖先锁合并。冻结V82b不热改。
+
+[V1752 runtime回归](../experiments/reports/v1752_covered_restore_full_runtime_cpu_20261018.xml)
+1352项通过，[V1748预算/消费审计](../experiments/reports/v1748_covered_restore_metadata_audit_cpu_20261018.xml)
+239项通过。[V1751最终CPU基准](../experiments/reports/v1751_covered_restore_budget_final_control_cpu_20261018.json)
+对照0d7aed5，24组完整构造替身、每组101次/10次预热；新锁/扩展锁必须
+真的调用锁替身，避免缺字段落入异常分支却误称验证。计数仅在独立首遍，
+计时不含计数Mock；固定时钟用普通callable。覆盖场景预算读取1→0，
+锁及消费/生命周期记录一致，预算展示差异明确单列。64节点/原生预算
+同节点覆盖线程CPU P50为49.884→17.115us，祖先覆盖57.670→24.125us；
+新/更深锁约384/397us，深512约2.5ms，没有同等改善。保留慢路径，
+不外推在线频率、整轮CPU、DMA、GPU吞吐或JCT。
+
+[V1753旧接口差异](../experiments/reports/v1753_legacy_sglang_contract_provenance_20261018.json)
+广adapter套件另有两个失败：旧fixture缺ReqState.time_stats，旧测试调用
+当前Scheduler不存在的check_memory；在安装版和冻结引擎均复现，测试源
+与0d7aed5一致。该套件不是全绿；未改引擎或删除旧测试规避，不混入
+上面的相关runtime通过结论。
+
 [V1743完成子集](../experiments/reports/v1743_v82b_completed_workflow_shape_20261018.json)
 截至10:51 PDT，151个结果均completed，其中35个root多轮、15个workflow
 嵌套，最大深度2，425个child返回、21个嵌套JOIN完成。尚有5个未完成，
