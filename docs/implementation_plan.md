@@ -5,6 +5,11 @@ Status date: 2026-10-18 (PDT).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+At10:51 PDT V1743 binds151 completed results:35 multi-round roots,15 nested
+workflows, depth2,425 reported child returns and21 nested JOIN completions in that
+completed subset. Five unfinished workflows are not zero-round or error results.
+Predictive is still running; matched native and end-to-end acceptance are pending.
+
 V1729 freezes an independent10:26 PDT Host-status observation. Both pools reached
 capacity, but cumulative FULL retirement265.19GB is not distinct useful loss.
 Exact-prefix reaccess attributes3896 FULL tokens/79.79MB to recomputation;
@@ -25,9 +30,19 @@ V1735 repairs the corresponding tool-audit clock path:12597 rounds with last-sec
 forecasts have round-weighted absolute error P50/P90 of110.22/576.90ms;
 432 multi-tool rounds yield163.71/622.98ms. This is selected trace diagnostics,
 not all-tool or independent generalization proof. V1736 passes105 CPU cases.
-Fit a work-only candidate on the fixed project split, leaving phase/encoder and
-running V82b artifacts untouched. Report held-development work and trigger metrics
-before any later deployment; neither a refit nor local tests close GPU acceptance.
+V1737 finds no unbacked FULL nodes in163 JOIN/3607 tool expanded observations;
+shortcut/expired evidence remains unknown. Of71 exact FULL recompute records,
+62 cover at most64 tokens, maximum1176. Do not infer Host-loss causality from
+empty-plan counts.
+The fixed-project work-only fits are complete and remain undeployed. V1740 retains
+all three: on the same15 final requests, last-snapshot MAE P50 changes46.96 to
+58.21/direct,49.36/late-weighted and28.98/body-progress-weighted tokens. The last
+candidate's first32-token triggers remain6, but median RETURN lead grows4.55s to
+11.61s. Preserve phase/encoder and running V82b artifacts. Require first-trigger
+timing and coverage alongside point errors; GPU acceptance stays open.
+V1741 reproduces the same sealed-prefix statistics with the final auditor.
+A later terminal summary never upgrades an earlier prefix to a complete run or
+labels its unobserved RETURNs as false positives. V1742 passes105 CPU cases.
 
 At09:55 PDT V82b's second48-root wave is in actual GPU service: V1715 observes
 all156 workflow starts,22 roots with multiple rounds and9 nested workflows/depth2;

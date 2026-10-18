@@ -6,6 +6,11 @@
 问题后停止并保留部分数据。V82b于08:50 PDT从`ab951b9`冷启动，
 08:55通过真实服务核对，predictive先行、随后相同合同的native。V81不恢复。
 
+[V1743完成子集](../experiments/reports/v1743_v82b_completed_workflow_shape_20261018.json)
+截至10:51 PDT，151个结果均completed，其中35个root多轮、15个workflow
+嵌套，最大深度2，425个child返回、21个嵌套JOIN完成。尚有5个未完成，
+不补零轮次或失败；任务正确性未独立评分。native尚未开始，完整验收保持开放。
+
 ## Host压力与预测迁移
 
 [V1729状态快照](../experiments/reports/v1729_v82b_host_status_20261018.json)
@@ -34,9 +39,9 @@ EOS前最后快照共161个自然最终请求：第1轮128个的剩余token绝�
 [V1731 CPU检查](../experiments/reports/v1731_nested_work_export_cpu_20261018.xml)
 94项通过。离线误差审计与样本导出可在关闭机会采样时读取现有成对时钟；
 密封前缀长度/哈希继续核对，分组不使用未来结构，不增加在线埋点。
-V1733导出19546个实际已交付快照/159个自然请求，按项目隔离重拟合
-剩余工作头；phase/encoder不变。候选与本轮运行模型分开，V82b继续冻结
-ab951b9，不能将CPU开发集改进称为整轮吞吐或未见项目验证。
+V1733导出19546个实际已交付快照/159个自然请求，已完成按项目隔离的三组
+剩余工作头重拟合；phase/encoder不变。候选与本轮运行模型分开，V82b继续
+冻结ab951b9，不能将CPU开发集改进称为整轮吞吐或未见项目验证。
 
 [V1735工具时序](../experiments/reports/v1735_v82b_tool_forecast_sealed_prefix_20261018_summary.json)
 从同一V1726前缀重新核对现有成对时钟；12597个有末秒预测的工具轮次，
@@ -44,6 +49,27 @@ ab951b9，不能将CPU开发集改进称为整轮吞吐或未见项目验证。
 163.71/622.98ms。数据支持工具时序仍有可用信息，不能证明所有轮次精确、
 实际Host机会存在或已取得吞吐收益。工具侧时钟修复后的V1736共105项CPU
 检查通过；不增加在线采样。
+
+[V1737副本与丢失归因](../experiments/reports/v1737_v82b_host_loss_and_wait_backing_20261018.json)
+在同一密封前缀，71条FULL重算涉及49个请求、3893 token/79.73MB；
+62条不超过64 token，最大1176 token。163个JOIN和3607个tool等待确实
+展开的闭包没有无device且无Host的FULL节点；快捷返回不枚举这些节点，
+缺少展开不能算零丢失。较晚V1729状态计数不同，不强行要求两个前缀相等。
+
+[V1740模型开发结论](../experiments/reports/v1740_v82b_work_refit_decision_20261018.json)
+同一固定15请求评估集、冻结phase/encoder：直接重训和晚期加权的末段
+绝对误差P50为58.21/49.36 token，旧头46.96；正文进度加权为28.98、
+P90为66.22（旧头123.53）。但该候选首32-token触发仍6个，其中5个离
+RETURN超过2s，中位提前量11.61s而旧头4.55s。第一个候选减少过早触发
+同时降低覆盖，未达到联合改善。三者均未部署，全部报告保留。
+19546个输入重放的phase分数最大差6.86e-7、center最大差0.00177 token，
+证明本次导出与实际输入一致，不证明新头有效或嵌套推广成立。
+后续评价优先首触发及消费，不只优化最后一个快照；模型不学习迁移净收益。
+
+[V1741最终密封审计](../experiments/reports/v1741_v82b_nested_forecast_prefix_final_20261018.json)
+与V1732的误差、结构分组、触发和通知统计完全一致。早期前缀始终按partial
+评价，后来新增的summary不成为其未来标签。[V1742 CPU检查](../experiments/reports/v1742_nested_forecast_prefix_final_cpu_20261018.xml)
+105项通过，包括追加日志及后来完成不改变早期未知状态。
 
 ## JOIN并行与最新消费诊断
 

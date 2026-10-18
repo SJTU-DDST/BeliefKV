@@ -455,12 +455,20 @@ def sampled_trigger_replay(forecasts: dict, native: dict, terminals: set, thresh
     }
 
 
-def audit(arm: Path, threshold: float, *, allow_partial: bool = False) -> dict:
+def audit(
+    arm: Path, threshold: float, *, allow_partial: bool = False,
+    collection_complete: bool | None = None,
+) -> dict:
     started_ms = time.time() * 1000
     clients = [path for path in arm.glob("client_*") if path.is_dir()]
-    if len(clients) != 1 or not allow_partial and not (clients[0] / "summary.json").is_file():
+    if len(clients) != 1:
+        raise ValueError("audit requires one client directory")
+    complete = (
+        (clients[0] / "summary.json").is_file()
+        if collection_complete is None else collection_complete
+    )
+    if not allow_partial and not complete:
         raise ValueError("audit requires one terminal workload summary; use allow_partial for a live run")
-    complete = (clients[0] / "summary.json").is_file()
     children, terminals, last_result, nonterminal = set(), set(), {}, set()
     return_times = {}
     requests_by_invocation = defaultdict(set)
@@ -634,6 +642,8 @@ def main() -> None:
     if args.sealed_prefix_report is None:
         result = audit(args.arm, float(threshold), allow_partial=args.allow_partial)
     else:
+        if not args.allow_partial:
+            parser.error("sealed JSONL prefixes do not prove collection completion; use --allow-partial")
         payload = args.sealed_prefix_report.read_bytes()
         evidence = json.loads(payload)
         sealed = SealedRecords()
@@ -645,7 +655,10 @@ def main() -> None:
             yield from sealed(path)
 
         with patch.dict(globals(), snapshot_records=observed_records):
-            result = audit(args.arm, float(threshold), allow_partial=args.allow_partial)
+            result = audit(
+                args.arm, float(threshold), allow_partial=True,
+                collection_complete=False,
+            )
         result["sealed_prefix_report"] = {
             "path": str(args.sealed_prefix_report.resolve()),
             "sha256": hashlib.sha256(payload).hexdigest(),

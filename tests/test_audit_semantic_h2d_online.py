@@ -266,6 +266,7 @@ def test_sealed_audit_ignores_appends_and_verifies_original_prefixes(tmp_path, m
             "event": "semantic_child_forecast", "request_id": "new",
             "score": .9, "observed_output_tokens": 1, "remaining_tokens": 2,
         }) + "\n")
+    (tmp_path / "client_36/summary.json").write_text("{}")
     artifact = tmp_path / "model/artifact.json"
     write_rows(artifact.parent / "report.json", [{
         "calibration": {"semantic_event": {"request_operating_point": {"threshold": .6}}},
@@ -281,6 +282,7 @@ def test_sealed_audit_ignores_appends_and_verifies_original_prefixes(tmp_path, m
     result = json.loads(output.read_text())
     assert result["forecast_request_count"] == 1
     assert result["first_crossing_unresolved_count"] == 1
+    assert result["collection_complete"] is False
     assert result["sealed_prefix_report"]["collection_code_commit"] == "frozen"
     assert result["sealed_prefix_report"]["input_jsonl_prefixes"] == seals
 
