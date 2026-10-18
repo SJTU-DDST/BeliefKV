@@ -41,6 +41,14 @@ from beliefkv.experiments.arrival_schedule import (
     WorkflowArrival, arrival_schedule_digest, build_workflow_arrivals,
     load_workflow_arrivals,
 )
+from beliefkv.experiments.delegation_policy import (
+    IN_GRAPH_SUBAGENT_PROFILES,
+    NESTED_COORDINATOR_ROLE,
+    NESTED_IN_GRAPH_PROFILE,
+    SUBAGENT_FANOUT_PROFILES,
+    TWO_TO_FOUR_IN_GRAPH_PROFILES,
+    delegation_contract,
+)
 from beliefkv.experiments.sandbox_progress import observe_output
 from beliefkv.predictor.project_tool_history import ProjectToolHistory
 from beliefkv.experiments.swebench_prompt import (
@@ -99,17 +107,6 @@ SERVER_ARTIFACT_FILENAMES = {
 DEFAULT_SANDBOX_TEST_ENV = "/opt/miniconda3/envs/testbed"
 SANDBOX_COMMAND_TIMEOUT_LIMIT_S = 180
 DEFAULT_SANDBOX_SUPPORT_DIR = Path(__file__).with_name("sandbox_support")
-SUBAGENT_FANOUT_PROFILES = (
-    "natural",
-    "parallel_analysis_2to3",
-    "native_subagent_2to3",
-    "native_dynamic_1to4",
-    "native_in_graph_1to4",
-    "native_in_graph_2to4",
-)
-IN_GRAPH_SUBAGENT_PROFILES = frozenset({
-    "native_in_graph_1to4", "native_in_graph_2to4",
-})
 READ_ONLY_SUBAGENT_FANOUT_PROFILES = frozenset(
     {
         "parallel_analysis_2to3",
@@ -2187,14 +2184,66 @@ explain it honestly rather than inventing work. Finish in concise natural langua
 not a completion JSON.
 """
 
+NATIVE_NESTED_2TO4_PROMPT = """
+Use this same root conversation to complete FOUR distinct delegation phases.
+Start with two to four parallel native task calls before any repository tool.
+In each phase issue two to four task calls in ONE assistant response, wait for
+ALL their results, integrate the evidence, and then do the root's next work.
+
+Plan these four rounds explicitly in the working todo list:
+1. Diagnose the failure and establish the intended behavior and regression.
+2. After the root makes a candidate patch, review its implementation and invariants.
+3. After incorporating review findings, validate focused regression and edge cases.
+4. Validate the integrated result's compatibility and cross-component behavior.
+These are separate JOIN phases. A successful diagnosis or first test does not
+replace the later review, regression, and integration phases. Assign new
+deliverables derived from the current evidence rather than repeating old work.
+
+In each round use ONE delegation-coordinator for a substantial, decomposable
+workstream and one to three other children for complementary independent work.
+The coordinator launches its own two-to-four-child round and returns a synthesis
+only after those children finish. Give it enough context, relevant symbols or
+changed files, and two separable questions. Reserve those questions for its
+grandchildren; do not assign them again to the root's other children.
+Other child roles are leaves. Do not ask them to create descendants, and do not
+launch several coordinators for the same workstream.
+
+The root integrates reports, makes the candidate patch, revises it when needed,
+and owns final verification. Concurrent writes must have disjoint file scopes.
+Use further rounds when new failures or material changes require fresh evidence.
+If a concrete blocker prevents further useful work, return an honest explanation
+of the completed phases and blocker. Do not invent a test, duplicate investigation,
+or a successful delegation merely to fill a round. Finish in natural language.
+"""
+
+NESTED_COORDINATOR_PROMPT = """
+Coordinate only the workstream assigned by your direct parent; do not take over
+the entire repository repair. Begin with two to four independent native task
+calls together in ONE assistant response. Split the assigned work into concrete,
+non-overlapping code-path, invariant, regression, or compatibility questions.
+Pass each grandchild the relevant context and an exact evidence/test deliverable.
+All available child roles here are leaves and cannot delegate further.
+Wait for ALL grandchildren, reconcile their findings, and resolve contradictions
+within this assigned scope. Do not repeat their investigation yourself or rerun
+their commands unless the evidence exposes a specific unresolved gap.
+One useful nested round is the default; use another only for a new substantive
+gap. Announce completion only after nested JOINs and any needed tools finish,
+then return a concise synthesis, tested evidence, and uncertainty to your parent.
+"""
+
 
 class NativeDelegationRoundPromptMiddleware(AgentMiddleware[Any, Any, Any]):
     """Persist stage instructions in task results, keeping future KV prefixes stable."""
 
-    def __init__(self, audit: JsonlAudit, *, minimum_children: int = 1) -> None:
+    def __init__(
+        self, audit: JsonlAudit, *, minimum_children: int = 1,
+        target_rounds: int = 3, nested_coordinator: bool = False,
+    ) -> None:
         super().__init__()
         self.audit = audit
         self.minimum_children = minimum_children
+        self.target_rounds = target_rounds
+        self.nested_coordinator = nested_coordinator
         self._rounds: dict[tuple[str, ...], int] = {}
         self._lock = threading.Lock()
 
@@ -2228,7 +2277,7 @@ class NativeDelegationRoundPromptMiddleware(AgentMiddleware[Any, Any, Any]):
             ):
                 updated.append(message)
                 continue
-            if round_index < 3:
+            if round_index < self.target_rounds:
                 instruction = (
                     f"\n\nSUPERVISOR PHASE: delegation round {round_index} has returned. "
                     "Do not treat one investigation as the whole workflow. "
@@ -2239,9 +2288,12 @@ class NativeDelegationRoundPromptMiddleware(AgentMiddleware[Any, Any, Any]):
                         if round_index == 1 else
                         "The next round must independently validate the regression and "
                         "compatibility of the reviewed patch. "
+                        if round_index == 2 else
+                        "The next round must independently check the integrated result "
+                        "across affected components and compatibility boundaries. "
                     ) +
                     "Issue this bounded task round before your final answer. "
-                    "Use at least three useful rounds for this repair; choose "
+                    f"Use at least {self.target_rounds} useful rounds for this repair; choose "
                     f"{self.minimum_children}-4 "
                     "children for the next round. An apparently resolved issue still "
                     "needs independent validation. Stop earlier only for a concrete "
@@ -2252,6 +2304,12 @@ class NativeDelegationRoundPromptMiddleware(AgentMiddleware[Any, Any, Any]):
                     "\n\nSUPERVISOR PHASE: integrate this round and verify the result. "
                     "Delegate further substantive gaps or failed validation; do not "
                     "repeat completed work merely to increase the round count."
+                )
+            if self.nested_coordinator and round_index < self.target_rounds:
+                instruction += (
+                    " Include one delegation-coordinator for a decomposable workstream "
+                    "and other leaf children for disjoint evidence. The coordinator "
+                    "must JOIN its own grandchildren before reporting to you."
                 )
             updated.append(message.model_copy(update={
                 "content": _message_text(message) + instruction,
@@ -2265,6 +2323,8 @@ class NativeDelegationRoundPromptMiddleware(AgentMiddleware[Any, Any, Any]):
             forced_tool_choice=False,
             requested_min_children=self.minimum_children,
             requested_max_children=4,
+            requested_root_rounds=self.target_rounds,
+            nested_coordinator_enabled=self.nested_coordinator,
             observed_round_children=len(signature),
         )
         if isinstance(result, ToolMessage):
@@ -2362,6 +2422,8 @@ def _autonomous_fanout_prompt(
         return NATIVE_IN_GRAPH_1TO4_PROMPT
     if config.subagent_fanout_profile == "native_in_graph_2to4":
         return NATIVE_IN_GRAPH_2TO4_PROMPT
+    if config.subagent_fanout_profile == NESTED_IN_GRAPH_PROFILE:
+        return NATIVE_NESTED_2TO4_PROMPT
     return AUTONOMOUS_NATURAL_SUBAGENT_PROMPT
 
 
@@ -3029,6 +3091,8 @@ def _autonomous_subagents(
     model: Any,
     summary_model: Any,
     deadline_controller: WorkflowDeadlineController | None = None,
+    *,
+    include_nested_coordinator: bool = True,
 ) -> list[dict[str, Any]]:
     subagents: list[dict[str, Any]] = []
     read_only = (
@@ -3039,6 +3103,16 @@ def _autonomous_subagents(
         if read_only
         else AUTONOMOUS_SUBAGENT_SPECS
     )
+    nested = (
+        include_nested_coordinator
+        and config.subagent_fanout_profile == NESTED_IN_GRAPH_PROFILE
+    )
+    if nested:
+        specs = ((
+            NESTED_COORDINATOR_ROLE,
+            "Lead one bounded workstream through a nested parallel task round, then synthesize.",
+            NESTED_COORDINATOR_PROMPT,
+        ), *specs)
     for name, description, system_prompt in specs:
         scope = f"autonomous:{name}"
         subagents.append(
@@ -3114,6 +3188,20 @@ def _autonomous_subagents(
                 ],
             }
         )
+        if nested and name == NESTED_COORDINATOR_ROLE:
+            subagents[-1]["middleware"].extend([
+                PrivateStateIsolatingSubAgentMiddleware(
+                    backend=backend,
+                    private_state_keys=CONTEXT_LIFECYCLE_PRIVATE_STATE_KEYS,
+                    subagents=_autonomous_subagents(
+                        config, workload, backend, adapter, model, summary_model,
+                        deadline_controller, include_nested_coordinator=False,
+                    ),
+                ),
+                InitialInGraphDelegationMiddleware(
+                    audit=backend.audit, task_fanout=(2, 4),
+                ),
+            ])
     return subagents
 
 
@@ -3138,7 +3226,13 @@ def _build_autonomous_agent(
     if delegation_enabled and config.subagent_fanout_profile in IN_GRAPH_SUBAGENT_PROFILES:
         middleware.insert(0, NativeDelegationRoundPromptMiddleware(
             backend.audit,
-            minimum_children=2 if config.subagent_fanout_profile == "native_in_graph_2to4" else 1,
+            minimum_children=(
+                2 if config.subagent_fanout_profile in TWO_TO_FOUR_IN_GRAPH_PROFILES else 1
+            ),
+            target_rounds=(
+                4 if config.subagent_fanout_profile == NESTED_IN_GRAPH_PROFILE else 3
+            ),
+            nested_coordinator=config.subagent_fanout_profile == NESTED_IN_GRAPH_PROFILE,
         ))
     if delegation_enabled:
         middleware.append(
@@ -3162,7 +3256,7 @@ def _build_autonomous_agent(
             single_task_choice=True,
             task_fanout=(
                 (2, 4)
-                if config.subagent_fanout_profile == "native_in_graph_2to4"
+                if config.subagent_fanout_profile in TWO_TO_FOUR_IN_GRAPH_PROFILES
                 else None
             ),
         ))
@@ -3965,6 +4059,22 @@ def _trace_summary(path: Path) -> dict[str, Any]:
             child_start_ms.get(child_id, float("inf")),
             float(item.get("ts_ms", 0.0)),
         )
+    depth_by_invocation = {root: 0 for root in root_invocations}
+    unresolved = {
+        child: parent
+        for parent, child_ids in children_by_parent.items() for child in child_ids
+    }
+    while unresolved:
+        resolved = [
+            child for child, parent in unresolved.items() if parent in depth_by_invocation
+        ]
+        if not resolved:
+            break
+        for child in resolved:
+            depth_by_invocation[child] = depth_by_invocation[unresolved.pop(child)] + 1
+    spawn_count_by_depth = Counter(
+        depth_by_invocation[child] for child in children if child in depth_by_invocation
+    )
     child_return_ms = {
         str(item["invocation_id"]): float(item.get("ts_ms", 0.0))
         for item in records
@@ -4123,6 +4233,28 @@ def _trace_summary(path: Path) -> dict[str, Any]:
             for parent, child_ids in sorted(children_by_parent.items())
         },
         "delegation_round_count": len(ordered_rounds),
+        "root_delegation_round_count": sum(
+            len(rounds_by_parent.get(root, ())) for root in root_invocations
+        ),
+        "delegation_rounds_by_parent": {
+            parent: len(parent_rounds) for parent, parent_rounds in sorted(rounds_by_parent.items())
+        },
+        "nested_delegation_round_count": sum(
+            len(parent_rounds) for parent, parent_rounds in rounds_by_parent.items()
+            if parent in children
+        ),
+        "nested_join_satisfied_count": sum(
+            join_id in join_satisfied_ms and parent in children
+            for join_id, parent in round_parent.items()
+        ),
+        "maximum_spawn_depth": max(spawn_count_by_depth, default=0),
+        "spawn_count_by_depth": {
+            str(depth): count for depth, count in sorted(spawn_count_by_depth.items())
+        },
+        "nested_spawn_count": sum(
+            count for depth, count in spawn_count_by_depth.items() if depth >= 2
+        ),
+        "unknown_spawn_depth_count": len(unresolved),
         "fanout_per_round": [
             len(round_members.get(join_id, ())) for join_id in ordered_rounds
         ],
@@ -4786,6 +4918,7 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
         "workload_manifest_sha256": bundle.manifest_sha256,
         "instance_ids": [item.instance_id for item in workloads],
         "dynamic_subagent_policy": config.subagent_fanout_profile,
+        "delegation_contract": delegation_contract(config.subagent_fanout_profile),
         "native_session_terminal_close": {
             "mode": (
                 "shared_deferred_dispatch" if config.native_radix_sessions else "disabled"
@@ -4970,6 +5103,29 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
             for item in results
         ),
         "subagent_fanout_profile": config.subagent_fanout_profile,
+        "delegation_contract": delegation_contract(config.subagent_fanout_profile),
+        "delegation_round_count": sum(
+            int(item.get("trace", {}).get("delegation_round_count", 0)) for item in results
+        ),
+        "root_delegation_round_counts": [
+            int(item.get("trace", {}).get("root_delegation_round_count", 0)) for item in results
+        ],
+        "nested_delegation_round_count": sum(
+            int(item.get("trace", {}).get("nested_delegation_round_count", 0)) for item in results
+        ),
+        "nested_join_satisfied_count": sum(
+            int(item.get("trace", {}).get("nested_join_satisfied_count", 0)) for item in results
+        ),
+        "nested_spawn_count": sum(
+            int(item.get("trace", {}).get("nested_spawn_count", 0)) for item in results
+        ),
+        "workflows_with_nested_spawn": sum(
+            int(item.get("trace", {}).get("nested_spawn_count", 0)) > 0 for item in results
+        ),
+        "maximum_spawn_depth": max(
+            (int(item.get("trace", {}).get("maximum_spawn_depth", 0)) for item in results),
+            default=0,
+        ),
         "fanout_parent_count": sum(
             int(item.get("trace", {}).get("fanout_parent_count", 0))
             for item in results

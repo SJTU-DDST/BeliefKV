@@ -4,6 +4,50 @@
 用户明确 GPU 被占用至北京时间 2026-10-19 08:00，此前只执行 CPU 工作，
 不启动 GPU 实验，也不恢复已经停止的 Poisson V81。
 
+## 多轮与嵌套委派负载
+
+当前新实验默认 `native_in_graph_nested_2to4`。旧 prompt 已要求三轮，
+但首轮之后主要依赖提示，所有 child 都没有 task 工具，实际不能嵌套。
+本次同时修改 prompt 与真实 harness 工具图：
+
+- root 目标四轮，每轮2–4个并行 child：诊断、候选补丁审查、回归/边界
+  验证、整合后跨组件/兼容验证。root 在轮间整合证据并修改候选补丁。
+- 每轮提示指定一个 `delegation-coordinator` 处理可分解的 workstream，
+  其他 child 负责不重叠的证据。coordinator 自己用原生 task 启动一轮
+  2–4个 grandchild，等待其 JOIN 后再综合并向 root RETURN。
+- 只有 coordinator 拥有嵌套 task；它的可用角色都是叶子。实际最大
+  spawn 深度为2（root=0、child=1、grandchild=2），形成三层 agent。
+- 初始 root/coordinator 请求沿用原有 generation-time 的2–4 fanout
+  约束；后续轮数通过系统 prompt 和持久写入 tool result 的阶段指令推动。
+  不拒绝自然终态，不因未达到轮数而强制重新回答，也不制造重复调查。
+- 轮数和每轮 coordinator 是请求目标，不宣称真实模型已遵从。
+  任务有具体 blocker 时保留真实终态及未完成阶段；不删样本。
+
+所有 child 层均保留独立上下文和原生 session、完成通知、终态释放。
+grandchild 的 JOIN parent 是 coordinator；coordinator 的 RETURN 才能
+完成 root 对它的依赖。前者可为 coordinator KV 提供恢复机会，不能
+错误归为直接解锁 root。新增角色属于新的预测分布，沿用的预测头
+只能作为开发起点，不能继承旧 profile 的校准结论。
+
+计划、client manifest 和 summary 使用同一份委派合同，并核对两侧。
+新增实际 root 轮数分布、嵌套轮数/已满足 JOIN、spawn 深度分布和未知
+深度计数。未来实验继续是108+48/3600s，其他池比例、工具/输出/任务时限
+不变；native 和 predictive 都启用相同多轮嵌套形状。旧非嵌套 native
+仅作历史参考，新负载需要一次匹配的 native。
+
+逻辑机会多不等于有效预取多：仍按每个 JOIN 的直接 parent 检查安全
+输入 checkpoint、可恢复 Host-only FULL、实际提前提交与首次复用。
+同时报告增加的模型/工具工作、质量、重算、控制成本和高压段吞吐。
+不因提高 fanout 或嵌套深度就先宣称端到端收益或论文创新。
+
+CPU 验证：V1661 回归309项通过、1项环境相关跳过。真实 harness/
+LangGraph 配合受控假模型，在有/无排队控制通道两种模式下均产生四轮
+root JOIN、四轮嵌套 JOIN、16个后代与17个独立 session，通知归属、
+祖先等待及终态回收核对通过；取消样例保留3个取消与2个 JOIN_TIMEOUT，
+不作为成功 JOIN。假模型按脚本输出，不能证明真实模型已达到轮数或
+预测精度，也没有 GPU 性能结论。测试见 `tests/test_nested_delegation.py`，
+日志见 `experiments/reports/v1661_nested_delegation_final_cpu_20261018.xml`。
+
 ## 目标与已完成部分
 
 主负载恢复到 156 个互不重复任务：108 个 root 在零时到达，48 个在

@@ -399,6 +399,39 @@ def test_actual_runtime_must_match_the_registered_parallel_restore_setting(tmp_p
     main()
     assert (tmp_path / "comparison.json").is_file()
 
+def test_nested_workload_contract_must_match_the_actual_client(tmp_path, monkeypatch):
+    from beliefkv.experiments.delegation_policy import (
+        NESTED_IN_GRAPH_PROFILE, delegation_contract,
+    )
+
+    arm = tmp_path / "predictive_h2d"
+    client, _ = fixture(arm)
+    shape = delegation_contract(NESTED_IN_GRAPH_PROFILE)
+    (tmp_path / "ab_plan.json").write_text(json.dumps({
+        "order": ["predictive_h2d"], "fanout_profile": NESTED_IN_GRAPH_PROFILE,
+        "delegation_contract": shape,
+    }))
+    monkeypatch.setattr(sys, "argv", ["summarize", "--run-root", str(tmp_path)])
+    with pytest.raises(ValueError, match="mismatched nested delegation workload"):
+        main()
+    path = client / "summary.json"
+    actual = json.loads(path.read_text())
+    actual.update(subagent_fanout_profile=NESTED_IN_GRAPH_PROFILE, delegation_contract=shape)
+    path.write_text(json.dumps(actual))
+    manifest_path = client / "manifest.json"
+    manifest_path.write_text(json.dumps({
+        "config": {"subagent_fanout_profile": "native_in_graph_2to4"},
+        "delegation_contract": delegation_contract("native_in_graph_2to4"),
+    }))
+    with pytest.raises(ValueError, match="mismatched nested delegation workload"):
+        main()
+    manifest_path.write_text(json.dumps({
+        "config": {"subagent_fanout_profile": NESTED_IN_GRAPH_PROFILE},
+        "delegation_contract": shape,
+    }))
+    main()
+    assert (tmp_path / "comparison.json").is_file()
+
 
 def test_poisson_pair_freezes_one_exact_schedule_without_reordering_tasks(tmp_path, monkeypatch):
     from beliefkv.experiments.arrival_schedule import (

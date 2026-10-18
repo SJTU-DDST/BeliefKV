@@ -25,7 +25,7 @@ def test_probe_defaults_to_training_only_moderate_pressure_candidate() -> None:
         'HICACHE_SIZE_GB="${HICACHE_SIZE_GB:-200}"',
         'HOST_SPLIT="${HOST_SPLIT:-80:20}"',
         'HICACHE_WRITE_POLICY="${HICACHE_WRITE_POLICY:-write_back}"',
-        'FANOUT_PROFILE="${FANOUT_PROFILE:-native_in_graph_2to4}"',
+        'FANOUT_PROFILE="${FANOUT_PROFILE:-native_in_graph_nested_2to4}"',
     ):
         assert setting in script
     assert '--enable-beliefkv-admission --beliefkv-event-socket-path "$SOCKET"' in script

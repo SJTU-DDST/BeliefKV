@@ -19,6 +19,9 @@ from beliefkv.experiments.arrival_schedule import (
     arrival_schedule_digest, build_poisson_workflow_arrivals,
     build_workflow_arrivals, load_workflow_arrivals,
 )
+from beliefkv.experiments.delegation_policy import (
+    NESTED_IN_GRAPH_PROFILE, delegation_contract,
+)
 
 
 NON_EXECUTION_SOURCE_PATHS = (
@@ -276,10 +279,8 @@ def summarize(arm: Path) -> dict | None:
         raise ValueError("expected one workload summary")
     summary = json.loads(clients[0].read_text())
     manifest_path = clients[0].parent / "manifest.json"
-    harness_config = (
-        json.loads(manifest_path.read_text()).get("config", {})
-        if manifest_path.exists() else {}
-    )
+    manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
+    harness_config = manifest.get("config", {})
     native_path = arm / "server/native_telemetry_status.json"
     native = json.loads(native_path.read_text()) if native_path.exists() else {}
     capacity = json.loads((arm / "server/native_capacity_census.json").read_text())["capacity"]
@@ -359,6 +360,14 @@ def summarize(arm: Path) -> dict | None:
     duration = summary["duration_seconds"]
     return {
         "run": str(arm.resolve()), "duration_seconds": duration,
+        "subagent_fanout_profile": summary.get("subagent_fanout_profile"),
+        "delegation_contract": summary.get("delegation_contract"),
+        "manifest_delegation_contract": manifest.get("delegation_contract"),
+        "manifest_fanout_profile": harness_config.get("subagent_fanout_profile"),
+        "root_delegation_round_counts": summary.get("root_delegation_round_counts"),
+        "nested_delegation_round_count": summary.get("nested_delegation_round_count"),
+        "nested_spawn_count": summary.get("nested_spawn_count"),
+        "maximum_spawn_depth": summary.get("maximum_spawn_depth"),
         "sandbox_command_timeout_s": harness_config.get("sandbox_command_timeout_s"),
         "workflow_count": summary["workflow_count"], "outcomes": dict(outcomes),
         "completed_workflows_per_hour": summary["completed_workflows"] * 3600 / duration,
@@ -575,6 +584,8 @@ def main() -> None:
             for row, arrival in zip(workloads, arrivals)
         ]
         native_pair = "native" in order
+        fanout = os.environ.get("FANOUT_PROFILE", NESTED_IN_GRAPH_PROFILE)
+        shape = delegation_contract(fanout)
         patch = root / "patches/sglang-v0.5.20-beliefkv-staging.patch"
         reference_artifacts = {}
         for field, path in (
@@ -654,22 +665,16 @@ def main() -> None:
             "child_final_report_shadow": os.environ.get("CHILD_FINAL_REPORT_SHADOW", "1") == "1",
             "child_finish_chunk_shadow": True,
             "stream_http_timing_shadow": True,
-            "fanout_profile": os.environ.get("FANOUT_PROFILE", "native_in_graph_2to4"),
+            "fanout_profile": fanout,
+            "delegation_contract": shape,
             "in_graph_initial_tool_choice": "task",
             "in_graph_initial_parallel_tool_calls": True,
-            "in_graph_initial_fanout_generation_bounds": (
-                [2, 4]
-                if os.environ.get("FANOUT_PROFILE", "native_in_graph_2to4") == "native_in_graph_2to4"
-                else None
-            ),
+            "in_graph_initial_fanout_generation_bounds": shape["initial_fanout_generation_bounds"],
             "in_graph_named_task_constraint": (
                 "BeliefKV-only native task repetition; first 2to4 generation bounded "
                 "to 2-4; no response rejection; complete prompt tool schema unchanged"
             ),
-            "requested_children_per_round": (
-                [2, 4] if os.environ.get("FANOUT_PROFILE", "native_in_graph_2to4") == "native_in_graph_2to4"
-                else [1, 4]
-            ),
+            "requested_children_per_round": shape["children_per_round"],
             "join_prediction_semantics": (
                 "complete ALL membership; prefetch from the last observed unfinished child; "
                 "no joint calibration claim from marginal child intervals"
@@ -822,6 +827,13 @@ def main() -> None:
     for name, arm in arms.items():
         if arm is None:
             continue
+        if plan.get("fanout_profile") == NESTED_IN_GRAPH_PROFILE and (
+            arm.get("subagent_fanout_profile") != plan["fanout_profile"]
+            or arm.get("delegation_contract") != plan.get("delegation_contract")
+            or arm.get("manifest_fanout_profile") != plan["fanout_profile"]
+            or arm.get("manifest_delegation_contract") != plan.get("delegation_contract")
+        ):
+            raise ValueError(f"{name}: mismatched nested delegation workload")
         if (
             "sandbox_command_timeout_s" in plan
             and arm["sandbox_command_timeout_s"] != plan["sandbox_command_timeout_s"]

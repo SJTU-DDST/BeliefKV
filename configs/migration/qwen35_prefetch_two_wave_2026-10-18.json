@@ -11,7 +11,12 @@
     "initial_roots": 108,
     "second_batch_roots": 48,
     "second_batch_offset_seconds": 3600,
-    "fanout_profile": "native_in_graph_2to4",
+    "fanout_profile": "native_in_graph_nested_2to4",
+    "root_round_target": 4,
+    "children_per_round": [2, 4],
+    "maximum_spawn_depth": 2,
+    "nested_coordinator_role": "delegation-coordinator",
+    "nested_round_target": 1,
     "sampling_seed": 21
   },
   "environment": {
@@ -20,6 +25,7 @@
     "ARRIVAL_BATCH_INTERVAL_MS": "3600000",
     "ARRIVAL_RATE_PER_SECOND": "0",
     "ARM_ORDER": "predictive_h2d native",
+    "FANOUT_PROFILE": "native_in_graph_nested_2to4",
     "HOST_SPLIT": "80:20",
     "HOST_NUMA_MEMORY_POLICY": "preferred",
     "PREPARE_HOST": "1",
@@ -42,6 +48,8 @@
   "adaptive_depth_status": "cpu_policy_prototype_not_connected_to_engine",
   "acceptance": [
     "verify actual capacities, overlap support and physical_disabled=false",
+    "verify identical nested delegation contracts in both client manifests and summaries",
+    "report actual root rounds, nested rounds, successful JOINs and spawn depths rather than configured targets",
     "count early submit and next-request FULL reuse separately from demand restoration",
     "report useful recompute, duplicate loading, PREPARE consumption and control cost",
     "report all workflow outcomes, quality, mean JCT, tail and high-pressure throughput",
