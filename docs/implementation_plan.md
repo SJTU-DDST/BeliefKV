@@ -1,6 +1,29 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-16 (PDT).
+Status date: 2026-10-18 (PDT).
+
+Current CPU phase (V1670/V1671) supersedes historical research-only goals.
+Against `7f1509e`, remove repeated registration work and retain safe originally
+selected JOIN/tool targets after final capacity/residency changes. Node ownership
+is indexed for pending commands; fixed-age expiry stops at the first live entry;
+confirmed JOIN authorization precedes unrelated visible-request traversal.
+Final enqueue still drains events, recaptures the checkpoint and checks native
+allocation. It may retain fitting whole FULL extents and defer Mamba, never add
+targets, skip a missing ancestor, grant admission, or claim partial-layer loading.
+
+Validation: 1316 CPU cases plus two subtests pass. Twenty-four positive dispatch
+cases, 101 timed samples each, preserve targets, pending bytes and budgets on a
+stable tree. Native-budget/no-diagnostic 64-extent JOIN/tool P50 changes from
+4.291/4.025 ms to 3.734/3.528 ms; four-extent changes are small. These CPU fixtures
+do not establish online opportunity frequencies, DMA, reuse or end-to-end gains.
+See `docs/layer_prefetch_design_zh.md` for the evidence and remaining boundaries.
+
+Next acceptance stays on the 108+48 nested workload: count actually early FULL
+and next-request reuse, outstanding recovery and ACK-to-service waits, control
+cost, useful-prefix loss/recomputation, quality and all workflow outcomes. Keep
+predictive first and a matching native reference for the changed task contract.
+Actual layer mode remains `native_all_layers`; engine prefix/tail pause/resume
+is unimplemented. No GPU launch before 2026-10-19 08:00 Asia/Shanghai.
 
 Current steering: idea research first, with an OSDI-level systems contribution
 as the selection target. Do not continue GPU experiments or automatically

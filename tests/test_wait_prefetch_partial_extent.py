@@ -495,6 +495,7 @@ def test_partial_enqueue_reclaims_only_the_bounded_safe_input_tail_without_waiti
 
 
 @pytest.mark.parametrize("source", ("join_ticket", "tool_wait"))
+@pytest.mark.parametrize("sampling", (False, True))
 @pytest.mark.parametrize(
     "case,free_full,free_mamba,byte_limit",
     (
@@ -510,9 +511,11 @@ def test_partial_enqueue_reclaims_only_the_bounded_safe_input_tail_without_waiti
     ),
 )
 def test_successful_reclaim_reuses_only_a_complete_reserved_burst_plan(
-    source, case, free_full, free_mamba, byte_limit,
+    source, sampling, case, free_full, free_mamba, byte_limit,
 ):
     runtime, key, original, cache, _ = batch_fixture(source)
+    runtime.enable_h2d_opportunity_sampling = sampling
+    runtime._opportunity_writer = NS(record=lambda row: None, close=lambda: None)
     opportunity = replace(
         original, fits_current_free_lists=False,
         capacity_budget={"requested_full_tokens": 16, "requested_mamba_slots": 1},
@@ -545,7 +548,12 @@ def test_successful_reclaim_reuses_only_a_complete_reserved_burst_plan(
             result = runtime._reclaim_wait_prefetch_capacity(
                 key, opportunity, source=source,
             )
-        assert result.capacity_reclaim == {**diagnosis, "waiting_candidate_checks": []}
+        assert result.capacity_reclaim == (
+            {**diagnosis, "waiting_candidate_checks": []} if sampling else None
+        )
+        assert cache.reclaim_beliefkv_handoff_capacity.call_args.kwargs.get(
+            "collect_diagnostics", False,
+        ) is sampling
         if case == "fit":
             inspect.assert_not_called()
             assert result.steps == original.steps

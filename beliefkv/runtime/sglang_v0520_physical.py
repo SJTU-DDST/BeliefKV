@@ -9,7 +9,7 @@ Pool byte accounting therefore uses the caller's frozen per-token pool sizes.
 from __future__ import annotations
 
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from math import isfinite
 from time import monotonic
 from typing import Callable, KeysView, Mapping
@@ -740,6 +740,76 @@ def plan_prefetch_gpu_steps(
     return tuple(steps)
 
 
+def revalidate_prefetch_subset(
+    opportunity: SessionH2DOpportunity, selected: tuple[PrefetchLoadStep, ...],
+) -> SessionH2DOpportunity | None:
+    """Retain only selected targets from a fresh ancestor-first capacity plan."""
+    candidate = getattr(opportunity, "candidate", None)
+    if candidate is None or not selected or not opportunity.steps:
+        return None
+    current_steps = opportunity.steps
+    partial = opportunity.partial_full_step
+    if partial is not None:
+        if current_steps[-1] != replace(partial, include_mamba=False):
+            return None
+        current_steps = current_steps[:-1]
+    elif opportunity.fits_current_free_lists is not True:
+        return None
+    if not current_steps:
+        return None
+    nodes = {node.node_id: node for node in candidate.nodes}
+    selected_positions = {step.node_id: position for position, step in enumerate(selected)}
+    if len(selected_positions) != len(selected):
+        return None
+    result = []
+    previous_position = -1
+    full = mamba = deferred = 0
+    for current in current_steps:
+        position = selected_positions.get(current.node_id)
+        if position is None or position <= previous_position:
+            return None
+        for skipped in selected[previous_position + 1:position]:
+            node = nodes.get(skipped.node_id)
+            if (
+                node is None or node.creation_time != skipped.creation_time
+                or node.full_device_tokens <= 0
+                or skipped.include_mamba and not node.mamba_device_present
+            ):
+                return None
+        prior = selected[position]
+        if replace(current, include_mamba=prior.include_mamba) != prior:
+            return None
+        node = nodes.get(current.node_id)
+        if node is None or node.creation_time != current.creation_time:
+            return None
+        include_mamba = prior.include_mamba and current.include_mamba
+        missing_full = node.full_host_tokens if node.full_device_tokens == 0 else 0
+        missing_mamba = int(node.mamba_host_present and not node.mamba_device_present)
+        deferred += int(current.include_mamba and not include_mamba) * missing_mamba
+        if missing_full or include_mamba and missing_mamba:
+            result.append(
+                current if current.include_mamba == include_mamba
+                else replace(current, include_mamba=include_mamba)
+            )
+            full += missing_full
+            mamba += int(include_mamba) * missing_mamba
+        previous_position = position
+    headroom = opportunity.headroom
+    if (
+        not result or not headroom.observable
+        or full > headroom.device_full_free_tokens
+        or mamba > headroom.device_mamba_free_slots
+    ):
+        return None
+    return replace(
+        opportunity, step=result[0], steps=tuple(result),
+        required_full_tokens=full, required_mamba_slots=mamba,
+        deferred_mamba_slots=opportunity.deferred_mamba_slots + deferred,
+        partial_full_step=None, partial_full_tokens=0,
+        fits_current_free_lists=True,
+    )
+
+
 def next_shadow_backup_step(
     candidate: ActionLocalShadowCandidate,
     *,
@@ -1367,6 +1437,7 @@ class PhysicalTransactionLedger:
         self._pending_action_counts: dict[str, int] = {}
         self._pending_action_bytes: dict[str, int] = {}
         self._pending_h2d_contexts: dict[tuple[str, str, int], int] = {}
+        self._pending_nodes: set[int] = set()
         self._context_invalidated_commands: set[str] = set()
         self._history: deque[str] = deque()
         self._seen: set[str] = set()
@@ -1431,6 +1502,8 @@ class PhysicalTransactionLedger:
 
     def _retire(self, command_id: str) -> None:
         expected, _, _ = self._pending.pop(command_id)
+        for child in expected.children:
+            self._pending_nodes.difference_update(child.published_node_ids)
         self._context_invalidated_commands.discard(command_id)
         size = self._pending_action_bytes[expected.action] - sum(
             child.num_bytes for child in expected.children
@@ -1459,14 +1532,16 @@ class PhysicalTransactionLedger:
         if not self._pending:
             return ()
         now = monotonic()
-        expired = tuple(
-            command_id
-            for command_id, (_, started, _) in self._pending.items()
-            if now - started >= self.max_age_s
-        )
+        # One fixed age and monotonic insertion order put the earliest expiry
+        # first, including after an out-of-order ACK removes an interior entry.
+        expired = []
+        for command_id, (_, started, _) in self._pending.items():
+            if now - started < self.max_age_s:
+                break
+            expired.append(command_id)
         for command_id in expired:
             self._retire(command_id)
-        return expired
+        return tuple(expired)
 
     def register(self, expected: PhysicalActionExpectation) -> None:
         self.expire()
@@ -1529,13 +1604,10 @@ class PhysicalTransactionLedger:
             published.update(child.published_node_ids)
             if len(published) > self.max_nodes:
                 raise PhysicalReceiptError("command exceeds node bound")
-        if any(
-            published.intersection(part.published_node_ids)
-            for other, _, _ in self._pending.values()
-            for part in other.children
-        ):
+        if not published.isdisjoint(self._pending_nodes):
             raise PhysicalReceiptError("node already owned by a pending command")
         self._pending[expected.command_id] = (expected, monotonic(), set())
+        self._pending_nodes.update(published)
         self._pending_action_counts[expected.action] = (
             self._pending_action_counts.get(expected.action, 0) + 1
         )

@@ -1135,7 +1135,7 @@ def test_wait_full_only_payload_does_not_expand_when_state_capacity_or_byte_budg
 
 
 @pytest.mark.parametrize("change", ["state_capacity_lost", "full_extent_already_resident"])
-def test_wait_burst_rejects_state_mask_changes_that_cannot_preserve_selected_payload(change):
+def test_wait_burst_keeps_missing_full_when_state_or_residency_changes(change):
     runtime, key, opportunity, cache, _ = batch_fixture("tool_wait")
     headroom = replace(opportunity.headroom, device_mamba_free_slots=(
         0 if change == "state_capacity_lost" else 4
@@ -1164,11 +1164,16 @@ def test_wait_burst_rejects_state_mask_changes_that_cannot_preserve_selected_pay
             patch("beliefkv.runtime.sglang_v0520_physical.observe_static_full_mamba_headroom",
                   return_value=headroom):
             runtime._roll_tool_prefetch()
-            assert not runtime._issue_wait_prefetch_steps(key, selected, source="tool_wait")
-        cache.prefetch_gpu_session_nodes.assert_not_called()
-        assert runtime.physical_ledger.pending_count == 0
+            commands = runtime._issue_wait_prefetch_steps(key, selected, source="tool_wait")
+        expected_nodes = (1, 2, 3, 4) if change == "state_capacity_lost" else (1, 2, 3)
+        cache.prefetch_gpu_session_nodes.assert_called_once()
+        issued = cache.prefetch_gpu_session_nodes.call_args.kwargs["nodes"]
+        assert tuple(item[0] for item in issued) == expected_nodes
+        assert not any(item[2] for item in issued)
+        assert len(commands) == runtime.physical_ledger.pending_count == len(expected_nodes)
+        assert not runtime.completed_physical_actions
         assert not runtime.physical_disabled
-        assert runtime.counts["prefetch_burst_plan_changed"] == 1
+        assert runtime.counts["prefetch_burst_subset_revalidated"] == 1
     finally:
         runtime.close()
 

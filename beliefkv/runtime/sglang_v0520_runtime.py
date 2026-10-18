@@ -67,6 +67,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
     next_prefetch_gpu_step,
     next_shadow_backup_step,
     plan_prefetch_gpu_steps,
+    revalidate_prefetch_subset,
     prefetch_expectation_from_native_op,
     shadow_backup_steps,
     shadow_expectation_from_native_op,
@@ -3873,6 +3874,11 @@ class NativeAdmissionRuntime:
     def register_physical_action(self, expected: PhysicalActionExpectation) -> None:
         """Accept only a live causal identity; this does not issue the transfer."""
         context = self.graph.contexts.get(expected.context_id)
+        if (
+            self.physical_disabled or context is None
+            or context.epoch != expected.context_epoch
+        ):
+            raise PhysicalReceiptError("physical action has no live causal context")
         session_key = self.context_sessions.get(expected.context_id)
         invocation = (
             self.graph.invocations.get(session_key.invocation_id)
@@ -3889,7 +3895,17 @@ class NativeAdmissionRuntime:
             and invocation is not None
             and invocation.state.value in ("wait_tool", "wait_child", "wait_join")
         )
-        visible = not session_waiting and any(
+        ticket = self._join_ticket
+        confirmed_join = (
+            not session_waiting and expected.action == "PREFETCH_GPU"
+            and ticket is not None and ticket.phase == "confirmed"
+            and ticket.key.context_id == expected.context_id
+            and ticket.key.context_epoch == expected.context_epoch
+            and ticket.key.session_id == expected.session_id
+            and ticket.key.session_generation == expected.session_generation
+            and self._live_join_ticket(ticket)
+        )
+        visible = not (session_waiting or confirmed_join) and any(
             key.context_id == expected.context_id
             and key.context_epoch == expected.context_epoch
             and (
@@ -3902,22 +3918,7 @@ class NativeAdmissionRuntime:
             and not self._terminal(key)
             for key in self.visible.values()
         )
-        confirmed_join = (
-            expected.action == "PREFETCH_GPU"
-            and self._live_join_ticket()
-            and self._join_ticket is not None
-            and self._join_ticket.phase == "confirmed"
-            and self._join_ticket.key.context_id == expected.context_id
-            and self._join_ticket.key.context_epoch == expected.context_epoch
-            and self._join_ticket.key.session_id == expected.session_id
-            and self._join_ticket.key.session_generation == expected.session_generation
-        )
-        if (
-            self.physical_disabled
-            or context is None
-            or context.epoch != expected.context_epoch
-            or not (visible or session_waiting or confirmed_join)
-        ):
+        if not (visible or session_waiting or confirmed_join):
             raise PhysicalReceiptError("physical action has no live causal context")
         self.physical_ledger.register(expected)
 
@@ -6840,13 +6841,27 @@ class NativeAdmissionRuntime:
             return ()
         # Capture once after draining causal events. Native rechecks allocation,
         # ancestry and generation for every node in this same ordered burst.
+        selected_count = len(steps)
         fresh = self._wait_prefetch_opportunity(
             key, max_steps=len(steps), fit_current_capacity=True,
         )
         if (
-            fresh is None or fresh.fits_current_free_lists is not True
-            or fresh.partial_full_step is not None
-            or len(fresh.steps) != len(steps)
+            fresh is not None and (
+                fresh.steps != steps or fresh.partial_full_step is not None
+            )
+        ):
+            subset = revalidate_prefetch_subset(fresh, steps)
+            if subset is not None:
+                fresh = subset
+                steps = fresh.steps
+                self.counts["prefetch_burst_subset_revalidated"] += 1
+                self._record_wait_prefetch_plan(
+                    source, key, fresh, reason="enqueue_selected_subset",
+                    join_id_override=join_id,
+                )
+        if (
+            fresh is None or fresh.fits_current_free_lists is not True or not fresh.steps
+            or fresh.partial_full_step is not None or fresh.steps != steps
         ):
             self.counts["prefetch_burst_plan_changed"] += 1
             self._record_wait_prefetch_plan(
@@ -6854,39 +6869,6 @@ class NativeAdmissionRuntime:
                 join_id_override=join_id,
             )
             return ()
-        if fresh.steps != steps:
-            nodes = {
-                node.node_id: node for node in fresh.candidate.nodes
-            } if fresh.candidate is not None else {}
-            if not all(
-                current == selected or (
-                    current.include_mamba and not selected.include_mamba
-                    and replace(current, include_mamba=False) == selected
-                    and current.node_id in nodes
-                    and nodes[current.node_id].full_device_tokens == 0
-                    and nodes[current.node_id].full_host_tokens > 0
-                )
-                for current, selected in zip(fresh.steps, steps)
-            ):
-                self.counts["prefetch_burst_plan_changed"] += 1
-                self._record_wait_prefetch_plan(
-                    source, key, fresh, reason="enqueue_prefix_changed",
-                    join_id_override=join_id,
-                )
-                return ()
-            dropped_mamba = sum(
-                int(nodes[current.node_id].mamba_host_present
-                    and not nodes[current.node_id].mamba_device_present)
-                for current, selected in zip(fresh.steps, steps)
-                if current.include_mamba and not selected.include_mamba
-            )
-            # Capacity growth may offer a combined restore. Keep the selected
-            # FULL-only payload and estimate its timing without the later state.
-            fresh = replace(
-                fresh, step=steps[0], steps=steps,
-                required_mamba_slots=fresh.required_mamba_slots - dropped_mamba,
-                deferred_mamba_slots=fresh.deferred_mamba_slots + dropped_mamba,
-            )
         if not self._wait_prefetch_timing_valid(
             key, fresh, source, service_shape=service_shape,
         ):
@@ -6965,7 +6947,7 @@ class NativeAdmissionRuntime:
             self.counts[f"{source}_burst_nodes"] += len(issued)
             self._record_wait_prefetch_plan(
                 source, key, fresh,
-                reason="submitted" if len(issued) == len(steps) else "submitted_partial",
+                reason="submitted" if len(issued) == selected_count else "submitted_partial",
             )
             self._reclaim_wait_prefetch_tail_capacity(
                 key, fresh, steps[:len(issued)], source=source,

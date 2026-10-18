@@ -20,6 +20,9 @@ def assert_pending_indexes(ledger):
         (item.context_id, item.session_id, item.session_generation)
         for item in pending if item.action == "PREFETCH_GPU" and item.session_id is not None
     }
+    assert ledger._pending_nodes == {
+        node for item in pending for part in item.children for node in part.published_node_ids
+    }
     for action in ("PREPARE_HOST", "PREFETCH_GPU"):
         assert ledger.pending_action_bytes(action) == sum(
             part.num_bytes for item in pending if item.action == action for part in item.children
@@ -97,6 +100,34 @@ def test_restore_budget_queries_do_not_traverse_registered_commands():
         assert ledger.pending_action_bytes("PREFETCH_GPU") == 32
         assert ("ctx", "s", 1) in ledger.pending_h2d_contexts
         assert len(ledger.pending_h2d_contexts) == 1
+
+
+def test_node_conflicts_and_expiry_follow_transaction_lifetime_with_interior_removal():
+    ledger = PhysicalTransactionLedger(max_age_s=2.5)
+    clock = [0.]
+    with patch("beliefkv.runtime.sglang_v0520_physical.monotonic", lambda: clock[0]):
+        for number in range(3):
+            clock[0] = float(number)
+            ledger.register(expected(
+                str(number), children=(child(10 + number, (10 + number,), 10, 0, 10),),
+            ))
+        ledger.cancel_unsubmitted("1")
+        assert_pending_indexes(ledger)
+        clock[0] = 2.5
+        assert ledger.expire() == ("0",)
+        assert_pending_indexes(ledger)
+        ledger.register(expected("replacement", children=(child(10, (10,), 10, 0, 10),)))
+        with pytest.raises(PhysicalReceiptError, match="already owned"):
+            ledger.register(expected("collision", children=(child(12, (12,), 10, 0, 10),)))
+        assert_pending_indexes(ledger)
+        clock[0] = 4.49
+        assert ledger.expire() == ()
+        clock[0] = 4.5
+        assert ledger.expire() == ("2",)
+        assert_pending_indexes(ledger)
+        clock[0] = 5.
+        assert ledger.expire() == ("replacement",)
+        assert_pending_indexes(ledger)
 
 
 def test_disabled_profiling_avoids_scope_construction_but_keeps_final_runtime_evidence(

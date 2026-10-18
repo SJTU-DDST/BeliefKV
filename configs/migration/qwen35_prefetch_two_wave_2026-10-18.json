@@ -52,6 +52,8 @@
     "verify identical nested delegation contracts in both client manifests and summaries",
     "report actual root rounds, nested rounds, successful JOINs and spawn depths rather than configured targets",
     "count early submit and next-request FULL reuse separately from demand restoration",
+    "verify final live-plan shrink preserves only originally selected whole FULL extents within current reserves, with deferred Mamba and unchanged native execution dependencies",
+    "audit enqueue_selected_subset and submitted_partial against actual native submissions, ACKs and next-request reuse; plan changes alone are not useful coverage",
     "separate terminal private KV reclamation, Host-backed HBM eviction, loss of recoverable copies and subsequent useful-prefix recomputation",
     "report Host eviction reaccess, cached input/device/Host tokens, same-session common-input loss, native dropped-token and retraction evidence with coverage; absent evidence is unknown",
     "report useful recompute, duplicate loading, PREPARE consumption and control cost; detailed CPU scopes are opt-in and disabled scopes are unmeasured",
