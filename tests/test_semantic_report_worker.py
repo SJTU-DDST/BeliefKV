@@ -47,7 +47,11 @@ def queue_worker():
     worker._outputs = context.Queue(maxsize=2)
     worker._result_poller = select.poll()
     worker._result_poller.register(worker._outputs._reader, select.POLLIN)
-    worker._process = NS(is_alive=Mock(return_value=True))
+    exit_reader, exit_writer = context.Pipe(duplex=False)
+    worker._exit_sentinel = exit_reader.fileno()
+    worker._result_poller.register(worker._exit_sentinel, select.POLLIN)
+    worker._test_exit_writer = exit_writer
+    worker._process = NS(is_alive=Mock(return_value=True), join=Mock())
     worker._pending = OrderedDict()
     worker._active = False
     worker._started = time.monotonic()
@@ -61,6 +65,8 @@ def queue_worker():
         for queue in (worker._inputs, worker._outputs):
             queue.close()
             queue.join_thread()
+        exit_reader.close()
+        exit_writer.close()
 
 
 def test_empty_poll_then_ready_dispatches_pending_input_without_delay(queue_worker):
@@ -102,7 +108,7 @@ def test_empty_result_queue_does_not_delay_worker_failure_detection(queue_worker
     worker = queue_worker
     worker._started = 0.
     if failure == "exit":
-        worker._process.is_alive.return_value = False
+        worker._test_exit_writer.send_bytes(b"exit")
         expected = "semantic worker exited"
     else:
         if failure == "inference_timeout":
@@ -112,6 +118,54 @@ def test_empty_result_queue_does_not_delay_worker_failure_detection(queue_worker
         assert worker.poll() == ()
     assert worker.disabled
     assert worker.error == expected
+    if failure == "exit":
+        worker._process.join.assert_called_once_with(timeout=0)
+
+
+@pytest.mark.parametrize("inflight", (False, True))
+def test_empty_poll_uses_exit_readiness_without_process_liveness_syscall(queue_worker, inflight):
+    worker = queue_worker
+    worker.ready, worker._active = True, inflight
+    assert worker.poll() == ()
+    worker._process.is_alive.assert_not_called()
+
+
+def exit_on_release(started, release):
+    started.set()
+    release.wait(timeout=10)
+
+
+@pytest.mark.parametrize("inflight", (False, True))
+@pytest.mark.parametrize("queued_reply", (False, True))
+def test_real_process_exit_wins_over_queued_result_without_delaying_failure(
+    queue_worker, inflight, queued_reply,
+):
+    worker = queue_worker
+    context = mp.get_context("spawn")
+    started, release = context.Event(), context.Event()
+    process = context.Process(target=exit_on_release, args=(started, release))
+    process.start()
+    worker._result_poller.unregister(worker._exit_sentinel)
+    worker._process = process
+    worker._exit_sentinel = process.sentinel
+    worker._result_poller.register(worker._exit_sentinel, select.POLLIN)
+    worker.ready, worker._active = True, inflight
+    try:
+        assert started.wait(timeout=5)
+        if queued_reply:
+            worker._outputs.put(("result", ("discard-after-exit",)))
+            assert select.select([worker._outputs._reader], [], [], 1)[0]
+        release.set()
+        process.join(timeout=5)
+        assert not process.is_alive()
+        assert worker.poll() == ()
+        assert worker.disabled and worker.error == "semantic worker exited"
+    finally:
+        release.set()
+        if process.is_alive():
+            process.terminate()
+            process.join(timeout=2)
+        process.close()
 
 
 @pytest.mark.skipif(not ARTIFACT.exists(), reason="local pinned encoder artifact required")

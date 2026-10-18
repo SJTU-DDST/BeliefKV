@@ -5,6 +5,40 @@ Status date: 2026-10-18 (PDT).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Main now shares result-pipe and process-exit readiness in both predictor workers.
+It removes repeated idle is_alive/waitpid checks without adding a result-delivery
+timer; exit wins over queued results, semantic exit is reaped with join(timeout=0),
+and startup/inference timeouts remain. V1790 passes 1178 related runtime/report
+CPU checks. V1784/V1789 use actual spawned processes/queues and preserve inputs,
+replies and lifecycle; V1796 binds final source, test and benchmark hashes.
+Empty-poll P50 improves; ready-result costs vary, including
+an earlier semantic mean regression in V1785. No whole-run/GPU benefit is proven.
+Keep this and earlier main fixes outside both frozen V82b arms.
+
+The comparison reporter now adds common system/native-agent eligible task
+intersections and JCT statistics without dropping the original completed cohort.
+Unknown flags/correctness remain unknown, exclusions stay visible, and duplicate
+identities/invalid completed durations are rejected. V1781 has 106 passing report
+checks; V1782 is only a predictive membership self-check (156 system, 148 strict),
+not a native comparison. Use the updated main reporter after native completes;
+do not rewrite collection provenance or imply that intervention-filtered results
+are an unbiased causal KV-policy gain.
+
+V1787/V1788 cover both arms' complete 600-2400s windows: decode throughput is
+1102.72/1263.33 token/s and GPU utilization 84.385/95.071% (predictive/native).
+Sustained batch48 graph/context bins are near native; batch47 and short-prefill
+turnover remain slower. V1792's 16-token work/prefix matching gives a 1.402
+short-prefill worker-interval ratio, 1.617 after neighbor matching with a different
+matched population. Prioritize turnover/restore/short-prefill control attribution.
+These are descriptive windows, not exclusive forward timing or final paired JCT.
+
+V1793/V1795 use existing turnover probes, not new online instrumentation.
+For220/196 proven decode47-prefill1-decode48 neighbors, run_batch return to next
+run_batch entry averages7.689/2.787ms, with post-launch physical wall2.284/0.00267ms.
+Treat missing phases as unknown and overlap by union, not additive cost. Validate
+existing main empty-restore/budget fixes on this path next; worker polling alone
+does not resolve the observed selection/run_batch/turnover differences.
+
 V1774 seals the completed predictive inputs. V1780 binds all 40354 native
 lifetimes and 18902 distinct successor requests/18904 independent waits, without
 missing service sequence numbers or open/unbound requests. Final Host FULL/Mamba

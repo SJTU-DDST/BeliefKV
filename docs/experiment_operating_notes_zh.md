@@ -7,6 +7,31 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 后续开发固定在主目录 `/home/longhao/experiment/BeliefKV` 的 `main` 分支。
 历史实验 worktree 保留其冻结来源；新代码修改、验证与提交在主目录进行。
 
+**预测worker退出轮询。**结果pipe和进程sentinel共用poller，不增加交付
+周期；同轮退出/结果都就绪时继续优先失效，semantic须用零等待join回收。
+提交/关闭检查与启动、推理超时保留。V1790有1178项相关CPU通过，不包含
+全部仓库/旧版本adapter合同。V1784/V1789的真实spawn/队列测量只代表
+poll/dispatch局部成本，结果就绪路径保留波动和V1785的均值变慢证据。
+当前V82b两侧仍为ab951b9，不热改worker或模型来混合本轮结果。
+
+**JCT资格分组。**更新后的main报告保留原全部completed结果，并新增两侧
+均明确True的system/native-agent同任务交集；不能只比较两侧有效数量，
+不能从completed/measurement_valid推断自然终态或正确性。未知标志与
+task_correctness_valid保持未知，逐任务排除原因保留。V1781有106项CPU
+报告检查通过，V1782的156/148仅为predictive单侧自检；不能充作native
+对照、质量评分或原gate通过。完整native结束后再生成共同集合的JCT。
+
+V1787/V1788已覆盖两侧600–2400s窗口，时钟按PDT原始采样并经client
+单调时钟核对。V1792匹配16-token工作量/前缀后短prefill比1.402，进一步
+匹配邻居后比1.617；两种匹配人口不同，精确单token+邻居无足够共同样本。
+worker/launch区间包含overlap与调度处理，不能当独占forward或可省JCT；
+缺失详细控制计时仍记未知，优先排查周转路径，不归因成GPU kernel变慢。
+
+V1793/V1795继续复用原有周转探针与密封相邻身份；220/196个47→1→48
+样本的返回→下一run_batch进入均值7.689/2.787ms，不是CUDA空闲。
+物理控制墙钟是该区间的子集，不可再与整个间隔相加；未知部分不推CPU。
+这些新观察不代表main空规划、预算或worker改动已部署/解决主要性能差距。
+
 **完整观察与移交审计。**V1774/V1780是predictive完成后的新观察，不能
 把旧密封前缀中的未知RETURN补成已知。最终40354条原生生命周期全部
 闭合，18904个独立wait绑定18902个不同后继请求；同一后继可对应多个

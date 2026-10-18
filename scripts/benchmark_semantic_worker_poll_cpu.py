@@ -74,6 +74,9 @@ def fixture(worker_class):
     worker.error = ""
     worker.dropped = 0
     worker._process.start()
+    worker._exit_sentinel = worker._process.sentinel
+    if worker_class is SemanticReportWorker:
+        worker._result_poller.register(worker._exit_sentinel, select.POLLIN)
     if not select.select([worker.fileno()], [], [], 20)[0]:
         worker.close()
         raise RuntimeError("echo worker startup timed out")

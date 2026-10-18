@@ -94,6 +94,9 @@ def fixture(worker_class):
     worker.disabled = False
     worker._closed = False
     worker._process.start()
+    worker._exit_sentinel = worker._process.sentinel
+    if worker_class is NativePredictorWorker:
+        worker._result_poller.register(worker._exit_sentinel, select.POLLIN)
     if not select.select([worker.fileno()], [], [], 20)[0]:
         worker.close()
         raise RuntimeError("echo worker startup timed out")

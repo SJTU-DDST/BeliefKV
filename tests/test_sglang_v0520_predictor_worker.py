@@ -6,6 +6,7 @@ from queue import Queue
 import select
 import time
 from types import SimpleNamespace as NS
+from unittest.mock import patch
 
 import pytest
 
@@ -68,11 +69,26 @@ def fake_context(monkeypatch):
 
     class FakeProcess:
         def __init__(self, **kwargs):
-            self.alive = False
+            self._exit_reader, self._exit_writer = worker_module.mp.Pipe(duplex=False)
+            self._alive = False
             self.stuck = False
             self.joins = []
             self.terminated = False
             self.killed = False
+
+        @property
+        def sentinel(self):
+            return self._exit_reader.fileno()
+
+        @property
+        def alive(self):
+            return self._alive
+
+        @alive.setter
+        def alive(self, value):
+            if self._alive and not value:
+                self._exit_writer.send_bytes(b"exit")
+            self._alive = value
 
         def start(self):
             self.alive = True
@@ -103,7 +119,12 @@ def fake_context(monkeypatch):
 
     context = FakeContext()
     monkeypatch.setattr(worker_module.mp, "get_context", lambda method: context)
-    return context
+    try:
+        yield context
+    finally:
+        if hasattr(context, "process"):
+            context.process._exit_reader.close()
+            context.process._exit_writer.close()
 
 
 def test_predict_batch_skips_unsupported_and_ood_heads():
@@ -711,13 +732,15 @@ def test_spawned_tool_wait_completion_wakes_output_fd(tmp_path):
     assert worker.fileno() is None
 
 
-def test_spawned_worker_fails_closed_when_child_exits(tmp_path):
+@pytest.mark.parametrize("inflight", (False, True))
+def test_spawned_worker_fails_closed_when_child_exits(tmp_path, inflight):
     path = tmp_path / "empty.json"
     FrontierBeliefModel().save(path)
     worker = NativePredictorWorker(str(path), "a" * 64)
     try:
-        worker.submit(batch("old"))
-        worker.submit(batch("new"))
+        if inflight:
+            worker.submit(batch("old"))
+            worker.submit(batch("new"))
         worker._process.terminate()
         worker._process.join(timeout=2)
         assert not worker._process.is_alive()
@@ -725,5 +748,18 @@ def test_spawned_worker_fails_closed_when_child_exits(tmp_path):
         assert worker.disabled
         assert worker.failure_count == 1
         assert not any(worker._pending.values())
+    finally:
+        worker.close()
+
+
+@pytest.mark.parametrize("inflight", (False, True))
+def test_empty_native_poll_uses_exit_readiness_without_liveness_syscall(fake_context, inflight):
+    worker = NativePredictorWorker("unused", "a" * 64)
+    try:
+        if inflight:
+            worker.submit(batch("old"))
+        with patch.object(worker._process, "is_alive") as alive:
+            assert worker.poll() == ()
+            alive.assert_not_called()
     finally:
         worker.close()

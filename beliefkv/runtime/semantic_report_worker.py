@@ -88,6 +88,8 @@ class SemanticReportWorker:
             target=_worker_main, args=(artifact, self._inputs, self._outputs), daemon=True,
         )
         self._process.start()
+        self._exit_sentinel = self._process.sentinel
+        self._result_poller.register(self._exit_sentinel, select.POLLIN)
         self._pending: OrderedDict[str, SemanticReportInput] = OrderedDict()
         self._active = False
         self._started = time.monotonic()
@@ -134,15 +136,17 @@ class SemanticReportWorker:
     def poll(self) -> tuple[SemanticReportReply, ...]:
         if self.disabled:
             return ()
-        if not self._process.is_alive():
+        ready = self._result_poller.poll(0)
+        if ready and any(fd == self._exit_sentinel for fd, _ in ready):
+            self._process.join(timeout=0)
             self.disabled, self.error = True, "semantic worker exited"
             return ()
         if time.monotonic() - self._started > (10. if self.ready and self._active else 60.):
             if self._active or not self.ready:
                 self.disabled, self.error = True, "semantic worker timed out"
                 return ()
-        # Queue.get_nowait constructs a selector even when no result is available.
-        if not self._result_poller.poll(0):
+        # The shared probe also detects process exit without a per-poll waitpid.
+        if not ready:
             return ()
         try:
             kind, values = self._outputs.get_nowait()

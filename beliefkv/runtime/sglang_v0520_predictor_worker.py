@@ -222,6 +222,8 @@ class NativePredictorWorker:
             daemon=True,
         )
         self._process.start()
+        self._exit_sentinel = self._process.sentinel
+        self._result_poller.register(self._exit_sentinel, select.POLLIN)
         self._active_sequence: int | None = None
         self._active_kind: str | None = None
         self._started_at: float | None = None
@@ -341,7 +343,12 @@ class NativePredictorWorker:
     ) -> tuple[NativeDemandHint | NativeToolWaitHint | NativeJoinWaitHint, ...]:
         if self.disabled or self._closed:
             return ()
-        if not self._process.is_alive():
+        try:
+            ready = self._result_poller.poll(0)
+        except (OSError, ValueError):
+            self._fail()
+            return ()
+        if ready and any(fd == self._exit_sentinel for fd, _ in ready):
             self._fail()
             return ()
         if self._active_sequence is None:
@@ -352,8 +359,8 @@ class NativePredictorWorker:
             self._fail()
             return ()
         try:
-            # Reuse the readiness probe; an empty Queue.get_nowait builds a selector.
-            if not self._result_poller.poll(0):
+            # One readiness probe covers both the result pipe and process exit.
+            if not ready:
                 return ()
             response = self._output_queue.get_nowait()
         except Empty:
