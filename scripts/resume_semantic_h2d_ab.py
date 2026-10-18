@@ -42,6 +42,17 @@ def resume_environment(plan: dict, run_root: Path, *, python: str, port: int) ->
         "TRANSFER_SERVICE_SEED": plan["transfer_service_seed"],
         "ENABLE_TOOL_TIMING": int(plan["tool_timing_enabled"]),
         "PREFETCH_LEAD_MS": plan["prefetch_lead_ms"],
+        "JOIN_PREFETCH_MIN_ADVANCE_MS": plan.get("join_prefetch_min_advance_ms", 0),
+        "TOOL_PREFETCH_MIN_ADVANCE_MS": plan.get("tool_prefetch_min_advance_ms", 0),
+        "PARALLEL_WAIT_PREFETCH": int(plan.get("parallel_wait_prefetch", False)),
+        "WAIT_PREFETCH_CONTEXTS": plan.get("wait_prefetch_contexts", 1),
+        "PREDICTION_MAINTENANCE_INTERVAL_MS": plan.get(
+            "prediction_maintenance_interval_ms", 0,
+        ),
+        "H2D_OPPORTUNITY_SAMPLING": int(
+            plan["policy_configuration"]["predictive_h2d"].get("h2d_opportunity_sampling", True)
+        ),
+        "TERMINAL_CACHE_DIAGNOSTICS": int(plan.get("terminal_cache_diagnostics", True)),
         "SEMANTIC_WORK_STATISTIC": plan["semantic_work_statistic"],
         "EOS_PROTOCOL_WINDOW_MS": plan["eos_protocol_window_ms"],
         "FANOUT_PROFILE": plan["fanout_profile"],

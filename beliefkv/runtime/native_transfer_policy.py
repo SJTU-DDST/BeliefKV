@@ -17,29 +17,35 @@ class TransferStartWindow:
     service_ceiling_bytes: int | None = None
     service_ceiling_shape: str | None = None
     planning_slack_ms: float = 0.
+    minimum_advance_ms: float = 0.
 
 
 def transfer_start_window(
     estimate: NativeServiceEstimate, *, max_lead_ms: float, observation_spacing_ms: float,
     prediction_early_ms: float = 0., planning_slack_ms: float = 0.,
+    minimum_advance_ms: float = 0.,
 ) -> TransferStartWindow | None:
     """Include early completion uncertainty within the residence allowance."""
     service_ms = estimate.submit_to_ack_p90_ms
     enqueue_ms = estimate.enqueue_to_submit_p90_ms or 0.
     if not all(math.isfinite(value) and value >= 0 for value in (
         service_ms, enqueue_ms, max_lead_ms, observation_spacing_ms, prediction_early_ms,
-        planning_slack_ms,
+        planning_slack_ms, minimum_advance_ms,
     )):
         return None
     return TransferStartWindow(
         service_ms, enqueue_ms,
         min(
             max_lead_ms,
-            service_ms + enqueue_ms + observation_spacing_ms
-            + prediction_early_ms + planning_slack_ms,
+            max(
+                minimum_advance_ms,
+                service_ms + enqueue_ms + observation_spacing_ms
+                + prediction_early_ms + planning_slack_ms,
+            ),
         ),
         prediction_early_ms,
         planning_slack_ms=planning_slack_ms,
+        minimum_advance_ms=minimum_advance_ms,
     )
 
 
@@ -69,16 +75,17 @@ def native_residency_budget(
     protected_bytes: int,
     evictable_full_tokens: int = 0,
     evictable_mamba_slots: int = 0,
+    restore_frontier_slots: int = 1,
 ) -> PrefetchResidencyBudget:
     # Cache restoration does not allocate a request row. A full decode batch
-    # may overlap one frontier restore with its next completion, even while
-    # all rows are occupied. Native admission still requires an actual row.
+    # may overlap a bounded number of restores with its next completions, even
+    # while all rows are occupied. Native admission still requires an actual row.
     rows = max(0, available_request_rows)
     if rows == 0 and running_requests >= max_running_requests > 0:
-        rows = 1
+        rows = restore_frontier_slots
     slots = max(0, min(
         rows, prefill_slots,
-        max(1, max_running_requests - running_requests),
+        max(restore_frontier_slots, max_running_requests - running_requests),
     ))
     full_reserve = max(0, input_token_reserve) + max(1, page_size) * (
         running_requests + slots

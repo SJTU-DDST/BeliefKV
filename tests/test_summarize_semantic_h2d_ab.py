@@ -355,6 +355,50 @@ def test_native_pair_freezes_disjoint_108_plus_48_fixed_arrivals(tmp_path, monke
     assert plan["order"] == ["native", "predictive_h2d"]
     assert plan["formal_repetition_order"] == ["predictive_h2d native"]
 
+def test_optimized_prefetch_configuration_survives_plan_environment_roundtrip(tmp_path, monkeypatch):
+    from scripts.resume_semantic_h2d_ab import resume_environment
+
+    artifact = tmp_path / "model.json"
+    artifact.write_text("{}")
+    manifest = tmp_path / "workload.json"
+    manifest.write_text(json.dumps({"workloads": [{"instance_id": "task"}]}))
+    monkeypatch.setattr(sys, "argv", [
+        "summarize", "--run-root", str(tmp_path), "--initialize", "--root-count", "1",
+        "--semantic-artifact", str(artifact), "--workload-manifest", str(manifest),
+        "--join-prefetch-min-advance-ms", "1000", "--tool-prefetch-min-advance-ms", "500",
+        "--parallel-wait-prefetch", "1", "--wait-prefetch-contexts", "2",
+        "--prediction-maintenance-interval-ms", "100",
+        "--h2d-opportunity-sampling", "0", "--terminal-cache-diagnostics", "0",
+    ])
+    main()
+    plan = json.loads((tmp_path / "ab_plan.json").read_text())
+    assert not plan["policy_configuration"]["predictive_h2d"]["h2d_opportunity_sampling"]
+    for field in ("h2d_seed_artifact", "tool_timing_artifact", "transfer_service_seed"):
+        plan.setdefault(field, "")
+    env = resume_environment(plan, tmp_path, python="/python", port=18454)
+    assert env["JOIN_PREFETCH_MIN_ADVANCE_MS"] == "1000.0"
+    assert env["TOOL_PREFETCH_MIN_ADVANCE_MS"] == "500.0"
+    assert env["PARALLEL_WAIT_PREFETCH"] == "1"
+    assert env["WAIT_PREFETCH_CONTEXTS"] == "2"
+    assert env["PREDICTION_MAINTENANCE_INTERVAL_MS"] == "100.0"
+    assert env["H2D_OPPORTUNITY_SAMPLING"] == env["TERMINAL_CACHE_DIAGNOSTICS"] == "0"
+
+def test_actual_runtime_must_match_the_registered_parallel_restore_setting(tmp_path, monkeypatch):
+    arm = tmp_path / "predictive_h2d"
+    fixture(arm)
+    (tmp_path / "ab_plan.json").write_text(json.dumps({
+        "order": ["predictive_h2d"], "parallel_wait_prefetch": True,
+    }))
+    monkeypatch.setattr(sys, "argv", ["summarize", "--run-root", str(tmp_path)])
+    with pytest.raises(ValueError, match="mismatched parallel_wait_prefetch"):
+        main()
+    path = arm / "opportunities/admission_opportunities.jsonl"
+    actual = json.loads(path.read_text())
+    actual["parallel_wait_prefetch"] = True
+    path.write_text(json.dumps(actual) + "\n")
+    main()
+    assert (tmp_path / "comparison.json").is_file()
+
 
 def test_poisson_pair_freezes_one_exact_schedule_without_reordering_tasks(tmp_path, monkeypatch):
     from beliefkv.experiments.arrival_schedule import (

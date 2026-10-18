@@ -439,6 +439,31 @@ class NativeAdmissionRuntime:
         if not math.isfinite(lead_setting) or lead_setting < 0:
             raise ValueError("prefetch lead must be finite and nonnegative")
         self.prefetch_lead_ms = lead_setting
+        self.join_prefetch_min_advance_ms = float(os.environ.get(
+            "BELIEFKV_JOIN_PREFETCH_MIN_ADVANCE_MS", "0",
+        ))
+        self.tool_prefetch_min_advance_ms = float(os.environ.get(
+            "BELIEFKV_TOOL_PREFETCH_MIN_ADVANCE_MS", "0",
+        ))
+        self._prediction_maintenance_interval_ms = float(os.environ.get(
+            "BELIEFKV_PREDICTION_MAINTENANCE_INTERVAL_MS", "0",
+        ))
+        if not all(math.isfinite(value) and value >= 0 for value in (
+            self.join_prefetch_min_advance_ms, self.tool_prefetch_min_advance_ms,
+            self._prediction_maintenance_interval_ms,
+        )):
+            raise ValueError("prefetch advance and maintenance intervals must be finite and nonnegative")
+        parallel_setting = os.environ.get("BELIEFKV_PARALLEL_WAIT_PREFETCH", "0")
+        if parallel_setting not in ("0", "1"):
+            raise ValueError("parallel wait prefetch must be 0 or 1")
+        self._parallel_wait_prefetch = parallel_setting == "1"
+        self._wait_prefetch_contexts = int(os.environ.get("BELIEFKV_WAIT_PREFETCH_CONTEXTS", "1"))
+        if not 1 <= self._wait_prefetch_contexts <= 2:
+            raise ValueError("wait prefetch contexts must be one or two")
+        self._prediction_maintenance_next_ms = 0.
+        self._prediction_maintenance_graph_version = -1
+        self._lease_refresh_signature = None
+        self._lease_refresh_next_ms = 0.
         self.semantic_work_statistic = os.environ.get(
             "BELIEFKV_SEMANTIC_WORK_STATISTIC", "upper",
         )
@@ -1776,29 +1801,7 @@ class NativeAdmissionRuntime:
             self._retry_terminal_child_reclaims(now_ms=now_ms)
         if self._semantic_worker is not None:
             self._poll_semantic_reports(now_ms)
-        for join_id, stage in tuple(self._final_stages.items()):
-            if not self._live_final_stage(stage):
-                self._clear_final_stage(join_id)
-        expired_tool = [
-            context for context, hint in self.tool_wait_hints.items()
-            if not hint.live(hint.key, now_ms=now_ms)
-        ]
-        for context in expired_tool:
-            self.tool_wait_hints.pop(context)
-        if expired_tool:
-            self.shadow_candidate = None
-            self.counts["tool_wait_expired"] += len(expired_tool)
-        expired_join = [
-            join_id for join_id, hint in self.join_wait_hints.items()
-            if not self._live_join_hint(hint)
-        ]
-        for join_id in expired_join:
-            self.join_wait_hints.pop(join_id)
-        self.counts["join_wait_expired"] += len(expired_join)
-        self._completion_hints = {
-            join_id: hint for join_id, hint in self._completion_hints.items()
-            if self._live_completion_hint(hint)
-        }
+        self._maintain_prediction_state(now_ms)
         if self._model_worker is not None:
             hints = self._model_worker.poll()
             for hint in hints:
@@ -1883,6 +1886,45 @@ class NativeAdmissionRuntime:
         if not defer_observations:
             self.sample_runtime_observations(waiting_queue, now_ms=now_ms)
 
+    def _maintain_prediction_state(self, now_ms: float) -> None:
+        version = self.graph.graph_version
+        if (
+            version == self._prediction_maintenance_graph_version
+            and now_ms < self._prediction_maintenance_next_ms
+        ):
+            self.counts["prediction_maintenance_deferred"] += 1
+            return
+        self._prediction_maintenance_graph_version = version
+        self._prediction_maintenance_next_ms = (
+            now_ms + self._prediction_maintenance_interval_ms
+        )
+        self.counts["prediction_maintenance_sweeps"] += 1
+        # Transfer selection and enqueue still validate every live identity and
+        # expiry; this sweep only retires stale prediction bookkeeping.
+        for join_id, stage in tuple(self._final_stages.items()):
+            if not self._live_final_stage(stage):
+                self._clear_final_stage(join_id)
+        expired_tool = [
+            context for context, hint in self.tool_wait_hints.items()
+            if not hint.live(hint.key, now_ms=now_ms)
+        ]
+        for context in expired_tool:
+            self.tool_wait_hints.pop(context)
+        if expired_tool:
+            self.shadow_candidate = None
+            self.counts["tool_wait_expired"] += len(expired_tool)
+        expired_join = [
+            join_id for join_id, hint in self.join_wait_hints.items()
+            if not self._live_join_hint(hint)
+        ]
+        for join_id in expired_join:
+            self.join_wait_hints.pop(join_id)
+        self.counts["join_wait_expired"] += len(expired_join)
+        self._completion_hints = {
+            join_id: hint for join_id, hint in self._completion_hints.items()
+            if self._live_completion_hint(hint)
+        }
+
     def sample_runtime_observations(
         self, waiting_queue: Sequence[object] = (), *, now_ms: float | None = None,
     ) -> None:
@@ -1945,6 +1987,11 @@ class NativeAdmissionRuntime:
                 "tool_prefetch": self.enable_tool_prefetch,
                 "tool_prefetch_planning_slack_ms": TOOL_PREFETCH_PLANNING_SLACK_MS,
                 "prefetch_lead_ms": self.prefetch_lead_ms,
+                "join_prefetch_min_advance_ms": self.join_prefetch_min_advance_ms,
+                "tool_prefetch_min_advance_ms": self.tool_prefetch_min_advance_ms,
+                "parallel_wait_prefetch": self._parallel_wait_prefetch,
+                "wait_prefetch_contexts": self._wait_prefetch_contexts,
+                "prediction_maintenance_interval_ms": self._prediction_maintenance_interval_ms,
                 "semantic_work_statistic": self.semantic_work_statistic,
                 "final_admission_policy": "remaining_report_work",
                 "eos_protocol_window_ms": self.eos_protocol_window_ms,
@@ -2747,7 +2794,7 @@ class NativeAdmissionRuntime:
         if not enough_service:
             self.counts["final_stage_no_h2d_service_evidence"] += 1
             return
-        if self.physical_ledger.pending_action_count("PREFETCH_GPU"):
+        if self._wait_prefetch_transfer_busy():
             return
         if self._join_ticket is not None and self._live_join_ticket():
             return
@@ -2884,6 +2931,7 @@ class NativeAdmissionRuntime:
                 estimate, max_lead_ms=self.prefetch_lead_ms,
                 observation_spacing_ms=SEMANTIC_FRAME_INTERVAL_MS,
                 prediction_early_ms=self._join_work_prediction_early_ms(stage.key),
+                minimum_advance_ms=self.join_prefetch_min_advance_ms,
             )
             if window is None:
                 self.counts["prefetch_service_exceeds_lead_window"] += 1
@@ -3356,7 +3404,7 @@ class NativeAdmissionRuntime:
         )
         if (
             self.enable_confirmed_join_canary and ticket.issued_nodes >= 1
-            or self.physical_ledger.pending_action_count("PREFETCH_GPU")
+            or self._wait_prefetch_transfer_busy(ticket.key)
         ):
             return
         if ticket.phase == "probabilistic":
@@ -4421,9 +4469,7 @@ class NativeAdmissionRuntime:
         entries = self._native_cache.cache_controller.mem_pool_host.entry_map
         full_unit = entries["kv"].host_pool.size_per_token
         mamba_unit = entries["mamba"].host_pool.size_per_token
-        byte_limit = max(0, budget.byte_limit - sum(
-            lease.protected_bytes for lease in self._prefetch_service_leases.values()
-        ))
+        byte_limit = self._prefetch_byte_allowance(budget)
         nodes = {node.node_id: node for node in candidate.nodes}
         selected, full, mamba, deferred_mamba = [], 0, 0, 0
         partial_step, partial_tokens = None, 0
@@ -4848,9 +4894,7 @@ class NativeAdmissionRuntime:
             and (headroom := observe_static_full_mamba_headroom(self._native_cache)).observable
         ):
             budget = self._current_residency_budget(include_evictable=True)
-            allowance = max(0, budget.byte_limit - sum(
-                lease.protected_bytes for lease in self._prefetch_service_leases.values()
-            ))
+            allowance = self._prefetch_byte_allowance(budget)
             entries = self._native_cache.cache_controller.mem_pool_host.entry_map
             planned_bytes = (
                 opportunity.required_full_tokens * entries["kv"].host_pool.size_per_token
@@ -4977,9 +5021,7 @@ class NativeAdmissionRuntime:
         budget = self._current_residency_budget(include_evictable=True)
         entries = self._native_cache.cache_controller.mem_pool_host.entry_map
         full_unit = entries["kv"].host_pool.size_per_token
-        allowance = max(0, budget.byte_limit - sum(
-            lease.protected_bytes for lease in self._prefetch_service_leases.values()
-        ))
+        allowance = self._prefetch_byte_allowance(budget)
         target_tokens = min(tail_tokens, allowance // full_unit)
         page_size = max(1, self._native_page_size)
         target_tokens = target_tokens // page_size * page_size
@@ -5983,7 +6025,7 @@ class NativeAdmissionRuntime:
         if now_ms < self._tool_prefetch_next_ms:
             self.counts["tool_prefetch_scan_deferred"] += 1
             return
-        if self.physical_ledger.pending_action_count("PREFETCH_GPU"):
+        if self._wait_prefetch_transfer_busy():
             return
         self._tool_prefetch_next_ms = now_ms + SEMANTIC_FRAME_INTERVAL_MS
         self.counts["tool_prefetch_scans"] += 1
@@ -6300,6 +6342,10 @@ class NativeAdmissionRuntime:
             # A narrow tool distribution can still overestimate the last few
             # hundred milliseconds. Keep this runtime allowance separate from it.
             planning_slack_ms=TOOL_PREFETCH_PLANNING_SLACK_MS if hint is not None else 0.,
+            minimum_advance_ms=(
+                self.tool_prefetch_min_advance_ms if hint is not None
+                else self.join_prefetch_min_advance_ms
+            ),
         )
         return (
             replace(
@@ -6341,7 +6387,7 @@ class NativeAdmissionRuntime:
     def dispatch_tool_prefetch(self) -> None:
         opportunity = self._roll_tool_prefetch()
         ticket = self._tool_ticket
-        if ticket is None or self.physical_ledger.pending_action_count("PREFETCH_GPU"):
+        if ticket is None or self._wait_prefetch_transfer_busy(ticket.key):
             return
         hint = self._live_tool_hint(ticket.key)
         if (
@@ -6511,7 +6557,7 @@ class NativeAdmissionRuntime:
         if (
             self.physical_disabled
             or cache is None
-            or self.physical_ledger.pending_action_count("PREFETCH_GPU")
+            or self._wait_prefetch_transfer_busy(step.key)
             or not isinstance(step, PrefetchLoadStep)
             or self.refreshed_prefetch_gpu_step(
                 source=source,
@@ -6679,6 +6725,31 @@ class NativeAdmissionRuntime:
                 })
             self._opportunity_writer.record(record)
 
+    def _wait_prefetch_transfer_busy(self, key: PrefillCandidateKey | None = None) -> bool:
+        if not self._parallel_wait_prefetch or not self.can_prefetch_during_overlap():
+            return bool(self.physical_ledger.pending_action_count("PREFETCH_GPU"))
+        if self.physical_ledger.pending_count >= self.physical_ledger.max_pending:
+            return True
+        sessions = {
+            (context, session, generation)
+            for context, _, session, generation in self.physical_ledger.pending_h2d_sessions
+        }
+        if len(sessions) >= self._wait_prefetch_contexts:
+            return True
+        return key is not None and (
+            key.context_id, key.session_id, key.session_generation,
+        ) in sessions
+
+    def _prefetch_byte_allowance(self, budget: PrefetchResidencyBudget) -> int:
+        occupied = sum(
+            lease.protected_bytes for lease in self._prefetch_service_leases.values()
+        )
+        if self._parallel_wait_prefetch and budget.source != "native_next_prefill":
+            # Native free lists already exclude pending allocations. The legacy
+            # fixed byte allowance has no such accounting.
+            occupied += self.physical_ledger.pending_action_bytes("PREFETCH_GPU")
+        return max(0, budget.byte_limit - occupied)
+
     def _live_wait_prefetch(self, key: PrefillCandidateKey, source: str) -> bool:
         if self.physical_disabled or (
             self.context_sessions.get(key.context_id) != key and not (
@@ -6722,7 +6793,7 @@ class NativeAdmissionRuntime:
                 join_id_override=join_id,
             )
             return ()
-        if self.physical_ledger.pending_action_count("PREFETCH_GPU"):
+        if self._wait_prefetch_transfer_busy(key):
             self._record_wait_prefetch_plan(
                 source, key, None, reason="enqueue_transfer_busy",
                 join_id_override=join_id,
@@ -6799,9 +6870,7 @@ class NativeAdmissionRuntime:
                 join_id_override=join_id,
             )
             return ()
-        byte_allowance = max(0, issue_budget.byte_limit - sum(
-            lease.protected_bytes for lease in self._prefetch_service_leases.values()
-        ))
+        byte_allowance = self._prefetch_byte_allowance(issue_budget)
         commands = tuple(f"beliefkv-prefetch-{uuid4().hex}" for _ in steps)
         planned = dict(zip(commands, steps))
         registered: set[str] = set()
@@ -6963,6 +7032,7 @@ class NativeAdmissionRuntime:
                     })
                 return
         self._prefetch_service_leases.pop(command_id)
+        self._lease_refresh_signature = None
         evidence = self._tool_prefetch_survival_evidence.get(lease.key)
         if (
             reason == "service_window_expired" and lease.source == "tool_wait"
@@ -7134,6 +7204,17 @@ class NativeAdmissionRuntime:
         if not self._prefetch_service_leases:
             return
         now = time.monotonic()
+        signature = (
+            self.graph.graph_version, self.semantic_revision,
+            self._context_sessions_revision, len(self._prefetch_service_leases),
+        )
+        if (
+            context_id is None and self._prediction_maintenance_interval_ms > 0
+            and signature == self._lease_refresh_signature
+            and now * 1000. < self._lease_refresh_next_ms
+        ):
+            self.counts["prefetch_lease_maintenance_deferred"] += 1
+            return
         leases = tuple(self._prefetch_service_leases.items())
         visible_by_context = None
         for command, lease in leases:
@@ -7215,6 +7296,14 @@ class NativeAdmissionRuntime:
             reason = self._prefetch_lease_invalid_reason(lease)
             if reason is not None:
                 self._release_prefetch_service_lease(command, reason)
+        self._lease_refresh_signature = signature if context_id is None else None
+        self._lease_refresh_next_ms = min(
+            now * 1000. + self._prediction_maintenance_interval_ms,
+            min(
+                (lease.expires_at * 1000. for lease in self._prefetch_service_leases.values()),
+                default=now * 1000.,
+            ),
+        )
 
     def _register_prefetch_service_lease(self, action: PhysicalActionCompleted) -> None:
         pending = self._prefetch_steps.pop(action.command_id, None)
@@ -7316,9 +7405,8 @@ class NativeAdmissionRuntime:
                 demand_ready=lease.demand_ready,
             )
             protection_bytes_fit = (
-                protected_bytes + sum(
-                    item.protected_bytes for item in self._prefetch_service_leases.values()
-                ) - sum(item.protected_bytes for item in superseded) <= budget.byte_limit
+                protected_bytes - sum(item.protected_bytes for item in superseded)
+                <= self._prefetch_byte_allowance(budget)
             )
             if already_protected:
                 protection_reason = "covered_by_existing_lock"
@@ -7378,6 +7466,7 @@ class NativeAdmissionRuntime:
             protected_bytes = 0
         lease = replace(lease, lock_params=lock_params, protected_bytes=protected_bytes)
         self._prefetch_service_leases[action.command_id] = lease
+        self._lease_refresh_signature = None
         reason = self._prefetch_lease_invalid_reason(lease)
         if reason is not None:
             self._release_prefetch_service_lease(action.command_id, reason)
@@ -7497,6 +7586,9 @@ class NativeAdmissionRuntime:
                 ),
                 evictable_full_tokens=full_evictable,
                 evictable_mamba_slots=mamba_evictable,
+                restore_frontier_slots=(
+                    self._wait_prefetch_contexts if self._parallel_wait_prefetch else 1
+                ),
             )
         except (AttributeError, KeyError, TypeError, ValueError, RuntimeError):
             self._residency_budget = PrefetchResidencyBudget(4, 1024 ** 3)
@@ -7519,11 +7611,25 @@ class NativeAdmissionRuntime:
         # Demand restoration feeds the next native batch. Speculative cache
         # restoration can overlap it without allocating a request row; both
         # remain subject to the same live byte and native allocator budgets.
-        return len({
+        occupied = {
             lease.key for lease in locked
             if budget.source != "native_next_prefill"
             or lease.demand_ready == demand_ready
-        }) < budget.request_slots
+        }
+        if self._parallel_wait_prefetch:
+            sessions = {
+                (item.context_id, item.session_id, item.session_generation) for item in occupied
+            }
+            sessions.update(
+                (context, session, generation)
+                for context, _, session, generation in self.physical_ledger.pending_h2d_sessions
+            )
+            return (
+                key.context_id, key.session_id, key.session_generation,
+            ) in sessions or len(sessions) < min(
+                budget.request_slots, self._wait_prefetch_contexts,
+            )
+        return key in occupied or len(occupied) < budget.request_slots
 
     def _executable_waiting_key(
         self, req: object, *, key: PrefillCandidateKey | None = None,

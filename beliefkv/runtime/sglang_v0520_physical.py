@@ -1379,6 +1379,14 @@ class PhysicalTransactionLedger:
         """Count a direction without serializing unrelated native transfers."""
         return self._pending_action_counts.get(action, 0)
 
+    def pending_action_bytes(self, action: str) -> int:
+        return sum(
+            child.num_bytes
+            for expected, _, _ in self._pending.values()
+            if expected.action == action
+            for child in expected.children
+        )
+
     def is_pending(self, command_id: str) -> bool:
         return command_id in self._pending
 

@@ -458,6 +458,13 @@ def main() -> None:
     parser.add_argument("--tool-timing-artifact", type=Path)
     parser.add_argument("--enable-tool-timing", type=int, choices=(0, 1), default=0)
     parser.add_argument("--prefetch-lead-ms", type=int, default=1000)
+    parser.add_argument("--join-prefetch-min-advance-ms", type=float, default=0.)
+    parser.add_argument("--tool-prefetch-min-advance-ms", type=float, default=0.)
+    parser.add_argument("--parallel-wait-prefetch", type=int, choices=(0, 1), default=0)
+    parser.add_argument("--wait-prefetch-contexts", type=int, choices=(1, 2), default=1)
+    parser.add_argument("--prediction-maintenance-interval-ms", type=float, default=0.)
+    parser.add_argument("--h2d-opportunity-sampling", type=int, choices=(0, 1), default=1)
+    parser.add_argument("--terminal-cache-diagnostics", type=int, choices=(0, 1), default=1)
     parser.add_argument("--native-reference-run", type=Path)
     parser.add_argument("--native-reference-timeline", type=Path)
     parser.add_argument("--native-reference-cache", type=Path)
@@ -467,6 +474,11 @@ def main() -> None:
     parser.add_argument("--sampling-seed", type=int, default=21)
     parser.add_argument("--repetition-id", type=int, default=0)
     args = parser.parse_args()
+    if not all(math.isfinite(value) and value >= 0 for value in (
+        args.join_prefetch_min_advance_ms, args.tool_prefetch_min_advance_ms,
+        args.prediction_maintenance_interval_ms,
+    )):
+        parser.error("prefetch advance and maintenance must be finite and nonnegative")
     if (
         args.native_reference_timeline is not None
         or args.native_reference_cache is not None
@@ -576,6 +588,12 @@ def main() -> None:
                 ).hexdigest()
         plan = {
             "prefetch_lead_ms": args.prefetch_lead_ms,
+            "join_prefetch_min_advance_ms": args.join_prefetch_min_advance_ms,
+            "tool_prefetch_min_advance_ms": args.tool_prefetch_min_advance_ms,
+            "parallel_wait_prefetch": bool(args.parallel_wait_prefetch),
+            "wait_prefetch_contexts": args.wait_prefetch_contexts,
+            "prediction_maintenance_interval_ms": args.prediction_maintenance_interval_ms,
+            "terminal_cache_diagnostics": bool(args.terminal_cache_diagnostics),
             "semantic_work_statistic": args.semantic_work_statistic,
             "eos_protocol_window_ms": args.eos_protocol_window_ms,
             "eos_prefetch_evidence_window_ms": max(
@@ -697,7 +715,7 @@ def main() -> None:
             "prepare_pool_scope": "missing_full_session_path",
             "wait_prefetch_policy": (
                 "safe_next_input_checkpoint_missing_prefix;ancestor_first;"
-                "up_to_16_extents;pool_capacity_and_prefill_reserve;"
+                "bounded_by_available_ledger_entries;pool_capacity_and_prefill_reserve;"
                 "residency_byte_budget;whole_burst_start_window;"
                 "cold_reclaim_excludes_target_closure;per_node_ACK"
             ),
@@ -743,7 +761,9 @@ def main() -> None:
                     "final_stage_priority": name != "native",
                     "prepare_host": bool(args.prepare_host) and name != "native",
                     "predictive_h2d": name == "predictive_h2d",
-                    "h2d_opportunity_sampling": name == "predictive_h2d",
+                    "h2d_opportunity_sampling": (
+                        name == "predictive_h2d" and bool(args.h2d_opportunity_sampling)
+                    ),
                     "semantic_text_stream": name == "predictive_h2d",
                     "execution_handoff": name == "predictive_h2d" and bool(args.execution_handoff),
                 } for name in order
@@ -837,6 +857,9 @@ def main() -> None:
         for setting in (
             "semantic_work_statistic", "eos_protocol_window_ms",
             "eos_prefetch_evidence_window_ms",
+            "join_prefetch_min_advance_ms", "tool_prefetch_min_advance_ms",
+            "parallel_wait_prefetch", "wait_prefetch_contexts",
+            "prediction_maintenance_interval_ms", "terminal_cache_diagnostics",
         ):
             if setting in plan and state.get(setting) != plan[setting]:
                 raise ValueError(f"{name}: mismatched {setting}")

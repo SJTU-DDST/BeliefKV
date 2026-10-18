@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "kind": "development_candidate_not_a_frozen_execution_plan",
+  "not_before": "2026-10-19T08:00:00+08:00",
+  "timezone": "Asia/Shanghai",
+  "gpu_experiment_started": false,
+  "workload": {
+    "manifest": "configs/migration/qwen35_native_predictive_replenished_108plus48_2026-10-09.json",
+    "root_count": 156,
+    "arrival_mode": "batched",
+    "initial_roots": 108,
+    "second_batch_roots": 48,
+    "second_batch_offset_seconds": 3600,
+    "fanout_profile": "native_in_graph_2to4",
+    "sampling_seed": 21
+  },
+  "environment": {
+    "ROOT_COUNT": "156",
+    "ARRIVAL_BATCH_SIZE": "108",
+    "ARRIVAL_BATCH_INTERVAL_MS": "3600000",
+    "ARRIVAL_RATE_PER_SECOND": "0",
+    "ARM_ORDER": "predictive_h2d native",
+    "HOST_SPLIT": "80:20",
+    "HOST_NUMA_MEMORY_POLICY": "preferred",
+    "PREPARE_HOST": "1",
+    "EXECUTION_HANDOFF": "0",
+    "ENABLE_TOOL_TIMING": "1",
+    "PREFETCH_LEAD_MS": "1000",
+    "JOIN_PREFETCH_MIN_ADVANCE_MS": "1000",
+    "TOOL_PREFETCH_MIN_ADVANCE_MS": "500",
+    "PARALLEL_WAIT_PREFETCH": "1",
+    "WAIT_PREFETCH_CONTEXTS": "2",
+    "PREDICTION_MAINTENANCE_INTERVAL_MS": "100",
+    "H2D_OPPORTUNITY_SAMPLING": "0",
+    "TERMINAL_CACHE_DIAGNOSTICS": "0",
+    "CHILD_FINAL_REPORT_SHADOW": "1",
+    "BELIEFKV_CHECKPOINT_PATH_SHADOW": "0",
+    "BELIEFKV_WORKFLOW_ATTAINED_WORK": "0",
+    "BELIEFKV_RECORD_OUTPUT_TOKEN_IDS": "0"
+  },
+  "engine_layer_mode": "native_all_layers",
+  "adaptive_depth_status": "cpu_policy_prototype_not_connected_to_engine",
+  "acceptance": [
+    "verify actual capacities, overlap support and physical_disabled=false",
+    "count early submit and next-request FULL reuse separately from demand restoration",
+    "report useful recompute, duplicate loading, PREPARE consumption and control cost",
+    "report all workflow outcomes, quality, mean JCT, tail and high-pressure throughput",
+    "do not infer complete later-layer overlap or oracle throughput from layer counts"
+  ]
+}
