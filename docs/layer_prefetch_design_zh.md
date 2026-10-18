@@ -55,6 +55,16 @@ cache H2D不占request row，现用已有池容量/空闲行恢复有界前沿�
 不能把未转换全部归于行预算，也不能将原生Host命中字节全部算作可预取。
 当前V82b继续从ab951b9执行匹配对照，新的CPU修复留待后续冻结验证。
 
+[V1704更新的workload形状](../experiments/reports/v1704_v82b_live_workflow_shape_20261018.json)
+于09:28 PDT观测108个root、37个completed、17个多轮root（14个两轮、
+2个三轮、1个四轮），5个coordinator产生10个grandchild，嵌套JOIN已
+完成2个，最大深度2。早期无嵌套不再代表当前前缀；第二批48个root仍待到达。
+main另修复部分入队后尾部容量回收的诊断开关遗漏：关闭机会采样时不
+构建候选细诊断，保留实际回收、预算、在途命令和首次复用。
+[V1703相关CPU检查](../experiments/reports/v1703_tail_reclaim_diagnostics_cpu_20261018.xml)
+371项通过；诊断开关不改变有界安全尾部、实际入队或取消检查。该修改
+同样尚未部署到V82b，不能将其计为本轮的性能收益。
+
 [V1693启动回执](../experiments/reports/v1693_v82b_actual_service_and_clock_20261018.json)
 核对V82b的真实工作流GPU服务、固定物理容量、委派合同、到达表、冻结
 应用/引擎/模型产物，physical_disabled=false、overlap支持、两个context

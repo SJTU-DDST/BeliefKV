@@ -5082,11 +5082,14 @@ class NativeAdmissionRuntime:
         excluded = tuple(nodes)
         self._publish_parent_pressure_candidates(exclude_node_ids=excluded)
         self.counts["wait_prefetch_tail_capacity_checks"] += 1
+        collect_diagnostics = (
+            self._opportunity_writer is not None and self.enable_h2d_opportunity_sampling
+        )
         freed = reclaim(
             full_tokens=target_tokens + budget.reserve_full_tokens,
             mamba_slots=budget.reserve_mamba_slots,
             exclude_node_ids=excluded,
-            **({"collect_diagnostics": True} if self._opportunity_writer is not None else {}),
+            **({"collect_diagnostics": True} if collect_diagnostics else {}),
         )
         if freed:
             self.counts["wait_prefetch_tail_cold_reclaimed"] += 1
@@ -5104,7 +5107,7 @@ class NativeAdmissionRuntime:
                 "freed_units": freed,
                 "capacity_reclaim": getattr(
                     self._native_cache, "beliefkv_handoff_last_capacity", None,
-                ),
+                ) if collect_diagnostics else None,
                 "scope": (
                     "One bounded cold-capacity pass after native enqueue. No "
                     "DMA wait, tail enqueue, admission or execution readiness."

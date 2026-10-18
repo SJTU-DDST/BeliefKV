@@ -30,6 +30,16 @@ V1701's latest sealed prefix has56 closed JOINs:51 observed start windows,
 attribute the entire conversion gap to row accounting. Keep the matched pair
 running and continue CPU diagnosis of JOIN ticket selection and consumption.
 
+At09:28 PDT, V1704's newer live shape prefix observes37 completed workflows
+among108 released roots;17 have multiple root rounds (14 two,2 three,1 four).
+Five actually use coordinators/depth2, with10 grandchildren and2 completed
+nested JOINs. The second48-root arrival is still pending. These observations
+supersede the early prefix's lack of nesting without claiming full compliance.
+Main also disables detailed tail-capacity candidate diagnostics when opportunity
+sampling is off, retaining actual reclaim/receipt/reuse records. V1703 passes371
+focused CPU cases; frozen V82b remains unchanged. Keep GPU throughput/JCT and
+quality acceptance pending the complete matched pair.
+
 The user's 2026-10-18 "GPU is free" instruction supersedes
 the prior October 19 08:00 Asia/Shanghai reservation. V82 was launched at
 08:25 PDT from frozen application `44c802f` and qualified engine tree `53020ce3`.

@@ -406,8 +406,9 @@ def test_explicit_zero_byte_budget_does_not_authorize_backed_capacity_probe(sour
 @pytest.mark.parametrize("source", ("join_ticket", "tool_wait"))
 @pytest.mark.parametrize("byte_limit,tail_target", ((1024, 8), (60, 6)))
 @pytest.mark.parametrize("wait_ends_after_enqueue", (False, True))
+@pytest.mark.parametrize("sampling", (False, True))
 def test_partial_enqueue_reclaims_only_the_bounded_safe_input_tail_without_waiting(
-    source, byte_limit, tail_target, wait_ends_after_enqueue,
+    source, byte_limit, tail_target, wait_ends_after_enqueue, sampling,
 ):
     fixture = (
         provisional_join_batch_fixture() if source == "join_ticket"
@@ -437,12 +438,16 @@ def test_partial_enqueue_reclaims_only_the_bounded_safe_input_tail_without_waiti
     )
     records = []
     runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    runtime.enable_h2d_opportunity_sampling = sampling
+    diagnosis = {"native_full_scanned": 3, "freed_units": {0: tail_target}}
+    cache.beliefkv_handoff_last_capacity = diagnosis
 
     def reclaim(**kwargs):
         assert runtime.physical_ledger.pending_count == 1, (dict(runtime.counts), records)
         assert kwargs["full_tokens"] == tail_target + 1
         assert kwargs["mamba_slots"] == 1
         assert kwargs["exclude_node_ids"] == (0, 1, 2, 3, 4)
+        assert kwargs.get("collect_diagnostics", False) is sampling
         assert not runtime.completed_physical_actions
         return {0: tail_target}
 
@@ -490,6 +495,7 @@ def test_partial_enqueue_reclaims_only_the_bounded_safe_input_tail_without_waiti
             assert row["budgeted_tail_full_tokens"] == tail_target
             assert row["reserve_full_tokens"] == 1
             assert row["freed_units"] == {0: tail_target}
+            assert row["capacity_reclaim"] == (diagnosis if sampling else None)
     finally:
         runtime.close()
 
