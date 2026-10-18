@@ -5,6 +5,26 @@ Status date: 2026-10-18 (PDT).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+The run-only candidate `beliefkv-v83-main-control-candidate-20261018` now freezes
+committed main at b698a34. V1813 binds 33 local test modules and native action
+fences: 1978 unique test items plus 27 native subtests pass. The two original
+V1809 skips are resolved by the exact identities in V1810/V1812, using the real
+pinned semantic artifact and an existing pytest image. Preserve V1811's missing
+pytest failure in the initially selected SymPy image. Nine model/seed files
+match V82b byte-for-byte; external encoder files and tree53020ce3 are also bound.
+This is CPU qualification, not a registered or launched experiment. Recheck
+digests before a future cold launch; keep developing on main and preserve V82b.
+
+V1807 counts 53522 physical dispatches in the complete 600-2400s busy window,
+versus 13374006 over the whole run; the latter is not a busy-path cost estimate.
+V1808's selected-method CPU overlay gives two admission calls at
+2.447ms frozen/2.426ms main, with unchanged queue and completed-batch state.
+It shares current helpers and excludes the native allocator, so it cannot
+explain or resolve the measured online selection/run_batch difference.
+Keep the short-prefill/turnover diagnosis open. Finish the current native and
+its audits/HTML, then use main's common-eligible JCT reporter before choosing
+the next GPU observation; the prepared candidate has no launch waiter.
+
 Main now removes the second closure observation for a fitting JOIN/tool plan
 selected in the same synchronous dispatch, only after an explicitly empty tuple
 from the event drain and with unchanged cache/target identity. Cached and
