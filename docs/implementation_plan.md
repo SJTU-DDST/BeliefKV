@@ -5,6 +5,20 @@ Status date: 2026-10-18 (PDT).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+V1769 reconstructs40000 closed native request lifetimes from V1754's sealed
+prefix; all18663 next-request targets bind. No service sequence is missing.
+The2 unbound and1 unclosed requests start after every target launch.
+For1788 tool no-input-plan/later-Host-hit requests, queue-to-first-launch P50
+is14.060s;88.80% of waiter-time overlaps at least47 launched-unfinished requests,
+63.40% overlaps48. Early-and-reused FULL cohorts have JOIN91/tool89 requests
+with queue P50 of57.11/86.61ms;68 JOIN capacity-refusal/later-Host-hit requests
+have6.768s P50. These are different cohorts, not causal policy gains.
+Prioritize validation of restore/residency/near-term admission coordination.
+Observed lifetimes are not allocator/running slots or CUDA execution; do not
+infer a slot reservation or preemption policy directly from them.
+V1768 passes102 offline audit cases. No online instrumentation or frozen
+V82b source changes are introduced; the full matched pair remains pending.
+
 At11:47 PDT the matched V82b pair still has155 completed predictive workflows.
 The remaining django-13112 has22 same-command executions totaling2701.66s, all
 exit137 with7 output characters. This is repeated tool work, not one hung call

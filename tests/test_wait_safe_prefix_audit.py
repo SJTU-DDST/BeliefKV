@@ -2,7 +2,10 @@ from copy import deepcopy
 
 import pytest
 
-from scripts.audit_wait_safe_prefix import audit_safe_prefix, host_interval_at_safe_cap
+from scripts.audit_wait_safe_prefix import (
+    audit_safe_prefix, host_interval_at_safe_cap, native_lifetimes,
+    queue_lifetime_exposure, wait_occupancy_targets,
+)
 
 
 @pytest.mark.parametrize(
@@ -106,3 +109,106 @@ def test_duplicate_request_or_wait_is_rejected():
         audit_safe_prefix([wait], [plan], [native, deepcopy(native)])
     with pytest.raises(ValueError, match="duplicate wait"):
         audit_safe_prefix([wait, deepcopy(wait)], [plan], [native])
+
+
+def test_queue_wait_exposure_conserves_ties_and_zero_wait_requests():
+    lifetimes = {
+        "incumbent": {"queue": 0, "launch": 0, "finish": 10},
+        "target": {"queue": 2, "launch": 8, "finish": 11},
+        "tied": {"queue": 8, "launch": 8, "finish": 12},
+    }
+    result = queue_lifetime_exposure(
+        lifetimes, {"targets": {"target", "tied", "missing"}}, request_limit=1,
+    )
+    group = result["groups"]["targets"]
+    assert group["queue_to_first_launch_request_ms"] == 6
+    assert group["request_ms_by_launched_unfinished"] == {1: 6}
+    assert group["wait_fraction_at_or_above_limit"] == 1
+    assert group["unknown_lifetime_targets"] == 1
+    assert result["maximum_observed_launched_unfinished"] == 3
+
+
+def test_queue_wait_counts_changes_in_incumbent_lifetimes():
+    result = queue_lifetime_exposure({
+        "a": {"queue": 0, "launch": 0, "finish": 5},
+        "b": {"queue": 1, "launch": 2, "finish": 6},
+        "target": {"queue": 1, "launch": 7, "finish": 8},
+    }, {"targets": {"target"}}, request_limit=2)
+    group = result["groups"]["targets"]
+    assert group["request_ms_by_launched_unfinished"] == {0: 1, 1: 2, 2: 3}
+    assert group["wait_fraction_at_or_above_limit"] == .5
+    assert group["wait_fraction_at_or_above_limit_minus_one"] == pytest.approx(5 / 6)
+
+
+@pytest.mark.parametrize(
+    "row",
+    [
+        {"queue": 2, "launch": 1, "finish": 3},
+        {"queue": 1, "launch": 3, "finish": 2},
+        {"queue": 0, "launch": float("nan"), "finish": 2},
+    ],
+)
+def test_queue_wait_rejects_invalid_lifetime(row):
+    with pytest.raises(ValueError, match="lifetime ordering"):
+        queue_lifetime_exposure({"target": row}, {"targets": {"target"}}, request_limit=48)
+
+
+def test_native_lifetimes_match_monotonic_clock_and_keep_open_requests_unknown():
+    _, _, native = fixture()
+    native["ts_ms"] = 110
+    end = {
+        **native, "kind": "llm_result",
+        "attributes": {
+            "request_id": "request", "complete_monotonic_ms": 30,
+            "monotonic_clock_domain": "clock",
+        },
+    }
+    sample = {
+        "event": "gpu_service_sample", "sample_id": "native-service-000000001",
+        "launch_monotonic_ms": 20,
+        "complete_monotonic_ms": 25, "complete_ts_ms": 125,
+        "monotonic_clock_domain": "clock",
+        "request_samples": [{
+            **{key: native[key] for key in (
+                "workflow_id", "invocation_id", "context_id", "context_epoch",
+            )},
+            "request_id": "request",
+        }],
+    }
+    opened = {**native, "attributes": {**native["attributes"], "request_id": "open"}}
+    result, coverage = native_lifetimes([native, end, opened], [sample])
+    assert result == {"request": {"queue": 10, "launch": 20, "finish": 30}}
+    assert coverage["requests_without_closed_observed_lifetime"] == 1
+    assert coverage["missing_service_sequence_numbers"] == 0
+    assert coverage["service_requests_outside_native_prefix_unique"] == 0
+    end["attributes"]["monotonic_clock_domain"] = "other"
+    with pytest.raises(ValueError, match="inconsistent native request lifetime"):
+        native_lifetimes([native, end], [sample])
+
+
+def test_native_service_prefix_gaps_and_unbound_requests_remain_explicit():
+    service = {
+        "event": "gpu_service_sample", "sample_id": "native-service-000000003",
+        "launch_monotonic_ms": 20, "complete_monotonic_ms": 25,
+        "complete_ts_ms": 125, "monotonic_clock_domain": "clock",
+        "request_samples": [{"request_id": "not_in_native_prefix"}],
+    }
+    lifetimes, coverage = native_lifetimes([], [service])
+    assert lifetimes == {}
+    assert coverage["missing_service_sequence_numbers"] == 2
+    assert coverage["service_requests_outside_native_prefix_unique"] == 1
+    assert coverage["first_unbound_service_launch_monotonic_ms"] == 20
+    with pytest.raises(ValueError, match="reversed service sequence"):
+        native_lifetimes([], [service, deepcopy(service)])
+
+
+def test_occupancy_targets_deduplicate_requests_within_overlapping_views():
+    row = {
+        "next_request_id": "request", "source": "tool_wait",
+        "host_interval": {"host_hit_tokens_at_service": 10},
+        "last_pre_completion_no_step_reason": "no_reusable_input_restore_step",
+        "early_started_and_reused_full_bytes": 100,
+    }
+    targets = wait_occupancy_targets([row, deepcopy(row)])
+    assert all(ids == {"request"} for ids in targets.values())
+    assert len(targets) == 3
