@@ -5,6 +5,16 @@ Status date: 2026-10-18 (PDT).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+At11:47 PDT the matched V82b pair still has155 completed predictive workflows.
+The remaining django-13112 has22 same-command executions totaling2701.66s, all
+exit137 with7 output characters. This is repeated tool work, not one hung call
+or measured H2D overhead. V1763 reproduces missing timeout diagnostics through
+the actual /bin/sh wrapper. Main preserves GNU timeout's --verbose signal
+diagnostic without changing command limits or execution/termination policy.
+V1765 passes181 CPU cases; one explicit-image integration case is skipped.
+The actual container supports --verbose. Model retry reduction remains unproven;
+neither frozen V82b arm is hot-patched and matched native remains pending.
+
 Main now excludes historical-only Mamba misses from empty restore planning when
 FULL has no Host-only extent and the deepest safe input checkpoint is resident or
 absent. Necessary state/FULL restores and unknown geometry retain authoritative

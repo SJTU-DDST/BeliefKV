@@ -916,8 +916,9 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         timeout_s = timeout if timeout is not None else self.default_timeout_s
         timeout_s = max(1, min(int(timeout_s), SANDBOX_COMMAND_TIMEOUT_LIMIT_S))
         command_sha256 = hashlib.sha256(command.encode("utf-8")).hexdigest()
+        # Exit 137 also covers other SIGKILL causes; preserve timeout's own diagnostic.
         wrapped = (
-            f"timeout --signal=KILL {timeout_s}s /bin/bash -o pipefail -c "
+            f"timeout --verbose --signal=KILL {timeout_s}s /bin/bash -o pipefail -c "
             f"{shlex.quote(command)}"
         )
         argv = self._docker_exec_argv(wrapped)

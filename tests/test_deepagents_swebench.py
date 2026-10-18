@@ -1567,6 +1567,48 @@ def test_pipeline_timeout_is_not_hidden_by_a_successful_output_filter(tmp_path, 
         audit.close()
 
 
+@pytest.mark.parametrize("output_timing_shadow", (False, True))
+@pytest.mark.parametrize(
+    "command,exit_code,timed_out",
+    (
+        ("sleep 2", 137, True),
+        ("kill -KILL $$", 137, False),
+        ("exit 137", 137, False),
+        ("printf finished", 0, False),
+    ),
+)
+def test_sandbox_timeout_has_explicit_signal_feedback_without_guessing_from_exit_137(
+    tmp_path, monkeypatch, output_timing_shadow, command, exit_code, timed_out,
+):
+    audit = JsonlAudit(tmp_path / "audit.jsonl")
+    backend = DockerWorkspaceBackend(
+        tmp_path, image="fixture:latest", audit=audit,
+        output_timing_shadow=output_timing_shadow,
+    )
+    backend._started = True
+    monkeypatch.setattr(
+        backend, "_docker_exec_argv",
+        lambda wrapped: ["/bin/sh", "-c", wrapped + '\nresult=$?\nexit "$result"'],
+    )
+    try:
+        response = backend.execute(command, timeout=1)
+        assert response.exit_code == exit_code
+        assert ("timeout: sending signal KILL" in response.output) is timed_out
+        command_status = "succeeded" if exit_code == 0 else "failed"
+        message = ToolMessage(
+            content=response.output + f"\n[Command {command_status} with exit code {exit_code}]",
+            name="execute", tool_call_id="test", status="success",
+        )
+        outcome = classify_tool_outcome(message, tool_name="execute")
+        assert outcome.error_class == (
+            "timeout" if timed_out else "command_failed" if exit_code else None
+        )
+    finally:
+        backend._started = False
+        backend.close()
+        audit.close()
+
+
 def test_experiment_config_rejects_unsupported_mode(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="mode"):
         DeepAgentsExperimentConfig(
