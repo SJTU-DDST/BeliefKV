@@ -1,0 +1,40 @@
+{
+  "status": "cpu_verified_not_gpu_or_jct_acceptance",
+  "baseline_commit": "bb68834",
+  "candidate_source_sha256": {
+    "beliefkv/experiments/deepagents_swebench.py": "1d0693ae460efa9f8432ae2b871358e916969be8e46bb34b7c56b6cef2c2b873",
+    "beliefkv/runtime/v0520_native_telemetry.py": "671f5e148ee77e40c94eb5409b07866c1f4fbbc171c20130d9c44b20403f6576"
+  },
+  "identical_edit_records": [
+    {
+      "variant": "baseline",
+      "errors": [
+        null,
+        null,
+        null
+      ],
+      "epoch_after_identical_edits": 3,
+      "file_content_unchanged": true,
+      "mtime_unchanged": false
+    },
+    {
+      "variant": "candidate",
+      "errors": [
+        "Error: Invalid arguments: search and replacement text are identical after newline normalization; no file content was changed. Provide different replacement text, or use read_file to inspect the current file.",
+        "Error: Invalid arguments: search and replacement text are identical after newline normalization; no file content was changed. Provide different replacement text, or use read_file to inspect the current file.",
+        "Error: Invalid arguments: search and replacement text are identical after newline normalization; no file content was changed. Provide different replacement text, or use read_file to inspect the current file."
+      ],
+      "epoch_after_identical_edits": 0,
+      "file_content_unchanged": true,
+      "mtime_unchanged": true
+    }
+  ],
+  "identity_body_matches_measured_proposal": true,
+  "identity_proposal_report": "/home/longhao/experiment/BeliefKV/experiments/reports/v2081_identity_proposal_cpu_20261020.json",
+  "identity_proposal_report_sha256": "2b305091e07f30a268b31b8218d1d62d1eb1d1d27a2e1c615201b455d7301f0f",
+  "scope": [
+    "Real local filesystem and backend, no Docker or GPU invocation.",
+    "Official edit_file description requires differing search/replacement text.",
+    "V90b's exact repeated edit arguments were not retained; this does not prove its loop is eliminated."
+  ]
+}

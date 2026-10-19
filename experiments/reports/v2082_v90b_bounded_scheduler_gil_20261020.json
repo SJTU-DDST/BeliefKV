@@ -1,0 +1,2804 @@
+{
+  "status": "bounded_live_development_profile_not_cpu_accounting",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_user_team_1root_20261020_v90b",
+  "collection_commit": "7e77e28",
+  "pid": 4014050,
+  "requested_duration_seconds": 25,
+  "requested_rate_hz": 99,
+  "recorded_samples": 1362,
+  "sampling_errors": 0,
+  "method": "py-spy record --gil --format raw",
+  "raw_sha256": "2221799bee524b931eb558de2305d39ae9f9c1f14067a27decee191e5b34985f",
+  "compressed_profile": "/home/longhao/experiment/BeliefKV/experiments/reports/v2082_v90b_bounded_scheduler_gil_20261020.raw.gz",
+  "compressed_sha256": "9782d6b01179a8fe7d83a0ef6ccb9a97c57be27621287f3b84c5b34466147355",
+  "route_samples": {
+    "launch": 683,
+    "result": 223,
+    "selection": 207,
+    "other": 249
+  },
+  "leaf_functions": [
+    [
+      "send_pyobj (zmq/sugar/socket.py:1002)",
+      42
+    ],
+    [
+      "__call__ (torch/_ops.py:1279)",
+      33
+    ],
+    [
+      "set_mamba_track_indices_from_reqs (schedule_batch.py:2154)",
+      22
+    ],
+    [
+      "fill_from (cuda_graph_buffer_registry.py:453)",
+      17
+    ],
+    [
+      "__getitem__ (radix_cache.py:146)",
+      16
+    ],
+    [
+      "_sync_hicache_ready_counts (unified_radix_cache.py:4503)",
+      16
+    ],
+    [
+      "__call__ (triton/backends/nvidia/driver.py:328)",
+      15
+    ],
+    [
+      "dynamic_func (<string>:4)",
+      13
+    ],
+    [
+      "get_loads (scheduler_components/load_inquirer.py:143)",
+      10
+    ],
+    [
+      "replay (torch/cuda/graphs.py:186)",
+      9
+    ],
+    [
+      "alloc (allocator/token.py:61)",
+      9
+    ],
+    [
+      "copy (schedule_batch.py:3751)",
+      9
+    ],
+    [
+      "__getitem__ (<frozen os>:676)",
+      8
+    ],
+    [
+      "recv_pyobj (zmq/sugar/socket.py:1033)",
+      8
+    ],
+    [
+      "set_mamba_track_indices_from_reqs (schedule_batch.py:2163)",
+      8
+    ],
+    [
+      "fill_from (cuda_graph_buffer_registry.py:456)",
+      8
+    ],
+    [
+      "_sample (scheduler_stage_metrics.py:128)",
+      7
+    ],
+    [
+      "__new__ (torch/cuda/streams.py:43)",
+      7
+    ],
+    [
+      "publish (overlap_utils.py:580)",
+      7
+    ],
+    [
+      "exit (scheduler_stage_metrics.py:93)",
+      7
+    ],
+    [
+      "__len__ (torch/_tensor.py:1184)",
+      7
+    ],
+    [
+      "get (<frozen _collections_abc>:776)",
+      7
+    ],
+    [
+      "_async_d2h (utils.py:41)",
+      7
+    ],
+    [
+      "wrapper (scheduler_stage_metrics.py:155)",
+      7
+    ],
+    [
+      "<lambda> (cuda_graph_buffer_registry.py:610)",
+      7
+    ],
+    [
+      "__check_for_pid_change (prometheus_client/values.py:104)",
+      6
+    ],
+    [
+      "encode (<frozen os>:759)",
+      6
+    ],
+    [
+      "__instancecheck__ (<frozen abc>:119)",
+      6
+    ],
+    [
+      "alloc_for_decode (allocation.py:640)",
+      6
+    ],
+    [
+      "_replay_metadata (hybrid_linear_attn_backend.py:780)",
+      6
+    ],
+    [
+      "prepare_for_decode (schedule_batch.py:3532)",
+      6
+    ],
+    [
+      "<listcomp> (scheduler.py:4611)",
+      6
+    ],
+    [
+      "_sync_hicache_ready_counts (unified_radix_cache.py:4516)",
+      6
+    ],
+    [
+      "_replay_metadata (hybrid_linear_attn_backend.py:779)",
+      6
+    ],
+    [
+      "set_mamba_track_indices_from_reqs (schedule_batch.py:2160)",
+      6
+    ],
+    [
+      "_apply_cuda_graph_metadata (flashattention_backend.py:2928)",
+      5
+    ],
+    [
+      "__enter__ (torch/autograd/profiler.py:919)",
+      5
+    ],
+    [
+      "fill_from (cuda_graph_buffer_registry.py:440)",
+      5
+    ],
+    [
+      "__new__ (torch/cuda/streams.py:186)",
+      5
+    ],
+    [
+      "_async_d2h (utils.py:43)",
+      5
+    ],
+    [
+      "<genexpr> (prometheus_client/metrics.py:176)",
+      5
+    ],
+    [
+      "replay (runner_backend/full_cuda_graph_backend.py:208)",
+      5
+    ],
+    [
+      "run_batch (scheduler.py:4743)",
+      5
+    ],
+    [
+      "labels (prometheus_client/metrics.py:174)",
+      5
+    ],
+    [
+      "_foreach_copy (cuda_graph_buffer_registry.py:54)",
+      5
+    ],
+    [
+      "run_batch (scheduler.py:4677)",
+      5
+    ],
+    [
+      "__exit__ (torch/autograd/profiler.py:951)",
+      5
+    ],
+    [
+      "resolve_forward_inputs (overlap_utils.py:111)",
+      5
+    ],
+    [
+      "build_replay_fb_view (runner/decode_cuda_graph_runner.py:183)",
+      5
+    ],
+    [
+      "current_stream (torch/cuda/__init__.py:1246)",
+      4
+    ],
+    [
+      "compute_cache_key (triton/runtime/jit.py:575)",
+      4
+    ],
+    [
+      "wrapper (sglang/kernels/jit/utils/common.py:36)",
+      4
+    ],
+    [
+      "__init__ (<string>:32)",
+      4
+    ],
+    [
+      "__len__ (torch/_tensor.py:1193)",
+      4
+    ],
+    [
+      "_set_stream_by_id (torch/cuda/__init__.py:835)",
+      4
+    ],
+    [
+      "build_replay_fb_view (runner/decode_cuda_graph_runner.py:184)",
+      4
+    ],
+    [
+      "profile_range (utils/nvtx_utils.py:94)",
+      4
+    ],
+    [
+      "wait (torch/cuda/streams.py:223)",
+      4
+    ],
+    [
+      "__init__ (zmq/error.py:57)",
+      4
+    ],
+    [
+      "__init__ (zmq/error.py:64)",
+      4
+    ],
+    [
+      "forward (sampler.py:188)",
+      4
+    ],
+    [
+      "_derived_width (runtime_context.py:332)",
+      4
+    ],
+    [
+      "wrapper (utils/nvtx_utils.py:109)",
+      4
+    ],
+    [
+      "fields (dataclasses.py:1250)",
+      4
+    ],
+    [
+      "forward_batch_generation (tp_worker.py:633)",
+      4
+    ],
+    [
+      "_compute_scheduler_metadata (flashattention_backend.py:389)",
+      4
+    ],
+    [
+      "_grouped_foreach_copy_ (cuda_graph_buffer_registry.py:60)",
+      4
+    ],
+    [
+      "alloc_for_decode (allocation.py:626)",
+      4
+    ],
+    [
+      "run (triton/runtime/jit.py:723)",
+      4
+    ],
+    [
+      "is_initialized (torch/cuda/__init__.py:454)",
+      4
+    ],
+    [
+      "__getitem__ (<frozen os>:679)",
+      4
+    ],
+    [
+      "_check_token_based_finish (schedule_batch.py:1724)",
+      4
+    ],
+    [
+      "<genexpr> (dataclasses.py:1250)",
+      4
+    ],
+    [
+      "_beliefkv_after_forward_dispatch (scheduler.py:4057)",
+      4
+    ],
+    [
+      "_grouped_foreach_copy_ (cuda_graph_buffer_registry.py:61)",
+      3
+    ],
+    [
+      "_get_current_device_index (torch/_utils.py:845)",
+      3
+    ],
+    [
+      "set_mamba_track_indices_from_reqs (schedule_batch.py:2138)",
+      3
+    ],
+    [
+      "is_extend (forward_batch_info.py:141)",
+      3
+    ],
+    [
+      "is_decode (forward_batch_info.py:158)",
+      3
+    ],
+    [
+      "_pack_two_doubles (prometheus_client/mmap_dict.py:20)",
+      3
+    ],
+    [
+      "get (<frozen _collections_abc>:774)",
+      3
+    ],
+    [
+      "_handle_fromlist (<frozen importlib._bootstrap>:1229)",
+      3
+    ],
+    [
+      "available_size (allocator/token.py:52)",
+      3
+    ],
+    [
+      "on_launch (beliefkv/runtime/v0520_native_telemetry.py:1303)",
+      3
+    ],
+    [
+      "set_mamba_track_indices_from_reqs (schedule_batch.py:2159)",
+      3
+    ],
+    [
+      "match_at (radix_cache.py:209)",
+      3
+    ],
+    [
+      "get_scheduler_metadata (sgl_kernel/flash_attn.py:399)",
+      3
+    ],
+    [
+      "write (memory_pool.py:293)",
+      3
+    ],
+    [
+      "_wrapped_call_impl (torch/nn/modules/module.py:1778)",
+      3
+    ],
+    [
+      "enter (scheduler_stage_metrics.py:85)",
+      3
+    ],
+    [
+      "<lambda> (triton/runtime/jit.py:370)",
+      3
+    ],
+    [
+      "__call__ (triton/runtime/jit.py:1110)",
+      3
+    ],
+    [
+      "_maybe_init_forward_bufs (overlap_utils.py:325)",
+      3
+    ],
+    [
+      "measured (beliefkv/runtime/hotpath_timing.py:104)",
+      3
+    ],
+    [
+      "on_launch (beliefkv/runtime/v0520_native_telemetry.py:1322)",
+      3
+    ],
+    [
+      "__init__ (cutlass/base_dsl/typing.py:1728)",
+      3
+    ],
+    [
+      "to_payload (scheduler_components/output_streamer.py:773)",
+      3
+    ],
+    [
+      "build_replay_fb_view (runner/decode_cuda_graph_runner.py:207)",
+      3
+    ],
+    [
+      "_compute_mrope_positions_decode (forward_batch_info.py:1263)",
+      3
+    ],
+    [
+      "is_dspark (spec_info.py:125)",
+      3
+    ],
+    [
+      "clamp_position_cuda (sglang/kernels/ops/attention/clamp_position.py:40)",
+      3
+    ],
+    [
+      "build_replay_fb_view (runner/decode_cuda_graph_runner.py:193)",
+      3
+    ],
+    [
+      "increment_realtime_tokens (metrics_collector.py:1291)",
+      3
+    ],
+    [
+      "_deserialize (zmq/sugar/socket.py:840)",
+      3
+    ],
+    [
+      "prepare_for_decode (schedule_batch.py:3545)",
+      3
+    ],
+    [
+      "_call_impl (torch/nn/modules/module.py:1789)",
+      3
+    ],
+    [
+      "mamba_cache_chunk_size (arg_groups/overrides.py:1906)",
+      3
+    ],
+    [
+      "process_batch_result_decode (scheduler_components/batch_result_processor.py:1017)",
+      3
+    ],
+    [
+      "run (triton/runtime/jit.py:761)",
+      3
+    ],
+    [
+      "send_output (scheduler_components/output_sender.py:22)",
+      3
+    ],
+    [
+      "prepare_for_decode (schedule_batch.py:3534)",
+      3
+    ],
+    [
+      "_apply_cuda_graph_metadata (flashattention_backend.py:2781)",
+      3
+    ],
+    [
+      "run_batch (scheduler.py:4766)",
+      3
+    ],
+    [
+      "record_batch_in_overlap (scheduler.py:4616)",
+      3
+    ],
+    [
+      "build_step_span_name (utils/profile_utils.py:490)",
+      3
+    ],
+    [
+      "clamp_position_cuda (sglang/kernels/ops/attention/clamp_position.py:38)",
+      3
+    ],
+    [
+      "__init__ (zmq/error.py:130)",
+      3
+    ],
+    [
+      "_relay_forward_payload (scheduler.py:4946)",
+      2
+    ],
+    [
+      "__getitem__ (<frozen os>:677)",
+      2
+    ],
+    [
+      "_log_gauge (metrics_collector.py:1163)",
+      2
+    ],
+    [
+      "execute (runner/decode_cuda_graph_runner.py:1418)",
+      2
+    ],
+    [
+      "get (<frozen _collections_abc>:775)",
+      2
+    ],
+    [
+      "event_loop_overlap (scheduler.py:2187)",
+      2
+    ],
+    [
+      "current_device (torch/cuda/__init__.py:1206)",
+      2
+    ],
+    [
+      "labels (prometheus_client/metrics.py:203)",
+      2
+    ],
+    [
+      "begin_phase (beliefkv/runtime/prefill_turnover_probe.py:209)",
+      2
+    ],
+    [
+      "process_batch_result_decode (scheduler_components/batch_result_processor.py:1014)",
+      2
+    ],
+    [
+      "_write_payload (load_snapshot.py:370)",
+      2
+    ],
+    [
+      "_static_full_mamba_pool_geometry (beliefkv/runtime/sglang_v0520_observer.py:263)",
+      2
+    ],
+    [
+      "event_loop_overlap (scheduler.py:2179)",
+      2
+    ],
+    [
+      "_compute_mrope_positions_decode (forward_batch_info.py:1252)",
+      2
+    ],
+    [
+      "dynamic_func (<string>:3)",
+      2
+    ],
+    [
+      "forward_jit (sglang/kernels/ops/attention/clamp_position.py:66)",
+      2
+    ],
+    [
+      "is_none (spec_info.py:98)",
+      2
+    ],
+    [
+      "active_pool_idxs (scheduler_components/pool_stats_observer.py:176)",
+      2
+    ],
+    [
+      "inc (prometheus_client/values.py:116)",
+      2
+    ],
+    [
+      "__len__ (torch/_tensor.py:1182)",
+      2
+    ],
+    [
+      "_resolve_default (environ.py:65)",
+      2
+    ],
+    [
+      "_compute_mrope_positions_decode (forward_batch_info.py:1246)",
+      2
+    ],
+    [
+      "__call__ (triton/backends/nvidia/driver.py:313)",
+      2
+    ],
+    [
+      "_get_device_attr (torch/_utils.py:828)",
+      2
+    ],
+    [
+      "_all_reduce_attn_groups (unified_radix_cache.py:359)",
+      2
+    ],
+    [
+      "_get_available_device_type (torch/_utils.py:811)",
+      2
+    ],
+    [
+      "_identity (beliefkv/runtime/v0520_native_telemetry.py:1075)",
+      2
+    ],
+    [
+      "enter (scheduler_stage_metrics.py:82)",
+      2
+    ],
+    [
+      "_enc_hook (load_snapshot.py:267)",
+      2
+    ],
+    [
+      "wait_stream (torch/cuda/streams.py:77)",
+      2
+    ],
+    [
+      "_compute_mrope_positions_decode (forward_batch_info.py:1245)",
+      2
+    ],
+    [
+      "send (zmq/sugar/socket.py:713)",
+      2
+    ],
+    [
+      "maybe_sleep_on_idle (scheduler.py:6109)",
+      2
+    ],
+    [
+      "_normalize_decode_outputs (scheduler_components/batch_result_processor.py:1095)",
+      2
+    ],
+    [
+      "_wrapped_call_impl (torch/nn/modules/module.py:1775)",
+      2
+    ],
+    [
+      "evicted (unified_cache/unified_tree_core.py:166)",
+      2
+    ],
+    [
+      "fused_replay_state_indices (sglang/kernels/ops/mamba/mamba_state_indices_triton.py:87)",
+      2
+    ],
+    [
+      "_get_device_index (torch/cuda/_utils.py:583)",
+      2
+    ],
+    [
+      "getenv (<frozen os>:777)",
+      2
+    ],
+    [
+      "__getattr__ (runtime_context.py:281)",
+      2
+    ],
+    [
+      "normal_decode_set_metadata (sglang/kernels/ops/attention/metadata.py:660)",
+      2
+    ],
+    [
+      "wrapper (utils/nvtx_utils.py:106)",
+      2
+    ],
+    [
+      "stream_output (scheduler_components/output_streamer.py:126)",
+      2
+    ],
+    [
+      "normal_decode_set_metadata (sglang/kernels/ops/attention/metadata.py:605)",
+      2
+    ],
+    [
+      "_grouped_foreach_copy_ (cuda_graph_buffer_registry.py:62)",
+      2
+    ],
+    [
+      "_get_mamba_token_info (scheduler_components/pool_stats_observer.py:279)",
+      2
+    ],
+    [
+      "on_selected (beliefkv/runtime/prefill_turnover_probe.py:141)",
+      2
+    ],
+    [
+      "event_loop_overlap (scheduler.py:2135)",
+      2
+    ],
+    [
+      "_raw_n (cuda_graph_buffer_registry.py:207)",
+      2
+    ],
+    [
+      "event_loop_overlap (scheduler.py:2145)",
+      2
+    ],
+    [
+      "run (triton/runtime/jit.py:760)",
+      2
+    ],
+    [
+      "forward (model_runner.py:1651)",
+      2
+    ],
+    [
+      "_get_mamba_token_info (scheduler_components/pool_stats_observer.py:248)",
+      2
+    ],
+    [
+      "normal_decode_set_metadata (sglang/kernels/ops/attention/metadata.py:591)",
+      2
+    ],
+    [
+      "_record_scheduler_time (scheduler_components/metrics_reporter.py:1276)",
+      2
+    ],
+    [
+      "is_health_check_generate_req (utils.py:377)",
+      2
+    ],
+    [
+      "_apply_cuda_graph_metadata (flashattention_backend.py:2927)",
+      2
+    ],
+    [
+      "is_extend (forward_batch_info.py:138)",
+      2
+    ],
+    [
+      "__enter__ (torch/cuda/__init__.py:791)",
+      2
+    ],
+    [
+      "fill_from (cuda_graph_buffer_registry.py:468)",
+      2
+    ],
+    [
+      "_get_device_index (torch/cuda/_utils.py:584)",
+      2
+    ],
+    [
+      "fill_from (cuda_graph_buffer_registry.py:469)",
+      2
+    ],
+    [
+      "__get__ (enum.py:211)",
+      2
+    ],
+    [
+      "prepare_for_decode (schedule_batch.py:3530)",
+      2
+    ],
+    [
+      "is_disable_overlap_for_batch (scheduler.py:2231)",
+      2
+    ],
+    [
+      "build_replay_fb_view (runner/decode_cuda_graph_runner.py:209)",
+      2
+    ],
+    [
+      "poll (beliefkv/runtime/restore_wait_probe.py:76)",
+      2
+    ],
+    [
+      "build_replay_fb_view (runner/decode_cuda_graph_runner.py:182)",
+      2
+    ],
+    [
+      "_poll_timeout_aborts (scheduler.py:3562)",
+      2
+    ],
+    [
+      "stash (overlap_utils.py:608)",
+      2
+    ],
+    [
+      "build_replay_fb_view (runner/decode_cuda_graph_runner.py:181)",
+      2
+    ],
+    [
+      "_sync_hicache_ready_counts (unified_radix_cache.py:4474)",
+      2
+    ],
+    [
+      "labels (prometheus_client/metrics.py:182)",
+      2
+    ],
+    [
+      "replace (dataclasses.py:1496)",
+      2
+    ],
+    [
+      "replace (dataclasses.py:1503)",
+      2
+    ],
+    [
+      "shared_read_ends (base_attn_backend.py:160)",
+      2
+    ],
+    [
+      "_async_d2h (utils.py:42)",
+      2
+    ],
+    [
+      "record (torch/cuda/streams.py:209)",
+      2
+    ],
+    [
+      "config_bag (runtime_context.py:1085)",
+      2
+    ],
+    [
+      "current_device (torch/cuda/__init__.py:1205)",
+      2
+    ],
+    [
+      "init_new (forward_batch_info.py:873)",
+      2
+    ],
+    [
+      "fill_from (cuda_graph_buffer_registry.py:471)",
+      2
+    ],
+    [
+      "record (torch/cuda/streams.py:207)",
+      2
+    ],
+    [
+      "mamba_checkpoint_grid (runtime_context.py:2009)",
+      2
+    ],
+    [
+      "send_output (scheduler_components/output_sender.py:20)",
+      2
+    ],
+    [
+      "_apply_cuda_graph_metadata (flashattention_backend.py:2909)",
+      2
+    ],
+    [
+      "get_loads (scheduler_components/load_inquirer.py:105)",
+      2
+    ],
+    [
+      "set_mamba_track_indices_from_reqs (schedule_batch.py:2152)",
+      2
+    ],
+    [
+      "_make_graph_key (runner/decode_cuda_graph_runner.py:545)",
+      2
+    ],
+    [
+      "_is_compiled (torch/cuda/__init__.py:162)",
+      2
+    ],
+    [
+      "alloc_for_decode (allocation.py:625)",
+      2
+    ],
+    [
+      "wrapper (utils/nvtx_utils.py:108)",
+      2
+    ],
+    [
+      "fill_from (cuda_graph_buffer_registry.py:443)",
+      2
+    ],
+    [
+      "process_batch_result (scheduler.py:5023)",
+      2
+    ],
+    [
+      "init_new (forward_batch_info.py:864)",
+      2
+    ],
+    [
+      "_get_device_index (torch/cuda/_utils.py:581)",
+      2
+    ],
+    [
+      "__init__ (<string>:88)",
+      2
+    ],
+    [
+      "get_next_batch_to_run (scheduler.py:3963)",
+      2
+    ],
+    [
+      "process_batch_result (scheduler.py:5058)",
+      2
+    ],
+    [
+      "current_stream (torch/cuda/__init__.py:1248)",
+      2
+    ],
+    [
+      "event_loop_overlap (scheduler.py:2197)",
+      2
+    ],
+    [
+      "_pull_raw_reqs (scheduler_components/request_receiver.py:139)",
+      2
+    ],
+    [
+      "copy (schedule_batch.py:3723)",
+      2
+    ],
+    [
+      "on_idle (scheduler.py:5236)",
+      2
+    ],
+    [
+      "__enter__ (threading.py:272)",
+      2
+    ],
+    [
+      "_call_impl (torch/nn/modules/module.py:1783)",
+      2
+    ],
+    [
+      "check_hicache_events (unified_radix_cache.py:4859)",
+      2
+    ],
+    [
+      "_identity (beliefkv/runtime/v0520_native_telemetry.py:1074)",
+      2
+    ],
+    [
+      "forward_batch_generation (tp_worker.py:628)",
+      2
+    ],
+    [
+      "launch_metadata (triton/compiler/compiler.py:486)",
+      2
+    ],
+    [
+      "__enter__ (contextlib.py:135)",
+      2
+    ],
+    [
+      "prepare_for_decode (schedule_batch.py:3503)",
+      2
+    ],
+    [
+      "process_batch_result_decode (scheduler_components/batch_result_processor.py:1067)",
+      2
+    ],
+    [
+      "check_hicache_events (unified_radix_cache.py:4860)",
+      2
+    ],
+    [
+      "execute (runner/decode_cuda_graph_runner.py:1419)",
+      2
+    ],
+    [
+      "_apply_cuda_graph_metadata (flashattention_backend.py:2785)",
+      2
+    ],
+    [
+      "stash (overlap_utils.py:609)",
+      2
+    ],
+    [
+      "event_loop_overlap (scheduler.py:2141)",
+      2
+    ],
+    [
+      "_broadcast_reqs_across_ranks (scheduler_components/request_receiver.py:178)",
+      2
+    ],
+    [
+      "wrapper (scheduler_stage_metrics.py:149)",
+      2
+    ],
+    [
+      "update_finish_state (schedule_batch.py:1874)",
+      1
+    ],
+    [
+      "prepare_for_decode (schedule_batch.py:3469)",
+      1
+    ],
+    [
+      "getenv (<frozen os>:773)",
+      1
+    ],
+    [
+      "compute_cache_key (triton/runtime/jit.py:576)",
+      1
+    ],
+    [
+      "on_launch (beliefkv/runtime/v0520_native_telemetry.py:1301)",
+      1
+    ],
+    [
+      "to_payload (scheduler_components/output_streamer.py:738)",
+      1
+    ],
+    [
+      "on_idle (scheduler.py:5187)",
+      1
+    ],
+    [
+      "_foreach_copy (cuda_graph_buffer_registry.py:53)",
+      1
+    ],
+    [
+      "_compute_mrope_positions_decode (forward_batch_info.py:1262)",
+      1
+    ],
+    [
+      "get_parallel (runtime_context.py:1355)",
+      1
+    ],
+    [
+      "convert_tokens_to_ids (transformers/tokenization_utils_base.py:1464)",
+      1
+    ],
+    [
+      "replace (dataclasses.py:1481)",
+      1
+    ],
+    [
+      "load_batch (runner/decode_cuda_graph_runner.py:1388)",
+      1
+    ],
+    [
+      "is_built (torch/backends/cuda/__init__.py:50)",
+      1
+    ],
+    [
+      "process_batch_result_decode (scheduler_components/batch_result_processor.py:925)",
+      1
+    ],
+    [
+      "is_none (moe/utils.py:59)",
+      1
+    ],
+    [
+      "<listcomp> (schedule_batch.py:3561)",
+      1
+    ],
+    [
+      "exit (scheduler_stage_metrics.py:90)",
+      1
+    ],
+    [
+      "dispatch_after_forward (beliefkv/runtime/sglang_v0520_runtime.py:912)",
+      1
+    ],
+    [
+      "should_record (scheduler_components/metrics_reporter.py:160)",
+      1
+    ],
+    [
+      "__init__ (<string>:34)",
+      1
+    ],
+    [
+      "set (prometheus_client/metrics.py:464)",
+      1
+    ],
+    [
+      "__init__ (<string>:75)",
+      1
+    ],
+    [
+      "_record_step_counters (scheduler.py:5090)",
+      1
+    ],
+    [
+      "put (queue.py:145)",
+      1
+    ],
+    [
+      "_replay_metadata (hybrid_linear_attn_backend.py:909)",
+      1
+    ],
+    [
+      "__enter__ (torch/autograd/profiler.py:920)",
+      1
+    ],
+    [
+      "supports_fast_match_prefix (unified_cache/unified_tree_core_interface.py:435)",
+      1
+    ],
+    [
+      "__truediv__ (pathlib.py:767)",
+      1
+    ],
+    [
+      "flash_attn_with_kvcache (sgl_kernel/flash_attn.py:188)",
+      1
+    ],
+    [
+      "scheduler_step (beliefkv/runtime/sglang_v0520_runtime.py:1946)",
+      1
+    ],
+    [
+      "__getstate__ (req_time_stats.py:666)",
+      1
+    ],
+    [
+      "is_empty (schedule_batch.py:2502)",
+      1
+    ],
+    [
+      "process_batch_result_decode (scheduler_components/batch_result_processor.py:927)",
+      1
+    ],
+    [
+      "run_batch (scheduler.py:4739)",
+      1
+    ],
+    [
+      "process_batch_result_decode (scheduler_components/batch_result_processor.py:950)",
+      1
+    ],
+    [
+      "_sync_hicache_ready_counts (unified_radix_cache.py:4514)",
+      1
+    ],
+    [
+      "is_extend (forward_batch_info.py:139)",
+      1
+    ],
+    [
+      "enter (scheduler_stage_metrics.py:86)",
+      1
+    ],
+    [
+      "_forward_raw (model_runner.py:1811)",
+      1
+    ],
+    [
+      "get_scheduler_metadata (sgl_kernel/flash_attn.py:417)",
+      1
+    ],
+    [
+      "__init__ (<string>:63)",
+      1
+    ],
+    [
+      "alloc (allocator/token.py:62)",
+      1
+    ],
+    [
+      "_sample (scheduler_stage_metrics.py:129)",
+      1
+    ],
+    [
+      "on_launch (beliefkv/runtime/v0520_native_telemetry.py:1330)",
+      1
+    ],
+    [
+      "on_completed (beliefkv/runtime/v0520_native_telemetry.py:1553)",
+      1
+    ],
+    [
+      "_write_payload (load_snapshot.py:368)",
+      1
+    ],
+    [
+      "<genexpr> (scheduler_components/output_streamer.py:158)",
+      1
+    ],
+    [
+      "load_batch (runner/decode_cuda_graph_runner.py:1246)",
+      1
+    ],
+    [
+      "decay_step (scheduler_components/new_token_ratio_tracker.py:35)",
+      1
+    ],
+    [
+      "labels (prometheus_client/metrics.py:138)",
+      1
+    ],
+    [
+      "replay (runner_backend_utils/breakable_cuda_graph/breakable_cuda_graph.py:289)",
+      1
+    ],
+    [
+      "is_none (spec_info.py:97)",
+      1
+    ],
+    [
+      "run (triton/runtime/jit.py:745)",
+      1
+    ],
+    [
+      "record_batch_in_overlap (scheduler.py:4613)",
+      1
+    ],
+    [
+      "_unified_attention_with_output_impl (radix_attention.py:301)",
+      1
+    ],
+    [
+      "acquire_component_lock (unified_cache/components/full.py:360)",
+      1
+    ],
+    [
+      "_is_owned (threading.py:289)",
+      1
+    ],
+    [
+      "_write_payload (load_snapshot.py:369)",
+      1
+    ],
+    [
+      "get (environ.py:77)",
+      1
+    ],
+    [
+      "_beliefkv_on_batch_completed (scheduler.py:5068)",
+      1
+    ],
+    [
+      "_maybe_update_local_attn_metadata_for_replay (flashattention_backend.py:3258)",
+      1
+    ],
+    [
+      "init_forward_metadata_out_graph (hybrid_linear_attn_backend.py:1217)",
+      1
+    ],
+    [
+      "get_loads (scheduler_components/load_inquirer.py:153)",
+      1
+    ],
+    [
+      "forward_context (forward_context.py:78)",
+      1
+    ],
+    [
+      "_sync_hicache_ready_counts (unified_radix_cache.py:4476)",
+      1
+    ],
+    [
+      "to_payload (scheduler_components/output_streamer.py:727)",
+      1
+    ],
+    [
+      "_maybe_cupti_monitor (torch/autograd/profiler.py:857)",
+      1
+    ],
+    [
+      "_grouped_foreach_copy_ (cuda_graph_buffer_registry.py:63)",
+      1
+    ],
+    [
+      "_padded_n (cuda_graph_buffer_registry.py:204)",
+      1
+    ],
+    [
+      "get (environ.py:68)",
+      1
+    ],
+    [
+      "process_input_requests (scheduler.py:2283)",
+      1
+    ],
+    [
+      "get_next_batch_to_run (scheduler.py:4033)",
+      1
+    ],
+    [
+      "run_batch (scheduler.py:4751)",
+      1
+    ],
+    [
+      "_handle_finish_state_updated_req (scheduler_components/batch_result_processor.py:1305)",
+      1
+    ],
+    [
+      "run (triton/runtime/jit.py:744)",
+      1
+    ],
+    [
+      "can_run_graph (runner/decode_cuda_graph_runner.py:706)",
+      1
+    ],
+    [
+      "l2norm_fwd (l2norm.py:97)",
+      1
+    ],
+    [
+      "load_batch (runner/decode_cuda_graph_runner.py:1396)",
+      1
+    ],
+    [
+      "on_completed (beliefkv/runtime/v0520_native_telemetry.py:1578)",
+      1
+    ],
+    [
+      "run_batch (scheduler.py:4711)",
+      1
+    ],
+    [
+      "event_loop_overlap (scheduler.py:2134)",
+      1
+    ],
+    [
+      "empty_graph_memory_usage (graph_memory_usage.py:16)",
+      1
+    ],
+    [
+      "on_batch_completed (beliefkv/runtime/sglang_v0520_runtime.py:9795)",
+      1
+    ],
+    [
+      "_async_d2h (utils.py:39)",
+      1
+    ],
+    [
+      "mamba_track_grid (runtime_context.py:2012)",
+      1
+    ],
+    [
+      "full_evictable_size (unified_radix_cache.py:5026)",
+      1
+    ],
+    [
+      "__init__ (zmq/error.py:125)",
+      1
+    ],
+    [
+      "_compute_mrope_positions (forward_batch_info.py:1227)",
+      1
+    ],
+    [
+      "forward_batch_generation (tp_worker.py:622)",
+      1
+    ],
+    [
+      "__new__ (torch/cuda/streams.py:37)",
+      1
+    ],
+    [
+      "__init__ (triton/compiler/compiler.py:378)",
+      1
+    ],
+    [
+      "set_stream (torch/cuda/__init__.py:854)",
+      1
+    ],
+    [
+      "WORLD (torch/distributed/distributed_c10d.py:817)",
+      1
+    ],
+    [
+      "_check_all_pools (scheduler_components/invariant_checker.py:471)",
+      1
+    ],
+    [
+      "_padded_n (cuda_graph_buffer_registry.py:198)",
+      1
+    ],
+    [
+      "name (enum.py:1255)",
+      1
+    ],
+    [
+      "run_batch (scheduler.py:4694)",
+      1
+    ],
+    [
+      "file_lock (load_snapshot.py:288)",
+      1
+    ],
+    [
+      "_named (beliefkv/runtime/sglang_v0520_observer.py:193)",
+      1
+    ],
+    [
+      "alloc_for_decode (allocation.py:638)",
+      1
+    ],
+    [
+      "__init__ (cutlass/cute/runtime.py:173)",
+      1
+    ],
+    [
+      "_poll_restore_wait (beliefkv/runtime/v0520_native_telemetry.py:1660)",
+      1
+    ],
+    [
+      "get_loads (scheduler_components/load_inquirer.py:133)",
+      1
+    ],
+    [
+      "fill_from (cuda_graph_buffer_registry.py:429)",
+      1
+    ],
+    [
+      "dispatch_join_prepare (beliefkv/runtime/sglang_v0520_runtime.py:6182)",
+      1
+    ],
+    [
+      "__new__ (torch/cuda/streams.py:39)",
+      1
+    ],
+    [
+      "_pull_raw_reqs (scheduler_components/request_receiver.py:145)",
+      1
+    ],
+    [
+      "_derived_width (runtime_context.py:326)",
+      1
+    ],
+    [
+      "copy_to_cpu (utils.py:196)",
+      1
+    ],
+    [
+      "on_batch_completed (beliefkv/runtime/sglang_v0520_runtime.py:9793)",
+      1
+    ],
+    [
+      "build_step_span_name (utils/profile_utils.py:495)",
+      1
+    ],
+    [
+      "expire (beliefkv/runtime/sglang_v0520_physical.py:1656)",
+      1
+    ],
+    [
+      "update_regex_vocab_mask (sampling_batch_info.py:257)",
+      1
+    ],
+    [
+      "mamba_cache_chunk_size (runtime_context.py:1999)",
+      1
+    ],
+    [
+      "_pull_raw_reqs (scheduler_components/request_receiver.py:140)",
+      1
+    ],
+    [
+      "is_decode_or_idle (forward_batch_info.py:167)",
+      1
+    ],
+    [
+      "_get_device_index (torch/_utils.py:891)",
+      1
+    ],
+    [
+      "run_batch (scheduler.py:4707)",
+      1
+    ],
+    [
+      "__call__ (triton/backends/nvidia/driver.py:325)",
+      1
+    ],
+    [
+      "is_disable_overlap_for_batch (scheduler.py:2228)",
+      1
+    ],
+    [
+      "strip_beam_tail (beam_search/batch_tail.py:103)",
+      1
+    ],
+    [
+      "<listcomp> (scheduler_components/batch_result_processor.py:1099)",
+      1
+    ],
+    [
+      "get_global_expert_distribution_recorder (eplb/expert_distribution.py:304)",
+      1
+    ],
+    [
+      "_get_mamba_token_info (scheduler_components/pool_stats_observer.py:265)",
+      1
+    ],
+    [
+      "copy_to_cpu (utils.py:192)",
+      1
+    ],
+    [
+      "_insert_walk_step (unified_cache/unified_tree_core.py:1255)",
+      1
+    ],
+    [
+      "poll (beliefkv/runtime/prefill_turnover_probe.py:370)",
+      1
+    ],
+    [
+      "to_payload (scheduler_components/output_streamer.py:753)",
+      1
+    ],
+    [
+      "is_fully_idle (scheduler.py:5286)",
+      1
+    ],
+    [
+      "get_loads (scheduler_components/load_inquirer.py:129)",
+      1
+    ],
+    [
+      "apply_logits_bias (sampling_batch_info.py:318)",
+      1
+    ],
+    [
+      "match_at (radix_cache.py:207)",
+      1
+    ],
+    [
+      "forward_batch_generation (tp_worker.py:670)",
+      1
+    ],
+    [
+      "clamp_position (sglang/kernels/ops/attention/clamp_position.py:73)",
+      1
+    ],
+    [
+      "merge_graph_memory_usage (graph_memory_usage.py:28)",
+      1
+    ],
+    [
+      "pop_and_process (scheduler.py:2117)",
+      1
+    ],
+    [
+      "__init__ (contextlib.py:108)",
+      1
+    ],
+    [
+      "get_loads (scheduler_components/load_inquirer.py:231)",
+      1
+    ],
+    [
+      "_replay_metadata (hybrid_linear_attn_backend.py:848)",
+      1
+    ],
+    [
+      "on_completed (beliefkv/runtime/v0520_native_telemetry.py:1581)",
+      1
+    ],
+    [
+      "is_available (torch/cuda/__init__.py:178)",
+      1
+    ],
+    [
+      "release_component_lock (unified_cache/components/full.py:396)",
+      1
+    ],
+    [
+      "init_new (forward_batch_info.py:934)",
+      1
+    ],
+    [
+      "forward (sampler.py:289)",
+      1
+    ],
+    [
+      "<genexpr> (scheduler_components/output_streamer.py:157)",
+      1
+    ],
+    [
+      "build_step_span_name (utils/profile_utils.py:487)",
+      1
+    ],
+    [
+      "evict_to_free_tokens (allocator/base.py:77)",
+      1
+    ],
+    [
+      "prepare_for_decode (schedule_batch.py:3509)",
+      1
+    ],
+    [
+      "__init__ (<string>:7)",
+      1
+    ],
+    [
+      "graph_memory_usage (tp_worker.py:115)",
+      1
+    ],
+    [
+      "run (triton/runtime/jit.py:762)",
+      1
+    ],
+    [
+      "_maybe_clear_mm_inputs (scheduler.py:2911)",
+      1
+    ],
+    [
+      "commit_decode (beam_search/coordinator.py:383)",
+      1
+    ],
+    [
+      "on_launch (beliefkv/runtime/v0520_native_telemetry.py:1305)",
+      1
+    ],
+    [
+      "__init__ (<string>:35)",
+      1
+    ],
+    [
+      "prepare_for_decode (schedule_batch.py:3461)",
+      1
+    ],
+    [
+      "_check_mamba_pool (scheduler_components/invariant_checker.py:181)",
+      1
+    ],
+    [
+      "alloc_token_slots (allocation.py:158)",
+      1
+    ],
+    [
+      "_replay_metadata (hybrid_linear_attn_backend.py:846)",
+      1
+    ],
+    [
+      "_preprocess_logits (model_runner.py:1884)",
+      1
+    ],
+    [
+      "launch_metadata (triton/compiler/compiler.py:482)",
+      1
+    ],
+    [
+      "_advance_insert (unified_cache/unified_tree_core.py:1171)",
+      1
+    ],
+    [
+      "_unwrap_if_constexpr (triton/language/core.py:359)",
+      1
+    ],
+    [
+      "__init__ (contextlib.py:105)",
+      1
+    ],
+    [
+      "scheduler_step (beliefkv/runtime/sglang_v0520_runtime.py:1888)",
+      1
+    ],
+    [
+      "init_new (forward_batch_info.py:784)",
+      1
+    ],
+    [
+      "get_new_batch_prefill (scheduler.py:4092)",
+      1
+    ],
+    [
+      "active (triton/runtime/driver.py:38)",
+      1
+    ],
+    [
+      "is_empty (schedule_batch.py:2503)",
+      1
+    ],
+    [
+      "_get_device_index (torch/cuda/_utils.py:574)",
+      1
+    ],
+    [
+      "scheduler_step (beliefkv/runtime/sglang_v0520_runtime.py:1874)",
+      1
+    ],
+    [
+      "recv_requests (scheduler_components/request_receiver.py:112)",
+      1
+    ],
+    [
+      "update_running_batch (scheduler.py:4524)",
+      1
+    ],
+    [
+      "<genexpr> (schedule_batch.py:3162)",
+      1
+    ],
+    [
+      "__init__ (contextlib.py:104)",
+      1
+    ],
+    [
+      "_maintain_prediction_state (beliefkv/runtime/sglang_v0520_runtime.py:1965)",
+      1
+    ],
+    [
+      "put (queue.py:151)",
+      1
+    ],
+    [
+      "prepare_attn_tp_scatter_input (forward_batch_info.py:1720)",
+      1
+    ],
+    [
+      "__exit__ (contextlib.py:141)",
+      1
+    ],
+    [
+      "__c_pointers__ (cutlass/cutlass_dsl/cuda_stream_adapter.py:45)",
+      1
+    ],
+    [
+      "fill_from (cuda_graph_buffer_registry.py:419)",
+      1
+    ],
+    [
+      "run_batch (scheduler.py:4792)",
+      1
+    ],
+    [
+      "alloc_aux_to_lengths (memory_pool.py:369)",
+      1
+    ],
+    [
+      "wait (torch/cuda/streams.py:211)",
+      1
+    ],
+    [
+      "load_batch (runner/decode_cuda_graph_runner.py:1354)",
+      1
+    ],
+    [
+      "replay_session (runner_backend/full_cuda_graph_backend.py:197)",
+      1
+    ],
+    [
+      "evict_from_tree_cache (common.py:171)",
+      1
+    ],
+    [
+      "match_at (radix_cache.py:208)",
+      1
+    ],
+    [
+      "replace (dataclasses.py:1492)",
+      1
+    ],
+    [
+      "_prepare_pressure (beliefkv/runtime/sglang_v0520_runtime.py:6080)",
+      1
+    ],
+    [
+      "__enter__ (torch/autograd/profiler.py:918)",
+      1
+    ],
+    [
+      "__exit__ (contextlib.py:144)",
+      1
+    ],
+    [
+      "inc (prometheus_client/values.py:119)",
+      1
+    ],
+    [
+      "resolve_forward_inputs (overlap_utils.py:110)",
+      1
+    ],
+    [
+      "run (triton/runtime/jit.py:758)",
+      1
+    ],
+    [
+      "get_loads (scheduler_components/load_inquirer.py:240)",
+      1
+    ],
+    [
+      "forward (model_runner.py:1670)",
+      1
+    ],
+    [
+      "inc (prometheus_client/values.py:115)",
+      1
+    ],
+    [
+      "_beliefkv_before_batch_selection (scheduler.py:3842)",
+      1
+    ],
+    [
+      "<genexpr> (scheduler_components/output_streamer.py:152)",
+      1
+    ],
+    [
+      "measured (beliefkv/runtime/hotpath_timing.py:103)",
+      1
+    ],
+    [
+      "to_payload (scheduler_components/output_streamer.py:717)",
+      1
+    ],
+    [
+      "_zero_padded_pcg_tail (radix_attention.py:68)",
+      1
+    ],
+    [
+      "fill_from (cuda_graph_buffer_registry.py:461)",
+      1
+    ],
+    [
+      "__getattr__ (runtime_context.py:286)",
+      1
+    ],
+    [
+      "_get_device_index (torch/cuda/_utils.py:557)",
+      1
+    ],
+    [
+      "<lambda> (scheduler.py:2646)",
+      1
+    ],
+    [
+      "<genexpr> (hybrid_linear_attn_backend.py:1223)",
+      1
+    ],
+    [
+      "from_schedule_batch (sampling_batch_info.py:102)",
+      1
+    ],
+    [
+      "__call__ (triton/knobs.py:423)",
+      1
+    ],
+    [
+      "get_loads (scheduler_components/load_inquirer.py:233)",
+      1
+    ],
+    [
+      "init_new (forward_batch_info.py:815)",
+      1
+    ],
+    [
+      "run_batch (scheduler.py:4672)",
+      1
+    ],
+    [
+      "execute (runner/decode_cuda_graph_runner.py:1437)",
+      1
+    ],
+    [
+      "_beliefkv_on_batch_completed (scheduler.py:5070)",
+      1
+    ],
+    [
+      "__getitem__ (<frozen os>:674)",
+      1
+    ],
+    [
+      "dispatch_tool_prepare (beliefkv/runtime/sglang_v0520_runtime.py:6300)",
+      1
+    ],
+    [
+      "maybe_evict_swa (schedule_batch.py:3755)",
+      1
+    ],
+    [
+      "evict_from_tree_cache (common.py:173)",
+      1
+    ],
+    [
+      "_set_decode_page_metadata (flashattention_backend.py:2750)",
+      1
+    ],
+    [
+      "get (environ.py:71)",
+      1
+    ],
+    [
+      "<genexpr> (unified_cache/unified_tree_core.py:2183)",
+      1
+    ],
+    [
+      "prepare_for_decode (schedule_batch.py:3542)",
+      1
+    ],
+    [
+      "get_next_batch_to_run (scheduler.py:3848)",
+      1
+    ],
+    [
+      "load_batch (runner/decode_cuda_graph_runner.py:1314)",
+      1
+    ],
+    [
+      "init_new (forward_batch_info.py:841)",
+      1
+    ],
+    [
+      "session_held_tokens (unified_radix_cache.py:5005)",
+      1
+    ],
+    [
+      "_derived_width (runtime_context.py:333)",
+      1
+    ],
+    [
+      "_beliefkv_before_batch_selection (scheduler.py:3827)",
+      1
+    ],
+    [
+      "record_batch_in_overlap (scheduler.py:4610)",
+      1
+    ],
+    [
+      "can_prefetch_during_overlap (beliefkv/runtime/sglang_v0520_runtime.py:869)",
+      1
+    ],
+    [
+      "get_global_experts_capturer (state_capturer/routed_experts.py:137)",
+      1
+    ],
+    [
+      "on_batch_completed (beliefkv/runtime/sglang_v0520_runtime.py:9781)",
+      1
+    ],
+    [
+      "_touch_node (unified_cache/unified_tree_core.py:1013)",
+      1
+    ],
+    [
+      "_identity (beliefkv/runtime/v0520_native_telemetry.py:1068)",
+      1
+    ],
+    [
+      "can_run_graph (runner/decode_cuda_graph_runner.py:692)",
+      1
+    ],
+    [
+      "get_loads (scheduler_components/load_inquirer.py:239)",
+      1
+    ],
+    [
+      "clamp_position_cuda (sglang/kernels/ops/attention/clamp_position.py:39)",
+      1
+    ],
+    [
+      "get_next_batch_to_run (scheduler.py:4025)",
+      1
+    ],
+    [
+      "is_available (torch/cuda/__init__.py:188)",
+      1
+    ],
+    [
+      "_insert_walk_step (unified_cache/unified_tree_core.py:1274)",
+      1
+    ],
+    [
+      "_count_ready_acks (unified_radix_cache.py:4462)",
+      1
+    ],
+    [
+      "forward_batch_generation (tp_worker.py:672)",
+      1
+    ],
+    [
+      "__enter__ (torch/cuda/__init__.py:795)",
+      1
+    ],
+    [
+      "publish (overlap_utils.py:585)",
+      1
+    ],
+    [
+      "can_prefetch_during_overlap (beliefkv/runtime/sglang_v0520_runtime.py:871)",
+      1
+    ],
+    [
+      "replay (runner_backend/full_cuda_graph_backend.py:207)",
+      1
+    ],
+    [
+      "on_completed (beliefkv/runtime/v0520_native_telemetry.py:1622)",
+      1
+    ],
+    [
+      "flush_trace_batch (req_time_stats.py:1298)",
+      1
+    ],
+    [
+      "publish (overlap_utils.py:578)",
+      1
+    ],
+    [
+      "_raw_n (cuda_graph_buffer_registry.py:211)",
+      1
+    ],
+    [
+      "_unwrap_if_constexpr (triton/language/core.py:355)",
+      1
+    ],
+    [
+      "config_bag (runtime_context.py:1087)",
+      1
+    ],
+    [
+      "init_forward_metadata_out_graph (hybrid_linear_attn_backend.py:1218)",
+      1
+    ],
+    [
+      "next_power_of_2 (utils/common.py:3433)",
+      1
+    ],
+    [
+      "forward_batch_generation (tp_worker.py:632)",
+      1
+    ],
+    [
+      "inner (contextlib.py:81)",
+      1
+    ],
+    [
+      "on_completed (beliefkv/runtime/v0520_native_telemetry.py:1561)",
+      1
+    ],
+    [
+      "inc (prometheus_client/metrics.py:343)",
+      1
+    ],
+    [
+      "run_batch (scheduler.py:4693)",
+      1
+    ],
+    [
+      "cached_compile (flashinfer/gdn_kernels/delta_rule_dsl/custom_compile_cache.py:169)",
+      1
+    ],
+    [
+      "<genexpr> (scheduler_components/load_inquirer.py:129)",
+      1
+    ],
+    [
+      "replay_fn (runner_backend_utils/breakable_cuda_graph/breakable_cuda_graph.py:261)",
+      1
+    ],
+    [
+      "on_selected (beliefkv/runtime/prefill_turnover_probe.py:138)",
+      1
+    ],
+    [
+      "_maybe_init_forward_bufs (overlap_utils.py:361)",
+      1
+    ],
+    [
+      "on_completed (beliefkv/runtime/v0520_native_telemetry.py:1619)",
+      1
+    ],
+    [
+      "is_last_rank (distributed/parallel_state.py:576)",
+      1
+    ],
+    [
+      "_check_token_based_finish (schedule_batch.py:1725)",
+      1
+    ],
+    [
+      "_must_dispatch_in_python (torch/_ops.py:1156)",
+      1
+    ],
+    [
+      "_get_mamba_token_info (scheduler_components/pool_stats_observer.py:277)",
+      1
+    ],
+    [
+      "_all_reduce_attn_groups (unified_radix_cache.py:356)",
+      1
+    ],
+    [
+      "on_launch (beliefkv/runtime/v0520_native_telemetry.py:1156)",
+      1
+    ],
+    [
+      "on_launch (beliefkv/runtime/v0520_native_telemetry.py:1161)",
+      1
+    ],
+    [
+      "_validate_capture_hidden_mode (runner/decode_cuda_graph_runner.py:1228)",
+      1
+    ],
+    [
+      "_check_pool_invariant (scheduler_components/invariant_checker.py:91)",
+      1
+    ],
+    [
+      "<listcomp> (schedule_batch.py:3563)",
+      1
+    ],
+    [
+      "get_next_batch_to_run (scheduler.py:4011)",
+      1
+    ],
+    [
+      "process_batch_result (scheduler.py:5052)",
+      1
+    ],
+    [
+      "_get_device_index (torch/cuda/_utils.py:575)",
+      1
+    ],
+    [
+      "publish_load_snapshot (scheduler.py:1010)",
+      1
+    ],
+    [
+      "get (<frozen _collections_abc>:773)",
+      1
+    ],
+    [
+      "__len__ (torch/_tensor.py:1179)",
+      1
+    ],
+    [
+      "from_dlpack (cutlass/cute/runtime.py:826)",
+      1
+    ],
+    [
+      "chunk_gated_delta_rule (flashinfer/gdn_prefill.py:558)",
+      1
+    ],
+    [
+      "_process_hicache_events (scheduler.py:3791)",
+      1
+    ],
+    [
+      "alloc_for_decode (allocation.py:600)",
+      1
+    ],
+    [
+      "run_batch (scheduler.py:4716)",
+      1
+    ],
+    [
+      "event_loop_overlap (scheduler.py:2206)",
+      1
+    ],
+    [
+      "accept (scheduler_components/output_streamer.py:437)",
+      1
+    ],
+    [
+      "helper (contextlib.py:299)",
+      1
+    ],
+    [
+      "session_held_req_count (session/streaming_session.py:469)",
+      1
+    ],
+    [
+      "to_payload (scheduler_components/output_streamer.py:724)",
+      1
+    ],
+    [
+      "__getstate__ (req_time_stats.py:675)",
+      1
+    ],
+    [
+      "recv_requests (scheduler_components/request_receiver.py:110)",
+      1
+    ],
+    [
+      "_stream_output_generation (scheduler_components/output_streamer.py:161)",
+      1
+    ],
+    [
+      "set_raw (utils/gauge_histogram.py:66)",
+      1
+    ],
+    [
+      "fused_replay_state_indices (sglang/kernels/ops/mamba/mamba_state_indices_triton.py:85)",
+      1
+    ],
+    [
+      "event_loop_overlap (scheduler.py:2211)",
+      1
+    ],
+    [
+      "event_loop_overlap (scheduler.py:2198)",
+      1
+    ],
+    [
+      "get_next_batch_to_run (scheduler.py:4049)",
+      1
+    ],
+    [
+      "accept (scheduler_components/output_streamer.py:460)",
+      1
+    ],
+    [
+      "get_loads (scheduler_components/load_inquirer.py:230)",
+      1
+    ],
+    [
+      "_broadcast_reqs_across_ranks (scheduler_components/request_receiver.py:177)",
+      1
+    ],
+    [
+      "_forward_raw (model_runner.py:1784)",
+      1
+    ],
+    [
+      "__exit__ (contextlib.py:143)",
+      1
+    ],
+    [
+      "inc (prometheus_client/values.py:117)",
+      1
+    ],
+    [
+      "__call__ (torch/_ops.py:1095)",
+      1
+    ],
+    [
+      "encode (<frozen os>:757)",
+      1
+    ],
+    [
+      "_replay_metadata (hybrid_linear_attn_backend.py:849)",
+      1
+    ],
+    [
+      "loading_check (unified_radix_cache.py:4711)",
+      1
+    ],
+    [
+      "get_next_batch_to_run (scheduler.py:4046)",
+      1
+    ],
+    [
+      "_resolve_shared_read_ends (runner/decode_cuda_graph_runner.py:494)",
+      1
+    ],
+    [
+      "_check_str_based_finish (schedule_batch.py:1766)",
+      1
+    ],
+    [
+      "_init_handles (triton/compiler/compiler.py:441)",
+      1
+    ],
+    [
+      "_forward_raw (model_runner.py:1799)",
+      1
+    ],
+    [
+      "get_next_batch_to_run (scheduler.py:3960)",
+      1
+    ],
+    [
+      "forward (sglang/kernels/fused_op.py:629)",
+      1
+    ],
+    [
+      "increment_realtime_tokens (metrics_collector.py:1289)",
+      1
+    ],
+    [
+      "_nvml_based_avail (torch/cuda/__init__.py:166)",
+      1
+    ],
+    [
+      "get_next_batch_to_run (scheduler.py:4026)",
+      1
+    ],
+    [
+      "fused_qkv_split_gdn_prefill (sglang/kernels/ops/attention/triton_gdn_fused_proj.py:746)",
+      1
+    ],
+    [
+      "is_disable_overlap_for_batch (scheduler.py:2239)",
+      1
+    ],
+    [
+      "_broadcast_reqs_across_ranks (scheduler_components/request_receiver.py:208)",
+      1
+    ],
+    [
+      "alloc_for_decode (allocation.py:647)",
+      1
+    ],
+    [
+      "_get_device_attr (torch/_utils.py:830)",
+      1
+    ],
+    [
+      "is_extend (forward_batch_info.py:143)",
+      1
+    ],
+    [
+      "_handle_fromlist (<frozen importlib._bootstrap>:1218)",
+      1
+    ],
+    [
+      "_check_token_based_finish (schedule_batch.py:1722)",
+      1
+    ],
+    [
+      "on_completed (beliefkv/runtime/v0520_native_telemetry.py:1569)",
+      1
+    ],
+    [
+      "process_batch_result_decode (scheduler_components/batch_result_processor.py:928)",
+      1
+    ],
+    [
+      "session_held_tokens (scheduler_components/pool_stats_observer.py:185)",
+      1
+    ],
+    [
+      "run_batch (scheduler.py:4669)",
+      1
+    ],
+    [
+      "<genexpr> (torch/_ops.py:1155)",
+      1
+    ],
+    [
+      "synchronize (torch/cuda/streams.py:245)",
+      1
+    ],
+    [
+      "__getattr__ (runtime_context.py:287)",
+      1
+    ],
+    [
+      "_grouped_foreach_copy_ (cuda_graph_buffer_registry.py:65)",
+      1
+    ],
+    [
+      "_maybe_log_idle_metrics (scheduler_components/metrics_reporter.py:1323)",
+      1
+    ],
+    [
+      "config_bag (runtime_context.py:1086)",
+      1
+    ],
+    [
+      "_get_device_index (torch/cuda/_utils.py:577)",
+      1
+    ],
+    [
+      "__init__ (<string>:2)",
+      1
+    ],
+    [
+      "reset_padding (cuda_graph_buffer_registry.py:231)",
+      1
+    ],
+    [
+      "__call__ (triton/runtime/jit.py:1113)",
+      1
+    ],
+    [
+      "copy (schedule_batch.py:3713)",
+      1
+    ],
+    [
+      "_accumulate_decode_moment (scheduler.py:417)",
+      1
+    ],
+    [
+      "send_output (scheduler_components/output_sender.py:29)",
+      1
+    ],
+    [
+      "init_forward_metadata_out_graph (hybrid_linear_attn_backend.py:359)",
+      1
+    ],
+    [
+      "_refresh_fill_ids (schedule_batch.py:1510)",
+      1
+    ],
+    [
+      "put (queue.py:134)",
+      1
+    ],
+    [
+      "_call_impl (torch/nn/modules/module.py:1786)",
+      1
+    ],
+    [
+      "get_next_batch_to_run (scheduler.py:3989)",
+      1
+    ],
+    [
+      "mamba_track_grid (runtime_context.py:2016)",
+      1
+    ],
+    [
+      "get_num_generated_tokens (utils.py:130)",
+      1
+    ],
+    [
+      "run (triton/runtime/jit.py:709)",
+      1
+    ],
+    [
+      "get_next_batch_to_run (scheduler.py:3853)",
+      1
+    ],
+    [
+      "write (load_snapshot.py:351)",
+      1
+    ],
+    [
+      "event_loop_overlap (scheduler.py:2138)",
+      1
+    ],
+    [
+      "_record_step_counters (scheduler.py:5087)",
+      1
+    ],
+    [
+      "launch_metadata (triton/compiler/compiler.py:485)",
+      1
+    ],
+    [
+      "_pad_to_bucket (runner/base_cuda_graph_runner.py:149)",
+      1
+    ],
+    [
+      "execute (runner/decode_cuda_graph_runner.py:1407)",
+      1
+    ],
+    [
+      "run_batch (scheduler.py:4742)",
+      1
+    ],
+    [
+      "may_enable (debug_utils/dumper.py:269)",
+      1
+    ],
+    [
+      "graph_memory_usage (tp_worker.py:117)",
+      1
+    ],
+    [
+      "mamba_track_grid (runtime_context.py:2015)",
+      1
+    ],
+    [
+      "get_next_batch_to_run (scheduler.py:4016)",
+      1
+    ],
+    [
+      "current_stream (torch/cuda/__init__.py:1235)",
+      1
+    ],
+    [
+      "process_batch_result (scheduler.py:5049)",
+      1
+    ],
+    [
+      "check_hicache_events (unified_radix_cache.py:4852)",
+      1
+    ],
+    [
+      "profile_range (utils/nvtx_utils.py:84)",
+      1
+    ],
+    [
+      "_grouped_foreach_copy_ (cuda_graph_buffer_registry.py:64)",
+      1
+    ],
+    [
+      "_translate_mamba_indices (hybrid_linear_attn_backend.py:119)",
+      1
+    ],
+    [
+      "run (triton/runtime/jit.py:727)",
+      1
+    ],
+    [
+      "init_new (forward_batch_info.py:986)",
+      1
+    ],
+    [
+      "alloc_for_decode (allocation.py:646)",
+      1
+    ],
+    [
+      "<lambda> (torch/_utils.py:845)",
+      1
+    ],
+    [
+      "begin_phase (beliefkv/runtime/prefill_turnover_probe.py:237)",
+      1
+    ],
+    [
+      "<genexpr> (beliefkv/runtime/v0520_native_telemetry.py:1074)",
+      1
+    ],
+    [
+      "_init_track_ssm_indices (hybrid_linear_attn_backend.py:456)",
+      1
+    ],
+    [
+      "new_tokens_required_next_decode (schedule_batch.py:3161)",
+      1
+    ],
+    [
+      "process_batch_result_decode (scheduler_components/batch_result_processor.py:951)",
+      1
+    ],
+    [
+      "inner (contextlib.py:80)",
+      1
+    ],
+    [
+      "fill_from (cuda_graph_buffer_registry.py:460)",
+      1
+    ],
+    [
+      "_apply_cuda_graph_metadata (flashattention_backend.py:2926)",
+      1
+    ],
+    [
+      "get_moe_a2a_backend (moe/utils.py:465)",
+      1
+    ],
+    [
+      "last_shared_read_runner (tp_worker.py:97)",
+      1
+    ],
+    [
+      "update_finish_state (schedule_batch.py:1856)",
+      1
+    ],
+    [
+      "prepare_for_decode (schedule_batch.py:3502)",
+      1
+    ],
+    [
+      "record_batch_in_overlap (scheduler.py:4611)",
+      1
+    ],
+    [
+      "build_step_span_name (utils/profile_utils.py:491)",
+      1
+    ],
+    [
+      "to_payload (scheduler_components/output_streamer.py:767)",
+      1
+    ],
+    [
+      "__init__ (<string>:3)",
+      1
+    ],
+    [
+      "poll (beliefkv/runtime/restore_wait_probe.py:75)",
+      1
+    ],
+    [
+      "on_completed (beliefkv/runtime/v0520_native_telemetry.py:1574)",
+      1
+    ],
+    [
+      "_write_payload (load_snapshot.py:356)",
+      1
+    ],
+    [
+      "getter (runtime_context.py:461)",
+      1
+    ],
+    [
+      "_forward_raw (model_runner.py:1807)",
+      1
+    ],
+    [
+      "expire (beliefkv/runtime/sglang_v0520_physical.py:1658)",
+      1
+    ],
+    [
+      "init_new (forward_batch_info.py:887)",
+      1
+    ],
+    [
+      "_audit_fork_safety (filelock/_api.py:1801)",
+      1
+    ],
+    [
+      "__exit__ (torch/autograd/profiler.py:950)",
+      1
+    ],
+    [
+      "fill_from (cuda_graph_buffer_registry.py:464)",
+      1
+    ],
+    [
+      "notify (threading.py:382)",
+      1
+    ],
+    [
+      "process_batch_result (scheduler.py:5033)",
+      1
+    ],
+    [
+      "process_batch_result_decode (scheduler_components/batch_result_processor.py:974)",
+      1
+    ],
+    [
+      "fill_from (cuda_graph_buffer_registry.py:463)",
+      1
+    ],
+    [
+      "_call_impl (torch/nn/modules/module.py:1782)",
+      1
+    ],
+    [
+      "_preprocess_logits (sampler.py:134)",
+      1
+    ],
+    [
+      "__call__ (triton/runtime/jit.py:1112)",
+      1
+    ],
+    [
+      "get_next_batch_to_run (scheduler.py:4032)",
+      1
+    ],
+    [
+      "_check_mamba_pool (scheduler_components/invariant_checker.py:186)",
+      1
+    ],
+    [
+      "__hash__ (<string>:3)",
+      1
+    ],
+    [
+      "_record_step_counters (scheduler.py:5105)",
+      1
+    ],
+    [
+      "labels (prometheus_client/metrics.py:181)",
+      1
+    ],
+    [
+      "run_batch (scheduler.py:4784)",
+      1
+    ],
+    [
+      "get_next_batch_to_run (scheduler.py:3951)",
+      1
+    ],
+    [
+      "_replay_metadata (hybrid_linear_attn_backend.py:719)",
+      1
+    ],
+    [
+      "_pull_raw_reqs (scheduler_components/request_receiver.py:141)",
+      1
+    ],
+    [
+      "execute (runner/decode_cuda_graph_runner.py:1456)",
+      1
+    ],
+    [
+      "__init__ (zmq/error.py:132)",
+      1
+    ],
+    [
+      "session_held_tokens (session/streaming_session.py:431)",
+      1
+    ],
+    [
+      "forward (model_runner.py:1668)",
+      1
+    ],
+    [
+      "forward (sampler.py:190)",
+      1
+    ],
+    [
+      "execute (runner/decode_cuda_graph_runner.py:1413)",
+      1
+    ],
+    [
+      "sample (model_runner.py:1920)",
+      1
+    ],
+    [
+      "full_evictable_size (unified_cache/unified_tree_core.py:3106)",
+      1
+    ],
+    [
+      "findCaller (logging/__init__.py:1593)",
+      1
+    ],
+    [
+      "_check_req_pool (scheduler_components/invariant_checker.py:447)",
+      1
+    ],
+    [
+      "<lambda> (unified_cache/components/mamba.py:183)",
+      1
+    ],
+    [
+      "_raise_if_not_observable (prometheus_client/metrics.py:77)",
+      1
+    ],
+    [
+      "_stream_output_generation (scheduler_components/output_streamer.py:157)",
+      1
+    ],
+    [
+      "server_port_parsed (debug_utils/dumper.py:209)",
+      1
+    ],
+    [
+      "__init__ (<string>:14)",
+      1
+    ],
+    [
+      "_stream_output_generation (scheduler_components/output_streamer.py:187)",
+      1
+    ],
+    [
+      "get (environ.py:67)",
+      1
+    ],
+    [
+      "observe_per_stage_req_latency (req_time_stats.py:283)",
+      1
+    ],
+    [
+      "sock_recv (io_struct.py:2520)",
+      1
+    ],
+    [
+      "model_runner (tp_worker.py:528)",
+      1
+    ],
+    [
+      "__call__ (triton/backends/nvidia/driver.py:324)",
+      1
+    ],
+    [
+      "update_penalties (sampling_batch_info.py:284)",
+      1
+    ],
+    [
+      "on_launch (beliefkv/runtime/v0520_native_telemetry.py:1170)",
+      1
+    ],
+    [
+      "prepare_for_decode (schedule_batch.py:3531)",
+      1
+    ],
+    [
+      "<listcomp> (schedule_batch.py:3542)",
+      1
+    ],
+    [
+      "<genexpr> (forward_batch_info.py:1252)",
+      1
+    ],
+    [
+      "_get_new_batch_prefill_raw (scheduler.py:4168)",
+      1
+    ],
+    [
+      "copy (schedule_batch.py:3738)",
+      1
+    ],
+    [
+      "_lazy_init (torch/cuda/__init__.py:501)",
+      1
+    ],
+    [
+      "is_disable_overlap_for_batch (scheduler.py:2222)",
+      1
+    ],
+    [
+      "_clock (beliefkv/runtime/prefill_turnover_probe.py:16)",
+      1
+    ],
+    [
+      "execute (runner/decode_cuda_graph_runner.py:1434)",
+      1
+    ],
+    [
+      "maybe_contiguous (sgl_kernel/flash_attn.py:32)",
+      1
+    ],
+    [
+      "run_batch (scheduler.py:4681)",
+      1
+    ],
+    [
+      "generate_execution_args (cutlass/base_dsl/jit_executor.py:676)",
+      1
+    ],
+    [
+      "__enter__ (torch/cuda/__init__.py:789)",
+      1
+    ],
+    [
+      "__call__ (triton/runtime/jit.py:1116)",
+      1
+    ],
+    [
+      "send_output (scheduler_components/output_sender.py:17)",
+      1
+    ],
+    [
+      "fill_from (cuda_graph_buffer_registry.py:416)",
+      1
+    ]
+  ],
+  "limitations": [
+    "GIL samples are not exclusive CPU time, GPU stalls or removable JCT.",
+    "One task and a 25-second window, not a full-run or native-relative profile.",
+    "No process start-ticks snapshot was taken during this profile.",
+    "The external profiler makes this a development diagnostic, not a clean performance arm."
+  ]
+}

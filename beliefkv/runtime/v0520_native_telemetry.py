@@ -1064,19 +1064,19 @@ class NativeReactiveTelemetry:
         raw = getattr(req, "beliefkv_metadata", None)
         if not isinstance(raw, dict):
             return None
-        fields = {
-            "workflow_id": raw.get("root_workflow_id"),
-            "invocation_id": raw.get("invocation_id"),
-            "context_id": raw.get("context_id"),
-            "context_epoch": raw.get("context_epoch"),
-        }
+        workflow = raw.get("root_workflow_id")
+        invocation = raw.get("invocation_id")
+        context = raw.get("context_id")
+        epoch = raw.get("context_epoch")
         if (
-            not all(fields[key] for key in ("workflow_id", "invocation_id", "context_id"))
-            or type(fields["context_epoch"]) is not int
-            or fields["context_epoch"] < 0
+            not workflow or not invocation or not context
+            or type(epoch) is not int or epoch < 0
         ):
             return None
-        return fields
+        return {
+            "workflow_id": workflow, "invocation_id": invocation,
+            "context_id": context, "context_epoch": epoch,
+        }
 
     def _emit(self, stream: str, record: dict[str, Any]) -> None:
         if self._error is not None:

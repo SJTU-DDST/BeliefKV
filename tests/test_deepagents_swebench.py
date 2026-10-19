@@ -1091,6 +1091,41 @@ def test_workspace_epoch_advances_only_after_successful_mutations(
     audit.close()
 
 
+@pytest.mark.parametrize("old,new", (
+    ("VALUE = 1", "VALUE = 1"),
+    ("VALUE = 1\r\n", "VALUE = 1\n"),
+    ("VALUE = 1\r", "VALUE = 1\n"),
+))
+def test_identical_edit_preserves_file_and_workspace_epoch(
+    tmp_path: Path, old: str, new: str,
+) -> None:
+    from beliefkv.runtime.agent_safety import classify_tool_outcome
+
+    source = tmp_path / "module.py"
+    source.write_bytes(b"VALUE = 1\n")
+    before = source.stat().st_mtime_ns
+    audit = JsonlAudit(tmp_path / "audit.jsonl")
+    backend = DockerWorkspaceBackend(tmp_path, image="fixture:latest", audit=audit)
+
+    for _ in range(3):
+        result = backend.edit("/workspace/module.py", old, new)
+        assert "identical" in result.error
+        outcome = classify_tool_outcome(
+            ToolMessage(content=result.error, tool_call_id="noop", status="error"),
+            tool_name="edit_file",
+        )
+        assert (outcome.status, outcome.error_class) == ("error", "validation_error")
+        assert backend.workspace_epoch() == 0
+        assert source.stat().st_mtime_ns == before
+        assert source.read_bytes() == b"VALUE = 1\n"
+
+    changed = backend.edit("/workspace/module.py", "VALUE = 1", "VALUE = 2")
+    assert changed.error is None
+    assert backend.workspace_epoch() == 1
+    assert source.read_bytes() == b"VALUE = 2\n"
+    audit.close()
+
+
 def test_docker_backend_preflights_test_environment_before_use(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

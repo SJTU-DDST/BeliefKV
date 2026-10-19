@@ -20,14 +20,30 @@ preflight keep exact counts. Real model messages are not supplemented with a use
 The saved full counts remain120637/94121;33 relevant CPU checks pass. See V2075.
 GPU completion, useful migration and native-relative performance remain unaccepted.
 
-V90b owns its server and original single task, frozen at7e77e28. Actual spawn,
-JOIN_WAIT, child tools and completion intent are observed; wait for natural
-RETURN and parent service before treating that lifecycle as demonstrated.
+V90b owned its server and completed the original single task naturally, frozen
+at7e77e28:974.85s,5 sequential delegation rounds,5 natural child returns,
+330 model calls. No nesting or parallel child execution is demonstrated.
+JOIN-to-parent-service is155-163ms in all5 cases. V2080 seals this lifecycle;
+it is neither migration-pressure qualification, task-quality proof nor a speedup.
+V2082 preserves the25s GIL profile,1362 samples and0 errors; these are not CPU
+accounting, a native-relative cost decomposition or removable JCT.
 The subsequent main-only decoder change reuses immutable wire fields and removes
 an intermediate extension dict. Across316 historical events and30 full-control
 replays, graph/counters/delivery/exact ACKs match; CPU P50 is50.753 to49.566us.
 All345 related checks pass. See V2077–V2079. V90b does not contain this later
 change; freeze it separately for the next GPU candidate. No GPU/JCT gain is claimed.
+
+V90b also contains33 identical edit inputs and unchanged workspace digests over
+112.60s. Exact arguments were not retained; do not claim the new identical-edit
+check proves that episode eliminated. CPU reproduction establishes that identical
+search/replacement text was accepted and advanced workspace epoch. The backend now
+returns a parameter error without changing the file/epoch, and later valid edits
+still work. Natural RETURN is unchanged. A separate identity check removes temporary
+dict/generator work while reading metadata each time. V2081's8-request on_launch
+P50 is18.728 to14.420us; V2084 binds the installed function body to that proposal.
+Keep the mixed single-request0.017us regression. All359 related checks and4 final
+feedback rechecks pass; the real SWE Docker case is explicitly unselected.
+Queued V91 was cancelled before any GPU launch; freeze the latest fixes anew.
 
 V2064's two single-turn user variants
 both select read_file, and V2065's explicit-team version selects ls. No tool is

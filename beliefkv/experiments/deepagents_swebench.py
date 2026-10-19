@@ -23,7 +23,7 @@ from typing import Any, Callable, Iterable, Mapping, Sequence, TextIO
 
 import httpx
 from deepagents.backends import FilesystemBackend
-from deepagents.backends.protocol import ExecuteResponse, SandboxBackendProtocol
+from deepagents.backends.protocol import EditResult, ExecuteResponse, SandboxBackendProtocol
 from deepagents.graph import BASE_AGENT_PROMPT
 from deepagents.middleware.filesystem import FilesystemMiddleware
 from deepagents.middleware.patch_tool_calls import PatchToolCallsMiddleware
@@ -1034,6 +1034,15 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         new_string: str,
         replace_all: bool = False,
     ) -> Any:
+        normalized_old = old_string.replace("\r\n", "\n").replace("\r", "\n")
+        normalized_new = new_string.replace("\r\n", "\n").replace("\r", "\n")
+        if normalized_old == normalized_new:
+            return EditResult(error=(
+                "Error: Invalid arguments: search and replacement text are "
+                "identical after newline normalization; no file content was "
+                "changed. Provide different "
+                "replacement text, or use read_file to inspect the current file."
+            ))
         result = super().edit(
             file_path,
             old_string,

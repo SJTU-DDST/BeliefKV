@@ -1,0 +1,192 @@
+{
+  "status": "completed_dynamic_lifecycle_probe_not_performance_acceptance",
+  "code_commit": "7e77e28",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_user_team_1root_20261020_v90b",
+  "duration_seconds": 974.8471008613706,
+  "outcome": "completed",
+  "error": null,
+  "trace": {
+    "all_joins_satisfied": true,
+    "all_subagents_returned": true,
+    "child_cancel_count": 0,
+    "child_return_rate_by_role": {
+      "implementation-agent": {
+        "cancelled": 0,
+        "return_rate": 1.0,
+        "returned": 4,
+        "spawned": 4
+      },
+      "test-analyst": {
+        "cancelled": 0,
+        "return_rate": 1.0,
+        "returned": 1,
+        "spawned": 1
+      }
+    },
+    "child_return_span_ms": 770140.0787057877,
+    "children_per_parent": {
+      "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:a2ef27fac934:root": 5
+    },
+    "delegation_round_count": 5,
+    "delegation_rounds_by_parent": {
+      "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:a2ef27fac934:root": 5
+    },
+    "dynamic_subagent_count": 5,
+    "event_count": 1738,
+    "event_counts": {
+      "invocation_create": 6,
+      "join_create": 5,
+      "join_satisfied": 5,
+      "join_wait": 5,
+      "llm_result": 330,
+      "llm_submit": 330,
+      "return": 6,
+      "spawn": 5,
+      "structured_action": 372,
+      "tool_end": 336,
+      "tool_start": 336,
+      "workflow_end": 1,
+      "workflow_start": 1
+    },
+    "fanout_by_parent": {
+      "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:a2ef27fac934:root": 5
+    },
+    "fanout_parent_count": 1,
+    "fanout_per_round": [
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "join_satisfied_count": 5,
+    "join_timeout_count": 0,
+    "join_to_next_spawn_ms": [
+      2680.478178024292,
+      2917.2386379241943,
+      3073.456385612488,
+      16620.125423431396
+    ],
+    "join_type_counts": {
+      "all": 5
+    },
+    "llm_pairing_valid": true,
+    "llm_request_count": 330,
+    "llm_result_count": 330,
+    "maximum_spawn_depth": 1,
+    "mutating_tool_end_count": 94,
+    "natural_child_return_count": 5,
+    "nested_delegation_round_count": 0,
+    "nested_join_satisfied_count": 0,
+    "nested_spawn_count": 0,
+    "peak_concurrent_children": 1,
+    "post_join_spawn_count": 4,
+    "root_delegation_round_count": 5,
+    "root_return_count": 1,
+    "spawn_count_by_depth": {
+      "1": 5
+    },
+    "tool_call_count": 336,
+    "tool_pairing_valid": true,
+    "tool_result_count": 336,
+    "tool_status_coverage": 1.0,
+    "unknown_spawn_depth_count": 0,
+    "workflow_lifecycle_valid": true,
+    "workspace_digest_coverage": 1.0,
+    "workspace_digest_observation_count": 94
+  },
+  "agent_control": {
+    "duplicate_tool_calls_suppressed": 0,
+    "event_counts": {
+      "agent_empty_reasoning_retry": 7,
+      "agent_empty_reasoning_retry_result": 7,
+      "agent_graph_step_soft_budget_observed": 2,
+      "agent_guard_pattern_observed": 4,
+      "agent_natural_return": 6,
+      "agent_tool_observation_truncated": 1,
+      "agent_tool_repeat_observed": 37,
+      "agent_tool_repeated_result_feedback": 36
+    },
+    "forced_semantic_completions": 0,
+    "guard_intervened_completions": 0,
+    "guard_intervened_natural_language_returns": 0,
+    "natural_language_return_count": 6,
+    "natural_language_return_without_intervention_count": 6,
+    "natural_semantic_completions": 0,
+    "protocol_normalized_completions": 0,
+    "protocol_repair_failures": 0,
+    "protocol_repaired_completions": 0,
+    "semantic_completions": 0,
+    "stuck_reasons": {}
+  },
+  "join_successors": [
+    {
+      "join_id": "deepagents-join:224e311915fec7b4",
+      "parent": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:a2ef27fac934:root",
+      "next_request_id": "beliefkv:01a15675-1c15-7013-84a5-a05d69038215",
+      "join_to_client_submit_ms": 60.574594497680664,
+      "join_to_first_service_ms": 154.91791152954102
+    },
+    {
+      "join_id": "deepagents-join:56c11574e0f09146",
+      "parent": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:a2ef27fac934:root",
+      "next_request_id": "beliefkv:01a15677-d744-7fb1-a2a9-39afe003da19",
+      "join_to_client_submit_ms": 67.49654960632324,
+      "join_to_first_service_ms": 161.18488216400146
+    },
+    {
+      "join_id": "deepagents-join:7b269ad078153333",
+      "parent": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:a2ef27fac934:root",
+      "next_request_id": "beliefkv:01a1567a-8fe9-75e2-a824-68812dc9adf1",
+      "join_to_client_submit_ms": 68.24872970581055,
+      "join_to_first_service_ms": 162.72212409973145
+    },
+    {
+      "join_id": "deepagents-join:1bea7cc9785efff4",
+      "parent": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:a2ef27fac934:root",
+      "next_request_id": "beliefkv:01a1567b-66d2-75c0-a56d-6c48a4a1f9b4",
+      "join_to_client_submit_ms": 64.45566082000732,
+      "join_to_first_service_ms": 162.20367336273193
+    },
+    {
+      "join_id": "deepagents-join:41ab634ad9e93834",
+      "parent": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:a2ef27fac934:root",
+      "next_request_id": "beliefkv:01a15680-dc7a-7c22-b236-2d548b588702",
+      "join_to_client_submit_ms": 67.61212921142578,
+      "join_to_first_service_ms": 161.95269966125488
+    }
+  ],
+  "service_clock_domains": [
+    "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec"
+  ],
+  "repeated_edit": {
+    "calls": 33,
+    "results": 33,
+    "all_success": true,
+    "all_workspace_digest_unchanged": true,
+    "episode_span_seconds": 112.59826124954223,
+    "exact_arguments": "not_retained_in_this_trace",
+    "causal_limit": "The unchanged digest and repeated input do not prove argument equality or that the new identical-edit validation eliminates this episode."
+  },
+  "sources": [
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_user_team_1root_20261020_v90b/client_1/workflows/locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01/result.json",
+      "sha256": "c2699ca2b8b5f14673cbc5c89418ca1b040a35af10dd63f3db8af40a70bf502c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_user_team_1root_20261020_v90b/client_1/workflows/locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+      "sha256": "5ab23f84587883c2b9fbbe16dc3a52530448b1637fddee2353481ee558876055"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_user_team_1root_20261020_v90b/server/runtime_audit.jsonl",
+      "sha256": "5bc6d83499d7b455bc1c2e7793af8d1374236fa070636cf172d150191a566c1f"
+    }
+  ],
+  "scope": [
+    "Original task completed naturally; no administrative GPU interruption occurred.",
+    "Five sequential child returns do not prove nested or parallel delegation.",
+    "Single-root lifecycle evidence does not qualify 24-root migration pressure or JCT gain.",
+    "The queued V91 was cancelled before launch to inspect the repeated-edit episode.",
+    "JOIN-to-service uses the common host monotonic clock; not CUDA kernel timing."
+  ]
+}
