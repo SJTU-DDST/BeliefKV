@@ -179,9 +179,12 @@ def _bounded(value: object, ceiling: int, label: str) -> int:
     return value
 
 
-def _index_length(indices: object) -> int:
+def _bounded_index_length(indices: object, ceiling: int, label: str) -> int:
     shape = getattr(indices, "shape", None)
-    return shape[0] if shape else len(indices)
+    length = shape[0] if shape else len(indices)
+    if type(length) is not int or not 0 <= length <= ceiling:
+        raise ValueError(f"invalid {label}")
+    return length
 
 
 def _named(value: object, name: str) -> object:
@@ -609,35 +612,37 @@ def observe_unified_node_closure(
             if type(node) is not node_type:
                 _named(node, "UnifiedTreeNode")
                 node_type = type(node)
-            if type(node.id) is not int or node.id < 0 or node.id in visited:
+            current_id = node.id
+            if type(current_id) is not int or current_id < 0 or current_id in visited:
                 raise ValueError("invalid or cyclic node ancestry")
-            if not summaries and node.id != node_id:
+            if not summaries and current_id != node_id:
                 raise ValueError("resolved node ID mismatch")
             if max_nodes is not None and len(summaries) >= max_nodes:
                 raise ValueError("node ancestry exceeds bound")
-            visited.add(node.id)
+            visited.add(current_id)
             parent = node.parent
+            parent_id = None
             if parent is not None:
                 if type(parent) is not node_type:
                     _named(parent, "UnifiedTreeNode")
-                if type(parent.id) is not int or parent.id < 0:
+                parent_id = parent.id
+                if type(parent_id) is not int or parent_id < 0:
                     raise ValueError("invalid parent ID")
-            full = node.component_data[0]
-            mamba = node.component_data[2]
+            components = node.component_data
+            full = components[0]
+            mamba = components[2]
             if type(full) is not component_type:
                 _named(full, "ComponentData")
                 component_type = type(full)
             if type(mamba) is not component_type:
                 _named(mamba, "ComponentData")
-            full_device_tokens = (
-                0 if full.value is None else _bounded(
-                    _index_length(full.value), device_full_tokens, "FULL device length",
-                )
+            full_value = full.value
+            full_device_tokens = 0 if full_value is None else _bounded_index_length(
+                full_value, device_full_tokens, "FULL device length",
             )
-            full_host_tokens = (
-                0 if full.host_value is None else _bounded(
-                    _index_length(full.host_value), host_full_tokens, "FULL host length",
-                )
+            full_host_value = full.host_value
+            full_host_tokens = 0 if full_host_value is None else _bounded_index_length(
+                full_host_value, host_full_tokens, "FULL host length",
             )
             locks = (full.lock_ref, full.host_lock_ref, mamba.lock_ref, mamba.host_lock_ref)
             for value in locks:
@@ -670,29 +675,34 @@ def observe_unified_node_closure(
             for pending in (pending_write, pending_load):
                 if pending is not None and (type(pending) is not int or pending < 0):
                     raise ValueError("invalid pending transfer ID")
+            creation_time = normalize_native_creation_time(node.creation_time)
+            mamba_device_present = mamba.value is not None
+            mamba_host_present = mamba.host_value is not None
+            key = getattr(node, "key", None)
+            key_tokens = (
+                None if key is None else _bounded(len(key), 2**31 - 1, "node key length")
+            )
+            # Field order matches UnifiedNodeSummary, avoiding a per-node kwargs dict.
             summaries.append(
                 UnifiedNodeSummary(
-                    node_id=node.id,
-                    parent_id=None if parent is None else parent.id,
-                    creation_time=normalize_native_creation_time(node.creation_time),
-                    full_device_tokens=full_device_tokens,
-                    full_host_tokens=full_host_tokens,
-                    mamba_device_present=mamba.value is not None,
-                    mamba_host_present=mamba.host_value is not None,
-                    full_device_locks=full_device_locks,
-                    full_host_locks=full_host_locks,
-                    mamba_device_locks=mamba_device_locks,
-                    mamba_host_locks=mamba_host_locks,
-                    full_session_refs=full_session_refs,
-                    mamba_session_refs=mamba_session_refs,
-                    full_session_leaf_count=full_session_leaves,
-                    mamba_session_leaf_count=mamba_session_leaves,
-                    pending_write_id=pending_write,
-                    pending_load_id=pending_load,
-                    key_tokens=(
-                        _bounded(len(node.key), 2**31 - 1, "node key length")
-                        if getattr(node, "key", None) is not None else None
-                    ),
+                    current_id,
+                    parent_id,
+                    creation_time,
+                    full_device_tokens,
+                    full_host_tokens,
+                    mamba_device_present,
+                    mamba_host_present,
+                    full_device_locks,
+                    full_host_locks,
+                    mamba_device_locks,
+                    mamba_host_locks,
+                    full_session_refs,
+                    mamba_session_refs,
+                    full_session_leaves,
+                    mamba_session_leaves,
+                    pending_write,
+                    pending_load,
+                    key_tokens,
                 )
             )
             node = parent

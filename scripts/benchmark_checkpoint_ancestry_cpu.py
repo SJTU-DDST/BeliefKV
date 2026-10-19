@@ -20,6 +20,7 @@ sys.path.insert(0, str(ROOT))
 
 from beliefkv.runtime import sglang_v0520_physical as current
 from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
+from scripts.benchmark_native_prepare_path import baseline_runtime
 from tests.test_sglang_v0520_observer import UnifiedTreeCore, _node, _static_cache
 
 
@@ -34,11 +35,8 @@ def module_from_source(source, label):
 
 
 def baseline_module(revision):
-    source = subprocess.run(
-        ["git", "show", f"{revision}:{SOURCE.as_posix()}"], cwd=ROOT,
-        check=True, text=True, capture_output=True,
-    ).stdout
-    return module_from_source(source, "baseline"), hashlib.sha256(source.encode()).hexdigest()
+    _, digests = baseline_runtime(revision)
+    return sys.modules["beliefkv.runtime._prepare_baseline_physical"], digests
 
 
 def fixture(case):
@@ -173,7 +171,8 @@ def main():
     args = parser.parse_args()
     if args.samples < 1:
         parser.error("samples must be positive")
-    baseline, digest = baseline_module(args.baseline_commit)
+    baseline, digests = baseline_module(args.baseline_commit)
+    digest = digests[SOURCE.as_posix()]
     candidate_patch = None
     if args.candidate_patch is not None:
         if hashlib.sha256((ROOT / SOURCE).read_bytes()).hexdigest() != digest:
@@ -201,6 +200,8 @@ def main():
         ),
         "baseline_commit": args.baseline_commit,
         "baseline_source_sha256": digest,
+        "baseline_source_sha256s": digests,
+        "baseline_observer_helpers_and_types_frozen": True,
         "optimized_source": SOURCE.as_posix(),
         "optimized_source_sha256": hashlib.sha256(candidate_source.encode()).hexdigest(),
         "candidate_patch": candidate_patch,

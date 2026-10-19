@@ -623,6 +623,75 @@ def test_node_closure_captures_only_requested_ancestry() -> None:
     assert not result.physical_actions_supported
 
 
+def test_node_closure_preserves_independent_fields_and_rereads_live_state() -> None:
+    cache = _static_cache()
+    root = _node(0)
+    leaf = _node(5, root, device=[1, 2], host=[3, 4, 5], mamba_host=True)
+    leaf.key = range(7)
+    full, mamba = leaf.component_data[0], leaf.component_data[2]
+    full.lock_ref, full.host_lock_ref = 11, 12
+    mamba.lock_ref, mamba.host_lock_ref = 13, 14
+    full.session_ref, mamba.session_ref = 15, 16
+    full.session_ids = {"one"}
+    mamba.session_ids = {"one", "two"}
+    mamba.value = None
+    leaf.write_through_pending_id, leaf.load_back_pending_id = 17, 18
+    cache.tree_core = UnifiedTreeCore(node_by_id={0: root, 5: leaf}.__getitem__)
+    first = observe_unified_node_closure(cache, 5)
+    assert first.observable
+    expected = {
+        "node_id": 5, "parent_id": 0, "creation_time": 15,
+        "full_device_tokens": 2, "full_host_tokens": 3,
+        "mamba_device_present": False, "mamba_host_present": True,
+        "full_device_locks": 11, "full_host_locks": 12,
+        "mamba_device_locks": 13, "mamba_host_locks": 14,
+        "full_session_refs": 15, "mamba_session_refs": 16,
+        "full_session_leaf_count": 1, "mamba_session_leaf_count": 2,
+        "pending_write_id": 17, "pending_load_id": 18, "key_tokens": 7,
+    }
+    assert first.nodes[0].to_record() == expected
+
+    full.value, full.host_value = None, [6]
+    mamba.value, mamba.host_value = [7], None
+    full.lock_ref, full.host_lock_ref = 21, 22
+    mamba.lock_ref, mamba.host_lock_ref = 23, 24
+    full.session_ref, mamba.session_ref = 25, 26
+    full.session_ids.add("two")
+    mamba.session_ids.remove("two")
+    leaf.creation_time = 30.5
+    leaf.write_through_pending_id, leaf.load_back_pending_id = 27, None
+    leaf.key = range(8)
+    second = observe_unified_node_closure(cache, 5)
+    assert second.observable
+    assert second.nodes[0].to_record() == {
+        **expected, "creation_time": 30.5,
+        "full_device_tokens": 0, "full_host_tokens": 1,
+        "mamba_device_present": True, "mamba_host_present": False,
+        "full_device_locks": 21, "full_host_locks": 22,
+        "mamba_device_locks": 23, "mamba_host_locks": 24,
+        "full_session_refs": 25, "mamba_session_refs": 26,
+        "full_session_leaf_count": 2, "mamba_session_leaf_count": 1,
+        "pending_write_id": 27, "pending_load_id": None, "key_tokens": 8,
+    }
+    assert first.nodes[0].to_record() == expected
+
+
+@pytest.mark.parametrize("component,field", [
+    (0, "lock_ref"), (0, "host_lock_ref"), (2, "lock_ref"), (2, "host_lock_ref"),
+    (0, "session_ref"), (2, "session_ref"),
+])
+@pytest.mark.parametrize("value", [-1, True, 2**31])
+def test_node_closure_rejects_invalid_lock_or_reference(component, field, value) -> None:
+    cache = _static_cache()
+    ancestor = _node(4, _node(0))
+    leaf = _node(5, ancestor)
+    setattr(ancestor.component_data[component], field, value)
+    cache.tree_core = UnifiedTreeCore(node_by_id=lambda _: leaf)
+    observed = observe_unified_node_closure(cache, 5)
+    assert not observed.observable
+    assert observed.nodes == ()
+
+
 def test_native_float64_node_creation_time_is_normalized_for_h2d() -> None:
     cache = _static_cache()
     root = _node(0)

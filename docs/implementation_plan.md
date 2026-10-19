@@ -45,6 +45,28 @@ This is CPU evidence, not an end-to-end result. Keep new-context hybrid checkpoi
 gaps separate; FULL matches alone cannot reconstruct a missing Mamba checkpoint.
 GPU pause remains active and automatic resume remains disabled.
 
+V1950-V1955 reduce action-local ancestry capture relative to48197f2.
+Read each live node identity, component/index and key once within the
+capture, fuse index length/bounds validation, and avoid a per-node kwargs
+dictionary when constructing the immutable summary. Keep live geometry,
+ownership, type, lock/reference/session, pending, identity and cycle checks;
+never cache their values across captures. Freeze the baseline observer's
+helpers and classes too, rather than transplanting an old function into
+current globals or importing the current observer from old physical code.
+Use a plain fixed clock, avoiding mock call-history allocations in the
+closure benchmark. Final V1955 shows3.8%-17.6% lower CPU P50 and4.1%-17.9%
+lower means across30 scenes; retain V1950/V1953 and their outliers.
+The32 complete
+H2D/PREPARE observation scenes improve7.5%-16.8%, with equal plans.
+Complete64-node JOIN/tool dispatch improves only3.6%/2.4%. Of40 dispatch
+scenes,39 improve and one diagnostics-on legacy-budget tool scene adds
+19.94us/0.91%; preserve this regression, dependency timing variation and
+the isolated single-node tensor mean outlier in the raw evidence.
+The1948 CPU checks pass, including real CPU native radix/reclaim checks.
+See V1954 and the bound V1950-V1955 evidence. Keep GPU paused; real tail
+planning, accounting, registration and live-source checks remain costs.
+Do not claim completion of overhead reduction or throughput/JCT gains.
+
 V1946-V1948 reduce per-node accounting and redundant tail work relative to
 00d1114. When the entire selected plan has been submitted and its FULL
 quantity equals all missing FULL in the same immutable snapshot, skip tail

@@ -4,13 +4,11 @@
 from __future__ import annotations
 
 import argparse
-import ast
 from dataclasses import asdict
 import hashlib
 import json
 from pathlib import Path
 from statistics import mean, median
-import subprocess
 import sys
 import time
 from types import SimpleNamespace as NS
@@ -20,27 +18,16 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.runtime import sglang_v0520_observer as observer
+from scripts.benchmark_native_prepare_path import baseline_runtime
 from tests.test_sglang_v0520_observer import UnifiedTreeCore, _cache, _node, _static_cache
 
 SOURCE = "beliefkv/runtime/sglang_v0520_observer.py"
 
 
 def baseline_observer(revision):
-    source = subprocess.check_output(
-        ["git", "show", f"{revision}:{SOURCE}"], cwd=ROOT, text=True,
-    )
-    method = next(
-        node for node in ast.parse(source).body
-        if isinstance(node, ast.FunctionDef) and node.name == "observe_unified_node_closure"
-    )
-    namespace = dict(vars(observer))
-    module = ast.Module(body=[
-        ast.ImportFrom(
-            module="__future__", names=[ast.alias(name="annotations")], level=0,
-        ), method,
-    ], type_ignores=[])
-    exec(compile(ast.fix_missing_locations(module), f"{revision}:{SOURCE}", "exec"), namespace)
-    return namespace[method.name], hashlib.sha256(source.encode()).hexdigest()
+    _, digests = baseline_runtime(revision)
+    module = sys.modules["beliefkv.runtime._prepare_baseline_observer"]
+    return module.observe_unified_node_closure, digests
 
 
 def fixture(layout, depth, storage):
@@ -74,12 +61,15 @@ def measure(methods, *, layout, depth, storage, samples):
     costs = {name: {"wall_us": [], "thread_cpu_us": []} for name in methods}
     calls = max(1, min(20, 256 // depth))
     canonical = None
-    with patch.object(observer.time, "monotonic", return_value=1000.):
+    with patch.object(observer.time, "monotonic", lambda: 1000.):
         for sample in range(samples + 3):
             # Change residency and transfer state between calls, rather than
             # measuring an observation that could be reused across iterations.
             node = nodes[depth]
             node.component_data[0].value = range(2) if sample % 2 else None
+            node.component_data[0].host_lock_ref = sample % 4
+            node.component_data[2].session_ref = sample % 3
+            node.component_data[2].session_ids = {"leaf"} if sample % 2 else None
             node.load_back_pending_id = 7 if sample % 3 == 0 else None
             expected = asdict(methods["baseline"](cache, depth))
             if not expected["observable"]:
@@ -125,7 +115,7 @@ def main():
     args = parser.parse_args()
     if args.samples < 1 or args.output.exists():
         raise ValueError("positive samples and a new output path required")
-    baseline, digest = baseline_observer(args.baseline_revision)
+    baseline, digests = baseline_observer(args.baseline_revision)
     methods = {"baseline": baseline, "optimized": observer.observe_unified_node_closure}
     started = time.time()
     cases = [
@@ -139,7 +129,10 @@ def main():
             "CPU complete ancestry observations with real CPU int64 index tensors "
             "and pool stand-ins; no GPU, DMA, live frequency or throughput claim."
         ),
-        "baseline_revision": args.baseline_revision, "baseline_source_sha256": digest,
+        "baseline_revision": args.baseline_revision,
+        "baseline_source_sha256": digests[SOURCE],
+        "baseline_source_sha256s": digests,
+        "baseline_observer_helpers_and_types_frozen": True,
         "optimized_source_sha256": hashlib.sha256((ROOT / SOURCE).read_bytes()).hexdigest(),
         "benchmark_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "started_ts_ms": started * 1000., "finished_ts_ms": time.time() * 1000.,
