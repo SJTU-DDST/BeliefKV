@@ -64,6 +64,21 @@ Current goal:
 - Stop and fix material experimental failures promptly; CPU improvements alone
   do not establish GPU performance or a gain over native.
 
+V2043/V2044 replace Python per-key length generators with builtin map in issuance
+tracking and prefill records, preserving paths, len order, None/errors and all native
+proofs. No cross-call length cache is added. All complete dispatch records, expectations,
+unacknowledged tracking and native reads match; 29/32 CPU P50s improve, with retained
+0.696/2.303/0.448us regressions. Native-budget 64-node JOIN/tool are 2189.146 to
+2150.280us and 2202.007 to 2151.020us. All 12 actual native-key callback scenes with
+token diagnostics off improve 3.93%-8.35%; retain opt-in controls' three regressions,
+including 27.572us/1.05%. Pin baseline tracker class methods to the old revision when
+tracker code changes; the new provenance check rejects reuse of current callback/path
+methods. Unchanged module constants remain shared, so this fixture cannot cover changed
+constants. V2039 changed runtime only and its shared unchanged tracker scope remains valid.
+All 2393 checks pass in V2045. Prefill recording has the same transform but no separate
+performance measurement. See V2046. Commit main and republish the same 06:00 qualification;
+preserve engine/patch/workload and pending GPU/JCT acceptance.
+
 V2039 reuses the native H2D factory's single frozen child and canonical pool bytes
 for issuance metadata, removing generic multi-child dictionaries, generators and
 sorting. Read the same child's total for the submission budget. Do not extend this

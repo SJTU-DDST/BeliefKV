@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 from collections import Counter, deque, OrderedDict
 from contextlib import nullcontext
 import cProfile
@@ -29,10 +30,30 @@ from scripts.benchmark_native_prepare_path import baseline_runtime, fixture
 from scripts.benchmark_prefetch_control_cpu import distribution
 
 
+def pinned_issuance_tracker(revision):
+    from beliefkv.runtime import v0520_native_telemetry as telemetry
+
+    path = "beliefkv/runtime/v0520_native_telemetry.py"
+    source = subprocess.check_output(["git", "show", f"{revision}:{path}"], cwd=ROOT, text=True)
+    cls = next(
+        node for node in ast.parse(source).body
+        if isinstance(node, ast.ClassDef) and node.name == "NativeReactiveTelemetry"
+    )
+    cls.name = "PinnedNativeReactiveTelemetry"
+    cls.bases = [ast.Name(id="NativeReactiveTelemetry", ctx=ast.Load())]
+    namespace = dict(vars(telemetry))
+    module = ast.Module(body=[
+        ast.ImportFrom(module="__future__", names=[ast.alias(name="annotations")], level=0),
+        cls,
+    ], type_ignores=[])
+    exec(compile(ast.fix_missing_locations(module), f"{revision}:{path}", "exec"), namespace)
+    return namespace[cls.name], {path: hashlib.sha256(source.encode()).hexdigest()}
+
+
 def dispatch_fixture(
     cls, *, source, depth, diagnostics=False, native_budget=False, tail_reclaim=False,
     workflows=1, running=48, sparse_session_leaves=False, numpy_created_times=False,
-    capture_issuance=False,
+    capture_issuance=False, telemetry_cls=None,
 ):
     runtime, _, reads, _, rows = fixture(
         cls, workflows=workflows, depth=depth + 1, backed=True, host_full=1_000_000,
@@ -106,7 +127,8 @@ def dispatch_fixture(
     if capture_issuance:
         from beliefkv.runtime.v0520_native_telemetry import NativeReactiveTelemetry
 
-        issuance_probe = NativeReactiveTelemetry.__new__(NativeReactiveTelemetry)
+        telemetry_cls = telemetry_cls or NativeReactiveTelemetry
+        issuance_probe = telemetry_cls.__new__(telemetry_cls)
         issuance_probe._cache = cache
         issuance_probe._prefetch_prefix_diagnostics = False
         issuance_probe._pending_prefetch_use = OrderedDict()
@@ -435,7 +457,7 @@ def measure_prefill_check(baseline, *, depth, matching, ready, legacy, samples):
 def measure(
     baseline, *, source, depth, diagnostics, native_budget, samples, tail_reclaim=False,
     workflows=1, running=48, sparse_session_leaves=False, numpy_created_times=False,
-    align_command_namespaces=False, capture_issuance=False,
+    align_command_namespaces=False, capture_issuance=False, baseline_telemetry=None,
 ):
     with (
         patch("time.monotonic", lambda: 1000.)
@@ -450,6 +472,7 @@ def measure(
                 sparse_session_leaves=sparse_session_leaves,
                 numpy_created_times=numpy_created_times,
                 capture_issuance=capture_issuance,
+                telemetry_cls=baseline_telemetry if name == "baseline" else None,
             )
             for name, cls in (("baseline", baseline), ("candidate", NativeAdmissionRuntime))
         }
@@ -578,6 +601,10 @@ def main():
     )
     digests = {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in paths}
     baseline, baseline_sources = baseline_runtime(args.baseline)
+    baseline_telemetry = None
+    if args.capture_issuance:
+        baseline_telemetry, telemetry_sources = pinned_issuance_tracker(args.baseline)
+        baseline_sources.update(telemetry_sources)
     cases = [] if args.prefill_checks_only or args.report_selection_only else [
         measure(
             baseline, source=source, depth=depth, diagnostics=diagnostics,
@@ -588,6 +615,7 @@ def main():
             numpy_created_times=args.numpy_created_times,
             align_command_namespaces=args.align_command_namespaces,
             capture_issuance=args.capture_issuance,
+            baseline_telemetry=baseline_telemetry,
         )
         for source in ("join_ticket", "tool_wait") for depth in args.depths
         for diagnostics in (False, True) for native_budget in (False, True)
@@ -635,6 +663,7 @@ def main():
         "dispatch_numpy_created_times": args.numpy_created_times,
         "dispatch_aligned_command_namespaces": args.align_command_namespaces,
         "dispatch_native_issuance_callback": args.capture_issuance,
+        "dispatch_pinned_baseline_issuance_source": args.capture_issuance,
         "limitations": [
             "The CPU native enqueue uses scalar index stand-ins, not the real native allocator or controller.",
             "Plans have real positive Host-only prefixes and causal identities in both sources.",
@@ -643,6 +672,7 @@ def main():
             "Each prefill key layout creates independent command namespaces and dictionaries; samples within it reuse that layout.",
             "When enabled, the diagnostic writer appends records to memory without I/O or background GIL contention.",
             "The optional real issuance callback records allocation identity with token diagnostics off; no ACK or service is synthesized.",
+            "When enabled, baseline issuance methods are pinned to the requested revision; unchanged module constants use the current namespace.",
             "Local CPU timings and synthetic scene frequencies do not establish workflow throughput or JCT gains.",
         ],
     }

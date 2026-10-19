@@ -1527,7 +1527,7 @@ class NativeReactiveTelemetry:
                 for node_id, created in leaves:
                     node = cache.tree_core.node_by_id(node_id)
                     path = self._node_key_path(node)
-                    prefix = sum(len(key) for key in path) if path is not None else None
+                    prefix = sum(map(len, path)) if path is not None else None
                     state = node.component_data[2]
                     states.append({
                         "node_id": node_id, "prefix_tokens": prefix,
@@ -1827,7 +1827,7 @@ class NativeReactiveTelemetry:
             try:
                 node = tree_core.node_by_id(node_id)
                 path = self._node_key_path(node)
-                prefix_len = sum(len(key) for key in path) if path is not None else None
+                prefix_len = sum(map(len, path)) if path is not None else None
                 full_value = node.component_data[0].value
                 mamba_value = node.component_data[2].value if len(node.component_data) > 2 else None
                 nodes.append((

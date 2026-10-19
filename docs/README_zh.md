@@ -23,7 +23,17 @@ child 都可动态委派叶子孙 agent，最大深度仍为 2。任务范围、
 见[24-root 配置](../configs/migration/qwen35_locobench_long_24root_running8_2026-10-19.json)
 及[CPU 原始结果](../experiments/reports/v1925_v85d_long_chat_token_cache_cpu_20261019.json)。
 
-**最新单节点发出记录降本，V2039。**原生 H2D 工厂每命令已冻结一个 child
+**最新前缀长度迭代降本，V2043/V2044。**原生发出追踪及 prefill 记录的
+长度求和改用内建 map，路径、逐段长度读取及错误处理保持。32 组完整
+提交中 29 组 CPU P50 更低；64 节点、原生预算的 JOIN/tool 为
+2189.15→2150.28us、2202.01→2151.02us。三组小回退完整保留。
+真实原生 key 的 12 组关闭 token 诊断场景均改善约 3.93%–8.35%；
+开启诊断的三组回退也保留。2393 项检查通过。完整提交基准已将基线
+tracker 方法固定到旧提交，并检查其不调用当前回调，详见
+[V2046](../experiments/reports/v2046_builtin_prefix_length_control_cpu_20261020_zh.md)。
+CPU 结果不等于 GPU/JCT；提交后更新原 06:00 启动资格。
+
+**此前单节点发出记录降本，V2039。**原生 H2D 工厂每命令已冻结一个 child
 及规范池字节，发出记录直接复用这些字段，不再按多个 child 建字典、排序
 和聚合；提交预算读取同一 child 的真实总字节。通用 ledger/ACK 保持。
 加入真实发出追踪回调后，32 组完整 JOIN/tool 的 CPU P50 降低

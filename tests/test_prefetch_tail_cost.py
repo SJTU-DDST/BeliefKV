@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from dataclasses import asdict, replace
 import pickle
 from types import SimpleNamespace as NS
@@ -11,7 +12,8 @@ from beliefkv.runtime.sglang_v0520_physical import (
     prefetch_expectation_from_native_op,
 )
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
-from scripts.benchmark_wait_prefetch_dispatch_cpu import dispatch_fixture
+from beliefkv.runtime.v0520_native_telemetry import NativeReactiveTelemetry
+from scripts.benchmark_wait_prefetch_dispatch_cpu import dispatch_fixture, pinned_issuance_tracker
 from tests.test_sglang_v0520_physical import Pool, native_prefetch
 
 
@@ -157,3 +159,28 @@ def test_single_node_issuance_preserves_zero_pools_and_sidecar_total_without_ack
         assert not runtime.completed_physical_actions
     finally:
         runtime.close()
+
+
+def test_dispatch_benchmark_uses_pinned_callback_methods_in_the_baseline(monkeypatch):
+    tracker, _ = pinned_issuance_tracker("HEAD")
+    root = NS(parent=None)
+    node = NS(
+        id=1, parent=root, key=tuple(range(8)), creation_time=2.,
+        component_data=(NS(value=object()), NS(), NS(value=None)),
+    )
+    audit = tracker.__new__(tracker)
+    audit._cache = NS(tree_core=NS(node_by_id={1: node}.__getitem__))
+    audit._pending_prefetch_use = OrderedDict()
+    audit._unacked_prefetch_use = {}
+    audit._prefetch_prefix_diagnostics = False
+    current_track = Mock(side_effect=AssertionError("baseline reused the current callback"))
+    current_path = Mock(side_effect=AssertionError("baseline reused the current path helper"))
+    monkeypatch.setattr(NativeReactiveTelemetry, "_track_prefetch_use", current_track)
+    monkeypatch.setattr(NativeReactiveTelemetry, "_node_key_path", current_path)
+    action = NS(command_id="restore", node_ids=(1,))
+    audit.on_prefetch_issued(action)
+    current_track.assert_not_called()
+    current_path.assert_not_called()
+    assert audit._unacked_prefetch_use == {"restore": action}
+    assert audit._pending_prefetch_use["restore"][1][0][:4] == (1, 2., node, 8)
+    assert audit._pending_prefetch_use["restore"][2:] == (None, {})
