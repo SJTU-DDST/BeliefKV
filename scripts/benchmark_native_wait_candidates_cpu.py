@@ -20,7 +20,7 @@ from beliefkv.control.causal_graph import InvocationState
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 import beliefkv.runtime.sglang_v0520_runtime as runtime_module
-from scripts.benchmark_native_prepare_path import fixture
+from scripts.benchmark_native_prepare_path import baseline_runtime, fixture
 from scripts.benchmark_native_shared_path import distribution
 
 SOURCE = "beliefkv/runtime/sglang_v0520_runtime.py"
@@ -115,7 +115,9 @@ def measure_case(baseline, *, workflows, mode, iterations):
                         cold_reads[name] += reads["session_snapshot"] - before
                     outputs[name] = (
                         tuple(actions), tuple(submissions),
-                        tuple(runtime._native_cache.beliefkv_join_pressure_candidates),
+                        tuple(getattr(
+                            runtime._native_cache, "beliefkv_join_pressure_candidates", (),
+                        )),
                     )
                 if outputs["baseline"] != outputs["optimized"]:
                     raise AssertionError((workflows, mode, iteration, outputs))
@@ -142,10 +144,16 @@ def measure_case(baseline, *, workflows, mode, iterations):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline-revision", required=True)
+    parser.add_argument("--full-baseline", action="store_true")
     parser.add_argument("--iterations", type=int, default=100)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    baseline, digest = baseline_class(args.baseline_revision)
+    if args.iterations < 1 or args.output.exists():
+        parser.error("use positive iterations and a fresh output path")
+    baseline, digest = (
+        baseline_runtime(args.baseline_revision) if args.full_baseline
+        else baseline_class(args.baseline_revision)
+    )
     cases = [
         measure_case(baseline, workflows=count, mode=mode, iterations=args.iterations)
         for count, mode in (
@@ -156,6 +164,7 @@ def main():
     ]
     report = {
         "schema_version": 1, "baseline_revision": args.baseline_revision,
+        "full_pinned_runtime_observer_and_ledger": args.full_baseline,
         "baseline_source_sha256": digest,
         "optimized_source_sha256": hashlib.sha256((ROOT / SOURCE).read_bytes()).hexdigest(),
         "benchmark_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
@@ -167,7 +176,9 @@ def main():
         "cases": cases,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
+    with args.output.open("x") as stream:
+        json.dump(report, stream, indent=2, allow_nan=False)
+        stream.write("\n")
     print(json.dumps({
         "cases": len(cases), "outputs_equal": True,
         "reductions": [

@@ -45,6 +45,21 @@ This is CPU evidence, not an end-to-end result. Keep new-context hybrid checkpoi
 gaps separate; FULL matches alone cannot reconstruct a missing Mamba checkpoint.
 GPU pause remains active and automatic resume remains disabled.
 
+V1931-V1933 reduce scheduler/prefetch CPU work relative to e5c660f. Skip
+PREPARE capacity observation only when its wait sources and old pressure
+candidates are absent; retain stale-candidate retirement and publication.
+Reconcile recent ACKs without rebuilding all128 receipts, and simplify
+single-node registration while retaining all validation and byte accounting.
+The24-root/8-running forced-due empty-source P50 is23.78 to3.21us;
+registering64 commands is302.57 to247.45us. Complete64-node JOIN/tool CPU
+dispatch improves only about2.3%/2.5%. Missing-ACK bursts of4/16 commands
+still cost about0.8-1.5us more; do not claim universal path improvements.
+The1161 CPU checks and60 controlled comparison scenes pass, including
+unchanged active PREPARE actions, tool rotation and candidate publication.
+See V1934 for scope and raw evidence. V85d has1811270 post-forward entries
+but558 controlled completions; neither microbench timings nor forced due
+frequency establish cumulative cost or GPU/JCT gains. Keep GPU paused.
+
 V1928 reuses an exact full-input count between compression and completion
 budgeting. Keep one bounded immutable content snapshot, including argument
 order/types, schema and chat template; changed/unsupported inputs recount.

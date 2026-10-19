@@ -14,11 +14,12 @@ import subprocess
 import sys
 import time
 from types import SimpleNamespace as NS
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from beliefkv.control.causal_graph import InvocationState
 from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
 from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
 from beliefkv.runtime.sglang_v0520_physical import (
@@ -26,7 +27,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
 )
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime, _ChildFinalStage
 from beliefkv.policy.causal_frontier import CausalFrontierScheduler
-from scripts.benchmark_native_prepare_path import baseline_runtime
+from scripts.benchmark_native_prepare_path import baseline_runtime, fixture
 from scripts.benchmark_native_shared_path import synthetic_runtime
 from tests.test_wait_prefetch_batch import batch_fixture
 
@@ -131,6 +132,149 @@ def pending_case(baseline, *, samples, pending):
     finally:
         for runtime in variants.values():
             runtime.close()
+
+
+def empty_prepare_case(baseline, *, samples, workflows, running):
+    variants = {}
+    for name, cls in (("baseline", baseline), ("candidate", NativeAdmissionRuntime)):
+        runtime, queue, reads, actions, _ = fixture(
+            cls, workflows=workflows, depth=4, backed=False,
+            host_full=1_000_000, leases=0,
+        )
+        for invocation in runtime.graph.invocations.values():
+            invocation.state = InvocationState.READY
+        runtime.graph._graph_version += 1
+        runtime._opportunity_writer = None
+        runtime.enable_final_stage_prefetch = runtime.enable_tool_prefetch = True
+        batch = NS(reqs=[NS(rid=f"busy-{index}") for index in range(running)])
+        variants[name] = runtime, queue, batch, reads, actions
+    try:
+        def dispatch(runtime, queue, batch):
+            runtime._join_prepare_next_ms = runtime._tool_prepare_next_ms = 0.
+            runtime.dispatch_after_forward(queue, running_batch=batch)
+
+        capacity_reads = {}
+        for name, (runtime, queue, batch, _, _) in variants.items():
+            globals_ = type(runtime)._prepare_pressure.__globals__
+            observe = globals_["observe_static_full_mamba_headroom"]
+            counted = Mock(wraps=observe)
+            with patch.dict(globals_, observe_static_full_mamba_headroom=counted):
+                dispatch(runtime, queue, batch)
+            capacity_reads[name] = counted.call_count
+        costs = compare({
+            name: lambda runtime=runtime, queue=queue, batch=batch:
+                dispatch(runtime, queue, batch)
+            for name, (runtime, queue, batch, _, _) in variants.items()
+        }, samples=samples)
+        if any(
+            runtime.physical_disabled or runtime.physical_ledger.pending_count or actions
+            or reads["session_snapshot"]
+            or getattr(runtime._native_cache, "beliefkv_join_pressure_candidates", ())
+            for runtime, _, _, reads, actions in variants.values()
+        ):
+            raise AssertionError("an empty PREPARE source changed native state")
+        return {
+            "case": "post_forward_prepare_without_wait_sources",
+            "workflows": workflows, "running_requests": running,
+            "forced_existing_prepare_deadlines_due": True,
+            "capacity_reads_per_dispatch": capacity_reads,
+            "costs": costs, "native_actions_and_candidate_publication_equal": True,
+        }
+    finally:
+        for runtime, *_ in variants.values():
+            runtime.close()
+
+
+def completion_reconcile_case(baseline, *, samples, source, commands, missing):
+    variants = {}
+    target = tuple(f"burst-{index}" for index in range(commands))
+    requested = ("missing", *target[1:]) if missing else target
+    key = PrefillCandidateKey("r", "w", "i", "c", 0, 0, "s", 1)
+    try:
+        for name, cls in (("baseline", baseline), ("candidate", NativeAdmissionRuntime)):
+            runtime = cls()
+            runtime.completed_physical_actions.extend(
+                NS(command_id=f"old-{index}", action=(
+                    "PREFETCH_GPU" if index % 2 else "PREPARE_HOST"
+                )) for index in range(128 - commands)
+            )
+            runtime.completed_physical_actions.extend(
+                NS(command_id=command, action="PREFETCH_GPU") for command in target
+            )
+            ticket = NS(
+                key=key, join_id="join", phase="confirmed",
+                command_id=requested[-1], command_ids=requested,
+            )
+            variants[name] = runtime, ticket
+
+        def reconcile(runtime, ticket):
+            ticket.command_id, ticket.command_ids = requested[-1], requested
+            return getattr(runtime, f"_reconcile_{source}_prefetch_ticket")(ticket)
+
+        outputs = {
+            name: reconcile(runtime, ticket)
+            for name, (runtime, ticket) in variants.items()
+        }
+        if set(outputs.values()) != {not missing}:
+            raise AssertionError("ACK reconciliation changed completion credit")
+        costs = compare({
+            name: lambda runtime=runtime, ticket=ticket: reconcile(runtime, ticket)
+            for name, (runtime, ticket) in variants.items()
+        }, samples=samples)
+        if any(runtime.physical_disabled or runtime.physical_ledger.pending_count
+               for runtime, _ in variants.values()):
+            raise AssertionError("ACK lookup issued or invalidated a transfer")
+        return {
+            "case": "wait_prefetch_ack_reconciliation", "source": source,
+            "history_receipts": 128, "burst_commands": commands,
+            "one_command_missing": missing, "costs": costs,
+            "completion_credit_equal": True,
+        }
+    finally:
+        for runtime, _ in variants.values():
+            runtime.close()
+
+
+def registration_case(baseline, *, samples, commands, children):
+    baseline_ledger = baseline._roll_tool_prefetch.__globals__["PhysicalTransactionLedger"]
+    planned = tuple(
+        PhysicalActionExpectation(
+            f"load-{index}", "PREFETCH_GPU", f"context-{index % 2}", 0,
+            tuple(PhysicalChildExpectation(
+                index * 16 + child * 2,
+                (index * 16 + child * 2,),
+                (("kv", 20),), 20,
+            ) for child in range(children)),
+            (("kv", 10),), session_id=f"session-{index % 2}", session_generation=1,
+        ) for index in range(commands)
+    )
+
+    def register(cls):
+        ledger = cls()
+        for expected in planned:
+            ledger.register(expected)
+        return ledger
+
+    variants = {"baseline": baseline_ledger, "candidate": PhysicalTransactionLedger}
+    states = {}
+    for name, cls in variants.items():
+        ledger = register(cls)
+        states[name] = (
+            ledger.pending_count, ledger.pending_action_bytes("PREFETCH_GPU"),
+            tuple(ledger.pending_h2d_contexts),
+            tuple(asdict(ledger.pending_expectation(item.command_id)) for item in planned),
+            sorted(ledger._pending_nodes),
+        )
+    if states["baseline"] != states["candidate"]:
+        raise AssertionError("registration changed bytes, ownership or node conflicts")
+    return {
+        "case": "register_native_restore_commands", "commands": commands,
+        "children_per_command": children,
+        "pending_bytes_contexts_and_node_ownership_equal": True,
+        "costs": compare({
+            name: lambda cls=cls: register(cls) for name, cls in variants.items()
+        }, samples=samples, calls=10),
+    }
 
 
 def native_ack_case(baseline, *, samples, pending, node_count):
@@ -618,6 +762,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline", default="31d6849")
     parser.add_argument("--samples", type=int, default=300)
+    parser.add_argument("--scheduler-only", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.samples < 1 or args.output.exists():
@@ -625,6 +770,7 @@ def main():
     paths = (
         "beliefkv/runtime/sglang_v0520_runtime.py",
         "beliefkv/runtime/sglang_v0520_physical.py",
+        "beliefkv/runtime/sglang_v0520_observer.py",
         "beliefkv/runtime/native_transfer_policy.py",
         "beliefkv/runtime/hotpath_timing.py",
         "scripts/benchmark_prefetch_control_cpu.py",
@@ -637,6 +783,18 @@ def main():
     sources = {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in paths}
     baseline, baseline_sources = baseline_runtime(args.baseline)
     cases = [
+        *(empty_prepare_case(
+            baseline, samples=args.samples, workflows=workflows, running=running,
+        ) for workflows, running in ((24, 0), (24, 8), (156, 48))),
+        *(completion_reconcile_case(
+            baseline, samples=args.samples, source=source, commands=commands,
+            missing=missing,
+        ) for source in ("join", "tool") for commands in (1, 4, 16)
+          for missing in (False, True)),
+        *(registration_case(
+            baseline, samples=args.samples, commands=commands, children=children,
+        ) for commands, children in ((1, 1), (16, 1), (64, 1), (16, 4))),
+    ] if args.scheduler_only else [
         *(idle_case(baseline, samples=args.samples, profiling=enabled)
           for enabled in (False, True)),
         *(pending_case(baseline, samples=args.samples, pending=pending)
@@ -669,19 +827,27 @@ def main():
         "head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
         "candidate_source_sha256": sources,
         "samples": args.samples, "warmup_samples": 20,
+        "scheduler_only": args.scheduler_only,
         "cases": cases,
-        "parallel_tool_conversion": parallel_tool_conversion_case(baseline),
-        "parallel_confirmed_join_conversion": parallel_confirmed_join_conversion_case(baseline),
-        "parallel_provisional_join_conversion": [
+        "parallel_tool_conversion": (
+            None if args.scheduler_only else parallel_tool_conversion_case(baseline)
+        ),
+        "parallel_confirmed_join_conversion": (
+            None if args.scheduler_only else parallel_confirmed_join_conversion_case(baseline)
+        ),
+        "parallel_provisional_join_conversion": [] if args.scheduler_only else [
             provisional_join_conversion_case(baseline, signal=signal)
             for signal in ("eos", "work")
         ],
-        "inflight_prefill_conversion": inflight_prefill_conversion_case(baseline),
+        "inflight_prefill_conversion": (
+            None if args.scheduler_only else inflight_prefill_conversion_case(baseline)
+        ),
         "limitations": [
             "Fixture frequency and pending populations are controlled, not replayed online frequencies.",
             "Both runtimes use the same profiling setting in each timing case.",
             "Removing repeated unchanged diagnostic rows intentionally changes observation density.",
             "Required final causal drain, prefix recapture, native capacity checks and ACK credit remain.",
+            "Forced due PREPARE calls and bounded ACK histories are controlled scenes, not measured online frequencies.",
         ],
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

@@ -4383,7 +4383,12 @@ def test_join_prepare_is_selective_and_invalidates_on_parent_reentry():
 
 @pytest.mark.parametrize("method", ("dispatch_join_prepare", "dispatch_tool_prepare"))
 def test_full_only_prepare_does_not_scan_backups_for_mamba_only_pressure(method):
-    runtime = final_stage_runtime()
+    if method == "dispatch_tool_prepare":
+        from tests.test_tool_predictive_transfers import tool_runtime
+
+        runtime, _ = tool_runtime()
+    else:
+        runtime = final_stage_runtime()
     runtime._clear_final_stage("join")
     runtime.enable_prepare_host = True
     runtime.attach_native_cache(NS())

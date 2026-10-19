@@ -1,0 +1,478 @@
+{
+  "scope": "CPU fixtures; no SGLang server, CUDA, DMA, throughput or JCT measurement",
+  "at": "2026-10-19T06:12:20.624289-07:00",
+  "baseline_revision": "e5c660f",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "c022919b429970d3284353060f6ac24e128c35f570efcee6638ce2cd1562085a",
+    "beliefkv/runtime/sglang_v0520_physical.py": "71c09a0a4c9148f2d7c0e6643dd740a39bfcb7e334767ea381d044b29e5407e5",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "ce43ad43d554bbecc8056df68e8246bde6c5024f2d29d2bdc4ccb9943cf2f106"
+  },
+  "head": "e5c660f009a6efbb91e6ab7e69f6f7d65ba2f29b",
+  "candidate_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "8e76f352f1c1c570c61ae2f01daf7a3d670b9584f8ee1dafa5d351ce38da40b7",
+    "beliefkv/runtime/sglang_v0520_physical.py": "fee89ac1f8d6e6414e8bfae363b9e61fad49eea9c327816315dcbe6d438641a6",
+    "beliefkv/runtime/sglang_v0520_observer.py": "c022919b429970d3284353060f6ac24e128c35f570efcee6638ce2cd1562085a",
+    "beliefkv/runtime/native_transfer_policy.py": "6c47b04bc78f641acdf7917815318c865c23551b906e6481b5f320b1de6838c9",
+    "beliefkv/runtime/hotpath_timing.py": "aa554df03b5c08cc009be14f21a9c25bdb5e48eb585b5cf774601d9ae471792b",
+    "scripts/benchmark_prefetch_control_cpu.py": "80199ccefd626885459a15eff4293bec1dab15000ad16e4e4d8da57b096d8309",
+    "scripts/benchmark_native_prepare_path.py": "3ccb01eb8778c1fa11f5a6cdd67c03c300998085b0846a44eec76323c7e2e6a3",
+    "scripts/benchmark_native_shared_path.py": "c0c91561f4887299a4add743f83eb91176f866aa118ed1da5a76a446f53ed06e",
+    "tests/test_wait_prefetch_batch.py": "cc6a1c18c44f63b20a76a306cc7138b173defe021242f03cecdbc44614407376",
+    "tests/test_join_confirmed_reentry.py": "121ee33268ad89bfdbd7ce40c929d62c81d992490235b025a796149f824b32e3",
+    "tests/test_join_parallel_prefetch.py": "396838bb27df899061246ed22bb5184fc54de3c69a1caec627c610b4fde95926"
+  },
+  "samples": 151,
+  "warmup_samples": 20,
+  "scheduler_only": true,
+  "cases": [
+    {
+      "case": "post_forward_prepare_without_wait_sources",
+      "workflows": 24,
+      "running_requests": 0,
+      "forced_existing_prepare_deadlines_due": true,
+      "capacity_reads_per_dispatch": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "costs": {
+        "baseline": {
+          "mean_us": 23.657503311258278,
+          "p50_us": 23.653380000000002,
+          "p90_us": 23.91214,
+          "p99_us": 24.13292
+        },
+        "candidate": {
+          "mean_us": 3.1400815894039735,
+          "p50_us": 3.1463200000000002,
+          "p90_us": 3.22676,
+          "p99_us": 3.26518
+        }
+      },
+      "native_actions_and_candidate_publication_equal": true,
+      "mean_thread_cpu_reduction_fraction": 0.8672691049393343
+    },
+    {
+      "case": "post_forward_prepare_without_wait_sources",
+      "workflows": 24,
+      "running_requests": 8,
+      "forced_existing_prepare_deadlines_due": true,
+      "capacity_reads_per_dispatch": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "costs": {
+        "baseline": {
+          "mean_us": 23.78378940397351,
+          "p50_us": 23.784380000000002,
+          "p90_us": 24.03148,
+          "p99_us": 24.2288
+        },
+        "candidate": {
+          "mean_us": 3.206404238410596,
+          "p50_us": 3.2096,
+          "p90_us": 3.2911599999999996,
+          "p99_us": 3.3407
+        }
+      },
+      "native_actions_and_candidate_publication_equal": true,
+      "mean_thread_cpu_reduction_fraction": 0.8651853081967288
+    },
+    {
+      "case": "post_forward_prepare_without_wait_sources",
+      "workflows": 156,
+      "running_requests": 48,
+      "forced_existing_prepare_deadlines_due": true,
+      "capacity_reads_per_dispatch": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "costs": {
+        "baseline": {
+          "mean_us": 23.71652450331126,
+          "p50_us": 23.692439999999998,
+          "p90_us": 24.00108,
+          "p99_us": 24.302919999999997
+        },
+        "candidate": {
+          "mean_us": 3.2266752317880796,
+          "p50_us": 3.23106,
+          "p90_us": 3.32468,
+          "p99_us": 3.38188
+        }
+      },
+      "native_actions_and_candidate_publication_equal": true,
+      "mean_thread_cpu_reduction_fraction": 0.8639482260000795
+    },
+    {
+      "case": "wait_prefetch_ack_reconciliation",
+      "source": "join",
+      "history_receipts": 128,
+      "burst_commands": 1,
+      "one_command_missing": false,
+      "costs": {
+        "baseline": {
+          "mean_us": 8.143813774834436,
+          "p50_us": 8.12234,
+          "p90_us": 8.27044,
+          "p99_us": 8.55088
+        },
+        "candidate": {
+          "mean_us": 1.356804105960265,
+          "p50_us": 1.3483,
+          "p90_us": 1.39094,
+          "p99_us": 1.47982
+        }
+      },
+      "completion_credit_equal": true,
+      "mean_thread_cpu_reduction_fraction": 0.833394507355634
+    },
+    {
+      "case": "wait_prefetch_ack_reconciliation",
+      "source": "join",
+      "history_receipts": 128,
+      "burst_commands": 1,
+      "one_command_missing": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 8.496526490066225,
+          "p50_us": 8.48408,
+          "p90_us": 8.6085,
+          "p99_us": 9.133280000000001
+        },
+        "candidate": {
+          "mean_us": 8.511537483443709,
+          "p50_us": 8.49794,
+          "p90_us": 8.619620000000001,
+          "p99_us": 9.333219999999999
+        }
+      },
+      "completion_credit_equal": true,
+      "mean_thread_cpu_reduction_fraction": -0.001766721188362519
+    },
+    {
+      "case": "wait_prefetch_ack_reconciliation",
+      "source": "join",
+      "history_receipts": 128,
+      "burst_commands": 4,
+      "one_command_missing": false,
+      "costs": {
+        "baseline": {
+          "mean_us": 8.545768079470198,
+          "p50_us": 8.54232,
+          "p90_us": 8.70406,
+          "p99_us": 9.29528
+        },
+        "candidate": {
+          "mean_us": 1.9187422516556292,
+          "p50_us": 1.9049,
+          "p90_us": 1.98644,
+          "p99_us": 2.0337
+        }
+      },
+      "completion_credit_equal": true,
+      "mean_thread_cpu_reduction_fraction": 0.775474570124938
+    },
+    {
+      "case": "wait_prefetch_ack_reconciliation",
+      "source": "join",
+      "history_receipts": 128,
+      "burst_commands": 4,
+      "one_command_missing": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 8.727308874172186,
+          "p50_us": 8.69698,
+          "p90_us": 8.877,
+          "p99_us": 9.2249
+        },
+        "candidate": {
+          "mean_us": 9.537881324503312,
+          "p50_us": 9.51288,
+          "p90_us": 9.67724,
+          "p99_us": 10.13308
+        }
+      },
+      "completion_credit_equal": true,
+      "mean_thread_cpu_reduction_fraction": -0.09287770858322131
+    },
+    {
+      "case": "wait_prefetch_ack_reconciliation",
+      "source": "join",
+      "history_receipts": 128,
+      "burst_commands": 16,
+      "one_command_missing": false,
+      "costs": {
+        "baseline": {
+          "mean_us": 9.72679761589404,
+          "p50_us": 9.7143,
+          "p90_us": 9.87818,
+          "p99_us": 10.17334
+        },
+        "candidate": {
+          "mean_us": 4.200176688741722,
+          "p50_us": 4.206180000000001,
+          "p90_us": 4.30572,
+          "p99_us": 4.37962
+        }
+      },
+      "completion_credit_equal": true,
+      "mean_thread_cpu_reduction_fraction": 0.5681850435668119
+    },
+    {
+      "case": "wait_prefetch_ack_reconciliation",
+      "source": "join",
+      "history_receipts": 128,
+      "burst_commands": 16,
+      "one_command_missing": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 9.88992225165563,
+          "p50_us": 9.86774,
+          "p90_us": 10.071399999999999,
+          "p99_us": 10.265120000000001
+        },
+        "candidate": {
+          "mean_us": 11.471936158940398,
+          "p50_us": 11.38878,
+          "p90_us": 11.56292,
+          "p99_us": 11.94122
+        }
+      },
+      "completion_credit_equal": true,
+      "mean_thread_cpu_reduction_fraction": -0.15996221881521167
+    },
+    {
+      "case": "wait_prefetch_ack_reconciliation",
+      "source": "tool",
+      "history_receipts": 128,
+      "burst_commands": 1,
+      "one_command_missing": false,
+      "costs": {
+        "baseline": {
+          "mean_us": 8.393328609271522,
+          "p50_us": 8.37424,
+          "p90_us": 8.53214,
+          "p99_us": 8.952020000000001
+        },
+        "candidate": {
+          "mean_us": 1.3362671523178808,
+          "p50_us": 1.3303399999999999,
+          "p90_us": 1.3825,
+          "p99_us": 1.44188
+        }
+      },
+      "completion_credit_equal": true,
+      "mean_thread_cpu_reduction_fraction": 0.840794133707359
+    },
+    {
+      "case": "wait_prefetch_ack_reconciliation",
+      "source": "tool",
+      "history_receipts": 128,
+      "burst_commands": 1,
+      "one_command_missing": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 8.271046357615894,
+          "p50_us": 8.24222,
+          "p90_us": 8.41048,
+          "p99_us": 8.83522
+        },
+        "candidate": {
+          "mean_us": 8.199411125827815,
+          "p50_us": 8.19024,
+          "p90_us": 8.301860000000001,
+          "p99_us": 8.53292
+        }
+      },
+      "completion_credit_equal": true,
+      "mean_thread_cpu_reduction_fraction": 0.008660963642419639
+    },
+    {
+      "case": "wait_prefetch_ack_reconciliation",
+      "source": "tool",
+      "history_receipts": 128,
+      "burst_commands": 4,
+      "one_command_missing": false,
+      "costs": {
+        "baseline": {
+          "mean_us": 8.625719735099338,
+          "p50_us": 8.62474,
+          "p90_us": 8.76698,
+          "p99_us": 8.88416
+        },
+        "candidate": {
+          "mean_us": 1.9186101986754966,
+          "p50_us": 1.9140599999999999,
+          "p90_us": 1.9669400000000001,
+          "p99_us": 2.0274
+        }
+      },
+      "completion_credit_equal": true,
+      "mean_thread_cpu_reduction_fraction": 0.7775710018877166
+    },
+    {
+      "case": "wait_prefetch_ack_reconciliation",
+      "source": "tool",
+      "history_receipts": 128,
+      "burst_commands": 4,
+      "one_command_missing": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 8.550512317880795,
+          "p50_us": 8.53334,
+          "p90_us": 8.662600000000001,
+          "p99_us": 9.28012
+        },
+        "candidate": {
+          "mean_us": 9.321048476821192,
+          "p50_us": 9.31734,
+          "p90_us": 9.424760000000001,
+          "p99_us": 9.56822
+        }
+      },
+      "completion_credit_equal": true,
+      "mean_thread_cpu_reduction_fraction": -0.09011578842229784
+    },
+    {
+      "case": "wait_prefetch_ack_reconciliation",
+      "source": "tool",
+      "history_receipts": 128,
+      "burst_commands": 16,
+      "one_command_missing": false,
+      "costs": {
+        "baseline": {
+          "mean_us": 9.761090331125828,
+          "p50_us": 9.73696,
+          "p90_us": 9.91468,
+          "p99_us": 10.37068
+        },
+        "candidate": {
+          "mean_us": 4.210289006622516,
+          "p50_us": 4.20492,
+          "p90_us": 4.30506,
+          "p99_us": 4.39554
+        }
+      },
+      "completion_credit_equal": true,
+      "mean_thread_cpu_reduction_fraction": 0.5686661157927315
+    },
+    {
+      "case": "wait_prefetch_ack_reconciliation",
+      "source": "tool",
+      "history_receipts": 128,
+      "burst_commands": 16,
+      "one_command_missing": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 9.653022913907284,
+          "p50_us": 9.651879999999998,
+          "p90_us": 9.78462,
+          "p99_us": 9.97624
+        },
+        "candidate": {
+          "mean_us": 11.01019284768212,
+          "p50_us": 11.018120000000001,
+          "p90_us": 11.149299999999998,
+          "p99_us": 11.43782
+        }
+      },
+      "completion_credit_equal": true,
+      "mean_thread_cpu_reduction_fraction": -0.140595329139801
+    },
+    {
+      "case": "register_native_restore_commands",
+      "commands": 1,
+      "children_per_command": 1,
+      "pending_bytes_contexts_and_node_ownership_equal": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 5.216013245033112,
+          "p50_us": 5.1917,
+          "p90_us": 5.369800000000001,
+          "p99_us": 6.1888000000000005
+        },
+        "candidate": {
+          "mean_us": 4.527459602649007,
+          "p50_us": 4.5188999999999995,
+          "p90_us": 4.668399999999999,
+          "p99_us": 5.098199999999999
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.1320076483777668
+    },
+    {
+      "case": "register_native_restore_commands",
+      "commands": 16,
+      "children_per_command": 1,
+      "pending_bytes_contexts_and_node_ownership_equal": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 71.85457284768212,
+          "p50_us": 71.73639999999999,
+          "p90_us": 72.9013,
+          "p99_us": 73.815
+        },
+        "candidate": {
+          "mean_us": 58.788290066225166,
+          "p50_us": 59.040800000000004,
+          "p90_us": 60.1835,
+          "p99_us": 61.1323
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.1818434410452201
+    },
+    {
+      "case": "register_native_restore_commands",
+      "commands": 64,
+      "children_per_command": 1,
+      "pending_bytes_contexts_and_node_ownership_equal": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 302.1581748344371,
+          "p50_us": 302.5722,
+          "p90_us": 306.8172,
+          "p99_us": 310.582
+        },
+        "candidate": {
+          "mean_us": 246.6103013245033,
+          "p50_us": 247.4459,
+          "p90_us": 252.0105,
+          "p99_us": 255.0976
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.18383706990674797
+    },
+    {
+      "case": "register_native_restore_commands",
+      "commands": 16,
+      "children_per_command": 4,
+      "pending_bytes_contexts_and_node_ownership_equal": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 161.76529933774833,
+          "p50_us": 161.5343,
+          "p90_us": 163.9843,
+          "p99_us": 165.8767
+        },
+        "candidate": {
+          "mean_us": 125.47542384105961,
+          "p50_us": 125.3535,
+          "p90_us": 126.8545,
+          "p99_us": 146.20520000000002
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.22433658915265509
+    }
+  ],
+  "parallel_tool_conversion": null,
+  "parallel_confirmed_join_conversion": null,
+  "parallel_provisional_join_conversion": [],
+  "inflight_prefill_conversion": null,
+  "limitations": [
+    "Fixture frequency and pending populations are controlled, not replayed online frequencies.",
+    "Both runtimes use the same profiling setting in each timing case.",
+    "Removing repeated unchanged diagnostic rows intentionally changes observation density.",
+    "Required final causal drain, prefix recapture, native capacity checks and ACK credit remain.",
+    "Forced due PREPARE calls and bounded ACK histories are controlled scenes, not measured online frequencies."
+  ]
+}

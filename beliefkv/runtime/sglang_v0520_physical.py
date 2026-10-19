@@ -1671,6 +1671,7 @@ class PhysicalTransactionLedger:
             raise PhysicalReceiptError("unsupported native pool")
         anchors: set[int] = set()
         published: set[int] = set()
+        total_bytes = 0
         for child in expected.children:
             if (
                 type(child.anchor_node_id) is not int
@@ -1678,10 +1679,18 @@ class PhysicalTransactionLedger:
                 or child.anchor_node_id in anchors
                 or type(child.published_node_ids) is not tuple
                 or not child.published_node_ids
-                or child.anchor_node_id not in child.published_node_ids
-                or any(type(node) is not int or node < 0 for node in child.published_node_ids)
-                or len(set(child.published_node_ids)) != len(child.published_node_ids)
-                or published.intersection(child.published_node_ids)
+                or (
+                    (
+                        type(child.published_node_ids[0]) is not int
+                        or child.published_node_ids[0] != child.anchor_node_id
+                        or child.published_node_ids[0] in published
+                    ) if len(child.published_node_ids) == 1 else (
+                        child.anchor_node_id not in child.published_node_ids
+                        or any(type(node) is not int or node < 0 for node in child.published_node_ids)
+                        or len(set(child.published_node_ids)) != len(child.published_node_ids)
+                        or not published.isdisjoint(child.published_node_ids)
+                    )
+                )
                 or type(child.pool_bytes) is not tuple
                 or type(child.num_bytes) is not int
                 or child.num_bytes <= 0
@@ -1696,6 +1705,7 @@ class PhysicalTransactionLedger:
                 raise PhysicalReceiptError("child bytes smaller than pool bytes")
             anchors.add(child.anchor_node_id)
             published.update(child.published_node_ids)
+            total_bytes += child.num_bytes
             if len(published) > self.max_nodes:
                 raise PhysicalReceiptError("command exceeds node bound")
         if not published.isdisjoint(self._pending_nodes):
@@ -1706,8 +1716,7 @@ class PhysicalTransactionLedger:
             self._pending_action_counts.get(expected.action, 0) + 1
         )
         self._pending_action_bytes[expected.action] = (
-            self._pending_action_bytes.get(expected.action, 0)
-            + sum(child.num_bytes for child in expected.children)
+            self._pending_action_bytes.get(expected.action, 0) + total_bytes
         )
         if (
             expected.action == "PREFETCH_GPU" and expected.session_id is not None

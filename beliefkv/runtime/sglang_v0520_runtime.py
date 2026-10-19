@@ -3466,15 +3466,29 @@ class NativeAdmissionRuntime:
         ticket = self._pending_confirmed_join_ticket(key.context_id, key.context_epoch)
         return ticket is not None and ticket.key == key
 
+    def _physical_actions_completed(
+        self, commands: Sequence[str], *, action: str | None = None,
+    ) -> bool:
+        remaining = set(commands)
+        if not remaining:
+            return True
+        # A burst is normally reconciled just after its ACK. Do not rebuild
+        # the whole bounded history when its newest receipts prove completion.
+        for completed in reversed(self.completed_physical_actions):
+            if (
+                (action is None or completed.action == action)
+                and completed.command_id in remaining
+            ):
+                remaining.remove(completed.command_id)
+                if not remaining:
+                    return True
+        return False
+
     def _reconcile_join_prefetch_ticket(self, ticket: _JoinPrefetchTicket) -> bool | None:
         commands = ticket.command_ids or (ticket.command_id,)
         if any(self.physical_ledger.is_pending(command) for command in commands):
             return None
-        completed = {
-            action.command_id for action in self.completed_physical_actions
-            if action.action == "PREFETCH_GPU"
-        }
-        if not set(commands).issubset(completed):
+        if not self._physical_actions_completed(commands, action="PREFETCH_GPU"):
             self._discard_join_ticket("action_ack_missing", ticket=ticket)
             self.counts["join_prefetch_lost_ack"] += 1
             return False
@@ -6046,8 +6060,10 @@ class NativeAdmissionRuntime:
 
     def _reclaim_critical_parent_headroom(self) -> None:
         demand = self._live_critical_parent_demand()
+        if demand is None:
+            return
         now_ms = time.monotonic() * 1000.
-        if demand is None or now_ms < self._critical_reclaim_next_ms:
+        if now_ms < self._critical_reclaim_next_ms:
             return
         self._critical_reclaim_next_ms = now_ms + SEMANTIC_FRAME_INTERVAL_MS
         key, full_tokens, mamba_slots, _ = demand
@@ -6109,6 +6125,9 @@ class NativeAdmissionRuntime:
         self._join_prepare_next_ms = now_ms + 50.
         if self.physical_ledger.pending_action_count("PREPARE_HOST"):
             return
+        parents = self._waiting_context_keys(InvocationState.WAIT_JOIN)
+        if not parents and not self._parent_pressure_candidates:
+            return
         headroom = observe_static_full_mamba_headroom(cache)
         if not headroom.observable:
             return
@@ -6122,7 +6141,6 @@ class NativeAdmissionRuntime:
             self._publish_parent_pressure_candidates()
             self.counts["prepare_mamba_pressure_only"] += 1
             return
-        parents = self._waiting_context_keys(InvocationState.WAIT_JOIN)
         if not parents:
             self._publish_parent_pressure_candidates()
             return
@@ -6226,6 +6244,9 @@ class NativeAdmissionRuntime:
         if now_ms < self._tool_prepare_next_ms or self.physical_ledger.pending_action_count("PREPARE_HOST"):
             return
         self._tool_prepare_next_ms = now_ms + 100.
+        demand = self._live_critical_parent_demand()
+        if not self.tool_wait_hints and demand is None:
+            return
         headroom = observe_static_full_mamba_headroom(self._native_cache)
         if not headroom.observable:
             return
@@ -6237,7 +6258,7 @@ class NativeAdmissionRuntime:
                 self.counts["prepare_mamba_pressure_only"] += 1
             return
         keys = {hint.key for hint in self.tool_wait_hints.values()}
-        if self._live_critical_parent_demand() is not None:
+        if demand is not None:
             keys.update(self._waiting_context_keys(InvocationState.WAIT_TOOL))
         keys = sorted(keys, key=lambda item: item.context_id)
         if not keys:
@@ -6294,13 +6315,9 @@ class NativeAdmissionRuntime:
         commands = ticket.command_ids or (ticket.command_id,)
         if any(self.physical_ledger.is_pending(command) for command in commands):
             return None
-        completed = {
-            action.command_id for action in self.completed_physical_actions
-            if action.action == "PREFETCH_GPU"
-        }
         self._tool_opportunity_cache.pop(ticket.key, None)
         self._tool_prefetch_next_ms = 0.
-        if not set(commands).issubset(completed):
+        if not self._physical_actions_completed(commands, action="PREFETCH_GPU"):
             self.counts["tool_prefetch_lost_ack"] += 1
             return False
         self.counts["tool_prefetch_acked"] += len(commands)
@@ -8156,8 +8173,7 @@ class NativeAdmissionRuntime:
                 commands = ticket.command_ids or (ticket.command_id,)
                 if any(self.physical_ledger.is_pending(command) for command in commands):
                     return
-                completed = {item.command_id for item in self.completed_physical_actions}
-                if not set(commands).issubset(completed):
+                if not self._physical_actions_completed(commands):
                     self._clear_execution_handoff("ack_unavailable")
                     return
                 ticket.command_id = None
@@ -8465,9 +8481,8 @@ class NativeAdmissionRuntime:
             lease is not None
             and lease.command_id is not None
             and self.physical_ledger.is_pending(lease.command_id)
-            and not any(
-                action.command_id == lease.command_id and action.action == "PREFETCH_GPU"
-                for action in self.completed_physical_actions
+            and not self._physical_actions_completed(
+                (lease.command_id,), action="PREFETCH_GPU",
             )
         ):
             self.counts["admission_prefetch_waiting_ack"] += 1
@@ -8494,10 +8509,7 @@ class NativeAdmissionRuntime:
             lease = _AdmissionPrefetchLease(key, time.monotonic() + 2.0)
             self._admission_lease = lease
         if lease.command_id is not None:
-            if any(
-                action.command_id == lease.command_id and action.action == "PREFETCH_GPU"
-                for action in self.completed_physical_actions
-            ):
+            if self._physical_actions_completed((lease.command_id,), action="PREFETCH_GPU"):
                 lease.command_id = None
                 self.counts["admission_prefetch_acked"] += 1
             elif not self.physical_ledger.is_pending(lease.command_id):
