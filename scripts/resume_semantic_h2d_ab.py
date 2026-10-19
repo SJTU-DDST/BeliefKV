@@ -34,6 +34,9 @@ def resume_environment(plan: dict, run_root: Path, *, python: str, port: int) ->
         "ACTIVATION_WALL_CLOCK_SECONDS": plan["activation_wall_clock_seconds"],
         "MODEL_REQUEST_TIMEOUT_SECONDS": plan.get("model_request_timeout_seconds", 600.),
         "MAX_COMPLETION_TOKENS": plan.get("max_completion_tokens", 8192),
+        "MODEL_CONTEXT_TOKENS": plan.get("context_tokens", 131072),
+        "CONTEXT_WINDOW_TOKENS": (plan.get("context_lifecycle") or {}).get("window_tokens", 32768),
+        "CONTEXT_KEEP_TOKENS": (plan.get("context_lifecycle") or {}).get("keep_tokens", 8192),
         "SEMANTIC_REPORT_ARTIFACT": plan.get("semantic_artifact") or "",
         "PREPARE_HOST": int(plan["policy_configuration"]["predictive_h2d"]["prepare_host"]),
         "EXECUTION_HANDOFF": int(

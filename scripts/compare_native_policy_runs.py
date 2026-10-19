@@ -196,7 +196,7 @@ def native_reference_metadata(current_run: Path, reference_run: Path) -> dict:
     current = json.loads((current_run / "ab_plan.json").read_bytes())
     fields = (
         "workload_sha256", "root_count", "arrival_schedule", "server_running",
-        "context_tokens", "max_completion_tokens", "host_gb", "host_split",
+        "context_tokens", "context_lifecycle", "max_completion_tokens", "host_gb", "host_split",
         "mamba_full_memory_ratio", "mem_fraction_static", "native_write_policy",
         "fanout_profile", "sampling_seed", "temperature", "sandbox_command_timeout_s",
         "activation_wall_clock_seconds", "child_final_report_shadow",

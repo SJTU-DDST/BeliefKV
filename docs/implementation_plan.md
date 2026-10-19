@@ -5,17 +5,32 @@ Status date: 2026-10-19 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+The latest user-selected validation uses128K dynamic history directly, skipping
+the proposed64K intermediate setting. Freeze window131072/keep8192/summary2048
+and output16384 in both arms. Use model/server context262144, supported by the
+local model config, to reserve static prompt/schema and output headroom.
+Explicitly forward the window, keep and model limit; compare actual manifests,
+and keep legacy resume at32K if its old plan omitted the setting. V1853 passes
+180 existing CPU checks. V84 retains the156 tasks and108+48/3600s arrival table,
+48 maximum running requests, Host200GB80:20 and the qualified engine.
+Observe actual context growth, shared capacity, useful-prefix loss and
+recomputation;128K per independent FULL is2.684GB, not proof48 can fit at once.
+
 V1848 traces the pylint-6386 child failure to a600s client read timeout while
 native generation continues through15925 output tokens, below the16384 cap.
 New launches explicitly freeze a model request timeout defaulting to14400s
 and compare it with both actual client manifests. Tool180s and the workflow
 global deadline remain. Legacy resume keeps600s when that field is absent;
-do not hot-change V83c or erase its workflow error.
+do not hot-change V83c or erase its workflow error. V83c was deliberately
+stopped at2026-10-18T22:00:59-07:00; V1852 preserves the process ownership,
+partial102 completed/1 error census and original traces. The old driver was
+terminated before its arm so it cannot launch old native. GPU release was
+confirmed. No terminal summary or end-to-end acceptance is invented.
 
 V1840-V1845 provide a complete observed600-2400s V83c prefix, with1275.96
 decode token/s and96.04% GPU utilization versus historical native1263.33/95.07%.
-Output caps and application versions differ, so wait for the already scheduled
-same-configuration native and common tail-excluded JCT before acceptance.
+Output caps and application versions differ; they are development evidence
+only. The restarted128K pair must provide its own common tail-excluded JCT.
 Early next-request-verified FULL is2.880GB JOIN and7.599GB tool in the sealed
 prefetch prefix; node JOIN ACK-to-service p50/p90 is332/651ms.
 Main now skips ordering for tool-only zero/single tagged-candidate queues,
@@ -32,9 +47,9 @@ backup loss from Host occupancy alone. The recommended next workload is one
 108-root wave, with128 as a later pressure candidate after checking useful-prefix
 loss. Do not mutate the current frozen156-task V83c arrival contract mid-run.
 
-V83c is now the current cold GPU validation, frozen at a8212c5, engine53020ce3.
+V83c is a preserved interrupted GPU validation, frozen at a8212c5, engine53020ce3.
 Use the unchanged156-task manifest hash,108+48 arrivals, FULL1798992/Mamba513
-and Host200GB80:20; predictive runs first, then native with output cap16384.
+and Host200GB80:20. Its planned native arm was not started.
 V1836 binds the source, seeds, inherited CPU checks, V1834's394 EOS regressions
 and V1835's actual tokenizer controls; populations overlap and are not summed.
 The old V83/V83b initialization evidence stays preserved. State:

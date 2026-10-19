@@ -431,6 +431,7 @@ def summarize(arm: Path) -> dict | None:
         "sandbox_command_timeout_s": harness_config.get("sandbox_command_timeout_s"),
         "model_request_timeout_seconds": harness_config.get("request_timeout_s"),
         "max_completion_tokens": harness_config.get("max_completion_tokens"),
+        "context_lifecycle": harness_config.get("context_lifecycle"),
         "workflow_count": summary["workflow_count"], "outcomes": dict(outcomes),
         "completed_workflows_per_hour": summary["completed_workflows"] * 3600 / duration,
         "completed_jct_p50_seconds": median(jct) if jct else None,
@@ -524,6 +525,9 @@ def main() -> None:
     parser.add_argument("--activation-wall-clock-seconds", type=float, default=14400.)
     parser.add_argument("--model-request-timeout-seconds", type=float, default=14400.)
     parser.add_argument("--max-completion-tokens", type=int, default=16384)
+    parser.add_argument("--model-context-tokens", type=int, default=131072)
+    parser.add_argument("--context-window-tokens", type=int, default=32768)
+    parser.add_argument("--context-keep-tokens", type=int, default=8192)
     parser.add_argument("--workload-manifest", type=Path)
     parser.add_argument("--prepare-host", type=int, choices=(0, 1), default=0)
     parser.add_argument("--execution-handoff", type=int, choices=(0, 1), default=1)
@@ -611,8 +615,17 @@ def main() -> None:
             raise ValueError("requested root count exceeds the workload manifest")
         if args.sampling_seed < 0 or args.repetition_id < 0:
             raise ValueError("sampling seed and repetition ID must be nonnegative")
-        if not 0 < args.max_completion_tokens < 131072:
+        if not 0 < args.max_completion_tokens < args.model_context_tokens:
             raise ValueError("output token cap must be positive and below the context size")
+        if not 0 < args.context_keep_tokens < args.context_window_tokens:
+            raise ValueError("retained history must be positive and below the dynamic window")
+        if args.context_window_tokens - args.context_keep_tokens < 2048:
+            raise ValueError("checkpoint summary must fit outside the retained history")
+        if (
+            args.context_window_tokens + args.max_completion_tokens + 4096
+            > args.model_context_tokens
+        ):
+            raise ValueError("dynamic history, output and prompt headroom must fit the model context")
         if not 0 < args.model_request_timeout_seconds < float("inf"):
             raise ValueError("model request timeout must be positive and finite")
         workloads = available[:args.root_count]
@@ -754,7 +767,15 @@ def main() -> None:
                 "remains a frozen diagnostic under changed fanout, with runtime "
                 "capacity and transfer decisions kept separate"
             ),
-            "context_tokens": 131072, "max_completion_tokens": args.max_completion_tokens,
+            "context_tokens": args.model_context_tokens,
+            "context_lifecycle": {
+                "window_tokens": args.context_window_tokens,
+                "keep_tokens": args.context_keep_tokens,
+                "intermediate_output_tokens": args.max_completion_tokens,
+                "summary_output_tokens": 2048,
+                "model_context_tokens": args.model_context_tokens,
+            },
+            "max_completion_tokens": args.max_completion_tokens,
             "sampling_seed": args.sampling_seed, "temperature": 0., "host_numa_node": 1,
             "mem_fraction_static": .94,
             "host_gb": 200, "host_split": args.host_split,
@@ -932,6 +953,11 @@ def main() -> None:
             and arm.get("model_request_timeout_seconds") != plan["model_request_timeout_seconds"]
         ):
             raise ValueError(f"{name}: mismatched model request timeout")
+        if (
+            "context_lifecycle" in plan
+            and arm.get("context_lifecycle") != plan["context_lifecycle"]
+        ):
+            raise ValueError(f"{name}: mismatched dynamic history or model context configuration")
         state = arm["runtime_state"]
         if name == "native":
             if state or arm["predictive_h2d_acks"]:

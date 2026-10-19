@@ -8,6 +8,9 @@ ROOT_COUNT="${ROOT_COUNT:-108}"
 SAMPLING_SEED="${SAMPLING_SEED:-21}"
 MAX_COMPLETION_TOKENS="${MAX_COMPLETION_TOKENS:-16384}"
 MODEL_REQUEST_TIMEOUT_SECONDS="${MODEL_REQUEST_TIMEOUT_SECONDS:-${ACTIVATION_WALL_CLOCK_SECONDS:-14400}}"
+MODEL_CONTEXT_TOKENS="${MODEL_CONTEXT_TOKENS:-131072}"
+CONTEXT_WINDOW_TOKENS="${CONTEXT_WINDOW_TOKENS:-32768}"
+CONTEXT_KEEP_TOKENS="${CONTEXT_KEEP_TOKENS:-8192}"
 ARRIVAL_BATCH_SIZE="${ARRIVAL_BATCH_SIZE:-0}"
 ARRIVAL_BATCH_INTERVAL_MS="${ARRIVAL_BATCH_INTERVAL_MS:-0}"
 WORKFLOW_ARRIVAL_SCHEDULE="${WORKFLOW_ARRIVAL_SCHEDULE:-}"
@@ -81,6 +84,11 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || { [[ "$ARRIVAL_BATCH_SIZE" == "0" ]] && [[ "$ARRIVAL_BATCH_INTERVAL_MS" != "0" ]]; } \
   || [[ ! "$SAMPLING_SEED" =~ ^[0-9]+$ ]] \
   || [[ ! "$MAX_COMPLETION_TOKENS" =~ ^[1-9][0-9]*$ ]] \
+  || [[ ! "$MODEL_CONTEXT_TOKENS" =~ ^[1-9][0-9]{0,6}$ ]] \
+  || [[ ! "$CONTEXT_WINDOW_TOKENS" =~ ^[1-9][0-9]{0,6}$ ]] \
+  || [[ ! "$CONTEXT_KEEP_TOKENS" =~ ^[1-9][0-9]{0,6}$ ]] \
+  || (( CONTEXT_KEEP_TOKENS >= CONTEXT_WINDOW_TOKENS )) \
+  || (( CONTEXT_WINDOW_TOKENS + MAX_COMPLETION_TOKENS + 4096 > MODEL_CONTEXT_TOKENS )) \
   || [[ ! "$HICACHE_SIZE_GB" =~ ^(0|[1-9][0-9]{0,2})$ ]] \
   || (( HICACHE_SIZE_GB > 200 )) \
   || { [[ "$HICACHE_SIZE_GB" == "0" ]] && [[ "$NATIVE_POLICY_BASELINE" != "1" || "$AB_MODE" != "off" ]]; } \
@@ -216,6 +224,7 @@ setsid env -u BELIEFKV_FULL_MAMBA_HOST_SPLIT "${unset_env[@]}" \
   ENABLE_SESSION_RADIX_CACHE=1 HOST_NUMA_NODE=1 \
   HOST_NUMA_MEMORY_POLICY="$HOST_NUMA_MEMORY_POLICY" \
   MEM_FRACTION_STATIC=0.94 MAX_RUNNING_REQUESTS=48 \
+  CONTEXT_LENGTH="$MODEL_CONTEXT_TOKENS" \
   "${telemetry_env[@]}" \
   SGLANG_PATCH_FLAVOR="$SGLANG_PATCH_FLAVOR" \
   SGLANG_SOURCE_CHECKOUT="$ROOT/third_party/sglang-v0.5.20" \
@@ -266,7 +275,9 @@ setsid "$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
   --server-audit "$RUN_ROOT/server/runtime_audit.jsonl" \
   --server-events "$RUN_ROOT/server/runtime_events.sglang.jsonl" \
   --server-log "$RUN_ROOT/server.log" --pool-tokens 1798995 \
-  --model-context-tokens 131072 --max-completion-tokens "$MAX_COMPLETION_TOKENS" \
+  --model-context-tokens "$MODEL_CONTEXT_TOKENS" \
+  --context-window-tokens "$CONTEXT_WINDOW_TOKENS" --context-keep-tokens "$CONTEXT_KEEP_TOKENS" \
+  --max-completion-tokens "$MAX_COMPLETION_TOKENS" \
   --request-timeout "$MODEL_REQUEST_TIMEOUT_SECONDS" \
   --sampling-seed "$SAMPLING_SEED" --recursion-limit 2048 \
   --sandbox-command-timeout 180 \
