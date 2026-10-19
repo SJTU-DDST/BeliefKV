@@ -49,7 +49,20 @@ reactive 作为本系统控制时默认与 predictive 同开前端缓存，隔�
 11 个新 context 的混合 checkpoint 缺口仍单列：深 FULL 命中不能替代
 该位置缺少的可恢复 Mamba 状态，现有日志不足以逐个区分未创建与被回收。
 
-**最新传输核算降本：V1974–V1976。**FULL-only D2H 直接验证单池计数、
+**最新合并 ACK 降本：V1981。**利用登记阶段已经证明的原始 publication
+互斥，普通回执省去逐条遍历其他在途命令。原 merged node 集合复用，
+遗漏 credit 用现有 `_pending_nodes` 核对；没有新增索引或跨调用缓存。
+split 必须继续核验 Host 目的地、邻接/代际和新增节点的其他命令所有权。
+V85d 有 65 个 tagged D2H ACK/386 回执、40 个 tagged H2D ACK/172 回执，
+最大分别为 8/42；本轮未见 tagged split，但 split 边界检查保留。
+38 组 ledger、16 组完整回调输出、pending、计数、租约及模拟锁相同。
+42 条完整 JOIN ACK CPU P50 1948.756→1402.615us，tool 对照
+1964.162→1411.925us；工具对照不代表该轮已有工具预取量。
+2090 项 CPU 检查通过；V88/补丁不变。105 个受控合并 ACK 的局部改善
+不能外推整轮吞吐/JCT。见
+[V1983](../experiments/reports/v1983_merged_ack_control_cpu_20261020_zh.md)。
+
+**此前传输核算降本：V1974–V1976。**FULL-only D2H 直接验证单池计数、
 几何和总字节，省去通用集合/排序/列表；H2D/D2H expectation 按固定字段
 顺序构造。原生两个核算方法仍执行，Host 目的索引对象与 split ACK 保留。
 12 组逐字段核算相同，纯 FULL D2H CPU P50 6.952→5.213us。

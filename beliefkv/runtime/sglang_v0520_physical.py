@@ -1857,7 +1857,8 @@ class PhysicalTransactionLedger:
         nodes = getattr(commit, "node_ids", ())
         if type(nodes) not in (tuple, list) or any(type(n) is not int for n in nodes):
             self._reject("invalid merged ACK nodes")
-        if len(set(nodes)) != len(nodes):
+        merged_nodes = set(nodes)
+        if len(merged_nodes) != len(nodes):
             self._reject("duplicate merged ACK node")
         if not receipts:
             if self._pending_nodes and not self._pending_nodes.isdisjoint(nodes):
@@ -1916,24 +1917,28 @@ class PhysicalTransactionLedger:
             if (
                 type(published) is not tuple
                 or len(published) > self.max_nodes
-                or (
-                    published != child.published_node_ids
-                    and not (
-                        expected.action == "PREPARE_HOST"
-                        and native_cache is not None
-                        and _native_split_publication(child, published, native_cache)
-                    )
-                )
-                or not set(published).issubset(nodes)
-                or credited_nodes.intersection(published)
-                or any(
-                    set(published).intersection(part.published_node_ids)
-                    for other_id, (other, _, _) in self._pending.items()
-                    if other_id != command_id
-                    for part in other.children
-                )
             ):
                 self._reject("child publication does not match native ACK")
+            split_publication = published != child.published_node_ids
+            if (
+                split_publication and not (
+                    expected.action == "PREPARE_HOST"
+                    and native_cache is not None
+                    and _native_split_publication(child, published, native_cache)
+                )
+                or not merged_nodes.issuperset(published)
+                or not credited_nodes.isdisjoint(published)
+            ):
+                self._reject("child publication does not match native ACK")
+            # register() keeps original publications disjoint across commands.
+            # Only a native split introduces nodes outside that reservation.
+            if split_publication:
+                own_nodes = {
+                    node for part in expected.children for node in part.published_node_ids
+                }
+                for node in published:
+                    if node in self._pending_nodes and node not in own_nodes:
+                        self._reject("child publication does not match native ACK")
             actual_counts = _counts(
                 getattr(receipt, "num_tokens_by_pool", ()), positive=False
             )
@@ -1950,15 +1955,11 @@ class PhysicalTransactionLedger:
             credited_nodes.update(published)
             by_command.setdefault(command_id, set()).add(anchor)
             publications.setdefault(command_id, {})[anchor] = published
-        if any(
-            set(nodes).difference(credited_nodes).intersection(child.published_node_ids)
-            for expected, _, _ in self._pending.values()
-            for child in expected.children
-        ):
+        if not self._pending_nodes.isdisjoint(merged_nodes - credited_nodes):
             self._reject("merged ACK omitted expected child credit")
         if any(credited_counts.get(pool, 0) > merged_counts.get(pool, 0) for pool in credited_counts):
             self._reject("children exceed merged ACK pool counts")
-        if credited_nodes == set(nodes) and credited_counts != merged_counts:
+        if credited_nodes == merged_nodes and credited_counts != merged_counts:
             self._reject("fully credited ACK has unmatched pool counts")
         completed: list[PhysicalActionCompleted] = []
         for command_id, anchors in by_command.items():

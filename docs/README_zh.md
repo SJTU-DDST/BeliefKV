@@ -23,7 +23,16 @@ child 都可动态委派叶子孙 agent，最大深度仍为 2。任务范围、
 见[24-root 配置](../configs/migration/qwen35_locobench_long_24root_running8_2026-10-19.json)
 及[CPU 原始结果](../experiments/reports/v1925_v85d_long_chat_token_cache_cpu_20261019.json)。
 
-**最新传输核算降本，V1974–V1976。**单池 FULL 的 PREPARE 省去通用池
+**最新合并 ACK 降本，V1981。**登记已保证原始预留互斥，普通回执不再
+逐条扫描所有其他在途命令；merged node 集合只建立一次。split 仍核对
+Host 目的地、节点代际和新增节点冲突。最新 V85d 实际最大 H2D tagged
+ACK 为 42 条；CPU 的完整 JOIN ACK P50 1948.76→1402.62us，约降 28%。
+38 组 ledger、16 组完整回调输出和状态一致，2090 项 CPU 检查通过。
+轨迹仅有 105 个受控合并 ACK，不能把该局部比例当成吞吐/JCT 改善。见
+[V1983](../experiments/reports/v1983_merged_ack_control_cpu_20261020_zh.md)。
+06:00 等待安排保持，并在提交后更新最新合格版本。
+
+**此前传输核算降本，V1974–V1976。**单池 FULL 的 PREPARE 省去通用池
 集合/排序及临时列表，固定字段传输记录改用位置参数；实际原生字节、
 索引、Host 目的地和 ACK 核对保留。4096-token FULL D2H 核算 CPU P50
 6.95→5.21us，但完整 64 节点 JOIN/tool 提交仅为

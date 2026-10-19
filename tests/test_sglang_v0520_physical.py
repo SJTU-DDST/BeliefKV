@@ -1706,6 +1706,46 @@ def test_d2h_split_ack_uses_actual_publication_and_exact_host_destinations():
     assert ledger._published_by_command == {}
 
 
+@pytest.mark.parametrize("overlap", (False, True))
+def test_split_ack_preserves_other_commands_pending_node_ownership(overlap):
+    obligation, event, cache, _ = split_shadow_case()
+    ledger = PhysicalTransactionLedger()
+    ledger.register(obligation)
+    other_node = 535 if overlap else 999
+    ledger.register(expected("other", children=(child(
+        other_node, (other_node,), 10, 0, 10,
+    ),)))
+    if overlap:
+        with pytest.raises(PhysicalReceiptError, match="publication"):
+            ledger.observe(event, live_context_epochs={"ctx": 3}, native_cache=cache)
+        assert ledger.pending_count == 0
+        assert not ledger._pending_nodes
+    else:
+        completed, = ledger.observe(event, live_context_epochs={"ctx": 3}, native_cache=cache)
+        assert completed.command_id == obligation.command_id
+        assert completed.node_ids == (535, 37)
+        assert ledger.pending_count == 1
+        assert ledger._pending_nodes == {999}
+
+
+@pytest.mark.parametrize("same_command", (False, True))
+def test_merged_ack_cannot_omit_credit_for_another_reserved_node(same_command):
+    ledger = PhysicalTransactionLedger()
+    first = child(11, (11,), 10, 0, 10)
+    second = child(13, (13,), 10, 0, 10)
+    ledger.register(expected("first", children=(first, second) if same_command else (first,)))
+    if not same_command:
+        ledger.register(expected("second", children=(second,)))
+    omitted = ack(
+        receipt(command="first", anchor=11, published=(11,), kv=1, mamba=0, total=10),
+        nodes=(11, 13), kv=2, mamba=0,
+    )
+    with pytest.raises(PhysicalReceiptError, match="omitted expected child"):
+        ledger.observe(omitted, live_context_epochs={"ctx": 3})
+    assert ledger.pending_count == 0
+    assert not ledger._pending_nodes
+
+
 @pytest.mark.parametrize("damage", (
     "foreign_parent", "recycled_anchor", "foreign_host_range",
     "foreign_mamba_slot", "missing_cache", "wrong_bytes", "h2d",

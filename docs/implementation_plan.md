@@ -64,6 +64,20 @@ Current goal:
 - Stop and fix material experimental failures promptly; CPU improvements alone
   do not establish GPU performance or a gain over native.
 
+V1981 removes quadratic ordinary merged-ACK scans relative to0c6cbc6.
+Reuse register-time disjoint immutable publications and the existing pending-node
+union; retain split Host destinations, adjacency/generation and foreign-node
+ownership checks. Build merged nodes once and preserve partial/omitted credit
+semantics. No new persistent owner index or cache.
+Latest V85d has105 tagged ACK groups:65 D2H/386 receipts and40 H2D/172 receipts,
+with maxima8/42. All38 ledger and16 complete runtime callback states agree,
+including modeled lock receipts, reads, leases and pending budgets.
+Full42-receipt JOIN/tool ACK CPU P50 is1948.756 to1402.615us and1964.162
+to1411.925us. The2090 main CPU checks pass; V88/patch unchanged.
+See V1983. Tool/64-receipt scenes are controls, not observed tool prefetch counts
+or an end-to-end gain. Keep the full performance goal active and update the
+existing06:00 waiter's qualification after committing this revision.
+
 V1974-V1976 reduce transfer-expectation construction relative to51c0f1f.
 For literal single-pool FULL D2H counts, retain strict counts, geometry and
 native bytes while removing generic sets/sorting/lists. Construct fixed-schema
