@@ -12,6 +12,12 @@ MODEL_REQUEST_TIMEOUT_SECONDS="${MODEL_REQUEST_TIMEOUT_SECONDS:-${ACTIVATION_WAL
 MODEL_CONTEXT_TOKENS="${MODEL_CONTEXT_TOKENS:-131072}"
 CONTEXT_WINDOW_TOKENS="${CONTEXT_WINDOW_TOKENS:-32768}"
 CONTEXT_KEEP_TOKENS="${CONTEXT_KEEP_TOKENS:-8192}"
+CONTEXT_COMPRESSION_TRIGGER_RATIO="${CONTEXT_COMPRESSION_TRIGGER_RATIO:-}"
+CONTEXT_TOKENIZER_PATH="${CONTEXT_TOKENIZER_PATH:-}"
+AGENT_RECURSION_LIMIT="${AGENT_RECURSION_LIMIT:-2048}"
+JOIN_PREFETCH_TRIGGER="${JOIN_PREFETCH_TRIGGER:-observed_eos}"
+ONLINE_TOOL_TIMING="${ONLINE_TOOL_TIMING:-0}"
+BORROWABLE_PARENT_HEADROOM="${BORROWABLE_PARENT_HEADROOM:-0}"
 ARRIVAL_BATCH_SIZE="${ARRIVAL_BATCH_SIZE:-0}"
 ARRIVAL_BATCH_INTERVAL_MS="${ARRIVAL_BATCH_INTERVAL_MS:-0}"
 WORKFLOW_ARRIVAL_SCHEDULE="${WORKFLOW_ARRIVAL_SCHEDULE:-}"
@@ -85,6 +91,10 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || { [[ "$ARRIVAL_BATCH_SIZE" == "0" ]] && [[ "$ARRIVAL_BATCH_INTERVAL_MS" != "0" ]]; } \
   || [[ ! "$SAMPLING_SEED" =~ ^[0-9]+$ ]] \
   || [[ ! "$MAX_RUNNING_REQUESTS" =~ ^[1-9][0-9]{0,3}$ ]] \
+  || [[ ! "$AGENT_RECURSION_LIMIT" =~ ^[1-9][0-9]{0,5}$ ]] \
+  || [[ "$JOIN_PREFETCH_TRIGGER" != "observed_eos" && "$JOIN_PREFETCH_TRIGGER" != "report_service_or_eos" ]] \
+  || [[ "$ONLINE_TOOL_TIMING" != "0" && "$ONLINE_TOOL_TIMING" != "1" ]] \
+  || [[ "$BORROWABLE_PARENT_HEADROOM" != "0" && "$BORROWABLE_PARENT_HEADROOM" != "1" ]] \
   || [[ ! "$MAX_COMPLETION_TOKENS" =~ ^[1-9][0-9]*$ ]] \
   || [[ ! "$MODEL_CONTEXT_TOKENS" =~ ^[1-9][0-9]{0,6}$ ]] \
   || [[ ! "$CONTEXT_WINDOW_TOKENS" =~ ^[1-9][0-9]{0,6}$ ]] \
@@ -144,7 +154,10 @@ if [[ -n "$DEVICE_MAMBA_SLOTS" ]]; then
 fi
 control_flags=(--control-socket "$SOCKET")
 telemetry_env=(BELIEFKV_ADMISSION_TELEMETRY_DIR="$RUN_ROOT/server"
-  BELIEFKV_ADMISSION_OPPORTUNITY_DIR="$RUN_ROOT/opportunities")
+  BELIEFKV_ADMISSION_OPPORTUNITY_DIR="$RUN_ROOT/opportunities"
+  BELIEFKV_JOIN_PREFETCH_TRIGGER="$JOIN_PREFETCH_TRIGGER"
+  BELIEFKV_ONLINE_TOOL_TIMING="$ONLINE_TOOL_TIMING"
+  BELIEFKV_BORROWABLE_PARENT_HEADROOM="$BORROWABLE_PARENT_HEADROOM")
 if [[ "$NATIVE_POLICY_BASELINE" == "1" ]]; then
   export BELIEFKV_EMIT_SEMANTIC_TEXT=0
   control_flags=(--native-policy-baseline)
@@ -266,6 +279,12 @@ curl --silent --show-error --max-time 10 --fail --request POST \
 
 set +e
 client_flags=()
+if [[ -n "$CONTEXT_COMPRESSION_TRIGGER_RATIO" ]]; then
+  client_flags+=(--context-compression-trigger-ratio "$CONTEXT_COMPRESSION_TRIGGER_RATIO")
+fi
+if [[ -n "$CONTEXT_TOKENIZER_PATH" ]]; then
+  client_flags+=(--context-tokenizer-path "$CONTEXT_TOKENIZER_PATH")
+fi
 if [[ -n "$WORKFLOW_ARRIVAL_SCHEDULE" ]]; then
   client_flags+=(--workflow-arrival-schedule "$WORKFLOW_ARRIVAL_SCHEDULE")
 fi
@@ -287,7 +306,7 @@ setsid "$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
   --context-window-tokens "$CONTEXT_WINDOW_TOKENS" --context-keep-tokens "$CONTEXT_KEEP_TOKENS" \
   --max-completion-tokens "$MAX_COMPLETION_TOKENS" \
   --request-timeout "$MODEL_REQUEST_TIMEOUT_SECONDS" \
-  --sampling-seed "$SAMPLING_SEED" --recursion-limit 2048 \
+  --sampling-seed "$SAMPLING_SEED" --recursion-limit "$AGENT_RECURSION_LIMIT" \
   --sandbox-command-timeout 180 \
   --activation-wall-clock-seconds "${ACTIVATION_WALL_CLOCK_SECONDS:-14400}" \
   --stream-completion-shadow --child-stream-content-shadow \

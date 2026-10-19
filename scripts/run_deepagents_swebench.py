@@ -179,6 +179,8 @@ def parse_args() -> argparse.Namespace:
         help="Hard model context limit used to reserve completion budget.",
     )
     parser.add_argument("--context-keep-tokens", type=int, default=8_192)
+    parser.add_argument("--context-compression-trigger-ratio", type=float)
+    parser.add_argument("--context-tokenizer-path")
     parser.add_argument("--summary-output-tokens", type=int, default=2_048)
     parser.add_argument("--tool-observation-turn-chars", type=int, default=65_536)
     parser.add_argument("--tool-observation-result-chars", type=int, default=16_384)
@@ -344,6 +346,8 @@ def main() -> int:
             intermediate_output_tokens=args.max_completion_tokens,
             summary_output_tokens=args.summary_output_tokens,
             model_context_tokens=args.model_context_tokens,
+            compression_trigger_ratio=args.context_compression_trigger_ratio,
+            tokenizer_path=args.context_tokenizer_path,
         ),
         loop_guard=LoopGuardPolicy(
             enabled=not args.disable_loop_guard,
@@ -355,6 +359,7 @@ def main() -> int:
             consecutive_no_progress_limit=args.stuck_no_progress_limit,
             max_model_calls_without_completion=args.stuck_max_model_calls,
             max_tool_calls_without_completion=args.stuck_max_tool_calls,
+            graph_step_hard_limit=args.recursion_limit,
             recovery_model_call_limit=args.stuck_recovery_model_calls,
             activation_wall_clock_s=(
                 None

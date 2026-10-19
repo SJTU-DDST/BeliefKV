@@ -2,6 +2,13 @@
 
 更新日期：2026-10-19（北京时间）
 
+**V85 长上下文验证准备中。**256K 总窗口、95% 完整输入压缩、本地
+tokenizer 缓存计数及可容纳的输出预算；图步骤硬预算保持 2048，
+不继承官方 50 轮。工具镜像改用 Python 3.10；工具计时按本轮在线适配，
+JOIN 使用通知/实际服务及 EOS 兜底，并按整批恢复成本准备可借用容量。
+12 root（8+4/900s）、running 8、Host80:20。CPU 检查通过后，按用户
+授权中止 V84 并先启动新 predictive；实验结果、工具密度和质量待验证。
+
 **长仓库负载候选已接入，工具密度仍待验证。**
 [研究与执行边界](research/long_repository_workload_selection_20261019_zh.md)、
 [12 任务清单](../configs/workloads/locobench_agent_long_12root_20261019.json)、

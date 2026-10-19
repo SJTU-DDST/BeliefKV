@@ -535,6 +535,15 @@ def main() -> None:
     parser.add_argument("--model-context-tokens", type=int, default=131072)
     parser.add_argument("--context-window-tokens", type=int, default=32768)
     parser.add_argument("--context-keep-tokens", type=int, default=8192)
+    parser.add_argument("--context-compression-trigger-ratio", type=float)
+    parser.add_argument("--context-tokenizer-path", type=Path)
+    parser.add_argument("--agent-recursion-limit", type=int, default=2048)
+    parser.add_argument(
+        "--join-prefetch-trigger",
+        choices=("observed_eos", "report_service_or_eos"), default="observed_eos",
+    )
+    parser.add_argument("--online-tool-timing", type=int, choices=(0, 1), default=0)
+    parser.add_argument("--borrowable-parent-headroom", type=int, choices=(0, 1), default=0)
     parser.add_argument("--workload-manifest", type=Path)
     parser.add_argument("--prepare-host", type=int, choices=(0, 1), default=0)
     parser.add_argument("--execution-handoff", type=int, choices=(0, 1), default=1)
@@ -639,6 +648,14 @@ def main() -> None:
             raise ValueError("checkpoint summary must fit outside the retained history")
         if args.context_window_tokens > args.model_context_tokens:
             raise ValueError("dynamic history ceiling cannot exceed the model context")
+        if args.agent_recursion_limit <= 64:
+            raise ValueError("agent graph recursion budget is too small")
+        if args.context_compression_trigger_ratio is not None and not (
+            0 < args.context_compression_trigger_ratio < 1
+            and args.context_tokenizer_path is not None
+            and args.context_tokenizer_path.is_dir()
+        ):
+            raise ValueError("ratio compression requires a valid local tokenizer")
         if not 0 < args.model_request_timeout_seconds < float("inf"):
             raise ValueError("model request timeout must be positive and finite")
         workloads = available[:args.root_count]
@@ -710,7 +727,9 @@ def main() -> None:
             "terminal_cache_diagnostics": bool(args.terminal_cache_diagnostics),
             "profile_shared_path": bool(args.profile_shared_path),
             "semantic_work_statistic": args.semantic_work_statistic,
-            "join_prefetch_trigger": "observed_eos",
+            "join_prefetch_trigger": args.join_prefetch_trigger,
+            "online_tool_timing": bool(args.online_tool_timing),
+            "borrowable_parent_headroom": bool(args.borrowable_parent_headroom),
             "eos_protocol_window_ms": args.eos_protocol_window_ms,
             "eos_prefetch_evidence_window_ms": max(
                 args.eos_protocol_window_ms, min(args.prefetch_lead_ms, 2000.),
@@ -769,7 +788,9 @@ def main() -> None:
             "activation_wall_clock_seconds": args.activation_wall_clock_seconds,
             "model_request_timeout_seconds": args.model_request_timeout_seconds,
             "sandbox_command_timeout_s": 180,
-            "recursion_limit": 2048, "finalization_reserve_steps": 32,
+            "recursion_limit": args.agent_recursion_limit, "finalization_reserve_steps": 32,
+            "upstream_max_turns_50_enforced": False,
+            "soft_model_and_tool_call_budgets_enforced": False,
             "native_reactive_guard_profile": True,
             "completion_gate_enabled": False,
             "child_final_report_shadow": os.environ.get("CHILD_FINAL_REPORT_SHADOW", "1") == "1",
@@ -786,11 +807,17 @@ def main() -> None:
             ),
             "requested_children_per_round": shape["children_per_round"],
             "join_prediction_semantics": (
+                "report notice plus actual decode service and causal direct-child "
+                "barrier; online report-length calibration; native no-tool EOS fallback"
+                if args.join_prefetch_trigger == "report_service_or_eos" else
                 "native no-tool EOS with visible final body; complete ALL membership; "
                 "prefetch only from the last observed unfinished direct child; "
                 "no remaining-work prediction or semantic inference"
             ),
             "prediction_regime_status": (
+                "new-domain online tool survival and observed report service; "
+                "cold-start and online calibration must be reported separately"
+                if args.online_tool_timing else
                 "JOIN uses observed EOS, no fitted child-return head; tool timing "
                 "remains a frozen diagnostic under changed fanout, with runtime "
                 "capacity and transfer decisions kept separate"
@@ -802,8 +829,13 @@ def main() -> None:
                 "intermediate_output_tokens": args.max_completion_tokens,
                 "summary_output_tokens": 2048,
                 "model_context_tokens": args.model_context_tokens,
+                "compression_trigger_ratio": args.context_compression_trigger_ratio,
+                "tokenizer_path": str(args.context_tokenizer_path.resolve()) if args.context_tokenizer_path else None,
             },
             "context_budget_semantics": (
+                "total_rendered_prompt_at_ratio;cached_local_chat_template_counter;"
+                "adaptive_completion_within_total_model_limit"
+                if args.context_compression_trigger_ratio is not None else
                 "dynamic_window_is_a_ceiling;actual_history_budget_reserves_output,"
                 "static_prompt,tool_schema_and_existing_4096_token_safety_margin"
             ),

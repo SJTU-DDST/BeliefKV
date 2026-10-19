@@ -5,6 +5,24 @@ Status date: 2026-10-19 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+V85 preparation now uses the user's 262144 total context and a95% rendered
+prompt compaction threshold(249036 tokens), with cached local chat-template
+counts and a completion budget that fits the remaining total window.
+Keep the2048 hard graph-step budget for roots and children; do not raise it
+to8192 or inherit the upstream50-turn cap. Python3.10 tool environments address
+runtime features missed by AST-only qualification; preserve original source
+test failures separately. Tool timing learns only from causally completed calls
+in this run, with censoring and explicit unsupported tails. JOIN anticipation
+uses the final direct child's notice and observed decode service, online report
+length correction and measured full restore cost; retain native EOS fallback.
+Critical-parent capacity is borrowable until needed, reclaimed only from native
+validated idle duplicates or newly prepared waiting contexts. Do not preempt
+active LLM requests or make a permanently idle partition. V1898 passes773 CPU
+checks with1 optional sandbox skip; V1902 passes254 transfer/policy checks.
+After environment/source qualification, interrupt V84 as explicitly authorized,
+preserve partial native evidence and start V85 predictive immediately, followed
+by a matched native run. GPU performance and dataset suitability remain pending.
+
 Long-repository workload support is now an opt-in candidate, not an accepted
 replacement performance result. V1890 binds12 distinct original LoCoBench-Agent
 tasks from6 generated projects: complete source110395-149832 tokens, task mean

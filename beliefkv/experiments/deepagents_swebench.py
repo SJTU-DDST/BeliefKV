@@ -91,6 +91,7 @@ from beliefkv.runtime.context_lifecycle import (
     ContextLifecyclePolicy,
     make_summary_model,
 )
+from beliefkv.runtime.context_token_counter import context_token_counter
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 from beliefkv.runtime.stream_content_shadow import StreamContentShadow
 from beliefkv.runtime.http_stream_timing import TimedSyncByteStream
@@ -2721,6 +2722,8 @@ def _model(
     model.set_beliefkv_prompt_limit(
         model_context_tokens=config.context_lifecycle.model_context_tokens,
         completion_tokens=config.max_completion_tokens,
+        token_counter=context_token_counter(config.context_lifecycle.tokenizer_path),
+        adaptive_completion=config.context_lifecycle.compression_trigger_ratio is not None,
     )
 
     if deadline_controller is not None:
@@ -3204,6 +3207,8 @@ def _autonomous_subagents(
                         model_context_tokens=(
                             config.context_lifecycle.model_context_tokens
                         ),
+                        tokenizer_path=config.context_lifecycle.tokenizer_path,
+                        adaptive_context_budget=config.context_lifecycle.compression_trigger_ratio is not None,
                     ),
                     PatchToolCallsMiddleware(),
                     _tool_observation_budget(
@@ -3319,6 +3324,8 @@ def _build_autonomous_agent(
             intermediate_tokens=config.context_lifecycle.intermediate_output_tokens,
             final_tokens=config.max_completion_tokens,
             model_context_tokens=config.context_lifecycle.model_context_tokens,
+            tokenizer_path=config.context_lifecycle.tokenizer_path,
+            adaptive_context_budget=config.context_lifecycle.compression_trigger_ratio is not None,
         ),
         PatchToolCallsMiddleware(),
         _tool_observation_budget(
@@ -3575,6 +3582,8 @@ def _run_planned_child(
                     model_context_tokens=(
                         config.context_lifecycle.model_context_tokens
                     ),
+                    tokenizer_path=config.context_lifecycle.tokenizer_path,
+                    adaptive_context_budget=config.context_lifecycle.compression_trigger_ratio is not None,
                 ),
                 _loop_guard(
                     config,

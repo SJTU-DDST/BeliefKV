@@ -112,6 +112,7 @@ def main():
     parser.add_argument("--selection-seed", type=int, default=21)
     parser.add_argument("--sandbox-python-minor-version", type=int, default=9)
     parser.add_argument("--profile-only", action="store_true")
+    parser.add_argument("--docker-image", default="beliefkv/locobench-agent:long-py310-v1")
     args = parser.parse_args()
     if args.output.exists():
         parser.error("output must be a new path")
@@ -271,8 +272,8 @@ def main():
             "difficulty": scenario["difficulty"],
             "problem_statement": scenario_prompt(scenario),
             "source_repo": str(repo),
-            "docker_image": "beliefkv/sweb.eval.x86_64.psf_1776_requests-5414:harness-v1",
-            "preflight_command": "python -c 'import ast, json, pytest'",
+            "docker_image": args.docker_image,
+            "preflight_command": "python -c 'import ast, json, pytest, hypothesis, yaml, numpy, pydantic, fastapi, sqlalchemy'",
             "frozen_repository_context": {
                 "path": str(pack.resolve()), "sha256": sha256_file(pack),
                 "tokens": row["context_tokens"], "source_file_count": len(files),

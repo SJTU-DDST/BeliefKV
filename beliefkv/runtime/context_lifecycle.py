@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import hashlib
+import math
 import threading
 from collections.abc import Mapping
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
-from functools import partial
 from typing import Annotated, Any, Awaitable, Callable, Protocol, Sequence
 
 from deepagents.middleware.summarization import SummarizationMiddleware
@@ -19,13 +19,15 @@ from langchain.agents.middleware.types import (
 )
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import BaseMessage
-from langchain_core.messages.utils import count_tokens_approximately, get_buffer_string
+from langchain_core.messages.utils import get_buffer_string
 from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables.config import (
     ensure_config,
     get_callback_manager_for_config,
 )
 from typing_extensions import NotRequired
+
+from beliefkv.runtime.context_token_counter import context_token_counter
 
 
 CONTEXT_SUMMARY_PROMPT = """You are creating a durable checkpoint for a coding agent.
@@ -82,6 +84,8 @@ class ContextLifecyclePolicy:
     intermediate_output_tokens: int = 1_024
     summary_output_tokens: int = 2_048
     model_context_tokens: int = 262_144
+    compression_trigger_ratio: float | None = None
+    tokenizer_path: str | None = None
 
     def __post_init__(self) -> None:
         if min(
@@ -99,6 +103,19 @@ class ContextLifecyclePolicy:
             raise ValueError("context window cannot exceed the model context")
         if self.intermediate_output_tokens >= self.model_context_tokens:
             raise ValueError("completion budget must fit inside model context")
+        if self.compression_trigger_ratio is not None and not (
+            math.isfinite(self.compression_trigger_ratio)
+            and 0 < self.compression_trigger_ratio < 1
+            and self.keep_tokens + self.summary_output_tokens < self.trigger_tokens
+        ):
+            raise ValueError("compression ratio must leave room for retained history")
+
+    @property
+    def trigger_tokens(self) -> int:
+        return (
+            math.floor(self.model_context_tokens * self.compression_trigger_ratio)
+            if self.compression_trigger_ratio is not None else self.window_tokens
+        )
 
 
 @dataclass(frozen=True)
@@ -179,12 +196,12 @@ class ContextLifecycleMiddleware(SummarizationMiddleware):
         super().__init__(
             model,
             backend=backend,
-            trigger=("tokens", policy.window_tokens),
+            trigger=("tokens", policy.trigger_tokens),
             keep=("tokens", policy.keep_tokens),
             summary_prompt=CONTEXT_SUMMARY_PROMPT,
             trim_tokens_to_summarize=policy.window_tokens - policy.keep_tokens,
             truncate_args_settings=None,
-            token_counter=partial(count_tokens_approximately, chars_per_token=3.0),
+            token_counter=context_token_counter(policy.tokenizer_path),
         )
         self.compaction_sink = compaction_sink
         self.summary_callbacks = tuple(summary_callbacks)
@@ -243,6 +260,11 @@ class ContextLifecycleMiddleware(SummarizationMiddleware):
         available dynamic window without becoming part of the keep budget.
         """
 
+        if self.policy.compression_trigger_ratio is not None:
+            return self.token_counter(
+                ([system_message] if system_message is not None else []) + messages,
+                tools=tools,
+            )
         dynamic_tokens = self.token_counter(messages)
         static_tokens = self.token_counter(
             [system_message] if system_message is not None else [], tools=tools
@@ -439,6 +461,8 @@ class CompletionBudgetMiddleware(AgentMiddleware[Any, Any, Any]):
         model_context_tokens: int,
         prompt_floor_tokens: int = 4_096,
         final_mode: Callable[[], bool] | None = None,
+        tokenizer_path: str | None = None,
+        adaptive_context_budget: bool = False,
     ) -> None:
         super().__init__()
         if min(intermediate_tokens, final_tokens) <= 0:
@@ -454,6 +478,8 @@ class CompletionBudgetMiddleware(AgentMiddleware[Any, Any, Any]):
         self.model_context_tokens = model_context_tokens
         self.prompt_floor_tokens = prompt_floor_tokens
         self.final_mode = final_mode or (lambda: False)
+        self.adaptive_context_budget = adaptive_context_budget
+        self.token_counter = context_token_counter(tokenizer_path)
 
     def _request(self, request: ModelRequest) -> ModelRequest:
         settings = dict(request.model_settings)
@@ -465,6 +491,16 @@ class CompletionBudgetMiddleware(AgentMiddleware[Any, Any, Any]):
             if self.final_mode() or runtime_finalization
             else self.intermediate_tokens
         )
+        if self.adaptive_context_budget:
+            prompt = self.token_counter(
+                ([request.system_message] if request.system_message is not None else [])
+                + list(request.messages),
+                tools=request.tools,
+            )
+            available = self.model_context_tokens - prompt - 256
+            if available <= 0:
+                raise ValueError("context compaction did not leave completion capacity")
+            settings["max_tokens"] = min(settings["max_tokens"], available)
         return request.override(model_settings=settings)
 
     def wrap_model_call(

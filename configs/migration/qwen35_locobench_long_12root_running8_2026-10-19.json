@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "scope": "Development candidate for large recoverable prefixes and fewer simultaneous requests; no GPU or task-correctness acceptance yet.",
+  "scope": "Development validation for large recoverable prefixes with causal online timing; task correctness and performance are not yet accepted.",
   "workload_manifest": "configs/workloads/locobench_agent_long_12root_20261019.json",
   "entrypoint": "scripts/run_qwen35_long_repository_ab.sh",
   "root_count": 12,
@@ -13,6 +13,11 @@
   "context_tokens": 262144,
   "context_lifecycle": {
     "window_tokens": 262144,
+    "compression_trigger_ratio": 0.95,
+    "trigger_prompt_tokens": 249036,
+    "tokenizer_path": "/srv/ai/models/Qwen/Qwen3.5-35B-A3B",
+    "counter": "cached serving chat template; total prompt including static source and tools",
+    "completion_reservation": "maximum 16384, reduced near total context ceiling with 256-token margin",
     "keep_tokens": 8192,
     "summary_output_tokens": 2048
   },
@@ -24,8 +29,17 @@
   "host_split": "80:20",
   "host_numa_memory_policy": "preferred",
   "fanout_profile": "native_in_graph_nested_2to4",
-  "join_prefetch_trigger": "observed_eos",
+  "agent_graph_recursion_limit": 2048,
+  "upstream_max_turns_50_enforced": false,
+  "soft_model_and_tool_call_budgets_enforced": false,
+  "child_specific_turn_cap": null,
+  "join_prefetch_trigger": "report_service_or_eos",
+  "join_prediction": "last unfinished direct child; notice plus actual decode service; online report length correction; tool rounds invalidate; EOS fallback",
   "tool_timing_enabled": true,
+  "online_tool_timing": true,
+  "tool_timing_source": "current run command-shape survival only; frozen SWE model is not used for timing decisions",
+  "borrowable_parent_headroom": true,
+  "headroom_policy": "no permanently idle partition; prepare idle tool/JOIN agents for current parent restore demand; native references and Host-copy checks remain authoritative",
   "prepare_host": true,
   "execution_handoff": false,
   "arm_order": [

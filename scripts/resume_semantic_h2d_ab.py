@@ -40,6 +40,12 @@ def resume_environment(plan: dict, run_root: Path, *, python: str, port: int) ->
         "MODEL_CONTEXT_TOKENS": plan.get("context_tokens", 131072),
         "CONTEXT_WINDOW_TOKENS": (plan.get("context_lifecycle") or {}).get("window_tokens", 32768),
         "CONTEXT_KEEP_TOKENS": (plan.get("context_lifecycle") or {}).get("keep_tokens", 8192),
+        "CONTEXT_COMPRESSION_TRIGGER_RATIO": (plan.get("context_lifecycle") or {}).get("compression_trigger_ratio") or "",
+        "CONTEXT_TOKENIZER_PATH": (plan.get("context_lifecycle") or {}).get("tokenizer_path") or "",
+        "AGENT_RECURSION_LIMIT": plan.get("recursion_limit", 2048),
+        "JOIN_PREFETCH_TRIGGER": plan.get("join_prefetch_trigger", "observed_eos"),
+        "ONLINE_TOOL_TIMING": int(plan.get("online_tool_timing", False)),
+        "BORROWABLE_PARENT_HEADROOM": int(plan.get("borrowable_parent_headroom", False)),
         "SEMANTIC_REPORT_ARTIFACT": plan.get("semantic_artifact") or "",
         "PREPARE_HOST": int(plan["policy_configuration"]["predictive_h2d"]["prepare_host"]),
         "EXECUTION_HANDOFF": int(

@@ -2679,6 +2679,7 @@ class BeliefKVChatOpenAI(ChatOpenAI):
     _active_rids: set[str] = PrivateAttr(default_factory=set)
     _active_rids_lock: threading.Lock = PrivateAttr(default_factory=threading.Lock)
     _beliefkv_max_prompt_tokens: int | None = PrivateAttr(default=None)
+    _beliefkv_context_tokens: int | None = PrivateAttr(default=None)
     _stream_run_manager: ContextVar[Any | None] = PrivateAttr(
         default_factory=lambda: ContextVar(
             "beliefkv_stream_run_manager", default=None
@@ -2721,25 +2722,39 @@ class BeliefKVChatOpenAI(ChatOpenAI):
         *,
         model_context_tokens: int,
         completion_tokens: int,
+        token_counter: Callable[..., int] | None = None,
+        adaptive_completion: bool = False,
     ) -> None:
         if completion_tokens >= model_context_tokens:
             raise ValueError("completion budget must fit inside model context")
         self._beliefkv_max_prompt_tokens = (
             model_context_tokens - completion_tokens
         )
+        if token_counter is not None:
+            self._beliefkv_prompt_token_counter = token_counter
+        self._beliefkv_context_tokens = model_context_tokens if adaptive_completion else None
 
-    def _preflight_model_context(self, messages: list[BaseMessage]) -> None:
+    def _preflight_model_context(
+        self, messages: list[BaseMessage], request_kwargs: dict | None = None,
+    ) -> None:
         """Signal overflow so the context middleware can compact before retry."""
 
         raw_limit = self._beliefkv_max_prompt_tokens
         if raw_limit is None:
             return
         limit = int(raw_limit)
+        if self._beliefkv_context_tokens is not None:
+            completion = (request_kwargs or {}).get("max_tokens", self.max_tokens)
+            limit = self._beliefkv_context_tokens - int(completion or 0) - 128
         # Model-specific tokenizers can replace this counter without changing
         # the request boundary. The default is deterministic and conservative
         # for code-heavy agent histories where 4 chars/token undercounts.
         counter = self._beliefkv_prompt_token_counter
-        prompt_tokens = counter(messages) if counter is not None else 0
+        prompt_tokens = (
+            counter(messages, tools=(request_kwargs or {}).get("tools"))
+            if counter is not None and self._beliefkv_context_tokens is not None
+            else counter(messages) if counter is not None else 0
+        )
         if prompt_tokens > limit:
             raise ContextOverflowError(
                 "BeliefKV prompt context preflight failed: "
@@ -2844,7 +2859,7 @@ class BeliefKVChatOpenAI(ChatOpenAI):
     ) -> Any:
         rid: str | None = None
         try:
-            self._preflight_model_context(messages)
+            self._preflight_model_context(messages, kwargs)
             kwargs, rid = self._with_beliefkv_runtime(run_manager, kwargs)
             self._track_request(rid)
             return super()._generate(messages, stop, run_manager, **kwargs)
@@ -2865,7 +2880,7 @@ class BeliefKVChatOpenAI(ChatOpenAI):
     ) -> Iterator[Any]:
         rid: str | None = None
         try:
-            self._preflight_model_context(messages)
+            self._preflight_model_context(messages, kwargs)
             if run_manager is None:
                 run_manager = self._stream_run_manager.get()
             kwargs, rid = self._with_beliefkv_runtime(run_manager, kwargs)
@@ -2888,7 +2903,7 @@ class BeliefKVChatOpenAI(ChatOpenAI):
     ) -> Any:
         rid: str | None = None
         try:
-            self._preflight_model_context(messages)
+            self._preflight_model_context(messages, kwargs)
             kwargs, rid = self._with_beliefkv_runtime(run_manager, kwargs)
             self._track_request(rid)
             return await super()._agenerate(messages, stop, run_manager, **kwargs)
@@ -2909,7 +2924,7 @@ class BeliefKVChatOpenAI(ChatOpenAI):
     ) -> AsyncIterator[Any]:
         rid: str | None = None
         try:
-            self._preflight_model_context(messages)
+            self._preflight_model_context(messages, kwargs)
             if run_manager is None:
                 run_manager = self._stream_run_manager.get()
             kwargs, rid = self._with_beliefkv_runtime(run_manager, kwargs)
