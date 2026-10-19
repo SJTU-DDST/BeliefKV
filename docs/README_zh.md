@@ -16,6 +16,14 @@ completed、2 个 TemplateError，全程无 child/JOIN；刚初始化的 native
 最新动态 profile 保留模型自选分工、时机、数量和自然返回；下一次单个
 原始重构任务先验证真实 child/JOIN，尚未验收正式迁移或相对 native 收益。
 
+V90b 已以 `7e77e28` 独占服务启动单个原始重构任务，轨迹已出现真实
+spawn/JOIN_WAIT 和 child 工具执行，仍需等待自然返回及 parent 继续执行。
+main 另删除事件解析时重复创建的固定字段集合和临时扩展字典；
+316 条 V89 历史事件的完整控制处理保持图、计数和 ACK 字节相同，
+CPU P50 50.753→49.566us，345 项相关检查通过，见
+[V2078](../experiments/reports/v2078_event_decoder_control_cpu_20261020.json)。
+该修改不在已运行的 V90b 快照内，尚未证明 GPU 或 JCT 收益。
+
 **V88 已于北京时间 06:14 主动中断。**V88
 于 06:00:31 启动、06:03:54 有真实服务，但首批 16 root 的 974 次提交、
 1008 次工具启动均未创建 child；10 个自然完成结果保留，native 未启动。

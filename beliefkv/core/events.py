@@ -58,6 +58,33 @@ class EventConfidence(str, Enum):
     INFERRED = "inferred"
 
 
+_EVENT_WIRE_FIELDS = frozenset((
+    "event_id",
+    "ts_ms",
+    "kind",
+    "workflow_id",
+    "invocation_id",
+    "target_invocation_id",
+    "context_id",
+    "target_context_id",
+    "parent_invocation_id",
+    "parent_context_id",
+    "agent_definition_id",
+    "agent_instance_id",
+    "relation_type",
+    "context_mode",
+    "execution_mode",
+    "return_target_id",
+    "join_id",
+    "member_invocation_ids",
+    "context_epoch",
+    "confidence",
+    "attributes",
+    "schema_version",
+    "sequence",
+))
+
+
 @dataclass(frozen=True)
 class RuntimeEvent:
     """Framework-neutral event consumed by the BeliefKV control plane.
@@ -132,33 +159,10 @@ class RuntimeEvent:
 
     @classmethod
     def from_dict(cls, raw: Mapping[str, Any]) -> "RuntimeEvent":
-        known = {
-            "event_id",
-            "ts_ms",
-            "kind",
-            "workflow_id",
-            "invocation_id",
-            "target_invocation_id",
-            "context_id",
-            "target_context_id",
-            "parent_invocation_id",
-            "parent_context_id",
-            "agent_definition_id",
-            "agent_instance_id",
-            "relation_type",
-            "context_mode",
-            "execution_mode",
-            "return_target_id",
-            "join_id",
-            "member_invocation_ids",
-            "context_epoch",
-            "confidence",
-            "attributes",
-            "schema_version",
-            "sequence",
-        }
         attributes = dict(raw.get("attributes", {}))
-        attributes.update({key: value for key, value in raw.items() if key not in known})
+        for key, value in raw.items():
+            if key not in _EVENT_WIRE_FIELDS:
+                attributes[key] = value
         return cls(
             event_id=str(raw["event_id"]),
             ts_ms=float(raw["ts_ms"]),

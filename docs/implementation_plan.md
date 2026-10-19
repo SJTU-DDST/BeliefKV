@@ -20,6 +20,15 @@ preflight keep exact counts. Real model messages are not supplemented with a use
 The saved full counts remain120637/94121;33 relevant CPU checks pass. See V2075.
 GPU completion, useful migration and native-relative performance remain unaccepted.
 
+V90b owns its server and original single task, frozen at7e77e28. Actual spawn,
+JOIN_WAIT, child tools and completion intent are observed; wait for natural
+RETURN and parent service before treating that lifecycle as demonstrated.
+The subsequent main-only decoder change reuses immutable wire fields and removes
+an intermediate extension dict. Across316 historical events and30 full-control
+replays, graph/counters/delivery/exact ACKs match; CPU P50 is50.753 to49.566us.
+All345 related checks pass. See V2077–V2079. V90b does not contain this later
+change; freeze it separately for the next GPU candidate. No GPU/JCT gain is claimed.
+
 V2064's two single-turn user variants
 both select read_file, and V2065's explicit-team version selects ls. No tool is
 executed in those probes; a first action does not establish later delegation.

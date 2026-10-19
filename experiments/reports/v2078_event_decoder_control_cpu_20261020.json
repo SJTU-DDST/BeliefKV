@@ -1,0 +1,60 @@
+{
+  "status": "cpu_control_comparison_not_gpu_or_jct_acceptance",
+  "baseline_commit": "7e77e28",
+  "baseline_source_sha256": {
+    "beliefkv/core/events.py": "62bbefc3f3f68fe43af8731e1a2b1197166feea6a85fcf28910f010591d634d9",
+    "beliefkv/runtime/event_channel.py": "032a8929a01ed19bfd67bf655b42c525ae830ce74dd55e790b69bd32ffc4ece3"
+  },
+  "candidate_source_sha256": {
+    "beliefkv/core/events.py": "5624f059a571264d4548ef05a50aef785e594a03502e24995a95567c79f5022c"
+  },
+  "source": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v89/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+    "prefix_bytes": 472247,
+    "prefix_sha256": "0cbc27872ca16e6dd393177c745e9463cfee9c994700703c6346e7b3968103d2",
+    "events": 316
+  },
+  "iterations": 30,
+  "warmup_iterations": 5,
+  "costs_per_event": {
+    "baseline": {
+      "wall_ms": {
+        "count": 30,
+        "mean_ms": 0.050716455696202534,
+        "p50_ms": 0.05076834493670886,
+        "p99_ms": 0.051191132911392406,
+        "max_ms": 0.051191132911392406
+      },
+      "thread_cpu_ms": {
+        "count": 30,
+        "mean_ms": 0.050711066561181434,
+        "p50_ms": 0.050753373417721515,
+        "p99_ms": 0.0511983417721519,
+        "max_ms": 0.0511983417721519
+      }
+    },
+    "candidate": {
+      "wall_ms": {
+        "count": 30,
+        "mean_ms": 0.049552528902953585,
+        "p50_ms": 0.0495738417721519,
+        "p99_ms": 0.05010491772151898,
+        "max_ms": 0.05010491772151898
+      },
+      "thread_cpu_ms": {
+        "count": 30,
+        "mean_ms": 0.04955455390295359,
+        "p50_ms": 0.04956573101265823,
+        "p99_ms": 0.05011138291139241,
+        "max_ms": 0.05011138291139241
+      }
+    }
+  },
+  "all_events_graph_counters_deliveries_and_exact_ack_equal": true,
+  "unknown_field_precedence_and_input_immutability_equal": true,
+  "scope": [
+    "Serialized event, JSON parsing, decoder, real runtime.on_events and ACK encoding.",
+    "Historical single-workflow prefix, not observed runtime frequency or GPU cost.",
+    "The pinned decoder is bound to the current immutable event class to compare equal records."
+  ]
+}
