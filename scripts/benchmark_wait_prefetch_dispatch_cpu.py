@@ -442,17 +442,19 @@ def main():
     parser.add_argument("--include-selection", action="store_true")
     parser.add_argument("--include-prefill-checks", action="store_true")
     parser.add_argument("--prefill-checks-only", action="store_true")
+    parser.add_argument("--prefill-key-layouts", type=int, default=1)
     parser.add_argument("--report-selection-only", action="store_true")
     parser.add_argument("--tail-reclaim", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    if args.samples < 1 or args.output.exists():
-        parser.error("use positive samples and a fresh output path")
+    if args.samples < 1 or args.prefill_key_layouts < 1 or args.output.exists():
+        parser.error("use positive samples/key layouts and a fresh output path")
     paths = (
         "beliefkv/runtime/sglang_v0520_runtime.py",
         "beliefkv/runtime/sglang_v0520_admission.py",
         "beliefkv/runtime/sglang_v0520_physical.py",
         "beliefkv/runtime/sglang_v0520_observer.py",
+        "beliefkv/runtime/event_channel.py",
         "scripts/benchmark_wait_prefetch_dispatch_cpu.py",
         "scripts/benchmark_native_prepare_path.py",
     )
@@ -475,10 +477,14 @@ def main():
         for remaining in (500., 1500.)
     ] if args.include_selection or args.report_selection_only else []
     prefill_cases = [
-        measure_prefill_check(
-            baseline, depth=depth, matching=matching, ready=ready,
-            legacy=legacy, samples=args.samples,
-        )
+        {
+            "key_layout": layout,
+            **measure_prefill_check(
+                baseline, depth=depth, matching=matching, ready=ready,
+                legacy=legacy, samples=args.samples,
+            ),
+        }
+        for layout in range(args.prefill_key_layouts)
         for depth, matching, ready, legacy in (
             (0, False, True, False),
             (4, False, False, False), (64, False, False, False),
@@ -498,11 +504,13 @@ def main():
         "candidate_source_sha256": digests, "samples": args.samples, "warmup_samples": 10,
         "cases": cases, "selection_cases": selection_cases,
         "prefill_check_cases": prefill_cases,
+        "prefill_key_layouts": args.prefill_key_layouts,
         "limitations": [
             "The CPU native enqueue uses scalar index stand-ins, not the real native allocator or controller.",
             "Plans have real positive Host-only prefixes and causal identities in both sources.",
             "Physical actions remain pending; this fixture never fabricates DMA completion or ACK/use credit.",
             "Resets, state verification and cProfile are outside the CPU timings.",
+            "Each prefill key layout creates independent command namespaces and dictionaries; samples within it reuse that layout.",
             "When enabled, the diagnostic writer appends records to memory without I/O or background GIL contention.",
             "Local CPU timings and synthetic scene frequencies do not establish workflow throughput or JCT gains.",
         ],

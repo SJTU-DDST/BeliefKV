@@ -195,6 +195,7 @@ def test_bookkeeping_sweep_coalesces_without_extending_action_authorization():
 def test_graph_change_wakes_prediction_maintenance_before_its_timer():
     runtime = NativeAdmissionRuntime()
     runtime._prediction_maintenance_interval_ms = 100.
+    runtime.tool_wait_hints["live"] = NS(key=None, live=lambda key, now_ms: True)
     try:
         runtime._maintain_prediction_state(1000.)
         runtime.on_events((event(1, RuntimeEventKind.WORKFLOW_START),))

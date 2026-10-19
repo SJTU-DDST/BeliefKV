@@ -198,8 +198,11 @@ def static_counter_case(*, engine: Path, iterations: int, checkpoint_depth: int 
 
 def baseline_runtime(revision):
     modules, digests = [], {}
-    for name in ("observer", "physical", "runtime"):
-        path = f"beliefkv/runtime/sglang_v0520_{name}.py"
+    for name in ("event_channel", "observer", "physical", "runtime"):
+        path = (
+            "beliefkv/runtime/event_channel.py" if name == "event_channel"
+            else f"beliefkv/runtime/sglang_v0520_{name}.py"
+        )
         source = subprocess.check_output(
             ["git", "show", f"{revision}:{path}"], cwd=ROOT, text=True,
         )

@@ -1687,8 +1687,9 @@ class PhysicalTransactionLedger:
         sizes = _counts(expected.pool_bytes_per_token, positive=True)
         if not sizes or set(sizes) - {"kv", "mamba"}:
             raise PhysicalReceiptError("unsupported native pool")
-        anchors: set[int] = set()
-        published: set[int] = set()
+        multiple_children = len(expected.children) > 1
+        anchors: set[int] | tuple[int, ...] = set() if multiple_children else ()
+        published: set[int] | tuple[int, ...] = set() if multiple_children else ()
         total_bytes = 0
         for child in expected.children:
             if (
@@ -1706,7 +1707,7 @@ class PhysicalTransactionLedger:
                         child.anchor_node_id not in child.published_node_ids
                         or any(type(node) is not int or node < 0 for node in child.published_node_ids)
                         or len(set(child.published_node_ids)) != len(child.published_node_ids)
-                        or not published.isdisjoint(child.published_node_ids)
+                        or multiple_children and not published.isdisjoint(child.published_node_ids)
                     )
                 )
                 or type(child.pool_bytes) is not tuple
@@ -1714,19 +1715,37 @@ class PhysicalTransactionLedger:
                 or child.num_bytes <= 0
             ):
                 raise PhysicalReceiptError("invalid or overlapping child nodes")
-            amounts = _counts(child.pool_bytes, positive=False)
-            if not amounts or set(amounts) - set(sizes):
+            if not child.pool_bytes:
                 raise PhysicalReceiptError("invalid child pools")
-            if any(value % sizes[pool] for pool, value in amounts.items()):
-                raise PhysicalReceiptError("pool bytes not aligned to token size")
-            if sum(amounts.values()) > child.num_bytes:
+            seen_pools = 0
+            pool_total = 0
+            for item in child.pool_bytes:
+                if type(item) not in (tuple, list) or len(item) != 2:
+                    raise PhysicalReceiptError("invalid pool entry")
+                pool, amount = item
+                if type(pool) is not str or type(amount) is not int or amount < 0:
+                    raise PhysicalReceiptError("invalid pool entry")
+                unit = sizes.get(pool)
+                if unit is None:
+                    raise PhysicalReceiptError("invalid child pools")
+                pool_bit = 1 if pool == "kv" else 2
+                if seen_pools & pool_bit:
+                    raise PhysicalReceiptError("invalid or duplicate pool entry")
+                seen_pools |= pool_bit
+                if amount % unit:
+                    raise PhysicalReceiptError("pool bytes not aligned to token size")
+                pool_total += amount
+            if pool_total > child.num_bytes:
                 raise PhysicalReceiptError("child bytes smaller than pool bytes")
-            anchors.add(child.anchor_node_id)
-            published.update(child.published_node_ids)
+            if multiple_children:
+                anchors.add(child.anchor_node_id)
+                published.update(child.published_node_ids)
+            else:
+                published = child.published_node_ids
             total_bytes += child.num_bytes
             if len(published) > self.max_nodes:
                 raise PhysicalReceiptError("command exceeds node bound")
-        if not published.isdisjoint(self._pending_nodes):
+        if not self._pending_nodes.isdisjoint(published):
             raise PhysicalReceiptError("node already owned by a pending command")
         self._pending[expected.command_id] = (expected, monotonic(), set())
         self._pending_nodes.update(published)

@@ -235,17 +235,28 @@ def completion_reconcile_case(baseline, *, samples, source, commands, missing):
             runtime.close()
 
 
-def registration_case(baseline, *, samples, commands, children):
+def registration_case(
+    baseline, *, samples, commands, children, pools="full", published_nodes=1,
+):
     baseline_ledger = baseline._roll_tool_prefetch.__globals__["PhysicalTransactionLedger"]
+    pool_bytes = {
+        "full": (("kv", 20),), "mamba": (("mamba", 30),),
+        "hybrid": (("kv", 20), ("mamba", 30)),
+    }[pools]
+    pool_sizes = tuple((pool, 10) for pool, _ in pool_bytes)
+    num_bytes = sum(amount for _, amount in pool_bytes)
     planned = tuple(
         PhysicalActionExpectation(
             f"load-{index}", "PREFETCH_GPU", f"context-{index % 2}", 0,
             tuple(PhysicalChildExpectation(
                 index * 16 + child * 2,
-                (index * 16 + child * 2,),
-                (("kv", 20),), 20,
+                tuple(range(
+                    index * 16 + child * 2,
+                    index * 16 + child * 2 + published_nodes,
+                )),
+                pool_bytes, num_bytes,
             ) for child in range(children)),
-            (("kv", 10),), session_id=f"session-{index % 2}", session_generation=1,
+            pool_sizes, session_id=f"session-{index % 2}", session_generation=1,
         ) for index in range(commands)
     )
 
@@ -269,7 +280,8 @@ def registration_case(baseline, *, samples, commands, children):
         raise AssertionError("registration changed bytes, ownership or node conflicts")
     return {
         "case": "register_native_restore_commands", "commands": commands,
-        "children_per_command": children,
+        "children_per_command": children, "pools": pools,
+        "published_nodes_per_child": published_nodes,
         "pending_bytes_contexts_and_node_ownership_equal": True,
         "costs": compare({
             name: lambda cls=cls: register(cls) for name, cls in variants.items()

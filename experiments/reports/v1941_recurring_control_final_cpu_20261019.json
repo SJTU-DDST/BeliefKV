@@ -1,0 +1,1649 @@
+{
+  "scope": "CPU runtime/ledger with real Unix sockets; no serving, CUDA, DMA or JCT",
+  "at": "2026-10-19T07:03:05.337967-07:00",
+  "baseline_revision": "fc9fea7",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/event_channel.py": "c053fa25b06d3c5de5331c1118665f8a95ffb68ea430e9666648ab84213056b4",
+    "beliefkv/runtime/sglang_v0520_observer.py": "c022919b429970d3284353060f6ac24e128c35f570efcee6638ce2cd1562085a",
+    "beliefkv/runtime/sglang_v0520_physical.py": "784d6631307ca415d2054360234ee2d6d450b791a3cc71b3495a6ff5d2e2d277",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "20cdbe6b8cb1b8333045ef8048092eaa370607d471a42a289f5a52ad2602fe65"
+  },
+  "candidate_source_sha256": {
+    "beliefkv/runtime/event_channel.py": "032a8929a01ed19bfd67bf655b42c525ae830ce74dd55e790b69bd32ffc4ece3",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "644a786814bcd898f7c00fd6677d85f86d8af07aa2ecc6a12c3e09b9731feaa7",
+    "beliefkv/runtime/sglang_v0520_physical.py": "2a8dd2037c8a1c53e842d841190a950f8c7f2c6644fd522afc86bd5f4b7c48c6",
+    "beliefkv/runtime/sglang_v0520_observer.py": "c022919b429970d3284353060f6ac24e128c35f570efcee6638ce2cd1562085a",
+    "beliefkv/runtime/hotpath_timing.py": "aa554df03b5c08cc009be14f21a9c25bdb5e48eb585b5cf774601d9ae471792b",
+    "scripts/benchmark_recurring_control_cpu.py": "60dff77731727e7de2187c010386e926ead7782f7526b06bc8c3ec8258d31c62",
+    "scripts/benchmark_native_prepare_path.py": "6dc6e755527f7546b2c3d93c7ff0913ff69664a045c5c22465bd477e93647995",
+    "scripts/benchmark_prefetch_control_cpu.py": "6aaa1784c17409e1c2654e563185ca38a23f8dcc8287642d15e849ddca5eaeea",
+    "scripts/benchmark_native_shared_path.py": "c0c91561f4887299a4add743f83eb91176f866aa118ed1da5a76a446f53ed06e"
+  },
+  "samples": 151,
+  "warmup_samples": 20,
+  "cases": [
+    {
+      "case": "real_empty_socket_drain",
+      "profiling": false,
+      "costs": {
+        "baseline": {
+          "mean_us": 0.7957324503311258,
+          "p50_us": 0.79286,
+          "p90_us": 0.7985399999999999,
+          "p99_us": 0.86462
+        },
+        "candidate": {
+          "mean_us": 0.645595761589404,
+          "p50_us": 0.6432,
+          "p90_us": 0.64718,
+          "p99_us": 0.72572
+        }
+      },
+      "no_delivery_or_ack": true,
+      "p50_thread_cpu_reduction_fraction": 0.18875968014529676
+    },
+    {
+      "case": "real_empty_socket_drain",
+      "profiling": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 0.9015002649006623,
+          "p50_us": 0.90242,
+          "p90_us": 0.9184,
+          "p99_us": 0.98956
+        },
+        "candidate": {
+          "mean_us": 0.9320859602649006,
+          "p50_us": 0.9328200000000001,
+          "p90_us": 0.9552200000000001,
+          "p99_us": 1.02054
+        }
+      },
+      "no_delivery_or_ack": true,
+      "p50_thread_cpu_reduction_fraction": -0.03368719664901065
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": false,
+      "maintenance_forced_due": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 6.832747682119205,
+          "p50_us": 6.849600000000001,
+          "p90_us": 7.0346,
+          "p99_us": 7.2369200000000005
+        },
+        "candidate": {
+          "mean_us": 5.74496,
+          "p50_us": 5.75174,
+          "p90_us": 5.97238,
+          "p99_us": 6.045859999999999
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.16028089231487974
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": false,
+      "maintenance_forced_due": true,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 9.063218410596027,
+          "p50_us": 9.18286,
+          "p90_us": 9.461559999999999,
+          "p99_us": 9.59568
+        },
+        "candidate": {
+          "mean_us": 5.457676953642384,
+          "p50_us": 5.465739999999999,
+          "p90_us": 5.59154,
+          "p99_us": 5.6804
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.40478892196984384
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": true,
+      "maintenance_forced_due": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 15.211678675496689,
+          "p50_us": 15.1955,
+          "p90_us": 15.5155,
+          "p99_us": 15.783040000000002
+        },
+        "candidate": {
+          "mean_us": 14.372962649006622,
+          "p50_us": 14.374139999999999,
+          "p90_us": 14.61966,
+          "p99_us": 14.76592
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.054052844592148985
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": true,
+      "maintenance_forced_due": true,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 17.8656259602649,
+          "p50_us": 17.8466,
+          "p90_us": 18.14948,
+          "p99_us": 18.88434
+        },
+        "candidate": {
+          "mean_us": 14.621458278145695,
+          "p50_us": 14.4071,
+          "p90_us": 14.774379999999999,
+          "p99_us": 18.6048
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.19272578530364326
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": false,
+      "maintenance_forced_due": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 7.055033907284768,
+          "p50_us": 7.0491,
+          "p90_us": 7.1887,
+          "p99_us": 7.26218
+        },
+        "candidate": {
+          "mean_us": 5.901479205298013,
+          "p50_us": 5.8918800000000005,
+          "p90_us": 6.035,
+          "p99_us": 6.192399999999999
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.16416563816657437
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": false,
+      "maintenance_forced_due": true,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 9.435808609271524,
+          "p50_us": 9.43698,
+          "p90_us": 9.62044,
+          "p99_us": 9.84978
+        },
+        "candidate": {
+          "mean_us": 5.9852459602649,
+          "p50_us": 5.97148,
+          "p90_us": 6.101640000000001,
+          "p99_us": 6.21838
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.3672255318968569
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": true,
+      "maintenance_forced_due": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 15.919864900662251,
+          "p50_us": 15.89672,
+          "p90_us": 16.292360000000002,
+          "p99_us": 16.57162
+        },
+        "candidate": {
+          "mean_us": 14.981503841059602,
+          "p50_us": 15.00674,
+          "p90_us": 15.25154,
+          "p99_us": 15.42916
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.055985134040229645
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": true,
+      "maintenance_forced_due": true,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 19.121302649006623,
+          "p50_us": 19.117639999999998,
+          "p90_us": 19.38616,
+          "p99_us": 20.907919999999997
+        },
+        "candidate": {
+          "mean_us": 15.817449139072847,
+          "p50_us": 15.660639999999999,
+          "p90_us": 16.03668,
+          "p99_us": 16.3604
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.1808277590748648
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": false,
+      "maintenance_forced_due": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 6.484436291390728,
+          "p50_us": 6.44222,
+          "p90_us": 6.76184,
+          "p99_us": 6.99066
+        },
+        "candidate": {
+          "mean_us": 5.5269397350993374,
+          "p50_us": 5.46872,
+          "p90_us": 5.78584,
+          "p99_us": 6.04446
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.15111250469558624
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": false,
+      "maintenance_forced_due": true,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 8.770555629139073,
+          "p50_us": 8.7728,
+          "p90_us": 9.02218,
+          "p99_us": 9.217120000000001
+        },
+        "candidate": {
+          "mean_us": 5.506032582781457,
+          "p50_us": 5.45008,
+          "p90_us": 5.769220000000001,
+          "p99_us": 5.9873400000000006
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.37875250775123115
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": true,
+      "maintenance_forced_due": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 15.982960397350993,
+          "p50_us": 16.014680000000002,
+          "p90_us": 16.3281,
+          "p99_us": 16.565360000000002
+        },
+        "candidate": {
+          "mean_us": 14.78177986754967,
+          "p50_us": 14.79768,
+          "p90_us": 15.15148,
+          "p99_us": 15.71708
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.07599277662744441
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": true,
+      "maintenance_forced_due": true,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 18.21701549668874,
+          "p50_us": 18.16566,
+          "p90_us": 18.48908,
+          "p99_us": 20.106
+        },
+        "candidate": {
+          "mean_us": 14.645929801324503,
+          "p50_us": 14.548639999999999,
+          "p90_us": 14.94206,
+          "p99_us": 18.43312
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.1991130517691072
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": false,
+      "maintenance_forced_due": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 7.029711523178808,
+          "p50_us": 6.97244,
+          "p90_us": 7.343100000000001,
+          "p99_us": 7.527399999999999
+        },
+        "candidate": {
+          "mean_us": 5.862515894039735,
+          "p50_us": 5.7969,
+          "p90_us": 6.173439999999999,
+          "p99_us": 6.42706
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.16859808044242763
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": false,
+      "maintenance_forced_due": true,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 7.154065562913908,
+          "p50_us": 7.130199999999999,
+          "p90_us": 7.41984,
+          "p99_us": 7.61476
+        },
+        "candidate": {
+          "mean_us": 4.670487417218543,
+          "p50_us": 4.6277,
+          "p90_us": 4.9304,
+          "p99_us": 5.1563
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.3509719222462203
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": true,
+      "maintenance_forced_due": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 12.883350463576159,
+          "p50_us": 12.85942,
+          "p90_us": 13.09146,
+          "p99_us": 13.30158
+        },
+        "candidate": {
+          "mean_us": 12.075778278145695,
+          "p50_us": 12.0663,
+          "p90_us": 12.298219999999999,
+          "p99_us": 12.493379999999998
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.06167618757300097
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": true,
+      "maintenance_forced_due": true,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 14.53281178807947,
+          "p50_us": 14.52294,
+          "p90_us": 14.79662,
+          "p99_us": 14.99676
+        },
+        "candidate": {
+          "mean_us": 11.901304105960264,
+          "p50_us": 11.87578,
+          "p90_us": 12.04866,
+          "p99_us": 13.13484
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.18227438796827633
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 0,
+      "profiling": false,
+      "maintenance_forced_due": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 10.986945033112583,
+          "p50_us": 10.9345,
+          "p90_us": 11.165899999999999,
+          "p99_us": 12.148520000000001
+        },
+        "candidate": {
+          "mean_us": 9.48565880794702,
+          "p50_us": 9.35394,
+          "p90_us": 9.516639999999999,
+          "p99_us": 10.179
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.14454799030591248
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 0,
+      "profiling": false,
+      "maintenance_forced_due": true,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 13.00976105960265,
+          "p50_us": 13.024899999999999,
+          "p90_us": 13.22288,
+          "p99_us": 13.43034
+        },
+        "candidate": {
+          "mean_us": 9.568143841059603,
+          "p50_us": 9.54576,
+          "p90_us": 9.71706,
+          "p99_us": 9.913620000000002
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.26711452679099257
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 0,
+      "profiling": true,
+      "maintenance_forced_due": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 20.273106357615895,
+          "p50_us": 20.25232,
+          "p90_us": 20.66598,
+          "p99_us": 20.965919999999997
+        },
+        "candidate": {
+          "mean_us": 18.982595629139073,
+          "p50_us": 19.03036,
+          "p90_us": 19.29054,
+          "p99_us": 19.46658
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.060336791044186544
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 0,
+      "profiling": true,
+      "maintenance_forced_due": true,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 17.661464370860926,
+          "p50_us": 17.656,
+          "p90_us": 17.8972,
+          "p99_us": 18.242279999999997
+        },
+        "candidate": {
+          "mean_us": 14.386572317880795,
+          "p50_us": 14.290479999999999,
+          "p90_us": 14.519440000000001,
+          "p99_us": 14.7064
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.19061622111463528
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 16,
+      "profiling": false,
+      "maintenance_forced_due": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 8.881289139072848,
+          "p50_us": 8.879100000000001,
+          "p90_us": 9.01488,
+          "p99_us": 9.226659999999999
+        },
+        "candidate": {
+          "mean_us": 7.773093112582782,
+          "p50_us": 7.7694399999999995,
+          "p90_us": 7.90652,
+          "p99_us": 8.0197
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.12497437803380995
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 16,
+      "profiling": false,
+      "maintenance_forced_due": true,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 10.364223973509933,
+          "p50_us": 10.35522,
+          "p90_us": 10.57144,
+          "p99_us": 10.775799999999998
+        },
+        "candidate": {
+          "mean_us": 7.693548476821192,
+          "p50_us": 7.684939999999999,
+          "p90_us": 7.79602,
+          "p99_us": 7.979
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.25786801246134805
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 16,
+      "profiling": true,
+      "maintenance_forced_due": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 15.865489403973509,
+          "p50_us": 15.85308,
+          "p90_us": 16.0947,
+          "p99_us": 16.31434
+        },
+        "candidate": {
+          "mean_us": 15.210213907284768,
+          "p50_us": 15.21592,
+          "p90_us": 15.37572,
+          "p99_us": 15.64046
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.04019155899042959
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 16,
+      "profiling": true,
+      "maintenance_forced_due": true,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 18.22330940397351,
+          "p50_us": 18.19254,
+          "p90_us": 18.428060000000002,
+          "p99_us": 18.79514
+        },
+        "candidate": {
+          "mean_us": 15.547585562913907,
+          "p50_us": 15.38384,
+          "p90_us": 15.57508,
+          "p99_us": 16.14668
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.1543874577161849
+    },
+    {
+      "case": "register_native_restore_commands",
+      "commands": 1,
+      "children_per_command": 1,
+      "pools": "full",
+      "published_nodes_per_child": 1,
+      "pending_bytes_contexts_and_node_ownership_equal": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 4.864609271523179,
+          "p50_us": 4.831600000000001,
+          "p90_us": 5.0725,
+          "p99_us": 5.4169
+        },
+        "candidate": {
+          "mean_us": 3.454759602649007,
+          "p50_us": 3.4467,
+          "p90_us": 3.5893,
+          "p99_us": 4.0487
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.2866338273035849
+    },
+    {
+      "case": "register_native_restore_commands",
+      "commands": 1,
+      "children_per_command": 1,
+      "pools": "mamba",
+      "published_nodes_per_child": 1,
+      "pending_bytes_contexts_and_node_ownership_equal": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 4.707150993377484,
+          "p50_us": 4.6944,
+          "p90_us": 4.9012,
+          "p99_us": 5.3741
+        },
+        "candidate": {
+          "mean_us": 3.353401986754967,
+          "p50_us": 3.3276,
+          "p90_us": 3.4781,
+          "p99_us": 3.8518000000000003
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.2911554192229039
+    },
+    {
+      "case": "register_native_restore_commands",
+      "commands": 1,
+      "children_per_command": 1,
+      "pools": "hybrid",
+      "published_nodes_per_child": 1,
+      "pending_bytes_contexts_and_node_ownership_equal": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 5.249312582781457,
+          "p50_us": 5.2249,
+          "p90_us": 5.4335,
+          "p99_us": 6.0355
+        },
+        "candidate": {
+          "mean_us": 3.905009271523179,
+          "p50_us": 3.8725,
+          "p90_us": 4.059,
+          "p99_us": 4.452
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.2588374897127218
+    },
+    {
+      "case": "register_native_restore_commands",
+      "commands": 64,
+      "children_per_command": 1,
+      "pools": "full",
+      "published_nodes_per_child": 1,
+      "pending_bytes_contexts_and_node_ownership_equal": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 241.4540119205298,
+          "p50_us": 241.2239,
+          "p90_us": 249.0387,
+          "p99_us": 253.2795
+        },
+        "candidate": {
+          "mean_us": 164.9195132450331,
+          "p50_us": 165.5613,
+          "p90_us": 167.3891,
+          "p99_us": 168.3382
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.3136612914391982
+    },
+    {
+      "case": "register_native_restore_commands",
+      "commands": 64,
+      "children_per_command": 1,
+      "pools": "mamba",
+      "published_nodes_per_child": 1,
+      "pending_bytes_contexts_and_node_ownership_equal": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 239.93986490066226,
+          "p50_us": 240.34320000000002,
+          "p90_us": 245.8357,
+          "p99_us": 249.9468
+        },
+        "candidate": {
+          "mean_us": 164.01068807947019,
+          "p50_us": 164.8483,
+          "p90_us": 166.8586,
+          "p99_us": 168.22670000000002
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.31411290188363983
+    },
+    {
+      "case": "register_native_restore_commands",
+      "commands": 64,
+      "children_per_command": 1,
+      "pools": "hybrid",
+      "published_nodes_per_child": 1,
+      "pending_bytes_contexts_and_node_ownership_equal": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 274.0572536423841,
+          "p50_us": 273.589,
+          "p90_us": 277.0963,
+          "p99_us": 286.16929999999996
+        },
+        "candidate": {
+          "mean_us": 195.36428278145695,
+          "p50_us": 195.558,
+          "p90_us": 197.0889,
+          "p99_us": 198.58870000000002
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.28521249026824913
+    },
+    {
+      "case": "register_native_restore_commands",
+      "commands": 16,
+      "children_per_command": 4,
+      "pools": "full",
+      "published_nodes_per_child": 1,
+      "pending_bytes_contexts_and_node_ownership_equal": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 127.94650728476822,
+          "p50_us": 128.2243,
+          "p90_us": 130.1653,
+          "p99_us": 131.6534
+        },
+        "candidate": {
+          "mean_us": 79.8103476821192,
+          "p50_us": 80.1199,
+          "p90_us": 81.19739999999999,
+          "p99_us": 82.527
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.3751582188399547
+    },
+    {
+      "case": "register_native_restore_commands",
+      "commands": 16,
+      "children_per_command": 4,
+      "pools": "mamba",
+      "published_nodes_per_child": 1,
+      "pending_bytes_contexts_and_node_ownership_equal": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 128.15322582781457,
+          "p50_us": 128.3657,
+          "p90_us": 130.8623,
+          "p99_us": 132.7701
+        },
+        "candidate": {
+          "mean_us": 80.00755960264901,
+          "p50_us": 79.3424,
+          "p90_us": 83.474,
+          "p99_us": 84.2621
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.3819034212410325
+    },
+    {
+      "case": "register_native_restore_commands",
+      "commands": 16,
+      "children_per_command": 4,
+      "pools": "hybrid",
+      "published_nodes_per_child": 1,
+      "pending_bytes_contexts_and_node_ownership_equal": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 156.05269006622515,
+          "p50_us": 156.0879,
+          "p90_us": 157.93689999999998,
+          "p99_us": 160.094
+        },
+        "candidate": {
+          "mean_us": 96.96242119205299,
+          "p50_us": 97.13789999999999,
+          "p90_us": 98.11510000000001,
+          "p99_us": 98.64789999999999
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.37767181184447995
+    },
+    {
+      "case": "register_native_restore_commands",
+      "commands": 16,
+      "children_per_command": 1,
+      "pools": "full",
+      "published_nodes_per_child": 2,
+      "pending_bytes_contexts_and_node_ownership_equal": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 73.291540397351,
+          "p50_us": 73.3027,
+          "p90_us": 75.11489999999999,
+          "p99_us": 85.2228
+        },
+        "candidate": {
+          "mean_us": 50.47158013245033,
+          "p50_us": 50.527,
+          "p90_us": 51.2974,
+          "p99_us": 51.983
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.310707518276953
+    },
+    {
+      "case": "register_native_restore_commands",
+      "commands": 16,
+      "children_per_command": 1,
+      "pools": "mamba",
+      "published_nodes_per_child": 2,
+      "pending_bytes_contexts_and_node_ownership_equal": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 74.1061178807947,
+          "p50_us": 74.4132,
+          "p90_us": 76.19319999999999,
+          "p99_us": 77.1627
+        },
+        "candidate": {
+          "mean_us": 50.22533774834437,
+          "p50_us": 50.2662,
+          "p90_us": 51.0291,
+          "p99_us": 52.3762
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.3244988792311042
+    },
+    {
+      "case": "register_native_restore_commands",
+      "commands": 16,
+      "children_per_command": 1,
+      "pools": "hybrid",
+      "published_nodes_per_child": 2,
+      "pending_bytes_contexts_and_node_ownership_equal": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 85.21383311258278,
+          "p50_us": 85.2315,
+          "p90_us": 86.4457,
+          "p99_us": 87.5453
+        },
+        "candidate": {
+          "mean_us": 65.1356,
+          "p50_us": 65.1445,
+          "p90_us": 66.31089999999999,
+          "p99_us": 67.3429
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.23567577714812016
+    }
+  ],
+  "validation_cases": [
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "kv",
+          20
+        ]
+      ],
+      "accepted": true,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "mamba",
+          15
+        ]
+      ],
+      "accepted": true,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "kv",
+          20
+        ],
+        [
+          "mamba",
+          15
+        ]
+      ],
+      "accepted": true,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "mamba",
+          0
+        ],
+        [
+          "kv",
+          20
+        ]
+      ],
+      "accepted": true,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "kv",
+          20
+        ]
+      ],
+      "accepted": true,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "kv",
+          true
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "kv",
+          -10
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "kv",
+          20.0
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "kv",
+          11
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "mamba",
+          6
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "kv",
+          20
+        ],
+        [
+          "kv",
+          0
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "mamba",
+          5
+        ],
+        [
+          "mamba",
+          5
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "swa",
+          20
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "",
+          0
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          [],
+          10
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "kv"
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        "kv"
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "kv",
+          20
+        ]
+      ],
+      "accepted": true,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "mamba",
+          15
+        ]
+      ],
+      "accepted": true,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "kv",
+          20
+        ],
+        [
+          "mamba",
+          15
+        ]
+      ],
+      "accepted": true,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "mamba",
+          0
+        ],
+        [
+          "kv",
+          20
+        ]
+      ],
+      "accepted": true,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "kv",
+          20
+        ]
+      ],
+      "accepted": true,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "kv",
+          true
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "kv",
+          -10
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "kv",
+          20.0
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "kv",
+          11
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "mamba",
+          6
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "kv",
+          20
+        ],
+        [
+          "kv",
+          0
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "mamba",
+          5
+        ],
+        [
+          "mamba",
+          5
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "swa",
+          20
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "",
+          0
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          [],
+          10
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "kv"
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        "kv"
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    }
+  ],
+  "limitations": [
+    "Empty prediction inventories and physical pending populations are controlled scenes.",
+    "Forced-due and deferred scenes are measured separately, not their online mixture.",
+    "Unexpired physical reservations do not represent native DMA or active service leases.",
+    "Empty sweeps/counters are intentionally removed; action/state comparisons exclude those diagnostics.",
+    "Microseconds and controlled fractions are not throughput, JCT or prediction-accuracy gains."
+  ]
+}

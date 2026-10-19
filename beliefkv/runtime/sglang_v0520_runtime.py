@@ -9,7 +9,7 @@ from collections import Counter, OrderedDict, deque
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field, replace
 from heapq import nsmallest
-from itertools import chain, islice
+from itertools import chain, count, islice
 import math
 import json
 import os
@@ -412,6 +412,8 @@ class NativeAdmissionRuntime:
         if service_path:
             self._native_service_samples.extend(load_native_service_seed(service_path, service_sha))
         self._prefetch_issue_times: dict[str, float] = {}
+        self._physical_command_namespace: str | None = None
+        self._physical_command_sequence = count(1)
         self._prefetch_steps: dict[
             str, tuple[PrefetchLoadStep, str, float | None]
         ] = {}
@@ -852,6 +854,16 @@ class NativeAdmissionRuntime:
         if callable(getattr(cache, "_evict_backed_join_parent", None)):
             cache.beliefkv_join_pressure_validator = self._live_parent_pressure_node
             cache.beliefkv_join_pressure_parked = self._on_parent_pressure_parked
+
+    def _next_physical_command_id(self, kind: str) -> str:
+        namespace = self._physical_command_namespace
+        if namespace is None:
+            namespace = self._physical_command_namespace = uuid4().hex
+        # PID separates forked copies; the sequence outlives bounded ACK history.
+        return (
+            f"beliefkv-{kind}-{namespace}-{os.getpid():x}"
+            f"-{next(self._physical_command_sequence):x}"
+        )
 
     def can_prefetch_during_overlap(self) -> bool:
         supports = getattr(self._native_cache, "supports_beliefkv_overlap_prefetch", None)
@@ -1915,16 +1927,15 @@ class NativeAdmissionRuntime:
                     self._submit_tool_wait(context)
                 self._scan_offsets["tool_wait"] = (offset + 8) % len(contexts)
         expired = self.physical_ledger.expire()
-        self.counts["physical_expired"] += len(expired)
-        self._discard_prefetch_tracking("physical_expired", expired)
-        lease = self._admission_lease
-        if lease is not None and lease.command_id is not None and (
-            lease.command_id in expired
-        ):
-            self._admission_lease = None
-            self.counts["admission_prefetch_expired"] += 1
+        if expired:
+            self.counts["physical_expired"] += len(expired)
+            self._discard_prefetch_tracking("physical_expired", expired)
+            lease = self._admission_lease
+            if lease is not None and lease.command_id in expired:
+                self._admission_lease = None
+                self.counts["admission_prefetch_expired"] += 1
         ticket = self._join_ticket
-        if ticket is not None and ticket.command_id in expired:
+        if expired and ticket is not None and ticket.command_id in expired:
             ticket.command_id = None
             self.counts["join_prefetch_expired"] += 1
         if ticket is not None and not self._live_join_ticket():
@@ -1936,6 +1947,11 @@ class NativeAdmissionRuntime:
             self.sample_runtime_observations(waiting_queue, now_ms=now_ms)
 
     def _maintain_prediction_state(self, now_ms: float) -> None:
+        if not (
+            self._final_stages or self.tool_wait_hints
+            or self.join_wait_hints or self._completion_hints
+        ):
+            return
         version = self.graph.graph_version
         if (
             version == self._prediction_maintenance_graph_version
@@ -1968,11 +1984,13 @@ class NativeAdmissionRuntime:
         ]
         for join_id in expired_join:
             self.join_wait_hints.pop(join_id)
-        self.counts["join_wait_expired"] += len(expired_join)
-        self._completion_hints = {
-            join_id: hint for join_id, hint in self._completion_hints.items()
-            if self._live_completion_hint(hint)
-        }
+        if expired_join:
+            self.counts["join_wait_expired"] += len(expired_join)
+        if self._completion_hints:
+            self._completion_hints = {
+                join_id: hint for join_id, hint in self._completion_hints.items()
+                if self._live_completion_hint(hint)
+            }
 
     def sample_runtime_observations(
         self, waiting_queue: Sequence[object] = (), *, now_ms: float | None = None,
@@ -5410,7 +5428,7 @@ class NativeAdmissionRuntime:
         ):
             self.counts["shadow_step_stale"] += 1
             return None
-        command_id = f"beliefkv-shadow-{uuid4().hex}"
+        command_id = self._next_physical_command_id("shadow")
         registered = False
 
         def before_enqueue(operation: object) -> bool:
@@ -5504,7 +5522,7 @@ class NativeAdmissionRuntime:
         if not steps or steps[0] != step:
             self.counts["shadow_step_stale"] += 1
             return ()
-        commands = tuple(f"beliefkv-shadow-{uuid4().hex}" for _ in steps)
+        commands = tuple(self._next_physical_command_id("shadow") for _ in steps)
         planned = dict(zip(commands, steps))
         registered = set()
 
@@ -6889,7 +6907,7 @@ class NativeAdmissionRuntime:
         ):
             self.counts["prefetch_step_stale"] += 1
             return None
-        command_id = f"beliefkv-prefetch-{uuid4().hex}"
+        command_id = self._next_physical_command_id("prefetch")
         issue_wall_ms = time.time() * 1000
         registered = False
 
@@ -7197,7 +7215,7 @@ class NativeAdmissionRuntime:
             )
             return ()
         byte_allowance = self._prefetch_byte_allowance(issue_budget)
-        commands = tuple(f"beliefkv-prefetch-{uuid4().hex}" for _ in steps)
+        commands = tuple(self._next_physical_command_id("prefetch") for _ in steps)
         planned = dict(zip(commands, steps))
         registered: set[str] = set()
         reserved_bytes = 0
@@ -7286,7 +7304,7 @@ class NativeAdmissionRuntime:
         ):
             return ()
         issue_budget = self._current_residency_budget(include_evictable=True)
-        commands = tuple(f"beliefkv-prefetch-{uuid4().hex}" for _ in steps)
+        commands = tuple(self._next_physical_command_id("prefetch") for _ in steps)
         planned = dict(zip(commands, steps))
         registered: set[str] = set()
         issued_at = time.time() * 1000.

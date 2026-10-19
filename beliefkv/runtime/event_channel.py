@@ -136,8 +136,12 @@ class RuntimeEventDatagramServer:
     def drain(self, *, max_messages: int = 256) -> tuple[RuntimeEventDelivery, ...]:
         if max_messages <= 0:
             raise ValueError("max_messages must be positive")
-        deliveries: list[RuntimeEventDelivery] = []
         timing = self._timing
+        if (timing is None or not timing.enabled) and self._receive_was_empty:
+            if not self._receive_poller.poll(0):
+                return ()
+            self._receive_was_empty = False
+        deliveries: list[RuntimeEventDelivery] = []
         for index in range(max_messages):
             receive_frame = None
             if timing is not None and timing.enabled:
@@ -155,8 +159,7 @@ class RuntimeEventDatagramServer:
                     if receive_frame is not None:
                         timing.finish(receive_frame)
             except BlockingIOError:
-                if index == 0:
-                    self._receive_was_empty = True
+                self._receive_was_empty = True
                 break
             profiled = False
             if timing is not None and timing.enabled:

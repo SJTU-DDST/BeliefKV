@@ -115,6 +115,42 @@ class RuntimeEventChannelTest(unittest.TestCase):
                     self.assertEqual(server.drain(), ())
                     receiver.recvfrom.assert_not_called()
 
+    def test_drained_burst_rearms_empty_probe_without_an_extra_receive(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            with RuntimeEventDatagramServer(
+                Path(temporary) / "server.sock", lambda _: None,
+            ) as server, socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as sender:
+                sender.sendto(_encode_event_message("first", ((
+                    event("first", RuntimeEventKind.WORKFLOW_START, ts_ms=0.),
+                ),)), str(server.path))
+                self.assertEqual(len(server.drain()), 1)
+                with patch.object(server, "_socket") as receiver:
+                    self.assertEqual(server.drain(), ())
+                    receiver.recvfrom.assert_not_called()
+                sender.sendto(_encode_event_message("second", ((
+                    event("second", RuntimeEventKind.WORKFLOW_START, ts_ms=1.),
+                ),)), str(server.path))
+                self.assertEqual(len(server.drain()), 1)
+
+    def test_empty_fast_path_preserves_profiling_after_runtime_toggle(self):
+        timing = HotpathTiming(enabled=False)
+        with tempfile.TemporaryDirectory() as temporary:
+            with RuntimeEventDatagramServer(
+                Path(temporary) / "server.sock", lambda _: None, timing=timing,
+            ) as server:
+                for _ in range(128):
+                    self.assertEqual(server.drain(), ())
+                self.assertEqual(server._receive_polls, 0)
+                timing.enabled = True
+                for _ in range(128):
+                    self.assertEqual(server.drain(), ())
+                snapshot = timing.snapshot()["phases"]
+                self.assertEqual(snapshot["control_socket_receive_sample"]["count"], 2)
+                self.assertEqual(server._receive_polls, 128)
+                timing.enabled = False
+                self.assertEqual(server.drain(), ())
+                self.assertEqual(server._receive_polls, 128)
+
     def test_queued_batches_share_ack_without_changing_order_or_close_boundary(self):
         transport = QueuedTransportFixture(hold_second=True)
         queued = QueuedRuntimeEventSink(transport)

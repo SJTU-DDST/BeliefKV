@@ -45,6 +45,25 @@ This is CPU evidence, not an end-to-end result. Keep new-context hybrid checkpoi
 gaps separate; FULL matches alone cannot reconstruct a missing Mamba checkpoint.
 GPU pause remains active and automatic resume remains disabled.
 
+V1941/V1942 further reduce control costs relative to fc9fea7. Skip empty
+prediction inventories and expiry cleanup, and probe empty sockets before
+allocating the receive loop. Rearm readiness after a drained burst, retaining
+immediate arrivals and profiling. Validate child pools in one pass and reuse
+validated publication tuples for single-child commands. PREPARE and all H2D
+issuers use one lazy random namespace plus the live PID and an unbounded
+sequence; cancellation, receipt history and ledger replacement never reset it.
+The24-root/8-running empty-inventory recurring P50 is6.44 to5.47us;
+registering64 FULL commands is241.22 to165.56us. Complete64-node JOIN/tool
+dispatch is2383.75 to2177.13us and2378.83 to2168.00us; all24 complete scenes
+improve2.9%-8.9%. The1384 CPU checks pass with identity, physical targets,
+budgets and ACK safety retained. The profiled empty-socket case adds about
+0.03us. A single64-command dependency scene adds1.61us; V1944's12 independent
+key layouts show mean P50 of26.46 to26.65us, so retain the residual variation
+without claiming dependency-path savings. See V1943 and the bound raw reports.
+Next CPU work remains native operation accounting, closure observation and
+replanning at the quantity boundary; do not claim all control costs are gone.
+Keep the GPU pause, engine/workload and policy triggers unchanged.
+
 V1935-V1937 optimize prefetch submission relative to3381a0e. Full-only
 operations skip unused auxiliary-pool structures while still reconciling
 native indices, counts and bytes. Retain an already exhausted bounded plan
