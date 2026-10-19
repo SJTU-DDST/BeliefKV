@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 PORT="${PORT:-18454}"
 ROOT_COUNT="${ROOT_COUNT:-108}"
+MAX_RUNNING_REQUESTS="${MAX_RUNNING_REQUESTS:-48}"
 SAMPLING_SEED="${SAMPLING_SEED:-21}"
 MAX_COMPLETION_TOKENS="${MAX_COMPLETION_TOKENS:-16384}"
 MODEL_REQUEST_TIMEOUT_SECONDS="${MODEL_REQUEST_TIMEOUT_SECONDS:-${ACTIVATION_WALL_CLOCK_SECONDS:-14400}}"
@@ -83,12 +84,13 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || { (( ARRIVAL_BATCH_SIZE > 0 )) && (( ARRIVAL_BATCH_INTERVAL_MS == 0 )); } \
   || { [[ "$ARRIVAL_BATCH_SIZE" == "0" ]] && [[ "$ARRIVAL_BATCH_INTERVAL_MS" != "0" ]]; } \
   || [[ ! "$SAMPLING_SEED" =~ ^[0-9]+$ ]] \
+  || [[ ! "$MAX_RUNNING_REQUESTS" =~ ^[1-9][0-9]{0,3}$ ]] \
   || [[ ! "$MAX_COMPLETION_TOKENS" =~ ^[1-9][0-9]*$ ]] \
   || [[ ! "$MODEL_CONTEXT_TOKENS" =~ ^[1-9][0-9]{0,6}$ ]] \
   || [[ ! "$CONTEXT_WINDOW_TOKENS" =~ ^[1-9][0-9]{0,6}$ ]] \
   || [[ ! "$CONTEXT_KEEP_TOKENS" =~ ^[1-9][0-9]{0,6}$ ]] \
   || (( CONTEXT_KEEP_TOKENS >= CONTEXT_WINDOW_TOKENS )) \
-  || (( CONTEXT_WINDOW_TOKENS + MAX_COMPLETION_TOKENS + 4096 > MODEL_CONTEXT_TOKENS )) \
+  || (( CONTEXT_WINDOW_TOKENS > MODEL_CONTEXT_TOKENS )) \
   || [[ ! "$HICACHE_SIZE_GB" =~ ^(0|[1-9][0-9]{0,2})$ ]] \
   || (( HICACHE_SIZE_GB > 200 )) \
   || { [[ "$HICACHE_SIZE_GB" == "0" ]] && [[ "$NATIVE_POLICY_BASELINE" != "1" || "$AB_MODE" != "off" ]]; } \
@@ -223,7 +225,7 @@ setsid env -u BELIEFKV_FULL_MAMBA_HOST_SPLIT "${unset_env[@]}" \
   HICACHE_WRITE_POLICY="$HICACHE_WRITE_POLICY" \
   ENABLE_SESSION_RADIX_CACHE=1 HOST_NUMA_NODE=1 \
   HOST_NUMA_MEMORY_POLICY="$HOST_NUMA_MEMORY_POLICY" \
-  MEM_FRACTION_STATIC=0.94 MAX_RUNNING_REQUESTS=48 \
+  MEM_FRACTION_STATIC=0.94 MAX_RUNNING_REQUESTS="$MAX_RUNNING_REQUESTS" \
   CONTEXT_LENGTH="$MODEL_CONTEXT_TOKENS" \
   "${telemetry_env[@]}" \
   SGLANG_PATCH_FLAVOR="$SGLANG_PATCH_FLAVOR" \
@@ -250,6 +252,12 @@ if [[ "$ready" != true ]]; then
   printf 'Native server did not become ready: %s\n' "$RUN_ROOT/server.log" >&2
   exit 1
 fi
+curl --silent --show-error --max-time 10 --fail \
+  --output "$RUN_ROOT/server/server_info.json" "$BASE_URL/server_info"
+jq --exit-status --argjson running "$MAX_RUNNING_REQUESTS" \
+  --argjson context "$MODEL_CONTEXT_TOKENS" \
+  '.max_running_requests == $running and .context_length == $context' \
+  "$RUN_ROOT/server/server_info.json" >/dev/null
 
 # Skipped warmup can race the engine's POST with HTTP startup.
 # Initialize both arms after health succeeds and before any workflow submits.

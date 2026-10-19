@@ -7,14 +7,19 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 后续开发固定在主目录 `/home/longhao/experiment/BeliefKV` 的 `main` 分支。
 历史实验 worktree 保留其冻结来源；新代码修改、验证与提交在主目录进行。
 
-当前用户选择直接验证 128K 动态历史，不先跑 64K。新轮显式设置
-CONTEXT_WINDOW_TOKENS=131072、CONTEXT_KEEP_TOKENS=8192、
-MODEL_CONTEXT_TOKENS=262144，输出仍为 16384；模型上限需为静态
-提示、工具 schema 和输出留余量。模型 cap 与动态压缩阈值必须分别
+当前用户进一步选择模型原生 256K 总上下文。新轮显式设置
+CONTEXT_WINDOW_TOKENS=262144、CONTEXT_KEEP_TOKENS=8192、
+MODEL_CONTEXT_TOKENS=262144，输出仍为 16384；现有生命周期会扣除
+静态提示、工具 schema、输出和 4096 安全余量后压缩，不能将 256K
+当作可再叠加输出的纯输入，也不扩展模型位置上限。模型 cap 与窗口必须分别
 写入冻结计划并核对实际 client manifest，不能仅修改服务端 cap。
 旧计划 resume 缺字段时保留原 32K，历史 native 的未记录配置标为未知。
-不填充无用文本来制造长上下文。保留原任务与两批到达，检查实际历史、
+不填充无用文本来制造长上下文。新轮从原清单按原顺序选择 112 项，
+首批 64、第二批 48（3600s），两侧相同。检查实际历史、
 原生准入、Host-only FULL、有用前缀损失和重算后再解释预取收益。
+两侧 MAX_RUNNING_REQUESTS=24，替代旧 48；写入冻结计划、resume，并
+在 workload 开始前保存/核对实际 server_info。原生 token 容量检查继续
+生效。去长尾阈值仍是 48 个活跃 workflow，不能混作 GPU running 上限。
 
 输出上限增大后须同时核对模型请求读取超时。V83c 的 pylint-6386 child
 在客户端 600s 无新流数据后 ReadTimeout，原生仍生成了约 15925 token，

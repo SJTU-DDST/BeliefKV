@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 ROOT_COUNT="${ROOT_COUNT:-108}"
+MAX_RUNNING_REQUESTS="${MAX_RUNNING_REQUESTS:-48}"
 ARRIVAL_BATCH_SIZE="${ARRIVAL_BATCH_SIZE:-0}"
 ARRIVAL_BATCH_INTERVAL_MS="${ARRIVAL_BATCH_INTERVAL_MS:-0}"
 ARRIVAL_RATE_PER_SECOND="${ARRIVAL_RATE_PER_SECOND:-0}"
@@ -66,13 +67,15 @@ if [[ $# -ne 0 ]] \
   || { [[ "$RESUME_PENDING" == "1" ]] && [[ ! -f "$RUN_ROOT/ab_plan.json" ]]; } \
   || [[ ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] || (( ROOT_COUNT > 156 )) \
   || [[ ! "$ARRIVAL_BATCH_SIZE" =~ ^[0-9]+$ || ! "$ARRIVAL_BATCH_INTERVAL_MS" =~ ^[0-9]+$ ]] \
-  || { [[ "$poisson_arrivals" == "0" ]] && (( ROOT_COUNT > 108 )) && [[ "$ARRIVAL_BATCH_SIZE" != "108" || "$ARRIVAL_BATCH_INTERVAL_MS" == "0" ]]; } \
+  || { [[ "$poisson_arrivals" == "0" ]] && (( ROOT_COUNT > 108 )) && { [[ "$ARRIVAL_BATCH_INTERVAL_MS" == "0" ]] \
+    || { [[ "$ARRIVAL_BATCH_SIZE" != "64" && "$ARRIVAL_BATCH_SIZE" != "108" ]]; }; }; } \
+  || { [[ "$poisson_arrivals" == "0" ]] && (( ROOT_COUNT > 128 )) && [[ "$ARRIVAL_BATCH_SIZE" != "108" ]]; } \
   || { [[ "$poisson_arrivals" == "1" ]] && [[ "$ARRIVAL_BATCH_SIZE" != "0" || "$ARRIVAL_BATCH_INTERVAL_MS" != "0" ]]; } \
   || [[ ! "$ARRIVAL_SEED" =~ ^[0-9]+$ ]] \
   || [[ ! "$SAMPLING_SEED" =~ ^[0-9]+$ || ! "$REPETITION_ID" =~ ^[0-9]+$ ]] \
   || [[ "$EXECUTION_HANDOFF" != "0" && "$EXECUTION_HANDOFF" != "1" ]] \
   || [[ "$ARM_ORDER" != "predictive_h2d reactive" && "$ARM_ORDER" != "reactive predictive_h2d" && "$ARM_ORDER" != "predictive_h2d" && "$ARM_ORDER" != "reactive" && "$ARM_ORDER" != "native predictive_h2d" && "$ARM_ORDER" != "predictive_h2d native" ]]; then
-  printf 'Usage: RUN_ROOT=<new path> ROOT_COUNT=108|156 ARRIVAL_BATCH_SIZE=0|108 ARRIVAL_BATCH_INTERVAL_MS=0|3600000 FANOUT_PROFILE=native_in_graph_2to4 ARM_ORDER="predictive_h2d native"|"predictive_h2d reactive"|predictive_h2d|reactive SAMPLING_SEED=21 REPETITION_ID=0 ACTIVATION_WALL_CLOCK_SECONDS=14400 PORT=18454 bash %s\n' "$0" >&2
+  printf 'Usage: RUN_ROOT=<new path> ROOT_COUNT=108|112|128|156 ARRIVAL_BATCH_SIZE=0|64|108 ARRIVAL_BATCH_INTERVAL_MS=0|3600000 FANOUT_PROFILE=native_in_graph_2to4 ARM_ORDER="predictive_h2d native"|"predictive_h2d reactive"|predictive_h2d|reactive SAMPLING_SEED=21 REPETITION_ID=0 ACTIVATION_WALL_CLOCK_SECONDS=14400 PORT=18454 bash %s\n' "$0" >&2
   exit 2
 fi
 mkdir -p "$RUN_ROOT"
@@ -80,6 +83,7 @@ export FANOUT_PROFILE HOST_NUMA_MEMORY_POLICY MAX_COMPLETION_TOKENS
 if [[ "$RESUME_PENDING" == "0" ]]; then
 "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
   --run-root "$RUN_ROOT" --initialize --root-count "$ROOT_COUNT" \
+  --server-running "$MAX_RUNNING_REQUESTS" \
   --arrival-batch-size "$ARRIVAL_BATCH_SIZE" --arrival-batch-interval-ms "$ARRIVAL_BATCH_INTERVAL_MS" \
   --arrival-rate-per-second "$ARRIVAL_RATE_PER_SECOND" --arrival-seed "$ARRIVAL_SEED" \
   --arm-order "$ARM_ORDER" --max-completion-tokens "$MAX_COMPLETION_TOKENS" \
@@ -133,6 +137,7 @@ for arm in $ARM_ORDER; do
   fi
   set +e
   NATIVE_POLICY_BASELINE="$baseline" AB_MODE="$mode" ROOT_COUNT="$ROOT_COUNT" PORT="$PORT" SAMPLING_SEED="$SAMPLING_SEED" \
+    MAX_RUNNING_REQUESTS="$MAX_RUNNING_REQUESTS" \
     ARRIVAL_BATCH_SIZE="$ARRIVAL_BATCH_SIZE" ARRIVAL_BATCH_INTERVAL_MS="$ARRIVAL_BATCH_INTERVAL_MS" \
     WORKFLOW_ARRIVAL_SCHEDULE="$arrival_schedule" \
     ACTIVATION_WALL_CLOCK_SECONDS="$ACTIVATION_WALL_CLOCK_SECONDS" \

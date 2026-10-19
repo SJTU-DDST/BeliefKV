@@ -5,16 +5,20 @@ Status date: 2026-10-19 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-The latest user-selected validation uses128K dynamic history directly, skipping
-the proposed64K intermediate setting. Freeze window131072/keep8192/summary2048
-and output16384 in both arms. Use model/server context262144, supported by the
-local model config, to reserve static prompt/schema and output headroom.
+The latest user-selected validation uses the model's native256K total context,
+superseding the64K and128K candidates. Freeze window262144/keep8192/summary2048
+and output16384 in both arms, with model/server context262144. The existing
+lifecycle subtracts static prompt/schema, output and4096 safety tokens from the
+actual history budget; do not exceed the native model limit or extend RoPE.
 Explicitly forward the window, keep and model limit; compare actual manifests,
-and keep legacy resume at32K if its old plan omitted the setting. V1853 passes
-180 existing CPU checks. V84 retains the156 tasks and108+48/3600s arrival table,
-48 maximum running requests, Host200GB80:20 and the qualified engine.
+and keep legacy resume at32K if its old plan omitted the setting. V1855 passes
+180 existing CPU checks; V1853/V1854 preserve prior candidates. V84 selects
+the first112 tasks in original order, using64+48/3600s
+arrivals to reduce the first wave from108 roots. Reduce maximum running requests
+from48 to24 in both arms, freeze/restore that cap and verify actual server_info
+before starting workflows. Keep Host200GB80:20 and the qualified engine.
 Observe actual context growth, shared capacity, useful-prefix loss and
-recomputation;128K per independent FULL is2.684GB, not proof48 can fit at once.
+recomputation;256K per independent FULL is5.369GB, not proof24 can fit at once.
 
 V1848 traces the pylint-6386 child failure to a600s client read timeout while
 native generation continues through15925 output tokens, below the16384 cap.
@@ -30,7 +34,7 @@ confirmed. No terminal summary or end-to-end acceptance is invented.
 V1840-V1845 provide a complete observed600-2400s V83c prefix, with1275.96
 decode token/s and96.04% GPU utilization versus historical native1263.33/95.07%.
 Output caps and application versions differ; they are development evidence
-only. The restarted128K pair must provide its own common tail-excluded JCT.
+only. The restarted256K pair must provide its own common tail-excluded JCT.
 Early next-request-verified FULL is2.880GB JOIN and7.599GB tool in the sealed
 prefetch prefix; node JOIN ACK-to-service p50/p90 is332/651ms.
 Main now skips ordering for tool-only zero/single tagged-candidate queues,

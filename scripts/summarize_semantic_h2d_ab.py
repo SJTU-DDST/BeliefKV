@@ -343,6 +343,8 @@ def summarize(arm: Path) -> dict | None:
     harness_config = manifest.get("config", {})
     native_path = arm / "server/native_telemetry_status.json"
     native = json.loads(native_path.read_text()) if native_path.exists() else {}
+    server_info_path = arm / "server/server_info.json"
+    server_info = json.loads(server_info_path.read_text()) if server_info_path.exists() else {}
     capacity = json.loads((arm / "server/native_capacity_census.json").read_text())["capacity"]
     last_state, forecast_costs, forecast_ages = {}, [], []
     for row in records(arm / "opportunities/admission_opportunities.jsonl"):
@@ -432,6 +434,8 @@ def summarize(arm: Path) -> dict | None:
         "model_request_timeout_seconds": harness_config.get("request_timeout_s"),
         "max_completion_tokens": harness_config.get("max_completion_tokens"),
         "context_lifecycle": harness_config.get("context_lifecycle"),
+        "server_running": server_info.get("max_running_requests"),
+        "server_context_tokens": server_info.get("context_length"),
         "workflow_count": summary["workflow_count"], "outcomes": dict(outcomes),
         "completed_workflows_per_hour": summary["completed_workflows"] * 3600 / duration,
         "completed_jct_p50_seconds": median(jct) if jct else None,
@@ -516,6 +520,7 @@ def main() -> None:
     parser.add_argument("--initialize", action="store_true")
     parser.add_argument("--verify-frozen-plan", action="store_true")
     parser.add_argument("--root-count", type=int, default=36)
+    parser.add_argument("--server-running", type=int, default=48)
     parser.add_argument("--arm-order", default="predictive_h2d native")
     parser.add_argument("--arrival-batch-size", type=int, default=0)
     parser.add_argument("--arrival-batch-interval-ms", type=int, default=0)
@@ -615,17 +620,16 @@ def main() -> None:
             raise ValueError("requested root count exceeds the workload manifest")
         if args.sampling_seed < 0 or args.repetition_id < 0:
             raise ValueError("sampling seed and repetition ID must be nonnegative")
+        if args.server_running <= 0:
+            raise ValueError("server running request cap must be positive")
         if not 0 < args.max_completion_tokens < args.model_context_tokens:
             raise ValueError("output token cap must be positive and below the context size")
         if not 0 < args.context_keep_tokens < args.context_window_tokens:
             raise ValueError("retained history must be positive and below the dynamic window")
         if args.context_window_tokens - args.context_keep_tokens < 2048:
             raise ValueError("checkpoint summary must fit outside the retained history")
-        if (
-            args.context_window_tokens + args.max_completion_tokens + 4096
-            > args.model_context_tokens
-        ):
-            raise ValueError("dynamic history, output and prompt headroom must fit the model context")
+        if args.context_window_tokens > args.model_context_tokens:
+            raise ValueError("dynamic history ceiling cannot exceed the model context")
         if not 0 < args.model_request_timeout_seconds < float("inf"):
             raise ValueError("model request timeout must be positive and finite")
         workloads = available[:args.root_count]
@@ -730,7 +734,7 @@ def main() -> None:
             "code_commit": subprocess.check_output(
                 ["git", "rev-parse", "HEAD"], cwd=root, text=True,
             ).strip(),
-            "root_count": args.root_count, "server_running": 48,
+            "root_count": args.root_count, "server_running": args.server_running,
             "workflow_arrival_mode": arrival_mode,
             "workflow_arrival_rate_per_second": args.arrival_rate_per_second,
             "workflow_arrival_seed": args.arrival_seed,
@@ -775,6 +779,10 @@ def main() -> None:
                 "summary_output_tokens": 2048,
                 "model_context_tokens": args.model_context_tokens,
             },
+            "context_budget_semantics": (
+                "dynamic_window_is_a_ceiling;actual_history_budget_reserves_output,"
+                "static_prompt,tool_schema_and_existing_4096_token_safety_margin"
+            ),
             "max_completion_tokens": args.max_completion_tokens,
             "sampling_seed": args.sampling_seed, "temperature": 0., "host_numa_node": 1,
             "mem_fraction_static": .94,
@@ -958,6 +966,12 @@ def main() -> None:
             and arm.get("context_lifecycle") != plan["context_lifecycle"]
         ):
             raise ValueError(f"{name}: mismatched dynamic history or model context configuration")
+        for actual, expected in (
+            ("server_running", "server_running"),
+            ("server_context_tokens", "context_tokens"),
+        ):
+            if arm.get(actual) is not None and expected in plan and arm[actual] != plan[expected]:
+                raise ValueError(f"{name}: mismatched {expected} in actual server configuration")
         state = arm["runtime_state"]
         if name == "native":
             if state or arm["predictive_h2d_acks"]:
