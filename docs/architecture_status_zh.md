@@ -49,7 +49,26 @@ reactive 作为本系统控制时默认与 predictive 同开前端缓存，隔�
 11 个新 context 的混合 checkpoint 缺口仍单列：深 FULL 命中不能替代
 该位置缺少的可恢复 Mamba 状态，现有日志不足以逐个区分未创建与被回收。
 
-**最新恢复租约降本：V2028。**不可变回执使用 slots，epoch 与 session
+**最新同步预取诊断降本：V2034。**此前预取 issued 回调会为各目标独立复制
+长 token 前缀，首次服务再做逐 token 比较；这些字段不决定原生 FULL/Mamba
+复用信用。现在默认关闭这一额外诊断，保留节点/分配对象、代际、前缀长度、
+原生驻留、ACK 前缓冲及 Mamba forward 证明。`target_prefix_diagnostics`
+明确 captured/disabled/unavailable，关闭诊断不意味着没有复用。
+需要排查文本差异时设 `PREFETCH_PREFIX_DIAGNOSTICS=1`；独立快照和旧记录
+语义保留。开关纳入冻结计划、逐 arm 启动、恢复与启动快照核对，
+无该字段的旧计划仍启用原诊断。V2034 的 24 组 CPU 对照只排除明确可选
+的诊断字段，其余 ACK/首用记录、生命周期和原生复用证明相同。
+131K/42 目标发出回调的 CPU P50 9.376→0.266ms，首用 5.632→0.216ms；
+省去 22.544MB token 数组，不能当作 KV 迁移减少。262K 单目标本来受旧
+131K 诊断上限跳过复制，增加 0.088us；开启诊断的控制多 0.001–7.411us，
+均保留。V2033 的独立输入/额外保留数组夹具曾有大回退，最终采用相同
+原生 key/input/action 地址且只保留快照标量统计，不将波动全归因于代码。
+2302 项运行检查加 84 项报告/恢复检查通过，V2037 合并原始 JUnit、
+去重为 2386 项，无 failure/error/skip。没有 GPU/JCT 新结论；见
+[V2038](../experiments/reports/v2038_optional_prefetch_prefix_diagnostics_cpu_20261020_zh.md)。
+提交后更新同一 06:00 资格，24-root 与 V88/补丁保持。
+
+**此前恢复租约降本：V2028。**不可变回执使用 slots，epoch 与 session
 直接逐字段比较，不再构造校验元组。每份租约仍独立读取当前期限、因果、
 session generation、节点代际和各池驻留，不复用其他回执的物理结论。
 96 组完整维护、epoch 交接、首次服务及调度循环的状态、日志、锁与回执

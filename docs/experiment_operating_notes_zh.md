@@ -52,6 +52,20 @@ native 默认关闭，reactive 控制与 predictive 同开。计数快照不依�
 错误，V1996 在相同代码、冻结 V88 导入下 2258 项全部通过；两份记录保留。
 不能跳过原生检查或修改生产所有权语义来消除这种来源错误。
 
+后续新实验默认 `PREFETCH_PREFIX_DIAGNOSTICS=0`，仅省去额外 token 快照/
+比较；必须保留原生节点、分配对象、代际、物化前缀长度、驻留、ACK 及
+Mamba forward 的复用证明。`target_prefixes=[]` 且 diagnostics=disabled
+不能按未复用处理；判断 FULL/Mamba 仍用原有已验证字段。临时排查文本
+差异时设为 1，独立快照及旧比较保持。冻结计划、服务端 launch/ready、
+resume 和最终汇总必须一致，不能让继承环境污染任一 arm。无该字段的
+旧计划恢复时保留原先开启诊断的行为，不以新默认值改写历史合同。
+V2034 使用相同原生 key/input/action 地址，快照统计只保留标量；不得
+额外持有数组而改变其释放时机。V2033 初版的大幅控制回退保留，不当作
+最终性能；最终开启诊断及原来已跳过复制的控制也保留小回退。
+2386 项检查通过，V2037 仅合并两个真实 JUnit 并核对无重复，不重复计数。
+CPU 诊断数组字节不是 KV 传输字节，局部降低也不是 GPU/JCT 收益。
+见 V2038；提交后更新同一 06:00 等待资格，V88 与 workload 保持。
+
 V2028 的恢复租约不再提供可写的实例 __dict__；原本就是 frozen 对象，
 仍用 dataclass replace 更新，并保留 copy/deepcopy/pickle/asdict。
 epoch/session 直接比较不改变允许的当前/后继 epoch；每份回执继续独立

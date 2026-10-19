@@ -46,6 +46,7 @@ PREDICTION_MAINTENANCE_INTERVAL_MS="${PREDICTION_MAINTENANCE_INTERVAL_MS:-0}"
 H2D_OPPORTUNITY_SAMPLING="${H2D_OPPORTUNITY_SAMPLING:-0}"
 TERMINAL_CACHE_DIAGNOSTICS="${TERMINAL_CACHE_DIAGNOSTICS:-0}"
 PROFILE_SHARED_PATH="${PROFILE_SHARED_PATH:-0}"
+PREFETCH_PREFIX_DIAGNOSTICS="${PREFETCH_PREFIX_DIAGNOSTICS:-0}"
 SEMANTIC_WORK_STATISTIC="${SEMANTIC_WORK_STATISTIC:-center}"
 EOS_PROTOCOL_WINDOW_MS="${EOS_PROTOCOL_WINDOW_MS:-250}"
 FANOUT_PROFILE="${FANOUT_PROFILE:-native_in_graph_nested_2to4}"
@@ -125,6 +126,7 @@ if [[ "$RESUME_PENDING" == "0" ]]; then
   --h2d-opportunity-sampling "$H2D_OPPORTUNITY_SAMPLING" \
   --terminal-cache-diagnostics "$TERMINAL_CACHE_DIAGNOSTICS" \
   --profile-shared-path "$PROFILE_SHARED_PATH" \
+  --prefetch-prefix-diagnostics "$PREFETCH_PREFIX_DIAGNOSTICS" \
   --transfer-service-seed "$TRANSFER_SERVICE_SEED" \
   --semantic-work-statistic "$SEMANTIC_WORK_STATISTIC" \
   --eos-protocol-window-ms "$EOS_PROTOCOL_WINDOW_MS" \
@@ -140,7 +142,8 @@ if [[ "$poisson_arrivals" == "1" ]]; then
 fi
 for arm in $ARM_ORDER; do
   "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
-    --run-root "$RUN_ROOT" --verify-frozen-plan
+    --run-root "$RUN_ROOT" --verify-frozen-plan \
+    --prefetch-prefix-diagnostics "$PREFETCH_PREFIX_DIAGNOSTICS"
   if [[ "$RESUME_PENDING" == "1" && "$arm" == "native" \
     && -f "$RUN_ROOT/$arm/client_$ROOT_COUNT/summary.json" ]]; then
     printf 'Reuse collected native arm; continue with pending predictive\n'
@@ -194,6 +197,7 @@ for arm in $ARM_ORDER; do
     H2D_OPPORTUNITY_SAMPLING="$H2D_OPPORTUNITY_SAMPLING" \
     TERMINAL_CACHE_DIAGNOSTICS="$TERMINAL_CACHE_DIAGNOSTICS" \
     PROFILE_SHARED_PATH="$PROFILE_SHARED_PATH" \
+    PREFETCH_PREFIX_DIAGNOSTICS="$PREFETCH_PREFIX_DIAGNOSTICS" \
     SEMANTIC_WORK_STATISTIC="$SEMANTIC_WORK_STATISTIC" \
     EOS_PROTOCOL_WINDOW_MS="$EOS_PROTOCOL_WINDOW_MS" \
     FANOUT_PROFILE="$FANOUT_PROFILE" \

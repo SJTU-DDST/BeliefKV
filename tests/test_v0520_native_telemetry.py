@@ -935,8 +935,9 @@ def test_first_service_expires_old_epoch_before_matches_and_retains_other_consum
 
 @pytest.mark.parametrize("changed_prefix", [False, True])
 def test_prefetch_diagnostic_separates_input_divergence_from_mamba_boundary(
-    tmp_path: Path, changed_prefix: bool,
+    tmp_path: Path, changed_prefix: bool, monkeypatch,
 ) -> None:
+    monkeypatch.setenv("BELIEFKV_PREFETCH_PREFIX_DIAGNOSTICS", "1")
     audit = NativeReactiveTelemetry(tmp_path / "restore")
     root = SimpleNamespace(id=0, creation_time=0, parent=None)
     loaded = SimpleNamespace(
@@ -972,6 +973,94 @@ def test_prefetch_diagnostic_separates_input_divergence_from_mamba_boundary(
     assert target["complete_input_prefix"] is not changed_prefix
     assert use["native_full_kv_hit_length"] == 8
     assert use["native_mamba_branching_seqlen"] == 8
+
+
+@pytest.mark.parametrize("before_ack", (False, True))
+@pytest.mark.parametrize("mutation", (None, "generation", "allocation", "short_prefix"))
+def test_optional_token_diagnostics_do_not_change_native_full_reuse_or_ack_credit(
+    tmp_path, monkeypatch, before_ack, mutation,
+):
+    monkeypatch.setattr(telemetry_module.time, "time", lambda: 100.)
+    results = {}
+    for enabled in (False, True):
+        monkeypatch.setenv("BELIEFKV_PREFETCH_PREFIX_DIAGNOSTICS", str(int(enabled)))
+        audit = NativeReactiveTelemetry(tmp_path / str(enabled))
+        root = SimpleNamespace(id=0, creation_time=0, parent=None)
+        loaded = SimpleNamespace(
+            id=11, creation_time=7, parent=root, key=array("q", range(8)),
+            component_data=(
+                SimpleNamespace(value=object()), SimpleNamespace(),
+                SimpleNamespace(value=None),
+            ),
+        )
+        audit._cache = SimpleNamespace(
+            tree_core=SimpleNamespace(node_by_id={0: root, 11: loaded}.__getitem__),
+        )
+        snapshot = Mock(wraps=audit._key_path_tokens)
+        audit._key_path_tokens = snapshot
+        emitted = Mock(wraps=audit._emit)
+        audit._emit = emitted
+        action = SimpleNamespace(
+            command_id="restore", action="PREFETCH_GPU",
+            context_id="ctx", context_epoch=2, node_ids=(11,),
+            pool_bytes=(("kv", 80),), num_bytes=80,
+        )
+        try:
+            audit.on_prefetch_issued(action)
+            assert snapshot.call_count == int(enabled)
+            assert not audit._prefetch_ack_times
+            if not enabled:
+                assert not audit._pending_prefetch_use["restore"][3]
+            if not before_ack:
+                audit.on_verified_action_ack(action)
+            if mutation == "generation":
+                loaded.creation_time += 1
+            elif mutation == "allocation":
+                loaded.component_data[0].value = object()
+            request = SimpleNamespace(
+                rid="next", last_node=11, best_match_node=11,
+                origin_input_ids=list(range(12)),
+                prefix_indices=range(4 if mutation == "short_prefix" else 8),
+                cached_tokens_device=8, cached_tokens_host=0, mamba_host_hit_length=0,
+            )
+            audit._record_prefetch_first_service(
+                request, {"context_id": "ctx", "context_epoch": 3},
+            )
+            if before_ack:
+                assert len(audit._prefetch_use_before_ack["restore"]) == 1
+                assert not any(call.args[0] == "action_use" for call in emitted.call_args_list)
+                audit.on_verified_action_ack(action)
+        finally:
+            audit.close()
+        [record] = _read(tmp_path / str(enabled) / "physical_action_use.jsonl")
+        assert record.pop("target_prefix_diagnostics") == (
+            "captured" if enabled else "disabled"
+        )
+        assert bool(record.pop("target_prefixes")) is enabled
+        assert record["full_node_reused"] is (mutation is None)
+        assert not audit._pending_prefetch_use
+        assert not audit._unacked_prefetch_use
+        results[enabled] = record
+    assert results[False] == results[True]
+
+
+def test_prefetch_token_diagnostics_default_off_is_recorded(tmp_path, monkeypatch):
+    monkeypatch.delenv("BELIEFKV_PREFETCH_PREFIX_DIAGNOSTICS", raising=False)
+    audit = NativeReactiveTelemetry(tmp_path / "default")
+    audit.close()
+    assert audit._prefetch_prefix_diagnostics is False
+    ready = json.loads((tmp_path / "default/native_telemetry_ready.json").read_text())
+    assert ready["prefetch_prefix_diagnostics"] is False
+
+
+@pytest.mark.parametrize("value", ("true", "", "2"))
+def test_prefetch_token_diagnostics_reject_invalid_settings_before_writer_start(
+    tmp_path, monkeypatch, value,
+):
+    monkeypatch.setenv("BELIEFKV_PREFETCH_PREFIX_DIAGNOSTICS", value)
+    with pytest.raises(ValueError, match="PREFETCH_PREFIX_DIAGNOSTICS"):
+        NativeReactiveTelemetry(tmp_path / "invalid")
+    assert not (tmp_path / "invalid").exists()
 
 
 @pytest.mark.parametrize("native_array", [False, True])

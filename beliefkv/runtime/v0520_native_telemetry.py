@@ -58,6 +58,10 @@ class NativeReactiveTelemetry:
         if checkpoint_shadow not in ("0", "1"):
             raise ValueError("BELIEFKV_CHECKPOINT_PATH_SHADOW must be 0 or 1")
         self._checkpoint_path_shadow = checkpoint_shadow == "1"
+        prefix_diagnostics = os.environ.get("BELIEFKV_PREFETCH_PREFIX_DIAGNOSTICS", "0")
+        if prefix_diagnostics not in ("0", "1"):
+            raise ValueError("BELIEFKV_PREFETCH_PREFIX_DIAGNOSTICS must be 0 or 1")
+        self._prefetch_prefix_diagnostics = prefix_diagnostics == "1"
         self.collection_mode = collection_mode
         self.directory = Path(directory).resolve()
         self.scheduler_path = (
@@ -1817,6 +1821,7 @@ class NativeReactiveTelemetry:
     def _track_prefetch_use(self, action: Any, ack_ts: float | None) -> None:
         nodes = []
         prefixes = {}
+        capture_prefixes = getattr(self, "_prefetch_prefix_diagnostics", False)
         tree_core = getattr(self._cache, "tree_core", None)
         for node_id in action.node_ids:
             try:
@@ -1828,7 +1833,7 @@ class NativeReactiveTelemetry:
                 nodes.append((
                     node_id, node.creation_time, node, prefix_len, full_value, mamba_value,
                 ))
-                if path is not None and prefix_len <= 131072:
+                if capture_prefixes and path is not None and prefix_len <= 131072:
                     token_ids = self._key_path_tokens(path)
                     if token_ids is not None:
                         prefixes[node_id] = (
@@ -1899,11 +1904,12 @@ class NativeReactiveTelemetry:
                 for command_id in matches
                 for tokens, _, _ in self._pending_prefetch_use[command_id][3].values()
             ), default=0)
-            try:
-                # Materialize only the ACK prefixes needed by the C comparison.
-                input_tokens = array("q", input_tokens[:prefix_limit])
-            except (TypeError, ValueError, OverflowError):
-                pass
+            if prefix_limit:
+                try:
+                    # Materialize only the diagnostic prefixes needed by the C comparison.
+                    input_tokens = array("q", input_tokens[:prefix_limit])
+                except (TypeError, ValueError, OverflowError):
+                    pass
         verified_input_prefix = array("q")
         for command_id in matches:
             action, nodes, ack_ts, prefixes = self._pending_prefetch_use.pop(command_id)
@@ -2042,6 +2048,10 @@ class NativeReactiveTelemetry:
                 "matched_node_ids": matched_nodes,
                 "reused_full_node_ids": reused_full_nodes,
                 "target_prefixes": target_prefixes,
+                "target_prefix_diagnostics": (
+                    "captured" if prefixes else "unavailable"
+                    if getattr(self, "_prefetch_prefix_diagnostics", False) else "disabled"
+                ),
                 "native_full_kv_hit_length": getattr(
                     req, "beliefkv_full_kv_hit_length", None
                 ),
@@ -2084,6 +2094,7 @@ class NativeReactiveTelemetry:
                         "collection_mode": self.collection_mode,
                         "record_output_token_ids": self._record_output_token_ids,
                         "checkpoint_path_shadow": self._checkpoint_path_shadow,
+                        "prefetch_prefix_diagnostics": self._prefetch_prefix_diagnostics,
                         "scheduler_pid": os.getpid(),
                         "scheduler_path": (
                             str(self.scheduler_path) if self.scheduler_path else None

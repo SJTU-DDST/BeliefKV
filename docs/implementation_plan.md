@@ -64,6 +64,24 @@ Current goal:
 - Stop and fix material experimental failures promptly; CPU improvements alone
   do not establish GPU performance or a gain over native.
 
+V2034 makes additional per-target token snapshots/comparisons opt-in with
+PREFETCH_PREFIX_DIAGNOSTICS=0 for new runs. Keep native node/allocation identity,
+generation, materialized-prefix length, residency, pre-ACK buffering and Mamba
+forward proofs. Emit captured/disabled/unavailable explicitly; missing diagnostic
+prefixes do not mean missing reuse. Opt-in controls preserve independent snapshots
+and previous token comparison. Freeze the setting, forward it to every arm, retain
+it on resume and verify the server launch; plans predating the field retain the old
+diagnostics-enabled behavior. All 24 CPU scenes preserve native reuse and ACK
+lifecycle, excluding only explicit optional diagnostic fields in record comparison.
+For 131K/42 targets, issuance CPU P50 is 9.376 to 0.266ms and first service 5.632 to
+0.216ms, avoiding 22.544MB of token arrays, not KV transfers. Retain the 0.088us
+regression for an already-skipped 262K single target and opt-in controls' 0.001-7.411us
+regressions. Preserve V2033's independent-input/extra-retained-array fixture results;
+V2034 reads the same native objects and records only scalar snapshot statistics.
+All 2302 runtime and 84 report/resume checks pass; V2037 merges their real JUnits
+with duplicate rejection (2386 total). See V2038. Commit main and republish the same
+06:00 qualification, retaining engine/patch/workload and pending GPU/JCT acceptance.
+
 V2028 uses slots for immutable restore leases and direct epoch/session comparisons,
 removing temporary validation tuples. Keep separate expiry, causal, native session
 generation, node generation, residency and lock checks for every receipt.

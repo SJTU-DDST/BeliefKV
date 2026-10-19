@@ -186,8 +186,9 @@ def test_native_policy_baseline_rejects_predictive_mix_before_launch(tmp_path: P
     ("off", True, "200"), ("off", True, "0"),
 ))
 @pytest.mark.parametrize("cache_override", [None, "0", "1"])
+@pytest.mark.parametrize("prefix_diagnostics", [None, "1"])
 def test_effective_policy_environment_without_launching_gpu(
-    tmp_path, mode, native, host_gb, cache_override,
+    tmp_path, mode, native, host_gb, cache_override, prefix_diagnostics,
 ):
     from sys import executable
 
@@ -215,7 +216,7 @@ def test_effective_policy_environment_without_launching_gpu(
         key: value for key, value in os.environ.items()
         if key not in (
             "NATIVE_CHAT_TOKEN_BLOCK_CACHE", "PREDICTIVE_CHAT_TOKEN_BLOCK_CACHE",
-            "REACTIVE_CHAT_TOKEN_BLOCK_CACHE",
+            "REACTIVE_CHAT_TOKEN_BLOCK_CACHE", "PREFETCH_PREFIX_DIAGNOSTICS",
         )
     }
     result = subprocess.run(
@@ -237,7 +238,10 @@ def test_effective_policy_environment_without_launching_gpu(
             "BELIEFKV_EXPERIMENT_PAUSE_FILE": str(tmp_path / "unused-pause"),
             "SGLANG_SOURCE_CHECKOUT": str(tmp_path / "candidate-engine"),
             "BELIEFKV_CHAT_TOKEN_BLOCK_CACHE": "1",
+            "BELIEFKV_PREFETCH_PREFIX_DIAGNOSTICS": "1",
             **({cache_variable: cache_override} if cache_override is not None else {}),
+            **({"PREFETCH_PREFIX_DIAGNOSTICS": prefix_diagnostics}
+               if prefix_diagnostics is not None else {}),
         },
         text=True, capture_output=True, timeout=10,
     )
@@ -248,9 +252,13 @@ def test_effective_policy_environment_without_launching_gpu(
     assert environment["SGLANG_SOURCE_CHECKOUT"] == str(tmp_path / "candidate-engine")
     cache_enabled = cache_override == "1" if cache_override is not None else not native
     assert environment["BELIEFKV_CHAT_TOKEN_BLOCK_CACHE"] == str(int(cache_enabled))
+    assert environment["BELIEFKV_PREFETCH_PREFIX_DIAGNOSTICS"] == (
+        prefix_diagnostics if prefix_diagnostics is not None else "0"
+    )
     assert json.loads((run_root / "server/launch_configuration.json").read_text()) == {
         "schema_version": 1, "chat_token_block_cache": cache_enabled,
         "native_policy_baseline": native,
+        "prefetch_prefix_diagnostics": prefix_diagnostics == "1",
     }
     if host_gb == "0":
         assert arguments[arguments.index("--max-total-tokens") + 1] == "1798992"

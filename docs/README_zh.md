@@ -23,7 +23,18 @@ child 都可动态委派叶子孙 agent，最大深度仍为 2。任务范围、
 见[24-root 配置](../configs/migration/qwen35_locobench_long_24root_running8_2026-10-19.json)
 及[CPU 原始结果](../experiments/reports/v1925_v85d_long_chat_token_cache_cpu_20261019.json)。
 
-**最新恢复租约降本，V2028。**不可变租约改用 slots，逐回执的 epoch/session
+**最新同步诊断降本，V2034。**预取目标的逐 token 快照/比较改为按需开启，
+默认 `PREFETCH_PREFIX_DIAGNOSTICS=0`；原生节点/分配身份、代际、物化前缀、
+ACK 与 Mamba forward 证明保留。记录显式区分诊断 disabled/unavailable，
+不能用缺少 target_prefixes 判断没有复用。24 组 CPU 对照的原生证明与
+ACK 生命周期一致；131K/42 目标的发出回调 9.376→0.266ms，首次服务
+5.632→0.216ms，省去 22.544MB token 诊断数组，并非 KV 传输字节。
+2386 项检查通过；开关已贯通冻结计划、服务端启动快照与恢复，旧计划
+保留原诊断方式。初次夹具回退及最终开启诊断的小回退均保留，详见
+[V2038](../experiments/reports/v2038_optional_prefetch_prefix_diagnostics_cpu_20261020_zh.md)。
+这些是 CPU 局部结果，GPU/JCT 仍待验证。提交后更新同一 06:00 等待资格。
+
+**此前恢复租约降本，V2028。**不可变租约改用 slots，逐回执的 epoch/session
 检查直接比较字段，省去临时元组；过期、代际、驻留和锁仍独立核对。
 96 组完整维护/首次服务对照的状态、记录、锁、回执相同，90 组 CPU P50
 更低；42 回执、单 context 且无诊断的维护循环 115.977→105.269us。

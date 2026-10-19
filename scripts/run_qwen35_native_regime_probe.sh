@@ -62,6 +62,7 @@ SEMANTIC_WORK_STATISTIC="${SEMANTIC_WORK_STATISTIC:-upper}"
 EOS_PROTOCOL_WINDOW_MS="${EOS_PROTOCOL_WINDOW_MS:-50}"
 TERMINAL_CACHE_DIAGNOSTICS="${TERMINAL_CACHE_DIAGNOSTICS:-0}"
 PROFILE_SHARED_PATH="${PROFILE_SHARED_PATH:-0}"
+PREFETCH_PREFIX_DIAGNOSTICS="${PREFETCH_PREFIX_DIAGNOSTICS:-0}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_native_regime_${HICACHE_WRITE_POLICY}_${FANOUT_PROFILE}_${HICACHE_SIZE_GB}g_${HOST_SPLIT/:/_}_${ROOT_COUNT}root_v1}"
 MANIFEST="${WORKLOAD_MANIFEST:-$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json}"
 BASE_URL="http://127.0.0.1:$PORT"
@@ -129,6 +130,7 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || [[ "$CHILD_FINAL_REPORT_SHADOW" != "0" && "$CHILD_FINAL_REPORT_SHADOW" != "1" ]] \
   || [[ "$ENABLE_TOOL_TIMING" != "0" && "$ENABLE_TOOL_TIMING" != "1" ]] \
   || [[ "$PROFILE_SHARED_PATH" != "0" && "$PROFILE_SHARED_PATH" != "1" ]] \
+  || [[ "$PREFETCH_PREFIX_DIAGNOSTICS" != "0" && "$PREFETCH_PREFIX_DIAGNOSTICS" != "1" ]] \
   || [[ ! "$PREFETCH_LEAD_MS" =~ ^[0-9]+$ ]] \
   || [[ "$SEMANTIC_WORK_STATISTIC" != upper && "$SEMANTIC_WORK_STATISTIC" != center ]] \
   || [[ ! "$EOS_PROTOCOL_WINDOW_MS" =~ ^[0-9]+$ ]] || (( EOS_PROTOCOL_WINDOW_MS < 50 || EOS_PROTOCOL_WINDOW_MS > 500 )) \
@@ -143,6 +145,7 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   exit 2
 fi
 export BELIEFKV_CHAT_TOKEN_BLOCK_CACHE="$CHAT_TOKEN_BLOCK_CACHE"
+export BELIEFKV_PREFETCH_PREFIX_DIAGNOSTICS="$PREFETCH_PREFIX_DIAGNOSTICS"
 "$PYTHON" -c 'import json,sys; rows=json.load(open(sys.argv[1]))["workloads"]; count=int(sys.argv[2]); assert count <= len(rows), "requested roots exceed manifest"; assert len({row["instance_id"] for row in rows[:count]}) == count, "duplicate workload"' "$MANIFEST" "$ROOT_COUNT"
 if [[ -n "$WORKFLOW_ARRIVAL_SCHEDULE" ]]; then
   PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -c 'import json,sys; from pathlib import Path; from beliefkv.experiments.arrival_schedule import load_workflow_arrivals; rows=json.load(open(sys.argv[1]))["workloads"][:int(sys.argv[2])]; load_workflow_arrivals(Path(sys.argv[3]), instance_ids=[row["instance_id"] for row in rows])' "$MANIFEST" "$ROOT_COUNT" "$WORKFLOW_ARRIVAL_SCHEDULE"
@@ -246,7 +249,8 @@ if [[ "$AB_MODE" != "off" ]]; then
   fi
 fi
 jq -n --argjson cache "$CHAT_TOKEN_BLOCK_CACHE" --argjson native "$NATIVE_POLICY_BASELINE" \
-  '{schema_version: 1, chat_token_block_cache: ($cache == 1), native_policy_baseline: ($native == 1)}' \
+  --argjson prefixes "$PREFETCH_PREFIX_DIAGNOSTICS" \
+  '{schema_version: 1, chat_token_block_cache: ($cache == 1), native_policy_baseline: ($native == 1), prefetch_prefix_diagnostics: ($prefixes == 1)}' \
   > "$RUN_ROOT/server/launch_configuration.json"
 setsid env -u BELIEFKV_FULL_MAMBA_HOST_SPLIT "${unset_env[@]}" \
   "${ab_env[@]}" \

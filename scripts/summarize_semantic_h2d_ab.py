@@ -442,6 +442,7 @@ def summarize(arm: Path) -> dict | None:
         "server_running": server_info.get("max_running_requests"),
         "server_context_tokens": server_info.get("context_length"),
         "server_launch_chat_token_block_cache": launch.get("chat_token_block_cache"),
+        "server_launch_prefetch_prefix_diagnostics": launch.get("prefetch_prefix_diagnostics"),
         "workflow_count": summary["workflow_count"], "outcomes": dict(outcomes),
         "completed_workflows_per_hour": summary["completed_workflows"] * 3600 / duration,
         "completed_jct_p50_seconds": median(jct) if jct else None,
@@ -566,6 +567,7 @@ def main() -> None:
     parser.add_argument("--h2d-opportunity-sampling", type=int, choices=(0, 1), default=0)
     parser.add_argument("--terminal-cache-diagnostics", type=int, choices=(0, 1), default=0)
     parser.add_argument("--profile-shared-path", type=int, choices=(0, 1), default=0)
+    parser.add_argument("--prefetch-prefix-diagnostics", type=int, choices=(0, 1), default=0)
     parser.add_argument("--native-reference-run", type=Path)
     parser.add_argument("--native-reference-timeline", type=Path)
     parser.add_argument("--native-reference-cache", type=Path)
@@ -590,6 +592,10 @@ def main() -> None:
     if args.verify_frozen_plan:
         root = Path(__file__).resolve().parents[1]
         plan = json.loads((args.run_root / "ab_plan.json").read_text())
+        if "prefetch_prefix_diagnostics" in plan and (
+            plan["prefetch_prefix_diagnostics"] is not bool(args.prefetch_prefix_diagnostics)
+        ):
+            raise ValueError("frozen prefetch prefix diagnostics configuration changed")
         if "chat_token_block_cache_by_arm" in plan and (
             frozen_chat_token_cache_configuration(plan)
             != chat_token_cache_configuration(plan["order"], os.environ)
@@ -745,6 +751,7 @@ def main() -> None:
             "prediction_maintenance_interval_ms": args.prediction_maintenance_interval_ms,
             "terminal_cache_diagnostics": bool(args.terminal_cache_diagnostics),
             "profile_shared_path": bool(args.profile_shared_path),
+            "prefetch_prefix_diagnostics": bool(args.prefetch_prefix_diagnostics),
             "semantic_work_statistic": args.semantic_work_statistic,
             "join_prefetch_trigger": args.join_prefetch_trigger,
             "online_tool_timing": bool(args.online_tool_timing),
@@ -1070,6 +1077,11 @@ def main() -> None:
             is not frozen_chat_token_cache_configuration(plan)[name]
         ):
             raise ValueError(f"{name}: mismatched server launch chat token cache configuration")
+        if "prefetch_prefix_diagnostics" in plan and (
+            arm.get("server_launch_prefetch_prefix_diagnostics")
+            is not plan["prefetch_prefix_diagnostics"]
+        ):
+            raise ValueError(f"{name}: mismatched server launch prefetch prefix diagnostics")
         state = arm["runtime_state"]
         if name == "native":
             if state or arm["predictive_h2d_acks"]:

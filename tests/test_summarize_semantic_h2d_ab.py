@@ -517,7 +517,10 @@ def test_native_pair_freezes_disjoint_108_plus_48_fixed_arrivals(tmp_path, monke
     assert plan["order"] == ["native", "predictive_h2d"]
     assert plan["formal_repetition_order"] == ["predictive_h2d native"]
 
-def test_optimized_prefetch_configuration_survives_plan_environment_roundtrip(tmp_path, monkeypatch):
+@pytest.mark.parametrize("prefix_diagnostics", (0, 1))
+def test_optimized_prefetch_configuration_survives_plan_environment_roundtrip(
+    tmp_path, monkeypatch, prefix_diagnostics,
+):
     from scripts.resume_semantic_h2d_ab import resume_environment
 
     artifact = tmp_path / "model.json"
@@ -531,6 +534,7 @@ def test_optimized_prefetch_configuration_survives_plan_environment_roundtrip(tm
         "--parallel-wait-prefetch", "1", "--wait-prefetch-contexts", "2",
         "--prediction-maintenance-interval-ms", "100",
         "--h2d-opportunity-sampling", "0", "--terminal-cache-diagnostics", "0",
+        "--prefetch-prefix-diagnostics", str(prefix_diagnostics),
     ])
     main()
     plan = json.loads((tmp_path / "ab_plan.json").read_text())
@@ -546,6 +550,45 @@ def test_optimized_prefetch_configuration_survives_plan_environment_roundtrip(tm
     assert env["H2D_OPPORTUNITY_SAMPLING"] == env["TERMINAL_CACHE_DIAGNOSTICS"] == "0"
     assert plan["profile_shared_path"] is False
     assert env["PROFILE_SHARED_PATH"] == "0"
+    assert plan["prefetch_prefix_diagnostics"] is bool(prefix_diagnostics)
+    assert env["PREFETCH_PREFIX_DIAGNOSTICS"] == str(prefix_diagnostics)
+    del plan["prefetch_prefix_diagnostics"]
+    assert resume_environment(plan, tmp_path, python="/python", port=18454)[
+        "PREFETCH_PREFIX_DIAGNOSTICS"
+    ] == "1"
+
+
+def test_frozen_prefix_diagnostics_rejects_a_changed_setting(tmp_path, monkeypatch):
+    (tmp_path / "ab_plan.json").write_text(json.dumps({
+        "prefetch_prefix_diagnostics": True,
+    }))
+    monkeypatch.setattr(sys, "argv", [
+        "summarize", "--run-root", str(tmp_path), "--verify-frozen-plan",
+        "--prefetch-prefix-diagnostics", "0",
+    ])
+    with pytest.raises(ValueError, match="frozen prefetch prefix diagnostics"):
+        main()
+
+
+@pytest.mark.parametrize("actual", (None, False, True))
+def test_summary_requires_the_frozen_prefix_diagnostics_in_server_launch(
+    tmp_path, monkeypatch, actual,
+):
+    arm = tmp_path / "predictive_h2d"
+    _, server = fixture(arm)
+    (tmp_path / "ab_plan.json").write_text(json.dumps({
+        "order": ["predictive_h2d"], "prefetch_prefix_diagnostics": False,
+    }))
+    if actual is not None:
+        (server / "launch_configuration.json").write_text(json.dumps({
+            "prefetch_prefix_diagnostics": actual,
+        }))
+    monkeypatch.setattr(sys, "argv", ["summarize", "--run-root", str(tmp_path)])
+    if actual is False:
+        main()
+    else:
+        with pytest.raises(ValueError, match="mismatched server launch prefetch prefix"):
+            main()
 
 def test_actual_runtime_must_match_the_registered_parallel_restore_setting(tmp_path, monkeypatch):
     arm = tmp_path / "predictive_h2d"

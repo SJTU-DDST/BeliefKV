@@ -71,6 +71,7 @@ def resume_environment(plan: dict, run_root: Path, *, python: str, port: int) ->
         ),
         "TERMINAL_CACHE_DIAGNOSTICS": int(plan.get("terminal_cache_diagnostics", True)),
         "PROFILE_SHARED_PATH": int(plan.get("profile_shared_path", True)),
+        "PREFETCH_PREFIX_DIAGNOSTICS": int(plan.get("prefetch_prefix_diagnostics", True)),
         "SEMANTIC_WORK_STATISTIC": plan["semantic_work_statistic"],
         "EOS_PROTOCOL_WINDOW_MS": plan["eos_protocol_window_ms"],
         "FANOUT_PROFILE": plan["fanout_profile"],
