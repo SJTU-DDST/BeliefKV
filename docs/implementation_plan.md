@@ -12,6 +12,13 @@ The next candidate is24 roots, not an authorized launch or a running-cap change.
 The report-only semantic-worker validation for observed/report-service JOINs
 is fixed;65 checks pass, with collection code and frozen configuration unchanged.
 
+The completed12-root audit is V1923/V1924. Pre-JOIN reused FULL is2.868GB,
+but only85.463MB across2 JOINs starts before model EOS. H2D stream totals1.160s;
+long-input frontend conversion totals676.813s, neither an oracle JCT bound.
+Before a resumed24-root run, distinguish missing-copy opportunity, safe FULL
+capacity, new-context hybrid checkpoint gaps and service consumption. Keep GPU
+paused; no completed native control or policy speedup has been established.
+
 V85 preparation now uses the user's 262144 total context and a95% rendered
 prompt compaction threshold(249036 tokens), with cached local chat-template
 counts and a completion budget that fits the remaining total window.

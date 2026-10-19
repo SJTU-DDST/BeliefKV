@@ -8,6 +8,13 @@ native 已停止并保留部分轨迹，自动接续禁用；下轮候选为 24 
 汇总器误将 report_service_or_eos 绑定旧语义 worker 的问题已修复，
 65 项检查通过；运行时代码和原配对配置没有改变。
 
+V1923/V1924 全程离线分析区分模型 EOS、客户端 JOIN 和服务：
+25 个 JOIN 完成前启动并复用 FULL 2.868GB，其中 EOS 前只有 2 个 JOIN、
+0.085GB；受控 FULL 6.702GB 均有复用证明，未见首次服务前重复原生加载。
+H2D stream 仅 1.160s，前端转换累计 676.813s；这些不是可减去的 JCT。
+详见[完整报告](../experiments/reports/v1924_v85d_complete_predictive_analysis_20261019_zh.md)。
+GPU 暂停状态不变，native 部分轨迹不能作配对。
+
 **V85d 已执行 LoCoBench-Agent 长上下文验证，首批核对通过。**总上下文 262144，
 完整渲染输入在 95%（249036 token）压缩动态历史；临近上限时适配输出
 预算，正常单次输出仍最多 16384。使用缓存的本地 chat-template token
