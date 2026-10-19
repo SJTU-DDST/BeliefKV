@@ -21,7 +21,11 @@ worker；在线工具计时与可借用容量也要核对冻结配置，不能�
 均可自然完成。模型是否实际产生更多 JOIN 必须从新轨迹核对。
 可借用关键容量必须同时计入恢复数据与输入/decode 预留，不抢断活跃
 LLM。24 root 可能提高恢复压力，也可能增加有用 Host 副本损失，均要观测。
-长输入分块 token 缓存是共用前端优化，native/predictive 两侧都启用；
+主对照的长输入分块 token 缓存只在 predictive 开启，native 默认关闭；
+reactive 作为本系统控制时与 predictive 同开。完整系统收益与 KV 政策收益
+分开归因；正式消融可设 `NATIVE_CHAT_TOKEN_BLOCK_CACHE=1` 对齐前端，
+开发期不每轮额外执行。开关按 arm 冻结、显式传给 server，恢复时保留，
+并核对 server 启动快照。禁止全局环境变量把 native 意外切到优化路径。
 使用新引擎候选与 af328f26 补丁，不修改 V85d 冻结路径。启动器必须尊重
 显式 `SGLANG_SOURCE_CHECKOUT`。测试暂停检查须隔离到临时路径，不删除
 真实 `/tmp/beliefkv-experiments.paused` 来运行 CPU 检查。

@@ -32,7 +32,13 @@ Borrowable parent capacity now prices restoration plus the native input/decode
 reserve, retaining safe waiting-state preparation and native reference checks.
 V1925 tests exact token reuse across growing source-backed histories:36 cases
 from12 workflows, three iterations, mean CPU conversion323.66 to98.61ms.
-The opt-in bounded chat token cache applies equally to predictive and native.
+The main comparison enables the bounded token cache in predictive and keeps it
+off in native. Attribute this contribution to frontend encoding, not KV policy.
+Keep the native-cache-on matched-frontend ablation available for formal attribution;
+do not require an additional development run on every iteration. Our reactive
+control defaults to the same frontend as predictive. Freeze per-arm settings and
+verify their server-launch snapshots; preserve them on resume and exclude inherited
+global cache flags from native.
 The new qualified engine candidate is sglang-v86-chat-token-cache-cpu-20261019,
 patch af328f26; respect the explicit SGLANG_SOURCE_CHECKOUT through the launcher.
 This is CPU evidence, not an end-to-end result. Keep new-context hybrid checkpoint

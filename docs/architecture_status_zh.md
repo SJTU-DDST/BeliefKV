@@ -34,7 +34,12 @@ V1925 定位整条对话缓存无法复用增长历史的编码工作，新增�
 CPU 核对 token 完全一致；转换均值 323.66→98.61ms，P50
 320.18→51.78ms。输入为轨迹重建而非原始 HTTP，不据此换算 JCT。
 新引擎候选 `sglang-v86-chat-token-cache-cpu-20261019` 与补丁
-af328f26 绑定，入口对 native/predictive 同时启用；V85d 原引擎不变。
+af328f26 绑定；主对照 predictive 开启、native 关闭分块编码缓存。
+前端收益可计入完整系统，但不能归因于 KV 预取。正式消融用
+`NATIVE_CHAT_TOKEN_BLOCK_CACHE=1` 对齐前端，开发期间不强制每轮增加实验。
+reactive 作为本系统控制时默认与 predictive 同开前端缓存，隔离预取增量。
+各 arm 的开关与实际 server 启动快照均核对冻结计划，resume 保留原值；
+不让全局缓存环境变量污染 native。V85d 原引擎和冻结配置不变。
 11 个新 context 的混合 checkpoint 缺口仍单列：深 FULL 命中不能替代
 该位置缺少的可恢复 Mamba 状态，现有日志不足以逐个区分未创建与被回收。
 

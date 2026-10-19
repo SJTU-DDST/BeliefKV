@@ -157,8 +157,21 @@ for arm in $ARM_ORDER; do
     baseline=1
     mode=off
   fi
+  arm_token_cache="$(jq -er --arg arm "$arm" '
+    if has("chat_token_block_cache_by_arm") then .chat_token_block_cache_by_arm[$arm]
+    else .chat_token_block_cache // false end |
+    if . == true then "1" elif . == false then "0"
+    else error("missing frozen arm token cache setting") end
+  ' "$RUN_ROOT/ab_plan.json")"
+  case "$arm" in
+    native) arm_cache_env=NATIVE_CHAT_TOKEN_BLOCK_CACHE ;;
+    reactive) arm_cache_env=REACTIVE_CHAT_TOKEN_BLOCK_CACHE ;;
+    predictive_h2d) arm_cache_env=PREDICTIVE_CHAT_TOKEN_BLOCK_CACHE ;;
+  esac
   set +e
-  NATIVE_POLICY_BASELINE="$baseline" AB_MODE="$mode" ROOT_COUNT="$ROOT_COUNT" PORT="$PORT" SAMPLING_SEED="$SAMPLING_SEED" \
+  env "$arm_cache_env=$arm_token_cache" \
+    NATIVE_POLICY_BASELINE="$baseline" AB_MODE="$mode" ROOT_COUNT="$ROOT_COUNT" PORT="$PORT" SAMPLING_SEED="$SAMPLING_SEED" \
+    BELIEFKV_CHAT_TOKEN_BLOCK_CACHE="$arm_token_cache" \
     MAX_RUNNING_REQUESTS="$MAX_RUNNING_REQUESTS" \
     ARRIVAL_BATCH_SIZE="$ARRIVAL_BATCH_SIZE" ARRIVAL_BATCH_INTERVAL_MS="$ARRIVAL_BATCH_INTERVAL_MS" \
     WORKFLOW_ARRIVAL_SCHEDULE="$arrival_schedule" \

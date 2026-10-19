@@ -18,7 +18,10 @@ V85d predictive 已结束，GPU 实验仍按用户要求暂停。新清单扩展
 临近 parent 的可借用容量计价补齐输入/decode 预留，避免恢复目标达成后
 仍不符合原生容量检查。V1925 的共用前端分块 token 缓存在 36 个增长
 历史输入上与原生 token 完全一致，CPU 转换均值 323.66→98.61ms；
-这不是 GPU/JCT 结论，后续 native 同样启用。新 context 的混合 checkpoint
+这不是 GPU/JCT 结论。主对照 predictive 启用、native 默认关闭该优化，
+考察完整系统；前端与 KV 收益分开归因，正式消融再将 native 同样启用。
+逐 arm 配置、恢复和 server 启动快照均写入核对流程，防止继承环境污染。
+新 context 的混合 checkpoint
 缺口另查，不将 FULL 深命中当作 Mamba checkpoint 的存在证明。
 
 ## 当前执行设置

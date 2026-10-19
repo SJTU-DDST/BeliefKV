@@ -36,6 +36,14 @@ CONFIRMED_JOIN_CANARY="${CONFIRMED_JOIN_CANARY:-0}"
 FANOUT_PROFILE="${FANOUT_PROFILE:-native_in_graph_nested_2to4}"
 AB_MODE="${AB_MODE:-off}"
 NATIVE_POLICY_BASELINE="${NATIVE_POLICY_BASELINE:-0}"
+CHAT_TOKEN_BLOCK_CACHE="${BELIEFKV_CHAT_TOKEN_BLOCK_CACHE:-0}"
+if [[ "$NATIVE_POLICY_BASELINE" == "1" ]]; then
+  CHAT_TOKEN_BLOCK_CACHE="${NATIVE_CHAT_TOKEN_BLOCK_CACHE:-0}"
+elif [[ "$AB_MODE" == "predictive_h2d" ]]; then
+  CHAT_TOKEN_BLOCK_CACHE="${PREDICTIVE_CHAT_TOKEN_BLOCK_CACHE:-$CHAT_TOKEN_BLOCK_CACHE}"
+elif [[ "$AB_MODE" == "reactive" ]]; then
+  CHAT_TOKEN_BLOCK_CACHE="${REACTIVE_CHAT_TOKEN_BLOCK_CACHE:-$CHAT_TOKEN_BLOCK_CACHE}"
+fi
 PREPARE_HOST="${PREPARE_HOST:-0}"
 EXECUTION_HANDOFF="${EXECUTION_HANDOFF:-1}"
 CHILD_FINAL_REPORT_SHADOW="${CHILD_FINAL_REPORT_SHADOW:-1}"
@@ -114,6 +122,7 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || [[ "$FANOUT_PROFILE" != "native_dynamic_1to4" && "$FANOUT_PROFILE" != "native_in_graph_1to4" && "$FANOUT_PROFILE" != "native_in_graph_2to4" && "$FANOUT_PROFILE" != "native_in_graph_nested_2to4" && "$FANOUT_PROFILE" != "native_in_graph_dynamic_nested" ]] \
   || [[ "$AB_MODE" != "off" && "$AB_MODE" != "reactive" && "$AB_MODE" != "predictive_h2d" ]] \
   || [[ "$NATIVE_POLICY_BASELINE" != "0" && "$NATIVE_POLICY_BASELINE" != "1" ]] \
+  || [[ "$CHAT_TOKEN_BLOCK_CACHE" != "0" && "$CHAT_TOKEN_BLOCK_CACHE" != "1" ]] \
   || { [[ "$NATIVE_POLICY_BASELINE" == "1" ]] && [[ "$AB_MODE" != "off" || "$CONFIRMED_JOIN_CANARY" != "0" ]]; } \
   || [[ "$PREPARE_HOST" != "0" && "$PREPARE_HOST" != "1" ]] \
   || [[ "$EXECUTION_HANDOFF" != "0" && "$EXECUTION_HANDOFF" != "1" ]] \
@@ -167,6 +176,7 @@ if [[ "$NATIVE_POLICY_BASELINE" == "1" ]]; then
 else
   server_flags+=(--enable-beliefkv-admission --beliefkv-event-socket-path "$SOCKET")
 fi
+telemetry_env+=(BELIEFKV_CHAT_TOKEN_BLOCK_CACHE="$CHAT_TOKEN_BLOCK_CACHE")
 if [[ "$CONFIRMED_JOIN_CANARY" == "1" ]]; then
   server_flags+=(--beliefkv-confirmed-join-canary)
 fi
@@ -234,6 +244,9 @@ if [[ "$AB_MODE" != "off" ]]; then
     fi
   fi
 fi
+jq -n --argjson cache "$CHAT_TOKEN_BLOCK_CACHE" --argjson native "$NATIVE_POLICY_BASELINE" \
+  '{schema_version: 1, chat_token_block_cache: ($cache == 1), native_policy_baseline: ($native == 1)}' \
+  > "$RUN_ROOT/server/launch_configuration.json"
 setsid env -u BELIEFKV_FULL_MAMBA_HOST_SPLIT "${unset_env[@]}" \
   "${ab_env[@]}" \
   "${host_split_env[@]}" PORT="$PORT" HICACHE_SIZE_GB="$HICACHE_SIZE_GB" \

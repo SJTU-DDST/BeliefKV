@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from scripts.resume_semantic_h2d_ab import resume_environment, update_predictive_revision
 
 
@@ -107,3 +109,20 @@ def test_resume_preserves_small_workload_comparison_population():
     environment = resume_environment(configuration, Path("/run"), python="/python", port=18454)
     assert environment["TAIL_ACTIVE_WORKFLOWS"] == "4"
     assert environment["WARMUP_SECONDS"] == "0.0"
+
+
+@pytest.mark.parametrize("legacy_common", [None, False, True])
+def test_resume_retains_frozen_frontend_config_without_inherited_defaults(legacy_common):
+    configuration = plan()
+    if legacy_common is not None:
+        configuration["chat_token_block_cache"] = legacy_common
+    environment = resume_environment(configuration, Path("/run"), python="/python", port=18454)
+    expected = str(int(bool(legacy_common)))
+    assert environment["NATIVE_CHAT_TOKEN_BLOCK_CACHE"] == expected
+    assert environment["PREDICTIVE_CHAT_TOKEN_BLOCK_CACHE"] == expected
+    configuration["chat_token_block_cache_by_arm"] = {
+        "native": False, "predictive_h2d": True,
+    }
+    environment = resume_environment(configuration, Path("/run"), python="/python", port=18454)
+    assert environment["NATIVE_CHAT_TOKEN_BLOCK_CACHE"] == "0"
+    assert environment["PREDICTIVE_CHAT_TOKEN_BLOCK_CACHE"] == "1"

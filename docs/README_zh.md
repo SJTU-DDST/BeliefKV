@@ -14,7 +14,8 @@ child 都可动态委派叶子孙 agent，最大深度仍为 2。任务范围、
 24 个不同原始任务、16+8/900s、running 8，尚未启动。
 临近 parent 的可借用容量计价已补上输入/decode 预留；长输入 token 分块
 复用在 36 个增长历史输入上保持原生 token 相同，CPU 转换均值
-323.66→98.61ms。两侧使用同一前端优化，不能当 predictive 专有收益。
+323.66→98.61ms。主对照为 predictive 开启、native 关闭该新增优化；
+这部分计入完整系统并单列为前端收益，KV 贡献另用双方同开的消融核验。
 见[24-root 配置](../configs/migration/qwen35_locobench_long_24root_running8_2026-10-19.json)
 及[CPU 原始结果](../experiments/reports/v1925_v85d_long_chat_token_cache_cpu_20261019.json)。
 

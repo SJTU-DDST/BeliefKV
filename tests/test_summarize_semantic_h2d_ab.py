@@ -416,6 +416,65 @@ def test_resume_rejects_changed_common_frontend_cache(tmp_path, monkeypatch):
         main()
 
 
+@pytest.mark.parametrize("native_cache", ["0", "1"])
+def test_new_dynamic_plan_freezes_each_frontend_without_prescribing_root_actions(
+    tmp_path, monkeypatch, native_cache,
+):
+    artifact = tmp_path / "model.json"
+    artifact.write_text("{}")
+    manifest = tmp_path / "workload.json"
+    manifest.write_text(json.dumps({"workloads": [{"instance_id": "task"}]}))
+    monkeypatch.setenv("FANOUT_PROFILE", "native_in_graph_dynamic_nested")
+    monkeypatch.setenv("NATIVE_CHAT_TOKEN_BLOCK_CACHE", native_cache)
+    monkeypatch.setenv("PREDICTIVE_CHAT_TOKEN_BLOCK_CACHE", "1")
+    monkeypatch.setattr(sys, "argv", [
+        "summarize", "--run-root", str(tmp_path), "--initialize",
+        "--root-count", "1", "--arm-order", "predictive_h2d native",
+        "--semantic-artifact", str(artifact), "--workload-manifest", str(manifest),
+    ])
+    main()
+    plan = json.loads((tmp_path / "ab_plan.json").read_text())
+    assert plan["chat_token_block_cache_by_arm"] == {
+        "predictive_h2d": True, "native": native_cache == "1",
+    }
+    assert plan["policy_configuration"]["predictive_h2d"]["chat_token_block_cache"]
+    assert plan["policy_configuration"]["native"]["chat_token_block_cache"] == (
+        native_cache == "1"
+    )
+    assert plan["in_graph_initial_tool_choice"] == "auto"
+    assert plan["in_graph_initial_fanout_generation_bounds"] is None
+    assert "no prescribed first action" in plan["in_graph_named_task_constraint"]
+    monkeypatch.setenv("PREDICTIVE_CHAT_TOKEN_BLOCK_CACHE", "0")
+    monkeypatch.setattr(sys, "argv", [
+        "summarize", "--run-root", str(tmp_path), "--verify-frozen-plan",
+    ])
+    with pytest.raises(ValueError, match="frozen per-arm chat token cache configuration changed"):
+        main()
+
+
+def test_comparison_requires_the_actual_server_frontend_to_match_each_arm(tmp_path, monkeypatch):
+    arm = tmp_path / "predictive_h2d"
+    fixture(arm)
+    (tmp_path / "ab_plan.json").write_text(json.dumps({
+        "order": ["predictive_h2d"],
+        "chat_token_block_cache_by_arm": {"predictive_h2d": True},
+    }))
+    monkeypatch.setattr(sys, "argv", ["summarize", "--run-root", str(tmp_path)])
+    for value in (None, False, True):
+        if value is not None:
+            (arm / "server/launch_configuration.json").write_text(json.dumps({
+                "chat_token_block_cache": value,
+            }))
+        if value is not True:
+            with pytest.raises(ValueError, match="mismatched server launch chat token cache"):
+                main()
+        else:
+            main()
+    comparison = json.loads((tmp_path / "comparison.json").read_text())
+    assert comparison["planned_frontend_cache_by_arm"] == {"predictive_h2d": True}
+    assert comparison["arms"]["predictive_h2d"]["server_launch_chat_token_block_cache"]
+
+
 @pytest.mark.parametrize("option", ("--native-reference-timeline", "--native-reference-cache"))
 def test_explicit_reference_artifacts_require_a_reference_run(tmp_path, monkeypatch, option):
     monkeypatch.setattr(sys, "argv", [

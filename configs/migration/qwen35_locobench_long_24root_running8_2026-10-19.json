@@ -48,12 +48,18 @@
   "join_prefetch_trigger": "report_service_or_eos",
   "online_tool_timing": true,
   "execution_handoff": false,
-  "chat_token_block_cache": true,
+  "chat_token_block_cache_by_arm": {
+    "predictive_h2d": true,
+    "native": false
+  },
+  "matched_frontend_ablation": "Set NATIVE_CHAT_TOKEN_BLOCK_CACHE=1; retain PREDICTIVE_CHAT_TOKEN_BLOCK_CACHE=1.",
   "engine_source_checkout": "/home/longhao/experiment/.worktrees/sglang-v86-chat-token-cache-cpu-20261019",
   "engine_patch_sha256": "af328f26c1d3aa5782dbe89da5d5cd6463eb46802c7e6d602c7c819fb4f387d3",
   "arm_order": ["predictive_h2d", "native"],
   "comparison_policy": {
-    "same_harness_and_frontend_in_both_arms": true,
+    "same_harness_in_both_arms": true,
+    "same_frontend_cache_in_main_comparison": false,
+    "attribution": "Main comparison measures the complete system; isolate KV policy benefits with the matched-frontend ablation.",
     "exclude_workload_tail": true,
     "tail_active_workflows": 4,
     "warmup_seconds": 600,

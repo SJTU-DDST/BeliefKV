@@ -22,6 +22,9 @@ from beliefkv.experiments.arrival_schedule import (
 from beliefkv.experiments.delegation_policy import (
     NESTED_IN_GRAPH_PROFILE, NESTED_IN_GRAPH_PROFILES, delegation_contract,
 )
+from beliefkv.experiments.chat_token_cache_policy import (
+    chat_token_cache_configuration, frozen_chat_token_cache_configuration,
+)
 
 
 NON_EXECUTION_SOURCE_PATHS = (
@@ -345,6 +348,8 @@ def summarize(arm: Path) -> dict | None:
     native = json.loads(native_path.read_text()) if native_path.exists() else {}
     server_info_path = arm / "server/server_info.json"
     server_info = json.loads(server_info_path.read_text()) if server_info_path.exists() else {}
+    launch_path = arm / "server/launch_configuration.json"
+    launch = json.loads(launch_path.read_text()) if launch_path.exists() else {}
     capacity = json.loads((arm / "server/native_capacity_census.json").read_text())["capacity"]
     last_state, forecast_costs, forecast_ages = {}, [], []
     for row in records(arm / "opportunities/admission_opportunities.jsonl"):
@@ -436,6 +441,7 @@ def summarize(arm: Path) -> dict | None:
         "context_lifecycle": harness_config.get("context_lifecycle"),
         "server_running": server_info.get("max_running_requests"),
         "server_context_tokens": server_info.get("context_length"),
+        "server_launch_chat_token_block_cache": launch.get("chat_token_block_cache"),
         "workflow_count": summary["workflow_count"], "outcomes": dict(outcomes),
         "completed_workflows_per_hour": summary["completed_workflows"] * 3600 / duration,
         "completed_jct_p50_seconds": median(jct) if jct else None,
@@ -584,9 +590,15 @@ def main() -> None:
     if args.verify_frozen_plan:
         root = Path(__file__).resolve().parents[1]
         plan = json.loads((args.run_root / "ab_plan.json").read_text())
+        if "chat_token_block_cache_by_arm" in plan and (
+            frozen_chat_token_cache_configuration(plan)
+            != chat_token_cache_configuration(plan["order"], os.environ)
+        ):
+            raise ValueError("frozen per-arm chat token cache configuration changed")
         cache_enabled = os.environ.get("BELIEFKV_CHAT_TOKEN_BLOCK_CACHE", "0") == "1"
         if (
-            "chat_token_block_cache" in plan
+            "chat_token_block_cache_by_arm" not in plan
+            and "chat_token_block_cache" in plan
             and plan["chat_token_block_cache"] != cache_enabled
         ):
             raise ValueError("frozen chat token cache configuration changed")
@@ -712,6 +724,7 @@ def main() -> None:
         native_pair = "native" in order
         fanout = os.environ.get("FANOUT_PROFILE", NESTED_IN_GRAPH_PROFILE)
         shape = delegation_contract(fanout)
+        token_cache = chat_token_cache_configuration(order, os.environ)
         patch = root / "patches/sglang-v0.5.20-beliefkv-staging.patch"
         reference_artifacts = {}
         for field, path in (
@@ -736,7 +749,7 @@ def main() -> None:
             "join_prefetch_trigger": args.join_prefetch_trigger,
             "online_tool_timing": bool(args.online_tool_timing),
             "borrowable_parent_headroom": bool(args.borrowable_parent_headroom),
-            "chat_token_block_cache": os.environ.get("BELIEFKV_CHAT_TOKEN_BLOCK_CACHE", "0") == "1",
+            "chat_token_block_cache_by_arm": token_cache,
             "eos_protocol_window_ms": args.eos_protocol_window_ms,
             "eos_prefetch_evidence_window_ms": max(
                 args.eos_protocol_window_ms, min(args.prefetch_lead_ms, 2000.),
@@ -805,10 +818,13 @@ def main() -> None:
             "stream_http_timing_shadow": True,
             "fanout_profile": fanout,
             "delegation_contract": shape,
-            "in_graph_initial_tool_choice": "task",
+            "in_graph_initial_tool_choice": shape.get("root_initial_tool_choice", "task"),
             "in_graph_initial_parallel_tool_calls": True,
             "in_graph_initial_fanout_generation_bounds": shape["initial_fanout_generation_bounds"],
             "in_graph_named_task_constraint": (
+                "automatic model-selected tools and fanout; no prescribed first action "
+                "or delegation round count"
+                if shape.get("root_initial_tool_choice") == "auto" else
                 "BeliefKV-only native task repetition; first 2to4 generation bounded "
                 "to 2-4; no response rejection; complete prompt tool schema unchanged"
             ),
@@ -937,6 +953,7 @@ def main() -> None:
                     ),
                     "semantic_text_stream": False,
                     "execution_handoff": name == "predictive_h2d" and bool(args.execution_handoff),
+                    "chat_token_block_cache": token_cache[name],
                 } for name in order
             },
             "order": order,
@@ -997,6 +1014,18 @@ def main() -> None:
         ),
         "revision_transition": plan.get("revision_transition"),
         "isolated_policy_effect_verified": False,
+        "planned_frontend_cache_by_arm": (
+            frozen_chat_token_cache_configuration(plan)
+            if "chat_token_block_cache_by_arm" in plan or "chat_token_block_cache" in plan
+            else None
+        ),
+        "frontend_cache_comparison_scope": (
+            "full-system comparison; frontend cache differs between arms; "
+            "KV-specific attribution requires a matched-frontend ablation"
+            if "chat_token_block_cache_by_arm" in plan and len(set(
+                frozen_chat_token_cache_configuration(plan).values(),
+            )) > 1 else "same frontend cache setting or historical setting unavailable"
+        ),
     }
     degraded = []
     expected_prepare = plan.get("prepare_host_in_both_arms", False)
@@ -1036,6 +1065,11 @@ def main() -> None:
         ):
             if arm.get(actual) is not None and expected in plan and arm[actual] != plan[expected]:
                 raise ValueError(f"{name}: mismatched {expected} in actual server configuration")
+        if "chat_token_block_cache_by_arm" in plan and (
+            arm.get("server_launch_chat_token_block_cache")
+            is not frozen_chat_token_cache_configuration(plan)[name]
+        ):
+            raise ValueError(f"{name}: mismatched server launch chat token cache configuration")
         state = arm["runtime_state"]
         if name == "native":
             if state or arm["predictive_h2d_acks"]:

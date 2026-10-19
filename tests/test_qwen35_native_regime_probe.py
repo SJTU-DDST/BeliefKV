@@ -112,6 +112,61 @@ def test_pair_driver_freezes_both_arms_and_exports_timelines_automatically():
     assert 'scripts/compare_native_policy_runs.py' in script
 
 
+@pytest.mark.parametrize("arm_order,cache_setting,environment_name", (
+    ("native predictive_h2d", {"chat_token_block_cache": True},
+     "NATIVE_CHAT_TOKEN_BLOCK_CACHE"),
+    ("reactive predictive_h2d", {"chat_token_block_cache": True},
+     "REACTIVE_CHAT_TOKEN_BLOCK_CACHE"),
+    ("predictive_h2d", {
+        "chat_token_block_cache_by_arm": {"predictive_h2d": False},
+    }, "PREDICTIVE_CHAT_TOKEN_BLOCK_CACHE"),
+))
+def test_pair_driver_passes_frozen_frontend_to_probe(
+    tmp_path, arm_order, cache_setting, environment_name,
+):
+    import shutil
+    from sys import executable
+
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    driver = scripts / "run_qwen35_semantic_h2d_ab.sh"
+    shutil.copyfile(SCRIPT.with_name(driver.name), driver)
+    (scripts / "summarize_semantic_h2d_ab.py").write_text("")
+    (scripts / SCRIPT.name).write_text(
+        '#!/bin/bash\nexec "$PYTHON" -c \''
+        "import json,os; from pathlib import Path; "
+        'Path(os.environ["RUN_ROOT"] + ".frontend.json").write_text('
+        'json.dumps({key: value for key, value in os.environ.items() '
+        'if key.endswith("CHAT_TOKEN_BLOCK_CACHE")})); '
+        "raise SystemExit(1)'"
+    )
+    run_root = tmp_path / "run"
+    run_root.mkdir()
+    (run_root / "ab_plan.json").write_text(json.dumps(cache_setting))
+    enabled = cache_setting.get("chat_token_block_cache", False)
+    result = subprocess.run(
+        ["/bin/bash", str(driver)],
+        env={
+            **os.environ, "PYTHON": executable,
+            "RUN_ROOT": str(run_root), "RESUME_PENDING": "1",
+            "ROOT_COUNT": "1", "ARRIVAL_BATCH_SIZE": "0",
+            "ARRIVAL_BATCH_INTERVAL_MS": "0", "ARRIVAL_RATE_PER_SECOND": "0",
+            "ARM_ORDER": arm_order, "NATIVE_REFERENCE_RUN": "",
+            "NATIVE_REFERENCE_TIMELINE": "", "NATIVE_REFERENCE_CACHE": "",
+            "BELIEFKV_CHAT_TOKEN_BLOCK_CACHE": str(int(enabled)),
+            environment_name: str(int(not enabled)),
+        },
+        text=True, capture_output=True, timeout=10,
+    )
+    assert result.returncode == 1, result.stderr
+    assert "Arm did not produce a terminal workload summary" in result.stderr
+    actual = json.loads(
+        (run_root / (arm_order.split()[0] + ".frontend.json")).read_text()
+    )
+    assert actual[environment_name] == str(int(enabled))
+    assert actual["BELIEFKV_CHAT_TOKEN_BLOCK_CACHE"] == str(int(enabled))
+
+
 def test_native_policy_baseline_rejects_predictive_mix_before_launch(tmp_path: Path) -> None:
     run_root = tmp_path / "baseline"
     result = subprocess.run(
@@ -130,7 +185,10 @@ def test_native_policy_baseline_rejects_predictive_mix_before_launch(tmp_path: P
     ("reactive", False, "200"), ("predictive_h2d", False, "200"),
     ("off", True, "200"), ("off", True, "0"),
 ))
-def test_effective_policy_environment_without_launching_gpu(tmp_path, mode, native, host_gb):
+@pytest.mark.parametrize("cache_override", [None, "0", "1"])
+def test_effective_policy_environment_without_launching_gpu(
+    tmp_path, mode, native, host_gb, cache_override,
+):
     from sys import executable
 
     binary = tmp_path / "bin"
@@ -148,10 +206,22 @@ def test_effective_policy_environment_without_launching_gpu(tmp_path, mode, nati
     artifact = tmp_path / "model.json"
     artifact.write_text("{}")
     run_root = tmp_path / "probe"
+    cache_variable = (
+        "NATIVE_CHAT_TOKEN_BLOCK_CACHE" if native
+        else "PREDICTIVE_CHAT_TOKEN_BLOCK_CACHE" if mode == "predictive_h2d"
+        else "REACTIVE_CHAT_TOKEN_BLOCK_CACHE"
+    )
+    inherited_environment = {
+        key: value for key, value in os.environ.items()
+        if key not in (
+            "NATIVE_CHAT_TOKEN_BLOCK_CACHE", "PREDICTIVE_CHAT_TOKEN_BLOCK_CACHE",
+            "REACTIVE_CHAT_TOKEN_BLOCK_CACHE",
+        )
+    }
     result = subprocess.run(
         ["/bin/bash", str(SCRIPT)],
         env={
-            **os.environ, "PATH": str(binary) + os.pathsep + os.environ["PATH"],
+            **inherited_environment, "PATH": str(binary) + os.pathsep + os.environ["PATH"],
             "RUN_ROOT": str(run_root), "AB_MODE": mode,
             "NATIVE_POLICY_BASELINE": str(int(native)),
             "HICACHE_SIZE_GB": host_gb,
@@ -166,6 +236,8 @@ def test_effective_policy_environment_without_launching_gpu(tmp_path, mode, nati
             "BELIEFKV_EMIT_SEMANTIC_TEXT": "1",
             "BELIEFKV_EXPERIMENT_PAUSE_FILE": str(tmp_path / "unused-pause"),
             "SGLANG_SOURCE_CHECKOUT": str(tmp_path / "candidate-engine"),
+            "BELIEFKV_CHAT_TOKEN_BLOCK_CACHE": "1",
+            **({cache_variable: cache_override} if cache_override is not None else {}),
         },
         text=True, capture_output=True, timeout=10,
     )
@@ -174,6 +246,12 @@ def test_effective_policy_environment_without_launching_gpu(tmp_path, mode, nati
     payload = json.loads(next(line for line in rows if line.startswith("{")))
     environment, arguments = payload["environment"], payload["arguments"]
     assert environment["SGLANG_SOURCE_CHECKOUT"] == str(tmp_path / "candidate-engine")
+    cache_enabled = cache_override == "1" if cache_override is not None else not native
+    assert environment["BELIEFKV_CHAT_TOKEN_BLOCK_CACHE"] == str(int(cache_enabled))
+    assert json.loads((run_root / "server/launch_configuration.json").read_text()) == {
+        "schema_version": 1, "chat_token_block_cache": cache_enabled,
+        "native_policy_baseline": native,
+    }
     if host_gb == "0":
         assert arguments[arguments.index("--max-total-tokens") + 1] == "1798992"
         assert arguments[arguments.index("--max-mamba-cache-size") + 1] == "513"

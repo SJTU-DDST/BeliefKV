@@ -17,6 +17,9 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.resume_predictive_after_native import PATCH_PATH, git, write_json
+from beliefkv.experiments.chat_token_cache_policy import (
+    CHAT_TOKEN_CACHE_ENV_BY_ARM, frozen_chat_token_cache_configuration,
+)
 
 
 def resume_environment(plan: dict, run_root: Path, *, python: str, port: int) -> dict[str, str]:
@@ -78,6 +81,10 @@ def resume_environment(plan: dict, run_root: Path, *, python: str, port: int) ->
         "native_reference_run", "native_reference_timeline", "native_reference_cache",
     ):
         values[field.upper()] = plan.get(field) or ""
+    for arm, enabled in frozen_chat_token_cache_configuration(plan).items():
+        values[CHAT_TOKEN_CACHE_ENV_BY_ARM[arm]] = int(enabled)
+    if "chat_token_block_cache" in plan:
+        values["BELIEFKV_CHAT_TOKEN_BLOCK_CACHE"] = int(plan["chat_token_block_cache"])
     return {name: str(value) for name, value in values.items()}
 
 
@@ -120,11 +127,11 @@ def main() -> None:
     write_json(run_root / "ab_plan.predictive_pre_resume.json", original)
     write_json(plan_path, plan)
     python = os.environ.get("PYTHON", "/home/longhao/miniconda3/envs/beliefkv-next/bin/python")
+    environment = resume_environment(plan, run_root, python=python, port=args.port)
     subprocess.run([
         python, str(ROOT / "scripts/summarize_semantic_h2d_ab.py"),
         "--run-root", str(run_root), "--verify-frozen-plan",
-    ], cwd=ROOT, check=True)
-    environment = resume_environment(plan, run_root, python=python, port=args.port)
+    ], cwd=ROOT, env={**os.environ, **environment}, check=True)
     write_json(run_root / "predictive_resume_environment.json", environment)
     state_path = run_root / "revision_transition.json"
     state = json.loads(state_path.read_text())
