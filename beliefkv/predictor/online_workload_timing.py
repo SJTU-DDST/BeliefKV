@@ -98,7 +98,7 @@ class OnlineWorkloadToolTiming:
             if not all(math.isfinite(value) for value in values):
                 continue
             times = sorted({duration - elapsed for duration, _ in history if duration > elapsed})
-            cdf = ((0., 0.),) + tuple(
+            cdf = tuple(
                 (future, 1. - curve.conditional_survival(elapsed, future))
                 for future in times
             )

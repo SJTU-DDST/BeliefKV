@@ -39,6 +39,16 @@ def test_online_tools_learn_only_completed_causal_observations():
     estimate = history.estimate("workflow", "agent", now_ms=10_500.)
     assert estimate.scope == "workflow" and estimate.samples == 4
     assert estimate.p50_ms == 1500.
+    from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
+    from beliefkv.runtime.sglang_v0520_prediction import NativeToolWaitHint
+    key = PrefillCandidateKey("request", "workflow", "agent", "ctx", 0, 0)
+    hint = NativeToolWaitHint(
+        key, estimate.p10_ms, estimate.p50_ms, estimate.p90_ms,
+        10_500., 12_500., "a" * 64, release_cdf=estimate.release_cdf,
+    )
+    assert hint.remaining_quantile(.5, now_ms=10_500.) == pytest.approx(1500.)
+    assert hint.release_probability_within(1000., now_ms=10_500.) is not None
+    assert all(tau > 0 for tau, _ in estimate.release_cdf)
     assert history.estimate("workflow", "agent", now_ms=15_000.) is None
     history.observe(tool_event(RuntimeEventKind.TOOL_START, call="parallel", start=10_000.))
     assert history.estimate("workflow", "agent", now_ms=10_500.) is None
@@ -170,3 +180,45 @@ def test_95_percent_input_gets_a_completion_that_fits(monkeypatch):
         override=lambda **kwargs: kwargs,
     )
     assert middleware._request(request)["model_settings"]["max_tokens"] == 12888
+
+
+def test_capacity_price_retains_safe_restore_when_free_list_plan_is_empty():
+    from dataclasses import replace
+    from tests.test_wait_prefetch_batch import batch_fixture
+    runtime, key, opportunity, cache, _ = batch_fixture("join_ticket")
+    try:
+        blocked = replace(
+            opportunity, step=None, steps=(),
+            required_full_tokens=0, required_mamba_slots=0,
+        )
+        priced = runtime._report_restore_cost_plan(blocked)
+        assert priced.required_full_tokens == opportunity.required_full_tokens
+        assert priced.required_mamba_slots == opportunity.required_mamba_slots
+        assert blocked.step is None
+        cache.prefetch_gpu_session_nodes.assert_not_called()
+    finally:
+        runtime.close()
+
+
+def test_critical_headroom_can_prepare_an_unhinted_tool_wait_but_not_active_llm():
+    from beliefkv.control.causal_graph import InvocationState
+    from tests.test_tool_predictive_transfers import tool_runtime
+    runtime, hint = tool_runtime()
+    runtime.tool_wait_hints.clear()
+    runtime._native_cache = NS()
+    demand = (NS(), 100_000, 1, time.monotonic() + 1.)
+    captured = NS()
+    try:
+        with patch.object(runtime, "_live_critical_parent_demand", return_value=demand), patch.object(
+            runtime, "capture_shadow_candidate", return_value=captured,
+        ) as capture:
+            assert runtime._refreshed_shadow_backup_candidate(
+                context_id=hint.key.context_id,
+            ) is captured
+            runtime.graph.invocations[hint.key.invocation_id].state = InvocationState.RUNNING_LLM
+            assert runtime._refreshed_shadow_backup_candidate(
+                context_id=hint.key.context_id,
+            ) is None
+            assert capture.call_count == 1
+    finally:
+        runtime.close()

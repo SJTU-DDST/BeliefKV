@@ -46,3 +46,33 @@ def test_cached_boundary_count_matches_full_tokenization(counter):
     assert counter(messages, tools=tools) == expected
     assert counter(messages, tools=tools) == expected
     assert counter._chars <= counter.cache_chars
+
+
+def test_concurrent_workflows_initialize_one_counter(monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    import time
+    import beliefkv.runtime.context_token_counter as module
+
+    barrier = Barrier(8)
+    created = []
+
+    def constructor(_):
+        time.sleep(.01)
+        value = object()
+        created.append(value)
+        return value
+
+    def start(_):
+        barrier.wait()
+        return module.context_token_counter("/counter-concurrency-fixture")
+
+    module._cached_context_token_counter.cache_clear()
+    monkeypatch.setattr(module, "ChatTemplateTokenCounter", constructor)
+    try:
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            counters = list(executor.map(start, range(8)))
+        assert len(created) == 1
+        assert all(counter is created[0] for counter in counters)
+    finally:
+        module._cached_context_token_counter.cache_clear()

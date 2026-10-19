@@ -85,8 +85,18 @@ class ChatTemplateTokenCounter:
         return self.rendered_count(rendered)
 
 
+_initialization_lock = RLock()
+
+
 @lru_cache(maxsize=2)
-def context_token_counter(model_path: str | None = None):
+def _cached_context_token_counter(model_path: str | None):
     if model_path:
         return ChatTemplateTokenCounter(model_path)
     return partial(count_tokens_approximately, chars_per_token=3.0)
+
+
+def context_token_counter(model_path: str | None = None):
+    # functools.lru_cache permits concurrent misses. Transformers lazy imports
+    # and loading this tokenizer must happen once before concurrent workflows.
+    with _initialization_lock:
+        return _cached_context_token_counter(model_path)

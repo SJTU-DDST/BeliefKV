@@ -19,9 +19,13 @@ Critical-parent capacity is borrowable until needed, reclaimed only from native
 validated idle duplicates or newly prepared waiting contexts. Do not preempt
 active LLM requests or make a permanently idle partition. V1898 passes773 CPU
 checks with1 optional sandbox skip; V1902 passes254 transfer/policy checks.
-After environment/source qualification, interrupt V84 as explicitly authorized,
-preserve partial native evidence and start V85 predictive immediately, followed
-by a matched native run. GPU performance and dataset suitability remain pending.
+V84 has been interrupted as authorized, with partial native evidence retained.
+V85b exposed a zero-time CDF contract error and concurrent first tokenizer
+imports; fix both and keep the failed trace. V1912 passes792 CPU checks, with
+the optional real sandbox check separately passed in V1904. V85c uses a fresh
+directory, frozen engine mapping, one initialized tokenizer, native-consumable
+CDFs and complete safe-checkpoint capacity pricing. Start predictive then matched
+native; GPU performance and dataset suitability remain pending.
 
 Long-repository workload support is now an opt-in candidate, not an accepted
 replacement performance result. V1890 binds12 distinct original LoCoBench-Agent

@@ -4873,6 +4873,8 @@ def _execute_scheduled_root_pool(
 
 
 def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
+    if config.context_lifecycle.tokenizer_path is not None:
+        context_token_counter(config.context_lifecycle.tokenizer_path)
     output_dir = config.output_dir.expanduser().resolve()
     if output_dir.exists():
         raise FileExistsError(f"experiment output already exists: {output_dir}")

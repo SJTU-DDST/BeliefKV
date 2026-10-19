@@ -3006,19 +3006,25 @@ class NativeAdmissionRuntime:
             if remaining is None:
                 continue
             observation = self._wait_prefetch_opportunity(stage.key)
-            if observation is None or observation.step is None:
+            if observation is None:
                 continue
-            window = self._h2d_start_window(observation)
+            cost_plan = self._report_restore_cost_plan(observation)
+            if cost_plan.step is None:
+                continue
+            window = self._h2d_start_window(cost_plan)
             if window is None:
                 self.counts["report_service_transfer_size_unsupported"] += 1
                 continue
             if self._borrowable_parent_headroom and remaining <= 2 * window.horizon_ms:
                 self._critical_parent_demand = (
-                    stage.key, observation.required_full_tokens,
-                    observation.required_mamba_slots,
+                    stage.key, cost_plan.required_full_tokens,
+                    cost_plan.required_mamba_slots,
                     time.monotonic() + max(1., remaining / 1000.),
                 )
             if remaining > window.horizon_ms:
+                continue
+            if observation.step is None:
+                self.counts["report_service_waiting_for_cold_capacity"] += 1
                 continue
             join = self.graph.joins[stage.join_id]
             self._join_ticket = _JoinPrefetchTicket(
@@ -3048,6 +3054,29 @@ class NativeAdmissionRuntime:
                 })
             return observation
         return None
+
+    @staticmethod
+    def _report_restore_cost_plan(opportunity):
+        candidate = getattr(opportunity, "candidate", None)
+        if candidate is None:
+            return opportunity
+        steps = plan_prefetch_gpu_steps(candidate)
+        if not steps:
+            return opportunity
+        nodes = {node.node_id: node for node in candidate.nodes}
+        # Price the safe checkpoint before applying current free-list budgets.
+        # This object is only a cost/capacity request, never an enqueue permit.
+        return replace(
+            opportunity, step=steps[0], steps=steps,
+            required_full_tokens=sum(
+                nodes[step.node_id].full_host_tokens
+                for step in steps if nodes[step.node_id].full_device_tokens == 0
+            ),
+            required_mamba_slots=sum(
+                step.include_mamba and nodes[step.node_id].mamba_host_present
+                and not nodes[step.node_id].mamba_device_present for step in steps
+            ),
+        )
 
     def _observe_report_service(self, batch: object) -> None:
         if (
@@ -5288,6 +5317,17 @@ class NativeAdmissionRuntime:
                 else self.tool_wait_hint)
         cache = self._native_cache
         if hint is None or cache is None:
+            key = self.context_sessions.get(context_id)
+            if (
+                cache is not None and key is not None
+                and self._live_critical_parent_demand() is not None
+                and self._long_tool_wait(key)
+            ):
+                return self.capture_shadow_candidate(
+                    cache, context_id=key.context_id, context_epoch=key.context_epoch,
+                    include_non_actionable=True,
+                    host_full_free_tokens=host_full_free_tokens,
+                )
             return None
         key = hint.key
         invocation = self.graph.invocations.get(key.invocation_id)
@@ -6176,19 +6216,22 @@ class NativeAdmissionRuntime:
             if mamba_pressure:
                 self.counts["prepare_mamba_pressure_only"] += 1
             return
-        hints = sorted(self.tool_wait_hints.values(), key=lambda item: item.key.context_id)
-        if not hints:
+        keys = {hint.key for hint in self.tool_wait_hints.values()}
+        if self._live_critical_parent_demand() is not None:
+            keys.update(self._waiting_context_keys(InvocationState.WAIT_TOOL))
+        keys = sorted(keys, key=lambda item: item.context_id)
+        if not keys:
             return
         candidates = []
         selected_candidate = selected_order = None
-        for offset in range(min(8, len(hints))):
-            hint = hints[(self._tool_prepare_cursor + offset) % len(hints)]
-            if not self._prepare_probe_due(hint.key, now_ms):
+        for offset in range(min(8, len(keys))):
+            key = keys[(self._tool_prepare_cursor + offset) % len(keys)]
+            if not self._prepare_probe_due(key, now_ms):
                 continue
-            if not self._long_tool_wait(hint.key):
+            if not self._long_tool_wait(key):
                 continue
             selection = self._refreshed_shadow_backup_selection(
-                context_id=hint.key.context_id,
+                context_id=key.context_id,
                 host_full_free_tokens=headroom.host_full_free_tokens,
             )
             if selection is not None:
@@ -6202,10 +6245,10 @@ class NativeAdmissionRuntime:
                     if selected_order is None or (rank, offset) < selected_order:
                         selected_order, selected_candidate = (rank, offset), candidate
                 else:
-                    self._prepare_probe_after_ms[hint.key] = now_ms + 1000.
+                    self._prepare_probe_after_ms[key] = now_ms + 1000.
             else:
-                self._prepare_probe_after_ms[hint.key] = now_ms + 1000.
-        self._tool_prepare_cursor = (self._tool_prepare_cursor + 8) % len(hints)
+                self._prepare_probe_after_ms[key] = now_ms + 1000.
+        self._tool_prepare_cursor = (self._tool_prepare_cursor + 8) % len(keys)
         first_attempt = True
         for rank, offset, step in sorted(candidates, key=lambda item: item[:2]):
             issued = self.issue_shadow_backup_steps(
