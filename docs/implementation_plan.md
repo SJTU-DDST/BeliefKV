@@ -64,6 +64,23 @@ Current goal:
 - Stop and fix material experimental failures promptly; CPU improvements alone
   do not establish GPU performance or a gain over native.
 
+V2028 uses slots for immutable restore leases and direct epoch/session comparisons,
+removing temporary validation tuples. Keep separate expiry, causal, native session
+generation, node generation, residency and lock checks for every receipt.
+All 96 maintenance/handoff/first-service/runtime scenes preserve complete state,
+records, receipts and locks; copy/deepcopy/pickle/replace keep fields. Ninety CPU
+P50s improve. One context/42 receipts without diagnostics has a maintenance-cycle
+P50 of 115.977 to 105.269us and a waiting scan of 107.928 to 94.763us. Preserve one
+0.145us first-service regression and five nanosecond deferred-path regressions.
+Retain V2027's slots-only prototype with its 18 regressions; do not attribute all
+between-run changes to field comparisons. All 169 focused and 2278 expanded
+checks pass (V2029/V2030). V2025/V2026 separately measure the earlier cb93eec
+against 51c0f1f: all 32 dispatch P50s improve 1.51%-6.10%, all 48 recurring-cycle
+P50s improve 4.81%-22.85%; retain the unchanged empty-socket control's 4.28ns
+regression. These are earlier CPU scopes, not additive savings or GPU/JCT gains.
+See V2031. Commit main and republish the same 06:00 qualification; preserve the
+engine, patch, configuration and full performance acceptance goal.
+
 V2021/V2022 inline H2D pool-name normalization while preserving the per-operation
 mapping snapshot before both native accounting callbacks, live unit sizes, arbitrary
 nonempty canonical sidecar names and duplicate-name rejection. Do not alias mutable

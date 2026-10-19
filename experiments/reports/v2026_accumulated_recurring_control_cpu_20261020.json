@@ -1,0 +1,2813 @@
+{
+  "status": "complete_cpu_comparison_not_gpu_or_jct_gain",
+  "scope": "CPU runtime/ledger with real Unix sockets; no serving, CUDA, DMA or JCT",
+  "at": "2026-10-19T13:42:04.355637-07:00",
+  "baseline_revision": "51c0f1f",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/event_channel.py": "032a8929a01ed19bfd67bf655b42c525ae830ce74dd55e790b69bd32ffc4ece3",
+    "beliefkv/runtime/sglang_v0520_observer.py": "c48af16182853d7fbf0b97879320e01c339bd0e677a78b024011d855040cbd8a",
+    "beliefkv/runtime/sglang_v0520_physical.py": "5e97a0cba4477000a4b134011af67adc33605b252c35628d7f2330ead640f029",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "0c5c996154c5dbe109421e90602463bac13000aac1afca69b2a54f56fb6f13d9"
+  },
+  "candidate_source_sha256": {
+    "beliefkv/runtime/event_channel.py": "032a8929a01ed19bfd67bf655b42c525ae830ce74dd55e790b69bd32ffc4ece3",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "d56ab04fce0a2c59ae9fcdd562b7900fe3b8dba25bd35a12f1c74f7efd29847d",
+    "beliefkv/runtime/sglang_v0520_physical.py": "47e3615b9189b83b898e83629686a12fd9effab331a45039fe1d6b9e8964ee4b",
+    "beliefkv/runtime/sglang_v0520_observer.py": "40db188bb8b3854d39be9606106094ef9d83c6f1b92d2d51fbff3ffe39f158e0",
+    "beliefkv/runtime/hotpath_timing.py": "aa554df03b5c08cc009be14f21a9c25bdb5e48eb585b5cf774601d9ae471792b",
+    "scripts/benchmark_recurring_control_cpu.py": "9e3f0df92e35570749b1b021bc432d9436f012df906170e39f8546860eb902af",
+    "scripts/benchmark_native_prepare_path.py": "6dc6e755527f7546b2c3d93c7ff0913ff69664a045c5c22465bd477e93647995",
+    "scripts/benchmark_prefetch_control_cpu.py": "6aaa1784c17409e1c2654e563185ca38a23f8dcc8287642d15e849ddca5eaeea",
+    "scripts/benchmark_native_shared_path.py": "c0c91561f4887299a4add743f83eb91176f866aa118ed1da5a76a446f53ed06e"
+  },
+  "samples": 151,
+  "registration_only": false,
+  "recurring_only": true,
+  "engine_hook_sources": {},
+  "removed_poll_counters": [
+    "physical_planning_after_forward",
+    "prediction_maintenance_deferred",
+    "prefetch_lease_maintenance_deferred",
+    "tool_prefetch_scan_deferred"
+  ],
+  "observed_runtime": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/opportunities/admission_opportunities.jsonl",
+    "sha256": "05d80418cf724afb0a3327f39d85d00fcfdace47072c1103c14d7ed60009f1ab",
+    "final_poll_counters": {
+      "physical_planning_after_forward": 1811270,
+      "prediction_maintenance_deferred": 1790449,
+      "prefetch_lease_maintenance_deferred": 6392,
+      "tool_prefetch_scan_deferred": 189619
+    },
+    "scope": "Historical diagnostic increments, not forward/completion rates or a workload-weighted timing, GPU or JCT saving."
+  },
+  "warmup_samples": 20,
+  "cases": [
+    {
+      "case": "real_empty_socket_drain",
+      "profiling": false,
+      "costs": {
+        "baseline": {
+          "mean_us": 0.5084891390728477,
+          "p50_us": 0.50628,
+          "p90_us": 0.5108199999999999,
+          "p99_us": 0.57068
+        },
+        "candidate": {
+          "mean_us": 0.5120586754966887,
+          "p50_us": 0.51056,
+          "p90_us": 0.51486,
+          "p99_us": 0.56714
+        }
+      },
+      "no_delivery_or_ack": true,
+      "p50_thread_cpu_reduction_fraction": -0.00845382002054218
+    },
+    {
+      "case": "real_empty_socket_drain",
+      "profiling": true,
+      "costs": {
+        "baseline": {
+          "mean_us": 0.7263781456953643,
+          "p50_us": 0.72666,
+          "p90_us": 0.74274,
+          "p99_us": 0.80032
+        },
+        "candidate": {
+          "mean_us": 0.7234272847682119,
+          "p50_us": 0.7263999999999999,
+          "p90_us": 0.74066,
+          "p99_us": 0.7827200000000001
+        }
+      },
+      "no_delivery_or_ack": true,
+      "p50_thread_cpu_reduction_fraction": 0.0003578014477197966
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": false,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 4.083117615894039,
+          "p50_us": 4.07994,
+          "p90_us": 4.17014,
+          "p99_us": 4.2881
+        },
+        "candidate": {
+          "mean_us": 3.2460100662251654,
+          "p50_us": 3.2367399999999997,
+          "p90_us": 3.29354,
+          "p99_us": 3.54758
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.20666970592704792
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": false,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 4,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 4.7825545695364235,
+          "p50_us": 4.77388,
+          "p90_us": 4.88306,
+          "p99_us": 5.16126
+        },
+        "candidate": {
+          "mean_us": 3.715523046357616,
+          "p50_us": 3.71138,
+          "p90_us": 3.7781599999999997,
+          "p99_us": 3.8454
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.22256529280166237
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": false,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 4.158843708609272,
+          "p50_us": 4.15634,
+          "p90_us": 4.24176,
+          "p99_us": 4.3726199999999995
+        },
+        "candidate": {
+          "mean_us": 3.335073642384106,
+          "p50_us": 3.33534,
+          "p90_us": 3.3858800000000002,
+          "p99_us": 3.5541199999999997
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.19752955725470012
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": false,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 4,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 7.03315059602649,
+          "p50_us": 7.0353,
+          "p90_us": 7.229520000000001,
+          "p99_us": 7.3729
+        },
+        "candidate": {
+          "mean_us": 5.982090860927152,
+          "p50_us": 5.9793,
+          "p90_us": 6.10474,
+          "p99_us": 6.46718
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.1501002089463136
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": true,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 11.121293377483443,
+          "p50_us": 11.1227,
+          "p90_us": 11.26252,
+          "p99_us": 11.36238
+        },
+        "candidate": {
+          "mean_us": 9.990504900662252,
+          "p50_us": 9.98688,
+          "p90_us": 10.146540000000002,
+          "p99_us": 10.3107
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.10211729166479366
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": true,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 4,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 11.929040397350994,
+          "p50_us": 11.93366,
+          "p90_us": 12.103639999999999,
+          "p99_us": 12.22308
+        },
+        "candidate": {
+          "mean_us": 10.591105960264901,
+          "p50_us": 10.590200000000001,
+          "p90_us": 10.732299999999999,
+          "p99_us": 10.850760000000001
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.11257736520061734
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": true,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 11.08987523178808,
+          "p50_us": 11.087459999999998,
+          "p90_us": 11.240219999999999,
+          "p99_us": 11.34072
+        },
+        "candidate": {
+          "mean_us": 10.004353112582782,
+          "p50_us": 10.01376,
+          "p90_us": 10.13182,
+          "p99_us": 10.25568
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.09683913177589809
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": true,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 4,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 14.349610198675498,
+          "p50_us": 14.36334,
+          "p90_us": 14.5319,
+          "p99_us": 14.72586
+        },
+        "candidate": {
+          "mean_us": 13.242813245033112,
+          "p50_us": 13.23974,
+          "p90_us": 13.38792,
+          "p99_us": 13.55136
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.07822693050502194
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": false,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 4.509984370860927,
+          "p50_us": 4.49832,
+          "p90_us": 4.59312,
+          "p99_us": 4.69234
+        },
+        "candidate": {
+          "mean_us": 3.8334076821192054,
+          "p50_us": 3.75746,
+          "p90_us": 3.84452,
+          "p99_us": 4.08544
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.16469704245140404
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": false,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 4,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 5.131492185430464,
+          "p50_us": 5.1303,
+          "p90_us": 5.2272799999999995,
+          "p99_us": 5.37674
+        },
+        "candidate": {
+          "mean_us": 4.0966022516556295,
+          "p50_us": 4.092239999999999,
+          "p90_us": 4.18558,
+          "p99_us": 4.3119
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.2023390445003217
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": false,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 4.61250821192053,
+          "p50_us": 4.60738,
+          "p90_us": 4.69352,
+          "p99_us": 4.8188
+        },
+        "candidate": {
+          "mean_us": 3.8090825165562916,
+          "p50_us": 3.80188,
+          "p90_us": 3.8788,
+          "p99_us": 3.9511999999999996
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.17482821039289143
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": false,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 4,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 7.312417218543047,
+          "p50_us": 7.3036,
+          "p90_us": 7.5149799999999995,
+          "p99_us": 7.60492
+        },
+        "candidate": {
+          "mean_us": 6.557367947019867,
+          "p50_us": 6.558140000000001,
+          "p90_us": 6.6828,
+          "p99_us": 6.87596
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.1020674735746755
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": true,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 11.556082913907284,
+          "p50_us": 11.55236,
+          "p90_us": 11.68018,
+          "p99_us": 11.887799999999999
+        },
+        "candidate": {
+          "mean_us": 10.548741721854304,
+          "p50_us": 10.54122,
+          "p90_us": 10.6899,
+          "p99_us": 10.8638
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.08752670450020605
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": true,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 4,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 12.251959337748344,
+          "p50_us": 12.218440000000001,
+          "p90_us": 12.51742,
+          "p99_us": 12.76714
+        },
+        "candidate": {
+          "mean_us": 11.000886622516557,
+          "p50_us": 10.963659999999999,
+          "p90_us": 11.309520000000001,
+          "p99_us": 11.459959999999999
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.10269559780135618
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": true,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 11.648445960264901,
+          "p50_us": 11.63088,
+          "p90_us": 11.80968,
+          "p99_us": 12.18302
+        },
+        "candidate": {
+          "mean_us": 10.661199735099338,
+          "p50_us": 10.6665,
+          "p90_us": 10.781139999999999,
+          "p99_us": 10.882760000000001
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.08291548017003014
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 12,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": true,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 4,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 15.412268741721855,
+          "p50_us": 15.40922,
+          "p90_us": 15.62856,
+          "p99_us": 15.88806
+        },
+        "candidate": {
+          "mean_us": 14.351561324503312,
+          "p50_us": 14.348040000000001,
+          "p90_us": 14.4924,
+          "p99_us": 14.65716
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.06886656170786054
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": false,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 4.178699735099338,
+          "p50_us": 4.17066,
+          "p90_us": 4.25974,
+          "p99_us": 4.4013800000000005
+        },
+        "candidate": {
+          "mean_us": 3.303692317880795,
+          "p50_us": 3.3093600000000003,
+          "p90_us": 3.35136,
+          "p99_us": 3.41202
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.2065140769086906
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": false,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 8,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 4.871449668874172,
+          "p50_us": 4.867439999999999,
+          "p90_us": 4.97232,
+          "p99_us": 5.071680000000001
+        },
+        "candidate": {
+          "mean_us": 3.7553170860927154,
+          "p50_us": 3.7553400000000003,
+          "p90_us": 3.8242,
+          "p99_us": 3.90022
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.2284773926334992
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": false,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 4.177867417218543,
+          "p50_us": 4.17524,
+          "p90_us": 4.250979999999999,
+          "p99_us": 4.35292
+        },
+        "candidate": {
+          "mean_us": 3.4118985430463575,
+          "p50_us": 3.40908,
+          "p90_us": 3.4811199999999998,
+          "p99_us": 3.5965
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.18350082869487738
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": false,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 8,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 7.54156238410596,
+          "p50_us": 7.5323,
+          "p90_us": 7.69496,
+          "p99_us": 7.85682
+        },
+        "candidate": {
+          "mean_us": 6.69972238410596,
+          "p50_us": 6.702100000000001,
+          "p90_us": 6.8071,
+          "p99_us": 6.91508
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.11021865831153821
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": true,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 11.142578940397351,
+          "p50_us": 11.123479999999999,
+          "p90_us": 11.335139999999999,
+          "p99_us": 11.57124
+        },
+        "candidate": {
+          "mean_us": 10.076913907284768,
+          "p50_us": 10.05858,
+          "p90_us": 10.211559999999999,
+          "p99_us": 10.3175
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.09573442843426694
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": true,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 8,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 11.828631523178808,
+          "p50_us": 11.83174,
+          "p90_us": 12.053600000000001,
+          "p99_us": 12.30192
+        },
+        "candidate": {
+          "mean_us": 10.554194172185431,
+          "p50_us": 10.54702,
+          "p90_us": 10.67076,
+          "p99_us": 10.791319999999999
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.10858250772920974
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": true,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 11.214875629139073,
+          "p50_us": 11.21148,
+          "p90_us": 11.38788,
+          "p99_us": 11.56308
+        },
+        "candidate": {
+          "mean_us": 9.97657536423841,
+          "p50_us": 9.97156,
+          "p90_us": 10.1225,
+          "p99_us": 10.29476
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.11059378422830879
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 0,
+      "profiling": true,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 8,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 14.939893642384106,
+          "p50_us": 14.94462,
+          "p90_us": 15.2463,
+          "p99_us": 15.41412
+        },
+        "candidate": {
+          "mean_us": 13.983540662251656,
+          "p50_us": 13.98884,
+          "p90_us": 14.1303,
+          "p99_us": 14.23324
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.06395478774301389
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": false,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 4.50869523178808,
+          "p50_us": 4.5087,
+          "p90_us": 4.58186,
+          "p99_us": 4.7022200000000005
+        },
+        "candidate": {
+          "mean_us": 3.7453626490066223,
+          "p50_us": 3.7458,
+          "p90_us": 3.8163,
+          "p99_us": 3.86366
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.16920620134406816
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": false,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 8,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 5.254363311258278,
+          "p50_us": 5.252479999999999,
+          "p90_us": 5.34722,
+          "p99_us": 5.44414
+        },
+        "candidate": {
+          "mean_us": 4.136084503311258,
+          "p50_us": 4.12378,
+          "p90_us": 4.22148,
+          "p99_us": 4.294899999999999
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.21488896673571334
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": false,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 4.685240529801325,
+          "p50_us": 4.683020000000001,
+          "p90_us": 4.7816,
+          "p99_us": 4.85926
+        },
+        "candidate": {
+          "mean_us": 3.8829070198675497,
+          "p50_us": 3.87988,
+          "p90_us": 3.93882,
+          "p99_us": 4.11122
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.17150044202245573
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": false,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 8,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 7.807640264900662,
+          "p50_us": 7.79514,
+          "p90_us": 7.97808,
+          "p99_us": 8.07692
+        },
+        "candidate": {
+          "mean_us": 7.0036586754966885,
+          "p50_us": 7.006939999999999,
+          "p90_us": 7.11158,
+          "p99_us": 7.1579
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.10111428402825362
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": true,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 11.58538715231788,
+          "p50_us": 11.602780000000001,
+          "p90_us": 11.82626,
+          "p99_us": 11.96228
+        },
+        "candidate": {
+          "mean_us": 10.510485033112582,
+          "p50_us": 10.52478,
+          "p90_us": 10.69388,
+          "p99_us": 10.84242
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.09290876841584528
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": true,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 8,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 12.189432715231789,
+          "p50_us": 12.147680000000001,
+          "p90_us": 12.47,
+          "p99_us": 12.66748
+        },
+        "candidate": {
+          "mean_us": 11.213553377483445,
+          "p50_us": 11.17692,
+          "p90_us": 11.40984,
+          "p99_us": 11.55898
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.0799132015331323
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": true,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 11.417616291390729,
+          "p50_us": 11.368979999999999,
+          "p90_us": 11.725719999999999,
+          "p99_us": 11.77482
+        },
+        "candidate": {
+          "mean_us": 10.480906092715232,
+          "p50_us": 10.45748,
+          "p90_us": 10.71082,
+          "p99_us": 10.9194
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.08017429883771443
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 24,
+      "running_requests": 8,
+      "pending_commands": 16,
+      "profiling": true,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 8,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 15.528760529801325,
+          "p50_us": 15.47494,
+          "p90_us": 15.96902,
+          "p99_us": 16.20028
+        },
+        "candidate": {
+          "mean_us": 14.513334304635762,
+          "p50_us": 14.459040000000002,
+          "p90_us": 14.85242,
+          "p99_us": 14.99792
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.0656480735951156
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 0,
+      "profiling": false,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 7.444619072847682,
+          "p50_us": 7.4354,
+          "p90_us": 7.55328,
+          "p99_us": 7.743060000000001
+        },
+        "candidate": {
+          "mean_us": 6.306359072847682,
+          "p50_us": 6.304399999999999,
+          "p90_us": 6.38384,
+          "p99_us": 6.52544
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.15211017564623297
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 0,
+      "profiling": false,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 8,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 8.114678410596026,
+          "p50_us": 8.10754,
+          "p90_us": 8.240920000000001,
+          "p99_us": 8.32004
+        },
+        "candidate": {
+          "mean_us": 6.782224503311259,
+          "p50_us": 6.7747399999999995,
+          "p90_us": 6.867979999999999,
+          "p99_us": 6.97666
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.16439018493895818
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 0,
+      "profiling": false,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 7.310229006622516,
+          "p50_us": 7.29946,
+          "p90_us": 7.3985,
+          "p99_us": 7.44646
+        },
+        "candidate": {
+          "mean_us": 6.334654701986755,
+          "p50_us": 6.3235600000000005,
+          "p90_us": 6.41996,
+          "p99_us": 6.5783000000000005
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.13369482126075072
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 0,
+      "profiling": false,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 8,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 10.668587284768211,
+          "p50_us": 10.65994,
+          "p90_us": 10.8605,
+          "p99_us": 11.06424
+        },
+        "candidate": {
+          "mean_us": 9.563824105960265,
+          "p50_us": 9.5511,
+          "p90_us": 9.714799999999999,
+          "p99_us": 9.82812
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.10401934720082862
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 0,
+      "profiling": true,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 14.299180397350993,
+          "p50_us": 14.2986,
+          "p90_us": 14.46834,
+          "p99_us": 14.5991
+        },
+        "candidate": {
+          "mean_us": 13.23803655629139,
+          "p50_us": 13.224459999999999,
+          "p90_us": 13.387120000000001,
+          "p99_us": 13.46424
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.07512203991999233
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 0,
+      "profiling": true,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 8,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 14.923839337748344,
+          "p50_us": 14.912139999999999,
+          "p90_us": 15.145340000000001,
+          "p99_us": 15.33922
+        },
+        "candidate": {
+          "mean_us": 13.505795629139072,
+          "p50_us": 13.488299999999999,
+          "p90_us": 13.649959999999998,
+          "p99_us": 13.79856
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.09548193619426859
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 0,
+      "profiling": true,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 14.529003708609272,
+          "p50_us": 14.521600000000001,
+          "p90_us": 14.68808,
+          "p99_us": 14.92692
+        },
+        "candidate": {
+          "mean_us": 13.192765165562914,
+          "p50_us": 13.18562,
+          "p90_us": 13.34058,
+          "p99_us": 13.47592
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.09199950418686653
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 0,
+      "profiling": true,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 8,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 18.37183271523179,
+          "p50_us": 18.37166,
+          "p90_us": 18.66738,
+          "p99_us": 18.8037
+        },
+        "candidate": {
+          "mean_us": 17.066373377483444,
+          "p50_us": 17.076700000000002,
+          "p90_us": 17.2535,
+          "p99_us": 17.365419999999997
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.07048682590468125
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 16,
+      "profiling": false,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 7.82969880794702,
+          "p50_us": 7.82576,
+          "p90_us": 7.90712,
+          "p99_us": 8.05014
+        },
+        "candidate": {
+          "mean_us": 6.787436158940397,
+          "p50_us": 6.75814,
+          "p90_us": 6.84304,
+          "p99_us": 7.824859999999999
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.13642381059475372
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 16,
+      "profiling": false,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 8,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 8.270843311258279,
+          "p50_us": 8.26614,
+          "p90_us": 8.38308,
+          "p99_us": 8.49256
+        },
+        "candidate": {
+          "mean_us": 7.2532984105960265,
+          "p50_us": 7.24192,
+          "p90_us": 7.33462,
+          "p99_us": 7.51016
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.12390547462297996
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 16,
+      "profiling": false,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 7.818925960264901,
+          "p50_us": 7.8145,
+          "p90_us": 7.92342,
+          "p99_us": 8.03696
+        },
+        "candidate": {
+          "mean_us": 6.967294304635762,
+          "p50_us": 6.961,
+          "p90_us": 7.07606,
+          "p99_us": 7.18196
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.1092200396698445
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 16,
+      "profiling": false,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 8,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 10.868640264900662,
+          "p50_us": 10.86358,
+          "p90_us": 11.087579999999999,
+          "p99_us": 11.273579999999999
+        },
+        "candidate": {
+          "mean_us": 10.051852582781457,
+          "p50_us": 10.0485,
+          "p90_us": 10.18226,
+          "p99_us": 10.366
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.07502867378893519
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 16,
+      "profiling": true,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 14.595943708609271,
+          "p50_us": 14.57544,
+          "p90_us": 14.84164,
+          "p99_us": 15.04688
+        },
+        "candidate": {
+          "mean_us": 13.576136026490067,
+          "p50_us": 13.56428,
+          "p90_us": 13.741200000000001,
+          "p99_us": 13.93568
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.06937423501451756
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 16,
+      "profiling": true,
+      "maintenance_forced_due": false,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 8,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 15.333074039735099,
+          "p50_us": 15.30908,
+          "p90_us": 15.580639999999999,
+          "p99_us": 15.7042
+        },
+        "candidate": {
+          "mean_us": 14.37298119205298,
+          "p50_us": 14.351379999999999,
+          "p90_us": 14.57112,
+          "p99_us": 14.69474
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 8550,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.06255764552801346
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 16,
+      "profiling": true,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 0,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 14.839455894039736,
+          "p50_us": 14.844,
+          "p90_us": 15.044,
+          "p99_us": 15.183879999999998
+        },
+        "candidate": {
+          "mean_us": 13.772715894039735,
+          "p50_us": 13.76334,
+          "p90_us": 13.95674,
+          "p99_us": 14.13656
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 0,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.07280113177041225
+    },
+    {
+      "case": "scheduler_dispatch_and_batch_completion",
+      "workflows": 156,
+      "running_requests": 48,
+      "pending_commands": 16,
+      "profiling": true,
+      "maintenance_forced_due": true,
+      "prepare_enabled_with_original_deadlines_deferred": true,
+      "active_tool_hints": 8,
+      "synthetic_live_workers": 0,
+      "native_idle_sleeper_enabled": false,
+      "includes_native_predictor_registration": false,
+      "configured_maintenance_interval_ms": 100.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 18.579041986754966,
+          "p50_us": 18.44956,
+          "p90_us": 18.79532,
+          "p99_us": 19.39168
+        },
+        "candidate": {
+          "mean_us": 17.598361324503312,
+          "p50_us": 17.5627,
+          "p90_us": 17.836080000000003,
+          "p99_us": 18.16308
+        }
+      },
+      "state_and_actions_equal": true,
+      "maintenance_diagnostic_counts": {
+        "baseline": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 8550,
+          "tool_prefetch_scan_deferred": 8550,
+          "prefetch_lease_maintenance_deferred": 0
+        },
+        "candidate": {
+          "prediction_maintenance_sweeps": 8550,
+          "prediction_maintenance_deferred": 0,
+          "physical_expired": 0,
+          "physical_planning_after_forward": 0,
+          "tool_prefetch_scan_deferred": 0,
+          "prefetch_lease_maintenance_deferred": 0
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.04806943905437322
+    }
+  ],
+  "validation_cases": [
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "kv",
+          20
+        ]
+      ],
+      "accepted": true,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "mamba",
+          15
+        ]
+      ],
+      "accepted": true,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "kv",
+          20
+        ],
+        [
+          "mamba",
+          15
+        ]
+      ],
+      "accepted": true,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "mamba",
+          0
+        ],
+        [
+          "kv",
+          20
+        ]
+      ],
+      "accepted": true,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "kv",
+          20
+        ]
+      ],
+      "accepted": true,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "kv",
+          true
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "kv",
+          -10
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "kv",
+          20.0
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "kv",
+          11
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "mamba",
+          6
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "kv",
+          20
+        ],
+        [
+          "kv",
+          0
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "mamba",
+          5
+        ],
+        [
+          "mamba",
+          5
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "swa",
+          20
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "",
+          0
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          [],
+          10
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        [
+          "kv"
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 1,
+      "pool_bytes": [
+        "kv"
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "kv",
+          20
+        ]
+      ],
+      "accepted": true,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "mamba",
+          15
+        ]
+      ],
+      "accepted": true,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "kv",
+          20
+        ],
+        [
+          "mamba",
+          15
+        ]
+      ],
+      "accepted": true,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "mamba",
+          0
+        ],
+        [
+          "kv",
+          20
+        ]
+      ],
+      "accepted": true,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "kv",
+          20
+        ]
+      ],
+      "accepted": true,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "kv",
+          true
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "kv",
+          -10
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "kv",
+          20.0
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "kv",
+          11
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "mamba",
+          6
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "kv",
+          20
+        ],
+        [
+          "kv",
+          0
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "mamba",
+          5
+        ],
+        [
+          "mamba",
+          5
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "swa",
+          20
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "",
+          0
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          [],
+          10
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        [
+          "kv"
+        ]
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    },
+    {
+      "children": 2,
+      "pool_bytes": [
+        "kv"
+      ],
+      "accepted": false,
+      "state_and_validation_equal": true
+    }
+  ],
+  "limitations": [
+    "Prediction inventories and physical pending populations are controlled scenes.",
+    "Forced-due and deferred scenes are measured separately, not their online mixture.",
+    "Unexpired physical reservations do not represent native DMA or active service leases.",
+    "PREPARE-enabled scenes defer its existing deadlines; they do not measure backups.",
+    "Synthetic workers expose real idle pipe fds; no predictor process or model is run.",
+    "The native block is included, not the complete get_next_batch_to_run method.",
+    "Empty sweeps/counters are intentionally removed; action/state comparisons exclude those diagnostics.",
+    "Microseconds and controlled fractions are not throughput, JCT or prediction-accuracy gains."
+  ]
+}

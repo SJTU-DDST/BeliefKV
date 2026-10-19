@@ -5,11 +5,13 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+import copy
 from dataclasses import asdict, replace
 from datetime import datetime
 import hashlib
 import json
 from pathlib import Path
+import pickle
 import sys
 import time
 from types import SimpleNamespace as NS
@@ -182,6 +184,28 @@ def measure(baseline, *, samples, contexts, receipts, phase, diagnostics, profil
         for name, cls in (("baseline", baseline), ("candidate", NativeAdmissionRuntime))
     }
     costs = {name: {"thread_cpu_us": [], "wall_us": []} for name in fixtures}
+    storage = {}
+    for name, (runtime, _, _, _) in fixtures.items():
+        lease = next(iter(runtime._prefetch_service_leases.values()), None)
+        if lease is None:
+            # The fixture installs its immutable receipts in reset().
+            fixtures[name][1]()
+            lease = next(iter(runtime._prefetch_service_leases.values()))
+        instance_dict = getattr(lease, "__dict__", None)
+        storage[name] = {
+            "instance_bytes": sys.getsizeof(lease),
+            "instance_dict_bytes": (
+                sys.getsizeof(instance_dict) if instance_dict is not None else 0
+            ),
+            "excludes_referenced_field_objects": True,
+        }
+        for convert in (
+            copy.copy, copy.deepcopy, lambda item: pickle.loads(pickle.dumps(item)),
+            lambda item: replace(item),
+        ):
+            restored = convert(lease)
+            if type(restored) is not type(lease) or asdict(restored) != asdict(lease):
+                raise AssertionError("restore receipt copy/serialization changed")
     calls = 100 if phase == "deferred_scan" else 1
     canonical = None
     try:
@@ -216,10 +240,13 @@ def measure(baseline, *, samples, contexts, receipts, phase, diagnostics, profil
             "diagnostics_writer_fixture": diagnostics, "profiling": profiling,
             "calls_per_sample": calls, "state_records_receipts_and_locks_equal": True,
             "canonical_output_sha256": hashlib.sha256(canonical.encode()).hexdigest(),
+            "record_storage_by_arm": storage,
+            "four_copy_and_serialization_roundtrips_equal": True,
             "costs": {
                 name: {clock: distribution(values) for clock, values in clocks.items()}
                 for name, clocks in costs.items()
             },
+            "raw_samples": costs,
         }
     finally:
         for runtime, *_ in fixtures.values():
@@ -266,6 +293,7 @@ def main():
            for path, digest in sources.items()):
         raise RuntimeError("measured source changed")
     report = {
+        "status": "complete_cpu_comparison_not_gpu_or_jct_gain",
         "scope": "CPU active receipt maintenance and runtime cycles; no native allocator, DMA or JCT",
         "at": datetime.now().astimezone().isoformat(),
         "baseline_revision": args.baseline, "baseline_source_sha256": digests,

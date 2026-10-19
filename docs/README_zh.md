@@ -23,7 +23,17 @@ child 都可动态委派叶子孙 agent，最大深度仍为 2。任务范围、
 见[24-root 配置](../configs/migration/qwen35_locobench_long_24root_running8_2026-10-19.json)
 及[CPU 原始结果](../experiments/reports/v1925_v85d_long_chat_token_cache_cpu_20261019.json)。
 
-**最新 H2D 池名处理降本，V2021/V2022。**每次操作仍先捕获 Host 池映射，
+**最新恢复租约降本，V2028。**不可变租约改用 slots，逐回执的 epoch/session
+检查直接比较字段，省去临时元组；过期、代际、驻留和锁仍独立核对。
+96 组完整维护/首次服务对照的状态、记录、锁、回执相同，90 组 CPU P50
+更低；42 回执、单 context 且无诊断的维护循环 115.977→105.269us。
+首次服务一组多 0.145us，五组未到期短路有纳秒级回退，全部保留。
+2278 项检查通过，见
+[V2031](../experiments/reports/v2031_compact_lease_and_accumulated_control_cpu_20261020_zh.md)。
+同文收录此前代码的累计控制对照；不同局部比例不相加、不换算 GPU/JCT。
+提交后更新同一 06:00 启动资格，24-root/V88 配置保持。
+
+**此前 H2D 池名处理降本，V2021/V2022。**每次操作仍先捕获 Host 池映射，
 再调用两个原生核算方法；池名校验直接在本次循环执行，减少逐池短函数调用。
 任意非空规范池名、derived sidecar、重复别名拒绝、回调中的映射替换及实时
 unit size 读取均保留。32 组完整 JOIN/tool 的记录、预留、原生读取一致；

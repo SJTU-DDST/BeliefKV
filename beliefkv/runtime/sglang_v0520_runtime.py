@@ -265,7 +265,7 @@ class _ToolPrefetchTicket:
     service_shape: _WaitPrefetchServiceShape | None = None
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class _PrefetchServiceLease:
     key: PrefillCandidateKey
     command_id: str
@@ -7473,7 +7473,10 @@ class NativeAdmissionRuntime:
             invocation.workflow_id != key.root_workflow_id
             or invocation.context_id != key.context_id
             or context.workflow_id != key.root_workflow_id
-            or context.epoch not in (key.context_epoch, key.context_epoch + 1)
+            or (
+                context.epoch != key.context_epoch
+                and context.epoch != key.context_epoch + 1
+            )
         ):
             return "context_changed"
         current = self.context_sessions.get(key.context_id)
@@ -7487,9 +7490,12 @@ class NativeAdmissionRuntime:
         ) or (current is not None and (
             current.root_workflow_id != key.root_workflow_id
             or current.invocation_id != key.invocation_id
-            or current.context_epoch not in (key.context_epoch, key.context_epoch + 1)
-            or (current.session_id, current.session_generation)
-            != (key.session_id, key.session_generation)
+            or (
+                current.context_epoch != key.context_epoch
+                and current.context_epoch != key.context_epoch + 1
+            )
+            or current.session_id != key.session_id
+            or current.session_generation != key.session_generation
         )):
             return "session_changed"
         if not lease.demand_ready:
