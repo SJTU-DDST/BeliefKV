@@ -11,6 +11,10 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 此前仅做 CPU 工作。登记进程在 06:00:31 通过两次空闲及 CPU 资格检查，
 移除本次明确日期的 `/tmp/beliefkv-experiments.paused` 并启动 V88。
 运行版本冻结为 `a3bc3cc`，06:03:54 已有真实 workflow GPU 服务记录，见 V2051。
+V88 后于 06:14 主动中断：16 root 的 974 次提交、1008 次工具启动无
+child/JOIN，不能继续把它当动态多 agent 负载资格已通过。10 个自然完成
+保留，6 个在途和 8 个未到达不是自然失败。状态里的 SIGTERM/exit -15
+与 `development_interruption.json` 一起解释，不能归因为引擎崩溃。
 状态文件为
 `/home/longhao/experiment/ops/v88_24root_after_0600_20261020.state.json`。
 GPU 被占用则等待，不终止他人的进程。后续候选代码变化必须更新资格及
@@ -52,6 +56,12 @@ native 默认关闭，reactive 控制与 predictive 同开。计数快照不依�
 模板变化、超预算和不支持的值均走重新计数。不得复用跨压缩输入的计数，
 也不把该 CPU 收益当成 KV 预取贡献。工具查询降本必须保持并行调用、
 终态清理、删失支持和历史更新后的预测一致；V1928/V1929 未启动 GPU。
+
+V89 只调整动态 profile 的仓库协作提示，调度/迁移 runtime 与引擎未改。
+替换 task 通用说明时保留 schema、auto、并行调用、深度和自然返回；
+不得用固定阶段、轮数或首轮强制 task 代替实际模型委派。V2054/V2057
+证明序列化输入变化，2398 项检查证明 CPU 合同；均不证明模型会主动委派。
+新轮先检查真实 child/JOIN，再验收恢复机会和性能；两侧同用新版提示。
 
 扩大 CPU 检查时须在 Python/pytest 启动前，将
 `SGLANG_SOURCE_CHECKOUT/python` 放在 `PYTHONPATH` 前部，并核对实际 import

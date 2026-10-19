@@ -1,0 +1,774 @@
+{
+  "summary": {
+    "join_commands": 0,
+    "tool_commands": 0,
+    "handoff_commands": 0,
+    "by_source": {
+      "execution_handoff": {
+        "issued_commands": 0,
+        "acknowledged_commands": 0,
+        "actual_bytes": 0,
+        "full_transfer_commands": 0,
+        "full_reused_commands": 0,
+        "full_not_reused_commands": 0,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 0,
+        "full_verified_reused_bytes_known": 0,
+        "full_reuse_proof_versions": {},
+        "native_reloaded_prefetched_full_before_first_service": 0,
+        "full_reuse_by_residency": [],
+        "mamba_forward_verified_commands": 0,
+        "ack_to_first_service_ms": {
+          "count": 0
+        }
+      },
+      "join_ticket": {
+        "issued_commands": 0,
+        "acknowledged_commands": 0,
+        "actual_bytes": 0,
+        "full_transfer_commands": 0,
+        "full_reused_commands": 0,
+        "full_not_reused_commands": 0,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 0,
+        "full_verified_reused_bytes_known": 0,
+        "full_reuse_proof_versions": {},
+        "native_reloaded_prefetched_full_before_first_service": 0,
+        "full_reuse_by_residency": [],
+        "mamba_forward_verified_commands": 0,
+        "ack_to_first_service_ms": {
+          "count": 0
+        }
+      },
+      "tool_wait": {
+        "issued_commands": 0,
+        "acknowledged_commands": 0,
+        "actual_bytes": 0,
+        "full_transfer_commands": 0,
+        "full_reused_commands": 0,
+        "full_not_reused_commands": 0,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 0,
+        "full_verified_reused_bytes_known": 0,
+        "full_reuse_proof_versions": {},
+        "native_reloaded_prefetched_full_before_first_service": 0,
+        "full_reuse_by_residency": [],
+        "mamba_forward_verified_commands": 0,
+        "ack_to_first_service_ms": {
+          "count": 0
+        }
+      }
+    },
+    "trigger_kinds": {},
+    "join_bytes": 0,
+    "tool_bytes": 0,
+    "handoff_bytes": 0,
+    "join_submitted_before_eos": 0,
+    "full_reused": 0,
+    "full_not_reused": 0,
+    "full_use_unknown": 0,
+    "full_reuse_proof_versions": {},
+    "mamba_forward_verified": 0,
+    "redemoted_before_first_service": 0,
+    "native_reloaded_before_first_service": 0,
+    "native_reloaded_prefetched_full_before_first_service": 0,
+    "native_reloaded_prefetched_mamba_before_first_service": 0,
+    "native_reload_pool_associations_by_evidence": {
+      "kv": {
+        "reconciled_native_receipt": 0,
+        "legacy_batch_pool_presence": 0
+      },
+      "mamba": {
+        "reconciled_native_receipt": 0,
+        "legacy_batch_pool_presence": 0
+      }
+    },
+    "issue_to_submit_ms": {
+      "count": 0
+    },
+    "enqueue_to_submit_ms": {
+      "count": 0
+    },
+    "submit_to_ack_ms": {
+      "count": 0
+    },
+    "ack_to_first_service_ms": {
+      "count": 0
+    },
+    "join_submit_after_eos_ms": {
+      "count": 0
+    },
+    "completion_lead_ms": {
+      "count": 0
+    },
+    "pressure_events": 0,
+    "pressure_events_with_prior_prepare_ack": 0,
+    "unique_prepared_nodes_demoted": 0,
+    "prepare_issued_commands": 0,
+    "prepare_acknowledged_commands": 0,
+    "prepare_commands_with_observed_restore": 0,
+    "prepare_commands_with_native_restore": 0,
+    "prepare_commands_with_controlled_restore": 0,
+    "prepare_commands_without_observed_restore": 0,
+    "prepare_commands_with_later_node_pool_d2h": 0,
+    "prepare_commands_with_host_eviction_before_later_d2h": 0,
+    "prepare_host_lifetime": {
+      "host_eviction_evidence_available": true,
+      "command_categories": {
+        "no_restore": 0,
+        "before_observed_eviction_only": 0,
+        "after_observed_eviction_only": 0,
+        "mixed": 0,
+        "unknown_eviction_evidence": 0
+      },
+      "restore_node_pool_associations": {
+        "before_observed_eviction": 0,
+        "after_observed_eviction": 0,
+        "unknown": 0
+      },
+      "by_pool": {},
+      "repeated_context_epoch_node_creation_groups": 0,
+      "additional_prepares_on_same_identity": 0,
+      "max_commands_on_same_identity": 0,
+      "prepare_identity_evidence_missing_commands": 0,
+      "scope": "Node/pool associations, not allocation continuity or model-forward reuse. A restore after observed Host eviction cannot establish consumption of the original prepared copy. Eviction latency stops at the next observed same-node/pool D2H write; absent eviction records are not zero evictions. Reported latencies include only observed evictions, excluding censored copies. Repeated context/epoch/node/creation identities are not exact duplicate bytes and do not establish the same wait episode across splits."
+    },
+    "prepare_selection": {
+      "candidate_records": 0,
+      "records_without_command_id": 0,
+      "burst_records": 0,
+      "explicit_burst_commands": 0,
+      "acknowledged_burst_commands": 0,
+      "by_source": {},
+      "scope": "Candidate selection-time estimates, not reclaimed bytes, DMA bytes or forward-use credit. Zero direct reclaim may be a necessary ancestor backup before an exclusive checkpoint becomes reclaimable. Match ACKs by command ID only; legacy records without it remain unassociated. Missing candidate estimates remain unknown. For a burst, candidate transfer/reclaim estimates describe the selected first extent only; explicit burst IDs link additional per-node receipts without multiplying this estimate or granting reuse credit."
+    },
+    "wait_events": {
+      "observed_wait_events": 42,
+      "records_without_wait_event_identity": 0,
+      "plan_timing": {
+        "by_source": {
+          "join_ticket": {
+            "observed_wait_events": 0,
+            "first_plan_relative_to_completion_ms": {
+              "count": 0
+            },
+            "first_positive_full_plan_relative_to_completion_ms": {
+              "count": 0
+            },
+            "plan_timing_categories": {}
+          },
+          "tool_wait": {
+            "observed_wait_events": 42,
+            "first_plan_relative_to_completion_ms": {
+              "count": 42,
+              "p50": 35.6070556640625,
+              "p90": 65.9389892578125,
+              "max": 233.18310546875
+            },
+            "first_positive_full_plan_relative_to_completion_ms": {
+              "count": 0
+            },
+            "plan_timing_categories": {
+              "no_plan_observation_before_completion": {
+                "independent_events": 35,
+                "max_snapshot_pre_completion_full_bytes_known": 0,
+                "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0,
+                "early_started_and_reused_full_bytes": 0
+              },
+              "only_zero_full_plan_before_completion": {
+                "independent_events": 7,
+                "max_snapshot_pre_completion_full_bytes_known": 0,
+                "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0,
+                "early_started_and_reused_full_bytes": 0
+              }
+            }
+          }
+        }
+      },
+      "by_source": {
+        "join_ticket": {
+          "observed_events": 0,
+          "events_with_observed_full_plan": 0,
+          "events_with_capacity_observation": 0,
+          "events_with_capacity_condition": {
+            "none": 0,
+            "full_only": 0,
+            "mamba_only": 0,
+            "both": 0
+          },
+          "max_snapshot_full_bytes_under_mamba_only_shortfall_known": 0,
+          "max_snapshot_planned_full_bytes_known": 0,
+          "planned_full_bytes_unknown_events": 0,
+          "events_with_early_reused_full": 0,
+          "completion_boundary_unknown_events": 0,
+          "events_first_observed_after_completion": 0,
+          "events_with_tool_ids_outside_request_round": 0,
+          "early_started_and_reused_full_bytes": 0,
+          "post_completion_reused_full_by_phase": {
+            "completion_to_client_submit": {
+              "events_with_reused_full": 0,
+              "full_bytes": 0,
+              "unknown_or_unordered_boundary_events": 0
+            },
+            "client_submit_to_native_arrival": {
+              "events_with_reused_full": 0,
+              "full_bytes": 0,
+              "unknown_or_unordered_boundary_events": 0
+            },
+            "native_arrival_to_first_service": {
+              "events_with_reused_full": 0,
+              "full_bytes": 0,
+              "unknown_or_unordered_boundary_events": 0
+            }
+          },
+          "remaining_native_full_host_hit_bytes_known": 0,
+          "remaining_native_full_evidence_unknown_events": 0,
+          "plan_evidence_categories": {},
+          "restore_burst_size_evidence": {},
+          "residual_native_demand_by_observed_planning_evidence": {
+            "observed_plan_reasons": {},
+            "observed_planning_no_step_reasons": {},
+            "observed_planning_blocked_details": {},
+            "observed_no_live_details": {}
+          },
+          "planning_gap_semantics": "One count per independent wait per observed reason, regardless of repeated samples. Evidence categories partition waits; reason/detail groups overlap and must not be summed. Zero or missing plans do not prove zero physical demand. Residual bytes are next-request native FULL Host hits, not a proven pre-boundary opportunity, exclusive rejection cause or oracle speedup. Burst categories partition waits by the largest explicitly observed plan, not lifetime node commands. A sixteen-node plan is not proof of truncation or that a larger early transfer would fit capacity or the service window.",
+          "client_submit_to_native_arrival_ms": {
+            "count": 0
+          },
+          "client_submit_to_http_request_ms": {
+            "count": 0
+          },
+          "http_request_to_body_sent_ms": {
+            "count": 0
+          },
+          "body_sent_to_native_arrival_ms": {
+            "count": 0
+          },
+          "http_request_to_response_headers_ms": {
+            "count": 0
+          },
+          "body_sent_to_api_received_ms": {
+            "count": 0
+          },
+          "api_received_to_chat_conversion_ms": {
+            "count": 0
+          },
+          "chat_conversion_ms": {
+            "count": 0
+          },
+          "chat_conversion_to_tokenized_ms": {
+            "count": 0
+          },
+          "tokenized_to_dispatch_ms": {
+            "count": 0
+          },
+          "dispatch_to_scheduler_received_ms": {
+            "count": 0
+          },
+          "scheduler_received_to_queue_registered_ms": {
+            "count": 0
+          },
+          "client_submit_to_first_service_ms": {
+            "count": 0
+          },
+          "submit_to_first_service_ms": {
+            "count": 0
+          },
+          "last_ack_to_first_service_ms": {
+            "count": 0
+          },
+          "full_expiration_commands_by_stage": {},
+          "full_expiration_bytes_by_stage": {}
+        },
+        "tool_wait": {
+          "observed_events": 42,
+          "events_with_observed_full_plan": 0,
+          "events_with_capacity_observation": 0,
+          "events_with_capacity_condition": {
+            "none": 0,
+            "full_only": 0,
+            "mamba_only": 0,
+            "both": 0
+          },
+          "max_snapshot_full_bytes_under_mamba_only_shortfall_known": 0,
+          "max_snapshot_planned_full_bytes_known": 0,
+          "planned_full_bytes_unknown_events": 0,
+          "events_with_early_reused_full": 0,
+          "completion_boundary_unknown_events": 0,
+          "events_first_observed_after_completion": 35,
+          "events_with_tool_ids_outside_request_round": 0,
+          "early_started_and_reused_full_bytes": 0,
+          "post_completion_reused_full_by_phase": {
+            "completion_to_client_submit": {
+              "events_with_reused_full": 0,
+              "full_bytes": 0,
+              "unknown_or_unordered_boundary_events": 0
+            },
+            "client_submit_to_native_arrival": {
+              "events_with_reused_full": 0,
+              "full_bytes": 0,
+              "unknown_or_unordered_boundary_events": 0
+            },
+            "native_arrival_to_first_service": {
+              "events_with_reused_full": 0,
+              "full_bytes": 0,
+              "unknown_or_unordered_boundary_events": 0
+            }
+          },
+          "remaining_native_full_host_hit_bytes_known": 0,
+          "remaining_native_full_evidence_unknown_events": 0,
+          "plan_evidence_categories": {
+            "only_zero_full_plan": {
+              "independent_events": 42,
+              "events_with_known_completion_boundary": 42,
+              "remaining_native_full_host_hit_bytes_known": 0,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            }
+          },
+          "restore_burst_size_evidence": {
+            "only_empty_plan_observed": {
+              "independent_events": 42,
+              "events_with_known_completion_boundary": 42,
+              "remaining_native_full_host_hit_bytes_known": 0,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            }
+          },
+          "residual_native_demand_by_observed_planning_evidence": {
+            "observed_plan_reasons": {
+              "no_restore_plan": {
+                "independent_events": 42,
+                "events_with_known_completion_boundary": 42,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              }
+            },
+            "observed_planning_no_step_reasons": {
+              "no_host_backed_missing_copy": {
+                "independent_events": 42,
+                "events_with_known_completion_boundary": 42,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              }
+            },
+            "observed_planning_blocked_details": {},
+            "observed_no_live_details": {}
+          },
+          "planning_gap_semantics": "One count per independent wait per observed reason, regardless of repeated samples. Evidence categories partition waits; reason/detail groups overlap and must not be summed. Zero or missing plans do not prove zero physical demand. Residual bytes are next-request native FULL Host hits, not a proven pre-boundary opportunity, exclusive rejection cause or oracle speedup. Burst categories partition waits by the largest explicitly observed plan, not lifetime node commands. A sixteen-node plan is not proof of truncation or that a larger early transfer would fit capacity or the service window.",
+          "client_submit_to_native_arrival_ms": {
+            "count": 42,
+            "p50": 105.371337890625,
+            "p90": 189.1984130859375,
+            "max": 620.67138671875
+          },
+          "client_submit_to_http_request_ms": {
+            "count": 35,
+            "p50": 30.632080078125,
+            "p90": 54.376953125,
+            "max": 511.80419921875
+          },
+          "http_request_to_body_sent_ms": {
+            "count": 35,
+            "p50": 1.9140625,
+            "p90": 8.843408203125001,
+            "max": 39.40087890625
+          },
+          "body_sent_to_native_arrival_ms": {
+            "count": 35,
+            "p50": 72.872802734375,
+            "p90": 138.53706054687507,
+            "max": 172.34765625
+          },
+          "http_request_to_response_headers_ms": {
+            "count": 35,
+            "p50": 2611.89306640625,
+            "p90": 5506.78779296875,
+            "max": 6774.14794921875
+          },
+          "body_sent_to_api_received_ms": {
+            "count": 34,
+            "p50": 9.1533203125,
+            "p90": 26.085449218749996,
+            "max": 88.2001953125
+          },
+          "api_received_to_chat_conversion_ms": {
+            "count": 42,
+            "p50": 30.96484375,
+            "p90": 34.4441650390625,
+            "max": 35.930419921875
+          },
+          "chat_conversion_ms": {
+            "count": 42,
+            "p50": 21.1019287109375,
+            "p90": 23.6177490234375,
+            "max": 29.795166015625
+          },
+          "chat_conversion_to_tokenized_ms": {
+            "count": 42,
+            "p50": 3.945556640625,
+            "p90": 4.6712890625,
+            "max": 7.94287109375
+          },
+          "tokenized_to_dispatch_ms": {
+            "count": 42,
+            "p50": 0.0069580078125,
+            "p90": 0.0085205078125,
+            "max": 0.009765625
+          },
+          "dispatch_to_scheduler_received_ms": {
+            "count": 42,
+            "p50": 6.4493408203125,
+            "p90": 34.65910644531249,
+            "max": 107.35302734375
+          },
+          "scheduler_received_to_queue_registered_ms": {
+            "count": 42,
+            "p50": 0.1298828125,
+            "p90": 0.1529052734375,
+            "max": 0.547607421875
+          },
+          "client_submit_to_first_service_ms": {
+            "count": 42,
+            "p50": 2484.1265869140625,
+            "p90": 5183.632153320311,
+            "max": 6790.970947265625
+          },
+          "submit_to_first_service_ms": {
+            "count": 42,
+            "p50": 2353.4794921875,
+            "p90": 5077.3036132812485,
+            "max": 6689.36669921875
+          },
+          "last_ack_to_first_service_ms": {
+            "count": 0
+          },
+          "full_expiration_commands_by_stage": {},
+          "full_expiration_bytes_by_stage": {}
+        }
+      }
+    },
+    "terminal_capacity_handoff": {
+      "reclaim_records": 5,
+      "terminal_contexts": 5,
+      "freed_device_units": {
+        "0": 16439,
+        "2": 19
+      },
+      "freed_host_units": {},
+      "freed_device_bytes_known": {
+        "0": 336670720,
+        "2": 1223393280
+      },
+      "freed_host_bytes_known": {},
+      "freed_device_units_with_unknown_byte_size": {},
+      "freed_host_units_with_unknown_byte_size": {},
+      "terminal_children": 0,
+      "by_invocation_scope": {
+        "workflow_root": {
+          "reclaim_records": 5,
+          "terminal_contexts": 5,
+          "freed_device_units": {
+            "0": 16439,
+            "2": 19
+          },
+          "freed_host_units": {},
+          "freed_device_bytes_known": {
+            "0": 336670720,
+            "2": 1223393280
+          },
+          "freed_host_bytes_known": {},
+          "freed_device_units_with_unknown_byte_size": {},
+          "freed_host_units_with_unknown_byte_size": {}
+        }
+      },
+      "parent_first_services": 0,
+      "parent_services_with_prior_device_release": 0,
+      "last_child_return_to_first_service_ms": {
+        "count": 0
+      },
+      "request_wait_ms": {
+        "count": 0
+      },
+      "restore_lookahead_records": 0,
+      "parent_services_with_prior_restore_lookahead": 0,
+      "restore_lookahead_to_first_service_ms": {
+        "count": 0
+      },
+      "queue_wait_before_restore_lookahead_ms": {
+        "count": 0
+      },
+      "sibling_release_windows": {
+        "observed_join_events": 0,
+        "completion_unobserved_events": 0,
+        "joins_with_sibling_device_release_before_join": 0,
+        "joins_with_early_reused_full_after_sibling_release": 0,
+        "early_reused_full_bytes_after_sibling_release_known": 0,
+        "cumulative_sibling_device_release_before_join": {
+          "reclaim_records": 0,
+          "terminal_contexts": 0,
+          "freed_device_units": {},
+          "freed_host_units": {},
+          "freed_device_bytes_known": {},
+          "freed_host_bytes_known": {},
+          "freed_device_units_with_unknown_byte_size": {},
+          "freed_host_units_with_unknown_byte_size": {}
+        },
+        "sibling_device_release_lead_ms": {
+          "count": 0
+        },
+        "rows": [],
+        "semantics": "Independent observed JOIN episodes, not all workload JOINs. Actual allocator release uses scheduler wall time; complete JOIN uses the existing client-clock offset conversion. Only explicitly identified dynamic subagents link by workflow/parent context/JOIN. Host-only or post-JOIN releases cannot support pre-JOIN H2D. A command qualifies only with the existing proof of actual pre-JOIN submission and FULL reuse by the following request. Temporal association does not prove exclusive capacity, child-to-parent page identity, that these bytes were necessary for prefetch, or a native-relative saving. Cumulative releases are not simultaneously free capacity; transferred FULL bytes are command receipts, not a count of unique pages. Unobserved JOIN completion leaves the release window unknown."
+      },
+      "rows": [],
+      "semantics": "Actual terminal-suffix allocator release, linked to the first observed completed parent GPU batch, not kernel start; RETURN delivery observation and service observation use scheduler wall time, not client event time; not exclusive slot ownership, predictive H2D reuse, avoided D2H bytes, or a native-relative latency saving. Restore lookahead is selection evidence, not submission/ACK evidence. Aggregate releases include internal calls; scope breakdown and terminal_children use explicit invocation-create metadata or recorded runtime scope, never ID spelling. Only confirmed dynamic subagents link to JOIN parent services; absent metadata stays unknown. Missing pool byte sizes stay unknown."
+    },
+    "parent_capacity_restore_retries": {
+      "rearm_records": 0,
+      "rearmed_requests": 0,
+      "rearmed_requests_with_observed_parent_service": 0,
+      "scope": "linked child allocator release enables a demand retry; not pre-boundary H2D"
+    }
+  },
+  "input_jsonl_prefixes": {
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 2101888,
+      "complete_prefix_sha256": "2c0b2b87010a0fd0f2d8a16046af468d232f81d36fe827cc9415f9502beb3522",
+      "first_read_limit_bytes": 2101888
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/server/transfer_telemetry.jsonl": {
+      "complete_prefix_bytes": 73159,
+      "complete_prefix_sha256": "b1b82308df8c762c6136c0ddb98e1e7431f9dd620872926c8e6f49a07806348f",
+      "first_read_limit_bytes": 73159
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/server/runtime_events.sglang.jsonl": {
+      "complete_prefix_bytes": 1125819,
+      "complete_prefix_sha256": "cf7c64d3539ef55ab9a713198941c57d9e5a1629a4fc7f57c70a874881e0a4d8",
+      "first_read_limit_bytes": 1125819
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/server/physical_action_use.jsonl": {
+      "complete_prefix_bytes": 0,
+      "complete_prefix_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "first_read_limit_bytes": 0
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/server/physical_action_ack.jsonl": {
+      "complete_prefix_bytes": 0,
+      "complete_prefix_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "first_read_limit_bytes": 0
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/server/eviction_attribution.jsonl": {
+      "complete_prefix_bytes": 545268,
+      "complete_prefix_sha256": "c1b202f86f14369ace94c729af8f885efed9165adb477ba28e63c1a08e70250e",
+      "first_read_limit_bytes": 545268
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_bug_investigation_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 167134,
+      "complete_prefix_sha256": "da83ad1f882adf55ccad28c4936a08d1debbf0ff8e392b47c7a0672599ba42ba",
+      "first_read_limit_bytes": 167134
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_multi_session_development_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 67238,
+      "complete_prefix_sha256": "234f8dd959f14a12c8076dfe73f3e2f885989711b5684da40018e84d00cb81e6",
+      "first_read_limit_bytes": 67238
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_bug_investigation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 389517,
+      "complete_prefix_sha256": "ade2c0bce00cf4e267eef32e49a771f3a8cd633fa4d90d46074a824b90f78e8b",
+      "first_read_limit_bytes": 389517
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_integration_testing_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 145925,
+      "complete_prefix_sha256": "009ec0e46655401e9bee42fc14b59fc464fe6c592fc93ed7c8f04ebe548bf2df",
+      "first_read_limit_bytes": 145925
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_bug_investigation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 81423,
+      "complete_prefix_sha256": "309fd6710005e34a9ecf8615494c483159025015d82b5f3649384b2bfee5e41f",
+      "first_read_limit_bytes": 81423
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_multi_session_development_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 167677,
+      "complete_prefix_sha256": "1f1376419e323db483271de79c991aef366f1db88ce48f32b821c7be04c5bdcf",
+      "first_read_limit_bytes": 167677
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_multi_session_development_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 117139,
+      "complete_prefix_sha256": "dd57f4a5077485eaf4bfcc6c43d6fe5f2881d5bc307803cf0ba66f5e92e630b5",
+      "first_read_limit_bytes": 117139
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_integration_testing_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 258353,
+      "complete_prefix_sha256": "1347d14d9b5a90ffe33376f3d6d120abc747c741e954c45c82361a43ff8894a8",
+      "first_read_limit_bytes": 258353
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_integration_testing_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 140120,
+      "complete_prefix_sha256": "140563d54a5a505acb0611119e3a47617fb0a09d02e7518055acea8ec4b3991b",
+      "first_read_limit_bytes": 140120
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 270040,
+      "complete_prefix_sha256": "2563e2953828034333147236f0907c72d713809b06b3b3f2426f0e4218db858d",
+      "first_read_limit_bytes": 270040
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 225668,
+      "complete_prefix_sha256": "277f4e70bef183679531fc936d644987142bc5705ba8e22c861b9be07cd880ff",
+      "first_read_limit_bytes": 225668
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_feature_implementation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 262708,
+      "complete_prefix_sha256": "c921dee060fc047a52a74be3bf2f62b6f2506525787e8f1b87c5680f7ef3f1c6",
+      "first_read_limit_bytes": 262708
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_bug_investigation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 243529,
+      "complete_prefix_sha256": "8ca0524b6b3308b8e3ad0985f45243d7dac7dd519e22ebdc3b39c68f96e0884c",
+      "first_read_limit_bytes": 243529
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 381762,
+      "complete_prefix_sha256": "2a5b4875ee9281f774c39efc370fdff79aba0c2f56b4fb42b52888a9bb76cbfe",
+      "first_read_limit_bytes": 381762
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_feature_implementation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 273057,
+      "complete_prefix_sha256": "b15eb3d6b7eb33d51db92e28b07e2ec21cb9e7cf9fcaea66e1b541648fffb284",
+      "first_read_limit_bytes": 273057
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 197279,
+      "complete_prefix_sha256": "8cafcdf497e30a209f5d21b427026690add6cd2c6df3238d28161c1e28aa091a",
+      "first_read_limit_bytes": 197279
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_bug_investigation_medium_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 27156,
+      "complete_prefix_sha256": "74fe84f7c771aa646fee40061310633a1e855e61b67c0d6870256f9fc439d580",
+      "first_read_limit_bytes": 27156
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_multi_session_development_medium_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 10320,
+      "complete_prefix_sha256": "f8b08eaf44dc028af8ae2ca7dd435fd5d29a8a9955f9023ba6da09db12e032fd",
+      "first_read_limit_bytes": 10320
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_bug_investigation_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 58974,
+      "complete_prefix_sha256": "f39d6e0a0d82b4cb29f4f860e44ad4c7b369d3d9cb2382318fcd42e0f33288cb",
+      "first_read_limit_bytes": 58974
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_integration_testing_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 16877,
+      "complete_prefix_sha256": "c519770f32018423b1f9aae49e2a223811aed78437fa248a5336ad1b31a1efbd",
+      "first_read_limit_bytes": 16877
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_bug_investigation_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 13108,
+      "complete_prefix_sha256": "5c3df859eddff1697ddf3172da034a41d83137f562a0ce3f65bbd9c9cddf753e",
+      "first_read_limit_bytes": 13108
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_multi_session_development_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 25282,
+      "complete_prefix_sha256": "ddaf0334b0d61eb14dc7396bac7b50b650fe125a4cdd1e3d781b8aed909fba1b",
+      "first_read_limit_bytes": 25282
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_multi_session_development_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 8444,
+      "complete_prefix_sha256": "22d7da64aaa41741e73941f9d6d49420dc6ca0452ce2d71e3ef774b7555e56ee",
+      "first_read_limit_bytes": 8444
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_integration_testing_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 42164,
+      "complete_prefix_sha256": "abf712a0ea1d3ee806351e635a9f0c9ff2031154a82e93b67860ce8e6a45c9bf",
+      "first_read_limit_bytes": 42164
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_integration_testing_medium_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 22507,
+      "complete_prefix_sha256": "3bf8ef507e366b28b65949cb76ecdb88af9e920b9eedfbdee21b5a5a35395a80",
+      "first_read_limit_bytes": 22507
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 33725,
+      "complete_prefix_sha256": "2020603213b2ee666e1c28be18169bb79ac4414d6563bc81547dc9e3a726babb",
+      "first_read_limit_bytes": 33725
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 25320,
+      "complete_prefix_sha256": "9e1e2cc108f893c2a6d85641af90da1f3e460e22fc2c56f7aeeb53b377403f51",
+      "first_read_limit_bytes": 25320
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_feature_implementation_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 33716,
+      "complete_prefix_sha256": "02b04ca477b8ac81d66ff74df45beb021eaf79a24903a8c19b02494bf40eb8dd",
+      "first_read_limit_bytes": 33716
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_bug_investigation_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 39347,
+      "complete_prefix_sha256": "fd3f1d50e6d3d7ab619d0a61acc19a2fef993d7cb8fd84172cbf89c1dba76de3",
+      "first_read_limit_bytes": 39347
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 42162,
+      "complete_prefix_sha256": "45b93daae0d6ab2f1dd7d52aba73fdeb1bd358797115cbb1fd59ceb1d44272ce",
+      "first_read_limit_bytes": 42162
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_feature_implementation_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 33708,
+      "complete_prefix_sha256": "4bb49b60c683508cef0434df72792a972ecddd972ecf784f7167ed93d8d7f827",
+      "first_read_limit_bytes": 33708
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 25314,
+      "complete_prefix_sha256": "40e45d5abb0b5b4b1e9122673efbc4b5d62092799eaf3d0249e8ca2b998760dc",
+      "first_read_limit_bytes": 25314
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/server/runtime_audit.jsonl": {
+      "complete_prefix_bytes": 108437420,
+      "complete_prefix_sha256": "508bff53d641649583a1d475aa331a2244da8b292529ece52bd20a1709a086f5",
+      "first_read_limit_bytes": 108437420
+    }
+  },
+  "collection_code_commit": "a3bc3cce71c8d083abb95d11d6be8d2f4677cb9e",
+  "audit_started_at_local": "2026-10-20T06:09:46.511836+08:00",
+  "audit_finished_at_local": "2026-10-20T06:09:47.263571+08:00",
+  "helper_sha256": "1bb8064854266d012423ce3bf4eea5b3aa1865a1fcc59308642ee645e7361db3",
+  "prefix_semantics": "Each JSONL is capped at its first-read stat size and last complete line. Repeated reads must match length and SHA256; this is not an atomic cross-file snapshot. Demand handoff remains separate from early prefetch.",
+  "sealed_dispatch_funnel": {
+    "sources": {
+      "join_ticket": {
+        "event_counts": {},
+        "events_with_observed_reason_before_completion": {},
+        "events_with_observed_no_step_reason_before_completion": {}
+      },
+      "tool_wait": {
+        "event_counts": {
+          "observed_events": 42,
+          "completion_observed": 42,
+          "positive_full_plan_before_completion": 0,
+          "start_before_completion": 0,
+          "submitted_before_completion": 0,
+          "start_without_submit_before_completion": 0
+        },
+        "events_with_observed_reason_before_completion": {
+          "no_restore_plan": 7
+        },
+        "events_with_observed_no_step_reason_before_completion": {
+          "no_host_backed_missing_copy": 7
+        }
+      }
+    },
+    "reclaim_record_count": 0
+  },
+  "detail_file": "v2053_v88_early_prefetch_20261020.json.gz",
+  "detail_uncompressed_sha256": "05f9886c36475113694f49e5c453cabbd1e6c9c233b71b08493b400d493ba52b"
+}

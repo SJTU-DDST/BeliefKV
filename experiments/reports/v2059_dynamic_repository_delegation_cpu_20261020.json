@@ -1,0 +1,151 @@
+{
+  "status": "complete_cpu_comparison_not_gpu_or_jct_gain",
+  "at": "2026-10-20T06:25:52.412488+08:00",
+  "baseline_revision": "a3bc3cce71c8d083abb95d11d6be8d2f4677cb9e",
+  "development_head_at_measurement": "1260f98831d74ef5371d182867f8333458bd46e1",
+  "candidate_source_sha256": {
+    "beliefkv/experiments/deepagents_swebench.py": "e3a8906da75ea5ef3080aaf27f54301e61fa6f9aa6e052d9968e5e6b3f3c9e9f",
+    "beliefkv/experiments/delegation_policy.py": "5c80df99a1bafb562eb5e0b51f7d65f840b1a3694ac41b534b0c845422a170cc"
+  },
+  "baseline_source_sha256": {
+    "beliefkv/experiments/deepagents_swebench.py": "dc88e95c4a472fd43b2eb454e6243cb9bdfd98d27dfe75a48dad15f5f2fa1d8c",
+    "beliefkv/experiments/delegation_policy.py": "5c80df99a1bafb562eb5e0b51f7d65f840b1a3694ac41b534b0c845422a170cc"
+  },
+  "checks": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v2058_dynamic_repository_delegation_cpu_checks_20261020.xml",
+    "sha256": "87d18e20527b609c2f20c680fcfffe161b96c12f91cf235cf51a22583a0f00a6",
+    "passed": 2398,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0
+  },
+  "payloads": {
+    "baseline": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v2054_v88_initial_delegation_payload_cpu_20261020.json",
+      "sha256": "a20efff2f3bc634396485ec7ce264fca0bb049b6b507fd379b2c4d991ee118dd"
+    },
+    "candidate": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v2057_dynamic_repository_delegation_payload_cpu_20261020.json",
+      "sha256": "6f0a2f5d3b54a13f12a6a47c0d8239d947729bea2c59a5a259614efc688797c5"
+    }
+  },
+  "payload_comparison": {
+    "same_tool_names": true,
+    "same_task_parameters": true,
+    "automatic_tool_choice_preserved": true,
+    "parallel_calls_preserved": true,
+    "task_description_characters": [
+      7265,
+      1286
+    ],
+    "system_characters": [
+      574031,
+      573095
+    ]
+  },
+  "unchanged_runtime_source_files": 56,
+  "v88_interrupted_evidence": {
+    "runtime_event_counts": {
+      "workflow_start": 16,
+      "invocation_create": 16,
+      "llm_submit": 974,
+      "llm_result": 969,
+      "tool_start": 1008,
+      "tool_end": 1007,
+      "return": 10,
+      "workflow_end": 10
+    },
+    "sealed_workflow_events": [
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+        "complete_bytes": 81423,
+        "complete_sha256": "309fd6710005e34a9ecf8615494c483159025015d82b5f3649384b2bfee5e41f"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+        "complete_bytes": 418590,
+        "complete_sha256": "7d184169866ef50afa2e4445526f2026b928009b6ffec7ed8cfe4f8cbe14496a"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+        "complete_bytes": 493310,
+        "complete_sha256": "00d3badecffaa7cbfb1c9f6bc370f8901beb7ae1063dd039e03ff02c65ccfafa"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+        "complete_bytes": 449258,
+        "complete_sha256": "ebaa22fef7899c8606602f58faaf0f85e7eccd57246309f5e3f80c38c6387723"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_integration_testing_expert_01/runtime_events.deepagents.jsonl",
+        "complete_bytes": 286272,
+        "complete_sha256": "b67f25270fafc50f4e14a346d7e54b35ccedf91e6f6c1f6ad4b5c6c00812c060"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_multi_session_development_expert_01/runtime_events.deepagents.jsonl",
+        "complete_bytes": 354444,
+        "complete_sha256": "7cab0b285e088aec2fe1ec0b0d1773a6ad925fdf4c57dcb2954e2ec48609e9e4"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+        "complete_bytes": 1199049,
+        "complete_sha256": "35dc2353dbb1a3465a663be09bbfdade4ebc0aefe13a1e88827e95c5c4047436"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+        "complete_bytes": 526206,
+        "complete_sha256": "0130d1ae6ccd7006b545f35a935516bb2768c98ca9dd772bf1bace61495b7f99"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+        "complete_bytes": 243529,
+        "complete_sha256": "8ca0524b6b3308b8e3ad0985f45243d7dac7dd519e22ebdc3b39c68f96e0884c"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_multi_session_development_expert_01/runtime_events.deepagents.jsonl",
+        "complete_bytes": 207316,
+        "complete_sha256": "ffb6b2a30823a05d7b3255e906b75f44d496362b57cfecd164bd2bd0ec70237a"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_bug_investigation_medium_01/runtime_events.deepagents.jsonl",
+        "complete_bytes": 167134,
+        "complete_sha256": "da83ad1f882adf55ccad28c4936a08d1debbf0ff8e392b47c7a0672599ba42ba"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_integration_testing_medium_01/runtime_events.deepagents.jsonl",
+        "complete_bytes": 140120,
+        "complete_sha256": "140563d54a5a505acb0611119e3a47617fb0a09d02e7518055acea8ec4b3991b"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_multi_session_development_medium_01/runtime_events.deepagents.jsonl",
+        "complete_bytes": 67238,
+        "complete_sha256": "234f8dd959f14a12c8076dfe73f3e2f885989711b5684da40018e84d00cb81e6"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+        "complete_bytes": 510521,
+        "complete_sha256": "04e2fb000428f2adb511f4936cc2f27aa7af98ba74703527704cbc892e6a161f"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+        "complete_bytes": 431343,
+        "complete_sha256": "5bf04d31bc20579fd24845abe1f42ab98b56688763c3a317b642a36bbfd8707b"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_integration_testing_expert_01/runtime_events.deepagents.jsonl",
+        "complete_bytes": 288100,
+        "complete_sha256": "1da148c72731405aa5c26c6d2f8677bb6c7860e68d0f030eb276e072758414c6"
+      }
+    ],
+    "transfer_batches": {
+      "d2h": {
+        "batches": 318,
+        "bytes": 22698577920,
+        "stream_ms": 1130.3591653108597
+      }
+    },
+    "administrative_receipt": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v88/development_interruption.json",
+    "sealed_lifecycle_report": "v2056_v88_stopped_prefetch_20261020.json.gz"
+  },
+  "scope": "Serialized request and existing CPU graph checks. The actual tool and guidance were present in V88. Changed domain guidance addresses a workload-qualification hypothesis; model delegation propensity and GPU performance remain unverified. Transfer data is a stopped complete-line prefix, not a full-run result; no missing terminal task is counted as a natural failure."
+}

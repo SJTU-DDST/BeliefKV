@@ -2,16 +2,25 @@
 
 更新日期：2026-10-20（北京时间）。
 
-**V88 predictive 已在北京时间 2026-10-20 06:00:31 启动，首条真实 workflow
-GPU 服务记录为 06:03:54。**启动前两次检查 GPU 空闲，冻结提交 `a3bc3cc`
-及 970 个源码文件、引擎与实际服务参数已核对，writer 无失败或丢失。
-独立启动与运行状态登记在
-`/home/longhao/experiment/ops/v88_24root_after_0600_20261020.state.json`，
-实际启动证据见 [V2051](../experiments/reports/v2051_v88_actual_startup_20261020.json)。
-本轮保持
-24 root、16+8/900s、running 8、256K、Host80:20，predictive 优先。
-双方使用同一冻结版本，运行中的实验来源不可变；后续候选修改仍须完成
-相应验证再启动。实际迁移、消费、去长尾吞吐和 JCT 尚未验收。
+**V88 于北京时间 06:14 主动中断，当前准备 V89 仓库协作提示验证。**V88
+从 06:00:31 启动、06:03:54 开始真实 GPU 服务；首次启动与源码核对见
+[V2051](../experiments/reports/v2051_v88_actual_startup_20261020.json)。
+首批 16 root 已提交 974 次模型请求、启动 1008 次工具，但只有 16 个
+root invocation，无 child/JOIN；10 个自然完成结果保留，6 个在途及
+8 个未到达不记为自然失败。native 尚未启动，不能作性能配对。
+截断物理记录为 318 批 D2H/22.70GB，没有 H2D；V2056 的 252 个工具
+等待均未观察到正 FULL 计划，其中一个后继原生证据缺失，不能补零。
+
+V2054 的真实序列化 CPU 捕获确认 task 工具和动态提示原已存在。V89
+替换通用 task 条件及非代码示例，明确 child 已有完整初始源码和共享
+工作区；模型仍选择任务、角色、时机、轮数与 fanout，自然 RETURN 保留。
+task 描述 7265→1286 字符，系统文本 574031→573095 字符；不是 token
+或 GPU 性能结果。2398 项 CPU 检查通过，工具参数、auto 和并行设置相同，
+真实委派倾向仍待验证。见
+[V2059](../experiments/reports/v2059_dynamic_repository_delegation_cpu_20261020.json)。
+24 root、16+8/900s、running 8、256K、Host80:20 与 V88 引擎保持，
+先 predictive 后 native，双方同一冻结代码；调度/迁移 runtime 未改。
+实际迁移、消费、去长尾吞吐和 JCT 尚未验收。
 V85d predictive 已 12/12 自然完成，无 error/incomplete 或 guard 强制完成；
 旧 native 保留部分轨迹且不恢复，不能作为完整对照。本次不是每日停机规则。
 汇总器误将 report_service_or_eos 绑定旧语义 worker 的问题已修复，
@@ -73,7 +82,7 @@ reactive 作为本系统控制时默认与 predictive 同开前端缓存，隔�
 涵盖重新挂接、失去 key、自环和深度边界。GPU/JCT 仍待验收；见
 [V2050](../experiments/reports/v2050_parent_path_read_control_cpu_20261020_zh.md)。
 提交后已更新同一 06:00 等待资格，24-root/V88/补丁与 token 诊断关闭保持，
-冻结候选现已运行，优先检查新 GPU 轨迹中的故障、恢复压力和实际消费。
+V88 候选启动后因缺少委派机会中断；后续优先检查实际委派、恢复压力和消费。
 
 **此前前缀长度迭代降本：V2043/V2044。**发出追踪和 prefill 记录对同一条
 原生 key 路径求长度时，改用 sum(map(len, path))，省去逐段进入 Python

@@ -2252,6 +2252,10 @@ then return a concise synthesis, tested evidence, and uncertainty to your parent
 
 DYNAMIC_NESTED_ROOT_PROMPT = """
 DYNAMIC MULTI-ROUND DELEGATION
+You are the parent coordinator of a software team. Actively assign substantial
+independent repository questions to task children, and integrate their evidence
+while handling the work that depends on that evidence. Project-wide investigation,
+implementation, and verification commonly expose complementary workstreams.
 Choose what to delegate, when to delegate, and how many rounds to run from the
 current task and observed evidence. Actively use parallel workstreams and further
 delegation rounds when new evidence, edits, or test results expose substantive
@@ -2272,6 +2276,35 @@ For analysis-only work, validate the diagnosis without unrequested code changes.
 Do not duplicate finished work, add artificial tool delays, or pad the conversation
 to create delegation. The root owns integration and final verification. Return
 naturally when the actual assignment is complete or honestly blocked.
+"""
+
+DYNAMIC_TASK_SYSTEM_PROMPT = """
+## Repository workstreams through task
+Use task proactively for substantial independent repository work. Each child
+already receives the complete initial project snapshot and the same mounted
+workspace; its description needs the assigned question, relevant new evidence,
+expected deliverable, and any write boundaries, not another copy of the source.
+The parent owns reconciliation and final verification.
+
+Choose the workstreams and timing from the current assignment. Submit independent
+task calls in the same response so they run concurrently. Give concurrent writers
+disjoint files. Integrate the returned evidence, then reassess new questions after
+edits, tests, or findings; further delegation rounds may be useful. A small atomic
+step can be completed directly. Every non-leaf child can delegate bounded work
+again, so a parent can assign a decomposable question as one workstream.
+"""
+
+DYNAMIC_TASK_DESCRIPTION = """Delegate one bounded repository workstream to a child.
+
+Actively use this tool for substantive independent investigation, implementation,
+review, or validation. Children already have the complete initial project source
+and shared workspace. Describe the question, new evidence, expected result, and
+disjoint write scope when edits are assigned. Choose subagent_type from the list.
+Independent task calls in one assistant response run concurrently and return their
+reports for integration. Reassess further work from new evidence after they return.
+
+Available child types:
+{available_agents}
 """
 
 DYNAMIC_DIRECT_CHILD_PROMPT = """
@@ -3333,6 +3366,10 @@ def _autonomous_subagents(
                 PrivateStateIsolatingSubAgentMiddleware(
                     backend=backend,
                     private_state_keys=CONTEXT_LIFECYCLE_PRIVATE_STATE_KEYS,
+                    **({
+                        "system_prompt": DYNAMIC_TASK_SYSTEM_PROMPT,
+                        "task_description": DYNAMIC_TASK_DESCRIPTION,
+                    } if dynamic else {}),
                     subagents=_autonomous_subagents(
                         config, workload, backend, adapter, model, summary_model,
                         deadline_controller, include_nested_coordinator=False,
@@ -3385,6 +3422,10 @@ def _build_autonomous_agent(
             PrivateStateIsolatingSubAgentMiddleware(
                 backend=backend,
                 private_state_keys=CONTEXT_LIFECYCLE_PRIVATE_STATE_KEYS,
+                **({
+                    "system_prompt": DYNAMIC_TASK_SYSTEM_PROMPT,
+                    "task_description": DYNAMIC_TASK_DESCRIPTION,
+                } if dynamic else {}),
                 subagents=_autonomous_subagents(
                     config,
                     workload,

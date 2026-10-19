@@ -9,9 +9,15 @@ V88 predictive launched at2026-10-20 06:00:31 Asia/Shanghai after two idle-resou
 checks and the latest CPU qualification. Its first real workflow GPU service was
 recorded at06:03:54. Revision a3bc3cc,970 source files, the engine, actual serving settings
 and zero writer failures/drops were verified in V2051.
+It was administratively interrupted at06:14: the first16 roots submitted974 model
+requests and1008 tool calls without a child or JOIN. Ten natural completions remain;
+six active and eight unarrived tasks are not natural failures. Native never started.
+The stopped prefix records318 D2H batches/22.70GB and no H2D; V2056 observes252
+tool waits without a positive FULL plan. One successor's native evidence is unknown.
 The one-time launch and live driver state is registered in
 `/home/longhao/experiment/ops/v88_24root_after_0600_20261020.state.json`.
-Predictive runs first, followed by native on the same frozen execution sources.
+The next V89 candidate still runs predictive first, followed by native on the same
+frozen execution sources.
 Subsequent candidate changes need validation and a new frozen source; keep the live
 run immutable. This is not a recurring daily restriction.
 V85d predictive finished all12 workflows naturally; its interrupted native trace
@@ -26,7 +32,7 @@ Before a resumed24-root run, distinguish missing-copy opportunity, safe FULL
 capacity, new-context hybrid checkpoint gaps and service consumption. No completed
 native control or policy speedup has been established for this workload.
 
-The running candidate is24 distinct original tasks on the same six qualified
+The V89 candidate is24 distinct original tasks on the same six qualified
 projects,16+8 waves900s apart and running8. Use native_in_graph_dynamic_nested:
 the model chooses delegation timing, fanout, roles and repeated rounds. Do not
 enforce four phases, force task generation at milestones, or reject natural
@@ -34,6 +40,16 @@ RETURN. All direct-child roles can spawn leaf grandchildren, with depth capped2.
 Keep scope, completion notice and delegation guidance after the long source.
 Measure observed delegation/JOIN density and useful migration rather than
 claiming the prompt guarantees the desired shape.
+
+V2054 captured the actual serialized CPU request: task and the dynamic guidance
+were already present. Treat the absent delegation as a workload-qualification
+problem, not a proven tool-registration bug. V89 uses repository-specific task
+guidance and description; children are told they already have the project snapshot.
+Keep automatic choice, tool arguments, parallel calls and unguarded natural RETURN.
+The description shrinks7265 to1286 characters and system text574031 to573095;
+these are not token counts or performance savings. V2057 preserves the serialized
+tool contract and V2058 passes2398 CPU checks. Real model behavior remains unverified.
+Scheduler/migration runtime and engine are unchanged. V2059 binds the evidence.
 
 Borrowable parent capacity now prices restoration plus the native input/decode
 reserve, retaining safe waiting-state preparation and native reference checks.
@@ -62,7 +78,7 @@ Current goal:
 
 - Continue removing unnecessary repeated PREPARE, prefetch, lifecycle and admission work.
 - Preserve current identity, generation, ownership, capacity, ACK and first-consumption checks.
-- Preserve the qualified live source while developing subsequent candidates on main.
+- Qualify and freeze V89; verify actual dynamic delegation before a long comparison.
 - Measure useful Host-only recovery, consumption delay, copy loss/recomputation,
   tail-excluded throughput and mean workflow JCT on the new24-root run.
 - Stop and fix material experimental failures promptly; CPU improvements alone
