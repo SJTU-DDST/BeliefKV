@@ -1272,6 +1272,78 @@ def test_prefetch_burst_uses_fitting_prefix_without_a_new_closure_snapshot():
     closure.assert_called_once()
 
 
+@pytest.mark.parametrize("max_steps,fit_current_capacity", ((1, False), (16, True), (16, False)))
+def test_checkpoint_cost_keeps_the_complete_plan_before_issue_limits(
+    max_steps, fit_current_capacity,
+):
+    from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
+
+    anchors = replace(prefetch_anchors(), reusable_input_tokens=12)
+    nodes = (
+        prefetch_node(12, 11, 5, full_host=4, mamba_host=True, key_tokens=4),
+        prefetch_node(11, 0, 4, full_host=8, mamba_host=True, key_tokens=8),
+        prefetch_node(0, None, 1, key_tokens=0),
+    )
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+        return_value=NS(observable=True, nodes=nodes),
+    ), patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_static_full_mamba_headroom",
+        return_value=NS(observable=True, device_full_free_tokens=8, device_mamba_free_slots=0),
+    ), patch(
+        "beliefkv.runtime.sglang_v0520_physical.plan_prefetch_gpu_steps",
+        wraps=plan_prefetch_gpu_steps,
+    ) as planner:
+        opportunity = inspect_session_h2d_opportunity(
+            object(), anchors, max_steps=max_steps,
+            fit_current_capacity=fit_current_capacity, include_checkpoint_plan=True,
+        )
+    planner.assert_called_once()
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime.plan_prefetch_gpu_steps",
+        side_effect=AssertionError("replanned the same checkpoint"),
+    ):
+        blocked = replace(
+            opportunity, step=None, steps=(), required_full_tokens=0, required_mamba_slots=0,
+        )
+        cost = NativeAdmissionRuntime._report_restore_cost_plan(blocked)
+    assert [(step.node_id, step.include_mamba) for step in cost.steps] == [
+        (11, False), (12, True),
+    ]
+    assert cost.required_full_tokens == 12 and cost.required_mamba_slots == 1
+    assert blocked.step is None and blocked.required_full_tokens == 0
+    assert len(opportunity.steps) == (1 if max_steps == 1 or fit_current_capacity else 2)
+
+
+def test_checkpoint_cost_is_recaptured_after_native_residency_changes():
+    anchors = replace(prefetch_anchors(), reusable_input_tokens=12)
+    ancestor = prefetch_node(11, 0, 4, full_host=8, key_tokens=8)
+    checkpoint = prefetch_node(12, 11, 5, full_host=4, mamba_host=True, key_tokens=4)
+    nodes = (checkpoint, ancestor, prefetch_node(0, None, 1, key_tokens=0))
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+        return_value=NS(observable=True, nodes=nodes),
+    ), patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_static_full_mamba_headroom",
+        return_value=NS(observable=True, device_full_free_tokens=20, device_mamba_free_slots=1),
+    ):
+        first = inspect_session_h2d_opportunity(
+            object(), anchors, include_checkpoint_plan=True,
+        )
+        ancestor.full_device_tokens = 8
+        second = inspect_session_h2d_opportunity(
+            object(), anchors, include_checkpoint_plan=True,
+        )
+        checkpoint.pending_load_id = 1
+        in_flight = inspect_session_h2d_opportunity(
+            object(), anchors, include_checkpoint_plan=True,
+        )
+    assert first.checkpoint_plan.full_tokens == 12
+    assert second.checkpoint_plan.full_tokens == 4
+    assert [step.node_id for step in second.checkpoint_plan.steps] == [12]
+    assert in_flight.checkpoint_plan.steps == () and in_flight.step is None
+
+
 def test_full_ancestor_restore_does_not_require_its_historical_mamba_slot():
     anchors = replace(prefetch_anchors(), reusable_input_tokens=12)
     root = prefetch_node(0, None, 1, key_tokens=0)

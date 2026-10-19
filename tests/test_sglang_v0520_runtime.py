@@ -2614,6 +2614,7 @@ def test_confirmed_join_canary_is_bounded_without_predictor(tmp_path):
                         "context_id": "ctx-parent", "context_epoch": 0, "max_steps": 1,
                         "fit_current_capacity": False,
                         "skip_empty_restore": True,
+                        "include_checkpoint_plan": False,
                     } for call in inspect.call_args_list
                 )
         key = runtime.context_sessions["ctx-parent"]

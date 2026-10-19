@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from array import array
 from collections import OrderedDict
-import json
 import sys
 from threading import RLock
 from typing import Any
@@ -30,18 +29,22 @@ class ChatPromptTokenCache:
             backend = self.tokenizer.backend_tokenizer
             token_id = self.tokenizer.convert_tokens_to_ids(self.separator)
             token = backend.get_added_tokens_decoder()[token_id]
-            processor = json.loads(backend.to_str()).get("post_processor")
+            processor = backend.post_processor
+            if processor is not None:
+                from tokenizers.processors import ByteLevel
+
+                if not isinstance(processor, ByteLevel):
+                    return None
             if (
                 token.content != self.separator or not token.special or token.normalized
                 or token.single_word or token.lstrip or token.rstrip
-                or processor is not None and processor.get("type") != "ByteLevel"
                 or self.tokenizer.encode(
                     self.separator, add_special_tokens=False,
                 ) != [token_id]
             ):
                 return None
             return token_id
-        except (AttributeError, KeyError, TypeError, ValueError):
+        except (AttributeError, ImportError, KeyError, TypeError, ValueError):
             return None
 
     @staticmethod

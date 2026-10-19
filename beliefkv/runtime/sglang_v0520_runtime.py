@@ -3005,7 +3005,9 @@ class NativeAdmissionRuntime:
             remaining = self._report_remaining_ms(stage)
             if remaining is None:
                 continue
-            observation = self._wait_prefetch_opportunity(stage.key)
+            observation = self._wait_prefetch_opportunity(
+                stage.key, include_checkpoint_plan=True,
+            )
             if observation is None:
                 continue
             cost_plan = self._report_restore_cost_plan(observation)
@@ -3062,6 +3064,15 @@ class NativeAdmissionRuntime:
 
     @staticmethod
     def _report_restore_cost_plan(opportunity):
+        checkpoint_plan = getattr(opportunity, "checkpoint_plan", None)
+        if checkpoint_plan is not None:
+            return replace(
+                opportunity,
+                step=checkpoint_plan.steps[0] if checkpoint_plan.steps else None,
+                steps=checkpoint_plan.steps,
+                required_full_tokens=checkpoint_plan.full_tokens,
+                required_mamba_slots=checkpoint_plan.mamba_slots,
+            )
         candidate = getattr(opportunity, "candidate", None)
         if candidate is None:
             return opportunity
@@ -4584,6 +4595,7 @@ class NativeAdmissionRuntime:
         max_steps: int = 1,
         fit_current_capacity: bool = False,
         skip_empty_restore: bool = False,
+        include_checkpoint_plan: bool = False,
     ) -> SessionH2DOpportunity | None:
         """Read action-local session/allocator evidence; never dispatch H2D."""
         cache = self._native_cache
@@ -4620,6 +4632,7 @@ class NativeAdmissionRuntime:
                 cache, anchors, max_steps=max_steps,
                 fit_current_capacity=fit_current_capacity,
                 skip_empty_restore=skip_empty_restore,
+                include_checkpoint_plan=include_checkpoint_plan,
             )
             if anchors is not None else None
         )
@@ -4627,6 +4640,7 @@ class NativeAdmissionRuntime:
     def _wait_prefetch_opportunity(
         self, key: PrefillCandidateKey,
         *, max_steps: int | None = None, fit_current_capacity: bool = False,
+        include_checkpoint_plan: bool = False,
     ) -> SessionH2DOpportunity | None:
         batched = callable(getattr(self._native_cache, "prefetch_gpu_session_nodes", None))
         slots = self.physical_ledger.max_pending - self.physical_ledger.pending_count
@@ -4641,6 +4655,7 @@ class NativeAdmissionRuntime:
             # need not discard an otherwise fitting FULL checkpoint extent.
             fit_current_capacity=False,
             skip_empty_restore=True,
+            include_checkpoint_plan=include_checkpoint_plan,
         )
         if getattr(opportunity, "no_step_reason", None) == "no_host_backed_missing_copy":
             self.counts["wait_prefetch_empty_restore_shortcut"] += 1

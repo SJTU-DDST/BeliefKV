@@ -1,4 +1,3 @@
-import json
 import os
 from types import SimpleNamespace
 
@@ -11,7 +10,7 @@ class BoundaryTokenizer:
     def __init__(self, *, unsafe=False):
         self.calls = []
         self.backend_tokenizer = SimpleNamespace(
-            to_str=lambda: json.dumps({"post_processor": None}),
+            post_processor=None,
             get_added_tokens_decoder=lambda: {999: SimpleNamespace(
                 content="<|im_start|>", special=True, normalized=unsafe,
                 single_word=False, lstrip=False, rstrip=False,
@@ -60,6 +59,29 @@ def test_memory_and_entry_budgets_evict_without_changing_tokens():
         assert cache.encode(text) == tokenizer.encode(text)
         assert cache.cached_bytes <= 1500
         assert len(cache._cache) <= 2
+
+
+@pytest.mark.parametrize("processor_kind", ("none", "byte_level", "template", "sequence"))
+def test_processor_validation_does_not_export_the_tokenizer_vocabulary(processor_kind):
+    from tokenizers.processors import ByteLevel, Sequence, TemplateProcessing
+
+    tokenizer = BoundaryTokenizer()
+    processors = {
+        "none": None,
+        "byte_level": ByteLevel(),
+        "template": TemplateProcessing(single="[BOS] $A", special_tokens=[("[BOS]", 1000)]),
+        "sequence": Sequence([ByteLevel()]),
+    }
+    tokenizer.backend_tokenizer.post_processor = processors[processor_kind]
+
+    def export_vocabulary():
+        raise AssertionError("serialized the whole tokenizer for a processor check")
+
+    tokenizer.backend_tokenizer.to_str = export_vocabulary
+    cache = ChatPromptTokenCache(tokenizer)
+    text = "<|im_start|>system\nsource"
+    assert cache.encode(text) == tokenizer.encode(text)
+    assert (cache.separator_id is not None) == (processor_kind in ("none", "byte_level"))
 
 
 @pytest.mark.parametrize("unsafe,kwargs", [

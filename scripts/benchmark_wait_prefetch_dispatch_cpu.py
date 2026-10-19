@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import argparse
-from collections import Counter
+from collections import Counter, deque
 import cProfile
 from dataclasses import asdict, replace
 from datetime import datetime
@@ -170,7 +170,7 @@ def state_signature(runtime, actions):
     }
 
 
-def selection_fixture(cls, *, depth, remaining_ms):
+def selection_fixture(cls, *, depth, remaining_ms, report_service=False):
     runtime, key, _, reads, actions, _, reset, _, now = dispatch_fixture(
         cls, source="join_ticket", depth=depth, native_budget=True,
     )
@@ -191,20 +191,28 @@ def selection_fixture(cls, *, depth, remaining_ms):
     )
     runtime._final_stages[join.join_id] = stage
     runtime._final_request_stages[child_key.request_id] = stage
+    if report_service:
+        runtime.join_prefetch_trigger = "report_service_or_eos"
+        runtime._semantic_progress[child_key.request_id] = deque((
+            (now * 1000. - 200., 80), (now * 1000., 100),
+        ))
     if not runtime._live_final_stage(stage):
         raise AssertionError("selection fixture has an invalid JOIN")
 
     def reset_selection():
         reset()
         runtime._join_ticket = None
+        runtime._report_candidate_next_ms = 0.
 
     reset_selection()
     return runtime, reads, actions, reset_selection, now
 
 
-def measure_selection(baseline, *, depth, remaining_ms, samples):
+def measure_selection(baseline, *, depth, remaining_ms, samples, report_service=False):
     variants = {
-        name: selection_fixture(cls, depth=depth, remaining_ms=remaining_ms)
+        name: selection_fixture(
+            cls, depth=depth, remaining_ms=remaining_ms, report_service=report_service,
+        )
         for name, cls in (("baseline", baseline), ("candidate", NativeAdmissionRuntime))
     }
     costs = {name: [] for name in variants}
@@ -238,7 +246,8 @@ def measure_selection(baseline, *, depth, remaining_ms, samples):
             if signatures["baseline"] != signatures["candidate"]:
                 raise AssertionError("the selection target changed")
         return {
-            "case": "provisional_join_selection", "depth": depth,
+            "case": "report_service_join_selection" if report_service else "provisional_join_selection",
+            "depth": depth,
             "remaining_ms": remaining_ms, "lead_ms": 1000.,
             "costs": {name: distribution(values) for name, values in costs.items()},
             "native_reads_per_scan": {
@@ -421,6 +430,7 @@ def main():
     parser.add_argument("--include-selection", action="store_true")
     parser.add_argument("--include-prefill-checks", action="store_true")
     parser.add_argument("--prefill-checks-only", action="store_true")
+    parser.add_argument("--report-selection-only", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.samples < 1 or args.output.exists():
@@ -435,7 +445,7 @@ def main():
     )
     digests = {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in paths}
     baseline, baseline_sources = baseline_runtime(args.baseline)
-    cases = [] if args.prefill_checks_only else [
+    cases = [] if args.prefill_checks_only or args.report_selection_only else [
         measure(
             baseline, source=source, depth=depth, diagnostics=diagnostics,
             native_budget=native_budget, samples=args.samples,
@@ -446,8 +456,10 @@ def main():
     selection_cases = [
         measure_selection(
             baseline, depth=depth, remaining_ms=remaining, samples=args.samples,
-        ) for depth in (4, 16, 64) for remaining in (500., 1500.)
-    ] if args.include_selection else []
+            report_service=args.report_selection_only,
+        ) for depth in ((4, 16, 64, 256) if args.report_selection_only else (4, 16, 64))
+        for remaining in (500., 1500.)
+    ] if args.include_selection or args.report_selection_only else []
     prefill_cases = [
         measure_prefill_check(
             baseline, depth=depth, matching=matching, ready=ready,

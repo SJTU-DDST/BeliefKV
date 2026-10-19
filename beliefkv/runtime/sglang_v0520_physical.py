@@ -70,6 +70,15 @@ class ActionLocalPrefetchCandidate:
 
 
 @dataclass(frozen=True)
+class PrefetchCheckpointPlan:
+    """Complete restore cost from one immutable action-local snapshot."""
+
+    steps: tuple[PrefetchLoadStep, ...]
+    full_tokens: int
+    mamba_slots: int
+
+
+@dataclass(frozen=True)
 class SessionH2DOpportunity:
     """Safe-point evidence, never an allocator reservation or action permit."""
 
@@ -100,6 +109,9 @@ class SessionH2DOpportunity:
         default=None, compare=False, repr=False,
     )
     enqueue_refresh_required: bool = field(default=False, compare=False, repr=False)
+    checkpoint_plan: PrefetchCheckpointPlan | None = field(
+        default=None, compare=False, repr=False,
+    )
 
 
 def _prefetch_block_detail(candidate: ActionLocalPrefetchCandidate) -> str:
@@ -150,8 +162,10 @@ def _prefetch_block_detail(candidate: ActionLocalPrefetchCandidate) -> str:
 def inspect_session_h2d_opportunity(
     cache: object, anchors: ContextSessionAnchors,
     *, max_steps: int = 1, fit_current_capacity: bool = False,
-    skip_empty_restore: bool = False,
+    skip_empty_restore: bool = False, include_checkpoint_plan: bool = False,
 ) -> SessionH2DOpportunity:
+    if type(max_steps) is not int or max_steps < 1:
+        raise ValueError("invalid prefetch burst bound")
     headroom = observe_static_full_mamba_headroom(cache)
     if skip_empty_restore and has_host_backed_missing_copy(
         cache, anchors, input_checkpoint_only=True,
@@ -168,7 +182,25 @@ def inspect_session_h2d_opportunity(
         cache, anchors, for_prefetch=True, include_non_actionable=True,
         on_failure=capture_failures.append,
     )
-    steps = plan_prefetch_gpu_steps(candidate, max_steps=max_steps) if candidate is not None else ()
+    steps = plan_prefetch_gpu_steps(
+        candidate, max_steps=None if include_checkpoint_plan else max_steps,
+    ) if candidate is not None else ()
+    nodes = {node.node_id: node for node in candidate.nodes} if steps else {}
+    checkpoint_plan = None
+    if include_checkpoint_plan:
+        checkpoint_plan = PrefetchCheckpointPlan(
+            steps,
+            sum(
+                nodes[planned.node_id].full_host_tokens for planned in steps
+                if nodes[planned.node_id].full_device_tokens == 0
+            ),
+            sum(
+                planned.include_mamba and nodes[planned.node_id].mamba_host_present
+                and not nodes[planned.node_id].mamba_device_present
+                for planned in steps
+            ),
+        )
+        steps = steps[:max_steps]
     step = steps[0] if steps else None
     no_step_reason = None
     blocked_detail = None
@@ -201,7 +233,6 @@ def inspect_session_h2d_opportunity(
             no_step_reason = "already_device_resident"
     full_tokens = mamba_slots = 0
     if steps:
-        nodes = {node.node_id: node for node in candidate.nodes}
         fitting_steps = []
         for planned in steps:
             node = nodes[planned.node_id]
@@ -232,6 +263,7 @@ def inspect_session_h2d_opportunity(
         candidate.missing_mamba_device_nodes if candidate is not None else None,
         unbacked_full, unbacked_mamba,
         blocked_detail, steps, candidate,
+        checkpoint_plan=checkpoint_plan,
     )
 
 

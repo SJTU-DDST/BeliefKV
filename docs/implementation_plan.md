@@ -45,6 +45,18 @@ This is CPU evidence, not an end-to-end result. Keep new-context hybrid checkpoi
 gaps separate; FULL matches alone cannot reconstruct a missing Mamba checkpoint.
 GPU pause remains active and automatic resume remains disabled.
 
+V1926 removes duplicate report-stage JOIN planning within one immutable native
+snapshot. Keep the complete checkpoint cost separately from the bounded issue
+plan, retaining fresh capture after reclaim/split and at enqueue. The synthetic
+4/16/64/256-node selection P50 improves about9%-18% with equal targets/budgets;
+do not infer scene frequency or JCT. Tool/EOS paths keep bounded planning.
+V1927 inspects the tokenizer postprocessor directly rather than exporting and
+parsing its whole vocabulary during cache initialization. On36 reconstructed
+long inputs, previous-cache/new-cache means are101.15/84.86ms and first cold
+requests743.69/229.63ms, with equal token IDs; overall medians are52.90/51.56ms.
+The889 related CPU checks pass. Preserve native-cache-off main comparison,
+dynamic delegation, unresolved hybrid-checkpoint attribution and the GPU pause.
+
 V85 preparation now uses the user's 262144 total context and a95% rendered
 prompt compaction threshold(249036 tokens), with cached local chat-template
 counts and a completion budget that fits the remaining total window.

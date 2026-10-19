@@ -6,16 +6,19 @@ from __future__ import annotations
 import argparse
 import ast
 from collections import OrderedDict
+from contextlib import nullcontext
 from datetime import datetime, timezone
 import hashlib
 import json
 import os
 from pathlib import Path
 import statistics
+import subprocess
 import sys
 import time
-from types import MethodType, SimpleNamespace
+from types import MethodType, ModuleType, SimpleNamespace
 import typing
+from unittest.mock import patch
 
 import orjson
 
@@ -24,6 +27,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.long_repository_tasks import parse_repository_context  # noqa: E402
+from beliefkv.runtime import chat_token_cache  # noqa: E402
 from scripts.benchmark_chat_prompt_encoding import trajectory_messages  # noqa: E402
 
 
@@ -65,6 +69,7 @@ def main():
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--baseline-serving", type=Path, required=True)
     parser.add_argument("--candidate-serving", type=Path, required=True)
+    parser.add_argument("--baseline-token-cache-revision")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--max-workflows", type=int, default=6)
     parser.add_argument("--iterations", type=int, default=3)
@@ -96,6 +101,21 @@ def main():
         sources.extend([source_binding(path), source_binding(context.path)])
     baseline, baseline_state = native_converter(args.baseline_serving, tokenizer)
     candidate, candidate_state = native_converter(args.candidate_serving, tokenizer)
+    baseline_cache = None
+    baseline_cache_binding = None
+    if args.baseline_token_cache_revision:
+        cache_path = "beliefkv/runtime/chat_token_cache.py"
+        source = subprocess.check_output(
+            ["git", "show", f"{args.baseline_token_cache_revision}:{cache_path}"],
+            cwd=ROOT, text=True,
+        )
+        module = ModuleType("_baseline_chat_token_cache")
+        exec(compile(source, f"{args.baseline_token_cache_revision}:{cache_path}", "exec"), vars(module))
+        baseline_cache = module.ChatPromptTokenCache
+        baseline_cache_binding = {
+            "revision": args.baseline_token_cache_revision, "path": cache_path,
+            "sha256": hashlib.sha256(source.encode()).hexdigest(),
+        }
     rows = {identity: {
         "case": identity, "baseline_wall_ms": [], "candidate_wall_ms": [],
         "baseline_thread_cpu_ms": [], "candidate_thread_cpu_ms": [],
@@ -109,17 +129,21 @@ def main():
         for identity, messages in cases:
             outputs = []
             for label, converter in (("baseline", baseline), ("candidate", candidate)):
-                wall_start, cpu_start = time.perf_counter_ns(), time.thread_time_ns()
-                _, ids, _ = converter(
-                    messages, tools=None, template_kwargs={"enable_thinking": True},
-                    encode_kwargs={}, use_cache=True, decode_prompt=False,
-                )
-                rows[identity][f"{label}_thread_cpu_ms"].append(
-                    (time.thread_time_ns() - cpu_start) / 1e6,
-                )
-                rows[identity][f"{label}_wall_ms"].append(
-                    (time.perf_counter_ns() - wall_start) / 1e6,
-                )
+                cache_context = patch.object(
+                    chat_token_cache, "ChatPromptTokenCache", baseline_cache,
+                ) if label == "baseline" and baseline_cache is not None else nullcontext()
+                with cache_context:
+                    wall_start, cpu_start = time.perf_counter_ns(), time.thread_time_ns()
+                    _, ids, _ = converter(
+                        messages, tools=None, template_kwargs={"enable_thinking": True},
+                        encode_kwargs={}, use_cache=True, decode_prompt=False,
+                    )
+                    rows[identity][f"{label}_thread_cpu_ms"].append(
+                        (time.thread_time_ns() - cpu_start) / 1e6,
+                    )
+                    rows[identity][f"{label}_wall_ms"].append(
+                        (time.perf_counter_ns() - wall_start) / 1e6,
+                    )
                 outputs.append(ids)
             if outputs[0] != outputs[1]:
                 raise AssertionError(f"native token mismatch: {identity}")
@@ -140,6 +164,9 @@ def main():
         ),
         "baseline": source_binding(args.baseline_serving),
         "candidate": source_binding(args.candidate_serving),
+        "baseline_token_cache": baseline_cache_binding,
+        "candidate_token_cache": source_binding(Path(chat_token_cache.__file__)),
+        "benchmark": source_binding(Path(__file__)),
         "sources": sources, "iterations": args.iterations, "all_tokens_equal": True,
         "cache": {"bytes": cache.cached_bytes, "hits": cache.hits,
                   "misses": cache.misses, "bypasses": cache.bypasses},

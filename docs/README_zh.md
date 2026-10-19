@@ -19,6 +19,16 @@ child 都可动态委派叶子孙 agent，最大深度仍为 2。任务范围、
 见[24-root 配置](../configs/migration/qwen35_locobench_long_24root_running8_2026-10-19.json)
 及[CPU 原始结果](../experiments/reports/v1925_v85d_long_chat_token_cache_cpu_20261019.json)。
 
+暂停期间继续削减 CPU 成本：JOIN 检查在同一快照内复用完整 checkpoint
+恢复计划，局部规划 P50 降低约 9%–18%，实际恢复目标和容量判断相同；
+不跨容量变化或提交边界复用。token 缓存初始化改为直接检查后处理器，
+不再导出并解析整个词表。相对上一版分块缓存，36 个增长历史输入的转换
+均值 101.15→84.86ms，首次冷请求 743.69→229.63ms，token 全部一致；
+初始化收益不能推广到每个热请求。见
+[JOIN CPU 结果](../experiments/reports/v1926_join_checkpoint_plan_cpu_20261019.json)、
+[前端 CPU 结果](../experiments/reports/v1927_chat_cache_initialization_cpu_20261019.json)。
+相关 889 项 CPU 检查通过；GPU 仍暂停，没有新增吞吐/JCT 结果。
+
 V85d 全程离线分析见
 [完整报告](../experiments/reports/v1924_v85d_complete_predictive_analysis_20261019_zh.md)：
 600–1273s GPU 98.01%；H2D stream 合计仅 1.160s。完成前复用 FULL

@@ -1,0 +1,487 @@
+{
+  "created_at": "2026-10-19T12:18:22.054877+00:00",
+  "scope": "CPU only; real Qwen tokenizer and native conversion method. Complete qualified source plus growing root trajectory histories; reconstructed inputs exclude original role instructions/tool schemas and are not exact HTTP replay. No GPU, queueing, JCT, baseline fairness or checkpoint availability claim.",
+  "baseline": {
+    "path": "/home/longhao/experiment/.worktrees/sglang-v86-chat-token-cache-cpu-20261019/python/sglang/srt/entrypoints/openai/serving_chat.py",
+    "sha256": "350341d8afccf041d34061e02b8da231da29bcaaa2947a9ba758e638a1438ffc"
+  },
+  "candidate": {
+    "path": "/home/longhao/experiment/.worktrees/sglang-v86-chat-token-cache-cpu-20261019/python/sglang/srt/entrypoints/openai/serving_chat.py",
+    "sha256": "350341d8afccf041d34061e02b8da231da29bcaaa2947a9ba758e638a1438ffc"
+  },
+  "baseline_token_cache": {
+    "revision": "81e5d18",
+    "path": "beliefkv/runtime/chat_token_cache.py",
+    "sha256": "131c15cfc081bbcf5f044e6d44c1bb60d63192a6fbf7644acc65cf9e51201e4f"
+  },
+  "candidate_token_cache": {
+    "path": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/chat_token_cache.py",
+    "sha256": "1b8544541cd3e65a03a4897c60ed53dcf857da5e004f55f91862de3bbdeac362"
+  },
+  "benchmark": {
+    "path": "/home/longhao/experiment/BeliefKV/scripts/benchmark_long_chat_token_cache.py",
+    "sha256": "c36f506eca21de68b349975a83f7dc02163ffd2b78ee883517c725c086f7c204"
+  },
+  "sources": [
+    {
+      "path": "/home/longhao/experiment/BeliefKV/configs/workloads/locobench_agent_long_12root_20261019.json",
+      "sha256": "efce390fd25c47cbf009c93d630f697c97dc0a55f6241388e53f9f5a9400be94"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_api_gateway_hard_009_bug_investigation_expert_01/trajectory.json",
+      "sha256": "995ff964eece53b8e6680ffbbd093f8db3216a1951bef36a1e516ea3a8826957"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/workloads/frozen/locobench_agent_long_py39_20261019/python_api_gateway_hard_009.txt.gz",
+      "sha256": "2e11642529af0746885be73045c64583e9bd9892dbdd3752e8c9794799eb9110"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/trajectory.json",
+      "sha256": "ebccc32e6e4f304068542a734debead7c33f47fef3e2479862bc8593f5806b84"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/workloads/frozen/locobench_agent_long_py39_20261019/python_api_gateway_hard_009.txt.gz",
+      "sha256": "2e11642529af0746885be73045c64583e9bd9892dbdd3752e8c9794799eb9110"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01/trajectory.json",
+      "sha256": "93603acecdf510188f53b5439a298135e199d55c39d750d0bd92bc4184c865cc"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/workloads/frozen/locobench_agent_long_py39_20261019/python_game_simulation_medium_033.txt.gz",
+      "sha256": "d69a3fc5073ff64e51a1ee296395855d494427e18b543676a7d5a8ce3677d042"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_game_simulation_medium_033_integration_testing_expert_01/trajectory.json",
+      "sha256": "df6d9d24d74f9b1df9112b0d458d2bbcac8de7a25edb4f0f6f1a3a304564a05b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/workloads/frozen/locobench_agent_long_py39_20261019/python_game_simulation_medium_033.txt.gz",
+      "sha256": "d69a3fc5073ff64e51a1ee296395855d494427e18b543676a7d5a8ce3677d042"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_mobile_game_hard_060_bug_investigation_expert_01/trajectory.json",
+      "sha256": "2a20f84f0b7e3cc0b3008f372ff85d0e45ee901117f494a6ec560e36500a7d8e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/workloads/frozen/locobench_agent_long_py39_20261019/python_mobile_game_hard_060.txt.gz",
+      "sha256": "e8670f549ac056bc0c394745a4eb17dcf25ea239fe34bdcb19872b89ddaf9c1c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_mobile_game_hard_060_feature_implementation_expert_01/trajectory.json",
+      "sha256": "01f5588d41530037b11ba2d1044d1d3e26143adbfad40416be22b527f6ef48e3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/workloads/frozen/locobench_agent_long_py39_20261019/python_mobile_game_hard_060.txt.gz",
+      "sha256": "e8670f549ac056bc0c394745a4eb17dcf25ea239fe34bdcb19872b89ddaf9c1c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_automation_hard_062_bug_investigation_expert_01/trajectory.json",
+      "sha256": "1206091f55d338c934d1d09cc62c93be26bae104d90f0ccdc71c2fc0f885064d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/workloads/frozen/locobench_agent_long_py39_20261019/python_system_automation_hard_062.txt.gz",
+      "sha256": "8341f2f07d8a8a89f0341ee28e8d206cc482548363101f44f7e2efa693a8f8d0"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_automation_hard_062_multi_session_development_expert_01/trajectory.json",
+      "sha256": "50c5d9af61395f9cf3753e18c21581cbb2d8a4fc6cb8d467b7044081ea90a8b2"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/workloads/frozen/locobench_agent_long_py39_20261019/python_system_automation_hard_062.txt.gz",
+      "sha256": "8341f2f07d8a8a89f0341ee28e8d206cc482548363101f44f7e2efa693a8f8d0"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_networking_hard_027_integration_testing_medium_01/trajectory.json",
+      "sha256": "f0884774ebb5a6ba2d3c06c59100f7cd014ead49a27717d9589e5130047a6874"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/workloads/frozen/locobench_agent_long_py39_20261019/python_system_networking_hard_027.txt.gz",
+      "sha256": "dd82355905380192d0291eed61343df7de96b7d09f002681eb44f52022722b7b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_networking_hard_027_multi_session_development_medium_01/trajectory.json",
+      "sha256": "49eefe58f0ba59f2a2f19347bc8fbe5c313285feda4a955a0a67e1698e2afac8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/workloads/frozen/locobench_agent_long_py39_20261019/python_system_networking_hard_027.txt.gz",
+      "sha256": "dd82355905380192d0291eed61343df7de96b7d09f002681eb44f52022722b7b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/trajectory.json",
+      "sha256": "cc2c4e2062d790d7bae38bfd826a62e8d181623885829d5ad37da167529f12aa"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/workloads/frozen/locobench_agent_long_py39_20261019/python_web_cms_hard_074.txt.gz",
+      "sha256": "8fe54d67f6787dd3c6acc8c26b53c5ee6986106f85601ed5be707617e15c700a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_web_cms_hard_074_feature_implementation_expert_01/trajectory.json",
+      "sha256": "5cb305b92fb8cdb82734ca73e8225609eaa772d0625634efcb4785236f1c9f69"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/workloads/frozen/locobench_agent_long_py39_20261019/python_web_cms_hard_074.txt.gz",
+      "sha256": "8fe54d67f6787dd3c6acc8c26b53c5ee6986106f85601ed5be707617e15c700a"
+    }
+  ],
+  "iterations": 3,
+  "all_tokens_equal": true,
+  "cache": {
+    "bytes": 22494442,
+    "hits": 783,
+    "misses": 919,
+    "bypasses": 0
+  },
+  "summary": {
+    "baseline_wall_ms": {
+      "count": 36,
+      "mean": 101.15445253703705,
+      "p50": 52.89556816666666,
+      "p90": 292.235504
+    },
+    "candidate_wall_ms": {
+      "count": 36,
+      "mean": 84.8596779074074,
+      "p50": 51.556423333333335,
+      "p90": 271.22502633333335
+    },
+    "baseline_thread_cpu_ms": {
+      "count": 36,
+      "mean": 101.14067141666666,
+      "p50": 52.884834166666664,
+      "p90": 292.225189
+    },
+    "candidate_thread_cpu_ms": {
+      "count": 36,
+      "mean": 84.85207017592593,
+      "p50": 51.55413,
+      "p90": 271.2197126666667
+    }
+  },
+  "rows": [
+    {
+      "case": "locobench__python_api_gateway_hard_009_bug_investigation_expert_01:2",
+      "baseline_wall_ms": 743.693872,
+      "candidate_wall_ms": 229.62973666666667,
+      "baseline_thread_cpu_ms": 743.464289,
+      "candidate_thread_cpu_ms": 229.611345,
+      "prompt_tokens": 124636,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_api_gateway_hard_009_bug_investigation_expert_01:19",
+      "baseline_wall_ms": 38.67530433333334,
+      "candidate_wall_ms": 37.619276,
+      "baseline_thread_cpu_ms": 38.671641666666666,
+      "candidate_thread_cpu_ms": 37.61689566666667,
+      "prompt_tokens": 140594,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_api_gateway_hard_009_bug_investigation_expert_01:39",
+      "baseline_wall_ms": 34.729506666666666,
+      "candidate_wall_ms": 35.647120666666666,
+      "baseline_thread_cpu_ms": 34.72578566666667,
+      "candidate_thread_cpu_ms": 35.64471366666667,
+      "prompt_tokens": 155040,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_api_gateway_hard_009_feature_implementation_expert_01:2",
+      "baseline_wall_ms": 8.37573,
+      "candidate_wall_ms": 8.723726666666668,
+      "baseline_thread_cpu_ms": 8.371932,
+      "candidate_thread_cpu_ms": 8.720896,
+      "prompt_tokens": 125213,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_api_gateway_hard_009_feature_implementation_expert_01:25",
+      "baseline_wall_ms": 53.26529133333333,
+      "candidate_wall_ms": 53.12237833333333,
+      "baseline_thread_cpu_ms": 53.262644,
+      "candidate_thread_cpu_ms": 53.12017233333333,
+      "prompt_tokens": 149429,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_api_gateway_hard_009_feature_implementation_expert_01:53",
+      "baseline_wall_ms": 35.65411866666667,
+      "candidate_wall_ms": 40.227648333333335,
+      "baseline_thread_cpu_ms": 35.65079766666667,
+      "candidate_thread_cpu_ms": 40.22508533333333,
+      "prompt_tokens": 166740,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:2",
+      "baseline_wall_ms": 250.11877233333334,
+      "candidate_wall_ms": 239.73208833333334,
+      "baseline_thread_cpu_ms": 250.11539633333334,
+      "candidate_thread_cpu_ms": 239.70488,
+      "prompt_tokens": 111232,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:49",
+      "baseline_wall_ms": 61.55875066666666,
+      "candidate_wall_ms": 51.91046733333334,
+      "baseline_thread_cpu_ms": 61.55498566666667,
+      "candidate_thread_cpu_ms": 51.907838000000005,
+      "prompt_tokens": 132225,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:101",
+      "baseline_wall_ms": 38.088942333333335,
+      "candidate_wall_ms": 37.654323,
+      "baseline_thread_cpu_ms": 38.040106,
+      "candidate_thread_cpu_ms": 37.65176666666667,
+      "prompt_tokens": 146349,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_game_simulation_medium_033_integration_testing_expert_01:2",
+      "baseline_wall_ms": 7.408269333333333,
+      "candidate_wall_ms": 6.584328,
+      "baseline_thread_cpu_ms": 7.404587666666667,
+      "candidate_thread_cpu_ms": 6.581745333333333,
+      "prompt_tokens": 111028,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_game_simulation_medium_033_integration_testing_expert_01:33",
+      "baseline_wall_ms": 73.0234,
+      "candidate_wall_ms": 72.17363033333334,
+      "baseline_thread_cpu_ms": 73.02051633333333,
+      "candidate_thread_cpu_ms": 72.17138033333333,
+      "prompt_tokens": 142413,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_game_simulation_medium_033_integration_testing_expert_01:63",
+      "baseline_wall_ms": 87.063412,
+      "candidate_wall_ms": 86.42041066666667,
+      "baseline_thread_cpu_ms": 87.06059166666667,
+      "candidate_thread_cpu_ms": 86.40844266666667,
+      "prompt_tokens": 180236,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_mobile_game_hard_060_bug_investigation_expert_01:2",
+      "baseline_wall_ms": 345.6052023333333,
+      "candidate_wall_ms": 327.2110406666667,
+      "baseline_thread_cpu_ms": 345.5765333333333,
+      "candidate_thread_cpu_ms": 327.1607163333333,
+      "prompt_tokens": 149707,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_mobile_game_hard_060_bug_investigation_expert_01:27",
+      "baseline_wall_ms": 60.181144333333336,
+      "candidate_wall_ms": 67.33249599999999,
+      "baseline_thread_cpu_ms": 60.17720033333333,
+      "candidate_thread_cpu_ms": 67.328413,
+      "prompt_tokens": 173723,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_mobile_game_hard_060_bug_investigation_expert_01:57",
+      "baseline_wall_ms": 29.210153333333334,
+      "candidate_wall_ms": 28.993872,
+      "baseline_thread_cpu_ms": 29.206691333333332,
+      "candidate_thread_cpu_ms": 28.991325666666665,
+      "prompt_tokens": 184498,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_mobile_game_hard_060_feature_implementation_expert_01:2",
+      "baseline_wall_ms": 10.335483666666667,
+      "candidate_wall_ms": 10.606769,
+      "baseline_thread_cpu_ms": 10.331885333333334,
+      "candidate_thread_cpu_ms": 10.604262,
+      "prompt_tokens": 150088,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_mobile_game_hard_060_feature_implementation_expert_01:180",
+      "baseline_wall_ms": 110.25749133333333,
+      "candidate_wall_ms": 109.70912433333334,
+      "baseline_thread_cpu_ms": 110.25456066666666,
+      "candidate_thread_cpu_ms": 109.707398,
+      "prompt_tokens": 198536,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_mobile_game_hard_060_feature_implementation_expert_01:370",
+      "baseline_wall_ms": 68.520987,
+      "candidate_wall_ms": 58.174083333333336,
+      "baseline_thread_cpu_ms": 68.51344566666667,
+      "candidate_thread_cpu_ms": 58.171418,
+      "prompt_tokens": 220327,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_system_automation_hard_062_bug_investigation_expert_01:2",
+      "baseline_wall_ms": 281.45140733333335,
+      "candidate_wall_ms": 271.22502633333335,
+      "baseline_thread_cpu_ms": 281.43164233333334,
+      "candidate_thread_cpu_ms": 271.2197126666667,
+      "prompt_tokens": 129100,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_system_automation_hard_062_bug_investigation_expert_01:11",
+      "baseline_wall_ms": 28.833731666666665,
+      "candidate_wall_ms": 28.770370333333332,
+      "baseline_thread_cpu_ms": 28.829781666666666,
+      "candidate_thread_cpu_ms": 28.767379000000002,
+      "prompt_tokens": 139277,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_system_automation_hard_062_bug_investigation_expert_01:19",
+      "baseline_wall_ms": 26.949166333333334,
+      "candidate_wall_ms": 27.419220666666668,
+      "baseline_thread_cpu_ms": 26.945738,
+      "candidate_thread_cpu_ms": 27.416534666666667,
+      "prompt_tokens": 145930,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_system_automation_hard_062_multi_session_development_expert_01:2",
+      "baseline_wall_ms": 10.168317,
+      "candidate_wall_ms": 10.133083000000001,
+      "baseline_thread_cpu_ms": 10.162796333333333,
+      "candidate_thread_cpu_ms": 10.130725666666667,
+      "prompt_tokens": 129609,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_system_automation_hard_062_multi_session_development_expert_01:73",
+      "baseline_wall_ms": 97.52581066666667,
+      "candidate_wall_ms": 103.416963,
+      "baseline_thread_cpu_ms": 97.52290166666667,
+      "candidate_thread_cpu_ms": 103.39444566666667,
+      "prompt_tokens": 172627,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_system_automation_hard_062_multi_session_development_expert_01:143",
+      "baseline_wall_ms": 79.59650133333334,
+      "candidate_wall_ms": 69.159448,
+      "baseline_thread_cpu_ms": 79.59268566666667,
+      "candidate_thread_cpu_ms": 69.15732366666667,
+      "prompt_tokens": 204559,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_system_networking_hard_027_integration_testing_medium_01:2",
+      "baseline_wall_ms": 337.83818866666667,
+      "candidate_wall_ms": 336.806259,
+      "baseline_thread_cpu_ms": 337.824724,
+      "candidate_thread_cpu_ms": 336.76793599999996,
+      "prompt_tokens": 150356,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_system_networking_hard_027_integration_testing_medium_01:17",
+      "baseline_wall_ms": 34.6457,
+      "candidate_wall_ms": 32.01386933333333,
+      "baseline_thread_cpu_ms": 34.626117666666666,
+      "candidate_thread_cpu_ms": 32.01070333333333,
+      "prompt_tokens": 161581,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_system_networking_hard_027_integration_testing_medium_01:33",
+      "baseline_wall_ms": 26.699755333333332,
+      "candidate_wall_ms": 27.193759333333333,
+      "baseline_thread_cpu_ms": 26.696197333333334,
+      "candidate_thread_cpu_ms": 27.19100033333333,
+      "prompt_tokens": 168954,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_system_networking_hard_027_multi_session_development_medium_01:2",
+      "baseline_wall_ms": 12.002368,
+      "candidate_wall_ms": 11.540751,
+      "baseline_thread_cpu_ms": 11.998736000000001,
+      "candidate_thread_cpu_ms": 11.537695333333334,
+      "prompt_tokens": 150644,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_system_networking_hard_027_multi_session_development_medium_01:36",
+      "baseline_wall_ms": 56.687637333333335,
+      "candidate_wall_ms": 56.716293666666665,
+      "baseline_thread_cpu_ms": 56.68080366666667,
+      "candidate_thread_cpu_ms": 56.71060166666667,
+      "prompt_tokens": 173257,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_system_networking_hard_027_multi_session_development_medium_01:74",
+      "baseline_wall_ms": 45.730602,
+      "candidate_wall_ms": 50.219608,
+      "baseline_thread_cpu_ms": 45.72657933333333,
+      "candidate_thread_cpu_ms": 50.198990333333334,
+      "prompt_tokens": 187108,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01:2",
+      "baseline_wall_ms": 292.235504,
+      "candidate_wall_ms": 289.085494,
+      "baseline_thread_cpu_ms": 292.225189,
+      "candidate_thread_cpu_ms": 289.080611,
+      "prompt_tokens": 122908,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01:90",
+      "baseline_wall_ms": 72.29356133333333,
+      "candidate_wall_ms": 70.999467,
+      "baseline_thread_cpu_ms": 72.289393,
+      "candidate_thread_cpu_ms": 70.99730833333334,
+      "prompt_tokens": 152436,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01:186",
+      "baseline_wall_ms": 52.525845,
+      "candidate_wall_ms": 51.20237933333333,
+      "baseline_thread_cpu_ms": 52.507024333333334,
+      "candidate_thread_cpu_ms": 51.200422,
+      "prompt_tokens": 170586,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_web_cms_hard_074_feature_implementation_expert_01:2",
+      "baseline_wall_ms": 10.355307666666667,
+      "candidate_wall_ms": 9.479106999999999,
+      "baseline_thread_cpu_ms": 10.351599666666667,
+      "candidate_thread_cpu_ms": 9.476783666666666,
+      "prompt_tokens": 123303,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_web_cms_hard_074_feature_implementation_expert_01:27",
+      "baseline_wall_ms": 70.04491533333334,
+      "candidate_wall_ms": 65.23469833333333,
+      "baseline_thread_cpu_ms": 70.04211233333334,
+      "candidate_thread_cpu_ms": 65.22998933333334,
+      "prompt_tokens": 151350,
+      "tokens_equal": true
+    },
+    {
+      "case": "locobench__python_web_cms_hard_074_feature_implementation_expert_01:59",
+      "baseline_wall_ms": 50.21014066666667,
+      "candidate_wall_ms": 42.860087666666665,
+      "baseline_thread_cpu_ms": 50.206558666666666,
+      "candidate_thread_cpu_ms": 42.857669666666666,
+      "prompt_tokens": 167123,
+      "tokens_equal": true
+    }
+  ]
+}

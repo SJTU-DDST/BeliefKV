@@ -1,0 +1,281 @@
+{
+  "scope": "Real CPU cache observation, selection, revalidation and transaction registration; no DMA or GPU",
+  "at": "2026-10-19T05:14:23.811710-07:00",
+  "baseline_revision": "81e5d18",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "c022919b429970d3284353060f6ac24e128c35f570efcee6638ce2cd1562085a",
+    "beliefkv/runtime/sglang_v0520_physical.py": "1675854a4bc242c4b4301ba516379003d4e4b4cda1a4776a01e9220e090ae304",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "ac21801aa671ad869b338b25e48b0ce04d6574cc100ab377480f897aec64db59"
+  },
+  "head": "81e5d18fdaa08f7aa520c962fdd83f9b09225dbc",
+  "candidate_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "ce43ad43d554bbecc8056df68e8246bde6c5024f2d29d2bdc4ccb9943cf2f106",
+    "beliefkv/runtime/sglang_v0520_admission.py": "74aaca51780c1a6a4ffdcbefe73576724f7ba68f216f955edfb39c30c30520c3",
+    "beliefkv/runtime/sglang_v0520_physical.py": "71c09a0a4c9148f2d7c0e6643dd740a39bfcb7e334767ea381d044b29e5407e5",
+    "beliefkv/runtime/sglang_v0520_observer.py": "c022919b429970d3284353060f6ac24e128c35f570efcee6638ce2cd1562085a",
+    "scripts/benchmark_wait_prefetch_dispatch_cpu.py": "6cf68333941f805483ac2a94063ebbf0ab97d5512a7d77449d234fc2b683e3d2",
+    "scripts/benchmark_native_prepare_path.py": "3ccb01eb8778c1fa11f5a6cdd67c03c300998085b0846a44eec76323c7e2e6a3"
+  },
+  "samples": 31,
+  "warmup_samples": 10,
+  "cases": [],
+  "selection_cases": [
+    {
+      "case": "report_service_join_selection",
+      "depth": 4,
+      "remaining_ms": 500.0,
+      "lead_ms": 1000.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 247.5312258064516,
+          "p50_us": 246.803,
+          "p90_us": 255.111,
+          "p99_us": 258.216
+        },
+        "candidate": {
+          "mean_us": 225.71367741935484,
+          "p50_us": 224.954,
+          "p90_us": 235.55,
+          "p99_us": 263.818
+        }
+      },
+      "native_reads_per_scan": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 4.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 4.0
+        }
+      },
+      "selected_target_and_no_physical_actions_equal": true
+    },
+    {
+      "case": "report_service_join_selection",
+      "depth": 4,
+      "remaining_ms": 1500.0,
+      "lead_ms": 1000.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 231.9260322580645,
+          "p50_us": 230.959,
+          "p90_us": 236.403,
+          "p99_us": 242.484
+        },
+        "candidate": {
+          "mean_us": 203.72206451612902,
+          "p50_us": 203.96,
+          "p90_us": 208.809,
+          "p99_us": 209.601
+        }
+      },
+      "native_reads_per_scan": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 4.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 4.0
+        }
+      },
+      "selected_target_and_no_physical_actions_equal": true
+    },
+    {
+      "case": "report_service_join_selection",
+      "depth": 16,
+      "remaining_ms": 500.0,
+      "lead_ms": 1000.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 399.0034838709677,
+          "p50_us": 397.636,
+          "p90_us": 407.37,
+          "p99_us": 426.777
+        },
+        "candidate": {
+          "mean_us": 345.7021935483871,
+          "p50_us": 344.729,
+          "p90_us": 352.457,
+          "p99_us": 380.271
+        }
+      },
+      "native_reads_per_scan": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 4.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 4.0
+        }
+      },
+      "selected_target_and_no_physical_actions_equal": true
+    },
+    {
+      "case": "report_service_join_selection",
+      "depth": 16,
+      "remaining_ms": 1500.0,
+      "lead_ms": 1000.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 379.8044516129032,
+          "p50_us": 378.167,
+          "p90_us": 386.274,
+          "p99_us": 396.613
+        },
+        "candidate": {
+          "mean_us": 327.5053870967742,
+          "p50_us": 326.613,
+          "p90_us": 332.461,
+          "p99_us": 348.263
+        }
+      },
+      "native_reads_per_scan": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 4.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 4.0
+        }
+      },
+      "selected_target_and_no_physical_actions_equal": true
+    },
+    {
+      "case": "report_service_join_selection",
+      "depth": 64,
+      "remaining_ms": 500.0,
+      "lead_ms": 1000.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 828.5673870967742,
+          "p50_us": 769.604,
+          "p90_us": 972.571,
+          "p99_us": 988.8
+        },
+        "candidate": {
+          "mean_us": 685.0686129032258,
+          "p50_us": 634.567,
+          "p90_us": 813.51,
+          "p99_us": 830.206
+        }
+      },
+      "native_reads_per_scan": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 4.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 4.0
+        }
+      },
+      "selected_target_and_no_physical_actions_equal": true
+    },
+    {
+      "case": "report_service_join_selection",
+      "depth": 64,
+      "remaining_ms": 1500.0,
+      "lead_ms": 1000.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 914.6067096774194,
+          "p50_us": 759.492,
+          "p90_us": 1157.632,
+          "p99_us": 1183.016
+        },
+        "candidate": {
+          "mean_us": 755.8793225806452,
+          "p50_us": 622.298,
+          "p90_us": 950.8,
+          "p99_us": 964.637
+        }
+      },
+      "native_reads_per_scan": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 4.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 4.0
+        }
+      },
+      "selected_target_and_no_physical_actions_equal": true
+    },
+    {
+      "case": "report_service_join_selection",
+      "depth": 256,
+      "remaining_ms": 500.0,
+      "lead_ms": 1000.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 2312.1495483870967,
+          "p50_us": 2304.828,
+          "p90_us": 2376.023,
+          "p99_us": 2392.749
+        },
+        "candidate": {
+          "mean_us": 2063.7708709677418,
+          "p50_us": 2046.412,
+          "p90_us": 2128.573,
+          "p99_us": 2148.328
+        }
+      },
+      "native_reads_per_scan": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 4.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 4.0
+        }
+      },
+      "selected_target_and_no_physical_actions_equal": true
+    },
+    {
+      "case": "report_service_join_selection",
+      "depth": 256,
+      "remaining_ms": 1500.0,
+      "lead_ms": 1000.0,
+      "costs": {
+        "baseline": {
+          "mean_us": 2266.5589354838708,
+          "p50_us": 2261.764,
+          "p90_us": 2301.25,
+          "p99_us": 2374.171
+        },
+        "candidate": {
+          "mean_us": 2004.6571612903226,
+          "p50_us": 1997.048,
+          "p90_us": 2040.093,
+          "p99_us": 2108.282
+        }
+      },
+      "native_reads_per_scan": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 4.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 4.0
+        }
+      },
+      "selected_target_and_no_physical_actions_equal": true
+    }
+  ],
+  "prefill_check_cases": [],
+  "limitations": [
+    "The CPU native enqueue uses scalar index stand-ins, not the real native allocator or controller.",
+    "Plans have real positive Host-only prefixes and causal identities in both sources.",
+    "Physical actions remain pending; this fixture never fabricates DMA completion or ACK/use credit.",
+    "Resets, state verification and cProfile are outside the CPU timings.",
+    "When enabled, the diagnostic writer appends records to memory without I/O or background GIL contention.",
+    "Local CPU timings and synthetic scene frequencies do not establish workflow throughput or JCT gains."
+  ]
+}
