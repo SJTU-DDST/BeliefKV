@@ -5,10 +5,16 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-GPU experiments are paused by explicit user request at 18:11 Asia/Shanghai on
-2026-10-19. V85d predictive finished all12 workflows naturally; native was
-intentionally stopped with its partial trace retained. Disable automatic resume.
-The next candidate is24 roots, not an authorized launch or a running-cap change.
+The user authorized a new GPU experiment no earlier than2026-10-20 06:00
+Asia/Shanghai. Until then, continue CPU-only control optimization and verification.
+A detached one-time waiter is registered in
+`/home/longhao/experiment/ops/v88_24root_after_0600_20261020.state.json`.
+At the deadline, require idle GPU resources and the latest CPU-qualified,
+frozen source before launching predictive first, followed by native.
+Publish a new qualification after subsequent code changes; an older qualification
+must not launch advanced/unverified main. This is not a recurring daily restriction.
+V85d predictive finished all12 workflows naturally; its interrupted native trace
+stays preserved and will not automatically resume.
 The report-only semantic-worker validation for observed/report-service JOINs
 is fixed;65 checks pass, with collection code and frozen configuration unchanged.
 
@@ -17,9 +23,10 @@ but only85.463MB across2 JOINs starts before model EOS. H2D stream totals1.160s;
 long-input frontend conversion totals676.813s, neither an oracle JCT bound.
 Before a resumed24-root run, distinguish missing-copy opportunity, safe FULL
 capacity, new-context hybrid checkpoint gaps and service consumption. Keep GPU
-paused; no completed native control or policy speedup has been established.
+idle until the authorized deadline; no completed native control or policy speedup
+has been established for this workload.
 
-The next paused candidate is24 distinct original tasks on the same six qualified
+The next candidate is24 distinct original tasks on the same six qualified
 projects,16+8 waves900s apart and running8. Use native_in_graph_dynamic_nested:
 the model chooses delegation timing, fanout, roles and repeated rounds. Do not
 enforce four phases, force task generation at milestones, or reject natural
@@ -44,7 +51,32 @@ patch2cbb0b46. Preserve V87/130d376d and V86/af328f26, and respect
 the explicit SGLANG_SOURCE_CHECKOUT through the launcher.
 This is CPU evidence, not an end-to-end result. Keep new-context hybrid checkpoint
 gaps separate; FULL matches alone cannot reconstruct a missing Mamba checkpoint.
-GPU pause remains active and automatic resume remains disabled.
+The one-time hold stays active until06:00; only the newly authorized24-root run
+may release it after verifying resources and the current CPU qualification.
+
+Current goal:
+
+- Continue removing unnecessary repeated PREPARE, prefetch, lifecycle and admission work.
+- Preserve current identity, generation, ownership, capacity, ACK and first-consumption checks.
+- Qualify and freeze the latest main revision before the authorized GPU start.
+- Measure useful Host-only recovery, consumption delay, copy loss/recomputation,
+  tail-excluded throughput and mean workflow JCT on the new24-root run.
+- Stop and fix material experimental failures promptly; CPU improvements alone
+  do not establish GPU performance or a gain over native.
+
+V1970 removes repeated PREPARE registration only for an existing record with
+the same frozen key object and node generation. Rebuild replaced group indices;
+retain fresh/new-epoch/equal-but-distinct-key processing. Construct prefix maps
+only when a new registration needs them. Publication/native reclaim still reads
+live ownership, settled copies, locks and pending transfers.
+All72 local states agree. Repeated64-node registration CPU P50 is76.809 to27.306us,
+but26 fresh/other local scenes regress, up to20.99us; retain those and V1969.
+All12 complete PREPARE scenes using24 synthetic workflows/running8 and sparse
+native-style indices improve4.6%-14.4%, preserving actions, publications, reads,
+counters and pending. The2069 main CPU checks pass; V88/patch unchanged.
+See V1972 and final V1970. These are not GPU/allocator/DMA/JCT results.
+Pause statements in earlier CPU records below describe their historical state;
+the current one-time06:00 authorization above takes precedence.
 
 V1967 reduces nonempty restore maintenance relative to4d389de. The latest
 complete V85d has172 JOIN lease registrations and up to42 simultaneous

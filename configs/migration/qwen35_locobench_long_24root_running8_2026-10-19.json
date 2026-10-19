@@ -1,8 +1,10 @@
 {
   "schema_version": 1,
-  "scope": "Paused development candidate; dynamic delegation and CPU fixes are not GPU performance results.",
+  "scope": "Development candidate authorized after the one-time 06:00 Beijing hold; CPU fixes are not GPU performance results.",
   "gpu_experiment_started": false,
-  "automatic_resume_allowed": false,
+  "automatic_resume_allowed": true,
+  "gpu_not_before": "2026-10-20T06:00:00+08:00",
+  "launch_policy": "Qualified latest code, predictive first; wait for idle GPU. Do not resume the interrupted V85d native arm.",
   "workload_manifest": "configs/workloads/locobench_agent_long_24root_20261019.json",
   "entrypoint": "scripts/run_qwen35_long_repository_ab.sh",
   "root_count": 24,

@@ -2,9 +2,14 @@
 
 更新日期：2026-10-20（北京时间）。
 
-**当前暂停 GPU 实验。**用户于 2026-10-19 18:11 要求暂停；V85d
-predictive 已 12/12 自然完成，无 error/incomplete 或 guard 强制完成。
-native 已停止并保留部分轨迹，自动接续禁用；下轮候选为 24 root。
+**当前执行 CPU 控制优化，GPU 新实验最早于北京时间 2026-10-20 06:00
+启动。**用户已授权这个时间之后启动；独立等待进程登记在
+`/home/longhao/experiment/ops/v88_24root_after_0600_20261020.state.json`，
+到点后核对最新 CPU 合格版本、冻结执行源码与 GPU 空闲状态。保持
+24 root、16+8/900s、running 8、256K、Host80:20，predictive 优先。
+新修改必须完成 CPU 验证并更新启动资格，运行中的实验来源不可变。
+V85d predictive 已 12/12 自然完成，无 error/incomplete 或 guard 强制完成；
+旧 native 保留部分轨迹且不恢复，不能作为完整对照。本次不是每日停机规则。
 汇总器误将 report_service_or_eos 绑定旧语义 worker 的问题已修复，
 65 项检查通过；运行时代码和原配对配置没有改变。
 
@@ -13,7 +18,7 @@ V1923/V1924 全程离线分析区分模型 EOS、客户端 JOIN 和服务：
 0.085GB；受控 FULL 6.702GB 均有复用证明，未见首次服务前重复原生加载。
 H2D stream 仅 1.160s，前端转换累计 676.813s；这些不是可减去的 JCT。
 详见[完整报告](../experiments/reports/v1924_v85d_complete_predictive_analysis_20261019_zh.md)。
-GPU 暂停状态不变，native 部分轨迹不能作配对。
+上述为旧轮结果，native 部分轨迹不能作配对；新轮需独立验证。
 
 **下一轮采用模型动态委派，不预设 root 流程。**新 profile
 `native_in_graph_dynamic_nested` 没有固定阶段、角色顺序或轮数，
@@ -44,7 +49,18 @@ reactive 作为本系统控制时默认与 predictive 同开前端缓存，隔�
 11 个新 context 的混合 checkpoint 缺口仍单列：深 FULL 命中不能替代
 该位置缺少的可恢复 Mamba 状态，现有日志不足以逐个区分未创建与被回收。
 
-**最新非空恢复维护降本：V1967。**最新完整 V85d 的 172 条租约注册均来自
+**最新 PREPARE 登记降本：V1970。**已有候选持有同一个不可变 key 对象、
+node ID/creation time 相同时，不再重复前缀计算和登记；新节点、代际、
+不同对象的 key 与 epoch 仍按原路径核对，替换的组索引也会重建。
+节点映射延后到实际新登记才构造，发布/原生回收仍读取当前物理状态。
+64 节点重复登记 CPU P50 76.809→27.306us；24-workflow/8-running、
+原生式稀疏索引下的完整 PREPARE 调度 12 组均改善 4.6%–14.4%。
+72 组局部登记的顺序/组/代际相同，26 组首次登记等路径回退仍保留，
+最大多约 20.99us，不宣称全面加速。2069 项 CPU 检查通过，V88 未改。
+详见 [V1972](../experiments/reports/v1972_prepare_registration_and_gpu_schedule_20261020_zh.md)。
+下文旧轮 CPU 记录中的暂停为历史状态；当前 06:00 授权以上文为准。
+
+**此前非空恢复维护降本：V1967。**最新完整 V85d 的 172 条租约注册均来自
 JOIN，同一 context 同时最多 42 条；这是注册事件观察，不是维护频率分布。
 有效性检查改用直接循环，保留原 summary、session、各池驻留与代际判定；
 下一 epoch 已给出交接依据时不再逐条查询另一份 JOIN 证明，仍验证

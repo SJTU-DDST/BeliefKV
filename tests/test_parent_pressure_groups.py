@@ -6,6 +6,7 @@ from unittest.mock import call, patch
 from beliefkv.control.causal_graph import InvocationState
 from beliefkv.runtime.sglang_v0520_runtime import _PrefetchServiceLease
 from tests.test_sglang_v0520_runtime import final_stage_runtime
+from scripts.benchmark_native_prepare_path import fixture
 
 
 def test_pressure_maintenance_checks_one_live_owner_for_many_nodes_each_call():
@@ -164,5 +165,71 @@ def test_pressure_groups_rebuild_for_replaced_or_extended_candidate_tables():
             runtime._parent_pressure_candidates[9] = (key, 3.)
             runtime._prune_parent_pressure_candidates()
         assert runtime._parent_pressure_groups == {newer: {8}, key: {9}}
+    finally:
+        runtime.close()
+
+
+def test_repeated_registration_retains_order_and_rebuilds_replaced_group_index():
+    from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
+    from beliefkv.runtime.sglang_v0520_physical import capture_action_local_shadow
+
+    runtime, _, _, _, _ = fixture(
+        NativeAdmissionRuntime, workflows=1, depth=16,
+        backed=True, host_full=1_000_000, leases=0,
+    )
+    try:
+        key = runtime.context_sessions["ctx-wf-0-root"]
+        anchors = runtime.snapshot_session_anchors(
+            runtime._native_cache, context_id=key.context_id, context_epoch=key.context_epoch,
+        )
+        candidate = capture_action_local_shadow(
+            runtime._native_cache, anchors, include_non_actionable=True,
+        )
+        runtime._register_backed_pressure_nodes(key, candidate=candidate)
+        original = tuple(runtime._parent_pressure_candidates.items())
+        runtime._parent_pressure_candidates = dict(original)
+        runtime._parent_pressure_groups = {}
+        with patch.object(
+            runtime, "_remember_parent_pressure_node",
+            wraps=runtime._remember_parent_pressure_node,
+        ) as remember:
+            runtime._register_backed_pressure_nodes(key, candidate=candidate)
+        assert remember.call_count == 0
+        assert tuple(runtime._parent_pressure_candidates.items()) == original
+        assert runtime._parent_pressure_groups == {key: set(dict(original))}
+        assert runtime._parent_pressure_group_source is runtime._parent_pressure_candidates
+    finally:
+        runtime.close()
+
+
+def test_repeated_registration_keeps_replaced_generations_and_new_copies_visible():
+    from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
+    from beliefkv.runtime.sglang_v0520_physical import capture_action_local_shadow
+
+    runtime, _, _, _, _ = fixture(
+        NativeAdmissionRuntime, workflows=1, depth=16,
+        backed=False, host_full=1_000_000, leases=0,
+    )
+    try:
+        key = runtime.context_sessions["ctx-wf-0-root"]
+        anchors = runtime.snapshot_session_anchors(
+            runtime._native_cache, context_id=key.context_id, context_epoch=key.context_epoch,
+        )
+        candidate = capture_action_local_shadow(
+            runtime._native_cache, anchors, include_non_actionable=True,
+        )
+        runtime._register_backed_pressure_nodes(key, candidate=candidate)
+        runtime._parent_pressure_candidates[1] = (key, -1.)
+        new_node = runtime._native_cache.tree_core.node_by_id(9)
+        new_node.component_data[0].host_value = new_node.component_data[0].value
+        candidate = capture_action_local_shadow(
+            runtime._native_cache, anchors, include_non_actionable=True,
+        )
+        runtime._register_backed_pressure_nodes(key, candidate=candidate)
+        assert runtime._parent_pressure_candidates[1] == (
+            key, runtime._native_cache.tree_core.node_by_id(1).creation_time,
+        )
+        assert runtime._parent_pressure_candidates[9] == (key, new_node.creation_time)
+        assert 9 in runtime._parent_pressure_groups[key]
     finally:
         runtime.close()

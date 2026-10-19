@@ -5892,16 +5892,31 @@ class NativeAdmissionRuntime:
             anchors = candidate.anchors
         if candidate is None or anchors.reusable_input_tokens is None:
             return
-        nodes = {node.node_id: node for node in candidate.nodes}
+        nodes = None
         if reclaim_tail_leaves is None:
             reclaim_tail_leaves = self._shadow_reclaim_tail_leaves(candidate)
         prefix_lengths: dict[int, int] = {}
+        existing = self._parent_pressure_candidates or None
+        unchanged_index_checked = False
         for node in candidate.nodes:
             if not (
                 node.full_device_tokens and node.full_host_tokens
                 or node.mamba_device_present and node.mamba_host_present
             ):
                 continue
+            previous = existing.get(node.node_id) if existing is not None else None
+            if (
+                previous is not None and previous[0] is key
+                and previous[1] == node.creation_time
+            ):
+                # Registration only adds candidates. Publication and reclaim
+                # still validate live ownership, locks and settled copies.
+                if not unchanged_index_checked:
+                    self._pressure_candidate_groups()
+                    unchanged_index_checked = True
+                continue
+            if nodes is None:
+                nodes = {item.node_id: item for item in candidate.nodes}
             chain, current = [], node
             while current is not None and current.node_id not in prefix_lengths:
                 chain.append(current)
