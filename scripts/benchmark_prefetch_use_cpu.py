@@ -82,6 +82,7 @@ def distribution(values):
         "p50_ms": statistics.median(values),
         "p90_ms": ordered[min(len(ordered) - 1, int(.9 * len(ordered)))],
         "max_ms": max(values),
+        "samples_ms": values,
     }
 
 
@@ -89,14 +90,27 @@ def measure(methods, *, tokens: int, extents: int, mismatch: str,
             native_array: bool, iterations: int):
     samples = {name: {"wall": [], "thread_cpu": []} for name in methods}
     canonical = None
-    with patch.object(telemetry.time, "time", return_value=.2):
+    audit, request, emitted = fixture(tokens, extents, mismatch, native_array)
+    pending = audit._pending_prefetch_use.copy()
+
+    def snapshot_hash():
+        digest = hashlib.sha256()
+        digest.update(memoryview(array("q", request.origin_input_ids)).cast("B"))
+        for state in pending.values():
+            for token_ids, _, _ in state[3].values():
+                digest.update(memoryview(token_ids).cast("B"))
+        return digest.hexdigest()
+
+    before = snapshot_hash()
+    with patch.object(telemetry.time, "time", lambda: .2):
         for iteration in range(iterations + 10):
             outputs = {}
             names = list(methods)
             if iteration % 2:
                 names.reverse()
             for name in names:
-                audit, request, emitted = fixture(tokens, extents, mismatch, native_array)
+                audit._pending_prefetch_use = pending.copy()
+                emitted.clear()
                 wall_start, cpu_start = time.perf_counter_ns(), time.thread_time_ns()
                 candidates = methods[name](
                     audit, request, {"context_id": "ctx", "context_epoch": 3},
@@ -105,7 +119,7 @@ def measure(methods, *, tokens: int, extents: int, mismatch: str,
                     "wall": (time.perf_counter_ns() - wall_start) / 1e6,
                     "thread_cpu": (time.thread_time_ns() - cpu_start) / 1e6,
                 }
-                outputs[name] = (emitted, candidates, list(audit._pending_prefetch_use))
+                outputs[name] = (emitted[:], candidates, list(audit._pending_prefetch_use))
                 if iteration >= 10:
                     for clock, value in elapsed.items():
                         samples[name][clock].append(value)
@@ -114,11 +128,14 @@ def measure(methods, *, tokens: int, extents: int, mismatch: str,
             if len(outputs["optimized"][0]) != extents:
                 raise AssertionError("first-service records were lost")
             canonical = json.dumps(outputs["optimized"], sort_keys=True)
+    if snapshot_hash() != before:
+        raise AssertionError("a measured callback mutated the shared read-only token snapshots")
     return {
         "input_tokens": tokens, "restore_extents": extents,
         "input_mismatch": mismatch != "none", "mismatch_position": mismatch,
         "input_storage": "native_array" if native_array else "list",
         "records_and_consumed_commands_equal": True,
+        "same_snapshot_addresses_and_contents_retained": True,
         "canonical_output_sha256": hashlib.sha256(canonical.encode()).hexdigest(),
         "costs": {
             name: {clock: distribution(values) for clock, values in clocks.items()}
@@ -127,9 +144,65 @@ def measure(methods, *, tokens: int, extents: int, mismatch: str,
     }
 
 
+def inventory_case(methods, *, size, scenario, iterations):
+    inventory = OrderedDict()
+    for index in range(size):
+        context = "other" if scenario == "other_context" or (
+            scenario == "mixed" and index % 4 == 1
+        ) else "ctx"
+        epoch = (
+            4 if scenario == "future_epoch" or scenario == "mixed" and index % 4 == 2
+            else 0 if scenario == "expired" or scenario == "mixed" and index % 4 == 0
+            else 1
+        )
+        inventory[str(index)] = (
+            NS(command_id=str(index), context_id=context, context_epoch=epoch,
+               node_ids=(), pool_bytes=()),
+            (), 100., {},
+        )
+    request = NS(
+        rid="next", origin_input_ids=(), last_node=0, prefix_indices=(),
+        cached_tokens_device=0,
+    )
+    fixtures = {}
+    for name in methods:
+        audit = telemetry.NativeReactiveTelemetry.__new__(telemetry.NativeReactiveTelemetry)
+        emitted = []
+        audit._cache = None
+        audit._emit_prefetch_use = emitted.append
+        fixtures[name] = audit, emitted
+    samples = {name: [] for name in methods}
+    with patch.object(telemetry.time, "time", lambda: .2):
+        for sample in range(iterations + 10):
+            order = list(methods)
+            if sample % 2:
+                order.reverse()
+            states = {}
+            for name in order:
+                audit, emitted = fixtures[name]
+                audit._pending_prefetch_use = inventory.copy()
+                emitted.clear()
+                started = time.thread_time_ns()
+                result = methods[name](
+                    audit, request, {"context_id": "ctx", "context_epoch": 2},
+                )
+                elapsed = (time.thread_time_ns() - started) / 1e6
+                states[name] = (result, emitted[:], audit._pending_prefetch_use.copy())
+                if sample >= 10:
+                    samples[name].append(elapsed)
+            if states["baseline"] != states["optimized"]:
+                raise AssertionError("inventory retirement, records or unconsumed commands changed")
+    return {
+        "inventory_commands": size, "scenario": scenario,
+        "records_retirement_order_and_pending_equal": True,
+        "costs": {name: distribution(values) for name, values in samples.items()},
+    }
+
+
 def observed_prefix_work(path: Path) -> dict:
     groups = {}
     prefix_hash, bytes_read, rows = hashlib.sha256(), 0, 0
+    without_snapshot = snapshot_tokens = 0
     with path.open("rb") as stream:
         for line in stream:
             if not line.endswith(b"\n"):
@@ -140,12 +213,14 @@ def observed_prefix_work(path: Path) -> dict:
             if row.get("event") != "beliefkv_prefetch_first_service":
                 continue
             rows += 1
+            without_snapshot += not row.get("target_prefixes")
             key = (row["context_id"], row["service_context_epoch"], row["request_id"])
             group = groups.setdefault(key, {
                 "commands": 0, "targets": 0, "common_tokens": 0, "max_common_tokens": 0,
             })
             group["commands"] += 1
             for target in row.get("target_prefixes", ()):
+                snapshot_tokens += target["prefix_tokens"]
                 common = target["common_input_prefix_tokens"]
                 group["targets"] += 1
                 group["common_tokens"] += common
@@ -155,6 +230,8 @@ def observed_prefix_work(path: Path) -> dict:
     return {
         "source": str(path.resolve()), "read_bytes": bytes_read,
         "source_sha256": prefix_hash.hexdigest(), "first_service_command_records": rows,
+        "records_without_token_snapshot": without_snapshot,
+        "snapshotted_prefix_tokens": snapshot_tokens,
         "first_service_requests": len(groups),
         "requests_with_multiple_target_prefixes": sum(
             group["targets"] > 1 for group in groups.values()
@@ -169,8 +246,8 @@ def observed_prefix_work(path: Path) -> dict:
         ),
         "semantics": (
             "Groups use the same context/epoch/first-service request. Common-prefix "
-            "tokens were compared by the old Python loop; repeated tokens count "
-            "shared matching positions, not avoided bytes, elapsed time or "
+            "tokens describe prefix evidence; repeated tokens count shared matching "
+            "positions, not avoided bytes, elapsed time or "
             "additional proven KV reuse. No token payload is saved."
         ),
     }
@@ -180,11 +257,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline-revision", required=True)
     parser.add_argument("--iterations", type=int, default=100)
+    parser.add_argument("--tokens", type=int, nargs="+", default=[1024, 8192, 32768])
+    parser.add_argument("--extents", type=int, nargs="+", default=[1, 16])
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--observed-action-use", type=Path)
     args = parser.parse_args()
-    if args.iterations <= 0:
-        parser.error("iterations must be positive")
+    if args.iterations <= 0 or args.output.exists() or min(args.tokens + args.extents) < 1:
+        parser.error("use positive sizes/iterations and a fresh output")
     if Path(telemetry.__file__).resolve() != ROOT / SOURCE:
         raise RuntimeError("benchmark imported a different worktree")
     baseline = subprocess.check_output(
@@ -197,6 +276,7 @@ def main() -> None:
         "optimized": load_method(current, str(ROOT / SOURCE)),
     }
     report = {
+        "status": "complete_cpu_comparison_not_gpu_or_jct_gain",
         "scope": (
             "CPU first-service evidence with native-array prefix snapshots and "
             "materialized request-prefix identity fixtures; no writer thread, "
@@ -206,13 +286,31 @@ def main() -> None:
         "baseline_source_sha256": hashlib.sha256(baseline.encode()).hexdigest(),
         "optimized_source_sha256": hashlib.sha256(current.encode()).hexdigest(),
         "benchmark_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "candidate_source_sha256": {
+            str(path): hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
+            for path in (SOURCE, Path("scripts/benchmark_prefetch_use_cpu.py"))
+        },
         "iterations_per_case": args.iterations, "warmup_iterations": 10, "deployed": False,
         "cases": [
             measure(methods, tokens=tokens, extents=extents, mismatch=mismatch,
                     native_array=native_array, iterations=args.iterations)
-            for tokens in (1024, 8192, 32768)
-            for extents in (1, 16) for mismatch in ("none", "first", "middle", "last")
+            for tokens in args.tokens
+            for extents in args.extents for mismatch in ("none", "first", "middle", "last")
             for native_array in (False, True)
+        ],
+        "inventory_cases": [
+            inventory_case(methods, size=0, scenario="empty", iterations=args.iterations),
+            *(inventory_case(methods, size=size, scenario=scenario, iterations=args.iterations)
+              for size in (1, 8, 42, 128)
+              for scenario in ("other_context", "future_epoch", "expired", "mixed")),
+        ],
+        "limitations": [
+            "One-time construction, shallow inventory resets and output comparison are outside timing.",
+            "Input/issuance arrays remain independent; exact reuse checks are retained.",
+            "Within each prefix case both methods read the same unchanged snapshot addresses.",
+            "Frozen time uses a plain function without Mock call-history overhead.",
+            "Inventory scenes use controlled counts, not an observed online pending distribution.",
+            "No full on_launch, actual native allocator, DMA, CUDA, writer I/O or JCT is measured.",
         ],
     }
     if args.observed_action_use is not None:
@@ -227,6 +325,7 @@ def main() -> None:
               f"{before:.4f} -> {after:.4f} ms")
     if "observed_prefix_work" in report:
         print(json.dumps(report["observed_prefix_work"], indent=2))
+    print(json.dumps({"inventory_cases": len(report["inventory_cases"])}))
 
 
 if __name__ == "__main__":

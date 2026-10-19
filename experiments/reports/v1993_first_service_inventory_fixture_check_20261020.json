@@ -1,0 +1,2271 @@
+{
+  "status": "complete_cpu_comparison_not_gpu_or_jct_gain",
+  "scope": "CPU first-service evidence with native-array prefix snapshots and materialized request-prefix identity fixtures; no writer thread, allocator, DMA, CUDA or end-to-end throughput measurement.",
+  "baseline_revision": "a346b6a",
+  "baseline_source_sha256": "7cdfce2651ab9a0e345dd560d843ba09bc681cf029154f205b2996fcccacfbb7",
+  "optimized_source_sha256": "74f994752de7b8da21eb3f995ad2f412eb11854cac6479d62e0242aedd84e960",
+  "benchmark_source_sha256": "e30e40ec9d6099370f0156f9e4b527368ff3d2f3b20cc8d47234350d8690ce7f",
+  "candidate_source_sha256": {
+    "beliefkv/runtime/v0520_native_telemetry.py": "74f994752de7b8da21eb3f995ad2f412eb11854cac6479d62e0242aedd84e960",
+    "scripts/benchmark_prefetch_use_cpu.py": "e30e40ec9d6099370f0156f9e4b527368ff3d2f3b20cc8d47234350d8690ce7f"
+  },
+  "iterations_per_case": 1,
+  "warmup_iterations": 10,
+  "deployed": false,
+  "cases": [
+    {
+      "input_tokens": 32768,
+      "restore_extents": 1,
+      "input_mismatch": false,
+      "mismatch_position": "none",
+      "input_storage": "list",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "cb97ecd2bc8136451c7efab0a4a253f4b0b05b8b16b3d1a88b860669b0d7fa50",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 1.076492,
+            "p50_ms": 1.076492,
+            "p90_ms": 1.076492,
+            "max_ms": 1.076492,
+            "samples_ms": [
+              1.076492
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 1.077149,
+            "p50_ms": 1.077149,
+            "p90_ms": 1.077149,
+            "max_ms": 1.077149,
+            "samples_ms": [
+              1.077149
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 1.076823,
+            "p50_ms": 1.076823,
+            "p90_ms": 1.076823,
+            "max_ms": 1.076823,
+            "samples_ms": [
+              1.076823
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 1.077384,
+            "p50_ms": 1.077384,
+            "p90_ms": 1.077384,
+            "max_ms": 1.077384,
+            "samples_ms": [
+              1.077384
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 32768,
+      "restore_extents": 1,
+      "input_mismatch": false,
+      "mismatch_position": "none",
+      "input_storage": "native_array",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "cb97ecd2bc8136451c7efab0a4a253f4b0b05b8b16b3d1a88b860669b0d7fa50",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.018288,
+            "p50_ms": 0.018288,
+            "p90_ms": 0.018288,
+            "max_ms": 0.018288,
+            "samples_ms": [
+              0.018288
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.0184,
+            "p50_ms": 0.0184,
+            "p90_ms": 0.0184,
+            "max_ms": 0.0184,
+            "samples_ms": [
+              0.0184
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.018108,
+            "p50_ms": 0.018108,
+            "p90_ms": 0.018108,
+            "max_ms": 0.018108,
+            "samples_ms": [
+              0.018108
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.018248,
+            "p50_ms": 0.018248,
+            "p90_ms": 0.018248,
+            "max_ms": 0.018248,
+            "samples_ms": [
+              0.018248
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 32768,
+      "restore_extents": 1,
+      "input_mismatch": true,
+      "mismatch_position": "first",
+      "input_storage": "list",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "936e15f1ee3dc2656802097a37afaed4c40c124edcc535b11753241aa7983351",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 1.034672,
+            "p50_ms": 1.034672,
+            "p90_ms": 1.034672,
+            "max_ms": 1.034672,
+            "samples_ms": [
+              1.034672
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 1.035273,
+            "p50_ms": 1.035273,
+            "p90_ms": 1.035273,
+            "max_ms": 1.035273,
+            "samples_ms": [
+              1.035273
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 1.064278,
+            "p50_ms": 1.064278,
+            "p90_ms": 1.064278,
+            "max_ms": 1.064278,
+            "samples_ms": [
+              1.064278
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 1.064669,
+            "p50_ms": 1.064669,
+            "p90_ms": 1.064669,
+            "max_ms": 1.064669,
+            "samples_ms": [
+              1.064669
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 32768,
+      "restore_extents": 1,
+      "input_mismatch": true,
+      "mismatch_position": "first",
+      "input_storage": "native_array",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "936e15f1ee3dc2656802097a37afaed4c40c124edcc535b11753241aa7983351",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.011689,
+            "p50_ms": 0.011689,
+            "p90_ms": 0.011689,
+            "max_ms": 0.011689,
+            "samples_ms": [
+              0.011689
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.011766,
+            "p50_ms": 0.011766,
+            "p90_ms": 0.011766,
+            "max_ms": 0.011766,
+            "samples_ms": [
+              0.011766
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.010371,
+            "p50_ms": 0.010371,
+            "p90_ms": 0.010371,
+            "max_ms": 0.010371,
+            "samples_ms": [
+              0.010371
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.010505,
+            "p50_ms": 0.010505,
+            "p90_ms": 0.010505,
+            "max_ms": 0.010505,
+            "samples_ms": [
+              0.010505
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 32768,
+      "restore_extents": 1,
+      "input_mismatch": true,
+      "mismatch_position": "middle",
+      "input_storage": "list",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "a44933d14a4d21ada27fa401716ef8fe49dd3689d91debe259d8541480b236b6",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 1.067265,
+            "p50_ms": 1.067265,
+            "p90_ms": 1.067265,
+            "max_ms": 1.067265,
+            "samples_ms": [
+              1.067265
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 1.068103,
+            "p50_ms": 1.068103,
+            "p90_ms": 1.068103,
+            "max_ms": 1.068103,
+            "samples_ms": [
+              1.068103
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 1.082579,
+            "p50_ms": 1.082579,
+            "p90_ms": 1.082579,
+            "max_ms": 1.082579,
+            "samples_ms": [
+              1.082579
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 1.083184,
+            "p50_ms": 1.083184,
+            "p90_ms": 1.083184,
+            "max_ms": 1.083184,
+            "samples_ms": [
+              1.083184
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 32768,
+      "restore_extents": 1,
+      "input_mismatch": true,
+      "mismatch_position": "middle",
+      "input_storage": "native_array",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "a44933d14a4d21ada27fa401716ef8fe49dd3689d91debe259d8541480b236b6",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.03011,
+            "p50_ms": 0.03011,
+            "p90_ms": 0.03011,
+            "max_ms": 0.03011,
+            "samples_ms": [
+              0.03011
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.030262,
+            "p50_ms": 0.030262,
+            "p90_ms": 0.030262,
+            "max_ms": 0.030262,
+            "samples_ms": [
+              0.030262
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.028779,
+            "p50_ms": 0.028779,
+            "p90_ms": 0.028779,
+            "max_ms": 0.028779,
+            "samples_ms": [
+              0.028779
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.028976,
+            "p50_ms": 0.028976,
+            "p90_ms": 0.028976,
+            "max_ms": 0.028976,
+            "samples_ms": [
+              0.028976
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 32768,
+      "restore_extents": 1,
+      "input_mismatch": true,
+      "mismatch_position": "last",
+      "input_storage": "list",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "9161e2a4554540813939a2ce1eee6a58a31406ebf13c57fe100b407f874d148b",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 1.093567,
+            "p50_ms": 1.093567,
+            "p90_ms": 1.093567,
+            "max_ms": 1.093567,
+            "samples_ms": [
+              1.093567
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 1.094261,
+            "p50_ms": 1.094261,
+            "p90_ms": 1.094261,
+            "max_ms": 1.094261,
+            "samples_ms": [
+              1.094261
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 1.096396,
+            "p50_ms": 1.096396,
+            "p90_ms": 1.096396,
+            "max_ms": 1.096396,
+            "samples_ms": [
+              1.096396
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 1.097095,
+            "p50_ms": 1.097095,
+            "p90_ms": 1.097095,
+            "max_ms": 1.097095,
+            "samples_ms": [
+              1.097095
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 32768,
+      "restore_extents": 1,
+      "input_mismatch": true,
+      "mismatch_position": "last",
+      "input_storage": "native_array",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "9161e2a4554540813939a2ce1eee6a58a31406ebf13c57fe100b407f874d148b",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.036438,
+            "p50_ms": 0.036438,
+            "p90_ms": 0.036438,
+            "max_ms": 0.036438,
+            "samples_ms": [
+              0.036438
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.036584,
+            "p50_ms": 0.036584,
+            "p90_ms": 0.036584,
+            "max_ms": 0.036584,
+            "samples_ms": [
+              0.036584
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.034743,
+            "p50_ms": 0.034743,
+            "p90_ms": 0.034743,
+            "max_ms": 0.034743,
+            "samples_ms": [
+              0.034743
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.034786,
+            "p50_ms": 0.034786,
+            "p90_ms": 0.034786,
+            "max_ms": 0.034786,
+            "samples_ms": [
+              0.034786
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 32768,
+      "restore_extents": 42,
+      "input_mismatch": false,
+      "mismatch_position": "none",
+      "input_storage": "list",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "e7a860894295fe77b353477691cec03a4340c8d0e66e9a4f510f4766c7f41bd0",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 1.735919,
+            "p50_ms": 1.735919,
+            "p90_ms": 1.735919,
+            "max_ms": 1.735919,
+            "samples_ms": [
+              1.735919
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 1.736757,
+            "p50_ms": 1.736757,
+            "p90_ms": 1.736757,
+            "max_ms": 1.736757,
+            "samples_ms": [
+              1.736757
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 1.725932,
+            "p50_ms": 1.725932,
+            "p90_ms": 1.725932,
+            "max_ms": 1.725932,
+            "samples_ms": [
+              1.725932
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 1.726687,
+            "p50_ms": 1.726687,
+            "p90_ms": 1.726687,
+            "max_ms": 1.726687,
+            "samples_ms": [
+              1.726687
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 32768,
+      "restore_extents": 42,
+      "input_mismatch": false,
+      "mismatch_position": "none",
+      "input_storage": "native_array",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "e7a860894295fe77b353477691cec03a4340c8d0e66e9a4f510f4766c7f41bd0",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.642027,
+            "p50_ms": 0.642027,
+            "p90_ms": 0.642027,
+            "max_ms": 0.642027,
+            "samples_ms": [
+              0.642027
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.64276,
+            "p50_ms": 0.64276,
+            "p90_ms": 0.64276,
+            "max_ms": 0.64276,
+            "samples_ms": [
+              0.64276
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.655002,
+            "p50_ms": 0.655002,
+            "p90_ms": 0.655002,
+            "max_ms": 0.655002,
+            "samples_ms": [
+              0.655002
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.655705,
+            "p50_ms": 0.655705,
+            "p90_ms": 0.655705,
+            "max_ms": 0.655705,
+            "samples_ms": [
+              0.655705
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 32768,
+      "restore_extents": 42,
+      "input_mismatch": true,
+      "mismatch_position": "first",
+      "input_storage": "list",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "e1709a68de9167ec996e0fb82d201479ede58edef06f9d29c5eab4d9d70e4f97",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 1.335068,
+            "p50_ms": 1.335068,
+            "p90_ms": 1.335068,
+            "max_ms": 1.335068,
+            "samples_ms": [
+              1.335068
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 1.335731,
+            "p50_ms": 1.335731,
+            "p90_ms": 1.335731,
+            "max_ms": 1.335731,
+            "samples_ms": [
+              1.335731
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 1.306268,
+            "p50_ms": 1.306268,
+            "p90_ms": 1.306268,
+            "max_ms": 1.306268,
+            "samples_ms": [
+              1.306268
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 1.306822,
+            "p50_ms": 1.306822,
+            "p90_ms": 1.306822,
+            "max_ms": 1.306822,
+            "samples_ms": [
+              1.306822
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 32768,
+      "restore_extents": 42,
+      "input_mismatch": true,
+      "mismatch_position": "first",
+      "input_storage": "native_array",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "e1709a68de9167ec996e0fb82d201479ede58edef06f9d29c5eab4d9d70e4f97",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.247607,
+            "p50_ms": 0.247607,
+            "p90_ms": 0.247607,
+            "max_ms": 0.247607,
+            "samples_ms": [
+              0.247607
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.24785,
+            "p50_ms": 0.24785,
+            "p90_ms": 0.24785,
+            "max_ms": 0.24785,
+            "samples_ms": [
+              0.24785
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.258889,
+            "p50_ms": 0.258889,
+            "p90_ms": 0.258889,
+            "max_ms": 0.258889,
+            "samples_ms": [
+              0.258889
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.25906,
+            "p50_ms": 0.25906,
+            "p90_ms": 0.25906,
+            "max_ms": 0.25906,
+            "samples_ms": [
+              0.25906
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 32768,
+      "restore_extents": 42,
+      "input_mismatch": true,
+      "mismatch_position": "middle",
+      "input_storage": "list",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "f720b17cc97a4467b18ca6159bae0cb436d6bea4935508f8ef8aa1e8e7b6f345",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 2.033056,
+            "p50_ms": 2.033056,
+            "p90_ms": 2.033056,
+            "max_ms": 2.033056,
+            "samples_ms": [
+              2.033056
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 2.03394,
+            "p50_ms": 2.03394,
+            "p90_ms": 2.03394,
+            "max_ms": 2.03394,
+            "samples_ms": [
+              2.03394
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 1.992528,
+            "p50_ms": 1.992528,
+            "p90_ms": 1.992528,
+            "max_ms": 1.992528,
+            "samples_ms": [
+              1.992528
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 1.993485,
+            "p50_ms": 1.993485,
+            "p90_ms": 1.993485,
+            "max_ms": 1.993485,
+            "samples_ms": [
+              1.993485
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 32768,
+      "restore_extents": 42,
+      "input_mismatch": true,
+      "mismatch_position": "middle",
+      "input_storage": "native_array",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "f720b17cc97a4467b18ca6159bae0cb436d6bea4935508f8ef8aa1e8e7b6f345",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.893474,
+            "p50_ms": 0.893474,
+            "p90_ms": 0.893474,
+            "max_ms": 0.893474,
+            "samples_ms": [
+              0.893474
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.894232,
+            "p50_ms": 0.894232,
+            "p90_ms": 0.894232,
+            "max_ms": 0.894232,
+            "samples_ms": [
+              0.894232
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.895209,
+            "p50_ms": 0.895209,
+            "p90_ms": 0.895209,
+            "max_ms": 0.895209,
+            "samples_ms": [
+              0.895209
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.895868,
+            "p50_ms": 0.895868,
+            "p90_ms": 0.895868,
+            "max_ms": 0.895868,
+            "samples_ms": [
+              0.895868
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 32768,
+      "restore_extents": 42,
+      "input_mismatch": true,
+      "mismatch_position": "last",
+      "input_storage": "list",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "cb5d99a23235e26c708e3a05686e51fa6cf05f86eaaa73f8b6f7238e90d1049b",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 1.436008,
+            "p50_ms": 1.436008,
+            "p90_ms": 1.436008,
+            "max_ms": 1.436008,
+            "samples_ms": [
+              1.436008
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 1.436565,
+            "p50_ms": 1.436565,
+            "p90_ms": 1.436565,
+            "max_ms": 1.436565,
+            "samples_ms": [
+              1.436565
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 1.417674,
+            "p50_ms": 1.417674,
+            "p90_ms": 1.417674,
+            "max_ms": 1.417674,
+            "samples_ms": [
+              1.417674
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 1.418754,
+            "p50_ms": 1.418754,
+            "p90_ms": 1.418754,
+            "max_ms": 1.418754,
+            "samples_ms": [
+              1.418754
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 32768,
+      "restore_extents": 42,
+      "input_mismatch": true,
+      "mismatch_position": "last",
+      "input_storage": "native_array",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "cb5d99a23235e26c708e3a05686e51fa6cf05f86eaaa73f8b6f7238e90d1049b",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.549784,
+            "p50_ms": 0.549784,
+            "p90_ms": 0.549784,
+            "max_ms": 0.549784,
+            "samples_ms": [
+              0.549784
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.550243,
+            "p50_ms": 0.550243,
+            "p90_ms": 0.550243,
+            "max_ms": 0.550243,
+            "samples_ms": [
+              0.550243
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.528295,
+            "p50_ms": 0.528295,
+            "p90_ms": 0.528295,
+            "max_ms": 0.528295,
+            "samples_ms": [
+              0.528295
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.528787,
+            "p50_ms": 0.528787,
+            "p90_ms": 0.528787,
+            "max_ms": 0.528787,
+            "samples_ms": [
+              0.528787
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 131072,
+      "restore_extents": 1,
+      "input_mismatch": false,
+      "mismatch_position": "none",
+      "input_storage": "list",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "7a8374fcd279f862c2d0ecc217ab06cc9bc0653a02716d3d569c2a8e782362ce",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 2.860502,
+            "p50_ms": 2.860502,
+            "p90_ms": 2.860502,
+            "max_ms": 2.860502,
+            "samples_ms": [
+              2.860502
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 2.861043,
+            "p50_ms": 2.861043,
+            "p90_ms": 2.861043,
+            "max_ms": 2.861043,
+            "samples_ms": [
+              2.861043
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 2.859447,
+            "p50_ms": 2.859447,
+            "p90_ms": 2.859447,
+            "max_ms": 2.859447,
+            "samples_ms": [
+              2.859447
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 2.860154,
+            "p50_ms": 2.860154,
+            "p90_ms": 2.860154,
+            "max_ms": 2.860154,
+            "samples_ms": [
+              2.860154
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 131072,
+      "restore_extents": 1,
+      "input_mismatch": false,
+      "mismatch_position": "none",
+      "input_storage": "native_array",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "7a8374fcd279f862c2d0ecc217ab06cc9bc0653a02716d3d569c2a8e782362ce",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.067337,
+            "p50_ms": 0.067337,
+            "p90_ms": 0.067337,
+            "max_ms": 0.067337,
+            "samples_ms": [
+              0.067337
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.067597,
+            "p50_ms": 0.067597,
+            "p90_ms": 0.067597,
+            "max_ms": 0.067597,
+            "samples_ms": [
+              0.067597
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.088215,
+            "p50_ms": 0.088215,
+            "p90_ms": 0.088215,
+            "max_ms": 0.088215,
+            "samples_ms": [
+              0.088215
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.088595,
+            "p50_ms": 0.088595,
+            "p90_ms": 0.088595,
+            "max_ms": 0.088595,
+            "samples_ms": [
+              0.088595
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 131072,
+      "restore_extents": 1,
+      "input_mismatch": true,
+      "mismatch_position": "first",
+      "input_storage": "list",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "8419577aaa07bb51680f390ad40a78a4b23cab5ccdcc6e55be255a242ad35fad",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 2.740095,
+            "p50_ms": 2.740095,
+            "p90_ms": 2.740095,
+            "max_ms": 2.740095,
+            "samples_ms": [
+              2.740095
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 2.740711,
+            "p50_ms": 2.740711,
+            "p90_ms": 2.740711,
+            "max_ms": 2.740711,
+            "samples_ms": [
+              2.740711
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 2.768479,
+            "p50_ms": 2.768479,
+            "p90_ms": 2.768479,
+            "max_ms": 2.768479,
+            "samples_ms": [
+              2.768479
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 2.769065,
+            "p50_ms": 2.769065,
+            "p90_ms": 2.769065,
+            "max_ms": 2.769065,
+            "samples_ms": [
+              2.769065
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 131072,
+      "restore_extents": 1,
+      "input_mismatch": true,
+      "mismatch_position": "first",
+      "input_storage": "native_array",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "8419577aaa07bb51680f390ad40a78a4b23cab5ccdcc6e55be255a242ad35fad",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.008602,
+            "p50_ms": 0.008602,
+            "p90_ms": 0.008602,
+            "max_ms": 0.008602,
+            "samples_ms": [
+              0.008602
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.00871,
+            "p50_ms": 0.00871,
+            "p90_ms": 0.00871,
+            "max_ms": 0.00871,
+            "samples_ms": [
+              0.00871
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.007377,
+            "p50_ms": 0.007377,
+            "p90_ms": 0.007377,
+            "max_ms": 0.007377,
+            "samples_ms": [
+              0.007377
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.007459,
+            "p50_ms": 0.007459,
+            "p90_ms": 0.007459,
+            "max_ms": 0.007459,
+            "samples_ms": [
+              0.007459
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 131072,
+      "restore_extents": 1,
+      "input_mismatch": true,
+      "mismatch_position": "middle",
+      "input_storage": "list",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "0fd8d500590600add989263958cda61cfe83e5a40684a0842de5634e6d5f6db1",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 2.838329,
+            "p50_ms": 2.838329,
+            "p90_ms": 2.838329,
+            "max_ms": 2.838329,
+            "samples_ms": [
+              2.838329
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 2.83891,
+            "p50_ms": 2.83891,
+            "p90_ms": 2.83891,
+            "max_ms": 2.83891,
+            "samples_ms": [
+              2.83891
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 2.82597,
+            "p50_ms": 2.82597,
+            "p90_ms": 2.82597,
+            "max_ms": 2.82597,
+            "samples_ms": [
+              2.82597
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 2.826527,
+            "p50_ms": 2.826527,
+            "p90_ms": 2.826527,
+            "max_ms": 2.826527,
+            "samples_ms": [
+              2.826527
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 131072,
+      "restore_extents": 1,
+      "input_mismatch": true,
+      "mismatch_position": "middle",
+      "input_storage": "native_array",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "0fd8d500590600add989263958cda61cfe83e5a40684a0842de5634e6d5f6db1",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.045619,
+            "p50_ms": 0.045619,
+            "p90_ms": 0.045619,
+            "max_ms": 0.045619,
+            "samples_ms": [
+              0.045619
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.045743,
+            "p50_ms": 0.045743,
+            "p90_ms": 0.045743,
+            "max_ms": 0.045743,
+            "samples_ms": [
+              0.045743
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.062051,
+            "p50_ms": 0.062051,
+            "p90_ms": 0.062051,
+            "max_ms": 0.062051,
+            "samples_ms": [
+              0.062051
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.062259,
+            "p50_ms": 0.062259,
+            "p90_ms": 0.062259,
+            "max_ms": 0.062259,
+            "samples_ms": [
+              0.062259
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 131072,
+      "restore_extents": 1,
+      "input_mismatch": true,
+      "mismatch_position": "last",
+      "input_storage": "list",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "987a9b3cc8157f5c1a1ae44f8f6bb59287fcf77e8a379d130e1ed103b2306f6d",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 2.91883,
+            "p50_ms": 2.91883,
+            "p90_ms": 2.91883,
+            "max_ms": 2.91883,
+            "samples_ms": [
+              2.91883
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 2.91944,
+            "p50_ms": 2.91944,
+            "p90_ms": 2.91944,
+            "max_ms": 2.91944,
+            "samples_ms": [
+              2.91944
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 2.949418,
+            "p50_ms": 2.949418,
+            "p90_ms": 2.949418,
+            "max_ms": 2.949418,
+            "samples_ms": [
+              2.949418
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 2.950077,
+            "p50_ms": 2.950077,
+            "p90_ms": 2.950077,
+            "max_ms": 2.950077,
+            "samples_ms": [
+              2.950077
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 131072,
+      "restore_extents": 1,
+      "input_mismatch": true,
+      "mismatch_position": "last",
+      "input_storage": "native_array",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "987a9b3cc8157f5c1a1ae44f8f6bb59287fcf77e8a379d130e1ed103b2306f6d",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.117453,
+            "p50_ms": 0.117453,
+            "p90_ms": 0.117453,
+            "max_ms": 0.117453,
+            "samples_ms": [
+              0.117453
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.117745,
+            "p50_ms": 0.117745,
+            "p90_ms": 0.117745,
+            "max_ms": 0.117745,
+            "samples_ms": [
+              0.117745
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.145622,
+            "p50_ms": 0.145622,
+            "p90_ms": 0.145622,
+            "max_ms": 0.145622,
+            "samples_ms": [
+              0.145622
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.145995,
+            "p50_ms": 0.145995,
+            "p90_ms": 0.145995,
+            "max_ms": 0.145995,
+            "samples_ms": [
+              0.145995
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 131072,
+      "restore_extents": 42,
+      "input_mismatch": false,
+      "mismatch_position": "none",
+      "input_storage": "list",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "d4db170612cbf3ffea92bbabaa29a0c95904e08733e8597ed9416a0d72dda82d",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 4.838993,
+            "p50_ms": 4.838993,
+            "p90_ms": 4.838993,
+            "max_ms": 4.838993,
+            "samples_ms": [
+              4.838993
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 4.839729,
+            "p50_ms": 4.839729,
+            "p90_ms": 4.839729,
+            "max_ms": 4.839729,
+            "samples_ms": [
+              4.839729
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 4.817031,
+            "p50_ms": 4.817031,
+            "p90_ms": 4.817031,
+            "max_ms": 4.817031,
+            "samples_ms": [
+              4.817031
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 4.81776,
+            "p50_ms": 4.81776,
+            "p90_ms": 4.81776,
+            "max_ms": 4.81776,
+            "samples_ms": [
+              4.81776
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 131072,
+      "restore_extents": 42,
+      "input_mismatch": false,
+      "mismatch_position": "none",
+      "input_storage": "native_array",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "d4db170612cbf3ffea92bbabaa29a0c95904e08733e8597ed9416a0d72dda82d",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 1.46729,
+            "p50_ms": 1.46729,
+            "p90_ms": 1.46729,
+            "max_ms": 1.46729,
+            "samples_ms": [
+              1.46729
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 1.468245,
+            "p50_ms": 1.468245,
+            "p90_ms": 1.468245,
+            "max_ms": 1.468245,
+            "samples_ms": [
+              1.468245
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 1.442621,
+            "p50_ms": 1.442621,
+            "p90_ms": 1.442621,
+            "max_ms": 1.442621,
+            "samples_ms": [
+              1.442621
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 1.443359,
+            "p50_ms": 1.443359,
+            "p90_ms": 1.443359,
+            "max_ms": 1.443359,
+            "samples_ms": [
+              1.443359
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 131072,
+      "restore_extents": 42,
+      "input_mismatch": true,
+      "mismatch_position": "first",
+      "input_storage": "list",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "42fb602d62228cc80090d362b7b54f7b71275bc5994a7050510d0950541e4b26",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 3.716616,
+            "p50_ms": 3.716616,
+            "p90_ms": 3.716616,
+            "max_ms": 3.716616,
+            "samples_ms": [
+              3.716616
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 3.717283,
+            "p50_ms": 3.717283,
+            "p90_ms": 3.717283,
+            "max_ms": 3.717283,
+            "samples_ms": [
+              3.717283
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 3.677323,
+            "p50_ms": 3.677323,
+            "p90_ms": 3.677323,
+            "max_ms": 3.677323,
+            "samples_ms": [
+              3.677323
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 3.678211,
+            "p50_ms": 3.678211,
+            "p90_ms": 3.678211,
+            "max_ms": 3.678211,
+            "samples_ms": [
+              3.678211
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 131072,
+      "restore_extents": 42,
+      "input_mismatch": true,
+      "mismatch_position": "first",
+      "input_storage": "native_array",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "42fb602d62228cc80090d362b7b54f7b71275bc5994a7050510d0950541e4b26",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.19273,
+            "p50_ms": 0.19273,
+            "p90_ms": 0.19273,
+            "max_ms": 0.19273,
+            "samples_ms": [
+              0.19273
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.192929,
+            "p50_ms": 0.192929,
+            "p90_ms": 0.192929,
+            "max_ms": 0.192929,
+            "samples_ms": [
+              0.192929
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 0.180919,
+            "p50_ms": 0.180919,
+            "p90_ms": 0.180919,
+            "max_ms": 0.180919,
+            "samples_ms": [
+              0.180919
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 0.181012,
+            "p50_ms": 0.181012,
+            "p90_ms": 0.181012,
+            "max_ms": 0.181012,
+            "samples_ms": [
+              0.181012
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 131072,
+      "restore_extents": 42,
+      "input_mismatch": true,
+      "mismatch_position": "middle",
+      "input_storage": "list",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "597d853ac37148638ac285e0b98ebb994e4360359b51cf8c035238cacaf3c769",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 5.0606,
+            "p50_ms": 5.0606,
+            "p90_ms": 5.0606,
+            "max_ms": 5.0606,
+            "samples_ms": [
+              5.0606
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 5.054578,
+            "p50_ms": 5.054578,
+            "p90_ms": 5.054578,
+            "max_ms": 5.054578,
+            "samples_ms": [
+              5.054578
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 5.004404,
+            "p50_ms": 5.004404,
+            "p90_ms": 5.004404,
+            "max_ms": 5.004404,
+            "samples_ms": [
+              5.004404
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 5.005161,
+            "p50_ms": 5.005161,
+            "p90_ms": 5.005161,
+            "max_ms": 5.005161,
+            "samples_ms": [
+              5.005161
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 131072,
+      "restore_extents": 42,
+      "input_mismatch": true,
+      "mismatch_position": "middle",
+      "input_storage": "native_array",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "597d853ac37148638ac285e0b98ebb994e4360359b51cf8c035238cacaf3c769",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 1.585558,
+            "p50_ms": 1.585558,
+            "p90_ms": 1.585558,
+            "max_ms": 1.585558,
+            "samples_ms": [
+              1.585558
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 1.58678,
+            "p50_ms": 1.58678,
+            "p90_ms": 1.58678,
+            "max_ms": 1.58678,
+            "samples_ms": [
+              1.58678
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 1.60605,
+            "p50_ms": 1.60605,
+            "p90_ms": 1.60605,
+            "max_ms": 1.60605,
+            "samples_ms": [
+              1.60605
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 1.60686,
+            "p50_ms": 1.60686,
+            "p90_ms": 1.60686,
+            "max_ms": 1.60686,
+            "samples_ms": [
+              1.60686
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 131072,
+      "restore_extents": 42,
+      "input_mismatch": true,
+      "mismatch_position": "last",
+      "input_storage": "list",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "5b630f2ccdfcee7114504b84276f9535f11ff55061be9a38b4f1f732f995f5b6",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 5.03619,
+            "p50_ms": 5.03619,
+            "p90_ms": 5.03619,
+            "max_ms": 5.03619,
+            "samples_ms": [
+              5.03619
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 5.037023,
+            "p50_ms": 5.037023,
+            "p90_ms": 5.037023,
+            "max_ms": 5.037023,
+            "samples_ms": [
+              5.037023
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 4.931371,
+            "p50_ms": 4.931371,
+            "p90_ms": 4.931371,
+            "max_ms": 4.931371,
+            "samples_ms": [
+              4.931371
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 4.932357,
+            "p50_ms": 4.932357,
+            "p90_ms": 4.932357,
+            "max_ms": 4.932357,
+            "samples_ms": [
+              4.932357
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input_tokens": 131072,
+      "restore_extents": 42,
+      "input_mismatch": true,
+      "mismatch_position": "last",
+      "input_storage": "native_array",
+      "records_and_consumed_commands_equal": true,
+      "canonical_output_sha256": "5b630f2ccdfcee7114504b84276f9535f11ff55061be9a38b4f1f732f995f5b6",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 1.498085,
+            "p50_ms": 1.498085,
+            "p90_ms": 1.498085,
+            "max_ms": 1.498085,
+            "samples_ms": [
+              1.498085
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 1.498857,
+            "p50_ms": 1.498857,
+            "p90_ms": 1.498857,
+            "max_ms": 1.498857,
+            "samples_ms": [
+              1.498857
+            ]
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 1,
+            "mean_ms": 1.485548,
+            "p50_ms": 1.485548,
+            "p90_ms": 1.485548,
+            "max_ms": 1.485548,
+            "samples_ms": [
+              1.485548
+            ]
+          },
+          "thread_cpu": {
+            "samples": 1,
+            "mean_ms": 1.486749,
+            "p50_ms": 1.486749,
+            "p90_ms": 1.486749,
+            "max_ms": 1.486749,
+            "samples_ms": [
+              1.486749
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "inventory_cases": [
+    {
+      "inventory_commands": 0,
+      "scenario": "empty",
+      "records_retirement_order_and_pending_equal": true,
+      "costs": {
+        "baseline": {
+          "samples": 1,
+          "mean_ms": 0.001125,
+          "p50_ms": 0.001125,
+          "p90_ms": 0.001125,
+          "max_ms": 0.001125,
+          "samples_ms": [
+            0.001125
+          ]
+        },
+        "optimized": {
+          "samples": 1,
+          "mean_ms": 0.000633,
+          "p50_ms": 0.000633,
+          "p90_ms": 0.000633,
+          "max_ms": 0.000633,
+          "samples_ms": [
+            0.000633
+          ]
+        }
+      }
+    },
+    {
+      "inventory_commands": 1,
+      "scenario": "other_context",
+      "records_retirement_order_and_pending_equal": true,
+      "costs": {
+        "baseline": {
+          "samples": 1,
+          "mean_ms": 0.00133,
+          "p50_ms": 0.00133,
+          "p90_ms": 0.00133,
+          "max_ms": 0.00133,
+          "samples_ms": [
+            0.00133
+          ]
+        },
+        "optimized": {
+          "samples": 1,
+          "mean_ms": 0.000909,
+          "p50_ms": 0.000909,
+          "p90_ms": 0.000909,
+          "max_ms": 0.000909,
+          "samples_ms": [
+            0.000909
+          ]
+        }
+      }
+    },
+    {
+      "inventory_commands": 1,
+      "scenario": "future_epoch",
+      "records_retirement_order_and_pending_equal": true,
+      "costs": {
+        "baseline": {
+          "samples": 1,
+          "mean_ms": 0.001368,
+          "p50_ms": 0.001368,
+          "p90_ms": 0.001368,
+          "max_ms": 0.001368,
+          "samples_ms": [
+            0.001368
+          ]
+        },
+        "optimized": {
+          "samples": 1,
+          "mean_ms": 0.000989,
+          "p50_ms": 0.000989,
+          "p90_ms": 0.000989,
+          "max_ms": 0.000989,
+          "samples_ms": [
+            0.000989
+          ]
+        }
+      }
+    },
+    {
+      "inventory_commands": 1,
+      "scenario": "expired",
+      "records_retirement_order_and_pending_equal": true,
+      "costs": {
+        "baseline": {
+          "samples": 1,
+          "mean_ms": 0.002056,
+          "p50_ms": 0.002056,
+          "p90_ms": 0.002056,
+          "max_ms": 0.002056,
+          "samples_ms": [
+            0.002056
+          ]
+        },
+        "optimized": {
+          "samples": 1,
+          "mean_ms": 0.001396,
+          "p50_ms": 0.001396,
+          "p90_ms": 0.001396,
+          "max_ms": 0.001396,
+          "samples_ms": [
+            0.001396
+          ]
+        }
+      }
+    },
+    {
+      "inventory_commands": 1,
+      "scenario": "mixed",
+      "records_retirement_order_and_pending_equal": true,
+      "costs": {
+        "baseline": {
+          "samples": 1,
+          "mean_ms": 0.001913,
+          "p50_ms": 0.001913,
+          "p90_ms": 0.001913,
+          "max_ms": 0.001913,
+          "samples_ms": [
+            0.001913
+          ]
+        },
+        "optimized": {
+          "samples": 1,
+          "mean_ms": 0.00159,
+          "p50_ms": 0.00159,
+          "p90_ms": 0.00159,
+          "max_ms": 0.00159,
+          "samples_ms": [
+            0.00159
+          ]
+        }
+      }
+    },
+    {
+      "inventory_commands": 8,
+      "scenario": "other_context",
+      "records_retirement_order_and_pending_equal": true,
+      "costs": {
+        "baseline": {
+          "samples": 1,
+          "mean_ms": 0.002336,
+          "p50_ms": 0.002336,
+          "p90_ms": 0.002336,
+          "max_ms": 0.002336,
+          "samples_ms": [
+            0.002336
+          ]
+        },
+        "optimized": {
+          "samples": 1,
+          "mean_ms": 0.001389,
+          "p50_ms": 0.001389,
+          "p90_ms": 0.001389,
+          "max_ms": 0.001389,
+          "samples_ms": [
+            0.001389
+          ]
+        }
+      }
+    },
+    {
+      "inventory_commands": 8,
+      "scenario": "future_epoch",
+      "records_retirement_order_and_pending_equal": true,
+      "costs": {
+        "baseline": {
+          "samples": 1,
+          "mean_ms": 0.002952,
+          "p50_ms": 0.002952,
+          "p90_ms": 0.002952,
+          "max_ms": 0.002952,
+          "samples_ms": [
+            0.002952
+          ]
+        },
+        "optimized": {
+          "samples": 1,
+          "mean_ms": 0.002065,
+          "p50_ms": 0.002065,
+          "p90_ms": 0.002065,
+          "max_ms": 0.002065,
+          "samples_ms": [
+            0.002065
+          ]
+        }
+      }
+    },
+    {
+      "inventory_commands": 8,
+      "scenario": "expired",
+      "records_retirement_order_and_pending_equal": true,
+      "costs": {
+        "baseline": {
+          "samples": 1,
+          "mean_ms": 0.005197,
+          "p50_ms": 0.005197,
+          "p90_ms": 0.005197,
+          "max_ms": 0.005197,
+          "samples_ms": [
+            0.005197
+          ]
+        },
+        "optimized": {
+          "samples": 1,
+          "mean_ms": 0.004407,
+          "p50_ms": 0.004407,
+          "p90_ms": 0.004407,
+          "max_ms": 0.004407,
+          "samples_ms": [
+            0.004407
+          ]
+        }
+      }
+    },
+    {
+      "inventory_commands": 8,
+      "scenario": "mixed",
+      "records_retirement_order_and_pending_equal": true,
+      "costs": {
+        "baseline": {
+          "samples": 1,
+          "mean_ms": 0.010937,
+          "p50_ms": 0.010937,
+          "p90_ms": 0.010937,
+          "max_ms": 0.010937,
+          "samples_ms": [
+            0.010937
+          ]
+        },
+        "optimized": {
+          "samples": 1,
+          "mean_ms": 0.010233,
+          "p50_ms": 0.010233,
+          "p90_ms": 0.010233,
+          "max_ms": 0.010233,
+          "samples_ms": [
+            0.010233
+          ]
+        }
+      }
+    },
+    {
+      "inventory_commands": 42,
+      "scenario": "other_context",
+      "records_retirement_order_and_pending_equal": true,
+      "costs": {
+        "baseline": {
+          "samples": 1,
+          "mean_ms": 0.012425,
+          "p50_ms": 0.012425,
+          "p90_ms": 0.012425,
+          "max_ms": 0.012425,
+          "samples_ms": [
+            0.012425
+          ]
+        },
+        "optimized": {
+          "samples": 1,
+          "mean_ms": 0.006357,
+          "p50_ms": 0.006357,
+          "p90_ms": 0.006357,
+          "max_ms": 0.006357,
+          "samples_ms": [
+            0.006357
+          ]
+        }
+      }
+    },
+    {
+      "inventory_commands": 42,
+      "scenario": "future_epoch",
+      "records_retirement_order_and_pending_equal": true,
+      "costs": {
+        "baseline": {
+          "samples": 1,
+          "mean_ms": 0.010053,
+          "p50_ms": 0.010053,
+          "p90_ms": 0.010053,
+          "max_ms": 0.010053,
+          "samples_ms": [
+            0.010053
+          ]
+        },
+        "optimized": {
+          "samples": 1,
+          "mean_ms": 0.006659,
+          "p50_ms": 0.006659,
+          "p90_ms": 0.006659,
+          "max_ms": 0.006659,
+          "samples_ms": [
+            0.006659
+          ]
+        }
+      }
+    },
+    {
+      "inventory_commands": 42,
+      "scenario": "expired",
+      "records_retirement_order_and_pending_equal": true,
+      "costs": {
+        "baseline": {
+          "samples": 1,
+          "mean_ms": 0.023821,
+          "p50_ms": 0.023821,
+          "p90_ms": 0.023821,
+          "max_ms": 0.023821,
+          "samples_ms": [
+            0.023821
+          ]
+        },
+        "optimized": {
+          "samples": 1,
+          "mean_ms": 0.019359,
+          "p50_ms": 0.019359,
+          "p90_ms": 0.019359,
+          "max_ms": 0.019359,
+          "samples_ms": [
+            0.019359
+          ]
+        }
+      }
+    },
+    {
+      "inventory_commands": 42,
+      "scenario": "mixed",
+      "records_retirement_order_and_pending_equal": true,
+      "costs": {
+        "baseline": {
+          "samples": 1,
+          "mean_ms": 0.039778,
+          "p50_ms": 0.039778,
+          "p90_ms": 0.039778,
+          "max_ms": 0.039778,
+          "samples_ms": [
+            0.039778
+          ]
+        },
+        "optimized": {
+          "samples": 1,
+          "mean_ms": 0.038324,
+          "p50_ms": 0.038324,
+          "p90_ms": 0.038324,
+          "max_ms": 0.038324,
+          "samples_ms": [
+            0.038324
+          ]
+        }
+      }
+    },
+    {
+      "inventory_commands": 128,
+      "scenario": "other_context",
+      "records_retirement_order_and_pending_equal": true,
+      "costs": {
+        "baseline": {
+          "samples": 1,
+          "mean_ms": 0.020214,
+          "p50_ms": 0.020214,
+          "p90_ms": 0.020214,
+          "max_ms": 0.020214,
+          "samples_ms": [
+            0.020214
+          ]
+        },
+        "optimized": {
+          "samples": 1,
+          "mean_ms": 0.010099,
+          "p50_ms": 0.010099,
+          "p90_ms": 0.010099,
+          "max_ms": 0.010099,
+          "samples_ms": [
+            0.010099
+          ]
+        }
+      }
+    },
+    {
+      "inventory_commands": 128,
+      "scenario": "future_epoch",
+      "records_retirement_order_and_pending_equal": true,
+      "costs": {
+        "baseline": {
+          "samples": 1,
+          "mean_ms": 0.027646,
+          "p50_ms": 0.027646,
+          "p90_ms": 0.027646,
+          "max_ms": 0.027646,
+          "samples_ms": [
+            0.027646
+          ]
+        },
+        "optimized": {
+          "samples": 1,
+          "mean_ms": 0.01803,
+          "p50_ms": 0.01803,
+          "p90_ms": 0.01803,
+          "max_ms": 0.01803,
+          "samples_ms": [
+            0.01803
+          ]
+        }
+      }
+    },
+    {
+      "inventory_commands": 128,
+      "scenario": "expired",
+      "records_retirement_order_and_pending_equal": true,
+      "costs": {
+        "baseline": {
+          "samples": 1,
+          "mean_ms": 0.064167,
+          "p50_ms": 0.064167,
+          "p90_ms": 0.064167,
+          "max_ms": 0.064167,
+          "samples_ms": [
+            0.064167
+          ]
+        },
+        "optimized": {
+          "samples": 1,
+          "mean_ms": 0.055111,
+          "p50_ms": 0.055111,
+          "p90_ms": 0.055111,
+          "max_ms": 0.055111,
+          "samples_ms": [
+            0.055111
+          ]
+        }
+      }
+    },
+    {
+      "inventory_commands": 128,
+      "scenario": "mixed",
+      "records_retirement_order_and_pending_equal": true,
+      "costs": {
+        "baseline": {
+          "samples": 1,
+          "mean_ms": 0.103988,
+          "p50_ms": 0.103988,
+          "p90_ms": 0.103988,
+          "max_ms": 0.103988,
+          "samples_ms": [
+            0.103988
+          ]
+        },
+        "optimized": {
+          "samples": 1,
+          "mean_ms": 0.094291,
+          "p50_ms": 0.094291,
+          "p90_ms": 0.094291,
+          "max_ms": 0.094291,
+          "samples_ms": [
+            0.094291
+          ]
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "One-time construction, shallow inventory resets and output comparison are outside timing.",
+    "Both variants retain independent input/issuance arrays and exact reuse checks.",
+    "Frozen time uses a plain function without Mock call-history overhead.",
+    "Inventory scenes use controlled counts, not an observed online pending distribution.",
+    "No full on_launch, actual native allocator, DMA, CUDA, writer I/O or JCT is measured."
+  ],
+  "observed_prefix_work": {
+    "source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/server/physical_action_use.jsonl",
+    "read_bytes": 180806,
+    "source_sha256": "cc017a55a79012f6b4ebe5442eb01476c3655940a858d9b70449dada1f86d460",
+    "first_service_command_records": 172,
+    "records_without_token_snapshot": 76,
+    "snapshotted_prefix_tokens": 7709290,
+    "first_service_requests": 30,
+    "requests_with_multiple_target_prefixes": 11,
+    "target_prefixes_per_request_histogram": {
+      "0": 17,
+      "1": 2,
+      "2": 4,
+      "3": 1,
+      "4": 1,
+      "5": 1,
+      "6": 1,
+      "10": 1,
+      "26": 1,
+      "32": 1
+    },
+    "reported_common_prefix_tokens": 7709290,
+    "repeated_common_prefix_tokens_within_request": 6409589,
+    "maximum_common_prefix_tokens": 131072,
+    "semantics": "Groups use the same context/epoch/first-service request. Common-prefix tokens describe prefix evidence; repeated tokens count shared matching positions, not avoided bytes, elapsed time or additional proven KV reuse. No token payload is saved."
+  }
+}

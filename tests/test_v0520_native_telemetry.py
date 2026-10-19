@@ -4,6 +4,7 @@ import json
 from io import StringIO
 import time
 from array import array
+from collections import OrderedDict
 from pathlib import Path
 from queue import Queue
 from types import SimpleNamespace
@@ -752,6 +753,48 @@ def test_failed_prefetch_discards_provisional_reuse_before_shutdown(tmp_path):
         item.get("reason") == "physical_expired"
         for item in _read(tmp_path / "discarded-service/runtime_audit.jsonl")
     )
+
+
+def test_empty_prefetch_inventory_keeps_identity_validation():
+    audit = NativeReactiveTelemetry.__new__(NativeReactiveTelemetry)
+    audit._pending_prefetch_use = OrderedDict()
+    assert audit._record_prefetch_first_service(
+        None, {"context_id": "ctx", "context_epoch": 2},
+    ) == []
+    with pytest.raises(KeyError, match="context_epoch"):
+        audit._record_prefetch_first_service(None, {"context_id": "ctx"})
+
+
+def test_first_service_expires_old_epoch_before_matches_and_retains_other_consumers():
+    audit = NativeReactiveTelemetry.__new__(NativeReactiveTelemetry)
+    records = []
+    audit._cache = None
+    audit._emit_prefetch_use = records.append
+    audit._pending_prefetch_use = OrderedDict()
+    for name, context, epoch in (
+        ("match-previous", "ctx", 1), ("other", "other", 0),
+        ("expired", "ctx", 0), ("future", "ctx", 4),
+        ("match-current", "ctx", 2),
+    ):
+        audit._pending_prefetch_use[name] = (
+            SimpleNamespace(
+                command_id=name, context_id=context, context_epoch=epoch,
+                node_ids=(), pool_bytes=(),
+            ), (), 100., {},
+        )
+    request = SimpleNamespace(
+        rid="next", last_node=0, origin_input_ids=(), prefix_indices=(),
+        cached_tokens_device=0,
+    )
+    assert audit._record_prefetch_first_service(
+        request, {"context_id": "ctx", "context_epoch": 2},
+    ) == []
+    assert [row["command_id"] for row in records] == [
+        "expired", "match-previous", "match-current",
+    ]
+    assert records[0]["reason"] == "epoch_advanced_without_first_service"
+    assert all(row["event"] == "beliefkv_prefetch_first_service" for row in records[1:])
+    assert tuple(audit._pending_prefetch_use) == ("other", "future")
 
 
 @pytest.mark.parametrize("changed_prefix", [False, True])

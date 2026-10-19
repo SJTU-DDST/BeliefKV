@@ -1813,19 +1813,18 @@ class NativeReactiveTelemetry:
     def _record_prefetch_first_service(
         self, req: Any, identity: dict[str, Any], batch: Any | None = None,
     ) -> list[dict[str, Any]]:
-        mamba_forward_candidates: list[dict[str, Any]] = []
         context_id = identity["context_id"]
         context_epoch = identity["context_epoch"]
-        matches = [
-            command_id for command_id, (action, _, _, _) in self._pending_prefetch_use.items()
-            if action.context_id == context_id
-            and action.context_epoch <= context_epoch <= action.context_epoch + 1
-        ]
-        expired = [
-            command_id for command_id, (action, _, _, _) in self._pending_prefetch_use.items()
-            if action.context_id == context_id
-            and context_epoch > action.context_epoch + 1
-        ]
+        if not self._pending_prefetch_use:
+            return []
+        matches = []
+        expired = []
+        for command_id, (action, _, _, _) in self._pending_prefetch_use.items():
+            if action.context_id == context_id:
+                if action.context_epoch <= context_epoch <= action.context_epoch + 1:
+                    matches.append(command_id)
+                elif context_epoch > action.context_epoch + 1:
+                    expired.append(command_id)
         for command_id in expired:
             action, _, ack_ts, _ = self._pending_prefetch_use.pop(command_id)
             self._emit_prefetch_use({
@@ -1837,7 +1836,8 @@ class NativeReactiveTelemetry:
                 "reason": "epoch_advanced_without_first_service",
             })
         if not matches:
-            return mamba_forward_candidates
+            return []
+        mamba_forward_candidates: list[dict[str, Any]] = []
         tree_core = getattr(self._cache, "tree_core", None)
         try:
             last_node = tree_core.node_by_id(req.last_node)

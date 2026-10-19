@@ -23,7 +23,18 @@ child 都可动态委派叶子孙 agent，最大深度仍为 2。任务范围、
 见[24-root 配置](../configs/migration/qwen35_locobench_long_24root_running8_2026-10-19.json)
 及[CPU 原始结果](../experiments/reports/v1925_v85d_long_chat_token_cache_cpu_20261019.json)。
 
-**最新在线事件降本，V1990。**仅使用在线工具计时时，不再维护旧 worker
+**最新首次服务记录降本，V1998。**空预取库存直接返回，非空库存一次分类
+匹配/过期命令；独立 token 快照、过期先发布、逐条 FULL/Mamba 证明保留。
+CPU P50：空入口 1.148→0.611us，42 条其他 context 命令的查询
+7.289→3.944us。17 组库存及 32 组完整前缀的记录与 pending 一致；
+完整前缀两项小回退保留，不能把库存局部降幅当吞吐/JCT 收益。
+2258 项 CPU 检查通过；扩大检查时暴露的已安装/冻结 SGLang 导入混用，
+已通过进程启动时固定源码路径解决，初次失败记录保留。见
+[V1997](../experiments/reports/v1997_first_service_inventory_cpu_20261020_zh.md)。
+06:00 等待资格在提交后更新；下一 CPU 重点是 V85d 后台 Host 驱逐/
+重访处理的毫秒级样本，不以每 64 条采样直接推算全量成本。
+
+**此前在线事件降本，V1990。**仅使用在线工具计时时，不再维护旧 worker
 消费的边界历史和命令特征；旧 worker 仍保留所需输入，边界队列按需创建。
 同时清理最后一个工具、workflow 结束及镜像失效后的残留工具分组。
 V85d 的 12 条完整 workflow、9428 个事件逐事件状态一致，9336 次无消费者

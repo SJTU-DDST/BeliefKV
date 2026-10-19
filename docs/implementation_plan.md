@@ -64,6 +64,27 @@ Current goal:
 - Stop and fix material experimental failures promptly; CPU improvements alone
   do not establish GPU performance or a gain over native.
 
+V1998 reduces first-service evidence inventory work relative toa346b6a.
+Keep context/epoch validation, return immediately for empty inventory, classify
+matches/expiry in one pass, publish expired commands before matching commands,
+and retain other contexts/future epochs. Do not alter token snapshots, exact
+FULL/Mamba evidence or pre-ACK bookkeeping. All17 inventory scenes and32 complete
+prefix scenes preserve records and pending state. Inventory CPU P50 improves
+8.2%-48.2%; empty1.148 to0.611us,42 unrelated commands7.289 to3.944us.
+Use the same read-only prefix buffers in both variants, copy emitted lists for
+comparison and verify snapshot contents. Preserve V1994's separate-allocation
+results and final regressions of1.971/0.072us; do not infer GPU/JCT gains.
+All2258 CPU checks pass in V1996. V1995's16 fixture errors came from importing
+installed SGLang before the qualified fixture inserted its path. Prepend the
+qualified engine/python to PYTHONPATH before Python starts; retain the failed
+record and do not weaken native ownership checks. See V1997 and final V1998.
+The rejected byte-copy prototype is absent from production. V1999 binds actual
+V85d background samples:22 Host-eviction samples average6.285ms CPU and26 request
+probes6.343ms. Profile these paths next while retaining exact hash/namespace,
+matching, counters and retirement; no64x extrapolation or GIL/JCT attribution.
+V88/patch/configuration remain unchanged; publish this CPU-qualified revision
+to the existing06:00 waiter and retain the full performance goal.
+
 V1990 skips legacy boundary/command feature maintenance when online tool timing
 has no model worker. Preserve the worker's live inputs; create boundary deques
 only when absent and retire completed/ended/discarded tool-run groups.

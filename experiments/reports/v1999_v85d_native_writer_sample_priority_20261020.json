@@ -1,0 +1,65 @@
+{
+  "status": "completed_historical_sample_priority_not_full_cost_or_jct",
+  "source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/server/native_telemetry_status.json",
+  "source_sha256": "19c4c6c4d21b67bf9910d1e983736ba0fdca82b923fe05e37dc220522ee5c3fe",
+  "writer_error": null,
+  "dropped_records": 0,
+  "failed_records": 0,
+  "writer_queue_depth": 0,
+  "sample_every": 64,
+  "sample_scope": "Every 64th record per category, starting with its first record. Measured processing samples only; queue waiting and status publication are excluded. Wall includes scheduling and GIL waiting; thread CPU excludes waiting. No full-run cost, GPU stall, GIL attribution or JCT saving is inferred.",
+  "categories": {
+    "audit:gpu_service_sample": {
+      "max_sample_cpu_ms": 0.573042,
+      "max_sample_wall_ms": 1.781854,
+      "mean_sample_cpu_ms": 0.07797552736318408,
+      "mean_sample_wall_ms": 0.12342328222523745,
+      "records_seen": 141490,
+      "sampled_cpu_ms": 172.403891,
+      "sampled_wall_ms": 272.888877,
+      "samples": 2211
+    },
+    "eviction_attribution:context_prefix_probe": {
+      "max_sample_cpu_ms": 3.349936,
+      "max_sample_wall_ms": 3.351101,
+      "mean_sample_cpu_ms": 1.1868974814814817,
+      "mean_sample_wall_ms": 1.1875993703703704,
+      "records_seen": 1728,
+      "sampled_cpu_ms": 32.046232,
+      "sampled_wall_ms": 32.065183,
+      "samples": 27
+    },
+    "eviction_attribution:host_block_eviction": {
+      "max_sample_cpu_ms": 20.294191,
+      "max_sample_wall_ms": 20.297129,
+      "mean_sample_cpu_ms": 6.284699863636363,
+      "mean_sample_wall_ms": 6.302676772727272,
+      "records_seen": 1393,
+      "sampled_cpu_ms": 138.263397,
+      "sampled_wall_ms": 138.658889,
+      "samples": 22
+    },
+    "eviction_attribution:request_probe": {
+      "max_sample_cpu_ms": 15.820035,
+      "max_sample_wall_ms": 16.085613,
+      "mean_sample_cpu_ms": 6.343170230769231,
+      "mean_sample_wall_ms": 6.443748807692308,
+      "records_seen": 1647,
+      "sampled_cpu_ms": 164.922426,
+      "sampled_wall_ms": 167.537469,
+      "samples": 26
+    },
+    "eviction_attribution:served_context_prefix": {
+      "max_sample_cpu_ms": 1.241485,
+      "max_sample_wall_ms": 1.245729,
+      "mean_sample_cpu_ms": 0.4636814444444444,
+      "mean_sample_wall_ms": 0.464791,
+      "records_seen": 1728,
+      "sampled_cpu_ms": 12.519399,
+      "sampled_wall_ms": 12.549357,
+      "samples": 27
+    }
+  },
+  "extrapolated_to_all_records": false,
+  "next_action": "Profile exact Host-eviction and request-probe writer processing on CPU; preserve namespace/prefix hashes, matching, counters and retirement semantics."
+}
