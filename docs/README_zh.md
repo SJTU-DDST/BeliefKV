@@ -7,6 +7,17 @@
 不能作为完整配对结果。下轮候选改为 24 root，等待明确恢复指令。
 汇总器已修复通知/实际服务模式误要求旧语义 worker 的校验，65 项检查通过。
 
+**暂停期间已准备动态委派的 24-root 候选。**不规定 root 的四阶段、轮数、
+角色或下一工具，不强制首轮 task/fan-out，不拒绝自然 RETURN；所有直接
+child 都可动态委派叶子孙 agent，最大深度仍为 2。任务范围、返回通知和
+委派提示放在长源码之后，避免埋在 100K 以上输入之前。入口默认改为
+24 个不同原始任务、16+8/900s、running 8，尚未启动。
+临近 parent 的可借用容量计价已补上输入/decode 预留；长输入 token 分块
+复用在 36 个增长历史输入上保持原生 token 相同，CPU 转换均值
+323.66→98.61ms。两侧使用同一前端优化，不能当 predictive 专有收益。
+见[24-root 配置](../configs/migration/qwen35_locobench_long_24root_running8_2026-10-19.json)
+及[CPU 原始结果](../experiments/reports/v1925_v85d_long_chat_token_cache_cpu_20261019.json)。
+
 V85d 全程离线分析见
 [完整报告](../experiments/reports/v1924_v85d_complete_predictive_analysis_20261019_zh.md)：
 600–1273s GPU 98.01%；H2D stream 合计仅 1.160s。完成前复用 FULL

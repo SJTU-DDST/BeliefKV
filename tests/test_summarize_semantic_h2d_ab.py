@@ -406,6 +406,16 @@ def test_initialize_freezes_selected_reference_artifacts_and_verifies_their_hash
         main()
 
 
+def test_resume_rejects_changed_common_frontend_cache(tmp_path, monkeypatch):
+    (tmp_path / "ab_plan.json").write_text(json.dumps({"chat_token_block_cache": True}))
+    monkeypatch.setenv("BELIEFKV_CHAT_TOKEN_BLOCK_CACHE", "0")
+    monkeypatch.setattr(sys, "argv", [
+        "summarize", "--run-root", str(tmp_path), "--verify-frozen-plan",
+    ])
+    with pytest.raises(ValueError, match="frozen chat token cache configuration changed"):
+        main()
+
+
 @pytest.mark.parametrize("option", ("--native-reference-timeline", "--native-reference-cache"))
 def test_explicit_reference_artifacts_require_a_reference_run(tmp_path, monkeypatch, option):
     monkeypatch.setattr(sys, "argv", [

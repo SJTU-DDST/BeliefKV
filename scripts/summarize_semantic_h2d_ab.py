@@ -20,7 +20,7 @@ from beliefkv.experiments.arrival_schedule import (
     build_workflow_arrivals, load_workflow_arrivals,
 )
 from beliefkv.experiments.delegation_policy import (
-    NESTED_IN_GRAPH_PROFILE, delegation_contract,
+    NESTED_IN_GRAPH_PROFILE, NESTED_IN_GRAPH_PROFILES, delegation_contract,
 )
 
 
@@ -584,6 +584,12 @@ def main() -> None:
     if args.verify_frozen_plan:
         root = Path(__file__).resolve().parents[1]
         plan = json.loads((args.run_root / "ab_plan.json").read_text())
+        cache_enabled = os.environ.get("BELIEFKV_CHAT_TOKEN_BLOCK_CACHE", "0") == "1"
+        if (
+            "chat_token_block_cache" in plan
+            and plan["chat_token_block_cache"] != cache_enabled
+        ):
+            raise ValueError("frozen chat token cache configuration changed")
         verification = verify_frozen_execution_source(root, plan["code_commit"])
         if plan.get("arrival_schedule_sha256"):
             load_workflow_arrivals(
@@ -730,6 +736,7 @@ def main() -> None:
             "join_prefetch_trigger": args.join_prefetch_trigger,
             "online_tool_timing": bool(args.online_tool_timing),
             "borrowable_parent_headroom": bool(args.borrowable_parent_headroom),
+            "chat_token_block_cache": os.environ.get("BELIEFKV_CHAT_TOKEN_BLOCK_CACHE", "0") == "1",
             "eos_protocol_window_ms": args.eos_protocol_window_ms,
             "eos_prefetch_evidence_window_ms": max(
                 args.eos_protocol_window_ms, min(args.prefetch_lead_ms, 2000.),
@@ -996,7 +1003,7 @@ def main() -> None:
     for name, arm in arms.items():
         if arm is None:
             continue
-        if plan.get("fanout_profile") == NESTED_IN_GRAPH_PROFILE and (
+        if plan.get("fanout_profile") in NESTED_IN_GRAPH_PROFILES and (
             arm.get("subagent_fanout_profile") != plan["fanout_profile"]
             or arm.get("delegation_contract") != plan.get("delegation_contract")
             or arm.get("manifest_fanout_profile") != plan["fanout_profile"]

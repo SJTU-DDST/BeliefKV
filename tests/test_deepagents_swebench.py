@@ -1242,6 +1242,7 @@ def test_workload_cli_native_reactive_guard_matches_p6_collection(
 ) -> None:
     from scripts import run_deepagents_swebench as cli
 
+    monkeypatch.setenv("BELIEFKV_EXPERIMENT_PAUSE_FILE", str(tmp_path / "unused-pause"))
     configs = []
     monkeypatch.setattr(cli, "run_experiment", lambda config: (
         configs.append(config) or {

@@ -14,7 +14,8 @@ from beliefkv.control.causal_graph import InvocationState, RuntimeCausalContextG
 from beliefkv.core.events import RuntimeEventKind
 from beliefkv.experiments.agent_protocol import ActivationDeadline, LoopGuardPolicy
 from beliefkv.experiments.delegation_policy import (
-    NESTED_COORDINATOR_ROLE, NESTED_IN_GRAPH_PROFILE, delegation_contract,
+    DYNAMIC_NESTED_IN_GRAPH_PROFILE, NESTED_COORDINATOR_ROLE,
+    NESTED_IN_GRAPH_PROFILE, delegation_contract,
 )
 from beliefkv.experiments import deepagents_swebench as harness
 from beliefkv.runtime.deepagents_adapter import DeepAgentsRuntimeAdapter
@@ -30,6 +31,7 @@ class NestedFixtureModel(BaseChatModel):
     _adapter: object = PrivateAttr(default=None)
     _sessions: object = PrivateAttr(default=None)
     _closed: list = PrivateAttr(default_factory=list)
+    _dynamic: bool = PrivateAttr(default=False)
 
     @property
     def _llm_type(self):
@@ -49,8 +51,12 @@ class NestedFixtureModel(BaseChatModel):
             str(message.content) for message in messages if isinstance(message, SystemMessage)
         )
         role = (
-            "root" if "FOUR distinct delegation phases" in system else
-            "coordinator" if "Coordinate only the workstream assigned" in system else "leaf"
+            "root" if (
+                "FOUR distinct delegation phases" in system
+                or "DYNAMIC MULTI-ROUND DELEGATION" in system
+            ) else
+            "coordinator" if "Coordinate only the workstream assigned" in system else
+            "direct" if "BOUNDED NESTED DELEGATION" in system else "leaf"
         )
         prior = [message for message in messages if isinstance(message, AIMessage)]
         assignment = next(
@@ -75,17 +81,29 @@ class NestedFixtureModel(BaseChatModel):
         if role == "root":
             rounds = sum(any(call["name"] == "task" for call in message.tool_calls)
                          for message in prior)
-            calls = [] if rounds >= 4 else [
-                call("task", {
-                    "subagent_type": NESTED_COORDINATOR_ROLE,
-                    "description": f"Phase {rounds + 1}: coordinate two independent invariants.",
-                }),
-                call("task", {
-                    "subagent_type": "test-analyst",
-                    "description": f"Phase {rounds + 1}: inspect disjoint compatibility evidence.",
-                }),
-            ]
-        elif role == "coordinator" and not prior:
+            if self._dynamic and not prior:
+                calls = [call("write_todos", {"todos": [
+                    {"content": "Investigate the actual assignment.", "status": "in_progress"},
+                ]})]
+            else:
+                calls = [] if rounds >= 4 else [
+                    call("task", {
+                        "subagent_type": (
+                            "repository-explorer" if self._dynamic
+                            else NESTED_COORDINATOR_ROLE
+                        ),
+                        "description": f"Evidence {rounds + 1}: coordinate two independent invariants.",
+                    }),
+                ]
+                if calls and (not self._dynamic or rounds != 1):
+                    calls.append(call("task", {
+                        "subagent_type": "test-analyst",
+                        "description": f"Evidence {rounds + 1}: inspect disjoint compatibility evidence.",
+                    }))
+        elif not prior and (
+            role == "coordinator"
+            or role == "direct" and "coordinate two independent invariants" in assignment
+        ):
             calls = [
                 call("task", {
                     "subagent_type": name,
@@ -105,11 +123,11 @@ class NestedFixtureModel(BaseChatModel):
         ))])
 
 
-def configuration(tmp_path):
+def configuration(tmp_path, profile=NESTED_IN_GRAPH_PROFILE):
     return harness.DeepAgentsExperimentConfig(
         mode="autonomous", base_url="http://localhost:1/v1", model="fixture",
         output_dir=tmp_path / "output", workload_manifest=tmp_path / "manifest.json",
-        docker_image="fixture:unused", subagent_fanout_profile=NESTED_IN_GRAPH_PROFILE,
+        docker_image="fixture:unused", subagent_fanout_profile=profile,
         child_final_report_shadow=True, completion_gate_enabled=False,
         tool_circuit_breaker_enabled=False,
         loop_guard=LoopGuardPolicy(
@@ -119,8 +137,9 @@ def configuration(tmp_path):
 
 
 @pytest.mark.parametrize("deliver_control", [False, True])
+@pytest.mark.parametrize("profile", [NESTED_IN_GRAPH_PROFILE, DYNAMIC_NESTED_IN_GRAPH_PROFILE])
 def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
-    tmp_path, monkeypatch, deliver_control,
+    tmp_path, monkeypatch, deliver_control, profile,
 ):
     audit = harness.JsonlAudit(tmp_path / "audit.jsonl")
     workspace = tmp_path / "workspace"
@@ -138,6 +157,7 @@ def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
         control_sink=queued, native_radix_sessions=sessions,
     )
     model = NestedFixtureModel()
+    model._dynamic = profile == DYNAMIC_NESTED_IN_GRAPH_PROFILE
     model._adapter, model._sessions, model._closed = adapter, sessions, closed
     monkeypatch.setattr(harness, "_model", lambda *args: model)
     monkeypatch.setattr(harness, "make_summary_model", lambda model, **kwargs: model)
@@ -149,7 +169,7 @@ def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
     adapter.start()
     try:
         agent = harness._build_autonomous_agent(
-            configuration(tmp_path), workload, backend, adapter, deadline,
+            configuration(tmp_path, profile), workload, backend, adapter, deadline,
         )
         result = agent.invoke(
             {"messages": [HumanMessage(content="Run the four controlled phases.")]},
@@ -176,23 +196,42 @@ def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
                 assert graph.invocations[parent].state is InvocationState.READY
                 assert graph.invocations["root"].state is InvocationState.WAIT_JOIN
     assert nested_joins == 4
-    assert len(graph.invocations) == 17
+    agents = 16 if model._dynamic else 17
+    assert len(graph.invocations) == agents
     assert all(item.state is InvocationState.DONE for item in graph.invocations.values())
-    assert len(closed) == len(set(closed)) == 17
+    assert len(closed) == len(set(closed)) == agents
 
     stages = [
         event for event in trace.events
         if event.attributes.get("child_completion_signal_kind") == "stage"
     ]
-    assert len(stages) == 16
+    assert len(stages) == agents - 1
     for event in stages:
         assert parent_by_join[event.join_id] == graph.invocations[event.invocation_id].parent_invocation_id
     first = [request for request in model._requests if request["first"]]
-    assert sum(request["role"] == "coordinator" for request in first) == 4
-    assert all(
-        (request["tool_choice"], request["bounds"]) == ("task", [2, 4])
-        for request in first if request["role"] in ("root", "coordinator")
-    )
+    if model._dynamic:
+        assert not any(request["role"] == "coordinator" for request in first)
+        assert sum(request["role"] == "direct" for request in first) == 7
+        assert all(
+            request["tool_choice"] is None and request["bounds"] is None
+            for request in model._requests
+        )
+        assert all("task" in request["tools"] for request in first if request["role"] == "direct")
+        assert result["messages"][1].tool_calls[0]["name"] == "write_todos"
+        root_fanouts = [
+            len([call for call in message.tool_calls if call["name"] == "task"])
+            for message in result["messages"]
+            if isinstance(message, AIMessage) and any(
+                call["name"] == "task" for call in message.tool_calls
+            )
+        ]
+        assert root_fanouts == [2, 1, 2, 2]
+    else:
+        assert sum(request["role"] == "coordinator" for request in first) == 4
+        assert all(
+            (request["tool_choice"], request["bounds"]) == ("task", [2, 4])
+            for request in first if request["role"] in ("root", "coordinator")
+        )
     assert all("task" not in request["tools"] for request in first if request["role"] == "leaf")
     if deliver_control:
         control_graph = RuntimeCausalContextGraph()
@@ -211,9 +250,9 @@ def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
     assert shape["root_delegation_round_count"] == 4
     assert shape["nested_delegation_round_count"] == shape["nested_join_satisfied_count"] == 4
     assert shape["delegation_round_count"] == 8
-    assert shape["dynamic_subagent_count"] == 16
+    assert shape["dynamic_subagent_count"] == agents - 1
     assert shape["nested_spawn_count"] == 8
-    assert shape["spawn_count_by_depth"] == {"1": 8, "2": 8}
+    assert shape["spawn_count_by_depth"] == {"1": agents - 9, "2": 8}
     assert shape["maximum_spawn_depth"] == 2
     assert shape["unknown_spawn_depth_count"] == 0
     assert shape["all_joins_satisfied"] and shape["all_subagents_returned"]
@@ -238,6 +277,48 @@ def test_shape_contract_and_future_candidate_are_explicit():
     assert candidate["environment"]["FANOUT_PROFILE"] == NESTED_IN_GRAPH_PROFILE
     assert candidate["not_before"] is None
     assert candidate["gpu_experiment_started"] is True
+
+
+def test_dynamic_contract_has_no_prescribed_rounds_roles_or_generation_bounds():
+    contract = delegation_contract(DYNAMIC_NESTED_IN_GRAPH_PROFILE)
+    for name in (
+        "root_round_target", "nested_round_target", "children_per_round",
+        "initial_fanout_generation_bounds", "nested_fanout_generation_bounds",
+    ):
+        assert contract[name] is None
+    assert contract["direct_child_task_tool_enabled"]
+    assert contract["root_initial_tool_choice"] == contract["nested_initial_tool_choice"] == "auto"
+    assert not contract["fixed_role_sequence"]
+    assert not contract["natural_final_response_rejected"]
+    assert contract["maximum_spawn_depth"] == 2
+
+
+def test_dynamic_delegation_allows_final_response_without_any_spawn(tmp_path):
+    from langchain.agents import create_agent
+    from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
+    from langchain_core.tools import tool
+
+    class RecordingModel(FakeMessagesListChatModel):
+        _choices: list = PrivateAttr(default_factory=list)
+
+        def bind_tools(self, tools, **kwargs):
+            self._choices.append(kwargs)
+            return self
+
+    @tool
+    def task(description: str) -> str:
+        """Delegate when useful."""
+        raise AssertionError("The model chose to finish without delegation.")
+
+    model = RecordingModel(responses=[AIMessage(content="The bounded question is answered.")])
+    agent = create_agent(
+        model=model, tools=[task],
+        middleware=[harness.DynamicDelegationPromptMiddleware()],
+    )
+    result = agent.invoke({"messages": [HumanMessage(content="Answer the bounded question.")]})
+    assert result["messages"][-1].content == "The bounded question is answered."
+    assert model._choices[0].get("tool_choice") is None
+    assert model._choices[0]["parallel_tool_calls"]
 
 
 def test_four_round_guidance_preserves_early_natural_return(tmp_path):

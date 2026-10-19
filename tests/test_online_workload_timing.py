@@ -127,6 +127,28 @@ def test_report_does_not_predict_while_waiting_for_service(monkeypatch):
         runtime.close()
 
 
+def test_borrowed_capacity_includes_restore_and_native_service_reserve(monkeypatch):
+    runtime, _, stage = report_fixture(monkeypatch)
+    try:
+        plan = NS(
+            step=NS(key=stage.key), required_full_tokens=100_000,
+            required_mamba_slots=1,
+        )
+        with patch.object(
+            runtime, "_wait_prefetch_opportunity", return_value=plan,
+        ), patch.object(
+            runtime, "_h2d_start_window", return_value=NS(horizon_ms=500., service_ms=400.),
+        ), patch.object(
+            runtime, "_current_residency_budget",
+            return_value=NS(reserve_full_tokens=4105, reserve_mamba_slots=2),
+        ):
+            assert runtime._roll_final_stage() is plan
+        key, full, mamba, _ = runtime._critical_parent_demand
+        assert key == stage.key and full == 104105 and mamba == 3
+    finally:
+        runtime.close()
+
+
 def test_soft_headroom_has_no_reclaim_when_capacity_already_suffices(monkeypatch):
     runtime, _, stage = report_fixture(monkeypatch)
     try:

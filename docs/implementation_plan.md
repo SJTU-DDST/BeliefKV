@@ -19,6 +19,26 @@ Before a resumed24-root run, distinguish missing-copy opportunity, safe FULL
 capacity, new-context hybrid checkpoint gaps and service consumption. Keep GPU
 paused; no completed native control or policy speedup has been established.
 
+The next paused candidate is24 distinct original tasks on the same six qualified
+projects,16+8 waves900s apart and running8. Use native_in_graph_dynamic_nested:
+the model chooses delegation timing, fanout, roles and repeated rounds. Do not
+enforce four phases, force task generation at milestones, or reject natural
+RETURN. All direct-child roles can spawn leaf grandchildren, with depth capped2.
+Keep scope, completion notice and delegation guidance after the long source.
+Measure observed delegation/JOIN density and useful migration rather than
+claiming the prompt guarantees the desired shape.
+
+Borrowable parent capacity now prices restoration plus the native input/decode
+reserve, retaining safe waiting-state preparation and native reference checks.
+V1925 tests exact token reuse across growing source-backed histories:36 cases
+from12 workflows, three iterations, mean CPU conversion323.66 to98.61ms.
+The opt-in bounded chat token cache applies equally to predictive and native.
+The new qualified engine candidate is sglang-v86-chat-token-cache-cpu-20261019,
+patch af328f26; respect the explicit SGLANG_SOURCE_CHECKOUT through the launcher.
+This is CPU evidence, not an end-to-end result. Keep new-context hybrid checkpoint
+gaps separate; FULL matches alone cannot reconstruct a missing Mamba checkpoint.
+GPU pause remains active and automatic resume remains disabled.
+
 V85 preparation now uses the user's 262144 total context and a95% rendered
 prompt compaction threshold(249036 tokens), with cached local chat-template
 counts and a completion budget that fits the remaining total window.

@@ -139,7 +139,8 @@ def test_effective_policy_environment_without_launching_gpu(tmp_path, mode, nati
     capture.write_text(
         "#!/bin/sh\nexec " + executable + " -c '"
         'import json,os,sys;print(json.dumps({"environment":'
-        '{k:v for k,v in os.environ.items() if k.startswith("BELIEFKV_")},'
+        '{k:v for k,v in os.environ.items() if k.startswith("BELIEFKV_")'
+        ' or k=="SGLANG_SOURCE_CHECKOUT"},'
         '"arguments":sys.argv[1:]}))'
         "' \"$@\"\n"
     )
@@ -163,6 +164,8 @@ def test_effective_policy_environment_without_launching_gpu(tmp_path, mode, nati
             "TRANSFER_SERVICE_SEED": str(artifact),
             "BELIEFKV_SEMANTIC_REPORT_ARTIFACT": "/inherited/unused-semantic.json",
             "BELIEFKV_EMIT_SEMANTIC_TEXT": "1",
+            "BELIEFKV_EXPERIMENT_PAUSE_FILE": str(tmp_path / "unused-pause"),
+            "SGLANG_SOURCE_CHECKOUT": str(tmp_path / "candidate-engine"),
         },
         text=True, capture_output=True, timeout=10,
     )
@@ -170,6 +173,7 @@ def test_effective_policy_environment_without_launching_gpu(tmp_path, mode, nati
     rows = (run_root / "server.log").read_text().splitlines()
     payload = json.loads(next(line for line in rows if line.startswith("{")))
     environment, arguments = payload["environment"], payload["arguments"]
+    assert environment["SGLANG_SOURCE_CHECKOUT"] == str(tmp_path / "candidate-engine")
     if host_gb == "0":
         assert arguments[arguments.index("--max-total-tokens") + 1] == "1798992"
         assert arguments[arguments.index("--max-mamba-cache-size") + 1] == "513"

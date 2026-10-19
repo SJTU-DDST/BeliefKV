@@ -49,10 +49,18 @@ index d1509a7..dcc1f1e 100644
      tool_choice: Union[ToolChoice, Literal["auto", "required", "none"]] = Field(
          default="auto", examples=["none"]
 diff --git a/python/sglang/srt/entrypoints/openai/serving_chat.py b/python/sglang/srt/entrypoints/openai/serving_chat.py
-index 89cac80..a5277b8 100644
+index 89cac80..fabd8a7 100644
 --- a/python/sglang/srt/entrypoints/openai/serving_chat.py
 +++ b/python/sglang/srt/entrypoints/openai/serving_chat.py
-@@ -116,6 +116,63 @@ _MEDIA_CONTENT_PART_TYPES = frozenset({"image_url", "video_url", "audio_url"})
+@@ -4,6 +4,7 @@ import copy
+ import json
+ import logging
+ import math
++import os
+ import time
+ import uuid
+ from collections import OrderedDict
+@@ -116,6 +117,63 @@ _MEDIA_CONTENT_PART_TYPES = frozenset({"image_url", "video_url", "audio_url"})
  _CHAT_TEMPLATE_CACHE_MAX_SIZE = 128
  
  
@@ -116,7 +124,7 @@ index 89cac80..a5277b8 100644
  def normalize_tool_content(role: str, content):
      """Normalize tool message content from OpenAI array format to plain string.
  
-@@ -1048,6 +1105,17 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1048,6 +1106,17 @@ class OpenAIServingChat(OpenAIServingBase):
              f"received unsupported content type '{media_type}'."
          )
  
@@ -134,7 +142,7 @@ index 89cac80..a5277b8 100644
      def _engine_prompt(
          self, processed_messages: MessageProcessingResult, is_multimodal: bool
      ) -> tuple[str, Any]:
-@@ -1058,6 +1126,9 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1058,6 +1127,9 @@ class OpenAIServingChat(OpenAIServingBase):
          """
          if is_multimodal and not chat_encoding.spec_renders_prompt_ids(
              self.chat_encoding_spec
@@ -144,7 +152,7 @@ index 89cac80..a5277b8 100644
          ):
              return "text", processed_messages.prompt
          if isinstance(processed_messages.prompt_ids, str):
-@@ -1069,6 +1140,9 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1069,6 +1141,9 @@ class OpenAIServingChat(OpenAIServingBase):
          request: ChatCompletionRequest,
          raw_request: Request = None,
      ) -> tuple[GenerateReqInput, ChatCompletionRequest]:
@@ -154,7 +162,7 @@ index 89cac80..a5277b8 100644
  
          # Header-based opt-in (same rationale as request_headers.py).
          if raw_request is not None and not request.return_input_ids_in_sglext:
-@@ -1158,9 +1232,13 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1158,9 +1233,13 @@ class OpenAIServingChat(OpenAIServingBase):
              video_data=processed_messages.video_data,
              audio_data=processed_messages.audio_data,
              sampling_params=sampling_params,
@@ -169,7 +177,7 @@ index 89cac80..a5277b8 100644
              return_sampling_mask=request.return_sampling_mask,
              stream=request.stream,
              return_text_in_logprobs=True,
-@@ -1176,6 +1254,7 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1176,6 +1255,7 @@ class OpenAIServingChat(OpenAIServingBase):
              routed_experts_start_len=request.routed_experts_start_len,
              rid=request.rid,
              session_id=request.session_id,
@@ -177,7 +185,7 @@ index 89cac80..a5277b8 100644
              extra_key=request.extra_key,
              cache_salt=request.cache_salt,
              require_reasoning=processed_messages.require_reasoning,
-@@ -1201,6 +1280,11 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1201,6 +1281,11 @@ class OpenAIServingChat(OpenAIServingBase):
          ):
              apply_header_overrides(adapted_request, raw_request.headers)
  
@@ -189,7 +197,7 @@ index 89cac80..a5277b8 100644
          return adapted_request, request
  
      def _process_messages(
-@@ -1256,25 +1340,24 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1256,25 +1341,24 @@ class OpenAIServingChat(OpenAIServingBase):
          required_parsed_natively = glm_constraint
          if effective_tools and request.tool_choice != "none":
              request.skip_special_tokens = False
@@ -224,7 +232,7 @@ index 89cac80..a5277b8 100644
                  required_parsed_natively = parser.detector.parses_required_natively()
                  if self.chat_encoding_spec == "kimi_k3":
                      tool_call_stop = parser.detector.eot_token
-@@ -1536,6 +1619,9 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1536,6 +1620,9 @@ class OpenAIServingChat(OpenAIServingBase):
                  if self._tokenizer_auto_adds_specials
                  else {}
              )
@@ -234,7 +242,7 @@ index 89cac80..a5277b8 100644
              try:
                  rendered_prompt, prompt_ids, decoded_prompt = (
                      self._render_and_encode_chat_template(
-@@ -1544,6 +1630,7 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1544,6 +1631,7 @@ class OpenAIServingChat(OpenAIServingBase):
                          template_kwargs=extra_template_kwargs,
                          encode_kwargs=encode_kwargs,
                          use_cache=is_multimodal,
@@ -242,7 +250,7 @@ index 89cac80..a5277b8 100644
                      )
                  )
              except Exception:
-@@ -1562,6 +1649,7 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1562,6 +1650,7 @@ class OpenAIServingChat(OpenAIServingBase):
                              template_kwargs=extra_template_kwargs,
                              encode_kwargs=encode_kwargs,
                              use_cache=is_multimodal,
@@ -250,7 +258,7 @@ index 89cac80..a5277b8 100644
                          )
                      )
                  except _CHAT_TEMPLATE_CLIENT_ERRORS as template_error:
-@@ -1578,7 +1666,7 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1578,7 +1667,7 @@ class OpenAIServingChat(OpenAIServingBase):
                  # The cached decode corresponds to prompt_ids before the prefix.
                  decoded_prompt = None
  
@@ -259,7 +267,7 @@ index 89cac80..a5277b8 100644
                  prompt = (
                      decoded_prompt
                      if decoded_prompt is not None
-@@ -1608,6 +1696,7 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1608,6 +1697,7 @@ class OpenAIServingChat(OpenAIServingBase):
          template_kwargs: Dict[str, Any],
          encode_kwargs: Dict[str, Any],
          use_cache: bool,
@@ -267,7 +275,7 @@ index 89cac80..a5277b8 100644
      ) -> tuple[str, List[int], Optional[str]]:
          cache_key = None
          if use_cache:
-@@ -1623,6 +1712,7 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1623,6 +1713,7 @@ class OpenAIServingChat(OpenAIServingBase):
                          tools,
                          template_kwargs,
                          encode_kwargs,
@@ -275,7 +283,23 @@ index 89cac80..a5277b8 100644
                      ),
                      option=orjson.OPT_SORT_KEYS,
                  )
-@@ -1649,7 +1739,7 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1644,12 +1735,21 @@ class OpenAIServingChat(OpenAIServingBase):
+             return_dict=False,
+             **template_kwargs,
+         )
+-        prompt_ids = self.tokenizer_manager.tokenizer.encode(
+-            rendered_prompt, **encode_kwargs
++        token_cache = getattr(self, "_beliefkv_chat_token_cache", None)
++        if token_cache is None and os.environ.get("BELIEFKV_CHAT_TOKEN_BLOCK_CACHE") == "1":
++            from beliefkv.runtime.chat_token_cache import ChatPromptTokenCache
++
++            token_cache = self._beliefkv_chat_token_cache = ChatPromptTokenCache(
++                self.tokenizer_manager.tokenizer,
++            )
++        prompt_ids = (
++            token_cache.encode(rendered_prompt, **encode_kwargs)
++            if token_cache is not None
++            else self.tokenizer_manager.tokenizer.encode(rendered_prompt, **encode_kwargs)
          )
          decoded_prompt = (
              self.tokenizer_manager.tokenizer.decode(prompt_ids)
@@ -284,7 +308,7 @@ index 89cac80..a5277b8 100644
              else None
          )
  
-@@ -1872,6 +1962,11 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1872,6 +1972,11 @@ class OpenAIServingChat(OpenAIServingBase):
                          choice_logprobs = self._process_streaming_logprobs(
                              content, n_prev_token, total_output_logprobs
                          ).model_dump()
@@ -296,7 +320,7 @@ index 89cac80..a5277b8 100644
                      n_prev_tokens[index] = total_output_logprobs
  
                  # Track finish_reason for each index
-@@ -2529,6 +2624,45 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -2529,6 +2634,45 @@ class OpenAIServingChat(OpenAIServingBase):
          token_logprobs = self._process_logprobs_tokens(logprobs, use_token_index=False)
          return ChoiceLogprobs(content=token_logprobs)
  

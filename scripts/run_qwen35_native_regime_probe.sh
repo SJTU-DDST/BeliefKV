@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
+EXPERIMENT_PAUSE_FILE="${BELIEFKV_EXPERIMENT_PAUSE_FILE:-/tmp/beliefkv-experiments.paused}"
 PORT="${PORT:-18454}"
 ROOT_COUNT="${ROOT_COUNT:-108}"
 MAX_RUNNING_REQUESTS="${MAX_RUNNING_REQUESTS:-48}"
@@ -28,6 +29,7 @@ DEVICE_FULL_TOKENS="${DEVICE_FULL_TOKENS:-}"
 DEVICE_MAMBA_SLOTS="${DEVICE_MAMBA_SLOTS:-}"
 HICACHE_WRITE_POLICY="${HICACHE_WRITE_POLICY:-write_back}"
 SGLANG_PATCH_FLAVOR="${SGLANG_PATCH_FLAVOR:-staging}"
+SGLANG_SOURCE_CHECKOUT="${SGLANG_SOURCE_CHECKOUT:-$ROOT/third_party/sglang-v0.5.20}"
 # Qwen3.5 advertises VLM support; its image warmup OOMs after 94% static KV sizing.
 SKIP_SERVER_WARMUP="${SKIP_SERVER_WARMUP:-1}"
 CONFIRMED_JOIN_CANARY="${CONFIRMED_JOIN_CANARY:-0}"
@@ -109,7 +111,7 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || [[ "$HICACHE_WRITE_POLICY" != "write_through_selective" && "$HICACHE_WRITE_POLICY" != "write_back" ]] \
   || [[ "$SKIP_SERVER_WARMUP" != "0" && "$SKIP_SERVER_WARMUP" != "1" ]] \
   || [[ "$CONFIRMED_JOIN_CANARY" != "0" && "$CONFIRMED_JOIN_CANARY" != "1" ]] \
-  || [[ "$FANOUT_PROFILE" != "native_dynamic_1to4" && "$FANOUT_PROFILE" != "native_in_graph_1to4" && "$FANOUT_PROFILE" != "native_in_graph_2to4" && "$FANOUT_PROFILE" != "native_in_graph_nested_2to4" ]] \
+  || [[ "$FANOUT_PROFILE" != "native_dynamic_1to4" && "$FANOUT_PROFILE" != "native_in_graph_1to4" && "$FANOUT_PROFILE" != "native_in_graph_2to4" && "$FANOUT_PROFILE" != "native_in_graph_nested_2to4" && "$FANOUT_PROFILE" != "native_in_graph_dynamic_nested" ]] \
   || [[ "$AB_MODE" != "off" && "$AB_MODE" != "reactive" && "$AB_MODE" != "predictive_h2d" ]] \
   || [[ "$NATIVE_POLICY_BASELINE" != "0" && "$NATIVE_POLICY_BASELINE" != "1" ]] \
   || { [[ "$NATIVE_POLICY_BASELINE" == "1" ]] && [[ "$AB_MODE" != "off" || "$CONFIRMED_JOIN_CANARY" != "0" ]]; } \
@@ -135,7 +137,7 @@ fi
 if [[ -n "$WORKFLOW_ARRIVAL_SCHEDULE" ]]; then
   PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -c 'import json,sys; from pathlib import Path; from beliefkv.experiments.arrival_schedule import load_workflow_arrivals; rows=json.load(open(sys.argv[1]))["workloads"][:int(sys.argv[2])]; load_workflow_arrivals(Path(sys.argv[3]), instance_ids=[row["instance_id"] for row in rows])' "$MANIFEST" "$ROOT_COUNT" "$WORKFLOW_ARRIVAL_SCHEDULE"
 fi
-if [[ -e /tmp/beliefkv-experiments.paused ]] \
+if [[ -e "$EXPERIMENT_PAUSE_FILE" ]] \
   || curl --silent --max-time 2 --fail "$BASE_URL/health" >/dev/null \
   || [[ "$(df -Pk "$ROOT" | awk 'NR == 2 {print $4}')" -lt 20971520 ]]; then
   printf 'Experiments paused, port occupied, or less than 20 GiB free\n' >&2
@@ -242,7 +244,7 @@ setsid env -u BELIEFKV_FULL_MAMBA_HOST_SPLIT "${unset_env[@]}" \
   CONTEXT_LENGTH="$MODEL_CONTEXT_TOKENS" \
   "${telemetry_env[@]}" \
   SGLANG_PATCH_FLAVOR="$SGLANG_PATCH_FLAVOR" \
-  SGLANG_SOURCE_CHECKOUT="$ROOT/third_party/sglang-v0.5.20" \
+  SGLANG_SOURCE_CHECKOUT="$SGLANG_SOURCE_CHECKOUT" \
   bash "$ROOT/scripts/launch_qwen35_native_v0520.sh" \
   "${server_flags[@]}" \
   > "$RUN_ROOT/server.log" 2>&1 &

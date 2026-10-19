@@ -12,6 +12,7 @@ from beliefkv.experiments.long_repository_tasks import (
     repository_path, unwrap_generated_file,
 )
 from scripts.prepare_locobench_agent_manifest import load_project, scenario_prompt
+from scripts.extend_locobench_agent_manifest import extend_manifest
 
 
 @pytest.mark.parametrize("path", ("../secret", "/tmp/x", "a/.git/config", "a\\..\\x", ""))
@@ -88,7 +89,59 @@ def test_only_public_task_fields_are_exposed_and_context_is_hash_bound(tmp_path)
         })
 
 
-def test_all_root_child_and_nested_child_prompts_receive_frozen_source(tmp_path, monkeypatch):
+def test_extension_reuses_qualified_sources_and_selects_distinct_original_tasks(tmp_path):
+    archive_path = tmp_path / "data.zip"
+    scenarios = [
+        f"data/python_example_{category}_expert_01.json"
+        for category in ("bug_investigation", "feature_implementation", "integration_testing")
+    ]
+    with zipfile.ZipFile(archive_path, "w") as archive:
+        for index, path in enumerate(scenarios):
+            archive.writestr(path, json.dumps({
+                "id": f"task-{index}", "title": f"Public task {index}",
+                "task_prompt": "Check observed evidence.", "difficulty": "expert",
+                "task_category": "investigation", "ground_truth": "SECRET_GOLD",
+            }))
+    base = {
+        "candidates": [{
+            "project_id": "python_example", "rejection_reasons": [],
+            "scenario_paths": scenarios,
+        }],
+        "workloads": [{
+            "repo": "locobench/python_example", "source_repo": "qualified-source",
+            "base_commit": "qualified-commit", "frozen_repository_context": {"sha256": "kept"},
+            "dataset_provenance": {"source_provenance_sha256": "source-proof"},
+        }],
+    }
+    with zipfile.ZipFile(archive_path) as archive:
+        result = extend_manifest(
+            base, archive, root_count=3, max_tasks_per_project=3,
+            references=tmp_path / "references",
+        )
+        with pytest.raises(ValueError, match="not enough distinct"):
+            extend_manifest(
+                base, archive, root_count=4, max_tasks_per_project=4,
+                references=tmp_path / "unused",
+            )
+    rows = result["workloads"]
+    assert len({row["instance_id"] for row in rows}) == 3
+    assert all(row["source_repo"] == "qualified-source" for row in rows)
+    assert all(row["base_commit"] == "qualified-commit" for row in rows)
+    assert all(row["frozen_repository_context"] == {"sha256": "kept"} for row in rows)
+    assert all("SECRET_GOLD" not in row["problem_statement"] for row in rows)
+    assert all("SECRET_GOLD" in Path(
+        row["dataset_provenance"]["reference_path"],
+    ).read_text() for row in rows)
+    assert "requested_workflows" not in base
+    assert not (tmp_path / "unused").exists()
+
+
+@pytest.mark.parametrize("profile", [
+    "native_in_graph_nested_2to4", "native_in_graph_dynamic_nested",
+])
+def test_all_root_child_and_nested_child_prompts_receive_frozen_source(
+    tmp_path, monkeypatch, profile,
+):
     pytest.importorskip("deepagents")
     from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
     from langchain_core.messages import AIMessage
@@ -111,7 +164,7 @@ def test_all_root_child_and_nested_child_prompts_receive_frozen_source(tmp_path,
         docker_image="fixture",
         completion_gate_enabled=False,
         max_completion_tokens=16384,
-        subagent_fanout_profile="native_in_graph_nested_2to4",
+        subagent_fanout_profile=profile,
         context_lifecycle=ContextLifecyclePolicy(window_tokens=262144),
     )
     workspace = tmp_path / "workspace"
@@ -143,7 +196,16 @@ def test_all_root_child_and_nested_child_prompts_receive_frozen_source(tmp_path,
     assert len(roots) == 1
     assert "LoCoBench-Agent" in roots[0]["system_prompt"]
     assert roots[0]["system_prompt"].count("SOURCE_SENTINEL") == 1
-    assert len(child_specs) == 9  # Five direct roles, four nested leaf roles.
+    assert len(child_specs) == (25 if profile == "native_in_graph_dynamic_nested" else 9)
     assert all(spec["system_prompt"].count("SOURCE_SENTINEL") == 1 for spec in child_specs)
+    if profile == "native_in_graph_dynamic_nested":
+        assert roots[0]["system_prompt"].index("SOURCE_SENTINEL") < roots[0]["system_prompt"].index(
+            "DYNAMIC MULTI-ROUND DELEGATION",
+        )
+        assert all(
+            spec["system_prompt"].index("SOURCE_SENTINEL")
+            < spec["system_prompt"].index(runner.NATIVE_CHILD_RETURN_INSTRUCTION.strip())
+            for spec in child_specs
+        )
     assert "LoCoBench-Agent scenario" in runner._task_prompt(workload)
     assert "SOURCE_SENTINEL" not in runner._task_prompt(workload)

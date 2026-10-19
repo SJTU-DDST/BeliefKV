@@ -78,6 +78,24 @@ def scenario_prompt(scenario):
     )
 
 
+def select_scenarios(candidates, root_count, max_tasks_per_project):
+    qualified = [row for row in candidates if not row["rejection_reasons"]]
+    selected, used = [], set()
+    for _ in range(max_tasks_per_project):
+        for row in qualified:
+            if len(selected) >= root_count:
+                break
+            available = [path for path in row["scenario_paths"] if path not in used]
+            category = DEFAULT_CATEGORIES[len(selected) % len(DEFAULT_CATEGORIES)]
+            preferred = [path for path in available if f"_{category}_" in path]
+            if not available:
+                continue
+            scenario_path = (preferred or available)[0]
+            selected.append((row, scenario_path))
+            used.add(scenario_path)
+    return selected
+
+
 def git(repo, *args):
     result = subprocess.run(
         ["git", "-c", "core.hooksPath=/dev/null", *args],
@@ -184,20 +202,7 @@ def main():
     candidates.sort(key=lambda row: hashlib.sha256(
         f"{args.selection_seed}:{row['project_id']}".encode(),
     ).hexdigest())
-    qualified = [row for row in candidates if not row["rejection_reasons"]]
-    selected, used = [], set()
-    for _ in range(args.max_tasks_per_project):
-        for row in qualified:
-            if len(selected) >= args.root_count:
-                break
-            available = [path for path in row["scenario_paths"] if path not in used]
-            category = DEFAULT_CATEGORIES[len(selected) % len(DEFAULT_CATEGORIES)]
-            preferred = [path for path in available if f"_{category}_" in path]
-            if not available:
-                continue
-            scenario_path = (preferred or available)[0]
-            selected.append((row, scenario_path))
-            used.add(scenario_path)
+    selected = select_scenarios(candidates, args.root_count, args.max_tasks_per_project)
     report = {
         "dataset": "SalesforceAIResearch/LoCoBench-Agent",
         "upstream_revision": UPSTREAM_REVISION,

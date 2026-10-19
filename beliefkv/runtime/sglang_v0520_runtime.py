@@ -3016,9 +3016,14 @@ class NativeAdmissionRuntime:
                 self.counts["report_service_transfer_size_unsupported"] += 1
                 continue
             if self._borrowable_parent_headroom and remaining <= 2 * window.horizon_ms:
+                budget = self._current_residency_budget(
+                    include_evictable=True, headroom=getattr(cost_plan, "headroom", None),
+                )
+                # Reclaim enough for restoration and its native service reserve;
+                # otherwise the final capacity check can reject the same plan.
                 self._critical_parent_demand = (
-                    stage.key, cost_plan.required_full_tokens,
-                    cost_plan.required_mamba_slots,
+                    stage.key, cost_plan.required_full_tokens + budget.reserve_full_tokens,
+                    cost_plan.required_mamba_slots + budget.reserve_mamba_slots,
                     time.monotonic() + max(1., remaining / 1000.),
                 )
             if remaining > window.horizon_ms:

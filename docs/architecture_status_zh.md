@@ -15,6 +15,29 @@ H2D stream 仅 1.160s，前端转换累计 676.813s；这些不是可减去的 J
 详见[完整报告](../experiments/reports/v1924_v85d_complete_predictive_analysis_20261019_zh.md)。
 GPU 暂停状态不变，native 部分轨迹不能作配对。
 
+**下一轮采用模型动态委派，不预设 root 流程。**新 profile
+`native_in_graph_dynamic_nested` 没有固定阶段、角色顺序或轮数，
+首轮及后续均为自动工具选择，无 fan-out 生成约束或终态拒绝。
+每个直接 child 都具备 task 工具，可依当前证据多轮创建孙 agent；
+深度 2 的孙 agent 是叶子。提示鼓励有用的并行和后续调查，不伪造任务、
+延时或重复工具调用。范围、返回通知及委派提示放在完整源码之后；
+旧 profile 与 V85d 冻结合同保留，CPU 图检查不证明在线委派数量已增加。
+
+24-root 清单复用六个已验证源码/环境，增加不同原始任务，每项目四项，
+前 12 项和原顺序相同；候选为 16+8/900s、running 8、256K、Host80:20。
+临近 parent 的容量回收目标现在包含待恢复 FULL/Mamba 加原生输入/decode
+预留；只计恢复数据会在回收后仍被最终容量检查拒绝。已有安全等待状态
+PREPARE/原生回收流程保留，不永久空置显存，也不抢占活跃 LLM。
+
+V1925 定位整条对话缓存无法复用增长历史的编码工作，新增有界 token
+分块缓存并保留原生回退。12 个 workflow 的 36 个源码+历史输入、三轮
+CPU 核对 token 完全一致；转换均值 323.66→98.61ms，P50
+320.18→51.78ms。输入为轨迹重建而非原始 HTTP，不据此换算 JCT。
+新引擎候选 `sglang-v86-chat-token-cache-cpu-20261019` 与补丁
+af328f26 绑定，入口对 native/predictive 同时启用；V85d 原引擎不变。
+11 个新 context 的混合 checkpoint 缺口仍单列：深 FULL 命中不能替代
+该位置缺少的可恢复 Mamba 状态，现有日志不足以逐个区分未创建与被回收。
+
 **V85d 已执行 LoCoBench-Agent 长上下文验证，首批核对通过。**总上下文 262144，
 完整渲染输入在 95%（249036 token）压缩动态历史；临近上限时适配输出
 预算，正常单次输出仍最多 16384。使用缓存的本地 chat-template token

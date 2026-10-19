@@ -42,9 +42,11 @@ from beliefkv.experiments.arrival_schedule import (
     load_workflow_arrivals,
 )
 from beliefkv.experiments.delegation_policy import (
+    DYNAMIC_NESTED_IN_GRAPH_PROFILE,
     IN_GRAPH_SUBAGENT_PROFILES,
     NESTED_COORDINATOR_ROLE,
     NESTED_IN_GRAPH_PROFILE,
+    NESTED_IN_GRAPH_PROFILES,
     SUBAGENT_FANOUT_PROFILES,
     TWO_TO_FOUR_IN_GRAPH_PROFILES,
     delegation_contract,
@@ -2248,6 +2250,42 @@ gap. Announce completion only after nested JOINs and any needed tools finish,
 then return a concise synthesis, tested evidence, and uncertainty to your parent.
 """
 
+DYNAMIC_NESTED_ROOT_PROMPT = """
+DYNAMIC MULTI-ROUND DELEGATION
+Choose what to delegate, when to delegate, and how many rounds to run from the
+current task and observed evidence. Actively use parallel workstreams and further
+delegation rounds when new evidence, edits, or test results expose substantive
+independent questions. A JOIN is an opportunity to reassess the work, not a reason
+to stop delegating or to start another round automatically.
+
+For separable work, prefer two to four complementary task calls in one response;
+a single bounded child or direct work is valid when the task warrants it.
+Every direct-child role can create leaf grandchildren. Assign a decomposable
+workstream when a child can usefully reconcile several independent questions;
+the optional delegation-coordinator role is not required for nesting.
+Give each branch concrete deliverables, relevant evidence, and disjoint write
+scopes. Do not assign a child's nested questions to its siblings as well.
+
+Let the task determine whether investigation, implementation, review, or validation
+is needed next. There is no fixed phase order, mandatory role, or round quota.
+For analysis-only work, validate the diagnosis without unrequested code changes.
+Do not duplicate finished work, add artificial tool delays, or pad the conversation
+to create delegation. The root owns integration and final verification. Return
+naturally when the actual assignment is complete or honestly blocked.
+"""
+
+DYNAMIC_DIRECT_CHILD_PROMPT = """
+BOUNDED NESTED DELEGATION
+You are a direct child and have access to task for leaf grandchildren. If your
+assigned workstream contains independent substantial questions, actively consider
+delegating those questions together, then reconcile the evidence. Prefer two to
+four parallel children for separable work; choose the actual count and any later
+rounds from your assignment and new evidence. This applies to every direct-child
+role, not only delegation-coordinator. Complete an atomic assignment directly.
+Do not expand the overall task or delegate the same investigation twice.
+Grandchildren are leaves; the maximum spawn depth is root=0, child=1, grandchild=2.
+"""
+
 
 class NativeDelegationRoundPromptMiddleware(AgentMiddleware[Any, Any, Any]):
     """Persist stage instructions in task results, keeping future KV prefixes stable."""
@@ -2349,6 +2387,43 @@ class NativeDelegationRoundPromptMiddleware(AgentMiddleware[Any, Any, Any]):
         return replace(result, update={**result.update, "messages": updated})
 
 
+class DynamicDelegationPromptMiddleware(AgentMiddleware[Any, Any, Any]):
+    """Keep delegation available without prescribing the next model action."""
+
+    def wrap_model_call(self, request: ModelRequest, handler: Any) -> ModelResponse:
+        return handler(request.override(model_settings={
+            **request.model_settings, "parallel_tool_calls": True,
+        }))
+
+    def wrap_tool_call(self, request: Any, handler: Any) -> Any:
+        result = handler(request)
+        if request.tool_call.get("name") != "task":
+            return result
+        if isinstance(result, ToolMessage):
+            messages = [result]
+        elif isinstance(result, Command) and isinstance(result.update, Mapping):
+            messages = result.update.get("messages", [])
+        else:
+            return result
+        instruction = (
+            "\n\nWORKSTREAM RETURNED: integrate this evidence and decide the next "
+            "action from the remaining task. Actively consider further parallel "
+            "or nested delegation for new independent questions. There is no "
+            "required round count, role sequence, or next tool. Do not duplicate "
+            "completed work; return naturally when the assignment is complete."
+        )
+        updated = [
+            message.model_copy(update={"content": _message_text(message) + instruction})
+            if isinstance(message, ToolMessage)
+            and message.tool_call_id == request.tool_call["id"]
+            and message.status != "error" else message
+            for message in messages
+        ]
+        if isinstance(result, ToolMessage):
+            return updated[0]
+        return replace(result, update={**result.update, "messages": updated})
+
+
 class InitialInGraphDelegationMiddleware(AgentMiddleware[Any, Any, Any]):
     """Require an initial task call without changing the session's tool schema."""
 
@@ -2439,6 +2514,8 @@ def _autonomous_fanout_prompt(
         return NATIVE_IN_GRAPH_1TO4_PROMPT
     if config.subagent_fanout_profile == "native_in_graph_2to4":
         return NATIVE_IN_GRAPH_2TO4_PROMPT
+    if config.subagent_fanout_profile == DYNAMIC_NESTED_IN_GRAPH_PROFILE:
+        return DYNAMIC_NESTED_ROOT_PROMPT
     if config.subagent_fanout_profile == NESTED_IN_GRAPH_PROFILE:
         return NATIVE_NESTED_2TO4_PROMPT
     return AUTONOMOUS_NATURAL_SUBAGENT_PROMPT
@@ -3152,13 +3229,18 @@ def _autonomous_subagents(
     )
     nested = (
         include_nested_coordinator
-        and config.subagent_fanout_profile == NESTED_IN_GRAPH_PROFILE
+        and config.subagent_fanout_profile in NESTED_IN_GRAPH_PROFILES
     )
+    dynamic = config.subagent_fanout_profile == DYNAMIC_NESTED_IN_GRAPH_PROFILE
     if nested:
         specs = ((
             NESTED_COORDINATOR_ROLE,
             "Lead one bounded workstream through a nested parallel task round, then synthesize.",
-            NESTED_COORDINATOR_PROMPT,
+            (
+                "Coordinate only your assigned workstream. Choose any nested "
+                "delegation and follow-up from the evidence; return a synthesis."
+                if dynamic else NESTED_COORDINATOR_PROMPT
+            ),
         ), *specs)
     for name, description, system_prompt in specs:
         scope = f"autonomous:{name}"
@@ -3168,12 +3250,20 @@ def _autonomous_subagents(
                 "description": description,
                 "system_prompt": (
                     system_prompt
-                    + DELEGATED_TASK_FOCUS_INSTRUCTION
+                    + ("" if dynamic else DELEGATED_TASK_FOCUS_INSTRUCTION)
                     + TOOL_PROGRESS_INSTRUCTION
                     + SANDBOX_PATH_CONTRACT
                     + repository_sandbox_contract(workload)
-                    + NATIVE_CHILD_RETURN_INSTRUCTION
+                    + ("" if dynamic else NATIVE_CHILD_RETURN_INSTRUCTION)
                     + _repository_context_prompt(workload)
+                    + (
+                        DELEGATED_TASK_FOCUS_INSTRUCTION + NATIVE_CHILD_RETURN_INSTRUCTION
+                        if dynamic else ""
+                    )
+                    + (
+                        "\n\n" + DYNAMIC_DIRECT_CHILD_PROMPT
+                        if nested and dynamic else ""
+                    )
                 ),
                 "model": model,
                 "tools": (
@@ -3238,7 +3328,7 @@ def _autonomous_subagents(
                 ],
             }
         )
-        if nested and name == NESTED_COORDINATOR_ROLE:
+        if nested and (dynamic or name == NESTED_COORDINATOR_ROLE):
             subagents[-1]["middleware"].extend([
                 PrivateStateIsolatingSubAgentMiddleware(
                     backend=backend,
@@ -3248,10 +3338,13 @@ def _autonomous_subagents(
                         deadline_controller, include_nested_coordinator=False,
                     ),
                 ),
-                InitialInGraphDelegationMiddleware(
-                    audit=backend.audit, task_fanout=(2, 4),
-                ),
             ])
+            if dynamic:
+                subagents[-1]["middleware"].append(DynamicDelegationPromptMiddleware())
+            elif name == NESTED_COORDINATOR_ROLE:
+                subagents[-1]["middleware"].append(InitialInGraphDelegationMiddleware(
+                    audit=backend.audit, task_fanout=(2, 4),
+                ))
     return subagents
 
 
@@ -3273,16 +3366,19 @@ def _build_autonomous_agent(
         TodoListMiddleware(),
         _filesystem_middleware(backend, allow_direct_edits=True),
     ]
-    if delegation_enabled and config.subagent_fanout_profile in IN_GRAPH_SUBAGENT_PROFILES:
+    dynamic = config.subagent_fanout_profile == DYNAMIC_NESTED_IN_GRAPH_PROFILE
+    if delegation_enabled and dynamic:
+        middleware.insert(0, DynamicDelegationPromptMiddleware())
+    elif delegation_enabled and config.subagent_fanout_profile in IN_GRAPH_SUBAGENT_PROFILES:
         middleware.insert(0, NativeDelegationRoundPromptMiddleware(
             backend.audit,
             minimum_children=(
                 2 if config.subagent_fanout_profile in TWO_TO_FOUR_IN_GRAPH_PROFILES else 1
             ),
             target_rounds=(
-                4 if config.subagent_fanout_profile == NESTED_IN_GRAPH_PROFILE else 3
+                4 if config.subagent_fanout_profile in NESTED_IN_GRAPH_PROFILES else 3
             ),
-            nested_coordinator=config.subagent_fanout_profile == NESTED_IN_GRAPH_PROFILE,
+            nested_coordinator=config.subagent_fanout_profile in NESTED_IN_GRAPH_PROFILES,
         ))
     if delegation_enabled:
         middleware.append(
@@ -3300,7 +3396,10 @@ def _build_autonomous_agent(
                 ),
             )
         )
-    if config.subagent_fanout_profile in IN_GRAPH_SUBAGENT_PROFILES:
+    if (
+        delegation_enabled and not dynamic
+        and config.subagent_fanout_profile in IN_GRAPH_SUBAGENT_PROFILES
+    ):
         middleware.append(InitialInGraphDelegationMiddleware(
             audit=backend.audit,
             single_task_choice=True,
@@ -3366,12 +3465,13 @@ def _build_autonomous_agent(
             + repository_sandbox_contract(workload)
             + "\n\n"
             + BASE_AGENT_PROMPT
+            + (_repository_context_prompt(workload) if dynamic else "")
             + "\n\nWORKFLOW DELEGATION REQUIREMENTS\n"
             + _autonomous_fanout_prompt(
                 config,
                 delegation_enabled=delegation_enabled,
             )
-            + _repository_context_prompt(workload)
+            + ("" if dynamic else _repository_context_prompt(workload))
         ),
         middleware=middleware,
         response_format=(
