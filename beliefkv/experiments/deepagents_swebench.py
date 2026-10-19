@@ -2307,6 +2307,14 @@ Available child types:
 {available_agents}
 """
 
+DYNAMIC_COLLABORATIVE_TASK_INSTRUCTION = """
+Complete this assignment as a collaborating multi-agent team using task.
+Delegate substantial parts of the investigation or validation, integrate their
+reports, and do the remaining work yourself. Choose the subagent assignments,
+number, nesting, timing, and any later delegation rounds from the task and
+evidence. There is no fixed phase sequence or role requirement.
+"""
+
 DYNAMIC_DIRECT_CHILD_PROMPT = """
 BOUNDED NESTED DELEGATION
 You are a direct child and have access to task for leaf grandchildren. If your
@@ -3535,6 +3543,8 @@ def _run_autonomous(
     plan_payload: dict[str, Any] | None = None
     prompt = _task_prompt(workload, workspace=backend.workspace)
     delegation_enabled = True
+    if config.subagent_fanout_profile == DYNAMIC_NESTED_IN_GRAPH_PROFILE:
+        prompt += "\n\n" + DYNAMIC_COLLABORATIVE_TASK_INSTRUCTION.strip()
     if config.subagent_fanout_profile == "parallel_analysis_2to3":
         planner = _model(config, adapter, deadline_controller).with_structured_output(
             ParallelAnalysisPlan,

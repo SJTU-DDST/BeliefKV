@@ -1,0 +1,499 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-19T15:35:26.525189-07:00",
+  "run_root": "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v89",
+  "collection_commit": "7502984f53ce0b7e890fbad5e6fc5b7527985332",
+  "execution_verification": {
+    "collection_code_commit": "7502984f53ce0b7e890fbad5e6fc5b7527985332",
+    "verification_code_commit": "7502984f53ce0b7e890fbad5e6fc5b7527985332",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py",
+      "scripts/analyze_prefill_turnover.py",
+      "scripts/seal_reservation_cutoff.py"
+    ],
+    "changed_committed_paths": []
+  },
+  "scheduler_identity": {
+    "pid": 3955864,
+    "parent": 3955463,
+    "start_ticks": "661924285"
+  },
+  "raw_mtime_local": "2026-10-19T15:34:02.594955-07:00",
+  "requested_duration_seconds": 8.0,
+  "requested_rate_hz": 20,
+  "method": "py-spy record --gil --threads --full-filenames --nonblocking --format raw",
+  "recorded_samples": 24,
+  "sampling_errors": 9,
+  "raw_sha256": "de8aa8a12949930b08e9812a391f143401676bd3b6a7d0d24591f69c65a6403f",
+  "compressed_profile": "experiments/reports/v2062_v89_early_scheduler_gil_20261020.raw.gz",
+  "compressed_sha256": "680a06ed41e1275c8cfafe17ae888abf5a538ce2d07d9d3cfc1390859020c517",
+  "route_samples": {
+    "other": 4,
+    "launch": 9,
+    "result": 9,
+    "selection": 1,
+    "writer": 1
+  },
+  "leaf_functions": [
+    [
+      "__getitem__ (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/mem_cache/radix_cache.py)",
+      3
+    ],
+    [
+      "extend (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py)",
+      2
+    ],
+    [
+      "send (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/zmq/sugar/socket.py)",
+      1
+    ],
+    [
+      "__init__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/typing.py)",
+      1
+    ],
+    [
+      "set_mamba_track_indices_from_reqs (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/schedule_batch.py)",
+      1
+    ],
+    [
+      "_maybe_log_time_stats (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/scheduler_components/output_streamer.py)",
+      1
+    ],
+    [
+      "_log_gauge (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/observability/metrics_collector.py)",
+      1
+    ],
+    [
+      "is_decode_or_idle (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/model_executor/forward_batch_info.py)",
+      1
+    ],
+    [
+      "run_batch (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/scheduler.py)",
+      1
+    ],
+    [
+      "_track_mamba_state_extend (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py)",
+      1
+    ],
+    [
+      "on_completed (/home/longhao/experiment/.worktrees/beliefkv-v88-control-7502984-20261020/beliefkv/runtime/v0520_native_telemetry.py)",
+      1
+    ],
+    [
+      "wrapper (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/utils/nvtx_utils.py)",
+      1
+    ],
+    [
+      "match (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/mem_cache/radix_cache.py)",
+      1
+    ],
+    [
+      "forward_extend (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/layers/attention/linear/gdn_backend.py)",
+      1
+    ],
+    [
+      "encode_record (/home/longhao/experiment/.worktrees/beliefkv-v88-control-7502984-20261020/beliefkv/runtime/record_json.py)",
+      1
+    ],
+    [
+      "chunk_gated_delta_rule (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_prefill.py)",
+      1
+    ],
+    [
+      "_async_d2h (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/utils.py)",
+      1
+    ],
+    [
+      "match_at (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/mem_cache/radix_cache.py)",
+      1
+    ],
+    [
+      "__init__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/zmq/error.py)",
+      1
+    ],
+    [
+      "forward_extend (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py)",
+      1
+    ],
+    [
+      "accept (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/scheduler_components/output_streamer.py)",
+      1
+    ]
+  ],
+  "inclusive_functions": [
+    [
+      "thread (3955864): MainThread",
+      23
+    ],
+    [
+      "_bootstrap (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/process.py)",
+      20
+    ],
+    [
+      "spawn_main (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/spawn.py)",
+      20
+    ],
+    [
+      "run (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/process.py)",
+      20
+    ],
+    [
+      "decorate_context (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/utils/_contextlib.py)",
+      20
+    ],
+    [
+      "dispatch_event_loop (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/scheduler.py)",
+      20
+    ],
+    [
+      "event_loop_overlap (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/scheduler.py)",
+      20
+    ],
+    [
+      "<module> (<string>)",
+      20
+    ],
+    [
+      "run_event_loop (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/scheduler.py)",
+      20
+    ],
+    [
+      "_main (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/spawn.py)",
+      20
+    ],
+    [
+      "run_scheduler_process (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/scheduler.py)",
+      20
+    ],
+    [
+      "wrapper (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/utils/nvtx_utils.py)",
+      19
+    ],
+    [
+      "wrapper (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/observability/scheduler_stage_metrics.py)",
+      17
+    ],
+    [
+      "run_batch (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/scheduler.py)",
+      9
+    ],
+    [
+      "pop_and_process (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/scheduler.py)",
+      9
+    ],
+    [
+      "process_batch_result (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/scheduler.py)",
+      9
+    ],
+    [
+      "forward_batch_generation (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/tp_worker.py)",
+      8
+    ],
+    [
+      "_call_impl (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/nn/modules/module.py)",
+      7
+    ],
+    [
+      "forward_extend (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py)",
+      7
+    ],
+    [
+      "forward (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py)",
+      7
+    ],
+    [
+      "_forward_raw (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/model_executor/model_runner.py)",
+      7
+    ],
+    [
+      "replay_fn (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/model_executor/runner_backend_utils/breakable_cuda_graph/breakable_cuda_graph.py)",
+      7
+    ],
+    [
+      "forward (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/model_executor/model_runner.py)",
+      7
+    ],
+    [
+      "_wrapped_call_impl (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/nn/modules/module.py)",
+      7
+    ],
+    [
+      "general_mm_embed_routine (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/mm_utils.py)",
+      7
+    ],
+    [
+      "replay (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/model_executor/runner_backend_utils/breakable_cuda_graph/breakable_cuda_graph.py)",
+      7
+    ],
+    [
+      "replay (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/model_executor/runner_backend/breakable_cuda_graph_backend.py)",
+      7
+    ],
+    [
+      "execute (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py)",
+      7
+    ],
+    [
+      "__call__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/_ops.py)",
+      7
+    ],
+    [
+      "replay_layer_forward (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py)",
+      7
+    ],
+    [
+      "_execute_body_capture (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py)",
+      7
+    ],
+    [
+      "forward (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/models/qwen3_vl.py)",
+      7
+    ],
+    [
+      "forward_extend (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/layers/attention/linear/gdn_backend.py)",
+      6
+    ],
+    [
+      "_unified_linear_attention_with_output_impl (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/layers/radix_linear_attention.py)",
+      6
+    ],
+    [
+      "unified_linear_attention_with_output (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/layers/radix_linear_attention.py)",
+      6
+    ],
+    [
+      "_linear_attention_with_output_impl (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/layers/radix_linear_attention.py)",
+      6
+    ],
+    [
+      "extend (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py)",
+      4
+    ],
+    [
+      "process_batch_result_decode (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/scheduler_components/batch_result_processor.py)",
+      4
+    ],
+    [
+      "_insert_walk_step (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      4
+    ],
+    [
+      "insert (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      4
+    ],
+    [
+      "_advance_insert (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      4
+    ],
+    [
+      "begin_insert (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      4
+    ],
+    [
+      "process_batch_result_prefill (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/scheduler_components/batch_result_processor.py)",
+      4
+    ],
+    [
+      "_track_mamba_state_extend (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py)",
+      3
+    ],
+    [
+      "__getitem__ (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/mem_cache/radix_cache.py)",
+      3
+    ],
+    [
+      "on_processed (/home/longhao/experiment/.worktrees/beliefkv-v88-control-7502984-20261020/beliefkv/runtime/prefill_turnover_probe.py)",
+      3
+    ],
+    [
+      "cache_unfinished_req (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      3
+    ],
+    [
+      "maybe_cache_unfinished_req (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/mem_cache/common.py)",
+      3
+    ],
+    [
+      "_auto_dump_wrapper (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/api_logging.py)",
+      2
+    ],
+    [
+      "chunk_gated_delta_rule (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_prefill.py)",
+      2
+    ],
+    [
+      "extend (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/layers/attention/linear/gdn_backend.py)",
+      2
+    ],
+    [
+      "cache_finished_req (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      2
+    ],
+    [
+      "release_kv_cache (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/mem_cache/common.py)",
+      2
+    ],
+    [
+      "_handle_finish_state_updated_req (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/scheduler_components/batch_result_processor.py)",
+      2
+    ],
+    [
+      "stream_output (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/scheduler_components/output_streamer.py)",
+      2
+    ],
+    [
+      "_stream_output_generation (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/scheduler_components/output_streamer.py)",
+      2
+    ],
+    [
+      "send (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/zmq/sugar/socket.py)",
+      1
+    ],
+    [
+      "__init__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/typing.py)",
+      1
+    ],
+    [
+      "delta_rule_prefill_dsl_sm90 (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_kernels/delta_rule_dsl/delta_rule_sm90.py)",
+      1
+    ],
+    [
+      "get_next_batch_to_run (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/scheduler.py)",
+      1
+    ],
+    [
+      "update_running_batch (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/scheduler.py)",
+      1
+    ],
+    [
+      "prepare_for_decode (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/schedule_batch.py)",
+      1
+    ],
+    [
+      "set_mamba_track_indices_from_reqs (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/schedule_batch.py)",
+      1
+    ],
+    [
+      "_maybe_log_time_stats (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/scheduler_components/output_streamer.py)",
+      1
+    ],
+    [
+      "_log_gauge (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/observability/metrics_collector.py)",
+      1
+    ],
+    [
+      "log_stats (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/observability/metrics_collector.py)",
+      1
+    ],
+    [
+      "report_prefill_stats (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/scheduler_components/metrics_reporter.py)",
+      1
+    ],
+    [
+      "init_new (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/model_executor/forward_batch_info.py)",
+      1
+    ],
+    [
+      "is_decode_or_idle (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/model_executor/forward_batch_info.py)",
+      1
+    ],
+    [
+      "on_completed (/home/longhao/experiment/.worktrees/beliefkv-v88-control-7502984-20261020/beliefkv/runtime/v0520_native_telemetry.py)",
+      1
+    ],
+    [
+      "match (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/mem_cache/radix_cache.py)",
+      1
+    ],
+    [
+      "run (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/threading.py)",
+      1
+    ],
+    [
+      "_bootstrap_inner (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/threading.py)",
+      1
+    ],
+    [
+      "_write (/home/longhao/experiment/.worktrees/beliefkv-v88-control-7502984-20261020/beliefkv/runtime/v0520_native_telemetry.py)",
+      1
+    ],
+    [
+      "thread (3957583): native-reactive-audit",
+      1
+    ],
+    [
+      "encode_record (/home/longhao/experiment/.worktrees/beliefkv-v88-control-7502984-20261020/beliefkv/runtime/record_json.py)",
+      1
+    ],
+    [
+      "_bootstrap (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/threading.py)",
+      1
+    ],
+    [
+      "copy_to_cpu (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/utils.py)",
+      1
+    ],
+    [
+      "is_none (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/speculative/spec_info.py)",
+      1
+    ],
+    [
+      "_async_d2h (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/utils.py)",
+      1
+    ],
+    [
+      "_match_prefix_helper (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "match_at (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/mem_cache/radix_cache.py)",
+      1
+    ],
+    [
+      "match_prefix (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      1
+    ],
+    [
+      "match_prefix (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "__init__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/zmq/error.py)",
+      1
+    ],
+    [
+      "unified_attention_with_output (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/layers/radix_attention.py)",
+      1
+    ],
+    [
+      "_unified_attention_with_output_impl (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/layers/radix_attention.py)",
+      1
+    ],
+    [
+      "exit (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/observability/scheduler_stage_metrics.py)",
+      1
+    ],
+    [
+      "accept (/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/scheduler_components/output_streamer.py)",
+      1
+    ]
+  ],
+  "limitations": [
+    "GIL stack samples are not CPU/wall accounting or kernel duration.",
+    "All sampling errors are retained; the sample is not a full-run profile.",
+    "Inclusive functions overlap; their counts cannot be summed as exclusive cost.",
+    "Main execution source remains frozen during collection.",
+    "The bounded read-only profiler overlaps the live development run.",
+    "No native-relative causal gain or JCT saving is inferred."
+  ],
+  "script_sha256": "aa806ae3a3130e1c94d71d2a42b19a42094f399ce1296e1ae04d49e6d171feff"
+}

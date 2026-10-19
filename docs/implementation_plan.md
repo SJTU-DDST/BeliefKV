@@ -5,6 +5,24 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Current priority is workload qualification. V89 launched7502984 at06:29:26 but
+its early trace still has no child/JOIN. V2064's two single-turn user variants
+both select read_file, and V2065's explicit-team version selects ls. No tool is
+executed in those probes; a first action does not establish later delegation.
+The latest client appends the collaborative mode to the dynamic profile's actual
+user task. Work decomposition, timing, fanout, nesting and subsequent rounds remain
+model-selected. V2067 captures the full _run_autonomous serializer; V2068 passes2398
+CPU checks. V2066 additionally has190 passes and one unselected SWE Docker case skipped.
+Next run one original cross-file refactoring task to observe a real child and
+first JOIN, without claiming original-task completion, migration consumption or JCT.
+An additional workflow on V89's shared server is diagnostic; use a fresh, matching
+24-root run for performance acceptance after workload qualification.
+
+V2060 pairs34 short single-request prefill samples: post_launch_physical P50 is
+0.013ms versus selection4.856ms. Native work remains inside the broad phases.
+V2062 preserves the bounded8s GIL profile,24 samples and9 errors; it does not prove
+full-run CPU cost, a native-relative bottleneck or a speedup.
+
 V88 predictive launched at2026-10-20 06:00:31 Asia/Shanghai after two idle-resource
 checks and the latest CPU qualification. Its first real workflow GPU service was
 recorded at06:03:54. Revision a3bc3cc,970 source files, the engine, actual serving settings
