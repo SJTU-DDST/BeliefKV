@@ -5236,9 +5236,14 @@ class NativeAdmissionRuntime:
         nodes = {node.node_id: node for node in candidate.nodes}
         # Use the pre-enqueue safe input plan, not total closure bytes: the
         # latter can include generated output that the next request cannot use.
+        checkpoint_plan = opportunity.checkpoint_plan
+        planned = (
+            checkpoint_plan.steps if checkpoint_plan is not None
+            else plan_prefetch_gpu_steps(candidate)
+        )
         tail_tokens = sum(
             nodes[step.node_id].full_host_tokens
-            for step in plan_prefetch_gpu_steps(candidate)
+            for step in planned
             if (step.node_id, step.creation_time) not in sent
             and (step.leaf_node_id, step.leaf_creation_time) == checkpoint
             and nodes[step.node_id].full_device_tokens == 0

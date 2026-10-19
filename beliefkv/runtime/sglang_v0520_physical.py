@@ -257,6 +257,13 @@ def inspect_session_h2d_opportunity(
         and headroom.device_mamba_free_slots >= mamba_slots
         if headroom.observable and step is not None else None
     )
+    if (
+        checkpoint_plan is None and steps and not fit_current_capacity
+        and len(steps) < max_steps
+    ):
+        # The bounded planner exhausted this snapshot without extra work.
+        # Keep its complete input plan for post-enqueue tail capacity planning.
+        checkpoint_plan = PrefetchCheckpointPlan(steps, full_tokens, mamba_slots)
     return SessionH2DOpportunity(
         anchors, headroom, step, full_tokens, mamba_slots, fits, no_step_reason,
         candidate.missing_full_device_tokens if candidate is not None else None,
@@ -1245,6 +1252,25 @@ class PhysicalActionExpectation:
     session_generation: int | None = None
 
 
+def _prefetch_pool_name(name: object) -> str:
+    value = getattr(name, "value", name)
+    if type(value) is not str or not value:
+        raise PhysicalReceiptError("invalid native prefetch pool name")
+    return value
+
+
+def _prefetch_index_count(host: object, device: object) -> int:
+    if host is None or device is None:
+        raise PhysicalReceiptError("unresolved native prefetch indices")
+    try:
+        host_count, device_count = len(host), len(device)
+    except (TypeError, ValueError) as exc:
+        raise PhysicalReceiptError("invalid native prefetch indices") from exc
+    if type(host_count) is not int or host_count != device_count:
+        raise PhysicalReceiptError("native prefetch FULL/side pool count mismatch")
+    return host_count
+
+
 def prefetch_expectation_from_native_op(
     command_id: str,
     step: PrefetchLoadStep,
@@ -1281,33 +1307,16 @@ def prefetch_expectation_from_native_op(
     ):
         raise PhysicalReceiptError("native prefetch operation identity mismatch")
 
-    def pool_name(name: object) -> str:
-        value = getattr(name, "value", name)
-        if type(value) is not str or not value:
-            raise PhysicalReceiptError("invalid native prefetch pool name")
-        return value
-
-    def index_count(host: object, device: object) -> int:
-        if host is None or device is None:
-            raise PhysicalReceiptError("unresolved native prefetch indices")
-        try:
-            host_count, device_count = len(host), len(device)
-        except (TypeError, ValueError) as exc:
-            raise PhysicalReceiptError("invalid native prefetch indices") from exc
-        if type(host_count) is not int or host_count != device_count:
-            raise PhysicalReceiptError("native prefetch FULL/side pool count mismatch")
-        return host_count
-
     try:
         entry_map = controller.mem_pool_host.entry_map
         if type(entry_map) is not dict:
             raise PhysicalReceiptError("native prefetch host geometry unavailable")
-        entries = {pool_name(name): entry for name, entry in entry_map.items()}
+        entries = {_prefetch_pool_name(name): entry for name, entry in entry_map.items()}
         if len(entries) != len(entry_map) or "kv" not in entries:
             raise PhysicalReceiptError("native prefetch host geometry changed")
         counts = controller._num_tokens_by_pool(operation)
         num_bytes = controller._transfer_num_bytes(operation)
-        full_count = index_count(operation.host_indices, operation.device_indices)
+        full_count = _prefetch_index_count(operation.host_indices, operation.device_indices)
         transfers = operation.pool_transfers
     except (AttributeError, KeyError, TypeError, ValueError) as exc:
         raise PhysicalReceiptError("native prefetch accounting unavailable") from exc
@@ -1318,62 +1327,73 @@ def prefetch_expectation_from_native_op(
     ) or any(type(count) is not int or count < 0 for count in counts.values()):
         raise PhysicalReceiptError("invalid native prefetch pool counts")
 
-    sizes: dict[str, int] = {}
+    if not transfers:
+        if counts != {"kv": full_count} or not full_count:
+            raise PhysicalReceiptError("native prefetch token counts mismatch")
+        size = getattr(getattr(entries["kv"], "host_pool", None), "size_per_token", None)
+        if type(size) is not int or size <= 0:
+            raise PhysicalReceiptError("native prefetch pool geometry changed")
+        expected_bytes = full_count * size
+        pool_bytes = (("kv", expected_bytes),)
+        pool_sizes = (("kv", size),)
+    else:
+        sizes: dict[str, int] = {}
 
-    def size_for(name: str) -> int:
-        if name not in sizes:
-            size = getattr(
-                getattr(entries.get(name), "host_pool", None),
-                "size_per_token",
-                None,
-            )
-            if type(size) is not int or size <= 0:
-                raise PhysicalReceiptError("native prefetch pool geometry changed")
-            sizes[name] = size
-        return sizes[name]
+        def size_for(name: str) -> int:
+            if name not in sizes:
+                size = getattr(
+                    getattr(entries.get(name), "host_pool", None),
+                    "size_per_token",
+                    None,
+                )
+                if type(size) is not int or size <= 0:
+                    raise PhysicalReceiptError("native prefetch pool geometry changed")
+                sizes[name] = size
+            return sizes[name]
 
-    pool_counts = {"kv": full_count}
-    source_indices = {"kv": (operation.host_indices, operation.device_indices)}
-    derived: list[tuple[str, str, object]] = []
-    for transfer in transfers or []:
-        try:
-            name = pool_name(transfer.name)
-            source = transfer.indices_from_pool
-            host_indices = transfer.host_indices
-            device_indices = transfer.device_indices
-        except AttributeError as exc:
-            raise PhysicalReceiptError("invalid native prefetch pool transfer") from exc
-        count = index_count(host_indices, device_indices)
-        if source is None:
-            if name != "mamba" or name in source_indices:
-                raise PhysicalReceiptError("unsupported native prefetch side pool")
-            pool_counts[name] = count
-            source_indices[name] = (host_indices, device_indices)
-        else:
-            if name in ("kv", "mamba") or any(
-                item[0] == name for item in derived
+        pool_counts = {"kv": full_count}
+        source_indices = {"kv": (operation.host_indices, operation.device_indices)}
+        derived: list[tuple[str, str, object]] = []
+        for transfer in transfers:
+            try:
+                name = _prefetch_pool_name(transfer.name)
+                source = transfer.indices_from_pool
+                host_indices = transfer.host_indices
+                device_indices = transfer.device_indices
+            except AttributeError as exc:
+                raise PhysicalReceiptError("invalid native prefetch pool transfer") from exc
+            count = _prefetch_index_count(host_indices, device_indices)
+            if source is None:
+                if name != "mamba" or name in source_indices:
+                    raise PhysicalReceiptError("unsupported native prefetch side pool")
+                pool_counts[name] = count
+                source_indices[name] = (host_indices, device_indices)
+            else:
+                if name in ("kv", "mamba") or any(
+                    item[0] == name for item in derived
+                ):
+                    raise PhysicalReceiptError("invalid derived prefetch sidecar")
+                derived.append((name, _prefetch_pool_name(source), transfer))
+        if counts != pool_counts or not any(pool_counts.values()):
+            raise PhysicalReceiptError("native prefetch token counts mismatch")
+        if not step.include_mamba and pool_counts.get("mamba", 0):
+            raise PhysicalReceiptError("historical Mamba included in FULL-only prefetch")
+
+        pool_bytes = tuple(
+            (name, count * size_for(name)) for name, count in sorted(pool_counts.items())
+        )
+        expected_bytes = sum(amount for _, amount in pool_bytes)
+        for name, source, transfer in derived:
+            indices = source_indices.get(source)
+            if (
+                indices is None
+                or pool_counts[source] == 0
+                or transfer.host_indices is not indices[0]
+                or transfer.device_indices is not indices[1]
             ):
-                raise PhysicalReceiptError("invalid derived prefetch sidecar")
-            derived.append((name, pool_name(source), transfer))
-    if counts != pool_counts or not any(pool_counts.values()):
-        raise PhysicalReceiptError("native prefetch token counts mismatch")
-    if not step.include_mamba and pool_counts.get("mamba", 0):
-        raise PhysicalReceiptError("historical Mamba included in FULL-only prefetch")
-
-    pool_bytes = tuple(
-        (name, count * size_for(name)) for name, count in sorted(pool_counts.items())
-    )
-    expected_bytes = sum(amount for _, amount in pool_bytes)
-    for name, source, transfer in derived:
-        indices = source_indices.get(source)
-        if (
-            indices is None
-            or pool_counts[source] == 0
-            or transfer.host_indices is not indices[0]
-            or transfer.device_indices is not indices[1]
-        ):
-            raise PhysicalReceiptError("derived prefetch sidecar indices mismatch")
-        expected_bytes += pool_counts[source] * size_for(name)
+                raise PhysicalReceiptError("derived prefetch sidecar indices mismatch")
+            expected_bytes += pool_counts[source] * size_for(name)
+        pool_sizes = tuple((name, sizes[name]) for name in sorted(pool_counts))
     if type(num_bytes) is not int or num_bytes <= 0 or num_bytes != expected_bytes:
         raise PhysicalReceiptError("native prefetch total bytes mismatch")
     return PhysicalActionExpectation(
@@ -1387,9 +1407,7 @@ def prefetch_expectation_from_native_op(
             pool_bytes=pool_bytes,
             num_bytes=num_bytes,
         ),),
-        pool_bytes_per_token=tuple(
-            (name, sizes[name]) for name in sorted(pool_counts)
-        ),
+        pool_bytes_per_token=pool_sizes,
         session_id=step.key.session_id,
         session_generation=step.key.session_generation,
     )

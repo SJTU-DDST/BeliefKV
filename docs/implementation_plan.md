@@ -45,6 +45,21 @@ This is CPU evidence, not an end-to-end result. Keep new-context hybrid checkpoi
 gaps separate; FULL matches alone cannot reconstruct a missing Mamba checkpoint.
 GPU pause remains active and automatic resume remains disabled.
 
+V1935-V1937 optimize prefetch submission relative to3381a0e. Full-only
+operations skip unused auxiliary-pool structures while still reconciling
+native indices, counts and bytes. Retain an already exhausted bounded plan
+for same-snapshot post-enqueue tail capacity accounting; preserve the original
+fallback at the quantity boundary and do not expand tool/EOS planning.
+Explicit report-stage complete plans use the same tail path. These snapshots
+are not native capacity, admission or readiness permits. The pinned native
+accounting helpers show full-only P50 of12.45 to9.24us. Complete16-node
+JOIN/tool CPU dispatch with tail reclaim is864.93 to744.56us and913.88
+to796.53us. Across24 scenes each, tail-reclaim support shows7.6%-13.9%
+and the path without it shows1.9%-13.4% lower P50, with equal physical targets
+and pending accounting;9 prefill dependency scenes remain equal.
+The1292 CPU checks pass. See V1938; keep GPU paused and do not claim GPU/JCT
+or prediction-accuracy gains from these controlled scenes.
+
 V1931-V1933 reduce scheduler/prefetch CPU work relative to e5c660f. Skip
 PREPARE capacity observation only when its wait sources and old pressure
 candidates are absent; retain stale-candidate retirement and publication.
@@ -80,7 +95,8 @@ V1926 removes duplicate report-stage JOIN planning within one immutable native
 snapshot. Keep the complete checkpoint cost separately from the bounded issue
 plan, retaining fresh capture after reclaim/split and at enqueue. The synthetic
 4/16/64/256-node selection P50 improves about9%-18% with equal targets/budgets;
-do not infer scene frequency or JCT. Tool/EOS paths keep bounded planning.
+do not infer scene frequency or JCT. Tool/EOS paths keep bounded planning;
+V1935 retains their naturally exhausted result without an extra full scan.
 V1927 inspects the tokenizer postprocessor directly rather than exporting and
 parsing its whole vocabulary during cache initialization. On36 reconstructed
 long inputs, previous-cache/new-cache means are101.15/84.86ms and first cold

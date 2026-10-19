@@ -1,0 +1,4324 @@
+{
+  "scope": "Real CPU cache observation, selection, revalidation and transaction registration; no DMA or GPU",
+  "at": "2026-10-19T06:36:53.501928-07:00",
+  "baseline_revision": "3381a0e",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "c022919b429970d3284353060f6ac24e128c35f570efcee6638ce2cd1562085a",
+    "beliefkv/runtime/sglang_v0520_physical.py": "fee89ac1f8d6e6414e8bfae363b9e61fad49eea9c327816315dcbe6d438641a6",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "8e76f352f1c1c570c61ae2f01daf7a3d670b9584f8ee1dafa5d351ce38da40b7"
+  },
+  "head": "3381a0e0b738356d54ef8d7e9556f8895e2b76a9",
+  "candidate_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "20cdbe6b8cb1b8333045ef8048092eaa370607d471a42a289f5a52ad2602fe65",
+    "beliefkv/runtime/sglang_v0520_admission.py": "74aaca51780c1a6a4ffdcbefe73576724f7ba68f216f955edfb39c30c30520c3",
+    "beliefkv/runtime/sglang_v0520_physical.py": "784d6631307ca415d2054360234ee2d6d450b791a3cc71b3495a6ff5d2e2d277",
+    "beliefkv/runtime/sglang_v0520_observer.py": "c022919b429970d3284353060f6ac24e128c35f570efcee6638ce2cd1562085a",
+    "scripts/benchmark_wait_prefetch_dispatch_cpu.py": "3e316a3ef9589b4cdeb4382a253c80c9f95cba39374ce6f20fbddbafbbb8dc97",
+    "scripts/benchmark_native_prepare_path.py": "3ccb01eb8778c1fa11f5a6cdd67c03c300998085b0846a44eec76323c7e2e6a3"
+  },
+  "samples": 101,
+  "warmup_samples": 10,
+  "cases": [
+    {
+      "source": "join_ticket",
+      "depth": 4,
+      "diagnostics": false,
+      "tail_reclaim_supported": true,
+      "budget_mode": "legacy_capacity_unavailable",
+      "costs": {
+        "baseline": {
+          "mean_us": 351.83271287128713,
+          "p50_us": 350.426,
+          "p90_us": 361.134,
+          "p99_us": 389.902
+        },
+        "candidate": {
+          "mean_us": 316.4572871287129,
+          "p50_us": 315.989,
+          "p90_us": 325.831,
+          "p99_us": 335.028
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 8.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 8.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 3547,
+          "function": "dispatch_join_prefetch",
+          "calls": 1,
+          "self_ms": 0.110394,
+          "cumulative_ms": 1.345126
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7094,
+          "function": "_issue_wait_prefetch_steps",
+          "calls": 1,
+          "self_ms": 0.088509,
+          "cumulative_ms": 0.62272
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 162,
+          "function": "inspect_session_h2d_opportunity",
+          "calls": 1,
+          "self_ms": 0.08335800000000002,
+          "cumulative_ms": 0.405904
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 4,
+          "self_ms": 0.07036099999999999,
+          "cumulative_ms": 0.13989200000000002
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 4,
+          "self_ms": 0.065991,
+          "cumulative_ms": 0.368834
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 4,
+          "self_ms": 0.062524,
+          "cumulative_ms": 0.099678
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 3386,
+          "function": "_live_join_ticket",
+          "calls": 7,
+          "self_ms": 0.061649,
+          "cumulative_ms": 0.096624
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.060604000000000005,
+          "cumulative_ms": 0.11298300000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/hotpath_timing.py",
+          "line": 100,
+          "function": "measured",
+          "calls": 3,
+          "self_ms": 0.059550000000000006,
+          "cumulative_ms": 1.369647
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 1,
+          "self_ms": 0.051945000000000005,
+          "cumulative_ms": 0.080615
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 4654,
+          "function": "_wait_prefetch_opportunity",
+          "calls": 1,
+          "self_ms": 0.039548,
+          "cumulative_ms": 0.533128
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1054,
+          "function": "capture_action_local_shadow",
+          "calls": 1,
+          "self_ms": 0.035933,
+          "cumulative_ms": 0.154048
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 34,
+          "self_ms": 0.032591,
+          "cumulative_ms": 0.061264
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 4606,
+          "function": "inspect_context_h2d_opportunity",
+          "calls": 1,
+          "self_ms": 0.023624000000000003,
+          "cumulative_ms": 0.46694800000000003
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 218,
+          "function": "_static_full_mamba_pool_geometry",
+          "calls": 2,
+          "self_ms": 0.023058000000000002,
+          "cumulative_ms": 0.041100000000000005
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/scripts/benchmark_wait_prefetch_dispatch_cpu.py",
+          "line": 93,
+          "function": "native_burst",
+          "calls": 1,
+          "self_ms": 0.021533000000000004,
+          "cumulative_ms": 0.39431900000000003
+        }
+      ]
+    },
+    {
+      "source": "join_ticket",
+      "depth": 4,
+      "diagnostics": false,
+      "tail_reclaim_supported": true,
+      "budget_mode": "native_next_prefill",
+      "costs": {
+        "baseline": {
+          "mean_us": 370.6888316831683,
+          "p50_us": 368.838,
+          "p90_us": 381.992,
+          "p99_us": 397.996
+        },
+        "candidate": {
+          "mean_us": 334.96169306930693,
+          "p50_us": 334.046,
+          "p90_us": 345.888,
+          "p99_us": 353.009
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 8.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 8.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 4,
+          "self_ms": 0.06115600000000001,
+          "cumulative_ms": 0.12402600000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 4,
+          "self_ms": 0.057173,
+          "cumulative_ms": 0.092773
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.054412,
+          "cumulative_ms": 0.10685000000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 3386,
+          "function": "_live_join_ticket",
+          "calls": 7,
+          "self_ms": 0.052242000000000004,
+          "cumulative_ms": 0.08584800000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 1,
+          "self_ms": 0.042691,
+          "cumulative_ms": 0.06781200000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7094,
+          "function": "_issue_wait_prefetch_steps",
+          "calls": 1,
+          "self_ms": 0.037643,
+          "cumulative_ms": 0.486227
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 34,
+          "self_ms": 0.023249,
+          "cumulative_ms": 0.05178700000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7866,
+          "function": "_current_residency_budget",
+          "calls": 2,
+          "self_ms": 0.022973,
+          "cumulative_ms": 0.04573000000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 4,
+          "self_ms": 0.022265,
+          "cumulative_ms": 0.301016
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 3547,
+          "function": "dispatch_join_prefetch",
+          "calls": 1,
+          "self_ms": 0.019306,
+          "cumulative_ms": 0.936034
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 4654,
+          "function": "_wait_prefetch_opportunity",
+          "calls": 1,
+          "self_ms": 0.018940000000000002,
+          "cumulative_ms": 0.387128
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 218,
+          "function": "_static_full_mamba_pool_geometry",
+          "calls": 2,
+          "self_ms": 0.018713,
+          "cumulative_ms": 0.039484000000000005
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 162,
+          "function": "inspect_session_h2d_opportunity",
+          "calls": 1,
+          "self_ms": 0.017809000000000002,
+          "cumulative_ms": 0.279704
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 9,
+          "self_ms": 0.017174000000000002,
+          "cumulative_ms": 0.024176
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 466,
+          "function": "has_host_backed_missing_copy",
+          "calls": 1,
+          "self_ms": 0.016679,
+          "cumulative_ms": 0.0227
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/scripts/benchmark_wait_prefetch_dispatch_cpu.py",
+          "line": 93,
+          "function": "native_burst",
+          "calls": 1,
+          "self_ms": 0.016292,
+          "cumulative_ms": 0.321203
+        }
+      ]
+    },
+    {
+      "source": "join_ticket",
+      "depth": 4,
+      "diagnostics": true,
+      "tail_reclaim_supported": true,
+      "budget_mode": "legacy_capacity_unavailable",
+      "costs": {
+        "baseline": {
+          "mean_us": 384.8577821782178,
+          "p50_us": 383.152,
+          "p90_us": 396.775,
+          "p99_us": 407.636
+        },
+        "candidate": {
+          "mean_us": 349.82143564356437,
+          "p50_us": 350.357,
+          "p90_us": 359.634,
+          "p99_us": 365.547
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 8.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 8.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 4,
+          "self_ms": 0.06309100000000001,
+          "cumulative_ms": 0.129864
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 4,
+          "self_ms": 0.05892700000000001,
+          "cumulative_ms": 0.09695300000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.05495,
+          "cumulative_ms": 0.107965
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 3386,
+          "function": "_live_join_ticket",
+          "calls": 7,
+          "self_ms": 0.054619,
+          "cumulative_ms": 0.088181
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 1,
+          "self_ms": 0.04245,
+          "cumulative_ms": 0.067887
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6954,
+          "function": "_record_prefetch_issued",
+          "calls": 4,
+          "self_ms": 0.039504,
+          "cumulative_ms": 0.050245000000000005
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7094,
+          "function": "_issue_wait_prefetch_steps",
+          "calls": 1,
+          "self_ms": 0.038022,
+          "cumulative_ms": 0.5654750000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 4840,
+          "function": "_record_wait_prefetch_plan",
+          "calls": 1,
+          "self_ms": 0.026952000000000004,
+          "cumulative_ms": 0.04046400000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 34,
+          "self_ms": 0.026368000000000003,
+          "cumulative_ms": 0.057018
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 4,
+          "self_ms": 0.024137000000000002,
+          "cumulative_ms": 0.31506700000000004
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 4654,
+          "function": "_wait_prefetch_opportunity",
+          "calls": 1,
+          "self_ms": 0.021068000000000003,
+          "cumulative_ms": 0.358684
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 3547,
+          "function": "dispatch_join_prefetch",
+          "calls": 1,
+          "self_ms": 0.020519000000000003,
+          "cumulative_ms": 0.9895210000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 218,
+          "function": "_static_full_mamba_pool_geometry",
+          "calls": 2,
+          "self_ms": 0.019026,
+          "cumulative_ms": 0.037141
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 9,
+          "self_ms": 0.017913,
+          "cumulative_ms": 0.024623000000000003
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 162,
+          "function": "inspect_session_h2d_opportunity",
+          "calls": 1,
+          "self_ms": 0.017553,
+          "cumulative_ms": 0.275061
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7074,
+          "function": "_live_wait_prefetch",
+          "calls": 6,
+          "self_ms": 0.016475,
+          "cumulative_ms": 0.08905600000000001
+        }
+      ]
+    },
+    {
+      "source": "join_ticket",
+      "depth": 4,
+      "diagnostics": true,
+      "tail_reclaim_supported": true,
+      "budget_mode": "native_next_prefill",
+      "costs": {
+        "baseline": {
+          "mean_us": 398.32354455445545,
+          "p50_us": 396.448,
+          "p90_us": 409.554,
+          "p99_us": 431.061
+        },
+        "candidate": {
+          "mean_us": 364.81343564356433,
+          "p50_us": 362.746,
+          "p90_us": 376.155,
+          "p99_us": 380.946
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 8.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 8.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 4,
+          "self_ms": 0.06205900000000001,
+          "cumulative_ms": 0.129146
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 4,
+          "self_ms": 0.05636700000000001,
+          "cumulative_ms": 0.092244
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.05600600000000001,
+          "cumulative_ms": 0.10817
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 3386,
+          "function": "_live_join_ticket",
+          "calls": 7,
+          "self_ms": 0.051957,
+          "cumulative_ms": 0.084713
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 1,
+          "self_ms": 0.041163000000000005,
+          "cumulative_ms": 0.06704600000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6954,
+          "function": "_record_prefetch_issued",
+          "calls": 4,
+          "self_ms": 0.038276000000000004,
+          "cumulative_ms": 0.048981000000000004
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7094,
+          "function": "_issue_wait_prefetch_steps",
+          "calls": 1,
+          "self_ms": 0.037697,
+          "cumulative_ms": 0.559067
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 34,
+          "self_ms": 0.025861000000000002,
+          "cumulative_ms": 0.055383
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 4,
+          "self_ms": 0.022392000000000002,
+          "cumulative_ms": 0.30515500000000007
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 4840,
+          "function": "_record_wait_prefetch_plan",
+          "calls": 1,
+          "self_ms": 0.022359,
+          "cumulative_ms": 0.035394
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 4654,
+          "function": "_wait_prefetch_opportunity",
+          "calls": 1,
+          "self_ms": 0.020062000000000003,
+          "cumulative_ms": 0.37959400000000004
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7866,
+          "function": "_current_residency_budget",
+          "calls": 2,
+          "self_ms": 0.019834,
+          "cumulative_ms": 0.037732
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 218,
+          "function": "_static_full_mamba_pool_geometry",
+          "calls": 2,
+          "self_ms": 0.019563000000000004,
+          "cumulative_ms": 0.037959
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 3547,
+          "function": "dispatch_join_prefetch",
+          "calls": 1,
+          "self_ms": 0.019489000000000003,
+          "cumulative_ms": 1.000101
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 9,
+          "self_ms": 0.017352000000000003,
+          "cumulative_ms": 0.023874000000000003
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 162,
+          "function": "inspect_session_h2d_opportunity",
+          "calls": 1,
+          "self_ms": 0.017287000000000004,
+          "cumulative_ms": 0.277243
+        }
+      ]
+    },
+    {
+      "source": "join_ticket",
+      "depth": 16,
+      "diagnostics": false,
+      "tail_reclaim_supported": true,
+      "budget_mode": "legacy_capacity_unavailable",
+      "costs": {
+        "baseline": {
+          "mean_us": 842.1086831683168,
+          "p50_us": 839.293,
+          "p90_us": 860.532,
+          "p99_us": 879.612
+        },
+        "candidate": {
+          "mean_us": 723.6927623762376,
+          "p50_us": 723.187,
+          "p90_us": 734.205,
+          "p99_us": 763.514
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 20.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 20.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 16,
+          "self_ms": 0.193559,
+          "cumulative_ms": 0.39676300000000003
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 16,
+          "self_ms": 0.189203,
+          "cumulative_ms": 0.3166
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.14153600000000002,
+          "cumulative_ms": 0.258962
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 3386,
+          "function": "_live_join_ticket",
+          "calls": 19,
+          "self_ms": 0.118553,
+          "cumulative_ms": 0.20228100000000002
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 1,
+          "self_ms": 0.081764,
+          "cumulative_ms": 0.129612
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 16,
+          "self_ms": 0.07900000000000001,
+          "cumulative_ms": 1.0244380000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 106,
+          "self_ms": 0.067862,
+          "cumulative_ms": 0.147228
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7094,
+          "function": "_issue_wait_prefetch_steps",
+          "calls": 1,
+          "self_ms": 0.051154000000000005,
+          "cumulative_ms": 1.342523
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/scripts/benchmark_wait_prefetch_dispatch_cpu.py",
+          "line": 93,
+          "function": "native_burst",
+          "calls": 1,
+          "self_ms": 0.050288000000000006,
+          "cumulative_ms": 1.087953
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7074,
+          "function": "_live_wait_prefetch",
+          "calls": 18,
+          "self_ms": 0.044359,
+          "cumulative_ms": 0.23641200000000004
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 21,
+          "self_ms": 0.039150000000000004,
+          "cumulative_ms": 0.053753
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1155,
+          "function": "_counts",
+          "calls": 32,
+          "self_ms": 0.036809,
+          "cumulative_ms": 0.03992300000000001
+        },
+        {
+          "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/uuid.py",
+          "line": 139,
+          "function": "__init__",
+          "calls": 16,
+          "self_ms": 0.033743,
+          "cumulative_ms": 0.042439000000000004
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 286,
+          "self_ms": 0.033231000000000004,
+          "cumulative_ms": 0.033231000000000004
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 322,
+          "self_ms": 0.031086,
+          "cumulative_ms": 0.031086
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 4654,
+          "function": "_wait_prefetch_opportunity",
+          "calls": 1,
+          "self_ms": 0.028692000000000002,
+          "cumulative_ms": 0.6109780000000001
+        }
+      ]
+    },
+    {
+      "source": "join_ticket",
+      "depth": 16,
+      "diagnostics": false,
+      "tail_reclaim_supported": true,
+      "budget_mode": "native_next_prefill",
+      "costs": {
+        "baseline": {
+          "mean_us": 867.3148712871288,
+          "p50_us": 864.925,
+          "p90_us": 882.841,
+          "p99_us": 917.791
+        },
+        "candidate": {
+          "mean_us": 746.8276237623762,
+          "p50_us": 744.561,
+          "p90_us": 759.403,
+          "p99_us": 775.87
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 20.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 20.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 16,
+          "self_ms": 0.188972,
+          "cumulative_ms": 0.319715
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 16,
+          "self_ms": 0.18852000000000002,
+          "cumulative_ms": 0.390635
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.140351,
+          "cumulative_ms": 0.258184
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 3386,
+          "function": "_live_join_ticket",
+          "calls": 19,
+          "self_ms": 0.118495,
+          "cumulative_ms": 0.200265
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 1,
+          "self_ms": 0.082173,
+          "cumulative_ms": 0.12994000000000003
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 16,
+          "self_ms": 0.079226,
+          "cumulative_ms": 1.017118
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 106,
+          "self_ms": 0.067301,
+          "cumulative_ms": 0.146696
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7094,
+          "function": "_issue_wait_prefetch_steps",
+          "calls": 1,
+          "self_ms": 0.053115,
+          "cumulative_ms": 1.350347
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/scripts/benchmark_wait_prefetch_dispatch_cpu.py",
+          "line": 93,
+          "function": "native_burst",
+          "calls": 1,
+          "self_ms": 0.048900000000000006,
+          "cumulative_ms": 1.0794920000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7074,
+          "function": "_live_wait_prefetch",
+          "calls": 18,
+          "self_ms": 0.043314000000000005,
+          "cumulative_ms": 0.233334
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1155,
+          "function": "_counts",
+          "calls": 32,
+          "self_ms": 0.037618000000000006,
+          "cumulative_ms": 0.040636
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 21,
+          "self_ms": 0.037239,
+          "cumulative_ms": 0.052000000000000005
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 286,
+          "self_ms": 0.032121,
+          "cumulative_ms": 0.032121
+        },
+        {
+          "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/uuid.py",
+          "line": 139,
+          "function": "__init__",
+          "calls": 16,
+          "self_ms": 0.031712000000000004,
+          "cumulative_ms": 0.039024
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 324,
+          "self_ms": 0.030378000000000002,
+          "cumulative_ms": 0.030378000000000002
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 4654,
+          "function": "_wait_prefetch_opportunity",
+          "calls": 1,
+          "self_ms": 0.029168000000000003,
+          "cumulative_ms": 0.627129
+        }
+      ]
+    },
+    {
+      "source": "join_ticket",
+      "depth": 16,
+      "diagnostics": true,
+      "tail_reclaim_supported": true,
+      "budget_mode": "legacy_capacity_unavailable",
+      "costs": {
+        "baseline": {
+          "mean_us": 915.4913366336633,
+          "p50_us": 913.473,
+          "p90_us": 930.157,
+          "p99_us": 959.185
+        },
+        "candidate": {
+          "mean_us": 803.9497326732674,
+          "p50_us": 802.822,
+          "p90_us": 817.113,
+          "p99_us": 832.976
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 20.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 20.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 16,
+          "self_ms": 0.194193,
+          "cumulative_ms": 0.32599100000000003
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 16,
+          "self_ms": 0.192257,
+          "cumulative_ms": 0.395573
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.13658900000000002,
+          "cumulative_ms": 0.256533
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 3386,
+          "function": "_live_join_ticket",
+          "calls": 19,
+          "self_ms": 0.119495,
+          "cumulative_ms": 0.20610900000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6954,
+          "function": "_record_prefetch_issued",
+          "calls": 16,
+          "self_ms": 0.11463000000000001,
+          "cumulative_ms": 0.148142
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 1,
+          "self_ms": 0.082626,
+          "cumulative_ms": 0.13131700000000002
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 16,
+          "self_ms": 0.078497,
+          "cumulative_ms": 1.032902
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 106,
+          "self_ms": 0.07105,
+          "cumulative_ms": 0.152483
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7094,
+          "function": "_issue_wait_prefetch_steps",
+          "calls": 1,
+          "self_ms": 0.05663700000000001,
+          "cumulative_ms": 1.521916
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/scripts/benchmark_wait_prefetch_dispatch_cpu.py",
+          "line": 93,
+          "function": "native_burst",
+          "calls": 1,
+          "self_ms": 0.049925,
+          "cumulative_ms": 1.096053
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7074,
+          "function": "_live_wait_prefetch",
+          "calls": 18,
+          "self_ms": 0.043052,
+          "cumulative_ms": 0.23983600000000002
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 21,
+          "self_ms": 0.040781000000000005,
+          "cumulative_ms": 0.056203
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 322,
+          "self_ms": 0.038829,
+          "cumulative_ms": 0.038829
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1155,
+          "function": "_counts",
+          "calls": 32,
+          "self_ms": 0.037897,
+          "cumulative_ms": 0.040617
+        },
+        {
+          "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/uuid.py",
+          "line": 139,
+          "function": "__init__",
+          "calls": 16,
+          "self_ms": 0.033396999999999996,
+          "cumulative_ms": 0.041539000000000006
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 323,
+          "self_ms": 0.031522,
+          "cumulative_ms": 0.031522
+        }
+      ]
+    },
+    {
+      "source": "join_ticket",
+      "depth": 16,
+      "diagnostics": true,
+      "tail_reclaim_supported": true,
+      "budget_mode": "native_next_prefill",
+      "costs": {
+        "baseline": {
+          "mean_us": 923.4724356435644,
+          "p50_us": 923.237,
+          "p90_us": 939.569,
+          "p99_us": 953.8
+        },
+        "candidate": {
+          "mean_us": 809.4660891089109,
+          "p50_us": 807.776,
+          "p90_us": 826.688,
+          "p99_us": 834.744
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 20.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 20.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 16,
+          "self_ms": 0.19249700000000003,
+          "cumulative_ms": 0.39621
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 16,
+          "self_ms": 0.192384,
+          "cumulative_ms": 0.31958600000000004
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.13962300000000002,
+          "cumulative_ms": 0.262704
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 3386,
+          "function": "_live_join_ticket",
+          "calls": 19,
+          "self_ms": 0.12394500000000001,
+          "cumulative_ms": 0.209935
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6954,
+          "function": "_record_prefetch_issued",
+          "calls": 16,
+          "self_ms": 0.112898,
+          "cumulative_ms": 0.146446
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 1,
+          "self_ms": 0.08239400000000001,
+          "cumulative_ms": 0.13225800000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 16,
+          "self_ms": 0.07815200000000001,
+          "cumulative_ms": 1.032839
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 106,
+          "self_ms": 0.069332,
+          "cumulative_ms": 0.151545
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7094,
+          "function": "_issue_wait_prefetch_steps",
+          "calls": 1,
+          "self_ms": 0.054927000000000004,
+          "cumulative_ms": 1.5352520000000003
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/scripts/benchmark_wait_prefetch_dispatch_cpu.py",
+          "line": 93,
+          "function": "native_burst",
+          "calls": 1,
+          "self_ms": 0.051357,
+          "cumulative_ms": 1.0973860000000002
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7074,
+          "function": "_live_wait_prefetch",
+          "calls": 18,
+          "self_ms": 0.043383,
+          "cumulative_ms": 0.244102
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 322,
+          "self_ms": 0.03893100000000001,
+          "cumulative_ms": 0.03893100000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 21,
+          "self_ms": 0.03836900000000001,
+          "cumulative_ms": 0.054522
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1155,
+          "function": "_counts",
+          "calls": 32,
+          "self_ms": 0.036968,
+          "cumulative_ms": 0.039742
+        },
+        {
+          "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/uuid.py",
+          "line": 139,
+          "function": "__init__",
+          "calls": 16,
+          "self_ms": 0.032846,
+          "cumulative_ms": 0.040556
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.getattr>",
+          "calls": 241,
+          "self_ms": 0.030697000000000002,
+          "cumulative_ms": 0.030697000000000002
+        }
+      ]
+    },
+    {
+      "source": "join_ticket",
+      "depth": 64,
+      "diagnostics": false,
+      "tail_reclaim_supported": true,
+      "budget_mode": "legacy_capacity_unavailable",
+      "costs": {
+        "baseline": {
+          "mean_us": 2739.895514851485,
+          "p50_us": 2711.882,
+          "p90_us": 2837.18,
+          "p99_us": 2888.32
+        },
+        "candidate": {
+          "mean_us": 2427.943693069307,
+          "p50_us": 2422.183,
+          "p90_us": 2458.371,
+          "p99_us": 2489.404
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 68.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 68.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 64,
+          "self_ms": 0.694836,
+          "cumulative_ms": 1.1635849999999999
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 64,
+          "self_ms": 0.665539,
+          "cumulative_ms": 1.397585
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.46621000000000007,
+          "cumulative_ms": 0.845541
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 2,
+          "self_ms": 0.45568100000000006,
+          "cumulative_ms": 0.729934
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 3386,
+          "function": "_live_join_ticket",
+          "calls": 67,
+          "self_ms": 0.380487,
+          "cumulative_ms": 0.665294
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 64,
+          "self_ms": 0.27172300000000005,
+          "cumulative_ms": 3.71835
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 397,
+          "self_ms": 0.239652,
+          "cumulative_ms": 0.5224940000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/scripts/benchmark_wait_prefetch_dispatch_cpu.py",
+          "line": 93,
+          "function": "native_burst",
+          "calls": 1,
+          "self_ms": 0.18155800000000002,
+          "cumulative_ms": 3.9492279999999997
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7074,
+          "function": "_live_wait_prefetch",
+          "calls": 66,
+          "self_ms": 0.14587,
+          "cumulative_ms": 0.819342
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1155,
+          "function": "_counts",
+          "calls": 128,
+          "self_ms": 0.13493400000000003,
+          "cumulative_ms": 0.145642
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 69,
+          "self_ms": 0.12765100000000001,
+          "cumulative_ms": 0.17450500000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 1071,
+          "self_ms": 0.120353,
+          "cumulative_ms": 0.120353
+        },
+        {
+          "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/uuid.py",
+          "line": 139,
+          "function": "__init__",
+          "calls": 64,
+          "self_ms": 0.11811100000000001,
+          "cumulative_ms": 0.14789500000000003
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 1261,
+          "self_ms": 0.11332400000000001,
+          "cumulative_ms": 0.11332400000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7094,
+          "function": "_issue_wait_prefetch_steps",
+          "calls": 1,
+          "self_ms": 0.11100900000000001,
+          "cumulative_ms": 4.992297000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1642,
+          "function": "expire",
+          "calls": 64,
+          "self_ms": 0.090933,
+          "cumulative_ms": 0.10911200000000001
+        }
+      ]
+    },
+    {
+      "source": "join_ticket",
+      "depth": 64,
+      "diagnostics": false,
+      "tail_reclaim_supported": true,
+      "budget_mode": "native_next_prefill",
+      "costs": {
+        "baseline": {
+          "mean_us": 2725.4319504950495,
+          "p50_us": 2724.838,
+          "p90_us": 2746.445,
+          "p99_us": 2842.945
+        },
+        "candidate": {
+          "mean_us": 2453.1399801980197,
+          "p50_us": 2452.345,
+          "p90_us": 2480.65,
+          "p99_us": 2514.422
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 68.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 68.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 64,
+          "self_ms": 0.703075,
+          "cumulative_ms": 1.176034
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 64,
+          "self_ms": 0.663816,
+          "cumulative_ms": 1.4013
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.473534,
+          "cumulative_ms": 0.855326
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 2,
+          "self_ms": 0.46077500000000005,
+          "cumulative_ms": 0.731191
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 3386,
+          "function": "_live_join_ticket",
+          "calls": 67,
+          "self_ms": 0.368524,
+          "cumulative_ms": 0.637849
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 64,
+          "self_ms": 0.283712,
+          "cumulative_ms": 3.7268160000000004
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 397,
+          "self_ms": 0.243961,
+          "cumulative_ms": 0.528707
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/scripts/benchmark_wait_prefetch_dispatch_cpu.py",
+          "line": 93,
+          "function": "native_burst",
+          "calls": 1,
+          "self_ms": 0.179935,
+          "cumulative_ms": 3.9572119999999997
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7074,
+          "function": "_live_wait_prefetch",
+          "calls": 66,
+          "self_ms": 0.145043,
+          "cumulative_ms": 0.7974000000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1155,
+          "function": "_counts",
+          "calls": 128,
+          "self_ms": 0.137552,
+          "cumulative_ms": 0.147749
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 1071,
+          "self_ms": 0.119204,
+          "cumulative_ms": 0.119204
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 69,
+          "self_ms": 0.11574300000000001,
+          "cumulative_ms": 0.16053
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 1263,
+          "self_ms": 0.11160900000000001,
+          "cumulative_ms": 0.11160900000000001
+        },
+        {
+          "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/uuid.py",
+          "line": 139,
+          "function": "__init__",
+          "calls": 64,
+          "self_ms": 0.10952600000000001,
+          "cumulative_ms": 0.135558
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7094,
+          "function": "_issue_wait_prefetch_steps",
+          "calls": 1,
+          "self_ms": 0.10038600000000002,
+          "cumulative_ms": 4.9761370000000005
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1642,
+          "function": "expire",
+          "calls": 64,
+          "self_ms": 0.087891,
+          "cumulative_ms": 0.10630800000000001
+        }
+      ]
+    },
+    {
+      "source": "join_ticket",
+      "depth": 64,
+      "diagnostics": true,
+      "tail_reclaim_supported": true,
+      "budget_mode": "legacy_capacity_unavailable",
+      "costs": {
+        "baseline": {
+          "mean_us": 3112.828227722772,
+          "p50_us": 3004.717,
+          "p90_us": 3055.327,
+          "p99_us": 3677.839
+        },
+        "candidate": {
+          "mean_us": 2611.328603960396,
+          "p50_us": 2607.352,
+          "p90_us": 2644.999,
+          "p99_us": 2685.977
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 68.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 68.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 64,
+          "self_ms": 0.69081,
+          "cumulative_ms": 1.1489770000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 64,
+          "self_ms": 0.67404,
+          "cumulative_ms": 1.416894
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.46561,
+          "cumulative_ms": 0.8425040000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 2,
+          "self_ms": 0.46331100000000003,
+          "cumulative_ms": 0.734603
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6954,
+          "function": "_record_prefetch_issued",
+          "calls": 64,
+          "self_ms": 0.38394500000000004,
+          "cumulative_ms": 0.503414
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 3386,
+          "function": "_live_join_ticket",
+          "calls": 67,
+          "self_ms": 0.38356700000000005,
+          "cumulative_ms": 0.658042
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 64,
+          "self_ms": 0.278878,
+          "cumulative_ms": 3.7155670000000005
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 397,
+          "self_ms": 0.245255,
+          "cumulative_ms": 0.534637
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/scripts/benchmark_wait_prefetch_dispatch_cpu.py",
+          "line": 93,
+          "function": "native_burst",
+          "calls": 1,
+          "self_ms": 0.181229,
+          "cumulative_ms": 3.947105
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7074,
+          "function": "_live_wait_prefetch",
+          "calls": 66,
+          "self_ms": 0.14468,
+          "cumulative_ms": 0.812758
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 1203,
+          "self_ms": 0.13379600000000003,
+          "cumulative_ms": 0.13379600000000003
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1155,
+          "function": "_counts",
+          "calls": 128,
+          "self_ms": 0.13279600000000003,
+          "cumulative_ms": 0.142597
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 69,
+          "self_ms": 0.11694700000000001,
+          "cumulative_ms": 0.16323700000000002
+        },
+        {
+          "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/uuid.py",
+          "line": 139,
+          "function": "__init__",
+          "calls": 64,
+          "self_ms": 0.113757,
+          "cumulative_ms": 0.142657
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 1262,
+          "self_ms": 0.108999,
+          "cumulative_ms": 0.108999
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7094,
+          "function": "_issue_wait_prefetch_steps",
+          "calls": 1,
+          "self_ms": 0.10754000000000001,
+          "cumulative_ms": 5.543937000000001
+        }
+      ]
+    },
+    {
+      "source": "join_ticket",
+      "depth": 64,
+      "diagnostics": true,
+      "tail_reclaim_supported": true,
+      "budget_mode": "native_next_prefill",
+      "costs": {
+        "baseline": {
+          "mean_us": 3112.293732673267,
+          "p50_us": 3023.692,
+          "p90_us": 3073.875,
+          "p99_us": 3124.924
+        },
+        "candidate": {
+          "mean_us": 2640.8059900990097,
+          "p50_us": 2631.169,
+          "p90_us": 2673.899,
+          "p99_us": 2733.474
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 68.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 68.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 64,
+          "self_ms": 0.707183,
+          "cumulative_ms": 1.1841800000000002
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 64,
+          "self_ms": 0.678772,
+          "cumulative_ms": 1.4217840000000002
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.474947,
+          "cumulative_ms": 0.861517
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 2,
+          "self_ms": 0.465997,
+          "cumulative_ms": 0.74297
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 3386,
+          "function": "_live_join_ticket",
+          "calls": 67,
+          "self_ms": 0.386965,
+          "cumulative_ms": 0.66417
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6954,
+          "function": "_record_prefetch_issued",
+          "calls": 64,
+          "self_ms": 0.376838,
+          "cumulative_ms": 0.49462500000000004
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 64,
+          "self_ms": 0.29072000000000003,
+          "cumulative_ms": 3.777565
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 397,
+          "self_ms": 0.245055,
+          "cumulative_ms": 0.535668
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/scripts/benchmark_wait_prefetch_dispatch_cpu.py",
+          "line": 93,
+          "function": "native_burst",
+          "calls": 1,
+          "self_ms": 0.190082,
+          "cumulative_ms": 4.0167079999999995
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7074,
+          "function": "_live_wait_prefetch",
+          "calls": 66,
+          "self_ms": 0.150994,
+          "cumulative_ms": 0.8181210000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1155,
+          "function": "_counts",
+          "calls": 128,
+          "self_ms": 0.138154,
+          "cumulative_ms": 0.148459
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 1203,
+          "self_ms": 0.13398700000000002,
+          "cumulative_ms": 0.13398700000000002
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 69,
+          "self_ms": 0.11995900000000001,
+          "cumulative_ms": 0.166381
+        },
+        {
+          "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/uuid.py",
+          "line": 139,
+          "function": "__init__",
+          "calls": 64,
+          "self_ms": 0.11865500000000001,
+          "cumulative_ms": 0.14859200000000003
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 1264,
+          "self_ms": 0.11143000000000002,
+          "cumulative_ms": 0.11143000000000002
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7094,
+          "function": "_issue_wait_prefetch_steps",
+          "calls": 1,
+          "self_ms": 0.11010800000000001,
+          "cumulative_ms": 5.636019
+        }
+      ]
+    },
+    {
+      "source": "tool_wait",
+      "depth": 4,
+      "diagnostics": false,
+      "tail_reclaim_supported": true,
+      "budget_mode": "legacy_capacity_unavailable",
+      "costs": {
+        "baseline": {
+          "mean_us": 403.7543267326733,
+          "p50_us": 401.459,
+          "p90_us": 415.93,
+          "p99_us": 438.176
+        },
+        "candidate": {
+          "mean_us": 368.05913861386136,
+          "p50_us": 366.598,
+          "p90_us": 380.345,
+          "p99_us": 387.298
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 8.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 8.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6331,
+          "function": "_roll_tool_prefetch",
+          "calls": 1,
+          "self_ms": 0.069527,
+          "cumulative_ms": 0.5630080000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 4,
+          "self_ms": 0.064665,
+          "cumulative_ms": 0.129165
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.05631,
+          "cumulative_ms": 0.108917
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 4,
+          "self_ms": 0.053936000000000005,
+          "cumulative_ms": 0.088745
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6204,
+          "function": "_live_tool_hint",
+          "calls": 14,
+          "self_ms": 0.053538,
+          "cumulative_ms": 0.110526
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6709,
+          "function": "dispatch_tool_prefetch",
+          "calls": 1,
+          "self_ms": 0.046503,
+          "cumulative_ms": 1.1663000000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 1,
+          "self_ms": 0.045572,
+          "cumulative_ms": 0.072246
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7094,
+          "function": "_issue_wait_prefetch_steps",
+          "calls": 1,
+          "self_ms": 0.036031,
+          "cumulative_ms": 0.48676800000000003
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 16,
+          "self_ms": 0.028674,
+          "cumulative_ms": 0.039433
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6639,
+          "function": "_h2d_start_window",
+          "calls": 3,
+          "self_ms": 0.027635000000000003,
+          "cumulative_ms": 0.120396
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_prediction.py",
+          "line": 261,
+          "function": "remaining_quantile",
+          "calls": 10,
+          "self_ms": 0.026638000000000002,
+          "cumulative_ms": 0.032913000000000005
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 35,
+          "self_ms": 0.025383,
+          "cumulative_ms": 0.054631000000000006
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 4654,
+          "function": "_wait_prefetch_opportunity",
+          "calls": 1,
+          "self_ms": 0.022180000000000002,
+          "cumulative_ms": 0.368276
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 4,
+          "self_ms": 0.022098,
+          "cumulative_ms": 0.291362
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 152,
+          "self_ms": 0.02085,
+          "cumulative_ms": 0.029641000000000004
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 218,
+          "function": "_static_full_mamba_pool_geometry",
+          "calls": 2,
+          "self_ms": 0.019259,
+          "cumulative_ms": 0.038124000000000005
+        }
+      ]
+    },
+    {
+      "source": "tool_wait",
+      "depth": 4,
+      "diagnostics": false,
+      "tail_reclaim_supported": true,
+      "budget_mode": "native_next_prefill",
+      "costs": {
+        "baseline": {
+          "mean_us": 452.17934653465346,
+          "p50_us": 450.815,
+          "p90_us": 468.127,
+          "p99_us": 483.847
+        },
+        "candidate": {
+          "mean_us": 412.3086336633663,
+          "p50_us": 413.305,
+          "p90_us": 422.71,
+          "p99_us": 429.835
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 8.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 8.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 4,
+          "self_ms": 0.060572,
+          "cumulative_ms": 0.12594800000000003
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 4,
+          "self_ms": 0.058609,
+          "cumulative_ms": 0.094856
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6204,
+          "function": "_live_tool_hint",
+          "calls": 14,
+          "self_ms": 0.054221,
+          "cumulative_ms": 0.11045
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.053989,
+          "cumulative_ms": 0.10276300000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 1,
+          "self_ms": 0.041952,
+          "cumulative_ms": 0.067686
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7094,
+          "function": "_issue_wait_prefetch_steps",
+          "calls": 1,
+          "self_ms": 0.035842,
+          "cumulative_ms": 0.5093620000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6331,
+          "function": "_roll_tool_prefetch",
+          "calls": 1,
+          "self_ms": 0.033650000000000006,
+          "cumulative_ms": 0.554868
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7866,
+          "function": "_current_residency_budget",
+          "calls": 3,
+          "self_ms": 0.028824,
+          "cumulative_ms": 0.092949
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 16,
+          "self_ms": 0.02875,
+          "cumulative_ms": 0.039195
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 218,
+          "function": "_static_full_mamba_pool_geometry",
+          "calls": 3,
+          "self_ms": 0.028364,
+          "cumulative_ms": 0.054691000000000004
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 35,
+          "self_ms": 0.026025000000000003,
+          "cumulative_ms": 0.055948
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_prediction.py",
+          "line": 261,
+          "function": "remaining_quantile",
+          "calls": 10,
+          "self_ms": 0.025878,
+          "cumulative_ms": 0.031974
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 4,
+          "self_ms": 0.022482000000000002,
+          "cumulative_ms": 0.29388600000000004
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 152,
+          "self_ms": 0.020749,
+          "cumulative_ms": 0.029059
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 4654,
+          "function": "_wait_prefetch_opportunity",
+          "calls": 1,
+          "self_ms": 0.018867000000000002,
+          "cumulative_ms": 0.36025100000000004
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 162,
+          "function": "inspect_session_h2d_opportunity",
+          "calls": 1,
+          "self_ms": 0.018141,
+          "cumulative_ms": 0.26684
+        }
+      ]
+    },
+    {
+      "source": "tool_wait",
+      "depth": 4,
+      "diagnostics": true,
+      "tail_reclaim_supported": true,
+      "budget_mode": "legacy_capacity_unavailable",
+      "costs": {
+        "baseline": {
+          "mean_us": 465.85547524752474,
+          "p50_us": 463.021,
+          "p90_us": 480.563,
+          "p99_us": 494.135
+        },
+        "candidate": {
+          "mean_us": 426.8049801980198,
+          "p50_us": 425.727,
+          "p90_us": 441.674,
+          "p99_us": 453.45
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 8.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 8.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 4,
+          "self_ms": 0.06164500000000001,
+          "cumulative_ms": 0.12471000000000002
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6204,
+          "function": "_live_tool_hint",
+          "calls": 14,
+          "self_ms": 0.056941000000000005,
+          "cumulative_ms": 0.11646800000000002
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 4,
+          "self_ms": 0.056669000000000004,
+          "cumulative_ms": 0.092915
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.05566600000000001,
+          "cumulative_ms": 0.110852
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 4840,
+          "function": "_record_wait_prefetch_plan",
+          "calls": 2,
+          "self_ms": 0.043583000000000004,
+          "cumulative_ms": 0.069512
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6954,
+          "function": "_record_prefetch_issued",
+          "calls": 4,
+          "self_ms": 0.043204,
+          "cumulative_ms": 0.06715200000000002
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 1,
+          "self_ms": 0.041843000000000005,
+          "cumulative_ms": 0.06817800000000002
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6331,
+          "function": "_roll_tool_prefetch",
+          "calls": 1,
+          "self_ms": 0.039166000000000006,
+          "cumulative_ms": 0.5448790000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7094,
+          "function": "_issue_wait_prefetch_steps",
+          "calls": 1,
+          "self_ms": 0.038529,
+          "cumulative_ms": 0.5818230000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_prediction.py",
+          "line": 261,
+          "function": "remaining_quantile",
+          "calls": 14,
+          "self_ms": 0.033563,
+          "cumulative_ms": 0.042145
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 16,
+          "self_ms": 0.030255,
+          "cumulative_ms": 0.041415
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 172,
+          "self_ms": 0.024086000000000003,
+          "cumulative_ms": 0.032961000000000004
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 35,
+          "self_ms": 0.024077,
+          "cumulative_ms": 0.054163
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 4654,
+          "function": "_wait_prefetch_opportunity",
+          "calls": 1,
+          "self_ms": 0.0222,
+          "cumulative_ms": 0.364044
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 4,
+          "self_ms": 0.021496,
+          "cumulative_ms": 0.28882500000000005
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6639,
+          "function": "_h2d_start_window",
+          "calls": 3,
+          "self_ms": 0.018996000000000002,
+          "cumulative_ms": 0.111435
+        }
+      ]
+    },
+    {
+      "source": "tool_wait",
+      "depth": 4,
+      "diagnostics": true,
+      "tail_reclaim_supported": true,
+      "budget_mode": "native_next_prefill",
+      "costs": {
+        "baseline": {
+          "mean_us": 492.3922871287129,
+          "p50_us": 490.401,
+          "p90_us": 507.06,
+          "p99_us": 516.137
+        },
+        "candidate": {
+          "mean_us": 455.47930693069304,
+          "p50_us": 453.326,
+          "p90_us": 470.562,
+          "p99_us": 480.19
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 8.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 8.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 4,
+          "self_ms": 0.06216400000000001,
+          "cumulative_ms": 0.1274
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 4,
+          "self_ms": 0.05569400000000001,
+          "cumulative_ms": 0.092315
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.053612,
+          "cumulative_ms": 0.10438
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6204,
+          "function": "_live_tool_hint",
+          "calls": 14,
+          "self_ms": 0.053320000000000006,
+          "cumulative_ms": 0.111602
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6954,
+          "function": "_record_prefetch_issued",
+          "calls": 4,
+          "self_ms": 0.045936000000000005,
+          "cumulative_ms": 0.068954
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 4840,
+          "function": "_record_wait_prefetch_plan",
+          "calls": 2,
+          "self_ms": 0.042463,
+          "cumulative_ms": 0.068654
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 1,
+          "self_ms": 0.040933000000000004,
+          "cumulative_ms": 0.067194
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7094,
+          "function": "_issue_wait_prefetch_steps",
+          "calls": 1,
+          "self_ms": 0.037547000000000004,
+          "cumulative_ms": 0.600619
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6331,
+          "function": "_roll_tool_prefetch",
+          "calls": 1,
+          "self_ms": 0.035601,
+          "cumulative_ms": 0.590563
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_prediction.py",
+          "line": 261,
+          "function": "remaining_quantile",
+          "calls": 14,
+          "self_ms": 0.034316,
+          "cumulative_ms": 0.042745000000000005
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 16,
+          "self_ms": 0.030303,
+          "cumulative_ms": 0.041212000000000006
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7866,
+          "function": "_current_residency_budget",
+          "calls": 3,
+          "self_ms": 0.029197,
+          "cumulative_ms": 0.09134700000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 218,
+          "function": "_static_full_mamba_pool_geometry",
+          "calls": 3,
+          "self_ms": 0.027150000000000004,
+          "cumulative_ms": 0.05432800000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 35,
+          "self_ms": 0.025788000000000002,
+          "cumulative_ms": 0.056008
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 172,
+          "self_ms": 0.022847,
+          "cumulative_ms": 0.033515
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 4,
+          "self_ms": 0.021784,
+          "cumulative_ms": 0.291072
+        }
+      ]
+    },
+    {
+      "source": "tool_wait",
+      "depth": 16,
+      "diagnostics": false,
+      "tail_reclaim_supported": true,
+      "budget_mode": "legacy_capacity_unavailable",
+      "costs": {
+        "baseline": {
+          "mean_us": 893.6278811881189,
+          "p50_us": 889.826,
+          "p90_us": 912.633,
+          "p99_us": 933.984
+        },
+        "candidate": {
+          "mean_us": 776.7830297029703,
+          "p50_us": 776.281,
+          "p90_us": 791.974,
+          "p99_us": 801.41
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 20.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 20.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 16,
+          "self_ms": 0.193215,
+          "cumulative_ms": 0.39845500000000006
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 16,
+          "self_ms": 0.18987500000000002,
+          "cumulative_ms": 0.31833700000000004
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.141826,
+          "cumulative_ms": 0.26157400000000003
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6204,
+          "function": "_live_tool_hint",
+          "calls": 26,
+          "self_ms": 0.09668600000000001,
+          "cumulative_ms": 0.202191
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 1,
+          "self_ms": 0.085461,
+          "cumulative_ms": 0.133669
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 16,
+          "self_ms": 0.076814,
+          "cumulative_ms": 0.9914910000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 107,
+          "self_ms": 0.07315900000000002,
+          "cumulative_ms": 0.154397
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7094,
+          "function": "_issue_wait_prefetch_steps",
+          "calls": 1,
+          "self_ms": 0.05215,
+          "cumulative_ms": 1.3441260000000002
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/scripts/benchmark_wait_prefetch_dispatch_cpu.py",
+          "line": 93,
+          "function": "native_burst",
+          "calls": 1,
+          "self_ms": 0.051564000000000006,
+          "cumulative_ms": 1.0564580000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 28,
+          "self_ms": 0.049341,
+          "cumulative_ms": 0.068399
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7074,
+          "function": "_live_wait_prefetch",
+          "calls": 18,
+          "self_ms": 0.046697,
+          "cumulative_ms": 0.191864
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 320,
+          "self_ms": 0.04126,
+          "cumulative_ms": 0.049879
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1155,
+          "function": "_counts",
+          "calls": 32,
+          "self_ms": 0.038611,
+          "cumulative_ms": 0.041594
+        },
+        {
+          "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/uuid.py",
+          "line": 139,
+          "function": "__init__",
+          "calls": 16,
+          "self_ms": 0.035380999999999996,
+          "cumulative_ms": 0.043353
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 351,
+          "self_ms": 0.03505900000000001,
+          "cumulative_ms": 0.03505900000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6331,
+          "function": "_roll_tool_prefetch",
+          "calls": 1,
+          "self_ms": 0.033174,
+          "cumulative_ms": 0.742081
+        }
+      ]
+    },
+    {
+      "source": "tool_wait",
+      "depth": 16,
+      "diagnostics": false,
+      "tail_reclaim_supported": true,
+      "budget_mode": "native_next_prefill",
+      "costs": {
+        "baseline": {
+          "mean_us": 914.9764950495049,
+          "p50_us": 913.879,
+          "p90_us": 928.714,
+          "p99_us": 942.547
+        },
+        "candidate": {
+          "mean_us": 796.5612376237624,
+          "p50_us": 796.528,
+          "p90_us": 812.815,
+          "p99_us": 820.746
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 20.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 20.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 16,
+          "self_ms": 0.190063,
+          "cumulative_ms": 0.396116
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 16,
+          "self_ms": 0.189697,
+          "cumulative_ms": 0.318106
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.141289,
+          "cumulative_ms": 0.26118800000000003
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6204,
+          "function": "_live_tool_hint",
+          "calls": 26,
+          "self_ms": 0.093127,
+          "cumulative_ms": 0.198903
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 1,
+          "self_ms": 0.082946,
+          "cumulative_ms": 0.13123
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 16,
+          "self_ms": 0.07541600000000001,
+          "cumulative_ms": 0.979882
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 107,
+          "self_ms": 0.07298700000000001,
+          "cumulative_ms": 0.153781
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7094,
+          "function": "_issue_wait_prefetch_steps",
+          "calls": 1,
+          "self_ms": 0.052079,
+          "cumulative_ms": 1.3488280000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 28,
+          "self_ms": 0.051449,
+          "cumulative_ms": 0.07148900000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/scripts/benchmark_wait_prefetch_dispatch_cpu.py",
+          "line": 93,
+          "function": "native_burst",
+          "calls": 1,
+          "self_ms": 0.050222,
+          "cumulative_ms": 1.0426250000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7074,
+          "function": "_live_wait_prefetch",
+          "calls": 18,
+          "self_ms": 0.044793,
+          "cumulative_ms": 0.185374
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 320,
+          "self_ms": 0.04055400000000001,
+          "cumulative_ms": 0.049502000000000004
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1155,
+          "function": "_counts",
+          "calls": 32,
+          "self_ms": 0.038986,
+          "cumulative_ms": 0.041854
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 354,
+          "self_ms": 0.035563000000000004,
+          "cumulative_ms": 0.035563000000000004
+        },
+        {
+          "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/uuid.py",
+          "line": 139,
+          "function": "__init__",
+          "calls": 16,
+          "self_ms": 0.034538,
+          "cumulative_ms": 0.044203000000000006
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6331,
+          "function": "_roll_tool_prefetch",
+          "calls": 1,
+          "self_ms": 0.034108,
+          "cumulative_ms": 0.8092450000000001
+        }
+      ]
+    },
+    {
+      "source": "tool_wait",
+      "depth": 16,
+      "diagnostics": true,
+      "tail_reclaim_supported": true,
+      "budget_mode": "legacy_capacity_unavailable",
+      "costs": {
+        "baseline": {
+          "mean_us": 989.7488514851485,
+          "p50_us": 984.063,
+          "p90_us": 1005.982,
+          "p99_us": 1050.748
+        },
+        "candidate": {
+          "mean_us": 876.609495049505,
+          "p50_us": 873.325,
+          "p90_us": 895.15,
+          "p99_us": 917.693
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 20.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 20.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 16,
+          "self_ms": 0.188655,
+          "cumulative_ms": 0.392145
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 16,
+          "self_ms": 0.18607700000000002,
+          "cumulative_ms": 0.308676
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.13873100000000002,
+          "cumulative_ms": 0.256248
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6954,
+          "function": "_record_prefetch_issued",
+          "calls": 16,
+          "self_ms": 0.13489900000000002,
+          "cumulative_ms": 0.211961
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6204,
+          "function": "_live_tool_hint",
+          "calls": 26,
+          "self_ms": 0.097781,
+          "cumulative_ms": 0.206383
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 1,
+          "self_ms": 0.08584800000000001,
+          "cumulative_ms": 0.13432300000000003
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 16,
+          "self_ms": 0.076754,
+          "cumulative_ms": 0.9743740000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 107,
+          "self_ms": 0.07129100000000001,
+          "cumulative_ms": 0.150908
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7094,
+          "function": "_issue_wait_prefetch_steps",
+          "calls": 1,
+          "self_ms": 0.05767200000000001,
+          "cumulative_ms": 1.5592280000000003
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_prediction.py",
+          "line": 261,
+          "function": "remaining_quantile",
+          "calls": 26,
+          "self_ms": 0.051978,
+          "cumulative_ms": 0.06622800000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 28,
+          "self_ms": 0.050756,
+          "cumulative_ms": 0.070244
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/scripts/benchmark_wait_prefetch_dispatch_cpu.py",
+          "line": 93,
+          "function": "native_burst",
+          "calls": 1,
+          "self_ms": 0.050716,
+          "cumulative_ms": 1.038359
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 4840,
+          "function": "_record_wait_prefetch_plan",
+          "calls": 2,
+          "self_ms": 0.048079000000000004,
+          "cumulative_ms": 0.088526
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7074,
+          "function": "_live_wait_prefetch",
+          "calls": 18,
+          "self_ms": 0.047572,
+          "cumulative_ms": 0.19437500000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 376,
+          "self_ms": 0.045421,
+          "cumulative_ms": 0.054355
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6331,
+          "function": "_roll_tool_prefetch",
+          "calls": 1,
+          "self_ms": 0.036527000000000004,
+          "cumulative_ms": 0.7907390000000001
+        }
+      ]
+    },
+    {
+      "source": "tool_wait",
+      "depth": 16,
+      "diagnostics": true,
+      "tail_reclaim_supported": true,
+      "budget_mode": "native_next_prefill",
+      "costs": {
+        "baseline": {
+          "mean_us": 1022.068099009901,
+          "p50_us": 1006.82,
+          "p90_us": 1032.994,
+          "p99_us": 1237.87
+        },
+        "candidate": {
+          "mean_us": 905.0977425742574,
+          "p50_us": 900.424,
+          "p90_us": 924.156,
+          "p99_us": 938.236
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 20.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 20.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 16,
+          "self_ms": 0.189698,
+          "cumulative_ms": 0.39061300000000004
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 16,
+          "self_ms": 0.187452,
+          "cumulative_ms": 0.31555900000000003
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.14322000000000001,
+          "cumulative_ms": 0.262976
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6954,
+          "function": "_record_prefetch_issued",
+          "calls": 16,
+          "self_ms": 0.138717,
+          "cumulative_ms": 0.22063100000000002
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6204,
+          "function": "_live_tool_hint",
+          "calls": 26,
+          "self_ms": 0.09804600000000001,
+          "cumulative_ms": 0.206949
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 1,
+          "self_ms": 0.090573,
+          "cumulative_ms": 0.14206
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 16,
+          "self_ms": 0.078409,
+          "cumulative_ms": 0.9727600000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 107,
+          "self_ms": 0.071949,
+          "cumulative_ms": 0.151399
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7094,
+          "function": "_issue_wait_prefetch_steps",
+          "calls": 1,
+          "self_ms": 0.06126800000000001,
+          "cumulative_ms": 1.596862
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 28,
+          "self_ms": 0.054354,
+          "cumulative_ms": 0.074255
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/scripts/benchmark_wait_prefetch_dispatch_cpu.py",
+          "line": 93,
+          "function": "native_burst",
+          "calls": 1,
+          "self_ms": 0.052496,
+          "cumulative_ms": 1.0380770000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_prediction.py",
+          "line": 261,
+          "function": "remaining_quantile",
+          "calls": 26,
+          "self_ms": 0.05144200000000001,
+          "cumulative_ms": 0.06643900000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 4840,
+          "function": "_record_wait_prefetch_plan",
+          "calls": 2,
+          "self_ms": 0.05113600000000001,
+          "cumulative_ms": 0.09147200000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6331,
+          "function": "_roll_tool_prefetch",
+          "calls": 1,
+          "self_ms": 0.046765,
+          "cumulative_ms": 0.958498
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 376,
+          "self_ms": 0.046559,
+          "cumulative_ms": 0.058044000000000005
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7074,
+          "function": "_live_wait_prefetch",
+          "calls": 18,
+          "self_ms": 0.043972000000000004,
+          "cumulative_ms": 0.184234
+        }
+      ]
+    },
+    {
+      "source": "tool_wait",
+      "depth": 64,
+      "diagnostics": false,
+      "tail_reclaim_supported": true,
+      "budget_mode": "legacy_capacity_unavailable",
+      "costs": {
+        "baseline": {
+          "mean_us": 2708.260801980198,
+          "p50_us": 2694.592,
+          "p90_us": 2788.634,
+          "p99_us": 2851.67
+        },
+        "candidate": {
+          "mean_us": 2401.6996534653467,
+          "p50_us": 2399.706,
+          "p90_us": 2428.717,
+          "p99_us": 2448.02
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 68.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 68.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 64,
+          "self_ms": 0.681148,
+          "cumulative_ms": 1.1409060000000002
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 64,
+          "self_ms": 0.678145,
+          "cumulative_ms": 1.4221510000000002
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.465936,
+          "cumulative_ms": 0.844176
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 2,
+          "self_ms": 0.44747200000000004,
+          "cumulative_ms": 0.716894
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 64,
+          "self_ms": 0.26973400000000003,
+          "cumulative_ms": 3.587085
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6204,
+          "function": "_live_tool_hint",
+          "calls": 74,
+          "self_ms": 0.25964800000000005,
+          "cumulative_ms": 0.555024
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 398,
+          "self_ms": 0.24161100000000002,
+          "cumulative_ms": 0.524514
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/scripts/benchmark_wait_prefetch_dispatch_cpu.py",
+          "line": 93,
+          "function": "native_burst",
+          "calls": 1,
+          "self_ms": 0.174864,
+          "cumulative_ms": 3.8103100000000003
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7074,
+          "function": "_live_wait_prefetch",
+          "calls": 66,
+          "self_ms": 0.15925000000000003,
+          "cumulative_ms": 0.680049
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1155,
+          "function": "_counts",
+          "calls": 128,
+          "self_ms": 0.136386,
+          "cumulative_ms": 0.146472
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 76,
+          "self_ms": 0.13478700000000002,
+          "cumulative_ms": 0.185646
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 1057,
+          "self_ms": 0.122691,
+          "cumulative_ms": 0.132084
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 1338,
+          "self_ms": 0.118523,
+          "cumulative_ms": 0.118523
+        },
+        {
+          "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/uuid.py",
+          "line": 139,
+          "function": "__init__",
+          "calls": 64,
+          "self_ms": 0.11354600000000001,
+          "cumulative_ms": 0.141588
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7094,
+          "function": "_issue_wait_prefetch_steps",
+          "calls": 1,
+          "self_ms": 0.102023,
+          "cumulative_ms": 4.852302
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1642,
+          "function": "expire",
+          "calls": 64,
+          "self_ms": 0.08569900000000001,
+          "cumulative_ms": 0.10348800000000001
+        }
+      ]
+    },
+    {
+      "source": "tool_wait",
+      "depth": 64,
+      "diagnostics": false,
+      "tail_reclaim_supported": true,
+      "budget_mode": "native_next_prefill",
+      "costs": {
+        "baseline": {
+          "mean_us": 2787.4224257425744,
+          "p50_us": 2798.568,
+          "p90_us": 2872.522,
+          "p99_us": 2889.82
+        },
+        "candidate": {
+          "mean_us": 2424.118504950495,
+          "p50_us": 2415.515,
+          "p90_us": 2460.603,
+          "p99_us": 2568.519
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 68.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 68.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 64,
+          "self_ms": 0.6743410000000001,
+          "cumulative_ms": 1.135871
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 64,
+          "self_ms": 0.6588550000000001,
+          "cumulative_ms": 1.4051570000000002
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 2,
+          "self_ms": 0.601414,
+          "cumulative_ms": 0.879807
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.47686600000000007,
+          "cumulative_ms": 0.8633310000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 64,
+          "self_ms": 0.271636,
+          "cumulative_ms": 3.566371
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6204,
+          "function": "_live_tool_hint",
+          "calls": 74,
+          "self_ms": 0.259367,
+          "cumulative_ms": 0.5584570000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 398,
+          "self_ms": 0.24985600000000002,
+          "cumulative_ms": 0.53578
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/scripts/benchmark_wait_prefetch_dispatch_cpu.py",
+          "line": 93,
+          "function": "native_burst",
+          "calls": 1,
+          "self_ms": 0.17608000000000001,
+          "cumulative_ms": 3.7906690000000003
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7074,
+          "function": "_live_wait_prefetch",
+          "calls": 66,
+          "self_ms": 0.155478,
+          "cumulative_ms": 0.6779560000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 76,
+          "self_ms": 0.13351200000000002,
+          "cumulative_ms": 0.185982
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1155,
+          "function": "_counts",
+          "calls": 128,
+          "self_ms": 0.133306,
+          "cumulative_ms": 0.14328300000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 1057,
+          "self_ms": 0.132215,
+          "cumulative_ms": 0.14094
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 1341,
+          "self_ms": 0.11881200000000001,
+          "cumulative_ms": 0.11881200000000001
+        },
+        {
+          "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/uuid.py",
+          "line": 139,
+          "function": "__init__",
+          "calls": 64,
+          "self_ms": 0.11442300000000001,
+          "cumulative_ms": 0.141635
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7094,
+          "function": "_issue_wait_prefetch_steps",
+          "calls": 1,
+          "self_ms": 0.10816800000000001,
+          "cumulative_ms": 5.014894000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1642,
+          "function": "expire",
+          "calls": 64,
+          "self_ms": 0.08749300000000002,
+          "cumulative_ms": 0.11049800000000001
+        }
+      ]
+    },
+    {
+      "source": "tool_wait",
+      "depth": 64,
+      "diagnostics": true,
+      "tail_reclaim_supported": true,
+      "budget_mode": "legacy_capacity_unavailable",
+      "costs": {
+        "baseline": {
+          "mean_us": 3164.3965148514853,
+          "p50_us": 3031.723,
+          "p90_us": 3083.19,
+          "p99_us": 3218.109
+        },
+        "candidate": {
+          "mean_us": 2872.4233366336634,
+          "p50_us": 2777.776,
+          "p90_us": 2838.649,
+          "p99_us": 4089.665
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 68.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 68.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 64,
+          "self_ms": 0.677588,
+          "cumulative_ms": 1.1362970000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 64,
+          "self_ms": 0.670852,
+          "cumulative_ms": 1.410861
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.47428300000000007,
+          "cumulative_ms": 0.8504220000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6954,
+          "function": "_record_prefetch_issued",
+          "calls": 64,
+          "self_ms": 0.470803,
+          "cumulative_ms": 0.7513200000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 2,
+          "self_ms": 0.447906,
+          "cumulative_ms": 0.7185680000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 64,
+          "self_ms": 0.277106,
+          "cumulative_ms": 3.577008
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6204,
+          "function": "_live_tool_hint",
+          "calls": 74,
+          "self_ms": 0.261868,
+          "cumulative_ms": 0.549847
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 398,
+          "self_ms": 0.24614600000000003,
+          "cumulative_ms": 0.527217
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/scripts/benchmark_wait_prefetch_dispatch_cpu.py",
+          "line": 93,
+          "function": "native_burst",
+          "calls": 1,
+          "self_ms": 0.17562100000000003,
+          "cumulative_ms": 3.8012750000000004
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7074,
+          "function": "_live_wait_prefetch",
+          "calls": 66,
+          "self_ms": 0.162771,
+          "cumulative_ms": 0.675431
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 1257,
+          "self_ms": 0.145227,
+          "cumulative_ms": 0.15457200000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1155,
+          "function": "_counts",
+          "calls": 128,
+          "self_ms": 0.132805,
+          "cumulative_ms": 0.14336700000000002
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 76,
+          "self_ms": 0.131853,
+          "cumulative_ms": 0.18329
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 1340,
+          "self_ms": 0.12079600000000001,
+          "cumulative_ms": 0.12079600000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_prediction.py",
+          "line": 261,
+          "function": "remaining_quantile",
+          "calls": 74,
+          "self_ms": 0.120757,
+          "cumulative_ms": 0.158557
+        },
+        {
+          "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/uuid.py",
+          "line": 139,
+          "function": "__init__",
+          "calls": 64,
+          "self_ms": 0.11345000000000001,
+          "cumulative_ms": 0.142214
+        }
+      ]
+    },
+    {
+      "source": "tool_wait",
+      "depth": 64,
+      "diagnostics": true,
+      "tail_reclaim_supported": true,
+      "budget_mode": "native_next_prefill",
+      "costs": {
+        "baseline": {
+          "mean_us": 3172.3594554455444,
+          "p50_us": 3090.348,
+          "p90_us": 3158.978,
+          "p99_us": 3221.503
+        },
+        "candidate": {
+          "mean_us": 2822.2510693069307,
+          "p50_us": 2820.937,
+          "p90_us": 2879.033,
+          "p99_us": 2906.277
+        }
+      },
+      "native_reads_per_dispatch": {
+        "baseline": {
+          "session_snapshot": 1.0,
+          "node_lookup": 68.0
+        },
+        "candidate": {
+          "session_snapshot": 1.0,
+          "node_lookup": 68.0
+        }
+      },
+      "stable_physical_targets_and_pending_credit_equal": true,
+      "top_profile_self": [
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1658,
+          "function": "register",
+          "calls": 64,
+          "self_ms": 0.6708090000000001,
+          "cumulative_ms": 1.124164
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1274,
+          "function": "prefetch_expectation_from_native_op",
+          "calls": 64,
+          "self_ms": 0.669609,
+          "cumulative_ms": 1.3983070000000002
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6954,
+          "function": "_record_prefetch_issued",
+          "calls": 64,
+          "self_ms": 0.46939000000000003,
+          "cumulative_ms": 0.740017
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+          "line": 567,
+          "function": "observe_unified_node_closure",
+          "calls": 1,
+          "self_ms": 0.467547,
+          "cumulative_ms": 0.8449340000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 673,
+          "function": "plan_prefetch_gpu_steps",
+          "calls": 2,
+          "self_ms": 0.45479200000000003,
+          "cumulative_ms": 0.721287
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7206,
+          "function": "before_enqueue",
+          "calls": 64,
+          "self_ms": 0.27383100000000005,
+          "cumulative_ms": 3.5328990000000005
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 6204,
+          "function": "_live_tool_hint",
+          "calls": 74,
+          "self_ms": 0.253608,
+          "cumulative_ms": 0.5357210000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "calls": 398,
+          "self_ms": 0.237052,
+          "cumulative_ms": 0.51393
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/scripts/benchmark_wait_prefetch_dispatch_cpu.py",
+          "line": 93,
+          "function": "native_burst",
+          "calls": 1,
+          "self_ms": 0.180012,
+          "cumulative_ms": 3.761014
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 7074,
+          "function": "_live_wait_prefetch",
+          "calls": 66,
+          "self_ms": 0.162804,
+          "cumulative_ms": 0.664648
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "calls": 1257,
+          "self_ms": 0.14125700000000002,
+          "cumulative_ms": 0.150401
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py",
+          "line": 1155,
+          "function": "_counts",
+          "calls": 128,
+          "self_ms": 0.133417,
+          "cumulative_ms": 0.14352600000000001
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py",
+          "line": 8720,
+          "function": "_terminal",
+          "calls": 76,
+          "self_ms": 0.128076,
+          "cumulative_ms": 0.17930500000000002
+        },
+        {
+          "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/uuid.py",
+          "line": 139,
+          "function": "__init__",
+          "calls": 64,
+          "self_ms": 0.11755100000000002,
+          "cumulative_ms": 0.143912
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "calls": 1343,
+          "self_ms": 0.117357,
+          "cumulative_ms": 0.117357
+        },
+        {
+          "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_prediction.py",
+          "line": 261,
+          "function": "remaining_quantile",
+          "calls": 74,
+          "self_ms": 0.11489900000000002,
+          "cumulative_ms": 0.150905
+        }
+      ]
+    }
+  ],
+  "selection_cases": [],
+  "prefill_check_cases": [
+    {
+      "case": "prefill_restore_dependency_check",
+      "pending_commands": 0,
+      "matching_context": false,
+      "native_state_ready": true,
+      "legacy_session": false,
+      "deferred": false,
+      "calls_per_sample": 100,
+      "costs": {
+        "baseline": {
+          "mean_us": 0.1538409900990099,
+          "p50_us": 0.15272,
+          "p90_us": 0.16471,
+          "p99_us": 0.1769
+        },
+        "candidate": {
+          "mean_us": 0.1513519801980198,
+          "p50_us": 0.15206,
+          "p90_us": 0.1596,
+          "p99_us": 0.16788
+        }
+      },
+      "native_checks": {
+        "calls": 0,
+        "nodes": []
+      },
+      "native_checks_and_pending_physical_state_equal": true
+    },
+    {
+      "case": "prefill_restore_dependency_check",
+      "pending_commands": 4,
+      "matching_context": false,
+      "native_state_ready": false,
+      "legacy_session": false,
+      "deferred": false,
+      "calls_per_sample": 100,
+      "costs": {
+        "baseline": {
+          "mean_us": 1.159169306930693,
+          "p50_us": 1.1788599999999998,
+          "p90_us": 1.21754,
+          "p99_us": 1.23637
+        },
+        "candidate": {
+          "mean_us": 1.1326730693069307,
+          "p50_us": 1.15565,
+          "p90_us": 1.19445,
+          "p99_us": 1.20896
+        }
+      },
+      "native_checks": {
+        "calls": 0,
+        "nodes": []
+      },
+      "native_checks_and_pending_physical_state_equal": true
+    },
+    {
+      "case": "prefill_restore_dependency_check",
+      "pending_commands": 64,
+      "matching_context": false,
+      "native_state_ready": false,
+      "legacy_session": false,
+      "deferred": false,
+      "calls_per_sample": 100,
+      "costs": {
+        "baseline": {
+          "mean_us": 1.1542319801980199,
+          "p50_us": 1.17024,
+          "p90_us": 1.21063,
+          "p99_us": 1.2181
+        },
+        "candidate": {
+          "mean_us": 1.155140396039604,
+          "p50_us": 1.17229,
+          "p90_us": 1.19871,
+          "p99_us": 1.2341600000000001
+        }
+      },
+      "native_checks": {
+        "calls": 0,
+        "nodes": []
+      },
+      "native_checks_and_pending_physical_state_equal": true
+    },
+    {
+      "case": "prefill_restore_dependency_check",
+      "pending_commands": 4,
+      "matching_context": true,
+      "native_state_ready": true,
+      "legacy_session": false,
+      "deferred": false,
+      "calls_per_sample": 100,
+      "costs": {
+        "baseline": {
+          "mean_us": 4.309054455445544,
+          "p50_us": 4.3093,
+          "p90_us": 4.405270000000001,
+          "p99_us": 4.42986
+        },
+        "candidate": {
+          "mean_us": 4.063543465346535,
+          "p50_us": 4.06921,
+          "p90_us": 4.14414,
+          "p99_us": 4.19606
+        }
+      },
+      "native_checks": {
+        "calls": 11101,
+        "nodes": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "native_checks_and_pending_physical_state_equal": true
+    },
+    {
+      "case": "prefill_restore_dependency_check",
+      "pending_commands": 4,
+      "matching_context": true,
+      "native_state_ready": false,
+      "legacy_session": false,
+      "deferred": true,
+      "calls_per_sample": 100,
+      "costs": {
+        "baseline": {
+          "mean_us": 4.063373267326733,
+          "p50_us": 4.06302,
+          "p90_us": 4.14351,
+          "p99_us": 4.22887
+        },
+        "candidate": {
+          "mean_us": 3.987350495049505,
+          "p50_us": 4.00366,
+          "p90_us": 4.07427,
+          "p99_us": 4.12764
+        }
+      },
+      "native_checks": {
+        "calls": 11101,
+        "nodes": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "native_checks_and_pending_physical_state_equal": true
+    },
+    {
+      "case": "prefill_restore_dependency_check",
+      "pending_commands": 64,
+      "matching_context": true,
+      "native_state_ready": true,
+      "legacy_session": false,
+      "deferred": false,
+      "calls_per_sample": 100,
+      "costs": {
+        "baseline": {
+          "mean_us": 26.258604455445546,
+          "p50_us": 26.29316,
+          "p90_us": 26.86652,
+          "p99_us": 26.993509999999997
+        },
+        "candidate": {
+          "mean_us": 26.65730891089109,
+          "p50_us": 26.68348,
+          "p90_us": 27.16394,
+          "p99_us": 27.39777
+        }
+      },
+      "native_checks": {
+        "calls": 11101,
+        "nodes": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64
+        ]
+      },
+      "native_checks_and_pending_physical_state_equal": true
+    },
+    {
+      "case": "prefill_restore_dependency_check",
+      "pending_commands": 64,
+      "matching_context": true,
+      "native_state_ready": false,
+      "legacy_session": false,
+      "deferred": true,
+      "calls_per_sample": 100,
+      "costs": {
+        "baseline": {
+          "mean_us": 25.909285544554457,
+          "p50_us": 25.93033,
+          "p90_us": 26.495810000000002,
+          "p99_us": 26.81075
+        },
+        "candidate": {
+          "mean_us": 25.82485396039604,
+          "p50_us": 25.86148,
+          "p90_us": 26.37404,
+          "p99_us": 26.58214
+        }
+      },
+      "native_checks": {
+        "calls": 11101,
+        "nodes": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64
+        ]
+      },
+      "native_checks_and_pending_physical_state_equal": true
+    },
+    {
+      "case": "prefill_restore_dependency_check",
+      "pending_commands": 4,
+      "matching_context": true,
+      "native_state_ready": true,
+      "legacy_session": true,
+      "deferred": false,
+      "calls_per_sample": 100,
+      "costs": {
+        "baseline": {
+          "mean_us": 3.8270221782178218,
+          "p50_us": 3.82054,
+          "p90_us": 3.97769,
+          "p99_us": 4.0252
+        },
+        "candidate": {
+          "mean_us": 3.6815071287128713,
+          "p50_us": 3.70011,
+          "p90_us": 3.7869099999999998,
+          "p99_us": 3.91005
+        }
+      },
+      "native_checks": {
+        "calls": 11101,
+        "nodes": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "native_checks_and_pending_physical_state_equal": true
+    },
+    {
+      "case": "prefill_restore_dependency_check",
+      "pending_commands": 4,
+      "matching_context": true,
+      "native_state_ready": false,
+      "legacy_session": true,
+      "deferred": true,
+      "calls_per_sample": 100,
+      "costs": {
+        "baseline": {
+          "mean_us": 3.701169306930693,
+          "p50_us": 3.7138899999999997,
+          "p90_us": 3.80262,
+          "p99_us": 3.86005
+        },
+        "candidate": {
+          "mean_us": 3.7360017821782177,
+          "p50_us": 3.75511,
+          "p90_us": 3.83136,
+          "p99_us": 3.88333
+        }
+      },
+      "native_checks": {
+        "calls": 11101,
+        "nodes": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "native_checks_and_pending_physical_state_equal": true
+    }
+  ],
+  "limitations": [
+    "The CPU native enqueue uses scalar index stand-ins, not the real native allocator or controller.",
+    "Plans have real positive Host-only prefixes and causal identities in both sources.",
+    "Physical actions remain pending; this fixture never fabricates DMA completion or ACK/use credit.",
+    "Resets, state verification and cProfile are outside the CPU timings.",
+    "When enabled, the diagnostic writer appends records to memory without I/O or background GIL contention.",
+    "Local CPU timings and synthetic scene frequencies do not establish workflow throughput or JCT gains."
+  ]
+}

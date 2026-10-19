@@ -28,7 +28,9 @@ from scripts.benchmark_native_prepare_path import baseline_runtime, fixture
 from scripts.benchmark_prefetch_control_cpu import distribution
 
 
-def dispatch_fixture(cls, *, source, depth, diagnostics=False, native_budget=False):
+def dispatch_fixture(
+    cls, *, source, depth, diagnostics=False, native_budget=False, tail_reclaim=False,
+):
     runtime, _, reads, _, rows = fixture(
         cls, workflows=1, depth=depth + 1, backed=True, host_full=1_000_000,
         leases=0, host_only=True,
@@ -109,6 +111,12 @@ def dispatch_fixture(cls, *, source, depth, diagnostics=False, native_budget=Fal
         return tuple(outcomes)
 
     cache.prefetch_gpu_session_nodes = native_burst
+    if tail_reclaim:
+        def reclaim(**kwargs):
+            reads["native_tail_reclaim"] += 1
+            return {}
+
+        cache.reclaim_beliefkv_handoff_capacity = reclaim
     if source == "tool_wait":
         runtime.enable_tool_prefetch = True
         parent.state = InvocationState.WAIT_TOOL
@@ -358,11 +366,14 @@ def measure_prefill_check(baseline, *, depth, matching, ready, legacy, samples):
             runtime.close()
 
 
-def measure(baseline, *, source, depth, diagnostics, native_budget, samples):
+def measure(
+    baseline, *, source, depth, diagnostics, native_budget, samples, tail_reclaim=False,
+):
     variants = {
         name: dispatch_fixture(
             cls, source=source, depth=depth,
             diagnostics=diagnostics, native_budget=native_budget,
+            tail_reclaim=tail_reclaim,
         )
         for name, cls in (("baseline", baseline), ("candidate", NativeAdmissionRuntime))
     }
@@ -403,6 +414,7 @@ def measure(baseline, *, source, depth, diagnostics, native_budget, samples):
         functions = sorted(pstats.Stats(profile).stats.items(), key=lambda item: -item[1][2])
         return {
             "source": source, "depth": depth, "diagnostics": diagnostics,
+            "tail_reclaim_supported": tail_reclaim,
             "budget_mode": "native_next_prefill" if native_budget else "legacy_capacity_unavailable",
             "costs": {name: distribution(values) for name, values in costs.items()},
             "native_reads_per_dispatch": {
@@ -431,6 +443,7 @@ def main():
     parser.add_argument("--include-prefill-checks", action="store_true")
     parser.add_argument("--prefill-checks-only", action="store_true")
     parser.add_argument("--report-selection-only", action="store_true")
+    parser.add_argument("--tail-reclaim", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.samples < 1 or args.output.exists():
@@ -449,6 +462,7 @@ def main():
         measure(
             baseline, source=source, depth=depth, diagnostics=diagnostics,
             native_budget=native_budget, samples=args.samples,
+            tail_reclaim=args.tail_reclaim,
         )
         for source in ("join_ticket", "tool_wait") for depth in (4, 16, 64)
         for diagnostics in (False, True) for native_budget in (False, True)
