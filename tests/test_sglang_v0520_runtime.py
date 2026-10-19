@@ -525,7 +525,7 @@ def test_after_forward_planning_retains_existing_waiting_context_handlers():
     runtime = NativeAdmissionRuntime()
     runtime.enable_final_stage_prefetch = True
     runtime.enable_tool_prefetch = True
-    runtime._final_stages["pending"] = object()
+    runtime._eos_prefetch_keys["pending"] = object()
     runtime.tool_wait_hints["pending"] = object()
     runtime._hotpath_timing.enabled = True
     calls = []
@@ -550,7 +550,7 @@ def test_after_forward_skips_only_existing_backoff_work():
     runtime = NativeAdmissionRuntime()
     runtime.enable_final_stage_prefetch = True
     runtime.enable_tool_prefetch = True
-    runtime._final_stages["pending"] = object()
+    runtime._eos_prefetch_keys["pending"] = object()
     runtime.tool_wait_hints["pending"] = object()
     runtime._hotpath_timing.enabled = True
     runtime._tool_prefetch_next_ms = 1050.
@@ -597,7 +597,7 @@ def test_after_forward_rechecks_clock_after_prior_handler_crosses_deadline():
     runtime = NativeAdmissionRuntime()
     runtime.enable_final_stage_prefetch = True
     runtime.enable_tool_prefetch = True
-    runtime._final_stages["pending"] = object()
+    runtime._eos_prefetch_keys["pending"] = object()
     runtime.tool_wait_hints["pending"] = object()
     runtime._tool_prefetch_next_ms = 1050.
     runtime._join_prepare_next_ms = runtime._tool_prepare_next_ms = 1050.
@@ -620,7 +620,7 @@ def test_after_forward_prior_handler_can_rearm_tool_scan_immediately():
     runtime = NativeAdmissionRuntime()
     runtime.enable_final_stage_prefetch = True
     runtime.enable_tool_prefetch = True
-    runtime._final_stages["pending"] = object()
+    runtime._eos_prefetch_keys["pending"] = object()
     runtime.tool_wait_hints["pending"] = object()
     runtime._tool_prefetch_next_ms = 5000.
     runtime._join_prepare_next_ms = runtime._tool_prepare_next_ms = 5000.
@@ -2414,6 +2414,7 @@ def test_join_prefetch_three_stages_and_confirmed_parent_ticket():
     runtime.enable_admission_prefetch = True
     parent, child = req("parent"), req("child")
     parent.session_id, parent.session_generation = "session-parent", 2
+    child.session_id, child.session_generation = "session-child", 1
     runtime.register_visible_request(parent)
     runtime.register_visible_request(child)
     runtime.on_events((
@@ -2465,6 +2466,21 @@ def test_join_prefetch_three_stages_and_confirmed_parent_ticket():
                     },
                 ),))
                 assert runtime.graph.invocations["parent"].state.value == "wait_join"
+                runtime.dispatch_join_prefetch()
+                assert issued == []
+                child_key = runtime.visible["child"]
+                runtime._semantic_keys["child"] = child_key
+                runtime._semantic_finished["child"] = (time.monotonic() * 1000., 3)
+                runtime._semantic_body_seen.add("child")
+                child.finished_reason = NS(to_json=lambda: {"type": "stop"})
+                runtime._record_native_final_body(child, child_key)
+                runtime._h2d_samples.extend(((1, 1.),) * 3)
+                runtime._ensure_observed_final_stage(child_key)
+                from beliefkv.runtime.sglang_v0520_runtime import _JoinPrefetchTicket
+                runtime._join_ticket = _JoinPrefetchTicket(
+                    key, "join", "all", ("child",), "provisional",
+                    time.monotonic() + 1., stage_bound=True,
+                )
                 runtime.dispatch_join_prefetch()
                 assert issued == ["join_ticket"]
                 runtime.physical_ledger.is_pending = lambda command: True
@@ -2747,7 +2763,8 @@ def test_join_prefetch_all_requires_last_child_and_rejects_false_intent():
     assert runtime.counts["join_intent_stale"] == 1
     runtime.on_events((event(7, RuntimeEventKind.RETURN, invocation_id="a"),))
     runtime.on_events((intent(8, "b"),))
-    assert runtime._join_ticket.phase == "provisional"
+    assert runtime._join_ticket is None
+    assert runtime.counts["join_intent_waiting_for_native_eos"] == 1
     runtime.on_events((event(
         9, RuntimeEventKind.INVOCATION_CANCEL, invocation_id="b",
     ),))
@@ -2897,8 +2914,8 @@ def test_natural_final_join_signal_stays_bound_and_survives_late_model_hint():
     runtime.on_events((natural(8, names=("ChildCompletion",)),))
     assert runtime._join_ticket is None
     runtime.on_events((natural(9),))
-    assert runtime._join_ticket.phase == "provisional"
-    assert runtime.counts["join_intent_natural_final_accepted"] == 1
+    assert runtime._join_ticket is None
+    assert runtime.counts["join_intent_waiting_for_native_eos"] == 1
     key = runtime.context_sessions["ctx-parent"]
     child = runtime.graph.invocations["b"]
     parent_invocation = runtime.graph.invocations["parent"]
@@ -2915,8 +2932,8 @@ def test_natural_final_join_signal_stays_bound_and_survives_late_model_hint():
     )
     runtime.scheduler_step()
     runtime._model_worker = None
-    assert runtime._join_ticket.phase == "provisional"
-    assert runtime.counts["join_wait_ticket_preserved"] == 1
+    assert runtime._join_ticket is None
+    assert runtime.counts["join_work_forecast_ignored"] == 1
     runtime.on_events((event(
         10, RuntimeEventKind.INVOCATION_CANCEL, invocation_id="b",
     ),))
@@ -3013,8 +3030,8 @@ def test_join_probabilistic_prefetch_requires_live_near_term_hint():
             with patch.object(runtime, "issue_prefetch_gpu_step",
                               return_value="probabilistic-h2d") as issue:
                 runtime.dispatch_join_prefetch()
-                issue.assert_called_once_with(step, source="join_ticket")
-    assert runtime.counts["join_prefetch_probabilistic_issued"] == 1
+                issue.assert_not_called()
+    assert runtime.counts["join_prefetch_probabilistic_issued"] == 0
     runtime.on_events((event(5, RuntimeEventKind.RETURN, invocation_id="child"),))
     assert runtime.join_wait_hint is None
     assert runtime._join_ticket.phase == "confirmed"
@@ -3719,10 +3736,11 @@ def test_semantic_pending_snapshot_coalesces_then_resubmits_at_existing_interval
     ("parent", False, True),
     (None, True, True),
 ])
-def test_native_child_decode_history_skips_only_confirmed_roots(
+def test_native_eos_tracking_skips_decode_history_and_confirmed_roots(
     parent_metadata, linked_child, tracked,
 ):
     runtime = NativeAdmissionRuntime()
+    runtime.enable_admission_prefetch = True
     request = req("served")
     request.session_id, request.session_generation = "session", 1
     request.origin_input_ids, request.output_ids = [1, 2], [7, 8]
@@ -3741,10 +3759,10 @@ def test_native_child_decode_history_skips_only_confirmed_roots(
     runtime._tool_open_token_ids = frozenset({7})
     try:
         runtime.on_batch_completed(NS(reqs=(request,)))
-        assert ("served" in runtime._semantic_progress) is tracked
-        assert ("served" in runtime._semantic_keys) is tracked
-        assert ("served" in runtime._decoded_tool_requests) is tracked
-        assert runtime.counts["semantic_native_tool_marker_invalidated"] == int(tracked)
+        assert not runtime._semantic_progress
+        assert not runtime._semantic_keys
+        assert not runtime._decoded_tool_requests
+        assert runtime.counts["semantic_native_tool_marker_invalidated"] == 0
         assert runtime._context_tokens["ctx-served"] == (
             0, 2, 2, parent_metadata not in ("missing", None),
         )
@@ -3752,6 +3770,8 @@ def test_native_child_decode_history_skips_only_confirmed_roots(
         runtime.on_batch_completed(NS(reqs=(request,)))
         assert "served" not in runtime.visible
         assert ("served" in runtime._semantic_finished) is tracked
+        assert ("served" in runtime._decoded_tool_requests) is tracked
+        assert runtime.counts["semantic_native_tool_marker_invalidated"] == int(tracked)
         assert runtime._context_tokens["ctx-served"][:3] == (0, 2, 2)
     finally:
         runtime.close()
@@ -3814,7 +3834,7 @@ def test_semantic_reply_still_creates_final_stage_after_snapshot_submission():
     runtime.close()
 
 
-def test_native_decode_tool_marker_invalidates_forecast_before_client_tool_chunk():
+def test_native_finished_tool_marker_rejects_eos_without_decode_history():
     from beliefkv.control.causal_graph import InvocationState
 
     runtime = final_stage_runtime()
@@ -3832,22 +3852,22 @@ def test_native_decode_tool_marker_invalidates_forecast_before_client_tool_chunk
     runtime._tool_open_token_ids = frozenset({248058})
     key = runtime.visible["child"]
     runtime.on_batch_completed(NS(reqs=[child]))
-    assert "child" in runtime._decoded_tool_requests
-    assert "child" not in runtime._child_report_notices
-    assert not runtime._semantic_key_live(key, time.monotonic() * 1000)
-    assert not runtime._final_stages
+    assert not runtime._decoded_tool_requests
+    assert not runtime._semantic_progress
+    assert not runtime._decoded_scan_positions
     assert runtime.graph.invocations["child"].state is InvocationState.RUNNING_LLM
-    progress = tuple(runtime._semantic_progress["child"])
-    scanned = runtime._decoded_scan_positions["child"]
     child.output_ids.extend([5, 6, 7])
     runtime.on_batch_completed(NS(reqs=[child]))
-    assert tuple(runtime._semantic_progress["child"]) == progress
-    assert runtime._decoded_scan_positions["child"] == scanned
+    assert not runtime._semantic_progress
+    assert not runtime._decoded_scan_positions
     assert runtime._context_tokens["ctx-child"][2] == len(child.output_ids)
-    assert runtime.counts["semantic_native_tool_marker_invalidated"] == 1
+    assert runtime.counts["semantic_native_tool_marker_invalidated"] == 0
     child.finished = lambda: True
     child.finished_reason = NS(to_json=lambda: {"type": "stop"})
     runtime.on_batch_completed(NS(reqs=[child]))
+    assert "child" in runtime._decoded_tool_requests
+    assert not runtime._semantic_key_live(key, time.monotonic() * 1000)
+    assert runtime.counts["semantic_native_tool_marker_invalidated"] == 1
     assert runtime._semantic_finished["child"][1] == len(child.output_ids)
     assert runtime._semantic_eos_proofs["child"] is False
     assert "child" not in runtime._semantic_normal_stops
@@ -3901,6 +3921,10 @@ def test_semantic_eos_window_creates_only_h2d_candidate_not_final_priority():
         required_full_tokens=100, required_mamba_slots=1,
     )):
         runtime._roll_final_stage()
+        assert runtime._join_ticket is None
+        runtime._semantic_eos_proofs["child"] = True
+        runtime._ensure_observed_final_stage(key)
+        runtime._roll_final_stage()
     assert runtime._join_ticket is not None
     assert runtime._join_ticket.stage_bound
     assert runtime.running_batch_retraction_barrier_required(NS()) is True
@@ -3938,7 +3962,7 @@ def test_observed_native_final_body_does_not_require_a_model_forecast(
     runtime._native_running_batch = NS(reqs=[child] if running else [])
     key = runtime.visible["child"]
     now = time.monotonic() * 1000
-    runtime._semantic_worker = NS()
+    assert runtime._semantic_worker is None
     runtime._semantic_keys["child"] = key
     runtime._semantic_finished["child"] = (now, 3)
     child.finished_reason = NS(to_json=lambda: {"type": reason})
@@ -4463,6 +4487,7 @@ def test_prepare_host_shortfall_keeps_existing_safe_backed_nodes_for_reclaim(blo
 def test_final_stage_latest_start_requires_serviced_decode_and_h2d_evidence():
     runtime = final_stage_runtime()
     child = req("child")
+    child.session_id, child.session_generation = "cs", 1
     child.beliefkv_metadata["context_epoch"] = 1
     runtime.on_events((event(
         7, RuntimeEventKind.LLM_SUBMIT, invocation_id="child",
@@ -4497,6 +4522,13 @@ def test_final_stage_latest_start_requires_serviced_decode_and_h2d_evidence():
         issue.assert_not_called()  # Still too early in the final decode.
         stage.generated_tokens = 120
         runtime.dispatch_join_prefetch()
+        issue.assert_not_called()
+        child_key = runtime.visible["child"]
+        runtime._semantic_keys["child"] = child_key
+        runtime._semantic_finished["child"] = (time.monotonic() * 1000., 120)
+        runtime._semantic_eos_proofs["child"] = True
+        runtime._ensure_observed_final_stage(child_key)
+        runtime.dispatch_join_prefetch()
         issue.assert_called_once()
         assert runtime._join_ticket.issued_nodes == stage.issued_nodes == 1
     runtime.on_events((event(
@@ -4518,12 +4550,14 @@ def test_final_stage_service_evidence_preserves_separate_ack_and_native_historie
     runtime._h2d_samples.extend([(105, 200.)] * ack_count)
     runtime._native_service_samples.extend(NS(direction=value) for value in native_directions)
     runtime._roll_final_stage()
-    assert runtime.counts["final_stage_no_h2d_service_evidence"] == int(not enough_service)
+    assert runtime.counts["final_stage_no_h2d_service_evidence"] == 0
+    assert len(runtime._h2d_samples) == ack_count
+    assert len(runtime._native_service_samples) == len(native_directions)
     assert runtime._join_ticket is None
 
 
 @pytest.mark.parametrize("statistic, notice, should_issue", [
-    ("upper", True, False), ("center", True, True), ("center", False, False),
+    ("upper", True, False), ("center", True, False), ("center", False, False),
 ])
 def test_semantic_work_statistic_does_not_bypass_notice_or_physical_checks(
     monkeypatch, statistic, notice, should_issue,
@@ -4623,6 +4657,11 @@ def test_join_prefetch_budget_survives_stage_recreation_and_counts_only_issued()
     ),))
     runtime.register_visible_request(child)
     key = runtime._final_stages["join"].key
+    child_key = runtime.visible["child"]
+    runtime._semantic_keys["child"] = child_key
+    runtime._semantic_finished["child"] = (time.monotonic() * 1000., 120)
+    runtime._semantic_eos_proofs["child"] = True
+    runtime._ensure_observed_final_stage(child_key)
     runtime._h2d_samples.extend([(105, 200.0)] * 3)
     runtime.attach_native_cache(NS(cache_controller=NS(
         mem_pool_host=NS(entry_map={
@@ -4662,6 +4701,7 @@ def test_join_prefetch_budget_survives_stage_recreation_and_counts_only_issued()
             ),))
             stage = runtime._final_stages["join"]
             stage.request_id = "child"
+            runtime._final_request_stages["child"] = stage
             stage.generated_tokens, stage.tokens_per_second = 120, 80
             runtime.dispatch_join_prefetch()
         assert issue.call_count == 5  # A decline is not issued; no two-node cap.

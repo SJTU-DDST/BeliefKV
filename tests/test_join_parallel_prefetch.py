@@ -31,6 +31,7 @@ def provisional_fixture(*, signal="eos", **kwargs):
             )
         runtime._semantic_eos_proofs.clear()
         runtime._semantic_finished.clear()
+        runtime._eos_prefetch_keys.clear()
     return runtime, first, second, plans, cache, acknowledge
 
 
@@ -45,6 +46,8 @@ def test_independent_provisional_joins_fill_legal_slots_before_return_or_ack(
     runtime, first, second, plans, cache, _ = provisional_fixture(
         signal=signal, parallel=parallel, overlap=overlap, contexts=contexts,
     )
+    if signal == "work":
+        expected_contexts = 0
     try:
         with patch.object(
             runtime, "inspect_context_h2d_opportunity",

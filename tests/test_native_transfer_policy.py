@@ -381,7 +381,7 @@ def test_completed_prefill_selections_do_not_consume_next_restore_frontier(
 def test_post_forward_restore_budget_observes_current_native_running_batch(current_running):
     runtime, *_ = locked_runtime()
     runtime.enable_final_stage_prefetch = True
-    runtime._final_stages["pending"] = object()
+    runtime._eos_prefetch_keys["pending"] = object()
     runtime._native_cache.req_to_token_pool = NS(available_size=lambda: 6)
     runtime._native_cache.host_pool_group.entry_map["mamba"].host_pool.size_per_token = 64
     runtime._observe_native_admission_capacity(
@@ -418,7 +418,7 @@ def test_post_forward_restore_budget_observes_current_native_running_batch(curre
 def test_post_forward_without_native_batch_preserves_last_observed_capacity():
     runtime, *_ = locked_runtime()
     runtime.enable_final_stage_prefetch = True
-    runtime._final_stages["pending"] = object()
+    runtime._eos_prefetch_keys["pending"] = object()
     runtime._native_cache.req_to_token_pool = NS(available_size=lambda: 6)
     runtime._native_cache.host_pool_group.entry_map["mamba"].host_pool.size_per_token = 64
     runtime._observe_native_admission_capacity(
@@ -2008,13 +2008,15 @@ def test_tool_starts_long_transfer_with_only_one_hundred_ms_remaining():
     runtime.close()
 
 
-def test_join_starts_long_transfer_before_child_return_with_short_remaining_decode():
+def test_join_starts_long_transfer_after_native_eos_before_child_return():
+    import time
     from beliefkv.core.events import RuntimeEventKind
     from tests.test_sglang_v0520_runtime import event
 
     runtime = final_stage_runtime()
     runtime.prefetch_lead_ms = 500.
     child = req("child")
+    child.session_id, child.session_generation = "cs", 1
     child.beliefkv_metadata["context_epoch"] = 1
     runtime.on_events((event(
         7, RuntimeEventKind.LLM_SUBMIT, invocation_id="child",
@@ -2022,6 +2024,11 @@ def test_join_starts_long_transfer_before_child_return_with_short_remaining_deco
         attributes={"request_id": "child"},
     ),))
     runtime.register_visible_request(child)
+    child_key = runtime.visible["child"]
+    runtime._semantic_keys["child"] = child_key
+    runtime._semantic_eos_proofs["child"] = True
+    runtime._semantic_finished["child"] = (time.monotonic() * 1000., 124)
+    runtime._ensure_observed_final_stage(child_key)
     stage = runtime._final_stages["join"]
     stage.generated_tokens = stage.expected_tokens - 4
     stage.tokens_per_second = 40.
@@ -2059,8 +2066,8 @@ def test_join_eta_does_not_treat_a_descheduled_child_as_still_receiving_service(
         assert not runtime._final_stage_service_available(stage)
 
 
-@pytest.mark.parametrize("upper, should_issue", [(400., False), (24., True), (20., False)])
-def test_overtaken_work_center_uses_remaining_upper_or_waits_for_a_new_forecast(
+@pytest.mark.parametrize("upper, should_issue", [(400., False), (24., False), (20., False)])
+def test_overtaken_work_center_never_substitutes_for_native_eos(
     monkeypatch, upper, should_issue,
 ):
     import time
@@ -2101,4 +2108,4 @@ def test_overtaken_work_center_uses_remaining_upper_or_waits_for_a_new_forecast(
         patch.object(runtime, "issue_prefetch_gpu_step", return_value="command") as issue:
         runtime.dispatch_join_prefetch()
     assert bool(issue.call_count) is should_issue
-    assert runtime.counts["semantic_work_forecast_overtaken"] == 1
+    assert runtime.counts["semantic_work_forecast_overtaken"] == 0

@@ -396,7 +396,12 @@ def test_native_pair_freezes_disjoint_108_plus_48_fixed_arrivals(tmp_path, monke
     assert [row["offset_seconds"] for row in plan["arrival_schedule"]] == [0.] * 108 + [3600.] * 48
     assert len({row["instance_id"] for row in plan["arrival_schedule"]}) == 156
     assert not any(plan["policy_configuration"]["native"].values())
-    assert all(plan["policy_configuration"]["predictive_h2d"].values())
+    predictive = plan["policy_configuration"]["predictive_h2d"]
+    assert predictive["control"] and predictive["predictive_h2d"]
+    assert predictive["prepare_host"] and predictive["execution_handoff"]
+    assert predictive["semantic_text_stream"] is False
+    assert plan["join_prefetch_trigger"] == "observed_eos"
+    assert plan["semantic_artifact"] is None
     assert not plan["prepare_host_in_both_arms"]
     assert plan["host_split"] == "80:20"
     assert plan["order"] == ["native", "predictive_h2d"]

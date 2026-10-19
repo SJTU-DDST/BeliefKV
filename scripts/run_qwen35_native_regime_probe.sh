@@ -6,6 +6,7 @@ PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 PORT="${PORT:-18454}"
 ROOT_COUNT="${ROOT_COUNT:-108}"
 SAMPLING_SEED="${SAMPLING_SEED:-21}"
+MAX_COMPLETION_TOKENS="${MAX_COMPLETION_TOKENS:-16384}"
 ARRIVAL_BATCH_SIZE="${ARRIVAL_BATCH_SIZE:-0}"
 ARRIVAL_BATCH_INTERVAL_MS="${ARRIVAL_BATCH_INTERVAL_MS:-0}"
 WORKFLOW_ARRIVAL_SCHEDULE="${WORKFLOW_ARRIVAL_SCHEDULE:-}"
@@ -40,7 +41,6 @@ SEMANTIC_WORK_STATISTIC="${SEMANTIC_WORK_STATISTIC:-upper}"
 EOS_PROTOCOL_WINDOW_MS="${EOS_PROTOCOL_WINDOW_MS:-50}"
 TERMINAL_CACHE_DIAGNOSTICS="${TERMINAL_CACHE_DIAGNOSTICS:-0}"
 PROFILE_SHARED_PATH="${PROFILE_SHARED_PATH:-0}"
-SEMANTIC_REPORT_ARTIFACT="${SEMANTIC_REPORT_ARTIFACT:-$ROOT/experiments/models/child_semantic_work_frozen_phase_20261001_v1/semantic_event_calibrated.json}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_native_regime_${HICACHE_WRITE_POLICY}_${FANOUT_PROFILE}_${HICACHE_SIZE_GB}g_${HOST_SPLIT/:/_}_${ROOT_COUNT}root_v1}"
 MANIFEST="${WORKLOAD_MANIFEST:-$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json}"
 BASE_URL="http://127.0.0.1:$PORT"
@@ -79,6 +79,7 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || { (( ARRIVAL_BATCH_SIZE > 0 )) && (( ARRIVAL_BATCH_INTERVAL_MS == 0 )); } \
   || { [[ "$ARRIVAL_BATCH_SIZE" == "0" ]] && [[ "$ARRIVAL_BATCH_INTERVAL_MS" != "0" ]]; } \
   || [[ ! "$SAMPLING_SEED" =~ ^[0-9]+$ ]] \
+  || [[ ! "$MAX_COMPLETION_TOKENS" =~ ^[1-9][0-9]*$ ]] \
   || [[ ! "$HICACHE_SIZE_GB" =~ ^(0|[1-9][0-9]{0,2})$ ]] \
   || (( HICACHE_SIZE_GB > 200 )) \
   || { [[ "$HICACHE_SIZE_GB" == "0" ]] && [[ "$NATIVE_POLICY_BASELINE" != "1" || "$AB_MODE" != "off" ]]; } \
@@ -100,7 +101,6 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || [[ "$SEMANTIC_WORK_STATISTIC" != upper && "$SEMANTIC_WORK_STATISTIC" != center ]] \
   || [[ ! "$EOS_PROTOCOL_WINDOW_MS" =~ ^[0-9]+$ ]] || (( EOS_PROTOCOL_WINDOW_MS < 50 || EOS_PROTOCOL_WINDOW_MS > 500 )) \
   || [[ "$AB_MODE" != "off" && "$CONFIRMED_JOIN_CANARY" != "0" ]] \
-  || [[ "$AB_MODE" == "predictive_h2d" && ! -f "$SEMANTIC_REPORT_ARTIFACT" ]] \
   || [[ "$CONFIRMED_JOIN_CANARY" == "1" && "$SGLANG_PATCH_FLAVOR" != "writeback_prepare" ]] \
   || { [[ "$HOST_SPLIT" != auto ]] \
     && { [[ ! "$HOST_SPLIT" =~ ^([1-9][0-9]?):([1-9][0-9]?)$ ]] \
@@ -197,12 +197,11 @@ if [[ "$AB_MODE" != "off" ]]; then
     ab_env+=(BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH=0 BELIEFKV_ENABLE_TOOL_PREFETCH=0
       BELIEFKV_ENABLE_EXECUTION_HANDOFF=0 BELIEFKV_H2D_OPPORTUNITY_SAMPLING=0)
   else
-    export BELIEFKV_EMIT_SEMANTIC_TEXT=1
+    export BELIEFKV_EMIT_SEMANTIC_TEXT=0
     ab_env+=(BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH=1 \
       BELIEFKV_H2D_OPPORTUNITY_SAMPLING="$H2D_OPPORTUNITY_SAMPLING" \
       BELIEFKV_ENABLE_EXECUTION_HANDOFF="$EXECUTION_HANDOFF" \
-      BELIEFKV_ENABLE_TOOL_PREFETCH="$ENABLE_TOOL_TIMING" \
-      BELIEFKV_SEMANTIC_REPORT_ARTIFACT="$SEMANTIC_REPORT_ARTIFACT")
+      BELIEFKV_ENABLE_TOOL_PREFETCH="$ENABLE_TOOL_TIMING")
     if [[ -f "$H2D_SEED_ARTIFACT" ]]; then
       ab_env+=(BELIEFKV_H2D_SEED="$H2D_SEED_ARTIFACT" \
         BELIEFKV_H2D_SEED_SHA256="$(sha256sum "$H2D_SEED_ARTIFACT" | cut -d' ' -f1)")
@@ -266,7 +265,7 @@ setsid "$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
   --server-audit "$RUN_ROOT/server/runtime_audit.jsonl" \
   --server-events "$RUN_ROOT/server/runtime_events.sglang.jsonl" \
   --server-log "$RUN_ROOT/server.log" --pool-tokens 1798995 \
-  --model-context-tokens 131072 --max-completion-tokens 8192 \
+  --model-context-tokens 131072 --max-completion-tokens "$MAX_COMPLETION_TOKENS" \
   --sampling-seed "$SAMPLING_SEED" --recursion-limit 2048 \
   --sandbox-command-timeout 180 \
   --activation-wall-clock-seconds "${ACTIVATION_WALL_CLOCK_SECONDS:-14400}" \

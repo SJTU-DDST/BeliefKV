@@ -363,6 +363,168 @@ def phase_statistics(rows: list[dict]) -> dict:
     }
 
 
+def workload_tail_cutoff(workflows: list[dict], *, minimum_active: int) -> float:
+    """Use workload depletion after the last arrival, never measured GPU speed."""
+    if minimum_active <= 0 or not workflows:
+        raise ValueError("tail cutoff requires workflows and a positive active threshold")
+    last_arrival = max(row["start_seconds"] for row in workflows)
+    if any(row["end_seconds"] < row["start_seconds"] for row in workflows):
+        raise ValueError("workflow terminal time precedes its arrival")
+    terminals = Counter(row["end_seconds"] for row in workflows)
+    active = sum(count for end, count in terminals.items() if end > last_arrival)
+    if active < minimum_active:
+        raise ValueError("insufficient active workflows after the final arrival")
+    for end, count in sorted(terminals.items()):
+        if end <= last_arrival:
+            continue
+        active -= count
+        if active < minimum_active:
+            return end
+    raise ValueError("no observed workload tail boundary")
+
+
+def restricted_workflow_jct(workflows: list[dict], *, cutoff_seconds: float) -> dict:
+    """Count failures and unfinished work as incomplete at the common cutoff."""
+    if not math.isfinite(cutoff_seconds) or cutoff_seconds <= 0:
+        raise ValueError("restricted JCT requires a positive finite cutoff")
+    rows = []
+    for row in workflows:
+        start, end = row["start_seconds"], row["end_seconds"]
+        if (
+            not all(math.isfinite(value) for value in (start, end))
+            or end < start
+        ):
+            raise ValueError("invalid workflow observation interval")
+        if start >= cutoff_seconds:
+            continue
+        completed = row["outcome"] == "completed" and end <= cutoff_seconds
+        rows.append({
+            **row,
+            "completed_by_cutoff": completed,
+            "restricted_jct_seconds": (end if completed else cutoff_seconds) - start,
+            "terminal_by_cutoff": end <= cutoff_seconds,
+        })
+    values = [row["restricted_jct_seconds"] for row in rows]
+    return {
+        "cutoff_seconds": cutoff_seconds,
+        "arrived_workflows": len(rows),
+        "completed_by_cutoff": sum(row["completed_by_cutoff"] for row in rows),
+        "incomplete_at_cutoff": sum(not row["completed_by_cutoff"] for row in rows),
+        "failed_or_incomplete_terminal_by_cutoff": sum(
+            row["terminal_by_cutoff"] and row["outcome"] != "completed" for row in rows
+        ),
+        "mean_restricted_time_to_completion_seconds": mean(values) if values else None,
+        "p50_restricted_time_to_completion_seconds": percentile(values, .5),
+        "p95_restricted_time_to_completion_seconds": percentile(values, .95),
+        "original_outcomes": dict(Counter(row["outcome"] for row in workflows)),
+        "rows": rows,
+        "semantics": (
+            "Same collection-time cutoff in both arms. Successful completion time "
+            "is clipped at the cutoff; failed, incomplete and still-running tasks "
+            "remain incomplete through that cutoff. Later arrivals have shorter "
+            "follow-up. This is restricted completion latency, not full-run JCT, "
+            "a Kaplan-Meier estimate, or a completed-only mean."
+        ),
+    }
+
+
+def workflow_completion_observations(arm: Path, timeline_path: Path) -> list[dict]:
+    with gzip.open(timeline_path, "rt") as stream:
+        timeline = json.load(stream)
+    anchor_ms, _ = aligned_native_clock(
+        timeline["summary"]["clock_alignment"], anchor_text=timeline["start_anchor"],
+    )
+    sample = next(
+        row for row in records(arm / "server/runtime_audit.jsonl")
+        if row.get("event") == "gpu_service_sample"
+    )
+    offset = sample["complete_ts_ms"] - sample["complete_monotonic_ms"]
+    client = next(arm.glob("client_*/summary.json"))
+    outcomes = {
+        row["instance_id"]: row for row in json.loads(client.read_text())["workflows"]
+    }
+    observations = []
+    for path in sorted((client.parent / "workflows").glob("*/runtime_events.deepagents.jsonl")):
+        start = end = None
+        with path.open("rb") as stream:
+            for line in stream:
+                if b'"workflow_start"' not in line and b'"workflow_end"' not in line:
+                    continue
+                row = json.loads(line)
+                if row["kind"] == "workflow_start":
+                    start = (row["ts_ms"] + offset - anchor_ms) / 1000.
+                elif row["kind"] == "workflow_end":
+                    end = (row["ts_ms"] + offset - anchor_ms) / 1000.
+        if start is None or end is None:
+            raise ValueError(f"missing terminal workflow clock: {path}")
+        outcome = outcomes[path.parent.name]
+        observations.append({
+            "instance_id": path.parent.name, "start_seconds": start, "end_seconds": end,
+            **{field: outcome.get(field) for field in (
+                "outcome", "measurement_valid", "system_jct_eligible",
+                "native_agent_jct_eligible", "task_correctness_valid",
+            )},
+        })
+    if {row["instance_id"] for row in observations} != set(outcomes):
+        raise ValueError("workflow clock observations do not match terminal outcomes")
+    return observations
+
+
+def tail_excluded_comparison(
+    arms: dict[str, str], timelines: dict[str, str], *,
+    minimum_active: int, warmup_seconds: float,
+) -> dict:
+    observations = {
+        name: workflow_completion_observations(Path(path), Path(timelines[name]))
+        for name, path in arms.items()
+    }
+    boundaries = {
+        name: workload_tail_cutoff(rows, minimum_active=minimum_active)
+        for name, rows in observations.items()
+    }
+    cutoff = min(boundaries.values())
+    if not math.isfinite(warmup_seconds) or not 0 <= warmup_seconds < cutoff:
+        raise ValueError("warmup must end before the common workload tail cutoff")
+    runs = {}
+    for name, path in arms.items():
+        with gzip.open(timelines[name], "rt") as stream:
+            clock = json.load(stream)["summary"]["clock_alignment"]
+        busy = busy_window_statistics(
+            Path(path), [(warmup_seconds, cutoff)],
+            gpu_timezone=clock["gpu_timezone"],
+        )
+        restricted = restricted_workflow_jct(observations[name], cutoff_seconds=cutoff)
+        runs[name] = {
+            "sustained_load": busy,
+            "restricted_jct": restricted,
+            "tail": {
+                "start_seconds": cutoff,
+                "end_seconds": max(row["end_seconds"] for row in observations[name]),
+                "workflows_successfully_completed_in_tail": [
+                    row["instance_id"] for row in observations[name]
+                    if row["outcome"] == "completed" and row["end_seconds"] > cutoff
+                ],
+            },
+        }
+    return {
+        "primary": True,
+        "scope": "common workload window; descriptive live trajectories, not causal speedup",
+        "policy": {
+            "rule": (
+                "In each arm, after its final workflow arrival, find the first "
+                "terminal event leaving fewer than minimum_active workflows. "
+                "Use the earlier arm boundary for both arms; never choose a "
+                "boundary from GPU utilization, throughput or JCT advantage."
+            ),
+            "minimum_active": minimum_active,
+            "warmup_seconds": warmup_seconds,
+            "individual_tail_boundaries_seconds": boundaries,
+            "common_cutoff_seconds": cutoff,
+        },
+        "runs": runs,
+    }
+
+
 def last_runtime_state(path: Path) -> dict:
     if not path.exists():
         return {}
@@ -995,6 +1157,9 @@ def main() -> None:
         help="NAME=IANA_ZONE for --busy-window; completed comparisons use each timeline's clock evidence.",
     )
     parser.add_argument("--bin-seconds", type=int, default=600)
+    parser.add_argument("--exclude-workload-tail", action="store_true")
+    parser.add_argument("--tail-active-workflows", type=int, default=48)
+    parser.add_argument("--warmup-seconds", type=float, default=600.)
     parser.add_argument("--native-reference-run", type=Path)
     parser.add_argument(
         "--native-reference-cache", type=Path,
@@ -1016,6 +1181,8 @@ def main() -> None:
     if args.native_reference_cache is not None and args.native_reference_run is None:
         parser.error("--native-reference-cache requires --native-reference-run")
     if args.busy_window:
+        if args.exclude_workload_tail:
+            parser.error("tail exclusion requires completed arms and timelines")
         if args.native_reference_cache is not None:
             parser.error("--native-reference-cache applies to completed comparisons")
         windows = [tuple(float(value) for value in window.split(":")) for window in args.busy_window]
@@ -1093,6 +1260,12 @@ def main() -> None:
         }
         for left, right in combinations(arms, 2)
     }
+    if args.exclude_workload_tail:
+        report["tail_excluded_primary_comparison"] = tail_excluded_comparison(
+            arms, timelines, minimum_active=args.tail_active_workflows,
+            warmup_seconds=args.warmup_seconds,
+        )
+        report["full_run_metrics_role"] = "background; workload tails excluded from primary comparison"
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n")
     print(f"Saved {args.output}")

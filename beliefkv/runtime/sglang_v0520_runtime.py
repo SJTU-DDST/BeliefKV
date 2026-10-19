@@ -80,7 +80,7 @@ from beliefkv.runtime.sglang_v0520_observer import (
 )
 from beliefkv.predictor.structured_frontier import LocalFrontierFeatures
 from beliefkv.runtime.semantic_report_worker import (
-    SEMANTIC_TEXT, SemanticReportInput, SemanticReportReply, SemanticReportWorker,
+    SEMANTIC_TEXT, SemanticReportInput, SemanticReportReply,
 )
 from beliefkv.runtime.clock_evidence import (
     SEMANTIC_FRAME_INTERVAL_MS,
@@ -513,18 +513,10 @@ class NativeAdmissionRuntime:
         if sampling_setting not in ("0", "1"):
             raise ValueError("H2D opportunity sampling setting must be 0 or 1")
         self.enable_h2d_opportunity_sampling = sampling_setting == "1"
-        semantic_artifact = os.environ.get("BELIEFKV_SEMANTIC_REPORT_ARTIFACT")
+        self.join_prefetch_trigger = "observed_eos"
         self._semantic_worker = None
         self._semantic_score_threshold = .5
-        if semantic_artifact:
-            report = json.loads(
-                (Path(semantic_artifact).resolve().parent / "report.json").read_text()
-            )
-            threshold = report["calibration"]["semantic_event"]["request_operating_point"]["threshold"]
-            if type(threshold) not in (int, float) or not 0 <= threshold <= 1:
-                raise ValueError("semantic H2D needs the frozen calibration operating point")
-            self._semantic_score_threshold = float(threshold)
-            self._semantic_worker = SemanticReportWorker(semantic_artifact)
+        self._eos_prefetch_keys: dict[str, PrefillCandidateKey] = {}
         self._semantic_progress: dict[str, deque[tuple[float, int]]] = {}
         self._semantic_keys: dict[str, PrefillCandidateKey] = {}
         self._semantic_frames: dict[str, RuntimeEvent] = {}
@@ -859,7 +851,7 @@ class NativeAdmissionRuntime:
             or self._join_inflight_tickets
             or (
                 (self.enable_final_stage_prefetch or self.enable_admission_prefetch)
-                and (self._final_stages or self._semantic_eos_proofs)
+                and self._eos_prefetch_keys
             )
         ):
             self.dispatch_join_prefetch()
@@ -1466,6 +1458,7 @@ class NativeAdmissionRuntime:
                 self._semantic_body_seen.discard(rid)
                 self._semantic_normal_stops.discard(rid)
                 self._semantic_eos_proofs.pop(rid, None)
+                self._eos_prefetch_keys.pop(rid, None)
                 self._semantic_submit_ms.pop(rid, None)
                 self._semantic_submitted_frames.pop(rid, None)
                 self._decoded_tool_requests.discard(rid)
@@ -1565,6 +1558,7 @@ class NativeAdmissionRuntime:
         now_ms = time.monotonic() * 1000
         if not self._observed_final_eos_live(key, now_ms):
             return
+        self._eos_prefetch_keys[key.request_id] = key
         parent = self._semantic_parent(key.invocation_id)
         if parent is None:
             return
@@ -1820,8 +1814,6 @@ class NativeAdmissionRuntime:
         now_ms = time.monotonic() * 1000
         if self._terminal_child_reclaims and now_ms >= self._terminal_child_reclaim_next_ms:
             self._retry_terminal_child_reclaims(now_ms=now_ms)
-        if self._semantic_worker is not None:
-            self._poll_semantic_reports(now_ms)
         self._maintain_prediction_state(now_ms)
         if self._model_worker is not None:
             hints = self._model_worker.poll()
@@ -1832,29 +1824,7 @@ class NativeAdmissionRuntime:
                 if isinstance(hint, NativeJoinWaitHint):
                     if self._live_join_hint(hint):
                         self.join_wait_hint = hint
-                        ticket = self._join_ticket
-                        if ticket is not None and self._live_join_ticket() and (
-                            ticket.phase in ("provisional", "confirmed")
-                            or ticket.command_id is not None
-                        ):
-                            self.counts["join_wait_ticket_preserved"] += 1
-                            self.counts["join_wait_accepted"] += 1
-                            continue
-                        if ticket is None or (
-                            ticket.key, ticket.join_id
-                        ) != (hint.key, hint.join_id):
-                            if ticket is None or not self._live_join_ticket():
-                                self._join_ticket = _JoinPrefetchTicket(
-                                    hint.key, hint.join_id, hint.join_mode,
-                                    hint.member_ids, "probabilistic",
-                                    hint.expires_monotonic_ms / 1000,
-                                    issued_nodes=self._issued_join_nodes(
-                                        hint.join_id, hint.key,
-                                    ),
-                                )
-                        self.counts["join_wait_accepted"] += 1
-                    else:
-                        self.counts["join_wait_result_stale"] += 1
+                    self.counts["join_work_forecast_ignored"] += 1
                     continue
                 if (
                     hint.predictor_sha256 == self.predictor_sha256
@@ -2055,6 +2025,7 @@ class NativeAdmissionRuntime:
                     for lease in self._prefetch_service_leases.values()
                 ),
                 "semantic_worker_configured": self._semantic_worker is not None,
+                "join_prefetch_trigger": self.join_prefetch_trigger,
                 "semantic_worker_error": (
                     self._semantic_worker.error if self._semantic_worker else ""
                 ),
@@ -2696,41 +2667,18 @@ class NativeAdmissionRuntime:
             if notice is not None:
                 self._activate_child_report_stage(key, child_id, notice)
             return
-        if join_id in self._final_stages:
-            # The explicit stage is governed by service progress, not a
-            # second, unconditional two-second completion-intent lease.
-            return
-        ticket = self._join_inflight_tickets.get(join_id) or self._join_ticket
-        if ticket is None or (ticket.key, ticket.join_id) != (key, join_id):
-            ticket = _JoinPrefetchTicket(
-                key, join_id, join.mode.value,
-                tuple(sorted(join.member_invocation_ids)),
-                "provisional", time.monotonic() + 2.0,
-                issued_nodes=self._issued_join_nodes(join_id, key),
-            )
-            self._join_ticket = ticket
-        else:
-            ticket.phase = "provisional"
-            ticket.expires_at = time.monotonic() + 2.0
-        self.counts["join_intent_accepted"] += 1
-        self.counts[f"join_intent_{signal_kind}_accepted"] += 1
-        age_ms = time.monotonic() * 1000 - event.ts_ms
-        if age_ms >= 0:
-            for limit in (50, 100, 250, 500):
-                if age_ms <= limit:
-                    self.counts[f"join_intent_delivery_le_{limit}ms"] += 1
-            if age_ms > 500:
-                self.counts["join_intent_delivery_over_500ms"] += 1
-        if (
-            self.completion_lead is not None
-            and 0 <= age_ms <= self.completion_lead.p90_ms
-        ):
-            self._completion_hints[join_id] = _CompletionReentryHint(
-                key, join_id, child_id, context.epoch, event.ts_ms
-            )
-            self.counts["join_completion_forecast_accepted"] += 1
-        elif self.completion_lead is not None:
-            self.counts["join_completion_forecast_too_late"] += 1
+        # A notification can describe intent, but only native EOS permits a
+        # provisional JOIN transfer. Confirmed RETURN recovery is independent.
+        self.counts["join_intent_waiting_for_native_eos"] += 1
+        if self.completion_lead is not None:
+            age_ms = time.monotonic() * 1000 - event.ts_ms
+            if 0 <= age_ms <= self.completion_lead.p90_ms:
+                self._completion_hints[join_id] = _CompletionReentryHint(
+                    key, join_id, child_id, context.epoch, event.ts_ms,
+                )
+                self.counts["join_completion_forecast_accepted"] += 1
+            else:
+                self.counts["join_completion_forecast_too_late"] += 1
 
     def _clear_final_stage(self, join_id: str) -> None:
         stage = self._final_stages.pop(join_id, None)
@@ -2816,7 +2764,7 @@ class NativeAdmissionRuntime:
     def _roll_final_stage(self) -> SessionH2DOpportunity | None:
         if not (
             self.enable_final_stage_prefetch or self.enable_admission_prefetch
-        ) or self.physical_disabled:
+        ) or self.physical_disabled or not self._eos_prefetch_keys:
             return
         enough_service = len(self._h2d_samples) >= 3
         if not enough_service:
@@ -2833,109 +2781,29 @@ class NativeAdmissionRuntime:
             return
         if self._join_ticket is not None and self._live_join_ticket():
             return
-        for rid, valid in tuple(self._semantic_eos_proofs.items()):
-            if valid and (key := self._semantic_keys.get(rid)) is not None:
-                self._ensure_observed_final_stage(key)
-        batch = self._native_running_batch
-        running_ids = (
-            {getattr(req, "rid", None) for req in getattr(batch, "reqs", ())}
-            if batch is not None and self._final_stages else None
-        )
-        for stage in tuple(self._final_stages.values()):
-            observed_eos = self._semantic_eos_proofs.get(stage.request_id) is True
-            if stage.request_id is None or (
-                not observed_eos and not self._final_stage_service_available(
-                    stage, running_ids=running_ids,
-                )
-            ):
-                self.counts["final_stage_service_filter_skipped"] += 1
+        now_ms = time.monotonic() * 1000
+        for rid, child_key in tuple(self._eos_prefetch_keys.items()):
+            if not self._observed_final_eos_live(child_key, now_ms):
+                self._eos_prefetch_keys.pop(rid, None)
+                continue
+            self._ensure_observed_final_stage(child_key)
+            stage = self._final_request_stages.get(rid)
+            if stage is None:
                 continue
             if stage.join_id in self._join_inflight_tickets:
                 continue
             if not self._live_final_stage(stage):
                 continue
-            if self._semantic_worker is not None:
-                progress = self._semantic_progress.get(stage.request_id, ())
-                if progress:
-                    stage.generated_tokens = progress[-1][1]
-                    stage.tokens_per_second = self._semantic_rate(stage.request_id)
-            if not observed_eos and (
-                stage.generated_tokens < 16 or stage.tokens_per_second is None
-            ):
-                continue
-            child_key = self.visible.get(stage.request_id) or self._semantic_keys.get(stage.request_id)
             if (
                 child_key is None or child_key.invocation_id != stage.child_id
                 or child_key.context_epoch != stage.child_epoch
             ):
                 continue
-            forecast = None
-            trigger_kind = "estimated_work"
-            effective_work_statistic = self.semantic_work_statistic
-            if self._semantic_worker is not None and observed_eos:
-                now_ms = time.monotonic() * 1000
-                if not self._observed_final_eos_live(child_key, now_ms):
-                    self.counts["semantic_eos_evidence_window_expired"] += 1
-                    continue
-                remaining, remaining_ms = 0., 0.
-                trigger_kind = "observed_no_tool_eos"
-                self.counts["observed_eos_h2d_candidate"] += 1
-            elif self._semantic_worker is not None:
-                if self._semantic_eos_proofs.get(stage.request_id) is False:
-                    self.counts["semantic_finish_without_valid_body_skipped"] += 1
-                    continue
-                now_ms = time.monotonic() * 1000
-                forecast = self._live_final_stage_forecast(stage, now_ms)
-                if forecast is None:
-                    self.counts["semantic_latest_start_no_live_forecast"] += 1
-                    continue
-                progress = self._semantic_progress.get(stage.request_id, ())
-                generated = progress[-1][1] if progress else stage.generated_tokens
-                remaining = max(
-                    0., forecast.middle_tokens
-                    - max(0, generated - forecast.observation.observed_output_tokens),
-                )
-                if stage.request_id not in self._semantic_finished:
-                    # Notice prose can still end in announce_completion_intent.
-                    # Unannounced children retain the no-tool native EOS path.
-                    if not forecast.observation.notice_active:
-                        self.counts["semantic_pre_eos_phase_unconfirmed"] += 1
-                        continue
-                    projection = self._remaining_semantic_work(forecast, generated)
-                    if projection is None or projection[1] != self.semantic_work_statistic:
-                        self.counts["semantic_work_forecast_overtaken"] += 1
-                    if projection is None:
-                        continue
-                    remaining, effective_work_statistic = projection
-                    if effective_work_statistic == "upper_after_center_overrun":
-                        self.counts["semantic_work_overrun_uses_live_upper"] += 1
-                    remaining = max(1., remaining)
-                    self.counts[
-                        "semantic_pre_eos_uses_work_upper_bound"
-                        if effective_work_statistic != "center"
-                        else "semantic_pre_eos_uses_work_center"
-                    ] += 1
-                # EOS is known GPU progress, not confirmation that the child RETURNed.
-                if stage.request_id in self._semantic_finished:
-                    ended_ms = self._semantic_finished[stage.request_id][0]
-                    if now_ms - ended_ms > self.eos_protocol_window_ms:
-                        self.counts["semantic_eos_protocol_window_expired"] += 1
-                        continue
-                    remaining = 0.
-                remaining_ms = remaining * 1000 / stage.tokens_per_second
-            else:
-                remaining = stage.expected_tokens - stage.generated_tokens
-                if remaining < 4:
-                    continue
-                remaining_ms = remaining * 1000 / stage.tokens_per_second
-            if remaining_ms > self.prefetch_lead_ms:
-                if self._semantic_worker is not None:
-                    self.counts["semantic_h2d_too_early"] += 1
-                continue
+            remaining_ms = 0.
+            self.counts["observed_eos_h2d_candidate"] += 1
             observation = self._wait_prefetch_opportunity(stage.key)
             if observation is None or observation.step is None:
-                if self._semantic_worker is not None:
-                    self.counts["semantic_h2d_no_host_target"] += 1
+                self.counts["observed_eos_no_host_target"] += 1
                 self._record_wait_prefetch_plan(
                     "join_ticket", stage.key, observation,
                     reason="no_restore_plan", remaining_ms=remaining_ms,
@@ -2974,7 +2842,6 @@ class NativeAdmissionRuntime:
             window = transfer_start_window(
                 estimate, max_lead_ms=self.prefetch_lead_ms,
                 observation_spacing_ms=SEMANTIC_FRAME_INTERVAL_MS,
-                prediction_early_ms=self._join_work_prediction_early_ms(stage.key),
                 minimum_advance_ms=self.join_prefetch_min_advance_ms,
             )
             if window is None:
@@ -2982,14 +2849,6 @@ class NativeAdmissionRuntime:
                 self._record_wait_prefetch_plan(
                     "join_ticket", stage.key, observation,
                     reason="service_exceeds_lead", remaining_ms=remaining_ms,
-                )
-                continue
-            if remaining_ms > window.horizon_ms:
-                if self._semantic_worker is not None:
-                    self.counts["semantic_h2d_not_latest_start"] += 1
-                self._record_wait_prefetch_plan(
-                    "join_ticket", stage.key, observation,
-                    reason="before_start_window", remaining_ms=remaining_ms, window=window,
                 )
                 continue
             if not self._prefetch_slot_available(
@@ -3014,7 +2873,6 @@ class NativeAdmissionRuntime:
                 "provisional", min(stage.expires_at, time.monotonic() + 2.0),
                 issued_nodes=self._issued_join_nodes(stage.join_id, stage.key),
                 stage_bound=True,
-                work_endpoint_tokens=stage.generated_tokens + remaining,
             )
             self.counts["final_stage_latest_start"] += 1
             if self._opportunity_writer is not None:
@@ -3027,32 +2885,8 @@ class NativeAdmissionRuntime:
                     "generated_tokens": stage.generated_tokens,
                     "expected_tokens": stage.expected_tokens,
                     "remaining_ms": remaining_ms,
-                    "trigger_kind": trigger_kind,
-                    "work_statistic": self.semantic_work_statistic,
-                    "effective_work_statistic": effective_work_statistic,
-                    "forecast_center_tokens": (
-                        forecast.middle_tokens if forecast is not None else None
-                    ),
-                    "forecast_lower_tokens": (
-                        forecast.lower_tokens if forecast is not None else None
-                    ),
-                    "forecast_upper_tokens": (
-                        forecast.upper_tokens if forecast is not None else None
-                    ),
-                    "forecast_observed_output_tokens": (
-                        forecast.observation.observed_output_tokens
-                        if forecast is not None else None
-                    ),
-                    "forecast_observation_age_ms": (
-                        now_ms - forecast.observation.observed_ts_ms
-                        if forecast is not None else None
-                    ),
-                    "advanced_since_forecast_tokens": (
-                        max(0, stage.generated_tokens - forecast.observation.observed_output_tokens)
-                        if forecast is not None else None
-                    ),
-                    "projected_remaining_tokens": remaining,
-                    "tokens_per_second": stage.tokens_per_second,
+                    "trigger_kind": "observed_no_tool_eos",
+                    "native_eos_age_ms": now_ms - self._semantic_finished[rid][0],
                     "h2d_ms": window.service_ms,
                     "enqueue_to_submit_p90_ms": window.enqueue_ms,
                     "prediction_early_ms": window.prediction_early_ms,
@@ -3506,6 +3340,9 @@ class NativeAdmissionRuntime:
             self.enable_confirmed_join_canary and ticket.issued_nodes >= 1
             or self._wait_prefetch_transfer_busy(ticket.key)
         ):
+            return
+        if ticket.phase != "confirmed" and not self._join_ticket_has_native_eos(ticket):
+            self._discard_join_ticket("native_eos_required")
             return
         if ticket.phase == "probabilistic":
             hint = self.join_wait_hints.get(ticket.join_id)
@@ -4846,6 +4683,16 @@ class NativeAdmissionRuntime:
             "scope": "bounded reusable checkpoint plan; not a reservation or oracle",
         })
 
+    def _join_ticket_has_native_eos(self, ticket: _JoinPrefetchTicket) -> bool:
+        stage = self._final_stages.get(ticket.join_id)
+        child_key = (
+            self._eos_prefetch_keys.get(stage.request_id)
+            if stage is not None and ticket.stage_bound and ticket.key == stage.key else None
+        )
+        return child_key is not None and self._observed_final_eos_live(
+            child_key, time.monotonic() * 1000.,
+        )
+
     def _wait_prefetch_timing_valid(
         self, key: PrefillCandidateKey, opportunity: SessionH2DOpportunity, source: str,
         *, service_shape: _WaitPrefetchServiceShape | None = None,
@@ -4853,6 +4700,13 @@ class NativeAdmissionRuntime:
         ticket = self._join_ticket if source == "join_ticket" else self._tool_ticket
         if source == "join_ticket" and ticket is not None and ticket.phase == "confirmed":
             return True
+        if source == "join_ticket":
+            if (
+                ticket is None or ticket.key != key
+                or not self._join_ticket_has_native_eos(ticket)
+            ):
+                self.counts["join_prefetch_requires_native_eos"] += 1
+                return False
         window = (
             self._h2d_start_window(opportunity, service_shape=service_shape)
             if service_shape is not None else self._h2d_start_window(opportunity)
@@ -4864,56 +4718,8 @@ class NativeAdmissionRuntime:
                 remaining = self._tool_prefetch_remaining(
                     hint, .5, now_ms=time.monotonic() * 1000.,
                 )
-        elif window is not None and ticket is not None:
-            if ticket.phase == "probabilistic":
-                hint = self.join_wait_hints.get(ticket.join_id)
-                if hint is not None and self._live_join_hint(hint):
-                    remaining = max(
-                        0., hint.wait_p10_ms - (
-                            time.monotonic() * 1000. - hint.issued_monotonic_ms
-                        ),
-                    )
-            elif ticket.stage_bound and (
-                stage := self._final_stages.get(ticket.join_id)
-            ) is not None:
-                rid = stage.request_id
-                if self._semantic_eos_proofs.get(rid) is True:
-                    child_key = self.visible.get(rid) or self._semantic_keys.get(rid)
-                    if child_key is not None and self._observed_final_eos_live(
-                        child_key, time.monotonic() * 1000.,
-                    ):
-                        remaining = 0.
-                elif self._final_stage_service_available(stage):
-                    progress = self._semantic_progress.get(rid, ())
-                    generated = progress[-1][1] if progress else stage.generated_tokens
-                    rate = self._semantic_rate(rid) if progress else stage.tokens_per_second
-                    endpoint = ticket.work_endpoint_tokens
-                    if self._semantic_worker is not None:
-                        forecast = self._live_final_stage_forecast(
-                            stage, time.monotonic() * 1000.,
-                        )
-                        projection = (
-                            self._remaining_semantic_work(forecast, generated)
-                            if forecast is not None and forecast.observation.notice_active
-                            and self._semantic_eos_proofs.get(rid) is not False else None
-                        )
-                        # The selected endpoint is provisional: delivered forecasts
-                        # may move it in either direction before a physical enqueue.
-                        endpoint = (
-                            generated + max(1., projection[0])
-                            if projection is not None else None
-                        )
-                        if endpoint != ticket.work_endpoint_tokens:
-                            self.counts[
-                                "join_work_endpoint_refreshed" if endpoint is not None
-                                else "join_work_endpoint_invalidated"
-                            ] += 1
-                            ticket.work_endpoint_tokens = endpoint
-                    if endpoint is not None and endpoint > generated and rate is not None and rate > 0:
-                        remaining = (endpoint - generated) * 1000. / rate
-            else:
-                # Legacy completion notification tickets have no work forecast.
-                return True
+        elif window is not None and source == "join_ticket":
+            remaining = 0.
         valid = window is not None and remaining is not None and remaining <= window.horizon_ms
         if not valid:
             self.counts["wait_prefetch_batch_timing_changed"] += 1
@@ -6466,8 +6272,6 @@ class NativeAdmissionRuntime:
             center = self._tool_prefetch_remaining(hint, .5, now_ms=now_ms)
             if lower is not None and center is not None:
                 prediction_early_ms = max(0., center - lower)
-        elif opportunity.step is not None:
-            prediction_early_ms = self._join_work_prediction_early_ms(opportunity.step.key)
         window = transfer_start_window(
             estimate, max_lead_ms=self.prefetch_lead_ms,
             observation_spacing_ms=SEMANTIC_FRAME_INTERVAL_MS,
@@ -6487,34 +6291,6 @@ class NativeAdmissionRuntime:
             )
             if window is not None and ceiling_bytes is not None else window
         )
-
-    def _join_work_prediction_early_ms(self, key: PrefillCandidateKey) -> float:
-        """Use the live work interval for selection and the final enqueue check."""
-        invocation = self.graph.invocations.get(key.invocation_id)
-        stage = self._final_stages.get(invocation.join_id) if invocation is not None else None
-        if stage is None or stage.key != key or self._semantic_worker is None:
-            return 0.
-        rid = stage.request_id
-        now_ms = time.monotonic() * 1000.
-        forecast = self._live_final_stage_forecast(stage, now_ms)
-        if (
-            forecast is None
-            or not forecast.observation.notice_active
-            or rid in self._semantic_finished
-            or self._semantic_eos_proofs.get(rid) is False
-        ):
-            return 0.
-        progress = self._semantic_progress.get(rid, ())
-        generated = progress[-1][1] if progress else stage.generated_tokens
-        rate = self._semantic_rate(rid) if progress else stage.tokens_per_second
-        if rate is None or rate <= 0:
-            return 0.
-        projection = self._remaining_semantic_work(forecast, generated)
-        if projection is None:
-            return 0.
-        advanced = max(0., generated - forecast.observation.observed_output_tokens)
-        lower = max(0., forecast.lower_tokens - advanced)
-        return max(0., projection[0] - lower) * 1000. / rate
 
     @timed_runtime("tool_prefetch")
     def dispatch_tool_prefetch(self) -> None:
@@ -9590,7 +9366,10 @@ class NativeAdmissionRuntime:
                             self._release_prefetch_service_lease(
                                 command, "first_gpu_service", request=req,
                             )
-            if self._semantic_worker is not None:
+            if (
+                (self.enable_final_stage_prefetch or self.enable_admission_prefetch)
+                and visible_key is not None and req.finished()
+            ):
                 key = visible_key
                 metadata = getattr(req, "beliefkv_metadata", None)
                 if (
@@ -9606,26 +9385,10 @@ class NativeAdmissionRuntime:
                         and invocation.context_id == key.context_id
                     ):
                         key = None
-                if key is not None and key.request_id in self._decoded_tool_requests:
-                    # A tool marker rules out a natural RETURN for this request.
-                    if req.finished():
-                        self._semantic_finished[key.request_id] = (
-                            time.monotonic() * 1000,
-                            len(getattr(req, "output_ids", ()) or ()),
-                        )
-                        self._semantic_eos_proofs[key.request_id] = False
-                    key = None
                 if key is not None:
                     self._semantic_keys[key.request_id] = key
-                    history = self._semantic_progress.get(key.request_id)
-                    if history is None:
-                        history = deque(maxlen=128)
-                        self._semantic_progress[key.request_id] = history
-                    tokens = len(getattr(req, "output_ids", ()) or ())
-                    start = self._decoded_scan_positions.get(key.request_id, 0)
                     outputs = getattr(req, "output_ids", ()) or ()
-                    self._decoded_scan_positions[key.request_id] = len(outputs)
-                    if any(token in self._tool_open_token_ids for token in outputs[start:]):
+                    if any(token in self._tool_open_token_ids for token in outputs):
                         self._child_report_notices.pop(key.invocation_id, None)
                         self._decoded_tool_requests.add(key.request_id)
                         self._semantic_forecasts.pop(key.request_id, None)
@@ -9634,35 +9397,10 @@ class NativeAdmissionRuntime:
                             if active.child_id == key.invocation_id:
                                 self._clear_final_stage(join_id)
                         self.counts["semantic_native_tool_marker_invalidated"] += 1
-                    if not history or tokens > history[-1][1]:
-                        history.append((time.monotonic() * 1000, tokens))
-                    if req.finished():
-                        self._semantic_finished[key.request_id] = (
-                            time.monotonic() * 1000, tokens,
-                        )
-                        self._record_native_final_body(req, key)
-            stage = self._final_request_stages.get(rid)
-            if stage is not None:
-                key = _request_key(req)
-                if (
-                    key is not None and key == visible_key
-                    and key.invocation_id == stage.child_id
-                    and key.context_epoch == stage.child_epoch
-                ):
-                    now = time.monotonic()
-                    tokens = len(getattr(req, "output_ids", ()) or ())
-                    if (
-                        stage.last_service_at is not None
-                        and tokens > stage.generated_tokens
-                        and 0 < now - stage.last_service_at <= 0.5
-                    ):
-                        rate = (tokens - stage.generated_tokens) / (
-                            now - stage.last_service_at
-                        )
-                        stage.tokens_per_second = min(500.0, max(1.0, rate))
-                    if tokens > stage.generated_tokens:
-                        stage.generated_tokens = tokens
-                        stage.last_service_at = now
+                    self._semantic_finished[key.request_id] = (
+                        time.monotonic() * 1000, len(outputs),
+                    )
+                    self._record_native_final_body(req, key)
             if (
                 visible_key is not None
                 and (key := visible_key).session_id is not None
@@ -9744,7 +9482,7 @@ class NativeAdmissionRuntime:
             return True
         # SGLang uses this drain to reach the same safe point needed for a
         # native JOIN H2D. Request it once per burst, never per decode tick.
-        if self._semantic_worker is not None:
+        if self._eos_prefetch_keys:
             # Build the read-only intent before deciding whether overlap must drain.
             # Issuance still waits for SGLang's drained safe point and revalidation.
             self._roll_final_stage()
@@ -9753,8 +9491,7 @@ class NativeAdmissionRuntime:
             ticket is None
             or not (
                 ticket.phase == "confirmed"
-                or self._semantic_worker is not None
-                and ticket.stage_bound and ticket.phase == "provisional"
+                or ticket.stage_bound and ticket.phase == "provisional"
             )
             or not self._live_join_ticket()
             or ticket.command_id is not None

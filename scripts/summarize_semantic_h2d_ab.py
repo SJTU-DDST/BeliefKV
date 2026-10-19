@@ -429,6 +429,7 @@ def summarize(arm: Path) -> dict | None:
         "nested_spawn_count": summary.get("nested_spawn_count"),
         "maximum_spawn_depth": summary.get("maximum_spawn_depth"),
         "sandbox_command_timeout_s": harness_config.get("sandbox_command_timeout_s"),
+        "max_completion_tokens": harness_config.get("max_completion_tokens"),
         "workflow_count": summary["workflow_count"], "outcomes": dict(outcomes),
         "completed_workflows_per_hour": summary["completed_workflows"] * 3600 / duration,
         "completed_jct_p50_seconds": median(jct) if jct else None,
@@ -520,6 +521,7 @@ def main() -> None:
     parser.add_argument("--arrival-seed", type=int, default=21)
     parser.add_argument("--semantic-artifact", type=Path)
     parser.add_argument("--activation-wall-clock-seconds", type=float, default=14400.)
+    parser.add_argument("--max-completion-tokens", type=int, default=16384)
     parser.add_argument("--workload-manifest", type=Path)
     parser.add_argument("--prepare-host", type=int, choices=(0, 1), default=0)
     parser.add_argument("--execution-handoff", type=int, choices=(0, 1), default=1)
@@ -567,10 +569,10 @@ def main() -> None:
             verification["frozen_arrival_schedule_verified"] = True
         paths = [
             (plan["workload_manifest"], plan["workload_sha256"]),
-            (plan["semantic_artifact"], plan["semantic_artifact_sha256"]),
             (root / "patches/sglang-v0.5.20-beliefkv-staging.patch", plan["sglang_patch_sha256"]),
         ]
         for field, digest in (
+            ("semantic_artifact", "semantic_artifact_sha256"),
             ("h2d_seed_artifact", "h2d_seed_sha256"),
             ("tool_timing_artifact", "tool_timing_sha256"),
             ("transfer_service_seed", "transfer_service_seed_sha256"),
@@ -598,10 +600,6 @@ def main() -> None:
         raise ValueError("--run-root is required")
     if args.initialize:
         root = Path(__file__).resolve().parents[1]
-        artifact = (
-            args.semantic_artifact
-            or root / "experiments/models/child_semantic_work_frozen_phase_20261001_v1/semantic_event_calibrated.json"
-        ).resolve()
         manifest = (
             args.workload_manifest
             or root / "configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json"
@@ -611,6 +609,8 @@ def main() -> None:
             raise ValueError("requested root count exceeds the workload manifest")
         if args.sampling_seed < 0 or args.repetition_id < 0:
             raise ValueError("sampling seed and repetition ID must be nonnegative")
+        if not 0 < args.max_completion_tokens < 131072:
+            raise ValueError("output token cap must be positive and below the context size")
         workloads = available[:args.root_count]
         if len({row["instance_id"] for row in workloads}) != args.root_count:
             raise ValueError("duplicate workflows in arrival table")
@@ -669,6 +669,7 @@ def main() -> None:
             "terminal_cache_diagnostics": bool(args.terminal_cache_diagnostics),
             "profile_shared_path": bool(args.profile_shared_path),
             "semantic_work_statistic": args.semantic_work_statistic,
+            "join_prefetch_trigger": "observed_eos",
             "eos_protocol_window_ms": args.eos_protocol_window_ms,
             "eos_prefetch_evidence_window_ms": max(
                 args.eos_protocol_window_ms, min(args.prefetch_lead_ms, 2000.),
@@ -739,14 +740,16 @@ def main() -> None:
             ),
             "requested_children_per_round": shape["children_per_round"],
             "join_prediction_semantics": (
-                "complete ALL membership; prefetch from the last observed unfinished child; "
-                "no joint calibration claim from marginal child intervals"
+                "native no-tool EOS with visible final body; complete ALL membership; "
+                "prefetch only from the last observed unfinished direct child; "
+                "no remaining-work prediction or semantic inference"
             ),
             "prediction_regime_status": (
-                "frozen heads under a changed root/fanout regime; diagnostic, "
-                "not assumed calibrated or a source of offline net-benefit targets"
+                "JOIN uses observed EOS, no fitted child-return head; tool timing "
+                "remains a frozen diagnostic under changed fanout, with runtime "
+                "capacity and transfer decisions kept separate"
             ),
-            "context_tokens": 131072, "max_completion_tokens": 8192,
+            "context_tokens": 131072, "max_completion_tokens": args.max_completion_tokens,
             "sampling_seed": args.sampling_seed, "temperature": 0., "host_numa_node": 1,
             "mem_fraction_static": .94,
             "host_gb": 200, "host_split": args.host_split,
@@ -762,8 +765,8 @@ def main() -> None:
                 else "native_prefill_layerwise_dependencies"
             ),
             "mamba_full_memory_ratio": .9, "native_write_policy": "write_back",
-            "semantic_artifact": str(artifact),
-            "semantic_artifact_sha256": hashlib.sha256(artifact.read_bytes()).hexdigest(),
+            "semantic_artifact": None,
+            "semantic_artifact_sha256": None,
             "workload_manifest": str(manifest),
             "workload_sha256": hashlib.sha256(manifest.read_bytes()).hexdigest(),
             "workload_instance_ids_in_manifest_order": [
@@ -835,13 +838,22 @@ def main() -> None:
                     "h2d_opportunity_sampling": (
                         name == "predictive_h2d" and bool(args.h2d_opportunity_sampling)
                     ),
-                    "semantic_text_stream": name == "predictive_h2d",
+                    "semantic_text_stream": False,
                     "execution_handoff": name == "predictive_h2d" and bool(args.execution_handoff),
                 } for name in order
             },
             "order": order,
             "measurement_windows_seconds": [[0, 3600], [3600, 7200], [7200, None]],
-            "headline_metric": "all-arrival completed workflows per collection hour",
+            "headline_metric": (
+                "common sustained-load window throughput and fixed-horizon restricted JCT; "
+                "workload tails reported separately"
+            ),
+            "primary_comparison_policy": {
+                "exclude_workload_tail": True, "tail_active_workflows": 48,
+                "warmup_seconds": 600.,
+                "cutoff": "earlier arm depletion below threshold after final arrival",
+                "incomplete_work": "retain through common cutoff in restricted JCT",
+            },
         }
         if native_pair:
             for key in (
@@ -905,6 +917,11 @@ def main() -> None:
             and arm["sandbox_command_timeout_s"] != plan["sandbox_command_timeout_s"]
         ):
             raise ValueError(f"{name}: mismatched sandbox command timeout")
+        if (
+            plan.get("join_prefetch_trigger") == "observed_eos"
+            and arm.get("max_completion_tokens") != plan["max_completion_tokens"]
+        ):
+            raise ValueError(f"{name}: mismatched output token cap")
         state = arm["runtime_state"]
         if name == "native":
             if state or arm["predictive_h2d_acks"]:
@@ -933,6 +950,7 @@ def main() -> None:
         ):
             raise ValueError(f"{name}: mismatched H2D opportunity sampling configuration")
         for setting in (
+            "join_prefetch_trigger",
             "semantic_work_statistic", "eos_protocol_window_ms",
             "eos_prefetch_evidence_window_ms",
             "join_prefetch_min_advance_ms", "tool_prefetch_min_advance_ms",
@@ -943,9 +961,13 @@ def main() -> None:
             if setting in plan and state.get(setting) != plan[setting]:
                 raise ValueError(f"{name}: mismatched {setting}")
         expected = name == "predictive_h2d"
-        if state["final_stage_prefetch"] != expected or state["semantic_worker_configured"] != expected:
+        eos_only = plan.get("join_prefetch_trigger") == "observed_eos"
+        if (
+            state["final_stage_prefetch"] != expected
+            or state["semantic_worker_configured"] != (expected and not eos_only)
+        ):
             raise ValueError(f"{name}: wrong predictive/model configuration")
-        if expected and (
+        if expected and not eos_only and (
             state["counts"].get("semantic_worker_disabled")
             or not state["counts"].get("semantic_worker_ready")
         ):

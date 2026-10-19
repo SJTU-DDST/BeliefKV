@@ -1,8 +1,19 @@
 # BeliefKV 文档导航
 
-更新日期：2026-10-18（PDT）
+更新日期：2026-10-19（北京时间）
 
-**最新完整结果（V82b，以本段为准）。**108+48 两批多轮嵌套 workflow 的
+**当前执行要求。**JOIN 改为仅使用实际无工具 EOS；删除在线剩余工作
+推理、语义文本流和逐 decode 进度维护，保留工具预测、增量 PREPARE
+及恢复消费协同。后续 predictive/native 输出上限均为 16384，先跑 predictive。
+V1829 通过 1997 项 CPU 检查，端到端性能尚待验证。
+主要对比排除工作负载长尾：共同边界取最后一批到达后活跃 workflow
+低于 48 的两侧较早时刻，失败/未完成保留在截尾时延中，原尾部另列。
+[V1827 去长尾结果](../experiments/reports/v1827_v82b_tail_excluded_comparison_20261019.json)
+仍显示 predictive 较慢；
+[V1828 波动分析](../experiments/reports/v1828_v82b_gpu_variation_busy_20261019.json)
+只证明统计关联，不当作控制开销的全部因果解释。
+
+**最新完整结果（V82b，以下为全程背景）。**108+48 两批多轮嵌套 workflow 的
 predictive→native 对照已结束；两侧冻结 ab951b9/引擎树 53020ce3。
 predictive 156 completed、native 153 completed/3 incomplete，原 gate
 失败及全部任务保留，正确性未评分。共同 system 合格 153 个任务的平均

@@ -17,7 +17,7 @@ RESUME_PENDING="${RESUME_PENDING:-0}"
 SAMPLING_SEED="${SAMPLING_SEED:-21}"
 REPETITION_ID="${REPETITION_ID:-0}"
 ACTIVATION_WALL_CLOCK_SECONDS="${ACTIVATION_WALL_CLOCK_SECONDS:-14400}"
-ARTIFACT="${SEMANTIC_REPORT_ARTIFACT:-$ROOT/experiments/models/child_semantic_work_live_v7_quantiles/semantic_event_calibrated.json}"
+MAX_COMPLETION_TOKENS="${MAX_COMPLETION_TOKENS:-16384}"
 PREPARE_HOST="${PREPARE_HOST:-1}"
 EXECUTION_HANDOFF="${EXECUTION_HANDOFF:-1}"
 H2D_SEED_ARTIFACT="${H2D_SEED_ARTIFACT:-$ROOT/experiments/models/native_h2d_ack_seed_20261004.json}"
@@ -56,7 +56,7 @@ elif [[ -n "$NATIVE_REFERENCE_TIMELINE" || -n "$NATIVE_REFERENCE_CACHE" ]]; then
   exit 2
 fi
 
-if [[ $# -ne 0 || ! -f "$ARTIFACT" ]] \
+if [[ $# -ne 0 ]] \
   || [[ "$RESUME_PENDING" != "0" && "$RESUME_PENDING" != "1" ]] \
   || { [[ "$RESUME_PENDING" == "0" ]] && [[ -e "$RUN_ROOT" ]]; } \
   || { [[ "$RESUME_PENDING" == "1" ]] && [[ ! -f "$RUN_ROOT/ab_plan.json" ]]; } \
@@ -72,13 +72,13 @@ if [[ $# -ne 0 || ! -f "$ARTIFACT" ]] \
   exit 2
 fi
 mkdir -p "$RUN_ROOT"
-export FANOUT_PROFILE HOST_NUMA_MEMORY_POLICY
+export FANOUT_PROFILE HOST_NUMA_MEMORY_POLICY MAX_COMPLETION_TOKENS
 if [[ "$RESUME_PENDING" == "0" ]]; then
 "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
   --run-root "$RUN_ROOT" --initialize --root-count "$ROOT_COUNT" \
   --arrival-batch-size "$ARRIVAL_BATCH_SIZE" --arrival-batch-interval-ms "$ARRIVAL_BATCH_INTERVAL_MS" \
   --arrival-rate-per-second "$ARRIVAL_RATE_PER_SECOND" --arrival-seed "$ARRIVAL_SEED" \
-  --arm-order "$ARM_ORDER" --semantic-artifact "$ARTIFACT" \
+  --arm-order "$ARM_ORDER" --max-completion-tokens "$MAX_COMPLETION_TOKENS" \
   --activation-wall-clock-seconds "$ACTIVATION_WALL_CLOCK_SECONDS" \
   --prepare-host "$PREPARE_HOST" --execution-handoff "$EXECUTION_HANDOFF" \
   --h2d-seed "$H2D_SEED_ARTIFACT" \
@@ -144,7 +144,7 @@ for arm in $ARM_ORDER; do
     FANOUT_PROFILE="$FANOUT_PROFILE" \
     HOST_SPLIT="$HOST_SPLIT" HICACHE_SIZE_GB=200 HICACHE_WRITE_POLICY=write_back \
     SGLANG_PATCH_FLAVOR=staging CONFIRMED_JOIN_CANARY=0 \
-    SEMANTIC_REPORT_ARTIFACT="$ARTIFACT" RUN_ROOT="$RUN_ROOT/$arm" \
+    MAX_COMPLETION_TOKENS="$MAX_COMPLETION_TOKENS" RUN_ROOT="$RUN_ROOT/$arm" \
     bash "$ROOT/scripts/run_qwen35_native_regime_probe.sh" \
     > "$RUN_ROOT/$arm.launch.log" 2>&1
   status="$?"
@@ -160,7 +160,7 @@ for arm in $ARM_ORDER; do
     "$PYTHON" "$ROOT/scripts/audit_join_transfer_windows.py" \
       --arm "$RUN_ROOT/$arm" --output "$RUN_ROOT/$arm/join_transfer_windows.json"
     "$PYTHON" "$ROOT/scripts/audit_join_candidate_windows.py" \
-      --arm "$RUN_ROOT/$arm" --artifact "$ARTIFACT" \
+      --arm "$RUN_ROOT/$arm" --threshold 0.5 \
       --output "$RUN_ROOT/$arm/join_candidate_windows.json"
     "$PYTHON" "$ROOT/scripts/audit_tool_transfer_windows.py" \
       --arm "$RUN_ROOT/$arm" --output "$RUN_ROOT/$arm/tool_transfer_windows.json"
@@ -188,6 +188,7 @@ if [[ "$ARM_ORDER" == "predictive_h2d" || "$ARM_ORDER" == "reactive" ]]; then
       --timeline "native=${NATIVE_REFERENCE_TIMELINE:-$NATIVE_REFERENCE_RUN/timelines/native.json.gz}" \
       --native-reference-run "$NATIVE_REFERENCE_RUN" \
       "${reference_comparison_args[@]}" \
+      --exclude-workload-tail \
       --output "$RUN_ROOT/native_reference_comparison.json"
   fi
 else
@@ -198,5 +199,6 @@ else
       --timeline "$arm=$RUN_ROOT/timelines/$arm.json.gz")
   done
   "$PYTHON" "$ROOT/scripts/compare_native_policy_runs.py" "${comparison_args[@]}" \
+    --exclude-workload-tail \
     --output "$RUN_ROOT/native_policy_comparison.json"
 fi

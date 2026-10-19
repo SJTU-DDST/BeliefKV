@@ -154,7 +154,7 @@ def test_two_full_batch_restore_frontiers_reserve_growth_without_allocating_requ
     )).request_slots == 1
 
 
-def test_join_minimum_advance_reaches_native_enqueue_for_a_narrow_forecast():
+def test_join_minimum_advance_does_not_authorize_work_forecast_without_eos():
     runtime, _, opportunity, cache, _ = semantic_join_batch_fixture(
         center_tokens=32., lower_tokens=32., lead_ms=1000.,
     )
@@ -165,8 +165,8 @@ def test_join_minimum_advance_reaches_native_enqueue_for_a_narrow_forecast():
                    return_value=forecast.observation.observed_ts_ms / 1000.), \
              patch.object(runtime, "inspect_context_h2d_opportunity", return_value=opportunity):
             runtime.dispatch_join_prefetch()
-        cache.prefetch_gpu_session_nodes.assert_called_once()
-        assert runtime.physical_ledger.pending_count == 4
+        cache.prefetch_gpu_session_nodes.assert_not_called()
+        assert runtime.physical_ledger.pending_count == 0
         assert not runtime.graph.joins["join"].satisfied
     finally:
         runtime.close()

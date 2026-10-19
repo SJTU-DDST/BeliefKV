@@ -195,27 +195,26 @@ def test_unchanged_plan_only_has_a_periodic_heartbeat_with_diagnostic_sampling(
         runtime.close()
 
 
-def test_many_live_join_stages_only_read_the_running_batch_once_per_scan():
+def test_work_only_join_stages_never_scan_the_running_batch_or_physical_cache():
     runtime, reads = join_scan_fixture(NativeAdmissionRuntime, workflows=156)
     try:
         with patch.object(runtime, "_live_final_stage", wraps=runtime._live_final_stage) as live:
             assert runtime._roll_final_stage() is None
-        assert live.call_count == 48
-        assert reads[0] == 48
-        assert runtime.counts["final_stage_service_filter_skipped"] == 108
+        assert live.call_count == 0
+        assert reads[0] == 0
         assert runtime._join_ticket is None
         assert not runtime.physical_ledger.pending_count
         runtime._native_running_batch.reqs.clear()
         with patch.object(runtime, "_live_final_stage", wraps=runtime._live_final_stage) as live:
             assert runtime._roll_final_stage() is None
         assert live.call_count == 0
-        assert runtime.counts["final_stage_service_filter_skipped"] == 264
+        assert reads[0] == 0
     finally:
         runtime.close()
 
 
 @pytest.mark.parametrize("lead_ms,remaining_tokens,plans", (
-    (1000., 60., False), (4000., 120., True),
+    (1000., 60., False), (4000., 120., False),
 ))
 def test_join_uses_configured_lead_before_building_a_physical_plan(
     lead_ms, remaining_tokens, plans,

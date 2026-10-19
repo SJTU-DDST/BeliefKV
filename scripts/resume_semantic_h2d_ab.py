@@ -32,7 +32,8 @@ def resume_environment(plan: dict, run_root: Path, *, python: str, port: int) ->
         "HOST_NUMA_MEMORY_POLICY": plan.get("host_numa_memory_policy", "bind"),
         "SAMPLING_SEED": plan["sampling_seed"], "REPETITION_ID": plan["repetition_id"],
         "ACTIVATION_WALL_CLOCK_SECONDS": plan["activation_wall_clock_seconds"],
-        "SEMANTIC_REPORT_ARTIFACT": plan["semantic_artifact"],
+        "MAX_COMPLETION_TOKENS": plan.get("max_completion_tokens", 8192),
+        "SEMANTIC_REPORT_ARTIFACT": plan.get("semantic_artifact") or "",
         "PREPARE_HOST": int(plan["policy_configuration"]["predictive_h2d"]["prepare_host"]),
         "EXECUTION_HANDOFF": int(
             plan["policy_configuration"]["predictive_h2d"].get("execution_handoff", True)

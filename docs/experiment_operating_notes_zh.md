@@ -1,13 +1,28 @@
 # BeliefKV 实验注意事项
 
-更新日期：2026-10-18（PDT）。本文是当前实验的执行约束，不是新增 agent
+更新日期：2026-10-19（北京时间）。本文是当前实验的执行约束，不是新增 agent
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
 后续开发固定在主目录 `/home/longhao/experiment/BeliefKV` 的 `main` 分支。
 历史实验 worktree 保留其冻结来源；新代码修改、验证与提交在主目录进行。
 
-**V82b 已完整收尾，后续比较使用完整口径。**V1822/V1825 记录
+**后续配置与主要比较口径，以本段为准。**JOIN 只允许真实原生无工具
+EOS 触发，通知及剩余工作预测均不能授权 H2D。关闭在线语义 worker 和
+语义文本传送；结束时检查工具标记和可见正文。保留工具预测、FULL 增量
+PREPARE、恢复驻留及原生依赖检查。两侧输出上限统一 16384，不能再用
+旧 8192 native 作同配置主对照；工具超时 180s、workflow 14400s。
+先 predictive 后 native；调试迭代随后可复用同配置 native。
+
+排除工作负载长尾，使用相同时间窗：最后一批到达后活跃 workflow
+跌破 48，取两侧较早边界，预热截至 600s。失败和未完成任务在共同
+截点内保留，报告截尾完成时延、完成数及原始结果；全程结果和尾部单列。
+不能分别选取有利窗口、按 GPU 利用率/收益选择截点，或删除长任务后
+计算完成者 JCT。V1827 的 V82b 共同边界 4780.310s，结论仍未超过 native。
+V1828 的 GPU 波动与采样控制 CPU 仅为相关证据，不能外推独占停顿或
+oracle JCT。V1829 的 1997 项 CPU 检查通过，GPU 验收尚待新冻结运行。
+
+**V82b 已完整收尾，以下全程数字保留作背景。**V1822/V1825 记录
 predictive 156 completed、148 strict 合格，native 153 completed、
 3 incomplete、145 strict 合格。共同 system/strict 合格任务数分别为
 153/141，平均 JCT 为 2591.814/2105.767s 和 2386.965/1937.292s
@@ -16,7 +31,7 @@ workflow（介入事件数为 10/9，不能与 workflow 数混用）、
 全部轨迹差异及未评分正确性保留，不能把配置可比较当 gate 或质量通过。
 native 三个 incomplete（django-10554/11206/12273）均有有效 parser、
 已完成 child/JOIN、未过期 deadline，以及末次 root 原生输出 8192 token/
-client length 证据；继续保留用户指定上限。成功 workspace 已清理，
+client length 证据；当时上限 8192，后续遵循上述新上限。成功 workspace 已清理，
 三个失败 workspace 保留，不为整理实验删除异常。
 
 两侧原 HTML 与 qualified HTML 均存在；V1816/V1823 分别确认校正文案外

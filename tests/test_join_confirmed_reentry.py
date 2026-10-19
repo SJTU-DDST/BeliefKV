@@ -132,6 +132,8 @@ def parallel_join_fixture(*, parallel=True, overlap=True, contexts=2, provisiona
         now_ms = time.monotonic() * 1000.
         runtime._semantic_finished["child2"] = (now_ms, 3)
         runtime._semantic_finished["child"] = (now_ms, 3)
+        runtime._ensure_observed_final_stage(runtime.visible["child"])
+        runtime._ensure_observed_final_stage(runtime.visible["child2"])
     else:
         complete_join(runtime)
         complete_join(runtime, sequence=22, child="child2", join="join2")

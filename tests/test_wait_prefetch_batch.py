@@ -99,10 +99,10 @@ def provisional_join_batch_fixture():
     child.session_id, child.session_generation = "cs", 1
     child.beliefkv_metadata["context_epoch"] = 1
     runtime.register_visible_request(child)
-    runtime._semantic_worker = NS(close=lambda: None)
     runtime._semantic_keys["child"] = runtime.visible["child"]
     runtime._semantic_eos_proofs["child"] = True
     runtime._semantic_finished["child"] = (time.monotonic() * 1000., 3)
+    runtime._ensure_observed_final_stage(runtime.visible["child"])
     runtime._h2d_samples.extend(((180, 10.),) * 3)
     return runtime, key, opportunity, cache, reserved
 
@@ -175,7 +175,8 @@ def semantic_join_batch_fixture(*, center_tokens=48., lower_tokens=4., lead_ms=2
     runtime, key, opportunity, cache, reserved = provisional_join_batch_fixture()
     runtime._semantic_eos_proofs.clear()
     runtime._semantic_finished.clear()
-    runtime._semantic_worker.error = ""
+    runtime._eos_prefetch_keys.clear()
+    runtime._semantic_worker = NS(error="", close=lambda: None)
     runtime.semantic_work_statistic = "center"
     runtime.prefetch_lead_ms = lead_ms
     stage = runtime._final_stages["join"]
@@ -189,11 +190,11 @@ def semantic_join_batch_fixture(*, center_tokens=48., lower_tokens=4., lead_ms=2
     return runtime, key, opportunity, cache, reserved
 
 
-@pytest.mark.parametrize("lead_ms,lower_tokens,expected_nodes", [
-    (2000., 4., 4), (500., 4., 0), (2000., 48., 0),
+@pytest.mark.parametrize("lead_ms,lower_tokens", [
+    (2000., 4.), (500., 4.), (2000., 48.),
 ])
-def test_join_work_interval_reaches_final_batch_enqueue_with_residency_bound(
-    lead_ms, lower_tokens, expected_nodes,
+def test_join_work_interval_cannot_authorize_a_transfer_without_native_eos(
+    lead_ms, lower_tokens,
 ):
     runtime, _, opportunity, cache, _ = semantic_join_batch_fixture(
         lower_tokens=lower_tokens, lead_ms=lead_ms,
@@ -207,25 +208,12 @@ def test_join_work_interval_reaches_final_batch_enqueue_with_residency_bound(
             patch.object(runtime, "inspect_context_h2d_opportunity",
                          return_value=opportunity) as inspect:
             runtime.dispatch_join_prefetch()
-        assert runtime.physical_ledger.pending_count == expected_nodes
-        assert cache.prefetch_gpu_session_nodes.call_count == int(expected_nodes > 0)
+        assert runtime.physical_ledger.pending_count == 0
+        cache.prefetch_gpu_session_nodes.assert_not_called()
         assert not runtime.graph.joins["join"].satisfied
-        if lead_ms < 1200.:
-            inspect.assert_not_called()
-            assert runtime.counts["semantic_h2d_too_early"] == 1
-            assert not any(row["event"] == "wait_prefetch_plan" for row in records)
-            return
-        plan = next(row for row in records if row["event"] == "wait_prefetch_plan")
-        assert plan["predicted_remaining_ms"] == 1200.
-        assert plan["prediction_early_ms"] == (48. - lower_tokens) * 25.
-        assert plan["start_window_ms"] == min(
-            lead_ms, 110. + (48. - lower_tokens) * 25.,
-        )
-        if expected_nodes:
-            assert runtime._join_ticket.work_endpoint_tokens == 168.
-            latest = next(row for row in records if row["event"] == "final_stage_latest_start")
-            assert latest["forecast_lower_tokens"] == lower_tokens
-            assert latest["prediction_early_ms"] == 1100.
+        inspect.assert_not_called()
+        assert not records
+        assert runtime._join_ticket is None
     finally:
         runtime.close()
 
@@ -259,20 +247,15 @@ def test_join_work_uncertainty_is_rechecked_after_causal_drain(change):
         runtime.close()
 
 
-def test_join_enqueue_uses_new_forecast_after_decode_passes_selected_endpoint():
-    runtime, _, opportunity, cache, _ = semantic_join_batch_fixture(center_tokens=8.)
-    forecast = runtime._semantic_forecasts["child"]
-    now = forecast.observation.observed_ts_ms / 1000.
+def test_join_enqueue_ignores_forecast_changes_after_native_eos():
+    runtime, _, opportunity, cache, _ = provisional_join_batch_fixture()
+    now = time.monotonic()
     records = []
     runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
 
     def drain(**kwargs):
         runtime._semantic_progress["child"] = ((now * 1000., 129),)
-        runtime._semantic_forecasts["child"] = replace(
-            forecast,
-            observation=replace(forecast.observation, observed_output_tokens=124),
-            middle_tokens=16., lower_tokens=2.,
-        )
+        runtime._semantic_forecasts["child"] = NS(final_score=0., middle_tokens=1e9)
 
     runtime.event_server = NS(drain=drain, close=lambda: None)
     try:
@@ -281,9 +264,10 @@ def test_join_enqueue_uses_new_forecast_after_decode_passes_selected_endpoint():
             patch.object(runtime, "inspect_context_h2d_opportunity", return_value=opportunity):
             runtime.dispatch_join_prefetch()
         selected = next(row for row in records if row["event"] == "final_stage_latest_start")
-        assert selected["generated_tokens"] + selected["projected_remaining_tokens"] == 128.
-        assert runtime._join_ticket.work_endpoint_tokens == 140.
-        assert runtime.counts["join_work_endpoint_refreshed"] == 1
+        assert selected["trigger_kind"] == "observed_no_tool_eos"
+        assert selected["remaining_ms"] == 0.
+        assert runtime._join_ticket.work_endpoint_tokens is None
+        assert runtime.counts["join_work_endpoint_refreshed"] == 0
         cache.prefetch_gpu_session_nodes.assert_called_once()
         assert runtime.physical_ledger.pending_count == 4
         assert not runtime.graph.joins["join"].satisfied
@@ -338,7 +322,7 @@ def test_selected_join_cannot_keep_old_endpoint_when_latest_forecast_invalidates
             runtime.dispatch_join_prefetch()
         cache.prefetch_gpu_session_nodes.assert_not_called()
         assert runtime.physical_ledger.pending_count == 0
-        assert runtime.counts["wait_prefetch_batch_timing_changed"] == 1
+        assert runtime.counts["wait_prefetch_batch_timing_changed"] == 0
         assert runtime._join_ticket is None
         assert not runtime.physical_disabled
     finally:
@@ -348,7 +332,7 @@ def test_selected_join_cannot_keep_old_endpoint_when_latest_forecast_invalidates
 @pytest.mark.parametrize("remaining,upper,generated,endpoint", [
     (1., 2., 124, 125.), (4., 20., 129, 144.),
 ])
-def test_join_latest_work_can_shorten_endpoint_or_use_live_upper_after_center_overrun(
+def test_join_work_endpoint_changes_cannot_create_an_eos_opportunity(
     remaining, upper, generated, endpoint,
 ):
     runtime, key, opportunity, cache, _ = semantic_join_batch_fixture(center_tokens=8.)
@@ -359,17 +343,15 @@ def test_join_latest_work_can_shorten_endpoint_or_use_live_upper_after_center_ov
             patch.object(runtime, "_semantic_rate", return_value=40.), \
             patch.object(runtime, "inspect_context_h2d_opportunity", return_value=opportunity):
             runtime._roll_final_stage()
-            assert runtime._join_ticket.work_endpoint_tokens == 128.
+            assert runtime._join_ticket is None
             runtime._semantic_progress["child"] = ((now * 1000., generated),)
             runtime._semantic_forecasts["child"] = replace(
                 forecast, observation=replace(forecast.observation, observed_output_tokens=124),
                 lower_tokens=0., middle_tokens=remaining, upper_tokens=upper,
             )
-            assert runtime._wait_prefetch_timing_valid(key, opportunity, "join_ticket")
-            assert runtime._join_ticket.work_endpoint_tokens == endpoint
             runtime.dispatch_join_prefetch()
-        cache.prefetch_gpu_session_nodes.assert_called_once()
-        assert runtime.physical_ledger.pending_count == 4
+        cache.prefetch_gpu_session_nodes.assert_not_called()
+        assert runtime.physical_ledger.pending_count == 0
     finally:
         runtime.close()
 
@@ -1469,7 +1451,7 @@ def test_tool_window_uses_surviving_cdf_and_join_keeps_its_service_window():
         runtime.close()
 
 
-def test_join_batch_window_rechecks_live_work_progress_and_service_availability():
+def test_join_batch_window_requires_eos_regardless_of_work_progress_or_running_slot():
     runtime, key, opportunity, _, _ = provisional_join_batch_fixture()
     with patch.object(runtime, "inspect_context_h2d_opportunity", return_value=opportunity):
         runtime._roll_final_stage()
@@ -1489,7 +1471,7 @@ def test_join_batch_window_rechecks_live_work_progress_and_service_availability(
         patch.object(runtime, "_semantic_rate", return_value=40.):
         assert not runtime._wait_prefetch_timing_valid(key, opportunity, "join_ticket")
         runtime._semantic_progress["child"] = ((time.monotonic() * 1000., 124),)
-        assert runtime._wait_prefetch_timing_valid(key, opportunity, "join_ticket")
+        assert not runtime._wait_prefetch_timing_valid(key, opportunity, "join_ticket")
         service.return_value = False
         assert not runtime._wait_prefetch_timing_valid(key, opportunity, "join_ticket")
         service.return_value = True

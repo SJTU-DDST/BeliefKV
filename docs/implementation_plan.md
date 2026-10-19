@@ -1,9 +1,35 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-18 (PDT).
+Status date: 2026-10-19 (Asia/Shanghai).
 
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
+
+The active goal now uses native EOS only for provisional JOIN prefetch. Remove
+live remaining-work inference and semantic text delivery, while retaining tool
+timing, incremental FULL-only PREPARE, residency, native dependencies and bounded
+restore admission. A notice alone cannot authorize H2D. Child completion checks
+run at native finish, including tools, visible body, epoch/session and direct
+JOIN ownership. V1829 passes 1997 related CPU checks. The shared output cap for
+subsequent predictive/native runs is 16384; keep tool180s/workflow14400s.
+
+Performance acceptance must exclude workload tails from primary metrics.
+Freeze an active-workflow threshold of48 and warmup600s. After the last arrival,
+find each arm's first depletion below48 and use the earlier boundary for both.
+Report restricted completion latency and completion counts through that cutoff;
+failures and unfinished tasks remain in the population. Preserve full JCT,
+outcomes and the tail separately. V1827 gives a common V82b boundary4780.310s:
+decode1003.208/1164.776 token/s and restricted mean2167.451/1930.898s,
+predictive/native. Removing tails does not establish a win.
+
+V1828 quantifies V82b's busy-window utilization variation: stddev19.319/9.972,
+below80% samples30.649%/6.674%. Sampled per-prefill control CPU and utilization
+correlate -0.301/-0.104 in10s bins. Treat this as association with load/geometry
+confounders, not exclusive idle attribution. Next freeze latest main and run
+predictive first, followed by one native arm with the same increased output cap.
+Compare short-prefill/turnover cost, demand H2D, restore consumption and the
+tail-excluded performance metrics. Keep the goal active until GPU evidence
+establishes an improvement; no canary or new guard is required.
 
 The V82b predictive/native pair is complete. V1822/V1825 bind identical task
 sets, physical capacity, application ab951b9 and engine tree53020ce3, all 156
@@ -13,7 +39,8 @@ Predictive has 156 completed/148 strict eligible; native has 153 completed/
 workflows with graph-budget intervention per arm remain (10/9 completion
 events; event counts are not workflow counts). Native's three incomplete
 roots reach 8192 output tokens with valid parsers, satisfied dependencies and
-unexpired deadlines. Keep the user's unchanged output cap and ungraded quality.
+unexpired deadlines. The old cap is historical; apply the new shared cap above
+and preserve ungraded quality.
 
 Common system-eligible JCT is 2591.814/2105.767s on 153 tasks; common strict
 JCT is 2386.965/1937.292s on 141 tasks (predictive/native), both about 23% worse

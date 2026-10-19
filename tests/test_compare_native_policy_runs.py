@@ -11,7 +11,45 @@ from scripts.compare_native_policy_runs import (
     jct_eligibility_counts, paired_workflow_jct, phase_statistics, transfer_parts, restore_wait_statistics,
     aligned_native_clock, cached_native_reference, native_reference_metadata,
     historical_reference_current_run,
+    restricted_workflow_jct, workload_tail_cutoff,
 )
+
+
+def test_tail_cutoff_waits_for_last_arrival_and_counts_simultaneous_terminals():
+    rows = [
+        {"start_seconds": 0., "end_seconds": 100.},
+        {"start_seconds": 0., "end_seconds": 200.},
+        {"start_seconds": 150., "end_seconds": 200.},
+        {"start_seconds": 150., "end_seconds": 300.},
+    ]
+    assert workload_tail_cutoff(rows, minimum_active=2) == 200.
+
+
+def test_restricted_jct_keeps_slow_work_and_does_not_reward_failure():
+    rows = [
+        {"instance_id": "success", "start_seconds": 0., "end_seconds": 50.,
+         "outcome": "completed"},
+        {"instance_id": "slow", "start_seconds": 0., "end_seconds": 100.,
+         "outcome": "completed"},
+        {"instance_id": "failed", "start_seconds": 0., "end_seconds": 10.,
+         "outcome": "incomplete"},
+        {"instance_id": "second_wave", "start_seconds": 60., "end_seconds": 100.,
+         "outcome": "completed"},
+    ]
+    result = restricted_workflow_jct(rows, cutoff_seconds=80.)
+    assert result["arrived_workflows"] == 4
+    assert result["completed_by_cutoff"] == 1
+    assert result["incomplete_at_cutoff"] == 3
+    assert result["failed_or_incomplete_terminal_by_cutoff"] == 1
+    assert [row["restricted_jct_seconds"] for row in result["rows"]] == [50., 80., 80., 20.]
+    assert result["mean_restricted_time_to_completion_seconds"] == 57.5
+    assert result["original_outcomes"] == {"completed": 3, "incomplete": 1}
+
+
+@pytest.mark.parametrize("cutoff", [0., -1., float("inf"), float("nan")])
+def test_restricted_jct_rejects_invalid_cutoffs(cutoff):
+    with pytest.raises(ValueError, match="cutoff"):
+        restricted_workflow_jct([], cutoff_seconds=cutoff)
 
 
 @pytest.mark.parametrize("names", [("reactive",), ("predictive_h2d",), ("reactive", "predictive_h2d")])
