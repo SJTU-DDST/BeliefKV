@@ -12,17 +12,30 @@ V1857 核对实际 server_info/client manifest：256K、running 24、
 运行目录 `qwen35_nested_eos_prefetch_256k_two_wave_112root_20261019_v84`，
 状态见 `/home/longhao/experiment/ops/v84_256k_running24_20261019.state.json`。
 
-**V84 的已完成忙碌窗口诊断与 CPU 候选（V1861–V1867）。**600–900s 的
-单侧 decode 为 816.03 token/s、GPU 利用率 74.79%、时间加权 batch 23.48；
-本轮 native 尚未完成，不能与旧 48-running 直接配对。所封存前缀中，
-JOIN/tool 提前且下一请求确认复用 FULL 分别为 167.98/55.58MB。
-部分正 FULL 计划被输入/decode 预留后的零容量限制，不能据此认定没有
-可回收冷 KV；详细候选普查仍关闭。V1864 有 111 次同节点 Mamba 备份
-ACK 后 100ms 内释放 FULL 的关联，不能换算为可省 JCT。
+**V84 最新忙碌窗口与预取瓶颈（V1868–V1872）。**600–1200s、
+1200–1800s 单侧 decode 分别为 821.06/867.59 token/s，GPU 利用率
+76.04%/85.14%；600–1800s 可见 decode 上下文均值约 34.47K，
+不能把 256K 上限当作所有请求的实际长度。本轮 native 尚未完成。
+新封存的 83 个 JOIN 完成等待中，71 个在完成前有正 FULL 计划，
+17 个提前且被下一请求复用，共 0.368GB；5291 个已观察工具等待中，
+95 个有正 FULL 计划，24 个提前且复用，共 0.586GB。这些是独立等待
+事件，不能用命令数替代。多数未提交 JOIN 记录容量拒绝；详细同动作
+冷候选普查关闭，不能从零预算推断不存在可回收 KV。249 个短单请求
+prefill 抽样中，run_batch/selection/post-launch physical 平均墙钟为
+61.92/11.97/1.92ms；区间有重叠，不能相加或当纯 kernel/JCT。
+
+**main 最新 CPU 降本（V1875/V1877/V1878）。**工具计时模式不再逐 decode
+重写上下文 token 计数；保留请求结束时的工具特征、真实 EOS、恢复首次
+服务与保护释放，没有待观察恢复时跳过未结束请求的记账。622 项 CPU
+检查全部通过，包含真实 native allocator；旧通知即预取的测试改为先拒绝
+通知、再用原生 stop/闭合模板验证 EOS。24 请求回调的 CPU 基准 P50
+13.20→3.17us，结束状态相同；不是整轮控制成本或吞吐/JCT 改善。
+V1864 的 111 次同节点 Mamba 备份 ACK 后 100ms 内释放 FULL 的关联
+仍单列，不能换算为可省 JCT。
 CPU 回归复现直接 allocator 的 FULL 回收会先同步备份活跃 Mamba；
 main 候选优先复用已有的保留 HBM Mamba、单独释放 FULL 的路径，原回退
 和 Mamba 压力回收保留。189 项 CPU 检查通过，合格候选树 03af77d2、
-补丁 SHA 1529584a；V1867 绑定来源与检查。该修复未进入运行中的 V84，
+补丁 SHA 1529584a；V1867 绑定来源与检查。以上修改未进入运行中的 V84，
 其 predictive/native 均保持原树 53020ce3。后续须另测 Mamba 驻留压力
 及端到端收益，当前目标未达成。
 

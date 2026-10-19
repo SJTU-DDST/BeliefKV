@@ -8,11 +8,16 @@
 实际 FULL 36.822GB、Mamba 513 槽，后续核对 native 的真实池容量。
 实验尚未给出吞吐或 JCT 结论，不能把增大配置上限当作历史已经变长。
 
-V1861 的 V84 单侧 600–900s 窗口为 816.03 decode token/s、74.79% GPU
-利用率，仍待同配置 native。main 已保存 FULL 短缺时保留活跃 HBM Mamba、
-避免先同步备份的 CPU 修复，189 项检查通过；来源见
+V1869 的 V84 单侧 600–1200/1200–1800s decode 为 821.06/867.59 token/s，
+GPU 利用率 76.04%/85.14%，仍待同配置 native。V1868 封存前缀中，提前
+且下一请求复用 FULL 为 JOIN 17 个事件/0.368GB、tool 24 个/0.586GB；
+正 JOIN 计划到实际提交仍主要受容量记录限制。main 删除工具计时模式的
+逐 decode token 记账，622 项 CPU 检查通过；24 请求回调 P50
+13.20→3.17us，不当作吞吐或 JCT 改善，见
+[V1878 核验](../experiments/reports/v1878_tool_timing_decode_completion_qualification_20261019.json)。
+另已保存 FULL 短缺时保留活跃 HBM Mamba、避免先同步备份的 CPU 修复：
 [V1867 候选核验](../experiments/reports/v1867_full_only_allocator_qualification_20261019.json)。
-候选树 03af77d2 尚未部署，V84 两侧继续使用冻结的 53020ce3。
+以上修改尚未部署，候选树 03af77d2；V84 两侧继续使用冻结的 53020ce3。
 
 **当前验证直接使用模型原生 256K 总上下文。**用户进一步替换 128K
 候选；两侧均为窗口上限 262144、保留 8192、摘要 2048、输出 16384，

@@ -9336,7 +9336,15 @@ class NativeAdmissionRuntime:
             {lease.key.context_id for lease in self._prefetch_service_leases.values()}
             if self._prefetch_service_leases else ()
         )
+        observe_service = bool(
+            pending_by_context or lease_contexts or self._parent_capacity_handoffs
+            or self._residency_hint_admissions
+        )
         for req in batch.reqs:
+            finished = req.finished()
+            # Tool timing consumes the completed model request, not decode progress.
+            if self._tool_timing_only and not finished and not observe_service:
+                continue
             rid = req.rid
             visible_key = self.visible.get(rid)
             if self._residency_hint_admissions and (
@@ -9396,7 +9404,7 @@ class NativeAdmissionRuntime:
                             )
             if (
                 (self.enable_final_stage_prefetch or self.enable_admission_prefetch)
-                and visible_key is not None and req.finished()
+                and visible_key is not None and finished
             ):
                 key = visible_key
                 metadata = getattr(req, "beliefkv_metadata", None)
@@ -9433,6 +9441,7 @@ class NativeAdmissionRuntime:
                 visible_key is not None
                 and (key := visible_key).session_id is not None
                 and key.session_generation is not None
+                and (finished or not self._tool_timing_only)
             ):
                 self._context_tokens[key.context_id] = (
                     key.context_epoch,
@@ -9440,7 +9449,7 @@ class NativeAdmissionRuntime:
                     len(getattr(req, "output_ids", ()) or ()),
                     req.beliefkv_metadata.get("parent_invocation_id") is not None,
                 )
-            if visible_key is not None and req.finished():
+            if visible_key is not None and finished:
                 context_id = visible_key.context_id
                 key = visible_key
                 if self._workflow_attained_work_enabled:

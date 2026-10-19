@@ -199,8 +199,12 @@ def test_sibling_return_activates_an_already_serviced_report_without_another_not
     assert not runtime.graph.joins["join"].satisfied
 
 
-def test_sibling_capacity_can_feed_prefetch_before_the_final_child_returns(family):
+@pytest.mark.parametrize("tool_timing_only", (False, True))
+def test_sibling_capacity_can_feed_prefetch_after_eos_before_child_return(
+    family, tool_timing_only,
+):
     runtime, requests, cache, _ = family
+    runtime._tool_timing_only = tool_timing_only
     runtime.enable_admission_prefetch = True
     early_report_notice(runtime)
     child = child_report_request(runtime, requests["child2"])
@@ -219,6 +223,16 @@ def test_sibling_capacity_can_feed_prefetch_before_the_final_child_returns(famil
         required_full_tokens=10, required_mamba_slots=1,
     )), patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=step), \
          patch.object(runtime, "issue_prefetch_gpu_step", return_value="prefetch-parent") as issue:
+        runtime.dispatch_join_prefetch()
+        issue.assert_not_called()
+        runtime._reasoning_open_token_ids = frozenset({900})
+        runtime._reasoning_close_token_ids = frozenset({901})
+        child.origin_input_ids, child.output_ids = [900, 901], [1, 2, 3]
+        child.tokenizer = NS(decode=lambda *_args, **_kwargs: "Completed report.")
+        child.finished_reason = NS(to_json=lambda: {"type": "stop"})
+        child.finished = lambda: True
+        runtime.on_batch_completed(NS(reqs=[child]))
+        assert runtime._semantic_eos_proofs[child.rid]
         runtime.dispatch_join_prefetch()
     issue.assert_called_once()
     assert issue.call_args.args[0].key == key

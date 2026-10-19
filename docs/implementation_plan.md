@@ -14,11 +14,22 @@ native must match the actual pools. Physical actions are enabled; semantic
 worker and detailed shared profiling are off. Performance acceptance remains
 open. State: /home/longhao/experiment/ops/v84_256k_running24_20261019.state.json.
 
-V1861 observes816.03 decode token/s,74.79% GPU utilization and23.48 weighted
-batch in V84's complete600-900s single-arm window. A same-configuration native
-result is still required. The sealed wait audit confirms167.98MB JOIN and
-55.58MB tool FULL restored early and reused by the next request. Capacity
-rejections do not establish absence of reclaimable cold state.
+V1869 observes 821.06/867.59 decode token/s and 76.04%/85.14% GPU utilization
+in V84's complete 600-1200s/1200-1800s single-arm windows. Mean visible decode
+context over 600-1800s is 34.47K, not 256K. Same-configuration native is pending.
+V1868 seals 71 positive pre-completion FULL plans among 83 observed completed
+JOIN waits, with 17 early reused events/0.368GB. Tool waits have 95 positive
+plans and 24 early reused events/0.586GB. Capacity rejections still dominate
+the observed JOIN submission gap; absent action-local diagnostics do not
+establish absence of reclaimable cold state. Short-prefill phases in V1871
+overlap and are not pure kernel timings or additive JCT.
+V1878 qualifies tool-only completion bookkeeping that saves completed-request
+features and EOS while removing unused per-decode token snapshots. Restore
+first service, leases, handoffs and legacy progress mode remain. V1877 passes
+622 CPU checks with the qualified native allocator and no skips. The updated
+sibling-capacity test rejects notice-only transfers and permits a real native
+stop with closed input reasoning before child RETURN. V1875's 24-request
+callback CPU P50 is 13.20 to 3.17us; no GPU/JCT gain is claimed.
 V1867 qualifies a main-only allocator fix: try the existing FULL reclaim that
 retains live Mamba in HBM before the prior demotion fallback. The old direct
 path reproduces an unexpected synchronous D2H;189 related CPU checks pass
