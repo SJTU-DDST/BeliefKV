@@ -2,25 +2,28 @@
 
 更新日期：2026-10-19（北京时间）
 
-**V85c 长上下文验证准备重启。**256K 总窗口、95% 完整输入压缩、本地
+**V85d 长上下文验证已执行，首批核对通过。**256K 总窗口、95% 完整输入压缩、本地
 tokenizer 缓存计数及可容纳的输出预算；图步骤硬预算保持 2048，
 不继承官方 50 轮。工具镜像改用 Python 3.10；工具计时按本轮在线适配，
 JOIN 使用通知/实际服务及 EOS 兜底，并按整批恢复成本准备可借用容量。
 12 root（8+4/900s）、running 8、Host80:20。V84 已按授权中止；
 V85b 的 CDF 契约与 tokenizer 并发初始化错误已修复，792 项 CPU
-检查通过。保留失败轨迹，以新代码先跑 predictive；效果与质量待验证。
+检查通过。保留失败轨迹，使用 e317471 和端口 18490 先跑 predictive；
+效果与质量待验证。状态见 `v85d_locobench_long_12root_20261019.state.json`。
+V1914：首批 8 root 均提交，24 agent 首请求均超过 100K，无 workflow
+错误。V1915 已出现实际迁移，但受控恢复仍须区分提前预取和需求恢复。
 
-**长仓库负载候选已接入，工具密度仍待验证。**
+**长仓库负载配置与资格边界。**
 [研究与执行边界](research/long_repository_workload_selection_20261019_zh.md)、
 [12 任务清单](../configs/workloads/locobench_agent_long_12root_20261019.json)、
 [并发配置](../configs/migration/qwen35_locobench_long_12root_running8_2026-10-19.json)。
 六个生成项目的完整源码为 110395–149832 token，所有普通 agent 深度
-均接收快照；不是已证实的自然长历史。V1890 核对输入及真实 Python 3.9
-沙箱解析，295 项 CPU 检查通过、1 项既有测试跳过；项目依赖、实际工具
-调用和正确性未通过，尚未 GPU 运行。候选采用 root 8+4/900s、running 8、
-去长尾阈值 4，两侧同配置；正在运行的 V84 原生对照不热改。
+均接收快照；不是已证实的自然长历史。V1890 的 Python 3.9 解析仅为先前
+资格记录；当前已切换 Python 3.10 工具镜像，并通过真实工具链路检查。
+原项目测试失败仍保留，任务正确性尚未验收。采用 root 8+4/900s、
+running 8、去长尾阈值 4，两侧同配置；V84 部分原生轨迹独立保留。
 
-**V84 predictive 已结束，native 同配置对照正在运行。**原始结果
+**V84 切换前记录：predictive 已结束，native 部分轨迹保留。**原始结果
 112 completed，104 个 native-agent-JCT 合格、8 个既有 guard 干预任务保留，
 正确性未评分。全量 405 个普通 agent/26350 次请求的上下文审计见
 [V1882 上下文与终态分组](../experiments/reports/v1882_v84_agent_context_eligibility_20261019.json)、

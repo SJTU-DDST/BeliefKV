@@ -2,7 +2,7 @@
 
 更新日期：2026-10-19（北京时间）。
 
-**V85c 准备重启 LoCoBench-Agent 长上下文验证。**总上下文 262144，
+**V85d 已执行 LoCoBench-Agent 长上下文验证，首批核对通过。**总上下文 262144，
 完整渲染输入在 95%（249036 token）压缩动态历史；临近上限时适配输出
 预算，正常单次输出仍最多 16384。使用缓存的本地 chat-template token
 计数，root/child 图步骤硬预算均保留 2048，不提高到 8192，不继承官方
@@ -13,8 +13,15 @@ JOIN 根据通知、真实 decode 服务和本轮报告长度校正启动，EOS 
 空置、不抢占活跃 LLM。V85b 暴露在线 CDF 的 0ms 契约错误和首次并发
 导入 tokenizer 的竞态；已修复并通过 V1912 的 792 项 CPU 检查，
 真实沙箱链路另在 V1904 通过。V84 已按授权中止、部分 native 轨迹保留；
-V85b 失败也保留。接下来用修复代码先跑 V85c predictive，再跑相同配置
+V85b 失败也保留。V85c 的上轮残留 socket 在模型启动前被拒绝并安全清理；
+V85d 使用 e317471 修复代码和新端口 18490，先 predictive，再跑相同配置
 native。吞吐/JCT、工具密度与预测精度尚未验收。
+V1914 封存首批 8 个 root 全部成功提交，24 个已服务 agent 的首请求均
+超过 100K，范围 115976–158641 token；已观察 16 次 spawn、8 个 JOIN、
+137 次工具调用，无 workflow 错误。V1915 后续前缀累计 D2H 73.506GB、
+H2D 19.338GB，物理路径未禁用。受控 JOIN 恢复含完成后的需求恢复；
+41 个节点 ACK、0.678GB FULL 首次复用证明不等于 41 次预测预取命中。
+这些是早期功能与负载证据，不是吞吐或 JCT 比较。
 
 **长上下文输入的先前资格记录。**V1890 输入检查绑定
 LoCoBench-Agent 的 6 个生成项目、12 个不同任务；完整源码为
@@ -25,11 +32,12 @@ LoCoBench-Agent 的 6 个生成项目、12 个不同任务；完整源码为
 项目依赖，功能、工具密度和正确性未验收。原 Python 版本不兼容候选
 与失败记录保留。配置为 root 8+4/900s、running 8（decode 也至多 8）、
 256K、Host 200GB/80:20，去长尾阈值 4；不是最优并发结论。
-新入口为 `run_qwen35_long_repository_ab.sh`，正在运行的 V84 不热改。
-环境与交互密度合格后才将候选用于正式性能比较，详见
+新入口为 `run_qwen35_long_repository_ab.sh`；V84 已中止并保留部分轨迹。
+V85d 使用 Python 3.10 镜像，实际工具链路已通过；原项目测试失败保留，
+整体质量与完整交互密度仍待验收。正式性能比较的边界详见
 [长负载研究记录](research/long_repository_workload_selection_20261019_zh.md)。
 
-**V84 predictive 已结束，native 同配置对照正在运行。**predictive 原始
+**V84 切换前记录：predictive 已结束，native 部分轨迹保留。**predictive 原始
 summary 为 112 completed、104 native-agent-JCT 合格，8 个 workflow 有
 既有 guard 干预；正确性未评分，completed 不等于自然完成或正确。
 V1882 使用全量轨迹统计实际上下文：405 个普通 agent、26350 次模型请求，

@@ -22,10 +22,17 @@ checks with1 optional sandbox skip; V1902 passes254 transfer/policy checks.
 V84 has been interrupted as authorized, with partial native evidence retained.
 V85b exposed a zero-time CDF contract error and concurrent first tokenizer
 imports; fix both and keep the failed trace. V1912 passes792 CPU checks, with
-the optional real sandbox check separately passed in V1904. V85c uses a fresh
-directory, frozen engine mapping, one initialized tokenizer, native-consumable
-CDFs and complete safe-checkpoint capacity pricing. Start predictive then matched
-native; GPU performance and dataset suitability remain pending.
+the optional real sandbox check separately passed in V1904. V85c was rejected
+before GPU startup by a stale refused control socket.
+V85d now starts on port18490 with the same qualified e317471 code, a verified
+engine mapping, one initialized tokenizer, native-consumable CDFs and complete
+safe-checkpoint capacity pricing. Run predictive then matched native; GPU
+performance and dataset suitability remain pending.
+V1914 verifies all8 initial roots submitted and24 served agents have first
+prompts115976-158641 tokens, with no workflow errors. V1915's later live prefix
+records73.506GB D2H and19.338GB H2D; physical controls remain enabled. Controlled
+JOIN ACKs include confirmed demand recovery and are not all predictive hits.
+These early checks establish execution and migration activity, not a speedup.
 
 Long-repository workload support is now an opt-in candidate, not an accepted
 replacement performance result. V1890 binds12 distinct original LoCoBench-Agent
@@ -33,21 +40,24 @@ tasks from6 generated projects: complete source110395-149832 tokens, task mean
 130780.67. Supply the immutable source to roots and all child depths, separately
 from public task instructions; exclude reference answers and approaches.
 V1889 passes295 CPU checks with1 existing optional real-sandbox progress test
-skipped. All6 projects parse in the actual Python3.9 container, but missing
-project dependencies, task execution and interaction density remain open.
-Preserve V1887's incompatible-project failure and V1888's prior manifest.
+skipped. That Python3.9 parsing was an earlier qualification step. The current
+Python3.10 image passes dependency preflight and the real tool path; preserve
+original project test failures, V1887's incompatible-project failure and V1888's
+prior manifest. Task correctness and full interaction density remain open.
 The candidate entrypoint is run_qwen35_long_repository_ab.sh:12 roots in8+4
 waves900s apart, running8 with a coupled decode upper bound8, context256K,
-Host200GB80:20 and existing EOS/tool/FULL PREPARE policies. Freeze a tail
+Host200GB80:20 and report-service/EOS JOIN, online tool timing and FULL PREPARE
+policies in predictive. Freeze a tail
 threshold4 and warmup600s through initialization, resume and final comparison.
 Native results from the old task set are not matched controls. Qualify actual
 tool turns/durations, JOIN frequency, useful Host-only restoration, exposed waits
 and recomputation before adopting this as the primary workload. Long supplied
-material alone does not establish tool-intensive natural histories. Keep V84's
-live pair unchanged; no candidate GPU run or performance win is claimed.
+material alone does not establish tool-intensive natural histories. V84's
+interrupted native trace is retained separately; no performance win is claimed.
 See docs/research/long_repository_workload_selection_20261019_zh.md.
 
-V84 predictive has finished; same-configuration native is now running.
+V84 predictive has finished; native was intentionally interrupted for this
+dataset transition, retaining its partial trace.
 Predictive reports112 completed,104 native-agent-JCT eligible and8 workflows
 with existing guard intervention. Correctness remains ungraded. V1882 audits
 all405 ordinary agents/26350 requests separately from3 internal summaries:
