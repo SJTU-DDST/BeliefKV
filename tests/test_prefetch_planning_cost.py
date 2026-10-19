@@ -106,7 +106,7 @@ def test_tail_reclaim_uses_only_the_same_complete_input_plan(cached_plan, all_se
             runtime._reclaim_wait_prefetch_tail_capacity(
                 key, opportunity, sent, source="tool_wait", commands=("pending",),
             )
-        assert planner.call_count == int(not cached_plan)
+        assert planner.call_count == int(not cached_plan and not all_sent)
         assert runtime.physical_ledger.pending_count == 1
         assert not runtime.completed_physical_actions
         if all_sent:

@@ -288,7 +288,7 @@ class ShadowBackupStep:
     missing_full_prefix_tokens: int = field(default=0, compare=False)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class PrefetchLoadStep:
     """One native H2D target bound to a FULL session leaf and its epochs."""
 
@@ -1172,7 +1172,7 @@ def _counts(items: tuple[tuple[str, int], ...], *, positive: bool) -> dict[str, 
     return result
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class PhysicalChildExpectation:
     anchor_node_id: int
     published_node_ids: tuple[int, ...]
@@ -1240,7 +1240,7 @@ def _native_split_publication(
         return False
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class PhysicalActionExpectation:
     command_id: str
     action: str
@@ -1286,16 +1286,16 @@ def prefetch_expectation_from_native_op(
         or not command_id
         or getattr(operation, "beliefkv_command_id", None) != command_id
         or getattr(operation, "node_ids", None) != [step.node_id]
-        or any(
-            type(node_id) is not int or node_id < 0
-            for node_id in (step.leaf_node_id, step.node_id)
-        )
-        or any(
-            type(created) not in (int, float)
-            or created < 0
-            or (type(created) is float and not isfinite(created))
-            for created in (step.leaf_creation_time, step.creation_time)
-        )
+        or type(step.leaf_node_id) is not int
+        or step.leaf_node_id < 0
+        or type(step.node_id) is not int
+        or step.node_id < 0
+        or type(step.leaf_creation_time) not in (int, float)
+        or step.leaf_creation_time < 0
+        or (type(step.leaf_creation_time) is float and not isfinite(step.leaf_creation_time))
+        or type(step.creation_time) not in (int, float)
+        or step.creation_time < 0
+        or (type(step.creation_time) is float and not isfinite(step.creation_time))
         or type(step.key.context_id) is not str
         or not step.key.context_id
         or type(step.key.context_epoch) is not int
@@ -1322,13 +1322,12 @@ def prefetch_expectation_from_native_op(
         raise PhysicalReceiptError("native prefetch accounting unavailable") from exc
     if type(transfers) is not list and transfers is not None:
         raise PhysicalReceiptError("invalid native prefetch pool transfers")
-    if type(counts) is not dict or set(counts) - {"kv", "mamba"} or (
-        "kv" not in counts
-    ) or any(type(count) is not int or count < 0 for count in counts.values()):
+    if type(counts) is not dict:
         raise PhysicalReceiptError("invalid native prefetch pool counts")
 
     if not transfers:
-        if counts != {"kv": full_count} or not full_count:
+        count = counts.get("kv")
+        if len(counts) != 1 or type(count) is not int or count != full_count or not full_count:
             raise PhysicalReceiptError("native prefetch token counts mismatch")
         size = getattr(getattr(entries["kv"], "host_pool", None), "size_per_token", None)
         if type(size) is not int or size <= 0:
@@ -1337,6 +1336,11 @@ def prefetch_expectation_from_native_op(
         pool_bytes = (("kv", expected_bytes),)
         pool_sizes = (("kv", size),)
     else:
+        if (
+            set(counts) - {"kv", "mamba"} or "kv" not in counts
+            or any(type(count) is not int or count < 0 for count in counts.values())
+        ):
+            raise PhysicalReceiptError("invalid native prefetch pool counts")
         sizes: dict[str, int] = {}
 
         def size_for(name: str) -> int:

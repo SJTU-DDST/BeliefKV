@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import argparse
 import ast
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import datetime
 import hashlib
 import json
@@ -17,7 +17,10 @@ from types import MethodType
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from beliefkv.runtime.sglang_v0520_physical import prefetch_expectation_from_native_op
+from beliefkv.runtime.sglang_v0520_physical import (
+    PrefetchLoadStep, ShadowBackupStep,
+    prefetch_expectation_from_native_op, shadow_expectation_from_native_op,
+)
 from scripts.benchmark_native_prepare_path import baseline_runtime
 from scripts.benchmark_prefetch_control_cpu import compare
 from tests.test_sglang_v0520_physical import Pool, native_prefetch
@@ -49,10 +52,16 @@ def native_accounting(engine):
     }
 
 
-def measure_case(baseline, methods, *, full, mamba, sidecar, samples):
+def instance_storage_bytes(record):
+    state = getattr(record, "__dict__", None)
+    return sys.getsizeof(record) + (sys.getsizeof(state) if state is not None else 0)
+
+
+def measure_case(baseline, methods, *, full, mamba, sidecar, samples, direction="h2d"):
     names = baseline._roll_tool_prefetch.__globals__
     variants = {}
     outputs = {}
+    steps = {}
     for name in ("baseline", "candidate"):
         step, operation, controller = native_prefetch(full=full, mamba=mamba, sidecar=sidecar)
         group = controller.mem_pool_host
@@ -62,13 +71,26 @@ def measure_case(baseline, methods, *, full, mamba, sidecar, samples):
         for method in ("_num_tokens_by_pool", "_transfer_num_bytes"):
             setattr(controller, method, MethodType(methods[method], controller))
         if name == "baseline":
-            step = names["PrefetchLoadStep"](
-                step.key, step.leaf_node_id, step.leaf_creation_time,
-                step.node_id, step.creation_time, step.include_mamba,
+            step_type, account = (
+                (names["PrefetchLoadStep"], names["prefetch_expectation_from_native_op"])
+                if direction == "h2d"
+                else (names["ShadowBackupStep"], names["shadow_expectation_from_native_op"])
             )
-            account = names["prefetch_expectation_from_native_op"]
         else:
-            account = prefetch_expectation_from_native_op
+            step_type, account = (
+                (PrefetchLoadStep, prefetch_expectation_from_native_op)
+                if direction == "h2d"
+                else (ShadowBackupStep, shadow_expectation_from_native_op)
+            )
+        step = step_type(
+            step.key, step.leaf_node_id, step.leaf_creation_time,
+            step.node_id, step.creation_time, step.include_mamba,
+        )
+        # Mature split dictionaries before retaining the step used in timing.
+        for _ in range(64):
+            replace(step)
+        step = replace(step)
+        steps[name] = step
         callback = lambda account=account, step=step, operation=operation, controller=controller: (
             account("prefetch-1", step, operation, controller)
         )
@@ -77,11 +99,21 @@ def measure_case(baseline, methods, *, full, mamba, sidecar, samples):
     if outputs["baseline"] != outputs["candidate"]:
         raise AssertionError("native counts, per-pool bytes or total bytes changed")
     costs = compare(variants, samples=samples, calls=100)
+    storage = {}
+    for name, callback in variants.items():
+        action = callback()
+        storage[name] = {
+            "step": instance_storage_bytes(replace(steps[name])),
+            "child_expectation": instance_storage_bytes(action.children[0]),
+            "action_expectation": instance_storage_bytes(action),
+        }
     return {
+        "direction": direction,
         "full_tokens": full, "mamba_slots": mamba,
         "sidecar_source": sidecar.value if sidecar is not None else None,
         "costs": costs, "accounting_equal": True,
         "expectation": outputs["candidate"],
+        "record_instance_storage_bytes": storage,
     }
 
 
@@ -90,6 +122,7 @@ def main():
     parser.add_argument("--baseline", required=True)
     parser.add_argument("--samples", type=int, default=151)
     parser.add_argument("--engine", type=Path, required=True)
+    parser.add_argument("--include-d2h", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.samples < 1 or args.output.exists():
@@ -107,8 +140,9 @@ def main():
     cases = [
         measure_case(
             baseline, methods, full=full, mamba=mamba, sidecar=sidecar,
-            samples=args.samples,
+            samples=args.samples, direction=direction,
         )
+        for direction in (("h2d", "d2h") if args.include_d2h else ("h2d",))
         for full, mamba, sidecar in (
             (2, 0, None), (4096, 0, None), (4096, 1, None),
             (0, 2, None), (4096, 1, Pool.KV), (0, 2, Pool.MAMBA),
@@ -133,10 +167,12 @@ def main():
         "candidate_source_sha256": sources,
         "native_controller_source": native_source,
         "samples": args.samples, "warmup_samples": 20, "calls_per_sample": 100,
+        "include_d2h": args.include_d2h,
         "cases": cases,
         "limitations": [
             "Token counts and pool shapes are controlled; this is not an online frequency estimate.",
             "Native helpers operate on CPU tuples, not CUDA tensors or native transfer operations.",
+            "Record storage counts the shallow instance plus its dictionary, excluding referenced values and allocator overhead.",
             "No transfer completion, reuse, prediction accuracy, throughput or JCT is measured.",
         ],
     }

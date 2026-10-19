@@ -45,7 +45,26 @@ This is CPU evidence, not an end-to-end result. Keep new-context hybrid checkpoi
 gaps separate; FULL matches alone cannot reconstruct a missing Mamba checkpoint.
 GPU pause remains active and automatic resume remains disabled.
 
-V1941/V1942 further reduce control costs relative to fc9fea7. Skip empty
+V1946-V1948 reduce per-node accounting and redundant tail work relative to
+00d1114. When the entire selected plan has been submitted and its FULL
+quantity equals all missing FULL in the same immutable snapshot, skip tail
+indexing/replanning. Retain live-source/pending validation, actual tail work
+for65/96-node paths, safe input checkpoints and all native readiness checks.
+This is not a completion or admission proof. Merge FULL-only scalar validation
+and use fixed-field step/child/action records, retaining metadata and dataclass
+copy/serialization. Their shallow H2D instance storage totals544 to256 bytes;
+do not treat this as total heap, Host or HBM savings.
+Pinned native FULL accounting P50 is7.16 to5.71us. Complete64-node JOIN/tool
+CPU dispatch is2170.40 to1836.43us and2138.82 to1846.12us. The40 scenes with
+tail support improve2.9%-17.6%;40 without it improve1.0%-9.8%, with equal
+targets/pending/budgets and9 unchanged prefill dependency decisions.
+The1750 CPU checks pass, including16 real CPU native radix/reclaim checks
+rerun with the qualified checkout after the initial missing-env skips.
+See V1949. Keep GPU experiments paused. Closure observation, unavoidable
+tail planning, registration and live-source validation remain CPU costs;
+do not infer throughput/JCT or prediction-accuracy gains from these scenes.
+
+Earlier V1941/V1942 reduce control costs relative to fc9fea7. Skip empty
 prediction inventories and expiry cleanup, and probe empty sockets before
 allocating the receive loop. Rearm readiness after a drained burst, retaining
 immediate arrivals and profiling. Validate child pools in one pass and reuse
@@ -60,8 +79,9 @@ budgets and ACK safety retained. The profiled empty-socket case adds about
 0.03us. A single64-command dependency scene adds1.61us; V1944's12 independent
 key layouts show mean P50 of26.46 to26.65us, so retain the residual variation
 without claiming dependency-path savings. See V1943 and the bound raw reports.
-Next CPU work remains native operation accounting, closure observation and
-replanning at the quantity boundary; do not claim all control costs are gone.
+At that checkpoint, native operation accounting, closure observation and
+quantity-boundary replanning remained costs; V1946-V1948 address the
+FULL-only and proven-empty-tail portions without removing all control work.
 Keep the GPU pause, engine/workload and policy triggers unchanged.
 
 V1935-V1937 optimize prefetch submission relative to3381a0e. Full-only

@@ -72,6 +72,12 @@ def dispatch_fixture(
     runtime._native_service_samples.extend(
         NativeServiceSample(size, 10., shape="hybrid") for _ in range(3)
     )
+    if depth > runtime.physical_ledger.max_pending:
+        # A bounded prefix may stop before its Mamba checkpoint.
+        full_size = runtime.physical_ledger.max_pending * 128 * full_unit
+        runtime._native_service_samples.extend(
+            NativeServiceSample(full_size, 10., shape="full") for _ in range(3)
+        )
     runtime.predictor_sha256 = "a" * 64
     runtime._hotpath_timing.enabled = False
     runtime.enable_h2d_opportunity_sampling = False
@@ -396,8 +402,10 @@ def measure(
                 expected_mode = (
                     "native_next_prefill" if native_budget else "legacy_capacity_unavailable"
                 )
+                expected_nodes = min(depth, runtime.physical_ledger.max_pending)
                 if (
-                    len(actions) != depth or runtime.physical_ledger.pending_count != depth
+                    len(actions) != expected_nodes
+                    or runtime.physical_ledger.pending_count != expected_nodes
                     or runtime._residency_budget.source != expected_mode or runtime.physical_disabled
                 ):
                     raise AssertionError((name, source, depth, states[name], dict(runtime.counts)))
@@ -413,7 +421,8 @@ def measure(
             profile.runcall(dispatch)
         functions = sorted(pstats.Stats(profile).stats.items(), key=lambda item: -item[1][2])
         return {
-            "source": source, "depth": depth, "diagnostics": diagnostics,
+            "source": source, "depth": depth, "issued_nodes": expected_nodes,
+            "diagnostics": diagnostics,
             "tail_reclaim_supported": tail_reclaim,
             "budget_mode": "native_next_prefill" if native_budget else "legacy_capacity_unavailable",
             "costs": {name: distribution(values) for name, values in costs.items()},
@@ -439,6 +448,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline", default="7f1509e")
     parser.add_argument("--samples", type=int, default=31)
+    parser.add_argument("--depths", type=int, nargs="+", default=(4, 16, 64))
     parser.add_argument("--include-selection", action="store_true")
     parser.add_argument("--include-prefill-checks", action="store_true")
     parser.add_argument("--prefill-checks-only", action="store_true")
@@ -447,7 +457,10 @@ def main():
     parser.add_argument("--tail-reclaim", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    if args.samples < 1 or args.prefill_key_layouts < 1 or args.output.exists():
+    if (
+        args.samples < 1 or args.prefill_key_layouts < 1
+        or any(depth < 1 for depth in args.depths) or args.output.exists()
+    ):
         parser.error("use positive samples/key layouts and a fresh output path")
     paths = (
         "beliefkv/runtime/sglang_v0520_runtime.py",
@@ -466,7 +479,7 @@ def main():
             native_budget=native_budget, samples=args.samples,
             tail_reclaim=args.tail_reclaim,
         )
-        for source in ("join_ticket", "tool_wait") for depth in (4, 16, 64)
+        for source in ("join_ticket", "tool_wait") for depth in args.depths
         for diagnostics in (False, True) for native_budget in (False, True)
     ]
     selection_cases = [

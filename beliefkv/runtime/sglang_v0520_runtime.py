@@ -5247,6 +5247,13 @@ class NativeAdmissionRuntime:
             or not any(self.physical_ledger.is_pending(command) for command in commands)
         ):
             return
+        if (
+            issued_steps == opportunity.steps
+            and opportunity.required_full_tokens == candidate.missing_full_device_tokens
+        ):
+            # Every missing FULL token in this snapshot is already submitted.
+            # This says nothing about DMA completion, state or request readiness.
+            return
         sent = {(step.node_id, step.creation_time) for step in issued_steps}
         checkpoint = (
             issued_steps[0].leaf_node_id, issued_steps[0].leaf_creation_time,
