@@ -5,7 +5,18 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-Current priority is the confirmed V89 compaction error, then workload qualification.
+Current priority is V91b's fresh GPU trace and remaining control/migration costs.
+Frozen f29717e launched at2026-10-20 07:43:32 Asia/Shanghai; first actual workflow
+service is07:46:31. Keep24 roots,16+8 arrivals/900s,running8,256K,Host80:20.
+All737 distinct CPU cases pass, with four final rechecks replacing earlier same-name
+executions rather than being added twice. The real SWE Docker case is unselected.
+Startup source/configuration match and initial writer failures/drops are zero.
+See V2086. Predictive precedes native on the same frozen task/code. Useful migration,
+consumption, tail-excluded throughput and mean JCT remain unaccepted.
+The observed generic tracebacks are the known internal freeze_gc startup race;
+the launcher successfully POSTs after health and before actual workflow requests.
+
+The confirmed V89 compaction error is CPU-fixed:
 V89 predictive finished22 completed and2 TemplateErrors, with no child/JOIN.
 Its1612 D2H batches/63.173GB include auxiliary diagnostics and are not a clean
 performance control. Native was administratively stopped during initialization;

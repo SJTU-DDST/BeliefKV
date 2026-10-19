@@ -2,7 +2,17 @@
 
 更新日期：2026-10-20（北京时间）。
 
-**当前先修复真实压缩错误，再验证工作负载资格。**V89 predictive 已结束：
+**当前运行 V91b，优先验证最新控制降本与迁移机会。**`f29717e` 于
+北京时间 2026-10-20 07:43:32 启动，07:46:31 已有真实 GPU 服务。
+24 root、16+8/900s、running 8、256K、Host80:20 与原引擎保持；
+737 个不同 CPU 用例通过，来源/配置核对无差异，初查写盘失败/丢弃均 0。
+predictive 后接 native，双方同一冻结任务与代码；全程迁移压力、消费、
+去长尾吞吐和平均 JCT 仍未验收。见
+[V2086](../experiments/reports/v2086_v91b_actual_startup_20261020.json)。
+新增 generic traceback 经人工核对为内部 freeze_gc 启动竞态，启动器已在
+health 后、真实请求前成功 POST；可选 TorchCodec 警告另列，不能当新故障。
+
+此前 V89 predictive 已结束：
 22 completed、2 个 `TemplateError: No user query found in messages.`，
 全程无 child/JOIN。控制交付未失败，不能归因为 workflow 超时。
 driver 汇总 1612 批 D2H/63.173GB、无 H2D，但包含附加诊断流量，

@@ -7,6 +7,13 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 后续开发固定在主目录 `/home/longhao/experiment/BeliefKV` 的 `main` 分支。
 历史实验 worktree 保留其冻结来源；新代码修改、验证与提交在主目录进行。
 
+当前 V91b 使用冻结 `f29717e`，北京时间 2026-10-20 07:43:32 启动、
+07:46:31 首次真实服务，先 predictive 后 native。737 个不同 CPU 用例
+及来源通过，4 项最终复查替代此前同名执行，不重复相加；真实 SWE Docker
+用例未选，不冒充已运行。24 root、16+8/900s、running 8、256K、
+Host80:20 保持。初次启动核对写盘失败/丢弃均 0，见 V2086；运行后仍需
+从最新 trace 验证机会、消费、重复工具行为和去长尾性能，不按 CPU 比例验收。
+
 V89 predictive 为 22 completed、2 个真实 TemplateError，无 child/JOIN；
 native 初始化后行政停止，未记录 native workflow。driver 的 63.173GB
 D2H 包含附加诊断，不能用本轮作干净性能配对。附加单任务的
