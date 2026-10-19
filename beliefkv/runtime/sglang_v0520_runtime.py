@@ -533,6 +533,7 @@ class NativeAdmissionRuntime:
         self._decoded_tool_requests: set[str] = set()
         self._decoded_scan_positions: dict[str, int] = {}
         self._tool_open_token_ids: frozenset[int] = frozenset()
+        self._reasoning_open_token_ids: frozenset[int] = frozenset()
         self._reasoning_close_token_ids: frozenset[int] = frozenset()
         if model_path:
             config = Path(model_path) / "tokenizer_config.json"
@@ -547,6 +548,10 @@ class NativeAdmissionRuntime:
                 self._reasoning_close_token_ids = frozenset(
                     int(token_id) for token_id, token in tokens.items()
                     if isinstance(token, dict) and token.get("content") == "</think>"
+                )
+                self._reasoning_open_token_ids = frozenset(
+                    int(token_id) for token_id, token in tokens.items()
+                    if isinstance(token, dict) and token.get("content") == "<think>"
                 )
         self._runtime_state_next_ms = 0.
         self._terminal_cache_diagnostics = os.environ.get(
@@ -1597,14 +1602,32 @@ class NativeAdmissionRuntime:
         outputs = getattr(req, "output_ids", ()) or ()
         tokenizer = getattr(req, "tokenizer", None)
         if normal and not body and tokenizer is not None:
-            close = next((
+            markers = self._reasoning_open_token_ids | self._reasoning_close_token_ids
+            marker = next((
                 index for index in range(len(outputs) - 1, -1, -1)
-                if outputs[index] in self._reasoning_close_token_ids
+                if outputs[index] in markers
             ), None)
-            if close is not None:
+            body_start = None
+            if marker is not None and outputs[marker] in self._reasoning_close_token_ids:
+                body_start = marker + 1
+            elif marker is None:
+                # enable_thinking=False closes reasoning in the immutable input
+                # template; its ordinary output need not emit another </think>.
+                inputs = getattr(req, "origin_input_ids", ()) or ()
+                tail = inputs[-32:]
+                prompt_markers = [
+                    token for token in tail if token in markers
+                ]
+                if (
+                    len(prompt_markers) >= 2
+                    and prompt_markers[-2] in self._reasoning_open_token_ids
+                    and prompt_markers[-1] in self._reasoning_close_token_ids
+                ):
+                    body_start = 0
+            if body_start is not None:
                 # Inspect only the completed visible suffix, never the reasoning
                 # prefix or a future decode. No text/token payload is logged.
-                suffix = outputs[max(close + 1, len(outputs) - 64):]
+                suffix = outputs[max(body_start, len(outputs) - 64):]
                 try:
                     body = bool(tokenizer.decode(suffix, skip_special_tokens=True).strip())
                 except (TypeError, ValueError, KeyError, IndexError):

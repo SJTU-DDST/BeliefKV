@@ -7,6 +7,13 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 后续开发固定在主目录 `/home/longhao/experiment/BeliefKV` 的 `main` 分支。
 历史实验 worktree 保留其冻结来源；新代码修改、验证与提交在主目录进行。
 
+156 root 必须显式传入 `qwen35_native_predictive_replenished_108plus48_2026-10-09.json`，
+不能误用默认 128 项清单。V83 的初始化失败发生在 GPU 启动前，日志保留。
+无 worker 的 EOS 判断必须覆盖 `enable_thinking=False` 输入已闭合 reasoning
+的真实模板，同时拒绝输出重新开启 reasoning；本地 tokenizer 两种模式已
+核对。V83b 在服务器初始化阶段为此修复主动停止，没有 workflow 结果；
+保留日志并冻结新代码，不在旧运行快照里编辑或热替换。
+
 **后续配置与主要比较口径，以本段为准。**JOIN 只允许真实原生无工具
 EOS 触发，通知及剩余工作预测均不能授权 H2D。关闭在线语义 worker 和
 语义文本传送；结束时检查工具标记和可见正文。保留工具预测、FULL 增量

@@ -9,6 +9,7 @@ from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from tests.test_sglang_v0520_runtime import event, final_stage_runtime, req
 
 
+@pytest.mark.parametrize("closed_prompt", (False, True))
 @pytest.mark.parametrize("reason,outputs,matched,expected", (
     ("stop", [1, 99, 10], None, True),
     ("stop", [1, 99, 10], "NaN happened", False),
@@ -19,7 +20,7 @@ from tests.test_sglang_v0520_runtime import event, final_stage_runtime, req
     ("stop", [1, 99, 10, 77], None, False),
 ))
 def test_finished_child_eos_without_worker_or_streaming(
-    reason, outputs, matched, expected,
+    reason, outputs, matched, expected, closed_prompt,
 ):
     runtime = final_stage_runtime()
     runtime._clear_final_stage("join")
@@ -28,12 +29,14 @@ def test_finished_child_eos_without_worker_or_streaming(
     child.session_id, child.session_generation = "cs", 1
     child.beliefkv_metadata["context_epoch"] = 1
     child.beliefkv_metadata["parent_invocation_id"] = "parent"
-    child.origin_input_ids, child.output_ids = [1, 2], outputs
+    child.origin_input_ids = [98, 1, 99, 1] if closed_prompt else [1, 2]
+    child.output_ids = [token for token in outputs if token != 99] if closed_prompt else outputs
     child.tokenizer = NS(decode=lambda ids, **_: "Report." if 10 in ids else "")
     child.finished_reason = NS(to_json=lambda: {"type": reason, "matched": matched})
     finished = [False]
     child.finished = lambda: finished[0]
     runtime._reasoning_close_token_ids = frozenset({99})
+    runtime._reasoning_open_token_ids = frozenset({98})
     runtime._tool_open_token_ids = frozenset({77})
     runtime.on_events((event(
         7, RuntimeEventKind.LLM_SUBMIT, invocation_id="child",
@@ -86,5 +89,36 @@ def test_eos_runtime_never_loads_legacy_semantic_model(monkeypatch):
     try:
         assert runtime._semantic_worker is None
         assert runtime.join_prefetch_trigger == "observed_eos"
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("prompt,outputs,expected", (
+    ([98, 1, 99, 1], [10, 11], True),
+    ([98, 1, 99, 1], [], False),
+    ([98, 1], [10, 11], False),
+    ([98, 1], [10, 99, 11], True),
+    ([98, 1, 99, 1], [98, 10, 11], False),
+    ([98, 1, 99, 1], [10, 99, 98, 11], False),
+    ([98, 1, 99, *([1] * 33)], [10, 11], False),
+))
+def test_visible_eos_body_respects_prompt_and_output_reasoning_state(
+    prompt, outputs, expected,
+):
+    from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
+
+    runtime = NativeAdmissionRuntime()
+    runtime._reasoning_open_token_ids = frozenset({98})
+    runtime._reasoning_close_token_ids = frozenset({99})
+    key = PrefillCandidateKey("child", "wf", "child", "ctx-child", 0, 0)
+    request = NS(
+        origin_input_ids=prompt, output_ids=outputs,
+        finished_reason=NS(to_json=lambda: {"type": "stop"}),
+        beliefkv_metadata={},
+        tokenizer=NS(decode=lambda ids, **_: "Report." if 11 in ids else ""),
+    )
+    try:
+        runtime._record_native_final_body(request, key)
+        assert runtime._semantic_eos_proofs["child"] is expected
     finally:
         runtime.close()

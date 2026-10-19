@@ -5,6 +5,14 @@ Status date: 2026-10-19 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+The worker-free EOS body proof must handle the actual Qwen template:
+enable_thinking=False places the closing marker in input, not generated output.
+Validate its recent open/close pair and reject reopened/unclosed output reasoning.
+V1833 passes387 related CPU checks; actual local tokenizer controls confirm both
+thinking modes. Preserve V83's pre-GPU manifest initialization failure and V83b's
+intentional stop during server initialization, with no workflow performance
+claim. The next freeze explicitly selects the same156-task manifest hash as V82b.
+
 The active goal now uses native EOS only for provisional JOIN prefetch. Remove
 live remaining-work inference and semantic text delivery, while retaining tool
 timing, incremental FULL-only PREPARE, residency, native dependencies and bounded
