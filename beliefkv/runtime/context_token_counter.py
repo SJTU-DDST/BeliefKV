@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections import OrderedDict
 from functools import lru_cache, partial
 import json
+import math
+import os
 from threading import RLock
 from typing import Any
 
@@ -13,8 +15,38 @@ from langchain_core.messages.utils import count_tokens_approximately
 from langchain_core.utils.function_calling import convert_to_openai_tool
 
 
+def _count_snapshot(value: Any, remaining: list[int]) -> tuple:
+    remaining[0] -= 1
+    if remaining[0] < 0:
+        raise ValueError("request count snapshot exceeds cache budget")
+    kind = type(value)
+    if kind is str:
+        remaining[0] -= len(value)
+        if remaining[0] < 0:
+            raise ValueError("request count snapshot exceeds cache budget")
+        return kind, value
+    if value is None or kind in (int, bool):
+        return kind, value
+    if kind is float and math.isfinite(value):
+        return kind, repr(value)
+    if kind in (list, tuple):
+        return kind, tuple(_count_snapshot(item, remaining) for item in value)
+    if kind is dict:
+        items = []
+        for key, item in value.items():
+            if type(key) is not str:
+                raise TypeError("non-string request count key")
+            remaining[0] -= len(key)
+            items.append((key, _count_snapshot(item, remaining)))
+        return kind, tuple(items)
+    raise TypeError("unsupported request count snapshot value")
+
+
 class ChatTemplateTokenCounter:
-    def __init__(self, model_path: str, *, cache_chars: int = 16_000_000) -> None:
+    def __init__(
+        self, model_path: str, *, cache_chars: int = 16_000_000,
+        cache_requests: bool = False,
+    ) -> None:
         from transformers import AutoTokenizer
 
         self.tokenizer = AutoTokenizer.from_pretrained(
@@ -27,6 +59,8 @@ class ChatTemplateTokenCounter:
         self._chars = 0
         self._cache: OrderedDict[str, int] = OrderedDict()
         self._lock = RLock()
+        self.cache_requests = cache_requests
+        self._last_request: tuple[tuple, int] | None = None
 
     def rendered_count(self, rendered: str) -> int:
         # An indivisible added token separates messages. BPE cannot merge
@@ -77,21 +111,41 @@ class ChatTemplateTokenCounter:
                         }
                         for call in message["tool_calls"]
                     ]
+        wire_tools = [convert_to_openai_tool(tool) for tool in tools] if tools else None
+        key = None
+        if self.cache_requests:
+            try:
+                # Snapshot mutable arguments without copying the long text or
+                # sorting fields whose order can affect template rendering.
+                key = _count_snapshot(
+                    (getattr(self.tokenizer, "chat_template", None), wire, wire_tools),
+                    [self.cache_chars],
+                )
+            except (RecursionError, TypeError, ValueError):
+                pass
+            if key is not None:
+                with self._lock:
+                    previous = self._last_request
+                    if previous is not None and previous[0] == key:
+                        return previous[1]
         rendered = self.tokenizer.apply_chat_template(
-            wire,
-            tools=[convert_to_openai_tool(tool) for tool in tools] if tools else None,
+            wire, tools=wire_tools,
             tokenize=False, add_generation_prompt=True, enable_thinking=True,
         )
-        return self.rendered_count(rendered)
+        count = self.rendered_count(rendered)
+        if key is not None:
+            with self._lock:
+                self._last_request = (key, count)
+        return count
 
 
 _initialization_lock = RLock()
 
 
 @lru_cache(maxsize=2)
-def _cached_context_token_counter(model_path: str | None):
+def _cached_context_token_counter(model_path: str | None, cache_requests: bool = False):
     if model_path:
-        return ChatTemplateTokenCounter(model_path)
+        return ChatTemplateTokenCounter(model_path, cache_requests=cache_requests)
     return partial(count_tokens_approximately, chars_per_token=3.0)
 
 
@@ -99,4 +153,6 @@ def context_token_counter(model_path: str | None = None):
     # functools.lru_cache permits concurrent misses. Transformers lazy imports
     # and loading this tokenizer must happen once before concurrent workflows.
     with _initialization_lock:
-        return _cached_context_token_counter(model_path)
+        return _cached_context_token_counter(
+            model_path, os.environ.get("BELIEFKV_CHAT_TOKEN_BLOCK_CACHE") == "1",
+        )

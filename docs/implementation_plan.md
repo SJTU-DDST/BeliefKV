@@ -45,6 +45,22 @@ This is CPU evidence, not an end-to-end result. Keep new-context hybrid checkpoi
 gaps separate; FULL matches alone cannot reconstruct a missing Mamba checkpoint.
 GPU pause remains active and automatic resume remains disabled.
 
+V1928 reuses an exact full-input count between compression and completion
+budgeting. Keep one bounded immutable content snapshot, including argument
+order/types, schema and chat template; changed/unsupported inputs recount.
+Use the per-arm frontend flag and export its normalized value to the client.
+Native stays off by default. Across36 reconstructed long inputs and three
+iterations, each side's216 counts equal native; second-count means5.18/0.80ms,
+pair means85.93/82.00ms, template renders216/108. Do not infer production hit
+frequency or JCT from two deliberately consecutive calls.
+V1929 indexes active tools by invocation and uses fitted event counts plus
+binary survival lookup. Replay3719 real lifecycle events;36 controlled query
+scenes and post-update predictions remain equal. The24/256-active query P50s
+are114.83/87.85us and113.22/68.64us. These populations are controlled CPU scenes,
+not measured workload frequencies or prediction-accuracy improvements.
+The70 client/config and415 predictor/runtime CPU checks pass with overlap.
+Keep GPU paused, automatic resume disabled, workload and dynamic delegation unchanged.
+
 V1926 removes duplicate report-stage JOIN planning within one immutable native
 snapshot. Keep the complete checkpoint cost separately from the bounded issue
 plan, retaining fresh capture after reclaim/split and at enqueue. The synthetic

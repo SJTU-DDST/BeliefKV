@@ -30,6 +30,14 @@ reactive 作为本系统控制时与 predictive 同开。完整系统收益与 K
 显式 `SGLANG_SOURCE_CHECKOUT`。测试暂停检查须隔离到临时路径，不删除
 真实 `/tmp/beliefkv-experiments.paused` 来运行 CPU 检查。
 
+同一逐 arm 前端开关也控制客户端完整输入计数复用，probe 必须将归一化
+后的 `BELIEFKV_CHAT_TOKEN_BLOCK_CACHE` 导出给客户端，不能只给 server。
+native 默认关闭，reactive 控制与 predictive 同开。计数快照不依赖对象
+身份、不排序参数，不把 bool/int/float 或正负零合并；消息、schema、
+模板变化、超预算和不支持的值均走重新计数。不得复用跨压缩输入的计数，
+也不把该 CPU 收益当成 KV 预取贡献。工具查询降本必须保持并行调用、
+终态清理、删失支持和历史更新后的预测一致；V1928/V1929 未启动 GPU。
+
 报告阶段的完整 checkpoint 成本只复用本次只读快照，不能将它当成容量
 许可或跨回收/分裂/提交的物理计划。实际恢复仍受事务数、字节和两池预算
 限制；工具/EOS 路径不额外建立这份成本快照。token 缓存类型检查不允许

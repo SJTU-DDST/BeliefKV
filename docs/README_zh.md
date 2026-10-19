@@ -19,6 +19,20 @@ child 都可动态委派叶子孙 agent，最大深度仍为 2。任务范围、
 见[24-root 配置](../configs/migration/qwen35_locobench_long_24root_running8_2026-10-19.json)
 及[CPU 原始结果](../experiments/reports/v1925_v85d_long_chat_token_cache_cpu_20261019.json)。
 
+**最新 CPU 优化为 V1928/V1929。**压缩判断和输出预算之间复用同一完整
+输入的精确计数，消息/参数/工具 schema/模板变化均重新计算；只保留一条
+有界快照，不把计数写进 agent 状态。按 arm 的前端开关启用，native 默认
+关闭。36 个重建长输入、三轮每侧 216 次计数均等于原生；第二次均值
+5.18→0.80ms，两次合计均值 85.93→82.00ms，模板渲染 216→108 次。
+工具预测按 invocation 索引活动调用、复用曲线事件数并用二分查找生存率；
+3719 个真实生命周期事件及 36 组受控查询/历史更新前后预测一致，
+24 活动工具的查询 P50 114.83→87.85us，256 活动工具 113.22→68.64us。
+原始结果见
+[计数复用](../experiments/reports/v1928_context_count_reuse_cpu_20261019.json)、
+[工具查询](../experiments/reports/v1929_online_tool_lookup_cpu_20261019.json)。
+70 项客户端/配置回归和 415 项预测/runtime 回归通过，存在交叉覆盖；
+这些是局部 CPU 证据，GPU 仍暂停，工作负载并发和动态委派未变。
+
 暂停期间继续削减 CPU 成本：JOIN 检查在同一快照内复用完整 checkpoint
 恢复计划，局部规划 P50 降低约 9%–18%，实际恢复目标和容量判断相同；
 不跨容量变化或提交边界复用。token 缓存初始化改为直接检查后处理器，

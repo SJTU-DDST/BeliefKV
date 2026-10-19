@@ -66,6 +66,39 @@ def test_timeout_does_not_become_an_observed_completion():
     assert history.estimate("workflow", "agent", now_ms=1000.) is None
 
 
+def test_active_tool_index_preserves_duplicate_and_terminal_event_semantics():
+    history = OnlineWorkloadToolTiming()
+
+    def observe(item):
+        history.observe(item)
+        flattened = {
+            identity: value for group in history._open_by_invocation.values()
+            for identity, value in group.items()
+        }
+        assert flattened == history.open
+        assert all(history._open_by_invocation.values())
+
+    observe(tool_event(RuntimeEventKind.TOOL_START, call="one", invocation="a"))
+    observe(tool_event(RuntimeEventKind.TOOL_START, call="one", invocation="a", start=500.))
+    assert history.open[("workflow", "a", "one")][1] == 0.
+    observe(tool_event(RuntimeEventKind.TOOL_START, call="two", invocation="b"))
+    other = tool_event(RuntimeEventKind.TOOL_START, call="three", invocation="a")
+    other.workflow_id = "other-workflow"
+    observe(other)
+    observe(tool_event(
+        RuntimeEventKind.TOOL_END, call="two", invocation="b", duration_ms=float("nan"),
+    ))
+    observe(tool_event(RuntimeEventKind.TOOL_END, call="two", invocation="b"))
+    observe(tool_event(RuntimeEventKind.RETURN, invocation="a"))
+    assert set(history.open) == {("other-workflow", "a", "three")}
+    observe(tool_event(RuntimeEventKind.TOOL_START, invocation="cancelled"))
+    observe(tool_event(RuntimeEventKind.INVOCATION_CANCEL, invocation="cancelled"))
+    observe(tool_event(RuntimeEventKind.TOOL_START, invocation="root"))
+    observe(tool_event(RuntimeEventKind.TOOL_START, invocation="child"))
+    observe(tool_event(RuntimeEventKind.WORKFLOW_END, invocation="root"))
+    assert set(history._open_by_invocation) == {("other-workflow", "a")}
+
+
 def test_report_work_adapts_without_using_current_future_length():
     work = OnlineReportWork()
     assert work.remaining(expected=100, generated=30) == 70.

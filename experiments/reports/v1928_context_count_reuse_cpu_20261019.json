@@ -1,0 +1,752 @@
+{
+  "created_at": "2026-10-19T12:38:22.294148+00:00",
+  "scope": "CPU only, real Qwen tokenizer and exact native token-count checks. Two consecutive counts model compression checking followed by completion budgeting. Reconstructed source-backed root histories omit original role prompts/tool schemas; not exact HTTP replay, observed cache-hit frequency, GPU, JCT or speedup evidence.",
+  "sources": [
+    {
+      "path": "/home/longhao/experiment/BeliefKV/configs/workloads/locobench_agent_long_12root_20261019.json",
+      "sha256": "efce390fd25c47cbf009c93d630f697c97dc0a55f6241388e53f9f5a9400be94"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_api_gateway_hard_009_bug_investigation_expert_01/trajectory.json",
+      "sha256": "995ff964eece53b8e6680ffbbd093f8db3216a1951bef36a1e516ea3a8826957"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/workloads/frozen/locobench_agent_long_py39_20261019/python_api_gateway_hard_009.txt.gz",
+      "sha256": "2e11642529af0746885be73045c64583e9bd9892dbdd3752e8c9794799eb9110"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/trajectory.json",
+      "sha256": "ebccc32e6e4f304068542a734debead7c33f47fef3e2479862bc8593f5806b84"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01/trajectory.json",
+      "sha256": "93603acecdf510188f53b5439a298135e199d55c39d750d0bd92bc4184c865cc"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/workloads/frozen/locobench_agent_long_py39_20261019/python_game_simulation_medium_033.txt.gz",
+      "sha256": "d69a3fc5073ff64e51a1ee296395855d494427e18b543676a7d5a8ce3677d042"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_game_simulation_medium_033_integration_testing_expert_01/trajectory.json",
+      "sha256": "df6d9d24d74f9b1df9112b0d458d2bbcac8de7a25edb4f0f6f1a3a304564a05b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_mobile_game_hard_060_bug_investigation_expert_01/trajectory.json",
+      "sha256": "2a20f84f0b7e3cc0b3008f372ff85d0e45ee901117f494a6ec560e36500a7d8e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/workloads/frozen/locobench_agent_long_py39_20261019/python_mobile_game_hard_060.txt.gz",
+      "sha256": "e8670f549ac056bc0c394745a4eb17dcf25ea239fe34bdcb19872b89ddaf9c1c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_mobile_game_hard_060_feature_implementation_expert_01/trajectory.json",
+      "sha256": "01f5588d41530037b11ba2d1044d1d3e26143adbfad40416be22b527f6ef48e3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_automation_hard_062_bug_investigation_expert_01/trajectory.json",
+      "sha256": "1206091f55d338c934d1d09cc62c93be26bae104d90f0ccdc71c2fc0f885064d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/workloads/frozen/locobench_agent_long_py39_20261019/python_system_automation_hard_062.txt.gz",
+      "sha256": "8341f2f07d8a8a89f0341ee28e8d206cc482548363101f44f7e2efa693a8f8d0"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_automation_hard_062_multi_session_development_expert_01/trajectory.json",
+      "sha256": "50c5d9af61395f9cf3753e18c21581cbb2d8a4fc6cb8d467b7044081ea90a8b2"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_networking_hard_027_integration_testing_medium_01/trajectory.json",
+      "sha256": "f0884774ebb5a6ba2d3c06c59100f7cd014ead49a27717d9589e5130047a6874"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/workloads/frozen/locobench_agent_long_py39_20261019/python_system_networking_hard_027.txt.gz",
+      "sha256": "dd82355905380192d0291eed61343df7de96b7d09f002681eb44f52022722b7b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_networking_hard_027_multi_session_development_medium_01/trajectory.json",
+      "sha256": "49eefe58f0ba59f2a2f19347bc8fbe5c313285feda4a955a0a67e1698e2afac8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/trajectory.json",
+      "sha256": "cc2c4e2062d790d7bae38bfd826a62e8d181623885829d5ad37da167529f12aa"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/workloads/frozen/locobench_agent_long_py39_20261019/python_web_cms_hard_074.txt.gz",
+      "sha256": "8fe54d67f6787dd3c6acc8c26b53c5ee6986106f85601ed5be707617e15c700a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_web_cms_hard_074_feature_implementation_expert_01/trajectory.json",
+      "sha256": "5cb305b92fb8cdb82734ca73e8225609eaa772d0625634efcb4785236f1c9f69"
+    }
+  ],
+  "counter_source": {
+    "path": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/context_token_counter.py",
+    "sha256": "3245a4ed5d05c22c91f4198f25ccf5f2c5ec7f72b0083d9104c0729e623ca3c5"
+  },
+  "benchmark_source": {
+    "path": "/home/longhao/experiment/BeliefKV/scripts/benchmark_context_count_reuse_cpu.py",
+    "sha256": "954b735c0519f0eabf27743765a59ce99a16c6c387095d75e397f34f431cbdab"
+  },
+  "cache_requests_by_variant": {
+    "baseline": false,
+    "candidate": true
+  },
+  "iterations": 3,
+  "all_counts_equal_native": true,
+  "template_render_calls": {
+    "baseline": 216,
+    "candidate": 108
+  },
+  "summary": {
+    "baseline_first_wall_ms": {
+      "count": 36,
+      "mean": 80.74994250925926,
+      "p50": 47.83456133333333,
+      "p90": 268.8629173333333
+    },
+    "baseline_first_thread_cpu_ms": {
+      "count": 36,
+      "mean": 80.73448876851852,
+      "p50": 47.835809833333336,
+      "p90": 268.63155966666665
+    },
+    "baseline_second_wall_ms": {
+      "count": 36,
+      "mean": 5.182447574074074,
+      "p50": 4.539352166666667,
+      "p90": 9.575496333333334
+    },
+    "baseline_second_thread_cpu_ms": {
+      "count": 36,
+      "mean": 5.182981833333334,
+      "p50": 4.540848333333333,
+      "p90": 9.577062
+    },
+    "baseline_pair_wall_ms": {
+      "count": 36,
+      "mean": 85.93239008333333,
+      "p50": 54.07371583333333,
+      "p90": 272.7884373333333
+    },
+    "baseline_pair_thread_cpu_ms": {
+      "count": 36,
+      "mean": 85.91747060185185,
+      "p50": 54.05651866666666,
+      "p90": 272.5583876666667
+    },
+    "candidate_first_wall_ms": {
+      "count": 36,
+      "mean": 81.20179797222222,
+      "p50": 48.43905433333333,
+      "p90": 275.183146
+    },
+    "candidate_first_thread_cpu_ms": {
+      "count": 36,
+      "mean": 81.18453967592593,
+      "p50": 48.405025,
+      "p90": 275.08096
+    },
+    "candidate_second_wall_ms": {
+      "count": 36,
+      "mean": 0.7989663333333333,
+      "p50": 0.39864900000000003,
+      "p90": 2.3332763333333335
+    },
+    "candidate_second_thread_cpu_ms": {
+      "count": 36,
+      "mean": 0.7994549629629629,
+      "p50": 0.3990551666666666,
+      "p90": 2.3344553333333335
+    },
+    "candidate_pair_wall_ms": {
+      "count": 36,
+      "mean": 82.00076430555555,
+      "p50": 49.919088,
+      "p90": 275.22082466666666
+    },
+    "candidate_pair_thread_cpu_ms": {
+      "count": 36,
+      "mean": 81.98399463888889,
+      "p50": 49.8857495,
+      "p90": 275.11876666666666
+    }
+  },
+  "rows": [
+    {
+      "case": "locobench__python_api_gateway_hard_009_bug_investigation_expert_01:2",
+      "prompt_tokens": 124636,
+      "baseline_first_wall_ms": 237.47788833333334,
+      "baseline_first_thread_cpu_ms": 237.46292766666667,
+      "baseline_second_wall_ms": 2.741756,
+      "baseline_second_thread_cpu_ms": 2.7432836666666667,
+      "baseline_pair_wall_ms": 240.21964433333332,
+      "baseline_pair_thread_cpu_ms": 240.20621133333333,
+      "candidate_first_wall_ms": 245.87287933333332,
+      "candidate_first_thread_cpu_ms": 245.80577166666666,
+      "candidate_second_wall_ms": 0.056676333333333336,
+      "candidate_second_thread_cpu_ms": 0.05692266666666667,
+      "candidate_pair_wall_ms": 245.92955566666666,
+      "candidate_pair_thread_cpu_ms": 245.8626943333333
+    },
+    {
+      "case": "locobench__python_api_gateway_hard_009_bug_investigation_expert_01:19",
+      "prompt_tokens": 140594,
+      "baseline_first_wall_ms": 35.72051166666667,
+      "baseline_first_thread_cpu_ms": 35.66387266666667,
+      "baseline_second_wall_ms": 3.582112,
+      "baseline_second_thread_cpu_ms": 3.583426,
+      "baseline_pair_wall_ms": 39.30262366666667,
+      "baseline_pair_thread_cpu_ms": 39.247298666666666,
+      "candidate_first_wall_ms": 34.976928,
+      "candidate_first_thread_cpu_ms": 34.90783733333333,
+      "candidate_second_wall_ms": 0.3128956666666667,
+      "candidate_second_thread_cpu_ms": 0.31328533333333336,
+      "candidate_pair_wall_ms": 35.28982366666666,
+      "candidate_pair_thread_cpu_ms": 35.221122666666666
+    },
+    {
+      "case": "locobench__python_api_gateway_hard_009_bug_investigation_expert_01:39",
+      "prompt_tokens": 155040,
+      "baseline_first_wall_ms": 32.04530833333333,
+      "baseline_first_thread_cpu_ms": 32.047459,
+      "baseline_second_wall_ms": 5.243289,
+      "baseline_second_thread_cpu_ms": 5.244801333333333,
+      "baseline_pair_wall_ms": 37.288597333333335,
+      "baseline_pair_thread_cpu_ms": 37.29226033333333,
+      "candidate_first_wall_ms": 32.675528666666665,
+      "candidate_first_thread_cpu_ms": 32.664219,
+      "candidate_second_wall_ms": 0.8566026666666666,
+      "candidate_second_thread_cpu_ms": 0.857082,
+      "candidate_pair_wall_ms": 33.53213133333333,
+      "candidate_pair_thread_cpu_ms": 33.521301
+    },
+    {
+      "case": "locobench__python_api_gateway_hard_009_feature_implementation_expert_01:2",
+      "prompt_tokens": 125213,
+      "baseline_first_wall_ms": 4.76643,
+      "baseline_first_thread_cpu_ms": 4.767601,
+      "baseline_second_wall_ms": 2.6592663333333335,
+      "baseline_second_thread_cpu_ms": 2.6606263333333335,
+      "baseline_pair_wall_ms": 7.425696333333334,
+      "baseline_pair_thread_cpu_ms": 7.428227333333333,
+      "candidate_first_wall_ms": 4.757754,
+      "candidate_first_thread_cpu_ms": 4.7591106666666665,
+      "candidate_second_wall_ms": 0.030016333333333332,
+      "candidate_second_thread_cpu_ms": 0.030155,
+      "candidate_pair_wall_ms": 4.7877703333333335,
+      "candidate_pair_thread_cpu_ms": 4.789265666666667
+    },
+    {
+      "case": "locobench__python_api_gateway_hard_009_feature_implementation_expert_01:25",
+      "prompt_tokens": 149429,
+      "baseline_first_wall_ms": 50.302030333333335,
+      "baseline_first_thread_cpu_ms": 50.264788,
+      "baseline_second_wall_ms": 3.9173306666666665,
+      "baseline_second_thread_cpu_ms": 3.9186403333333333,
+      "baseline_pair_wall_ms": 54.219361,
+      "baseline_pair_thread_cpu_ms": 54.18342833333333,
+      "candidate_first_wall_ms": 50.519185,
+      "candidate_first_thread_cpu_ms": 50.510122333333335,
+      "candidate_second_wall_ms": 0.36266333333333334,
+      "candidate_second_thread_cpu_ms": 0.36307233333333333,
+      "candidate_pair_wall_ms": 50.88184833333333,
+      "candidate_pair_thread_cpu_ms": 50.87319466666666
+    },
+    {
+      "case": "locobench__python_api_gateway_hard_009_feature_implementation_expert_01:53",
+      "prompt_tokens": 166740,
+      "baseline_first_wall_ms": 31.993844666666668,
+      "baseline_first_thread_cpu_ms": 31.995906,
+      "baseline_second_wall_ms": 5.089558666666666,
+      "baseline_second_thread_cpu_ms": 5.090793333333333,
+      "baseline_pair_wall_ms": 37.08340333333334,
+      "baseline_pair_thread_cpu_ms": 37.086699333333335,
+      "candidate_first_wall_ms": 32.299672,
+      "candidate_first_thread_cpu_ms": 32.28866766666667,
+      "candidate_second_wall_ms": 0.8636413333333334,
+      "candidate_second_thread_cpu_ms": 0.8642626666666666,
+      "candidate_pair_wall_ms": 33.163313333333335,
+      "candidate_pair_thread_cpu_ms": 33.15293033333333
+    },
+    {
+      "case": "locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:2",
+      "prompt_tokens": 111232,
+      "baseline_first_wall_ms": 247.95215133333332,
+      "baseline_first_thread_cpu_ms": 247.91398266666667,
+      "baseline_second_wall_ms": 2.418298666666667,
+      "baseline_second_thread_cpu_ms": 2.4195623333333334,
+      "baseline_pair_wall_ms": 250.37044999999998,
+      "baseline_pair_thread_cpu_ms": 250.33354500000002,
+      "candidate_first_wall_ms": 244.64538266666665,
+      "candidate_first_thread_cpu_ms": 244.55383066666667,
+      "candidate_second_wall_ms": 0.032715666666666664,
+      "candidate_second_thread_cpu_ms": 0.03287933333333334,
+      "candidate_pair_wall_ms": 244.67809833333334,
+      "candidate_pair_thread_cpu_ms": 244.58671
+    },
+    {
+      "case": "locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:49",
+      "prompt_tokens": 132225,
+      "baseline_first_wall_ms": 49.206689,
+      "baseline_first_thread_cpu_ms": 49.206768000000004,
+      "baseline_second_wall_ms": 4.721381666666667,
+      "baseline_second_thread_cpu_ms": 4.722841,
+      "baseline_pair_wall_ms": 53.92807066666666,
+      "baseline_pair_thread_cpu_ms": 53.929609,
+      "candidate_first_wall_ms": 49.289184,
+      "candidate_first_thread_cpu_ms": 49.245724333333335,
+      "candidate_second_wall_ms": 0.6457716666666666,
+      "candidate_second_thread_cpu_ms": 0.6462479999999999,
+      "candidate_pair_wall_ms": 49.93495566666667,
+      "candidate_pair_thread_cpu_ms": 49.891972333333335
+    },
+    {
+      "case": "locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:101",
+      "prompt_tokens": 146349,
+      "baseline_first_wall_ms": 34.728515333333334,
+      "baseline_first_thread_cpu_ms": 34.730652,
+      "baseline_second_wall_ms": 6.30012,
+      "baseline_second_thread_cpu_ms": 6.301628666666667,
+      "baseline_pair_wall_ms": 41.028635333333334,
+      "baseline_pair_thread_cpu_ms": 41.032280666666665,
+      "candidate_first_wall_ms": 35.01943266666667,
+      "candidate_first_thread_cpu_ms": 35.02159,
+      "candidate_second_wall_ms": 1.2654133333333333,
+      "candidate_second_thread_cpu_ms": 1.2659806666666666,
+      "candidate_pair_wall_ms": 36.284846,
+      "candidate_pair_thread_cpu_ms": 36.28757066666667
+    },
+    {
+      "case": "locobench__python_game_simulation_medium_033_integration_testing_expert_01:2",
+      "prompt_tokens": 111028,
+      "baseline_first_wall_ms": 3.990502,
+      "baseline_first_thread_cpu_ms": 3.99178,
+      "baseline_second_wall_ms": 2.396017,
+      "baseline_second_thread_cpu_ms": 2.3972363333333333,
+      "baseline_pair_wall_ms": 6.386519,
+      "baseline_pair_thread_cpu_ms": 6.389016333333333,
+      "candidate_first_wall_ms": 4.011826666666667,
+      "candidate_first_thread_cpu_ms": 4.013079666666667,
+      "candidate_second_wall_ms": 0.030386,
+      "candidate_second_thread_cpu_ms": 0.030574,
+      "candidate_pair_wall_ms": 4.042212666666667,
+      "candidate_pair_thread_cpu_ms": 4.043653666666667
+    },
+    {
+      "case": "locobench__python_game_simulation_medium_033_integration_testing_expert_01:33",
+      "prompt_tokens": 142413,
+      "baseline_first_wall_ms": 69.81845066666666,
+      "baseline_first_thread_cpu_ms": 69.82153466666666,
+      "baseline_second_wall_ms": 4.671944666666667,
+      "baseline_second_thread_cpu_ms": 4.673509666666667,
+      "baseline_pair_wall_ms": 74.49039533333334,
+      "baseline_pair_thread_cpu_ms": 74.49504433333334,
+      "candidate_first_wall_ms": 70.06191033333333,
+      "candidate_first_thread_cpu_ms": 70.06257766666667,
+      "candidate_second_wall_ms": 1.13331,
+      "candidate_second_thread_cpu_ms": 1.1342373333333333,
+      "candidate_pair_wall_ms": 71.19522033333332,
+      "candidate_pair_thread_cpu_ms": 71.196815
+    },
+    {
+      "case": "locobench__python_game_simulation_medium_033_integration_testing_expert_01:63",
+      "prompt_tokens": 180236,
+      "baseline_first_wall_ms": 84.397921,
+      "baseline_first_thread_cpu_ms": 84.38878433333333,
+      "baseline_second_wall_ms": 6.787199333333334,
+      "baseline_second_thread_cpu_ms": 6.7887580000000005,
+      "baseline_pair_wall_ms": 91.18512033333333,
+      "baseline_pair_thread_cpu_ms": 91.17754233333334,
+      "candidate_first_wall_ms": 84.550559,
+      "candidate_first_thread_cpu_ms": 84.524221,
+      "candidate_second_wall_ms": 2.3332763333333335,
+      "candidate_second_thread_cpu_ms": 2.3344553333333335,
+      "candidate_pair_wall_ms": 86.88383533333334,
+      "candidate_pair_thread_cpu_ms": 86.85867633333334
+    },
+    {
+      "case": "locobench__python_mobile_game_hard_060_bug_investigation_expert_01:2",
+      "prompt_tokens": 149707,
+      "baseline_first_wall_ms": 339.430692,
+      "baseline_first_thread_cpu_ms": 339.42297733333334,
+      "baseline_second_wall_ms": 4.104175,
+      "baseline_second_thread_cpu_ms": 4.105620666666667,
+      "baseline_pair_wall_ms": 343.534867,
+      "baseline_pair_thread_cpu_ms": 343.528598,
+      "candidate_first_wall_ms": 339.82246166666664,
+      "candidate_first_thread_cpu_ms": 339.7997506666667,
+      "candidate_second_wall_ms": 0.041128,
+      "candidate_second_thread_cpu_ms": 0.04129166666666667,
+      "candidate_pair_wall_ms": 339.86358966666666,
+      "candidate_pair_thread_cpu_ms": 339.84104233333335
+    },
+    {
+      "case": "locobench__python_mobile_game_hard_060_bug_investigation_expert_01:27",
+      "prompt_tokens": 173723,
+      "baseline_first_wall_ms": 56.53593266666667,
+      "baseline_first_thread_cpu_ms": 56.53886966666666,
+      "baseline_second_wall_ms": 5.075923333333334,
+      "baseline_second_thread_cpu_ms": 5.077531333333334,
+      "baseline_pair_wall_ms": 61.611856,
+      "baseline_pair_thread_cpu_ms": 61.616400999999996,
+      "candidate_first_wall_ms": 56.22723233333333,
+      "candidate_first_thread_cpu_ms": 56.23000566666666,
+      "candidate_second_wall_ms": 0.406372,
+      "candidate_second_thread_cpu_ms": 0.4068113333333333,
+      "candidate_pair_wall_ms": 56.63360433333333,
+      "candidate_pair_thread_cpu_ms": 56.636817
+    },
+    {
+      "case": "locobench__python_mobile_game_hard_060_bug_investigation_expert_01:57",
+      "prompt_tokens": 184498,
+      "baseline_first_wall_ms": 25.153102,
+      "baseline_first_thread_cpu_ms": 25.155141666666665,
+      "baseline_second_wall_ms": 6.229257,
+      "baseline_second_thread_cpu_ms": 6.205905666666666,
+      "baseline_pair_wall_ms": 31.382358999999997,
+      "baseline_pair_thread_cpu_ms": 31.361047333333335,
+      "candidate_first_wall_ms": 25.218397,
+      "candidate_first_thread_cpu_ms": 25.220544999999998,
+      "candidate_second_wall_ms": 0.9998416666666666,
+      "candidate_second_thread_cpu_ms": 1.0006296666666668,
+      "candidate_pair_wall_ms": 26.218238666666664,
+      "candidate_pair_thread_cpu_ms": 26.221174666666666
+    },
+    {
+      "case": "locobench__python_mobile_game_hard_060_feature_implementation_expert_01:2",
+      "prompt_tokens": 150088,
+      "baseline_first_wall_ms": 5.3862586666666665,
+      "baseline_first_thread_cpu_ms": 5.370365333333333,
+      "baseline_second_wall_ms": 3.265385666666667,
+      "baseline_second_thread_cpu_ms": 3.266913333333333,
+      "baseline_pair_wall_ms": 8.651644333333333,
+      "baseline_pair_thread_cpu_ms": 8.637278666666667,
+      "candidate_first_wall_ms": 5.423914,
+      "candidate_first_thread_cpu_ms": 5.425096666666667,
+      "candidate_second_wall_ms": 0.03005266666666667,
+      "candidate_second_thread_cpu_ms": 0.030246333333333333,
+      "candidate_pair_wall_ms": 5.453966666666667,
+      "candidate_pair_thread_cpu_ms": 5.455343
+    },
+    {
+      "case": "locobench__python_mobile_game_hard_060_feature_implementation_expert_01:180",
+      "prompt_tokens": 198536,
+      "baseline_first_wall_ms": 106.61007000000001,
+      "baseline_first_thread_cpu_ms": 106.57446633333333,
+      "baseline_second_wall_ms": 10.328568333333333,
+      "baseline_second_thread_cpu_ms": 10.330468,
+      "baseline_pair_wall_ms": 116.93863833333333,
+      "baseline_pair_thread_cpu_ms": 116.90493433333333,
+      "candidate_first_wall_ms": 106.69534433333334,
+      "candidate_first_thread_cpu_ms": 106.671804,
+      "candidate_second_wall_ms": 2.340390333333333,
+      "candidate_second_thread_cpu_ms": 2.3413226666666667,
+      "candidate_pair_wall_ms": 109.03573466666667,
+      "candidate_pair_thread_cpu_ms": 109.01312666666666
+    },
+    {
+      "case": "locobench__python_mobile_game_hard_060_feature_implementation_expert_01:370",
+      "prompt_tokens": 220327,
+      "baseline_first_wall_ms": 54.48869666666667,
+      "baseline_first_thread_cpu_ms": 54.466062,
+      "baseline_second_wall_ms": 16.349738333333335,
+      "baseline_second_thread_cpu_ms": 16.35168566666667,
+      "baseline_pair_wall_ms": 70.838435,
+      "baseline_pair_thread_cpu_ms": 70.81774766666666,
+      "candidate_first_wall_ms": 56.37798566666667,
+      "candidate_first_thread_cpu_ms": 56.34827933333334,
+      "candidate_second_wall_ms": 3.8442036666666666,
+      "candidate_second_thread_cpu_ms": 3.8453443333333333,
+      "candidate_pair_wall_ms": 60.22218933333333,
+      "candidate_pair_thread_cpu_ms": 60.19362366666667
+    },
+    {
+      "case": "locobench__python_system_automation_hard_062_bug_investigation_expert_01:2",
+      "prompt_tokens": 129100,
+      "baseline_first_wall_ms": 277.08944,
+      "baseline_first_thread_cpu_ms": 277.0516656666667,
+      "baseline_second_wall_ms": 2.8633063333333335,
+      "baseline_second_thread_cpu_ms": 2.864664,
+      "baseline_pair_wall_ms": 279.9527463333333,
+      "baseline_pair_thread_cpu_ms": 279.9163296666667,
+      "candidate_first_wall_ms": 277.5960593333333,
+      "candidate_first_thread_cpu_ms": 277.5756543333334,
+      "candidate_second_wall_ms": 0.04065666666666667,
+      "candidate_second_thread_cpu_ms": 0.040828333333333335,
+      "candidate_pair_wall_ms": 277.636716,
+      "candidate_pair_thread_cpu_ms": 277.6164826666667
+    },
+    {
+      "case": "locobench__python_system_automation_hard_062_bug_investigation_expert_01:11",
+      "prompt_tokens": 139277,
+      "baseline_first_wall_ms": 25.179876666666665,
+      "baseline_first_thread_cpu_ms": 25.181979,
+      "baseline_second_wall_ms": 3.5486750000000002,
+      "baseline_second_thread_cpu_ms": 3.5498136666666666,
+      "baseline_pair_wall_ms": 28.728551666666664,
+      "baseline_pair_thread_cpu_ms": 28.731792666666667,
+      "candidate_first_wall_ms": 25.301679333333333,
+      "candidate_first_thread_cpu_ms": 25.303702666666666,
+      "candidate_second_wall_ms": 0.25070933333333334,
+      "candidate_second_thread_cpu_ms": 0.25111066666666665,
+      "candidate_pair_wall_ms": 25.552388666666666,
+      "candidate_pair_thread_cpu_ms": 25.554813333333335
+    },
+    {
+      "case": "locobench__python_system_automation_hard_062_bug_investigation_expert_01:19",
+      "prompt_tokens": 145930,
+      "baseline_first_wall_ms": 23.178500666666668,
+      "baseline_first_thread_cpu_ms": 23.167361666666665,
+      "baseline_second_wall_ms": 4.422162666666667,
+      "baseline_second_thread_cpu_ms": 4.423596333333333,
+      "baseline_pair_wall_ms": 27.600663333333333,
+      "baseline_pair_thread_cpu_ms": 27.590958,
+      "candidate_first_wall_ms": 23.246551666666665,
+      "candidate_first_thread_cpu_ms": 23.235867666666667,
+      "candidate_second_wall_ms": 0.276703,
+      "candidate_second_thread_cpu_ms": 0.277065,
+      "candidate_pair_wall_ms": 23.523254666666666,
+      "candidate_pair_thread_cpu_ms": 23.512932666666668
+    },
+    {
+      "case": "locobench__python_system_automation_hard_062_multi_session_development_expert_01:2",
+      "prompt_tokens": 129609,
+      "baseline_first_wall_ms": 5.713571333333333,
+      "baseline_first_thread_cpu_ms": 5.714949,
+      "baseline_second_wall_ms": 3.552738,
+      "baseline_second_thread_cpu_ms": 3.554023,
+      "baseline_pair_wall_ms": 9.266309333333332,
+      "baseline_pair_thread_cpu_ms": 9.268972,
+      "candidate_first_wall_ms": 5.7416643333333335,
+      "candidate_first_thread_cpu_ms": 5.742796333333334,
+      "candidate_second_wall_ms": 0.030034666666666668,
+      "candidate_second_thread_cpu_ms": 0.030156333333333334,
+      "candidate_pair_wall_ms": 5.771699,
+      "candidate_pair_thread_cpu_ms": 5.772952666666667
+    },
+    {
+      "case": "locobench__python_system_automation_hard_062_multi_session_development_expert_01:73",
+      "prompt_tokens": 172627,
+      "baseline_first_wall_ms": 94.43646266666667,
+      "baseline_first_thread_cpu_ms": 94.42380466666667,
+      "baseline_second_wall_ms": 6.906458,
+      "baseline_second_thread_cpu_ms": 6.907941,
+      "baseline_pair_wall_ms": 101.34292066666667,
+      "baseline_pair_thread_cpu_ms": 101.33174566666666,
+      "candidate_first_wall_ms": 94.29301866666667,
+      "candidate_first_thread_cpu_ms": 94.29675333333333,
+      "candidate_second_wall_ms": 2.013812333333333,
+      "candidate_second_thread_cpu_ms": 2.0148133333333336,
+      "candidate_pair_wall_ms": 96.306831,
+      "candidate_pair_thread_cpu_ms": 96.31156666666666
+    },
+    {
+      "case": "locobench__python_system_automation_hard_062_multi_session_development_expert_01:143",
+      "prompt_tokens": 204559,
+      "baseline_first_wall_ms": 65.62281366666666,
+      "baseline_first_thread_cpu_ms": 65.610891,
+      "baseline_second_wall_ms": 9.575496333333334,
+      "baseline_second_thread_cpu_ms": 9.577062,
+      "baseline_pair_wall_ms": 75.19830999999999,
+      "baseline_pair_thread_cpu_ms": 75.18795300000001,
+      "candidate_first_wall_ms": 66.613564,
+      "candidate_first_thread_cpu_ms": 66.608675,
+      "candidate_second_wall_ms": 2.844901666666667,
+      "candidate_second_thread_cpu_ms": 2.846004333333333,
+      "candidate_pair_wall_ms": 69.45846566666667,
+      "candidate_pair_thread_cpu_ms": 69.45467933333333
+    },
+    {
+      "case": "locobench__python_system_networking_hard_027_integration_testing_medium_01:2",
+      "prompt_tokens": 150356,
+      "baseline_first_wall_ms": 317.72452633333336,
+      "baseline_first_thread_cpu_ms": 317.71238033333333,
+      "baseline_second_wall_ms": 3.0962256666666668,
+      "baseline_second_thread_cpu_ms": 3.0975633333333334,
+      "baseline_pair_wall_ms": 320.820752,
+      "baseline_pair_thread_cpu_ms": 320.80994366666664,
+      "candidate_first_wall_ms": 317.30653366666667,
+      "candidate_first_thread_cpu_ms": 317.255756,
+      "candidate_second_wall_ms": 0.040108,
+      "candidate_second_thread_cpu_ms": 0.04032533333333333,
+      "candidate_pair_wall_ms": 317.3466416666667,
+      "candidate_pair_thread_cpu_ms": 317.29608133333335
+    },
+    {
+      "case": "locobench__python_system_networking_hard_027_integration_testing_medium_01:17",
+      "prompt_tokens": 161581,
+      "baseline_first_wall_ms": 27.22069666666667,
+      "baseline_first_thread_cpu_ms": 27.22288766666667,
+      "baseline_second_wall_ms": 4.019350666666667,
+      "baseline_second_thread_cpu_ms": 4.020731666666666,
+      "baseline_pair_wall_ms": 31.240047333333333,
+      "baseline_pair_thread_cpu_ms": 31.243619333333335,
+      "candidate_first_wall_ms": 26.941334666666666,
+      "candidate_first_thread_cpu_ms": 26.921158666666667,
+      "candidate_second_wall_ms": 0.246782,
+      "candidate_second_thread_cpu_ms": 0.24716033333333334,
+      "candidate_pair_wall_ms": 27.188116666666666,
+      "candidate_pair_thread_cpu_ms": 27.168319
+    },
+    {
+      "case": "locobench__python_system_networking_hard_027_integration_testing_medium_01:33",
+      "prompt_tokens": 168954,
+      "baseline_first_wall_ms": 20.645513666666666,
+      "baseline_first_thread_cpu_ms": 20.632531333333333,
+      "baseline_second_wall_ms": 5.067185666666667,
+      "baseline_second_thread_cpu_ms": 5.068843,
+      "baseline_pair_wall_ms": 25.712699333333333,
+      "baseline_pair_thread_cpu_ms": 25.701374333333334,
+      "candidate_first_wall_ms": 20.870872000000002,
+      "candidate_first_thread_cpu_ms": 20.872658,
+      "candidate_second_wall_ms": 0.47467600000000004,
+      "candidate_second_thread_cpu_ms": 0.4751283333333333,
+      "candidate_pair_wall_ms": 21.345548,
+      "candidate_pair_thread_cpu_ms": 21.34778633333333
+    },
+    {
+      "case": "locobench__python_system_networking_hard_027_multi_session_development_medium_01:2",
+      "prompt_tokens": 150644,
+      "baseline_first_wall_ms": 4.966588333333333,
+      "baseline_first_thread_cpu_ms": 4.9677473333333335,
+      "baseline_second_wall_ms": 2.9880896666666668,
+      "baseline_second_thread_cpu_ms": 2.989402666666667,
+      "baseline_pair_wall_ms": 7.9546779999999995,
+      "baseline_pair_thread_cpu_ms": 7.9571499999999995,
+      "candidate_first_wall_ms": 4.926872666666666,
+      "candidate_first_thread_cpu_ms": 4.9280143333333335,
+      "candidate_second_wall_ms": 0.029466666666666665,
+      "candidate_second_thread_cpu_ms": 0.029616,
+      "candidate_pair_wall_ms": 4.956339333333333,
+      "candidate_pair_thread_cpu_ms": 4.957630333333333
+    },
+    {
+      "case": "locobench__python_system_networking_hard_027_multi_session_development_medium_01:36",
+      "prompt_tokens": 173257,
+      "baseline_first_wall_ms": 49.613724999999995,
+      "baseline_first_thread_cpu_ms": 49.61632066666667,
+      "baseline_second_wall_ms": 4.656541666666667,
+      "baseline_second_thread_cpu_ms": 4.6581003333333335,
+      "baseline_pair_wall_ms": 54.270266666666664,
+      "baseline_pair_thread_cpu_ms": 54.274421000000004,
+      "candidate_first_wall_ms": 49.51002366666667,
+      "candidate_first_thread_cpu_ms": 49.512602666666666,
+      "candidate_second_wall_ms": 0.5806006666666667,
+      "candidate_second_thread_cpu_ms": 0.5809343333333333,
+      "candidate_pair_wall_ms": 50.09062433333333,
+      "candidate_pair_thread_cpu_ms": 50.093537
+    },
+    {
+      "case": "locobench__python_system_networking_hard_027_multi_session_development_medium_01:74",
+      "prompt_tokens": 187108,
+      "baseline_first_wall_ms": 33.99638566666667,
+      "baseline_first_thread_cpu_ms": 33.982204,
+      "baseline_second_wall_ms": 6.2974206666666666,
+      "baseline_second_thread_cpu_ms": 6.29061,
+      "baseline_pair_wall_ms": 40.293806333333336,
+      "baseline_pair_thread_cpu_ms": 40.272814,
+      "candidate_first_wall_ms": 34.32172333333333,
+      "candidate_first_thread_cpu_ms": 34.321730333333335,
+      "candidate_second_wall_ms": 1.32288,
+      "candidate_second_thread_cpu_ms": 1.3234866666666667,
+      "candidate_pair_wall_ms": 35.64460333333333,
+      "candidate_pair_thread_cpu_ms": 35.645217
+    },
+    {
+      "case": "locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01:2",
+      "prompt_tokens": 122908,
+      "baseline_first_wall_ms": 268.8629173333333,
+      "baseline_first_thread_cpu_ms": 268.63155966666665,
+      "baseline_second_wall_ms": 3.9255199999999997,
+      "baseline_second_thread_cpu_ms": 3.926828,
+      "baseline_pair_wall_ms": 272.7884373333333,
+      "baseline_pair_thread_cpu_ms": 272.5583876666667,
+      "candidate_first_wall_ms": 275.183146,
+      "candidate_first_thread_cpu_ms": 275.08096,
+      "candidate_second_wall_ms": 0.037678666666666666,
+      "candidate_second_thread_cpu_ms": 0.03780666666666667,
+      "candidate_pair_wall_ms": 275.22082466666666,
+      "candidate_pair_thread_cpu_ms": 275.11876666666666
+    },
+    {
+      "case": "locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01:90",
+      "prompt_tokens": 152436,
+      "baseline_first_wall_ms": 69.78105833333333,
+      "baseline_first_thread_cpu_ms": 69.771578,
+      "baseline_second_wall_ms": 6.907171,
+      "baseline_second_thread_cpu_ms": 6.908836,
+      "baseline_pair_wall_ms": 76.68822933333334,
+      "baseline_pair_thread_cpu_ms": 76.680414,
+      "candidate_first_wall_ms": 69.09746133333333,
+      "candidate_first_thread_cpu_ms": 69.08454366666668,
+      "candidate_second_wall_ms": 1.3441996666666667,
+      "candidate_second_thread_cpu_ms": 1.344885,
+      "candidate_pair_wall_ms": 70.441661,
+      "candidate_pair_thread_cpu_ms": 70.42942866666668
+    },
+    {
+      "case": "locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01:186",
+      "prompt_tokens": 170586,
+      "baseline_first_wall_ms": 46.46243366666667,
+      "baseline_first_thread_cpu_ms": 46.46485166666667,
+      "baseline_second_wall_ms": 10.029344,
+      "baseline_second_thread_cpu_ms": 10.030674,
+      "baseline_pair_wall_ms": 56.491777666666664,
+      "baseline_pair_thread_cpu_ms": 56.495525666666666,
+      "candidate_first_wall_ms": 47.588924666666664,
+      "candidate_first_thread_cpu_ms": 47.56432566666667,
+      "candidate_second_wall_ms": 2.3142956666666668,
+      "candidate_second_thread_cpu_ms": 2.315201,
+      "candidate_pair_wall_ms": 49.90322033333333,
+      "candidate_pair_thread_cpu_ms": 49.87952666666667
+    },
+    {
+      "case": "locobench__python_web_cms_hard_074_feature_implementation_expert_01:2",
+      "prompt_tokens": 123303,
+      "baseline_first_wall_ms": 5.244321333333334,
+      "baseline_first_thread_cpu_ms": 5.245777333333334,
+      "baseline_second_wall_ms": 2.861768,
+      "baseline_second_thread_cpu_ms": 2.8631016666666667,
+      "baseline_pair_wall_ms": 8.106089333333333,
+      "baseline_pair_thread_cpu_ms": 8.108879,
+      "candidate_first_wall_ms": 5.362441,
+      "candidate_first_thread_cpu_ms": 5.363762,
+      "candidate_second_wall_ms": 0.030676,
+      "candidate_second_thread_cpu_ms": 0.030851333333333335,
+      "candidate_pair_wall_ms": 5.393117,
+      "candidate_pair_thread_cpu_ms": 5.394613333333333
+    },
+    {
+      "case": "locobench__python_web_cms_hard_074_feature_implementation_expert_01:27",
+      "prompt_tokens": 151350,
+      "baseline_first_wall_ms": 62.175888,
+      "baseline_first_thread_cpu_ms": 62.17864466666666,
+      "baseline_second_wall_ms": 4.370555333333334,
+      "baseline_second_thread_cpu_ms": 4.371855333333333,
+      "baseline_pair_wall_ms": 66.54644333333333,
+      "baseline_pair_thread_cpu_ms": 66.5505,
+      "candidate_first_wall_ms": 62.184871666666666,
+      "candidate_first_thread_cpu_ms": 62.187656000000004,
+      "candidate_second_wall_ms": 0.390926,
+      "candidate_second_thread_cpu_ms": 0.391299,
+      "candidate_pair_wall_ms": 62.575797666666666,
+      "candidate_pair_thread_cpu_ms": 62.578955
+    },
+    {
+      "case": "locobench__python_web_cms_hard_074_feature_implementation_expert_01:59",
+      "prompt_tokens": 167123,
+      "baseline_first_wall_ms": 39.07821633333333,
+      "baseline_first_thread_cpu_ms": 39.080523666666664,
+      "baseline_second_wall_ms": 5.598782333333333,
+      "baseline_second_thread_cpu_ms": 5.600468333333334,
+      "baseline_pair_wall_ms": 44.67699866666667,
+      "baseline_pair_thread_cpu_ms": 44.680992,
+      "candidate_first_wall_ms": 38.73240766666667,
+      "candidate_first_thread_cpu_ms": 38.73457833333333,
+      "candidate_second_wall_ms": 0.908324,
+      "candidate_second_thread_cpu_ms": 0.908906,
+      "candidate_pair_wall_ms": 39.64073166666667,
+      "candidate_pair_thread_cpu_ms": 39.64348433333333
+    }
+  ]
+}

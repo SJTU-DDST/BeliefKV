@@ -25,6 +25,7 @@ class OnlineWorkloadToolTiming:
     def __init__(self, *, window: int = 64, max_keys: int = 256) -> None:
         self.window, self.max_keys = window, max_keys
         self.open: dict[tuple, tuple[tuple, float]] = {}
+        self._open_by_invocation: dict[tuple, dict[tuple, tuple[tuple, float]]] = {}
         self.samples: OrderedDict[tuple, deque] = OrderedDict()
         self._curves: dict[tuple, KaplanMeierCurve] = {}
         self.revision = 0
@@ -43,11 +44,16 @@ class OnlineWorkloadToolTiming:
             if not command or command == "unknown":
                 command = attrs.get("observed_command_class") or name
             signature = (str(attrs.get("backend_class") or "unknown"), str(command))
-            self.open.setdefault(identity, (signature, event.ts_ms))
+            started = self.open.setdefault(identity, (signature, event.ts_ms))
+            self._open_by_invocation.setdefault(identity[:2], {})[identity] = started
         elif event.kind is RuntimeEventKind.TOOL_END:
             started = self.open.pop(identity, None)
             if started is None:
                 return
+            active = self._open_by_invocation[identity[:2]]
+            active.pop(identity)
+            if not active:
+                del self._open_by_invocation[identity[:2]]
             signature, start = started
             duration = attrs.get("duration_ms", event.ts_ms - start)
             if type(duration) not in (int, float) or not math.isfinite(duration) or duration < 0:
@@ -68,32 +74,36 @@ class OnlineWorkloadToolTiming:
             RuntimeEventKind.RETURN, RuntimeEventKind.INVOCATION_CANCEL,
             RuntimeEventKind.WORKFLOW_END,
         ):
-            self.open = {
-                key: value for key, value in self.open.items()
-                if key[0] != event.workflow_id or (
-                    event.kind is not RuntimeEventKind.WORKFLOW_END
-                    and key[1] != event.invocation_id
-                )
-            }
+            if event.kind is RuntimeEventKind.WORKFLOW_END:
+                for owner in tuple(self._open_by_invocation):
+                    if owner[0] == event.workflow_id:
+                        self._discard_open_invocation(owner)
+            else:
+                self._discard_open_invocation((event.workflow_id, event.invocation_id))
+
+    def _discard_open_invocation(self, owner: tuple) -> None:
+        for identity in self._open_by_invocation.pop(owner, ()):
+            self.open.pop(identity, None)
 
     def estimate(self, workflow: str, invocation: str, *, now_ms: float) -> OnlineToolEstimate | None:
-        active = [
-            value for key, value in self.open.items()
-            if key[:2] == (workflow, invocation)
-        ]
+        active = self._open_by_invocation.get((workflow, invocation), {})
         # A parallel group's completion is a maximum, not one tool's duration.
         if len(active) != 1:
             return None
-        signature, started = active[0]
+        signature, started = next(iter(active.values()))
         elapsed = max(0., now_ms - started)
         for prefix, minimum, scope in ((workflow, 4, "workflow"), ("*", 8, "run")):
             key = (prefix, *signature)
             history = self.samples.get(key)
-            if history is None or sum(completed for _, completed in history) < minimum:
+            if history is None:
                 continue
             curve = self._curves.get(key)
             if curve is None:
+                if sum(completed for _, completed in history) < minimum:
+                    continue
                 curve = self._curves[key] = KaplanMeierCurve().fit(list(history))
+            if curve.event_count < minimum:
+                continue
             values = tuple(curve.remaining_quantile(elapsed, q) for q in (.1, .5, .9))
             if not all(math.isfinite(value) for value in values):
                 continue

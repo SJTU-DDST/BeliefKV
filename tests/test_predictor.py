@@ -1,4 +1,5 @@
 import math
+import random
 import unittest
 
 from beliefkv.control.causal_graph import RuntimeCausalContextGraph
@@ -17,6 +18,52 @@ from beliefkv.predictor.types import RemainingTimePrediction
 
 
 class SurvivalModelTest(unittest.TestCase):
+    def test_indexed_survival_matches_linear_queries_and_roundtrips(self):
+        class LinearCurve(KaplanMeierCurve):
+            def survival(self, time_ms):
+                if time_ms < 0:
+                    return 1.0
+                value = 1.0
+                for step_time, step_value in self._steps:
+                    if step_time > time_ms:
+                        break
+                    value = step_value
+                return value
+
+        random_source = random.Random(21)
+        for size in (0, 1, 8, 64, 128):
+            samples = [
+                (float(random_source.randrange(16)), random_source.randrange(4) != 0)
+                for _ in range(size)
+            ]
+            reference = LinearCurve().fit(samples)
+            fitted = KaplanMeierCurve().fit(samples)
+            restored = KaplanMeierCurve.from_dict(fitted.to_dict())
+            for elapsed in (-1., 0., .5, *map(float, range(18)), math.inf, math.nan):
+                for curve in (fitted, restored):
+                    self.assertEqual(curve.survival(elapsed), reference.survival(elapsed))
+                    if elapsed >= 0:
+                        for future in (0., .5, 2., 20.):
+                            self.assertEqual(
+                                curve.conditional_survival(elapsed, future),
+                                reference.conditional_survival(elapsed, future),
+                            )
+                        for quantile in (.1, .5, .9):
+                            self.assertEqual(
+                                curve.remaining_quantile(elapsed, quantile),
+                                reference.remaining_quantile(elapsed, quantile),
+                            )
+
+    def test_serialized_repeated_timestamps_use_the_last_survival_step(self):
+        curve = KaplanMeierCurve.from_dict({
+            "sample_count": 4, "event_count": 4,
+            "steps": [[10., .75], [10., .5], [20., 0.]],
+        })
+        self.assertEqual(curve.survival(9.999), 1.)
+        self.assertEqual(curve.survival(10.), .5)
+        self.assertEqual(curve.survival(10.001), .5)
+        self.assertEqual(curve.survival(20.), 0.)
+
     def test_kaplan_meier_accounts_for_right_censoring(self):
         curve = KaplanMeierCurve().fit(
             [(10, True), (20, False), (30, True), (40, True)]

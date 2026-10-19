@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+from bisect import bisect_right
 from dataclasses import dataclass
 from math import inf
+from operator import itemgetter
 from typing import Any, Mapping
 
 from beliefkv.predictor.types import RemainingTimePrediction
+
+
+_STEP_TIME = itemgetter(0)
 
 
 @dataclass(frozen=True)
@@ -61,12 +66,8 @@ class KaplanMeierCurve:
     def survival(self, time_ms: float) -> float:
         if time_ms < 0:
             return 1.0
-        value = 1.0
-        for step_time, step_value in self._steps:
-            if step_time > time_ms:
-                break
-            value = step_value
-        return value
+        index = bisect_right(self._steps, time_ms, key=_STEP_TIME)
+        return self._steps[index - 1][1] if index else 1.0
 
     def conditional_survival(self, elapsed_ms: float, future_ms: float) -> float:
         if elapsed_ms < 0 or future_ms < 0:
