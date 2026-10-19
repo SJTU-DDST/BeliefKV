@@ -179,6 +179,81 @@ def test_compression_and_completion_budget_share_the_same_exact_count(fake_count
     assert tokenizer.render_calls == 1
 
 
+def test_retention_counts_fragments_without_rendering_a_request(fake_counter, monkeypatch):
+    from beliefkv.runtime.context_lifecycle import (
+        ContextLifecycleMiddleware, ContextLifecyclePolicy,
+    )
+    from tests.test_context_lifecycle import _FakeModel
+
+    counter, tokenizer = fake_counter
+    monkeypatch.setattr(
+        "beliefkv.runtime.context_lifecycle.context_token_counter", lambda _: counter,
+    )
+    lifecycle = ContextLifecycleMiddleware(
+        _FakeModel(), backend=SimpleNamespace(),
+        policy=ContextLifecyclePolicy(
+            window_tokens=4096, keep_tokens=128, summary_output_tokens=256,
+            compression_trigger_ratio=.95,
+        ),
+        compaction_sink=SimpleNamespace(),
+    )
+    messages = [
+        HumanMessage(content="Investigate the parser."),
+        AIMessage(content="", tool_calls=[{
+            "name": "execute", "args": {"command": "pytest -q"}, "id": "one",
+        }]),
+        ToolMessage(content="earlier evidence " * 1000, tool_call_id="one"),
+        AIMessage(content="", tool_calls=[{
+            "name": "execute", "args": {"command": "git diff"}, "id": "two",
+        }]),
+        ToolMessage(content="latest evidence", tool_call_id="two"),
+    ]
+
+    cutoff = lifecycle._determine_cutoff_index(messages)
+    assert cutoff == 3
+    assert lifecycle.token_counter(messages[cutoff:]) > 0
+    assert lifecycle.token_counter([SystemMessage(content="system only")], tools=[]) > 0
+    assert tokenizer.render_calls == 0
+    assert "Investigate the parser." in lifecycle._summary_input(messages[:cutoff])
+    assert tokenizer.render_calls == 0
+    lifecycle._count_tokens(messages, SystemMessage(content="source"), [])
+    assert tokenizer.render_calls == 1
+
+
+def test_real_template_stays_strict_while_compression_accepts_fragments(counter, monkeypatch):
+    from jinja2.exceptions import TemplateError
+    from beliefkv.runtime.context_lifecycle import (
+        ContextLifecycleMiddleware, ContextLifecyclePolicy,
+    )
+    from tests.test_context_lifecycle import _FakeModel
+
+    monkeypatch.setattr(
+        "beliefkv.runtime.context_lifecycle.context_token_counter", lambda _: counter,
+    )
+    lifecycle = ContextLifecycleMiddleware(
+        _FakeModel(), backend=SimpleNamespace(),
+        policy=ContextLifecyclePolicy(
+            window_tokens=4096, keep_tokens=128, summary_output_tokens=256,
+            compression_trigger_ratio=.95,
+        ),
+        compaction_sink=SimpleNamespace(),
+    )
+    fragments = [
+        AIMessage(content="Investigating " * 1000),
+        AIMessage(content="", tool_calls=[{
+            "name": "execute", "args": {"command": "git diff"}, "id": "one",
+        }]),
+        ToolMessage(content="latest evidence", tool_call_id="one"),
+    ]
+    with pytest.raises(TemplateError, match="No user query"):
+        counter(fragments)
+    cutoff = lifecycle._determine_cutoff_index(fragments)
+    assert cutoff == 1
+    full = [HumanMessage(content="Investigate the parser."), *fragments]
+    assert lifecycle._count_tokens(full, None, []) == counter(full)
+    assert lifecycle._count_tokens(full, None, []) == counter(full)
+
+
 def test_frontend_flag_keeps_native_counter_separate_from_predictive(monkeypatch):
     import beliefkv.runtime.context_token_counter as module
 

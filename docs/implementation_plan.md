@@ -5,8 +5,22 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-Current priority is workload qualification. V89 launched7502984 at06:29:26 but
-its early trace still has no child/JOIN. V2064's two single-turn user variants
+Current priority is the confirmed V89 compaction error, then workload qualification.
+V89 predictive finished22 completed and2 TemplateErrors, with no child/JOIN.
+Its1612 D2H batches/63.173GB include auxiliary diagnostics and are not a clean
+performance control. Native was administratively stopped during initialization;
+no native workflow result exists. The auxiliary single task lost its connection
+when the owning V89 driver cleaned up the shared server. This operational lifetime
+mistake does not establish an engine failure. The next probe must own its server.
+
+Both failed trajectories reproduce the retention binary search passing user-free
+assistant/tool fragments to the strict Qwen chat template. Fragment budgeting now
+uses estimates; ratio-based compression, completion budgeting and complete-request
+preflight keep exact counts. Real model messages are not supplemented with a user.
+The saved full counts remain120637/94121;33 relevant CPU checks pass. See V2075.
+GPU completion, useful migration and native-relative performance remain unaccepted.
+
+V2064's two single-turn user variants
 both select read_file, and V2065's explicit-team version selects ls. No tool is
 executed in those probes; a first action does not establish later delegation.
 The latest client appends the collaborative mode to the dynamic profile's actual
@@ -15,8 +29,7 @@ model-selected. V2067 captures the full _run_autonomous serializer; V2068 passes
 CPU checks. V2066 additionally has190 passes and one unselected SWE Docker case skipped.
 Next run one original cross-file refactoring task to observe a real child and
 first JOIN, without claiming original-task completion, migration consumption or JCT.
-An additional workflow on V89's shared server is diagnostic; use a fresh, matching
-24-root run for performance acceptance after workload qualification.
+Use a fresh, matching24-root run for performance acceptance after qualification.
 
 V2060 pairs34 short single-request prefill samples: post_launch_physical P50 is
 0.013ms versus selection4.856ms. Native work remains inside the broad phases.
@@ -96,7 +109,8 @@ Current goal:
 
 - Continue removing unnecessary repeated PREPARE, prefetch, lifecycle and admission work.
 - Preserve current identity, generation, ownership, capacity, ACK and first-consumption checks.
-- Qualify and freeze V89; verify actual dynamic delegation before a long comparison.
+- Fix confirmed shared-path errors and freeze the next candidate; verify actual
+  dynamic delegation with an independently owned server before a long comparison.
 - Measure useful Host-only recovery, consumption delay, copy loss/recomputation,
   tail-excluded throughput and mean workflow JCT on the new24-root run.
 - Stop and fix material experimental failures promptly; CPU improvements alone

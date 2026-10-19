@@ -2,8 +2,22 @@
 
 更新日期：2026-10-20（北京时间）。
 
-**当前优先验证工作负载资格。**V89 于 06:29:26 使用 `7502984` 启动；
-早期仍无 child/JOIN。V2064 的两种首轮提示均选择同一 read_file，
+**当前先修复真实压缩错误，再验证工作负载资格。**V89 predictive 已结束：
+22 completed、2 个 `TemplateError: No user query found in messages.`，
+全程无 child/JOIN。控制交付未失败，不能归因为 workflow 超时。
+driver 汇总 1612 批 D2H/63.173GB、无 H2D，但包含附加诊断流量，
+不作为干净性能对照。刚初始化的 native 已行政停止，无 workflow 结果。
+附加单任务因共用 predictive 服务被所属 driver 清理而连接失败；
+下次 probe 独占服务生命周期，不据这次失败判断引擎或任务能力。
+
+两份失败 trajectory 均在 CPU 复现同一保留尾部二分搜索栈：LangChain
+向完整 Qwen 模板传入无 user 的 assistant/tool 片段。压缩保留/溢出裁剪
+改用片段预算估计，95% 阈值、补全预算及真实请求预检仍精确计数；
+没有给模型请求补造 user。两份完整历史计数保持 120637/94121，
+33 项相关检查通过，见
+[V2075](../experiments/reports/v2075_v89_compaction_fragment_replay_cpu_20261020.json)。
+
+V2064 的两种首轮提示均选择同一 read_file，
 V2065 的显式协作说明选择 ls；未执行这些工具，不能据首轮选择宣称
 协作有效或无效。新客户端在动态 profile 的真实用户任务末尾增加团队
 协作说明，模型仍自选分工、时机、数量、嵌套和后续轮次。V2067 捕获
@@ -17,7 +31,7 @@ selection/result/run_batch 含原生工作，不能全部归因到新增控制�
 V2062 的 8 秒外部 GIL 采样仅 24 个样本、9 个错误，不作全程成本或
 精确归因；这些开发诊断不能用来宣称超过 native。
 
-**V88 于北京时间 06:14 主动中断，当前准备 V89 仓库协作提示验证。**V88
+**V88 于北京时间 06:14 主动中断。**V88
 从 06:00:31 启动、06:03:54 开始真实 GPU 服务；首次启动与源码核对见
 [V2051](../experiments/reports/v2051_v88_actual_startup_20261020.json)。
 首批 16 root 已提交 974 次模型请求、启动 1008 次工具，但只有 16 个

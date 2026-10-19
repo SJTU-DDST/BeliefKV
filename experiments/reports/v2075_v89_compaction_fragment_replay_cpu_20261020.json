@@ -1,0 +1,46 @@
+{
+  "status": "cpu_reproduction_fixed_not_gpu_or_jct_acceptance",
+  "baseline_commit": "394fd78",
+  "baseline_source_sha256": "b78f5843ffeb5d7eab25b3b470e55f1b73349d8ecf52ca339652f58401e1e635",
+  "candidate_source_sha256": {
+    "beliefkv/runtime/context_lifecycle.py": "ccf24949446dd40527c6c879d6d7bf41408222cd541317d8c99e9fa749f6f9c7"
+  },
+  "records": [
+    {
+      "instance_id": "locobench__python_web_cms_hard_074_integration_testing_expert_01",
+      "trajectory": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v89/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_integration_testing_expert_01/trajectory.json",
+      "trajectory_sha256": "6a098b90fd216e01dd96da4358f0906050a1a77f63ffafe718dcf682214dfb45",
+      "messages": 205,
+      "before_full_count": 120637,
+      "baseline_failure": "TemplateError: No user query found in messages.",
+      "cutoff": 197,
+      "retained_messages": 8,
+      "first_retained_type": "ai",
+      "after_full_count": 120637,
+      "summary_input_chars": 471505,
+      "retained_estimated_tokens": 11483,
+      "exact_count_matches": true
+    },
+    {
+      "instance_id": "locobench__python_system_networking_hard_027_integration_testing_medium_01",
+      "trajectory": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v89/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_integration_testing_medium_01/trajectory.json",
+      "trajectory_sha256": "65b3e3f07d5882fed015aeb97b5fa8abf62fc72e4ed2ead3e98d49e1d2f3b4d8",
+      "messages": 164,
+      "before_full_count": 94121,
+      "baseline_failure": "TemplateError: No user query found in messages.",
+      "cutoff": 156,
+      "retained_messages": 8,
+      "first_retained_type": "ai",
+      "after_full_count": 94121,
+      "summary_input_chars": 373369,
+      "retained_estimated_tokens": 8176,
+      "exact_count_matches": true
+    }
+  ],
+  "scope": [
+    "Original saved workflow messages; no live server, Docker or GPU request.",
+    "Reproduce the actual retention binary-search exception.",
+    "Keep exact complete-request counts; estimate only fragment budgets.",
+    "This does not verify summary quality or end-to-end workflow completion."
+  ]
+}

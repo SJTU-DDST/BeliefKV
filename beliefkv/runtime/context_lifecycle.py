@@ -6,6 +6,7 @@ import threading
 from collections.abc import Mapping
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
+from functools import partial
 from typing import Annotated, Any, Awaitable, Callable, Protocol, Sequence
 
 from deepagents.middleware.summarization import SummarizationMiddleware
@@ -19,7 +20,7 @@ from langchain.agents.middleware.types import (
 )
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import BaseMessage
-from langchain_core.messages.utils import get_buffer_string
+from langchain_core.messages.utils import count_tokens_approximately, get_buffer_string
 from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables.config import (
     ensure_config,
@@ -193,6 +194,7 @@ class ContextLifecycleMiddleware(SummarizationMiddleware):
         )
         if not 0 < self.completion_tokens < policy.model_context_tokens:
             raise ValueError("completion budget must fit inside model context")
+        self._request_token_counter = context_token_counter(policy.tokenizer_path)
         super().__init__(
             model,
             backend=backend,
@@ -201,7 +203,9 @@ class ContextLifecycleMiddleware(SummarizationMiddleware):
             summary_prompt=CONTEXT_SUMMARY_PROMPT,
             trim_tokens_to_summarize=policy.window_tokens - policy.keep_tokens,
             truncate_args_settings=None,
-            token_counter=context_token_counter(policy.tokenizer_path),
+            # Retention and overflow trimming count assistant/tool-only fragments.
+            # The serving template is valid only for complete conversations.
+            token_counter=partial(count_tokens_approximately, chars_per_token=3.0),
         )
         self.compaction_sink = compaction_sink
         self.summary_callbacks = tuple(summary_callbacks)
@@ -254,14 +258,14 @@ class ContextLifecycleMiddleware(SummarizationMiddleware):
         system_message: BaseMessage | None,
         tools: list[Any] | None,
     ) -> int:
-        """Count dynamic history with the same estimate as the request preflight.
+        """Use the complete request count for ratio-based compression.
 
-        Static prompt/schema bytes cannot be compacted, so they reduce the
-        available dynamic window without becoming part of the keep budget.
+        Legacy dynamic-window budgeting and retained fragments use estimates;
+        static prompt/schema bytes do not belong in their retention budget.
         """
 
         if self.policy.compression_trigger_ratio is not None:
-            return self.token_counter(
+            return self._request_token_counter(
                 ([system_message] if system_message is not None else []) + messages,
                 tools=tools,
             )
