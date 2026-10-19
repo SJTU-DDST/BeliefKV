@@ -177,16 +177,13 @@ def test_effective_policy_environment_without_launching_gpu(tmp_path, mode, nati
         assert "--max-total-tokens" not in arguments
         assert "--max-mamba-cache-size" not in arguments
     predictive = mode == "predictive_h2d"
-    assert environment["BELIEFKV_EMIT_SEMANTIC_TEXT"] == str(int(predictive))
+    assert environment["BELIEFKV_EMIT_SEMANTIC_TEXT"] == "0"
     assert environment["BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH"] == str(int(predictive))
     assert environment["BELIEFKV_ENABLE_TOOL_PREFETCH"] == str(int(predictive))
     assert environment["BELIEFKV_ENABLE_PREPARE_HOST"] == str(int(not native))
     assert environment["BELIEFKV_ENABLE_RESIDENT_FIRST"] == str(int(not native))
-    if predictive:
-        assert environment["BELIEFKV_SEMANTIC_REPORT_ARTIFACT"] == str(artifact)
-        assert environment["BELIEFKV_H2D_OPPORTUNITY_SAMPLING"] == "1"
-    else:
-        assert "BELIEFKV_SEMANTIC_REPORT_ARTIFACT" not in environment
+    assert "BELIEFKV_SEMANTIC_REPORT_ARTIFACT" not in environment
+    assert environment.get("BELIEFKV_H2D_OPPORTUNITY_SAMPLING", "0") == "0"
     if not native:
         assert environment["BELIEFKV_TOOL_TIMING_ARTIFACT"] == str(artifact)
     if mode == "reactive":

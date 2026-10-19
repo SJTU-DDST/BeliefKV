@@ -7,6 +7,7 @@ PORT="${PORT:-18454}"
 ROOT_COUNT="${ROOT_COUNT:-108}"
 SAMPLING_SEED="${SAMPLING_SEED:-21}"
 MAX_COMPLETION_TOKENS="${MAX_COMPLETION_TOKENS:-16384}"
+MODEL_REQUEST_TIMEOUT_SECONDS="${MODEL_REQUEST_TIMEOUT_SECONDS:-${ACTIVATION_WALL_CLOCK_SECONDS:-14400}}"
 ARRIVAL_BATCH_SIZE="${ARRIVAL_BATCH_SIZE:-0}"
 ARRIVAL_BATCH_INTERVAL_MS="${ARRIVAL_BATCH_INTERVAL_MS:-0}"
 WORKFLOW_ARRIVAL_SCHEDULE="${WORKFLOW_ARRIVAL_SCHEDULE:-}"
@@ -266,6 +267,7 @@ setsid "$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
   --server-events "$RUN_ROOT/server/runtime_events.sglang.jsonl" \
   --server-log "$RUN_ROOT/server.log" --pool-tokens 1798995 \
   --model-context-tokens 131072 --max-completion-tokens "$MAX_COMPLETION_TOKENS" \
+  --request-timeout "$MODEL_REQUEST_TIMEOUT_SECONDS" \
   --sampling-seed "$SAMPLING_SEED" --recursion-limit 2048 \
   --sandbox-command-timeout 180 \
   --activation-wall-clock-seconds "${ACTIVATION_WALL_CLOCK_SECONDS:-14400}" \

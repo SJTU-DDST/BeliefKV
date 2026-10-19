@@ -429,6 +429,7 @@ def summarize(arm: Path) -> dict | None:
         "nested_spawn_count": summary.get("nested_spawn_count"),
         "maximum_spawn_depth": summary.get("maximum_spawn_depth"),
         "sandbox_command_timeout_s": harness_config.get("sandbox_command_timeout_s"),
+        "model_request_timeout_seconds": harness_config.get("request_timeout_s"),
         "max_completion_tokens": harness_config.get("max_completion_tokens"),
         "workflow_count": summary["workflow_count"], "outcomes": dict(outcomes),
         "completed_workflows_per_hour": summary["completed_workflows"] * 3600 / duration,
@@ -521,6 +522,7 @@ def main() -> None:
     parser.add_argument("--arrival-seed", type=int, default=21)
     parser.add_argument("--semantic-artifact", type=Path)
     parser.add_argument("--activation-wall-clock-seconds", type=float, default=14400.)
+    parser.add_argument("--model-request-timeout-seconds", type=float, default=14400.)
     parser.add_argument("--max-completion-tokens", type=int, default=16384)
     parser.add_argument("--workload-manifest", type=Path)
     parser.add_argument("--prepare-host", type=int, choices=(0, 1), default=0)
@@ -611,6 +613,8 @@ def main() -> None:
             raise ValueError("sampling seed and repetition ID must be nonnegative")
         if not 0 < args.max_completion_tokens < 131072:
             raise ValueError("output token cap must be positive and below the context size")
+        if not 0 < args.model_request_timeout_seconds < float("inf"):
+            raise ValueError("model request timeout must be positive and finite")
         workloads = available[:args.root_count]
         if len({row["instance_id"] for row in workloads}) != args.root_count:
             raise ValueError("duplicate workflows in arrival table")
@@ -722,6 +726,7 @@ def main() -> None:
             "arrival_schedule": arrival_rows,
             "arrival_schedule_sha256": arrival_schedule_digest(arrival_rows),
             "activation_wall_clock_seconds": args.activation_wall_clock_seconds,
+            "model_request_timeout_seconds": args.model_request_timeout_seconds,
             "sandbox_command_timeout_s": 180,
             "recursion_limit": 2048, "finalization_reserve_steps": 32,
             "native_reactive_guard_profile": True,
@@ -922,6 +927,11 @@ def main() -> None:
             and arm.get("max_completion_tokens") != plan["max_completion_tokens"]
         ):
             raise ValueError(f"{name}: mismatched output token cap")
+        if (
+            "model_request_timeout_seconds" in plan
+            and arm.get("model_request_timeout_seconds") != plan["model_request_timeout_seconds"]
+        ):
+            raise ValueError(f"{name}: mismatched model request timeout")
         state = arm["runtime_state"]
         if name == "native":
             if state or arm["predictive_h2d_acks"]:

@@ -7,6 +7,14 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 后续开发固定在主目录 `/home/longhao/experiment/BeliefKV` 的 `main` 分支。
 历史实验 worktree 保留其冻结来源；新代码修改、验证与提交在主目录进行。
 
+输出上限增大后须同时核对模型请求读取超时。V83c 的 pylint-6386 child
+在客户端 600s 无新流数据后 ReadTimeout，原生仍生成了约 15925 token，
+接近新 16384 上限；不是 GPU 停止服务。工具参数流可能长时间不向客户端
+交付正文。后续启动显式传 MODEL_REQUEST_TIMEOUT_SECONDS，默认随
+workflow 上限 14400s，并在计划及实际 client 配置中核验两侧一致；
+工具调用上限仍为 180s。旧冻结计划 resume 保留原 600s，不能热改本轮
+单侧配置或把该 error 改记为完成；workflow 全局 deadline 仍有效。
+
 Host 满池不能直接当作可预取副本丢失：须区分旧备份回收、随后 HBM 命中、
 Host-only 消失和实际有用前缀重算。V1838 的 V82b 第二批后仍有正 JOIN
 Host-only 观察，工具恢复需求却接近零；单批108是下一配置建议，不据此

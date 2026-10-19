@@ -5,6 +5,13 @@ Status date: 2026-10-19 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+V1848 traces the pylint-6386 child failure to a600s client read timeout while
+native generation continues through15925 output tokens, below the16384 cap.
+New launches explicitly freeze a model request timeout defaulting to14400s
+and compare it with both actual client manifests. Tool180s and the workflow
+global deadline remain. Legacy resume keeps600s when that field is absent;
+do not hot-change V83c or erase its workflow error.
+
 V1840-V1845 provide a complete observed600-2400s V83c prefix, with1275.96
 decode token/s and96.04% GPU utilization versus historical native1263.33/95.07%.
 Output caps and application versions differ, so wait for the already scheduled

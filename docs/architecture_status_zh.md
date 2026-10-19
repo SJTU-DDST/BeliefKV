@@ -2,6 +2,13 @@
 
 更新日期：2026-10-19（北京时间）。
 
+**V83c 读取超时单独保留。**pylint-6386 的一个 child 在客户端约 600s
+未收到新流数据后 ReadTimeout，随后 child cancel/JOIN timeout/workflow
+error；原生持续 decode，已生成约 15925 token，未到 16384。后续新实验
+显式设置模型请求超时默认 14400s，写入冻结计划并核对实际两侧配置，
+工具 180s 与 workflow 全局 deadline 不变。旧计划 resume 默认仍为
+600s，V83c 不热改，失败不删除，不将缺一请求的批次当作零上下文。
+
 **V83c 高负载前缀与最新 main（V1840–V1845）。**600–2400s 的 decode
 吞吐为 1275.96 token/s、GPU 利用率 96.04%；历史 V82b native 为
 1263.33/95.07%。满 48 请求、相近上下文分桶 worker 比为
