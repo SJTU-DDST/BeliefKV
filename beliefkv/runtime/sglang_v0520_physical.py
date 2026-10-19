@@ -722,6 +722,8 @@ def plan_prefetch_gpu_steps(
             or node.full_host_tokens < 0
             or type(node.mamba_device_present) is not bool
             or type(node.mamba_host_present) is not bool
+            or node.pending_write_id is not None
+            or node.pending_load_id is not None
         ):
             return ()
     if (
@@ -744,7 +746,7 @@ def plan_prefetch_gpu_steps(
     paths: set[int] = set()
     provenance: dict[int, int] = {}
     depth: dict[int, int] = {}
-    roots: set[int] = set()
+    root_id = None
     single_leaf = next(iter(full_leaves)) if len(full_leaves) == 1 else None
     ordered_nodes = None
     for leaf, created in sorted(full_leaves.items()):
@@ -759,7 +761,10 @@ def plan_prefetch_gpu_steps(
             seen.add(current)
             chain.append(current)
             current = nodes[current].parent_id
-        roots.add(chain[-1])
+        if root_id is None:
+            root_id = chain[-1]
+        elif root_id != chain[-1]:
+            return ()
         if single_leaf is not None:
             # One validated ancestry already has the required root-first order.
             paths = seen
@@ -770,15 +775,11 @@ def plan_prefetch_gpu_steps(
                 provenance.setdefault(node_id, leaf)
                 depth[node_id] = distance
     if (
-        len(roots) != 1
-        or set(nodes) != paths
+        # Every path member was resolved in nodes, so cardinality proves coverage.
+        len(nodes) != len(paths)
         or any(
             leaf not in paths or nodes[leaf].creation_time != created
             for leaf, created in mamba_leaves.items()
-        )
-        or any(
-            node.pending_write_id is not None or node.pending_load_id is not None
-            for node in nodes.values()
         )
     ):
         return ()
@@ -1688,9 +1689,24 @@ class PhysicalTransactionLedger:
             or len(self._pending) >= self.max_pending
         ):
             raise PhysicalReceiptError("invalid, reused or over-bound command")
-        sizes = _counts(expected.pool_bytes_per_token, positive=True)
-        if not sizes or set(sizes) - {"kv", "mamba"}:
-            raise PhysicalReceiptError("unsupported native pool")
+        single_pool = single_unit = None
+        if len(expected.pool_bytes_per_token) == 1:
+            item = expected.pool_bytes_per_token[0]
+            if type(item) not in (tuple, list) or len(item) != 2:
+                raise PhysicalReceiptError("invalid pool entry")
+            single_pool, single_unit = item
+            if (
+                type(single_pool) is not str or not single_pool
+                or type(single_unit) is not int or single_unit <= 0
+            ):
+                raise PhysicalReceiptError("invalid or duplicate pool entry")
+            if single_pool not in ("kv", "mamba"):
+                raise PhysicalReceiptError("unsupported native pool")
+            sizes = None
+        else:
+            sizes = _counts(expected.pool_bytes_per_token, positive=True)
+            if not sizes or set(sizes) - {"kv", "mamba"}:
+                raise PhysicalReceiptError("unsupported native pool")
         multiple_children = len(expected.children) > 1
         anchors: set[int] | tuple[int, ...] = set() if multiple_children else ()
         published: set[int] | tuple[int, ...] = set() if multiple_children else ()
@@ -1729,7 +1745,9 @@ class PhysicalTransactionLedger:
                 pool, amount = item
                 if type(pool) is not str or type(amount) is not int or amount < 0:
                     raise PhysicalReceiptError("invalid pool entry")
-                unit = sizes.get(pool)
+                unit = (
+                    single_unit if pool == single_pool else None
+                ) if sizes is None else sizes.get(pool)
                 if unit is None:
                     raise PhysicalReceiptError("invalid child pools")
                 pool_bit = 1 if pool == "kv" else 2

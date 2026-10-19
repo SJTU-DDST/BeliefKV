@@ -19,7 +19,17 @@ child 都可动态委派叶子孙 agent，最大深度仍为 2。任务范围、
 见[24-root 配置](../configs/migration/qwen35_locobench_long_24root_running8_2026-10-19.json)
 及[CPU 原始结果](../experiments/reports/v1925_v85d_long_chat_token_cache_cpu_20261019.json)。
 
-**最新闭包观察降本，V1950–V1955。**逐次读取实时状态，在一次捕获内
+**最新规划与登记降本，V1956–V1958。**将 pending 检查合并进节点校验，
+依据已证明的祖先包含关系比较数量，省去额外集合复制；多根仍拒绝。
+单池 FULL/Mamba 登记直接核对尺寸和对齐，省去逐命令尺寸字典及集合，
+多池保留原核算。相对 82ef624，64 条 FULL 登记 P50
+172.50→151.13us，完整 64 节点 JOIN/tool 为 1791.23→1739.86us、
+1793.21→1752.82us，仅改善 2.9%/2.3%。40 组中 39 组改善，
+一组诊断场景回退 1.3%，完整计划、pending 与预算相同。
+1994 项 CPU 回归通过；GPU 仍暂停，不外推吞吐/JCT。见
+[本轮说明](../experiments/reports/v1959_prefetch_planner_registration_cpu_20261019_zh.md)。
+
+**上一轮闭包观察降本，V1950–V1955。**逐次读取实时状态，在一次捕获内
 复用节点 ID、component 和 FULL 索引，合并长度读取/边界检查，构造
 固定字段摘要时省去逐节点关键字字典。旧版 observer 的辅助函数与数据
 类型现已完整冻结，避免对照误用新版；固定时钟改用普通函数，去掉

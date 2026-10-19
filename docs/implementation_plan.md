@@ -45,6 +45,23 @@ This is CPU evidence, not an end-to-end result. Keep new-context hybrid checkpoi
 gaps separate; FULL matches alone cannot reconstruct a missing Mamba checkpoint.
 GPU pause remains active and automatic resume remains disabled.
 
+V1956-V1958 reduce planning/registration relative to82ef624. Merge pending
+checks into complete node validation; compare closure cardinality only after
+proving every path member belongs to the node index. Retain root equality,
+cycles, Mamba anchors, input boundaries and validation beyond burst limits.
+Single-pool FULL/Mamba registration validates scalar geometry without a
+temporary sizes dictionary/set, retaining multi-pool accounting, alignment,
+ownership, atomic reservation and ACK rules. Registering64 FULL commands
+improves172.50 to151.13us. The16 H2D planner scenes improve3.3%-11.0%,
+but complete observations improve only0.9%-3.1%. Complete64-node JOIN/tool
+dispatch is1791.23 to1739.86us and1793.21 to1752.82us. Of40 scenes,39
+improve; the diagnostics-on native-budget64-node tool case adds28.43us/1.33%.
+Retain this regression and do not attribute unchanged PREPARE timing noise.
+The1994 CPU checks pass without skips, including46 added boundary/atomicity
+cases. See V1959. Keep GPU paused; actual tail replanning, native accounting,
+registration and live-source costs remain. Do not multiply transfer-path
+microseconds by every decode call or infer throughput/JCT gains.
+
 V1950-V1955 reduce action-local ancestry capture relative to48197f2.
 Read each live node identity, component/index and key once within the
 capture, fuse index length/bounds validation, and avoid a per-node kwargs

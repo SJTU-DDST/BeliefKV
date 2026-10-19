@@ -195,6 +195,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline", default="fc9fea7")
     parser.add_argument("--samples", type=int, default=151)
+    parser.add_argument("--registration-only", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.samples < 1 or args.output.exists():
@@ -209,7 +210,7 @@ def main():
     sources = {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in paths}
     baseline, baseline_sources = baseline_runtime(args.baseline)
     validation = validation_cases(baseline)
-    cases = [
+    cases = [] if args.registration_only else [
         *(socket_case(baseline, samples=args.samples, profiling=profiling)
           for profiling in (False, True)),
         *(recurring_case(
@@ -217,12 +218,14 @@ def main():
             pending=pending, profiling=profiling, due=due,
         ) for workflows, running in ((12, 8), (24, 8), (156, 48))
           for pending in (0, 16) for profiling in (False, True) for due in (False, True)),
-        *(registration_case(
+    ]
+    cases.extend(
+        registration_case(
             baseline, samples=args.samples, commands=commands, children=children,
             pools=pools, published_nodes=nodes,
         ) for commands, children, nodes in ((1, 1, 1), (64, 1, 1), (16, 4, 1), (16, 1, 2))
-          for pools in ("full", "mamba", "hybrid")),
-    ]
+          for pools in ("full", "mamba", "hybrid")
+    )
     for case in cases:
         case["p50_thread_cpu_reduction_fraction"] = (
             1. - case["costs"]["candidate"]["p50_us"] / case["costs"]["baseline"]["p50_us"]
@@ -235,6 +238,7 @@ def main():
         "at": datetime.now().astimezone().isoformat(),
         "baseline_revision": args.baseline, "baseline_source_sha256": baseline_sources,
         "candidate_source_sha256": sources, "samples": args.samples,
+        "registration_only": args.registration_only,
         "warmup_samples": 20, "cases": cases, "validation_cases": validation,
         "limitations": [
             "Empty prediction inventories and physical pending populations are controlled scenes.",

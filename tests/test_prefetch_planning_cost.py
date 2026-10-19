@@ -74,6 +74,38 @@ def test_implicit_complete_plan_is_recaptured_after_residency_and_pending_change
         runtime.close()
 
 
+@pytest.mark.parametrize("max_steps", (1, None))
+@pytest.mark.parametrize("field,value", (
+    ("pending_write_id", 0), ("pending_load_id", False),
+    ("full_host_tokens", True), ("full_device_tokens", -1),
+    ("mamba_host_present", 1), ("creation_time", float("nan")),
+))
+def test_prefetch_still_validates_nodes_beyond_the_selected_input_and_burst(field, value, max_steps):
+    anchors = replace(prefetch_anchors(), reusable_input_tokens=8)
+    root = prefetch_node(0, None, 1, key_tokens=0)
+    checkpoint = prefetch_node(11, 0, 4, full_host=8, mamba_host=True, key_tokens=8)
+    output = prefetch_node(12, 11, 5, full_host=4, mamba_host=True, key_tokens=4)
+    candidate = NS(anchors=anchors, nodes=(root, checkpoint, output))
+    assert [step.node_id for step in plan_prefetch_gpu_steps(candidate, max_steps=max_steps)] == [11]
+    setattr(output, field, value)
+    assert plan_prefetch_gpu_steps(candidate, max_steps=max_steps) == ()
+
+
+@pytest.mark.parametrize("max_steps", (1, None))
+def test_prefetch_rejects_disjoint_roots_even_when_every_node_is_on_a_full_path(max_steps):
+    first_root = prefetch_node(0, None, 1, key_tokens=0)
+    second_root = prefetch_node(20, None, 2, key_tokens=0)
+    first = prefetch_node(11, 0, 4, full_host=8, mamba_host=True, key_tokens=8)
+    second = prefetch_node(12, 20, 5, full_host=4, mamba_host=True, key_tokens=4)
+    leaves = ((11, 4), (12, 5))
+    anchors = replace(
+        prefetch_anchors(), component_leaves=((0, leaves), (2, leaves)),
+        reusable_input_tokens=12,
+    )
+    candidate = NS(anchors=anchors, nodes=(first_root, first, second_root, second))
+    assert plan_prefetch_gpu_steps(candidate, max_steps=max_steps) == ()
+
+
 @pytest.mark.parametrize("cached_plan", (False, True))
 @pytest.mark.parametrize("all_sent", (False, True))
 def test_tail_reclaim_uses_only_the_same_complete_input_plan(cached_plan, all_sent):

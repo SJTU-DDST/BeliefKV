@@ -30,6 +30,79 @@ def assert_pending_indexes(ledger):
         )
 
 
+@pytest.mark.parametrize("pool,unit", (("kv", 10), ("mamba", 5)))
+@pytest.mark.parametrize("action", ("PREPARE_HOST", "PREFETCH_GPU"))
+@pytest.mark.parametrize("children", (1, 2))
+@pytest.mark.parametrize("published_nodes", (1, 2))
+def test_single_pool_registration_keeps_budgets_conflicts_and_retirement(
+    pool, unit, action, children, published_nodes,
+):
+    original = expected(action=action)
+    command = replace(
+        original, session_id="session", session_generation=1,
+        pool_bytes_per_token=((pool, unit),),
+        children=tuple(replace(
+            original.children[0], anchor_node_id=node,
+            published_node_ids=tuple(range(node, node + published_nodes)),
+            pool_bytes=((pool, 2 * unit),), num_bytes=2 * unit + 3,
+        ) for node in range(10, 10 + 2 * children, 2)),
+    )
+    ledger = PhysicalTransactionLedger()
+    ledger.register(command)
+    assert_pending_indexes(ledger)
+    assert ledger.pending_count == 1
+    assert ledger.pending_action_bytes(action) == children * (2 * unit + 3)
+    with pytest.raises(PhysicalReceiptError, match="already owned"):
+        ledger.register(replace(command, command_id="overlapping"))
+    assert_pending_indexes(ledger)
+    assert ledger.pending_count == 1
+    ledger.cancel_unsubmitted(command.command_id)
+    assert_pending_indexes(ledger)
+    assert ledger.pending_count == 0
+
+
+@pytest.mark.parametrize("geometry", (
+    (), (("kv", 0),), (("kv", -1),), (("kv", True),), (("kv", 1.0),),
+    (("", 10),), ((True, 10),), (("swa", 10),), (("kv",),), ("kv",),
+    (("kv", 10), ("kv", 10)),
+))
+def test_invalid_pool_geometry_never_reserves_nodes_or_bytes(geometry):
+    original = expected()
+    command = replace(
+        original, pool_bytes_per_token=geometry,
+        children=(replace(original.children[0], pool_bytes=(("kv", 20),), num_bytes=20),),
+    )
+    ledger = PhysicalTransactionLedger()
+    with pytest.raises(PhysicalReceiptError):
+        ledger.register(command)
+    assert_pending_indexes(ledger)
+    assert ledger.pending_count == 0
+
+
+@pytest.mark.parametrize("pool_bytes", (
+    (("kv", 20), ("mamba", 0)), (("mamba", 5),), (("kv", 11),),
+    (("kv", 20), ("kv", 0)), (("kv", True),),
+))
+def test_single_pool_failure_in_later_child_is_atomic(pool_bytes):
+    original = expected()
+    first = replace(
+        original.children[0], published_node_ids=(11,),
+        pool_bytes=(("kv", 20),), num_bytes=20,
+    )
+    second = replace(
+        first, anchor_node_id=12, published_node_ids=(12,),
+        pool_bytes=pool_bytes,
+    )
+    command = replace(
+        original, pool_bytes_per_token=(("kv", 10),), children=(first, second),
+    )
+    ledger = PhysicalTransactionLedger()
+    with pytest.raises(PhysicalReceiptError):
+        ledger.register(command)
+    assert_pending_indexes(ledger)
+    assert ledger.pending_count == 0
+
+
 @pytest.mark.parametrize("finish", ["cancel", "expire", "invalid_ack", "ack"])
 def test_physical_budget_indexes_follow_partial_ack_invalidation_and_retirement(finish):
     ledger = PhysicalTransactionLedger()
