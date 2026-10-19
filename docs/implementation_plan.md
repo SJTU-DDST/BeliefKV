@@ -64,6 +64,23 @@ Current goal:
 - Stop and fix material experimental failures promptly; CPU improvements alone
   do not establish GPU performance or a gain over native.
 
+V1990 skips legacy boundary/command feature maintenance when online tool timing
+has no model worker. Preserve the worker's live inputs; create boundary deques
+only when absent and retire completed/ended/discarded tool-run groups.
+Replay all12 complete V85d workflows,9428 events. Per-event graph, online
+history, actual counters and physical state agree. Online mode avoids9336
+legacy classifiers and preserves1351 supported direct timing queries.
+These are not the2447 periodic forecasts counted by the live run.
+All24 online scenes improve8.8%-12.0% in amortized CPU P50. With profiling off,
+the event-weighted replay P50s are23.595 to20.942us, only about25ms per replay;
+do not extrapolate this into online or JCT savings. Of24 worker controls, keep
+the2 small regressions of0.066/0.034us. All2104 CPU checks pass without skips.
+See V1992 and final V1990; V1989 is a fixture check. No native requests/sessions,
+live model worker, transfer/capacity handling, service consumption or GPU were
+included. V88/patch/configuration stay unchanged; publish the new CPU-qualified
+revision to the same06:00 waiter. Next inspect large-prefix restore and use
+evidence copying/scanning, retaining the full throughput/JCT goal.
+
 V1987 removes four diagnostic-only poll counters relative toa9b42a2:
 physical_planning_after_forward, prediction_maintenance_deferred,
 tool_prefetch_scan_deferred and prefetch_lease_maintenance_deferred.

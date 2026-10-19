@@ -1,0 +1,3852 @@
+{
+  "status": "complete_cpu_comparison_not_gpu_or_jct_gain",
+  "at": "2026-10-19T11:31:47.641796-07:00",
+  "baseline_revision": "52ccccb",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/event_channel.py": "032a8929a01ed19bfd67bf655b42c525ae830ce74dd55e790b69bd32ffc4ece3",
+    "beliefkv/runtime/sglang_v0520_observer.py": "c48af16182853d7fbf0b97879320e01c339bd0e677a78b024011d855040cbd8a",
+    "beliefkv/runtime/sglang_v0520_physical.py": "ee233150693b659c9b73fe2c2abe5de8455dbd8b1ffa2a2e63b35c53b787e2c8",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "7addcaa371025eae403133e048e36e448ef6a7adf47602e50db61ceafce4656e"
+  },
+  "candidate_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "d56ab04fce0a2c59ae9fcdd562b7900fe3b8dba25bd35a12f1c74f7efd29847d",
+    "beliefkv/predictor/online_workload_timing.py": "1dcfde49a962d272ebac7d9d2ed207dea4ba9e9f32014d7cc4e0e49a90d976ab",
+    "beliefkv/predictor/tool_survival.py": "143725aef6b099ccec08ead6c08ef98a1c21f472eb8ba9acc7578dceaed8c615",
+    "beliefkv/predictor/composer.py": "c0ffecf7f08c309c47338b8ccace624dbf65021f1e862aa492c269575e39c0a7",
+    "beliefkv/control/causal_graph.py": "2b5070822d2dba1cc994b94e40245430de18edd12b2fd1dceed76e9a88d3f657",
+    "beliefkv/core/events.py": "62bbefc3f3f68fe43af8731e1a2b1197166feea6a85fcf28910f010591d634d9",
+    "beliefkv/runtime/hotpath_timing.py": "aa554df03b5c08cc009be14f21a9c25bdb5e48eb585b5cf774601d9ae471792b",
+    "scripts/benchmark_online_event_control_cpu.py": "fdffa41bf916e3e594bb41ca59538d82ffd36e527b7f9b57b622bb5fc1e6b5c8",
+    "scripts/benchmark_native_prepare_path.py": "6dc6e755527f7546b2c3d93c7ff0913ff69664a045c5c22465bd477e93647995",
+    "scripts/benchmark_prefetch_control_cpu.py": "6aaa1784c17409e1c2654e563185ca38a23f8dcc8287642d15e849ddca5eaeea"
+  },
+  "samples": 1,
+  "warmup_samples": 5,
+  "cases": [
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_api_gateway_hard_009_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "1b98b35f304ff012e391c270a42af2ee036b0972270c813ea447e6d76598ee50",
+        "events": 563,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 8,
+          "llm_submit": 94,
+          "llm_result": 94,
+          "spawn": 7,
+          "join_create": 5,
+          "join_wait": 5,
+          "structured_action": 165,
+          "tool_start": 85,
+          "tool_end": 85,
+          "return": 8,
+          "join_satisfied": 5,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 551,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 55,
+        "candidate": 55
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 29.523007104795738,
+            "p50_us": 29.523007104795738,
+            "p90_us": 29.523007104795738,
+            "p99_us": 29.523007104795738,
+            "samples_us": [
+              29.523007104795738
+            ]
+          },
+          "wall_us": {
+            "mean_us": 30.196303730017764,
+            "p50_us": 30.196303730017764,
+            "p90_us": 30.196303730017764,
+            "p99_us": 30.196303730017764,
+            "samples_us": [
+              30.196303730017764
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 25.789744227353463,
+            "p50_us": 25.789744227353463,
+            "p90_us": 25.789744227353463,
+            "p99_us": 25.789744227353463,
+            "samples_us": [
+              25.789744227353463
+            ]
+          },
+          "wall_us": {
+            "mean_us": 26.45969626998224,
+            "p50_us": 26.45969626998224,
+            "p90_us": 26.45969626998224,
+            "p99_us": 26.45969626998224,
+            "samples_us": [
+              26.45969626998224
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.12645266331409177
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_api_gateway_hard_009_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "1b98b35f304ff012e391c270a42af2ee036b0972270c813ea447e6d76598ee50",
+        "events": 563,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 8,
+          "llm_submit": 94,
+          "llm_result": 94,
+          "spawn": 7,
+          "join_create": 5,
+          "join_wait": 5,
+          "structured_action": 165,
+          "tool_start": 85,
+          "tool_end": 85,
+          "return": 8,
+          "join_satisfied": 5,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 551,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 55,
+        "candidate": 55
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 38.68970692717584,
+            "p50_us": 38.68970692717584,
+            "p90_us": 38.68970692717584,
+            "p99_us": 38.68970692717584,
+            "samples_us": [
+              38.68970692717584
+            ]
+          },
+          "wall_us": {
+            "mean_us": 39.325737122557726,
+            "p50_us": 39.325737122557726,
+            "p90_us": 39.325737122557726,
+            "p99_us": 39.325737122557726,
+            "samples_us": [
+              39.325737122557726
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 34.27919538188277,
+            "p50_us": 34.27919538188277,
+            "p90_us": 34.27919538188277,
+            "p99_us": 34.27919538188277,
+            "samples_us": [
+              34.27919538188277
+            ]
+          },
+          "wall_us": {
+            "mean_us": 34.915761989342805,
+            "p50_us": 34.915761989342805,
+            "p90_us": 34.915761989342805,
+            "p99_us": 34.915761989342805,
+            "samples_us": [
+              34.915761989342805
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.11399702648548893
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_api_gateway_hard_009_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "1b98b35f304ff012e391c270a42af2ee036b0972270c813ea447e6d76598ee50",
+        "events": 563,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 8,
+          "llm_submit": 94,
+          "llm_result": 94,
+          "spawn": 7,
+          "join_create": 5,
+          "join_wait": 5,
+          "structured_action": 165,
+          "tool_start": 85,
+          "tool_end": 85,
+          "return": 8,
+          "join_satisfied": 5,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 551,
+        "candidate": 551
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 1
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 27.841728241563054,
+            "p50_us": 27.841728241563054,
+            "p90_us": 27.841728241563054,
+            "p99_us": 27.841728241563054,
+            "samples_us": [
+              27.841728241563054
+            ]
+          },
+          "wall_us": {
+            "mean_us": 28.490637655417405,
+            "p50_us": 28.490637655417405,
+            "p90_us": 28.490637655417405,
+            "p99_us": 28.490637655417405,
+            "samples_us": [
+              28.490637655417405
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 27.142101243339255,
+            "p50_us": 27.142101243339255,
+            "p90_us": 27.142101243339255,
+            "p99_us": 27.142101243339255,
+            "samples_us": [
+              27.142101243339255
+            ]
+          },
+          "wall_us": {
+            "mean_us": 27.805188277087034,
+            "p50_us": 27.805188277087034,
+            "p90_us": 27.805188277087034,
+            "p99_us": 27.805188277087034,
+            "samples_us": [
+              27.805188277087034
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.02512872017690959
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_api_gateway_hard_009_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "1b98b35f304ff012e391c270a42af2ee036b0972270c813ea447e6d76598ee50",
+        "events": 563,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 8,
+          "llm_submit": 94,
+          "llm_result": 94,
+          "spawn": 7,
+          "join_create": 5,
+          "join_wait": 5,
+          "structured_action": 165,
+          "tool_start": 85,
+          "tool_end": 85,
+          "return": 8,
+          "join_satisfied": 5,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 551,
+        "candidate": 551
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 1
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 37.054547069271756,
+            "p50_us": 37.054547069271756,
+            "p90_us": 37.054547069271756,
+            "p99_us": 37.054547069271756,
+            "samples_us": [
+              37.054547069271756
+            ]
+          },
+          "wall_us": {
+            "mean_us": 37.70557371225578,
+            "p50_us": 37.70557371225578,
+            "p90_us": 37.70557371225578,
+            "p99_us": 37.70557371225578,
+            "samples_us": [
+              37.70557371225578
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 35.96464653641208,
+            "p50_us": 35.96464653641208,
+            "p90_us": 35.96464653641208,
+            "p99_us": 35.96464653641208,
+            "samples_us": [
+              35.96464653641208
+            ]
+          },
+          "wall_us": {
+            "mean_us": 36.610200710479575,
+            "p50_us": 36.610200710479575,
+            "p90_us": 36.610200710479575,
+            "p99_us": 36.610200710479575,
+            "samples_us": [
+              36.610200710479575
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.029413408584435086
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "5fc0196f7abb9f25a2f6a9f16a35a140196e7aa22b4d597dc95f6fee7bdf4853",
+        "events": 914,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 7,
+          "llm_submit": 150,
+          "llm_result": 150,
+          "spawn": 6,
+          "join_create": 4,
+          "join_wait": 4,
+          "structured_action": 238,
+          "tool_start": 171,
+          "tool_end": 171,
+          "return": 7,
+          "join_satisfied": 4,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 904,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 118,
+        "candidate": 118
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 30.45153719912473,
+            "p50_us": 30.45153719912473,
+            "p90_us": 30.45153719912473,
+            "p99_us": 30.45153719912473,
+            "samples_us": [
+              30.45153719912473
+            ]
+          },
+          "wall_us": {
+            "mean_us": 31.09368271334792,
+            "p50_us": 31.09368271334792,
+            "p90_us": 31.09368271334792,
+            "p99_us": 31.09368271334792,
+            "samples_us": [
+              31.09368271334792
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 26.574793216630198,
+            "p50_us": 26.574793216630198,
+            "p90_us": 26.574793216630198,
+            "p99_us": 26.574793216630198,
+            "samples_us": [
+              26.574793216630198
+            ]
+          },
+          "wall_us": {
+            "mean_us": 27.217493435448578,
+            "p50_us": 27.217493435448578,
+            "p90_us": 27.217493435448578,
+            "p99_us": 27.217493435448578,
+            "samples_us": [
+              27.217493435448578
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.12730864642872486
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "5fc0196f7abb9f25a2f6a9f16a35a140196e7aa22b4d597dc95f6fee7bdf4853",
+        "events": 914,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 7,
+          "llm_submit": 150,
+          "llm_result": 150,
+          "spawn": 6,
+          "join_create": 4,
+          "join_wait": 4,
+          "structured_action": 238,
+          "tool_start": 171,
+          "tool_end": 171,
+          "return": 7,
+          "join_satisfied": 4,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 904,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 118,
+        "candidate": 118
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 39.147041575492345,
+            "p50_us": 39.147041575492345,
+            "p90_us": 39.147041575492345,
+            "p99_us": 39.147041575492345,
+            "samples_us": [
+              39.147041575492345
+            ]
+          },
+          "wall_us": {
+            "mean_us": 39.78832932166302,
+            "p50_us": 39.78832932166302,
+            "p90_us": 39.78832932166302,
+            "p99_us": 39.78832932166302,
+            "samples_us": [
+              39.78832932166302
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 35.435085339168495,
+            "p50_us": 35.435085339168495,
+            "p90_us": 35.435085339168495,
+            "p99_us": 35.435085339168495,
+            "samples_us": [
+              35.435085339168495
+            ]
+          },
+          "wall_us": {
+            "mean_us": 36.07382932166302,
+            "p50_us": 36.07382932166302,
+            "p90_us": 36.07382932166302,
+            "p99_us": 36.07382932166302,
+            "samples_us": [
+              36.07382932166302
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.09482086223975827
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "5fc0196f7abb9f25a2f6a9f16a35a140196e7aa22b4d597dc95f6fee7bdf4853",
+        "events": 914,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 7,
+          "llm_submit": 150,
+          "llm_result": 150,
+          "spawn": 6,
+          "join_create": 4,
+          "join_wait": 4,
+          "structured_action": 238,
+          "tool_start": 171,
+          "tool_end": 171,
+          "return": 7,
+          "join_satisfied": 4,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 904,
+        "candidate": 904
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 1
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 28.805157549234135,
+            "p50_us": 28.805157549234135,
+            "p90_us": 28.805157549234135,
+            "p99_us": 28.805157549234135,
+            "samples_us": [
+              28.805157549234135
+            ]
+          },
+          "wall_us": {
+            "mean_us": 29.45827571115974,
+            "p50_us": 29.45827571115974,
+            "p90_us": 29.45827571115974,
+            "p99_us": 29.45827571115974,
+            "samples_us": [
+              29.45827571115974
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 28.356336980306345,
+            "p50_us": 28.356336980306345,
+            "p90_us": 28.356336980306345,
+            "p99_us": 28.356336980306345,
+            "samples_us": [
+              28.356336980306345
+            ]
+          },
+          "wall_us": {
+            "mean_us": 29.006942013129105,
+            "p50_us": 29.006942013129105,
+            "p90_us": 29.006942013129105,
+            "p99_us": 29.006942013129105,
+            "samples_us": [
+              29.006942013129105
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.015581257216200295
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "5fc0196f7abb9f25a2f6a9f16a35a140196e7aa22b4d597dc95f6fee7bdf4853",
+        "events": 914,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 7,
+          "llm_submit": 150,
+          "llm_result": 150,
+          "spawn": 6,
+          "join_create": 4,
+          "join_wait": 4,
+          "structured_action": 238,
+          "tool_start": 171,
+          "tool_end": 171,
+          "return": 7,
+          "join_satisfied": 4,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 904,
+        "candidate": 904
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 1
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 38.27065864332604,
+            "p50_us": 38.27065864332604,
+            "p90_us": 38.27065864332604,
+            "p99_us": 38.27065864332604,
+            "samples_us": [
+              38.27065864332604
+            ]
+          },
+          "wall_us": {
+            "mean_us": 38.919460612691466,
+            "p50_us": 38.919460612691466,
+            "p90_us": 38.919460612691466,
+            "p99_us": 38.919460612691466,
+            "samples_us": [
+              38.919460612691466
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 36.803961706783376,
+            "p50_us": 36.803961706783376,
+            "p90_us": 36.803961706783376,
+            "p99_us": 36.803961706783376,
+            "samples_us": [
+              36.803961706783376
+            ]
+          },
+          "wall_us": {
+            "mean_us": 37.46077352297593,
+            "p50_us": 37.46077352297593,
+            "p90_us": 37.46077352297593,
+            "p99_us": 37.46077352297593,
+            "samples_us": [
+              37.46077352297593
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.03832431916607304
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "04cd4fce7528e85853e2662abf3fdf89e498b4632f68d0a10321e82472c92539",
+        "events": 1835,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 9,
+          "llm_submit": 341,
+          "llm_result": 341,
+          "spawn": 8,
+          "join_create": 4,
+          "join_wait": 4,
+          "structured_action": 451,
+          "tool_start": 331,
+          "tool_end": 331,
+          "return": 9,
+          "join_satisfied": 4,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 1825,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 280,
+        "candidate": 280
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 23.394264850136242,
+            "p50_us": 23.394264850136242,
+            "p90_us": 23.394264850136242,
+            "p99_us": 23.394264850136242,
+            "samples_us": [
+              23.394264850136242
+            ]
+          },
+          "wall_us": {
+            "mean_us": 23.894819073569483,
+            "p50_us": 23.894819073569483,
+            "p90_us": 23.894819073569483,
+            "p99_us": 23.894819073569483,
+            "samples_us": [
+              23.894819073569483
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 20.390640871934604,
+            "p50_us": 20.390640871934604,
+            "p90_us": 20.390640871934604,
+            "p99_us": 20.390640871934604,
+            "samples_us": [
+              20.390640871934604
+            ]
+          },
+          "wall_us": {
+            "mean_us": 20.88790408719346,
+            "p50_us": 20.88790408719346,
+            "p90_us": 20.88790408719346,
+            "p99_us": 20.88790408719346,
+            "samples_us": [
+              20.88790408719346
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.12839146677370994
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "04cd4fce7528e85853e2662abf3fdf89e498b4632f68d0a10321e82472c92539",
+        "events": 1835,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 9,
+          "llm_submit": 341,
+          "llm_result": 341,
+          "spawn": 8,
+          "join_create": 4,
+          "join_wait": 4,
+          "structured_action": 451,
+          "tool_start": 331,
+          "tool_end": 331,
+          "return": 9,
+          "join_satisfied": 4,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 1825,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 280,
+        "candidate": 280
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 30.558100272479564,
+            "p50_us": 30.558100272479564,
+            "p90_us": 30.558100272479564,
+            "p99_us": 30.558100272479564,
+            "samples_us": [
+              30.558100272479564
+            ]
+          },
+          "wall_us": {
+            "mean_us": 31.113750953678473,
+            "p50_us": 31.113750953678473,
+            "p90_us": 31.113750953678473,
+            "p99_us": 31.113750953678473,
+            "samples_us": [
+              31.113750953678473
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 27.756555858310627,
+            "p50_us": 27.756555858310627,
+            "p90_us": 27.756555858310627,
+            "p99_us": 27.756555858310627,
+            "samples_us": [
+              27.756555858310627
+            ]
+          },
+          "wall_us": {
+            "mean_us": 28.30067029972752,
+            "p50_us": 28.30067029972752,
+            "p90_us": 28.30067029972752,
+            "p99_us": 28.30067029972752,
+            "samples_us": [
+              28.30067029972752
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.09167927289943445
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "04cd4fce7528e85853e2662abf3fdf89e498b4632f68d0a10321e82472c92539",
+        "events": 1835,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 9,
+          "llm_submit": 341,
+          "llm_result": 341,
+          "spawn": 8,
+          "join_create": 4,
+          "join_wait": 4,
+          "structured_action": 451,
+          "tool_start": 331,
+          "tool_end": 331,
+          "return": 9,
+          "join_satisfied": 4,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 1825,
+        "candidate": 1825
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 2
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 22.313917711171662,
+            "p50_us": 22.313917711171662,
+            "p90_us": 22.313917711171662,
+            "p99_us": 22.313917711171662,
+            "samples_us": [
+              22.313917711171662
+            ]
+          },
+          "wall_us": {
+            "mean_us": 22.853845776566757,
+            "p50_us": 22.853845776566757,
+            "p90_us": 22.853845776566757,
+            "p99_us": 22.853845776566757,
+            "samples_us": [
+              22.853845776566757
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 21.65988228882834,
+            "p50_us": 21.65988228882834,
+            "p90_us": 21.65988228882834,
+            "p99_us": 21.65988228882834,
+            "samples_us": [
+              21.65988228882834
+            ]
+          },
+          "wall_us": {
+            "mean_us": 22.2007514986376,
+            "p50_us": 22.2007514986376,
+            "p90_us": 22.2007514986376,
+            "p99_us": 22.2007514986376,
+            "samples_us": [
+              22.2007514986376
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.02931064956002216
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "04cd4fce7528e85853e2662abf3fdf89e498b4632f68d0a10321e82472c92539",
+        "events": 1835,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 9,
+          "llm_submit": 341,
+          "llm_result": 341,
+          "spawn": 8,
+          "join_create": 4,
+          "join_wait": 4,
+          "structured_action": 451,
+          "tool_start": 331,
+          "tool_end": 331,
+          "return": 9,
+          "join_satisfied": 4,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 1825,
+        "candidate": 1825
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 2
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 29.54458528610354,
+            "p50_us": 29.54458528610354,
+            "p90_us": 29.54458528610354,
+            "p99_us": 29.54458528610354,
+            "samples_us": [
+              29.54458528610354
+            ]
+          },
+          "wall_us": {
+            "mean_us": 30.108445231607632,
+            "p50_us": 30.108445231607632,
+            "p90_us": 30.108445231607632,
+            "p99_us": 30.108445231607632,
+            "samples_us": [
+              30.108445231607632
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 28.659783106267028,
+            "p50_us": 28.659783106267028,
+            "p90_us": 28.659783106267028,
+            "p99_us": 28.659783106267028,
+            "samples_us": [
+              28.659783106267028
+            ]
+          },
+          "wall_us": {
+            "mean_us": 29.206565122615803,
+            "p50_us": 29.206565122615803,
+            "p90_us": 29.206565122615803,
+            "p99_us": 29.206565122615803,
+            "samples_us": [
+              29.206565122615803
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.029948031805769992
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_game_simulation_medium_033_integration_testing_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "2432ba27a5e53d6d8664f7bc3214baa9e33569ff9f50a1e96fe73455042cd84f",
+        "events": 233,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 41,
+          "llm_result": 41,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 32,
+          "tool_start": 53,
+          "tool_end": 53,
+          "return": 3,
+          "join_satisfied": 1,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 229,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 26,
+        "candidate": 26
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 24.014896995708153,
+            "p50_us": 24.014896995708153,
+            "p90_us": 24.014896995708153,
+            "p99_us": 24.014896995708153,
+            "samples_us": [
+              24.014896995708153
+            ]
+          },
+          "wall_us": {
+            "mean_us": 24.51921888412017,
+            "p50_us": 24.51921888412017,
+            "p90_us": 24.51921888412017,
+            "p99_us": 24.51921888412017,
+            "samples_us": [
+              24.51921888412017
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 21.227270386266092,
+            "p50_us": 21.227270386266092,
+            "p90_us": 21.227270386266092,
+            "p99_us": 21.227270386266092,
+            "samples_us": [
+              21.227270386266092
+            ]
+          },
+          "wall_us": {
+            "mean_us": 21.720888412017167,
+            "p50_us": 21.720888412017167,
+            "p90_us": 21.720888412017167,
+            "p99_us": 21.720888412017167,
+            "samples_us": [
+              21.720888412017167
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.11607905750918912
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_game_simulation_medium_033_integration_testing_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "2432ba27a5e53d6d8664f7bc3214baa9e33569ff9f50a1e96fe73455042cd84f",
+        "events": 233,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 41,
+          "llm_result": 41,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 32,
+          "tool_start": 53,
+          "tool_end": 53,
+          "return": 3,
+          "join_satisfied": 1,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 229,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 26,
+        "candidate": 26
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 31.254064377682404,
+            "p50_us": 31.254064377682404,
+            "p90_us": 31.254064377682404,
+            "p99_us": 31.254064377682404,
+            "samples_us": [
+              31.254064377682404
+            ]
+          },
+          "wall_us": {
+            "mean_us": 31.76396566523605,
+            "p50_us": 31.76396566523605,
+            "p90_us": 31.76396566523605,
+            "p99_us": 31.76396566523605,
+            "samples_us": [
+              31.76396566523605
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 27.803201716738197,
+            "p50_us": 27.803201716738197,
+            "p90_us": 27.803201716738197,
+            "p99_us": 27.803201716738197,
+            "samples_us": [
+              27.803201716738197
+            ]
+          },
+          "wall_us": {
+            "mean_us": 28.315892703862662,
+            "p50_us": 28.315892703862662,
+            "p90_us": 28.315892703862662,
+            "p99_us": 28.315892703862662,
+            "samples_us": [
+              28.315892703862662
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.11041324479411918
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_game_simulation_medium_033_integration_testing_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "2432ba27a5e53d6d8664f7bc3214baa9e33569ff9f50a1e96fe73455042cd84f",
+        "events": 233,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 41,
+          "llm_result": 41,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 32,
+          "tool_start": 53,
+          "tool_end": 53,
+          "return": 3,
+          "join_satisfied": 1,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 229,
+        "candidate": 229
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 2
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 22.5637982832618,
+            "p50_us": 22.5637982832618,
+            "p90_us": 22.5637982832618,
+            "p99_us": 22.5637982832618,
+            "samples_us": [
+              22.5637982832618
+            ]
+          },
+          "wall_us": {
+            "mean_us": 23.055879828326184,
+            "p50_us": 23.055879828326184,
+            "p90_us": 23.055879828326184,
+            "p99_us": 23.055879828326184,
+            "samples_us": [
+              23.055879828326184
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 21.909103004291847,
+            "p50_us": 21.909103004291847,
+            "p90_us": 21.909103004291847,
+            "p99_us": 21.909103004291847,
+            "samples_us": [
+              21.909103004291847
+            ]
+          },
+          "wall_us": {
+            "mean_us": 22.407652360515023,
+            "p50_us": 22.407652360515023,
+            "p90_us": 22.407652360515023,
+            "p99_us": 22.407652360515023,
+            "samples_us": [
+              22.407652360515023
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.029015295685195786
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_game_simulation_medium_033_integration_testing_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "2432ba27a5e53d6d8664f7bc3214baa9e33569ff9f50a1e96fe73455042cd84f",
+        "events": 233,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 41,
+          "llm_result": 41,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 32,
+          "tool_start": 53,
+          "tool_end": 53,
+          "return": 3,
+          "join_satisfied": 1,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 229,
+        "candidate": 229
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 2
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 29.744781115879828,
+            "p50_us": 29.744781115879828,
+            "p90_us": 29.744781115879828,
+            "p99_us": 29.744781115879828,
+            "samples_us": [
+              29.744781115879828
+            ]
+          },
+          "wall_us": {
+            "mean_us": 30.247609442060085,
+            "p50_us": 30.247609442060085,
+            "p90_us": 30.247609442060085,
+            "p99_us": 30.247609442060085,
+            "samples_us": [
+              30.247609442060085
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 28.599,
+            "p50_us": 28.599,
+            "p90_us": 28.599,
+            "p99_us": 28.599,
+            "samples_us": [
+              28.599
+            ]
+          },
+          "wall_us": {
+            "mean_us": 29.09185407725322,
+            "p50_us": 29.09185407725322,
+            "p90_us": 29.09185407725322,
+            "p99_us": 29.09185407725322,
+            "samples_us": [
+              29.09185407725322
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.038520408384115856
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_mobile_game_hard_060_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "e6cffd5cb81cbdf15d42417211a831b1786a21764101a180c6267f851314ccbd",
+        "events": 949,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 6,
+          "llm_submit": 167,
+          "llm_result": 167,
+          "spawn": 5,
+          "join_create": 4,
+          "join_wait": 4,
+          "structured_action": 210,
+          "tool_start": 187,
+          "tool_end": 187,
+          "return": 6,
+          "join_satisfied": 4,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 939,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 152,
+        "candidate": 152
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 23.582311907270814,
+            "p50_us": 23.582311907270814,
+            "p90_us": 23.582311907270814,
+            "p99_us": 23.582311907270814,
+            "samples_us": [
+              23.582311907270814
+            ]
+          },
+          "wall_us": {
+            "mean_us": 24.076430979978923,
+            "p50_us": 24.076430979978923,
+            "p90_us": 24.076430979978923,
+            "p99_us": 24.076430979978923,
+            "samples_us": [
+              24.076430979978923
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 21.03330136986301,
+            "p50_us": 21.03330136986301,
+            "p90_us": 21.03330136986301,
+            "p99_us": 21.03330136986301,
+            "samples_us": [
+              21.03330136986301
+            ]
+          },
+          "wall_us": {
+            "mean_us": 21.523326659641725,
+            "p50_us": 21.523326659641725,
+            "p90_us": 21.523326659641725,
+            "p99_us": 21.523326659641725,
+            "samples_us": [
+              21.523326659641725
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.10808993399081879
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_mobile_game_hard_060_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "e6cffd5cb81cbdf15d42417211a831b1786a21764101a180c6267f851314ccbd",
+        "events": 949,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 6,
+          "llm_submit": 167,
+          "llm_result": 167,
+          "spawn": 5,
+          "join_create": 4,
+          "join_wait": 4,
+          "structured_action": 210,
+          "tool_start": 187,
+          "tool_end": 187,
+          "return": 6,
+          "join_satisfied": 4,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 939,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 152,
+        "candidate": 152
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 30.848564805057958,
+            "p50_us": 30.848564805057958,
+            "p90_us": 30.848564805057958,
+            "p99_us": 30.848564805057958,
+            "samples_us": [
+              30.848564805057958
+            ]
+          },
+          "wall_us": {
+            "mean_us": 31.3659114857745,
+            "p50_us": 31.3659114857745,
+            "p90_us": 31.3659114857745,
+            "p99_us": 31.3659114857745,
+            "samples_us": [
+              31.3659114857745
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 27.578133825079032,
+            "p50_us": 27.578133825079032,
+            "p90_us": 27.578133825079032,
+            "p99_us": 27.578133825079032,
+            "samples_us": [
+              27.578133825079032
+            ]
+          },
+          "wall_us": {
+            "mean_us": 28.09089989462592,
+            "p50_us": 28.09089989462592,
+            "p90_us": 28.09089989462592,
+            "p99_us": 28.09089989462592,
+            "samples_us": [
+              28.09089989462592
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.1060156607169842
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_mobile_game_hard_060_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "e6cffd5cb81cbdf15d42417211a831b1786a21764101a180c6267f851314ccbd",
+        "events": 949,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 6,
+          "llm_submit": 167,
+          "llm_result": 167,
+          "spawn": 5,
+          "join_create": 4,
+          "join_wait": 4,
+          "structured_action": 210,
+          "tool_start": 187,
+          "tool_end": 187,
+          "return": 6,
+          "join_satisfied": 4,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 939,
+        "candidate": 939
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 2
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 22.43440674394099,
+            "p50_us": 22.43440674394099,
+            "p90_us": 22.43440674394099,
+            "p99_us": 22.43440674394099,
+            "samples_us": [
+              22.43440674394099
+            ]
+          },
+          "wall_us": {
+            "mean_us": 22.93821812434141,
+            "p50_us": 22.93821812434141,
+            "p90_us": 22.93821812434141,
+            "p99_us": 22.93821812434141,
+            "samples_us": [
+              22.93821812434141
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 21.910262381454164,
+            "p50_us": 21.910262381454164,
+            "p90_us": 21.910262381454164,
+            "p99_us": 21.910262381454164,
+            "samples_us": [
+              21.910262381454164
+            ]
+          },
+          "wall_us": {
+            "mean_us": 22.413533192834564,
+            "p50_us": 22.413533192834564,
+            "p90_us": 22.413533192834564,
+            "p99_us": 22.413533192834564,
+            "samples_us": [
+              22.413533192834564
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.023363415332049553
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_mobile_game_hard_060_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "e6cffd5cb81cbdf15d42417211a831b1786a21764101a180c6267f851314ccbd",
+        "events": 949,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 6,
+          "llm_submit": 167,
+          "llm_result": 167,
+          "spawn": 5,
+          "join_create": 4,
+          "join_wait": 4,
+          "structured_action": 210,
+          "tool_start": 187,
+          "tool_end": 187,
+          "return": 6,
+          "join_satisfied": 4,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 939,
+        "candidate": 939
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 2
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 29.617955742887247,
+            "p50_us": 29.617955742887247,
+            "p90_us": 29.617955742887247,
+            "p99_us": 29.617955742887247,
+            "samples_us": [
+              29.617955742887247
+            ]
+          },
+          "wall_us": {
+            "mean_us": 30.131118018967335,
+            "p50_us": 30.131118018967335,
+            "p90_us": 30.131118018967335,
+            "p99_us": 30.131118018967335,
+            "samples_us": [
+              30.131118018967335
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 28.87191886195996,
+            "p50_us": 28.87191886195996,
+            "p90_us": 28.87191886195996,
+            "p99_us": 28.87191886195996,
+            "samples_us": [
+              28.87191886195996
+            ]
+          },
+          "wall_us": {
+            "mean_us": 29.377672286617493,
+            "p50_us": 29.377672286617493,
+            "p90_us": 29.377672286617493,
+            "p99_us": 29.377672286617493,
+            "samples_us": [
+              29.377672286617493
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.025188668907591638
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_mobile_game_hard_060_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "7ee28a4a7f74b2d76c753f1a6f56d5ebbc09162cd4f0ed42bec88f57f4346d97",
+        "events": 1182,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 252,
+          "llm_result": 252,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 137,
+          "tool_start": 264,
+          "tool_end": 264,
+          "return": 3,
+          "join_satisfied": 1,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 1178,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 216,
+        "candidate": 216
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 23.972589678510996,
+            "p50_us": 23.972589678510996,
+            "p90_us": 23.972589678510996,
+            "p99_us": 23.972589678510996,
+            "samples_us": [
+              23.972589678510996
+            ]
+          },
+          "wall_us": {
+            "mean_us": 24.484894247038916,
+            "p50_us": 24.484894247038916,
+            "p90_us": 24.484894247038916,
+            "p99_us": 24.484894247038916,
+            "samples_us": [
+              24.484894247038916
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 20.87459475465313,
+            "p50_us": 20.87459475465313,
+            "p90_us": 20.87459475465313,
+            "p99_us": 20.87459475465313,
+            "samples_us": [
+              20.87459475465313
+            ]
+          },
+          "wall_us": {
+            "mean_us": 21.371337563451775,
+            "p50_us": 21.371337563451775,
+            "p90_us": 21.371337563451775,
+            "p99_us": 21.371337563451775,
+            "samples_us": [
+              21.371337563451775
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.12923071580518075
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_mobile_game_hard_060_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "7ee28a4a7f74b2d76c753f1a6f56d5ebbc09162cd4f0ed42bec88f57f4346d97",
+        "events": 1182,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 252,
+          "llm_result": 252,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 137,
+          "tool_start": 264,
+          "tool_end": 264,
+          "return": 3,
+          "join_satisfied": 1,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 1178,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 216,
+        "candidate": 216
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 31.589923857868023,
+            "p50_us": 31.589923857868023,
+            "p90_us": 31.589923857868023,
+            "p99_us": 31.589923857868023,
+            "samples_us": [
+              31.589923857868023
+            ]
+          },
+          "wall_us": {
+            "mean_us": 32.103750423011846,
+            "p50_us": 32.103750423011846,
+            "p90_us": 32.103750423011846,
+            "p99_us": 32.103750423011846,
+            "samples_us": [
+              32.103750423011846
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 28.009269881556687,
+            "p50_us": 28.009269881556687,
+            "p90_us": 28.009269881556687,
+            "p99_us": 28.009269881556687,
+            "samples_us": [
+              28.009269881556687
+            ]
+          },
+          "wall_us": {
+            "mean_us": 28.521513536379015,
+            "p50_us": 28.521513536379015,
+            "p90_us": 28.521513536379015,
+            "p99_us": 28.521513536379015,
+            "samples_us": [
+              28.521513536379015
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.11334797742538749
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_mobile_game_hard_060_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "7ee28a4a7f74b2d76c753f1a6f56d5ebbc09162cd4f0ed42bec88f57f4346d97",
+        "events": 1182,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 252,
+          "llm_result": 252,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 137,
+          "tool_start": 264,
+          "tool_end": 264,
+          "return": 3,
+          "join_satisfied": 1,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 1178,
+        "candidate": 1178
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 2
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 22.596394247038916,
+            "p50_us": 22.596394247038916,
+            "p90_us": 22.596394247038916,
+            "p99_us": 22.596394247038916,
+            "samples_us": [
+              22.596394247038916
+            ]
+          },
+          "wall_us": {
+            "mean_us": 23.109257191201355,
+            "p50_us": 23.109257191201355,
+            "p90_us": 23.109257191201355,
+            "p99_us": 23.109257191201355,
+            "samples_us": [
+              23.109257191201355
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 21.795893401015228,
+            "p50_us": 21.795893401015228,
+            "p90_us": 21.795893401015228,
+            "p99_us": 21.795893401015228,
+            "samples_us": [
+              21.795893401015228
+            ]
+          },
+          "wall_us": {
+            "mean_us": 22.30132994923858,
+            "p50_us": 22.30132994923858,
+            "p90_us": 22.30132994923858,
+            "p99_us": 22.30132994923858,
+            "samples_us": [
+              22.30132994923858
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.03542604352146084
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_mobile_game_hard_060_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "7ee28a4a7f74b2d76c753f1a6f56d5ebbc09162cd4f0ed42bec88f57f4346d97",
+        "events": 1182,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 252,
+          "llm_result": 252,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 137,
+          "tool_start": 264,
+          "tool_end": 264,
+          "return": 3,
+          "join_satisfied": 1,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 1178,
+        "candidate": 1178
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 2
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 30.04393739424704,
+            "p50_us": 30.04393739424704,
+            "p90_us": 30.04393739424704,
+            "p99_us": 30.04393739424704,
+            "samples_us": [
+              30.04393739424704
+            ]
+          },
+          "wall_us": {
+            "mean_us": 30.558185279187818,
+            "p50_us": 30.558185279187818,
+            "p90_us": 30.558185279187818,
+            "p99_us": 30.558185279187818,
+            "samples_us": [
+              30.558185279187818
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 28.882280879864638,
+            "p50_us": 28.882280879864638,
+            "p90_us": 28.882280879864638,
+            "p99_us": 28.882280879864638,
+            "samples_us": [
+              28.882280879864638
+            ]
+          },
+          "wall_us": {
+            "mean_us": 29.394624365482237,
+            "p50_us": 29.394624365482237,
+            "p90_us": 29.394624365482237,
+            "p99_us": 29.394624365482237,
+            "samples_us": [
+              29.394624365482237
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.03866525546031929
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_automation_hard_062_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "8cf314e408ca2b26e362aeb086845647816ecc96f91d79b0c19c786bb0946c8e",
+        "events": 555,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 6,
+          "llm_submit": 80,
+          "llm_result": 80,
+          "spawn": 5,
+          "join_create": 3,
+          "join_wait": 3,
+          "structured_action": 151,
+          "tool_start": 108,
+          "tool_end": 108,
+          "return": 6,
+          "join_satisfied": 3,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 547,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 78,
+        "candidate": 78
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 23.45905765765766,
+            "p50_us": 23.45905765765766,
+            "p90_us": 23.45905765765766,
+            "p99_us": 23.45905765765766,
+            "samples_us": [
+              23.45905765765766
+            ]
+          },
+          "wall_us": {
+            "mean_us": 23.962854054054056,
+            "p50_us": 23.962854054054056,
+            "p90_us": 23.962854054054056,
+            "p99_us": 23.962854054054056,
+            "samples_us": [
+              23.962854054054056
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 20.890162162162163,
+            "p50_us": 20.890162162162163,
+            "p90_us": 20.890162162162163,
+            "p99_us": 20.890162162162163,
+            "samples_us": [
+              20.890162162162163
+            ]
+          },
+          "wall_us": {
+            "mean_us": 21.386493693693694,
+            "p50_us": 21.386493693693694,
+            "p90_us": 21.386493693693694,
+            "p99_us": 21.386493693693694,
+            "samples_us": [
+              21.386493693693694
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.10950548538580962
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_automation_hard_062_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "8cf314e408ca2b26e362aeb086845647816ecc96f91d79b0c19c786bb0946c8e",
+        "events": 555,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 6,
+          "llm_submit": 80,
+          "llm_result": 80,
+          "spawn": 5,
+          "join_create": 3,
+          "join_wait": 3,
+          "structured_action": 151,
+          "tool_start": 108,
+          "tool_end": 108,
+          "return": 6,
+          "join_satisfied": 3,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 547,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 78,
+        "candidate": 78
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 30.61576936936937,
+            "p50_us": 30.61576936936937,
+            "p90_us": 30.61576936936937,
+            "p99_us": 30.61576936936937,
+            "samples_us": [
+              30.61576936936937
+            ]
+          },
+          "wall_us": {
+            "mean_us": 31.16502882882883,
+            "p50_us": 31.16502882882883,
+            "p90_us": 31.16502882882883,
+            "p99_us": 31.16502882882883,
+            "samples_us": [
+              31.16502882882883
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 27.65061981981982,
+            "p50_us": 27.65061981981982,
+            "p90_us": 27.65061981981982,
+            "p99_us": 27.65061981981982,
+            "samples_us": [
+              27.65061981981982
+            ]
+          },
+          "wall_us": {
+            "mean_us": 28.21607927927928,
+            "p50_us": 28.21607927927928,
+            "p90_us": 28.21607927927928,
+            "p99_us": 28.21607927927928,
+            "samples_us": [
+              28.21607927927928
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.09685040130058398
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_automation_hard_062_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "8cf314e408ca2b26e362aeb086845647816ecc96f91d79b0c19c786bb0946c8e",
+        "events": 555,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 6,
+          "llm_submit": 80,
+          "llm_result": 80,
+          "spawn": 5,
+          "join_create": 3,
+          "join_wait": 3,
+          "structured_action": 151,
+          "tool_start": 108,
+          "tool_end": 108,
+          "return": 6,
+          "join_satisfied": 3,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 547,
+        "candidate": 547
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 2
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 22.300895495495496,
+            "p50_us": 22.300895495495496,
+            "p90_us": 22.300895495495496,
+            "p99_us": 22.300895495495496,
+            "samples_us": [
+              22.300895495495496
+            ]
+          },
+          "wall_us": {
+            "mean_us": 22.86555315315315,
+            "p50_us": 22.86555315315315,
+            "p90_us": 22.86555315315315,
+            "p99_us": 22.86555315315315,
+            "samples_us": [
+              22.86555315315315
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 21.770756756756757,
+            "p50_us": 21.770756756756757,
+            "p90_us": 21.770756756756757,
+            "p99_us": 21.770756756756757,
+            "samples_us": [
+              21.770756756756757
+            ]
+          },
+          "wall_us": {
+            "mean_us": 22.307915315315316,
+            "p50_us": 22.307915315315316,
+            "p90_us": 22.307915315315316,
+            "p99_us": 22.307915315315316,
+            "samples_us": [
+              22.307915315315316
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.023772083002040034
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_automation_hard_062_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "8cf314e408ca2b26e362aeb086845647816ecc96f91d79b0c19c786bb0946c8e",
+        "events": 555,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 6,
+          "llm_submit": 80,
+          "llm_result": 80,
+          "spawn": 5,
+          "join_create": 3,
+          "join_wait": 3,
+          "structured_action": 151,
+          "tool_start": 108,
+          "tool_end": 108,
+          "return": 6,
+          "join_satisfied": 3,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 547,
+        "candidate": 547
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 2
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 29.252857657657657,
+            "p50_us": 29.252857657657657,
+            "p90_us": 29.252857657657657,
+            "p99_us": 29.252857657657657,
+            "samples_us": [
+              29.252857657657657
+            ]
+          },
+          "wall_us": {
+            "mean_us": 29.804634234234236,
+            "p50_us": 29.804634234234236,
+            "p90_us": 29.804634234234236,
+            "p99_us": 29.804634234234236,
+            "samples_us": [
+              29.804634234234236
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 28.974645045045044,
+            "p50_us": 28.974645045045044,
+            "p90_us": 28.974645045045044,
+            "p99_us": 28.974645045045044,
+            "samples_us": [
+              28.974645045045044
+            ]
+          },
+          "wall_us": {
+            "mean_us": 29.524664864864864,
+            "p50_us": 29.524664864864864,
+            "p90_us": 29.524664864864864,
+            "p99_us": 29.524664864864864,
+            "samples_us": [
+              29.524664864864864
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.00951061314653423
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_automation_hard_062_multi_session_development_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "b0936ea0cfaa996f8117d426d2971de944047a5e1be7d4ea5d2314642ddea5ba",
+        "events": 474,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 103,
+          "llm_result": 103,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 63,
+          "tool_start": 96,
+          "tool_end": 96,
+          "return": 3,
+          "join_satisfied": 1,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 470,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 60,
+        "candidate": 60
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 24.111900843881855,
+            "p50_us": 24.111900843881855,
+            "p90_us": 24.111900843881855,
+            "p99_us": 24.111900843881855,
+            "samples_us": [
+              24.111900843881855
+            ]
+          },
+          "wall_us": {
+            "mean_us": 24.617411392405064,
+            "p50_us": 24.617411392405064,
+            "p90_us": 24.617411392405064,
+            "p99_us": 24.617411392405064,
+            "samples_us": [
+              24.617411392405064
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 20.874430379746833,
+            "p50_us": 20.874430379746833,
+            "p90_us": 20.874430379746833,
+            "p99_us": 20.874430379746833,
+            "samples_us": [
+              20.874430379746833
+            ]
+          },
+          "wall_us": {
+            "mean_us": 21.366396624472575,
+            "p50_us": 21.366396624472575,
+            "p90_us": 21.366396624472575,
+            "p99_us": 21.366396624472575,
+            "samples_us": [
+              21.366396624472575
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.1342685707400998
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_automation_hard_062_multi_session_development_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "b0936ea0cfaa996f8117d426d2971de944047a5e1be7d4ea5d2314642ddea5ba",
+        "events": 474,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 103,
+          "llm_result": 103,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 63,
+          "tool_start": 96,
+          "tool_end": 96,
+          "return": 3,
+          "join_satisfied": 1,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 470,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 60,
+        "candidate": 60
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 31.059398734177215,
+            "p50_us": 31.059398734177215,
+            "p90_us": 31.059398734177215,
+            "p99_us": 31.059398734177215,
+            "samples_us": [
+              31.059398734177215
+            ]
+          },
+          "wall_us": {
+            "mean_us": 31.566023206751055,
+            "p50_us": 31.566023206751055,
+            "p90_us": 31.566023206751055,
+            "p99_us": 31.566023206751055,
+            "samples_us": [
+              31.566023206751055
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 27.737377637130802,
+            "p50_us": 27.737377637130802,
+            "p90_us": 27.737377637130802,
+            "p99_us": 27.737377637130802,
+            "samples_us": [
+              27.737377637130802
+            ]
+          },
+          "wall_us": {
+            "mean_us": 28.247151898734177,
+            "p50_us": 28.247151898734177,
+            "p90_us": 28.247151898734177,
+            "p99_us": 28.247151898734177,
+            "samples_us": [
+              28.247151898734177
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.10695703176606952
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_automation_hard_062_multi_session_development_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "b0936ea0cfaa996f8117d426d2971de944047a5e1be7d4ea5d2314642ddea5ba",
+        "events": 474,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 103,
+          "llm_result": 103,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 63,
+          "tool_start": 96,
+          "tool_end": 96,
+          "return": 3,
+          "join_satisfied": 1,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 470,
+        "candidate": 470
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 1
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 22.152586497890294,
+            "p50_us": 22.152586497890294,
+            "p90_us": 22.152586497890294,
+            "p99_us": 22.152586497890294,
+            "samples_us": [
+              22.152586497890294
+            ]
+          },
+          "wall_us": {
+            "mean_us": 22.670183544303796,
+            "p50_us": 22.670183544303796,
+            "p90_us": 22.670183544303796,
+            "p99_us": 22.670183544303796,
+            "samples_us": [
+              22.670183544303796
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 21.575588607594938,
+            "p50_us": 21.575588607594938,
+            "p90_us": 21.575588607594938,
+            "p99_us": 21.575588607594938,
+            "samples_us": [
+              21.575588607594938
+            ]
+          },
+          "wall_us": {
+            "mean_us": 22.07984388185654,
+            "p50_us": 22.07984388185654,
+            "p90_us": 22.07984388185654,
+            "p99_us": 22.07984388185654,
+            "samples_us": [
+              22.07984388185654
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.026046524650758296
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_automation_hard_062_multi_session_development_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "b0936ea0cfaa996f8117d426d2971de944047a5e1be7d4ea5d2314642ddea5ba",
+        "events": 474,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 103,
+          "llm_result": 103,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 63,
+          "tool_start": 96,
+          "tool_end": 96,
+          "return": 3,
+          "join_satisfied": 1,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 470,
+        "candidate": 470
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 1
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 30.037786919831223,
+            "p50_us": 30.037786919831223,
+            "p90_us": 30.037786919831223,
+            "p99_us": 30.037786919831223,
+            "samples_us": [
+              30.037786919831223
+            ]
+          },
+          "wall_us": {
+            "mean_us": 30.54110759493671,
+            "p50_us": 30.54110759493671,
+            "p90_us": 30.54110759493671,
+            "p99_us": 30.54110759493671,
+            "samples_us": [
+              30.54110759493671
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 28.68659282700422,
+            "p50_us": 28.68659282700422,
+            "p90_us": 28.68659282700422,
+            "p99_us": 28.68659282700422,
+            "samples_us": [
+              28.68659282700422
+            ]
+          },
+          "wall_us": {
+            "mean_us": 29.19826371308017,
+            "p50_us": 29.19826371308017,
+            "p90_us": 29.19826371308017,
+            "p99_us": 29.19826371308017,
+            "samples_us": [
+              29.19826371308017
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.044983143945765636
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_networking_hard_027_integration_testing_medium_01/runtime_events.deepagents.jsonl",
+        "sha256": "cef80f4d3b0819842ebdaeaaa8f7006c70fdedc4b36877e2f282ad7f0f84931b",
+        "events": 895,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 9,
+          "llm_submit": 159,
+          "llm_result": 159,
+          "spawn": 8,
+          "join_create": 6,
+          "join_wait": 6,
+          "structured_action": 245,
+          "tool_start": 143,
+          "tool_end": 143,
+          "return": 9,
+          "join_satisfied": 6,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 881,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 3,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 110,
+        "candidate": 110
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 22.874509497206706,
+            "p50_us": 22.874509497206706,
+            "p90_us": 22.874509497206706,
+            "p99_us": 22.874509497206706,
+            "samples_us": [
+              22.874509497206706
+            ]
+          },
+          "wall_us": {
+            "mean_us": 23.40936089385475,
+            "p50_us": 23.40936089385475,
+            "p90_us": 23.40936089385475,
+            "p99_us": 23.40936089385475,
+            "samples_us": [
+              23.40936089385475
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 20.004696089385476,
+            "p50_us": 20.004696089385476,
+            "p90_us": 20.004696089385476,
+            "p99_us": 20.004696089385476,
+            "samples_us": [
+              20.004696089385476
+            ]
+          },
+          "wall_us": {
+            "mean_us": 20.541520670391062,
+            "p50_us": 20.541520670391062,
+            "p90_us": 20.541520670391062,
+            "p99_us": 20.541520670391062,
+            "samples_us": [
+              20.541520670391062
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.12545901402483295
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_networking_hard_027_integration_testing_medium_01/runtime_events.deepagents.jsonl",
+        "sha256": "cef80f4d3b0819842ebdaeaaa8f7006c70fdedc4b36877e2f282ad7f0f84931b",
+        "events": 895,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 9,
+          "llm_submit": 159,
+          "llm_result": 159,
+          "spawn": 8,
+          "join_create": 6,
+          "join_wait": 6,
+          "structured_action": 245,
+          "tool_start": 143,
+          "tool_end": 143,
+          "return": 9,
+          "join_satisfied": 6,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 881,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 3,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 110,
+        "candidate": 110
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 29.867072625698324,
+            "p50_us": 29.867072625698324,
+            "p90_us": 29.867072625698324,
+            "p99_us": 29.867072625698324,
+            "samples_us": [
+              29.867072625698324
+            ]
+          },
+          "wall_us": {
+            "mean_us": 30.508940782122906,
+            "p50_us": 30.508940782122906,
+            "p90_us": 30.508940782122906,
+            "p99_us": 30.508940782122906,
+            "samples_us": [
+              30.508940782122906
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 27.03901117318436,
+            "p50_us": 27.03901117318436,
+            "p90_us": 27.03901117318436,
+            "p99_us": 27.03901117318436,
+            "samples_us": [
+              27.03901117318436
+            ]
+          },
+          "wall_us": {
+            "mean_us": 27.580183240223462,
+            "p50_us": 27.580183240223462,
+            "p90_us": 27.580183240223462,
+            "p99_us": 27.580183240223462,
+            "samples_us": [
+              27.580183240223462
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.09468827052305873
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_networking_hard_027_integration_testing_medium_01/runtime_events.deepagents.jsonl",
+        "sha256": "cef80f4d3b0819842ebdaeaaa8f7006c70fdedc4b36877e2f282ad7f0f84931b",
+        "events": 895,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 9,
+          "llm_submit": 159,
+          "llm_result": 159,
+          "spawn": 8,
+          "join_create": 6,
+          "join_wait": 6,
+          "structured_action": 245,
+          "tool_start": 143,
+          "tool_end": 143,
+          "return": 9,
+          "join_satisfied": 6,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 881,
+        "candidate": 881
+      },
+      "metadata_group_highwater": {
+        "baseline": 3,
+        "candidate": 2
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 21.73695865921788,
+            "p50_us": 21.73695865921788,
+            "p90_us": 21.73695865921788,
+            "p99_us": 21.73695865921788,
+            "samples_us": [
+              21.73695865921788
+            ]
+          },
+          "wall_us": {
+            "mean_us": 22.274698324022346,
+            "p50_us": 22.274698324022346,
+            "p90_us": 22.274698324022346,
+            "p99_us": 22.274698324022346,
+            "samples_us": [
+              22.274698324022346
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 21.29713184357542,
+            "p50_us": 21.29713184357542,
+            "p90_us": 21.29713184357542,
+            "p99_us": 21.29713184357542,
+            "samples_us": [
+              21.29713184357542
+            ]
+          },
+          "wall_us": {
+            "mean_us": 21.83151396648045,
+            "p50_us": 21.83151396648045,
+            "p90_us": 21.83151396648045,
+            "p99_us": 21.83151396648045,
+            "samples_us": [
+              21.83151396648045
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.02023405493555297
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_networking_hard_027_integration_testing_medium_01/runtime_events.deepagents.jsonl",
+        "sha256": "cef80f4d3b0819842ebdaeaaa8f7006c70fdedc4b36877e2f282ad7f0f84931b",
+        "events": 895,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 9,
+          "llm_submit": 159,
+          "llm_result": 159,
+          "spawn": 8,
+          "join_create": 6,
+          "join_wait": 6,
+          "structured_action": 245,
+          "tool_start": 143,
+          "tool_end": 143,
+          "return": 9,
+          "join_satisfied": 6,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 881,
+        "candidate": 881
+      },
+      "metadata_group_highwater": {
+        "baseline": 3,
+        "candidate": 2
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 28.588251396648044,
+            "p50_us": 28.588251396648044,
+            "p90_us": 28.588251396648044,
+            "p99_us": 28.588251396648044,
+            "samples_us": [
+              28.588251396648044
+            ]
+          },
+          "wall_us": {
+            "mean_us": 29.121754189944134,
+            "p50_us": 29.121754189944134,
+            "p90_us": 29.121754189944134,
+            "p99_us": 29.121754189944134,
+            "samples_us": [
+              29.121754189944134
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 28.35155530726257,
+            "p50_us": 28.35155530726257,
+            "p90_us": 28.35155530726257,
+            "p99_us": 28.35155530726257,
+            "samples_us": [
+              28.35155530726257
+            ]
+          },
+          "wall_us": {
+            "mean_us": 28.885503910614528,
+            "p50_us": 28.885503910614528,
+            "p90_us": 28.885503910614528,
+            "p99_us": 28.885503910614528,
+            "samples_us": [
+              28.885503910614528
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.008279488175104932
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_networking_hard_027_multi_session_development_medium_01/runtime_events.deepagents.jsonl",
+        "sha256": "f192b6d47f64b2f94055467cf01c31dd5536e36ce4c019f8b82bf7f630380cca",
+        "events": 198,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 42,
+          "llm_result": 42,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 17,
+          "tool_start": 42,
+          "tool_end": 42,
+          "return": 3,
+          "join_satisfied": 1,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 194,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 17,
+        "candidate": 17
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 24.90226767676768,
+            "p50_us": 24.90226767676768,
+            "p90_us": 24.90226767676768,
+            "p99_us": 24.90226767676768,
+            "samples_us": [
+              24.90226767676768
+            ]
+          },
+          "wall_us": {
+            "mean_us": 25.414565656565657,
+            "p50_us": 25.414565656565657,
+            "p90_us": 25.414565656565657,
+            "p99_us": 25.414565656565657,
+            "samples_us": [
+              25.414565656565657
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 21.389787878787878,
+            "p50_us": 21.389787878787878,
+            "p90_us": 21.389787878787878,
+            "p99_us": 21.389787878787878,
+            "samples_us": [
+              21.389787878787878
+            ]
+          },
+          "wall_us": {
+            "mean_us": 21.889065656565656,
+            "p50_us": 21.889065656565656,
+            "p90_us": 21.889065656565656,
+            "p99_us": 21.889065656565656,
+            "samples_us": [
+              21.889065656565656
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.14105060003257186
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_networking_hard_027_multi_session_development_medium_01/runtime_events.deepagents.jsonl",
+        "sha256": "f192b6d47f64b2f94055467cf01c31dd5536e36ce4c019f8b82bf7f630380cca",
+        "events": 198,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 42,
+          "llm_result": 42,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 17,
+          "tool_start": 42,
+          "tool_end": 42,
+          "return": 3,
+          "join_satisfied": 1,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 194,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 17,
+        "candidate": 17
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 31.687025252525252,
+            "p50_us": 31.687025252525252,
+            "p90_us": 31.687025252525252,
+            "p99_us": 31.687025252525252,
+            "samples_us": [
+              31.687025252525252
+            ]
+          },
+          "wall_us": {
+            "mean_us": 32.20026767676768,
+            "p50_us": 32.20026767676768,
+            "p90_us": 32.20026767676768,
+            "p99_us": 32.20026767676768,
+            "samples_us": [
+              32.20026767676768
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 27.97917676767677,
+            "p50_us": 27.97917676767677,
+            "p90_us": 27.97917676767677,
+            "p99_us": 27.97917676767677,
+            "samples_us": [
+              27.97917676767677
+            ]
+          },
+          "wall_us": {
+            "mean_us": 28.493833333333335,
+            "p50_us": 28.493833333333335,
+            "p90_us": 28.493833333333335,
+            "p99_us": 28.493833333333335,
+            "samples_us": [
+              28.493833333333335
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.1170147230703833
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_networking_hard_027_multi_session_development_medium_01/runtime_events.deepagents.jsonl",
+        "sha256": "f192b6d47f64b2f94055467cf01c31dd5536e36ce4c019f8b82bf7f630380cca",
+        "events": 198,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 42,
+          "llm_result": 42,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 17,
+          "tool_start": 42,
+          "tool_end": 42,
+          "return": 3,
+          "join_satisfied": 1,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 194,
+        "candidate": 194
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 1
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 22.976156565656566,
+            "p50_us": 22.976156565656566,
+            "p90_us": 22.976156565656566,
+            "p99_us": 22.976156565656566,
+            "samples_us": [
+              22.976156565656566
+            ]
+          },
+          "wall_us": {
+            "mean_us": 23.498166666666666,
+            "p50_us": 23.498166666666666,
+            "p90_us": 23.498166666666666,
+            "p99_us": 23.498166666666666,
+            "samples_us": [
+              23.498166666666666
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 21.87312121212121,
+            "p50_us": 21.87312121212121,
+            "p90_us": 21.87312121212121,
+            "p99_us": 21.87312121212121,
+            "samples_us": [
+              21.87312121212121
+            ]
+          },
+          "wall_us": {
+            "mean_us": 22.375080808080806,
+            "p50_us": 22.375080808080806,
+            "p90_us": 22.375080808080806,
+            "p99_us": 22.375080808080806,
+            "samples_us": [
+              22.375080808080806
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.04800782717437224
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_system_networking_hard_027_multi_session_development_medium_01/runtime_events.deepagents.jsonl",
+        "sha256": "f192b6d47f64b2f94055467cf01c31dd5536e36ce4c019f8b82bf7f630380cca",
+        "events": 198,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 42,
+          "llm_result": 42,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 17,
+          "tool_start": 42,
+          "tool_end": 42,
+          "return": 3,
+          "join_satisfied": 1,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 194,
+        "candidate": 194
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 1
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 29.56075252525253,
+            "p50_us": 29.56075252525253,
+            "p90_us": 29.56075252525253,
+            "p99_us": 29.56075252525253,
+            "samples_us": [
+              29.56075252525253
+            ]
+          },
+          "wall_us": {
+            "mean_us": 30.062959595959597,
+            "p50_us": 30.062959595959597,
+            "p90_us": 30.062959595959597,
+            "p99_us": 30.062959595959597,
+            "samples_us": [
+              30.062959595959597
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 29.20748484848485,
+            "p50_us": 29.20748484848485,
+            "p90_us": 29.20748484848485,
+            "p99_us": 29.20748484848485,
+            "samples_us": [
+              29.20748484848485
+            ]
+          },
+          "wall_us": {
+            "mean_us": 29.714732323232322,
+            "p50_us": 29.714732323232322,
+            "p90_us": 29.714732323232322,
+            "p99_us": 29.714732323232322,
+            "samples_us": [
+              29.714732323232322
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.011950564400073915
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "1fb007e9dff45485d8513ed18b8dbc9b306a424eb5c262fb313db2a36be013ab",
+        "events": 679,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 4,
+          "llm_submit": 134,
+          "llm_result": 134,
+          "spawn": 3,
+          "join_create": 2,
+          "join_wait": 2,
+          "structured_action": 84,
+          "tool_start": 154,
+          "tool_end": 154,
+          "return": 4,
+          "join_satisfied": 2,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 673,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 108,
+        "candidate": 108
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 24.611848306332842,
+            "p50_us": 24.611848306332842,
+            "p90_us": 24.611848306332842,
+            "p99_us": 24.611848306332842,
+            "samples_us": [
+              24.611848306332842
+            ]
+          },
+          "wall_us": {
+            "mean_us": 25.145544918998528,
+            "p50_us": 25.145544918998528,
+            "p90_us": 25.145544918998528,
+            "p99_us": 25.145544918998528,
+            "samples_us": [
+              25.145544918998528
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 21.439846833578795,
+            "p50_us": 21.439846833578795,
+            "p90_us": 21.439846833578795,
+            "p99_us": 21.439846833578795,
+            "samples_us": [
+              21.439846833578795
+            ]
+          },
+          "wall_us": {
+            "mean_us": 21.946085419734903,
+            "p50_us": 21.946085419734903,
+            "p90_us": 21.946085419734903,
+            "p99_us": 21.946085419734903,
+            "samples_us": [
+              21.946085419734903
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.1288810752152192
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "1fb007e9dff45485d8513ed18b8dbc9b306a424eb5c262fb313db2a36be013ab",
+        "events": 679,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 4,
+          "llm_submit": 134,
+          "llm_result": 134,
+          "spawn": 3,
+          "join_create": 2,
+          "join_wait": 2,
+          "structured_action": 84,
+          "tool_start": 154,
+          "tool_end": 154,
+          "return": 4,
+          "join_satisfied": 2,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 673,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 108,
+        "candidate": 108
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 30.90224447717231,
+            "p50_us": 30.90224447717231,
+            "p90_us": 30.90224447717231,
+            "p99_us": 30.90224447717231,
+            "samples_us": [
+              30.90224447717231
+            ]
+          },
+          "wall_us": {
+            "mean_us": 31.417652430044182,
+            "p50_us": 31.417652430044182,
+            "p90_us": 31.417652430044182,
+            "p99_us": 31.417652430044182,
+            "samples_us": [
+              31.417652430044182
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 27.941795287187038,
+            "p50_us": 27.941795287187038,
+            "p90_us": 27.941795287187038,
+            "p99_us": 27.941795287187038,
+            "samples_us": [
+              27.941795287187038
+            ]
+          },
+          "wall_us": {
+            "mean_us": 28.44737702503682,
+            "p50_us": 28.44737702503682,
+            "p90_us": 28.44737702503682,
+            "p99_us": 28.44737702503682,
+            "samples_us": [
+              28.44737702503682
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.0958004585127199
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "1fb007e9dff45485d8513ed18b8dbc9b306a424eb5c262fb313db2a36be013ab",
+        "events": 679,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 4,
+          "llm_submit": 134,
+          "llm_result": 134,
+          "spawn": 3,
+          "join_create": 2,
+          "join_wait": 2,
+          "structured_action": 84,
+          "tool_start": 154,
+          "tool_end": 154,
+          "return": 4,
+          "join_satisfied": 2,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 673,
+        "candidate": 673
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 1
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 22.883234167893963,
+            "p50_us": 22.883234167893963,
+            "p90_us": 22.883234167893963,
+            "p99_us": 22.883234167893963,
+            "samples_us": [
+              22.883234167893963
+            ]
+          },
+          "wall_us": {
+            "mean_us": 23.39184094256259,
+            "p50_us": 23.39184094256259,
+            "p90_us": 23.39184094256259,
+            "p99_us": 23.39184094256259,
+            "samples_us": [
+              23.39184094256259
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 21.929067746686304,
+            "p50_us": 21.929067746686304,
+            "p90_us": 21.929067746686304,
+            "p99_us": 21.929067746686304,
+            "samples_us": [
+              21.929067746686304
+            ]
+          },
+          "wall_us": {
+            "mean_us": 22.431898379970544,
+            "p50_us": 22.431898379970544,
+            "p90_us": 22.431898379970544,
+            "p99_us": 22.431898379970544,
+            "samples_us": [
+              22.431898379970544
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.0416971838074528
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "1fb007e9dff45485d8513ed18b8dbc9b306a424eb5c262fb313db2a36be013ab",
+        "events": 679,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 4,
+          "llm_submit": 134,
+          "llm_result": 134,
+          "spawn": 3,
+          "join_create": 2,
+          "join_wait": 2,
+          "structured_action": 84,
+          "tool_start": 154,
+          "tool_end": 154,
+          "return": 4,
+          "join_satisfied": 2,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 673,
+        "candidate": 673
+      },
+      "metadata_group_highwater": {
+        "baseline": 2,
+        "candidate": 1
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 29.802111929307802,
+            "p50_us": 29.802111929307802,
+            "p90_us": 29.802111929307802,
+            "p99_us": 29.802111929307802,
+            "samples_us": [
+              29.802111929307802
+            ]
+          },
+          "wall_us": {
+            "mean_us": 30.311215022091307,
+            "p50_us": 30.311215022091307,
+            "p90_us": 30.311215022091307,
+            "p99_us": 30.311215022091307,
+            "samples_us": [
+              30.311215022091307
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 29.078391752577318,
+            "p50_us": 29.078391752577318,
+            "p90_us": 29.078391752577318,
+            "p99_us": 29.078391752577318,
+            "samples_us": [
+              29.078391752577318
+            ]
+          },
+          "wall_us": {
+            "mean_us": 29.58940795287187,
+            "p50_us": 29.58940795287187,
+            "p90_us": 29.58940795287187,
+            "p99_us": 29.58940795287187,
+            "samples_us": [
+              29.58940795287187
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.024284190947513662
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_web_cms_hard_074_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "6c231648d9fbb1b50f1f1464f8e48fa06eab2b99e6bd33a8603fdedad1b732e1",
+        "events": 951,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 6,
+          "llm_submit": 165,
+          "llm_result": 165,
+          "spawn": 5,
+          "join_create": 2,
+          "join_wait": 2,
+          "structured_action": 224,
+          "tool_start": 186,
+          "tool_end": 186,
+          "return": 6,
+          "join_satisfied": 2,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 945,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 3,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 131,
+        "candidate": 131
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 23.776635120925345,
+            "p50_us": 23.776635120925345,
+            "p90_us": 23.776635120925345,
+            "p99_us": 23.776635120925345,
+            "samples_us": [
+              23.776635120925345
+            ]
+          },
+          "wall_us": {
+            "mean_us": 24.283638275499477,
+            "p50_us": 24.283638275499477,
+            "p90_us": 24.283638275499477,
+            "p99_us": 24.283638275499477,
+            "samples_us": [
+              24.283638275499477
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 20.55630494216614,
+            "p50_us": 20.55630494216614,
+            "p90_us": 20.55630494216614,
+            "p99_us": 20.55630494216614,
+            "samples_us": [
+              20.55630494216614
+            ]
+          },
+          "wall_us": {
+            "mean_us": 21.056152471083074,
+            "p50_us": 21.056152471083074,
+            "p90_us": 21.056152471083074,
+            "p99_us": 21.056152471083074,
+            "samples_us": [
+              21.056152471083074
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.13544095547502666
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_web_cms_hard_074_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "6c231648d9fbb1b50f1f1464f8e48fa06eab2b99e6bd33a8603fdedad1b732e1",
+        "events": 951,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 6,
+          "llm_submit": 165,
+          "llm_result": 165,
+          "spawn": 5,
+          "join_create": 2,
+          "join_wait": 2,
+          "structured_action": 224,
+          "tool_start": 186,
+          "tool_end": 186,
+          "return": 6,
+          "join_satisfied": 2,
+          "workflow_end": 1
+        }
+      },
+      "mode": "online",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": false,
+      "boundary_classifier_calls": {
+        "baseline": 945,
+        "candidate": 0
+      },
+      "metadata_group_highwater": {
+        "baseline": 3,
+        "candidate": 0
+      },
+      "supported_query_counts": {
+        "baseline": 131,
+        "candidate": 131
+      },
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 30.88206309148265,
+            "p50_us": 30.88206309148265,
+            "p90_us": 30.88206309148265,
+            "p99_us": 30.88206309148265,
+            "samples_us": [
+              30.88206309148265
+            ]
+          },
+          "wall_us": {
+            "mean_us": 31.41682229232387,
+            "p50_us": 31.41682229232387,
+            "p90_us": 31.41682229232387,
+            "p99_us": 31.41682229232387,
+            "samples_us": [
+              31.41682229232387
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 27.318853838065195,
+            "p50_us": 27.318853838065195,
+            "p90_us": 27.318853838065195,
+            "p99_us": 27.318853838065195,
+            "samples_us": [
+              27.318853838065195
+            ]
+          },
+          "wall_us": {
+            "mean_us": 27.82775078864353,
+            "p50_us": 27.82775078864353,
+            "p90_us": 27.82775078864353,
+            "p99_us": 27.82775078864353,
+            "samples_us": [
+              27.82775078864353
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.11538119208104969
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_web_cms_hard_074_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "6c231648d9fbb1b50f1f1464f8e48fa06eab2b99e6bd33a8603fdedad1b732e1",
+        "events": 951,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 6,
+          "llm_submit": 165,
+          "llm_result": 165,
+          "spawn": 5,
+          "join_create": 2,
+          "join_wait": 2,
+          "structured_action": 224,
+          "tool_start": 186,
+          "tool_end": 186,
+          "return": 6,
+          "join_satisfied": 2,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": false,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 945,
+        "candidate": 945
+      },
+      "metadata_group_highwater": {
+        "baseline": 3,
+        "candidate": 3
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 22.271068349106205,
+            "p50_us": 22.271068349106205,
+            "p90_us": 22.271068349106205,
+            "p99_us": 22.271068349106205,
+            "samples_us": [
+              22.271068349106205
+            ]
+          },
+          "wall_us": {
+            "mean_us": 22.777574132492116,
+            "p50_us": 22.777574132492116,
+            "p90_us": 22.777574132492116,
+            "p99_us": 22.777574132492116,
+            "samples_us": [
+              22.777574132492116
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 21.779498422712933,
+            "p50_us": 21.779498422712933,
+            "p90_us": 21.779498422712933,
+            "p99_us": 21.779498422712933,
+            "samples_us": [
+              21.779498422712933
+            ]
+          },
+          "wall_us": {
+            "mean_us": 22.28351840168244,
+            "p50_us": 22.28351840168244,
+            "p90_us": 22.28351840168244,
+            "p99_us": 22.28351840168244,
+            "samples_us": [
+              22.28351840168244
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.022072130473839602
+    },
+    {
+      "trace": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/client_12/workflows/locobench__python_web_cms_hard_074_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+        "sha256": "6c231648d9fbb1b50f1f1464f8e48fa06eab2b99e6bd33a8603fdedad1b732e1",
+        "events": 951,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 6,
+          "llm_submit": 165,
+          "llm_result": 165,
+          "spawn": 5,
+          "join_create": 2,
+          "join_wait": 2,
+          "structured_action": 224,
+          "tool_start": 186,
+          "tool_end": 186,
+          "return": 6,
+          "join_satisfied": 2,
+          "workflow_end": 1
+        }
+      },
+      "mode": "worker",
+      "profiling": true,
+      "every_event_state_and_online_estimate_equal": true,
+      "live_worker_features_equal": true,
+      "boundary_classifier_calls": {
+        "baseline": 945,
+        "candidate": 945
+      },
+      "metadata_group_highwater": {
+        "baseline": 3,
+        "candidate": 3
+      },
+      "supported_query_counts": {},
+      "costs_per_event": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 29.22956782334385,
+            "p50_us": 29.22956782334385,
+            "p90_us": 29.22956782334385,
+            "p99_us": 29.22956782334385,
+            "samples_us": [
+              29.22956782334385
+            ]
+          },
+          "wall_us": {
+            "mean_us": 29.731406940063092,
+            "p50_us": 29.731406940063092,
+            "p90_us": 29.731406940063092,
+            "p99_us": 29.731406940063092,
+            "samples_us": [
+              29.731406940063092
+            ]
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 28.937750788643534,
+            "p50_us": 28.937750788643534,
+            "p90_us": 28.937750788643534,
+            "p99_us": 28.937750788643534,
+            "samples_us": [
+              28.937750788643534
+            ]
+          },
+          "wall_us": {
+            "mean_us": 29.450347003154572,
+            "p50_us": 29.450347003154572,
+            "p90_us": 29.450347003154572,
+            "p99_us": 29.450347003154572,
+            "samples_us": [
+              29.450347003154572
+            ]
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.00998362467977576
+    }
+  ],
+  "limitations": [
+    "Each workflow is replayed with its own history; cross-workflow event order is not reconstructed.",
+    "Each event is delivered individually; original wire batch boundaries are unavailable.",
+    "Validation, state serialization, query checks and counted classifiers are outside timed handlers.",
+    "No native requests/sessions are bound; online estimates are checked directly outside timing.",
+    "Worker mode retains its feature bookkeeping using a stub; no model process is executed.",
+    "Empty run groups and groups of ended workflows are intentionally retired, not prediction inputs.",
+    "No socket, writer I/O, GPU, DMA, service consumption, prefetch coverage or JCT is measured."
+  ]
+}

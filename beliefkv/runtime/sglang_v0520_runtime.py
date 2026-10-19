@@ -1118,6 +1118,7 @@ class NativeAdmissionRuntime:
             self._context_tokens.clear()
             self._boundary_history.clear()
             self._tool_metadata.clear()
+            self._tool_metadata_by_run.clear()
             self._next_wait_refresh_ms = 0.0
             self._scan_offsets = {"tool_wait": 0, "join_wait": 0}
             self._active_tool_census_version = None
@@ -1167,14 +1168,13 @@ class NativeAdmissionRuntime:
             for event in events:
                 if self._online_tool_timing is not None:
                     self._online_tool_timing.observe(event)
-                if (
-                    self._model_worker is not None or self._online_tool_timing is not None
-                ) and event.invocation_id is not None:
+                if self._model_worker is not None and event.invocation_id is not None:
                     boundary = observed_boundary_action(event)
                     if boundary is not None:
-                        self._boundary_history.setdefault(
-                            event.invocation_id, deque(maxlen=8)
-                        ).append(boundary)
+                        history = self._boundary_history.get(event.invocation_id)
+                        if history is None:
+                            history = self._boundary_history[event.invocation_id] = deque(maxlen=8)
+                        history.append(boundary)
                     if event.kind is RuntimeEventKind.TOOL_START:
                         attrs = event.attributes
                         self._tool_metadata[event.invocation_id] = (
@@ -1221,6 +1221,7 @@ class NativeAdmissionRuntime:
                                 self._tool_metadata[event.invocation_id] = next(iter(pending.values()))
                             else:
                                 self._tool_metadata.pop(event.invocation_id, None)
+                                self._tool_metadata_by_run.pop(event.invocation_id, None)
                         else:
                             self._tool_metadata.pop(event.invocation_id, None)
                             self._tool_metadata_by_run.pop(event.invocation_id, None)
@@ -1328,6 +1329,7 @@ class NativeAdmissionRuntime:
                     }
                     for invocation_id in (
                         set(self._boundary_history) | set(self._tool_metadata)
+                        | set(self._tool_metadata_by_run)
                     ):
                         invocation = self.graph.invocations.get(invocation_id)
                         if invocation is not None and (
@@ -1335,6 +1337,7 @@ class NativeAdmissionRuntime:
                         ):
                             self._boundary_history.pop(invocation_id, None)
                             self._tool_metadata.pop(invocation_id, None)
+                            self._tool_metadata_by_run.pop(invocation_id, None)
                     self.context_sessions = {
                         context: key
                         for context, key in self.context_sessions.items()

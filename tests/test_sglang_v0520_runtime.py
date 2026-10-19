@@ -5073,6 +5073,7 @@ def test_partial_event_failure_discards_mirror_and_restores_native_order():
     a, b = req("a"), req("b")
     runtime.register_visible_request(a)
     runtime.register_visible_request(b)
+    runtime._tool_metadata_by_run["stale"] = {"tool": ("old",)}
     with pytest.raises(Exception):
         runtime.on_events(
             (
@@ -5081,6 +5082,7 @@ def test_partial_event_failure_discards_mirror_and_restores_native_order():
             )
         )
     assert runtime.graph.invocations == {}
+    assert not runtime._tool_metadata_by_run
     assert runtime.counts["causal_mirror_discarded"] == 1
     assert select(runtime, [a, b]).candidates == (a, b)
 

@@ -45,6 +45,16 @@ native 默认关闭，reactive 控制与 predictive 同开。计数快照不依�
 也不把该 CPU 收益当成 KV 预取贡献。工具查询降本必须保持并行调用、
 终态清理、删失支持和历史更新后的预测一致；V1928/V1929 未启动 GPU。
 
+V1990 只有在没有旧模型 worker 时，才省去其边界历史和命令特征维护；
+在线工具历史、并行组语义、真实信号、JOIN 阶段和工具时长分布不变。
+有 worker 时继续保留活跃输入，不能拿纯在线模式的空特征表用于旧模型。
+工具结束/WORKFLOW_END/镜像失效的 run 分组清理，不得删除仍活跃的 sibling
+工具元数据。12 个完整 workflow 的逐事件图、历史和定点预测一致，2104
+项 CPU 检查通过。事件回放不绑定原生请求/服务，1351 个有支持查询不能
+当实际 2447 次在线预测或预取数量；局部 CPU 收益也不能外推 JCT。
+保留旧 worker 两项小回退和 V1989 初次检查，最终对照为 V1990，见 V1992。
+06:00 资格更新、GPU 空闲检查和不接续旧 native 的约束保持。
+
 V1987 删除四类仅用于诊断的轮询计数：`physical_planning_after_forward`、
 `prediction_maintenance_deferred`、`tool_prefetch_scan_deferred` 和
 `prefetch_lease_maintenance_deferred`。后续不能把它们缺失解读成零等待、

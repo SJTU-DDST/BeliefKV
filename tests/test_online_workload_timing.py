@@ -13,6 +13,7 @@ from beliefkv.runtime.context_lifecycle import (
     CompletionBudgetMiddleware, ContextLifecycleMiddleware, ContextLifecyclePolicy,
 )
 from beliefkv.runtime.sglang_v0520_observer import StaticPoolHeadroomObservation
+from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from tests.test_sglang_v0520_runtime import event, final_stage_runtime, req
 
 
@@ -97,6 +98,95 @@ def test_active_tool_index_preserves_duplicate_and_terminal_event_semantics():
     observe(tool_event(RuntimeEventKind.TOOL_START, invocation="child"))
     observe(tool_event(RuntimeEventKind.WORKFLOW_END, invocation="root"))
     assert set(history._open_by_invocation) == {("other-workflow", "a")}
+
+
+def test_online_tool_hints_do_not_build_unused_legacy_features():
+    runtime = NativeAdmissionRuntime()
+    runtime._online_tool_timing = OnlineWorkloadToolTiming()
+    runtime._tool_timing_only = True
+    runtime.predictor_sha256 = "a" * 64
+    request = req("agent")
+    request.session_id, request.session_generation = "session", 1
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="agent", context_id="ctx-agent"),
+    ))
+    assert runtime.register_visible_request(request)
+
+    def start(number, *, name="execute"):
+        runtime.on_events((event(
+            2 + 2 * number, RuntimeEventKind.TOOL_START, invocation_id="agent",
+            attributes={
+                "tool_run_id": str(number), "tool_name": name,
+                "tool_family": "shell", "backend_class": "sandbox",
+                "observed_command_shape": "pytest",
+            },
+        ),))
+
+    def end(number):
+        runtime.on_events((event(
+            3 + 2 * number, RuntimeEventKind.TOOL_END, invocation_id="agent",
+            attributes={"tool_run_id": str(number), "duration_ms": 1000. + 100. * number},
+        ),))
+
+    try:
+        with (
+            patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.),
+            patch("beliefkv.runtime.sglang_v0520_runtime.observed_boundary_action",
+                  side_effect=AssertionError("online timing does not consume legacy features")),
+        ):
+            for number in range(4):
+                start(number)
+                end(number)
+            start(4)
+            assert runtime.counts["online_tool_supported"] == 1
+            assert runtime.tool_wait_hints["ctx-agent"].release_cdf
+            start(5)
+            assert "ctx-agent" not in runtime.tool_wait_hints
+            end(5)
+            assert runtime.tool_wait_hints["ctx-agent"].release_cdf
+            assert runtime.counts["online_tool_supported"] == 2
+            assert not runtime._boundary_history
+            assert not runtime._tool_metadata
+            assert not runtime._tool_metadata_by_run
+            runtime.on_events((event(20, RuntimeEventKind.WORKFLOW_END),))
+        assert not runtime._online_tool_timing.open
+        assert not runtime.tool_wait_hints
+    finally:
+        runtime.close()
+
+
+def test_worker_feature_run_groups_retire_after_last_tool_and_workflow_end():
+    runtime = NativeAdmissionRuntime()
+    runtime._model_worker = NS(disabled=False, close=lambda: None)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="agent", context_id="ctx-agent"),
+    ))
+    try:
+        for number in range(2):
+            runtime.on_events((event(
+                2 + 2 * number, RuntimeEventKind.TOOL_START, invocation_id="agent",
+                attributes={"tool_run_id": str(number), "tool_name": "execute"},
+            ),))
+            assert "agent" in runtime._tool_metadata_by_run
+            assert "agent" in runtime._tool_metadata
+            if number == 0:
+                runtime.on_events((event(
+                    3, RuntimeEventKind.TOOL_END, invocation_id="agent",
+                    attributes={"tool_run_id": str(number)},
+                ),))
+                assert not runtime._tool_metadata_by_run
+                assert not runtime._tool_metadata
+                assert tuple(runtime._boundary_history["agent"]) == ("tool_end",)
+        runtime.on_events((event(6, RuntimeEventKind.WORKFLOW_END),))
+        assert not runtime._boundary_history
+        assert not runtime._tool_metadata
+        assert not runtime._tool_metadata_by_run
+    finally:
+        runtime.close()
 
 
 def test_report_work_adapts_without_using_current_future_length():
