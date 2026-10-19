@@ -33,8 +33,9 @@ V1925 定位整条对话缓存无法复用增长历史的编码工作，新增�
 分块缓存并保留原生回退。12 个 workflow 的 36 个源码+历史输入、三轮
 CPU 核对 token 完全一致；转换均值 323.66→98.61ms，P50
 320.18→51.78ms。输入为轨迹重建而非原始 HTTP，不据此换算 JCT。
-新引擎候选 `sglang-v86-chat-token-cache-cpu-20261019` 与补丁
-af328f26 绑定；主对照 predictive 开启、native 关闭分块编码缓存。
+V1925 的引擎候选 `sglang-v86-chat-token-cache-cpu-20261019` 与补丁
+af328f26 绑定并保留；最新 V87 候选见下文。主对照 predictive 开启、
+native 关闭分块编码缓存。
 前端收益可计入完整系统，但不能归因于 KV 预取。正式消融用
 `NATIVE_CHAT_TOKEN_BLOCK_CACHE=1` 对齐前端，开发期间不强制每轮增加实验。
 reactive 作为本系统控制时默认与 predictive 同开前端缓存，隔离预取增量。
@@ -43,7 +44,24 @@ reactive 作为本系统控制时默认与 predictive 同开前端缓存，隔�
 11 个新 context 的混合 checkpoint 缺口仍单列：深 FULL 命中不能替代
 该位置缺少的可恢复 Mamba 状态，现有日志不足以逐个区分未创建与被回收。
 
-**最新规划与登记降本：V1956–V1958。**pending 检查并入完整节点校验，
+**最新完成回调降本：V1960。**runtime 的原有扫描返回本批完成 ID，
+适配层直接移除注册，避免同批第二次遍历、集合查询和 finished 调用。
+未结束请求不创建完成列表；无 tagged 请求也保留完整 batch 的服务观察。
+旧 runtime 返回 None 时走原扫描，新 runtime 配旧引擎也保持行为兼容，
+但不会省去第二次扫描。24 组四种组合的 visible、context、计数和注册
+状态一致；纯 tagged、未结束的 8/48 请求回调 CPU P50
+3.230→1.901us、11.384→5.161us；8 请求 finished 检查 16→8。
+这是 runtime+适配层完成回调，未包含完整结果处理、GPU、DMA 或采样写入。
+2045 项主仓和 86 项引擎 CPU 检查、41 个 subtest 通过；原 batch 身份、
+首次服务/ACK 前证据、EOS 和终态清理保留。完整补丁更新至 130d376d，
+新候选 `sglang-v87-completion-cpu-20261019` 的树为 db73b955，
+相对 V86 仅 scheduler 回调及 lifecycle 检查两文件改变，旧来源未改。
+启动器及 24-root 配置已绑定 V87，仍禁止自动恢复 GPU 实验。见
+[V1961](../experiments/reports/v1961_batch_completion_control_cpu_20261019_zh.md)。
+V85d 有 1811270 次 post-forward，记录的 prefill/decode worker 区间合计
+141490；两者不是同一种回调计数，不能据此推导累计节省或 JCT 收益。
+
+**上一轮规划与登记降本：V1956–V1958。**pending 检查并入完整节点校验，
 在每个祖先均已解析到 nodes 的前提下，以数量相同证明闭包覆盖，省去
 再次复制节点 ID 集合。单个根 ID 逐路径核对，多根、环、缺页前驱、
 安全输入边界、超出 burst 的非法节点及所有原严格类型校验继续保留。

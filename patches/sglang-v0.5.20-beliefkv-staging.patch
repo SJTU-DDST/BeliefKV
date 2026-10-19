@@ -1120,7 +1120,7 @@ index 7811e44..5cf4df9 100755
          self.mamba_track_mask_next_cpu = None
          self.mamba_decode_batch_idx_cpu = None
 diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
-index 743c8af..8ccba7d 100644
+index 743c8af..63aee95 100644
 --- a/python/sglang/srt/managers/scheduler.py
 +++ b/python/sglang/srt/managers/scheduler.py
 @@ -725,9 +725,152 @@ class Scheduler(
@@ -1749,7 +1749,7 @@ index 743c8af..8ccba7d 100644
          self._record_step_counters(batch, result)
  
          self.metrics_reporter.log_batch_result_stats(batch, result)
-@@ -4634,6 +5054,20 @@ class Scheduler(
+@@ -4634,6 +5054,24 @@ class Scheduler(
          self.maybe_send_health_check_signal()
          self.metrics_reporter.update_device_timer()
  
@@ -1759,18 +1759,22 @@ index 743c8af..8ccba7d 100644
 +            return
 +        # The service observer records a descriptor for every selected batch,
 +        # including untagged batches. Always pair it with a completion callback.
-+        runtime.on_batch_completed(batch)
-+        self._beliefkv_registered_request_ids.difference_update(
-+            req.rid
-+            for req in batch.reqs
-+            if req.rid in self._beliefkv_registered_request_ids and req.finished()
-+        )
++        completed_ids = runtime.on_batch_completed(batch)
++        if type(completed_ids) is tuple:
++            self._beliefkv_registered_request_ids.difference_update(completed_ids)
++        else:
++            # Runtimes predating completion IDs keep the original cleanup.
++            self._beliefkv_registered_request_ids.difference_update(
++                req.rid
++                for req in batch.reqs
++                if req.rid in self._beliefkv_registered_request_ids and req.finished()
++            )
 +        runtime.sample_runtime_observations(self.waiting_queue)
 +
      def _record_step_counters(
          self, batch: ScheduleBatch, result: GenerationBatchResult
      ) -> None:
-@@ -5215,6 +5649,9 @@ class Scheduler(
+@@ -5215,6 +5653,9 @@ class Scheduler(
          }
  
      def abort_request(self, recv_req: AbortReq):
@@ -1780,7 +1784,7 @@ index 743c8af..8ccba7d 100644
          if (chunked_req := self.chunked_req) is not None:
              if recv_req.abort_all or chunked_req.rid.startswith(recv_req.rid):
                  self._pending_chunked_abort_req = chunked_req
-@@ -5369,6 +5806,25 @@ class Scheduler(
+@@ -5369,6 +5810,25 @@ class Scheduler(
                  else:
                      req.to_finish = FINISH_ABORT()
  
@@ -1806,7 +1810,7 @@ index 743c8af..8ccba7d 100644
      def _pause_engine(self) -> Tuple[List[Req], int]:
          raise NotImplementedError()
  
-@@ -5642,6 +6098,8 @@ class Scheduler(
+@@ -5642,6 +6102,8 @@ class Scheduler(
  
      def maybe_sleep_on_idle(self):
          if self.idle_sleeper is not None:
@@ -1815,7 +1819,7 @@ index 743c8af..8ccba7d 100644
              self.idle_sleeper.maybe_sleep()
  
      def handle_freeze_gc(self, recv_req: FreezeGCReq):
-@@ -5652,6 +6110,17 @@ class Scheduler(
+@@ -5652,6 +6114,17 @@ class Scheduler(
  
      def handle_shutdown(self, recv_req: ShutdownReq):
          # Break the event loop; the finally in run_scheduler_process releases resources.
@@ -6657,10 +6661,10 @@ index 0000000..6a07ed3
 +    assert counter.consumer_index == -1
 diff --git a/test/srt/test_beliefkv_lifecycle.py b/test/srt/test_beliefkv_lifecycle.py
 new file mode 100644
-index 0000000..88361ff
+index 0000000..1db16d8
 --- /dev/null
 +++ b/test/srt/test_beliefkv_lifecycle.py
-@@ -0,0 +1,278 @@
+@@ -0,0 +1,308 @@
 +"""CPU-only contract tests for optional scheduler request lifecycle hooks."""
 +
 +import ast
@@ -6908,6 +6912,36 @@ index 0000000..88361ff
 +        active.finished = lambda: True
 +        scheduler._beliefkv_on_batch_completed(SimpleNamespace(reqs=[active]))
 +        self.assertEqual(scheduler._beliefkv_registered_request_ids, set())
++
++    def test_batch_completion_reuses_finished_ids_without_rechecking_requests(self):
++        runtime = Mock()
++        runtime.on_batch_completed.return_value = ("done", "untagged-done")
++        scheduler = scheduler_fixture(runtime)
++        scheduler._beliefkv_registered_request_ids.update(("active", "done"))
++        active = request("active")
++        done = request("done")
++        active.finished = done.finished = Mock(side_effect=AssertionError("duplicate finish check"))
++        batch = SimpleNamespace(reqs=[active, done])
++
++        scheduler._beliefkv_on_batch_completed(batch)
++
++        runtime.on_batch_completed.assert_called_once_with(batch)
++        runtime.sample_runtime_observations.assert_called_once_with(scheduler.waiting_queue)
++        self.assertEqual(scheduler._beliefkv_registered_request_ids, {"active"})
++        active.finished.assert_not_called()
++
++    def test_batch_completion_accepts_empty_ids_and_preserves_legacy_none(self):
++        for completed in ((), None):
++            with self.subTest(completed=completed):
++                runtime = Mock()
++                runtime.on_batch_completed.return_value = completed
++                scheduler = scheduler_fixture(runtime)
++                scheduler._beliefkv_registered_request_ids.add("active")
++                active = request("active")
++                active.finished = Mock(return_value=False)
++                scheduler._beliefkv_on_batch_completed(SimpleNamespace(reqs=[active]))
++                self.assertEqual(scheduler._beliefkv_registered_request_ids, {"active"})
++                self.assertEqual(active.finished.call_count, int(completed is None))
 +
 +    def test_scheduler_entry_points_are_wired(self):
 +        methods = {

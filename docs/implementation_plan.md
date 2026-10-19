@@ -39,11 +39,29 @@ do not require an additional development run on every iteration. Our reactive
 control defaults to the same frontend as predictive. Freeze per-arm settings and
 verify their server-launch snapshots; preserve them on resume and exclude inherited
 global cache flags from native.
-The new qualified engine candidate is sglang-v86-chat-token-cache-cpu-20261019,
-patch af328f26; respect the explicit SGLANG_SOURCE_CHECKOUT through the launcher.
+The current qualified CPU engine candidate is sglang-v87-completion-cpu-20261019,
+patch130d376d. Preserve V86/af328f26 as the earlier frontend baseline and respect
+the explicit SGLANG_SOURCE_CHECKOUT through the launcher.
 This is CPU evidence, not an end-to-end result. Keep new-context hybrid checkpoint
 gaps separate; FULL matches alone cannot reconstruct a missing Mamba checkpoint.
 GPU pause remains active and automatic resume remains disabled.
+
+V1960 shares completion IDs from the existing runtime request scan with the
+native scheduler hook, removing its second scan and finished checks. Preserve
+the original batch identity and all service observations. A legacy runtime
+returning None retains native cleanup; a legacy hook ignores new IDs, so
+the performance change requires the new engine too. Across24 scenes and
+four runtime/hook pairings, registration, visible/context state and counters
+agree. Unfinished tagged8/48-request callback CPU P50 is3.230 to1.901us
+and11.384 to5.161us. Counted predicates, outside timing, confirm16 to8
+checks for8 requests. The2045 main CPU checks and86 native checks pass,
+plus41 subtests, including pre-ACK first-service and lifecycle contracts.
+Bind the paused launcher/config to V87/tree db73b955 and patch130d376d;
+the only engine delta from V86 is scheduler.py and its lifecycle tests.
+Keep GPU paused and old sources intact. V85d's1811270 post-forward entries
+and141490 recorded prefill/decode worker intervals are distinct populations;
+do not use either as an unverified completion-callback count or multiply
+microbench gains into JCT/throughput. See V1961 and raw V1960.
 
 V1956-V1958 reduce planning/registration relative to82ef624. Merge pending
 checks into complete node validation; compare closure cardinality only after

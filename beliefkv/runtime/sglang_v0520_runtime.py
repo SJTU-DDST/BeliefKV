@@ -9738,8 +9738,10 @@ class NativeAdmissionRuntime:
         pass
 
     @timed_runtime("batch_completed")
-    def on_batch_completed(self, batch: object) -> None:
+    def on_batch_completed(self, batch: object) -> tuple[str, ...]:
+        """Observe the original batch and share its completed request IDs."""
         self._observe_report_service(batch)
+        completed_ids: list[str] | None = None
         pending_by_context: dict[str, list[tuple[str, PrefetchLoadStep]]] = {}
         for command, (step, _, _) in self._prefetch_steps.items():
             if command not in self._prefetch_first_services:
@@ -9758,6 +9760,10 @@ class NativeAdmissionRuntime:
             if self._tool_timing_only and not finished and not observe_service:
                 continue
             rid = req.rid
+            if finished:
+                if completed_ids is None:
+                    completed_ids = []
+                completed_ids.append(rid)
             visible_key = self.visible.get(rid)
             if self._residency_hint_admissions and (
                 feedback := self._residency_hint_admissions.pop(rid, None)
@@ -9896,6 +9902,7 @@ class NativeAdmissionRuntime:
                     self._context_tokens.pop(context_id, None)
                 self.semantic_revision += 1
         self._refresh_prefetch_service_leases()
+        return tuple(completed_ids) if completed_ids is not None else ()
 
     def on_abort_request(self, abort: object) -> None:
         removed = [

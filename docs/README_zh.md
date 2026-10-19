@@ -19,7 +19,17 @@ child 都可动态委派叶子孙 agent，最大深度仍为 2。任务范围、
 见[24-root 配置](../configs/migration/qwen35_locobench_long_24root_running8_2026-10-19.json)
 及[CPU 原始结果](../experiments/reports/v1925_v85d_long_chat_token_cache_cpu_20261019.json)。
 
-**最新规划与登记降本，V1956–V1958。**将 pending 检查合并进节点校验，
+**最新完成回调降本，V1960。**runtime 在已有扫描中返回完成 request ID，
+SGLang 适配层直接清理注册，省去第二次遍历和 finished 检查；完整 batch
+仍交给服务观察，旧 runtime 无返回值时保留兼容扫描。24 组、四种新旧
+组合的状态相同；无请求结束的 8/48 请求批次 CPU P50
+3.230→1.901us、11.384→5.161us，局部降低 41%/55%。
+主仓 2045 项及引擎 86 项 CPU 检查通过，另有 41 个 subtest。
+待恢复候选已绑定 V87/130d376d 补丁，V85d/V86 来源保留，GPU 仍暂停。
+181 万 post-forward 不能当成完成回调次数，不外推吞吐/JCT。见
+[本轮说明](../experiments/reports/v1961_batch_completion_control_cpu_20261019_zh.md)。
+
+**上一轮规划与登记降本，V1956–V1958。**将 pending 检查合并进节点校验，
 依据已证明的祖先包含关系比较数量，省去额外集合复制；多根仍拒绝。
 单池 FULL/Mamba 登记直接核对尺寸和对齐，省去逐命令尺寸字典及集合，
 多池保留原核算。相对 82ef624，64 条 FULL 登记 P50
