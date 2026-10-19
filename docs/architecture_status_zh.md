@@ -49,7 +49,18 @@ reactive 作为本系统控制时默认与 predictive 同开前端缓存，隔�
 11 个新 context 的混合 checkpoint 缺口仍单列：深 FULL 命中不能替代
 该位置缺少的可恢复 Mamba 状态，现有日志不足以逐个区分未创建与被回收。
 
-**最新 PREPARE 登记降本：V1970。**已有候选持有同一个不可变 key 对象、
+**最新传输核算降本：V1974–V1976。**FULL-only D2H 直接验证单池计数、
+几何和总字节，省去通用集合/排序/列表；H2D/D2H expectation 按固定字段
+顺序构造。原生两个核算方法仍执行，Host 目的索引对象与 split ACK 保留。
+12 组逐字段核算相同，纯 FULL D2H CPU P50 6.952→5.213us。
+32 组完整 JOIN/tool 提交的目标、pending 和预算相同，30 组 P50 降低
+0.6%–2.9%，两组诊断 tool 多约 24/36us；全部结果保留。
+24-workflow/8-running 的完整 PREPARE 另有 12 组，含不调用核算的阴性
+控制，不能将其波动归因为策略收益。2086 项 CPU 检查通过，无 skip。
+V88/补丁不变，没有 GPU/JCT 新结果；见
+[V1978](../experiments/reports/v1978_transfer_accounting_control_cpu_20261020_zh.md)。
+
+**此前 PREPARE 登记降本：V1970。**已有候选持有同一个不可变 key 对象、
 node ID/creation time 相同时，不再重复前缀计算和登记；新节点、代际、
 不同对象的 key 与 epoch 仍按原路径核对，替换的组索引也会重建。
 节点映射延后到实际新登记才构造，发布/原生回收仍读取当前物理状态。

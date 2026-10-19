@@ -212,6 +212,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline", default="07eb988")
     parser.add_argument("--samples", type=int, default=101)
+    parser.add_argument("--dispatch-only", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.samples < 1 or args.output.exists():
@@ -227,7 +228,7 @@ def main():
     sources = {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in paths}
     baseline, baseline_sources = baseline_runtime(args.baseline)
     with patch("time.monotonic", lambda: 1000.):
-        cases = [
+        cases = [] if args.dispatch_only else [
             measure(baseline, depth=depth, layout=layout, phase=phase, samples=args.samples)
             for depth in (4, 16, 64, 256)
             for layout in ("backed", "partial", "unbacked")
@@ -253,6 +254,7 @@ def main():
         "observed_at": datetime.now().astimezone().isoformat(),
         "baseline_revision": args.baseline, "baseline_source_sha256": baseline_sources,
         "candidate_source_sha256": sources, "cases": cases, "dispatch_cases": dispatch,
+        "dispatch_only": args.dispatch_only,
         "limitations": [
             "Registration uses validated immutable CPU closure snapshots; reset and equality checks are untimed.",
             "Full JOIN PREPARE dispatch uses 24 synthetic workflows and native-style sparse leaf/LRU indices.",

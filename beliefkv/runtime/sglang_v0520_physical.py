@@ -1401,20 +1401,13 @@ def prefetch_expectation_from_native_op(
         pool_sizes = tuple((name, sizes[name]) for name in sorted(pool_counts))
     if type(num_bytes) is not int or num_bytes <= 0 or num_bytes != expected_bytes:
         raise PhysicalReceiptError("native prefetch total bytes mismatch")
+    # Field order follows the fixed receipt schema.
     return PhysicalActionExpectation(
-        command_id=command_id,
-        action="PREFETCH_GPU",
-        context_id=step.key.context_id,
-        context_epoch=step.key.context_epoch,
-        children=(PhysicalChildExpectation(
-            anchor_node_id=step.node_id,
-            published_node_ids=(step.node_id,),
-            pool_bytes=pool_bytes,
-            num_bytes=num_bytes,
+        command_id, "PREFETCH_GPU", step.key.context_id, step.key.context_epoch,
+        (PhysicalChildExpectation(
+            step.node_id, (step.node_id,), pool_bytes, num_bytes,
         ),),
-        pool_bytes_per_token=pool_sizes,
-        session_id=step.key.session_id,
-        session_generation=step.key.session_generation,
+        pool_sizes, step.key.session_id, step.key.session_generation,
     )
 
 
@@ -1453,40 +1446,53 @@ def shadow_expectation_from_native_op(
     if (
         type(counts) is not dict
         or not counts
-        or set(counts) - {"kv", "mamba"}
         or type(full_count) is not int
         or full_count != host_count
         or counts.get("kv") != full_count
-        or any(type(count) is not int or count < 0 for count in counts.values())
         or type(num_bytes) is not int
         or num_bytes <= 0
     ):
         raise PhysicalReceiptError("invalid native shadow pool counts")
-    if not step.include_mamba and counts.get("mamba", 0):
-        raise PhysicalReceiptError("historical Mamba included in FULL-only backup")
-    sizes = []
-    pool_bytes = []
-    for pool, count in sorted(counts.items()):
-        entry = entries.get(pool)
+    if len(counts) == 1 and type(pool := next(iter(counts))) is str and pool == "kv":
+        count = counts["kv"]
+        if type(count) is not int or count < 0:
+            raise PhysicalReceiptError("invalid native shadow pool counts")
+        entry = entries.get("kv")
         size = getattr(getattr(entry, "host_pool", None), "size_per_token", None)
         if type(size) is not int or size <= 0:
             raise PhysicalReceiptError("native shadow pool geometry changed")
-        sizes.append((pool, size))
-        pool_bytes.append((pool, count * size))
-    if sum(amount for _, amount in pool_bytes) > num_bytes:
+        expected_bytes = count * size
+        sizes = (("kv", size),)
+        pool_bytes = (("kv", expected_bytes),)
+    else:
+        if set(counts) - {"kv", "mamba"} or any(
+            type(count) is not int or count < 0 for count in counts.values()
+        ):
+            raise PhysicalReceiptError("invalid native shadow pool counts")
+        if not step.include_mamba and counts.get("mamba", 0):
+            raise PhysicalReceiptError("historical Mamba included in FULL-only backup")
+        sizes = []
+        pool_bytes = []
+        expected_bytes = 0
+        for pool, count in sorted(counts.items()):
+            entry = entries.get(pool)
+            size = getattr(getattr(entry, "host_pool", None), "size_per_token", None)
+            if type(size) is not int or size <= 0:
+                raise PhysicalReceiptError("native shadow pool geometry changed")
+            amount = count * size
+            sizes.append((pool, size))
+            pool_bytes.append((pool, amount))
+            expected_bytes += amount
+        sizes = tuple(sizes)
+        pool_bytes = tuple(pool_bytes)
+    if expected_bytes > num_bytes:
         raise PhysicalReceiptError("native shadow bytes smaller than pool bytes")
     return PhysicalActionExpectation(
-        command_id=command_id,
-        action="PREPARE_HOST",
-        context_id=step.key.context_id,
-        context_epoch=step.key.context_epoch,
-        children=(PhysicalChildExpectation(
-            anchor_node_id=step.node_id,
-            published_node_ids=(step.node_id,),
-            pool_bytes=tuple(pool_bytes),
-            num_bytes=num_bytes,
-            anchor_creation_time=normalize_native_creation_time(step.creation_time),
-            host_destination_indices=(
+        command_id, "PREPARE_HOST", step.key.context_id, step.key.context_epoch,
+        (PhysicalChildExpectation(
+            step.node_id, (step.node_id,), pool_bytes, num_bytes,
+            normalize_native_creation_time(step.creation_time),
+            (
                 ("kv", operation.host_indices),
                 *(
                     ("mamba", transfer.host_indices)
@@ -1496,9 +1502,7 @@ def shadow_expectation_from_native_op(
                 ),
             ),
         ),),
-        pool_bytes_per_token=tuple(sizes),
-        session_id=step.key.session_id,
-        session_generation=step.key.session_generation,
+        sizes, step.key.session_id, step.key.session_generation,
     )
 
 

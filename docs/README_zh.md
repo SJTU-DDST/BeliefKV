@@ -23,7 +23,16 @@ child 都可动态委派叶子孙 agent，最大深度仍为 2。任务范围、
 见[24-root 配置](../configs/migration/qwen35_locobench_long_24root_running8_2026-10-19.json)
 及[CPU 原始结果](../experiments/reports/v1925_v85d_long_chat_token_cache_cpu_20261019.json)。
 
-**最新 PREPARE 登记降本，V1970。**同一不可变身份、同代际的已有候选
+**最新传输核算降本，V1974–V1976。**单池 FULL 的 PREPARE 省去通用池
+集合/排序及临时列表，固定字段传输记录改用位置参数；实际原生字节、
+索引、Host 目的地和 ACK 核对保留。4096-token FULL D2H 核算 CPU P50
+6.95→5.21us，但完整 64 节点 JOIN/tool 提交仅为
+2247.74→2188.33us、1756.93→1744.69us。32 组完整提交中 30 组更低，
+两组诊断 tool 回退完整保留；2086 项 CPU 检查通过。见
+[V1978](../experiments/reports/v1978_transfer_accounting_control_cpu_20261020_zh.md)。
+没有 GPU 吞吐/JCT 新结论，仍在 06:00 后用最新合格代码验证。
+
+**此前 PREPARE 登记降本，V1970。**同一不可变身份、同代际的已有候选
 不再重复登记；没有新记录时不构造前缀表。原生发布和回收仍逐次核对
 当前锁、引用、备份及在途状态。64 节点重复登记 CPU P50
 76.81→27.31us；24-workflow/8-running 的 12 组完整 PREPARE 调度下降

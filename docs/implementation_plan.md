@@ -64,6 +64,19 @@ Current goal:
 - Stop and fix material experimental failures promptly; CPU improvements alone
   do not establish GPU performance or a gain over native.
 
+V1974-V1976 reduce transfer-expectation construction relative to51c0f1f.
+For literal single-pool FULL D2H counts, retain strict counts, geometry and
+native bytes while removing generic sets/sorting/lists. Construct fixed-schema
+H2D/D2H records positionally; preserve every field, Host destination object
+and split-ACK check. Native accounting methods still run.
+All12 local accounting results agree; FULL D2H CPU P50 is6.952 to5.213us.
+Full JOIN/tool submission improves in30/32 controlled scenes by0.6%-2.9%;
+retain the2 diagnostic-tool regressions of23.888/36.269us and the separate
+PREPARE negative-control fluctuations. The2086 main CPU checks pass without
+skips, including17 new malformed-input/metadata cases. V88 and patch unchanged.
+See V1978; no new GPU, throughput or JCT evidence. Publish the new main revision
+to the existing06:00 waiter after CPU qualification and preserve older snapshots.
+
 V1970 removes repeated PREPARE registration only for an existing record with
 the same frozen key object and node generation. Rebuild replaced group indices;
 retain fresh/new-epoch/equal-but-distinct-key processing. Construct prefix maps

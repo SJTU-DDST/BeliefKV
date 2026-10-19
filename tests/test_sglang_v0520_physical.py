@@ -524,6 +524,53 @@ def test_native_prefetch_full_only_without_aux_transfers():
     )
 
 
+@pytest.mark.parametrize("sidecar", (None, Pool.KV))
+@pytest.mark.parametrize("full", (1, 128, 4096))
+def test_full_shadow_preserves_sidecar_bytes_and_original_host_destinations(sidecar, full):
+    original, operation, controller = native_prefetch(full=full, mamba=0, sidecar=sidecar)
+    step = ShadowBackupStep(
+        original.key, original.leaf_node_id, original.leaf_creation_time,
+        original.node_id, original.creation_time, include_mamba=False,
+    )
+    obligation = shadow_expectation_from_native_op("prefetch-1", step, operation, controller)
+    part = obligation.children[0]
+    assert part.pool_bytes == (("kv", full * 10),)
+    assert part.num_bytes == full * (10 if sidecar is None else 13)
+    assert part.anchor_creation_time == step.creation_time
+    assert part.host_destination_indices[0][0] == "kv"
+    assert part.host_destination_indices[0][1] is operation.host_indices
+    assert obligation.pool_bytes_per_token == (("kv", 10),)
+    ledger = PhysicalTransactionLedger()
+    ledger.register(obligation)
+    assert ledger.pending_action_bytes("PREPARE_HOST") == part.num_bytes
+    ledger.cancel_unsubmitted(obligation.command_id)
+    assert ledger.pending_count == 0
+
+
+@pytest.mark.parametrize("change", (
+    lambda op, ctrl: setattr(ctrl, "_num_tokens_by_pool", lambda _: {"kv": True}),
+    lambda op, ctrl: setattr(ctrl, "_num_tokens_by_pool", lambda _: {"kv": 1.}),
+    lambda op, ctrl: setattr(ctrl, "_num_tokens_by_pool", lambda _: {"kv": -1}),
+    lambda op, ctrl: setattr(ctrl, "_num_tokens_by_pool", lambda _: {"kv": 2}),
+    lambda op, ctrl: setattr(ctrl, "_num_tokens_by_pool", lambda _: {"kv": 1, "mamba": True}),
+    lambda op, ctrl: setattr(ctrl, "_transfer_num_bytes", lambda _: True),
+    lambda op, ctrl: setattr(ctrl, "_transfer_num_bytes", lambda _: 10.),
+    lambda op, ctrl: setattr(ctrl, "_transfer_num_bytes", lambda _: 9),
+    lambda op, ctrl: setattr(ctrl.mem_pool_host.entry_map[Pool.KV].host_pool, "size_per_token", True),
+    lambda op, ctrl: setattr(ctrl.mem_pool_host.entry_map[Pool.KV].host_pool, "size_per_token", 10.),
+    lambda op, ctrl: setattr(ctrl.mem_pool_host.entry_map[Pool.KV].host_pool, "size_per_token", 0),
+))
+def test_full_shadow_rejects_malformed_native_counts_bytes_and_geometry(change):
+    original, operation, controller = native_prefetch(full=1, mamba=0, sidecar=None)
+    step = ShadowBackupStep(
+        original.key, original.leaf_node_id, original.leaf_creation_time,
+        original.node_id, original.creation_time, include_mamba=False,
+    )
+    change(operation, controller)
+    with pytest.raises(PhysicalReceiptError):
+        shadow_expectation_from_native_op("prefetch-1", step, operation, controller)
+
+
 def test_native_prefetch_rejects_empty_transfer_and_orphan_sidecar():
     step, op, controller = native_prefetch(full=0, mamba=0, sidecar=None)
     with pytest.raises(PhysicalReceiptError):
