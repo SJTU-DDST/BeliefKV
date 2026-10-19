@@ -5,15 +5,40 @@ Status date: 2026-10-19 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-V84 predictive has cold-started from main9bd42bf and will automatically run
-native afterward. V1856 binds the clean execution snapshot, engine53020ce3,
+V84 predictive has finished; same-configuration native is now running.
+Predictive reports112 completed,104 native-agent-JCT eligible and8 workflows
+with existing guard intervention. Correctness remains ungraded. V1882 audits
+all405 ordinary agents/26350 requests separately from3 internal summaries:
+agent-weighted mean prompt23909 tokens(9.12% of262144), median19312,
+p9045185. Mean-prompt bucket counts below16K/16-32K/32-64K/64-128K/128-256K
+are155/174/61/15/0(K=1024). Root/child/nested-child means are34277/20390/11091.
+Only10 agents ever reach128K including generated output; all are roots.
+The374 agents in104 eligible workflows remain83.16% below32K on average;
+only6 reach128K peaks. Eligibility is not task correctness. Preserve all strata,
+and distinguish the41323-token request-weighted input mean from agent means.
+This is a full-lifecycle logical-context census, not unique KV occupancy or
+busy-window concurrent residency. V1883 passes6 CPU auditor checks.
+
+Correct the earlier queue/batch conflation: max_running_requests24 limits
+admission and, in this TP1/PP1 engine, the whole running_batch used for decode.
+There is no independently configured decode slice cap. max_queued_requestsNone
+limits neither admission slots nor decode size; it leaves the pre-admission
+waiting queue unbounded. Do not claim24 is optimal based on the256K ceiling or
+that both dimensions were tuned separately. Assess actual running residency,
+batch fill, native restore waits and useful-state recomputation before changing
+either dimension. Genuine long-task validation must provide long reusable
+prefixes around JOIN/tool returns during busy periods. Keep the current workload
+as an ordinary-length control and preserve the live pair's frozen configuration.
+
+V1856 binds the clean main9bd42bf execution snapshot, engine53020ce3,
 inputs and checks. V1857 verifies actual server/client256K/running24/output16384/
 request timeout14400s and the64+48 arrival schedule. Actual FULL capacity is
 1797968 tokens/36.822GB after native profiling capped the requested1798992;
-native must match the actual pools. Physical actions are enabled; semantic
+native server_info confirms token_capacity1797968 and running24. Physical actions are enabled; semantic
 worker and detailed shared profiling are off. Performance acceptance remains
 open. State: /home/longhao/experiment/ops/v84_256k_running24_20261019.state.json.
 
+The following V1868-V1872 metrics describe sealed prefixes, not the final run.
 V1869 observes 821.06/867.59 decode token/s and 76.04%/85.14% GPU utilization
 in V84's complete 600-1200s/1200-1800s single-arm windows. Mean visible decode
 context over 600-1800s is 34.47K, not 256K. Same-configuration native is pending.

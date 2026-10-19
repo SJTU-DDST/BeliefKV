@@ -2,17 +2,44 @@
 
 更新日期：2026-10-19（北京时间）。
 
-**V84 已冷启动 predictive，随后自动接 native。**运行快照来自 main
+**V84 predictive 已结束，native 同配置对照正在运行。**predictive 原始
+summary 为 112 completed、104 native-agent-JCT 合格，8 个 workflow 有
+既有 guard 干预；正确性未评分，completed 不等于自然完成或正确。
+V1882 使用全量轨迹统计实际上下文：405 个普通 agent、26350 次模型请求，
+另列 3 个内部摘要请求，无未配对请求。逐 agent 先对其请求输入长度取均值，
+再将 agent 等权统计：总体均值 23909 token（256K 的 9.12%），
+P50/P90 为 19312/45185；平均输入低于 16K、16–32K、32–64K、
+64–128K、128–256K 的 agent 数为 155/174/61/15/0，K=1024。
+root/child/嵌套 child 的平均输入分别为 34277/20390/11091 token。
+峰值含实际生成输出，仅 10/405 个 agent 达到 128K，均为 root；
+104 个 JCT 合格 workflow 的 374 个 agent 中，83.16% 平均输入低于
+32K，只有 6 个峰值达到 128K。该资格标签不代表质量通过。
+按请求等权的平均输入为 41323 token，与 agent 等权的 23909 不混用。
+以上为全生命周期逻辑上下文，不能当唯一物理 KV 或忙碌时并发驻留量。
+
+**纠正 running queue 与 decode batch 的口径。**实际改动的是
+`max_running_requests=24`；冻结引擎在 TP1/PP1 中限制准入，prefill 完成
+后合入 running_batch，decode 执行整个 running_batch，因此也压住单步
+decode 的上界，尚无独立的 decode 切片上限。`max_queued_requests=None`
+是准入前等待队列容量，不是用户所指的已准入可执行请求容量。不能声称
+已独立调优这两个维度，也不能仅凭 256K 上限认定 24 最优。后续依据
+实际并发驻留、batch 填充、恢复与重算共同比较准入规模及 decode 批量。
+上下文审计脚本 6 项 CPU 检查通过；本次未改变运行配置。原任务保留
+普通长度对照，长上下文负载须验证忙碌阶段 JOIN/tool 等待后的长可复用
+前缀需求，不能用少数峰值代替。性能目标未达成。
+
+运行快照来自 main
 `9bd42bf`，合格引擎仍为 53020ce3；V1856 绑定源码、种子及任务选择。
 V1857 核对实际 server_info/client manifest：256K、running 24、
 输出 16384、请求超时 14400s、工具 180s、64+48/3600s 到达均生效。
 实际 FULL 池被引擎 profile 上限裁至 1797968 token/36.822GB（请求
-1798992），Mamba 513 槽；后续 native 须与实际容量匹配。物理传输未禁用，
+1798992），Mamba 513 槽；native server_info 已核对 FULL 1797968、
+running 24 和相同上下文上限。物理传输未禁用，
 语义 worker 与详细共享路径采样关闭，冷启动不代表吞吐或 JCT 通过。
 运行目录 `qwen35_nested_eos_prefetch_256k_two_wave_112root_20261019_v84`，
 状态见 `/home/longhao/experiment/ops/v84_256k_running24_20261019.state.json`。
 
-**V84 最新忙碌窗口与预取瓶颈（V1868–V1872）。**600–1200s、
+**V84 已封存前缀诊断（V1868–V1872，非全程统计）。**600–1200s、
 1200–1800s 单侧 decode 分别为 821.06/867.59 token/s，GPU 利用率
 76.04%/85.14%；600–1800s 可见 decode 上下文均值约 34.47K，
 不能把 256K 上限当作所有请求的实际长度。本轮 native 尚未完成。

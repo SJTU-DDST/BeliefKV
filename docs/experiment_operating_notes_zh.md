@@ -7,11 +7,30 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 后续开发固定在主目录 `/home/longhao/experiment/BeliefKV` 的 `main` 分支。
 历史实验 worktree 保留其冻结来源；新代码修改、验证与提交在主目录进行。
 
-当前 V84 已从 main `9bd42bf` 冷启动，先 predictive 后 native；配置核对
+当前 V84 predictive 已结束，同配置 native 正在运行。原始 summary 中
+112 completed、104 native-agent-JCT 合格、8 个既有 guard 干预任务均保留，
+正确性未评分。V1882 上下文审计以原生实际输入/输出计数匹配 26353 个
+完整请求，405 个普通 agent/26350 请求，3 个内部摘要另列；来源独立
+哈希绑定。先对各 agent 的请求输入取均值再对 agent 等权，不能与请求
+等权、decode 时间等权、唯一物理 KV 占用互换。81.23% 平均输入低于
+32K，仅 10 个 agent 峰值达到 128K；104 合格 workflow 中仍有 83.16%
+平均输入低于 32K。完整生命周期统计不等于去长尾性能比较，资格标签
+不代表正确性。V1883 的 6 项 CPU 检查通过，不改运行配置。
+
+running 请求容量与单步 decode batch 需分别说明：实际修改参数为
+`max_running_requests=24`，当前 TP1/PP1 原生调度把它同时用于准入上限
+及 running_batch 的 decode 上界，没有独立配置后者。
+`max_queued_requests=None` 对应准入前等待队列，不是已准入请求容量。
+不能仅因 context cap 为 256K 就下调并发，或将 24 宣称为已调优结果；
+须根据真实驻留、batch 填充、恢复与重算检验。长任务须在忙碌期形成
+有用长前缀与后续恢复需求，保留普通任务对照。本次不热改两侧配置。
+
+V84 冻结 main `9bd42bf`，先 predictive 后 native；配置核对
 见 V1856/V1857，状态文件为 `v84_256k_running24_20261019.state.json`。
 实际 FULL 1797968 token、Mamba 513 槽；原生 profile 比请求的 FULL 上限
-少 1024 token，不能仅凭启动参数声称实际池完全相等。后续核对 native 的
-真实容量；冷启动通过不作为吞吐/JCT 或长上下文已实现的证据。
+少 1024 token，不能仅凭启动参数声称实际池完全相等。native server_info
+已核对 token_capacity=1797968、running=24；冷启动通过不作为吞吐/JCT
+或长上下文已实现的证据。
 
 V1867 的 main 候选补丁 SHA 为 1529584a、合格引擎树 03af77d2，修复
 FULL allocator 回收时不必要的同步 Mamba 备份，189 项 CPU 检查通过。

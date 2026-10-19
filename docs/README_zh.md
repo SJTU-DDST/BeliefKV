@@ -2,12 +2,29 @@
 
 更新日期：2026-10-19（北京时间）
 
-**V84 predictive 已冷启动，随后自动接 native。**冻结 main `9bd42bf`；
+**V84 predictive 已结束，native 同配置对照正在运行。**原始结果
+112 completed，104 个 native-agent-JCT 合格、8 个既有 guard 干预任务保留，
+正确性未评分。全量 405 个普通 agent/26350 次请求的上下文审计见
+[V1882 上下文与终态分组](../experiments/reports/v1882_v84_agent_context_eligibility_20261019.json)、
+[逐 agent CSV](../experiments/reports/v1882_v84_agent_context_eligibility_20261019.csv)：
+agent 等权平均输入 23909 token（256K 的 9.12%），81.23% 平均低于
+32K；仅 10 个 agent 峰值达到 128K，均为 root。104 个 JCT 合格 workflow
+中结论不变；完整请求匹配、内部摘要另列，6 项 CPU 检查通过。
+
+**准入容量与 decode 批量纠正。**当前 `max_running_requests=24` 同时
+限制准入及整批 running_batch 的 decode 上界，并未分别调优。
+`max_queued_requests=None` 为准入前等待队列，不是用户所指的 running
+容量；不能凭 256K 上限认定并发 24 最优。后续结合真实驻留与 batch
+利用率考察两者，并以忙碌时 JOIN/tool 的长可复用前缀选择长任务。
+本次只做离线上下文核查，不改变正在运行的对照配置。
+
+冻结 main `9bd42bf`；
 [V1857 实际配置核对](../experiments/reports/v1857_v84_256k_startup_validation_20261019.json)
 确认 256K/running 24/输出 16384/请求超时 14400s 已生效；物理通道正常。
-实际 FULL 36.822GB、Mamba 513 槽，后续核对 native 的真实池容量。
+实际 FULL 36.822GB、Mamba 513 槽；native 已核对 FULL token_capacity1797968。
 实验尚未给出吞吐或 JCT 结论，不能把增大配置上限当作历史已经变长。
 
+以下 V1868–V1872 是已封存前缀，不能当最终全程迁移总量。
 V1869 的 V84 单侧 600–1200/1200–1800s decode 为 821.06/867.59 token/s，
 GPU 利用率 76.04%/85.14%，仍待同配置 native。V1868 封存前缀中，提前
 且下一请求复用 FULL 为 JOIN 17 个事件/0.368GB、tool 24 个/0.586GB；
