@@ -1744,7 +1744,7 @@ def test_tool_candidate_scan_reaches_start_window_without_decode_tick_rescans():
         runtime.dispatch_tool_prefetch()
         issue.assert_not_called()
         assert runtime.counts["tool_prefetch_scans"] == 1
-        assert runtime.counts["tool_prefetch_scan_deferred"] == 1
+        assert "tool_prefetch_scan_deferred" not in runtime.counts
         clock[0] += .16
         runtime.dispatch_tool_prefetch()
         issue.assert_called_once()

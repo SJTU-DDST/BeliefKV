@@ -212,9 +212,14 @@ def test_disabled_profiling_avoids_scope_construction_but_keeps_final_runtime_ev
     runtime.event_server = NS(drain=Mock(), close=Mock())
     try:
         assert not runtime._hotpath_timing.enabled
-        with patch.object(runtime._hotpath_timing, "measure", side_effect=AssertionError(
-            "disabled profiling must not allocate context managers",
-        )):
+        with (
+            patch.object(runtime._hotpath_timing, "measure", side_effect=AssertionError(
+                "disabled profiling must not allocate context managers",
+            )),
+            patch.object(runtime, "_maintain_prediction_state", side_effect=AssertionError(
+                "no prediction inventory needs maintenance",
+            )),
+        ):
             runtime.on_events((event(0, RuntimeEventKind.WORKFLOW_START),))
             runtime.scheduler_step()
     finally:

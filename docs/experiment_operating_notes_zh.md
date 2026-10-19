@@ -45,6 +45,16 @@ native 默认关闭，reactive 控制与 predictive 同开。计数快照不依�
 也不把该 CPU 收益当成 KV 预取贡献。工具查询降本必须保持并行调用、
 终态清理、删失支持和历史更新后的预测一致；V1928/V1929 未启动 GPU。
 
+V1987 删除四类仅用于诊断的轮询计数：`physical_planning_after_forward`、
+`prediction_maintenance_deferred`、`tool_prefetch_scan_deferred` 和
+`prefetch_lease_maintenance_deferred`。后续不能把它们缺失解读成零等待、
+零调度或零模型服务；实际扫描、迁移、失败、ACK 和首次消费证据保留。
+空库存跳过只在前序 handler 之后读取，不跨事件缓存空状态，也不改变
+原有时钟和唤醒位置。2090 项 CPU 检查、48 组常态状态对照通过；
+未覆盖完整原生调度器、真实 DMA 或 GPU 性能，不能将 4.4%–23.4% 的局部
+CPU 降幅作为 JCT 收益。V1985 是初次检查，最终独立计时为 V1987，
+参见 V1988；保持 06:00 资格更新和资源检查。
+
 V1981 的 ACK 短路依赖登记后不可变的原始 publication 及命令间预留互斥；
 不能将这个证明套到 split 新增节点。split 仍核对原 Host 目的地、邻接、
 代际和其他命令的现有预留。`_pending_nodes` 必须保留整个命令生命周期，

@@ -187,7 +187,8 @@ def test_bookkeeping_sweep_coalesces_without_extending_action_authorization():
             assert runtime._live_tool_hint(key) is None
         runtime._maintain_prediction_state(begin + 100.)
         assert key.context_id not in runtime.tool_wait_hints
-        assert runtime.counts["prediction_maintenance_deferred"] == 1
+        assert "prediction_maintenance_deferred" not in runtime.counts
+        assert runtime.counts["prediction_maintenance_sweeps"] == 2
     finally:
         runtime.close()
 
@@ -218,7 +219,7 @@ def test_lease_scan_coalesces_but_never_passes_the_earliest_expiry():
             runtime._refresh_prefetch_service_leases()
             runtime._refresh_prefetch_service_leases()
             assert validate.call_count == 1
-        assert runtime.counts["prefetch_lease_maintenance_deferred"] == 1
+        assert "prefetch_lease_maintenance_deferred" not in runtime.counts
         with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
                    return_value=lease.expires_at):
             runtime._refresh_prefetch_service_leases()

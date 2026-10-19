@@ -542,7 +542,7 @@ def test_after_forward_planning_retains_existing_waiting_context_handlers():
     assert calls == [
         "join", "tool", ("join-prepare", queue, running), ("tool-prepare", queue, running),
     ]
-    assert runtime.counts["physical_planning_after_forward"] == 1
+    assert "physical_planning_after_forward" not in runtime.counts
     assert runtime._hotpath_timing.snapshot()["phases"]["post_launch_physical"]["count"] == 1
 
 
@@ -562,8 +562,8 @@ def test_after_forward_skips_only_existing_backoff_work():
     with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.):
         runtime.dispatch_after_forward()
     runtime.dispatch_join_prefetch.assert_called_once()
-    assert runtime.counts["physical_planning_after_forward"] == 1
-    assert runtime.counts["tool_prefetch_scan_deferred"] == 1
+    assert "physical_planning_after_forward" not in runtime.counts
+    assert "tool_prefetch_scan_deferred" not in runtime.counts
     assert runtime.physical_ledger.pending_count == 0
     assert runtime._tool_prefetch_next_ms == 1050.
     assert runtime._join_prepare_next_ms == runtime._tool_prepare_next_ms == 1050.
@@ -4905,9 +4905,15 @@ def test_no_prefetch_lease_skips_per_decode_identity_parsing():
     runtime = NativeAdmissionRuntime()
     a = req("a")
     a.finished = lambda: False
-    with patch("beliefkv.runtime.sglang_v0520_runtime._request_key",
-               side_effect=AssertionError("no active restore or final stage")):
-        runtime.on_batch_completed(NS(reqs=[a]))
+    with (
+        patch("beliefkv.runtime.sglang_v0520_runtime._request_key",
+              side_effect=AssertionError("no active restore or final stage")),
+        patch.object(runtime, "_observe_report_service",
+                     side_effect=AssertionError("no active report stage")),
+        patch.object(runtime, "_refresh_prefetch_service_leases",
+                     side_effect=AssertionError("no restore lease")),
+    ):
+        assert runtime.on_batch_completed(NS(reqs=[a])) == ()
 
 def test_native_fenced_prefetch_does_not_request_overlap_drain():
     runtime = NativeAdmissionRuntime()
@@ -4934,7 +4940,7 @@ def test_tool_prefetch_retry_deadline_skips_unneeded_transaction_inspection():
         runtime.dispatch_tool_prefetch()
     assert runtime._tool_ticket is None
     assert runtime._tool_prefetch_next_ms == 1050.
-    assert runtime.counts["tool_prefetch_scan_deferred"] == 1
+    assert "tool_prefetch_scan_deferred" not in runtime.counts
     assert runtime.counts["tool_prefetch_scans"] == 0
     assert runtime.physical_ledger.pending_count == 0
 

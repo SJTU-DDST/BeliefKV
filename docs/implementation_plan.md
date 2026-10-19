@@ -64,6 +64,25 @@ Current goal:
 - Stop and fix material experimental failures promptly; CPU improvements alone
   do not establish GPU performance or a gain over native.
 
+V1987 removes four diagnostic-only poll counters relative toa9b42a2:
+physical_planning_after_forward, prediction_maintenance_deferred,
+tool_prefetch_scan_deferred and prefetch_lease_maintenance_deferred.
+V85d reports1811270/1790449/189619/6392 increments respectively.
+Their absence in future traces is not evidence of no waiting or no service.
+Keep actual sweeps, transfers, failures, ACKs and first-use evidence.
+Skip empty prediction maintenance and empty report/lease callbacks; allocate
+pending service groups only when an unobserved command requires them.
+Check inventories after prior handlers without moving clocks or caching absence.
+All48 recurring-control states agree. For24-root/8-running deferred cycles,
+CPU P50 is4.373 to3.351us without predictions and4.831 to3.790us with8 tool
+hints; forced-due active-hint cycles are7.597 to6.808us. The48 scenes improve
+4.4%-23.4%; retain the unchanged profiled empty-socket control's0.00088us
+regression as variation. The2090 CPU checks pass without skips.
+See V1988 and final V1987; V1985 is an initial check. No complete native
+scheduler, real workers, active transfer consumption, DMA or GPU/JCT was
+measured. V88/patch/configuration stay unchanged; publish this revision to
+the existing06:00 waiter after commit and keep the performance goal active.
+
 V1981 removes quadratic ordinary merged-ACK scans relative to0c6cbc6.
 Reuse register-time disjoint immutable publications and the existing pending-node
 union; retain split Host destinations, adjacency/generation and foreign-node

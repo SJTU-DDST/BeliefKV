@@ -33,6 +33,36 @@ from scripts.benchmark_native_shared_path import synthetic_runtime
 from scripts.benchmark_prefetch_control_cpu import compare, registration_case
 
 
+REMOVED_POLL_COUNTERS = frozenset((
+    "physical_planning_after_forward", "tool_prefetch_scan_deferred",
+    "prediction_maintenance_deferred", "prefetch_lease_maintenance_deferred",
+))
+
+
+def observed_poll_counts(path):
+    if path is None:
+        return None
+    digest, final = hashlib.sha256(), None
+    with path.open("rb") as stream:
+        for line in stream:
+            digest.update(line)
+            row = json.loads(line)
+            if row.get("event") == "admission_runtime_state" and row.get("final") is True:
+                final = row
+    if final is None or type(final.get("counts")) is not dict:
+        raise ValueError("observed runtime lacks a complete final counter snapshot")
+    return {
+        "path": str(path.resolve()), "sha256": digest.hexdigest(),
+        "final_poll_counters": {
+            name: final["counts"].get(name, 0) for name in sorted(REMOVED_POLL_COUNTERS)
+        },
+        "scope": (
+            "Historical diagnostic increments, not forward/completion rates or "
+            "a workload-weighted timing, GPU or JCT saving."
+        ),
+    }
+
+
 def physical_state(ledger):
     return {
         "pending": [asdict(value[0]) for value in ledger._pending.values()],
@@ -247,13 +277,16 @@ def recurring_case(
                     "running_batch_identity_retained": runtime._native_running_batch is batch,
                     "positive_action_counts": {
                         key: value for key, value in runtime.counts.items()
-                        if value and not key.startswith("prediction_maintenance_")
+                        if value and key not in REMOVED_POLL_COUNTERS
+                        and not key.startswith("prediction_maintenance_")
                     },
                 }
                 counters[name] = {
                     key: runtime.counts[key] for key in (
                         "prediction_maintenance_sweeps", "prediction_maintenance_deferred",
-                        "physical_expired",
+                        "physical_expired", "physical_planning_after_forward",
+                        "tool_prefetch_scan_deferred",
+                        "prefetch_lease_maintenance_deferred",
                     )
                 }
             if states["baseline"] != states["candidate"]:
@@ -291,6 +324,7 @@ def main():
     parser.add_argument("--candidate-engine", type=Path)
     parser.add_argument("--predictor-workers", type=int, nargs="+", default=[0], choices=(0, 1, 2))
     parser.add_argument("--idle-sleeper", type=int, nargs="+", default=[0, 1], choices=(0, 1))
+    parser.add_argument("--observed-runtime", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.samples < 1 or args.output.exists():
@@ -307,6 +341,7 @@ def main():
         "scripts/benchmark_native_shared_path.py",
     )
     sources = {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in paths}
+    observed = observed_poll_counts(args.observed_runtime)
     baseline, baseline_sources = baseline_runtime(args.baseline)
     hooks, hook_sources = None, {}
     if args.baseline_engine:
@@ -349,12 +384,15 @@ def main():
            for info in hook_sources.values()):
         raise RuntimeError("engine hook source changed")
     report = {
+        "status": "complete_cpu_comparison_not_gpu_or_jct_gain",
         "scope": "CPU runtime/ledger with real Unix sockets; no serving, CUDA, DMA or JCT",
         "at": datetime.now().astimezone().isoformat(),
         "baseline_revision": args.baseline, "baseline_source_sha256": baseline_sources,
         "candidate_source_sha256": sources, "samples": args.samples,
         "registration_only": args.registration_only,
         "recurring_only": args.recurring_only, "engine_hook_sources": hook_sources,
+        "removed_poll_counters": sorted(REMOVED_POLL_COUNTERS),
+        "observed_runtime": observed,
         "warmup_samples": 20, "cases": cases, "validation_cases": validation,
         "limitations": [
             "Prediction inventories and physical pending populations are controlled scenes.",

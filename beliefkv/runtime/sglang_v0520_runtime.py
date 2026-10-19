@@ -882,7 +882,6 @@ class NativeAdmissionRuntime:
         """Plan immutable waiting contexts after native forward submission."""
         if running_batch is not None:
             self._native_running_batch = running_batch
-        self.counts["physical_planning_after_forward"] += 1
         if (
             self._join_ticket is not None or self._confirmed_join_tickets
             or self._join_inflight_tickets
@@ -901,13 +900,11 @@ class NativeAdmissionRuntime:
         if self._tool_ticket is not None or self._tool_inflight_tickets or (
             self.enable_tool_prefetch and self.tool_wait_hints
         ):
-            if (
+            if not (
                 self.enable_tool_prefetch and not self.physical_disabled
                 and self._tool_ticket is None
                 and time.monotonic() * 1000. < self._tool_prefetch_next_ms
             ):
-                self.counts["tool_prefetch_scan_deferred"] += 1
-            else:
                 self.dispatch_tool_prefetch()
         # Earlier handlers can cross a deadline or rearm another source.
         # Read each existing deadline at its original dispatch position.
@@ -1888,7 +1885,11 @@ class NativeAdmissionRuntime:
         now_ms = time.monotonic() * 1000
         if self._terminal_child_reclaims and now_ms >= self._terminal_child_reclaim_next_ms:
             self._retry_terminal_child_reclaims(now_ms=now_ms)
-        self._maintain_prediction_state(now_ms)
+        if (
+            self._final_stages or self.tool_wait_hints
+            or self.join_wait_hints or self._completion_hints
+        ):
+            self._maintain_prediction_state(now_ms)
         if self._model_worker is not None:
             hints = self._model_worker.poll()
             for hint in hints:
@@ -1961,7 +1962,6 @@ class NativeAdmissionRuntime:
             version == self._prediction_maintenance_graph_version
             and now_ms < self._prediction_maintenance_next_ms
         ):
-            self.counts["prediction_maintenance_deferred"] += 1
             return
         self._prediction_maintenance_graph_version = version
         self._prediction_maintenance_next_ms = (
@@ -6406,7 +6406,6 @@ class NativeAdmissionRuntime:
                 return
         now_ms = time.monotonic() * 1000
         if now_ms < self._tool_prefetch_next_ms:
-            self.counts["tool_prefetch_scan_deferred"] += 1
             return
         if self._wait_prefetch_transfer_busy():
             return
@@ -7589,7 +7588,6 @@ class NativeAdmissionRuntime:
             and signature == self._lease_refresh_signature
             and now * 1000. < self._lease_refresh_next_ms
         ):
-            self.counts["prefetch_lease_maintenance_deferred"] += 1
             return
         leases = tuple(self._prefetch_service_leases.items())
         visible_by_context = None
@@ -9767,12 +9765,19 @@ class NativeAdmissionRuntime:
     @timed_runtime("batch_completed")
     def on_batch_completed(self, batch: object) -> tuple[str, ...]:
         """Observe the original batch and share its completed request IDs."""
-        self._observe_report_service(batch)
+        if (
+            self.join_prefetch_trigger == "report_service_or_eos"
+            and self._final_request_stages
+        ):
+            self._observe_report_service(batch)
         completed_ids: list[str] | None = None
-        pending_by_context: dict[str, list[tuple[str, PrefetchLoadStep]]] = {}
-        for command, (step, _, _) in self._prefetch_steps.items():
-            if command not in self._prefetch_first_services:
-                pending_by_context.setdefault(step.key.context_id, []).append((command, step))
+        pending_by_context: dict[str, list[tuple[str, PrefetchLoadStep]]] | None = None
+        if self._prefetch_steps:
+            for command, (step, _, _) in self._prefetch_steps.items():
+                if command not in self._prefetch_first_services:
+                    if pending_by_context is None:
+                        pending_by_context = {}
+                    pending_by_context.setdefault(step.key.context_id, []).append((command, step))
         lease_contexts = (
             {lease.key.context_id for lease in self._prefetch_service_leases.values()}
             if self._prefetch_service_leases else ()
@@ -9928,7 +9933,8 @@ class NativeAdmissionRuntime:
                     self._forget_session(rid)
                     self._context_tokens.pop(context_id, None)
                 self.semantic_revision += 1
-        self._refresh_prefetch_service_leases()
+        if self._prefetch_service_leases:
+            self._refresh_prefetch_service_leases()
         return tuple(completed_ids) if completed_ids is not None else ()
 
     def on_abort_request(self, abort: object) -> None:

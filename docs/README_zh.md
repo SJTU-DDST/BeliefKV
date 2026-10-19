@@ -23,7 +23,18 @@ child 都可动态委派叶子孙 agent，最大深度仍为 2。任务范围、
 见[24-root 配置](../configs/migration/qwen35_locobench_long_24root_running8_2026-10-19.json)
 及[CPU 原始结果](../experiments/reports/v1925_v85d_long_chat_token_cache_cpu_20261019.json)。
 
-**最新合并 ACK 降本，V1981。**登记已保证原始预留互斥，普通回执不再
+**最新常态轮询降本，V1987。**删除 post-forward、预测维护延后、工具扫描
+延后和租约维护延后的四类逐轮计数；保留实际扫描、迁移、失败、ACK 及首次
+消费记录。没有预测库存、报告阶段或租约时，跳过空维护及临时分组。
+V85d 中这四类诊断合计递增约 380 万次，不能当 GPU forward 次数。
+24-root/8-running 常态循环 CPU P50，无预测库存 4.373→3.351us，
+8 条工具预测 4.831→3.790us；48 组循环降低 4.4%–23.4%，状态与实际
+动作计数相同。2090 项 CPU 检查通过，原生引擎和配置未改。
+这些微秒计时不代表吞吐/JCT；见
+[V1988](../experiments/reports/v1988_recurring_poll_control_cpu_20261020_zh.md)。
+提交后更新同一个 06:00 等待进程的合格源码，保持目标继续执行。
+
+**此前合并 ACK 降本，V1981。**登记已保证原始预留互斥，普通回执不再
 逐条扫描所有其他在途命令；merged node 集合只建立一次。split 仍核对
 Host 目的地、节点代际和新增节点冲突。最新 V85d 实际最大 H2D tagged
 ACK 为 42 条；CPU 的完整 JOIN ACK P50 1948.76→1402.62us，约降 28%。
