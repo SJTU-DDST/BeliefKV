@@ -5,6 +5,15 @@ Status date: 2026-10-19 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+V84 predictive has cold-started from main9bd42bf and will automatically run
+native afterward. V1856 binds the clean execution snapshot, engine53020ce3,
+inputs and checks. V1857 verifies actual server/client256K/running24/output16384/
+request timeout14400s and the64+48 arrival schedule. Actual FULL capacity is
+1797968 tokens/36.822GB after native profiling capped the requested1798992;
+native must match the actual pools. Physical actions are enabled; semantic
+worker and detailed shared profiling are off. Performance acceptance remains
+open. State: /home/longhao/experiment/ops/v84_256k_running24_20261019.state.json.
+
 The latest user-selected validation uses the model's native256K total context,
 superseding the64K and128K candidates. Freeze window262144/keep8192/summary2048
 and output16384 in both arms, with model/server context262144. The existing

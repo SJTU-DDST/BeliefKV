@@ -7,6 +7,12 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 后续开发固定在主目录 `/home/longhao/experiment/BeliefKV` 的 `main` 分支。
 历史实验 worktree 保留其冻结来源；新代码修改、验证与提交在主目录进行。
 
+当前 V84 已从 main `9bd42bf` 冷启动，先 predictive 后 native；配置核对
+见 V1856/V1857，状态文件为 `v84_256k_running24_20261019.state.json`。
+实际 FULL 1797968 token、Mamba 513 槽；原生 profile 比请求的 FULL 上限
+少 1024 token，不能仅凭启动参数声称实际池完全相等。后续核对 native 的
+真实容量；冷启动通过不作为吞吐/JCT 或长上下文已实现的证据。
+
 当前用户进一步选择模型原生 256K 总上下文。新轮显式设置
 CONTEXT_WINDOW_TOKENS=262144、CONTEXT_KEEP_TOKENS=8192、
 MODEL_CONTEXT_TOKENS=262144，输出仍为 16384；现有生命周期会扣除
