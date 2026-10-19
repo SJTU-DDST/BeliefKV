@@ -1,16 +1,18 @@
 from dataclasses import asdict, replace
 import pickle
+from types import SimpleNamespace as NS
 from unittest.mock import Mock, patch
 
 import pytest
 
 from beliefkv.runtime.sglang_v0520_physical import (
     PhysicalActionExpectation, PhysicalChildExpectation, PhysicalReceiptError,
-    PrefetchLoadStep, plan_prefetch_gpu_steps, prefetch_expectation_from_native_op,
+    PhysicalActionCompleted, PrefetchLoadStep, plan_prefetch_gpu_steps,
+    prefetch_expectation_from_native_op,
 )
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from scripts.benchmark_wait_prefetch_dispatch_cpu import dispatch_fixture
-from tests.test_sglang_v0520_physical import native_prefetch
+from tests.test_sglang_v0520_physical import Pool, native_prefetch
 
 
 @pytest.mark.parametrize("source", ("join_ticket", "tool_wait"))
@@ -123,3 +125,35 @@ def test_compact_prefetch_records_keep_dataclass_copy_serialization_and_metadata
         assert asdict(restored) == asdict(record)
         assert asdict(replace(record)) == asdict(record)
     assert action.children[0].host_destination_indices == (("kv", (1, 2)),)
+
+
+@pytest.mark.parametrize("full,mamba,sidecar,pools,total", (
+    (2, 0, None, (("kv", 20),), 20),
+    (2, 1, None, (("kv", 20), ("mamba", 5)), 25),
+    (0, 2, None, (("kv", 0), ("mamba", 10)), 10),
+    (2, 0, Pool.KV, (("kv", 20),), 26),
+    (2, 1, Pool.KV, (("kv", 20), ("mamba", 5)), 31),
+    (0, 2, Pool.MAMBA, (("kv", 0), ("mamba", 10)), 16),
+))
+def test_single_node_issuance_preserves_zero_pools_and_sidecar_total_without_ack(
+    full, mamba, sidecar, pools, total,
+):
+    step, operation, controller = native_prefetch(full=full, mamba=mamba, sidecar=sidecar)
+    expected = prefetch_expectation_from_native_op("prefetch-1", step, operation, controller)
+    runtime = NativeAdmissionRuntime()
+    records = []
+    runtime.prefetch_issued_callback = records.append
+    runtime.physical_ledger.register(expected)
+    try:
+        runtime._record_prefetch_issued(
+            "prefetch-1", step, "tool_wait", 100., NS(load_started=True),
+        )
+        assert records == [PhysicalActionCompleted(
+            "prefetch-1", "PREFETCH_GPU", step.key.context_id, step.key.context_epoch,
+            (step.node_id,), pools, total, "tool_wait",
+        )]
+        assert runtime.physical_ledger.pending_expectation("prefetch-1") == expected
+        assert runtime.physical_ledger.pending_count == 1
+        assert not runtime.completed_physical_actions
+    finally:
+        runtime.close()

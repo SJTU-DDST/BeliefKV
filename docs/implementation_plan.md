@@ -64,6 +64,21 @@ Current goal:
 - Stop and fix material experimental failures promptly; CPU improvements alone
   do not establish GPU performance or a gain over native.
 
+V2039 reuses the native H2D factory's single frozen child and canonical pool bytes
+for issuance metadata, removing generic multi-child dictionaries, generators and
+sorting. Read the same child's total for the submission budget. Do not extend this
+assumption to the general ledger or merged ACKs. Keep zero FULL pools, sidecar total
+bytes and every native accounting/capacity check. Complete dispatch now includes
+the real on_prefetch_issued identity tracker with token diagnostics off.
+All 32 scenes preserve records, full expectations, unacknowledged tracking, targets
+and native read counts; CPU P50s improve 4.32%-8.50%. Native-budget 64-node JOIN/tool
+are 2367.061 to 2177.665us and 2349.675 to 2194.786us. Depth256 still enqueues only
+64 nodes. Retain V2040's no-callback controls and two 1.768/0.979us regressions.
+All 2392 checks pass in V2041. The cache/controller remain CPU doubles, no ACK/use
+credit is invented, and call counts are not full per-field instrumentation. See V2042.
+Commit main and update the same 06:00 qualification, preserving V88/patch/workload,
+disabled extra token diagnostics and pending GPU/JCT acceptance.
+
 V2034 makes additional per-target token snapshots/comparisons opt-in with
 PREFETCH_PREFIX_DIAGNOSTICS=0 for new runs. Keep native node/allocation identity,
 generation, materialized-prefix length, residency, pre-ACK buffering and Mamba

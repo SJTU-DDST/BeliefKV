@@ -7009,14 +7009,11 @@ class NativeAdmissionRuntime:
         if self.prefetch_issued_callback is not None:
             expected = self.physical_ledger.pending_expectation(command_id)
             if expected is not None:
+                # Native H2D registration freezes one child with canonical pool bytes.
+                child = expected.children[0]
                 self.prefetch_issued_callback(PhysicalActionCompleted(
                     command_id, expected.action, expected.context_id, expected.context_epoch,
-                    tuple(node for child in expected.children for node in child.published_node_ids),
-                    tuple(sorted(
-                        (pool, sum(dict(child.pool_bytes).get(pool, 0) for child in expected.children))
-                        for pool, _ in expected.pool_bytes_per_token
-                    )),
-                    sum(child.num_bytes for child in expected.children), source,
+                    child.published_node_ids, child.pool_bytes, child.num_bytes, source,
                 ))
         if self._opportunity_writer is not None:
             tokens = self._context_tokens.get(step.key.context_id)
@@ -7260,7 +7257,7 @@ class NativeAdmissionRuntime:
                 expected = prefetch_expectation_from_native_op(
                     command, step, operation, cache.cache_controller,
                 )
-                size = sum(child.num_bytes for child in expected.children)
+                size = expected.children[0].num_bytes
                 if reserved_bytes + size > byte_allowance:
                     self.counts["prefetch_burst_byte_budget_lost"] += 1
                     return False

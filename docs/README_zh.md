@@ -23,7 +23,17 @@ child 都可动态委派叶子孙 agent，最大深度仍为 2。任务范围、
 见[24-root 配置](../configs/migration/qwen35_locobench_long_24root_running8_2026-10-19.json)
 及[CPU 原始结果](../experiments/reports/v1925_v85d_long_chat_token_cache_cpu_20261019.json)。
 
-**最新同步诊断降本，V2034。**预取目标的逐 token 快照/比较改为按需开启，
+**最新单节点发出记录降本，V2039。**原生 H2D 工厂每命令已冻结一个 child
+及规范池字节，发出记录直接复用这些字段，不再按多个 child 建字典、排序
+和聚合；提交预算读取同一 child 的真实总字节。通用 ledger/ACK 保持。
+加入真实发出追踪回调后，32 组完整 JOIN/tool 的 CPU P50 降低
+4.32%–8.50%，全部记录、预留、追踪库存与原生读取一致；64 节点、
+原生预算的 JOIN/tool 为 2367.06→2177.67us、2349.68→2194.79us。
+2392 项检查通过。无回调的控制组有两项小回退，保留原始结果；见
+[V2042](../experiments/reports/v2042_single_child_issuance_metadata_cpu_20261020_zh.md)。
+CPU 结论不等于 GPU/JCT，提交后更新原 06:00 等待资格。
+
+**此前同步诊断降本，V2034。**预取目标的逐 token 快照/比较改为按需开启，
 默认 `PREFETCH_PREFIX_DIAGNOSTICS=0`；原生节点/分配身份、代际、物化前缀、
 ACK 与 Mamba forward 证明保留。记录显式区分诊断 disabled/unavailable，
 不能用缺少 target_prefixes 判断没有复用。24 组 CPU 对照的原生证明与

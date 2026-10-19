@@ -49,7 +49,24 @@ reactive 作为本系统控制时默认与 predictive 同开前端缓存，隔�
 11 个新 context 的混合 checkpoint 缺口仍单列：深 FULL 命中不能替代
 该位置缺少的可恢复 Mamba 状态，现有日志不足以逐个区分未创建与被回收。
 
-**最新同步预取诊断降本：V2034。**此前预取 issued 回调会为各目标独立复制
+**最新单节点发出记录降本：V2039。**原生 H2D 工厂已冻结一个 child，且池
+字节规范有序；发出通知直接复用该 child 的节点、池字节和总字节，删除
+多 child 聚合用的临时字典、生成器及排序。逐节点提交预算也读取该 child，
+不改变任何计数、sidecar 总字节或容量限制；通用 ledger/合并 ACK 未改。
+CPU 完整提交新增真实 on_prefetch_issued 回调，记录本次配置所需的原生
+身份追踪，token 诊断保持关闭。32 组记录、完整 expectation、未 ACK
+追踪库存、目标和原生读取次数一致，CPU P50 降低 4.32%–8.50%。
+64 节点、原生预算且关闭额外诊断的 JOIN/tool 为
+2367.061→2177.665us、2349.675→2194.786us。256 路径仍只提交 64 节点。
+V2040 无回调控制的 30/32 组更低，两组多 1.768/0.979us，均保留。
+V2041 的 2392 项检查通过；新增边界核对零 FULL 池、Mamba-only 与
+派生 sidecar 的总字节，发出通知没有转成 ACK 信用。
+真实回调仍使用 CPU cache/controller 替身，不代表真实 allocator、DMA
+或在线次数；node_by_id/session snapshot 计数也不是逐字段全量埋点。
+详见 [V2042](../experiments/reports/v2042_single_child_issuance_metadata_cpu_20261020_zh.md)；
+提交后更新同一 06:00 资格，24-root、V88 和额外 token 诊断关闭保持。
+
+**此前同步预取诊断降本：V2034。**此前预取 issued 回调会为各目标独立复制
 长 token 前缀，首次服务再做逐 token 比较；这些字段不决定原生 FULL/Mamba
 复用信用。现在默认关闭这一额外诊断，保留节点/分配对象、代际、前缀长度、
 原生驻留、ACK 前缓冲及 Mamba forward 证明。`target_prefix_diagnostics`

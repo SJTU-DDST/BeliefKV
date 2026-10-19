@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import argparse
-from collections import Counter, deque
+from collections import Counter, deque, OrderedDict
 from contextlib import nullcontext
 import cProfile
 from dataclasses import asdict, replace
@@ -32,6 +32,7 @@ from scripts.benchmark_prefetch_control_cpu import distribution
 def dispatch_fixture(
     cls, *, source, depth, diagnostics=False, native_budget=False, tail_reclaim=False,
     workflows=1, running=48, sparse_session_leaves=False, numpy_created_times=False,
+    capture_issuance=False,
 ):
     runtime, _, reads, _, rows = fixture(
         cls, workflows=workflows, depth=depth + 1, backed=True, host_full=1_000_000,
@@ -101,6 +102,21 @@ def dispatch_fixture(
     if not diagnostics:
         runtime._opportunity_writer = None
     actions = []
+    issuance_probe = None
+    if capture_issuance:
+        from beliefkv.runtime.v0520_native_telemetry import NativeReactiveTelemetry
+
+        issuance_probe = NativeReactiveTelemetry.__new__(NativeReactiveTelemetry)
+        issuance_probe._cache = cache
+        issuance_probe._prefetch_prefix_diagnostics = False
+        issuance_probe._pending_prefetch_use = OrderedDict()
+        issuance_probe._unacked_prefetch_use = {}
+        issuance_probe._prefetch_use_before_ack = {}
+        issuance_probe._prefetch_ack_times = OrderedDict()
+        issuance_probe._emit = lambda kind, record: rows.append({"kind": kind, **record})
+        runtime._cpu_issuance_probe = issuance_probe
+        runtime.prefetch_issued_callback = issuance_probe.on_prefetch_issued
+        runtime.prefetch_discarded_callback = issuance_probe.on_prefetch_discarded
     controller = cache.cache_controller
     controller.mem_pool_host = cache.host_pool_group
     controller._num_tokens_by_pool = lambda operation: {
@@ -179,6 +195,11 @@ def dispatch_fixture(
         actions.clear()
         rows.clear()
         reads.clear()
+        if issuance_probe is not None:
+            issuance_probe._pending_prefetch_use.clear()
+            issuance_probe._unacked_prefetch_use.clear()
+            issuance_probe._prefetch_use_before_ack.clear()
+            issuance_probe._prefetch_ack_times.clear()
 
     reset()
     return runtime, key, cache, reads, actions, rows, reset, dispatch, fixed_now
@@ -191,13 +212,36 @@ def state_signature(runtime, actions):
             "node": step.node_id, "created": step.creation_time,
             "include_mamba": step.include_mamba, "source": source,
         })
-    return {
+    state = {
         "actions": list(actions), "pending_steps": pending,
         "pending_count": runtime.physical_ledger.pending_count,
         "pending_bytes": runtime.physical_ledger.pending_action_bytes("PREFETCH_GPU"),
         "residency_budget": asdict(runtime._residency_budget),
         "physical_disabled": runtime.physical_disabled,
     }
+    probe = getattr(runtime, "_cpu_issuance_probe", None)
+    if probe is not None:
+        state["issued_use_tracking"] = {
+            "unacked_actions": {
+                command: asdict(action)
+                for command, action in probe._unacked_prefetch_use.items()
+            },
+            "pending_targets": {
+                command: {
+                    "action": asdict(action), "ack_time": ack_time,
+                    "nodes": [
+                        (node_id, created, prefix_len, full is not None, mamba is not None)
+                        for node_id, created, _, prefix_len, full, mamba in nodes
+                    ],
+                    "token_snapshot_count": len(prefixes),
+                }
+                for command, (action, nodes, ack_time, prefixes)
+                in probe._pending_prefetch_use.items()
+            },
+            "ack_times": dict(probe._prefetch_ack_times),
+            "use_before_ack": dict(probe._prefetch_use_before_ack),
+        }
+    return state
 
 
 def selection_fixture(cls, *, depth, remaining_ms, report_service=False):
@@ -391,7 +435,7 @@ def measure_prefill_check(baseline, *, depth, matching, ready, legacy, samples):
 def measure(
     baseline, *, source, depth, diagnostics, native_budget, samples, tail_reclaim=False,
     workflows=1, running=48, sparse_session_leaves=False, numpy_created_times=False,
-    align_command_namespaces=False,
+    align_command_namespaces=False, capture_issuance=False,
 ):
     with (
         patch("time.monotonic", lambda: 1000.)
@@ -405,6 +449,7 @@ def measure(
                 workflows=workflows, running=running,
                 sparse_session_leaves=sparse_session_leaves,
                 numpy_created_times=numpy_created_times,
+                capture_issuance=capture_issuance,
             )
             for name, cls in (("baseline", baseline), ("candidate", NativeAdmissionRuntime))
         }
@@ -470,6 +515,7 @@ def measure(
             "sparse_session_leaves": sparse_session_leaves,
             "numpy_created_times": numpy_created_times,
             "aligned_command_namespaces_and_record_clocks": align_command_namespaces,
+            "native_issuance_callback_included": capture_issuance,
             "records_and_complete_expectations_equal": align_command_namespaces,
             "canonical_state_sha256": canonical,
             "budget_mode": "native_next_prefill" if native_budget else "legacy_capacity_unavailable",
@@ -509,6 +555,7 @@ def main():
     parser.add_argument("--sparse-session-leaves", action="store_true")
     parser.add_argument("--numpy-created-times", action="store_true")
     parser.add_argument("--align-command-namespaces", action="store_true")
+    parser.add_argument("--capture-issuance", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if (
@@ -517,12 +564,15 @@ def main():
         or any(depth < 1 for depth in args.depths) or args.output.exists()
     ):
         parser.error("use positive samples/key layouts and a fresh output path")
+    if args.capture_issuance and not args.align_command_namespaces:
+        parser.error("issuance tracking comparison requires aligned commands")
     paths = (
         "beliefkv/runtime/sglang_v0520_runtime.py",
         "beliefkv/runtime/sglang_v0520_admission.py",
         "beliefkv/runtime/sglang_v0520_physical.py",
         "beliefkv/runtime/sglang_v0520_observer.py",
         "beliefkv/runtime/event_channel.py",
+        "beliefkv/runtime/v0520_native_telemetry.py",
         "scripts/benchmark_wait_prefetch_dispatch_cpu.py",
         "scripts/benchmark_native_prepare_path.py",
     )
@@ -537,6 +587,7 @@ def main():
             sparse_session_leaves=args.sparse_session_leaves,
             numpy_created_times=args.numpy_created_times,
             align_command_namespaces=args.align_command_namespaces,
+            capture_issuance=args.capture_issuance,
         )
         for source in ("join_ticket", "tool_wait") for depth in args.depths
         for diagnostics in (False, True) for native_budget in (False, True)
@@ -583,6 +634,7 @@ def main():
         "dispatch_sparse_session_leaves": args.sparse_session_leaves,
         "dispatch_numpy_created_times": args.numpy_created_times,
         "dispatch_aligned_command_namespaces": args.align_command_namespaces,
+        "dispatch_native_issuance_callback": args.capture_issuance,
         "limitations": [
             "The CPU native enqueue uses scalar index stand-ins, not the real native allocator or controller.",
             "Plans have real positive Host-only prefixes and causal identities in both sources.",
@@ -590,6 +642,7 @@ def main():
             "Resets, state verification and cProfile are outside the CPU timings.",
             "Each prefill key layout creates independent command namespaces and dictionaries; samples within it reuse that layout.",
             "When enabled, the diagnostic writer appends records to memory without I/O or background GIL contention.",
+            "The optional real issuance callback records allocation identity with token diagnostics off; no ACK or service is synthesized.",
             "Local CPU timings and synthetic scene frequencies do not establish workflow throughput or JCT gains.",
         ],
     }
