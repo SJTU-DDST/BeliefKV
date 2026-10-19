@@ -53,8 +53,8 @@
     "native": false
   },
   "matched_frontend_ablation": "Set NATIVE_CHAT_TOKEN_BLOCK_CACHE=1; retain PREDICTIVE_CHAT_TOKEN_BLOCK_CACHE=1.",
-  "engine_source_checkout": "/home/longhao/experiment/.worktrees/sglang-v87-completion-cpu-20261019",
-  "engine_patch_sha256": "130d376d7e50a7072f6f9bb63319438f87fa94eb1e3e29189c21fac10754668e",
+  "engine_source_checkout": "/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019",
+  "engine_patch_sha256": "2cbb0b4699e000ffc28bd80f6ee70732fb13b4950e40aa303b9afbc7d5a418ef",
   "arm_order": ["predictive_h2d", "native"],
   "comparison_policy": {
     "same_harness_in_both_arms": true,

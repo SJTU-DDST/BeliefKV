@@ -1,6 +1,6 @@
 from dataclasses import replace
 from types import SimpleNamespace as NS
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -63,6 +63,48 @@ def test_no_critical_parent_skips_the_reclaim_clock():
         ):
             runtime._reclaim_critical_parent_headroom()
     finally:
+        runtime.close()
+
+
+def test_predictor_fds_are_live_deduplicated_and_follow_worker_removal():
+    runtime = NativeAdmissionRuntime()
+    semantic = NS(disabled=False, fileno=lambda: 71, close=lambda: None)
+    model = NS(disabled=False, fileno=lambda: 73, close=lambda: None)
+    try:
+        assert runtime.predictor_filenos() == ()
+        runtime._semantic_worker, runtime._model_worker = semantic, model
+        assert runtime.predictor_filenos() == (71, 73)
+        model.fileno = lambda: 71
+        assert runtime.predictor_filenos() == (71,)
+        semantic.disabled = True
+        assert runtime.predictor_filenos() == (71,)
+        model.fileno = lambda: None
+        assert runtime.predictor_filenos() == ()
+        runtime._semantic_worker = runtime._model_worker = None
+        assert runtime.predictor_filenos() == ()
+    finally:
+        runtime.close()
+
+
+def test_post_forward_observes_parent_demand_created_by_an_earlier_handler():
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_prepare_host = True
+    runtime._join_ticket = object()
+    demand = object()
+    runtime.dispatch_join_prefetch = lambda: setattr(
+        runtime, "_critical_parent_demand", demand,
+    )
+    runtime._join_prepare_next_ms = runtime._tool_prepare_next_ms = float("inf")
+    runtime._reclaim_critical_parent_headroom = Mock()
+    batch = NS(reqs=())
+    try:
+        runtime.dispatch_after_forward(running_batch=batch)
+        assert runtime._native_running_batch is batch
+        runtime._reclaim_critical_parent_headroom.assert_called_once_with()
+        assert runtime._critical_parent_demand is demand
+    finally:
+        runtime._join_ticket = None
+        runtime._critical_parent_demand = None
         runtime.close()
 
 

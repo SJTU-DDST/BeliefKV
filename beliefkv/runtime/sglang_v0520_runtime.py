@@ -881,7 +881,7 @@ class NativeAdmissionRuntime:
     ) -> None:
         """Plan immutable waiting contexts after native forward submission."""
         if running_batch is not None:
-            self._observe_native_admission_capacity(running_batch=running_batch, adder=None)
+            self._native_running_batch = running_batch
         self.counts["physical_planning_after_forward"] += 1
         if (
             self._join_ticket is not None or self._confirmed_join_tickets
@@ -916,7 +916,8 @@ class NativeAdmissionRuntime:
                 self.dispatch_join_prepare(waiting_queue, running_batch=running_batch)
             if time.monotonic() * 1000. >= self._tool_prepare_next_ms:
                 self.dispatch_tool_prepare(waiting_queue, running_batch=running_batch)
-            self._reclaim_critical_parent_headroom()
+            if self._critical_parent_demand is not None:
+                self._reclaim_critical_parent_headroom()
 
     def predictor_fileno(self) -> int | None:
         if self._semantic_worker is not None:
@@ -926,6 +927,8 @@ class NativeAdmissionRuntime:
         return self._model_worker.fileno()
 
     def predictor_filenos(self) -> tuple[int, ...]:
+        if self._semantic_worker is None and self._model_worker is None:
+            return ()
         return tuple(dict.fromkeys(
             fd for worker in (self._semantic_worker, self._model_worker)
             if worker is not None and not worker.disabled
@@ -1880,7 +1883,8 @@ class NativeAdmissionRuntime:
                     self.event_server.drain(max_messages=128)
             else:
                 self.event_server.drain(max_messages=128)
-        self._refresh_prefetch_service_leases()
+        if self._prefetch_service_leases:
+            self._refresh_prefetch_service_leases()
         now_ms = time.monotonic() * 1000
         if self._terminal_child_reclaims and now_ms >= self._terminal_child_reclaim_next_ms:
             self._retry_terminal_child_reclaims(now_ms=now_ms)

@@ -4,11 +4,14 @@
 from __future__ import annotations
 
 import argparse
+import ast
 from dataclasses import asdict, replace
 from datetime import datetime
 import hashlib
 import json
+import os
 from pathlib import Path
+import select
 import subprocess
 import sys
 import tempfile
@@ -24,6 +27,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
     PhysicalActionExpectation, PhysicalChildExpectation, PhysicalTransactionLedger,
 )
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
+from beliefkv.runtime.sglang_v0520_prediction import NativeToolWaitHint
 from scripts.benchmark_native_prepare_path import baseline_runtime
 from scripts.benchmark_native_shared_path import synthetic_runtime
 from scripts.benchmark_prefetch_control_cpu import compare, registration_case
@@ -112,25 +116,92 @@ def socket_case(baseline, *, samples, profiling):
                 server.close()
 
 
-def recurring_case(baseline, *, samples, workflows, running, pending, profiling, due):
+def predictor_hook(engine):
+    path = engine / "python/sglang/srt/managers/scheduler.py"
+    source = path.read_text()
+    scheduler = next(node for node in ast.parse(source).body
+                     if isinstance(node, ast.ClassDef) and node.name == "Scheduler")
+    method = next(node for node in scheduler.body if isinstance(node, ast.FunctionDef)
+                  and node.name == "get_next_batch_to_run")
+    runtime_block = next(
+        node for node in method.body
+        if isinstance(node, ast.If) and isinstance(node.test, ast.Compare)
+        and isinstance(node.test.left, ast.NamedExpr)
+        and isinstance(node.test.left.target, ast.Name)
+        and node.test.left.target.id == "beliefkv_runtime"
+    )
+    idle_block = next(
+        node for node in runtime_block.body
+        if isinstance(node, ast.If) and isinstance(node.test, ast.Compare)
+        and isinstance(node.test.left, ast.Attribute)
+        and node.test.left.attr == "idle_sleeper"
+    )
+    function = ast.FunctionDef(
+        name="refresh_predictor_fds",
+        args=ast.arguments(
+            posonlyargs=[], args=[
+                ast.arg(arg="self"), ast.arg(arg="beliefkv_runtime"),
+            ], kwonlyargs=[], kw_defaults=[], defaults=[],
+        ),
+        body=[idle_block], decorator_list=[],
+    )
+    namespace = {}
+    exec(compile(ast.fix_missing_locations(ast.Module(
+        body=[function], type_ignores=[],
+    )), str(path), "exec"), namespace)
+    return namespace[function.name], {
+        "path": str(path.resolve()), "sha256": hashlib.sha256(source.encode()).hexdigest(),
+        "scope": "actual idle_sleeper block from get_next_batch_to_run",
+    }
+
+
+def recurring_case(
+    baseline, *, samples, workflows, running, pending, profiling, due,
+    prepare=False, active_hints=False, fd_hooks=None, workers=0, idle_sleeper=True,
+):
     variants = {}
+    pipes = [os.pipe() for _ in range(workers)]
     with tempfile.TemporaryDirectory(prefix="bkv-recurring-control-") as temporary:
         try:
             for name, cls in (("baseline", baseline), ("candidate", NativeAdmissionRuntime)):
                 runtime, queue = synthetic_runtime(
                     cls, CausalFrontierScheduler, workflows, 16, profiling=profiling,
                 )
-                variants[name] = runtime, NS(reqs=queue[:running])
+                scheduler = NS(
+                    idle_sleeper=NS(poller=select.poll()) if idle_sleeper else None,
+                    _beliefkv_predictor_fds=set(), _beliefkv_predictor_fd=None,
+                )
+                variants[name] = runtime, NS(reqs=queue[:running]), scheduler
                 runtime._tool_timing_only = True
                 runtime.enable_final_stage_prefetch = runtime.enable_tool_prefetch = True
-                runtime.enable_prepare_host = False
+                runtime.enable_prepare_host = prepare
+                runtime._join_prepare_next_ms = runtime._tool_prepare_next_ms = 1e100
+                runtime._tool_prefetch_next_ms = 1e100
                 runtime._prediction_maintenance_interval_ms = 100.
-                runtime._prediction_maintenance_graph_version = runtime.graph.graph_version
                 runtime._prediction_maintenance_next_ms = 1e100
                 runtime._tool_refresh_next_ms = 1e100
                 for invocation in runtime.graph.invocations.values():
                     if invocation.state is InvocationState.WAIT_JOIN:
                         invocation.state = InvocationState.READY
+                if active_hints:
+                    for request in queue[running:running + 8]:
+                        key = runtime.visible[request.rid]
+                        invocation = runtime.graph.invocations[key.invocation_id]
+                        invocation.state = InvocationState.WAIT_TOOL
+                        runtime.tool_wait_hints[key.context_id] = NativeToolWaitHint(
+                            key, 10_000., 20_000., 30_000., 0., 1e100,
+                            runtime.predictor_sha256, invocation.updated_ts_ms,
+                        )
+                runtime._prediction_maintenance_graph_version = runtime.graph.graph_version
+                for index, (fd, _) in enumerate(pipes):
+                    worker = NS(
+                        disabled=False, fileno=lambda fd=fd: fd,
+                        poll=lambda: (), close=lambda: None,
+                    )
+                    if index == 0:
+                        runtime._model_worker = worker
+                    else:
+                        runtime._semantic_worker = worker
                 names = cls._roll_tool_prefetch.__globals__
                 runtime.event_server = names["RuntimeEventDatagramServer"](
                     Path(temporary) / f"{name}.sock", runtime.on_events,
@@ -140,22 +211,25 @@ def recurring_case(baseline, *, samples, workflows, running, pending, profiling,
                     runtime.physical_ledger.register(command(index))
             before = {
                 name: physical_state(runtime.physical_ledger)
-                for name, (runtime, _) in variants.items()
+                for name, (runtime, _, _) in variants.items()
             }
 
-            def cycle(runtime, batch):
+            def cycle(name, runtime, batch, scheduler):
                 if due:
                     runtime._prediction_maintenance_next_ms = 0.
                 runtime.scheduler_step(defer_observations=True)
+                if fd_hooks is not None:
+                    fd_hooks[name](scheduler, runtime)
                 runtime.dispatch_after_forward(running_batch=batch)
                 runtime.on_batch_completed(batch)
 
             costs = compare({
-                name: lambda runtime=runtime, batch=batch: cycle(runtime, batch)
-                for name, (runtime, batch) in variants.items()
+                name: lambda name=name, runtime=runtime, batch=batch, scheduler=scheduler:
+                    cycle(name, runtime, batch, scheduler)
+                for name, (runtime, batch, scheduler) in variants.items()
             }, samples=samples)
             states, counters = {}, {}
-            for name, (runtime, _) in variants.items():
+            for name, (runtime, batch, scheduler) in variants.items():
                 current = physical_state(runtime.physical_ledger)
                 if current != before[name] or runtime.physical_disabled or (
                     runtime.completed_physical_actions
@@ -165,6 +239,12 @@ def recurring_case(baseline, *, samples, workflows, running, pending, profiling,
                     "physical": current, "visible": sorted(runtime.visible),
                     "tokens": dict(runtime._context_tokens),
                     "semantic_revision": runtime.semantic_revision,
+                    "tool_hints": {
+                        key: asdict(hint) for key, hint in runtime.tool_wait_hints.items()
+                    },
+                    "registered_fds": sorted(scheduler._beliefkv_predictor_fds),
+                    "legacy_fd": scheduler._beliefkv_predictor_fd,
+                    "running_batch_identity_retained": runtime._native_running_batch is batch,
                     "positive_action_counts": {
                         key: value for key, value in runtime.counts.items()
                         if value and not key.startswith("prediction_maintenance_")
@@ -182,13 +262,21 @@ def recurring_case(baseline, *, samples, workflows, running, pending, profiling,
                 "case": "scheduler_dispatch_and_batch_completion", "workflows": workflows,
                 "running_requests": running, "pending_commands": pending,
                 "profiling": profiling, "maintenance_forced_due": due,
+                "prepare_enabled_with_original_deadlines_deferred": prepare,
+                "active_tool_hints": len(next(iter(variants.values()))[0].tool_wait_hints),
+                "synthetic_live_workers": workers,
+                "native_idle_sleeper_enabled": idle_sleeper,
+                "includes_native_predictor_registration": fd_hooks is not None,
                 "configured_maintenance_interval_ms": 100.,
                 "costs": costs, "state_and_actions_equal": True,
                 "maintenance_diagnostic_counts": counters,
             }
         finally:
-            for runtime, _ in variants.values():
+            for runtime, _, _ in variants.values():
                 runtime.close()
+            for reader, writer in pipes:
+                os.close(reader)
+                os.close(writer)
 
 
 def main():
@@ -196,10 +284,21 @@ def main():
     parser.add_argument("--baseline", default="fc9fea7")
     parser.add_argument("--samples", type=int, default=151)
     parser.add_argument("--registration-only", action="store_true")
+    parser.add_argument("--recurring-only", action="store_true")
+    parser.add_argument("--active-hints", action="store_true")
+    parser.add_argument("--prepare-enabled", action="store_true")
+    parser.add_argument("--baseline-engine", type=Path)
+    parser.add_argument("--candidate-engine", type=Path)
+    parser.add_argument("--predictor-workers", type=int, nargs="+", default=[0], choices=(0, 1, 2))
+    parser.add_argument("--idle-sleeper", type=int, nargs="+", default=[0, 1], choices=(0, 1))
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.samples < 1 or args.output.exists():
         parser.error("use positive samples and a fresh output")
+    if args.recurring_only and args.registration_only:
+        parser.error("select recurring or registration cases")
+    if bool(args.baseline_engine) != bool(args.candidate_engine):
+        parser.error("both engine sources are required for hook comparisons")
     paths = (
         "beliefkv/runtime/event_channel.py", "beliefkv/runtime/sglang_v0520_runtime.py",
         "beliefkv/runtime/sglang_v0520_physical.py", "beliefkv/runtime/sglang_v0520_observer.py",
@@ -209,6 +308,13 @@ def main():
     )
     sources = {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in paths}
     baseline, baseline_sources = baseline_runtime(args.baseline)
+    hooks, hook_sources = None, {}
+    if args.baseline_engine:
+        hooks = {}
+        for name, engine in (
+            ("baseline", args.baseline_engine), ("candidate", args.candidate_engine),
+        ):
+            hooks[name], hook_sources[name] = predictor_hook(engine)
     validation = validation_cases(baseline)
     cases = [] if args.registration_only else [
         *(socket_case(baseline, samples=args.samples, profiling=profiling)
@@ -216,16 +322,22 @@ def main():
         *(recurring_case(
             baseline, samples=args.samples, workflows=workflows, running=running,
             pending=pending, profiling=profiling, due=due,
+            prepare=args.prepare_enabled, active_hints=active,
+            fd_hooks=hooks, workers=workers, idle_sleeper=bool(sleeper),
         ) for workflows, running in ((12, 8), (24, 8), (156, 48))
-          for pending in (0, 16) for profiling in (False, True) for due in (False, True)),
+          for pending in (0, 16) for profiling in (False, True) for due in (False, True)
+          for active in ((False, True) if args.active_hints else (False,))
+          for workers in args.predictor_workers
+          for sleeper in (args.idle_sleeper if hooks is not None else (0,))),
     ]
-    cases.extend(
-        registration_case(
-            baseline, samples=args.samples, commands=commands, children=children,
-            pools=pools, published_nodes=nodes,
-        ) for commands, children, nodes in ((1, 1, 1), (64, 1, 1), (16, 4, 1), (16, 1, 2))
-          for pools in ("full", "mamba", "hybrid")
-    )
+    if not args.recurring_only:
+        cases.extend(
+            registration_case(
+                baseline, samples=args.samples, commands=commands, children=children,
+                pools=pools, published_nodes=nodes,
+            ) for commands, children, nodes in ((1, 1, 1), (64, 1, 1), (16, 4, 1), (16, 1, 2))
+              for pools in ("full", "mamba", "hybrid")
+        )
     for case in cases:
         case["p50_thread_cpu_reduction_fraction"] = (
             1. - case["costs"]["candidate"]["p50_us"] / case["costs"]["baseline"]["p50_us"]
@@ -233,17 +345,24 @@ def main():
     if any(hashlib.sha256((ROOT / path).read_bytes()).hexdigest() != digest
            for path, digest in sources.items()):
         raise RuntimeError("benchmark sources changed")
+    if any(hashlib.sha256(Path(info["path"]).read_bytes()).hexdigest() != info["sha256"]
+           for info in hook_sources.values()):
+        raise RuntimeError("engine hook source changed")
     report = {
         "scope": "CPU runtime/ledger with real Unix sockets; no serving, CUDA, DMA or JCT",
         "at": datetime.now().astimezone().isoformat(),
         "baseline_revision": args.baseline, "baseline_source_sha256": baseline_sources,
         "candidate_source_sha256": sources, "samples": args.samples,
         "registration_only": args.registration_only,
+        "recurring_only": args.recurring_only, "engine_hook_sources": hook_sources,
         "warmup_samples": 20, "cases": cases, "validation_cases": validation,
         "limitations": [
-            "Empty prediction inventories and physical pending populations are controlled scenes.",
+            "Prediction inventories and physical pending populations are controlled scenes.",
             "Forced-due and deferred scenes are measured separately, not their online mixture.",
             "Unexpired physical reservations do not represent native DMA or active service leases.",
+            "PREPARE-enabled scenes defer its existing deadlines; they do not measure backups.",
+            "Synthetic workers expose real idle pipe fds; no predictor process or model is run.",
+            "The native block is included, not the complete get_next_batch_to_run method.",
             "Empty sweeps/counters are intentionally removed; action/state comparisons exclude those diagnostics.",
             "Microseconds and controlled fractions are not throughput, JCT or prediction-accuracy gains.",
         ],

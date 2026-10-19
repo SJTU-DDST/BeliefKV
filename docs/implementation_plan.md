@@ -1,6 +1,6 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-19 (Asia/Shanghai).
+Status date: 2026-10-20 (Asia/Shanghai).
 
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
@@ -39,12 +39,33 @@ do not require an additional development run on every iteration. Our reactive
 control defaults to the same frontend as predictive. Freeze per-arm settings and
 verify their server-launch snapshots; preserve them on resume and exclude inherited
 global cache flags from native.
-The current qualified CPU engine candidate is sglang-v87-completion-cpu-20261019,
-patch130d376d. Preserve V86/af328f26 as the earlier frontend baseline and respect
+The current qualified CPU engine candidate is sglang-v88-idle-control-cpu-20261019,
+patch2cbb0b46. Preserve V87/130d376d and V86/af328f26, and respect
 the explicit SGLANG_SOURCE_CHECKOUT through the launcher.
 This is CPU evidence, not an end-to-end result. Keep new-context hybrid checkpoint
 gaps separate; FULL matches alone cannot reconstruct a missing Mamba checkpoint.
 GPU pause remains active and automatic resume remains disabled.
+
+V1963 removes empty maintenance calls from recurring runtime control and avoids
+rebuilding predictor fd inventories/differences when no worker or fd change exists.
+Keep live worker fd reads, immediate removal and all original deadline positions.
+Read parent demand after earlier handlers, so new demand is never hidden by a
+cached absence. Directly retain the same running-batch reference at post-forward.
+V85d's actual sleep_on_idle=false excludes the fd block: report that case
+separately. For24 roots/8 running, no pending and deferred maintenance, CPU
+P50 is4.801 to4.331us without hints and5.342 to4.901us with8 tool hints.
+The sleeper-enabled/no-worker case is6.305 to4.480us, not a default-config gain.
+All192 controlled loop scenes agree on visible/context state, pending, hints and
+fd registration; P50 reductions range2.7%-29.6%. Two unchanged socket controls
+are slightly slower and retained. The2050 main and87 native CPU checks pass,
+plus41 subtests. Bind the paused
+candidate to V88/tree1db6d884 and patch2cbb0b46; preserve V87 and older sources.
+The engine delta is scheduler.py and its hook checks only. Do not enable idle
+sleep or extrapolate CPU microseconds to DMA, JCT or throughput. This measures
+runtime plus the native fd block, not complete get_next_batch_to_run, real
+prediction work, active lease scans or PREPARE transfers. See V1964 and raw
+V1963; V1962 only sampled the sleeper-enabled scenes.
+GPU pause and the workload/trigger contract remain unchanged.
 
 V1960 shares completion IDs from the existing runtime request scan with the
 native scheduler hook, removing its second scan and finished checks. Preserve
@@ -56,7 +77,7 @@ agree. Unfinished tagged8/48-request callback CPU P50 is3.230 to1.901us
 and11.384 to5.161us. Counted predicates, outside timing, confirm16 to8
 checks for8 requests. The2045 main CPU checks and86 native checks pass,
 plus41 subtests, including pre-ACK first-service and lifecycle contracts.
-Bind the paused launcher/config to V87/tree db73b955 and patch130d376d;
+At that stage the launcher/config used V87/tree db73b955 and patch130d376d;
 the only engine delta from V86 is scheduler.py and its lifecycle tests.
 Keep GPU paused and old sources intact. V85d's1811270 post-forward entries
 and141490 recorded prefill/decode worker intervals are distinct populations;

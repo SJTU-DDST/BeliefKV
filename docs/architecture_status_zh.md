@@ -1,6 +1,6 @@
 # BeliefKV 当前架构与实现状态
 
-更新日期：2026-10-19（北京时间）。
+更新日期：2026-10-20（北京时间）。
 
 **当前暂停 GPU 实验。**用户于 2026-10-19 18:11 要求暂停；V85d
 predictive 已 12/12 自然完成，无 error/incomplete 或 guard 强制完成。
@@ -44,7 +44,29 @@ reactive 作为本系统控制时默认与 predictive 同开前端缓存，隔�
 11 个新 context 的混合 checkpoint 缺口仍单列：深 FULL 命中不能替代
 该位置缺少的可恢复 Mamba 状态，现有日志不足以逐个区分未创建与被回收。
 
-**最新完成回调降本：V1960。**runtime 的原有扫描返回本批完成 ID，
+**最新常态维护降本：V1963。**post-forward 在原位置直接更新 running batch
+引用，没有关键 parent 时不调用空回收，没有恢复租约时不调用空刷新。
+检查位于前序 handler 之后，仍看得到 handler 刚创建的需求；各个定时
+来源在原位置读时钟，不跨 handler 缓存期限或容量许可。
+没有 worker 时 predictor_filenos 直接返回空元组；原生 idle sleeper 的
+fd 未改变时不再构造注册差集，没有 fd 时不再查询旧的单 fd 接口。
+每轮仍读取现有 worker 的实时 fd，创建、关闭、去重及注销语义保留。
+V85d server_info 的 sleep_on_idle=false，不能把 fd 路径改善算进该配置。
+相对 b93290c，原配置对应的 24-root/8-running、无 pending、维护尚未
+到期的循环 P50，无预测库存 4.801→4.331us，8 条工具等待预测
+5.342→4.901us，分别约 9.8%/8.3%。启用 sleeper、无 worker 的对应
+场景为 6.305→4.480us；它只是另外的受控场景，未修改实验默认开关。
+192 组循环均改善 2.7%–29.6%，含 profiling、强制到期、16 条在途命令
+及两个模拟 worker；状态、pending、预测库存和 fd 相同。空 socket 两组
+代码未改、局部略慢约 0.004/0.007us，作为噪声原样保留。
+2050 项主仓及 87 项引擎 CPU 检查、41 个 subtest 通过。
+新 V88 引擎树为 1db6d884、补丁 2cbb0b46，
+相对 V87 仅改 scheduler 及其 hook 检查，已绑定暂停候选。见
+[V1964](../experiments/reports/v1964_scheduler_maintenance_cpu_20261020_zh.md)。
+基准包含 runtime 控制循环及 fd 适配块，不包含整个原生 scheduler、
+真实预测计算、活跃租约、实际 PREPARE/DMA 或 JCT。GPU 暂停保持。
+
+**上一轮完成回调降本：V1960。**runtime 的原有扫描返回本批完成 ID，
 适配层直接移除注册，避免同批第二次遍历、集合查询和 finished 调用。
 未结束请求不创建完成列表；无 tagged 请求也保留完整 batch 的服务观察。
 旧 runtime 返回 None 时走原扫描，新 runtime 配旧引擎也保持行为兼容，
@@ -56,7 +78,7 @@ reactive 作为本系统控制时默认与 predictive 同开前端缓存，隔�
 首次服务/ACK 前证据、EOS 和终态清理保留。完整补丁更新至 130d376d，
 新候选 `sglang-v87-completion-cpu-20261019` 的树为 db73b955，
 相对 V86 仅 scheduler 回调及 lifecycle 检查两文件改变，旧来源未改。
-启动器及 24-root 配置已绑定 V87，仍禁止自动恢复 GPU 实验。见
+当时启动器及 24-root 配置绑定 V87，最新来源见上文。见
 [V1961](../experiments/reports/v1961_batch_completion_control_cpu_20261019_zh.md)。
 V85d 有 1811270 次 post-forward，记录的 prefill/decode worker 区间合计
 141490；两者不是同一种回调计数，不能据此推导累计节省或 JCT 收益。

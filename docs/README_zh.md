@@ -1,6 +1,6 @@
 # BeliefKV 文档导航
 
-更新日期：2026-10-19（北京时间）
+更新日期：2026-10-20（北京时间）
 
 **当前按用户要求暂停 GPU 实验。**2026-10-19 18:11 停止 V85d native
 及自动接续；predictive 已 12/12 自然完成，native 部分轨迹保留，
@@ -19,13 +19,25 @@ child 都可动态委派叶子孙 agent，最大深度仍为 2。任务范围、
 见[24-root 配置](../configs/migration/qwen35_locobench_long_24root_running8_2026-10-19.json)
 及[CPU 原始结果](../experiments/reports/v1925_v85d_long_chat_token_cache_cpu_20261019.json)。
 
-**最新完成回调降本，V1960。**runtime 在已有扫描中返回完成 request ID，
+**最新常态维护降本，V1963。**post-forward 直接保留本批引用，无关键
+parent、无恢复租约时跳过空维护调用；不移动各处期限检查。无预测 worker
+时不构造 fd 库存，原生 idle sleeper 仅在 fd 变化时计算注册差集。
+实际 V85d 的 sleep_on_idle=false，因此这项 fd 收益单列。
+原配置对应的 24-root/8-running 常态循环，无预测库存 P50
+4.801→4.331us，带 8 条工具等待预测为 5.342→4.901us。
+192 组循环状态、pending、预测和 fd 相同；主仓 2050 项及引擎 87 项
+CPU 检查通过，另有 41 个 subtest。
+候选绑定 V88/2cbb0b46，保留旧来源，GPU 仍暂停。完整范围及剩余成本见
+[本轮说明](../experiments/reports/v1964_scheduler_maintenance_cpu_20261020_zh.md)。
+这不是完整调度器、GPU 吞吐或 JCT 结果。
+
+**上一轮完成回调降本，V1960。**runtime 在已有扫描中返回完成 request ID，
 SGLang 适配层直接清理注册，省去第二次遍历和 finished 检查；完整 batch
 仍交给服务观察，旧 runtime 无返回值时保留兼容扫描。24 组、四种新旧
 组合的状态相同；无请求结束的 8/48 请求批次 CPU P50
 3.230→1.901us、11.384→5.161us，局部降低 41%/55%。
 主仓 2045 项及引擎 86 项 CPU 检查通过，另有 41 个 subtest。
-待恢复候选已绑定 V87/130d376d 补丁，V85d/V86 来源保留，GPU 仍暂停。
+当时的候选绑定 V87/130d376d 补丁，最新来源见上文；旧来源保留。
 181 万 post-forward 不能当成完成回调次数，不外推吞吐/JCT。见
 [本轮说明](../experiments/reports/v1961_batch_completion_control_cpu_20261019_zh.md)。
 
