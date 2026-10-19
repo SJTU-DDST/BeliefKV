@@ -227,6 +227,65 @@ def test_prefill_cohorts_require_native_geometry_for_every_batch_row(tmp_path):
     assert set(prefill["cohorts"]) == {"2/1024/2048", "1/0/6144"}
 
 
+@pytest.mark.parametrize("include_known_batch", [False, True])
+def test_partial_decode_geometry_retains_interval_without_matching_unknowns(
+    tmp_path, include_known_batch,
+):
+    directory = tmp_path / "server"
+    directory.mkdir()
+    rows = []
+    if include_known_batch:
+        rows.append({
+            "event": "gpu_service_sample", "sample_id": "known",
+            "phase": "decode", "batch_size": 1, "complete_ts_ms": 140.,
+            "service_start_monotonic_ms": 130., "complete_monotonic_ms": 140.,
+            "service_elapsed_ms": 10.,
+            "request_samples": [{"sequence_tokens_before": 1000}],
+        })
+    rows.extend([
+        {
+            "event": "gpu_service_sample", "sample_id": "partial",
+            "forward_iter": 2, "phase": "decode", "batch_size": 2,
+            "complete_ts_ms": 160., "service_start_monotonic_ms": 140.,
+            "complete_monotonic_ms": 160., "service_elapsed_ms": 20.,
+            "request_samples": [{"sequence_tokens_before": 2000}],
+        },
+        {
+            "event": "gpu_service_sample", "sample_id": "invalid",
+            "forward_iter": 3, "phase": "decode", "batch_size": 1,
+            "complete_ts_ms": 180., "service_start_monotonic_ms": 160.,
+            "complete_monotonic_ms": 180., "service_elapsed_ms": 20.,
+            "request_samples": [{"sequence_tokens_before": -1}],
+        },
+        {
+            "event": "gpu_service_sample", "sample_id": "outside",
+            "phase": "decode", "batch_size": 1, "complete_ts_ms": 210.,
+            "service_start_monotonic_ms": 180., "complete_monotonic_ms": 210.,
+        },
+    ])
+    (directory / "runtime_audit.jsonl").write_bytes(b"".join(encoded(row) for row in rows))
+    result = decode_geometry(tmp_path, 100., 200.)
+    assert result["decode_batches"] == int(include_known_batch)
+    coverage = result["decode_geometry_coverage"]
+    assert coverage["observed_batches"] == 2 + int(include_known_batch)
+    assert coverage["known_geometry_batches"] == int(include_known_batch)
+    assert coverage["unknown_geometry_batches"] == 2
+    assert coverage["observed_worker_interval_ms"] == 40. + 10. * include_known_batch
+    assert coverage["unknown_geometry_worker_interval_ms"] == 40.
+    assert [row["sample_id"] for row in coverage["unknown_geometry_examples"]] == [
+        "partial", "invalid",
+    ]
+    assert result["sequence_tokens_per_request_mean"] == (
+        1000 if include_known_batch else None
+    )
+    assert result["worker_decode_duration_mean_ms"] == (10. if include_known_batch else None)
+    assert result["worker_interval_neighbors"]["unknown_geometry_window_pairs"] == 2
+    assert set(result["worker_interval_neighbors"]["cohorts"]) == (
+        {"decode/1/decode/2/0/unknown"} if include_known_batch else set()
+    )
+    assert len(result["cohorts"]) == int(include_known_batch)
+
+
 @pytest.mark.parametrize("raw_launch_count", [0, 1, 2])
 def test_worker_intervals_keep_raw_launch_coverage_and_overlap_separate(
     tmp_path, raw_launch_count,

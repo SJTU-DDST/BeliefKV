@@ -7,6 +7,11 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 后续开发固定在主目录 `/home/longhao/experiment/BeliefKV` 的 `main` 分支。
 历史实验 worktree 保留其冻结来源；新代码修改、验证与提交在主目录进行。
 
+Host 满池不能直接当作可预取副本丢失：须区分旧备份回收、随后 HBM 命中、
+Host-only 消失和实际有用前缀重算。V1838 的 V82b 第二批后仍有正 JOIN
+Host-only 观察，工具恢复需求却接近零；单批108是下一配置建议，不据此
+临时删改正在运行的156项冻结任务或把未观察到的损失记为零。
+
 156 root 必须显式传入 `qwen35_native_predictive_replenished_108plus48_2026-10-09.json`，
 不能误用默认 128 项清单。V83 的初始化失败发生在 GPU 启动前，日志保留。
 无 worker 的 EOS 判断必须覆盖 `enable_thinking=False` 输入已闭合 reasoning

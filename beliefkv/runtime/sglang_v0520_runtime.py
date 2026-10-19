@@ -8718,8 +8718,13 @@ class NativeAdmissionRuntime:
         self._prefetch_priority_partial_restore_details = None
         self._resident_priority_promoted = None
         self._resident_priority_details = None
-        if self._native_prefill_order:
-            self.counts["native_prefill_order_plans"] += 1
+        if self._native_prefill_order or self._tool_timing_only and len(tagged) < 2:
+            # Tool-only inference has no local output-demand submission to
+            # preserve. Without competing tagged slots, ordering cannot change.
+            self.counts[
+                "native_prefill_order_plans" if self._native_prefill_order
+                else "noncompeting_prefill_plans"
+            ] += 1
             return compile_native_prefill_plan(
                 [
                     key for index, _ in tagged

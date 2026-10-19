@@ -275,8 +275,12 @@ def worker_interval_neighbors(markers: list[dict]) -> dict:
     cohorts = defaultdict(list)
     examples = []
     paired = 0
+    unknown_geometry_pairs = 0
     for current, following in zip(ordered, ordered[1:]):
         if not current["in_window"]:
+            continue
+        if current["geometry_cohort"] == "unknown":
+            unknown_geometry_pairs += 1
             continue
         boundary_gap = following["start_ms"] - current["complete_ms"]
         elapsed = current["complete_ms"] - current["start_ms"]
@@ -306,6 +310,7 @@ def worker_interval_neighbors(markers: list[dict]) -> dict:
             for row in selected
         ),
         "paired_window_samples": paired,
+        "unknown_geometry_window_pairs": unknown_geometry_pairs,
         "cohorts": {
             f"{phase}/{size}/{next_phase}/{next_size}/{geometry}": {
                 "batches": len(values),
@@ -355,6 +360,8 @@ def decode_geometry(arm: Path, begin: float, end: float) -> dict:
     prefill_durations, prefill_work = [], []
     prefill_sources = Counter()
     prefill_groups = defaultdict(list)
+    decode_observed_durations, decode_unknown_durations = [], []
+    decode_unknown_examples = []
     interval_markers = []
     prefix, bytes_read = hashlib.sha256(), 0
     covered = False
@@ -419,13 +426,25 @@ def decode_geometry(arm: Path, begin: float, end: float) -> dict:
                 continue
             if row["phase"] != "decode":
                 continue
+            duration = row["service_elapsed_ms"]
+            decode_observed_durations.append(duration)
             observed = [
                 item["sequence_tokens_before"] for item in row["request_samples"]
                 if type(item.get("sequence_tokens_before")) is int
+                and item["sequence_tokens_before"] >= 0
             ]
-            if len(observed) != row["batch_size"]:
-                raise ValueError("incomplete visible decode geometry")
-            duration = row["service_elapsed_ms"]
+            if len(observed) != row["batch_size"] or not observed:
+                decode_unknown_durations.append(duration)
+                if len(decode_unknown_examples) < 8:
+                    decode_unknown_examples.append({
+                        "sample_id": row.get("sample_id"),
+                        "forward_iter": row.get("forward_iter"),
+                        "batch_size": row["batch_size"],
+                        "recorded_requests": len(row["request_samples"]),
+                        "valid_sequence_lengths": len(observed),
+                        "worker_interval_ms": duration,
+                    })
+                continue
             contexts.extend(observed)
             sums.append(sum(observed))
             durations.append(duration)
@@ -438,21 +457,37 @@ def decode_geometry(arm: Path, begin: float, end: float) -> dict:
             )
             graph_groups[(row["batch_size"], int(average) // 2048, replay_label)].append(duration)
             batches.append((average, duration))
-    if not covered or not batches:
+    if not covered or not decode_observed_durations:
         raise ValueError(f"runtime samples have not covered the requested window: {path}")
     return {
         "source": str(path), "read_prefix_bytes": bytes_read,
         "read_prefix_sha256": prefix.hexdigest(),
         "decode_batches": len(batches), "observed_request_steps": len(contexts),
-        "sequence_tokens_per_request_mean": mean(contexts),
-        "sequence_tokens_per_request_median": median(contexts),
-        "sequence_tokens_per_batch_sum_mean": mean(sums),
-        "worker_decode_duration_mean_ms": mean(durations),
-        "worker_decode_duration_median_ms": median(durations),
+        "decode_geometry_coverage": {
+            "observed_batches": len(decode_observed_durations),
+            "known_geometry_batches": len(batches),
+            "unknown_geometry_batches": len(decode_unknown_durations),
+            "observed_worker_interval_ms": sum(decode_observed_durations),
+            "unknown_geometry_worker_interval_ms": sum(decode_unknown_durations),
+            "unknown_geometry_examples": decode_unknown_examples,
+            "semantics": (
+                "Incomplete or invalid request geometry remains unknown. Its batch "
+                "and worker interval are retained here and in neighboring interval "
+                "coverage, but are excluded from context means and matched cohorts. "
+                "decode_batches and worker_decode_duration fields cover known "
+                "geometry only; missing request lengths are never filled with zero."
+            ),
+        },
+        "sequence_tokens_per_request_mean": mean(contexts) if contexts else None,
+        "sequence_tokens_per_request_median": median(contexts) if contexts else None,
+        "sequence_tokens_per_batch_sum_mean": mean(sums) if sums else None,
+        "worker_decode_duration_mean_ms": mean(durations) if durations else None,
+        "worker_decode_duration_median_ms": median(durations) if durations else None,
         "worker_interval_neighbors": worker_interval_neighbors(interval_markers),
         "background_writer_timing": writer.summary(),
         "time_weighted_mean_request_sequence_tokens": (
             sum(average * duration for average, duration in batches) / sum(durations)
+            if sum(durations) > 0 else None
         ),
         "cohorts": {
             f"{size}/{bucket * 2048}": {

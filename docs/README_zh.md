@@ -2,6 +2,16 @@
 
 更新日期：2026-10-19（北京时间）
 
+**正在验证 V83c。**冻结代码 `a8212c5` 已启动 predictive→native 对照，
+任务/顺序与 V82b 同 hash，108+48 两批、多轮嵌套、Host 80:20，
+输出上限两侧 16384。保留原生需求恢复，JOIN 仅真实 EOS，工具预取与
+FULL 增量 PREPARE 保留，语义 worker/文本流关闭。V1829 的 1997 项组合、
+V1834 的 394 项 EOS 相关回归、V1830 的原生恢复检查及 27 子项通过，
+相互有重叠，不将测试数相加。真实 tokenizer 验证见 V1835。
+当前仅完成冷启动配置与容量核对，不代表吞吐/JCT 已超过 native。
+运行目录为 `experiments/raw/qwen35_nested_eos_prefetch_two_wave_156root_20261019_v83c`，
+状态见 `/home/longhao/experiment/ops/v83c_eos_only_20261019.state.json`。
+
 **当前执行要求。**JOIN 改为仅使用实际无工具 EOS；删除在线剩余工作
 推理、语义文本流和逐 decode 进度维护，保留工具预测、增量 PREPARE
 及恢复消费协同。后续 predictive/native 输出上限均为 16384，先跑 predictive。

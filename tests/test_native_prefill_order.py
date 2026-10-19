@@ -114,6 +114,71 @@ def test_native_order_preserves_capacity_observation(native_runtime):
     assert runtime._native_page_size == 16
 
 
+@pytest.mark.parametrize("tagged_count", [0, 1])
+def test_tool_only_noncompeting_queue_skips_ordering_but_keeps_capacity(
+    monkeypatch, tagged_count,
+):
+    monkeypatch.setenv("BELIEFKV_NATIVE_PREFILL_ORDER", "0")
+    runtime = NativeAdmissionRuntime()
+    runtime._tool_timing_only = True
+    runtime.enable_resident_first = True
+    runtime.enable_final_stage_priority = True
+    plain = request("plain", tagged=False)
+    tagged = [request("single")] if tagged_count else []
+    for item in tagged:
+        runtime.register_visible_request(item)
+    running = NS(reqs=[request("running")])
+    adder = NS(
+        max_running_requests=48, max_prefill_bs=8, page_size=16,
+        rem_input_tokens=8192, rem_chunk_tokens=4096,
+    )
+    for name in (
+        "_prefill_causal_ranks", "_submit_local_predictions", "_resident_prefill_scan",
+        "_current_residency_budget", "_read_request_residency_hint",
+        "_read_request_reentry", "_resident_aged_bypass", "_final_admission_work",
+    ):
+        monkeypatch.setattr(runtime, name, Mock(side_effect=AssertionError(name)))
+    try:
+        queued = [plain, *tagged]
+        assert select(runtime, queued, running=running, adder=adder).candidates == tuple(queued)
+        assert runtime.counts["noncompeting_prefill_plans"] == 1
+        assert runtime.counts["native_prefill_order_plans"] == 0
+        assert runtime._native_max_running == 48
+        assert runtime._native_input_reserve == 4096
+        assert runtime._native_running_batch is running
+        assert runtime.enable_resident_first
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+def test_tool_only_noncompeting_queue_rechecks_identity_and_resumes_competition(monkeypatch):
+    monkeypatch.setenv("BELIEFKV_NATIVE_PREFILL_ORDER", "0")
+    runtime = NativeAdmissionRuntime()
+    runtime._tool_timing_only = True
+    runtime.enable_resident_first = False
+    first, second = request("first"), request("second")
+    runtime.register_visible_request(first)
+    runtime.register_visible_request(second)
+    causal = Mock(return_value={0: (3, 0, 0), 1: (0, 0, 1)})
+    monkeypatch.setattr(runtime, "_prefill_causal_ranks", causal)
+    try:
+        plan = runtime.plan_native_prefill([first], running_batch=None, adder=None)
+        first.cache_request_handle.attempt_id += 1
+        changed = select_native_prefill_candidates(
+            [first], plan=plan, current_semantic_revision=runtime.semantic_revision,
+        )
+        assert changed.candidates == ()
+        assert changed.rejected == (("first", "identity_changed"),)
+        causal.assert_not_called()
+        first.cache_request_handle.attempt_id -= 1
+        assert select(runtime, [first, second]).candidates == (second, first)
+        causal.assert_called_once()
+        assert runtime.counts["noncompeting_prefill_plans"] == 1
+    finally:
+        runtime.close()
+
+
 @pytest.mark.parametrize("change", ["attempt", "session", "epoch", "abort", "terminal"])
 def test_native_order_keeps_identity_and_terminal_checks(native_runtime, change):
     runtime = native_runtime

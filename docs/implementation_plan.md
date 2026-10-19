@@ -5,6 +5,35 @@ Status date: 2026-10-19 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+V1840-V1845 provide a complete observed600-2400s V83c prefix, with1275.96
+decode token/s and96.04% GPU utilization versus historical native1263.33/95.07%.
+Output caps and application versions differ, so wait for the already scheduled
+same-configuration native and common tail-excluded JCT before acceptance.
+Early next-request-verified FULL is2.880GB JOIN and7.599GB tool in the sealed
+prefetch prefix; node JOIN ACK-to-service p50/p90 is332/651ms.
+Main now skips ordering for tool-only zero/single tagged-candidate queues,
+retaining capacity, identity, terminal and native dependency checks.509 CPU
+checks pass; its local microsecond saving is not an online speedup. Preserve
+V83c's frozen a8212c5 and keep the full performance goal active.
+
+V1838 diagnoses why the late second wave adds little migration: native H2D
+before/after3600s is2817.962/5.408GB predictive and2648.204/.293GB native.
+Observed later JOINs still have Host-only FULL; observed tool waits have almost
+no restoration demand and mostly serve from device. Matched FULL recomputation
+is small, with unobserved loss and Mamba locations still unknown. Do not infer
+backup loss from Host occupancy alone. The recommended next workload is one
+108-root wave, with128 as a later pressure candidate after checking useful-prefix
+loss. Do not mutate the current frozen156-task V83c arrival contract mid-run.
+
+V83c is now the current cold GPU validation, frozen at a8212c5, engine53020ce3.
+Use the unchanged156-task manifest hash,108+48 arrivals, FULL1798992/Mamba513
+and Host200GB80:20; predictive runs first, then native with output cap16384.
+V1836 binds the source, seeds, inherited CPU checks, V1834's394 EOS regressions
+and V1835's actual tokenizer controls; populations overlap and are not summed.
+The old V83/V83b initialization evidence stays preserved. State:
+/home/longhao/experiment/ops/v83c_eos_only_20261019.state.json.
+Cold startup and capacity are observed; performance acceptance remains open.
+
 The worker-free EOS body proof must handle the actual Qwen template:
 enable_thinking=False places the closing marker in input, not generated output.
 Validate its recent open/close pair and reject reopened/unclosed output reasoning.
