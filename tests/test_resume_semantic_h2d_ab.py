@@ -97,3 +97,13 @@ def test_resume_retains_poisson_rate_and_arrival_seed():
     assert environment["ARRIVAL_BATCH_INTERVAL_MS"] == "0"
     assert environment["ARRIVAL_RATE_PER_SECOND"] == str(1 / 15)
     assert environment["ARRIVAL_SEED"] == "21"
+
+
+def test_resume_preserves_small_workload_comparison_population():
+    configuration = plan()
+    configuration["primary_comparison_policy"] = {
+        "tail_active_workflows": 4, "warmup_seconds": 0.,
+    }
+    environment = resume_environment(configuration, Path("/run"), python="/python", port=18454)
+    assert environment["TAIL_ACTIVE_WORKFLOWS"] == "4"
+    assert environment["WARMUP_SECONDS"] == "0.0"

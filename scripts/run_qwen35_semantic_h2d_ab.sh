@@ -5,6 +5,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 ROOT_COUNT="${ROOT_COUNT:-108}"
 MAX_RUNNING_REQUESTS="${MAX_RUNNING_REQUESTS:-48}"
+TAIL_ACTIVE_WORKFLOWS="${TAIL_ACTIVE_WORKFLOWS:-48}"
+WARMUP_SECONDS="${WARMUP_SECONDS:-600}"
 ARRIVAL_BATCH_SIZE="${ARRIVAL_BATCH_SIZE:-0}"
 ARRIVAL_BATCH_INTERVAL_MS="${ARRIVAL_BATCH_INTERVAL_MS:-0}"
 ARRIVAL_RATE_PER_SECOND="${ARRIVAL_RATE_PER_SECOND:-0}"
@@ -84,6 +86,7 @@ if [[ "$RESUME_PENDING" == "0" ]]; then
 "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
   --run-root "$RUN_ROOT" --initialize --root-count "$ROOT_COUNT" \
   --server-running "$MAX_RUNNING_REQUESTS" \
+  --tail-active-workflows "$TAIL_ACTIVE_WORKFLOWS" --warmup-seconds "$WARMUP_SECONDS" \
   --arrival-batch-size "$ARRIVAL_BATCH_SIZE" --arrival-batch-interval-ms "$ARRIVAL_BATCH_INTERVAL_MS" \
   --arrival-rate-per-second "$ARRIVAL_RATE_PER_SECOND" --arrival-seed "$ARRIVAL_SEED" \
   --arm-order "$ARM_ORDER" --max-completion-tokens "$MAX_COMPLETION_TOKENS" \
@@ -112,6 +115,8 @@ if [[ "$RESUME_PENDING" == "0" ]]; then
   "${reference_args[@]}" \
   --workload-manifest "${WORKLOAD_MANIFEST:-$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json}"
 fi
+tail_active_workflows="$(jq -r '.primary_comparison_policy.tail_active_workflows // 48' "$RUN_ROOT/ab_plan.json")"
+warmup_seconds="$(jq -r '.primary_comparison_policy.warmup_seconds // 600' "$RUN_ROOT/ab_plan.json")"
 arrival_schedule=""
 if [[ "$poisson_arrivals" == "1" ]]; then
   arrival_schedule="$RUN_ROOT/ab_plan.json"
@@ -205,6 +210,7 @@ if [[ "$ARM_ORDER" == "predictive_h2d" || "$ARM_ORDER" == "reactive" ]]; then
       --native-reference-run "$NATIVE_REFERENCE_RUN" \
       "${reference_comparison_args[@]}" \
       --exclude-workload-tail \
+      --tail-active-workflows "$tail_active_workflows" --warmup-seconds "$warmup_seconds" \
       --output "$RUN_ROOT/native_reference_comparison.json"
   fi
 else
@@ -216,5 +222,6 @@ else
   done
   "$PYTHON" "$ROOT/scripts/compare_native_policy_runs.py" "${comparison_args[@]}" \
     --exclude-workload-tail \
+    --tail-active-workflows "$tail_active_workflows" --warmup-seconds "$warmup_seconds" \
     --output "$RUN_ROOT/native_policy_comparison.json"
 fi

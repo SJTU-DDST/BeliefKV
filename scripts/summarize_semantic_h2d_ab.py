@@ -521,6 +521,8 @@ def main() -> None:
     parser.add_argument("--verify-frozen-plan", action="store_true")
     parser.add_argument("--root-count", type=int, default=36)
     parser.add_argument("--server-running", type=int, default=48)
+    parser.add_argument("--tail-active-workflows", type=int, default=48)
+    parser.add_argument("--warmup-seconds", type=float, default=600.)
     parser.add_argument("--arm-order", default="predictive_h2d native")
     parser.add_argument("--arrival-batch-size", type=int, default=0)
     parser.add_argument("--arrival-batch-interval-ms", type=int, default=0)
@@ -558,6 +560,8 @@ def main() -> None:
     parser.add_argument("--sampling-seed", type=int, default=21)
     parser.add_argument("--repetition-id", type=int, default=0)
     args = parser.parse_args()
+    if args.tail_active_workflows <= 0 or not math.isfinite(args.warmup_seconds) or args.warmup_seconds < 0:
+        parser.error("tail threshold must be positive and warmup finite and nonnegative")
     if not all(math.isfinite(value) and value >= 0 for value in (
         args.join_prefetch_min_advance_ms, args.tool_prefetch_min_advance_ms,
         args.prediction_maintenance_interval_ms,
@@ -582,6 +586,10 @@ def main() -> None:
             (plan["workload_manifest"], plan["workload_sha256"]),
             (root / "patches/sglang-v0.5.20-beliefkv-staging.patch", plan["sglang_patch_sha256"]),
         ]
+        paths.extend(
+            (item["path"], item["sha256"])
+            for item in plan.get("workload_auxiliary_artifacts", [])
+        )
         for field, digest in (
             ("semantic_artifact", "semantic_artifact_sha256"),
             ("h2d_seed_artifact", "h2d_seed_sha256"),
@@ -615,7 +623,8 @@ def main() -> None:
             args.workload_manifest
             or root / "configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json"
         ).resolve()
-        available = json.loads(manifest.read_text())["workloads"]
+        workload_bundle = json.loads(manifest.read_text())
+        available = workload_bundle["workloads"]
         if not 0 < args.root_count <= len(available):
             raise ValueError("requested root count exceeds the workload manifest")
         if args.sampling_seed < 0 or args.repetition_id < 0:
@@ -635,6 +644,17 @@ def main() -> None:
         workloads = available[:args.root_count]
         if len({row["instance_id"] for row in workloads}) != args.root_count:
             raise ValueError("duplicate workflows in arrival table")
+        auxiliary_artifacts = {}
+        for row in workloads:
+            context = row.get("frozen_repository_context")
+            if context is not None:
+                path = str(Path(context["path"]).resolve())
+                expected = context["sha256"]
+                if hashlib.sha256(Path(path).read_bytes()).hexdigest() != expected:
+                    raise ValueError(f"workload repository context changed: {path}")
+                auxiliary_artifacts[path] = {
+                    "path": path, "sha256": expected, "kind": "frozen_repository_context",
+                }
         order = args.arm_order.split()
         if order not in (
             ["reactive", "predictive_h2d"], ["predictive_h2d", "reactive"],
@@ -735,6 +755,10 @@ def main() -> None:
                 ["git", "rev-parse", "HEAD"], cwd=root, text=True,
             ).strip(),
             "root_count": args.root_count, "server_running": args.server_running,
+            "workload_auxiliary_artifacts": list(auxiliary_artifacts.values()),
+            "workload_task_kinds": sorted({row.get("task_kind", "swebench") for row in workloads}),
+            "workload_context_delivery": workload_bundle.get("context_delivery"),
+            "workload_dataset_nature": workload_bundle.get("dataset_nature"),
             "workflow_arrival_mode": arrival_mode,
             "workflow_arrival_rate_per_second": args.arrival_rate_per_second,
             "workflow_arrival_seed": args.arrival_seed,
@@ -883,8 +907,9 @@ def main() -> None:
                 "workload tails reported separately"
             ),
             "primary_comparison_policy": {
-                "exclude_workload_tail": True, "tail_active_workflows": 48,
-                "warmup_seconds": 600.,
+                "exclude_workload_tail": True,
+                "tail_active_workflows": args.tail_active_workflows,
+                "warmup_seconds": args.warmup_seconds,
                 "cutoff": "earlier arm depletion below threshold after final arrival",
                 "incomplete_work": "retain through common cutoff in restricted JCT",
             },

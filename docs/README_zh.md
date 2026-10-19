@@ -2,6 +2,16 @@
 
 更新日期：2026-10-19（北京时间）
 
+**长仓库负载候选已接入，工具密度仍待验证。**
+[研究与执行边界](research/long_repository_workload_selection_20261019_zh.md)、
+[12 任务清单](../configs/workloads/locobench_agent_long_12root_20261019.json)、
+[并发配置](../configs/migration/qwen35_locobench_long_12root_running8_2026-10-19.json)。
+六个生成项目的完整源码为 110395–149832 token，所有普通 agent 深度
+均接收快照；不是已证实的自然长历史。V1890 核对输入及真实 Python 3.9
+沙箱解析，295 项 CPU 检查通过、1 项既有测试跳过；项目依赖、实际工具
+调用和正确性未通过，尚未 GPU 运行。候选采用 root 8+4/900s、running 8、
+去长尾阈值 4，两侧同配置；正在运行的 V84 原生对照不热改。
+
 **V84 predictive 已结束，native 同配置对照正在运行。**原始结果
 112 completed，104 个 native-agent-JCT 合格、8 个既有 guard 干预任务保留，
 正确性未评分。全量 405 个普通 agent/26350 次请求的上下文审计见

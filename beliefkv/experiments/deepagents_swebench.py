@@ -56,6 +56,10 @@ from beliefkv.experiments.swebench_prompt import (
     repository_sandbox_contract as repository_sandbox_contract_for_repo,
 )
 from beliefkv.experiments.swebench_source import verify_workload_source_objects
+from beliefkv.experiments.long_repository_tasks import (
+    FrozenRepositoryContext, build_long_repository_task_prompt,
+    parse_repository_context,
+)
 from beliefkv.experiments.agent_protocol import (
     AgentLoopGuardMiddleware,
     ChildCompletion,
@@ -345,6 +349,8 @@ class SweBenchWorkload:
     docker_image: str | None = None
     preflight_command: str | None = None
     oracle_kv_pressure: OracleKVPressureContext | None = None
+    task_kind: str = "swebench"
+    frozen_repository_context: FrozenRepositoryContext | None = None
 
 
 def repository_sandbox_contract(workload: SweBenchWorkload) -> str:
@@ -396,11 +402,20 @@ def load_workload_bundle(path: Path) -> WorkloadBundle:
                 if item.get("preflight_command")
                 else None
             ),
+            task_kind=str(item.get("task_kind", "swebench")),
+            frozen_repository_context=parse_repository_context(
+                item.get("frozen_repository_context")
+            ),
         )
         for item in raw["workloads"]
     )
     if len({item.instance_id for item in workloads}) != len(workloads):
         raise ValueError("workload instance IDs must be unique")
+    for item in workloads:
+        if item.task_kind not in ("swebench", "locobench_agent"):
+            raise ValueError(f"unsupported repository task kind: {item.task_kind}")
+        if item.task_kind == "locobench_agent" and item.frozen_repository_context is None:
+            raise ValueError("LoCoBench-Agent tasks require their frozen project context")
     missing_sources = [
         item.instance_id
         for item in workloads
@@ -2868,6 +2883,11 @@ def _task_prompt(
     workspace: Path | None = None,
     include_pressure: bool = True,
 ) -> str:
+    if workload.task_kind == "locobench_agent":
+        return build_long_repository_task_prompt(
+            instance_id=workload.instance_id, repo=workload.repo,
+            problem_statement=workload.problem_statement,
+        )
     base_prompt = build_swebench_task_prompt(
         instance_id=workload.instance_id,
         repo=workload.repo,
@@ -2879,6 +2899,29 @@ def _task_prompt(
     if workspace is None:
         raise ValueError("Oracle pressure prompt requires the checked-out workspace")
     return _build_oracle_pressure_prompt(base_prompt, workload, workspace)
+
+
+def _repository_context_prompt(workload: SweBenchWorkload) -> str:
+    context = workload.frozen_repository_context
+    return "\n\n" + context.text if context is not None else ""
+
+
+def _autonomous_system_prompt(
+    workload: SweBenchWorkload, config: DeepAgentsExperimentConfig,
+) -> str:
+    if workload.task_kind == "locobench_agent":
+        return (
+            "You supervise a LoCoBench-Agent long-repository software task. "
+            "Use the mounted offline Docker workspace and the supplied project "
+            "snapshot to fulfil the task. Coordinate disjoint workstreams, "
+            "implement only requested changes, and validate findings with focused "
+            "tools. Report actual results and concrete blockers in natural language.\n"
+            + TOOL_PROGRESS_INSTRUCTION + SANDBOX_PATH_CONTRACT
+        )
+    return (
+        AUTONOMOUS_SYSTEM_PROMPT if config.completion_gate_enabled
+        else AUTONOMOUS_NATIVE_SYSTEM_PROMPT
+    )
 
 
 def _message_payload(message: BaseMessage) -> dict[str, Any]:
@@ -3127,6 +3170,7 @@ def _autonomous_subagents(
                     + SANDBOX_PATH_CONTRACT
                     + repository_sandbox_contract(workload)
                     + NATIVE_CHILD_RETURN_INSTRUCTION
+                    + _repository_context_prompt(workload)
                 ),
                 "model": model,
                 "tools": (
@@ -3311,11 +3355,7 @@ def _build_autonomous_agent(
         model=model,
         tools=[_workspace_patch_tool(backend)],
         system_prompt=(
-            (
-                AUTONOMOUS_SYSTEM_PROMPT
-                if config.completion_gate_enabled
-                else AUTONOMOUS_NATIVE_SYSTEM_PROMPT
-            )
+            _autonomous_system_prompt(workload, config)
             + repository_sandbox_contract(workload)
             + "\n\n"
             + BASE_AGENT_PROMPT
@@ -3324,6 +3364,7 @@ def _build_autonomous_agent(
                 config,
                 delegation_enabled=delegation_enabled,
             )
+            + _repository_context_prompt(workload)
         ),
         middleware=middleware,
         response_format=(
@@ -4684,6 +4725,15 @@ def _run_workflow(
         "schema_version": 1,
         "instance_id": workload.instance_id,
         "repo": workload.repo,
+        "task_kind": workload.task_kind,
+        "frozen_repository_context": (
+            {
+                "sha256": workload.frozen_repository_context.sha256,
+                "tokens": workload.frozen_repository_context.tokens,
+                "source_file_count": workload.frozen_repository_context.source_file_count,
+            }
+            if workload.frozen_repository_context is not None else None
+        ),
         "base_commit": workload.base_commit,
         "source_repo": str(workload.source_repo) if workload.source_repo else None,
         "docker_image": workload.docker_image or config.docker_image,
@@ -4851,6 +4901,17 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
         workloads = tuple(indexed[item] for item in config.instance_ids)
     else:
         workloads = bundle.workloads[: config.max_workflows]
+    for item in workloads:
+        context = item.frozen_repository_context
+        if context is None:
+            continue
+        if config.mode != "autonomous" or config.completion_gate_enabled:
+            raise ValueError("long repository tasks use autonomous natural completion")
+        if (
+            context.tokens + config.max_completion_tokens + 8192
+            >= config.context_lifecycle.model_context_tokens
+        ):
+            raise ValueError(f"long repository context exceeds the request budget: {item.instance_id}")
     verify_workload_source_objects(
         (item.source_repo, item.base_commit) for item in workloads
     )

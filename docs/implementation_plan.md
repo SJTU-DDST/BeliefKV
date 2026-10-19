@@ -5,6 +5,26 @@ Status date: 2026-10-19 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Long-repository workload support is now an opt-in candidate, not an accepted
+replacement performance result. V1890 binds12 distinct original LoCoBench-Agent
+tasks from6 generated projects: complete source110395-149832 tokens, task mean
+130780.67. Supply the immutable source to roots and all child depths, separately
+from public task instructions; exclude reference answers and approaches.
+V1889 passes295 CPU checks with1 existing optional real-sandbox progress test
+skipped. All6 projects parse in the actual Python3.9 container, but missing
+project dependencies, task execution and interaction density remain open.
+Preserve V1887's incompatible-project failure and V1888's prior manifest.
+The candidate entrypoint is run_qwen35_long_repository_ab.sh:12 roots in8+4
+waves900s apart, running8 with a coupled decode upper bound8, context256K,
+Host200GB80:20 and existing EOS/tool/FULL PREPARE policies. Freeze a tail
+threshold4 and warmup600s through initialization, resume and final comparison.
+Native results from the old task set are not matched controls. Qualify actual
+tool turns/durations, JOIN frequency, useful Host-only restoration, exposed waits
+and recomputation before adopting this as the primary workload. Long supplied
+material alone does not establish tool-intensive natural histories. Keep V84's
+live pair unchanged; no candidate GPU run or performance win is claimed.
+See docs/research/long_repository_workload_selection_20261019_zh.md.
+
 V84 predictive has finished; same-configuration native is now running.
 Predictive reports112 completed,104 native-agent-JCT eligible and8 workflows
 with existing guard intervention. Correctness remains ungraded. V1882 audits

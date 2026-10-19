@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "scope": "Development candidate for large recoverable prefixes and fewer simultaneous requests; no GPU or task-correctness acceptance yet.",
+  "workload_manifest": "configs/workloads/locobench_agent_long_12root_20261019.json",
+  "entrypoint": "scripts/run_qwen35_long_repository_ab.sh",
+  "root_count": 12,
+  "workflow_arrival_mode": "batched",
+  "workflow_arrival_batch_size": 8,
+  "workflow_arrival_batch_interval_ms": 900000,
+  "maximum_active_workflows": 12,
+  "server_running": 8,
+  "decode_batch_semantics": "The current native scheduler decodes its admitted running batch; its upper bound is also 8, with no separately tuned decode slice.",
+  "context_tokens": 262144,
+  "context_lifecycle": {
+    "window_tokens": 262144,
+    "keep_tokens": 8192,
+    "summary_output_tokens": 2048
+  },
+  "max_completion_tokens": 16384,
+  "sandbox_command_timeout_s": 180,
+  "activation_wall_clock_seconds": 14400,
+  "model_request_timeout_seconds": 14400,
+  "host_gb": 200,
+  "host_split": "80:20",
+  "host_numa_memory_policy": "preferred",
+  "fanout_profile": "native_in_graph_nested_2to4",
+  "join_prefetch_trigger": "observed_eos",
+  "tool_timing_enabled": true,
+  "prepare_host": true,
+  "execution_handoff": false,
+  "arm_order": [
+    "predictive_h2d",
+    "native"
+  ],
+  "primary_comparison_policy": {
+    "exclude_workload_tail": true,
+    "tail_active_workflows": 4,
+    "warmup_seconds": 600,
+    "cutoff": "earlier arm depletion below threshold after final arrival",
+    "incomplete_work": "retain through common cutoff in restricted JCT"
+  },
+  "source_context_tokens": {
+    "minimum": 110395,
+    "maximum": 149832,
+    "mean_across_tasks": 130780.66666666667
+  },
+  "capacity_estimate": {
+    "full_bytes_per_token": 20480,
+    "reference_full_pool_tokens": 1797968,
+    "reference_full_pool_bytes": 36822405120,
+    "minimum_full_bytes_per_independent_source": 2260889600,
+    "maximum_full_bytes_per_independent_source": 3068559360,
+    "eight_independent_sources_at_maximum_bytes": 24548474880,
+    "semantics": "Logical independent-source estimate before growth and radix sharing. Waiting roots and children can exceed HBM capacity; this is not an observed residency or transfer measurement."
+  },
+  "acceptance_observations": [
+    "Actual native prompt length distribution by root, child and nested child; target a majority above 100000 tokens.",
+    "Tool-call counts, durations and LLM turns per ordinary agent; long supplied context alone does not establish a tool-intensive workload.",
+    "Observed delegation rounds, nested spawn and JOIN counts; no fixed minimum-step termination guard.",
+    "Positive Host-only FULL opportunities, actual D2H/H2D and request-critical restore waits.",
+    "Useful Host-only copy loss, same-session prefix recomputation and baseline environment blockers.",
+    "Common tail-excluded restricted workflow JCT and throughput, with full-run tails and failures retained."
+  ],
+  "interpretation": [
+    "LoCoBench-Agent uses generated software projects. This is an adapted multi-agent workload rather than an official benchmark score.",
+    "Complete project source is supplied to every workstream without padding; reference answers are excluded.",
+    "Lower concurrency may reduce pressure and does not guarantee more exposed H2D or a speedup.",
+    "Interaction density and actual large-prefix restoration must be established before adopting this candidate as the primary performance workload."
+  ]
+}

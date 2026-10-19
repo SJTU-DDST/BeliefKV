@@ -2,6 +2,19 @@
 
 更新日期：2026-10-19（北京时间）。
 
+**长上下文交互负载已接入候选，尚未 GPU 验收。**V1890 输入检查绑定
+LoCoBench-Agent 的 6 个生成项目、12 个不同任务；完整源码为
+110395–149832 token，任务均值 130780.67，root/child/嵌套 child
+都收到同一项目快照，参考答案不暴露。这是完整材料输入，不是已观察到
+工具历史自然增长到 100K。295 项 CPU 检查通过、1 项既有真实工具进度
+检查跳过；六个项目在真实 Python 3.9 Docker 中解析通过，但仍缺部分
+项目依赖，功能、工具密度和正确性未验收。原 Python 版本不兼容候选
+与失败记录保留。配置为 root 8+4/900s、running 8（decode 也至多 8）、
+256K、Host 200GB/80:20，去长尾阈值 4；不是最优并发结论。
+新入口为 `run_qwen35_long_repository_ab.sh`，正在运行的 V84 不热改。
+环境与交互密度合格后才将候选用于正式性能比较，详见
+[长负载研究记录](research/long_repository_workload_selection_20261019_zh.md)。
+
 **V84 predictive 已结束，native 同配置对照正在运行。**predictive 原始
 summary 为 112 completed、104 native-agent-JCT 合格，8 个 workflow 有
 既有 guard 干预；正确性未评分，completed 不等于自然完成或正确。

@@ -296,6 +296,47 @@ def test_initialize_records_explicit_long_budget_and_manifest_selection(tmp_path
     assert plan["formal_repetition_order"] == ["predictive_h2d native"]
 
 
+def test_long_project_sources_and_small_workload_cutoff_are_frozen(tmp_path, monkeypatch):
+    context = tmp_path / "project.txt.gz"
+    context.write_bytes(b"frozen project source")
+    manifest = tmp_path / "workload.json"
+    manifest.write_text(json.dumps({
+        "context_delivery": "complete project in every agent",
+        "workloads": [
+            {
+                "instance_id": str(index), "task_kind": "locobench_agent",
+                "frozen_repository_context": {
+                    "path": str(context),
+                    "sha256": hashlib.sha256(context.read_bytes()).hexdigest(),
+                },
+            }
+            for index in range(4)
+        ],
+    }))
+    monkeypatch.setattr(sys, "argv", [
+        "summarize", "--run-root", str(tmp_path), "--initialize",
+        "--root-count", "4", "--workload-manifest", str(manifest),
+        "--tail-active-workflows", "2", "--warmup-seconds", "0",
+    ])
+    main()
+    configuration = json.loads((tmp_path / "ab_plan.json").read_text())
+    assert configuration["primary_comparison_policy"]["tail_active_workflows"] == 2
+    assert configuration["primary_comparison_policy"]["warmup_seconds"] == 0
+    assert configuration["workload_task_kinds"] == ["locobench_agent"]
+    assert len(configuration["workload_auxiliary_artifacts"]) == 1
+    monkeypatch.setattr(
+        "scripts.summarize_semantic_h2d_ab.verify_frozen_execution_source",
+        lambda *_: {"execution_source_unchanged": True},
+    )
+    monkeypatch.setattr(sys, "argv", [
+        "summarize", "--run-root", str(tmp_path), "--verify-frozen-plan",
+    ])
+    main()
+    context.write_bytes(b"changed source")
+    with pytest.raises(ValueError, match="frozen artifact changed"):
+        main()
+
+
 def test_single_reactive_arm_keeps_prepare_without_predictive_inputs(tmp_path, monkeypatch):
     artifact = tmp_path / "model.json"
     artifact.write_text("{}")

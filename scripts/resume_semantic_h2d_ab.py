@@ -24,6 +24,8 @@ def resume_environment(plan: dict, run_root: Path, *, python: str, port: int) ->
         "PYTHON": python, "RUN_ROOT": str(run_root),
         "ROOT_COUNT": plan["root_count"],
         "MAX_RUNNING_REQUESTS": plan.get("server_running", 48),
+        "TAIL_ACTIVE_WORKFLOWS": (plan.get("primary_comparison_policy") or {}).get("tail_active_workflows", 48),
+        "WARMUP_SECONDS": (plan.get("primary_comparison_policy") or {}).get("warmup_seconds", 600.),
         "ARRIVAL_BATCH_SIZE": plan["workflow_arrival_batch_size"],
         "ARRIVAL_BATCH_INTERVAL_MS": plan["workflow_arrival_batch_interval_ms"],
         "ARRIVAL_RATE_PER_SECOND": plan.get("workflow_arrival_rate_per_second", 0),
