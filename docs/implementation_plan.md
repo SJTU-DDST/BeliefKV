@@ -64,6 +64,23 @@ Current goal:
 - Stop and fix material experimental failures promptly; CPU improvements alone
   do not establish GPU performance or a gain over native.
 
+V2013/V2016 reduce temporary tuple/iterator work in live node validation and reuse
+the creation-time type within one call. Keep every live field, bound, rejection
+and scalar output; do not cache observations across calls. All 30 closure scenes
+match; mean thread CPU reductions are 1.8%-7.1%. All 32 complete JOIN/tool
+dispatch scenes preserve records, full expectations and native reads, with CPU
+P50 reductions of 0.8%-3.8%. Use 24-workflow/8-running CPU fixtures, sparse
+session leaf markers and native numpy.float64 creation times. For 64 nodes,
+native-budget JOIN/tool without diagnostics are 1724.14 to 1691.81us and
+1750.80 to 1707.98us. A depth-256 path still enqueues at most 64 commands.
+Retain V2014's independent-namespace regressions and V2015's fixture check.
+V2016 aligns command IDs and record clocks, compares emitted records and full
+reservations, and retains raw samples; do not attribute all measurement changes
+to UUIDs. All 2266 checks pass in V2017. See V2018. Keep the engine/patch/config
+unchanged and update the existing 06:00 qualification after committing main.
+This is CPU evidence; useful migration, consumption, throughput and JCT remain
+to be measured on the authorized GPU run.
+
 V2010/V2011 add a bounded 4096-token rejection filter before the existing long route
 and exact namespaced HMAC. Reference the short filter by long route, retaining
 all terminal/pool/namespace, expiry and recent-overflow semantics. Retain the

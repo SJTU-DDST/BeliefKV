@@ -20,12 +20,14 @@ from numpy import float64
 
 def normalize_native_creation_time(value: object) -> int | float:
     """Preserve native node identity in a form accepted by the H2D primitive."""
-    if type(value) is float64:
+    value_type = type(value)
+    if value_type is float64:
         value = float(value)
+        value_type = float
     if (
-        type(value) not in (int, float)
+        value_type not in (int, float)
         or value < 0
-        or (type(value) is float and not isfinite(value))
+        or (value_type is float and not isfinite(value))
     ):
         raise ValueError("invalid native node creation time")
     return value
@@ -644,16 +646,24 @@ def observe_unified_node_closure(
             full_host_tokens = 0 if full_host_value is None else _bounded_index_length(
                 full_host_value, host_full_tokens, "FULL host length",
             )
-            locks = (full.lock_ref, full.host_lock_ref, mamba.lock_ref, mamba.host_lock_ref)
-            for value in locks:
-                if type(value) is not int or not 0 <= value <= 2**31 - 1:
-                    raise ValueError("invalid node lock count")
-            full_device_locks, full_host_locks, mamba_device_locks, mamba_host_locks = locks
-            references = (full.session_ref, mamba.session_ref)
-            for value in references:
-                if type(value) is not int or not 0 <= value <= 2**31 - 1:
-                    raise ValueError("invalid session reference count")
-            full_session_refs, mamba_session_refs = references
+            full_device_locks = full.lock_ref
+            full_host_locks = full.host_lock_ref
+            mamba_device_locks = mamba.lock_ref
+            mamba_host_locks = mamba.host_lock_ref
+            if (
+                type(full_device_locks) is not int or not 0 <= full_device_locks <= 2**31 - 1
+                or type(full_host_locks) is not int or not 0 <= full_host_locks <= 2**31 - 1
+                or type(mamba_device_locks) is not int or not 0 <= mamba_device_locks <= 2**31 - 1
+                or type(mamba_host_locks) is not int or not 0 <= mamba_host_locks <= 2**31 - 1
+            ):
+                raise ValueError("invalid node lock count")
+            full_session_refs = full.session_ref
+            mamba_session_refs = mamba.session_ref
+            if (
+                type(full_session_refs) is not int or not 0 <= full_session_refs <= 2**31 - 1
+                or type(mamba_session_refs) is not int or not 0 <= mamba_session_refs <= 2**31 - 1
+            ):
+                raise ValueError("invalid session reference count")
             full_ids, mamba_ids = full.session_ids, mamba.session_ids
             if full_ids is None and mamba_ids is None:
                 full_session_leaves = mamba_session_leaves = 0
@@ -663,18 +673,20 @@ def observe_unified_node_closure(
                         continue
                     if type(ids) is not set or not ids:
                         raise ValueError("invalid session leaf identities")
-                    if any(
-                        type(session_id) is not str or not session_id
-                        for session_id in ids
-                    ):
-                        raise ValueError("invalid session leaf identities")
+                    for session_id in ids:
+                        if type(session_id) is not str or not session_id:
+                            raise ValueError("invalid session leaf identities")
                 full_session_leaves = 0 if full_ids is None else len(full_ids)
                 mamba_session_leaves = 0 if mamba_ids is None else len(mamba_ids)
             pending_write = node.write_through_pending_id
             pending_load = node.load_back_pending_id
-            for pending in (pending_write, pending_load):
-                if pending is not None and (type(pending) is not int or pending < 0):
-                    raise ValueError("invalid pending transfer ID")
+            if (
+                pending_write is not None
+                and (type(pending_write) is not int or pending_write < 0)
+                or pending_load is not None
+                and (type(pending_load) is not int or pending_load < 0)
+            ):
+                raise ValueError("invalid pending transfer ID")
             creation_time = normalize_native_creation_time(node.creation_time)
             mamba_device_present = mamba.value is not None
             mamba_host_present = mamba.host_value is not None

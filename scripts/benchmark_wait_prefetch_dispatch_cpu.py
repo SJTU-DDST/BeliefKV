@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter, deque
+from contextlib import nullcontext
 import cProfile
 from dataclasses import asdict, replace
 from datetime import datetime
@@ -30,13 +31,28 @@ from scripts.benchmark_prefetch_control_cpu import distribution
 
 def dispatch_fixture(
     cls, *, source, depth, diagnostics=False, native_budget=False, tail_reclaim=False,
+    workflows=1, running=48, sparse_session_leaves=False, numpy_created_times=False,
 ):
     runtime, _, reads, _, rows = fixture(
-        cls, workflows=1, depth=depth + 1, backed=True, host_full=1_000_000,
+        cls, workflows=workflows, depth=depth + 1, backed=True, host_full=1_000_000,
         leases=0, host_only=True,
     )
     names = cls._wait_prefetch_opportunity.__globals__
     cache = runtime._native_cache
+    if sparse_session_leaves or numpy_created_times:
+        from numpy import float64
+
+        for node_id in range(workflows * (depth + 1)):
+            node = cache.tree_core.node_by_id(node_id)
+            offset = node_id % (depth + 1)
+            if sparse_session_leaves:
+                full, mamba = node.component_data[0], node.component_data[2]
+                full.session_ref = int(offset != 0)
+                mamba.session_ref = int(offset == depth)
+                if offset != depth:
+                    full.session_ids = mamba.session_ids = None
+            if numpy_created_times:
+                node.creation_time = float64(node.creation_time)
     snapshot = cache.session_refs.snapshot_session_leaf_anchors
 
     def live_snapshot(session, generation, *, max_leaves):
@@ -56,9 +72,9 @@ def dispatch_fixture(
         cache.full_evictable_size = lambda: 0
         cache.mamba_evictable_size = lambda: 0
         runtime._observe_native_admission_capacity(
-            running_batch=NS(reqs=[NS(rid=f"busy-{index}") for index in range(48)]),
+            running_batch=NS(reqs=[NS(rid=f"busy-{index}") for index in range(running)]),
             adder=NS(
-                max_running_requests=48, max_prefill_bs=4,
+                max_running_requests=running, max_prefill_bs=4,
                 page_size=1, rem_input_tokens=256,
             ),
         )
@@ -374,17 +390,30 @@ def measure_prefill_check(baseline, *, depth, matching, ready, legacy, samples):
 
 def measure(
     baseline, *, source, depth, diagnostics, native_budget, samples, tail_reclaim=False,
+    workflows=1, running=48, sparse_session_leaves=False, numpy_created_times=False,
+    align_command_namespaces=False,
 ):
-    variants = {
-        name: dispatch_fixture(
-            cls, source=source, depth=depth,
-            diagnostics=diagnostics, native_budget=native_budget,
-            tail_reclaim=tail_reclaim,
-        )
-        for name, cls in (("baseline", baseline), ("candidate", NativeAdmissionRuntime))
-    }
+    with (
+        patch("time.monotonic", lambda: 1000.)
+        if align_command_namespaces else nullcontext()
+    ):
+        variants = {
+            name: dispatch_fixture(
+                cls, source=source, depth=depth,
+                diagnostics=diagnostics, native_budget=native_budget,
+                tail_reclaim=tail_reclaim,
+                workflows=workflows, running=running,
+                sparse_session_leaves=sparse_session_leaves,
+                numpy_created_times=numpy_created_times,
+            )
+            for name, cls in (("baseline", baseline), ("candidate", NativeAdmissionRuntime))
+        }
+    if align_command_namespaces:
+        for runtime, *_ in variants.values():
+            runtime._physical_command_namespace = "0123456789abcdef0123456789abcdef"
     costs = {name: [] for name in variants}
     observed_reads = {name: Counter() for name in variants}
+    canonical = None
     try:
         for sample in range(samples + 10):
             states = {}
@@ -392,13 +421,22 @@ def measure(
             if sample % 2:
                 order.reverse()
             for name in order:
-                runtime, _, _, reads, actions, _, reset, dispatch, now = variants[name]
+                runtime, _, _, reads, actions, rows, reset, dispatch, now = variants[name]
                 reset()
-                with patch("time.monotonic", lambda: now):
+                with patch("time.monotonic", lambda: now), (
+                    patch("time.time", lambda: 1700000000.)
+                    if align_command_namespaces else nullcontext()
+                ):
                     started = time.thread_time_ns()
                     dispatch()
                     elapsed = (time.thread_time_ns() - started) / 1000.
                 states[name] = state_signature(runtime, actions)
+                if align_command_namespaces:
+                    states[name]["records"] = rows[:]
+                    states[name]["expectations"] = [
+                        asdict(pending[0])
+                        for pending in runtime.physical_ledger._pending.values()
+                    ]
                 expected_mode = (
                     "native_next_prefill" if native_budget else "legacy_capacity_unavailable"
                 )
@@ -414,6 +452,10 @@ def measure(
                     observed_reads[name].update(reads)
             if states["baseline"] != states["candidate"]:
                 raise AssertionError("a stable cache changed physical targets or pending credit")
+            if align_command_namespaces:
+                canonical = hashlib.sha256(
+                    json.dumps(states["candidate"], sort_keys=True).encode(),
+                ).hexdigest()
         runtime, _, _, _, _, _, reset, dispatch, now = variants["candidate"]
         reset()
         with patch("time.monotonic", lambda: now):
@@ -424,8 +466,15 @@ def measure(
             "source": source, "depth": depth, "issued_nodes": expected_nodes,
             "diagnostics": diagnostics,
             "tail_reclaim_supported": tail_reclaim,
+            "workflows": workflows, "configured_running_requests": running,
+            "sparse_session_leaves": sparse_session_leaves,
+            "numpy_created_times": numpy_created_times,
+            "aligned_command_namespaces_and_record_clocks": align_command_namespaces,
+            "records_and_complete_expectations_equal": align_command_namespaces,
+            "canonical_state_sha256": canonical,
             "budget_mode": "native_next_prefill" if native_budget else "legacy_capacity_unavailable",
             "costs": {name: distribution(values) for name, values in costs.items()},
+            "raw_thread_cpu_us": costs,
             "native_reads_per_dispatch": {
                 name: {key: value / samples for key, value in counters.items()}
                 for name, counters in observed_reads.items()
@@ -455,10 +504,16 @@ def main():
     parser.add_argument("--prefill-key-layouts", type=int, default=1)
     parser.add_argument("--report-selection-only", action="store_true")
     parser.add_argument("--tail-reclaim", action="store_true")
+    parser.add_argument("--workflows", type=int, default=1)
+    parser.add_argument("--running", type=int, default=48)
+    parser.add_argument("--sparse-session-leaves", action="store_true")
+    parser.add_argument("--numpy-created-times", action="store_true")
+    parser.add_argument("--align-command-namespaces", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if (
         args.samples < 1 or args.prefill_key_layouts < 1
+        or args.workflows < 1 or args.running < 1
         or any(depth < 1 for depth in args.depths) or args.output.exists()
     ):
         parser.error("use positive samples/key layouts and a fresh output path")
@@ -478,6 +533,10 @@ def main():
             baseline, source=source, depth=depth, diagnostics=diagnostics,
             native_budget=native_budget, samples=args.samples,
             tail_reclaim=args.tail_reclaim,
+            workflows=args.workflows, running=args.running,
+            sparse_session_leaves=args.sparse_session_leaves,
+            numpy_created_times=args.numpy_created_times,
+            align_command_namespaces=args.align_command_namespaces,
         )
         for source in ("join_ticket", "tool_wait") for depth in args.depths
         for diagnostics in (False, True) for native_budget in (False, True)
@@ -510,6 +569,7 @@ def main():
            for path, digest in digests.items()):
         raise RuntimeError("CPU benchmark sources changed during measurement")
     report = {
+        "status": "complete_cpu_comparison_not_gpu_or_jct_gain",
         "scope": "Real CPU cache observation, selection, revalidation and transaction registration; no DMA or GPU",
         "at": datetime.now().astimezone().isoformat(),
         "baseline_revision": args.baseline, "baseline_source_sha256": baseline_sources,
@@ -518,6 +578,11 @@ def main():
         "cases": cases, "selection_cases": selection_cases,
         "prefill_check_cases": prefill_cases,
         "prefill_key_layouts": args.prefill_key_layouts,
+        "dispatch_workflows": args.workflows,
+        "dispatch_running_requests": args.running,
+        "dispatch_sparse_session_leaves": args.sparse_session_leaves,
+        "dispatch_numpy_created_times": args.numpy_created_times,
+        "dispatch_aligned_command_namespaces": args.align_command_namespaces,
         "limitations": [
             "The CPU native enqueue uses scalar index stand-ins, not the real native allocator or controller.",
             "Plans have real positive Host-only prefixes and causal identities in both sources.",
