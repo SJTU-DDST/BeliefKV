@@ -621,6 +621,48 @@ def test_completed_native_predictive_pair_reports_correct_baseline(
     assert not report["isolated_policy_effect_verified"]
 
 
+@pytest.mark.parametrize("trigger", ("observed_eos", "report_service_or_eos"))
+def test_observed_join_summary_accepts_online_timing_without_semantic_worker(
+    tmp_path, monkeypatch, trigger,
+):
+    client, _ = fixture(tmp_path / "predictive_h2d")
+    (client / "manifest.json").write_text(json.dumps({
+        "config": {"max_completion_tokens": 16384},
+    }))
+    state_path = tmp_path / "predictive_h2d/opportunities/admission_opportunities.jsonl"
+    state = json.loads(state_path.read_text())
+    state.update(
+        join_prefetch_trigger=trigger, online_tool_timing=True,
+        borrowable_parent_headroom=True, semantic_worker_configured=False, counts={},
+    )
+    state_path.write_text(json.dumps(state) + "\n")
+    (tmp_path / "ab_plan.json").write_text(json.dumps({
+        "order": ["predictive_h2d", "native"], "join_prefetch_trigger": trigger,
+        "online_tool_timing": True, "borrowable_parent_headroom": True,
+        "max_completion_tokens": 16384,
+    }))
+    monkeypatch.setattr(sys, "argv", [
+        "summarize", "--run-root", str(tmp_path), "--allow-incomplete",
+    ])
+    main()
+    report = json.loads((tmp_path / "comparison.json").read_text())
+    assert report["status"] == "partial"
+    assert not report["comparison_eligible"]
+    assert not report["arms"]["predictive_h2d"]["runtime_state"]["semantic_worker_configured"]
+
+    for setting, error in (
+        ("final_stage_prefetch", "wrong predictive/model configuration"),
+        ("semantic_worker_configured", "wrong predictive/model configuration"),
+        ("online_tool_timing", "mismatched online_tool_timing"),
+        ("borrowable_parent_headroom", "mismatched borrowable_parent_headroom"),
+    ):
+        changed = {**state, setting: not state[setting]}
+        state_path.write_text(json.dumps(changed) + "\n")
+        with pytest.raises(ValueError, match=error):
+            main()
+    state_path.write_text(json.dumps(state) + "\n")
+
+
 def test_initialize_accepts_exact_84_roots_and_records_live_fairness_scope(tmp_path, monkeypatch):
     artifact = tmp_path / "model.json"
     artifact.write_text("{}")

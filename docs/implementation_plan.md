@@ -5,6 +5,13 @@ Status date: 2026-10-19 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+GPU experiments are paused by explicit user request at 18:11 Asia/Shanghai on
+2026-10-19. V85d predictive finished all12 workflows naturally; native was
+intentionally stopped with its partial trace retained. Disable automatic resume.
+The next candidate is24 roots, not an authorized launch or a running-cap change.
+The report-only semantic-worker validation for observed/report-service JOINs
+is fixed;65 checks pass, with collection code and frozen configuration unchanged.
+
 V85 preparation now uses the user's 262144 total context and a95% rendered
 prompt compaction threshold(249036 tokens), with cached local chat-template
 counts and a completion budget that fits the remaining total window.

@@ -1058,6 +1058,7 @@ def main() -> None:
             raise ValueError(f"{name}: mismatched H2D opportunity sampling configuration")
         for setting in (
             "join_prefetch_trigger",
+            "online_tool_timing", "borrowable_parent_headroom",
             "semantic_work_statistic", "eos_protocol_window_ms",
             "eos_prefetch_evidence_window_ms",
             "join_prefetch_min_advance_ms", "tool_prefetch_min_advance_ms",
@@ -1068,13 +1069,16 @@ def main() -> None:
             if setting in plan and state.get(setting) != plan[setting]:
                 raise ValueError(f"{name}: mismatched {setting}")
         expected = name == "predictive_h2d"
-        eos_only = plan.get("join_prefetch_trigger") == "observed_eos"
+        observed_join = plan.get("join_prefetch_trigger") in (
+            "observed_eos", "report_service_or_eos",
+        )
+        semantic_worker_required = expected and not observed_join
         if (
             state["final_stage_prefetch"] != expected
-            or state["semantic_worker_configured"] != (expected and not eos_only)
+            or state["semantic_worker_configured"] != semantic_worker_required
         ):
             raise ValueError(f"{name}: wrong predictive/model configuration")
-        if expected and not eos_only and (
+        if semantic_worker_required and (
             state["counts"].get("semantic_worker_disabled")
             or not state["counts"].get("semantic_worker_ready")
         ):
