@@ -19,7 +19,20 @@ child 都可动态委派叶子孙 agent，最大深度仍为 2。任务范围、
 见[24-root 配置](../configs/migration/qwen35_locobench_long_24root_running8_2026-10-19.json)
 及[CPU 原始结果](../experiments/reports/v1925_v85d_long_chat_token_cache_cpu_20261019.json)。
 
-**最新常态维护降本，V1963。**post-forward 直接保留本批引用，无关键
+**最新非空恢复维护降本，V1967。**V85d 实际曾有同一 parent 的 42 条
+恢复回执。有效性检查减少临时生成器，复用本次扫描相邻回执共享的
+不可变身份匹配；epoch 交接不重复查询另一份 JOIN 证明，首次服务
+不再查询仅供工具过期使用的历史。各节点驻留、代际及过期仍逐条检查。
+单 context/42 回执的 CPU P50：等待维护 119.98→83.61us，
+epoch 交接 149.14→88.72us，首次服务 46.49→38.47us；
+runtime 控制循环 138.00→98.95us，约降低 28.3%。
+96 组状态、逐回执记录和锁一致，主仓 2058 项及引擎 87 项 CPU 检查、
+41 个 subtest 通过。中间版小回执退化和代码差分均保留，最终 5 组
+未到期路径小幅回退也保留。V88、配置与 GPU 暂停不变，局部计时不代表
+吞吐/JCT 或预取数量提升。见
+[本轮说明](../experiments/reports/v1968_active_prefetch_maintenance_cpu_20261020_zh.md)。
+
+**上一轮常态维护降本，V1963。**post-forward 直接保留本批引用，无关键
 parent、无恢复租约时跳过空维护调用；不移动各处期限检查。无预测 worker
 时不构造 fd 库存，原生 idle sleeper 仅在 fd 变化时计算注册差集。
 实际 V85d 的 sleep_on_idle=false，因此这项 fd 收益单列。

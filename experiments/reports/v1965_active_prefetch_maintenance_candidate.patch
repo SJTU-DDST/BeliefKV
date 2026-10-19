@@ -1,0 +1,114 @@
+diff --git a/beliefkv/runtime/sglang_v0520_runtime.py b/beliefkv/runtime/sglang_v0520_runtime.py
+index 7f7fc85..41f6c26 100644
+--- a/beliefkv/runtime/sglang_v0520_runtime.py
++++ b/beliefkv/runtime/sglang_v0520_runtime.py
+@@ -7461,7 +7461,7 @@ class NativeAdmissionRuntime:
+         current = self.context_sessions.get(key.context_id)
+         pending_epoch_handoff = current is None and context.epoch == key.context_epoch + 1
+         pending_client_handoff = (
+-            current is None and lease.source == "join_ticket"
++            current is None and not pending_epoch_handoff and lease.source == "join_ticket"
+             and self._pending_confirmed_join_submit(key)
+         )
+         if (
+@@ -7474,17 +7474,18 @@ class NativeAdmissionRuntime:
+             != (key.session_id, key.session_generation)
+         )):
+             return "session_changed"
+-        if not lease.demand_ready and any(
+-            (child := self.graph.invocations.get(child_id)) is not None
+-            and child.agent_definition_id == "context-summarizer"
+-            and child.relation_type is RelationType.CALL
+-            and child.parent_invocation_id == key.invocation_id
+-            and not child.state.terminal
+-            for child_id in invocation.blocking_child_ids
+-        ):
+-            # The next request is a summary, not this checkpoint's consumer.
+-            # Relinquish only speculative protection; retain resumable data.
+-            return "context_summary_started"
++        if not lease.demand_ready:
++            for child_id in invocation.blocking_child_ids:
++                child = self.graph.invocations.get(child_id)
++                if (
++                    child is not None
++                    and child.agent_definition_id == "context-summarizer"
++                    and child.relation_type is RelationType.CALL
++                    and child.parent_invocation_id == key.invocation_id
++                    and not child.state.terminal
++                ):
++                    # The next request is a summary, not this checkpoint's consumer.
++                    return "context_summary_started"
+         cache = self._native_cache
+         try:
+             sessions = cache.session_refs
+@@ -7501,12 +7502,11 @@ class NativeAdmissionRuntime:
+             node = cache.tree_core.node_by_id(lease.node_id)
+             if node.creation_time != lease.creation_time:
+                 return "node_generation_changed"
+-            if any(
+-                amount > 0 and node.component_data[component].value is None
+-                for name, amount in lease.pool_bytes
+-                for component in (0 if name in ("kv", "full") else 2,)
+-            ):
+-                return "native_residency_lost"
++            for name, amount in lease.pool_bytes:
++                if amount > 0 and node.component_data[
++                    0 if name in ("kv", "full") else 2
++                ].value is None:
++                    return "native_residency_lost"
+         except (AttributeError, KeyError, IndexError, RuntimeError, TypeError, ValueError):
+             return "native_residency_unobservable"
+         if lease.source == "tool_wait" and invocation.state is InvocationState.WAIT_TOOL:
+@@ -7577,6 +7577,7 @@ class NativeAdmissionRuntime:
+             return
+         leases = tuple(self._prefetch_service_leases.items())
+         visible_by_context = None
++        submitted_consumers = None
+         for command, lease in leases:
+             if context_id is not None and lease.key.context_id != context_id:
+                 continue
+@@ -7607,7 +7608,7 @@ class NativeAdmissionRuntime:
+                         "context_epoch": lease.key.context_epoch,
+                         "submission_grace_ms": (lease.expires_at - now) * 1000.,
+                     })
+-            if not lease.demand_ready and now < lease.expires_at:
++            if not lease.demand_ready and now < lease.expires_at and self.visible:
+                 if len(leases) > 1 and visible_by_context is None:
+                     # A prefix burst has several receipts for the same next consumer.
+                     visible_by_context = {
+@@ -7617,7 +7618,15 @@ class NativeAdmissionRuntime:
+                     for key in self.visible.values():
+                         if key.context_id in visible_by_context:
+                             visible_by_context[key.context_id].append(key)
+-                if any(
++                keys = (
++                    visible_by_context.get(lease.key.context_id, ())
++                    if visible_by_context is not None else self.visible.values()
++                )
++                submitted = (
++                    submitted_consumers is not None
++                    and lease.key in submitted_consumers
++                )
++                if not submitted and keys and any(
+                     key.context_id == lease.key.context_id
+                     and key.invocation_id == lease.key.invocation_id
+                     and key.root_workflow_id == lease.key.root_workflow_id
+@@ -7627,11 +7636,14 @@ class NativeAdmissionRuntime:
+                         lease.key.context_epoch, lease.key.context_epoch + 1,
+                     )
+                     and key.request_id != lease.key.request_id
+-                    for key in (
+-                        visible_by_context.get(lease.key.context_id, ())
+-                        if visible_by_context is not None else self.visible.values()
+-                    )
++                    for key in keys
+                 ):
++                    submitted = True
++                    if len(leases) > 1:
++                        if submitted_consumers is None:
++                            submitted_consumers = set()
++                        submitted_consumers.add(lease.key)
++                if submitted:
+                     lease = replace(
+                         lease, demand_ready=True,
+                         expires_at=(

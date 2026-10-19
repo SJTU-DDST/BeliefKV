@@ -46,6 +46,28 @@ This is CPU evidence, not an end-to-end result. Keep new-context hybrid checkpoi
 gaps separate; FULL matches alone cannot reconstruct a missing Mamba checkpoint.
 GPU pause remains active and automatic resume remains disabled.
 
+V1967 reduces nonempty restore maintenance relative to4d389de. The latest
+complete V85d has172 JOIN lease registrations and up to42 simultaneous
+receipts for one context; these are registration populations, not sweep rates.
+Use direct summary/pool loops and reuse a consumer match only for consecutive
+receipts sharing the same frozen key object within one sweep. Epoch handoff
+already supplies one alternative: skip the other JOIN proof query while
+retaining native session-generation checks. Read tool survival evidence only
+when tool-wait protection expires, not on normal first-service/JOIN release.
+Keep every receipt's expiry, identity, node generation, native residency and
+lock release. Out-of-timing checks retain42 node validations while eliminating
+42 redundant JOIN or tool-history queries in their respective scenes.
+For42 receipts/one context with diagnostics off, CPU P50 is119.981 to83.609us
+for waiting maintenance,149.138 to88.720us for epoch handoff,46.489 to38.473us
+for first service and138.004 to98.945us for the runtime control cycle.
+All96 scenes preserve complete state, records, pending and locks. All84
+non-deferred scenes improve; retain the5 small deferred regressions and both
+intermediate versions/patches. The2058 main and87 native CPU checks pass,
+plus41 subtests. Keep V88/tree1db6d884, patch2cbb0b46, workload and GPU pause
+unchanged. No model, DMA, real writer I/O or complete native scheduler is
+measured; do not extrapolate CPU percentages into throughput/JCT or restored
+coverage. See V1968, final V1967 and intermediate V1965/V1966.
+
 V1963 removes empty maintenance calls from recurring runtime control and avoids
 rebuilding predictor fd inventories/differences when no worker or fd change exists.
 Keep live worker fd reads, immediate removal and all original deadline positions.

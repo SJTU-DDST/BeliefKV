@@ -1,0 +1,4168 @@
+{
+  "scope": "CPU active receipt maintenance and runtime cycles; no native allocator, DMA or JCT",
+  "at": "2026-10-20T00:48:58.595159+08:00",
+  "baseline_revision": "4d389de",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/event_channel.py": "032a8929a01ed19bfd67bf655b42c525ae830ce74dd55e790b69bd32ffc4ece3",
+    "beliefkv/runtime/sglang_v0520_observer.py": "c48af16182853d7fbf0b97879320e01c339bd0e677a78b024011d855040cbd8a",
+    "beliefkv/runtime/sglang_v0520_physical.py": "5e97a0cba4477000a4b134011af67adc33605b252c35628d7f2330ead640f029",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "d04da94e5da5d7a2d6e40f590121f5a4884dffff91b0228408c0c1fc10e1ccd1"
+  },
+  "candidate_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "cb688c6400b8107b9d3d81a0ddb268a85615a59eee5aafbcb9385b51356e0ac5",
+    "beliefkv/runtime/event_channel.py": "032a8929a01ed19bfd67bf655b42c525ae830ce74dd55e790b69bd32ffc4ece3",
+    "beliefkv/runtime/sglang_v0520_observer.py": "c48af16182853d7fbf0b97879320e01c339bd0e677a78b024011d855040cbd8a",
+    "beliefkv/runtime/sglang_v0520_physical.py": "5e97a0cba4477000a4b134011af67adc33605b252c35628d7f2330ead640f029",
+    "beliefkv/runtime/hotpath_timing.py": "aa554df03b5c08cc009be14f21a9c25bdb5e48eb585b5cf774601d9ae471792b",
+    "scripts/benchmark_native_prepare_path.py": "6dc6e755527f7546b2c3d93c7ff0913ff69664a045c5c22465bd477e93647995",
+    "scripts/benchmark_native_shared_path.py": "c0c91561f4887299a4add743f83eb91176f866aa118ed1da5a76a446f53ed06e",
+    "scripts/benchmark_prefetch_control_cpu.py": "6aaa1784c17409e1c2654e563185ca38a23f8dcc8287642d15e849ddca5eaeea",
+    "scripts/benchmark_active_prefetch_maintenance_cpu.py": "4e4db2af4073e00be28f5052a9f9a646610aeb5fe081bb6195eecc6fb49c0521"
+  },
+  "samples": 151,
+  "warmup_samples": 20,
+  "observed_bursts": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_12root_running8_20261019_v85d/predictive_h2d/opportunities/admission_opportunities.jsonl",
+    "sha256": "05d80418cf724afb0a3327f39d85d00fcfdace47072c1103c14d7ed60009f1ab",
+    "registrations_by_source": {
+      "join_ticket": 172
+    },
+    "live_receipts_after_registration_histogram": {
+      "1": 27,
+      "2": 21,
+      "3": 16,
+      "4": 12,
+      "5": 8,
+      "6": 7,
+      "7": 6,
+      "8": 4,
+      "9": 4,
+      "10": 4,
+      "11": 4,
+      "12": 4,
+      "13": 3,
+      "14": 3,
+      "15": 3,
+      "16": 3,
+      "17": 3,
+      "18": 3,
+      "19": 3,
+      "20": 3,
+      "21": 3,
+      "22": 3,
+      "23": 3,
+      "24": 2,
+      "25": 2,
+      "26": 2,
+      "27": 1,
+      "28": 1,
+      "29": 1,
+      "30": 1,
+      "31": 1,
+      "32": 1,
+      "33": 1,
+      "34": 1,
+      "35": 1,
+      "36": 1,
+      "37": 1,
+      "38": 1,
+      "39": 1,
+      "40": 1,
+      "41": 1,
+      "42": 1
+    },
+    "same_context_receipts_after_registration_histogram": {
+      "1": 30,
+      "2": 22,
+      "3": 15,
+      "4": 12,
+      "5": 8,
+      "6": 7,
+      "7": 6,
+      "8": 4,
+      "9": 4,
+      "10": 4,
+      "11": 3,
+      "12": 3,
+      "13": 3,
+      "14": 3,
+      "15": 3,
+      "16": 3,
+      "17": 3,
+      "18": 3,
+      "19": 3,
+      "20": 3,
+      "21": 3,
+      "22": 3,
+      "23": 2,
+      "24": 2,
+      "25": 2,
+      "26": 2,
+      "27": 1,
+      "28": 1,
+      "29": 1,
+      "30": 1,
+      "31": 1,
+      "32": 1,
+      "33": 1,
+      "34": 1,
+      "35": 1,
+      "36": 1,
+      "37": 1,
+      "38": 1,
+      "39": 1,
+      "40": 1,
+      "41": 1,
+      "42": 1
+    },
+    "maximum_same_context_receipts": 42,
+    "unmatched_releases": 0,
+    "unreleased_receipts": 0,
+    "scope": "registration-event counts, not time or maintenance-frequency weighting"
+  },
+  "cases": [
+    {
+      "contexts": 1,
+      "receipts_per_context": 1,
+      "total_receipts": 1,
+      "phase": "waiting_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "905353d00d08f61ef1d03405930a66d09fd6befbab11785ded18639f52c8dd81",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 16.148311258278145,
+            "p50_us": 16.042,
+            "p90_us": 16.817,
+            "p99_us": 20.154
+          },
+          "wall_us": {
+            "mean_us": 15.181562913907285,
+            "p50_us": 15.113,
+            "p90_us": 15.846,
+            "p99_us": 19.237
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 14.8431059602649,
+            "p50_us": 14.737,
+            "p90_us": 15.532,
+            "p99_us": 16.332
+          },
+          "wall_us": {
+            "mean_us": 13.888132450331126,
+            "p50_us": 13.781,
+            "p90_us": 14.544,
+            "p99_us": 15.371
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.08134895898267058
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 1,
+      "total_receipts": 1,
+      "phase": "waiting_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "905353d00d08f61ef1d03405930a66d09fd6befbab11785ded18639f52c8dd81",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 15.976185430463577,
+            "p50_us": 15.794,
+            "p90_us": 16.567,
+            "p99_us": 21.015
+          },
+          "wall_us": {
+            "mean_us": 14.954145695364238,
+            "p50_us": 14.854,
+            "p90_us": 15.562,
+            "p99_us": 19.265
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 14.794774834437087,
+            "p50_us": 14.628,
+            "p90_us": 15.469,
+            "p99_us": 18.783
+          },
+          "wall_us": {
+            "mean_us": 13.806145695364238,
+            "p50_us": 13.644,
+            "p90_us": 14.52,
+            "p99_us": 15.445
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.0738255033557047
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 1,
+      "total_receipts": 1,
+      "phase": "ready_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "224efe55a79a9e1a0c85b01bbe2943c03c5ff35a56ee1d5f4bc2553bdef920c2",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 21.04054966887417,
+            "p50_us": 19.727,
+            "p90_us": 25.001,
+            "p99_us": 26.719
+          },
+          "wall_us": {
+            "mean_us": 20.18665562913907,
+            "p50_us": 18.946,
+            "p90_us": 23.943,
+            "p99_us": 25.723
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 19.379933774834438,
+            "p50_us": 18.157,
+            "p90_us": 23.142,
+            "p99_us": 23.841
+          },
+          "wall_us": {
+            "mean_us": 18.549403973509932,
+            "p50_us": 17.365,
+            "p90_us": 22.219,
+            "p99_us": 22.905
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.07958635372839262
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 1,
+      "total_receipts": 1,
+      "phase": "ready_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "7bf7a1eefff342376adeb4baefe9c9b50150f24d85b90b9318266ce6d9959bd1",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 19.83780794701987,
+            "p50_us": 19.755,
+            "p90_us": 20.596,
+            "p99_us": 23.284
+          },
+          "wall_us": {
+            "mean_us": 19.072417218543045,
+            "p50_us": 18.964,
+            "p90_us": 19.835,
+            "p99_us": 22.495
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 18.720364238410596,
+            "p50_us": 18.614,
+            "p90_us": 19.46,
+            "p99_us": 21.548
+          },
+          "wall_us": {
+            "mean_us": 17.948814569536424,
+            "p50_us": 17.844,
+            "p90_us": 18.667,
+            "p99_us": 20.697
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.05775752973930637
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 1,
+      "total_receipts": 1,
+      "phase": "epoch_handoff",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "224efe55a79a9e1a0c85b01bbe2943c03c5ff35a56ee1d5f4bc2553bdef920c2",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 20.195940397350995,
+            "p50_us": 20.079,
+            "p90_us": 21.046,
+            "p99_us": 22.791
+          },
+          "wall_us": {
+            "mean_us": 19.428377483443708,
+            "p50_us": 19.309,
+            "p90_us": 20.23,
+            "p99_us": 22.019
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 18.07819867549669,
+            "p50_us": 18.001,
+            "p90_us": 18.766,
+            "p99_us": 20.101
+          },
+          "wall_us": {
+            "mean_us": 17.311543046357617,
+            "p50_us": 17.243,
+            "p90_us": 17.957,
+            "p99_us": 19.373
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.10349120972159964
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 1,
+      "total_receipts": 1,
+      "phase": "epoch_handoff",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "7bf7a1eefff342376adeb4baefe9c9b50150f24d85b90b9318266ce6d9959bd1",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 21.007456953642386,
+            "p50_us": 20.889,
+            "p90_us": 21.918,
+            "p99_us": 23.888
+          },
+          "wall_us": {
+            "mean_us": 20.22387417218543,
+            "p50_us": 20.142,
+            "p90_us": 21.068,
+            "p99_us": 23.029
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 18.778953642384106,
+            "p50_us": 18.723,
+            "p90_us": 19.606,
+            "p99_us": 20.466
+          },
+          "wall_us": {
+            "mean_us": 18.003,
+            "p50_us": 17.92,
+            "p90_us": 18.818,
+            "p99_us": 19.603
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.10369093781416061
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 1,
+      "total_receipts": 1,
+      "phase": "consumer_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "196175ec7f629e6ef818b20dcb9bda49d410705c3710570dc2c2d593aaa69535",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 19.748993377483444,
+            "p50_us": 19.693,
+            "p90_us": 20.802,
+            "p99_us": 22.672
+          },
+          "wall_us": {
+            "mean_us": 18.974933774834437,
+            "p50_us": 18.926,
+            "p90_us": 19.983,
+            "p99_us": 21.838
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 18.873403973509934,
+            "p50_us": 18.814,
+            "p90_us": 19.604,
+            "p99_us": 22.341
+          },
+          "wall_us": {
+            "mean_us": 18.102298013245033,
+            "p50_us": 18.047,
+            "p90_us": 18.817,
+            "p99_us": 21.334
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.04463514954552383
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 1,
+      "total_receipts": 1,
+      "phase": "consumer_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "d9ce5cee37803edf5b1ce47e0c66fec80fd1127dfccca4dcb2f6e3f0356384e2",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 20.564490066225165,
+            "p50_us": 20.46,
+            "p90_us": 21.427,
+            "p99_us": 24.217
+          },
+          "wall_us": {
+            "mean_us": 19.77658940397351,
+            "p50_us": 19.652,
+            "p90_us": 20.544,
+            "p99_us": 23.383
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 19.735291390728477,
+            "p50_us": 19.619,
+            "p90_us": 20.626,
+            "p99_us": 22.578
+          },
+          "wall_us": {
+            "mean_us": 18.96139072847682,
+            "p50_us": 18.873,
+            "p90_us": 19.801,
+            "p99_us": 21.828
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.04110459433040081
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 1,
+      "total_receipts": 1,
+      "phase": "first_service",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "6cbe7c5927ce1858bc92f4c9a4cb6bc2b66fa0b13eba0ffaab9b934dfb2533ca",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 9.156675496688742,
+            "p50_us": 9.09,
+            "p90_us": 9.954,
+            "p99_us": 10.547
+          },
+          "wall_us": {
+            "mean_us": 8.485476821192053,
+            "p50_us": 8.43,
+            "p90_us": 9.208,
+            "p99_us": 9.809
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 8.77284105960265,
+            "p50_us": 8.74,
+            "p90_us": 9.573,
+            "p99_us": 11.148
+          },
+          "wall_us": {
+            "mean_us": 8.110291390728477,
+            "p50_us": 8.085,
+            "p90_us": 8.835,
+            "p99_us": 10.392
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.03850385038503845
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 1,
+      "total_receipts": 1,
+      "phase": "first_service",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "e57b4e9dc4815b2030b44ad7a093ba079713d4e746dfd47b9efd3dd225333c4e",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 11.15543046357616,
+            "p50_us": 11.065,
+            "p90_us": 12.206,
+            "p99_us": 14.614
+          },
+          "wall_us": {
+            "mean_us": 10.453258278145695,
+            "p50_us": 10.369,
+            "p90_us": 11.442,
+            "p99_us": 13.781
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 10.890013245033114,
+            "p50_us": 10.9,
+            "p90_us": 11.815,
+            "p99_us": 12.409
+          },
+          "wall_us": {
+            "mean_us": 10.191562913907285,
+            "p50_us": 10.142,
+            "p90_us": 11.125,
+            "p99_us": 11.655
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.014911884319927626
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 1,
+      "total_receipts": 1,
+      "phase": "deferred_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 100,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "13c164c2be0cca02b348f33f3d9588432180abb12c3a59dd36f6acdfc039810c",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 0.5410939735099338,
+            "p50_us": 0.5360199999999999,
+            "p90_us": 0.56559,
+            "p99_us": 0.5937899999999999
+          },
+          "wall_us": {
+            "mean_us": 0.5336850993377483,
+            "p50_us": 0.5288999999999999,
+            "p90_us": 0.5571900000000001,
+            "p99_us": 0.58685
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 0.5420606622516556,
+            "p50_us": 0.53888,
+            "p90_us": 0.56626,
+            "p99_us": 0.58651
+          },
+          "wall_us": {
+            "mean_us": 0.5348045695364239,
+            "p50_us": 0.53165,
+            "p90_us": 0.5590499999999999,
+            "p99_us": 0.57911
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": -0.005335621805156787
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 1,
+      "total_receipts": 1,
+      "phase": "deferred_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 100,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "13c164c2be0cca02b348f33f3d9588432180abb12c3a59dd36f6acdfc039810c",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 0.5411827814569536,
+            "p50_us": 0.53691,
+            "p90_us": 0.57025,
+            "p99_us": 0.58538
+          },
+          "wall_us": {
+            "mean_us": 0.5338396688741722,
+            "p50_us": 0.52983,
+            "p90_us": 0.56213,
+            "p99_us": 0.5776
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 0.5429254304635761,
+            "p50_us": 0.53834,
+            "p90_us": 0.56653,
+            "p99_us": 0.58858
+          },
+          "wall_us": {
+            "mean_us": 0.5355450331125827,
+            "p50_us": 0.53143,
+            "p90_us": 0.5588200000000001,
+            "p99_us": 0.5810700000000001
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": -0.0026633886498668158
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 1,
+      "total_receipts": 1,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "4e1c34a0213d7d8fd7b4e63d1320a7af12ea3b74212da2151fdc3a5afc2e0782",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 24.86366225165563,
+            "p50_us": 24.752,
+            "p90_us": 25.655,
+            "p99_us": 28.463
+          },
+          "wall_us": {
+            "mean_us": 24.066496688741722,
+            "p50_us": 23.955,
+            "p90_us": 24.846,
+            "p99_us": 27.307
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 23.839841059602648,
+            "p50_us": 23.726,
+            "p90_us": 24.468,
+            "p99_us": 28.928
+          },
+          "wall_us": {
+            "mean_us": 23.033456953642386,
+            "p50_us": 22.912,
+            "p90_us": 23.684,
+            "p99_us": 28.11
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.04145119586296053
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 1,
+      "total_receipts": 1,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": false,
+      "profiling": true,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "4e1c34a0213d7d8fd7b4e63d1320a7af12ea3b74212da2151fdc3a5afc2e0782",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 30.591370860927153,
+            "p50_us": 30.521,
+            "p90_us": 31.363,
+            "p99_us": 34.466
+          },
+          "wall_us": {
+            "mean_us": 29.76909271523179,
+            "p50_us": 29.697,
+            "p90_us": 30.508,
+            "p99_us": 33.605
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 29.76032450331126,
+            "p50_us": 29.748,
+            "p90_us": 30.75,
+            "p99_us": 34.268
+          },
+          "wall_us": {
+            "mean_us": 28.95407284768212,
+            "p50_us": 28.944,
+            "p90_us": 29.925,
+            "p99_us": 33.495
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.025326824153861227
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 1,
+      "total_receipts": 1,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "4e1c34a0213d7d8fd7b4e63d1320a7af12ea3b74212da2151fdc3a5afc2e0782",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 25.092099337748344,
+            "p50_us": 24.963,
+            "p90_us": 25.766,
+            "p99_us": 28.39
+          },
+          "wall_us": {
+            "mean_us": 24.292218543046356,
+            "p50_us": 24.187,
+            "p90_us": 24.87,
+            "p99_us": 27.597
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 23.860165562913906,
+            "p50_us": 23.772,
+            "p90_us": 24.784,
+            "p99_us": 26.082
+          },
+          "wall_us": {
+            "mean_us": 23.065556291390727,
+            "p50_us": 23.003,
+            "p90_us": 23.982,
+            "p99_us": 25.305
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.04771061170532398
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 1,
+      "total_receipts": 1,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": true,
+      "profiling": true,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "4e1c34a0213d7d8fd7b4e63d1320a7af12ea3b74212da2151fdc3a5afc2e0782",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 30.880834437086094,
+            "p50_us": 30.72,
+            "p90_us": 31.776,
+            "p99_us": 37.193
+          },
+          "wall_us": {
+            "mean_us": 30.071225165562915,
+            "p50_us": 29.916,
+            "p90_us": 30.971,
+            "p99_us": 36.439
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 29.91580132450331,
+            "p50_us": 29.765,
+            "p90_us": 31.007,
+            "p99_us": 34.402
+          },
+          "wall_us": {
+            "mean_us": 29.105854304635763,
+            "p50_us": 29.0,
+            "p90_us": 30.175,
+            "p99_us": 33.589
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.03108723958333326
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 8,
+      "total_receipts": 8,
+      "phase": "waiting_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "cf304b7a5d4a3886cb7d4897c4bbe0e4578a5cb68de6247ca65854b267254718",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 34.64619205298013,
+            "p50_us": 34.473,
+            "p90_us": 35.942,
+            "p99_us": 39.81
+          },
+          "wall_us": {
+            "mean_us": 33.808993377483446,
+            "p50_us": 33.613,
+            "p90_us": 35.109,
+            "p99_us": 38.85
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 25.779264900662252,
+            "p50_us": 25.638,
+            "p90_us": 26.817,
+            "p99_us": 28.925
+          },
+          "wall_us": {
+            "mean_us": 24.987403973509934,
+            "p50_us": 24.856,
+            "p90_us": 26.023,
+            "p99_us": 28.152
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.2562875293708119
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 8,
+      "total_receipts": 8,
+      "phase": "waiting_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "cf304b7a5d4a3886cb7d4897c4bbe0e4578a5cb68de6247ca65854b267254718",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 34.48055629139073,
+            "p50_us": 34.22,
+            "p90_us": 35.557,
+            "p99_us": 38.623
+          },
+          "wall_us": {
+            "mean_us": 33.44286092715232,
+            "p50_us": 33.393,
+            "p90_us": 34.738,
+            "p99_us": 36.225
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 25.597483443708608,
+            "p50_us": 25.441,
+            "p90_us": 26.538,
+            "p99_us": 29.282
+          },
+          "wall_us": {
+            "mean_us": 24.796112582781458,
+            "p50_us": 24.658,
+            "p90_us": 25.601,
+            "p99_us": 28.369
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.2565458796025716
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 8,
+      "total_receipts": 8,
+      "phase": "ready_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "cbe70981a21f1ed71f593f2a7621944ffcd8610b41bea5781f6b9f36fa50ba65",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 42.10064900662252,
+            "p50_us": 41.914,
+            "p90_us": 43.71,
+            "p99_us": 46.946
+          },
+          "wall_us": {
+            "mean_us": 41.292119205298015,
+            "p50_us": 41.142,
+            "p90_us": 42.873,
+            "p99_us": 46.156
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 32.87576158940397,
+            "p50_us": 32.72,
+            "p90_us": 33.917,
+            "p99_us": 38.267
+          },
+          "wall_us": {
+            "mean_us": 32.06401986754967,
+            "p50_us": 31.903,
+            "p90_us": 33.139,
+            "p99_us": 37.47
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.21935391515961256
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 8,
+      "total_receipts": 8,
+      "phase": "ready_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "8a8d8f31f2423af78b84785bf473e033c0f550705e8573b78d333170d2a9b48d",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 42.63484105960265,
+            "p50_us": 42.268,
+            "p90_us": 44.654,
+            "p99_us": 48.832
+          },
+          "wall_us": {
+            "mean_us": 41.80499337748344,
+            "p50_us": 41.433,
+            "p90_us": 43.703,
+            "p99_us": 48.046
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 33.83117880794702,
+            "p50_us": 33.646,
+            "p90_us": 34.978,
+            "p99_us": 38.884
+          },
+          "wall_us": {
+            "mean_us": 32.98992715231788,
+            "p50_us": 32.878,
+            "p90_us": 34.028,
+            "p99_us": 38.103
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.2039841014479038
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 8,
+      "total_receipts": 8,
+      "phase": "epoch_handoff",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "cbe70981a21f1ed71f593f2a7621944ffcd8610b41bea5781f6b9f36fa50ba65",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 46.580086092715234,
+            "p50_us": 46.407,
+            "p90_us": 48.354,
+            "p99_us": 51.79
+          },
+          "wall_us": {
+            "mean_us": 45.7295761589404,
+            "p50_us": 45.612,
+            "p90_us": 47.493,
+            "p99_us": 50.941
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 32.80776821192053,
+            "p50_us": 32.586,
+            "p90_us": 33.996,
+            "p99_us": 38.664
+          },
+          "wall_us": {
+            "mean_us": 31.981324503311257,
+            "p50_us": 31.772,
+            "p90_us": 33.216,
+            "p99_us": 37.83
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.2978214493503135
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 8,
+      "total_receipts": 8,
+      "phase": "epoch_handoff",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "8a8d8f31f2423af78b84785bf473e033c0f550705e8573b78d333170d2a9b48d",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 47.09470198675497,
+            "p50_us": 46.813,
+            "p90_us": 48.609,
+            "p99_us": 52.412
+          },
+          "wall_us": {
+            "mean_us": 46.28372847682119,
+            "p50_us": 46.031,
+            "p90_us": 47.853,
+            "p99_us": 51.498
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 33.57061589403973,
+            "p50_us": 33.441,
+            "p90_us": 34.662,
+            "p99_us": 38.151
+          },
+          "wall_us": {
+            "mean_us": 32.76535099337748,
+            "p50_us": 32.662,
+            "p90_us": 33.859,
+            "p99_us": 37.395
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.28564714929613566
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 8,
+      "total_receipts": 8,
+      "phase": "consumer_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "a3bdb5971bedef2681bc7981d5344664f52fdd731244b4ea06a85a58c1e7d8a8",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 76.83729139072848,
+            "p50_us": 76.767,
+            "p90_us": 79.454,
+            "p99_us": 81.743
+          },
+          "wall_us": {
+            "mean_us": 76.02719867549669,
+            "p50_us": 75.947,
+            "p90_us": 78.628,
+            "p99_us": 80.952
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 65.53460927152318,
+            "p50_us": 65.407,
+            "p90_us": 67.899,
+            "p99_us": 69.618
+          },
+          "wall_us": {
+            "mean_us": 64.72064900662252,
+            "p50_us": 64.632,
+            "p90_us": 67.162,
+            "p99_us": 68.669
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.14798025193116837
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 8,
+      "total_receipts": 8,
+      "phase": "consumer_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "19f1cf56fad7f2086dd8b2f1c4387c69db904f868f8db2393407a948324e24ef",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 81.34618543046358,
+            "p50_us": 81.357,
+            "p90_us": 83.599,
+            "p99_us": 88.228
+          },
+          "wall_us": {
+            "mean_us": 80.52390066225166,
+            "p50_us": 80.486,
+            "p90_us": 82.746,
+            "p99_us": 87.447
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 70.3763774834437,
+            "p50_us": 70.195,
+            "p90_us": 72.846,
+            "p99_us": 76.92
+          },
+          "wall_us": {
+            "mean_us": 69.5555298013245,
+            "p50_us": 69.388,
+            "p90_us": 72.053,
+            "p99_us": 76.11
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.13719778261243665
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 8,
+      "total_receipts": 8,
+      "phase": "first_service",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "0c3e651c5e884da95e2b2bd99837cbd8cc0fbaed69dbfc0cd73479790281810e",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 16.64690728476821,
+            "p50_us": 16.664,
+            "p90_us": 17.606,
+            "p99_us": 18.798
+          },
+          "wall_us": {
+            "mean_us": 15.9581059602649,
+            "p50_us": 15.961,
+            "p90_us": 16.852,
+            "p99_us": 18.107
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 15.695496688741722,
+            "p50_us": 15.626,
+            "p90_us": 16.622,
+            "p99_us": 17.991
+          },
+          "wall_us": {
+            "mean_us": 14.988781456953642,
+            "p50_us": 14.902,
+            "p90_us": 15.866,
+            "p99_us": 17.249
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.06228996639462325
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 8,
+      "total_receipts": 8,
+      "phase": "first_service",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "2933706230a3ab9c7003838fac1081b946a269127936eb17f3d689f87310b004",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 25.3128940397351,
+            "p50_us": 25.326,
+            "p90_us": 26.67,
+            "p99_us": 28.678
+          },
+          "wall_us": {
+            "mean_us": 24.565344370860927,
+            "p50_us": 24.559,
+            "p90_us": 25.886,
+            "p99_us": 27.818
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 23.442456953642385,
+            "p50_us": 23.393,
+            "p90_us": 24.924,
+            "p99_us": 25.611
+          },
+          "wall_us": {
+            "mean_us": 22.699913907284767,
+            "p50_us": 22.688,
+            "p90_us": 24.111,
+            "p99_us": 24.922
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.07632472557845693
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 8,
+      "total_receipts": 8,
+      "phase": "deferred_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 100,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "06db194870a209ea1acf5479408de89d383e035b97d312dd5256509a78c2330e",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 0.5520934437086092,
+            "p50_us": 0.5479400000000001,
+            "p90_us": 0.57884,
+            "p99_us": 0.59658
+          },
+          "wall_us": {
+            "mean_us": 0.5441806622516556,
+            "p50_us": 0.53988,
+            "p90_us": 0.57052,
+            "p99_us": 0.5888
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 0.5457641059602649,
+            "p50_us": 0.5403600000000001,
+            "p90_us": 0.56997,
+            "p99_us": 0.65028
+          },
+          "wall_us": {
+            "mean_us": 0.5381714569536424,
+            "p50_us": 0.53295,
+            "p90_us": 0.56114,
+            "p99_us": 0.642
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.01383363141949856
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 8,
+      "total_receipts": 8,
+      "phase": "deferred_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 100,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "06db194870a209ea1acf5479408de89d383e035b97d312dd5256509a78c2330e",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 0.5488601986754967,
+            "p50_us": 0.54322,
+            "p90_us": 0.57362,
+            "p99_us": 0.6275499999999999
+          },
+          "wall_us": {
+            "mean_us": 0.5411441059602649,
+            "p50_us": 0.5360199999999999,
+            "p90_us": 0.56629,
+            "p99_us": 0.61924
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 0.5588628476821192,
+            "p50_us": 0.5517799999999999,
+            "p90_us": 0.5865,
+            "p99_us": 0.60934
+          },
+          "wall_us": {
+            "mean_us": 0.5511490728476821,
+            "p50_us": 0.5447000000000001,
+            "p90_us": 0.57939,
+            "p99_us": 0.60149
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": -0.01575788814844792
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 8,
+      "total_receipts": 8,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "0d4453555b3f99286faee42920b0c9a0d93b0a9d3d5974a2329d3bb69146e272",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 47.94311920529801,
+            "p50_us": 47.626,
+            "p90_us": 49.362,
+            "p99_us": 54.125
+          },
+          "wall_us": {
+            "mean_us": 47.06167549668874,
+            "p50_us": 46.798,
+            "p90_us": 48.486,
+            "p99_us": 53.224
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 39.06768874172185,
+            "p50_us": 38.792,
+            "p90_us": 40.351,
+            "p99_us": 45.958
+          },
+          "wall_us": {
+            "mean_us": 38.203615894039736,
+            "p50_us": 37.939,
+            "p90_us": 39.463,
+            "p99_us": 45.008
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.18548691890983904
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 8,
+      "total_receipts": 8,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": false,
+      "profiling": true,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "0d4453555b3f99286faee42920b0c9a0d93b0a9d3d5974a2329d3bb69146e272",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 54.97949668874172,
+            "p50_us": 54.614,
+            "p90_us": 57.445,
+            "p99_us": 60.215
+          },
+          "wall_us": {
+            "mean_us": 54.123437086092714,
+            "p50_us": 53.788,
+            "p90_us": 56.615,
+            "p99_us": 59.331
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 45.15341721854305,
+            "p50_us": 45.004,
+            "p90_us": 46.422,
+            "p99_us": 49.151
+          },
+          "wall_us": {
+            "mean_us": 44.32046357615894,
+            "p50_us": 44.166,
+            "p90_us": 45.604,
+            "p99_us": 48.403
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.1759622074925843
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 8,
+      "total_receipts": 8,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "0d4453555b3f99286faee42920b0c9a0d93b0a9d3d5974a2329d3bb69146e272",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 47.35025165562914,
+            "p50_us": 47.037,
+            "p90_us": 48.764,
+            "p99_us": 50.72
+          },
+          "wall_us": {
+            "mean_us": 46.51962913907285,
+            "p50_us": 46.212,
+            "p90_us": 47.956,
+            "p99_us": 49.884
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 38.60505298013245,
+            "p50_us": 38.485,
+            "p90_us": 39.845,
+            "p99_us": 42.516
+          },
+          "wall_us": {
+            "mean_us": 37.77396688741722,
+            "p50_us": 37.62,
+            "p90_us": 39.019,
+            "p99_us": 41.689
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.18181431638922552
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 8,
+      "total_receipts": 8,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": true,
+      "profiling": true,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "0d4453555b3f99286faee42920b0c9a0d93b0a9d3d5974a2329d3bb69146e272",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 53.28686754966888,
+            "p50_us": 52.965,
+            "p90_us": 54.736,
+            "p99_us": 59.529
+          },
+          "wall_us": {
+            "mean_us": 52.44513907284768,
+            "p50_us": 52.112,
+            "p90_us": 53.905,
+            "p99_us": 58.677
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 44.812218543046356,
+            "p50_us": 44.588,
+            "p90_us": 46.429,
+            "p99_us": 49.296
+          },
+          "wall_us": {
+            "mean_us": 43.958496688741725,
+            "p50_us": 43.714,
+            "p90_us": 45.611,
+            "p99_us": 48.48
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.1581610497498348
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 42,
+      "total_receipts": 42,
+      "phase": "waiting_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "5fa447faf0f0bdccf40e27e97bdceca35bacbddaf7a28afa62921802013ccc16",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 120.63201324503311,
+            "p50_us": 119.981,
+            "p90_us": 123.858,
+            "p99_us": 131.353
+          },
+          "wall_us": {
+            "mean_us": 119.9776357615894,
+            "p50_us": 119.085,
+            "p90_us": 122.722,
+            "p99_us": 133.715
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 84.00430463576159,
+            "p50_us": 83.609,
+            "p90_us": 86.392,
+            "p99_us": 93.674
+          },
+          "wall_us": {
+            "mean_us": 83.14421854304636,
+            "p50_us": 82.747,
+            "p90_us": 85.503,
+            "p99_us": 92.829
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.30314799843308526
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 42,
+      "total_receipts": 42,
+      "phase": "waiting_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "5fa447faf0f0bdccf40e27e97bdceca35bacbddaf7a28afa62921802013ccc16",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 121.07996688741721,
+            "p50_us": 120.646,
+            "p90_us": 125.504,
+            "p99_us": 132.297
+          },
+          "wall_us": {
+            "mean_us": 120.25486092715232,
+            "p50_us": 119.889,
+            "p90_us": 124.691,
+            "p99_us": 131.493
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 83.7070463576159,
+            "p50_us": 83.417,
+            "p90_us": 86.228,
+            "p99_us": 88.067
+          },
+          "wall_us": {
+            "mean_us": 82.89663576158941,
+            "p50_us": 82.639,
+            "p90_us": 85.291,
+            "p99_us": 87.299
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.30858047510899655
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 42,
+      "total_receipts": 42,
+      "phase": "ready_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "ddfc3fc3d8e3065d96fd907225f8673a98b9745abb8b5e9e3c93e79365f05923",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 130.77443046357615,
+            "p50_us": 130.113,
+            "p90_us": 134.696,
+            "p99_us": 140.067
+          },
+          "wall_us": {
+            "mean_us": 129.9297284768212,
+            "p50_us": 129.276,
+            "p90_us": 133.811,
+            "p99_us": 139.285
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 91.18117880794702,
+            "p50_us": 90.696,
+            "p90_us": 93.802,
+            "p99_us": 103.806
+          },
+          "wall_us": {
+            "mean_us": 90.33580794701987,
+            "p50_us": 89.804,
+            "p90_us": 92.982,
+            "p99_us": 103.001
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.3029443637453598
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 42,
+      "total_receipts": 42,
+      "phase": "ready_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "bc3e958b212efb676180f64588fdc24616ead6c8542417146de75b22a293c4a4",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 131.9312715231788,
+            "p50_us": 131.629,
+            "p90_us": 135.388,
+            "p99_us": 139.569
+          },
+          "wall_us": {
+            "mean_us": 131.06811258278145,
+            "p50_us": 130.715,
+            "p90_us": 134.552,
+            "p99_us": 138.685
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 91.95713907284768,
+            "p50_us": 91.403,
+            "p90_us": 94.039,
+            "p99_us": 99.403
+          },
+          "wall_us": {
+            "mean_us": 91.09333112582782,
+            "p50_us": 90.467,
+            "p90_us": 93.245,
+            "p99_us": 98.424
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.3056013492467464
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 42,
+      "total_receipts": 42,
+      "phase": "epoch_handoff",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "ddfc3fc3d8e3065d96fd907225f8673a98b9745abb8b5e9e3c93e79365f05923",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 149.019,
+            "p50_us": 149.138,
+            "p90_us": 153.616,
+            "p99_us": 161.371
+          },
+          "wall_us": {
+            "mean_us": 148.16349006622517,
+            "p50_us": 148.303,
+            "p90_us": 152.512,
+            "p99_us": 160.525
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 89.07793377483443,
+            "p50_us": 88.72,
+            "p90_us": 92.018,
+            "p99_us": 98.174
+          },
+          "wall_us": {
+            "mean_us": 88.22313245033112,
+            "p50_us": 87.913,
+            "p90_us": 91.17,
+            "p99_us": 97.362
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.4051147259585083
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 42,
+      "total_receipts": 42,
+      "phase": "epoch_handoff",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "bc3e958b212efb676180f64588fdc24616ead6c8542417146de75b22a293c4a4",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 148.12464900662252,
+            "p50_us": 147.707,
+            "p90_us": 151.971,
+            "p99_us": 161.564
+          },
+          "wall_us": {
+            "mean_us": 147.23796688741723,
+            "p50_us": 146.699,
+            "p90_us": 151.091,
+            "p99_us": 160.732
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 90.89944370860927,
+            "p50_us": 90.331,
+            "p90_us": 93.565,
+            "p99_us": 100.413
+          },
+          "wall_us": {
+            "mean_us": 90.02163576158941,
+            "p50_us": 89.476,
+            "p90_us": 92.575,
+            "p99_us": 99.277
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.3884446911791587
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 42,
+      "total_receipts": 42,
+      "phase": "consumer_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "cd98a9ea830d2280c3dace37d43636af7c6feb239740017ba873216782c14035",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 335.20514569536425,
+            "p50_us": 334.691,
+            "p90_us": 343.817,
+            "p99_us": 349.32
+          },
+          "wall_us": {
+            "mean_us": 334.2964503311258,
+            "p50_us": 333.893,
+            "p90_us": 342.814,
+            "p99_us": 348.129
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 270.84845695364237,
+            "p50_us": 271.175,
+            "p90_us": 277.465,
+            "p99_us": 290.274
+          },
+          "wall_us": {
+            "mean_us": 269.932238410596,
+            "p50_us": 270.382,
+            "p90_us": 276.353,
+            "p99_us": 288.578
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.18977504623667796
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 42,
+      "total_receipts": 42,
+      "phase": "consumer_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "bb6864f8eeb8734cae382638814ba93005f936ec4210c2f6cb8808fbf4499e0d",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 364.16735761589405,
+            "p50_us": 363.724,
+            "p90_us": 372.265,
+            "p99_us": 377.856
+          },
+          "wall_us": {
+            "mean_us": 363.1966688741722,
+            "p50_us": 362.654,
+            "p90_us": 371.1,
+            "p99_us": 376.905
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 302.28923178807946,
+            "p50_us": 296.164,
+            "p90_us": 306.428,
+            "p99_us": 336.856
+          },
+          "wall_us": {
+            "mean_us": 301.32829139072845,
+            "p50_us": 295.196,
+            "p90_us": 305.434,
+            "p99_us": 335.798
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.18574523539826904
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 42,
+      "total_receipts": 42,
+      "phase": "first_service",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "7623b5a26a2cf11a1a9b1cd74cbfc6b8435cc52ef51c285c8a05fc329e1f1841",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 46.81398675496689,
+            "p50_us": 46.489,
+            "p90_us": 48.478,
+            "p99_us": 53.014
+          },
+          "wall_us": {
+            "mean_us": 46.015880794701985,
+            "p50_us": 45.79,
+            "p90_us": 47.261,
+            "p99_us": 52.288
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 38.720172185430464,
+            "p50_us": 38.473,
+            "p90_us": 40.519,
+            "p99_us": 42.739
+          },
+          "wall_us": {
+            "mean_us": 38.02608609271523,
+            "p50_us": 37.786,
+            "p90_us": 39.707,
+            "p99_us": 41.986
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.17242788616662008
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 42,
+      "total_receipts": 42,
+      "phase": "first_service",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "e660b4c1f7184e04ab80e11e2ccf6f1bee0237012c5a2bb1b81b750b80b3cb2b",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 84.04150331125828,
+            "p50_us": 83.712,
+            "p90_us": 86.481,
+            "p99_us": 91.241
+          },
+          "wall_us": {
+            "mean_us": 83.24490728476822,
+            "p50_us": 82.926,
+            "p90_us": 85.672,
+            "p99_us": 90.46
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 76.09103311258278,
+            "p50_us": 75.964,
+            "p90_us": 78.751,
+            "p99_us": 86.269
+          },
+          "wall_us": {
+            "mean_us": 75.29152317880795,
+            "p50_us": 75.147,
+            "p90_us": 77.936,
+            "p99_us": 85.444
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.09255542813455664
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 42,
+      "total_receipts": 42,
+      "phase": "deferred_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 100,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "a671d4f8debb0ca9380da811420fab098b7f0d4df0ae6d13a0b082aebd109417",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 0.5445707947019868,
+            "p50_us": 0.54132,
+            "p90_us": 0.56741,
+            "p99_us": 0.5982799999999999
+          },
+          "wall_us": {
+            "mean_us": 0.5360306622516556,
+            "p50_us": 0.53285,
+            "p90_us": 0.5590599999999999,
+            "p99_us": 0.59025
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 0.5499408609271523,
+            "p50_us": 0.54706,
+            "p90_us": 0.56678,
+            "p99_us": 0.6498200000000001
+          },
+          "wall_us": {
+            "mean_us": 0.5415423178807947,
+            "p50_us": 0.5388099999999999,
+            "p90_us": 0.55787,
+            "p99_us": 0.6408400000000001
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": -0.010603709450971666
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 42,
+      "total_receipts": 42,
+      "phase": "deferred_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 100,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "a671d4f8debb0ca9380da811420fab098b7f0d4df0ae6d13a0b082aebd109417",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 0.5500037086092715,
+            "p50_us": 0.54698,
+            "p90_us": 0.57421,
+            "p99_us": 0.6054400000000001
+          },
+          "wall_us": {
+            "mean_us": 0.5419734437086092,
+            "p50_us": 0.53896,
+            "p90_us": 0.56651,
+            "p99_us": 0.59781
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 0.5507262251655629,
+            "p50_us": 0.5468099999999999,
+            "p90_us": 0.5761499999999999,
+            "p99_us": 0.60588
+          },
+          "wall_us": {
+            "mean_us": 0.543014238410596,
+            "p50_us": 0.53886,
+            "p90_us": 0.5664,
+            "p99_us": 0.59846
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.0003107974697431626
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 42,
+      "total_receipts": 42,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "b84b364078b97ef4a16b0724080a319af8a106d42bc1dbfc412a0b476206d9e1",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 138.30219205298013,
+            "p50_us": 138.004,
+            "p90_us": 143.723,
+            "p99_us": 150.281
+          },
+          "wall_us": {
+            "mean_us": 137.41317218543045,
+            "p50_us": 137.151,
+            "p90_us": 142.879,
+            "p99_us": 149.387
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 99.39725165562913,
+            "p50_us": 98.945,
+            "p90_us": 101.862,
+            "p99_us": 106.145
+          },
+          "wall_us": {
+            "mean_us": 98.50836423841059,
+            "p50_us": 98.081,
+            "p90_us": 100.966,
+            "p99_us": 105.273
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.28302802817309647
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 42,
+      "total_receipts": 42,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": false,
+      "profiling": true,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "b84b364078b97ef4a16b0724080a319af8a106d42bc1dbfc412a0b476206d9e1",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 144.65712582781458,
+            "p50_us": 144.423,
+            "p90_us": 148.378,
+            "p99_us": 153.475
+          },
+          "wall_us": {
+            "mean_us": 143.7824238410596,
+            "p50_us": 143.59,
+            "p90_us": 147.364,
+            "p99_us": 152.635
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 104.98040397350994,
+            "p50_us": 104.459,
+            "p90_us": 108.227,
+            "p99_us": 116.098
+          },
+          "wall_us": {
+            "mean_us": 104.16488741721854,
+            "p50_us": 103.609,
+            "p90_us": 107.305,
+            "p99_us": 116.776
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.27671492767772443
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 42,
+      "total_receipts": 42,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "b84b364078b97ef4a16b0724080a319af8a106d42bc1dbfc412a0b476206d9e1",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 140.12387417218542,
+            "p50_us": 139.038,
+            "p90_us": 144.93,
+            "p99_us": 155.59
+          },
+          "wall_us": {
+            "mean_us": 139.35209271523178,
+            "p50_us": 138.193,
+            "p90_us": 144.108,
+            "p99_us": 171.254
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 98.80312582781457,
+            "p50_us": 98.264,
+            "p90_us": 101.311,
+            "p99_us": 115.015
+          },
+          "wall_us": {
+            "mean_us": 97.87311920529801,
+            "p50_us": 97.359,
+            "p90_us": 100.352,
+            "p99_us": 114.161
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.2932579582560164
+    },
+    {
+      "contexts": 1,
+      "receipts_per_context": 42,
+      "total_receipts": 42,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": true,
+      "profiling": true,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "b84b364078b97ef4a16b0724080a319af8a106d42bc1dbfc412a0b476206d9e1",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 148.35441721854303,
+            "p50_us": 147.673,
+            "p90_us": 152.827,
+            "p99_us": 159.519
+          },
+          "wall_us": {
+            "mean_us": 147.48074834437085,
+            "p50_us": 146.825,
+            "p90_us": 151.897,
+            "p99_us": 158.664
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 104.50957615894039,
+            "p50_us": 104.298,
+            "p90_us": 107.089,
+            "p99_us": 109.005
+          },
+          "wall_us": {
+            "mean_us": 103.64161589403973,
+            "p50_us": 103.395,
+            "p90_us": 106.141,
+            "p99_us": 108.157
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.29372329403479314
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 1,
+      "total_receipts": 2,
+      "phase": "waiting_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "19ae8f580ffced8daaa039bf2cf54783c6487d8bc21471928017c8bc88f367c9",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 18.462132450331126,
+            "p50_us": 17.965,
+            "p90_us": 18.761,
+            "p99_us": 22.073
+          },
+          "wall_us": {
+            "mean_us": 17.679503311258276,
+            "p50_us": 17.173,
+            "p90_us": 17.963,
+            "p99_us": 21.3
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 15.736721854304635,
+            "p50_us": 15.389,
+            "p90_us": 16.18,
+            "p99_us": 21.543
+          },
+          "wall_us": {
+            "mean_us": 14.951887417218543,
+            "p50_us": 14.607,
+            "p90_us": 15.409,
+            "p99_us": 20.782
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.14338992485388258
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 1,
+      "total_receipts": 2,
+      "phase": "waiting_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "19ae8f580ffced8daaa039bf2cf54783c6487d8bc21471928017c8bc88f367c9",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 18.102655629139072,
+            "p50_us": 17.954,
+            "p90_us": 18.92,
+            "p99_us": 20.703
+          },
+          "wall_us": {
+            "mean_us": 17.328119205298012,
+            "p50_us": 17.172,
+            "p90_us": 18.112,
+            "p99_us": 19.995
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 15.372251655629139,
+            "p50_us": 15.305,
+            "p90_us": 16.071,
+            "p99_us": 18.247
+          },
+          "wall_us": {
+            "mean_us": 14.60062251655629,
+            "p50_us": 14.547,
+            "p90_us": 15.324,
+            "p99_us": 17.466
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.14754372284727646
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 1,
+      "total_receipts": 2,
+      "phase": "ready_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "ea6ae6f9a2b25aa82b794af3f4d728e2771a637f15cf8be18a7845fcb93af031",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 30.25405298013245,
+            "p50_us": 30.178,
+            "p90_us": 31.325,
+            "p99_us": 33.823
+          },
+          "wall_us": {
+            "mean_us": 29.45128476821192,
+            "p50_us": 29.44,
+            "p90_us": 30.535,
+            "p99_us": 33.074
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 27.057576158940396,
+            "p50_us": 27.116,
+            "p90_us": 27.933,
+            "p99_us": 30.092
+          },
+          "wall_us": {
+            "mean_us": 26.262966887417218,
+            "p50_us": 26.331,
+            "p90_us": 27.145,
+            "p99_us": 29.271
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.1014646431175028
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 1,
+      "total_receipts": 2,
+      "phase": "ready_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "12cd0c65154457f88dd07510060ea83281afce44de2501919e93d94ebb5880c3",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 31.717105960264902,
+            "p50_us": 31.547,
+            "p90_us": 32.947,
+            "p99_us": 36.504
+          },
+          "wall_us": {
+            "mean_us": 31.167350993377482,
+            "p50_us": 30.73,
+            "p90_us": 32.096,
+            "p99_us": 35.619
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 28.754615894039734,
+            "p50_us": 28.681,
+            "p90_us": 29.578,
+            "p99_us": 32.751
+          },
+          "wall_us": {
+            "mean_us": 27.939715231788078,
+            "p50_us": 27.892,
+            "p90_us": 28.751,
+            "p99_us": 31.937
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.09084857514185185
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 1,
+      "total_receipts": 2,
+      "phase": "epoch_handoff",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "ea6ae6f9a2b25aa82b794af3f4d728e2771a637f15cf8be18a7845fcb93af031",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 31.920417218543047,
+            "p50_us": 31.687,
+            "p90_us": 33.385,
+            "p99_us": 35.581
+          },
+          "wall_us": {
+            "mean_us": 31.11571523178808,
+            "p50_us": 30.868,
+            "p90_us": 32.513,
+            "p99_us": 34.695
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 26.966476821192053,
+            "p50_us": 26.857,
+            "p90_us": 27.942,
+            "p99_us": 30.757
+          },
+          "wall_us": {
+            "mean_us": 26.172708609271524,
+            "p50_us": 26.107,
+            "p90_us": 27.132,
+            "p99_us": 29.822
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.1524284406854547
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 1,
+      "total_receipts": 2,
+      "phase": "epoch_handoff",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "12cd0c65154457f88dd07510060ea83281afce44de2501919e93d94ebb5880c3",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 32.91088741721855,
+            "p50_us": 32.75,
+            "p90_us": 34.19,
+            "p99_us": 37.217
+          },
+          "wall_us": {
+            "mean_us": 32.115046357615896,
+            "p50_us": 31.935,
+            "p90_us": 33.187,
+            "p99_us": 36.454
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 28.489158940397353,
+            "p50_us": 28.451,
+            "p90_us": 29.381,
+            "p99_us": 32.44
+          },
+          "wall_us": {
+            "mean_us": 27.68965562913907,
+            "p50_us": 27.643,
+            "p90_us": 28.565,
+            "p99_us": 31.634
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.1312671755725191
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 1,
+      "total_receipts": 2,
+      "phase": "consumer_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "7d53fb54c3a7b47b5dd83e5f95d736129c3ae6e97c96ecd51fa4c8d215268301",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 31.194324503311258,
+            "p50_us": 30.908,
+            "p90_us": 32.49,
+            "p99_us": 37.873
+          },
+          "wall_us": {
+            "mean_us": 30.36230463576159,
+            "p50_us": 30.163,
+            "p90_us": 31.695,
+            "p99_us": 36.88
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 30.108576158940398,
+            "p50_us": 29.953,
+            "p90_us": 31.22,
+            "p99_us": 32.964
+          },
+          "wall_us": {
+            "mean_us": 29.27162251655629,
+            "p50_us": 29.119,
+            "p90_us": 30.311,
+            "p99_us": 32.119
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.030898149346447634
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 1,
+      "total_receipts": 2,
+      "phase": "consumer_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "6eba2f55c6f455f9412078ff3da252aca28d4a2cfa92340da0f963a7e3da254e",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 32.629238410596024,
+            "p50_us": 32.461,
+            "p90_us": 33.914,
+            "p99_us": 36.279
+          },
+          "wall_us": {
+            "mean_us": 31.814794701986756,
+            "p50_us": 31.69,
+            "p90_us": 33.097,
+            "p99_us": 35.514
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 31.66562251655629,
+            "p50_us": 31.411,
+            "p90_us": 32.853,
+            "p99_us": 35.756
+          },
+          "wall_us": {
+            "mean_us": 30.832225165562914,
+            "p50_us": 30.591,
+            "p90_us": 32.022,
+            "p99_us": 34.939
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.032346508117433115
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 1,
+      "total_receipts": 2,
+      "phase": "first_service",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "cad1d708f589b4ceabc6891dc5363a322709cd5c22a621f6637745816f2703d0",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 13.926814569536424,
+            "p50_us": 13.88,
+            "p90_us": 15.128,
+            "p99_us": 16.665
+          },
+          "wall_us": {
+            "mean_us": 13.239509933774835,
+            "p50_us": 13.221,
+            "p90_us": 14.406,
+            "p99_us": 15.967
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 13.296754966887418,
+            "p50_us": 13.272,
+            "p90_us": 14.489,
+            "p99_us": 17.176
+          },
+          "wall_us": {
+            "mean_us": 12.610112582781458,
+            "p50_us": 12.574,
+            "p90_us": 13.716,
+            "p99_us": 16.524
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.043804034582132556
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 1,
+      "total_receipts": 2,
+      "phase": "first_service",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "e1a29a635ed7598355966f7e34a02fc7bc8d5716711f23ac05b4b9eb29bf4d45",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 17.436960264900662,
+            "p50_us": 17.41,
+            "p90_us": 18.82,
+            "p99_us": 21.124
+          },
+          "wall_us": {
+            "mean_us": 16.699668874172186,
+            "p50_us": 16.65,
+            "p90_us": 18.084,
+            "p99_us": 20.386
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 16.82273509933775,
+            "p50_us": 16.776,
+            "p90_us": 18.373,
+            "p99_us": 19.626
+          },
+          "wall_us": {
+            "mean_us": 16.08392715231788,
+            "p50_us": 16.077,
+            "p90_us": 17.546,
+            "p99_us": 18.846
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.03641585295807004
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 1,
+      "total_receipts": 2,
+      "phase": "deferred_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 100,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "749e05fb98107703205f29b7a26039c41efff95eda63e1e1f4d9080299d848c6",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 0.5488505298013245,
+            "p50_us": 0.54326,
+            "p90_us": 0.5794400000000001,
+            "p99_us": 0.60221
+          },
+          "wall_us": {
+            "mean_us": 0.541045761589404,
+            "p50_us": 0.53587,
+            "p90_us": 0.57209,
+            "p99_us": 0.5948
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 0.5442042384105961,
+            "p50_us": 0.53928,
+            "p90_us": 0.57126,
+            "p99_us": 0.61
+          },
+          "wall_us": {
+            "mean_us": 0.5365129139072847,
+            "p50_us": 0.53088,
+            "p90_us": 0.56337,
+            "p99_us": 0.6020599999999999
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.00732614217869898
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 1,
+      "total_receipts": 2,
+      "phase": "deferred_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 100,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "749e05fb98107703205f29b7a26039c41efff95eda63e1e1f4d9080299d848c6",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 0.5513558940397351,
+            "p50_us": 0.5478200000000001,
+            "p90_us": 0.58096,
+            "p99_us": 0.6090599999999999
+          },
+          "wall_us": {
+            "mean_us": 0.5436349006622516,
+            "p50_us": 0.5402,
+            "p90_us": 0.57382,
+            "p99_us": 0.60092
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 0.5447067549668874,
+            "p50_us": 0.54028,
+            "p90_us": 0.56933,
+            "p99_us": 0.6144700000000001
+          },
+          "wall_us": {
+            "mean_us": 0.5370413907284768,
+            "p50_us": 0.5326799999999999,
+            "p90_us": 0.56222,
+            "p99_us": 0.60556
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.013763644992881074
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 1,
+      "total_receipts": 2,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "909b1adc7b0efad87876f67ece7f15414c8c12e95665f10c303e4a0bb232dec8",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 31.516066225165563,
+            "p50_us": 31.369,
+            "p90_us": 32.899,
+            "p99_us": 35.872
+          },
+          "wall_us": {
+            "mean_us": 30.677192052980132,
+            "p50_us": 30.511,
+            "p90_us": 31.986,
+            "p99_us": 35.018
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 28.141291390728476,
+            "p50_us": 27.962,
+            "p90_us": 29.143,
+            "p99_us": 31.988
+          },
+          "wall_us": {
+            "mean_us": 27.313066225165564,
+            "p50_us": 27.125,
+            "p90_us": 28.295,
+            "p99_us": 31.134
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.10861041155280693
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 1,
+      "total_receipts": 2,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": false,
+      "profiling": true,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "909b1adc7b0efad87876f67ece7f15414c8c12e95665f10c303e4a0bb232dec8",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 38.06835761589404,
+            "p50_us": 37.914,
+            "p90_us": 39.352,
+            "p99_us": 41.095
+          },
+          "wall_us": {
+            "mean_us": 37.21105298013245,
+            "p50_us": 37.056,
+            "p90_us": 38.503,
+            "p99_us": 40.301
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 34.22746357615894,
+            "p50_us": 34.135,
+            "p90_us": 35.604,
+            "p99_us": 37.117
+          },
+          "wall_us": {
+            "mean_us": 33.39393377483444,
+            "p50_us": 33.261,
+            "p90_us": 34.647,
+            "p99_us": 36.285
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.09967294403122862
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 1,
+      "total_receipts": 2,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "909b1adc7b0efad87876f67ece7f15414c8c12e95665f10c303e4a0bb232dec8",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 31.23035761589404,
+            "p50_us": 31.197,
+            "p90_us": 32.22,
+            "p99_us": 33.711
+          },
+          "wall_us": {
+            "mean_us": 30.40711258278146,
+            "p50_us": 30.355,
+            "p90_us": 31.356,
+            "p99_us": 32.979
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 28.37341059602649,
+            "p50_us": 28.161,
+            "p90_us": 29.315,
+            "p99_us": 31.632
+          },
+          "wall_us": {
+            "mean_us": 27.552185430463577,
+            "p50_us": 27.362,
+            "p90_us": 28.501,
+            "p99_us": 30.798
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.09731704971631883
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 1,
+      "total_receipts": 2,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": true,
+      "profiling": true,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "909b1adc7b0efad87876f67ece7f15414c8c12e95665f10c303e4a0bb232dec8",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 37.536185430463576,
+            "p50_us": 37.343,
+            "p90_us": 38.979,
+            "p99_us": 40.097
+          },
+          "wall_us": {
+            "mean_us": 36.68838410596027,
+            "p50_us": 36.499,
+            "p90_us": 38.056,
+            "p99_us": 39.269
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 34.514827814569536,
+            "p50_us": 34.313,
+            "p90_us": 35.687,
+            "p99_us": 38.69
+          },
+          "wall_us": {
+            "mean_us": 33.651841059602646,
+            "p50_us": 33.494,
+            "p90_us": 34.895,
+            "p99_us": 37.678
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.08113970489783895
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 8,
+      "total_receipts": 16,
+      "phase": "waiting_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "5c9b09493a013ffdc6909f1a8da96b57a9fbfdebb1907923069a30b5c88a6b3a",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 57.89670198675497,
+            "p50_us": 57.408,
+            "p90_us": 60.154,
+            "p99_us": 65.924
+          },
+          "wall_us": {
+            "mean_us": 57.06185430463576,
+            "p50_us": 56.554,
+            "p90_us": 59.302,
+            "p99_us": 64.814
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 41.97528476821192,
+            "p50_us": 41.522,
+            "p90_us": 43.623,
+            "p99_us": 47.53
+          },
+          "wall_us": {
+            "mean_us": 41.12808609271523,
+            "p50_us": 40.641,
+            "p90_us": 42.847,
+            "p99_us": 46.765
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.27672101449275366
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 8,
+      "total_receipts": 16,
+      "phase": "waiting_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "5c9b09493a013ffdc6909f1a8da96b57a9fbfdebb1907923069a30b5c88a6b3a",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 57.31761589403973,
+            "p50_us": 57.04,
+            "p90_us": 59.558,
+            "p99_us": 61.762
+          },
+          "wall_us": {
+            "mean_us": 56.49722516556292,
+            "p50_us": 56.243,
+            "p90_us": 58.667,
+            "p99_us": 60.816
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 41.53286754966887,
+            "p50_us": 41.226,
+            "p90_us": 43.292,
+            "p99_us": 45.013
+          },
+          "wall_us": {
+            "mean_us": 40.732238410596025,
+            "p50_us": 40.399,
+            "p90_us": 42.466,
+            "p99_us": 44.212
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.2772440392706872
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 8,
+      "total_receipts": 16,
+      "phase": "ready_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "6d2efe559b6e6f0b33399064ead7296ee0dd170f7b62741783b1a58ea3f1243a",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 70.91368874172186,
+            "p50_us": 70.631,
+            "p90_us": 73.255,
+            "p99_us": 76.922
+          },
+          "wall_us": {
+            "mean_us": 70.05077483443709,
+            "p50_us": 69.679,
+            "p90_us": 72.394,
+            "p99_us": 76.112
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 54.56156291390729,
+            "p50_us": 54.333,
+            "p90_us": 56.504,
+            "p99_us": 61.017
+          },
+          "wall_us": {
+            "mean_us": 53.696496688741725,
+            "p50_us": 53.432,
+            "p90_us": 55.61,
+            "p99_us": 60.171
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.23074853817728758
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 8,
+      "total_receipts": 16,
+      "phase": "ready_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "850f41a6b1c3224a374448fb454c208ca1b1c208bbaf6886c32ca58daa9bdd1d",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 71.84482781456954,
+            "p50_us": 71.47,
+            "p90_us": 74.281,
+            "p99_us": 77.499
+          },
+          "wall_us": {
+            "mean_us": 70.99617218543047,
+            "p50_us": 70.634,
+            "p90_us": 73.429,
+            "p99_us": 76.745
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 55.77429801324503,
+            "p50_us": 55.436,
+            "p90_us": 57.189,
+            "p99_us": 66.856
+          },
+          "wall_us": {
+            "mean_us": 54.92817880794702,
+            "p50_us": 54.592,
+            "p90_us": 56.233,
+            "p99_us": 66.101
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.22434587938995376
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 8,
+      "total_receipts": 16,
+      "phase": "epoch_handoff",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "6d2efe559b6e6f0b33399064ead7296ee0dd170f7b62741783b1a58ea3f1243a",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 74.8767880794702,
+            "p50_us": 74.877,
+            "p90_us": 77.017,
+            "p99_us": 80.208
+          },
+          "wall_us": {
+            "mean_us": 74.0468013245033,
+            "p50_us": 74.068,
+            "p90_us": 76.155,
+            "p99_us": 79.364
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 53.54871523178808,
+            "p50_us": 53.323,
+            "p90_us": 55.572,
+            "p99_us": 58.784
+          },
+          "wall_us": {
+            "mean_us": 52.7218940397351,
+            "p50_us": 52.526,
+            "p90_us": 54.603,
+            "p99_us": 57.965
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.28785875502490743
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 8,
+      "total_receipts": 16,
+      "phase": "epoch_handoff",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "850f41a6b1c3224a374448fb454c208ca1b1c208bbaf6886c32ca58daa9bdd1d",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 77.25795364238411,
+            "p50_us": 77.126,
+            "p90_us": 79.947,
+            "p99_us": 82.779
+          },
+          "wall_us": {
+            "mean_us": 76.41629801324504,
+            "p50_us": 76.297,
+            "p90_us": 79.038,
+            "p99_us": 81.937
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 55.30400662251655,
+            "p50_us": 55.019,
+            "p90_us": 56.955,
+            "p99_us": 62.381
+          },
+          "wall_us": {
+            "mean_us": 54.46477483443709,
+            "p50_us": 54.153,
+            "p90_us": 56.094,
+            "p99_us": 61.39
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.28663485724658355
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 8,
+      "total_receipts": 16,
+      "phase": "consumer_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "5adf3173fbaeea7fe442af08d92c3a1e3e47d5524507c1f2619e338f9f4c41ea",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 140.489940397351,
+            "p50_us": 140.186,
+            "p90_us": 144.216,
+            "p99_us": 149.108
+          },
+          "wall_us": {
+            "mean_us": 139.63770198675496,
+            "p50_us": 139.369,
+            "p90_us": 143.466,
+            "p99_us": 148.177
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 118.96018543046358,
+            "p50_us": 118.777,
+            "p90_us": 122.039,
+            "p99_us": 128.219
+          },
+          "wall_us": {
+            "mean_us": 118.12392052980132,
+            "p50_us": 117.937,
+            "p90_us": 121.261,
+            "p99_us": 127.22
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.15271853109440314
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 8,
+      "total_receipts": 16,
+      "phase": "consumer_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "da123a9beb60f1fba1324a435714a17034033c588c218c65a19c976b51a02eee",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 149.94972185430464,
+            "p50_us": 149.28,
+            "p90_us": 155.558,
+            "p99_us": 158.349
+          },
+          "wall_us": {
+            "mean_us": 149.08858940397351,
+            "p50_us": 148.451,
+            "p90_us": 154.693,
+            "p99_us": 157.488
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 128.12697350993378,
+            "p50_us": 127.935,
+            "p90_us": 131.795,
+            "p99_us": 137.299
+          },
+          "wall_us": {
+            "mean_us": 127.250059602649,
+            "p50_us": 127.138,
+            "p90_us": 130.903,
+            "p99_us": 136.442
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.14298633440514463
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 8,
+      "total_receipts": 16,
+      "phase": "first_service",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "4408713e67908ace56ff75ff3e93386ae54410fb81b79b885beed978cd75f47c",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 27.759529801324504,
+            "p50_us": 27.776,
+            "p90_us": 28.911,
+            "p99_us": 30.285
+          },
+          "wall_us": {
+            "mean_us": 27.045933774834438,
+            "p50_us": 27.05,
+            "p90_us": 28.16,
+            "p99_us": 29.389
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 24.44441059602649,
+            "p50_us": 24.378,
+            "p90_us": 25.524,
+            "p99_us": 26.895
+          },
+          "wall_us": {
+            "mean_us": 23.72633774834437,
+            "p50_us": 23.68,
+            "p90_us": 24.808,
+            "p99_us": 26.128
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.12233582949308752
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 8,
+      "total_receipts": 16,
+      "phase": "first_service",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "7d901b1c64f23e29bfe63eac610e4fd145ef4d9334706a790dd121d04727c971",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 43.8547417218543,
+            "p50_us": 43.675,
+            "p90_us": 45.479,
+            "p99_us": 52.22
+          },
+          "wall_us": {
+            "mean_us": 43.06969536423841,
+            "p50_us": 42.885,
+            "p90_us": 44.7,
+            "p99_us": 50.32
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 40.22918543046357,
+            "p50_us": 40.109,
+            "p90_us": 42.095,
+            "p99_us": 46.312
+          },
+          "wall_us": {
+            "mean_us": 39.46243708609271,
+            "p50_us": 39.386,
+            "p90_us": 41.243,
+            "p99_us": 45.57
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.081648540354894
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 8,
+      "total_receipts": 16,
+      "phase": "deferred_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 100,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "8b14ca29d09ec1be4c633b3651a19c863edcec67bbdba9ea14c573b45240758a",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 0.5572696026490066,
+            "p50_us": 0.55043,
+            "p90_us": 0.58215,
+            "p99_us": 0.62487
+          },
+          "wall_us": {
+            "mean_us": 0.5490798675496689,
+            "p50_us": 0.5418999999999999,
+            "p90_us": 0.57437,
+            "p99_us": 0.61539
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 0.5553744370860927,
+            "p50_us": 0.5504,
+            "p90_us": 0.58617,
+            "p99_us": 0.61911
+          },
+          "wall_us": {
+            "mean_us": 0.5473809933774835,
+            "p50_us": 0.54238,
+            "p90_us": 0.57759,
+            "p99_us": 0.61149
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 5.450284323160748e-05
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 8,
+      "total_receipts": 16,
+      "phase": "deferred_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 100,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "8b14ca29d09ec1be4c633b3651a19c863edcec67bbdba9ea14c573b45240758a",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 0.5537492052980132,
+            "p50_us": 0.54892,
+            "p90_us": 0.58448,
+            "p99_us": 0.59599
+          },
+          "wall_us": {
+            "mean_us": 0.5458449668874172,
+            "p50_us": 0.54034,
+            "p90_us": 0.57651,
+            "p99_us": 0.58786
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 0.5454066887417218,
+            "p50_us": 0.5420499999999999,
+            "p90_us": 0.56936,
+            "p99_us": 0.60739
+          },
+          "wall_us": {
+            "mean_us": 0.5375897350993377,
+            "p50_us": 0.53479,
+            "p90_us": 0.5612999999999999,
+            "p99_us": 0.59981
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.01251548495226995
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 8,
+      "total_receipts": 16,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "fd62b542a3832924f1c5caeefa77145a7132a6ee86d45d69cfa19c2afca2f3ad",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 70.7391523178808,
+            "p50_us": 70.418,
+            "p90_us": 72.689,
+            "p99_us": 75.788
+          },
+          "wall_us": {
+            "mean_us": 69.87674834437087,
+            "p50_us": 69.541,
+            "p90_us": 71.815,
+            "p99_us": 74.941
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 54.994370860927155,
+            "p50_us": 54.792,
+            "p90_us": 56.522,
+            "p99_us": 60.58
+          },
+          "wall_us": {
+            "mean_us": 54.12924503311258,
+            "p50_us": 53.938,
+            "p90_us": 55.678,
+            "p99_us": 59.68
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.22190349058479375
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 8,
+      "total_receipts": 16,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": false,
+      "profiling": true,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "fd62b542a3832924f1c5caeefa77145a7132a6ee86d45d69cfa19c2afca2f3ad",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 77.35082781456954,
+            "p50_us": 77.01,
+            "p90_us": 79.618,
+            "p99_us": 83.031
+          },
+          "wall_us": {
+            "mean_us": 76.47364238410596,
+            "p50_us": 76.169,
+            "p90_us": 78.796,
+            "p99_us": 82.183
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 61.479920529801326,
+            "p50_us": 61.147,
+            "p90_us": 63.565,
+            "p99_us": 66.306
+          },
+          "wall_us": {
+            "mean_us": 60.62698013245033,
+            "p50_us": 60.295,
+            "p90_us": 62.712,
+            "p99_us": 65.333
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.20598623555382423
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 8,
+      "total_receipts": 16,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "fd62b542a3832924f1c5caeefa77145a7132a6ee86d45d69cfa19c2afca2f3ad",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 71.08149668874172,
+            "p50_us": 70.965,
+            "p90_us": 73.032,
+            "p99_us": 75.251
+          },
+          "wall_us": {
+            "mean_us": 70.20482781456954,
+            "p50_us": 70.032,
+            "p90_us": 72.207,
+            "p99_us": 74.307
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 55.3518940397351,
+            "p50_us": 55.096,
+            "p90_us": 57.092,
+            "p99_us": 62.596
+          },
+          "wall_us": {
+            "mean_us": 54.48892715231788,
+            "p50_us": 54.271,
+            "p90_us": 56.254,
+            "p99_us": 61.649
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.22361727612203208
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 8,
+      "total_receipts": 16,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": true,
+      "profiling": true,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "fd62b542a3832924f1c5caeefa77145a7132a6ee86d45d69cfa19c2afca2f3ad",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 76.35812582781458,
+            "p50_us": 76.051,
+            "p90_us": 78.928,
+            "p99_us": 81.734
+          },
+          "wall_us": {
+            "mean_us": 75.46749668874172,
+            "p50_us": 75.117,
+            "p90_us": 77.937,
+            "p99_us": 80.874
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 63.82329801324503,
+            "p50_us": 63.539,
+            "p90_us": 66.34,
+            "p99_us": 69.967
+          },
+          "wall_us": {
+            "mean_us": 62.951185430463575,
+            "p50_us": 62.659,
+            "p90_us": 65.381,
+            "p99_us": 69.086
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.16452117657887466
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 42,
+      "total_receipts": 84,
+      "phase": "waiting_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "d8d2ff3ba26acaa44c750ff322de9c60614927da4027becdfcde47d80926d1ee",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 248.54852317880795,
+            "p50_us": 248.648,
+            "p90_us": 255.996,
+            "p99_us": 262.97
+          },
+          "wall_us": {
+            "mean_us": 247.58991390728477,
+            "p50_us": 247.697,
+            "p90_us": 254.85,
+            "p99_us": 261.755
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 160.65111920529802,
+            "p50_us": 160.16,
+            "p90_us": 164.883,
+            "p99_us": 171.931
+          },
+          "wall_us": {
+            "mean_us": 159.75213907284768,
+            "p50_us": 159.254,
+            "p90_us": 164.038,
+            "p99_us": 171.119
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.3558765805476014
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 42,
+      "total_receipts": 84,
+      "phase": "waiting_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "d8d2ff3ba26acaa44c750ff322de9c60614927da4027becdfcde47d80926d1ee",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 248.34166225165563,
+            "p50_us": 247.368,
+            "p90_us": 256.776,
+            "p99_us": 265.519
+          },
+          "wall_us": {
+            "mean_us": 247.46386092715233,
+            "p50_us": 246.472,
+            "p90_us": 255.961,
+            "p99_us": 264.499
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 166.43831125827813,
+            "p50_us": 165.457,
+            "p90_us": 169.886,
+            "p99_us": 191.298
+          },
+          "wall_us": {
+            "mean_us": 165.5191655629139,
+            "p50_us": 164.588,
+            "p90_us": 168.898,
+            "p99_us": 190.466
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.33113013809385206
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 42,
+      "total_receipts": 84,
+      "phase": "ready_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "93403334664aa7257b5bbc4e5d3ebe3b5941dfb2d9f563496d757695c4896e9c",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 263.71229801324506,
+            "p50_us": 263.165,
+            "p90_us": 272.926,
+            "p99_us": 279.805
+          },
+          "wall_us": {
+            "mean_us": 262.90065562913907,
+            "p50_us": 262.271,
+            "p90_us": 272.01,
+            "p99_us": 282.651
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 180.37585430463577,
+            "p50_us": 179.715,
+            "p90_us": 186.744,
+            "p99_us": 192.663
+          },
+          "wall_us": {
+            "mean_us": 179.43190728476822,
+            "p50_us": 178.795,
+            "p90_us": 185.861,
+            "p99_us": 191.771
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.317101438261167
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 42,
+      "total_receipts": 84,
+      "phase": "ready_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "7f210ac5bbc1c9a3cbbebacee73a1d14c14cff67cd5ea4ef27836682f9816a7e",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 258.55641059602647,
+            "p50_us": 258.167,
+            "p90_us": 263.855,
+            "p99_us": 271.028
+          },
+          "wall_us": {
+            "mean_us": 257.59186754966885,
+            "p50_us": 257.238,
+            "p90_us": 262.979,
+            "p99_us": 270.02
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 184.95741059602648,
+            "p50_us": 184.278,
+            "p90_us": 190.396,
+            "p99_us": 196.965
+          },
+          "wall_us": {
+            "mean_us": 184.03911920529802,
+            "p50_us": 183.406,
+            "p90_us": 189.477,
+            "p99_us": 196.015
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.2862062153567264
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 42,
+      "total_receipts": 84,
+      "phase": "epoch_handoff",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "93403334664aa7257b5bbc4e5d3ebe3b5941dfb2d9f563496d757695c4896e9c",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 277.3904238410596,
+            "p50_us": 276.947,
+            "p90_us": 283.461,
+            "p99_us": 291.5
+          },
+          "wall_us": {
+            "mean_us": 276.3942582781457,
+            "p50_us": 275.99,
+            "p90_us": 282.408,
+            "p99_us": 290.297
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 173.86539072847683,
+            "p50_us": 173.561,
+            "p90_us": 178.813,
+            "p99_us": 184.725
+          },
+          "wall_us": {
+            "mean_us": 172.91274834437087,
+            "p50_us": 172.51,
+            "p90_us": 177.849,
+            "p99_us": 183.775
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.3733060838355353
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 42,
+      "total_receipts": 84,
+      "phase": "epoch_handoff",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "7f210ac5bbc1c9a3cbbebacee73a1d14c14cff67cd5ea4ef27836682f9816a7e",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 275.84743046357613,
+            "p50_us": 275.191,
+            "p90_us": 283.809,
+            "p99_us": 297.817
+          },
+          "wall_us": {
+            "mean_us": 274.77541721854305,
+            "p50_us": 274.115,
+            "p90_us": 282.454,
+            "p99_us": 296.217
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 177.7388013245033,
+            "p50_us": 176.027,
+            "p90_us": 184.334,
+            "p99_us": 222.958
+          },
+          "wall_us": {
+            "mean_us": 176.74111920529802,
+            "p50_us": 174.845,
+            "p90_us": 183.339,
+            "p99_us": 221.632
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.3603460868996442
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 42,
+      "total_receipts": 84,
+      "phase": "consumer_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "2175cf2d4e88f6ff017ca3eaf767432ee9f3f3904cf4c34d72e0da53d504342f",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 677.4299006622516,
+            "p50_us": 675.161,
+            "p90_us": 698.031,
+            "p99_us": 731.269
+          },
+          "wall_us": {
+            "mean_us": 676.3539072847682,
+            "p50_us": 674.202,
+            "p90_us": 696.943,
+            "p99_us": 730.195
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 545.4524569536424,
+            "p50_us": 544.108,
+            "p90_us": 567.344,
+            "p99_us": 580.188
+          },
+          "wall_us": {
+            "mean_us": 544.3974437086092,
+            "p50_us": 542.875,
+            "p90_us": 566.011,
+            "p99_us": 579.126
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.19410629464675833
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 42,
+      "total_receipts": 84,
+      "phase": "consumer_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "246c47f545bf4ab7840d76b2c95f258bc0e72362e041049342858a3ee42d9088",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 754.2188476821192,
+            "p50_us": 740.175,
+            "p90_us": 754.944,
+            "p99_us": 781.431
+          },
+          "wall_us": {
+            "mean_us": 753.1385894039735,
+            "p50_us": 738.971,
+            "p90_us": 753.632,
+            "p99_us": 780.54
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 601.1845629139073,
+            "p50_us": 601.279,
+            "p90_us": 620.7,
+            "p99_us": 639.045
+          },
+          "wall_us": {
+            "mean_us": 600.1172980132451,
+            "p50_us": 600.18,
+            "p90_us": 619.827,
+            "p99_us": 638.015
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.18765291991758704
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 42,
+      "total_receipts": 84,
+      "phase": "first_service",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "c2a22bbc2b887e406d2a0b71528a1bd61cf0ade56f3d04bc7ee8a1a8891bbbc5",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 90.72586754966888,
+            "p50_us": 90.506,
+            "p90_us": 92.675,
+            "p99_us": 98.931
+          },
+          "wall_us": {
+            "mean_us": 89.9883642384106,
+            "p50_us": 89.765,
+            "p90_us": 91.833,
+            "p99_us": 98.3
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 74.92487417218543,
+            "p50_us": 74.7,
+            "p90_us": 77.107,
+            "p99_us": 79.393
+          },
+          "wall_us": {
+            "mean_us": 74.1904238410596,
+            "p50_us": 73.99,
+            "p90_us": 76.401,
+            "p99_us": 78.653
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.17464035533555788
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 42,
+      "total_receipts": 84,
+      "phase": "first_service",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "4ab32fc1d4b2affc9ef2e639b5e37d692fcac97cdfb673a313d5301ba6e41201",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 165.313,
+            "p50_us": 164.94,
+            "p90_us": 169.711,
+            "p99_us": 173.675
+          },
+          "wall_us": {
+            "mean_us": 164.46170198675497,
+            "p50_us": 164.094,
+            "p90_us": 168.763,
+            "p99_us": 172.683
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 148.21201324503312,
+            "p50_us": 147.91,
+            "p90_us": 152.343,
+            "p99_us": 161.034
+          },
+          "wall_us": {
+            "mean_us": 147.37578145695363,
+            "p50_us": 147.058,
+            "p90_us": 151.472,
+            "p99_us": 160.116
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.10324966654541046
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 42,
+      "total_receipts": 84,
+      "phase": "deferred_scan",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 100,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "d1cdac5d525e2e728c45dae09412832f2056232266da2c347d368f0d05cea482",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 0.5560180132450331,
+            "p50_us": 0.55088,
+            "p90_us": 0.58854,
+            "p99_us": 0.61302
+          },
+          "wall_us": {
+            "mean_us": 0.5466328476821192,
+            "p50_us": 0.54165,
+            "p90_us": 0.57884,
+            "p99_us": 0.60202
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 0.5537372847682119,
+            "p50_us": 0.54916,
+            "p90_us": 0.58384,
+            "p99_us": 0.60126
+          },
+          "wall_us": {
+            "mean_us": 0.5445543708609272,
+            "p50_us": 0.53961,
+            "p90_us": 0.5741499999999999,
+            "p99_us": 0.5920599999999999
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.0031222770839385294
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 42,
+      "total_receipts": 84,
+      "phase": "deferred_scan",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 100,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "d1cdac5d525e2e728c45dae09412832f2056232266da2c347d368f0d05cea482",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 0.553494238410596,
+            "p50_us": 0.54683,
+            "p90_us": 0.5860299999999999,
+            "p99_us": 0.60153
+          },
+          "wall_us": {
+            "mean_us": 0.5445806622516556,
+            "p50_us": 0.53864,
+            "p90_us": 0.57537,
+            "p99_us": 0.59312
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 0.5555940397350994,
+            "p50_us": 0.5528099999999999,
+            "p90_us": 0.58499,
+            "p99_us": 0.6050399999999999
+          },
+          "wall_us": {
+            "mean_us": 0.54679059602649,
+            "p50_us": 0.54398,
+            "p90_us": 0.57648,
+            "p99_us": 0.59703
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": -0.010935756999432833
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 42,
+      "total_receipts": 84,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": false,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "78d60d412ff111d78ddd3c043bc1d15952fd632eaec5b883e6138c6362c64758",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 261.4748145695364,
+            "p50_us": 261.027,
+            "p90_us": 270.82,
+            "p99_us": 275.31
+          },
+          "wall_us": {
+            "mean_us": 260.533940397351,
+            "p50_us": 260.064,
+            "p90_us": 269.962,
+            "p99_us": 274.371
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 186.52190728476822,
+            "p50_us": 185.855,
+            "p90_us": 191.297,
+            "p99_us": 194.967
+          },
+          "wall_us": {
+            "mean_us": 185.70596688741722,
+            "p50_us": 184.853,
+            "p90_us": 189.972,
+            "p99_us": 194.22
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.287985534063526
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 42,
+      "total_receipts": 84,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": false,
+      "profiling": true,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "78d60d412ff111d78ddd3c043bc1d15952fd632eaec5b883e6138c6362c64758",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 278.4386026490066,
+            "p50_us": 277.999,
+            "p90_us": 289.601,
+            "p99_us": 301.336
+          },
+          "wall_us": {
+            "mean_us": 277.4307086092715,
+            "p50_us": 276.878,
+            "p90_us": 288.408,
+            "p99_us": 300.514
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 194.50401986754966,
+            "p50_us": 194.16,
+            "p90_us": 199.293,
+            "p99_us": 216.106
+          },
+          "wall_us": {
+            "mean_us": 193.52539072847682,
+            "p50_us": 193.139,
+            "p90_us": 198.336,
+            "p99_us": 215.13
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.30158022151158825
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 42,
+      "total_receipts": 84,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": true,
+      "profiling": false,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "78d60d412ff111d78ddd3c043bc1d15952fd632eaec5b883e6138c6362c64758",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 266.23731125827817,
+            "p50_us": 265.711,
+            "p90_us": 274.613,
+            "p99_us": 287.686
+          },
+          "wall_us": {
+            "mean_us": 265.220940397351,
+            "p50_us": 264.695,
+            "p90_us": 273.666,
+            "p99_us": 286.805
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 187.6546225165563,
+            "p50_us": 187.438,
+            "p90_us": 193.037,
+            "p99_us": 197.525
+          },
+          "wall_us": {
+            "mean_us": 186.64679470198675,
+            "p50_us": 186.516,
+            "p90_us": 191.93,
+            "p99_us": 196.446
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.29457944910071476
+    },
+    {
+      "contexts": 2,
+      "receipts_per_context": 42,
+      "total_receipts": 84,
+      "phase": "scheduler_cycle",
+      "diagnostics_writer_fixture": true,
+      "profiling": true,
+      "calls_per_sample": 1,
+      "state_records_receipts_and_locks_equal": true,
+      "canonical_output_sha256": "78d60d412ff111d78ddd3c043bc1d15952fd632eaec5b883e6138c6362c64758",
+      "costs": {
+        "baseline": {
+          "thread_cpu_us": {
+            "mean_us": 274.2634701986755,
+            "p50_us": 273.407,
+            "p90_us": 281.175,
+            "p99_us": 294.147
+          },
+          "wall_us": {
+            "mean_us": 273.2627152317881,
+            "p50_us": 272.448,
+            "p90_us": 280.206,
+            "p99_us": 293.234
+          }
+        },
+        "candidate": {
+          "thread_cpu_us": {
+            "mean_us": 193.76717218543047,
+            "p50_us": 193.297,
+            "p90_us": 198.39,
+            "p99_us": 204.052
+          },
+          "wall_us": {
+            "mean_us": 192.78385430463575,
+            "p50_us": 192.416,
+            "p90_us": 197.32,
+            "p99_us": 202.928
+          }
+        }
+      },
+      "p50_thread_cpu_reduction_fraction": 0.2930063970564031
+    }
+  ],
+  "limits": [
+    "Real trace counts describe registrations, not frequency-weighted maintenance populations.",
+    "Two simultaneous 42-receipt contexts exceed the latest trace's observed total maximum.",
+    "Native fields and single deepest-lock ownership use CPU doubles, not the real allocator.",
+    "Reset, output comparisons, construction and trace reading are outside timing.",
+    "Active scans are deliberately due; deferred calls and first service are separate scenes.",
+    "A writer fixture appends records; file serialization and background I/O are absent.",
+    "Fixed monotonic/wall clocks use plain functions, not counted mocks.",
+    "The runtime cycle excludes the rest of native scheduler selection and GPU execution.",
+    "No synthetic population or measured microseconds are extrapolated to throughput/JCT."
+  ]
+}
