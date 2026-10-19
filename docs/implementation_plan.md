@@ -64,6 +64,20 @@ Current goal:
 - Stop and fix material experimental failures promptly; CPU improvements alone
   do not establish GPU performance or a gain over native.
 
+V2021/V2022 inline H2D pool-name normalization while preserving the per-operation
+mapping snapshot before both native accounting callbacks, live unit sizes, arbitrary
+nonempty canonical sidecar names and duplicate-name rejection. Do not alias mutable
+maps or cache geometry across operations. All 12 scalar H2D/D2H expectations match;
+FULL4096 CPU P50 is 6.066 to 5.581us, with a retained 0.099us derived-sidecar regression.
+D2H is unchanged control code. All 32 complete JOIN/tool scenes preserve records,
+full reservations and native reads; 31 CPU P50s improve, with one 0.809us regression.
+For 64 nodes, native-budget JOIN/tool without diagnostics are 1684.783 to 1655.434us
+and 1687.816 to 1656.818us. All 2278 checks pass in V2023. Preserve V2019's failed
+new assertion and V2020's correction to assert the existing wrapper and cause;
+production error handling is unchanged. See V2024. Commit main and update the same
+06:00 qualification; V88/patch/configuration remain unchanged. CPU evidence does
+not establish allocator/DMA, GPU or end-to-end gains.
+
 V2013/V2016 reduce temporary tuple/iterator work in live node validation and reuse
 the creation-time type within one call. Keep every live field, bound, rejection
 and scalar output; do not cache observations across calls. All 30 closure scenes

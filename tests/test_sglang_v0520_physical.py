@@ -524,6 +524,92 @@ def test_native_prefetch_full_only_without_aux_transfers():
     )
 
 
+class _PoolAlias:
+    def __init__(self, value):
+        self.value = value
+
+
+@pytest.mark.parametrize("full,mamba,sidecar", [
+    (2, 0, None), (2, 1, Pool.KV), (0, 2, Pool.MAMBA),
+])
+def test_native_prefetch_pool_aliases_preserve_complete_accounting(full, mamba, sidecar):
+    step, operation, controller = native_prefetch(full=full, mamba=mamba, sidecar=sidecar)
+    expected = prefetch_expectation_from_native_op("prefetch-1", step, operation, controller)
+    controller.mem_pool_host.entry_map = {
+        _PoolAlias(name.value): entry
+        for name, entry in controller.mem_pool_host.entry_map.items()
+    }
+    assert prefetch_expectation_from_native_op(
+        "prefetch-1", step, operation, controller,
+    ) == expected
+
+
+@pytest.mark.parametrize("value", (None, True, 7, "", []))
+def test_native_prefetch_invalid_pool_alias_precedes_native_accounting(value):
+    step, operation, controller = native_prefetch()
+    controller.mem_pool_host.entry_map[_PoolAlias(value)] = NS()
+    with patch.object(
+        controller, "_num_tokens_by_pool", wraps=controller._num_tokens_by_pool,
+    ) as counts, patch.object(
+        controller, "_transfer_num_bytes", wraps=controller._transfer_num_bytes,
+    ) as total:
+        with pytest.raises(PhysicalReceiptError, match="accounting unavailable") as error:
+            prefetch_expectation_from_native_op("prefetch-1", step, operation, controller)
+    assert str(error.value.__cause__) == "invalid native prefetch pool name"
+    counts.assert_not_called()
+    total.assert_not_called()
+
+
+def test_native_prefetch_duplicate_normalized_pool_precedes_native_accounting():
+    step, operation, controller = native_prefetch()
+    controller.mem_pool_host.entry_map[_PoolAlias("kv")] = NS()
+    with patch.object(
+        controller, "_num_tokens_by_pool", wraps=controller._num_tokens_by_pool,
+    ) as counts:
+        with pytest.raises(PhysicalReceiptError, match="accounting unavailable") as error:
+            prefetch_expectation_from_native_op("prefetch-1", step, operation, controller)
+    assert str(error.value.__cause__) == "native prefetch host geometry changed"
+    counts.assert_not_called()
+
+
+@pytest.mark.parametrize("replace_map", (False, True))
+def test_native_prefetch_entry_snapshot_precedes_callbacks_and_is_fresh_next_call(replace_map):
+    step, operation, controller = native_prefetch(full=2, mamba=0, sidecar=None)
+    entries = controller.mem_pool_host.entry_map
+
+    def counts(_operation):
+        replacement = NS(host_pool=NS(size_per_token=1000))
+        if replace_map:
+            controller.mem_pool_host.entry_map = {**entries, Pool.KV: replacement}
+        else:
+            entries[Pool.KV] = replacement
+        return {"kv": 2}
+
+    controller._num_tokens_by_pool = counts
+    controller._transfer_num_bytes = lambda _operation: 20
+    expected = prefetch_expectation_from_native_op(
+        "prefetch-1", step, operation, controller,
+    )
+    assert expected.pool_bytes_per_token == (("kv", 10),)
+    assert expected.children[0].pool_bytes == (("kv", 20),)
+    with pytest.raises(PhysicalReceiptError, match="total bytes mismatch"):
+        prefetch_expectation_from_native_op("prefetch-1", step, operation, controller)
+
+
+def test_native_prefetch_entry_snapshot_still_reads_current_unit_size():
+    step, operation, controller = native_prefetch(full=2, mamba=0, sidecar=None)
+    entry = controller.mem_pool_host.entry_map[Pool.KV]
+
+    def counts(_operation):
+        entry.host_pool.size_per_token = 1000
+        return {"kv": 2}
+
+    controller._num_tokens_by_pool = counts
+    controller._transfer_num_bytes = lambda _operation: 20
+    with pytest.raises(PhysicalReceiptError, match="total bytes mismatch"):
+        prefetch_expectation_from_native_op("prefetch-1", step, operation, controller)
+
+
 @pytest.mark.parametrize("sidecar", (None, Pool.KV))
 @pytest.mark.parametrize("full", (1, 128, 4096))
 def test_full_shadow_preserves_sidecar_bytes_and_original_host_destinations(sidecar, full):

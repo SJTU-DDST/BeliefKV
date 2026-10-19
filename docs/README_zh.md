@@ -23,7 +23,17 @@ child 都可动态委派叶子孙 agent，最大深度仍为 2。任务范围、
 见[24-root 配置](../configs/migration/qwen35_locobench_long_24root_running8_2026-10-19.json)
 及[CPU 原始结果](../experiments/reports/v1925_v85d_long_chat_token_cache_cpu_20261019.json)。
 
-**最新闭包状态读取降本，V2013/V2016。**逐节点直接校验锁、引用和在途 ID，
+**最新 H2D 池名处理降本，V2021/V2022。**每次操作仍先捕获 Host 池映射，
+再调用两个原生核算方法；池名校验直接在本次循环执行，减少逐池短函数调用。
+任意非空规范池名、derived sidecar、重复别名拒绝、回调中的映射替换及实时
+unit size 读取均保留。32 组完整 JOIN/tool 的记录、预留、原生读取一致；
+31 组 CPU P50 降低，另一组多 0.809us。64 节点、原生预算且关闭诊断的
+JOIN/tool 为 1684.78→1655.43us、1687.82→1656.82us。2278 项检查通过。
+标量侧 FULL-derived sidecar 的 0.099us 回退保留，不外推 GPU/JCT；见
+[V2024](../experiments/reports/v2024_inline_pool_accounting_cpu_20261020_zh.md)。
+main 提交后更新同一 06:00 等待资格，V88 引擎和 24-root 配置保持。
+
+**此前闭包状态读取降本，V2013/V2016。**逐节点直接校验锁、引用和在途 ID，
 减少临时 tuple/生成器；创建时间的类型只在当前调用中读取一次。
 30 组闭包字段相同，平均线程 CPU 降低 1.8%–7.1%。24-root/8-running、
 稀疏叶子标记与原生 float64 时间下，32 组完整 JOIN/tool 提交的 CPU P50

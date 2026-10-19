@@ -1312,7 +1312,12 @@ def prefetch_expectation_from_native_op(
         entry_map = controller.mem_pool_host.entry_map
         if type(entry_map) is not dict:
             raise PhysicalReceiptError("native prefetch host geometry unavailable")
-        entries = {_prefetch_pool_name(name): entry for name, entry in entry_map.items()}
+        entries = {}
+        for raw_name, entry in entry_map.items():
+            name = getattr(raw_name, "value", raw_name)
+            if type(name) is not str or not name:
+                raise PhysicalReceiptError("invalid native prefetch pool name")
+            entries[name] = entry
         if len(entries) != len(entry_map) or "kv" not in entries:
             raise PhysicalReceiptError("native prefetch host geometry changed")
         counts = controller._num_tokens_by_pool(operation)

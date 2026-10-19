@@ -49,7 +49,21 @@ reactive 作为本系统控制时默认与 predictive 同开前端缓存，隔�
 11 个新 context 的混合 checkpoint 缺口仍单列：深 FULL 命中不能替代
 该位置缺少的可恢复 Mamba 状态，现有日志不足以逐个区分未创建与被回收。
 
-**最新闭包标量校验降本：V2013/V2016。**锁、session 引用及 pending ID
+**最新 H2D 池名处理降本：V2021/V2022。**本次映射快照仍早于两个原生核算
+回调，规范化及非空字符串校验直接在循环中完成。derived sidecar、重复
+规范池名拒绝、回调中的映射/entry 替换，以及 entry 内 unit size 的实时读取
+均保留；不跨调用缓存几何。12 组标量 H2D/D2H 对照的 expectation 相同，
+FULL4096 的 CPU P50 6.066→5.581us；FULL-derived sidecar 多 0.099us，
+D2H 代码未改、作为控制。32 组完整 JOIN/tool 的记录、预留及原生读取一致，
+31 组 CPU P50 更低，另一组多 0.809us。64 节点、原生预算且关闭诊断的
+JOIN/tool 为 1684.783→1655.434us、1687.816→1656.818us。
+V2023 的 2278 项检查通过，无 failure/error/skip。V2019 初次新增断言误认
+外层错误文本的失败保留；V2020 仅修正测试断言并校验原始 cause 后通过，
+生产错误包装未改。没有真实 allocator、DMA 或 GPU/JCT 新结论。见
+[V2024](../experiments/reports/v2024_inline_pool_accounting_cpu_20261020_zh.md)；
+提交后更新同一 06:00 启动资格，V88/补丁与 24-root 配置保持。
+
+**此前闭包标量校验降本：V2013/V2016。**锁、session 引用及 pending ID
 仍逐字段读取、校验原范围，省去逐节点的临时分组及短循环；session
 叶子 ID 直接迭代，创建时间仅在本次调用复用类型。没有跨调用缓存状态。
 30 组静态/分页静态/共享池闭包逐字段相同，平均线程 CPU 降低
