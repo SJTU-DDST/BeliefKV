@@ -5,14 +5,15 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-The user authorized a new GPU experiment no earlier than2026-10-20 06:00
-Asia/Shanghai. Until then, continue CPU-only control optimization and verification.
-A detached one-time waiter is registered in
+V88 predictive launched at2026-10-20 06:00:31 Asia/Shanghai after two idle-resource
+checks and the latest CPU qualification. Its first real workflow GPU service was
+recorded at06:03:54. Revision a3bc3cc,970 source files, the engine, actual serving settings
+and zero writer failures/drops were verified in V2051.
+The one-time launch and live driver state is registered in
 `/home/longhao/experiment/ops/v88_24root_after_0600_20261020.state.json`.
-At the deadline, require idle GPU resources and the latest CPU-qualified,
-frozen source before launching predictive first, followed by native.
-Publish a new qualification after subsequent code changes; an older qualification
-must not launch advanced/unverified main. This is not a recurring daily restriction.
+Predictive runs first, followed by native on the same frozen execution sources.
+Subsequent candidate changes need validation and a new frozen source; keep the live
+run immutable. This is not a recurring daily restriction.
 V85d predictive finished all12 workflows naturally; its interrupted native trace
 stays preserved and will not automatically resume.
 The report-only semantic-worker validation for observed/report-service JOINs
@@ -22,11 +23,10 @@ The completed12-root audit is V1923/V1924. Pre-JOIN reused FULL is2.868GB,
 but only85.463MB across2 JOINs starts before model EOS. H2D stream totals1.160s;
 long-input frontend conversion totals676.813s, neither an oracle JCT bound.
 Before a resumed24-root run, distinguish missing-copy opportunity, safe FULL
-capacity, new-context hybrid checkpoint gaps and service consumption. Keep GPU
-idle until the authorized deadline; no completed native control or policy speedup
-has been established for this workload.
+capacity, new-context hybrid checkpoint gaps and service consumption. No completed
+native control or policy speedup has been established for this workload.
 
-The next candidate is24 distinct original tasks on the same six qualified
+The running candidate is24 distinct original tasks on the same six qualified
 projects,16+8 waves900s apart and running8. Use native_in_graph_dynamic_nested:
 the model chooses delegation timing, fanout, roles and repeated rounds. Do not
 enforce four phases, force task generation at milestones, or reject natural
@@ -46,19 +46,23 @@ do not require an additional development run on every iteration. Our reactive
 control defaults to the same frontend as predictive. Freeze per-arm settings and
 verify their server-launch snapshots; preserve them on resume and exclude inherited
 global cache flags from native.
-The current qualified CPU engine candidate is sglang-v88-idle-control-cpu-20261019,
+The current frozen engine is sglang-v88-idle-control-cpu-20261019,
 patch2cbb0b46. Preserve V87/130d376d and V86/af328f26, and respect
 the explicit SGLANG_SOURCE_CHECKOUT through the launcher.
 This is CPU evidence, not an end-to-end result. Keep new-context hybrid checkpoint
 gaps separate; FULL matches alone cannot reconstruct a missing Mamba checkpoint.
-The one-time hold stays active until06:00; only the newly authorized24-root run
-may release it after verifying resources and the current CPU qualification.
+The one-time hold was released only for this qualified24-root run.
+V2052's initial large-map NUMA snapshot spans N0(52.226GB) and N1(149.574GB).
+Preferred placement permits fallback; these maps do not identify exact pool
+allocations. Observe native placement too. Optional TorchCodec warnings remain
+in the log; the launcher's explicit successful freeze_gc after health precedes
+real workflow service and handles the internal startup race.
 
 Current goal:
 
 - Continue removing unnecessary repeated PREPARE, prefetch, lifecycle and admission work.
 - Preserve current identity, generation, ownership, capacity, ACK and first-consumption checks.
-- Qualify and freeze the latest main revision before the authorized GPU start.
+- Preserve the qualified live source while developing subsequent candidates on main.
 - Measure useful Host-only recovery, consumption delay, copy loss/recomputation,
   tail-excluded throughput and mean workflow JCT on the new24-root run.
 - Stop and fix material experimental failures promptly; CPU improvements alone

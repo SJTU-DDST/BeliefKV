@@ -8,19 +8,21 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 历史实验 worktree 保留其冻结来源；新代码修改、验证与提交在主目录进行。
 
 用户最新授权：**北京时间 2026-10-20 06:00 后可启动新 GPU 实验**，
-此前仅做 CPU 工作。`/tmp/beliefkv-experiments.paused` 已改为本次明确日期
-的延后标记，只有登记的启动进程在到点、GPU 空闲且最新 CPU 资格通过后
-才可移除。状态文件为
+此前仅做 CPU 工作。登记进程在 06:00:31 通过两次空闲及 CPU 资格检查，
+移除本次明确日期的 `/tmp/beliefkv-experiments.paused` 并启动 V88。
+运行版本冻结为 `a3bc3cc`，06:03:54 已有真实 workflow GPU 服务记录，见 V2051。
+状态文件为
 `/home/longhao/experiment/ops/v88_24root_after_0600_20261020.state.json`。
-GPU 被占用则等待，不终止他人的进程。后续代码变化必须更新资格及冻结
-执行来源，不能启动未验证的 main。此次安排不恢复每日 00:00–06:00 规则。
+GPU 被占用则等待，不终止他人的进程。后续候选代码变化必须更新资格及
+冻结执行来源，不能启动未验证的 main；本轮双方继续使用同一已冻结代码。
+此次安排不恢复每日 00:00–06:00 规则。
 V85d predictive 12/12 自然完成；2026-10-19 18:11 中断的 native 保留部分
 轨迹，不自动续跑且不作完整配对。新轮为 24 root，先 predictive 后 native，
 root 数和 running 请求容量分别确定。
 汇总校验须区分通知/实际服务 JOIN 与旧语义模型，不得误要求后者的
 worker；在线工具计时与可借用容量也要核对冻结配置，不能直接跳过验证。
 
-后续配置为 24 个不同原始任务，16+8/900s、running 8；最早 06:00 启动。
+本轮配置为 24 个不同原始任务，16+8/900s、running 8。
 默认 profile 为 `native_in_graph_dynamic_nested`，不得预置 root 四阶段、
 固定角色或轮数，也不在工具结果后强制选择 task。直接 child 均可动态
 嵌套，孙 agent 为叶子；并行数 2–4 只是提示中的建议，单 child 和不委派
@@ -36,6 +38,12 @@ reactive 作为本系统控制时与 predictive 同开。完整系统收益与 K
 不修改 V85d 冻结路径。启动器必须尊重
 显式 `SGLANG_SOURCE_CHECKOUT`。测试暂停检查须隔离到临时路径，不删除
 真实 `/tmp/beliefkv-experiments.paused` 来运行 CPU 检查。
+
+V88 初始大映射 NUMA 快照跨 N0/N1，见 V2052；preferred 不承诺全部本地，
+且大映射不能直接当作精确 Host 池身份。native 也核对实际分布。
+外部按需核查不新增服务端采样。可选 TorchCodec 导入异常栈单列；
+内部 post-warmup freeze_gc 竞态须核对启动器在 health 后成功 POST、
+响应文件和真实请求时序，不能只凭 Traceback 字符串重启实验。
 
 同一逐 arm 前端开关也控制客户端完整输入计数复用，probe 必须将归一化
 后的 `BELIEFKV_CHAT_TOKEN_BLOCK_CACHE` 导出给客户端，不能只给 server。
