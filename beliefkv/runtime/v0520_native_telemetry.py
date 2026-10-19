@@ -117,6 +117,10 @@ class NativeReactiveTelemetry:
         ] = {}
         self._block_eviction_routes: dict[tuple[str, int, str], tuple[str, int, str]] = {}
         self._block_eviction_route_lengths: dict[tuple[str, int, str], Counter[int]] = {}
+        self._block_eviction_route_filters: dict[
+            tuple[str, int, str], tuple[str, int, str]
+        ] = {}
+        self._block_eviction_filter_refs: Counter[tuple[str, int, str]] = Counter()
         self._block_eviction_lengths: dict[str, OrderedDict[int, None]] = {}
         self._block_eviction_sorted_lengths: dict[str, list[int]] = {}
         self._block_eviction_length_refs: Counter[tuple[str, int]] = Counter()
@@ -374,6 +378,10 @@ class NativeReactiveTelemetry:
             digest_size=16,
             person=b"beliefkv-ns-v1",
         ).hexdigest()
+
+    @staticmethod
+    def _block_routing_tokens(prefix_tokens: int) -> int:
+        return min(4096, 1 << (prefix_tokens.bit_length() - 1))
 
     @staticmethod
     def _node_key_path(node: Any) -> tuple[Any, ...] | None:
@@ -662,6 +670,11 @@ class NativeReactiveTelemetry:
                     del route_lengths[prefix_tokens]
                     if not route_lengths:
                         del self._block_eviction_route_lengths[route]
+                        bounded = self._block_eviction_route_filters.pop(route)
+                        if self._block_eviction_filter_refs[bounded] == 1:
+                            del self._block_eviction_filter_refs[bounded]
+                        else:
+                            self._block_eviction_filter_refs[bounded] -= 1
                 else:
                     route_lengths[prefix_tokens] = references - 1
                 length_key = (namespace_digest, prefix_tokens)
@@ -705,11 +718,12 @@ class NativeReactiveTelemetry:
             record["extra_key"], record["cache_salt"]
         )
         routing_tokens = 1 << (prefix_tokens.bit_length() - 1)
+        filter_tokens = self._block_routing_tokens(prefix_tokens)
         digests = self._prefix_digests(
             record["extra_key"],
             record["cache_salt"],
             token_ids,
-            sorted({routing_tokens, prefix_tokens}),
+            sorted({filter_tokens, routing_tokens, prefix_tokens}),
         )
         prefix_digest = digests[prefix_tokens]
         identity = (
@@ -759,6 +773,9 @@ class NativeReactiveTelemetry:
             if route_lengths is None:
                 route_lengths = Counter()
                 self._block_eviction_route_lengths[route] = route_lengths
+                bounded = (namespace_digest, filter_tokens, digests[filter_tokens])
+                self._block_eviction_route_filters[route] = bounded
+                self._block_eviction_filter_refs[bounded] += 1
             route_lengths[prefix_tokens] += 1
             length_key = (namespace_digest, prefix_tokens)
             if not self._block_eviction_length_refs[length_key]:
@@ -835,14 +852,16 @@ class NativeReactiveTelemetry:
         else:
             prefix_lengths = ordered_lengths[:available_count]
         candidate_prefix_lengths = len(prefix_lengths)
-        if candidate_prefix_lengths <= 32:
+        if candidate_prefix_lengths <= 32 and (
+            not prefix_lengths or prefix_lengths[-1] <= 4096
+        ):
             prefix_digests = self._prefix_digests(
                 record.get("extra_key"), record.get("cache_salt"),
                 token_ids, prefix_lengths,
             )
         else:
-            # A matching terminal prefix must match its power-of-two prefix.
-            # Advance one hasher; only snapshot terminals on matching routes.
+            # Reject unrelated inputs cheaply, then retain the longer route to
+            # distinguish branches sharing source text. Full HMACs prove attribution.
             hasher = hashlib.blake2b(
                 key=self._block_hash_key, digest_size=16, person=b"beliefkv-kv-v1",
             )
@@ -850,23 +869,39 @@ class NativeReactiveTelemetry:
                 record.get("extra_key"), record.get("cache_salt"),
             ))
             token_bytes = memoryview(token_ids).cast("B")
-            previous_length = prefix_index = 0
+            previous_length = prefix_index = filter_boundary = 0
             prefix_digests = {}
             while prefix_index < candidate_prefix_lengths:
-                boundary = 1 << (prefix_lengths[prefix_index].bit_length() - 1)
+                prefix_tokens = prefix_lengths[prefix_index]
+                boundary = 1 << (prefix_tokens.bit_length() - 1)
                 boundary_end = bisect_left(
                     prefix_lengths, boundary * 2, lo=prefix_index + 1,
                 )
-                hasher.update(token_bytes[
-                    previous_length * token_ids.itemsize:
-                    boundary * token_ids.itemsize
-                ])
-                previous_length = boundary
-                routing_digest = hasher.copy().hexdigest()
-                route_lengths = self._block_eviction_route_lengths.get(
-                    (namespace_digest, boundary, routing_digest), (),
-                )
-                # An unmatched route rules out this whole prefix-length range.
+                bounded = self._block_routing_tokens(prefix_tokens)
+                if bounded != filter_boundary:
+                    hasher.update(token_bytes[
+                        previous_length * token_ids.itemsize:
+                        bounded * token_ids.itemsize
+                    ])
+                    previous_length = filter_boundary = bounded
+                    filter_digest = hasher.copy().hexdigest()
+                if self._block_eviction_filter_refs.get(
+                    (namespace_digest, bounded, filter_digest),
+                ):
+                    if boundary != bounded:
+                        hasher.update(token_bytes[
+                            previous_length * token_ids.itemsize:
+                            boundary * token_ids.itemsize
+                        ])
+                        previous_length = boundary
+                        routing_digest = hasher.copy().hexdigest()
+                    else:
+                        routing_digest = filter_digest
+                    route_lengths = self._block_eviction_route_lengths.get(
+                        (namespace_digest, boundary, routing_digest), (),
+                    )
+                else:
+                    route_lengths = ()
                 if route_lengths:
                     for index in range(prefix_index, boundary_end):
                         prefix_tokens = prefix_lengths[index]
@@ -1002,6 +1037,8 @@ class NativeReactiveTelemetry:
             self._block_eviction_index.clear()
             self._block_eviction_routes.clear()
             self._block_eviction_route_lengths.clear()
+            self._block_eviction_route_filters.clear()
+            self._block_eviction_filter_refs.clear()
             self._block_eviction_lengths.clear()
             self._block_eviction_sorted_lengths.clear()
             self._block_eviction_length_refs.clear()

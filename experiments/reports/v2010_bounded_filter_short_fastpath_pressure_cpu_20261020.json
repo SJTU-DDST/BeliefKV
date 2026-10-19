@@ -1,0 +1,1701 @@
+{
+  "status": "complete_cpu_comparison_not_gpu_or_jct_gain",
+  "benchmark_started_at_utc": "2026-10-19T19:39:25.491302+00:00",
+  "scope": "CPU writer processing with exact array prefixes and namespaced eviction identities; no concurrent writer/scheduler, GIL contention, allocator, DMA, CUDA or end-to-end throughput measurement.",
+  "baseline_revision": "ce2fd8f69206a2571625bc43917e9173685c77d7",
+  "baseline_source_sha256": "74f994752de7b8da21eb3f995ad2f412eb11854cac6479d62e0242aedd84e960",
+  "optimized_source_sha256": "7ce41a993abe5a26cf96af7faec195983b3b1a3b64f9e26e7390f16a44a62090",
+  "benchmark_source_sha256": "7ad42aa3ee1f95444acf76ea96c54e3a14a67d9a4a1aac356c9f2428c943070b",
+  "candidate_source_sha256": {
+    "beliefkv/runtime/v0520_native_telemetry.py": "7ce41a993abe5a26cf96af7faec195983b3b1a3b64f9e26e7390f16a44a62090",
+    "scripts/benchmark_native_prefix_writer_cpu.py": "7ad42aa3ee1f95444acf76ea96c54e3a14a67d9a4a1aac356c9f2428c943070b",
+    "tests/test_v0520_native_telemetry.py": "fc77fedd6161cc5fed5449968b2a5f148f06714b01ca65fe73a342bdc31af12c"
+  },
+  "iterations_per_case": 31,
+  "warmup_iterations": 10,
+  "deployed": false,
+  "cases": [
+    {
+      "prior_input_tokens": 1024,
+      "scenario": "context_append",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "c21a26d3fc4b74b822c9cc9e71752c7c728b22b66d95c10ecca3e820c54be394",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.08219509677419355,
+            "p50_ms": 0.082361,
+            "p90_ms": 0.084664,
+            "max_ms": 0.085074
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.08236712903225807,
+            "p50_ms": 0.082557,
+            "p90_ms": 0.084806,
+            "max_ms": 0.085242
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.08221264516129033,
+            "p50_ms": 0.081984,
+            "p90_ms": 0.085143,
+            "max_ms": 0.087708
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.08239132258064516,
+            "p50_ms": 0.082157,
+            "p90_ms": 0.085313,
+            "max_ms": 0.087899
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 1024,
+      "scenario": "context_middle_diverge",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "81e49eb8f2f777f932bd2da2bdeef567c13c9a6648c06eec70b9e6ee7deec578",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.08849670967741935,
+            "p50_ms": 0.088853,
+            "p90_ms": 0.090171,
+            "max_ms": 0.092575
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.0886795806451613,
+            "p50_ms": 0.089007,
+            "p90_ms": 0.090303,
+            "max_ms": 0.092834
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.087653,
+            "p50_ms": 0.086991,
+            "p90_ms": 0.091072,
+            "max_ms": 0.092106
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.08782790322580646,
+            "p50_ms": 0.087323,
+            "p90_ms": 0.091388,
+            "max_ms": 0.092254
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 1024,
+      "scenario": "context_late_diverge",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "7071538afca74d4209874dec8f772fdf9c6625966ab10bf570be90dfc1083e3c",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.08827003225806451,
+            "p50_ms": 0.087884,
+            "p90_ms": 0.090061,
+            "max_ms": 0.095633
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.08845787096774194,
+            "p50_ms": 0.08805,
+            "p90_ms": 0.090297,
+            "max_ms": 0.095805
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.08800103225806452,
+            "p50_ms": 0.087818,
+            "p90_ms": 0.090543,
+            "max_ms": 0.104286
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.08816122580645161,
+            "p50_ms": 0.08801,
+            "p90_ms": 0.090707,
+            "max_ms": 0.10452
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 1024,
+      "scenario": "context_shorter",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "45467247a81661a597f39cf2e528df57ce07d366d04b643ada042ea4d729b306",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.06682058064516129,
+            "p50_ms": 0.066884,
+            "p90_ms": 0.068292,
+            "max_ms": 0.069173
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.06704503225806452,
+            "p50_ms": 0.067088,
+            "p90_ms": 0.06857,
+            "max_ms": 0.069332
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.06671174193548388,
+            "p50_ms": 0.066366,
+            "p90_ms": 0.069478,
+            "max_ms": 0.07142
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.06688041935483871,
+            "p50_ms": 0.066546,
+            "p90_ms": 0.069718,
+            "max_ms": 0.071611
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 1024,
+      "scenario": "context_array",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "c21a26d3fc4b74b822c9cc9e71752c7c728b22b66d95c10ecca3e820c54be394",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.028776096774193547,
+            "p50_ms": 0.028668,
+            "p90_ms": 0.03004,
+            "max_ms": 0.033153
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.02890932258064516,
+            "p50_ms": 0.028784,
+            "p90_ms": 0.03025,
+            "max_ms": 0.03321
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.02835658064516129,
+            "p50_ms": 0.0285,
+            "p90_ms": 0.029717,
+            "max_ms": 0.030046
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.028506451612903227,
+            "p50_ms": 0.028676,
+            "p90_ms": 0.029916,
+            "max_ms": 0.030277
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 1024,
+      "scenario": "block_list",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "4841d449dc774a8d3ac876347ac8c2c0dd8802929cbe699b6a486accd6016e67",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.35011954838709675,
+            "p50_ms": 0.349245,
+            "p90_ms": 0.356972,
+            "max_ms": 0.364258
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.3503236129032258,
+            "p50_ms": 0.349426,
+            "p90_ms": 0.35714,
+            "max_ms": 0.36445
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.3542518387096774,
+            "p50_ms": 0.354256,
+            "p90_ms": 0.358957,
+            "max_ms": 0.374922
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.35446148387096776,
+            "p50_ms": 0.354501,
+            "p90_ms": 0.359137,
+            "max_ms": 0.375011
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 1024,
+      "scenario": "block_array",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "4841d449dc774a8d3ac876347ac8c2c0dd8802929cbe699b6a486accd6016e67",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.29324706451612903,
+            "p50_ms": 0.313092,
+            "p90_ms": 0.32185,
+            "max_ms": 0.328062
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.2934415483870968,
+            "p50_ms": 0.313322,
+            "p90_ms": 0.322052,
+            "max_ms": 0.328245
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.29702509677419353,
+            "p50_ms": 0.319247,
+            "p90_ms": 0.32568,
+            "max_ms": 0.327363
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.2972236451612903,
+            "p50_ms": 0.319439,
+            "p90_ms": 0.325882,
+            "max_ms": 0.327576
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 1024,
+      "scenario": "block_other_namespace",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "bababf63a90a7c271f3cc9993738e13dec899d9c1364e0f5a91b6ba6968d6985",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.030329451612903225,
+            "p50_ms": 0.030195,
+            "p90_ms": 0.031245,
+            "max_ms": 0.035134
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.030492451612903225,
+            "p50_ms": 0.03038,
+            "p90_ms": 0.031363,
+            "max_ms": 0.035319
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.030747096774193548,
+            "p50_ms": 0.030794,
+            "p90_ms": 0.031323,
+            "max_ms": 0.031664
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.030895387096774193,
+            "p50_ms": 0.030937,
+            "p90_ms": 0.03146,
+            "max_ms": 0.031808
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 1024,
+      "scenario": "block_many_branches",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "5170773242f1f77bd7a6ae3c8a4745bff8cd0045c20f1620400090d2c7d14499",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.3705590322580645,
+            "p50_ms": 0.370061,
+            "p90_ms": 0.379998,
+            "max_ms": 0.388419
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.3706469677419355,
+            "p50_ms": 0.370033,
+            "p90_ms": 0.379946,
+            "max_ms": 0.388572
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.3748604516129032,
+            "p50_ms": 0.37337,
+            "p90_ms": 0.381432,
+            "max_ms": 0.419441
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.37498258064516127,
+            "p50_ms": 0.373329,
+            "p90_ms": 0.381507,
+            "max_ms": 0.419845
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 1024,
+      "scenario": "block_many_unrelated",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "562be4f0c6a3316301270941374e2638de333afd2827a714a1785ba1d683f8b4",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.06403935483870968,
+            "p50_ms": 0.064002,
+            "p90_ms": 0.065082,
+            "max_ms": 0.069544
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.06412577419354838,
+            "p50_ms": 0.064098,
+            "p90_ms": 0.065144,
+            "max_ms": 0.069652
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.06485470967741935,
+            "p50_ms": 0.064756,
+            "p90_ms": 0.065701,
+            "max_ms": 0.071042
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.06498506451612904,
+            "p50_ms": 0.064898,
+            "p90_ms": 0.06583,
+            "max_ms": 0.072298
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 1024,
+      "scenario": "block_many_matches",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "a5088b92fad5daf2d25aa8d90eae5e32a99a152cc1075cbd1f1546d851345673",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 6.629372483870967,
+            "p50_ms": 6.631865,
+            "p90_ms": 6.696313,
+            "max_ms": 6.724469
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 6.628541741935484,
+            "p50_ms": 6.6321,
+            "p90_ms": 6.698586,
+            "max_ms": 6.724861
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 6.669443096774193,
+            "p50_ms": 6.671888,
+            "p90_ms": 6.710251,
+            "max_ms": 6.797859
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 6.66984329032258,
+            "p50_ms": 6.672243,
+            "p90_ms": 6.710635,
+            "max_ms": 6.79799
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 1024,
+      "scenario": "block_eviction",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "365172a09db2b5c558237a6b665e27f6d396b74df43974c9434d78af42577701",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.03840377419354839,
+            "p50_ms": 0.038464,
+            "p90_ms": 0.039354,
+            "max_ms": 0.043065
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.03850629032258065,
+            "p50_ms": 0.038535,
+            "p90_ms": 0.03947,
+            "max_ms": 0.043205
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.03880035483870968,
+            "p50_ms": 0.03899,
+            "p90_ms": 0.040064,
+            "max_ms": 0.041265
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.03892025806451613,
+            "p50_ms": 0.03912,
+            "p90_ms": 0.04014,
+            "max_ms": 0.04141
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 8192,
+      "scenario": "context_append",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "bea6597fd03f3181c340a63b80214b41366f30e659fa4bf46668e1f7208e73cb",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.34824232258064514,
+            "p50_ms": 0.347452,
+            "p90_ms": 0.352124,
+            "max_ms": 0.366832
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.34836993548387096,
+            "p50_ms": 0.347575,
+            "p90_ms": 0.35229,
+            "max_ms": 0.367004
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.34862348387096775,
+            "p50_ms": 0.34716,
+            "p90_ms": 0.35754,
+            "max_ms": 0.363465
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.34875374193548386,
+            "p50_ms": 0.347352,
+            "p90_ms": 0.357649,
+            "max_ms": 0.363533
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 8192,
+      "scenario": "context_middle_diverge",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "be884928362f81a57134dc23ffa481b1a888855419f63ce87753037946c36497",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.3616488064516129,
+            "p50_ms": 0.358742,
+            "p90_ms": 0.372165,
+            "max_ms": 0.394786
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.3617928064516129,
+            "p50_ms": 0.358841,
+            "p90_ms": 0.372323,
+            "max_ms": 0.394993
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.35974993548387096,
+            "p50_ms": 0.358154,
+            "p90_ms": 0.367179,
+            "max_ms": 0.401808
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.35909048387096776,
+            "p50_ms": 0.358249,
+            "p90_ms": 0.367406,
+            "max_ms": 0.377243
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 8192,
+      "scenario": "context_late_diverge",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "9b452a4a72c6f7e8fb6bf4c4e936ed10462f25ecb80cd831fbf840763e387011",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.3596802258064516,
+            "p50_ms": 0.358489,
+            "p90_ms": 0.365989,
+            "max_ms": 0.381762
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.3598314516129032,
+            "p50_ms": 0.358618,
+            "p90_ms": 0.36616,
+            "max_ms": 0.381862
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.35825851612903226,
+            "p50_ms": 0.356961,
+            "p90_ms": 0.364939,
+            "max_ms": 0.370205
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.35841593548387096,
+            "p50_ms": 0.357121,
+            "p90_ms": 0.365151,
+            "max_ms": 0.370429
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 8192,
+      "scenario": "context_shorter",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "5c854e31b4a66be91b0a279a1b3b3725526c105503599eb7f62daced7a3890c6",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.2607745806451613,
+            "p50_ms": 0.259986,
+            "p90_ms": 0.267535,
+            "max_ms": 0.271443
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.26085348387096774,
+            "p50_ms": 0.260094,
+            "p90_ms": 0.267639,
+            "max_ms": 0.271558
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.259405,
+            "p50_ms": 0.259197,
+            "p90_ms": 0.263955,
+            "max_ms": 0.269708
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.25950170967741937,
+            "p50_ms": 0.259255,
+            "p90_ms": 0.264011,
+            "max_ms": 0.269838
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 8192,
+      "scenario": "context_array",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "bea6597fd03f3181c340a63b80214b41366f30e659fa4bf46668e1f7208e73cb",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.027532354838709677,
+            "p50_ms": 0.027527,
+            "p90_ms": 0.029056,
+            "max_ms": 0.029386
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.02761783870967742,
+            "p50_ms": 0.027612,
+            "p90_ms": 0.029176,
+            "max_ms": 0.029458
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.027262193548387097,
+            "p50_ms": 0.027409,
+            "p90_ms": 0.028246,
+            "max_ms": 0.028673
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.027347064516129033,
+            "p50_ms": 0.027543,
+            "p90_ms": 0.028303,
+            "max_ms": 0.028761
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 8192,
+      "scenario": "block_list",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "d3664376bd9f2323b08a1ce4496642222b5f3fef470aee0c13a904409fc24b37",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.5181923548387096,
+            "p50_ms": 0.517615,
+            "p90_ms": 0.531374,
+            "max_ms": 0.532861
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.5184524838709678,
+            "p50_ms": 0.517856,
+            "p90_ms": 0.531645,
+            "max_ms": 0.533146
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.5334748387096774,
+            "p50_ms": 0.532571,
+            "p90_ms": 0.544868,
+            "max_ms": 0.594481
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.5323110967741935,
+            "p50_ms": 0.532847,
+            "p90_ms": 0.545136,
+            "max_ms": 0.552444
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 8192,
+      "scenario": "block_array",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "d3664376bd9f2323b08a1ce4496642222b5f3fef470aee0c13a904409fc24b37",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.33410590322580647,
+            "p50_ms": 0.333581,
+            "p90_ms": 0.337786,
+            "max_ms": 0.346053
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.33429877419354836,
+            "p50_ms": 0.333787,
+            "p90_ms": 0.337957,
+            "max_ms": 0.346296
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.34883606451612903,
+            "p50_ms": 0.347182,
+            "p90_ms": 0.353655,
+            "max_ms": 0.400335
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.3490657741935484,
+            "p50_ms": 0.3474,
+            "p90_ms": 0.35384,
+            "max_ms": 0.401512
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 8192,
+      "scenario": "block_other_namespace",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "0fb609f869fcf23d37d8a8975f92360a7acb6b92805992c3c3be0bf8e908b16c",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.18945664516129032,
+            "p50_ms": 0.187177,
+            "p90_ms": 0.19207,
+            "max_ms": 0.240716
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.18852306451612902,
+            "p50_ms": 0.187366,
+            "p90_ms": 0.192249,
+            "max_ms": 0.206053
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.18866867741935484,
+            "p50_ms": 0.187295,
+            "p90_ms": 0.193202,
+            "max_ms": 0.200422
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.18891503225806452,
+            "p50_ms": 0.187449,
+            "p90_ms": 0.193367,
+            "max_ms": 0.200582
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 8192,
+      "scenario": "block_many_branches",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "4f91855f5daef82f1a41547bc037c0ce3b364847e7a5a2ff98672b561a5cc061",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.5882439677419354,
+            "p50_ms": 0.588786,
+            "p90_ms": 0.594722,
+            "max_ms": 0.648088
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.5884773870967742,
+            "p50_ms": 0.589004,
+            "p90_ms": 0.594888,
+            "max_ms": 0.649194
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.5891938709677419,
+            "p50_ms": 0.591078,
+            "p90_ms": 0.59815,
+            "max_ms": 0.602731
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.5894224193548387,
+            "p50_ms": 0.591298,
+            "p90_ms": 0.59859,
+            "max_ms": 0.602934
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 8192,
+      "scenario": "block_many_unrelated",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "0bff683c0737f1cfcf577d9438fbec8bfe99689c3d8cefcf069917e64c871869",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.27311729032258064,
+            "p50_ms": 0.275244,
+            "p90_ms": 0.281748,
+            "max_ms": 0.288148
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.2732441290322581,
+            "p50_ms": 0.275487,
+            "p90_ms": 0.281942,
+            "max_ms": 0.288303
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.27407406451612903,
+            "p50_ms": 0.277067,
+            "p90_ms": 0.280073,
+            "max_ms": 0.290268
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.27421812903225806,
+            "p50_ms": 0.27709,
+            "p90_ms": 0.280105,
+            "max_ms": 0.290444
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 8192,
+      "scenario": "block_many_matches",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "9c650e680214de8913f2355080c1eb15cabd7aa8b77188362b9a0a5adfe878c5",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 6.9421758387096775,
+            "p50_ms": 6.931349,
+            "p90_ms": 7.019805,
+            "max_ms": 7.067704
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 6.942840838709677,
+            "p50_ms": 6.932266,
+            "p90_ms": 7.02061,
+            "max_ms": 7.068398
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 6.937851419354839,
+            "p50_ms": 6.948875,
+            "p90_ms": 7.008582,
+            "max_ms": 7.068438
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 6.938126258064516,
+            "p50_ms": 6.949725,
+            "p90_ms": 7.00924,
+            "max_ms": 7.057633
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 8192,
+      "scenario": "block_eviction",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "755b178928bcc2fe160b6f113bfc9e0b753a8e1a924e37cb9e38917835bf018b",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.121761,
+            "p50_ms": 0.121421,
+            "p90_ms": 0.123099,
+            "max_ms": 0.129073
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.12186067741935484,
+            "p50_ms": 0.121472,
+            "p90_ms": 0.123261,
+            "max_ms": 0.129205
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.12418951612903226,
+            "p50_ms": 0.123807,
+            "p90_ms": 0.126812,
+            "max_ms": 0.12934
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.124291,
+            "p50_ms": 0.123941,
+            "p90_ms": 0.126863,
+            "max_ms": 0.129462
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 32768,
+      "scenario": "context_append",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "a9da21295d49fcbf7b23733d7a8a1e723ef902d1857a6d336f45609bc766b3e2",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 1.3621447741935484,
+            "p50_ms": 1.359052,
+            "p90_ms": 1.390295,
+            "max_ms": 1.406119
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 1.362423,
+            "p50_ms": 1.359384,
+            "p90_ms": 1.390607,
+            "max_ms": 1.406336
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 1.361996935483871,
+            "p50_ms": 1.358279,
+            "p90_ms": 1.396911,
+            "max_ms": 1.412921
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 1.3623049032258066,
+            "p50_ms": 1.358565,
+            "p90_ms": 1.39716,
+            "max_ms": 1.413159
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 32768,
+      "scenario": "context_middle_diverge",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "1534237c747965cd52cc2fa6a38cb2d150cfb341eda0631cd3800ea2803be351",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 1.3682282258064515,
+            "p50_ms": 1.361244,
+            "p90_ms": 1.400126,
+            "max_ms": 1.407537
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 1.3684804193548388,
+            "p50_ms": 1.36143,
+            "p90_ms": 1.400341,
+            "max_ms": 1.407794
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 1.3634353870967741,
+            "p50_ms": 1.36181,
+            "p90_ms": 1.382519,
+            "max_ms": 1.413434
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 1.3635024838709677,
+            "p50_ms": 1.362237,
+            "p90_ms": 1.382752,
+            "max_ms": 1.413848
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 32768,
+      "scenario": "context_late_diverge",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "5082c02cb3aa130f4c57e69ffa5eeec2746219c2cb8b716f0409754c2bb5a1cd",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 1.375286935483871,
+            "p50_ms": 1.376242,
+            "p90_ms": 1.404977,
+            "max_ms": 1.437762
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 1.3755632258064516,
+            "p50_ms": 1.376603,
+            "p90_ms": 1.40526,
+            "max_ms": 1.438154
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 1.3699753870967741,
+            "p50_ms": 1.368196,
+            "p90_ms": 1.397502,
+            "max_ms": 1.405148
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 1.3702813870967743,
+            "p50_ms": 1.368613,
+            "p90_ms": 1.398076,
+            "max_ms": 1.405556
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 32768,
+      "scenario": "context_shorter",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "d5744abb261a6a2f0b12828782fb631d8526965a8f3a04e948f52d6ef3d7b7ca",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.9814763225806451,
+            "p50_ms": 0.98091,
+            "p90_ms": 0.98901,
+            "max_ms": 1.006109
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.9816391935483871,
+            "p50_ms": 0.981053,
+            "p90_ms": 0.989373,
+            "max_ms": 1.006209
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.9834986774193548,
+            "p50_ms": 0.981709,
+            "p90_ms": 0.998274,
+            "max_ms": 1.009342
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.9833674193548387,
+            "p50_ms": 0.981896,
+            "p90_ms": 0.998123,
+            "max_ms": 1.009489
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 32768,
+      "scenario": "context_array",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "a9da21295d49fcbf7b23733d7a8a1e723ef902d1857a6d336f45609bc766b3e2",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.068301,
+            "p50_ms": 0.067893,
+            "p90_ms": 0.070159,
+            "max_ms": 0.072336
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.06843793548387096,
+            "p50_ms": 0.068141,
+            "p90_ms": 0.070277,
+            "max_ms": 0.072516
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.06761583870967743,
+            "p50_ms": 0.068039,
+            "p90_ms": 0.070471,
+            "max_ms": 0.072437
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.06776390322580646,
+            "p50_ms": 0.068231,
+            "p90_ms": 0.070676,
+            "max_ms": 0.072631
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 32768,
+      "scenario": "block_list",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "8be8e89adc6fba6dcf73ed30632b4e331bd3d4cfdaee40c14b208aac89b34cd5",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 1.4113647419354838,
+            "p50_ms": 1.439644,
+            "p90_ms": 1.453426,
+            "max_ms": 1.456902
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 1.4116763548387097,
+            "p50_ms": 1.439959,
+            "p90_ms": 1.453665,
+            "max_ms": 1.457093
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 1.4242423870967742,
+            "p50_ms": 1.443429,
+            "p90_ms": 1.468914,
+            "max_ms": 1.515395
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 1.4226439677419356,
+            "p50_ms": 1.443711,
+            "p90_ms": 1.469321,
+            "max_ms": 1.477185
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 32768,
+      "scenario": "block_array",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "8be8e89adc6fba6dcf73ed30632b4e331bd3d4cfdaee40c14b208aac89b34cd5",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.6366944193548387,
+            "p50_ms": 0.635119,
+            "p90_ms": 0.645402,
+            "max_ms": 0.652427
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.636869870967742,
+            "p50_ms": 0.635193,
+            "p90_ms": 0.645491,
+            "max_ms": 0.652579
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.6492741935483871,
+            "p50_ms": 0.648436,
+            "p90_ms": 0.657847,
+            "max_ms": 0.661947
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.6494145806451613,
+            "p50_ms": 0.648567,
+            "p90_ms": 0.65805,
+            "max_ms": 0.662031
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 32768,
+      "scenario": "block_other_namespace",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "bdea19bbbde091719c214dbe53a5e8c97eec95e50df6839f3c1895dc5b41b7d0",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.7788296774193548,
+            "p50_ms": 0.805366,
+            "p90_ms": 0.820264,
+            "max_ms": 0.825724
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.7791856129032259,
+            "p50_ms": 0.805529,
+            "p90_ms": 0.820633,
+            "max_ms": 0.826168
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.7733599354838709,
+            "p50_ms": 0.746974,
+            "p90_ms": 0.818932,
+            "max_ms": 0.82441
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.7737240645161291,
+            "p50_ms": 0.747336,
+            "p90_ms": 0.819218,
+            "max_ms": 0.824795
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 32768,
+      "scenario": "block_many_branches",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "09c72c8a9e81e0ba8663a1c54212d52dd314a8308ec637eee6ea8b993853e142",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 1.2740709677419355,
+            "p50_ms": 1.274778,
+            "p90_ms": 1.283334,
+            "max_ms": 1.287797
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 1.2742481612903227,
+            "p50_ms": 1.27476,
+            "p90_ms": 1.283418,
+            "max_ms": 1.287906
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 1.2848668387096773,
+            "p50_ms": 1.278032,
+            "p90_ms": 1.293628,
+            "max_ms": 1.428654
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 1.2851065806451614,
+            "p50_ms": 1.278116,
+            "p90_ms": 1.293823,
+            "max_ms": 1.430831
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 32768,
+      "scenario": "block_many_unrelated",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "81bb7b2749cd34963ccc419c41467fc379077986a0573f68bddef9506072ef5b",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 1.0030465161290323,
+            "p50_ms": 0.966447,
+            "p90_ms": 1.05991,
+            "max_ms": 1.065308
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 1.0033532580645161,
+            "p50_ms": 0.966664,
+            "p90_ms": 1.060266,
+            "max_ms": 1.065472
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.9515695483870967,
+            "p50_ms": 0.951739,
+            "p90_ms": 0.956908,
+            "max_ms": 0.96447
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.9518317419354839,
+            "p50_ms": 0.95187,
+            "p90_ms": 0.957265,
+            "max_ms": 0.964816
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 32768,
+      "scenario": "block_many_matches",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "1db621fdc2dcb9c6c9bf0c7ae50924fda3ba727287aaba9540e540713f67072c",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 7.530261741935484,
+            "p50_ms": 7.523782,
+            "p90_ms": 7.591655,
+            "max_ms": 7.61717
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 7.530832258064517,
+            "p50_ms": 7.524377,
+            "p90_ms": 7.592227,
+            "max_ms": 7.617758
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 7.575840516129032,
+            "p50_ms": 7.565101,
+            "p90_ms": 7.63974,
+            "max_ms": 7.729546
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 7.576381032258064,
+            "p50_ms": 7.565632,
+            "p90_ms": 7.640285,
+            "max_ms": 7.730033
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 32768,
+      "scenario": "block_eviction",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "df818abd3611ca2ed2ccbb2a2554f3fc443e816b5e2c13463db450c417ea8120",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.41881341935483873,
+            "p50_ms": 0.418165,
+            "p90_ms": 0.420943,
+            "max_ms": 0.431838
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.418892,
+            "p50_ms": 0.418263,
+            "p90_ms": 0.420978,
+            "max_ms": 0.431792
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.42157264516129034,
+            "p50_ms": 0.421486,
+            "p90_ms": 0.424309,
+            "max_ms": 0.426865
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.42165474193548386,
+            "p50_ms": 0.421446,
+            "p90_ms": 0.424365,
+            "max_ms": 0.427029
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 8192,
+      "scenario": "block_pressure_unrelated",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "f85b93b72789fe132312040d5f613d0369f0454561d7d8511c34b36fd45765c7",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.10505822580645162,
+            "p50_ms": 0.104662,
+            "p90_ms": 0.108772,
+            "max_ms": 0.113389
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.10489809677419355,
+            "p50_ms": 0.10442,
+            "p90_ms": 0.108986,
+            "max_ms": 0.113453
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.10559412903225807,
+            "p50_ms": 0.104875,
+            "p90_ms": 0.108581,
+            "max_ms": 0.114133
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.10552612903225807,
+            "p50_ms": 0.104979,
+            "p90_ms": 0.108467,
+            "max_ms": 0.114129
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 8192,
+      "scenario": "block_pressure_partial",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "980d6de0af9755894bfb7ff92c250ee00b94279995799c48d14185a4721c3ea7",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.4424682258064516,
+            "p50_ms": 0.440821,
+            "p90_ms": 0.451907,
+            "max_ms": 0.459247
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.44249393548387095,
+            "p50_ms": 0.440899,
+            "p90_ms": 0.451605,
+            "max_ms": 0.459283
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.44442948387096776,
+            "p50_ms": 0.443472,
+            "p90_ms": 0.456032,
+            "max_ms": 0.461159
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.4444193870967742,
+            "p50_ms": 0.44332,
+            "p90_ms": 0.456162,
+            "max_ms": 0.461212
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 8192,
+      "scenario": "block_pressure_eviction",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "8f3e33739e4e2a3dbffeea27c6e0c0e8b959118fb475136e69cb2fcf9c92cbd0",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.17663464516129032,
+            "p50_ms": 0.177008,
+            "p90_ms": 0.17991,
+            "max_ms": 0.184219
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.17657864516129032,
+            "p50_ms": 0.177111,
+            "p90_ms": 0.18004,
+            "max_ms": 0.183821
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.18175267741935483,
+            "p50_ms": 0.181337,
+            "p90_ms": 0.185498,
+            "max_ms": 0.188528
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.18172351612903226,
+            "p50_ms": 0.181236,
+            "p90_ms": 0.185522,
+            "max_ms": 0.188171
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 32768,
+      "scenario": "block_pressure_unrelated",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "664e6f0838271202583aa718808bf214b57dd432503620b5fa8092f502c1113c",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.28807951612903226,
+            "p50_ms": 0.287941,
+            "p90_ms": 0.292071,
+            "max_ms": 0.293693
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.2880831290322581,
+            "p50_ms": 0.287891,
+            "p90_ms": 0.292161,
+            "max_ms": 0.29354
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.14838706451612904,
+            "p50_ms": 0.148355,
+            "p90_ms": 0.151331,
+            "max_ms": 0.154936
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.1483227741935484,
+            "p50_ms": 0.148478,
+            "p90_ms": 0.151302,
+            "max_ms": 0.154631
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 32768,
+      "scenario": "block_pressure_partial",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "247be1c7a7612f60d9e66fafa29e504cbafc1bb0466615b62fb628bfb557a68c",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 1.633897935483871,
+            "p50_ms": 1.633928,
+            "p90_ms": 1.65692,
+            "max_ms": 1.668026
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 1.6331383548387097,
+            "p50_ms": 1.63424,
+            "p90_ms": 1.650863,
+            "max_ms": 1.662056
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 1.6419687419354838,
+            "p50_ms": 1.639689,
+            "p90_ms": 1.658889,
+            "max_ms": 1.670056
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 1.6421178387096773,
+            "p50_ms": 1.639878,
+            "p90_ms": 1.658821,
+            "max_ms": 1.670172
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 32768,
+      "scenario": "block_pressure_eviction",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "f7c2b210e8f13f5431c6db3fd76eef21b9aa8c03f645992e42391d44c15ada98",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.4827233870967742,
+            "p50_ms": 0.48227,
+            "p90_ms": 0.486992,
+            "max_ms": 0.492279
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.48263267741935484,
+            "p50_ms": 0.482115,
+            "p90_ms": 0.48687,
+            "max_ms": 0.492149
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 31,
+            "mean_ms": 0.48725235483870966,
+            "p50_ms": 0.486643,
+            "p90_ms": 0.491669,
+            "max_ms": 0.498403
+          },
+          "thread_cpu": {
+            "samples": 31,
+            "mean_ms": 0.4869713870967742,
+            "p50_ms": 0.486159,
+            "p90_ms": 0.491553,
+            "max_ms": 0.498102
+          }
+        }
+      }
+    }
+  ],
+  "pressure_fixture_scope": "Directly seeded 4096/16384-entry namespaced CPU indexes. Setup and derived-index checks are outside measurement. Query and bounded-expiry mutation outputs and evidence states are compared.",
+  "benchmark_finished_at_utc": "2026-10-19T19:41:02.776025+00:00"
+}

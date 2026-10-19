@@ -256,6 +256,142 @@ def test_many_eviction_routes_use_exact_terminals_after_matching_boundaries(tmp_
     assert not audit._block_eviction_route_lengths
 
 
+@pytest.mark.parametrize("divergence", (0, 4095, 4096, 7000, 131071))
+def test_bounded_eviction_route_still_requires_exact_long_prefix(tmp_path, divergence):
+    audit = NativeReactiveTelemetry(tmp_path / "blocks")
+    audit.close()
+    original = array("q", range(131072))
+    changed = array("q", original)
+    changed[divergence] = -1
+    for pool in ("full", "mamba"):
+        audit._write_block_eviction({
+            "key_path": (original,), "pool": pool, "node_id": 1,
+            "units": 1, "ts_ms": 1., "extra_key": "ns", "cache_salt": "salt",
+        }, StringIO())
+    record = {
+        "input_ids": changed, "ts_ms": 2., "extra_key": "ns", "cache_salt": "salt",
+        "cached_tokens_device": len(changed), "cached_tokens_host": 0,
+    }
+    output = StringIO()
+    audit._write_block_request_probe(record, output)
+    assert output.getvalue() == ""
+    assert len(audit._pending_block_evictions) == 2
+    audit._write_block_request_probe({**record, "input_ids": original}, output)
+    rows = [json.loads(line) for line in output.getvalue().splitlines()]
+    assert {row["pool"] for row in rows[:-1]} == {"full", "mamba"}
+    assert rows[-1]["matched_evicted_blocks"] == 2
+    assert not audit._pending_block_evictions
+    assert not audit._block_eviction_routes
+    assert not audit._block_eviction_route_lengths
+
+
+def test_bounded_routes_preserve_lengths_namespaces_and_recent_overflow(tmp_path):
+    audit = NativeReactiveTelemetry(tmp_path / "blocks")
+    audit.close()
+    original = array("q", range(131074))
+    lengths = (4095, 4096, 4097, 8192, 131072, 131073)
+    for namespace in ("first", "second"):
+        for length in lengths:
+            audit._write_block_eviction({
+                "key_path": (original[:length],), "pool": "full", "node_id": length,
+                "units": 1, "ts_ms": 1., "extra_key": namespace, "cache_salt": None,
+            }, StringIO())
+    audit._max_prefix_lengths_per_probe = 2
+    record = {
+        "input_ids": original, "ts_ms": 2., "extra_key": "first", "cache_salt": None,
+        "cached_tokens_device": len(original), "cached_tokens_host": 0,
+    }
+    output = StringIO()
+    audit._write_block_request_probe(record, output)
+    rows = [json.loads(line) for line in output.getvalue().splitlines()]
+    assert [row["prefix_tokens"] for row in rows[:-1]] == [131072, 131073]
+    assert rows[-1]["candidate_prefix_lengths"] == 2
+    assert rows[-1]["omitted_prefix_lengths"] == 4
+    assert len(audit._pending_block_evictions) == 10
+    audit._max_prefix_lengths_per_probe = 32768
+    audit._write_block_request_probe(record, StringIO())
+    assert len(audit._pending_block_evictions) == len(lengths)
+    audit._write_block_request_probe({**record, "extra_key": "second"}, StringIO())
+    assert not audit._pending_block_evictions
+    assert not audit._block_eviction_route_lengths
+
+
+def test_unrelated_long_prefix_hashing_stops_at_the_route(tmp_path, monkeypatch):
+    audit = NativeReactiveTelemetry(tmp_path / "blocks")
+    audit.close()
+    original = array("q", range(131072))
+    audit._write_block_eviction({
+        "key_path": (original,), "pool": "full", "node_id": 1, "units": 1,
+        "ts_ms": 1., "extra_key": None, "cache_salt": None,
+    }, StringIO())
+    changed = array("q", original)
+    changed[0] = -1
+    original_hasher = telemetry_module.hashlib.blake2b
+    hashed_bytes = []
+
+    class MeasuredHash:
+        def __init__(self, value):
+            self.value = value
+
+        def update(self, value):
+            hashed_bytes.append(len(value))
+            return self.value.update(value)
+
+        def copy(self):
+            return MeasuredHash(self.value.copy())
+
+        def hexdigest(self):
+            return self.value.hexdigest()
+
+    def make_hash(*args, **kwargs):
+        value = original_hasher(*args, **kwargs)
+        return MeasuredHash(value) if kwargs.get("person") == b"beliefkv-kv-v1" else value
+
+    monkeypatch.setattr(telemetry_module.hashlib, "blake2b", make_hash)
+    output = StringIO()
+    audit._write_block_request_probe({
+        "input_ids": changed, "ts_ms": 2., "extra_key": None, "cache_salt": None,
+        "cached_tokens_device": len(changed), "cached_tokens_host": 0,
+    }, output)
+    assert output.getvalue() == ""
+    assert sum(hashed_bytes) == (
+        len(audit._namespace_bytes(None, None)) + 4096 * original.itemsize
+    )
+    assert len(audit._pending_block_evictions) == 1
+
+
+def test_bounded_filter_lifetime_tracks_routes_not_prefix_or_pool_entries(tmp_path):
+    audit = NativeReactiveTelemetry(tmp_path / "blocks")
+    audit.close()
+    original = array("q", range(20002))
+    audit._block_eviction_index_limit = 3
+    for length in (12000, 12001, 20000, 20001):
+        audit._write_block_eviction({
+            "key_path": (original[:length],), "pool": "full", "node_id": length,
+            "units": 1, "ts_ms": 1., "extra_key": None, "cache_salt": None,
+        }, StringIO())
+    assert len(audit._pending_block_evictions) == 3
+    assert len(audit._block_eviction_route_filters) == 2
+    assert list(audit._block_eviction_filter_refs.values()) == [2]
+    record = {
+        "input_ids": original[:12002], "ts_ms": 2.,
+        "cached_tokens_device": len(original), "cached_tokens_host": 0,
+    }
+    audit._write_block_request_probe(record, StringIO())
+    assert len(audit._pending_block_evictions) == 2
+    assert len(audit._block_eviction_route_filters) == 1
+    assert list(audit._block_eviction_filter_refs.values()) == [1]
+    audit._write_block_eviction({
+        "key_path": (original[:20000],), "pool": "mamba", "node_id": 20000,
+        "units": 1, "ts_ms": 3., "extra_key": None, "cache_salt": None,
+    }, StringIO())
+    assert list(audit._block_eviction_filter_refs.values()) == [1]
+    audit._write_block_request_probe({**record, "input_ids": original}, StringIO())
+    assert not audit._pending_block_evictions
+    assert not audit._block_eviction_route_filters
+    assert not audit._block_eviction_filter_refs
+
+
 def test_eviction_route_expiry_removes_only_the_expired_prefix(tmp_path):
     audit = NativeReactiveTelemetry(tmp_path / "blocks")
     audit.close()

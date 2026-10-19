@@ -64,6 +64,23 @@ Current goal:
 - Stop and fix material experimental failures promptly; CPU improvements alone
   do not establish GPU performance or a gain over native.
 
+V2010/V2011 add a bounded 4096-token rejection filter before the existing long route
+and exact namespaced HMAC. Reference the short filter by long route, retaining
+all terminal/pool/namespace, expiry and recent-overflow semantics. Retain the
+original direct path for at most 32 prefixes within 4096 tokens. All 60 long-prefix
+and 42 supplementary scenes preserve evidence and state.
+CPU P50 for 131072 tokens/64 unrelated candidates is 1.516 to 0.071ms; 187392
+tokens/one unrelated candidate is 2.152 to 0.068ms. Retain the long-case maximum
+regression of 0.75%/40.767us for 256 full matches and 13.613us for the small 8K
+array case. Do not infer GIL or GPU/JCT gains. All 2266 checks pass in V2009.
+Preserve V2004's two spawn failures from invoking
+pytest.main through stdin; rerun with the real `python -m pytest` entry.
+Also preserve V2001's rejected single-stage shared-head regression and V2003's
+per-terminal double-index cleanup regression. This is shared background evidence
+work, not a new prefetch/admission policy. Keep V88/patch/configuration unchanged,
+commit on main and publish the latest qualification to the existing 06:00 waiter.
+See V2008; performance acceptance remains pending on the new GPU trace.
+
 V1998 reduces first-service evidence inventory work relative toa346b6a.
 Keep context/epoch validation, return immediately for empty inventory, classify
 matches/expiry in one pass, publish expired commands before matching commands,

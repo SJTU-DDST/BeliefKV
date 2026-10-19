@@ -7,6 +7,7 @@ import argparse
 from array import array
 import ast
 from collections import Counter, OrderedDict
+from copy import deepcopy
 from datetime import datetime, timezone
 import hashlib
 from io import StringIO
@@ -33,6 +34,7 @@ METHODS = (
     "_remove_pending_block_totals", "_write_status",
     "_match_path", "_match_paths", "on_launch",
     "_common_array_prefix", "_record_prefetch_first_service",
+    "_block_routing_tokens",
 )
 
 
@@ -54,7 +56,17 @@ def load_writer(source: str, label: str) -> type:
         snapshot,
     ], type_ignores=[])
     exec(compile(ast.fix_missing_locations(module), label, "exec"), namespace)
-    return namespace[snapshot.name]
+    writer = namespace[snapshot.name]
+    writer._benchmark_multistage_routes = any(
+        isinstance(node, ast.FunctionDef) and node.name == "_block_routing_tokens"
+        for node in cls.body
+    )
+    if not writer._benchmark_multistage_routes:
+        # Old writers encoded this policy directly in their eviction/query methods.
+        writer._block_routing_tokens = staticmethod(
+            lambda length: 1 << (length.bit_length() - 1),
+        )
+    return writer
 
 
 def fixture(tokens: int, scenario: str, writer: type):
@@ -70,6 +82,8 @@ def fixture(tokens: int, scenario: str, writer: type):
     audit._block_eviction_index = {}
     audit._block_eviction_routes = {}
     audit._block_eviction_route_lengths = {}
+    audit._block_eviction_route_filters = {}
+    audit._block_eviction_filter_refs = Counter()
     audit._block_eviction_lengths = {}
     audit._block_eviction_sorted_lengths = {}
     audit._block_eviction_length_refs = Counter()
@@ -150,9 +164,11 @@ def pressure_fixture(audit, prior, scenario, record):
     unrelated[0] = -1
     lengths = list(range(len(prior) // 2, len(prior)))
     namespace = audit._namespace_digest(None, None)
-    unrelated_digests = audit._prefix_digests(None, None, unrelated, lengths)
-    matching_digests = audit._prefix_digests(None, None, token_ids, lengths)
-    boundary = lengths[0]
+    boundary = 1 << (lengths[0].bit_length() - 1)
+    bounded = audit._block_routing_tokens(lengths[0])
+    digest_lengths = sorted({bounded, boundary, *lengths})
+    unrelated_digests = audit._prefix_digests(None, None, unrelated, digest_lengths)
+    matching_digests = audit._prefix_digests(None, None, token_ids, digest_lengths)
     for position, length in enumerate(lengths[::2] + lengths[1::2], 1):
         matched = scenario == "block_pressure_partial" and length % 1024 == 0
         digests = matching_digests if matched else unrelated_digests
@@ -168,6 +184,10 @@ def pressure_fixture(audit, prior, scenario, record):
         }
         audit._block_eviction_index[index_key] = {identity}
         audit._block_eviction_routes[index_key] = route
+        if route not in audit._block_eviction_route_lengths and audit._benchmark_multistage_routes:
+            bounded_route = (namespace, bounded, digests[bounded])
+            audit._block_eviction_route_filters[route] = bounded_route
+            audit._block_eviction_filter_refs[bounded_route] += 1
         audit._block_eviction_route_lengths.setdefault(route, Counter())[length] += 1
         audit._block_eviction_length_refs[(namespace, length)] += 1
         audit._block_eviction_lengths.setdefault(namespace, OrderedDict())[length] = None
@@ -214,6 +234,94 @@ def distribution(values: list[float]) -> dict:
         "p50_ms": statistics.median(values),
         "p90_ms": ordered[min(len(ordered) - 1, int(.9 * len(ordered)))],
         "max_ms": max(values),
+    }
+
+
+def bounded_routing_case(writers, *, tokens, entries, scenario, iterations):
+    token_ids = array("q", range(tokens + 1))
+    seeded = {}
+    for name, writer in writers.items():
+        audit, _, _ = fixture(tokens, "block_eviction", writer)
+        branch = array("q", token_ids)
+        divergence = {
+            "unrelated": 0,
+            "shared_4k": 4096,
+            "shared_32k": 32768,
+            "shared_64k": 65536,
+            "partial_match": tokens - entries // 2,
+            "all_match": tokens + 1,
+        }[scenario]
+        if divergence < len(branch):
+            branch[divergence] = -1
+        for index, length in enumerate(range(tokens - entries + 1, tokens + 1)):
+            audit._write_block_eviction({
+                "key_path": (branch[:length],),
+                "pool": "full" if index % 2 else "mamba",
+                "node_id": index, "units": 16 if index % 2 else 1,
+                "ts_ms": 1., "extra_key": None, "cache_salt": None,
+            }, StringIO())
+        seeded[name] = audit.__dict__
+    record = {
+        "input_ids": token_ids, "ts_ms": 2., "extra_key": None, "cache_salt": None,
+        "cached_tokens_device": tokens // 2, "cached_tokens_host": tokens // 4,
+    }
+    samples = {name: {"wall": [], "thread_cpu": []} for name in writers}
+    signatures = {}
+    for iteration in range(iterations + 10):
+        order = list(writers)
+        if iteration % 2:
+            order.reverse()
+        for name in order:
+            audit = writers[name].__new__(writers[name])
+            audit.__dict__.update(deepcopy(seeded[name]))
+            output = StringIO()
+            wall, cpu = time.perf_counter_ns(), time.thread_time_ns()
+            audit._write_block_request_probe(record, output)
+            elapsed_cpu = (time.thread_time_ns() - cpu) / 1e6
+            elapsed_wall = (time.perf_counter_ns() - wall) / 1e6
+            signatures[name] = output.getvalue(), state(audit)
+            blocks, units = Counter(), Counter()
+            for identity, pending in audit._pending_block_evictions.items():
+                blocks[identity[0]] += 1
+                units[identity[0]] += pending["last_evicted_units"]
+            if audit._pending_block_counts != blocks or audit._pending_block_latest_units != units:
+                raise AssertionError("pending pool totals changed")
+            if audit._block_eviction_sorted_lengths != {
+                namespace: sorted(lengths)
+                for namespace, lengths in audit._block_eviction_lengths.items()
+            }:
+                raise AssertionError("sorted lengths diverged")
+            expected_routes = {}
+            for key, route in audit._block_eviction_routes.items():
+                if key not in audit._block_eviction_index:
+                    raise AssertionError("routing retained a removed full-prefix identity")
+                expected_routes.setdefault(route, Counter())[key[1]] += 1
+            if audit._block_eviction_route_lengths != expected_routes:
+                raise AssertionError("routing references diverged from the exact index")
+            if audit._benchmark_multistage_routes and (
+                audit._block_eviction_filter_refs != Counter(
+                    audit._block_eviction_route_filters.values(),
+                )
+                or audit._block_eviction_route_filters.keys() != expected_routes.keys()
+            ):
+                raise AssertionError("bounded filter references diverged from long routes")
+            if iteration >= 10:
+                samples[name]["wall"].append(elapsed_wall)
+                samples[name]["thread_cpu"].append(elapsed_cpu)
+        if any(value != signatures["baseline"] for value in signatures.values()):
+            raise AssertionError("routing changed full hashes, attribution or pending state")
+    return {
+        "prior_input_tokens": tokens, "pending_entries": entries, "scenario": scenario,
+        "records_hashes_counters_history_and_pending_equal": True,
+        "shared_read_only_request_buffer": True,
+        "canonical_output_sha256": hashlib.sha256(
+            json.dumps(signatures["baseline"], sort_keys=True).encode(),
+        ).hexdigest(),
+        "costs": {
+            name: {clock: distribution(values) for clock, values in clocks.items()}
+            for name, clocks in samples.items()
+        },
+        "raw_samples_ms": samples,
     }
 
 
@@ -544,6 +652,7 @@ def main() -> None:
     parser.add_argument("--status-publication-only", action="store_true")
     parser.add_argument("--first-service-match-paths", action="store_true")
     parser.add_argument("--first-service-prefixes", action="store_true")
+    parser.add_argument("--bounded-routes", action="store_true")
     args = parser.parse_args()
     if args.iterations <= 0:
         parser.error("iterations must be positive")
@@ -559,6 +668,7 @@ def main() -> None:
         "optimized": load_writer(current, str(ROOT / SOURCE)),
     }
     report = {
+        "status": "complete_cpu_comparison_not_gpu_or_jct_gain",
         "benchmark_started_at_utc": datetime.now(timezone.utc).isoformat(),
         "scope": (
             "CPU status publication and pending-counter mutation with unchanged evidence; "
@@ -572,12 +682,49 @@ def main() -> None:
         "baseline_source_sha256": hashlib.sha256(baseline.encode()).hexdigest(),
         "optimized_source_sha256": hashlib.sha256(current.encode()).hexdigest(),
         "benchmark_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "candidate_source_sha256": {
+            SOURCE.as_posix(): hashlib.sha256(current.encode()).hexdigest(),
+            str(Path(__file__).relative_to(ROOT)): hashlib.sha256(
+                Path(__file__).read_bytes(),
+            ).hexdigest(),
+            "tests/test_v0520_native_telemetry.py": hashlib.sha256(
+                (ROOT / "tests/test_v0520_native_telemetry.py").read_bytes(),
+            ).hexdigest(),
+        },
         "iterations_per_case": args.iterations, "warmup_iterations": 10,
         "deployed": False,
     }
     if args.observed_prefix_evidence is not None:
         report["observed_prefix_work"] = observed_prefix_work(args.observed_prefix_evidence)
-    if args.first_service_prefixes:
+    if args.bounded_routes:
+        for cap in (1024, 16384, 65536):
+            writers[f"cap_{cap}"] = type(
+                f"BoundedRoute{cap}", (writers["optimized"],), {
+                    "_block_routing_tokens": staticmethod(
+                        lambda length, cap=cap: min(cap, 1 << (length.bit_length() - 1)),
+                    ),
+                },
+            )
+        report["scope"] = (
+            "CPU eviction attribution on shared read-only request arrays, "
+            "alternating baseline/current/routing-cap order. Exact log records, "
+            "full HMACs, pending identities and pool counters compared; fixture "
+            "creation, reset and checks excluded from timing. No concurrent writer, "
+            "scheduler/GIL contention, allocator, DMA, CUDA or JCT measurement."
+        )
+        report["cases"] = [
+            bounded_routing_case(
+                writers, tokens=tokens, entries=entries,
+                scenario=scenario, iterations=args.iterations,
+            )
+            for tokens in (131072, 187392)
+            for entries in (1, 16, 64, 256, 512)
+            for scenario in (
+                "unrelated", "shared_4k", "shared_32k", "shared_64k",
+                "partial_match", "all_match",
+            )
+        ]
+    elif args.first_service_prefixes:
         report["scope"] = (
             "Complete first-service prefix audit on identical native array inputs "
             "and per-command records; alternating baseline/current order, fixed "
@@ -630,6 +777,7 @@ def main() -> None:
     if (
         args.pressure_cases and not args.status_publication_only
         and not args.first_service_match_paths and not args.first_service_prefixes
+        and not args.bounded_routes
     ):
         report["cases"].extend(
             measure(writers, tokens=tokens, scenario=scenario, iterations=args.iterations)
