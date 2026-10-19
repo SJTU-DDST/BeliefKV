@@ -1,6 +1,8 @@
 from collections import OrderedDict
 from dataclasses import asdict, replace
 import pickle
+from pathlib import Path
+import subprocess
 from types import SimpleNamespace as NS
 from unittest.mock import Mock, patch
 
@@ -14,6 +16,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from beliefkv.runtime.v0520_native_telemetry import NativeReactiveTelemetry
 from scripts.benchmark_wait_prefetch_dispatch_cpu import dispatch_fixture, pinned_issuance_tracker
+from scripts.benchmark_prefetch_capture_cpu import fixture as capture_fixture, load_methods
 from tests.test_sglang_v0520_physical import Pool, native_prefetch
 
 
@@ -184,3 +187,22 @@ def test_dispatch_benchmark_uses_pinned_callback_methods_in_the_baseline(monkeyp
     assert audit._unacked_prefetch_use == {"restore": action}
     assert audit._pending_prefetch_use["restore"][1][0][:4] == (1, 2., node, 8)
     assert audit._pending_prefetch_use["restore"][2:] == (None, {})
+
+
+def test_capture_benchmark_keeps_its_static_path_helper_pinned(monkeypatch):
+    source = subprocess.check_output(
+        ["git", "show", "HEAD:beliefkv/runtime/v0520_native_telemetry.py"],
+        cwd=Path(__file__).resolve().parents[1], text=True,
+    )
+    methods = load_methods(source, "HEAD:beliefkv/runtime/v0520_native_telemetry.py")
+    audit, _, actions, _ = capture_fixture(
+        methods, lambda tokens, **kwargs: tokens,
+        tokens=8, extents=1, diagnostics=False,
+    )
+    audit._pending_prefetch_use = OrderedDict()
+    audit._unacked_prefetch_use = {}
+    current_path = Mock(side_effect=AssertionError("capture baseline reused current path helper"))
+    monkeypatch.setattr(NativeReactiveTelemetry, "_node_key_path", current_path)
+    audit.on_prefetch_issued(actions[0])
+    current_path.assert_not_called()
+    assert audit._pending_prefetch_use[actions[0].command_id][1][0][3] == 8

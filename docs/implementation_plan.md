@@ -64,6 +64,20 @@ Current goal:
 - Stop and fix material experimental failures promptly; CPU improvements alone
   do not establish GPU performance or a gain over native.
 
+V2047/V2048 read each plain native parent field once per node step. Keep key order,
+root/None handling, missing keys, cycles and the existing 4096 traversal bound;
+recapture topology on every call. Complete records, expectations, unacknowledged
+tracking and native lookup counts match in all 32 dispatch scenes; 31 P50s improve
+with one retained 1.907us regression. Native-budget 64-node JOIN/tool are 2150.030
+to 2097.084us and 2170.149 to 2117.223us. Native-key callback controls preserve
+all proof/lifecycle fields, with retained 0.023/0.034/0.084us regressions.
+Pin the old static key-path helpers as well as callback methods in the callback
+microbenchmark; its new provenance check rejects current-helper reuse. Earlier V2044
+changed no helper, so its scope remains valid. All 2398 checks pass in V2049.
+See V2050. Commit and republish the same 06:00 qualification, freeze the startup
+candidate, and prioritize the new GPU trace's failures, recovery pressure and actual
+consumption. Keep the 24-root engine/configuration and pending GPU/JCT acceptance.
+
 V2043/V2044 replace Python per-key length generators with builtin map in issuance
 tracking and prefill records, preserving paths, len order, None/errors and all native
 proofs. No cross-call length cache is added. All complete dispatch records, expectations,

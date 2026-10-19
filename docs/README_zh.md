@@ -23,7 +23,16 @@ child 都可动态委派叶子孙 agent，最大深度仍为 2。任务范围、
 见[24-root 配置](../configs/migration/qwen35_locobench_long_24root_running8_2026-10-19.json)
 及[CPU 原始结果](../experiments/reports/v1925_v85d_long_chat_token_cache_cpu_20261019.json)。
 
-**最新前缀长度迭代降本，V2043/V2044。**原生发出追踪及 prefill 记录的
+**最新路径读取降本，V2047/V2048。**每个节点已读取的 parent 在本步复用，
+不跨调用缓存路径；重新挂接、缺失 key、环和原 4096 深度边界检查保持。
+32 组完整提交的记录、预留、追踪与原生查询一致，31 组 CPU P50 更低，
+一组多 1.907us。64 节点、原生预算的 JOIN/tool 为
+2150.03→2097.08us、2170.15→2117.22us。2398 项检查通过。
+原生 key 回调的三个小回退保留；其旧版本静态路径 helper 也已独立固定，
+详见 [V2050](../experiments/reports/v2050_parent_path_read_control_cpu_20261020_zh.md)。
+提交后更新同一 06:00 资格，进入 GPU 启动前的代码冻结与观察准备。
+
+**此前前缀长度迭代降本，V2043/V2044。**原生发出追踪及 prefill 记录的
 长度求和改用内建 map，路径、逐段长度读取及错误处理保持。32 组完整
 提交中 29 组 CPU P50 更低；64 节点、原生预算的 JOIN/tool 为
 2189.15→2150.28us、2202.01→2151.02us。三组小回退完整保留。

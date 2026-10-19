@@ -34,12 +34,17 @@ def load_methods(source, label):
     )
     names = {
         "on_prefetch_issued", "_track_prefetch_use", "on_verified_action_ack",
-        "_record_prefetch_first_service",
+        "_record_prefetch_first_service", "_node_key_path", "_key_path_tokens",
     }
+    methods = [
+        node for node in cls.body if isinstance(node, ast.FunctionDef) and node.name in names
+    ]
+    for method in methods:
+        method.decorator_list = []
     namespace = dict(vars(telemetry))
     module = ast.Module(body=[
         ast.ImportFrom(module="__future__", names=[ast.alias(name="annotations")], level=0),
-        *(node for node in cls.body if isinstance(node, ast.FunctionDef) and node.name in names),
+        *methods,
     ], type_ignores=[])
     exec(compile(ast.fix_missing_locations(module), label, "exec"), namespace)
     return {name: namespace[name] for name in names}
@@ -82,7 +87,8 @@ def fixture(methods, key_class, *, tokens, extents, diagnostics):
     records = []
     audit._emit = lambda kind, record: records.append((kind, record))
     for name, method in methods.items():
-        setattr(audit, name, MethodType(method, audit))
+        setattr(audit, name, method if name in ("_node_key_path", "_key_path_tokens")
+                else MethodType(method, audit))
     request = NS(
         rid="next", last_node=extents, best_match_node=extents,
         origin_input_ids=list(range(tokens + 1)), prefix_indices=range(tokens),
@@ -254,6 +260,7 @@ def main():
             "ACKs are explicitly simulated for lifecycle comparison; no real transfer or reuse credit is claimed.",
             "Disabled diagnostics omit token comparison only, preserving native allocation/prefix proof fields.",
             "Independent prefix snapshots and identical diagnostic records remain in opt-in controls.",
+            "The callback and its static key-path helpers are pinned separately for both revisions.",
             "Controlled token/extent populations are not measured online frequency or a JCT saving.",
         ],
     }

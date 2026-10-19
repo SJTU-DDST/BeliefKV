@@ -392,13 +392,16 @@ class NativeReactiveTelemetry:
         path = []
         current = node
         for _ in range(4096):
-            if current is None or getattr(current, "parent", None) is None:
+            if current is None:
+                break
+            parent = getattr(current, "parent", None)
+            if parent is None:
                 break
             key = getattr(current, "key", None)
             if key is None:
                 return None
             path.append(key)
-            current = current.parent
+            current = parent
         else:
             return None
         if current is None or not path:

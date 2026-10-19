@@ -34,6 +34,44 @@ class _Mode:
     def is_draft_extend_v2(self) -> bool:
         return self.phase == "draft_extend_v2"
 
+
+def test_native_key_path_is_recaptured_after_reparenting_or_key_loss():
+    root = SimpleNamespace(parent=None)
+    left_key, right_key, leaf_key = (array("q", values) for values in ((1, 2), (8, 9), (3,)))
+    left = SimpleNamespace(parent=root, key=left_key)
+    right = SimpleNamespace(parent=root, key=right_key)
+    leaf = SimpleNamespace(parent=left, key=leaf_key)
+    original = NativeReactiveTelemetry._node_key_path(leaf)
+    assert original == (left_key, leaf_key)
+    leaf.parent = right
+    assert NativeReactiveTelemetry._node_key_path(leaf) == (right_key, leaf_key)
+    assert original[0] is left_key
+    right.key = None
+    assert NativeReactiveTelemetry._node_key_path(leaf) is None
+    leaf.parent = None
+    assert NativeReactiveTelemetry._node_key_path(leaf) is None
+
+
+@pytest.mark.parametrize("depth", (4095, 4096))
+def test_native_key_path_preserves_the_existing_bounded_ancestry(depth):
+    leaf = SimpleNamespace(parent=None)
+    for index in range(depth):
+        leaf = SimpleNamespace(parent=leaf, key=array("q", (index,)))
+    path = NativeReactiveTelemetry._node_key_path(leaf)
+    if depth == 4096:
+        assert path is None
+    else:
+        assert len(path) == depth
+        assert path[0] == array("q", (0,))
+        assert path[-1] == array("q", (depth - 1,))
+
+
+def test_native_key_path_does_not_publish_a_cyclic_ancestry():
+    node = SimpleNamespace(key=array("q", (1,)), parent=None)
+    node.parent = node
+    assert NativeReactiveTelemetry._node_key_path(node) is None
+
+
 def test_context_prefix_loss_excludes_new_input_and_fresh_sessions(tmp_path):
     audit = NativeReactiveTelemetry(tmp_path / "prefix")
     audit.close()
