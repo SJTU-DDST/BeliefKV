@@ -14,6 +14,19 @@ native must match the actual pools. Physical actions are enabled; semantic
 worker and detailed shared profiling are off. Performance acceptance remains
 open. State: /home/longhao/experiment/ops/v84_256k_running24_20261019.state.json.
 
+V1861 observes816.03 decode token/s,74.79% GPU utilization and23.48 weighted
+batch in V84's complete600-900s single-arm window. A same-configuration native
+result is still required. The sealed wait audit confirms167.98MB JOIN and
+55.58MB tool FULL restored early and reused by the next request. Capacity
+rejections do not establish absence of reclaimable cold state.
+V1867 qualifies a main-only allocator fix: try the existing FULL reclaim that
+retains live Mamba in HBM before the prior demotion fallback. The old direct
+path reproduces an unexpected synchronous D2H;189 related CPU checks pass
+after the fix. Candidate tree03af77d2, patch SHA1529584a. V84 retains the old
+53020ce3 engine for both arms; do not switch its native to the new candidate.
+Later GPU validation must measure retained Mamba pressure and end-to-end
+effects. No throughput/JCT benefit is claimed and the active goal stays open.
+
 The latest user-selected validation uses the model's native256K total context,
 superseding the64K and128K candidates. Freeze window262144/keep8192/summary2048
 and output16384 in both arms, with model/server context262144. The existing

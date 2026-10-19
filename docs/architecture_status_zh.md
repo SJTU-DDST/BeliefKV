@@ -12,6 +12,20 @@ V1857 核对实际 server_info/client manifest：256K、running 24、
 运行目录 `qwen35_nested_eos_prefetch_256k_two_wave_112root_20261019_v84`，
 状态见 `/home/longhao/experiment/ops/v84_256k_running24_20261019.state.json`。
 
+**V84 的已完成忙碌窗口诊断与 CPU 候选（V1861–V1867）。**600–900s 的
+单侧 decode 为 816.03 token/s、GPU 利用率 74.79%、时间加权 batch 23.48；
+本轮 native 尚未完成，不能与旧 48-running 直接配对。所封存前缀中，
+JOIN/tool 提前且下一请求确认复用 FULL 分别为 167.98/55.58MB。
+部分正 FULL 计划被输入/decode 预留后的零容量限制，不能据此认定没有
+可回收冷 KV；详细候选普查仍关闭。V1864 有 111 次同节点 Mamba 备份
+ACK 后 100ms 内释放 FULL 的关联，不能换算为可省 JCT。
+CPU 回归复现直接 allocator 的 FULL 回收会先同步备份活跃 Mamba；
+main 候选优先复用已有的保留 HBM Mamba、单独释放 FULL 的路径，原回退
+和 Mamba 压力回收保留。189 项 CPU 检查通过，合格候选树 03af77d2、
+补丁 SHA 1529584a；V1867 绑定来源与检查。该修复未进入运行中的 V84，
+其 predictive/native 均保持原树 53020ce3。后续须另测 Mamba 驻留压力
+及端到端收益，当前目标未达成。
+
 **当前验证配置直接使用 256K 总上下文。**用户进一步将 128K 候选改为
 模型原生 262144 上限；动态窗口上限同为 262144，保留历史 8192、
 摘要 2048、输出 16384。现有上下文管理会从总预算中扣除输出、静态
