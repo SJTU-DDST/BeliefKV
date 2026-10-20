@@ -7,6 +7,14 @@
 重复摘要已清理；源码归档及保留范围见[整理记录](archive/research_exploration_20261020.md)。
 下文的最新工程状态与实验约束继续有效。
 
+**V103 已开始 GPU 验证。**北京时间 2026-10-21 06:00:27 从冻结
+提交 `216fd88` 启动 predictive，36 个 root 首轮均已委派 2–4 child。
+首个约 306.7 秒前缀中，后台 FULL 备份 56.05GB、754 批全部 ACK，
+平均 74.34MB/批，未触及字节或节点上限；总 H2D 127.27GB。
+这仍不证明有效预取或端到端收益，多轮/嵌套和性能验收继续开放。
+实际配置、原始前缀与口径见[架构状态](architecture_status_zh.md)及
+[实验注意事项](experiment_operating_notes_zh.md)。
+
 **最新资格 V2416：EOS 备份与恢复尾段可以连续推进。**confirmed
 JOIN 的空恢复仍在发行前过滤，空 A 不阻塞另一 EOS 的第一次选择。
 EOS 先启动冷 FULL 容量准备，再提交 parent H2D；匹配 ACK 唤醒

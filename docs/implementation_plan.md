@@ -12,6 +12,22 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+GPU validation V103 started at2026-10-21T06:00:27+08:00 from frozen runtime
+commit216fd88, after the authorized hold and live idle-resource checks.
+The36 roots all delegated with initial fanout2-4. Multiple rounds/nesting,
+useful prefetch and performance remain unverified. Preserve the frozen run;
+these progress notes do not change execution sources or the comparison policy.
+
+V2419 seals the first306.7s prefix:754 background FULL batches,56.05GB,
+all ACKed, mean74.34MB/batch, no byte/extent limit hits. Spawn-specific
+incremental backup adds135.02MB. Total H2D127.27GB and cumulative transfer
+stream5.18s are observed traffic, not anticipatory reuse or exposed wait.
+Only2 cold-capacity checks with no unbacked rejection are insufficient coverage
+evidence. Compare independent JOIN/tool opportunities, actual early FULL use,
+remaining native restoration, trimmed throughput and mean completion latency.
+V2418 records the existing V101/V99 development baselines, including their
+different realized recovery loads; it is not a candidate GPU result.
+
 Latest qualification is V2416. Preserve pre-ticket filtering for confirmed
 JOINs proven to have no recoverable Host-only input state. Deduplicate within
 the current event batch and recheck once on client submit, without selector
