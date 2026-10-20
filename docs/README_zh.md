@@ -7,6 +7,17 @@
 重复摘要已清理；源码归档及保留范围见[整理记录](archive/research_exploration_20261020.md)。
 下文的最新工程状态与实验约束继续有效。
 
+**下一轮使用最新资格重新冻结，不能启动旧 V102。**旧显式环境会
+覆盖新的 JOIN 默认值。`scripts/launch_qualified_after_hold.py` 将最新
+EOS/选择性预测配置与合格引擎一并冻结为 V103，保留 36-root 同时
+到达和现有长上下文合同。独立 CPU watcher 只在北京时间
+2026-10-21 06:00 之后、来源及资源重新核对通过且用户暂停未变化时
+启动 predictive；委派轨迹合格后再做同引擎 native。实现与验收见
+[架构状态](architecture_status_zh.md)和[实验注意事项](experiment_operating_notes_zh.md)。
+最新 V2317 通过 2355 项应用 CPU 检查，含 48 项启动生命周期检查，
+保留此前全部 2307 项；未改引擎核对来源后沿用 266 项证明。
+GPU 实验与端到端验收仍未开始。
+
 **最新控制优化：同轮 PREPARE 只发布一次候选。**合并同一
 post-forward 的普通 JOIN/tool 发布，在后台备份前读取最终
 原生状态；独立调用与关键恢复仍即时发布。不跨轮缓存、不改周期、

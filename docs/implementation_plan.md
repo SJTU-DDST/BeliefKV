@@ -12,6 +12,27 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Next-run preparation uses `scripts/launch_qualified_after_hold.py`. The old
+V102 environment still pins broad report mode,250ms and an obsolete engine;
+never launch it just because the shell defaults have changed. Freeze V103 from
+the latest source-bound CPU qualification, overriding those stale settings and
+preserving36 simultaneous roots,running8,256K/95%,Host200GB/80:20 and the
+dynamic nested delegation contract. Freeze the native engine separately rather
+than symlinking execution to the mutable development engine.
+
+The independent CPU watcher must not query or preload GPU before
+2026-10-21T06:00:00+08:00. Recheck latest qualification, exact user-pause identity,
+deadline and idle resources immediately before releasing that hold. Preserve
+newer holds or cancellations; restore the original pause if driver launch fails.
+Run predictive first and require the existing delegation-shape audit before a
+same-engine native arm. This refresh is needed because the old native baseline
+predates shared-engine changes; it does not require native on every iteration.
+Retain the authorized frontend-cache asymmetry and its attribution limitation.
+V2317 binds2355 passing application CPU cases, retaining all2307 prior cases
+and adding48 launch-lifecycle checks. Rehash and retain the266 unchanged-engine
+cases without claiming a rerun. This qualification does not establish GPU or
+end-to-end performance acceptance.
+
 Latest CPU control change coalesces ordinary JOIN/tool PREPARE candidate
 publication within one post-forward call. Selectors request publication only
 when they reach their existing publication branch; publish the final live native
@@ -29,7 +50,7 @@ V2315 binds2307 passing application CPU cases and retains all2257 preceding
 contracts. Native engine/patch hashes are unchanged; retain the266 source-bound
 native CPU cases without claiming a rerun. Cover direct/coalesced publication,
 not-due and no-work calls, live lock/inflight/Host mutations, immediate critical
-publication and clean exception retry. Freeze V2315 or a later qualification
+publication and clean exception retry. Freeze V2317 or a later qualification
 after the2026-10-21T06:00:00+08:00 hold. Keep the full performance goal active.
 
 Latest authorized JOIN policy is `selective_report_or_eos`; the long-repository
