@@ -83,7 +83,9 @@ def test_reclaim_uses_whole_safe_checkpoint_and_current_independent_reserves(
             collect_diagnostics=True, collect_cold_full_candidates=True,
         )
         assert state.runtime._critical_parent_demand == (state.key, *expected, 1002.)
-        state.planner.assert_called_once_with(state.key, include_checkpoint_plan=True)
+        state.planner.assert_called_once_with(
+            state.key, include_checkpoint_plan=True, apply_capacity_budget=False,
+        )
         assert state.runtime.counts["critical_parent_capacity_target_refreshed"] == int(
             expected != (5000, 10),
         )

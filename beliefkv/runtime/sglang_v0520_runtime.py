@@ -5183,7 +5183,7 @@ class NativeAdmissionRuntime:
     def _wait_prefetch_opportunity(
         self, key: PrefillCandidateKey,
         *, max_steps: int | None = None, fit_current_capacity: bool = False,
-        include_checkpoint_plan: bool = False,
+        include_checkpoint_plan: bool = False, apply_capacity_budget: bool = True,
     ) -> SessionH2DOpportunity | None:
         batched = callable(getattr(self._native_cache, "prefetch_gpu_session_nodes", None))
         slots = self.physical_ledger.max_pending - self.physical_ledger.pending_count
@@ -5202,7 +5202,7 @@ class NativeAdmissionRuntime:
         )
         if getattr(opportunity, "no_step_reason", None) == "no_host_backed_missing_copy":
             self.counts["wait_prefetch_empty_restore_shortcut"] += 1
-        if opportunity is None or opportunity.step is None:
+        if opportunity is None or opportunity.step is None or not apply_capacity_budget:
             return opportunity
         candidate = getattr(opportunity, "candidate", None)
         if candidate is None or not opportunity.headroom.observable:
@@ -6845,7 +6845,9 @@ class NativeAdmissionRuntime:
         reclaim = getattr(self._native_cache, "reclaim_beliefkv_handoff_capacity", None)
         if not callable(reclaim):
             return False
-        opportunity = self._wait_prefetch_opportunity(key, include_checkpoint_plan=True)
+        opportunity = self._wait_prefetch_opportunity(
+            key, include_checkpoint_plan=True, apply_capacity_budget=False,
+        )
         candidate = getattr(opportunity, "candidate", None)
         if candidate is None:
             return False
