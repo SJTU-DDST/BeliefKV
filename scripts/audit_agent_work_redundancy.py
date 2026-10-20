@@ -164,6 +164,86 @@ def token_totals(rows, native_results):
     }
 
 
+def prompt_repetitions(requests, native_submits=None, native_results=None):
+    native_submits, native_results = native_submits or {}, native_results or {}
+    by_digest, missing = defaultdict(list), 0
+    for row in requests.values():
+        if not row.get("prompt_sha256"):
+            missing += 1
+            continue
+        by_digest[row["prompt_sha256"]].append(row)
+    repeated = [rows for rows in by_digest.values() if len(rows) > 1]
+    overlap_pairs, unclosed, length_mismatch, length_unknown, empty_first = 0, 0, 0, 0, 0
+    for rows in repeated:
+        ordered = sorted(rows, key=lambda row: row["submit_ms"])
+        lengths = [
+            native_submits.get(row["request_id"], {}).get("prompt_tokens")
+            for row in rows
+        ]
+        known = [value for value in lengths if type(value) is int and value >= 0]
+        length_unknown += len(known) != len(lengths)
+        length_mismatch += len(set(known)) > 1
+        first = ordered[0]
+        empty_first += (
+            first.get("finish_reason") in ("stop", "length")
+            and first.get("output_chars") == 0 and first.get("tool_calls") == 0
+        )
+        for index, row in enumerate(ordered):
+            if "span_ms" not in row:
+                unclosed += 1
+                continue
+            end = row["submit_ms"] + row["span_ms"]
+            overlap_pairs += sum(
+                other["submit_ms"] < end for other in ordered[index + 1:]
+            )
+    return {
+        "requests": len(requests), "requests_without_digest": missing,
+        "distinct_semantic_digests": len(by_digest),
+        "repeated_digest_groups": len(repeated),
+        "requests_in_repeated_groups": sum(map(len, repeated)),
+        "additional_requests_after_first": sum(len(rows) - 1 for rows in repeated),
+        "repeated_groups_crossing_invocations": sum(
+            len({(row["workflow"], row.get("invocation")) for row in rows}) > 1
+            for rows in repeated
+        ),
+        "repeated_groups_crossing_workflows": sum(
+            len({row["workflow"] for row in rows}) > 1 for rows in repeated
+        ),
+        "overlapping_client_span_pairs": overlap_pairs,
+        "unclosed_requests_in_repeated_groups": unclosed,
+        "groups_with_different_native_input_lengths": length_mismatch,
+        "groups_without_complete_native_input_lengths": length_unknown,
+        "groups_with_callback_empty_first_result": empty_first,
+        "groups": [{
+            "digest": rows[0]["prompt_sha256"],
+            "requests": [{
+                **{
+                    key: row.get(key)
+                    for key in (
+                        "request_id", "workflow", "invocation", "role",
+                        "submit_ms", "span_ms", "finish_reason", "output_chars",
+                        "tool_calls",
+                    )
+                },
+                "native_input_tokens": native_submits.get(
+                    row["request_id"], {}
+                ).get("prompt_tokens"),
+                "native_output_tokens": native_results.get(row["request_id"]),
+            } for row in rows],
+        } for rows in repeated],
+        "scope": (
+            "Callback semantic-message/model-contract digests, not native token "
+            "arrays or a proof of equal physical inference state. Different "
+            "digests may render identically; equal digests still require engine "
+            "configuration/token checks. Overlapping client spans include queue "
+            "and delivery delay, not proven concurrent GPU work. Repeated inputs "
+            "do not authorize sharing one sampled response among independent "
+            "samples; only equal-state forward could be shared before each "
+            "request samples independently."
+        ),
+    }
+
+
 def dependency_topology(events):
     """Count declared consumers without inferring shared prompt or tensor values."""
     creates, joins, spawn_edges = {}, {}, set()
@@ -286,8 +366,11 @@ def prefill_service(path, requests, after_compaction, bindings):
     size = path.stat().st_size
     digest, analyzed_bytes = hashlib.sha256(), 0
     tokens, batches, unproven = Counter(), Counter(), Counter()
+    stage_tokens, stage_batches = Counter(), Counter()
     phase_events, invalid_timing, replay = Counter(), Counter(), Counter()
-    phase_durations, role_durations = defaultdict(list), defaultdict(list)
+    phase_durations, role_durations, stage_durations = (
+        defaultdict(list), defaultdict(list), defaultdict(list)
+    )
     after_compaction = set(after_compaction)
     seen = set()
     with path.open("rb") as stream:
@@ -317,11 +400,18 @@ def prefill_service(path, requests, after_compaction, bindings):
             replay[(phase, str(event.get("cuda_graph_replayed")))] += 1
             if phase != "prefill":
                 continue
-            roles = set()
+            roles, stages = set(), set()
             for sample in event["request_samples"]:
                 request = sample.get("request_id")
                 role = requests.get(request, {}).get("role", "unknown")
                 roles.add(role)
+                stage = (
+                    "unknown" if role == "unknown" else
+                    "summary" if role == "summary" else
+                    "post_compaction" if request in after_compaction else
+                    "ordinary"
+                )
+                stages.add(stage)
                 delta = sample.get("token_delta")
                 if (
                     sample.get("token_delta_semantics") != "prefill_extend_input_len"
@@ -330,12 +420,16 @@ def prefill_service(path, requests, after_compaction, bindings):
                     unproven[role] += 1
                     continue
                 tokens[role] += delta
+                stage_tokens[stage] += delta
                 if request in after_compaction:
                     tokens["next_ordinary_after_compaction"] += delta
             role_set = "+".join(sorted(roles)) or "unknown"
+            stage_set = "+".join(sorted(stages)) or "unknown"
             batches[role_set] += 1
+            stage_batches[stage_set] += 1
             if valid_timing:
                 role_durations[role_set].append(elapsed)
+                stage_durations[stage_set].append(elapsed)
     bindings.append({
         "path": str(path.resolve()), "observed_size_bytes": size,
         "analyzed_bytes": analyzed_bytes, "sha256": digest.hexdigest(),
@@ -356,6 +450,22 @@ def prefill_service(path, requests, after_compaction, bindings):
         "prefill_batch_role_set_worker_intervals_ms": {
             role_set: distribution(values)
             for role_set, values in sorted(role_durations.items())
+        },
+        "compaction_stage_service": {
+            "extend_tokens_by_stage": dict(stage_tokens),
+            "batches_by_stage_set": dict(stage_batches),
+            "worker_intervals_ms_by_stage_set": {
+                stage_set: distribution(values)
+                for stage_set, values in sorted(stage_durations.items())
+            },
+            "scope": (
+                "Post-compaction identifies the first ordinary request after an "
+                "observed compaction, not its exact old-token overlap. Stage sets "
+                "partition recorded prefill batches. A mixed interval is retained "
+                "whole, never split by request/token fractions. Pure stage sets "
+                "describe recorded rows, not exclusive GPU execution or removable "
+                "runtime; intervals retain queue/launch/restore dependencies."
+            ),
         },
         "cuda_graph_replay_observations": {
             phase + ":" + state: count
@@ -415,6 +525,7 @@ def analyze(client, *, with_prefill_service=False):
                 )
                 requests[request] = {
                     "request_id": request, "workflow": event["workflow_id"],
+                    "invocation": event.get("invocation_id"),
                     "role": role, "submit_ms": event["ts_ms"],
                     "prompt_chars": attrs.get("prompt_chars"),
                     "prompt_sha256": attrs.get("prompt_semantic_sha256"),
@@ -564,6 +675,9 @@ def analyze(client, *, with_prefill_service=False):
         "workflow_counts": dict(workflow_counts), "missing": dict(missing),
         "dependency_topology": dependency_topology(topology_events),
         "requests_by_role": per_role,
+        "prompt_identity_repetition": prompt_repetitions(
+            requests, native_submits, native_results
+        ),
         "summary_span_sum_per_workflow_ms": distribution(
             sum(summary_by_workflow.get(workflow, ()))
             for workflow in workflow_ids
@@ -627,8 +741,12 @@ def main():
     result = analyze(args.client, with_prefill_service=args.with_prefill_service)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
-    print(json.dumps({key: value for key, value in result.items()
-                      if key != "sources"}, indent=2, sort_keys=True))
+    summary = {key: value for key, value in result.items() if key != "sources"}
+    summary["prompt_identity_repetition"] = {
+        key: value for key, value in result["prompt_identity_repetition"].items()
+        if key != "groups"
+    }
+    print(json.dumps(summary, indent=2, sort_keys=True))
 
 
 if __name__ == "__main__":

@@ -2,6 +2,13 @@
 
 Status date: 2026-10-20 (Asia/Shanghai).
 
+Research-direction exploration is paused at the user's request. Keep the
+historical evidence and reusable auditor fixes; do not resume candidate
+searches or GPU experiments from old research instructions. One-off sources
+and duplicate summaries were removed after a verified archive was created.
+See [the consolidation record](archive/research_exploration_20261020.md).
+Current engineering contracts below retain precedence.
+
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 

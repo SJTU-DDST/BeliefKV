@@ -44,7 +44,7 @@ def read_requests(client, bindings):
             for event in events if event.get("kind") == "invocation_create"
         }
         compacted, previous = set(), {}
-        tools, joined = defaultdict(set), set()
+        tools, joined, join_waiters = defaultdict(set), set(), defaultdict(set)
         for event in sorted(events, key=lambda row: (row["ts_ms"], row["sequence"])):
             kind, attrs = event.get("kind"), event.get("attributes") or {}
             invocation = event.get("invocation_id")
@@ -52,8 +52,18 @@ def read_requests(client, bindings):
                 compacted.add(invocation)
             elif kind == "tool_end":
                 tools[invocation].add(str(attrs.get("tool_name") or "unknown"))
+            elif kind == "join_wait":
+                if event.get("join_id") and invocation is not None:
+                    join_waiters[event["join_id"]].add(invocation)
             elif kind == "join_satisfied":
-                joined.add(invocation)
+                waiters = join_waiters.get(event.get("join_id"), set())
+                if invocation is not None and waiters and waiters != {invocation}:
+                    raise ValueError("JOIN completion differs from its observed waiter")
+                owner = invocation
+                if owner is None and len(waiters) == 1:
+                    owner = next(iter(waiters))
+                if owner is not None:
+                    joined.add(owner)
             elif kind == "llm_submit":
                 request = attrs.get("request_id")
                 if not request or request in requests:
@@ -68,7 +78,7 @@ def read_requests(client, bindings):
                     ),
                     "first_observed_invocation_request": invocation not in previous,
                     "first_after_compaction": invocation in compacted,
-                    "follows_observed_join": invocation in joined,
+                    "follows_observed_join": not internal and invocation in joined,
                     "tools_since_previous_request": sorted(tools[invocation]),
                     "previous_client_request": previous.get(invocation),
                 }
@@ -76,7 +86,8 @@ def read_requests(client, bindings):
                     compacted.discard(invocation)
                 previous[invocation] = request
                 tools[invocation].clear()
-                joined.discard(invocation)
+                if not internal:
+                    joined.discard(invocation)
     return requests
 
 

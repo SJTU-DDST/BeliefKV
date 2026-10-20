@@ -4,6 +4,11 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+方向探索按用户要求暂停。历史研究中的“继续探索”或“goal active”保留其
+原始语境，不构成当前执行指令。一次性源码已移入可复核归档并从工作目录
+删除，详见[整理记录](archive/research_exploration_20261020.md)；原始 trace、
+冻结检出及当前 GPU 预约约束保持有效。
+
 **委派后备份验收。**真实 SPAWN（含嵌套委派）立即排队 parent
 已发布 FULL 的增量备份，首个可用安全点发行，不再等 WAIT_JOIN 或
 HBM 压力。该定向批次上限 4GiB/64 段，背景仍为 200ms/512MiB，

@@ -128,3 +128,25 @@ def test_filtered_source_hash_covers_nonselected_complete_rows(tmp_path):
     ]
     assert bindings[0]["sha256"] == hashlib.sha256(complete).hexdigest()
     assert bindings[0]["analyzed_bytes"] == len(complete)
+
+
+def test_join_without_invocation_resolves_waiter_and_preserves_internal_summary(tmp_path):
+    workflow = tmp_path / "workflows/one"
+    workflow.mkdir(parents=True)
+    events = [
+        {"kind": "invocation_create", "invocation_id": "root"},
+        {"kind": "llm_submit", "invocation_id": "root", "attributes": {"request_id": "a"}},
+        {"kind": "join_wait", "invocation_id": "root", "join_id": "j"},
+        {"kind": "join_satisfied", "invocation_id": None, "join_id": "j"},
+        {"kind": "llm_submit", "invocation_id": "root",
+         "attributes": {"request_id": "summary", "runtime_internal": True}},
+        {"kind": "llm_submit", "invocation_id": "root", "attributes": {"request_id": "b"}},
+    ]
+    for index, event in enumerate(events):
+        event.update(ts_ms=index, sequence=index)
+    (workflow / "runtime_events.deepagents.jsonl").write_text(
+        "".join(json.dumps(event) + "\n" for event in events)
+    )
+    result = read_requests(tmp_path, [])
+    assert not result["summary"]["follows_observed_join"]
+    assert result["b"]["follows_observed_join"]

@@ -2,6 +2,11 @@
 
 更新日期：2026-10-20（北京时间）
 
+方向探索已按用户要求暂停。研究结论集中保留在
+[研究记录](research/non_scheduling_directions_20261016_zh.md)，一次性脚本和
+重复摘要已清理；源码归档及保留范围见[整理记录](archive/research_exploration_20261020.md)。
+下文的最新工程状态与实验约束继续有效。
+
 **最新改动：SPAWN 后立即准备 parent 的 Host 副本。**真实委派后
 在首个可用安全点增量备份已发布 FULL，嵌套 child 委派同样适用；
 不要求进入 JOIN 等待或已有 HBM 压力。定向批次最多 4GiB/64 段，

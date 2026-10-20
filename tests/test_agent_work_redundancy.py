@@ -4,8 +4,8 @@ import json
 import pytest
 
 from scripts.audit_agent_work_redundancy import (
-    analyze, dependency_topology, prefill_service, read_source, repeated_results,
-    root_evidence, tool_pairs,
+    analyze, dependency_topology, prefill_service, prompt_repetitions, read_source,
+    repeated_results, root_evidence, tool_pairs,
 )
 
 
@@ -191,6 +191,121 @@ def test_service_identities_are_unique_across_phases(tmp_path):
     )
     with pytest.raises(ValueError, match="duplicate service sample"):
         prefill_service(path, {}, (), [])
+
+
+def test_compaction_stage_intervals_keep_mixed_batches_whole(tmp_path):
+    path = tmp_path / "service.jsonl"
+    path.write_text("".join(json.dumps({
+        "event": "gpu_service_sample", "phase": "prefill", "sample_id": identity,
+        "service_elapsed_ms": duration,
+        "request_samples": [{
+            "request_id": request, "token_delta": tokens,
+            "token_delta_semantics": "prefill_extend_input_len",
+        } for request, tokens in requests],
+    }) + "\n" for identity, duration, requests in [
+        ("mixed", 10, (("after", 100), ("regular", 1))),
+        ("summary", 5, (("summary", 50),)),
+        ("pure-after", 3, (("after", 40),)),
+    ]))
+    result = prefill_service(path, {
+        "after": {"role": "root"}, "regular": {"role": "child"},
+        "summary": {"role": "summary"},
+    }, ["after"], [])
+    stages = result["compaction_stage_service"]
+    assert stages["extend_tokens_by_stage"] == {
+        "post_compaction": 140, "ordinary": 1, "summary": 50,
+    }
+    intervals = stages["worker_intervals_ms_by_stage_set"]
+    assert intervals["ordinary+post_compaction"]["sum"] == 10
+    assert intervals["post_compaction"]["sum"] == 3
+    assert intervals["summary"]["sum"] == 5
+    assert sum(row["sum"] for row in intervals.values()) == result[
+        "worker_phase_intervals_ms"
+    ]["prefill"]["sum"]
+
+
+def test_unknown_request_stages_are_not_assigned_to_post_compaction(tmp_path):
+    path = tmp_path / "service.jsonl"
+    path.write_text(json.dumps({
+        "event": "gpu_service_sample", "phase": "prefill", "sample_id": "sample",
+        "service_elapsed_ms": 2,
+        "request_samples": [{
+            "request_id": "unknown", "token_delta": 20,
+            "token_delta_semantics": "prefill_extend_input_len",
+        }],
+    }) + "\n")
+    result = prefill_service(path, {}, ["unknown"], [])
+    assert result["compaction_stage_service"]["extend_tokens_by_stage"] == {
+        "unknown": 20,
+    }
+    assert result["compaction_stage_service"]["batches_by_stage_set"] == {
+        "unknown": 1,
+    }
+
+
+def test_prompt_fingerprints_preserve_namespaces_and_client_span_semantics():
+    rows = {
+        key: {
+            "request_id": key, "workflow": workflow, "invocation": invocation,
+            "prompt_sha256": digest, "submit_ms": start, "span_ms": span,
+        }
+        for key, workflow, invocation, digest, start, span in [
+            ("a", "wf", "one", "same", 0, 10),
+            ("b", "wf", "two", "same", 2, 3),
+            ("c", "other", "one", "same", 20, 1),
+            ("d", "wf", "one", "different", 3, 1),
+            ("unknown", "wf", "one", None, 4, 1),
+        ]
+    }
+    result = prompt_repetitions(rows)
+    assert result["requests"] == 5
+    assert result["distinct_semantic_digests"] == 2
+    assert result["requests_without_digest"] == 1
+    assert result["repeated_digest_groups"] == 1
+    assert result["requests_in_repeated_groups"] == 3
+    assert result["repeated_groups_crossing_invocations"] == 1
+    assert result["repeated_groups_crossing_workflows"] == 1
+    assert result["overlapping_client_span_pairs"] == 1
+
+
+def test_equal_boundary_is_not_overlap_and_unclosed_prompts_remain_unknown():
+    rows = {
+        "a": {
+            "request_id": "a", "workflow": "wf", "invocation": "root",
+            "prompt_sha256": "same", "submit_ms": 0, "span_ms": 1,
+        },
+        "b": {
+            "request_id": "b", "workflow": "wf", "invocation": "root",
+            "prompt_sha256": "same", "submit_ms": 1,
+        },
+    }
+    result = prompt_repetitions(rows)
+    assert result["overlapping_client_span_pairs"] == 0
+    assert result["unclosed_requests_in_repeated_groups"] == 1
+
+
+def test_semantic_digest_equality_does_not_hide_native_input_length_changes():
+    rows = {
+        "one": {
+            "request_id": "one", "workflow": "wf", "invocation": "root",
+            "prompt_sha256": "same", "submit_ms": 0, "span_ms": 1,
+            "finish_reason": "stop", "output_chars": 0, "tool_calls": 0,
+        },
+        "two": {
+            "request_id": "two", "workflow": "wf", "invocation": "root",
+            "prompt_sha256": "same", "submit_ms": 2, "span_ms": 1,
+            "finish_reason": "stop", "output_chars": 10, "tool_calls": 0,
+        },
+    }
+    result = prompt_repetitions(
+        rows, {"one": {"prompt_tokens": 10}, "two": {"prompt_tokens": 12}},
+        {"one": 3, "two": 4},
+    )
+    assert result["groups_with_different_native_input_lengths"] == 1
+    assert result["groups_without_complete_native_input_lengths"] == 0
+    assert result["groups_with_callback_empty_first_result"] == 1
+    assert result["groups"][0]["requests"][1]["native_input_tokens"] == 12
+    assert result["groups"][0]["requests"][0]["native_output_tokens"] == 3
 
 
 def test_roles_and_summary_per_workflow_include_zero_summary_workflows(tmp_path):
