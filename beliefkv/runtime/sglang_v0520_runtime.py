@@ -61,6 +61,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
     SessionH2DOpportunity,
     ShadowBackupStep,
     capture_action_local_shadow,
+    has_host_backed_missing_copy,
     inspect_session_residency_hint,
     inspect_session_h2d_opportunity,
     missing_prepare_full_prefix_tokens,
@@ -511,6 +512,7 @@ class NativeAdmissionRuntime:
         self._final_priority_native_rank: int | None = None
         self._join_ticket: _JoinPrefetchTicket | None = None
         self._confirmed_join_tickets: dict[str, _JoinPrefetchTicket] = {}
+        self._empty_join_reentry_origins: dict[str, PrefillCandidateKey] = {}
         self._join_inflight_tickets: dict[str, _JoinPrefetchTicket] = {}
         self._join_prefetch_issued: Counter[_JoinPrefetchIdentity] = Counter()
         self.enable_admission_prefetch = enable_admission_prefetch
@@ -802,6 +804,7 @@ class NativeAdmissionRuntime:
         self._residency_hint_admissions.clear()
         self._discard_join_ticket("shutdown")
         self._confirmed_join_tickets.clear()
+        self._empty_join_reentry_origins.clear()
         self._join_inflight_tickets.clear()
         self._tool_inflight_tickets.clear()
         self._final_stages.clear()
@@ -1034,6 +1037,8 @@ class NativeAdmissionRuntime:
                     and (
                         parent.state is InvocationState.WAIT_JOIN
                         or parent.join_id in self._confirmed_join_tickets
+                        or parent.state is InvocationState.READY
+                        and self._empty_join_reentry_origins.get(parent.join_id) == origin
                     )
                     and origin.invocation_id == event.invocation_id
                     and origin.root_workflow_id == event.workflow_id
@@ -1043,7 +1048,10 @@ class NativeAdmissionRuntime:
                 ):
                     if submitted_origins is None:
                         submitted_origins = {}
-                    submitted_origins[event.event_id] = (origin, tokens[1] - 1)
+                    submitted_origins[event.event_id] = (
+                        origin, tokens[1] - 1,
+                        self._empty_join_reentry_origins.get(parent.join_id) == origin,
+                    )
             if event.attributes.get(SEMANTIC_TEXT) is True:
                 self._capture_semantic_text(event)
                 continue
@@ -1182,6 +1190,7 @@ class NativeAdmissionRuntime:
             self._child_report_notices.clear()
             self._discard_join_ticket("causal_mirror_discarded")
             self._confirmed_join_tickets.clear()
+            self._empty_join_reentry_origins.clear()
             self._join_inflight_tickets.clear()
             self._admission_lease = None
             self.shadow_candidate = None
@@ -1345,6 +1354,11 @@ class NativeAdmissionRuntime:
                         self.shadow_candidate = None
                 if event.kind is RuntimeEventKind.WORKFLOW_END:
                     self._invalidate_join_eos_arrival(event)
+                    self._empty_join_reentry_origins = {
+                        join_id: key
+                        for join_id, key in self._empty_join_reentry_origins.items()
+                        if key.root_workflow_id != event.workflow_id
+                    }
                     self._spawn_full_prepares = OrderedDict(
                         (context, key) for context, key in self._spawn_full_prepares.items()
                         if key.root_workflow_id != event.workflow_id
@@ -1457,6 +1471,7 @@ class NativeAdmissionRuntime:
                 for context_id in tool_wait_refreshes:
                     self._submit_tool_wait(context_id)
             report_notices_in_batch: set[str] = set()
+            empty_join_restores = None
             for event in events:
                 if event.kind is RuntimeEventKind.STRUCTURED_ACTION:
                     if self._observe_child_report_notice(event):
@@ -1501,7 +1516,9 @@ class NativeAdmissionRuntime:
                     if event.invocation_id is not None:
                         self._child_report_notices.pop(event.invocation_id, None)
                         self._clear_semantic_invocation(event.invocation_id)
-                    self._advance_join_ticket(event)
+                    if empty_join_restores is None:
+                        empty_join_restores = set()
+                    self._advance_join_ticket(event, empty_restores=empty_join_restores)
                     if event.kind is RuntimeEventKind.JOIN_TIMEOUT:
                         self._join_prefetch_issued = Counter({
                             identity: count
@@ -3586,7 +3603,27 @@ class NativeAdmissionRuntime:
             )
         )
 
-    def _advance_join_ticket(self, event: RuntimeEvent) -> None:
+    def _join_restore_known_empty(
+        self, key: PrefillCandidateKey, *, input_tokens: int | None = None,
+    ) -> bool:
+        cache = self._native_cache
+        if not callable(getattr(getattr(cache, "tree_core", None), "node_by_id", None)):
+            return False
+        if input_tokens is None:
+            tokens = self._context_tokens.get(key.context_id)
+            if tokens is not None and tokens[0] == key.context_epoch:
+                input_tokens = max(0, tokens[1] - 1)
+        anchors = self._snapshot_key_session_anchors(
+            cache, key, reusable_input_tokens=input_tokens,
+        )
+        return anchors is not None and has_host_backed_missing_copy(
+            cache, anchors, input_checkpoint_only=True,
+        ) is False
+
+    def _advance_join_ticket(
+        self, event: RuntimeEvent, *,
+        empty_restores: set[tuple[str, PrefillCandidateKey]] | None = None,
+    ) -> None:
         ticket = self._join_ticket
         if ticket is not None and ticket.join_id in self._noncontinuing_joins:
             self._discard_join_ticket("noncontinuing_join")
@@ -3595,6 +3632,15 @@ class NativeAdmissionRuntime:
             RuntimeEventKind.JOIN_TIMEOUT, RuntimeEventKind.INVOCATION_CANCEL,
             RuntimeEventKind.CONTEXT_COMPACT, RuntimeEventKind.CONTEXT_ADVANCE,
         ):
+            if event.kind is RuntimeEventKind.JOIN_TIMEOUT:
+                self._empty_join_reentry_origins.pop(event.join_id, None)
+            else:
+                context = self.graph.contexts.get(event.context_id)
+                for invocation_id in (
+                    context.invocation_ids if context is not None else (event.invocation_id,)
+                ):
+                    for join_id in self._join_by_invocation.get(invocation_id, ()):
+                        self._empty_join_reentry_origins.pop(join_id, None)
             candidates = list(self._confirmed_join_tickets.values())
             candidates.extend(self._join_inflight_tickets.values())
             if ticket is not None and self._confirmed_join_tickets.get(ticket.join_id) is not ticket:
@@ -3656,19 +3702,42 @@ class NativeAdmissionRuntime:
                 pending = (
                     inflight if inflight is not None and inflight.key == key else
                     ticket if ticket is not None and (ticket.join_id, ticket.key) == (join_id, key)
-                    else _JoinPrefetchTicket(
+                    else None
+                )
+                identity = join_id, key
+                if empty_restores is not None and identity in empty_restores:
+                    continue
+                issued_nodes = self._issued_join_nodes(join_id, key)
+                if not (
+                    issued_nodes or pending is not None and (
+                        pending.issued_nodes or pending.command_id or pending.command_ids
+                    )
+                ) and self._join_restore_known_empty(key):
+                    if pending is not None:
+                        self._discard_join_ticket("no_host_backed_missing_copy", ticket=pending)
+                        if ticket is pending:
+                            ticket = None
+                    if empty_restores is not None:
+                        empty_restores.add(identity)
+                    # Identity only: recheck once on the next client submit.
+                    # It holds no pages and is never polled by the selector.
+                    self._empty_join_reentry_origins[join_id] = key
+                    self.counts["confirmed_join_empty_restore_skipped"] += 1
+                    continue
+                if pending is None:
+                    pending = _JoinPrefetchTicket(
                         key, join_id, join.mode.value,
                         tuple(sorted(join.member_invocation_ids)),
                         "confirmed", 0.,
-                        issued_nodes=self._issued_join_nodes(join_id, key),
+                        issued_nodes=issued_nodes,
                     )
-                )
                 # Keep any issued burst and its ACK identity across RETURN.
                 pending.phase = "confirmed"
                 pending.expires_at = time.monotonic() + 2.0
                 if self._join_inflight_tickets.get(join_id) is pending:
                     del self._join_inflight_tickets[join_id]
                 self._confirmed_join_tickets[join_id] = pending
+                self._empty_join_reentry_origins.pop(join_id, None)
                 if self._join_ticket is None:
                     self._join_ticket = pending
                 self.counts["join_reentry_confirmed"] += 1
@@ -3695,7 +3764,7 @@ class NativeAdmissionRuntime:
 
     def _bind_confirmed_join_submit(
         self, event: RuntimeEvent, *,
-        origin: tuple[PrefillCandidateKey, int] | None,
+        origin: tuple[PrefillCandidateKey, int, bool] | None,
         confirmed_in_batch: set[str],
     ) -> None:
         if (
@@ -3704,6 +3773,8 @@ class NativeAdmissionRuntime:
         ):
             return
         parent = self.graph.invocations.get(event.invocation_id)
+        if parent is not None:
+            self._empty_join_reentry_origins.pop(parent.join_id, None)
         pending = self._confirmed_join_tickets.get(parent.join_id) if parent else None
         rid = event.attributes.get("request_id")
         if pending is not None and pending.client_request_id is not None:
@@ -3713,7 +3784,7 @@ class NativeAdmissionRuntime:
         join = self.graph.joins.get(parent.join_id) if parent else None
         if origin is None or join is None:
             return
-        key, input_tokens = origin
+        key, input_tokens, confirmed_before_submit = origin
         if (
             join.join_id not in self._continuing_joins or not join.satisfied
             or join.join_id in self._noncontinuing_joins
@@ -3738,11 +3809,26 @@ class NativeAdmissionRuntime:
             if pending is not None:
                 self._discard_join_ticket("client_submit_identity_unproven", ticket=pending)
             return
+        if pending is not None and pending.key != key:
+            return
+        issued_nodes = self._issued_join_nodes(join.join_id, key)
         if pending is None:
-            if join.join_id not in confirmed_in_batch:
+            if join.join_id not in confirmed_in_batch and not confirmed_before_submit:
                 return
             pending = self._join_inflight_tickets.get(join.join_id)
-            if pending is not None and pending.key == key:
+            if pending is not None and pending.key != key:
+                pending = None
+        if not (
+            issued_nodes or pending is not None and (
+                pending.issued_nodes or pending.command_id or pending.command_ids
+            )
+        ) and self._join_restore_known_empty(key, input_tokens=input_tokens):
+            if pending is not None:
+                self._discard_join_ticket("no_host_backed_missing_copy", ticket=pending)
+            self.counts["confirmed_join_empty_restore_skipped"] += 1
+            return
+        if join.join_id not in self._confirmed_join_tickets:
+            if pending is not None:
                 del self._join_inflight_tickets[join.join_id]
                 pending.phase = "confirmed"
                 pending.expires_at = time.monotonic() + 2.
@@ -3750,7 +3836,7 @@ class NativeAdmissionRuntime:
                 pending = _JoinPrefetchTicket(
                     key, join.join_id, join.mode.value, tuple(sorted(join.member_invocation_ids)),
                     "confirmed", time.monotonic() + 2.,
-                    issued_nodes=self._issued_join_nodes(join.join_id, key),
+                    issued_nodes=issued_nodes,
                 )
             self._confirmed_join_tickets[join.join_id] = pending
             self.counts["join_reentry_confirmed"] += 1
@@ -4569,6 +4655,24 @@ class NativeAdmissionRuntime:
             or self._terminal(key)
         ):
             return None
+        return self._snapshot_key_session_anchors(
+            cache, key,
+            reusable_input_tokens=(
+                pending.checkpoint_input_tokens if pending is not None else (
+                    max(0, tokens[1] - 1)
+                    if (tokens := self._context_tokens.get(context_id)) is not None
+                    and tokens[0] == key.context_epoch else None
+                )
+            ),
+        )
+
+    @staticmethod
+    def _snapshot_key_session_anchors(
+        cache: object, key: PrefillCandidateKey, *,
+        reusable_input_tokens: int | None,
+    ) -> ContextSessionAnchors | None:
+        if key.session_id is None or key.session_generation is None:
+            return None
         try:
             snapshot = getattr(
                 cache.session_refs, "snapshot_latest_session_leaf_anchors",
@@ -4595,13 +4699,7 @@ class NativeAdmissionRuntime:
         return ContextSessionAnchors(
             key=key, component_leaves=leaves,
             captured_monotonic_s=time.monotonic(),
-            reusable_input_tokens=(
-                pending.checkpoint_input_tokens if pending is not None else (
-                    max(0, tokens[1] - 1)
-                    if (tokens := self._context_tokens.get(context_id)) is not None
-                    and tokens[0] == key.context_epoch else None
-                )
-            ),
+            reusable_input_tokens=reusable_input_tokens,
         )
 
     def _track_terminal_cache(self, key: PrefillCandidateKey) -> None:

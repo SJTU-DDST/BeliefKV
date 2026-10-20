@@ -22,21 +22,35 @@ samples: no-demand36-context P50 is231.7->213.7us,108-context541.5->489.1us.
 The real WAIT_JOIN-demand case keeps the same terminal-check count. Preserve
 the36-context candidate's higher mean299.3us versus232.2us; median improvement
 does not prove mean, online CPU or throughput/JCT improvement. Discard only the
-initial positive-demand fixture that selected a READY child. Refresh V103 to
-V2322 and retain the2026-10-21T06:00:00+08:00 GPU hold.
+initial positive-demand fixture that selected a READY child. V2322 qualifies
+that change; refresh V103 to the current V2326 qualification and retain
+the2026-10-21T06:00:00+08:00 GPU hold.
 
-Latest EOS conversion fix: an unproductive confirmed JOIN previously occupied
-the selector, preventing another parent's valid EOS from being inspected.
-After an empty plan, unavailable capacity or declined enqueue, make at most one
-same-safe-point EOS attempt while retaining the unfinished confirmed ticket in
-its map. Do not mark it restored or change in-flight ownership, live identities,
-capacity or ACK checks. Productive confirmed recovery retains priority. No EOS
-means no added planning scan; no new cadence or background worker is introduced.
-V2319 binds2367 passing application CPU cases, retaining all2355 previous cases
-and adding12 checks. Retain266 rehashed unchanged-engine cases. The same-state
-CPU proof changes0 native callbacks to1 burst/4 reservations; it is not GPU
-DMA, online-frequency or performance proof. Refresh V103 to this qualification
-and keep the2026-10-21T06:00:00+08:00 GPU hold.
+Latest confirmed-JOIN eligibility fix: check for recoverable Host-only FULL or
+the necessary input-compatible Mamba checkpoint before creating a new recovery
+ticket. A proven-empty restore does not enter selection; missing/unobservable
+anchors and capacity blockage do not establish emptiness. Share the negative
+check within the same RETURN/JOIN_SATISFIED batch. Keep already-issued bursts,
+their ACK identity, consumer binding and residency management.
+
+An empty JOIN retains only its one-use reentry identity, with no capacity,
+selector participation or polling. At the next client LLM_SUBMIT, recheck live
+native residency and allow recovery if eviction occurred after RETURN. Consume
+or invalidate that identity through existing lifecycle events; do not let an old
+satisfied JOIN authorize later unrelated requests. Do not cache native emptiness.
+The earlier bounded EOS fallback remains for unknown/changed plans, capacity
+blockage and declined enqueue, rather than known-empty ticket creation.
+
+V2325 compares the previous3d164e3 policy on identical CPU fixtures: empty A
+plus actionable EOS B changes two planner calls to B only, with extra EOS retries
+1->0 and the same1 burst/4 CPU action reservations. Positive FULL and unknown
+cases retain selection. The extra boundary check is not free: empty-case P50
+426->418us but mean474->478us; positive-FULL P50 341->374us. All slow samples
+are retained. Timing includes mocked planner callbacks, so it cannot prove
+full-planner cost, online frequency or throughput/JCT. V2326 reruns all2367
+preceding application cases and adds25 eligibility/lifecycle cases,2392 passing
+in total. Rehash and retain266 unchanged-engine cases. Freeze V103 to this
+qualification and keep the2026-10-21T06:00:00+08:00 GPU hold.
 
 Next-run preparation uses `scripts/launch_qualified_after_hold.py`. The old
 V102 environment still pins broad report mode,250ms and an obsolete engine;
@@ -76,7 +90,7 @@ V2315 binds2307 passing application CPU cases and retains all2257 preceding
 contracts. Native engine/patch hashes are unchanged; retain the266 source-bound
 native CPU cases without claiming a rerun. Cover direct/coalesced publication,
 not-due and no-work calls, live lock/inflight/Host mutations, immediate critical
-publication and clean exception retry. Freeze V2322 or a later qualification
+publication and clean exception retry. Freeze V2326 or a later qualification
 after the2026-10-21T06:00:00+08:00 hold. Keep the full performance goal active.
 
 Latest authorized JOIN policy is `selective_report_or_eos`; the long-repository
