@@ -18,6 +18,15 @@ initial fanout2-4 for every root,12 roots with multiple rounds,126 dynamic
 children and15 nested spawns,maximum depth2. V2435 seals the complete
 predictive summary. Keep the frozen execution and the running native arm.
 
+V104 is registered to follow V103,not yet GPU-started. Frozen runtime2c377da
+uses V2445 and the unchanged native tree,36 simultaneous roots,running8,
+256K/95% and Host200GB80:20. Watcher2106412 waits for exact V103 watcher/
+driver start identities to exit,completed native postprocessing and an idle GPU.
+Run predictive only against V103 native. State is
+`/home/longhao/experiment/ops/v104_queued_full_20261021.state.json`.
+Honor new user holds/pauses,verify frozen sources again,and stop on observed
+physical or writer failures. Do not duplicate either driver.
+
 Verified FULL submitted before the causal completion boundary is23.095GB
 for55 JOIN events and2.430GB for61 tool waits. Of70 observed JOINs,65 had
 a positive pre-completion plan;80 of2051 observed tool waits did. Separate

@@ -16,6 +16,14 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 不要重复启动 driver/native，也不要将后续 main 修改热换入 V103。
 对照仍包含已约定的前端缓存差异，不作独立预取归因。
 
+V104 接续已注册，运行码冻结为 `2c377da`，目前仍等待 V103，
+尚未启动 GPU。watcher PID `2106412` 按 V103 watcher/driver 的
+PID+start_ticks 等待，完整 native 后处理和 GPU 空闲后只跑 predictive，
+直接复用 V103 native；不再新增 native。36-root/running8/256K/95%/
+Host200GB80:20 保持，新用户暂停、来源变化及物理/写入错误均要处理。
+接续状态为 `/home/longhao/experiment/ops/v104_queued_full_20261021.state.json`；
+不要重复启动接续或修改冻结源码。
+
 [V2435 完整 predictive 汇总](../experiments/reports/v2435_v103_predictive_complete_summary_20261021.json)
 中，完成前启动且被下一请求确认复用的 FULL 为 JOIN23.095GB/
 55 个事件、tool2.430GB/61 轮；JOIN 总恢复37.986GB、tool2.806GB

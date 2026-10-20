@@ -13,6 +13,14 @@
 95% 压缩和 Host200GB80:20 已核对，PREPARE、工具预取和选择性
 预测/EOS 启用，handoff、语义 worker 及共享路径详细计时关闭。
 
+**V104 已注册接续，尚未启动 GPU。**冻结运行码 `2c377da`，使用
+V2445 的 2667 项应用资格及同一原生引擎；36-root 同时到达、
+running8、256K/95%、Host200GB80:20 保持。接续 watcher PID
+`2106412`，等待 V103 watcher/driver 的 PID 与 start_ticks 身份退出、
+完整 native 后处理及 GPU 空闲；只跑 predictive，复用 V103 native。
+状态位于 `/home/longhao/experiment/ops/v104_queued_full_20261021.state.json`。
+新的用户暂停、来源改变或已确认运行错误会阻止启动或停止本次运行。
+
 [V2435 完整 predictive 汇总](../experiments/reports/v2435_v103_predictive_complete_summary_20261021.json)
 中，JOIN/tool 在完成前启动且被下一请求确认复用的 FULL 分别为
 **23.095/2.430GB**，对应 55/61 个独立等待事件。JOIN 共观测 70 个，

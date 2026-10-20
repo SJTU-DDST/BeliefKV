@@ -19,6 +19,11 @@ native未完成，性能验收开放。CPU profiler于北京时间
 JCT保留其来源。实际配置、原始前缀与口径见[架构状态](architecture_status_zh.md)及
 [实验注意事项](experiment_operating_notes_zh.md)。
 
+**V104 已注册等待 V103 结束。**冻结运行码 `2c377da`，36-root/
+running8/256K/95%/Host200GB80:20 保持；仅接续 predictive 并复用
+V103 native。watcher `2106412` 核对旧进程身份、后处理和 GPU
+空闲后启动，目前未开始 GPU；新暂停或已确认运行错误照常处理。
+
 **main最新CPU资格V2445：关键容量事务可使用尚未启动的队尾FULL。**
 要求原生请求row为空、没有私有KV和生成输出且无retraction，保留
 下一批准入前沿和恢复保护；实时复核队列、身份和所有原生提交检查。
