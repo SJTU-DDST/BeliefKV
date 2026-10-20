@@ -142,6 +142,7 @@ def configuration(tmp_path, profile=NESTED_IN_GRAPH_PROFILE):
 @pytest.mark.parametrize("deliver_control", [False, True])
 @pytest.mark.parametrize("profile,source_context", [
     (NESTED_IN_GRAPH_PROFILE, False),
+    (NESTED_IN_GRAPH_PROFILE, True),
     (DYNAMIC_NESTED_IN_GRAPH_PROFILE, False),
     (DYNAMIC_NESTED_IN_GRAPH_PROFILE, True),
 ])

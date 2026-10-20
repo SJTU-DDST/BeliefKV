@@ -5,6 +5,32 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Latest user direction: restore the earlier working delegation prompt/configuration
+with minimal changes. The long-repository launcher now defaults to
+`native_in_graph_nested_2to4`. V82b frozen `ab951b9` and main have identical
+root/coordinator prompt text and initial/JOIN middleware ASTs. Reuse these
+unchanged, including the old four-phase/coordinator guidance and initial
+task/[2,4] generation settings. Concrete assignments remain model-generated;
+add no round-count or natural-RETURN rejection. Keep LoCoBench,36 simultaneous
+roots,root-only full source,task-specific descendants,running8,256K/95%,
+Host200GB/80:20 and latest runtime fixes.
+Explicitly override inherited dynamic FANOUT_PROFILE when freezing a new run.
+Check actual traces for initial2–4 fanout,multiple rounds and nested children
+before continuing full performance validation. Scripted CPU model tests prove
+plumbing only. Cancel native if workload shape fails; after a pass, use fresh
+native with the same changed common contract, not V96 as a matched baseline.
+V2193 records the five matching definitions and unchanged-source provenance.
+V2192 passes25 CPU cases without skips, including the restored profile with
+root-only long source in the nested harness. No new GPU run is started by
+this source/CPU audit.
+
+V98 was administratively stopped2026-10-20 14:42:31 Asia/Shanghai for the
+user's sparse-delegation rejection (V2190/V2191):17/36 completed,19 without
+terminal results;3 delegating roots,6 children,3 root JOIN rounds,no multiple
+rounds or nested spawn. Sixteen of17 completed workflows never delegated.
+Owned resources are released and the native follow-up is cancelled. Preserve
+partial evidence; infer neither natural failure nor complete-run performance.
+
 New main candidate preserves critical capacity preparation through a proven
 confirmed JOIN ticket into client reentry, stopping at native request arrival.
 Match the ticket's old safe checkpoint/current consumer, keep the earlier
@@ -16,10 +42,10 @@ by context so intermediate metadata ordering cannot discard valid demand.
 V2187 compares verified frozen V98 methods across5 graph/ticket sequences:
 old0/5 versus candidate5/5 retain capacity; no DMA is issued in this proof.
 V2186 passes1886 current CPU cases, including37 new identity/lifecycle cases.
-The running V98 snapshot is unchanged; actual capacity and performance remain
+The stopped V98 snapshot is unchanged; actual capacity and performance remain
 unverified for this candidate. Do not credit CPU eligibility as useful prefetch.
 
-V98 launched2026-10-20 14:13:44 Asia/Shanghai from frozen34f9362,
+V98 historical launch:2026-10-20 14:13:44 Asia/Shanghai from frozen34f9362,
 with first actual workflow service14:17:23. V2181 verifies971 frozen
 sources and507 external inputs, matching actual configuration and zero
 writer failures/drops. Predictive only; reuse completed V96 native as a
@@ -35,7 +61,7 @@ successor-reused FULL across6 completed JOIN waits despite positive plans.
 Start-window records and ACK counts cannot substitute for that metric.
 
 The V98 candidate passes1849 current CPU cases without skips (V2180).
-It is frozen and running with the same36-root common contract and completed
+It ran frozen with the same36-root common contract and completed
 V96 native development reference. No performance acceptance yet.
 
 Post-V97 main candidate connects native EOS to critical parent capacity demand.
@@ -95,7 +121,9 @@ generation and prompted fixed phases/coordinator roles; the dynamic profile
 uses auto without initial fanout bounds. V96 predictive has3 delegating roots,
 6 JOINs/11 children, versus31 native JOINs; neither arm has nested children.
 Do not describe this as lost JOIN events or solely a dataset property. Do not
-silently restore fixed phases/roles or RETURN gates. Any future common-harness
+silently restore fixed phases/roles or RETURN gates. The latest explicit user
+direction at the top now restores the old prompt/profile without RETURN gates.
+Any future common-harness
 change requires a new matched native reference. V2161/V2164 tested the
 superseded1-second fallback, not the current immediate policy. Withdraw the
 inconclusive estimator micro-optimization rather than crediting its median
