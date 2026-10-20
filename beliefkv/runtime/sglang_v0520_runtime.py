@@ -5651,6 +5651,7 @@ class NativeAdmissionRuntime:
                     })
                 diagnosis = {**observed, "waiting_candidate_checks": checks}
         if freed:
+            self._invalidate_causal_full_donor_observations(freed)
             self.counts[f"{source}_cold_reclaimed"] += 1
             if self._opportunity_writer is not None:
                 self._opportunity_writer.record({
@@ -5829,6 +5830,7 @@ class NativeAdmissionRuntime:
             **({"collect_diagnostics": True} if collect_diagnostics else {}),
         )
         if freed:
+            self._invalidate_causal_full_donor_observations(freed)
             self.counts["wait_prefetch_tail_cold_reclaimed"] += 1
         if self._opportunity_writer is not None:
             self._opportunity_writer.record({
@@ -6301,6 +6303,46 @@ class NativeAdmissionRuntime:
                 "source": source, "invocation_id": key.invocation_id,
                 "evidence": "real_allocation_shortfall;unlocked_exclusive_session;host_copy_settled",
             })
+
+    def _invalidate_causal_full_donor_observations(self, freed: dict[int, int]) -> None:
+        """Reuse the owner index already validated by this native reclaim."""
+        if freed.get(0, 0) <= 0 or not (
+            self._tool_opportunity_cache or self._semantic_target_cache or self.tool_wait_hints
+        ) or (
+            self._cold_full_owner_index_source is not self.context_sessions
+            or self._cold_full_owner_index_revision != self._context_sessions_revision
+        ):
+            return
+        cache = self._native_cache
+        invalidated = set()
+        for victim in getattr(cache, "beliefkv_handoff_last_victims", ()):
+            try:
+                if (
+                    victim.get("scope") != "causal_waiting_full"
+                    or victim.get("freed_units", {}).get(0, 0) <= 0
+                ):
+                    continue
+                node = cache.tree_core.node_by_id(victim["node_id"])
+                full = node.component_data[0]
+                if (
+                    node.creation_time != victim["creation_time"]
+                    or full.value is not None or full.host_value is None
+                ):
+                    continue
+                sessions = cache.session_refs
+                for session in full.session_ids or ():
+                    if session in sessions._closed_session_ids:
+                        continue
+                    generation = sessions._session_generations.get(session)
+                    for key in self._cold_full_owner_index.get(session, ()):
+                        if (
+                            key not in invalidated and key.session_generation == generation
+                            and self.context_sessions.get(key.context_id) == key
+                        ):
+                            invalidated.add(key)
+                            self._invalidate_wait_transfer_observation(key)
+            except (AttributeError, IndexError, KeyError, TypeError, ValueError, RuntimeError):
+                continue
 
     @timed_runtime("prepare_candidate_publication")
     def _publish_parent_pressure_candidates(
@@ -6800,6 +6842,7 @@ class NativeAdmissionRuntime:
         )
         self.counts["critical_parent_headroom_checks"] += 1
         if any(freed.values()):
+            self._invalidate_causal_full_donor_observations(freed)
             self._invalidate_wait_transfer_observation(key)
             self._report_candidate_next_ms = self._tool_prefetch_next_ms = 0.
         if self._opportunity_writer is not None:
