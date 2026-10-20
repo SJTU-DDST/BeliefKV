@@ -57,6 +57,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
     PhysicalActionExpectation,
     PhysicalReceiptError,
     PhysicalTransactionLedger,
+    PrefetchCheckpointPlan,
     PrefetchLoadStep,
     SessionH2DOpportunity,
     ShadowBackupStep,
@@ -6844,10 +6845,34 @@ class NativeAdmissionRuntime:
         reclaim = getattr(self._native_cache, "reclaim_beliefkv_handoff_capacity", None)
         if not callable(reclaim):
             return False
-        opportunity = self._wait_prefetch_opportunity(key)
+        opportunity = self._wait_prefetch_opportunity(key, include_checkpoint_plan=True)
         candidate = getattr(opportunity, "candidate", None)
         if candidate is None:
             return False
+        checkpoint = getattr(opportunity, "checkpoint_plan", None)
+        if isinstance(checkpoint, PrefetchCheckpointPlan):
+            budget = self._current_residency_budget(
+                include_evictable=True, headroom=opportunity.headroom,
+            )
+            if budget.source == "native_next_prefill":
+                targets = (
+                    checkpoint.full_tokens + budget.reserve_full_tokens,
+                    checkpoint.mamba_slots + budget.reserve_mamba_slots,
+                )
+                if targets != (full_tokens, mamba_slots):
+                    if self._live_critical_parent_demand() != demand:
+                        return False
+                    full_tokens, mamba_slots = targets
+                    demand = self._critical_parent_demand = (
+                        key, full_tokens, mamba_slots, demand[3],
+                    )
+                    self.counts["critical_parent_capacity_target_refreshed"] += 1
+                if (
+                    opportunity.headroom.device_full_free_tokens >= full_tokens
+                    and opportunity.headroom.device_mamba_free_slots >= mamba_slots
+                ):
+                    self.counts["critical_parent_capacity_refresh_satisfied"] += 1
+                    return True
         excluded = tuple(node.node_id for node in candidate.nodes)
         self._publish_parent_pressure_candidates(exclude_node_ids=excluded)
         prepare = getattr(self._native_cache, "prepare_beliefkv_cold_full_capacity", None)

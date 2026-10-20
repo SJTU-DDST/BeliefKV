@@ -86,7 +86,7 @@ def test_confirmed_capacity_reclaims_before_another_backup_with_the_current_rest
                 runtime, "_publish_parent_pressure_candidates",
             ) as publish:
                 runtime._reclaim_critical_parent_headroom()
-            inspect.assert_called_once_with(ticket.key)
+            inspect.assert_called_once_with(ticket.key, include_checkpoint_plan=True)
             excluded = tuple(node.node_id for node in opportunity.candidate.nodes)
             publish.assert_called_once_with(exclude_node_ids=excluded)
             cache.reclaim_beliefkv_handoff_capacity.assert_called_once_with(
