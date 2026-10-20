@@ -12,6 +12,18 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Latest CPU optimization: action-local FULL/Mamba capture returns as soon as it
+encounters a valid pending transfer, since that dependency already rejected the
+candidate after a full snapshot. Keep default diagnostic snapshots complete and
+all fields on unblocked paths. No cross-call state cache, broader D2H/H2D queue
+serialization, or relaxed native identity/owner/lock/capacity/ACK checks.
+V2302 compares24 identical CPU path cases with equal decisions/rejection reasons;
+64-node leaf blocking costs about229→7.5us, middle blocking239→115us.
+These are target-function CPU costs, not total scheduler or GPU/JCT improvement.
+V2306 qualifies2141 application/266 engine cases and retains every previous case;
+the native patch remains unchanged. Keep EOS as the default; optional report-work
+forecasting is not enabled by the historical window analysis in V2300.
+
 Latest addition: real SPAWN, including a child delegating to grandchildren,
 queues an immediate incremental backup of the parent's published native FULL
 path. Dispatch at the first available post-forward safe point without requiring

@@ -1139,7 +1139,7 @@ def capture_action_local_shadow(
                 observed_leaves[node_id] = created
                 continue
             observation = observe_unified_node_closure(
-                cache, node_id, max_nodes=max_nodes
+                cache, node_id, max_nodes=max_nodes, reject_pending=True,
             )
             if not observation.observable:
                 return _capture_rejected(

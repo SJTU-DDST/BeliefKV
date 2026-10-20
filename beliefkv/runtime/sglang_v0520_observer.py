@@ -570,12 +570,15 @@ def observe_unified_full_mamba_usage(cache: object) -> UnifiedUsageObservation:
 
 
 def observe_unified_node_closure(
-    cache: object, node_id: int, *, max_nodes: int | None = None
+    cache: object, node_id: int, *, max_nodes: int | None = None,
+    reject_pending: bool = False,
 ) -> UnifiedNodeClosureObservation:
     """Capture one FULL/MAMBA tree path for either validated device-pool layout.
 
     `creation_time` and pending/lock fields form a *local fingerprint*, not
     an atomic revision. Recheck the live tree before any physical command.
+    Action capture may reject at the first pending transfer; diagnostic callers
+    retain complete summaries by default.
     """
     # The common static layout has its own validator; it need not first fail
     # the shared-buffer census on every action-local ancestry observation.
@@ -605,6 +608,8 @@ def observe_unified_node_closure(
             raise ValueError("invalid node ID")
         if max_nodes is not None and (type(max_nodes) is not int or max_nodes <= 0):
             raise ValueError("invalid closure bound")
+        if type(reject_pending) is not bool:
+            raise ValueError("invalid pending-transfer capture mode")
         tree = _named(cache.tree_core, "UnifiedTreeCore")
         node = tree.node_by_id(node_id)
         visited: set[int] = set()
@@ -630,6 +635,25 @@ def observe_unified_node_closure(
                 parent_id = parent.id
                 if type(parent_id) is not int or parent_id < 0:
                     raise ValueError("invalid parent ID")
+            pending_write = node.write_through_pending_id
+            pending_load = node.load_back_pending_id
+            if (
+                pending_write is not None
+                and (type(pending_write) is not int or pending_write < 0)
+                or pending_load is not None
+                and (type(pending_load) is not int or pending_load < 0)
+            ):
+                raise ValueError("invalid pending transfer ID")
+            if reject_pending and (pending_write is not None or pending_load is not None):
+                # Action planning already rejects this path. Diagnostics still
+                # capture it, but no action needs the remaining scalar summaries.
+                return UnifiedNodeClosureObservation(
+                    observable=False,
+                    reason=(
+                        "pending_write_transfer" if pending_write is not None
+                        else "pending_load_transfer"
+                    ),
+                )
             components = node.component_data
             full = components[0]
             mamba = components[2]
@@ -678,15 +702,6 @@ def observe_unified_node_closure(
                             raise ValueError("invalid session leaf identities")
                 full_session_leaves = 0 if full_ids is None else len(full_ids)
                 mamba_session_leaves = 0 if mamba_ids is None else len(mamba_ids)
-            pending_write = node.write_through_pending_id
-            pending_load = node.load_back_pending_id
-            if (
-                pending_write is not None
-                and (type(pending_write) is not int or pending_write < 0)
-                or pending_load is not None
-                and (type(pending_load) is not int or pending_load < 0)
-            ):
-                raise ValueError("invalid pending transfer ID")
             creation_time = normalize_native_creation_time(node.creation_time)
             mamba_device_present = mamba.value is not None
             mamba_host_present = mamba.host_value is not None

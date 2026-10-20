@@ -1025,7 +1025,7 @@ def test_h2d_observer_separates_resident_unbacked_and_blocked_closures():
         return_value=headroom,
     ), patch(
         "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
-        side_effect=lambda cache, node_id, max_nodes:
+        side_effect=lambda cache, node_id, max_nodes, reject_pending:
         NS(observable=True, nodes=(leaf, root)),
     ):
         resident = inspect_session_h2d_opportunity(object(), anchors)
@@ -1183,7 +1183,7 @@ def test_h2d_observer_reports_mamba_leaf_outside_full_session_path():
                         device_mamba_free_slots=4),
     ), patch(
         "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
-        side_effect=lambda cache, node_id, max_nodes: NS(
+        side_effect=lambda cache, node_id, max_nodes, reject_pending: NS(
             observable=True,
             nodes=(full_leaf if node_id == 12 else mamba_leaf, root),
         ),
