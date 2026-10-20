@@ -2052,6 +2052,9 @@ class NativeAdmissionRuntime:
 
     def _record_runtime_state(self, *, final: bool = False) -> None:
         if self._opportunity_writer is not None:
+            idle_prepare_stats = getattr(
+                self._native_cache, "beliefkv_idle_full_prepare_stats", None,
+            )
             before_ms = time.monotonic() * 1000.
             wall_ms = time.time() * 1000.
             after_ms = time.monotonic() * 1000.
@@ -2070,6 +2073,10 @@ class NativeAdmissionRuntime:
                 "prepare_host": self.enable_prepare_host,
                 "h2d_opportunity_sampling": self.enable_h2d_opportunity_sampling,
                 "prepare_pool_scope": "missing_full_session_path",
+                "idle_full_prepare": {
+                    "interval_ms": IDLE_FULL_PREPARE_INTERVAL_MS,
+                    "native": dict(idle_prepare_stats) if isinstance(idle_prepare_stats, dict) else None,
+                },
                 "latest_full_session_branches_retired": getattr(
                     getattr(
                         getattr(self._native_cache, "tree_core", None),
@@ -6406,13 +6413,27 @@ class NativeAdmissionRuntime:
         if now_ms < self._idle_prepare_next_ms:
             return
         self._idle_prepare_next_ms = now_ms + IDLE_FULL_PREPARE_INTERVAL_MS
-        if (
-            self._live_critical_parent_demand() is not None
-            or self.physical_ledger.pending_count
-        ):
+        self.counts["idle_full_prepare_checks"] += 1
+        dirty = getattr(cache, "_beliefkv_unbacked_full", None)
+        if isinstance(dirty, dict):
+            self.counts["idle_full_prepare_dirty_nodes_last"] = len(dirty)
+            self.counts["idle_full_prepare_checks_with_dirty_index"] += bool(dirty)
+        if self._live_critical_parent_demand() is not None:
+            self.counts["idle_full_prepare_blocked_critical_demand"] += 1
+            self.counts["idle_full_prepare_blocked_critical_with_dirty_index"] += bool(dirty)
             return
+        if self.physical_ledger.pending_count:
+            self.counts["idle_full_prepare_blocked_physical_transaction"] += 1
+            self.counts["idle_full_prepare_blocked_transaction_with_dirty_index"] += bool(dirty)
+            if self.physical_ledger.pending_action_count("PREPARE_HOST"):
+                self.counts["idle_full_prepare_blocked_prepare_transaction"] += 1
+            if self.physical_ledger.pending_action_count("PREFETCH_GPU"):
+                self.counts["idle_full_prepare_blocked_prefetch_transaction"] += 1
+            return
+        self.counts["idle_full_prepare_native_calls"] += 1
         issued = prepare()
         if issued:
+            self.counts["idle_full_prepare_issued_batches"] += 1
             self._cold_full_backups.update({
                 node_id: (created, "idle") for node_id, created, _ in issued
             })
@@ -6424,6 +6445,8 @@ class NativeAdmissionRuntime:
                     "native_nodes": issued, "include_mamba": False,
                     "scope": "one bounded asynchronous FULL batch; no capacity released yet",
                 })
+        else:
+            self.counts["idle_full_prepare_empty_native_calls"] += 1
 
     def _prepare_probe_due(self, key: PrefillCandidateKey, now_ms: float) -> bool:
         if len(self._prepare_probe_after_ms) > 512:

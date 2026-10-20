@@ -51,6 +51,9 @@ def test_idle_prepare_tracks_issuance_without_any_capacity_or_prefetch_credit():
         cache.reclaim_beliefkv_handoff_capacity.assert_not_called()
         assert runtime._cold_full_backups == {71: (17., "idle")}
         assert runtime.counts["idle_cold_full_backup_tokens"] == 4096
+        assert runtime.counts["idle_full_prepare_checks"] == 1
+        assert runtime.counts["idle_full_prepare_native_calls"] == 1
+        assert runtime.counts["idle_full_prepare_issued_batches"] == 1
         assert not runtime.physical_ledger.pending_count
         assert not runtime.completed_physical_actions
     finally:
@@ -81,6 +84,7 @@ def test_background_checks_wait_400ms_without_accumulating_missed_rounds():
 ))
 def test_background_copy_yields_before_entering_the_native_backend(blocked):
     runtime, cache, key = fixture()
+    cache._beliefkv_unbacked_full = {71: object()}
     prepare = cache.prepare_beliefkv_idle_full
     if blocked == "disabled":
         runtime.enable_prepare_host = False
@@ -106,6 +110,34 @@ def test_background_copy_yields_before_entering_the_native_backend(blocked):
             runtime.dispatch_idle_prepare()
         prepare.assert_not_called()
         assert not runtime._cold_full_backups
+        if blocked in ("critical", "prepare_pending", "prefetch_pending"):
+            assert runtime.counts["idle_full_prepare_checks"] == 1
+            assert runtime.counts["idle_full_prepare_dirty_nodes_last"] == 1
+            assert runtime.counts["idle_full_prepare_checks_with_dirty_index"] == 1
+            assert runtime.counts["idle_full_prepare_native_calls"] == 0
+        if blocked in ("prepare_pending", "prefetch_pending"):
+            reason = "prepare" if blocked == "prepare_pending" else "prefetch"
+            assert runtime.counts[f"idle_full_prepare_blocked_{reason}_transaction"] == 1
+    finally:
+        runtime.close()
+
+
+def test_empty_round_and_native_aggregate_are_recorded_without_extra_node_scan():
+    runtime, cache, _ = fixture()
+    cache.prepare_beliefkv_idle_full.return_value = ()
+    cache.beliefkv_idle_full_prepare_stats = {"checks": 1, "scanned_nodes": 32, "stale_nodes": 32}
+    rows = []
+    runtime._opportunity_writer = NS(record=rows.append, close=lambda: None)
+    try:
+        with patch.object(runtime, "_live_critical_parent_demand", return_value=None):
+            runtime.dispatch_idle_prepare()
+        runtime._record_runtime_state()
+        state = rows[-1]
+        assert state["counts"]["idle_full_prepare_empty_native_calls"] == 1
+        assert state["idle_full_prepare"]["native"] == cache.beliefkv_idle_full_prepare_stats
+        assert state["idle_full_prepare"]["native"] is not cache.beliefkv_idle_full_prepare_stats
+        assert not runtime._cold_full_backups
+        cache.prepare_beliefkv_idle_full.assert_called_once()
     finally:
         runtime.close()
 

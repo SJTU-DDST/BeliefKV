@@ -2936,14 +2936,14 @@ index 6815679..a143793 100644
      def evict_device_end(self, component_type: ComponentType) -> None:
          """Finish the component's device-eviction walk."""
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..3827a3c 100644
+index d417d7d..4b193ab 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -4,9 +4,10 @@ import atexit
  import logging
  import threading
  import time
-+from collections import OrderedDict, deque
++from collections import Counter, OrderedDict, deque
  from dataclasses import replace
  from queue import Queue
 -from typing import TYPE_CHECKING, Iterator, NamedTuple, Optional, Sequence, TypeVar
@@ -3057,7 +3057,7 @@ index d417d7d..3827a3c 100644
          result = self.tree_core.evict_device_leaf(node_id, self.is_write_back)
          self._free_values(result.device_frees, result.host_frees)
          if self._tracks_write_through_unbacked_evictions():
-@@ -801,6 +869,799 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -801,6 +869,868 @@ class UnifiedRadixCache(BasePrefixCache):
          self._accumulate_tracker(tracker, result.tracker)
          return result.is_dropped
  
@@ -3588,44 +3588,78 @@ index d417d7d..3827a3c 100644
 +        self, *, exclude_node_ids: tuple[NodeId, ...] = (),
 +    ) -> tuple[tuple[NodeId, int | float, int], ...]:
 +        """Use idle transfer queues for one bounded, non-evicting FULL backup."""
++        stats = getattr(self, "beliefkv_idle_full_prepare_stats", None)
++        if stats is None:
++            stats = self.beliefkv_idle_full_prepare_stats = Counter()
++        stats["checks"] += 1
++        dirty = getattr(self, "_beliefkv_unbacked_full", None)
++        if dirty is not None:
++            stats["dirty_nodes_last"] = len(dirty)
++            stats["dirty_nodes_high_water"] = max(stats["dirty_nodes_high_water"], len(dirty))
 +        controller = self.cache_controller
 +        if (
-+            controller is None or controller.write_queue or controller.load_queue
-+            or controller.ack_write_queue or controller.ack_load_queue
-+            or not self.is_write_back or self.host_memory_mode != "cache"
++            controller is None or not self.is_write_back or self.host_memory_mode != "cache"
 +            or self.buffer_pipeline is not None
 +        ):
++            stats["blocked_unsupported"] += 1
 +            return ()
-+        dirty = getattr(self, "_beliefkv_unbacked_full", None)
++        queues = (
++            ("write_queue", "blocked_write_queue"),
++            ("load_queue", "blocked_h2d_queue"),
++            ("ack_write_queue", "blocked_d2h_ack"),
++            ("ack_load_queue", "blocked_h2d_ack"),
++        )
++        blocked = False
++        for name, reason in queues:
++            if getattr(controller, name):
++                stats[reason] += 1
++                blocked = True
++        if blocked:
++            stats["blocked_native_queues"] += 1
++            return ()
 +        if dirty is not None:
 +            candidates = []
 +            inspected = []
++            scanned = 0
 +            for _ in range(min(32, len(dirty))):
 +                node_id, node = dirty.popitem(last=False)
++                scanned += 1
++                stats["scanned_nodes"] += 1
 +                full = node.component_data[BASE_COMPONENT_TYPE]
 +                try:
 +                    live = self.tree_core.node_by_id(node_id) is node
 +                except (KeyError, RuntimeError, ValueError):
 +                    live = False
 +                if not live or full.value is None or full.host_value is not None:
++                    stats["stale_nodes"] += 1
 +                    continue
 +                inspected.append(node)
-+                if (
-+                    node_id not in exclude_node_ids
-+                    and node_id not in self.ongoing_write_through
-+                    and node.write_through_pending_id is None
-+                    and node.load_back_pending_id is None
-+                    and not any(cd.host_lock_ref for cd in node.component_data)
-+                ):
++                if node_id in exclude_node_ids:
++                    stats["excluded_nodes"] += 1
++                elif node_id in self.ongoing_write_through or node.write_through_pending_id is not None:
++                    stats["pending_d2h_nodes"] += 1
++                elif node.load_back_pending_id is not None:
++                    stats["pending_h2d_nodes"] += 1
++                elif any(cd.host_lock_ref for cd in node.component_data):
++                    stats["host_locked_nodes"] += 1
++                else:
 +                    candidates.append((node_id, node.creation_time, len(full.value)))
++                    stats["eligible_nodes"] += 1
++                    stats["eligible_full_tokens"] += len(full.value)
 +                    if len(candidates) >= 32:
 +                        break
++            stats["uninspected_nodes_last"] = len(dirty)
++            stats["scan_limited_rounds"] += scanned == 32 and bool(dirty)
 +            issued = self._prepare_beliefkv_cold_full_nodes(
 +                tuple(candidates), exclude_node_ids=exclude_node_ids,
 +                idle=True, read_only_backup=True,
 +            ) if candidates else ()
 +            for node in inspected:
 +                self._remember_beliefkv_unbacked_full(node)
++            stats["dirty_nodes_after_last"] = len(dirty)
++            stats["rounds_without_eligible_nodes"] += not candidates
++            stats["issued_rounds"] += bool(issued)
++            stats["empty_rounds"] += not issued
 +            return issued
 +        scan = getattr(self, "_beliefkv_idle_full_scan", None)
 +        if not scan:
@@ -3639,6 +3673,7 @@ index d417d7d..3827a3c 100644
 +            if not scan:
 +                break
 +            node = scan.popleft()
++            stats["scanned_nodes"] += 1
 +            full = node.component_data[BASE_COMPONENT_TYPE]
 +            if (
 +                node.id not in excluded and full.value is not None
@@ -3652,11 +3687,17 @@ index d417d7d..3827a3c 100644
 +                )
 +            ):
 +                candidates.append((node.id, node.creation_time, len(full.value)))
++                stats["eligible_nodes"] += 1
++                stats["eligible_full_tokens"] += len(full.value)
 +                if len(candidates) >= 32:
 +                    break
 +        issued = self._prepare_beliefkv_cold_full_nodes(
 +            tuple(candidates), exclude_node_ids=exclude_node_ids, idle=True,
 +        ) if candidates else ()
++        stats["compatibility_leaf_scan_rounds"] += 1
++        stats["rounds_without_eligible_nodes"] += not candidates
++        stats["issued_rounds"] += bool(issued)
++        stats["empty_rounds"] += not issued
 +        ancestors = set()
 +        for node_id, _, _ in issued:
 +            # Back preceding segments after the ACK, even while their suffixes
@@ -3673,6 +3714,7 @@ index d417d7d..3827a3c 100644
 +        read_only_backup: bool = False,
 +    ) -> tuple[tuple[NodeId, int | float, int], ...]:
 +        controller = getattr(self, "cache_controller", None)
++        stats = getattr(self, "beliefkv_idle_full_prepare_stats", None) if idle else None
 +        if (
 +            not self.is_write_back or self.host_memory_mode != "cache"
 +            or self.buffer_pipeline is not None or controller is None
@@ -3681,6 +3723,8 @@ index d417d7d..3827a3c 100644
 +            return ()
 +        prior = getattr(self, "_beliefkv_cold_full_prepare_pending", ())
 +        if any(node_id in self.ongoing_write_through for node_id, _, _ in prior):
++            if stats is not None:
++                stats["blocked_prior_background_batch"] += 1
 +            return ()
 +        self._beliefkv_cold_full_prepare_pending = ()
 +        host_pool = controller.mem_pool_host
@@ -3693,10 +3737,23 @@ index d417d7d..3827a3c 100644
 +        max_bytes = (1024 if idle else 64) * 1024 * 1024
 +        chunk_tokens = max(page, (max_bytes // unit // page) * page)
 +        host_free = host_pool.available_size()
++        if stats is not None:
++            stats["host_free_tokens_last"] = host_free
++            stats["host_reserved_tokens"] = chunk_tokens
++            stats["max_batch_bytes"] = max_bytes
++            stats["full_bytes_per_token"] = unit
++            stats["max_scanned_nodes"] = 32
++            stats["max_merged_nodes"] = 32
 +        if idle:
 +            host_free -= chunk_tokens
 +        limit = min(chunk_tokens, max(0, host_free) // page * page)
++        initial_limit = limit
++        if stats is not None:
++            stats["host_budget_tokens_last"] = limit
++            stats["host_budget_limited_rounds"] += limit < chunk_tokens
 +        if limit <= 0:
++            if stats is not None:
++                stats["blocked_host_capacity_rounds"] += 1
 +            return ()
 +        excluded = set(exclude_node_ids)
 +        queued = []
@@ -3736,6 +3793,8 @@ index d417d7d..3827a3c 100644
 +                    beliefkv_include_mamba=False, beliefkv_defer_writing=True,
 +                )
 +                if node_id not in self.ongoing_write_through:
++                    if stats is not None:
++                        stats["enqueue_failed_nodes"] += 1
 +                    continue
 +                queued.append((node_id, created, units))
 +                limit -= units
@@ -3745,6 +3804,16 @@ index d417d7d..3827a3c 100644
 +            if queued:
 +                self._beliefkv_cold_full_prepare_pending = tuple(queued)
 +                controller.start_writing()
++                if stats is not None:
++                    stats["issued_tokens"] += initial_limit - limit
++                    stats["issued_nodes"] += len(queued)
++                    stats["byte_budget_reached_rounds"] += (
++                        initial_limit == chunk_tokens and limit <= 0
++                    )
++                    stats["host_budget_reached_rounds"] += (
++                        initial_limit < chunk_tokens and limit <= 0
++                    )
++                    stats["extent_limit_reached_rounds"] += len(queued) >= 32
 +        return tuple(queued)
 +
 +    def _evict_backed_join_parent(
@@ -3857,7 +3926,7 @@ index d417d7d..3827a3c 100644
      def _evict_components(
          self,
          request_by_type: dict[ComponentType, int],
-@@ -851,6 +1712,11 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -851,6 +1781,11 @@ class UnifiedRadixCache(BasePrefixCache):
              # on a shared pool, released enough bytes to satisfy its allocation.
              if tracker[ct] >= request_cnt or target_reached(ct):
                  continue
@@ -3869,7 +3938,7 @@ index d417d7d..3827a3c 100644
              self.tree_core.evict_device_start(ct, request_cnt)
              try:
                  while True:
-@@ -861,6 +1727,21 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -861,6 +1796,21 @@ class UnifiedRadixCache(BasePrefixCache):
                      else:
                          backup_kv = self._evict_device_leaf(node_id, tracker)
                      if node_id is not None and backup_kv is not None:
@@ -3891,7 +3960,7 @@ index d417d7d..3827a3c 100644
                          # Deferred demote: run the D->H backup, demote only on success.
                          written = self._execute_and_commit_kv_backup(
                              backup_kv, write_back=True
-@@ -892,7 +1773,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -892,7 +1842,9 @@ class UnifiedRadixCache(BasePrefixCache):
              isinstance(self.tree_core, UnifiedTreeCore)
              and self.host_memory_mode == "cache"
              and self.cache_controller is not None
@@ -3902,7 +3971,7 @@ index d417d7d..3827a3c 100644
          )
  
      def _record_dropped_tokens(self, dropped_tokens: int, reason: str) -> None:
-@@ -955,6 +1838,18 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -955,6 +1907,18 @@ class UnifiedRadixCache(BasePrefixCache):
              return DecLockRefResult()
          return self.tree_core.dec_host_lock_ref(node_id, params)
  
@@ -3921,7 +3990,7 @@ index d417d7d..3827a3c 100644
      @rank_consensus(same_params=["req.rid", "is_insert", "kv_len_to_handle"])
      def cache_finished_req(
          self, req: Req, is_insert: bool = True, *, kv_len_to_handle: int, **kwargs
-@@ -1078,7 +1973,7 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1078,7 +2042,7 @@ class UnifiedRadixCache(BasePrefixCache):
              self._dec_req_lock(req, skip_swa=req.swa_prefix_lock_released)
  
          if is_insert and result is not None and result.last_device_node is not None:
@@ -3930,7 +3999,7 @@ index d417d7d..3827a3c 100644
  
          # cleanup
          for comp in self._components_tuple:
-@@ -1309,6 +2204,13 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1309,6 +2273,13 @@ class UnifiedRadixCache(BasePrefixCache):
              return 0
          result = self.tree_core.drive_host_eviction(component_type, num_tokens)
          self._free_values(result.device_frees, result.host_frees)
@@ -3944,7 +4013,7 @@ index d417d7d..3827a3c 100644
          return result.tracker.get(component_type, 0)
  
      # ---- Decode retraction ----
-@@ -1518,8 +2420,238 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1518,8 +2489,238 @@ class UnifiedRadixCache(BasePrefixCache):
  
      # ---- HiCache: Backup / LoadBack ----
  
@@ -4184,7 +4253,7 @@ index d417d7d..3827a3c 100644
      ) -> int:
          """Run a backup action top-down, stopping at the first failed backup."""
          if self.buffer_pipeline is not None:
-@@ -1532,14 +2664,23 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1532,14 +2733,23 @@ class UnifiedRadixCache(BasePrefixCache):
              return 0
          written = 0
          for node_id in action.node_ids:
@@ -4210,7 +4279,7 @@ index d417d7d..3827a3c 100644
              )
              if host_indices is None:
                  return 0
-@@ -1554,6 +2695,406 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1554,6 +2764,406 @@ class UnifiedRadixCache(BasePrefixCache):
              written = len(host_indices)
          return written
  
@@ -4617,7 +4686,7 @@ index d417d7d..3827a3c 100644
      @staticmethod
      def _backup_publish_node_ids(
          node_id: NodeId, comp_xfers: dict[ComponentType, list[PoolTransfer]]
-@@ -1574,18 +3115,77 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1574,18 +3184,77 @@ class UnifiedRadixCache(BasePrefixCache):
              CacheTransferPhase.BACKUP_HOST, kv_xfer, comp_xfers
          )
  
@@ -4697,7 +4766,7 @@ index d417d7d..3827a3c 100644
          )
  
      def _track_write_through_node(
-@@ -1627,10 +3227,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1627,10 +3296,10 @@ class UnifiedRadixCache(BasePrefixCache):
              updated_node_ids,
          )
  
@@ -4710,7 +4779,7 @@ index d417d7d..3827a3c 100644
  
          lock_node_id, lock_params, publish_node_ids = self.ongoing_write_through.pop(
              ack_id
-@@ -1643,15 +3243,26 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1643,15 +3312,26 @@ class UnifiedRadixCache(BasePrefixCache):
              # suffix; the prefix fragment must be persisted as well.
              for node_id in publish_node_ids:
                  self.write_backup_storage(node_id)
@@ -4738,7 +4807,7 @@ index d417d7d..3827a3c 100644
              return False
  
          host_anchor_params = self.inc_host_lock_ref(node_id).to_dec_params()
-@@ -1675,6 +3286,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1675,6 +3355,10 @@ class UnifiedRadixCache(BasePrefixCache):
                  result=result,
                  ancestor_lock_params=ancestor_lock_params,
                  host_anchor_params=host_anchor_params,
@@ -4749,7 +4818,7 @@ index d417d7d..3827a3c 100644
              )
              return success
          finally:
-@@ -1690,9 +3305,34 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1690,9 +3374,34 @@ class UnifiedRadixCache(BasePrefixCache):
          result: IncLockRefResult,
          ancestor_lock_params: DecLockRefParams,
          host_anchor_params: DecLockRefParams,
@@ -4785,7 +4854,7 @@ index d417d7d..3827a3c 100644
          kv_tokens = len(kv_xfer.host_indices)
          sidecar_xfers = self._build_sidecar_transfers(
              CacheTransferPhase.LOAD_BACK, kv_xfer, comp_xfers
-@@ -1703,7 +3343,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1703,7 +3412,8 @@ class UnifiedRadixCache(BasePrefixCache):
          # when the Full-KV load is skipped by thresholding. max(1, ...): an
          # entirely empty spec (e.g. foreign-pin rejection) must never report
          # success, even at load_back_threshold <= 0.
@@ -4795,7 +4864,7 @@ index d417d7d..3827a3c 100644
              mem_quota is not None and kv_tokens + result.delta > mem_quota
          ):
              self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -1714,6 +3355,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1714,6 +3424,10 @@ class UnifiedRadixCache(BasePrefixCache):
              self.token_to_kv_pool_allocator, "c128_attn_allocator", None
          )
          if c128_allocator is not None:
@@ -4806,7 +4875,7 @@ index d417d7d..3827a3c 100644
              c128_num_pages = _c128_transfer_num_pages(
                  comp_xfers.get(ComponentType.C128, ()),
                  c128_allocator.page_size,
-@@ -1727,6 +3372,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1727,6 +3441,10 @@ class UnifiedRadixCache(BasePrefixCache):
  
          avail = self._component_available_size(ComponentType.FULL)
          if avail < kv_tokens:
@@ -4817,7 +4886,7 @@ index d417d7d..3827a3c 100644
              needed = kv_tokens - avail
              self.evict_for_alloc(EvictParams(num_tokens=needed))
              if self._component_available_size(ComponentType.FULL) < kv_tokens:
-@@ -1741,6 +3390,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1741,6 +3459,9 @@ class UnifiedRadixCache(BasePrefixCache):
              host_indices=kv_xfer.host_indices,
              node_id=node_id,
              extra_pools=aux_xfers or None,
@@ -4827,7 +4896,7 @@ index d417d7d..3827a3c 100644
          )
  
          self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -3130,10 +4782,24 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3130,10 +4851,24 @@ class UnifiedRadixCache(BasePrefixCache):
              while self.ongoing_write_through:
                  for ack in cc.ack_write_queue:
                      ack.finish_event.synchronize()
@@ -4853,7 +4922,7 @@ index d417d7d..3827a3c 100644
                  cc.ack_write_queue.clear()
                  assert len(self.ongoing_write_through) == 0
              return
-@@ -3154,11 +4820,122 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3154,11 +4889,122 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_write_queue.pop(0)
              ack.finish_event.synchronize()
@@ -4977,7 +5046,7 @@ index d417d7d..3827a3c 100644
      def _log_write_ack_metrics(self, ack: HiCacheAck) -> None:
          """Record D->H backup volume and duration for a completed write ack."""
          if self.metrics_collector is None:
-@@ -3200,6 +4977,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3200,6 +5046,8 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_load_queue.pop(0)
              ack.finish_event.synchronize()
@@ -4986,7 +5055,7 @@ index d417d7d..3827a3c 100644
              for ack_id in ack.node_ids:
                  if (
                      self.buffer_pipeline is not None
-@@ -3211,6 +4990,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3211,6 +5059,8 @@ class UnifiedRadixCache(BasePrefixCache):
                  self.dec_host_lock_ref(node, host_lock_params)
                  # Unpin the loaded nodes; host copies stay as reclaimable duplicates.
                  self.tree_core.finish_load_back(node)
@@ -4995,7 +5064,7 @@ index d417d7d..3827a3c 100644
  
              if self.metrics_collector is not None:
                  for pool, num_tokens in (ack.num_tokens_by_pool or {}).items():
-@@ -3225,6 +5006,13 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3225,6 +5075,13 @@ class UnifiedRadixCache(BasePrefixCache):
                      self.metrics_collector.observe_load_back_duration(
                          duration_ms / 1000.0
                      )
@@ -5009,7 +5078,7 @@ index d417d7d..3827a3c 100644
              finish_count -= 1
  
      # ---- HiCache: Scheduler Entry Points ----
-@@ -3236,7 +5024,7 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3236,7 +5093,7 @@ class UnifiedRadixCache(BasePrefixCache):
      ) -> Optional[tuple[torch.Tensor, NodeId]]:
          """Prepare KV cache loading from host to device.
          Returns (device_indices, last_node), or None when buffer-mode
@@ -5018,7 +5087,7 @@ index d417d7d..3827a3c 100644
          if self.buffer_pipeline is not None:
              return self.buffer_pipeline.init_load_back(params)
          best_match_node_id = params.best_match_node
-@@ -3255,6 +5043,11 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3255,6 +5112,11 @@ class UnifiedRadixCache(BasePrefixCache):
                  and (req.swa_host_hit_length > 0 or req.mamba_host_hit_length > 0)
              )
          ):
@@ -5030,7 +5099,7 @@ index d417d7d..3827a3c 100644
              if self.load_back(best_match_node_id, mem_quota, req=req):
                  new_indices = self.tree_core.collect_full_device_indices(
                      best_match_node_id, last_best_match_device_node_id
-@@ -3341,9 +5134,31 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3341,9 +5203,31 @@ class UnifiedRadixCache(BasePrefixCache):
          if self.linker is not None:
              return self.linker.start_layer_wise_loading()
          if self.cache_controller is not None:
@@ -5472,10 +5541,10 @@ index 0000000..ee51548
 +    cache._execute_and_commit_kv_backup.assert_not_called()
 diff --git a/test/srt/test_beliefkv_cold_full_prepare.py b/test/srt/test_beliefkv_cold_full_prepare.py
 new file mode 100644
-index 0000000..4534304
+index 0000000..f3141af
 --- /dev/null
 +++ b/test/srt/test_beliefkv_cold_full_prepare.py
-@@ -0,0 +1,552 @@
+@@ -0,0 +1,599 @@
 +"""Cold FULL capacity preparation using real CPU trees and explicit ACK boundaries."""
 +
 +from types import SimpleNamespace as NS
@@ -5658,6 +5727,13 @@ index 0000000..4534304
 +    getattr(cache.cache_controller, queue).append(object())
 +    assert cache.prepare_beliefkv_idle_full() == ()
 +    cache._execute_and_commit_kv_backup.assert_not_called()
++    stats = cache.beliefkv_idle_full_prepare_stats
++    assert stats["checks"] == stats["blocked_native_queues"] == 1
++    assert stats["scanned_nodes"] == 0
++    assert stats[{
++        "write_queue": "blocked_write_queue", "load_queue": "blocked_h2d_queue",
++        "ack_write_queue": "blocked_d2h_ack", "ack_load_queue": "blocked_h2d_ack",
++    }[queue]] == 1
 +
 +
 +def test_idle_backup_requires_no_hbm_pressure_and_keeps_device_capacity(hybrid_cache):
@@ -6006,6 +6082,46 @@ index 0000000..4534304
 +    assert len(cache._beliefkv_unbacked_full) == 40
 +    assert next(iter(cache._beliefkv_unbacked_full)) == 1032
 +    cache._execute_and_commit_kv_backup.assert_not_called()
++    stats = cache.beliefkv_idle_full_prepare_stats
++    assert stats["dirty_nodes_last"] == stats["dirty_nodes_after_last"] == 40
++    assert stats["scanned_nodes"] == stats["host_locked_nodes"] == 32
++    assert stats["uninspected_nodes_last"] == 8
++    assert stats["scan_limited_rounds"] == stats["rounds_without_eligible_nodes"] == 1
++    assert stats["issued_rounds"] == 0
++
++
++def test_round_statistics_distinguish_backlog_from_host_budget_without_new_scan(hybrid_cache):
++    cache, allocator, _, _, leaf, _ = fixture(hybrid_cache)
++    assert cache.enable_beliefkv_incremental_prepare()
++    cache.cache_controller.mem_pool_host.available_size = lambda: 4
++    cache.tree_core.node_by_id = Mock(wraps=cache.tree_core.node_by_id)
++    available = allocator.available_size()
++    assert cache.prepare_beliefkv_idle_full() == ()
++    stats = cache.beliefkv_idle_full_prepare_stats
++    assert stats["dirty_nodes_last"] == 1
++    assert stats["scanned_nodes"] == stats["eligible_nodes"] == 1
++    assert stats["eligible_full_tokens"] == len(leaf.component_data[ComponentType.FULL].value)
++    assert stats["host_free_tokens_last"] == 4
++    assert stats["host_budget_tokens_last"] == 0
++    assert stats["blocked_host_capacity_rounds"] == 1
++    assert stats["issued_tokens"] == 0
++    assert cache.tree_core.node_by_id.call_count == 1
++    assert allocator.available_size() == available
++
++
++def test_round_statistics_count_actual_full_tokens_and_preserve_pending_ack(hybrid_cache):
++    cache, allocator, _, _, leaf, _ = fixture(hybrid_cache)
++    assert cache.enable_beliefkv_incremental_prepare()
++    install_cpu_enqueue(cache)
++    available = allocator.available_size()
++    assert cache.prepare_beliefkv_idle_full()
++    stats = cache.beliefkv_idle_full_prepare_stats
++    assert stats["checks"] == stats["issued_rounds"] == stats["issued_nodes"] == 1
++    assert stats["issued_tokens"] == 2
++    assert stats["max_batch_bytes"] == 1024**3
++    assert stats["dirty_nodes_after_last"] == 0
++    assert leaf.write_through_pending_id == leaf.id
++    assert allocator.available_size() == available
 +
 +@pytest.mark.parametrize("bad", ("unaligned", "shared", "d2h", "h2d", "backed", "locked"))
 +def test_split_rechecks_the_native_extent_before_changing_tree(hybrid_cache, bad):

@@ -5,6 +5,36 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Latest requirement: check background PREPARE coverage in every subsequent
+predictive arm. The driver now emits prepare_background.json offline, separating
+idle/urgent FULL and semantic JOIN/tool PREPARE. Measure issued-round bytes and
+node distributions, issue gaps, byte/extent-cap hits, sampled cold-unbacked
+rejections, Host headroom and directional stream time. New cumulative counters
+inside the existing400ms bounded check and1s state snapshot expose skipped/empty
+checks, dirty-index size, actual scanned/stale/eligible entries, queue blocking
+and Host/byte/node limits. No added per-token logging or whole-tree scan.
+Keep the frozen V101 runtime/engine unchanged; diagnostics are a future candidate.
+Do not increase an unhit cap from small-batch evidence alone. If safe published
+unbacked FULL persists, use measured cadence/scan/queue/Host-budget restrictions
+to tune the limiting stage, while preserving urgent priority and ACK ownership.
+Acceptance requires fewer unbacked cold-capacity failures and actual recovery/
+service benefit, alongside tail-excluded throughput/JCT, not copied bytes alone.
+V2254/V2262 seals617.69s:996 background batches/77.81GB,mean74.50MiB,
+P5045MiB,max480MiB and10 extents;none hits1GiB/32. D2H stream sum6.70s
+has no physical wall anchor and is not exact PCIe utilization or removable JCT.
+17/42 capacity checks still reject unbacked cold pages,all with at least one batch
+of FULL space in their latest prior Host usage sample. This remains unresolved.
+Use V2262 over the initial V2255 Host join: transfer ACKs are not usage samples.
+V2258 exports diagnostics only;V2261/V2266 qualifies1982 distinct application cases
+(1981 retained-contract suite plus1 snapshot supplement) and211 engine cases.
+Shell syntax passes;new counters still await a future GPU run.
+The newer V2264 prefix spans1584.82s:2455 background batches/116.36GB,
+mean45.20MiB and no cap hits;53/129 capacity checks still observe unbacked
+cold pages while prior Host samples have free space(minimum47.80GB).
+This lightweight observation does not re-collect controlled first-use or the
+Host eviction chain;do not upgrade native restore associations to proof of
+consumption or predictive prefetch,nor splice it into V2254 lifecycle evidence.
+
 Current V101 launched17:36:51 Asia/Shanghai from frozen8bdc5dc;first actual
 GPU service17:40:00. V2251 verifies972 sources/540 external inputs,incremental
 tracking and healthy writer. Preserve the frozen checkout and engine.

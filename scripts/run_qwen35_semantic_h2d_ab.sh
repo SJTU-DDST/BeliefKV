@@ -235,6 +235,11 @@ for arm in $ARM_ORDER; do
     --arm "$RUN_ROOT/$arm" --output "$RUN_ROOT/$arm/native_h2d_sources.json"
   "$PYTHON" "$ROOT/scripts/audit_prefetch_lifecycle.py" \
     --arm "$RUN_ROOT/$arm" --output "$RUN_ROOT/$arm/prefetch_lifecycle.json"
+  if [[ "$arm" == "predictive_h2d" ]]; then
+    "$PYTHON" "$ROOT/scripts/audit_prepare_background.py" \
+      --arm "$RUN_ROOT/$arm" --lifecycle "$RUN_ROOT/$arm/prefetch_lifecycle.json" \
+      --output "$RUN_ROOT/$arm/prepare_background.json"
+  fi
   "$PYTHON" "$ROOT/scripts/audit_native_memory_opportunity.py" \
     --arm "$RUN_ROOT/$arm" --output "$RUN_ROOT/$arm/memory_opportunity.json"
   "$PYTHON" "$ROOT/scripts/render_p6_execution_timeline.py" \
