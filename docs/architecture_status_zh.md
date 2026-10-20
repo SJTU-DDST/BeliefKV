@@ -40,6 +40,18 @@ V2289 对当前应用、独立引擎和 canonical patch 核对来源，
 随 200ms/512MiB 配置更名。离线 transfer-policy 审计接受没有
 服务估计的 EOS，保留窗口比较未知，不伪造零耗时。GPU 效果未验收。
 
+V2290 按同一封闭来源核对其余 24 个 JOIN：21 个始终无正 FULL
+计划，下一请求首次服务的 device-hit/input 比例 P50 为 98.27%
+（82.34%–99.59%），原生 FULL Host-hit 均为零；另 3 个仅完成后
+出现正 FULL 计划。不能从首次服务命中反推 EOS 时刻全部 KV 在 HBM，
+也不能把未命中输入全部算重算。4 个 service-size unsupported 的
+计划总载荷分别约 16.79MB、80.38MB、80.49MB、4.03GB；其中
+80.49MB 当时 free-list 足够，旧估计门槛仍拒绝，不是物理字节上限。
+嵌套 child 进入 WAIT_JOIN 后，以本层 join waiter 管理，与 root
+等待策略相同；SPAWN 本身不无条件卸载。实际 FULL 回收仍需压力/
+关键恢复需求、Host 副本、引用/锁与 ACK 条件。CPU 动态图核对
+root/child 等待资格一致，grandchild RETURN 只解锁直接 child。
+
 **V102 容量机会转化候选。**V101 的 execution handoff 为 false，
 实际需求 handoff H2D 为零（V2267/V2268）。普通需求恢复只有在
 减少原生暴露的等待、且不引入完整 ACK 串行门禁/额外容量竞争时，
