@@ -2939,7 +2939,7 @@ index 6815679..a143793 100644
      def evict_device_end(self, component_type: ComponentType) -> None:
          """Finish the component's device-eviction walk."""
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..510212d 100644
+index d417d7d..09d404d 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -4,9 +4,10 @@ import atexit
@@ -3069,7 +3069,7 @@ index d417d7d..510212d 100644
          result = self.tree_core.evict_device_leaf(node_id, self.is_write_back)
          self._free_values(result.device_frees, result.host_frees)
          if self._tracks_write_through_unbacked_evictions():
-@@ -801,6 +871,1029 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -801,6 +871,1119 @@ class UnifiedRadixCache(BasePrefixCache):
          self._accumulate_tracker(tracker, result.tracker)
          return result.is_dropped
  
@@ -3281,31 +3281,109 @@ index d417d7d..510212d 100644
 +            "reason": None,
 +        }
 +
-+    def _beliefkv_causal_full_donor(
++    def _beliefkv_full_covering_sessions(
++        self, node: UnifiedTreeNode, *, max_nodes: int = 64,
++    ) -> Optional[set[str]]:
++        """Resolve inherited FULL coverage in a bounded, current subtree."""
++        full = node.component_data[BASE_COMPONENT_TYPE]
++        owners = full.session_ids
++        if owners and len(owners) == full.session_ref:
++            return owners
++        pending = [node]
++        visited = set()
++        resolved: set[str] = set()
++        matched_refs = 0
++        inspected = 1
++        leaves = self.components[BASE_COMPONENT_TYPE]._session_leaves
++        while pending:
++            current = pending.pop()
++            data = current.component_data[BASE_COMPONENT_TYPE]
++            try:
++                live = self.tree_core.node_by_id(current.id)
++            except (KeyError, RuntimeError, ValueError):
++                return None
++            if (
++                current.id in visited
++                or live is not current
++                or type(data.session_ref) is not int or data.session_ref <= 0
++                or current is not node and data.value is not None
++                or current.write_through_pending_id is not None
++                or current.load_back_pending_id is not None
++                or any(cd.lock_ref or cd.host_lock_ref for cd in current.component_data)
++            ):
++                return None
++            visited.add(current.id)
++            direct = data.session_ids
++            if direct is not None and (type(direct) is not set or not direct):
++                return None
++            coverage = len(direct) if direct is not None else 0
++            for owner in direct or ():
++                if (
++                    type(owner) is not str or not owner
++                    or current not in leaves.get(owner, ())
++                ):
++                    return None
++                resolved.add(owner)
++            matched_refs += coverage
++            for child in current.children.values():
++                inspected += 1
++                if inspected > max_nodes:
++                    return None
++                child_full = child.component_data[BASE_COMPONENT_TYPE]
++                try:
++                    live_child = self.tree_core.node_by_id(child.id)
++                except (KeyError, RuntimeError, ValueError):
++                    return None
++                if (
++                    child.parent is not current
++                    or live_child is not child
++                    or type(child_full.session_ref) is not int
++                    or child_full.session_ref < 0
++                    or child_full.session_ref == 0 and child_full.session_ids
++                ):
++                    return None
++                coverage += child_full.session_ref
++                if child_full.session_ref:
++                    pending.append(child)
++            if coverage != data.session_ref or matched_refs > full.session_ref:
++                return None
++        return resolved if resolved and matched_refs == full.session_ref else None
++
++    def _beliefkv_causal_full_owner_refs(
 +        self, node: UnifiedTreeNode, *, require_host_copy: bool,
-+    ) -> bool:
++    ) -> Optional[tuple[tuple[str, int], ...]]:
 +        """Validate all session owners without releasing state or active references."""
 +        validator = getattr(self, "beliefkv_cold_full_owner_validator", None)
 +        full = node.component_data[BASE_COMPONENT_TYPE]
-+        owners = full.session_ids
 +        if (
 +            not callable(validator)
 +            or not set(self.tree_components) <= {BASE_COMPONENT_TYPE, ComponentType.MAMBA}
 +            or node not in self.tree_core.evictable_device_leaves
 +            or full.value is None
 +            or (require_host_copy and full.host_value is None)
-+            or full.session_ref <= 0 or not owners or len(owners) != full.session_ref
++            or full.session_ref <= 0
 +            or node.id in self.ongoing_write_through
 +            or node.write_through_pending_id is not None
 +            or node.load_back_pending_id is not None
 +            or any(cd.lock_ref or cd.host_lock_ref for cd in node.component_data)
 +        ):
-+            return False
++            return None
++        owners = self._beliefkv_full_covering_sessions(node)
++        if owners is None:
++            return None
 +        tracker = self.session_refs
 +        generations = tracker._session_generations
 +        if any(owner in tracker._closed_session_ids or owner not in generations for owner in owners):
-+            return False
-+        return validator(tuple((owner, generations[owner]) for owner in owners)) is True
++            return None
++        references = tuple((owner, generations[owner]) for owner in owners)
++        return references if validator(references) is True else None
++
++    def _beliefkv_causal_full_donor(
++        self, node: UnifiedTreeNode, *, require_host_copy: bool,
++    ) -> bool:
++        return self._beliefkv_causal_full_owner_refs(
++            node, require_host_copy=require_host_copy,
++        ) is not None
 +
 +    def reclaim_beliefkv_handoff_capacity(
 +        self, *, full_tokens: int, mamba_slots: int,
@@ -3499,9 +3577,11 @@ index d417d7d..510212d 100644
 +                node_id not in excluded and node.creation_time == created
 +                and validate(node_id, created)
 +            )
-+            causal_valid = scope != "causal_waiting_full" or self._beliefkv_causal_full_donor(
-+                node, require_host_copy=True,
++            causal_owners = (
++                self._beliefkv_causal_full_owner_refs(node, require_host_copy=True)
++                if scope == "causal_waiting_full" else None
 +            )
++            causal_valid = scope != "causal_waiting_full" or causal_owners is not None
 +            if scope == "waiting_agent" and diagnosis is not None:
 +                full = node.component_data[BASE_COMPONENT_TYPE]
 +                state = node.component_data[ComponentType.MAMBA]
@@ -3574,6 +3654,16 @@ index d417d7d..510212d 100644
 +                self.beliefkv_handoff_last_victims.append({
 +                    "node_id": node_id, "creation_time": created,
 +                    "scope": scope, "freed_units": freed,
++                    **({
++                        "full_session_owners": causal_owners,
++                        "full_owner_proof": (
++                            "direct_leaf" if (
++                                node.component_data[BASE_COMPONENT_TYPE].session_ids
++                                and len(node.component_data[BASE_COMPONENT_TYPE].session_ids)
++                                == node.component_data[BASE_COMPONENT_TYPE].session_ref
++                            ) else "inherited_coverage"
++                        ),
++                    } if causal_owners is not None else {}),
 +                })
 +                if scope == "waiting_agent" and callable(callback):
 +                    callback(node_id, freed)
@@ -4099,7 +4189,7 @@ index d417d7d..510212d 100644
      def _evict_components(
          self,
          request_by_type: dict[ComponentType, int],
-@@ -851,6 +1944,11 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -851,6 +2034,11 @@ class UnifiedRadixCache(BasePrefixCache):
              # on a shared pool, released enough bytes to satisfy its allocation.
              if tracker[ct] >= request_cnt or target_reached(ct):
                  continue
@@ -4111,7 +4201,7 @@ index d417d7d..510212d 100644
              self.tree_core.evict_device_start(ct, request_cnt)
              try:
                  while True:
-@@ -861,6 +1959,21 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -861,6 +2049,21 @@ class UnifiedRadixCache(BasePrefixCache):
                      else:
                          backup_kv = self._evict_device_leaf(node_id, tracker)
                      if node_id is not None and backup_kv is not None:
@@ -4133,7 +4223,7 @@ index d417d7d..510212d 100644
                          # Deferred demote: run the D->H backup, demote only on success.
                          written = self._execute_and_commit_kv_backup(
                              backup_kv, write_back=True
-@@ -892,7 +2005,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -892,7 +2095,9 @@ class UnifiedRadixCache(BasePrefixCache):
              isinstance(self.tree_core, UnifiedTreeCore)
              and self.host_memory_mode == "cache"
              and self.cache_controller is not None
@@ -4144,7 +4234,7 @@ index d417d7d..510212d 100644
          )
  
      def _record_dropped_tokens(self, dropped_tokens: int, reason: str) -> None:
-@@ -955,6 +2070,18 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -955,6 +2160,18 @@ class UnifiedRadixCache(BasePrefixCache):
              return DecLockRefResult()
          return self.tree_core.dec_host_lock_ref(node_id, params)
  
@@ -4163,7 +4253,7 @@ index d417d7d..510212d 100644
      @rank_consensus(same_params=["req.rid", "is_insert", "kv_len_to_handle"])
      def cache_finished_req(
          self, req: Req, is_insert: bool = True, *, kv_len_to_handle: int, **kwargs
-@@ -1078,7 +2205,7 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1078,7 +2295,7 @@ class UnifiedRadixCache(BasePrefixCache):
              self._dec_req_lock(req, skip_swa=req.swa_prefix_lock_released)
  
          if is_insert and result is not None and result.last_device_node is not None:
@@ -4172,7 +4262,7 @@ index d417d7d..510212d 100644
  
          # cleanup
          for comp in self._components_tuple:
-@@ -1309,6 +2436,13 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1309,6 +2526,13 @@ class UnifiedRadixCache(BasePrefixCache):
              return 0
          result = self.tree_core.drive_host_eviction(component_type, num_tokens)
          self._free_values(result.device_frees, result.host_frees)
@@ -4186,7 +4276,7 @@ index d417d7d..510212d 100644
          return result.tracker.get(component_type, 0)
  
      # ---- Decode retraction ----
-@@ -1518,8 +2652,238 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1518,8 +2742,238 @@ class UnifiedRadixCache(BasePrefixCache):
  
      # ---- HiCache: Backup / LoadBack ----
  
@@ -4426,7 +4516,7 @@ index d417d7d..510212d 100644
      ) -> int:
          """Run a backup action top-down, stopping at the first failed backup."""
          if self.buffer_pipeline is not None:
-@@ -1532,14 +2896,23 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1532,14 +2986,23 @@ class UnifiedRadixCache(BasePrefixCache):
              return 0
          written = 0
          for node_id in action.node_ids:
@@ -4452,7 +4542,7 @@ index d417d7d..510212d 100644
              )
              if host_indices is None:
                  return 0
-@@ -1554,6 +2927,406 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1554,6 +3017,406 @@ class UnifiedRadixCache(BasePrefixCache):
              written = len(host_indices)
          return written
  
@@ -4859,7 +4949,7 @@ index d417d7d..510212d 100644
      @staticmethod
      def _backup_publish_node_ids(
          node_id: NodeId, comp_xfers: dict[ComponentType, list[PoolTransfer]]
-@@ -1574,18 +3347,77 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1574,18 +3437,77 @@ class UnifiedRadixCache(BasePrefixCache):
              CacheTransferPhase.BACKUP_HOST, kv_xfer, comp_xfers
          )
  
@@ -4939,7 +5029,7 @@ index d417d7d..510212d 100644
          )
  
      def _track_write_through_node(
-@@ -1627,10 +3459,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1627,10 +3549,10 @@ class UnifiedRadixCache(BasePrefixCache):
              updated_node_ids,
          )
  
@@ -4952,7 +5042,7 @@ index d417d7d..510212d 100644
  
          lock_node_id, lock_params, publish_node_ids = self.ongoing_write_through.pop(
              ack_id
-@@ -1643,15 +3475,26 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1643,15 +3565,26 @@ class UnifiedRadixCache(BasePrefixCache):
              # suffix; the prefix fragment must be persisted as well.
              for node_id in publish_node_ids:
                  self.write_backup_storage(node_id)
@@ -4980,7 +5070,7 @@ index d417d7d..510212d 100644
              return False
  
          host_anchor_params = self.inc_host_lock_ref(node_id).to_dec_params()
-@@ -1675,6 +3518,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1675,6 +3608,10 @@ class UnifiedRadixCache(BasePrefixCache):
                  result=result,
                  ancestor_lock_params=ancestor_lock_params,
                  host_anchor_params=host_anchor_params,
@@ -4991,7 +5081,7 @@ index d417d7d..510212d 100644
              )
              return success
          finally:
-@@ -1690,9 +3537,34 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1690,9 +3627,34 @@ class UnifiedRadixCache(BasePrefixCache):
          result: IncLockRefResult,
          ancestor_lock_params: DecLockRefParams,
          host_anchor_params: DecLockRefParams,
@@ -5027,7 +5117,7 @@ index d417d7d..510212d 100644
          kv_tokens = len(kv_xfer.host_indices)
          sidecar_xfers = self._build_sidecar_transfers(
              CacheTransferPhase.LOAD_BACK, kv_xfer, comp_xfers
-@@ -1703,7 +3575,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1703,7 +3665,8 @@ class UnifiedRadixCache(BasePrefixCache):
          # when the Full-KV load is skipped by thresholding. max(1, ...): an
          # entirely empty spec (e.g. foreign-pin rejection) must never report
          # success, even at load_back_threshold <= 0.
@@ -5037,7 +5127,7 @@ index d417d7d..510212d 100644
              mem_quota is not None and kv_tokens + result.delta > mem_quota
          ):
              self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -1714,6 +3587,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1714,6 +3677,10 @@ class UnifiedRadixCache(BasePrefixCache):
              self.token_to_kv_pool_allocator, "c128_attn_allocator", None
          )
          if c128_allocator is not None:
@@ -5048,7 +5138,7 @@ index d417d7d..510212d 100644
              c128_num_pages = _c128_transfer_num_pages(
                  comp_xfers.get(ComponentType.C128, ()),
                  c128_allocator.page_size,
-@@ -1727,6 +3604,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1727,6 +3694,10 @@ class UnifiedRadixCache(BasePrefixCache):
  
          avail = self._component_available_size(ComponentType.FULL)
          if avail < kv_tokens:
@@ -5059,7 +5149,7 @@ index d417d7d..510212d 100644
              needed = kv_tokens - avail
              self.evict_for_alloc(EvictParams(num_tokens=needed))
              if self._component_available_size(ComponentType.FULL) < kv_tokens:
-@@ -1741,6 +3622,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1741,6 +3712,9 @@ class UnifiedRadixCache(BasePrefixCache):
              host_indices=kv_xfer.host_indices,
              node_id=node_id,
              extra_pools=aux_xfers or None,
@@ -5069,7 +5159,7 @@ index d417d7d..510212d 100644
          )
  
          self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -3130,10 +5014,24 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3130,10 +5104,24 @@ class UnifiedRadixCache(BasePrefixCache):
              while self.ongoing_write_through:
                  for ack in cc.ack_write_queue:
                      ack.finish_event.synchronize()
@@ -5095,7 +5185,7 @@ index d417d7d..510212d 100644
                  cc.ack_write_queue.clear()
                  assert len(self.ongoing_write_through) == 0
              return
-@@ -3154,11 +5052,122 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3154,11 +5142,122 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_write_queue.pop(0)
              ack.finish_event.synchronize()
@@ -5219,7 +5309,7 @@ index d417d7d..510212d 100644
      def _log_write_ack_metrics(self, ack: HiCacheAck) -> None:
          """Record D->H backup volume and duration for a completed write ack."""
          if self.metrics_collector is None:
-@@ -3200,6 +5209,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3200,6 +5299,8 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_load_queue.pop(0)
              ack.finish_event.synchronize()
@@ -5228,7 +5318,7 @@ index d417d7d..510212d 100644
              for ack_id in ack.node_ids:
                  if (
                      self.buffer_pipeline is not None
-@@ -3211,6 +5222,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3211,6 +5312,8 @@ class UnifiedRadixCache(BasePrefixCache):
                  self.dec_host_lock_ref(node, host_lock_params)
                  # Unpin the loaded nodes; host copies stay as reclaimable duplicates.
                  self.tree_core.finish_load_back(node)
@@ -5237,7 +5327,7 @@ index d417d7d..510212d 100644
  
              if self.metrics_collector is not None:
                  for pool, num_tokens in (ack.num_tokens_by_pool or {}).items():
-@@ -3225,6 +5238,13 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3225,6 +5328,13 @@ class UnifiedRadixCache(BasePrefixCache):
                      self.metrics_collector.observe_load_back_duration(
                          duration_ms / 1000.0
                      )
@@ -5251,7 +5341,7 @@ index d417d7d..510212d 100644
              finish_count -= 1
  
      # ---- HiCache: Scheduler Entry Points ----
-@@ -3236,7 +5256,7 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3236,7 +5346,7 @@ class UnifiedRadixCache(BasePrefixCache):
      ) -> Optional[tuple[torch.Tensor, NodeId]]:
          """Prepare KV cache loading from host to device.
          Returns (device_indices, last_node), or None when buffer-mode
@@ -5260,7 +5350,7 @@ index d417d7d..510212d 100644
          if self.buffer_pipeline is not None:
              return self.buffer_pipeline.init_load_back(params)
          best_match_node_id = params.best_match_node
-@@ -3255,6 +5275,11 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3255,6 +5365,11 @@ class UnifiedRadixCache(BasePrefixCache):
                  and (req.swa_host_hit_length > 0 or req.mamba_host_hit_length > 0)
              )
          ):
@@ -5272,7 +5362,7 @@ index d417d7d..510212d 100644
              if self.load_back(best_match_node_id, mem_quota, req=req):
                  new_indices = self.tree_core.collect_full_device_indices(
                      best_match_node_id, last_best_match_device_node_id
-@@ -3341,9 +5366,31 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3341,9 +5456,31 @@ class UnifiedRadixCache(BasePrefixCache):
          if self.linker is not None:
              return self.linker.start_layer_wise_loading()
          if self.cache_controller is not None:
@@ -7968,6 +8058,211 @@ index 0000000..ae52cd2
 +
 +if __name__ == "__main__":
 +    unittest.main()
+diff --git a/test/srt/test_beliefkv_inherited_full_owners.py b/test/srt/test_beliefkv_inherited_full_owners.py
+new file mode 100644
+index 0000000..16ee0df
+--- /dev/null
++++ b/test/srt/test_beliefkv_inherited_full_owners.py
+@@ -0,0 +1,199 @@
++"""Reclaim referenced FULL ancestors using complete, current leaf coverage."""
++
++from types import SimpleNamespace as NS
++from unittest.mock import Mock
++
++import pytest
++
++from sglang.srt.mem_cache.unified_cache.component_type import ComponentType as CT
++from test_beliefkv_cold_full_prepare import install_cpu_enqueue
++from test_beliefkv_terminal_capacity import hybrid_cache, insert_session
++
++
++def fixture(hybrid_cache, *, second=None, prefix_backed=True):
++    cache, allocator, pool = hybrid_cache
++    prefix, generation = insert_session(cache, [1, 2], "waiting-a")
++    leaf, _ = insert_session(cache, [1, 2, 3, 4], "waiting-a")
++    owners = {("waiting-a", generation)}
++    sibling = None
++    if second is not None:
++        owner = "waiting-a" if second == "same_session_sibling" else "waiting-b"
++        tokens = [1, 2, 3, 4] if second == "shared_leaf" else [1, 2, 5, 6]
++        other, second_generation = insert_session(cache, tokens, owner)
++        owners.add((owner, second_generation))
++        sibling = other if other is not leaf else None
++    for node in (prefix, leaf, *((sibling,) if sibling is not None else ())):
++        full = node.component_data[CT.FULL]
++        if node is not prefix or prefix_backed:
++            full.host_value = full.value.clone()
++            cache.tree_core._update_duplicate_tracking(node)
++    cache.is_write_back = True
++    cache.host_memory_mode = "cache"
++    cache.beliefkv_join_pressure_candidates = ()
++    cache.beliefkv_join_pressure_validator = lambda *_: False
++    cache.beliefkv_cold_full_owner_validator = Mock(
++        side_effect=lambda observed: set(observed) <= owners,
++    )
++    cache.cache_controller = NS(
++        write_queue=[], load_queue=[], ack_write_queue=[], ack_load_queue=[],
++        start_writing=Mock(),
++        mem_pool_host=NS(size_per_token=16 * 1024**2, available_size=lambda: 128),
++    )
++    if sibling is not None:
++        result = cache.tree_core.demote_backed_full_preserving_mamba(sibling.id)
++        cache._free_values(result.device_frees, result.host_frees)
++    return cache, allocator, pool, prefix, leaf, sibling, owners
++
++
++@pytest.mark.parametrize("second", (None, "shared_leaf", "sibling", "same_session_sibling"))
++def test_inherited_prefix_continues_reclaim_without_d2h_or_mamba_changes(hybrid_cache, second):
++    cache, allocator, pool, prefix, leaf, _, owners = fixture(hybrid_cache, second=second)
++    full_before = allocator.available_size()
++    state_before = pool.mamba_allocator.available_size()
++    states = {
++        node.id: node.component_data[CT.MAMBA].value for node in (prefix, leaf)
++    }
++    refs = {node.id: node.component_data[CT.FULL].session_ref for node in (prefix, leaf)}
++    assert prefix.component_data[CT.FULL].session_ids is None
++    assert cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=full_before + 4, mamba_slots=0, collect_diagnostics=True,
++    ) == {int(CT.FULL): 4}
++    assert allocator.available_size() == full_before + 4
++    assert pool.mamba_allocator.available_size() == state_before
++    for node in (prefix, leaf):
++        assert node.component_data[CT.FULL].value is None
++        assert node.component_data[CT.FULL].host_value is not None
++        assert node.component_data[CT.FULL].session_ref == refs[node.id]
++        assert node.component_data[CT.MAMBA].value is states[node.id]
++        assert node.component_data[CT.MAMBA].host_value is None
++    victim = cache.beliefkv_handoff_last_victims[-1]
++    assert victim["node_id"] == prefix.id
++    assert victim["full_owner_proof"] == "inherited_coverage"
++    assert set(victim["full_session_owners"]) == owners
++    cache._execute_and_commit_kv_backup.assert_not_called()
++
++
++def test_runnable_host_only_sibling_blocks_shared_prefix_reclaim(hybrid_cache):
++    cache, allocator, _, prefix, _, _, owners = fixture(hybrid_cache, second="sibling")
++    waiting = {item for item in owners if item[0] == "waiting-a"}
++    cache.beliefkv_cold_full_owner_validator.side_effect = lambda observed: set(observed) <= waiting
++    available = allocator.available_size()
++    assert cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=available + 4, mamba_slots=0,
++    ) == {int(CT.FULL): 2}
++    assert prefix.component_data[CT.FULL].value is not None
++    assert allocator.available_size() == available + 2
++
++
++@pytest.mark.parametrize("blocked", (
++    "coverage_count", "missing_generation", "closed_session", "missing_leaf_index",
++    "descendant_host_lock", "descendant_pending_load", "descendant_pending_write",
++))
++def test_unknown_or_unsettled_inherited_coverage_is_rejected(hybrid_cache, blocked):
++    cache, allocator, _, prefix, leaf, _, _ = fixture(hybrid_cache)
++    available = allocator.available_size()
++    assert cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=available + 2, mamba_slots=0,
++    ) == {int(CT.FULL): 2}
++    if blocked == "coverage_count":
++        prefix.component_data[CT.FULL].session_ref += 1
++    elif blocked == "missing_generation":
++        del cache.session_refs._session_generations["waiting-a"]
++    elif blocked == "closed_session":
++        cache.session_refs._closed_session_ids["waiting-a"] = None
++    elif blocked == "missing_leaf_index":
++        cache.components[CT.FULL]._session_leaves["waiting-a"].discard(leaf)
++    elif blocked == "descendant_host_lock":
++        leaf.component_data[CT.FULL].host_lock_ref = 1
++    elif blocked == "descendant_pending_load":
++        leaf.load_back_pending_id = leaf.id
++    else:
++        leaf.write_through_pending_id = leaf.id
++    assert not cache._beliefkv_causal_full_donor(prefix, require_host_copy=True)
++    assert cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=available + 4, mamba_slots=0,
++    ) == {}
++    assert prefix.component_data[CT.FULL].value is not None
++    assert allocator.available_size() == available + 2
++
++
++@pytest.mark.parametrize("changed", ("missing", "replaced"))
++def test_replaced_descendant_identity_cannot_prove_inherited_owners(hybrid_cache, changed, monkeypatch):
++    cache, allocator, _, prefix, leaf, _, _ = fixture(hybrid_cache)
++    available = allocator.available_size()
++    cache.reclaim_beliefkv_handoff_capacity(full_tokens=available + 2, mamba_slots=0)
++    original = cache.tree_core.node_by_id
++
++    def lookup(index):
++        if index == leaf.id:
++            if changed == "missing":
++                raise KeyError(index)
++            return NS()
++        return original(index)
++
++    monkeypatch.setattr(cache.tree_core, "node_by_id", lookup)
++    assert cache._beliefkv_full_covering_sessions(prefix) is None
++
++
++def test_owner_becoming_runnable_before_inherited_transaction_keeps_prefix(hybrid_cache):
++    cache, allocator, _, prefix, _, _, _ = fixture(hybrid_cache)
++    available = allocator.available_size()
++    cache.reclaim_beliefkv_handoff_capacity(full_tokens=available + 2, mamba_slots=0)
++    cache.beliefkv_cold_full_owner_validator.side_effect = (True, False)
++    assert cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=available + 4, mamba_slots=0,
++    ) == {}
++    assert prefix.component_data[CT.FULL].value is not None
++
++
++def test_inherited_owner_walk_is_bounded_and_stops_at_required_capacity(hybrid_cache):
++    cache, allocator, _, prefix, _, _, owners = fixture(hybrid_cache, second="sibling")
++    available = allocator.available_size()
++    assert cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=available + 2, mamba_slots=0,
++    ) == {int(CT.FULL): 2}
++    assert prefix.component_data[CT.FULL].value is not None
++    assert cache._beliefkv_full_covering_sessions(prefix, max_nodes=2) is None
++    assert cache._beliefkv_full_covering_sessions(prefix, max_nodes=3) == {
++        owner for owner, _ in owners
++    }
++    cache._beliefkv_full_covering_sessions = Mock(side_effect=AssertionError("capacity already fits"))
++    assert cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=allocator.available_size(), mamba_slots=0,
++    ) == {}
++
++
++def test_complete_direct_leaf_ownership_does_not_scan_descendant_coverage(hybrid_cache, monkeypatch):
++    cache, _, _, _, leaf, _, _ = fixture(hybrid_cache, second="shared_leaf")
++    lookup = Mock(side_effect=AssertionError("direct owners already cover every FULL reference"))
++    monkeypatch.setattr(cache.tree_core, "node_by_id", lookup)
++    assert cache._beliefkv_causal_full_donor(leaf, require_host_copy=True)
++    lookup.assert_not_called()
++
++
++def test_unbacked_inherited_prefix_still_requires_settled_backup_ack(hybrid_cache):
++    cache, allocator, _, prefix, _, _, _ = fixture(hybrid_cache, prefix_backed=False)
++    locks = install_cpu_enqueue(cache)
++    available = allocator.available_size()
++    target = available + 4
++    assert cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=target, mamba_slots=0,
++    ) == {int(CT.FULL): 2}
++    assert cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=target, mamba_slots=0, collect_cold_full_candidates=True,
++    ) == {}
++    assert cache.beliefkv_handoff_cold_full_candidates == (
++        (prefix.id, prefix.creation_time, 2),
++    )
++    assert cache.prepare_beliefkv_cold_full_capacity(full_tokens=target) == (
++        (prefix.id, prefix.creation_time, 2),
++    )
++    assert cache.reclaim_beliefkv_handoff_capacity(full_tokens=target, mamba_slots=0) == {}
++    cache.tree_core.finish_write_through([prefix.id], prefix.id)
++    del cache.ongoing_write_through[prefix.id]
++    cache.dec_lock_ref(prefix.id, locks[prefix.id])
++    assert cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=target, mamba_slots=0,
++    ) == {int(CT.FULL): 2}
++    assert allocator.available_size() == target
++    assert prefix.component_data[CT.MAMBA].host_value is None
 diff --git a/test/srt/test_beliefkv_latest_mamba_state.py b/test/srt/test_beliefkv_latest_mamba_state.py
 new file mode 100644
 index 0000000..44d2402

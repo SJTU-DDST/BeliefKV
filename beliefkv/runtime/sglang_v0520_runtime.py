@@ -6330,10 +6330,19 @@ class NativeAdmissionRuntime:
                 ):
                     continue
                 sessions = cache.session_refs
-                for session in full.session_ids or ():
-                    if session in sessions._closed_session_ids:
-                        continue
+                owners = victim.get("full_session_owners")
+                if owners is None:
+                    owners = tuple(
+                        (session, sessions._session_generations.get(session))
+                        for session in full.session_ids or ()
+                    )
+                for session, observed_generation in owners:
                     generation = sessions._session_generations.get(session)
+                    if (
+                        session in sessions._closed_session_ids
+                        or generation is None or generation != observed_generation
+                    ):
+                        continue
                     for key in self._cold_full_owner_index.get(session, ()):
                         if (
                             key not in invalidated and key.session_generation == generation
