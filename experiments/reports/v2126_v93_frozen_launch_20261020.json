@@ -1,0 +1,73 @@
+{
+  "status": "live_driver_launched_workflow_service_not_yet_accepted",
+  "observed_at": "2026-10-20T10:04:08.971951+08:00",
+  "launched_at": "2026-10-20T10:01:29.948700+08:00",
+  "code_commit": "17478feda10838f8890fb885608cbaefb3e2628f",
+  "execution_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v93-client-handoff-17478fe-20261020",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v93",
+  "live_driver": {
+    "pid": 63788,
+    "state": "S",
+    "ppid": 63673,
+    "start_ticks": "663195304",
+    "argv": [
+      "bash",
+      "/home/longhao/experiment/.worktrees/beliefkv-v93-client-handoff-17478fe-20261020/scripts/run_qwen35_semantic_h2d_ab.sh"
+    ]
+  },
+  "live_supervisor": {
+    "pid": 63673,
+    "state": "S",
+    "ppid": 1,
+    "start_ticks": "663195186",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/ops/start_v93_join_handoff_20261020.py",
+      "--watch"
+    ]
+  },
+  "launch_resource_check": {
+    "gpu_free_mib": 143142,
+    "gpu_utilization_percent": 0,
+    "compute_processes": [],
+    "disk_free_bytes": 608951078912,
+    "owned_runs": [],
+    "idle_port": true,
+    "ready": true
+  },
+  "cpu_checks": 1582,
+  "cpu_scope": "1582 distinct current-source cases: the exact previous1118 plus physical/confirmed/revalidation/parallel and8 new handoff cases. Local tokenizer cases explicitly enabled; no skip. Two passing subtests are not extra cases; real SWE Docker case unselected.",
+  "frozen_source_files_rechecked": 970,
+  "frozen_source_mismatches": [],
+  "changed_paths_from_v92": [
+    "beliefkv/runtime/sglang_v0520_physical.py",
+    "beliefkv/runtime/sglang_v0520_runtime.py"
+  ],
+  "changed_paths_from_native_reference": [
+    "beliefkv/runtime/sglang_v0520_admission.py",
+    "beliefkv/runtime/sglang_v0520_physical.py",
+    "beliefkv/runtime/sglang_v0520_runtime.py"
+  ],
+  "engine": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v88-control-7502984-20261020/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "2cbb0b4699e000ffc28bd80f6ee70732fb13b4950e40aa303b9afbc7d5a418ef",
+    "expected_tree": "1db6d8846499beba8f963db9ba8abc7a832ecda8",
+    "actual_tree": "1db6d8846499beba8f963db9ba8abc7a832ecda8",
+    "matches_worktree": true,
+    "covered_untracked_paths": []
+  },
+  "engine_checkout": "/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019",
+  "native_reference": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b",
+  "source_sha256": {
+    "/home/longhao/experiment/ops/v93_join_handoff_20261020.state.json": "7a57f3a74590814df992bfc847c9f8b20f3a2481e7ebb66552d9d0783efd5752",
+    "/home/longhao/experiment/ops/v93_join_handoff_20261020.qualified.json": "460729813b56f6d2f8390ffa78f0c3715f8643d36239182099b09d26a3734bf5",
+    "/home/longhao/experiment/ops/record_v93_launch_20261020.py": "6c025bd0c4085654c34f70716f863937192f56ff8e2140990e23cef2e7ce287f"
+  },
+  "scope": [
+    "Revalidate live driver/supervisor identities and every qualified frozen source.",
+    "The GPU resource sample precedes launch; it is not current GPU utilization.",
+    "A launched driver is not a verified first workflow GPU service or performance result.",
+    "Keep the running snapshot immutable; development stays on main.",
+    "One new predictive arm, with completed V91b native reused as historical control."
+  ]
+}

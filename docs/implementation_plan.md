@@ -5,6 +5,13 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+V93 is running: launched2026-10-20 10:01:29 Asia/Shanghai, first actual workflow
+GPU service10:04:26. V2126/V2127 verify frozen17478fe,970 execution sources,
+live processes/settings and1582 passing distinct CPU cases. The prelaunch GPU
+sample is idle with no compute process. Only predictive is newly run, retaining
+the V91b native reference. This is startup verification, not performance acceptance.
+Keep its snapshot immutable while developing on main.
+
 V92 completed at2026-10-20 09:39:11 Asia/Shanghai from frozen e8010f0.
 All24 outcomes are natural completed and JCT-eligible, with zero writer failures
 or drops. Quality remains ungraded. V91b native is the completed historical
@@ -92,10 +99,10 @@ Eight ordinary complete-dispatch controls retain records/reservations/native rea
 small timing regressions are retained, not claimed as performance gains.
 V2125 passes1582 distinct current-source cases with no skips, including8 new
 handoff cases and real local-tokenizer checks. Two passing subtests are not
-additional cases; real SWE Docker is unselected. Freeze V93 with this fix and
+additional cases; real SWE Docker is unselected. V93 is frozen with this fix and
 the residency-reader reduction. Only two runtime execution files differ from V92,
 three from the V91b native reference; workload, engine and frontend settings stay.
-Launch predictive only after an actual idle-resource check. Validate the replan
+Predictive launched after an actual idle-resource check. Validate the replan
 counter, true first-service reuse and tail-excluded throughput/JCT; keep /goal active.
 
 Main now skips causal/residency ranking only when a committed chunk has exhausted

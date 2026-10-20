@@ -1,0 +1,285 @@
+{
+  "status": "actual_workflow_service_observed_not_performance_acceptance",
+  "observed_at": "2026-10-20T10:04:59.036280+08:00",
+  "launched_at": "2026-10-20T10:01:29.948700+08:00",
+  "first_workflow_service_at": "2026-10-20T10:04:26.750786+08:00",
+  "code_commit": "17478feda10838f8890fb885608cbaefb3e2628f",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v93",
+  "execution_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v93-client-handoff-17478fe-20261020",
+  "native_reference": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b",
+  "cpu_checks": 1582,
+  "cpu_scope": "1582 distinct current-source cases: the exact previous1118 plus physical/confirmed/revalidation/parallel and8 new handoff cases. Local tokenizer cases explicitly enabled; no skip. Two passing subtests are not extra cases; real SWE Docker case unselected.",
+  "frozen_source_files_rechecked": 970,
+  "frozen_source_mismatches": [],
+  "changed_execution_paths_from_reference": [
+    "beliefkv/runtime/sglang_v0520_admission.py",
+    "beliefkv/runtime/sglang_v0520_physical.py",
+    "beliefkv/runtime/sglang_v0520_runtime.py"
+  ],
+  "process_environments_selected": {
+    "64201": {},
+    "63831": {
+      "PYTHONPATH": "/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python:/home/longhao/experiment/.worktrees/beliefkv-v93-client-handoff-17478fe-20261020:/home/longhao/experiment/.worktrees/beliefkv-v93-client-handoff-17478fe-20261020",
+      "SGLANG_SOURCE_CHECKOUT": "/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019"
+    }
+  },
+  "environment_evidence": "The live scheduler's recorded parent exposes the frozen PYTHONPATH. The renamed worker does not expose these entries in /proc/environ; their absence is recorded, not treated as a runtime import mismatch.",
+  "freeze_gc_initialization": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v93/predictive_h2d/server/gc_freeze_initialization.txt",
+    "sha256": "dd7b9a8cae9a8ab8b106d529308ba6ee6c9077ea3240c1a045ba3117c8664892",
+    "contents": "Garbage collection frozen.\n",
+    "known_internal_race_observed": true,
+    "successful_launcher_post_observed": true
+  },
+  "inspection": {
+    "observed_at": "2026-10-20T10:04:58.983939+08:00",
+    "not_before": "2026-10-20T06:00:00+08:00",
+    "schedule_status": "running_predictive",
+    "watcher_alive": true,
+    "driver_alive": true,
+    "schedule_error": null,
+    "qualified_commit": "17478feda10838f8890fb885608cbaefb3e2628f",
+    "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v93",
+    "plan_present": true,
+    "configuration_mismatches": [],
+    "arms": {
+      "predictive_h2d": {
+        "directory_present": true,
+        "scheduler": {
+          "pid": 64201,
+          "state": "R",
+          "ppid": 63831,
+          "start_ticks": "663196609",
+          "argv": [
+            "sglang::scheduler"
+          ]
+        },
+        "ready": {
+          "schema_version": 1,
+          "source": "native_sglang_v0520",
+          "collection_mode": "admission_observation",
+          "record_output_token_ids": false,
+          "checkpoint_path_shadow": false,
+          "prefetch_prefix_diagnostics": false,
+          "scheduler_pid": 64201,
+          "scheduler_path": "/home/longhao/experiment/.worktrees/sglang-v88-idle-control-cpu-20261019/python/sglang/srt/managers/scheduler.py",
+          "scheduler_sha256": "dc545cebc4337c8f72028d09903525618707ad4b4f69a0b300adc91d825dd4eb"
+        },
+        "launch": {
+          "schema_version": 1,
+          "chat_token_block_cache": true,
+          "native_policy_baseline": false,
+          "prefetch_prefix_diagnostics": false
+        },
+        "selected_server_info": {
+          "max_running_requests": 8,
+          "context_length": 262144,
+          "chunked_prefill_size": 4096,
+          "enable_mixed_chunk": false,
+          "enable_prefill_delayer": false,
+          "schedule_policy": "fcfs"
+        },
+        "writer": {
+          "writer_error": null,
+          "dropped_records": 0,
+          "failed_records": 0,
+          "queue_size": null,
+          "record_counts": {
+            "audit": 249,
+            "events": 6,
+            "eviction_attribution": 6,
+            "host_pool": 27
+          }
+        },
+        "first_observed_service_in_bounded_prefix": {
+          "event": "gpu_service_sample",
+          "ts_ms": 1792461866750.7861,
+          "sample_id": "native-service-000000001",
+          "phase": "prefill",
+          "batch_size": 1
+        },
+        "server_log_tail": {
+          "file_bytes_at_read": 131708,
+          "read_from_byte": 636,
+          "read_bytes": 131072,
+          "complete_lines": 990
+        },
+        "server_error_signatures": [
+          "Traceback (most recent call last):",
+          "Traceback (most recent call last):",
+          "Traceback (most recent call last):",
+          "Traceback (most recent call last):"
+        ],
+        "optional_codec_tracebacks_in_complete_envelopes": 60,
+        "runtime_state_tail": {
+          "file_bytes_at_read": 202478,
+          "read_from_byte": 0,
+          "read_bytes": 202478,
+          "complete_lines": 60
+        },
+        "recent_runtime_state": {
+          "event": "admission_runtime_state",
+          "ts_ms": 1792461898764.6616,
+          "monotonic_ms": 6632161865.239595,
+          "clock_sample_span_ms": 0.00033283233642578125,
+          "final": false,
+          "counts": {
+            "wait_context_groups_built": 2,
+            "noncompeting_prefill_plans": 52,
+            "wait_context_groups_invalidated": 0,
+            "wait_context_cache_retained": 48,
+            "admission_rank_dependencies_preserved": 16,
+            "native_admitted": 6,
+            "admission_residency_scan_targets": 29,
+            "admission_residency_scan_slot_bounded": 3,
+            "residency_ordering_hint_unavailable": 31,
+            "native_OTHER": 134,
+            "drained_chunk_prefill_plans": 122
+          },
+          "physical_disabled": false,
+          "final_stage_prefetch": true,
+          "final_stage_priority": true,
+          "prepare_host": true,
+          "h2d_opportunity_sampling": false,
+          "prepare_pool_scope": "missing_full_session_path",
+          "latest_full_session_branches_retired": 0,
+          "resident_first": true,
+          "prefill_ordering_mode": "workflow",
+          "workflow_attained_work": false,
+          "workflow_work_metric": "completed_request_output_tokens",
+          "workflow_work_accounts": 0,
+          "execution_handoff": false,
+          "overlap_prefetch_supported": true,
+          "execution_handoff_request_id": null,
+          "tool_timing_only": true,
+          "tool_predictor_configured": false,
+          "online_tool_timing": true,
+          "online_tool_timing_revision": 0,
+          "report_length_calibration_samples": 0,
+          "borrowable_parent_headroom": true,
+          "tool_predictor_disabled": false,
+          "tool_prefetch": true,
+          "tool_prefetch_planning_slack_ms": 250.0,
+          "prefetch_lead_ms": 1000.0,
+          "join_prefetch_min_advance_ms": 0.0,
+          "tool_prefetch_min_advance_ms": 0.0,
+          "parallel_wait_prefetch": true,
+          "wait_prefetch_contexts": 2,
+          "tool_inflight_contexts": 0,
+          "join_inflight_contexts": 0,
+          "prediction_maintenance_interval_ms": 100.0,
+          "semantic_work_statistic": "center",
+          "final_admission_policy": "remaining_report_work",
+          "eos_protocol_window_ms": 250.0,
+          "eos_prefetch_evidence_window_ms": 1000.0,
+          "terminal_cache_diagnostics": false,
+          "profile_shared_path": false,
+          "h2d_seed_samples": 22,
+          "h2d_service_samples": 22,
+          "prefetch_residency_budget": {
+            "request_slots": 5,
+            "byte_limit": 52777451520,
+            "reserve_full_tokens": 4104,
+            "reserve_mamba_slots": 5,
+            "source": "native_next_prefill",
+            "evictable_full_tokens": 0,
+            "evictable_mamba_slots": 0
+          },
+          "prefetch_request_counts_at_budget": {
+            "running_requests": 2,
+            "free_request_rows": 5,
+            "request_row_capacity": 8
+          },
+          "prefetch_residency_headroom": {
+            "observable": true,
+            "device_full_free_tokens": 1380120,
+            "device_mamba_free_slots": 387,
+            "host_full_free_tokens": 7812501,
+            "host_mamba_free_slots": 622,
+            "physical_actions_supported": false,
+            "reason": null,
+            "full_frees_deferred": false,
+            "mamba_batch_reserved": true
+          },
+          "prefetch_locked_count": 0,
+          "prefetch_locked_contexts_by_role": {
+            "demand": 0,
+            "speculative": 0
+          },
+          "prefetch_protected_bytes": 0,
+          "semantic_worker_configured": false,
+          "join_prefetch_trigger": "report_service_or_eos",
+          "semantic_worker_error": "",
+          "shared_path_timing": {
+            "schema_version": 1,
+            "enabled": false,
+            "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+            "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+            "elapsed_ms": 63703.372385,
+            "bucket_upper_ms": [
+              0.01,
+              0.025,
+              0.05,
+              0.1,
+              0.25,
+              0.5,
+              1.0,
+              2.5,
+              5.0,
+              10.0,
+              25.0,
+              50.0,
+              100.0,
+              250.0,
+              1000.0,
+              null
+            ],
+            "phases": {}
+          },
+          "control_timing_sample_every": null,
+          "opportunity_writer_timing": {
+            "schema_version": 1,
+            "sample_every": 64,
+            "snapshot_ts_ms": 1792461898764.8557,
+            "cpu_clock": "thread_time_ns",
+            "wall_clock": "perf_counter_ns",
+            "scope": "Every 64th record per category, starting with its first record. Measured processing samples only; queue waiting and status publication are excluded. Wall includes scheduling and GIL waiting; thread CPU excludes waiting. No full-run cost, GPU stall, GIL attribution or JCT saving is inferred.",
+            "categories": {
+              "admission_runtime_state": {
+                "records_seen": 59,
+                "samples": 1,
+                "sampled_cpu_ms": 0.077882,
+                "sampled_wall_ms": 0.077051,
+                "mean_sample_cpu_ms": 0.077882,
+                "mean_sample_wall_ms": 0.077051,
+                "max_sample_cpu_ms": 0.077882,
+                "max_sample_wall_ms": 0.077051
+              }
+            }
+          }
+        }
+      }
+    },
+    "unreadable_json": [],
+    "scope": "On-demand read-only inspection. Bounded complete-line reads are not atomic across files; absent or unobserved evidence stays unknown. Log signatures require inspection, not automatic stop/restart. This is not a throughput, reuse, quality or JCT result.",
+    "actual_checkout_commit": "17478feda10838f8890fb885608cbaefb3e2628f",
+    "plan_sha256": "6680e3282f1dbe6dec3fbf16edb848270e55784f3629f127dc62c4a0dcad1e73"
+  },
+  "source_bindings": {
+    "/home/longhao/experiment/ops/audit_v92_startup_20261020.py": "6e8ec919f91299110ef37071389247f4ddc85b42d1097717d24e7102d0ffcbc7",
+    "/home/longhao/experiment/ops/v93_join_handoff_20261020.state.json": "f27d0346cf0b8fc44cc13b20a3a19cdcdc6c53af76af5feab0c657f7e2e5487f",
+    "/home/longhao/experiment/ops/v93_join_handoff_20261020.qualified.json": "460729813b56f6d2f8390ffa78f0c3715f8643d36239182099b09d26a3734bf5",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v93/ab_plan.json": "6680e3282f1dbe6dec3fbf16edb848270e55784f3629f127dc62c4a0dcad1e73",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v93/frozen_execution_verification.json": "8794c1c9c9c6f77709e5d7c64f1b0f717c30079f82f5968407b1ec42df3b2426",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v93/predictive_h2d/server/launch_configuration.json": "7161d07e62ec9d1800426e6af61ab70d4468ee3711a66a2a7833cd900e2e8c69",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v93/predictive_h2d/server/native_telemetry_ready.json": "45c9838045692df88b41ea522143e68acfa9506910cec305b052fc3b4fb92d2d",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v93/predictive_h2d/server/server_info.json": "8002c7e22b08357afd42de8324c6a2c4780daa1707f97f10d2392a5702352172"
+  },
+  "scope": [
+    "Actual live process, launch flags and workflow service; not just a scheduled state label.",
+    "All qualified frozen execution files are rehashed; development remains on main.",
+    "Known optional TorchCodec tracebacks and the handled internal freeze_gc race are preserved.",
+    "Initial zero writer failures do not establish whole-run reliability or useful prefetch.",
+    "Only predictive is newly run; V91b native remains a historical live reference."
+  ]
+}
