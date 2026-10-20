@@ -111,6 +111,32 @@ def estimate_native_service(
     )
 
 
+def estimate_larger_full_h2d(
+    samples: Iterable[NativeServiceSample], size_bytes: int, *, minimum: int = 3,
+) -> NativeServiceEstimate | None:
+    """Retain measured larger-copy costs for a smaller FULL-only payload."""
+    if type(size_bytes) is not int or size_bytes <= 0:
+        return None
+    larger = [
+        sample for sample in samples
+        if sample.direction == "h2d" and sample.shape == "full"
+        and sample.size_bytes >= size_bytes
+    ]
+    if len(larger) < minimum:
+        return None
+    chosen = sorted(larger, key=lambda sample: sample.size_bytes)[:16]
+    timings = [sample.submit_to_ack_ms for sample in chosen]
+    queues = [
+        sample.enqueue_to_submit_ms for sample in chosen
+        if sample.enqueue_to_submit_ms is not None
+    ]
+    return NativeServiceEstimate(
+        float(median(timings)), percentile(timings, .9),
+        percentile(queues, .9) if queues else None, len(chosen),
+        "measured_larger_full_payload_without_downscaling",
+    )
+
+
 def native_service_planning_ceiling(
     samples: Iterable[NativeServiceSample | tuple[int, float]], max_size_bytes: int,
 ) -> tuple[float, float] | None:

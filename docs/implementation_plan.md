@@ -5,6 +5,46 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+V97 was administratively interrupted at2026-10-20 13:59:38 Asia/Shanghai
+for the user's latest-code restart, with16/36 completed and20 without terminal
+results (V2177). Preserve all partial traces and frozen code; this is not a
+crash or natural task failure. V2178 finds zero pre-boundary-issued and
+successor-reused FULL across6 completed JOIN waits despite positive plans.
+Start-window records and ACK counts cannot substitute for that metric.
+
+The V98 candidate passes1849 current CPU cases without skips (V2180).
+Freeze and launch predictive promptly using the same36-root common contract
+and completed V96 native development reference. No performance acceptance yet.
+
+Post-V97 main candidate connects native EOS to critical parent capacity demand.
+Price the same safe input checkpoint before free-list constraints; include native
+input/decode reserves and bound demand by the existing EOS evidence lifetime.
+No report forecast or supported DMA timing is required for capacity preparation;
+physical transfers retain their existing independent checks. Distinguish capacity
+rejection from no Host restore target. V2175 passes420 relevant current CPU cases;
+V2176 reproduces the frozen49fc2a8 omission before the fix, with no DMA credit.
+The stopped V97 snapshot is unchanged. Demand still requires WAIT_JOIN and
+current EOS evidence; unlock-through-first-service coordination is not complete.
+
+A bounded FULL-only timing fallback uses recent measured larger payloads when
+ordinary estimates have no support. Keep raw ACK/queue durations without byte
+downscaling, require3 samples, use nearest16 from the existing32/300s pool,
+and retain current estimate caching/expiry. V2179 supports18/22 historical
+independent waits, about294MB of maximum plans, not proven early DMA.
+Only4 actual validation copies exist and1 exceeds estimated P90; do not claim
+a calibrated percentile or guaranteed upper bound. No new per-decode scan,
+Mamba mixing, larger-target extrapolation or common-workload change.
+
+Latest complete V96 geometry audit V2169 uses the existing common cutoff.
+Fifty matched decode cohorts cover60483/52314 batches; their common minimum
+weight20769 yields13.947/13.936ms worker means, about0.08% apart. Actual mean
+contexts are147846/101414 tokens. This is descriptive matching, not proof of zero
+control cost or a causal throughput/JCT adjustment. V2171 coarse short-prefill
+work/prefix/neighbor matching still differs5.73%;16-token work bins have no
+sufficient common cohort. V2172's sampled post-launch physical CPU mean0.422ms
+is not a whole-run cost; selection/run_batch/result differences still confound
+work. Keep short-prefill and actual prefetch/consumption acceptance open.
+
 Current V97 candidate implements immediate tool-wait capacity donation and has
 passed1829 current CPU cases (V2166). For a live near-term critical parent
 restore, another current-session agent in WAIT_TOOL needs no duration model,

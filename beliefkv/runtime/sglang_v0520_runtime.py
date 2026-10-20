@@ -93,6 +93,7 @@ from beliefkv.runtime.native_h2d_seed import load_h2d_seed
 from beliefkv.runtime.native_transfer_service import (
     NativeServiceEstimate,
     NativeServiceSample,
+    estimate_larger_full_h2d,
     estimate_native_service,
     load_native_service_seed,
     native_service_planning_ceiling,
@@ -2906,12 +2907,41 @@ class NativeAdmissionRuntime:
                 continue
             remaining_ms = 0.
             self.counts["observed_eos_h2d_candidate"] += 1
-            observation = self._wait_prefetch_opportunity(stage.key)
+            observation = self._wait_prefetch_opportunity(
+                stage.key, include_checkpoint_plan=self._borrowable_parent_headroom,
+            )
+            cost_plan = None
+            if self._borrowable_parent_headroom and observation is not None:
+                cost_plan = self._report_restore_cost_plan(observation)
+                if cost_plan.step is not None:
+                    budget = self._current_residency_budget(
+                        include_evictable=True, headroom=getattr(cost_plan, "headroom", None),
+                    )
+                    # EOS can follow an exhausted/missing report forecast. Its
+                    # safe checkpoint still needs capacity before any enqueue.
+                    self._set_critical_parent_demand(
+                        stage.key,
+                        cost_plan.required_full_tokens + budget.reserve_full_tokens,
+                        cost_plan.required_mamba_slots + budget.reserve_mamba_slots,
+                        min(
+                            stage.expires_at,
+                            (
+                                self._semantic_finished[rid][0]
+                                + self.eos_prefetch_evidence_window_ms
+                            ) / 1000.,
+                        ),
+                    )
+                    self.counts["observed_eos_capacity_preparation"] += 1
             if observation is None or observation.step is None:
-                self.counts["observed_eos_no_host_target"] += 1
+                capacity_blocked = cost_plan is not None and cost_plan.step is not None
+                self.counts[
+                    "observed_eos_capacity_blocked" if capacity_blocked
+                    else "observed_eos_no_host_target"
+                ] += 1
                 self._record_wait_prefetch_plan(
                     "join_ticket", stage.key, observation,
-                    reason="no_restore_plan", remaining_ms=remaining_ms,
+                    reason="capacity_budget" if capacity_blocked else "no_restore_plan",
+                    remaining_ms=remaining_ms,
                 )
                 continue
             cache = self._native_cache
@@ -6805,6 +6835,12 @@ class NativeAdmissionRuntime:
             estimate = estimate_native_service(
                 (sample for _, sample in recent_full), size_bytes, shape="full",
             )
+            if estimate is None:
+                estimate = estimate_larger_full_h2d(
+                    (sample for _, sample in recent_full), size_bytes,
+                )
+                if estimate is not None:
+                    self.counts["h2d_larger_full_payload_supported"] += 1
             self.counts["h2d_full_service_fallback_computed"] += 1
             if estimate is not None:
                 self.counts["h2d_full_service_fallback_supported"] += 1
