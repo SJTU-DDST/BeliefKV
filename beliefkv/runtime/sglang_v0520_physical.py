@@ -378,9 +378,8 @@ def inspect_session_residency_hint(cache: object, request: object) -> dict | Non
             return None
         root, lookup = tree.root_node, tree.node_by_id
         limit = max(0, len(request.origin_input_ids) - 1)
-        namespace = (
-            getattr(request, "extra_key", None), getattr(request, "cache_salt", None),
-        )
+        extra_key = getattr(request, "extra_key", None)
+        cache_salt = getattr(request, "cache_salt", None)
         states = {} if len(leaves) > 1 else None
         best_prefix = device_prefix = best_device = best_missing = 0
         best_mamba = None
@@ -398,10 +397,13 @@ def inspect_session_residency_hint(cache: object, request: object) -> dict | Non
             full_device = full_available = True
             pending = pending_load = False
             while current is not root:
-                if current is None or current.id in seen or lookup(current.id) is not current:
+                if current is None:
                     return None
-                seen.add(current.id)
-                prior = states.get(current.id) if states is not None else None
+                node_id = current.id
+                if node_id in seen or lookup(node_id) is not current:
+                    return None
+                seen.add(node_id)
+                prior = states.get(node_id) if states is not None else None
                 if prior is not None:
                     if prior is False:
                         chain.clear()
@@ -417,7 +419,7 @@ def inspect_session_residency_hint(cache: object, request: object) -> dict | Non
                 key = node.key
                 if (
                     getattr(key, "is_bigram", False)
-                    or (key.extra_key, key.cache_salt) != namespace
+                    or key.extra_key != extra_key or key.cache_salt != cache_salt
                 ):
                     return None
                 prefix += len(key)
@@ -426,27 +428,29 @@ def inspect_session_residency_hint(cache: object, request: object) -> dict | Non
                         states[node.id] = False
                     break
                 full, state = node.component_data[0], node.component_data[2]
-                full_device = full_device and full.value is not None
+                full_value, full_host = full.value, full.host_value
+                state_value = state.value
+                load_pending = node.load_back_pending_id is not None
+                full_device = full_device and full_value is not None
                 full_available = full_available and (
-                    full.value is not None or full.host_value is not None
+                    full_value is not None or full_host is not None
                 )
-                if full.value is None and full.host_value is not None:
-                    shape = getattr(full.host_value, "shape", None)
-                    missing += int(shape[0]) if shape is not None else len(full.host_value)
+                if full_value is None and full_host is not None:
+                    shape = getattr(full_host, "shape", None)
+                    missing += int(shape[0]) if shape is not None else len(full_host)
                 pending = pending or (
-                    node.write_through_pending_id is not None
-                    or node.load_back_pending_id is not None
+                    node.write_through_pending_id is not None or load_pending
                 )
-                pending_load = pending_load or node.load_back_pending_id is not None
-                if state.value is not None or state.host_value is not None:
-                    ready = full_device and state.value is not None and not pending_load
+                pending_load = pending_load or load_pending
+                if state_value is not None or state.host_value is not None:
+                    ready = full_device and state_value is not None and not pending_load
                     if ready:
                         device_prefix = prefix
                     if full_available and (ready or not pending) and prefix > best_prefix:
                         best_prefix = prefix
                         best_device = device_prefix
                         best_missing = missing
-                        best_mamba = int(state.value is None)
+                        best_mamba = int(state_value is None)
                 if states is not None:
                     states[node.id] = (
                         prefix, missing, device_prefix, full_device,

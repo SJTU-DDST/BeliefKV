@@ -28,7 +28,7 @@ these are checks, not136 independent missed opportunities. Within the existing
 near-stage lead, a live last-child report can arm restore plus native input/decode
 capacity even without a supported timing estimate. DMA still requires the original
 ticket, timing, ownership, free-capacity and dependency checks. V2106 reproduces
-the old/new behavior with zero physical commands. All1118 distinct current-source
+the old/new behavior with zero physical commands. All1118 distinct V92 candidate
 CPU cases pass after explicit local-tokenizer rechecks supersede two initial skips;
 two passing subtests are not extra cases. See V2107–V2109.
 V92 includes this fix and the two control reductions below. Qualification verifies
@@ -45,6 +45,26 @@ justifies post-hoc task exclusion/counterfactual throughput correction nor attri
 all excess prefill to control work. First-root input work is close; continuation,
 child and compaction work differ. FULL/effective-prefix gaps are not per-layer GPU
 recomputation or removable JCT. Follow the latest V92 trace before changing arrivals.
+
+The subsequent main-only residency reader removes repeated node/component field
+reads and per-node namespace comparison tuples. It adds no cache and retains node,
+namespace, transfer and final native validation. V2114 passes597 related CPU cases;
+V2113 separately checks120 differential fixture layouts and8 whole-planner controls
+with identical plans, counters, budgets and native lookups. The8-request/64-node
+thread-CPU P50 is560.634 to534.131us, and16 requests587.058 to555.254us.
+Keep the single-request warm-hint0.026us regression. This is not in live V92 and
+does not establish GPU/JCT improvement.
+
+V2112/V2115 seal an initial V92 prefix:38 FULL receipts/296.038MB all have
+first-service reuse; one independent JOIN issues before completion and reuses
+123.597MB. The35 critical-capacity checks concern two parents and free nothing;
+all1935 scanned native leaves are unbacked. Triggering the repaired path is not
+successful capacity handoff. Twelve expired lease receipts are still reused,
+with no observed before-first-service native reload; expiry alone is not waste
+or a reason to extend protection. Next inspect safe waiting-agent backup versus
+actually reclaimable leaves, and remove repeated ineffective scanning only with
+sound native invalidation. Continue the immutable V92 snapshot absent a confirmed
+material bug; these independently sealed prefixes are not a whole-run result.
 
 Main now skips causal/residency ranking only when a committed chunk has exhausted
 the current integer input budget, all native inputs are nonempty, DLLM is absent,
