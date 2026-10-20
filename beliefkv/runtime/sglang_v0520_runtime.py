@@ -910,12 +910,12 @@ class NativeAdmissionRuntime:
         # Earlier handlers can cross a deadline or rearm another source.
         # Read each existing deadline at its original dispatch position.
         if self.enable_prepare_host:
+            if self._critical_parent_demand is not None:
+                self._reclaim_critical_parent_headroom()
             if time.monotonic() * 1000. >= self._join_prepare_next_ms:
                 self.dispatch_join_prepare(waiting_queue, running_batch=running_batch)
             if time.monotonic() * 1000. >= self._tool_prepare_next_ms:
                 self.dispatch_tool_prepare(waiting_queue, running_batch=running_batch)
-            if self._critical_parent_demand is not None:
-                self._reclaim_critical_parent_headroom()
 
     def predictor_fileno(self) -> int | None:
         if self._semantic_worker is not None:
@@ -1238,6 +1238,13 @@ class NativeAdmissionRuntime:
                     )
                 if context_id is not None:
                     key = self.context_sessions.get(context_id)
+                    if (
+                        event.kind is RuntimeEventKind.TOOL_START and key is not None
+                        and self._critical_tool_donor(key)
+                    ):
+                        self._prepare_probe_after_ms.pop(key, None)
+                        self._tool_prepare_next_ms = 0.
+                        self.counts["critical_tool_boundary_rearmed"] += 1
                     if key is not None and self._terminal(key):
                         self._track_terminal_cache(key)
                         returned = terminal_returns.get(key.invocation_id)
@@ -3089,7 +3096,7 @@ class NativeAdmissionRuntime:
                 )
                 # Reclaim enough for restoration and its native service reserve;
                 # unsupported DMA timing must not prevent safe capacity preparation.
-                self._critical_parent_demand = (
+                self._set_critical_parent_demand(
                     stage.key, cost_plan.required_full_tokens + budget.reserve_full_tokens,
                     cost_plan.required_mamba_slots + budget.reserve_mamba_slots,
                     time.monotonic() + max(1., remaining / 1000.),
@@ -5446,21 +5453,17 @@ class NativeAdmissionRuntime:
                 include_non_actionable=True,
                 host_full_free_tokens=host_full_free_tokens,
             )
+        cache = self._native_cache
+        key = self.context_sessions.get(context_id)
+        if cache is not None and key is not None and self._critical_tool_donor(key):
+            return self.capture_shadow_candidate(
+                cache, context_id=key.context_id, context_epoch=key.context_epoch,
+                include_non_actionable=True,
+                host_full_free_tokens=host_full_free_tokens,
+            )
         hint = (self.tool_wait_hints.get(context_id) if context_id is not None
                 else self.tool_wait_hint)
-        cache = self._native_cache
         if hint is None or cache is None:
-            key = self.context_sessions.get(context_id)
-            if (
-                cache is not None and key is not None
-                and self._live_critical_parent_demand() is not None
-                and self._long_tool_wait(key)
-            ):
-                return self.capture_shadow_candidate(
-                    cache, context_id=key.context_id, context_epoch=key.context_epoch,
-                    include_non_actionable=True,
-                    host_full_free_tokens=host_full_free_tokens,
-                )
             return None
         key = hint.key
         invocation = self.graph.invocations.get(key.invocation_id)
@@ -6107,7 +6110,12 @@ class NativeAdmissionRuntime:
                     and (state.host_value is not None or step.include_mamba)
                 )
             )
-            hint = self._live_tool_hint(step.key)
+            # A critical restore needs capacity regardless of this donor's
+            # forecast. Native locks and its current tool wait still govern it.
+            hint = (
+                None if self._critical_tool_donor(step.key)
+                else self._live_tool_hint(step.key)
+            )
             if hint is not None:
                 service = self._estimate_d2h_service(
                     transfer_bytes, shape=pool_shape(full_units, mamba_units),
@@ -6151,6 +6159,11 @@ class NativeAdmissionRuntime:
         burst_command_ids: tuple[str, ...] = (),
     ) -> None:
         if self._opportunity_writer is not None:
+            demand = (
+                self._live_critical_parent_demand()
+                if source == "tool_wait" and self._critical_tool_donor(step.key)
+                else None
+            )
             self._opportunity_writer.record({
                 "event": "prepare_candidate_selected", "ts_ms": time.time() * 1000.,
                 "command_id": command_id,
@@ -6161,6 +6174,12 @@ class NativeAdmissionRuntime:
                 "transfer_bytes": rank[1], "scanned_candidates": scanned,
                 "burst_command_ids": burst_command_ids or (command_id,),
                 "estimate_scope": "selected_first_extent",
+                "selection_reason": (
+                    "critical_parent_tool_wait" if demand is not None
+                    else "waiting_parent" if source == "join_prepare"
+                    else "predicted_long_tool_wait"
+                ),
+                "beneficiary_context_id": demand[0].context_id if demand is not None else None,
             })
 
     def _prepare_pressure(
@@ -6170,14 +6189,14 @@ class NativeAdmissionRuntime:
         slots = min(len(waiting_queue), 8)
         if self._native_max_running is not None:
             slots = min(slots, max(1, self._native_max_running - running))
-        if not slots and not running:
+        demand = self._live_critical_parent_demand()
+        if not slots and not running and demand is None:
             self.counts["prepare_no_service_demand"] += 1
             return False, False
         # Reserve a next-prefill window and one decode page per active request.
         # An occupied cache alone is not competing demand, nor free capacity.
         full_reserve = self._native_page_size * running + 8192 * slots
         mamba_reserve = 4 * slots
-        demand = self._live_critical_parent_demand()
         if demand is not None:
             full_reserve = max(full_reserve, demand[1])
             mamba_reserve = max(mamba_reserve, demand[2])
@@ -6201,6 +6220,33 @@ class NativeAdmissionRuntime:
             self._critical_parent_demand = None
             return None
         return demand
+
+    def _set_critical_parent_demand(
+        self, key: PrefillCandidateKey, full_tokens: int, mamba_slots: int,
+        expires: float,
+    ) -> None:
+        prior = self._live_critical_parent_demand()
+        self._critical_parent_demand = (key, full_tokens, mamba_slots, expires)
+        if (
+            prior is None or prior[0] != key
+            or full_tokens > prior[1] or mamba_slots > prior[2]
+        ):
+            # Rearm once when competing demand appears, not on every report tick.
+            self._tool_prepare_next_ms = self._critical_reclaim_next_ms = 0.
+            for donor in self._waiting_context_keys(InvocationState.WAIT_TOOL):
+                if self._critical_tool_donor(donor):
+                    self._prepare_probe_after_ms.pop(donor, None)
+
+    def _critical_tool_donor(self, key: PrefillCandidateKey) -> bool:
+        invocation = self.graph.invocations.get(key.invocation_id)
+        if (
+            self.context_sessions.get(key.context_id) != key
+            or invocation is None or invocation.state is not InvocationState.WAIT_TOOL
+            or not invocation.active_tool_calls or self._terminal(key)
+        ):
+            return False
+        demand = self._live_critical_parent_demand()
+        return demand is not None and demand[0] != key
 
     def _reclaim_critical_parent_headroom(self) -> None:
         demand = self._live_critical_parent_demand()
@@ -6359,18 +6405,12 @@ class NativeAdmissionRuntime:
         return None
 
     def _long_tool_wait(self, key: PrefillCandidateKey) -> bool:
+        if self._critical_tool_donor(key):
+            return True
         hint = self._live_tool_hint(key)
         if hint is None:
-            demand = self._live_critical_parent_demand()
-            invocation = self.graph.invocations.get(key.invocation_id)
-            return bool(
-                demand is not None and demand[0] != key
-                and invocation is not None
-                and invocation.state is InvocationState.WAIT_TOOL
-                and invocation.active_tool_calls
-                and time.monotonic() * 1000. - invocation.updated_ts_ms >= TOOL_OFFLOAD_WAIT_MS
-            )
-        now_ms = time.monotonic() * 1000
+            return False
+        now_ms = time.monotonic() * 1000.
         if hint.release_cdf:
             probability = hint.release_probability_within(TOOL_OFFLOAD_WAIT_MS, now_ms=now_ms)
             return probability is not None and probability <= .1
@@ -6381,7 +6421,7 @@ class NativeAdmissionRuntime:
     def dispatch_tool_prepare(
         self, waiting_queue: Sequence[object] = (), *, running_batch: object = None,
     ) -> None:
-        """Back long external waits; native allocator alone decides demotion."""
+        """Back predicted long waits or tool-idle donors for a critical restore."""
         if not self.enable_prepare_host or self.physical_disabled or self._native_cache is None:
             return
         now_ms = time.monotonic() * 1000
@@ -8820,6 +8860,8 @@ class NativeAdmissionRuntime:
                 and key.context_epoch in (action.context_epoch, action.context_epoch + 1)
             ):
                 self._invalidate_wait_transfer_observation(key)
+                if self._critical_tool_donor(key):
+                    self._critical_reclaim_next_ms = 0.
             self._register_prefetch_service_lease(action)
             issued = self._prefetch_issue_times.pop(action.command_id, None)
             submitted = getattr(commit, "submit_ts_ms", None)

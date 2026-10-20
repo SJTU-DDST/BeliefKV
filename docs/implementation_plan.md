@@ -5,7 +5,38 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-Current V96 supersedes the historical workload below. It launched2026-10-20
+Current V97 candidate implements immediate tool-wait capacity donation and has
+passed1829 current CPU cases (V2166). For a live near-term critical parent
+restore, another current-session agent in WAIT_TOOL needs no duration model,
+minimum wait age or round-trip window to become a FULL backup/reclaim candidate.
+Rearm at TOOL_START and once for new/growing critical demand. Reclaim valid
+backed cold capacity before more backups; D2H ACK, current waiting state,
+native ownership, references, locks and inflight checks still precede release.
+Ordinary tool policy is unchanged without critical demand; Mamba PREPARE stays
+off. Actual DMA, donor-to-parent consumption and performance remain unverified.
+Next run is predictive-only against completed V96 native, with the same36-root
+simultaneous arrivals/common harness/tasks/engine/capacity contract.
+
+V96 completed2026-10-20 13:20:32 Asia/Shanghai. V2167 applies the existing
+common600–1793.304s cutoff: decode470.235/542.871 token/s remains13.38%
+lower; restricted mean1362.907/1192.747s is14.27% higher. Both arms have36
+completed outcomes; predictive has35 natural/JCT-qualified tasks, with one
+existing-budget finalization retained and qualified separately. Quality is
+ungraded. JOIN/tool FULL transferred and reused1.470GB; pre-boundary issuance
+and successor reuse1.230GB. The10GB and native-relative goals remain active.
+
+Delegation regression is explicit: the old profile forced initial task/[2,4]
+generation and prompted fixed phases/coordinator roles; the dynamic profile
+uses auto without initial fanout bounds. V96 predictive has3 delegating roots,
+6 JOINs/11 children, versus31 native JOINs; neither arm has nested children.
+Do not describe this as lost JOIN events or solely a dataset property. Do not
+silently restore fixed phases/roles or RETURN gates. Any future common-harness
+change requires a new matched native reference. V2161/V2164 tested the
+superseded1-second fallback, not the current immediate policy. Withdraw the
+inconclusive estimator micro-optimization rather than crediting its median
+improvement while omitting its P99 regression.
+
+V96 historical startup supersedes the older workload below. It launched2026-10-20
 11:49:59 Asia/Shanghai from frozen63625de:36 simultaneous roots, predictive
 first, then fresh native. All36 offsets are zero and all historical native
 reference arguments are cleared. The9 projects and36 distinct original tasks
