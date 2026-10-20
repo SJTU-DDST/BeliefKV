@@ -50,6 +50,30 @@ Freeze V103 to this qualification; preserve the existing watcher, exact pause,
 restore and first service, total control cost, trimmed throughput and mean JCT.
 Overall performance acceptance remains open.
 
+V2383-V2385 extend CPU evidence without changing runtime or native sources.
+V2384 exercises actual HybridCacheController.load, CPU allocation, native
+start_loading, per-command receipts/loading ACK and runtime reconciliation.
+An available two-unit FULL prefix starts while donor D2H is pending. Both
+D2H-first and H2D-first ACK orders release two donor units and restore the
+two-unit tail: two H2D commands/four FULL units, no pending ledger entries.
+An explicit first-service observer call releases both leases and native locks.
+This is confirmed recovery after RETURN. DMA/events, Host geometry, growth
+reserves, one-node donor scan and first service are fixtures; no forward,
+verified token reuse, pre-RETURN prefetch or GPU overlap/performance is proved.
+
+V2385 changes donor readiness, running state, owner generation or device lock
+between D2H submit and ACK. All four preserve the protected resident FULL,
+Mamba, allocator and both component refs. A locked donor may cause a backup
+of a different eligible cold donor; do not turn per-page protection into a
+global backup veto. Positive donors wait on independent tools, since a shared
+child RETURN may also unlock a sibling JOIN.
+
+V2383 profiles the current PREPARE source: whole-owner pruning dominates this
+forced-due CPU fixture, but mock calls prevent an online absolute-cost claim.
+Retain cleanup pending stronger evidence rather than change authorization or
+the publication prefix from this profile alone. Keep V2381's actual2532/375
+test qualification; do not count these supplemental cases as a suite rerun.
+
 Historical qualification V2370: native FULL-only discovery accumulates enough
 candidate tokens for the current capacity deficit rather than selecting eight
 victims before doing any transaction. Keep bulk processing for large deficits.
