@@ -12,7 +12,28 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-Latest qualification is V2404. A WAIT_JOIN donor first checks whether the
+Latest qualification is V2408. This change is offline accounting only; retain
+V2404 runtime behavior. The sealed dispatch funnel includes both submitted and
+submitted_partial in submitted_before_completion,with separate reason-event
+counts. Deduplicate repeated logs per JOIN/tool episode;reason counts can
+overlap. Strict pre-completion timestamps and unknown completion remain distinct.
+Enqueueing a selected burst never proves a complete checkpoint or verified reuse.
+Keep actual bytes/first use under the existing per-command ACK/use evidence.
+
+V2406 extracts the exact old funnel AST from frozen9d30760. Controlled partial
+JOIN/tool episodes change submission count0->1 and start-without-submit1->0.
+Both actual CLI auditors reread the complete V101 prefixes:all lifecycle/ACK/
+use/byte conclusions and previous funnel counts match. V101 has no partial
+reason;early submission counts remain29 JOIN/46 tool,no extra physical benefit.
+
+V2407 reruns2584 prior application cases plus18 boundary/deduplication cases,
+2602 passing. Rehash unchanged runtime/native sources and retain V2402b CPU
+control plus375 actual V2380 engine cases,including all earlier outlier evidence;
+do not claim another performance/engine run. Freeze V103 from V2408 with the
+existing36-root/running8/256K/95%/Host200GB80:20 contract,watcher,exact pause
+and2026-10-21T06:00:00+08:00 hold. Performance acceptance remains open.
+
+Historical runtime qualification V2404: a WAIT_JOIN donor first checks whether the
 stored critical demand names the same invocation. Only then validate the live
 demand and its final complete key. Preserve same-invocation checkpoint rebinding,
 matching expiry checks, donor terminal validation, complete owner pruning,

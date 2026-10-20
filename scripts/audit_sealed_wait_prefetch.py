@@ -59,6 +59,52 @@ class SealedRecords:
         self.prefixes[str(path)] = evidence
 
 
+def dispatch_funnel(groups: dict, plans: dict) -> dict:
+    sources = {}
+    for source in ("join_ticket", "tool_wait"):
+        counts, reasons, details = Counter(), Counter(), Counter()
+        for identity, wait in groups.items():
+            if identity[0] != source:
+                continue
+            completion = wait.get("completion_ts_ms")
+            counts["observed_events"] += 1
+            if completion is None:
+                counts["completion_unknown"] += 1
+                continue
+            counts["completion_observed"] += 1
+            before = [
+                row for row in plans.get(identity, ()) if row["ts_ms"] < completion
+            ]
+            starts = [row for row in before if row["reason"] == "start_window"]
+            submitted = any(
+                row["reason"] in ("submitted", "submitted_partial") for row in before
+            )
+            counts["positive_full_plan_before_completion"] += any(
+                (row.get("planned_full_tokens") or 0) > 0 for row in before
+            )
+            counts["start_before_completion"] += bool(starts)
+            counts["submitted_before_completion"] += submitted
+            counts["events_with_submitted_reason_before_completion"] += any(
+                row["reason"] == "submitted" for row in before
+            )
+            counts["events_with_submitted_partial_reason_before_completion"] += any(
+                row["reason"] == "submitted_partial" for row in before
+            )
+            counts["start_without_submit_before_completion"] += bool(
+                starts and not submitted
+            )
+            reasons.update({row["reason"] for row in before})
+            details.update({
+                row["no_step_reason"] for row in before if row.get("no_step_reason")
+            })
+        sources[source] = {
+            "event_counts": dict(counts),
+            "events_with_observed_reason_before_completion": dict(reasons),
+            "events_with_observed_no_step_reason_before_completion": dict(details),
+        }
+    return sources
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--arm", type=Path, required=True)
@@ -86,47 +132,17 @@ def main():
             reclaimed.append(row)
         elif row["event"] == "wait_prefetch_plan":
             plans[lifecycle.wait_event_identity(row)].append(row)
-    sources = {}
-    for source in ("join_ticket", "tool_wait"):
-        counts, reasons, details = Counter(), Counter(), Counter()
-        for identity, wait in groups.items():
-            if identity[0] != source:
-                continue
-            completion = wait.get("completion_ts_ms")
-            counts["observed_events"] += 1
-            if completion is None:
-                counts["completion_unknown"] += 1
-                continue
-            counts["completion_observed"] += 1
-            before = [
-                row for row in plans[identity] if row["ts_ms"] < completion
-            ]
-            starts = [row for row in before if row["reason"] == "start_window"]
-            submitted = [row for row in before if row["reason"] == "submitted"]
-            counts["positive_full_plan_before_completion"] += any(
-                (row.get("planned_full_tokens") or 0) > 0 for row in before
-            )
-            counts["start_before_completion"] += bool(starts)
-            counts["submitted_before_completion"] += bool(submitted)
-            counts["start_without_submit_before_completion"] += bool(
-                starts and not submitted
-            )
-            reasons.update({row["reason"] for row in before})
-            details.update({
-                row["no_step_reason"] for row in before if row.get("no_step_reason")
-            })
-        sources[source] = {
-            "event_counts": dict(counts),
-            "events_with_observed_reason_before_completion": dict(reasons),
-            "events_with_observed_no_step_reason_before_completion": dict(details),
-        }
+    sources = dispatch_funnel(groups, plans)
     report["sealed_dispatch_funnel"] = {
         "sources": sources,
         "reclaim_records": reclaimed,
         "semantics": (
             "Independent wait episodes with recorded completion boundaries; reasons "
             "can overlap. Pending/unobserved boundaries are unknown, not misses. "
-            "Positive plans and cumulative checks do not prove available capacity."
+            "Submitted includes submitted and submitted_partial; their reason "
+            "counts can overlap within one event. A submitted burst is not proof "
+            "of a complete checkpoint or next-request reuse. Positive plans and "
+            "cumulative checks do not prove available capacity."
         ),
     }
     report["runtime_state_at_recorded_prefix_end"] = state
