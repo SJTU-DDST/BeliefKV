@@ -11,6 +11,9 @@ from statistics import median
 from typing import Iterable
 
 
+INCREMENTAL_BYTES_PER_MS = 24_000_000.
+
+
 @dataclass(frozen=True)
 class NativeServiceSample:
     size_bytes: int
@@ -95,7 +98,7 @@ def estimate_native_service(
     chosen = sorted(compatible, key=lambda pair: pair[1])[:16]
     # Estimate only the incremental byte cost; the ACK/polling overhead is fixed.
     timings = [
-        row.submit_to_ack_ms + max(0, size_bytes - row.size_bytes) / 24_000_000.
+        row.submit_to_ack_ms + max(0, size_bytes - row.size_bytes) / INCREMENTAL_BYTES_PER_MS
         for row, _ in chosen
     ]
     queues = [
@@ -106,6 +109,29 @@ def estimate_native_service(
         float(median(timings)), percentile(timings, .9),
         percentile(queues, .9) if queues else None, len(chosen), support,
     )
+
+
+def native_service_planning_ceiling(
+    samples: Iterable[NativeServiceSample | tuple[int, float]], max_size_bytes: int,
+) -> tuple[float, float] | None:
+    """Bound the current estimator for planning deferral, never authorize DMA."""
+    if type(max_size_bytes) is not int or max_size_bytes <= 0:
+        return None
+    service = enqueue = 0.
+    found = False
+    for item in samples:
+        sample = item if isinstance(item, NativeServiceSample) else NativeServiceSample(*item)
+        if sample.direction != "h2d":
+            continue
+        found = True
+        # Every supported estimate is a quantile of a subset of these costs.
+        service = max(
+            service,
+            sample.submit_to_ack_ms
+            + max(0, max_size_bytes - sample.size_bytes) / INCREMENTAL_BYTES_PER_MS,
+        )
+        enqueue = max(enqueue, sample.enqueue_to_submit_ms or 0.)
+    return (service, enqueue) if found else None
 
 
 def load_native_service_seed(path: str, sha256: str) -> tuple[NativeServiceSample, ...]:

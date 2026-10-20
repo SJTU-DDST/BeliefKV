@@ -5,6 +5,19 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Main now avoids full report-phase capture when even a conservative upper bound
+of the current timing rule cannot enter its existing two-window capacity lead.
+The bound uses the safe input, at most eight checkpoint paths and current H2D
+samples; it is not a prediction of actual future DMA latency or authorization.
+Near stages bypass this bound, unknown metadata falls back, new timing evidence
+is read each time, and EOS/live native checks remain. V2139 passes1603 distinct
+cases with no skips, including the previous1582 plus15 boundary cases and6 old
+estimator controls. V2137's64-node distant CPU P50 is519.595 to21.845us;
+V2138's saturated histories give518.919 to113.569us. Preserve near-stage about3%
+regressions and initial V2134–V2136 results. V2132 is a15-second external V93 GIL
+development profile,725 samples/0 errors, not exclusive CPU accounting or a
+clean formal performance arm. Freeze the new candidate separately after V93.
+
 The next main-only simplification uses one ordered ancestry dict instead of a
 temporary list plus cycle-detection set in residency ordering. Node identity,
 namespace, transfer and native admission checks remain; no cross-call cache is

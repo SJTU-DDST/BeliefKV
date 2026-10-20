@@ -95,6 +95,7 @@ from beliefkv.runtime.native_transfer_service import (
     NativeServiceSample,
     estimate_native_service,
     load_native_service_seed,
+    native_service_planning_ceiling,
     pool_shape,
 )
 from beliefkv.runtime.native_transfer_policy import (
@@ -3013,6 +3014,40 @@ class NativeAdmissionRuntime:
             return None
         return remaining * 1000. / rate
 
+    def _report_planning_ceiling_ms(self, key: PrefillCandidateKey) -> float | None:
+        tokens = self._context_tokens.get(key.context_id)
+        if (
+            tokens is None or tokens[0] != key.context_epoch
+            or type(tokens[1]) is not int or tokens[1] <= 1
+        ):
+            return None
+        try:
+            entries = self._native_cache.cache_controller.mem_pool_host.entry_map
+            full_unit = entries["kv"].host_pool.size_per_token
+            mamba_unit = entries["mamba"].host_pool.size_per_token
+        except (AttributeError, KeyError, TypeError):
+            return None
+        if (
+            type(full_unit) is not int or full_unit <= 0
+            or type(mamba_unit) is not int or mamba_unit <= 0
+        ):
+            return None
+        # Capture permits at most eight leaves. Each selected FULL path fits
+        # the safe input and needs at most one state. Count shared paths again
+        # for a conservative byte bound, independent of current residency.
+        maximum_bytes = 8 * ((tokens[1] - 1) * full_unit + mamba_unit)
+        ceiling = native_service_planning_ceiling(chain(
+            self._native_service_samples, self._h2d_samples,
+            (sample for _, sample in self._h2d_full_service_samples),
+        ), maximum_bytes)
+        if ceiling is None:
+            return None
+        service, enqueue = ceiling
+        return max(
+            self.prefetch_lead_ms,
+            service + enqueue + SEMANTIC_FRAME_INTERVAL_MS,
+        )
+
     def _roll_report_service_prefetch(self) -> SessionH2DOpportunity | None:
         if (
             not (self.enable_final_stage_prefetch or self.enable_admission_prefetch)
@@ -3030,6 +3065,13 @@ class NativeAdmissionRuntime:
             remaining = self._report_remaining_ms(stage)
             if remaining is None:
                 continue
+            if remaining > 2 * self.prefetch_lead_ms:
+                ceiling = self._report_planning_ceiling_ms(stage.key)
+                if ceiling is not None and remaining > 2 * ceiling:
+                    # Neither transfer nor the existing two-window capacity lead
+                    # can start yet. Near stages still recapture every live page.
+                    self.counts["report_service_planning_deferred"] += 1
+                    continue
             observation = self._wait_prefetch_opportunity(
                 stage.key, include_checkpoint_plan=True,
             )
