@@ -500,7 +500,7 @@ def has_host_backed_missing_copy(
                     return None
                 leaves[node_id] = node
         checked = {}
-        missing_state = False
+        missing_copy = False
         single_leaf = components[0][0][0] if len(components[0]) == 1 else None
         single_path_nodes = None
         for leaf_id, node in leaves.items():
@@ -522,30 +522,37 @@ def has_host_backed_missing_copy(
                 if (full.value is None or len(full.value) == 0) and (
                     full.host_value is not None and len(full.host_value) > 0
                 ):
-                    return True
-                if state.value is None and state.host_value is not None:
-                    if not input_checkpoint_only or input_limit is None:
+                    if input_limit is None:
                         return True
-                    missing_state = True
+                    missing_copy = True
+                if state.value is None and state.host_value is not None:
+                    if input_limit is None:
+                        return True
+                    missing_copy = True
                 checked[node_id] = node
                 node = node.parent
             if leaf_id == single_leaf:
                 single_path_nodes = len(checked)
-        if not missing_state:
+        if not missing_copy:
             return False
-        # FULL is resident everywhere. Only the deepest input-compatible state
-        # on each FULL path can produce a restore; older states are irrelevant.
+        # Only the deepest input-compatible state and its FULL ancestors are
+        # reusable. A Host-only output tail cannot create a recovery target.
         if single_path_nodes == len(checked):
-            prefix, selected_missing = 0, False
+            prefix, missing_full, selected_missing = 0, False, False
             for node in reversed(checked.values()):
                 prefix += len(node.key)
                 if prefix > input_limit:
                     break
+                full = node.component_data[0]
+                missing_full = missing_full or (
+                    (full.value is None or len(full.value) == 0)
+                    and full.host_value is not None and len(full.host_value) > 0
+                )
                 state = node.component_data[2]
                 if node.parent is not None and (
                     state.value is not None or state.host_value is not None
                 ):
-                    selected_missing = state.value is None
+                    selected_missing = missing_full or state.value is None
             return selected_missing
         checkpoints = {}
         for leaf_id, _ in components[0]:
@@ -553,15 +560,22 @@ def has_host_backed_missing_copy(
             while node is not None and node.id not in checkpoints:
                 chain.append(node)
                 node = node.parent
-            prefix, selected_missing = checkpoints[node.id] if node is not None else (0, False)
+            prefix, missing_full, selected_missing = (
+                checkpoints[node.id] if node is not None else (0, False, False)
+            )
             for node in reversed(chain):
                 prefix += len(node.key)
+                full = node.component_data[0]
+                missing_full = missing_full or (
+                    (full.value is None or len(full.value) == 0)
+                    and full.host_value is not None and len(full.host_value) > 0
+                )
                 state = node.component_data[2]
                 if node.parent is not None and prefix <= input_limit and (
                     state.value is not None or state.host_value is not None
                 ):
-                    selected_missing = state.value is None
-                checkpoints[node.id] = prefix, selected_missing
+                    selected_missing = missing_full or state.value is None
+                checkpoints[node.id] = prefix, missing_full, selected_missing
             if selected_missing:
                 return True
         return False

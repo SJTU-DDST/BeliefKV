@@ -495,7 +495,7 @@ def test_reduced_resident_quota_does_not_add_discovery_scans_without_fresh_hints
     "larger_input",
 ))
 def test_known_warm_candidate_rechecks_aged_head_without_a_fresh_head_hint(
-    head_hint, native_change,
+    head_hint, native_change, residency_clock,
 ):
     from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
 
