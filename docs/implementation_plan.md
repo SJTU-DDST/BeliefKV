@@ -5,7 +5,12 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-V91b's same-version pair is complete; next freeze the latest V92 predictive code.
+V92 is running from the frozen e8010f0 snapshot: launched at2026-10-20 09:02:26
+Asia/Shanghai, with real workflow service from09:05:41. V2110 verifies970 source
+files, actual processes and launch settings. Only predictive is newly run; V91b
+native is the historical reference. Initial zero writer failures/drops establish
+neither whole-run reliability nor performance acceptance. Keep the snapshot immutable.
+V91b's same-version pair is complete.
 Keep24 roots,16+8 arrivals/900s,running8,256K,Host80:20 and the existing engine.
 Both arms have24 completed outcomes, with23/24 natural-JCT eligibility because
 predictive has one existing graph-budget finalization. Quality remains ungraded.
@@ -26,11 +31,20 @@ ticket, timing, ownership, free-capacity and dependency checks. V2106 reproduces
 the old/new behavior with zero physical commands. All1118 distinct current-source
 CPU cases pass after explicit local-tokenizer rechecks supersede two initial skips;
 two passing subtests are not extra cases. See V2107–V2109.
-V92 will include this fix and the two control reductions below, run predictive only,
-and reuse completed V91b native. Verify only two predictive runtime execution files
-changed; keep the workload/engine/frontend contract and label the historical live
-reference accurately. Useful early recovery, PREPARE cost, tail-excluded throughput
-and mean completion latency still require GPU acceptance.
+V92 includes this fix and the two control reductions below. Qualification verifies
+only two predictive runtime execution files changed; keep the workload/engine/frontend
+contract and label the historical live reference accurately. Useful early recovery,
+PREPARE cost, tail-excluded throughput and mean completion latency still require
+GPU acceptance.
+
+V2111 exactly reconciles completed native prefill geometry to logical uncached input:
+4,938,458 predictive versus4,555,421 native extend tokens. Of the383,037 excess,
+347,750 (90.79%) belong to the already intervention-marked mobile-game bug workflow.
+Keep all24 outcomes in the primary result. This descriptive partition neither
+justifies post-hoc task exclusion/counterfactual throughput correction nor attributes
+all excess prefill to control work. First-root input work is close; continuation,
+child and compaction work differ. FULL/effective-prefix gaps are not per-layer GPU
+recomputation or removable JCT. Follow the latest V92 trace before changing arrivals.
 
 Main now skips causal/residency ranking only when a committed chunk has exhausted
 the current integer input budget, all native inputs are nonempty, DLLM is absent,

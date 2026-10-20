@@ -1,0 +1,2803 @@
+{
+  "status": "completed_pair_descriptive_input_partition_not_causal_attribution",
+  "observed_at": "2026-10-20T09:05:25.355707+08:00",
+  "collection_commit": "f29717e",
+  "arms": {
+    "predictive_h2d": {
+      "totals": {
+        "requests": 2148,
+        "prompt_tokens": 368351160,
+        "logical_uncached_prompt_tokens": 4938458,
+        "logical_host_hit_tokens": 145152,
+        "full_match_beyond_effective_hybrid_prefix_tokens": 1389736,
+        "actual_extend_tokens": 4938458,
+        "full_match_gap_extend_tokens": 1389736,
+        "native_prefill_request_samples": 2966
+      },
+      "by_request_position": {
+        "first_root": {
+          "requests": 24,
+          "prompt_tokens": 3314722,
+          "logical_uncached_prompt_tokens": 1647782,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 825938,
+          "actual_extend_tokens": 1647782,
+          "full_match_gap_extend_tokens": 825938,
+          "native_prefill_request_samples": 420
+        },
+        "other_continuation": {
+          "requests": 2096,
+          "prompt_tokens": 361323048,
+          "logical_uncached_prompt_tokens": 1900513,
+          "logical_host_hit_tokens": 3200,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 43219,
+          "actual_extend_tokens": 1900513,
+          "full_match_gap_extend_tokens": 43219,
+          "native_prefill_request_samples": 2192
+        },
+        "first_child": {
+          "requests": 13,
+          "prompt_tokens": 1636486,
+          "logical_uncached_prompt_tokens": 1109126,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 364214,
+          "actual_extend_tokens": 1109126,
+          "full_match_gap_extend_tokens": 364214,
+          "native_prefill_request_samples": 277
+        },
+        "after_join": {
+          "requests": 13,
+          "prompt_tokens": 1818422,
+          "logical_uncached_prompt_tokens": 22555,
+          "logical_host_hit_tokens": 141952,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 552,
+          "actual_extend_tokens": 22555,
+          "full_match_gap_extend_tokens": 552,
+          "native_prefill_request_samples": 13
+        },
+        "internal_summary": {
+          "requests": 1,
+          "prompt_tokens": 95964,
+          "logical_uncached_prompt_tokens": 95964,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 1,
+          "actual_extend_tokens": 95964,
+          "full_match_gap_extend_tokens": 1,
+          "native_prefill_request_samples": 24
+        },
+        "after_compaction": {
+          "requests": 1,
+          "prompt_tokens": 162518,
+          "logical_uncached_prompt_tokens": 162518,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 155812,
+          "actual_extend_tokens": 162518,
+          "full_match_gap_extend_tokens": 155812,
+          "native_prefill_request_samples": 40
+        }
+      },
+      "workflows": {
+        "locobench__python_api_gateway_hard_009_bug_investigation_expert_01": {
+          "instance_id": "locobench__python_api_gateway_hard_009_bug_investigation_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_bug_investigation_expert_01:e439e2a70de6",
+          "jct_seconds": 455.5464890887961,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 31,
+            "prompt_tokens": 4531995,
+            "logical_uncached_prompt_tokens": 32272,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 2424,
+            "actual_extend_tokens": 32272,
+            "full_match_gap_extend_tokens": 2424,
+            "native_prefill_request_samples": 31
+          },
+          "delegation_rounds": 0,
+          "tools": 41
+        },
+        "locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01": {
+          "instance_id": "locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:72e54424ab6d",
+          "jct_seconds": 893.3639084277675,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 79,
+            "prompt_tokens": 13901756,
+            "logical_uncached_prompt_tokens": 90753,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 5697,
+            "actual_extend_tokens": 90753,
+            "full_match_gap_extend_tokens": 5697,
+            "native_prefill_request_samples": 81
+          },
+          "delegation_rounds": 0,
+          "tools": 85
+        },
+        "locobench__python_api_gateway_hard_009_feature_implementation_expert_01": {
+          "instance_id": "locobench__python_api_gateway_hard_009_feature_implementation_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_feature_implementation_expert_01:b9a896266984",
+          "jct_seconds": 903.7370888534933,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 92,
+            "prompt_tokens": 16614257,
+            "logical_uncached_prompt_tokens": 218852,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 1735,
+            "actual_extend_tokens": 218852,
+            "full_match_gap_extend_tokens": 1735,
+            "native_prefill_request_samples": 124
+          },
+          "delegation_rounds": 0,
+          "tools": 94
+        },
+        "locobench__python_api_gateway_hard_009_integration_testing_expert_01": {
+          "instance_id": "locobench__python_api_gateway_hard_009_integration_testing_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_integration_testing_expert_01:6e732b7fc467",
+          "jct_seconds": 665.4873311892152,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 61,
+            "prompt_tokens": 10351085,
+            "logical_uncached_prompt_tokens": 202685,
+            "logical_host_hit_tokens": 448,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 127781,
+            "actual_extend_tokens": 202685,
+            "full_match_gap_extend_tokens": 127781,
+            "native_prefill_request_samples": 97
+          },
+          "delegation_rounds": 0,
+          "tools": 57
+        },
+        "locobench__python_game_simulation_medium_033_bug_investigation_expert_01": {
+          "instance_id": "locobench__python_game_simulation_medium_033_bug_investigation_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:a10dc6d3d84c",
+          "jct_seconds": 434.1870460258797,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 89,
+            "prompt_tokens": 11786457,
+            "logical_uncached_prompt_tokens": 400714,
+            "logical_host_hit_tokens": 138816,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 114660,
+            "actual_extend_tokens": 400714,
+            "full_match_gap_extend_tokens": 114660,
+            "native_prefill_request_samples": 173
+          },
+          "delegation_rounds": 2,
+          "tools": 106
+        },
+        "locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01": {
+          "instance_id": "locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d",
+          "jct_seconds": 1862.7529749516398,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 287,
+            "prompt_tokens": 41683755,
+            "logical_uncached_prompt_tokens": 737783,
+            "logical_host_hit_tokens": 1024,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 355999,
+            "actual_extend_tokens": 737783,
+            "full_match_gap_extend_tokens": 355999,
+            "native_prefill_request_samples": 405
+          },
+          "delegation_rounds": 5,
+          "tools": 299
+        },
+        "locobench__python_game_simulation_medium_033_integration_testing_expert_01": {
+          "instance_id": "locobench__python_game_simulation_medium_033_integration_testing_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:e823ae929fb4",
+          "jct_seconds": 428.1425606859848,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 18,
+            "prompt_tokens": 2349997,
+            "logical_uncached_prompt_tokens": 141217,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 1621,
+            "actual_extend_tokens": 141217,
+            "full_match_gap_extend_tokens": 1621,
+            "native_prefill_request_samples": 49
+          },
+          "delegation_rounds": 0,
+          "tools": 19
+        },
+        "locobench__python_game_simulation_medium_033_multi_session_development_expert_01": {
+          "instance_id": "locobench__python_game_simulation_medium_033_multi_session_development_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_multi_session_development_expert_01:73b79be19142",
+          "jct_seconds": 829.1589078465477,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 78,
+            "prompt_tokens": 11807628,
+            "logical_uncached_prompt_tokens": 69908,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 4381,
+            "actual_extend_tokens": 69908,
+            "full_match_gap_extend_tokens": 4381,
+            "native_prefill_request_samples": 80
+          },
+          "delegation_rounds": 0,
+          "tools": 71
+        },
+        "locobench__python_mobile_game_hard_060_bug_investigation_expert_01": {
+          "instance_id": "locobench__python_mobile_game_hard_060_bug_investigation_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_bug_investigation_expert_01:128d3f21c395",
+          "jct_seconds": 1521.6869913572446,
+          "natural_terminal": false,
+          "native_agent_jct_eligible": false,
+          "outcome": "completed",
+          "counts": {
+            "requests": 410,
+            "prompt_tokens": 81487789,
+            "logical_uncached_prompt_tokens": 732589,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 161876,
+            "actual_extend_tokens": 732589,
+            "full_match_gap_extend_tokens": 161876,
+            "native_prefill_request_samples": 554
+          },
+          "delegation_rounds": 0,
+          "tools": 403
+        },
+        "locobench__python_mobile_game_hard_060_cross_file_refactoring_expert_01": {
+          "instance_id": "locobench__python_mobile_game_hard_060_cross_file_refactoring_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_cross_file_refactoring_expert_01:52445db72cd0",
+          "jct_seconds": 475.46440559625626,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 58,
+            "prompt_tokens": 10514181,
+            "logical_uncached_prompt_tokens": 200901,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 156971,
+            "actual_extend_tokens": 200901,
+            "full_match_gap_extend_tokens": 156971,
+            "native_prefill_request_samples": 96
+          },
+          "delegation_rounds": 0,
+          "tools": 55
+        },
+        "locobench__python_mobile_game_hard_060_feature_implementation_expert_01": {
+          "instance_id": "locobench__python_mobile_game_hard_060_feature_implementation_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_feature_implementation_expert_01:f7e4f0fa186f",
+          "jct_seconds": 671.6704692738131,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 96,
+            "prompt_tokens": 19455177,
+            "logical_uncached_prompt_tokens": 66249,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 5647,
+            "actual_extend_tokens": 66249,
+            "full_match_gap_extend_tokens": 5647,
+            "native_prefill_request_samples": 103
+          },
+          "delegation_rounds": 0,
+          "tools": 116
+        },
+        "locobench__python_mobile_game_hard_060_integration_testing_expert_01": {
+          "instance_id": "locobench__python_mobile_game_hard_060_integration_testing_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_integration_testing_expert_01:8e07fbec81f0",
+          "jct_seconds": 645.1943256212398,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 72,
+            "prompt_tokens": 12671949,
+            "logical_uncached_prompt_tokens": 233357,
+            "logical_host_hit_tokens": 3136,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 5867,
+            "actual_extend_tokens": 233357,
+            "full_match_gap_extend_tokens": 5867,
+            "native_prefill_request_samples": 110
+          },
+          "delegation_rounds": 1,
+          "tools": 69
+        },
+        "locobench__python_system_automation_hard_062_bug_investigation_expert_01": {
+          "instance_id": "locobench__python_system_automation_hard_062_bug_investigation_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0",
+          "jct_seconds": 436.9057687940076,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 37,
+            "prompt_tokens": 5476312,
+            "logical_uncached_prompt_tokens": 83124,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 8285,
+            "actual_extend_tokens": 83124,
+            "full_match_gap_extend_tokens": 8285,
+            "native_prefill_request_samples": 47
+          },
+          "delegation_rounds": 2,
+          "tools": 66
+        },
+        "locobench__python_system_automation_hard_062_cross_file_refactoring_expert_01": {
+          "instance_id": "locobench__python_system_automation_hard_062_cross_file_refactoring_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_cross_file_refactoring_expert_01:926fc6384b1c",
+          "jct_seconds": 444.32846615463495,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 63,
+            "prompt_tokens": 10089353,
+            "logical_uncached_prompt_tokens": 174281,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 132333,
+            "actual_extend_tokens": 174281,
+            "full_match_gap_extend_tokens": 132333,
+            "native_prefill_request_samples": 96
+          },
+          "delegation_rounds": 0,
+          "tools": 53
+        },
+        "locobench__python_system_automation_hard_062_feature_implementation_expert_01": {
+          "instance_id": "locobench__python_system_automation_hard_062_feature_implementation_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_feature_implementation_expert_01:9bea66e4871b",
+          "jct_seconds": 764.8176648756489,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 122,
+            "prompt_tokens": 23587781,
+            "logical_uncached_prompt_tokens": 107461,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 2428,
+            "actual_extend_tokens": 107461,
+            "full_match_gap_extend_tokens": 2428,
+            "native_prefill_request_samples": 124
+          },
+          "delegation_rounds": 0,
+          "tools": 127
+        },
+        "locobench__python_system_automation_hard_062_multi_session_development_expert_01": {
+          "instance_id": "locobench__python_system_automation_hard_062_multi_session_development_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_multi_session_development_expert_01:af2c0b13ed8f",
+          "jct_seconds": 674.1830843165517,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 65,
+            "prompt_tokens": 10017268,
+            "logical_uncached_prompt_tokens": 329892,
+            "logical_host_hit_tokens": 832,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 5051,
+            "actual_extend_tokens": 329892,
+            "full_match_gap_extend_tokens": 5051,
+            "native_prefill_request_samples": 132
+          },
+          "delegation_rounds": 1,
+          "tools": 61
+        },
+        "locobench__python_system_networking_hard_027_bug_investigation_medium_01": {
+          "instance_id": "locobench__python_system_networking_hard_027_bug_investigation_medium_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_bug_investigation_medium_01:d5101b62f331",
+          "jct_seconds": 352.34460033103824,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 28,
+            "prompt_tokens": 4705512,
+            "logical_uncached_prompt_tokens": 179240,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 1067,
+            "actual_extend_tokens": 179240,
+            "full_match_gap_extend_tokens": 1067,
+            "native_prefill_request_samples": 65
+          },
+          "delegation_rounds": 0,
+          "tools": 27
+        },
+        "locobench__python_system_networking_hard_027_feature_implementation_medium_01": {
+          "instance_id": "locobench__python_system_networking_hard_027_feature_implementation_medium_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_feature_implementation_medium_01:1b62099d13aa",
+          "jct_seconds": 569.7381525021046,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 76,
+            "prompt_tokens": 13954817,
+            "logical_uncached_prompt_tokens": 202088,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 153533,
+            "actual_extend_tokens": 202088,
+            "full_match_gap_extend_tokens": 153533,
+            "native_prefill_request_samples": 113
+          },
+          "delegation_rounds": 0,
+          "tools": 77
+        },
+        "locobench__python_system_networking_hard_027_integration_testing_medium_01": {
+          "instance_id": "locobench__python_system_networking_hard_027_integration_testing_medium_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:f5e3ec41a8b6",
+          "jct_seconds": 611.3583487272263,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 36,
+            "prompt_tokens": 6404821,
+            "logical_uncached_prompt_tokens": 44757,
+            "logical_host_hit_tokens": 896,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 3608,
+            "actual_extend_tokens": 44757,
+            "full_match_gap_extend_tokens": 3608,
+            "native_prefill_request_samples": 36
+          },
+          "delegation_rounds": 0,
+          "tools": 36
+        },
+        "locobench__python_system_networking_hard_027_multi_session_development_medium_01": {
+          "instance_id": "locobench__python_system_networking_hard_027_multi_session_development_medium_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_multi_session_development_medium_01:129aba3a0a6d",
+          "jct_seconds": 634.7741774097085,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 59,
+            "prompt_tokens": 10449118,
+            "logical_uncached_prompt_tokens": 49376,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 1632,
+            "actual_extend_tokens": 49376,
+            "full_match_gap_extend_tokens": 1632,
+            "native_prefill_request_samples": 60
+          },
+          "delegation_rounds": 0,
+          "tools": 57
+        },
+        "locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01": {
+          "instance_id": "locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01:4a49b2d20bce",
+          "jct_seconds": 439.5039356285706,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 31,
+            "prompt_tokens": 4585983,
+            "logical_uncached_prompt_tokens": 31871,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 2030,
+            "actual_extend_tokens": 31871,
+            "full_match_gap_extend_tokens": 2030,
+            "native_prefill_request_samples": 32
+          },
+          "delegation_rounds": 0,
+          "tools": 38
+        },
+        "locobench__python_web_cms_hard_074_feature_implementation_expert_01": {
+          "instance_id": "locobench__python_web_cms_hard_074_feature_implementation_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:59819c3547f5",
+          "jct_seconds": 634.3758987281471,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 71,
+            "prompt_tokens": 11133560,
+            "logical_uncached_prompt_tokens": 196527,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 5399,
+            "actual_extend_tokens": 196527,
+            "full_match_gap_extend_tokens": 5399,
+            "native_prefill_request_samples": 106
+          },
+          "delegation_rounds": 1,
+          "tools": 72
+        },
+        "locobench__python_web_cms_hard_074_integration_testing_expert_01": {
+          "instance_id": "locobench__python_web_cms_hard_074_integration_testing_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:c3b6d255ae67",
+          "jct_seconds": 1116.9905818430707,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 125,
+            "prompt_tokens": 20740920,
+            "logical_uncached_prompt_tokens": 247096,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 4157,
+            "actual_extend_tokens": 247096,
+            "full_match_gap_extend_tokens": 4157,
+            "native_prefill_request_samples": 157
+          },
+          "delegation_rounds": 1,
+          "tools": 144
+        },
+        "locobench__python_web_cms_hard_074_multi_session_development_expert_01": {
+          "instance_id": "locobench__python_web_cms_hard_074_multi_session_development_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_multi_session_development_expert_01:458d6e4fbf02",
+          "jct_seconds": 412.58691834751517,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 64,
+            "prompt_tokens": 10049689,
+            "logical_uncached_prompt_tokens": 165465,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 125554,
+            "actual_extend_tokens": 165465,
+            "full_match_gap_extend_tokens": 125554,
+            "native_prefill_request_samples": 95
+          },
+          "delegation_rounds": 0,
+          "tools": 68
+        }
+      },
+      "unknown_prefill_samples": 0,
+      "sources": [
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 210067,
+          "analyzed_bytes": 210067,
+          "sha256": "e262497dcb3c52c2d81622e469478780308c7f4b7fca4f9864bf91cf8bd5c86e",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 486419,
+          "analyzed_bytes": 486419,
+          "sha256": "9e89b849215d5d77abb8d84695c667ce61c3c92cdda2071767f646de450804b1",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 551089,
+          "analyzed_bytes": 551089,
+          "sha256": "c38e62b75fc164520492d3010936d5742a293ad1e15f4d4ce1d7f4254d5166e8",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_integration_testing_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 350021,
+          "analyzed_bytes": 350021,
+          "sha256": "1ebb56ba389c2ad64f8821f1da21d26e7b79d7f031fac8eef20bcb5a1893265d",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 646670,
+          "analyzed_bytes": 646670,
+          "sha256": "6564882f73a450bc0072b5ec6a78189c6389346b6b4cf7adbca6de5f122f864d",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 2060231,
+          "analyzed_bytes": 2060231,
+          "sha256": "a4497c5c8858b8806f45a7101f55c6704e59ca603ed75b1b3b292a852062fe6f",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_integration_testing_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 112805,
+          "analyzed_bytes": 112805,
+          "sha256": "27cbd9a6875eb3216875ab76857e303835b81a973981c19efcc3a5ff39e9ce62",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_multi_session_development_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 452930,
+          "analyzed_bytes": 452930,
+          "sha256": "a41cefd7f50a7566335dd26c24513167977ceba46d2e38dfdbebb2d728c3de09",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 2394431,
+          "analyzed_bytes": 2394431,
+          "sha256": "fb6bf66825fd1ae66c7a522aaa6c5bd908929df2573180cb631678360804bdcb",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 335224,
+          "analyzed_bytes": 335224,
+          "sha256": "606b2dce1084929462698ac38c9d46a72c52c8f372c54754f6b34d3d10fe33b4",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 626941,
+          "analyzed_bytes": 626941,
+          "sha256": "933a4d2792638723a3999242630faab6cb7a0186bbfcf7e5b13b7af9d7630711",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_integration_testing_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 447925,
+          "analyzed_bytes": 447925,
+          "sha256": "35c8bbbc3f0f15667d351be655ac54eda18e8994e3236d754e88625e3aeb3a43",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 355948,
+          "analyzed_bytes": 355948,
+          "sha256": "25ececa8981bef72d0a690c0acb1f83f36b611a6befd5a3b236a0409f7077c3d",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 349557,
+          "analyzed_bytes": 349557,
+          "sha256": "e6cba571d371386b93ab827cbf145cfb7cf052227e994e0d3953552fb87b08a7",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 752254,
+          "analyzed_bytes": 752254,
+          "sha256": "2301bdb5b7882a962e425a4b59103c2c3c5e455068cf0dcc85eda6d100fa43bc",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_multi_session_development_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 416755,
+          "analyzed_bytes": 416755,
+          "sha256": "d8bc05baef90056cff71adcf5a8219a3acd9540f7c0a9df271888bb638df188d",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_bug_investigation_medium_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 164304,
+          "analyzed_bytes": 164304,
+          "sha256": "c8b97cece497f8203558f85e54f92085b15f40e0efc3a448f092e4c808074f73",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_feature_implementation_medium_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 462211,
+          "analyzed_bytes": 462211,
+          "sha256": "3a499b54d370f0e191b53da0875af8df55bb123f409f47326ee6e84a7f2d9b85",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_integration_testing_medium_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 217687,
+          "analyzed_bytes": 217687,
+          "sha256": "cda2b49a0b5fa28280acf6d9041b39954b91a197cecebf978cd724b1c04ec792",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_multi_session_development_medium_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 351683,
+          "analyzed_bytes": 351683,
+          "sha256": "0e691fc457bb33abf3b0085298758264ee5254afaddff75ee722e360ad8b68cc",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 203260,
+          "analyzed_bytes": 203260,
+          "sha256": "38b8857743ae0391d6fb838c1fbe59cc6063f42c0a2822187c6ec910c5700e61",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 436766,
+          "analyzed_bytes": 436766,
+          "sha256": "e59425a1508a7431be5a448db73a4faab46a596942c3b81858c89b35bfee7d03",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_integration_testing_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 812697,
+          "analyzed_bytes": 812697,
+          "sha256": "d2b8ff5c21bb0a9e50a6cbca621c05814720ddf1133c562801955d74ff3e115c",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_multi_session_development_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 388772,
+          "analyzed_bytes": 388772,
+          "sha256": "416ad913841e2dfaf013fa2d38763f51d214ac4838b717fd7f8edc49b2bff4e4",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/server/runtime_events.sglang.jsonl",
+          "observed_size_bytes": 4331797,
+          "analyzed_bytes": 4331797,
+          "sha256": "f257779e11229a49f5b5f3e7dab964bc19bda903c44f8f75fa9031754bcd70aa",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/server/runtime_audit.jsonl",
+          "observed_size_bytes": 491273910,
+          "analyzed_bytes": 491273910,
+          "sha256": "b8548aa408d6072b20e6b15293aa770b8440327542dc1f2f0c5b467ff50f0eb4",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_bug_investigation_expert_01/result.json",
+          "analyzed_bytes": 9069,
+          "sha256": "ca38ef210fd6d5e27d16d2b0ac79c4b13ff7763497c446078a8205dc087fc43f"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01/result.json",
+          "analyzed_bytes": 9837,
+          "sha256": "d55ce499ca9a27715aab40741cd2912074837f9bcbfd4306a2b5f88eab6b7f69"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/result.json",
+          "analyzed_bytes": 8131,
+          "sha256": "0d528a97478e096de1cd209da6943be247deff1e476c04fdf9eb7e45ee110d2e"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_integration_testing_expert_01/result.json",
+          "analyzed_bytes": 8121,
+          "sha256": "fe8ecfef35676a8487bb01ae5700a28f2bb8ebf8607007476894813255c66809"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_bug_investigation_expert_01/result.json",
+          "analyzed_bytes": 18218,
+          "sha256": "0e3c487ff3b647d090ea6fd0dbd7550b962994af9ae363d179f54ff1958ba025"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01/result.json",
+          "analyzed_bytes": 10507,
+          "sha256": "a1fa297c190704d19ce5ed23c2fa4ff6f8c38af84532f69e33df9e77e023a508"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_integration_testing_expert_01/result.json",
+          "analyzed_bytes": 7487,
+          "sha256": "e21f2cb350e23a42b76cb4668716ec1ff28a99420d6390a2056cd9b37438850d"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_multi_session_development_expert_01/result.json",
+          "analyzed_bytes": 7379,
+          "sha256": "2bc3d3a38443c097aefa554e585350b74d09f0d5cdfc5432ea8acf41d9059da7"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_bug_investigation_expert_01/result.json",
+          "analyzed_bytes": 5649,
+          "sha256": "de506667eb33ead03e318bc9ab9c60a48018b1421a948a5369e5e839d94a7256"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_cross_file_refactoring_expert_01/result.json",
+          "analyzed_bytes": 7435,
+          "sha256": "886ceb349714181c09fa397759bacc60c8b69a2ab9118e4540cabfb1d3401ef5"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_feature_implementation_expert_01/result.json",
+          "analyzed_bytes": 7677,
+          "sha256": "0097b67b08c4f6b94bec2fefdc6d0f1601afb2cf87379078188dba9099d5c4f6"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_integration_testing_expert_01/result.json",
+          "analyzed_bytes": 8434,
+          "sha256": "f40b085638a5ca7de2602c564316cf690b649521aa63f46787965b196cac0057"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_bug_investigation_expert_01/result.json",
+          "analyzed_bytes": 16240,
+          "sha256": "5cb398c0497c4ae0fa07751e52a5a2275d71037f6fb9a5890696ff6ff1fcef46"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_cross_file_refactoring_expert_01/result.json",
+          "analyzed_bytes": 7912,
+          "sha256": "c1aac2a8a52dee8e361f5ecbc28c09f668bbe227824eb484c2b7aaf56ac550a0"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_feature_implementation_expert_01/result.json",
+          "analyzed_bytes": 7730,
+          "sha256": "7f4deb3add7c25d0ee7757a215dba84320b8c790d69e52d883c6aa832b15cee7"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_multi_session_development_expert_01/result.json",
+          "analyzed_bytes": 12646,
+          "sha256": "687f649ee74712d668f07c8db3dc868c8465177459136655fe45c36b841848a3"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_bug_investigation_medium_01/result.json",
+          "analyzed_bytes": 8467,
+          "sha256": "7254fe4eaa8819c14a254379da985bb64cd2c4ca30676da091ec00198abb564f"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_feature_implementation_medium_01/result.json",
+          "analyzed_bytes": 6979,
+          "sha256": "3edef868d9df8307703b463a2bc104ef579abd2d5bccc1938b3e14ffd7113186"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_integration_testing_medium_01/result.json",
+          "analyzed_bytes": 6906,
+          "sha256": "e46e17c72defb472de6662e5678195bd6044fa322faaf29bbf4b47d1fd70ae37"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_multi_session_development_medium_01/result.json",
+          "analyzed_bytes": 8626,
+          "sha256": "a8897f103504bf38886ce8b2f72d98fb51a20f6a2b7f6ce8467e7e11e6cb3adb"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/result.json",
+          "analyzed_bytes": 8085,
+          "sha256": "1e9bfb961e693da6773ad6d3a84a75e1f362542cb1aed28e97d55cf878b5ac1c"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_feature_implementation_expert_01/result.json",
+          "analyzed_bytes": 9607,
+          "sha256": "17ebeab26c5195db4058380bb40ec6aba4e9c6aca524f02491be44bdf49612b2"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_integration_testing_expert_01/result.json",
+          "analyzed_bytes": 9164,
+          "sha256": "0906dbf82635955b6421ebf9a796421fe85239bfb0d15c7994dc6a6768b1dd60"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_multi_session_development_expert_01/result.json",
+          "analyzed_bytes": 9311,
+          "sha256": "3c689b32de6c0edd1999644826312a782f050ea40e24124dd1c23b6ede5fdede"
+        }
+      ]
+    },
+    "native": {
+      "totals": {
+        "requests": 2085,
+        "prompt_tokens": 342128258,
+        "logical_uncached_prompt_tokens": 4555421,
+        "logical_host_hit_tokens": 4371480,
+        "full_match_beyond_effective_hybrid_prefix_tokens": 1012443,
+        "actual_extend_tokens": 4555421,
+        "full_match_gap_extend_tokens": 1012443,
+        "native_prefill_request_samples": 2791
+      },
+      "by_request_position": {
+        "first_root": {
+          "requests": 24,
+          "prompt_tokens": 3314722,
+          "logical_uncached_prompt_tokens": 1640069,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 821562,
+          "actual_extend_tokens": 1640069,
+          "full_match_gap_extend_tokens": 821562,
+          "native_prefill_request_samples": 418
+        },
+        "other_continuation": {
+          "requests": 2030,
+          "prompt_tokens": 334683294,
+          "logical_uncached_prompt_tokens": 1721988,
+          "logical_host_hit_tokens": 4035275,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 46465,
+          "actual_extend_tokens": 1721988,
+          "full_match_gap_extend_tokens": 46465,
+          "native_prefill_request_samples": 2068
+        },
+        "first_child": {
+          "requests": 18,
+          "prompt_tokens": 2275398,
+          "logical_uncached_prompt_tokens": 1164102,
+          "logical_host_hit_tokens": 245642,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 142315,
+          "actual_extend_tokens": 1164102,
+          "full_match_gap_extend_tokens": 142315,
+          "native_prefill_request_samples": 291
+        },
+        "after_join": {
+          "requests": 13,
+          "prompt_tokens": 1854844,
+          "logical_uncached_prompt_tokens": 29262,
+          "logical_host_hit_tokens": 90563,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 2101,
+          "actual_extend_tokens": 29262,
+          "full_match_gap_extend_tokens": 2101,
+          "native_prefill_request_samples": 14
+        }
+      },
+      "workflows": {
+        "locobench__python_api_gateway_hard_009_bug_investigation_expert_01": {
+          "instance_id": "locobench__python_api_gateway_hard_009_bug_investigation_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_bug_investigation_expert_01:e439e2a70de6",
+          "jct_seconds": 1079.2694839043543,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 156,
+            "prompt_tokens": 23376119,
+            "logical_uncached_prompt_tokens": 341815,
+            "logical_host_hit_tokens": 853343,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 8152,
+            "actual_extend_tokens": 341815,
+            "full_match_gap_extend_tokens": 8152,
+            "native_prefill_request_samples": 220
+          },
+          "delegation_rounds": 3,
+          "tools": 163
+        },
+        "locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01": {
+          "instance_id": "locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:72e54424ab6d",
+          "jct_seconds": 782.8627656176686,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 61,
+            "prompt_tokens": 10171774,
+            "logical_uncached_prompt_tokens": 59602,
+            "logical_host_hit_tokens": 188665,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 5205,
+            "actual_extend_tokens": 59602,
+            "full_match_gap_extend_tokens": 5205,
+            "native_prefill_request_samples": 65
+          },
+          "delegation_rounds": 0,
+          "tools": 67
+        },
+        "locobench__python_api_gateway_hard_009_feature_implementation_expert_01": {
+          "instance_id": "locobench__python_api_gateway_hard_009_feature_implementation_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_feature_implementation_expert_01:b9a896266984",
+          "jct_seconds": 830.9721208633855,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 68,
+            "prompt_tokens": 11649334,
+            "logical_uncached_prompt_tokens": 70838,
+            "logical_host_hit_tokens": 185837,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 1569,
+            "actual_extend_tokens": 70838,
+            "full_match_gap_extend_tokens": 1569,
+            "native_prefill_request_samples": 69
+          },
+          "delegation_rounds": 0,
+          "tools": 71
+        },
+        "locobench__python_api_gateway_hard_009_integration_testing_expert_01": {
+          "instance_id": "locobench__python_api_gateway_hard_009_integration_testing_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_integration_testing_expert_01:6e732b7fc467",
+          "jct_seconds": 540.9794690879062,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 46,
+            "prompt_tokens": 7186291,
+            "logical_uncached_prompt_tokens": 178675,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 131471,
+            "actual_extend_tokens": 178675,
+            "full_match_gap_extend_tokens": 131471,
+            "native_prefill_request_samples": 79
+          },
+          "delegation_rounds": 0,
+          "tools": 41
+        },
+        "locobench__python_game_simulation_medium_033_bug_investigation_expert_01": {
+          "instance_id": "locobench__python_game_simulation_medium_033_bug_investigation_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:a10dc6d3d84c",
+          "jct_seconds": 584.5356977926567,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 68,
+            "prompt_tokens": 9273080,
+            "logical_uncached_prompt_tokens": 292408,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 225755,
+            "actual_extend_tokens": 292408,
+            "full_match_gap_extend_tokens": 225755,
+            "native_prefill_request_samples": 122
+          },
+          "delegation_rounds": 1,
+          "tools": 71
+        },
+        "locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01": {
+          "instance_id": "locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d",
+          "jct_seconds": 1795.9871577182785,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 340,
+            "prompt_tokens": 51335054,
+            "logical_uncached_prompt_tokens": 815959,
+            "logical_host_hit_tokens": 513146,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 25719,
+            "actual_extend_tokens": 815959,
+            "full_match_gap_extend_tokens": 25719,
+            "native_prefill_request_samples": 464
+          },
+          "delegation_rounds": 2,
+          "tools": 356
+        },
+        "locobench__python_game_simulation_medium_033_integration_testing_expert_01": {
+          "instance_id": "locobench__python_game_simulation_medium_033_integration_testing_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:e823ae929fb4",
+          "jct_seconds": 732.4965557614341,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 48,
+            "prompt_tokens": 6598456,
+            "logical_uncached_prompt_tokens": 58975,
+            "logical_host_hit_tokens": 60898,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 3673,
+            "actual_extend_tokens": 58975,
+            "full_match_gap_extend_tokens": 3673,
+            "native_prefill_request_samples": 49
+          },
+          "delegation_rounds": 1,
+          "tools": 49
+        },
+        "locobench__python_game_simulation_medium_033_multi_session_development_expert_01": {
+          "instance_id": "locobench__python_game_simulation_medium_033_multi_session_development_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_multi_session_development_expert_01:73b79be19142",
+          "jct_seconds": 1448.7665114356205,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 116,
+            "prompt_tokens": 19365808,
+            "logical_uncached_prompt_tokens": 93436,
+            "logical_host_hit_tokens": 120512,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 4238,
+            "actual_extend_tokens": 93436,
+            "full_match_gap_extend_tokens": 4238,
+            "native_prefill_request_samples": 117
+          },
+          "delegation_rounds": 0,
+          "tools": 116
+        },
+        "locobench__python_mobile_game_hard_060_bug_investigation_expert_01": {
+          "instance_id": "locobench__python_mobile_game_hard_060_bug_investigation_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_bug_investigation_expert_01:128d3f21c395",
+          "jct_seconds": 1266.27355424501,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 189,
+            "prompt_tokens": 34315719,
+            "logical_uncached_prompt_tokens": 384839,
+            "logical_host_hit_tokens": 663689,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 2866,
+            "actual_extend_tokens": 384839,
+            "full_match_gap_extend_tokens": 2866,
+            "native_prefill_request_samples": 262
+          },
+          "delegation_rounds": 1,
+          "tools": 186
+        },
+        "locobench__python_mobile_game_hard_060_cross_file_refactoring_expert_01": {
+          "instance_id": "locobench__python_mobile_game_hard_060_cross_file_refactoring_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_cross_file_refactoring_expert_01:52445db72cd0",
+          "jct_seconds": 492.99136908818036,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 49,
+            "prompt_tokens": 8795491,
+            "logical_uncached_prompt_tokens": 46134,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 1809,
+            "actual_extend_tokens": 46134,
+            "full_match_gap_extend_tokens": 1809,
+            "native_prefill_request_samples": 49
+          },
+          "delegation_rounds": 0,
+          "tools": 47
+        },
+        "locobench__python_mobile_game_hard_060_feature_implementation_expert_01": {
+          "instance_id": "locobench__python_mobile_game_hard_060_feature_implementation_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_feature_implementation_expert_01:f7e4f0fa186f",
+          "jct_seconds": 813.7769675729796,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 75,
+            "prompt_tokens": 14735682,
+            "logical_uncached_prompt_tokens": 60930,
+            "logical_host_hit_tokens": 197052,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 5644,
+            "actual_extend_tokens": 60930,
+            "full_match_gap_extend_tokens": 5644,
+            "native_prefill_request_samples": 80
+          },
+          "delegation_rounds": 0,
+          "tools": 87
+        },
+        "locobench__python_mobile_game_hard_060_integration_testing_expert_01": {
+          "instance_id": "locobench__python_mobile_game_hard_060_integration_testing_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_integration_testing_expert_01:8e07fbec81f0",
+          "jct_seconds": 638.1167008411139,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 75,
+            "prompt_tokens": 12835729,
+            "logical_uncached_prompt_tokens": 365209,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 155185,
+            "actual_extend_tokens": 365209,
+            "full_match_gap_extend_tokens": 155185,
+            "native_prefill_request_samples": 149
+          },
+          "delegation_rounds": 1,
+          "tools": 70
+        },
+        "locobench__python_system_automation_hard_062_bug_investigation_expert_01": {
+          "instance_id": "locobench__python_system_automation_hard_062_bug_investigation_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0",
+          "jct_seconds": 457.0023779151961,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 32,
+            "prompt_tokens": 4642665,
+            "logical_uncached_prompt_tokens": 151863,
+            "logical_host_hit_tokens": 125517,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 450,
+            "actual_extend_tokens": 151863,
+            "full_match_gap_extend_tokens": 450,
+            "native_prefill_request_samples": 64
+          },
+          "delegation_rounds": 0,
+          "tools": 31
+        },
+        "locobench__python_system_automation_hard_062_cross_file_refactoring_expert_01": {
+          "instance_id": "locobench__python_system_automation_hard_062_cross_file_refactoring_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_cross_file_refactoring_expert_01:926fc6384b1c",
+          "jct_seconds": 474.6642981925979,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 55,
+            "prompt_tokens": 8633844,
+            "logical_uncached_prompt_tokens": 41588,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 3816,
+            "actual_extend_tokens": 41588,
+            "full_match_gap_extend_tokens": 3816,
+            "native_prefill_request_samples": 56
+          },
+          "delegation_rounds": 0,
+          "tools": 48
+        },
+        "locobench__python_system_automation_hard_062_feature_implementation_expert_01": {
+          "instance_id": "locobench__python_system_automation_hard_062_feature_implementation_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_feature_implementation_expert_01:9bea66e4871b",
+          "jct_seconds": 654.4305575210601,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 66,
+            "prompt_tokens": 11279939,
+            "logical_uncached_prompt_tokens": 210723,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 137214,
+            "actual_extend_tokens": 210723,
+            "full_match_gap_extend_tokens": 137214,
+            "native_prefill_request_samples": 99
+          },
+          "delegation_rounds": 0,
+          "tools": 64
+        },
+        "locobench__python_system_automation_hard_062_multi_session_development_expert_01": {
+          "instance_id": "locobench__python_system_automation_hard_062_multi_session_development_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_multi_session_development_expert_01:af2c0b13ed8f",
+          "jct_seconds": 472.9555794419721,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 31,
+            "prompt_tokens": 4437051,
+            "logical_uncached_prompt_tokens": 165955,
+            "logical_host_hit_tokens": 680549,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 4727,
+            "actual_extend_tokens": 165955,
+            "full_match_gap_extend_tokens": 4727,
+            "native_prefill_request_samples": 63
+          },
+          "delegation_rounds": 1,
+          "tools": 30
+        },
+        "locobench__python_system_networking_hard_027_bug_investigation_medium_01": {
+          "instance_id": "locobench__python_system_networking_hard_027_bug_investigation_medium_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_bug_investigation_medium_01:d5101b62f331",
+          "jct_seconds": 610.5104497596622,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 52,
+            "prompt_tokens": 9333828,
+            "logical_uncached_prompt_tokens": 46596,
+            "logical_host_hit_tokens": 269524,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 842,
+            "actual_extend_tokens": 46596,
+            "full_match_gap_extend_tokens": 842,
+            "native_prefill_request_samples": 52
+          },
+          "delegation_rounds": 0,
+          "tools": 49
+        },
+        "locobench__python_system_networking_hard_027_feature_implementation_medium_01": {
+          "instance_id": "locobench__python_system_networking_hard_027_feature_implementation_medium_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_feature_implementation_medium_01:1b62099d13aa",
+          "jct_seconds": 563.535705992952,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 49,
+            "prompt_tokens": 8867378,
+            "logical_uncached_prompt_tokens": 195442,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 153140,
+            "actual_extend_tokens": 195442,
+            "full_match_gap_extend_tokens": 153140,
+            "native_prefill_request_samples": 86
+          },
+          "delegation_rounds": 0,
+          "tools": 49
+        },
+        "locobench__python_system_networking_hard_027_integration_testing_medium_01": {
+          "instance_id": "locobench__python_system_networking_hard_027_integration_testing_medium_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:f5e3ec41a8b6",
+          "jct_seconds": 1076.147026810795,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 61,
+            "prompt_tokens": 11625691,
+            "logical_uncached_prompt_tokens": 222619,
+            "logical_host_hit_tokens": 77395,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 1359,
+            "actual_extend_tokens": 222619,
+            "full_match_gap_extend_tokens": 1359,
+            "native_prefill_request_samples": 100
+          },
+          "delegation_rounds": 0,
+          "tools": 63
+        },
+        "locobench__python_system_networking_hard_027_multi_session_development_medium_01": {
+          "instance_id": "locobench__python_system_networking_hard_027_multi_session_development_medium_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_multi_session_development_medium_01:129aba3a0a6d",
+          "jct_seconds": 785.0004094298929,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 71,
+            "prompt_tokens": 12835193,
+            "logical_uncached_prompt_tokens": 44985,
+            "logical_host_hit_tokens": 103370,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 1623,
+            "actual_extend_tokens": 44985,
+            "full_match_gap_extend_tokens": 1623,
+            "native_prefill_request_samples": 71
+          },
+          "delegation_rounds": 0,
+          "tools": 71
+        },
+        "locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01": {
+          "instance_id": "locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01:4a49b2d20bce",
+          "jct_seconds": 826.9188556401059,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 86,
+            "prompt_tokens": 12729380,
+            "logical_uncached_prompt_tokens": 69315,
+            "logical_host_hit_tokens": 94842,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 4253,
+            "actual_extend_tokens": 69315,
+            "full_match_gap_extend_tokens": 4253,
+            "native_prefill_request_samples": 88
+          },
+          "delegation_rounds": 1,
+          "tools": 120
+        },
+        "locobench__python_web_cms_hard_074_feature_implementation_expert_01": {
+          "instance_id": "locobench__python_web_cms_hard_074_feature_implementation_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:59819c3547f5",
+          "jct_seconds": 801.6464498527348,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 69,
+            "prompt_tokens": 10690811,
+            "logical_uncached_prompt_tokens": 73475,
+            "logical_host_hit_tokens": 185305,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 4380,
+            "actual_extend_tokens": 73475,
+            "full_match_gap_extend_tokens": 4380,
+            "native_prefill_request_samples": 72
+          },
+          "delegation_rounds": 1,
+          "tools": 95
+        },
+        "locobench__python_web_cms_hard_074_integration_testing_expert_01": {
+          "instance_id": "locobench__python_web_cms_hard_074_integration_testing_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:c3b6d255ae67",
+          "jct_seconds": 1598.6104370011017,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 152,
+            "prompt_tokens": 26108633,
+            "logical_uncached_prompt_tokens": 383084,
+            "logical_host_hit_tokens": 51836,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 3437,
+            "actual_extend_tokens": 383084,
+            "full_match_gap_extend_tokens": 3437,
+            "native_prefill_request_samples": 215
+          },
+          "delegation_rounds": 1,
+          "tools": 163
+        },
+        "locobench__python_web_cms_hard_074_multi_session_development_expert_01": {
+          "instance_id": "locobench__python_web_cms_hard_074_multi_session_development_expert_01",
+          "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_multi_session_development_expert_01:458d6e4fbf02",
+          "jct_seconds": 576.1238727429882,
+          "natural_terminal": true,
+          "native_agent_jct_eligible": true,
+          "outcome": "completed",
+          "counts": {
+            "requests": 70,
+            "prompt_tokens": 11305308,
+            "logical_uncached_prompt_tokens": 180956,
+            "logical_host_hit_tokens": 0,
+            "full_match_beyond_effective_hybrid_prefix_tokens": 125916,
+            "actual_extend_tokens": 180956,
+            "full_match_gap_extend_tokens": 125916,
+            "native_prefill_request_samples": 100
+          },
+          "delegation_rounds": 0,
+          "tools": 71
+        }
+      },
+      "unknown_prefill_samples": 0,
+      "sources": [
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_api_gateway_hard_009_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 1070745,
+          "analyzed_bytes": 1070745,
+          "sha256": "7990bc75ab6c7c6764851a2dfd1403243eb3c99c4ccb62011b42fb9cc07b4ce9",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 379220,
+          "analyzed_bytes": 379220,
+          "sha256": "a6110bd3381bc7176cbaca01c7101fd557d9700ee1abbcc3220bdb8d58827489",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 412071,
+          "analyzed_bytes": 412071,
+          "sha256": "a3895a80004115ef937fc696228a2183e493a63cdd72b1a572848a817ab75bdd",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_api_gateway_hard_009_integration_testing_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 257502,
+          "analyzed_bytes": 257502,
+          "sha256": "e6847e6586bbedcdf657399d3197149e29fc391e74b05926bfad72a60ce9378b",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_game_simulation_medium_033_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 442654,
+          "analyzed_bytes": 442654,
+          "sha256": "697b0c9c846e046d589cf99b5d82920c4911f273940d1c0c47e3fb66af7b42d3",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 2443581,
+          "analyzed_bytes": 2443581,
+          "sha256": "6a9b32ec9ad7adc6e5cc63e42154fb1ac9440b6e00bf5d0852af8a78958aee98",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_game_simulation_medium_033_integration_testing_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 316970,
+          "analyzed_bytes": 316970,
+          "sha256": "6580d63c99777cd53326f24e3964c0ee0376251b5907b52691b59c35fe3724ca",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_game_simulation_medium_033_multi_session_development_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 704479,
+          "analyzed_bytes": 704479,
+          "sha256": "20e4a8f7f16376607291ce652b8e8020bb09f7a73de0026eaabe8f2e476fada1",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_mobile_game_hard_060_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 1142220,
+          "analyzed_bytes": 1142220,
+          "sha256": "33ae4f47f4f59263f43fac881971ec7ee440c0011223ab808c1320db7fd93071",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_mobile_game_hard_060_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 285179,
+          "analyzed_bytes": 285179,
+          "sha256": "e3403be4679dbe884c0ebcf2c969f3c5f75bdd889a01d5fa8175f6908dcadbb6",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_mobile_game_hard_060_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 477531,
+          "analyzed_bytes": 477531,
+          "sha256": "9a695e65a829d721023689519c6175bf6eaf28840a23cbcd9000a6ebd9b52da8",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_mobile_game_hard_060_integration_testing_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 478702,
+          "analyzed_bytes": 478702,
+          "sha256": "a4eadd4cdea4212acd18994291fe88a3fcb45b262828aa27145a929a67b31a49",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_system_automation_hard_062_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 187872,
+          "analyzed_bytes": 187872,
+          "sha256": "1a31ad198f6fc2f55baf04702a43854fe9333ffc8fc8142ffedd52b841d90a3e",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_system_automation_hard_062_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 310626,
+          "analyzed_bytes": 310626,
+          "sha256": "ecd3b138cef57f6a21c89705dc52a22de18ad649ebbfab193603f6581d982113",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_system_automation_hard_062_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 393477,
+          "analyzed_bytes": 393477,
+          "sha256": "a2530e3cacf4994e637f26803ee45c983ed7bb8d19ddaa82ef2f9eac982c5510",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_system_automation_hard_062_multi_session_development_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 227909,
+          "analyzed_bytes": 227909,
+          "sha256": "3851ba9a82aa53c1ad5f06da52093f63dc855b2059812948ea48939b72a6fbe6",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_system_networking_hard_027_bug_investigation_medium_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 298516,
+          "analyzed_bytes": 298516,
+          "sha256": "ac093c414353f7716c46bf1cbd80a8752d148cb768c18cee22ff764b7a3d828d",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_system_networking_hard_027_feature_implementation_medium_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 295920,
+          "analyzed_bytes": 295920,
+          "sha256": "319145115283d5d2e571c0c724102658c5b421d4018367f073364afff231fb35",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_system_networking_hard_027_integration_testing_medium_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 372923,
+          "analyzed_bytes": 372923,
+          "sha256": "09c47c742b68e596f59ebab00bdff75c1ae5f3309eea1c4a50159dcb774f2a82",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_system_networking_hard_027_multi_session_development_medium_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 432206,
+          "analyzed_bytes": 432206,
+          "sha256": "a77a7ad83c4ecb752d83dd72ff2a6586f5f9af2421d5b9e8fc666a00387643a9",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 650558,
+          "analyzed_bytes": 650558,
+          "sha256": "c7ae175b51896e3759fd71152d635783c7afdbd2242541c88d57d0416b412b0d",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_web_cms_hard_074_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 499958,
+          "analyzed_bytes": 499958,
+          "sha256": "0934822346c004ff0f675aff026ca70b2216d8b1bee660a5f1a195449366ded2",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_web_cms_hard_074_integration_testing_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 943091,
+          "analyzed_bytes": 943091,
+          "sha256": "922341346adb9515ae0b81ecfd127a071b64ffd3e2abc64c341bd6028369d1b5",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_web_cms_hard_074_multi_session_development_expert_01/runtime_events.deepagents.jsonl",
+          "observed_size_bytes": 415468,
+          "analyzed_bytes": 415468,
+          "sha256": "3b58525b877638356123c5367c7ee145d57bf9f44d809fbe1f952a2abc15cd7f",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/server/runtime_events.sglang.jsonl",
+          "observed_size_bytes": 4515014,
+          "analyzed_bytes": 4515014,
+          "sha256": "b7506215e801c0d92019cb5fa3426b65244de8173b9f6469c8c4eff586b42fa9",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/server/runtime_audit.jsonl",
+          "observed_size_bytes": 471195171,
+          "analyzed_bytes": 471195171,
+          "sha256": "5f7123971e33d975a50432692dd93fb9fe06a9a706496a12a5d3f5b9673db3a9",
+          "discarded_tail_bytes": 0
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_api_gateway_hard_009_bug_investigation_expert_01/result.json",
+          "analyzed_bytes": 7454,
+          "sha256": "948301e6da91d7a55e8b34a6fe02687ebfc8cbe9a475e44626d86c4aafee3864"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01/result.json",
+          "analyzed_bytes": 7666,
+          "sha256": "5ef1f1b4e3ae4dd58f3d46369dafbafbd59d36ae5c23fb49409fd19d49019727"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/result.json",
+          "analyzed_bytes": 7369,
+          "sha256": "2bddd2ab001d47fb5c75d80ab4a6f2ca9c55210680e77e267971558a3a6de97e"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_api_gateway_hard_009_integration_testing_expert_01/result.json",
+          "analyzed_bytes": 6823,
+          "sha256": "f0db8454240f4074932871fb68a2e1bbf308565e6b228bf6095850107c3a0242"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_game_simulation_medium_033_bug_investigation_expert_01/result.json",
+          "analyzed_bytes": 8069,
+          "sha256": "68b3dae5ad122961b6709b71bcdb1b621d5750d4733e29139e0c3a3d2434693c"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01/result.json",
+          "analyzed_bytes": 10522,
+          "sha256": "061a75055e8e6a19701ce9fe46b2a22cf423ee8fc0265764db700dc41363549a"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_game_simulation_medium_033_integration_testing_expert_01/result.json",
+          "analyzed_bytes": 8457,
+          "sha256": "30ab06ec0d0bb1be88b92bc488e9e8fd2d0c1db07101edf8d0637b3b74e7f6ed"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_game_simulation_medium_033_multi_session_development_expert_01/result.json",
+          "analyzed_bytes": 7317,
+          "sha256": "5181288dfec202e2fa7c3ddcd476143fd537c9d5509bc00ce1f082363ac5b405"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_mobile_game_hard_060_bug_investigation_expert_01/result.json",
+          "analyzed_bytes": 8730,
+          "sha256": "56dcea7f7adc1510bbb3c67b61b0077145b41e655f11ff8d5a6e0e349c1e45c3"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_mobile_game_hard_060_cross_file_refactoring_expert_01/result.json",
+          "analyzed_bytes": 7240,
+          "sha256": "05e7e9b14475bce3071fefc5d82574bbf4922ba2bf6e40f7b4900cc212db95bc"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_mobile_game_hard_060_feature_implementation_expert_01/result.json",
+          "analyzed_bytes": 7410,
+          "sha256": "1c045dd948fefdcff6ce99eea5d764679a2da387f2ded77173d15f69113bb74e"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_mobile_game_hard_060_integration_testing_expert_01/result.json",
+          "analyzed_bytes": 7544,
+          "sha256": "6399b39466e37e77fd6b5482f50a5a9be0e67b4cf156696c840792c96694640b"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_system_automation_hard_062_bug_investigation_expert_01/result.json",
+          "analyzed_bytes": 6481,
+          "sha256": "c0f676582b3fe4e5fc8134df260fb70b90adddb22eeab9bff006a87852634e77"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_system_automation_hard_062_cross_file_refactoring_expert_01/result.json",
+          "analyzed_bytes": 6714,
+          "sha256": "2e0b8edff730ecaf5a1e4f62bfeecbd17b6547fcad0cc9a917a3cb8f4fe87b61"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_system_automation_hard_062_feature_implementation_expert_01/result.json",
+          "analyzed_bytes": 6886,
+          "sha256": "c9b4642795ccd8ec1f3e407769212d6cf88bc55268f86b79489cf8bfe586917f"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_system_automation_hard_062_multi_session_development_expert_01/result.json",
+          "analyzed_bytes": 18434,
+          "sha256": "1717683c43db2b4b702be87d9fb5248220a907abe6671e46236e262a7efa53ac"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_system_networking_hard_027_bug_investigation_medium_01/result.json",
+          "analyzed_bytes": 8111,
+          "sha256": "d94283f6cccaebe692ceb5122205b71a55578196ef33d2d91f84a3f85c9eb9a0"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_system_networking_hard_027_feature_implementation_medium_01/result.json",
+          "analyzed_bytes": 7223,
+          "sha256": "a71fb9163255160caae82f051a2087e544b5ab1abeb25bc797427de9a324ec56"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_system_networking_hard_027_integration_testing_medium_01/result.json",
+          "analyzed_bytes": 6688,
+          "sha256": "19ed99613c824ad7818f1a6fa41d491672414bafb3b3087c9798c7c68ff86d8a"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_system_networking_hard_027_multi_session_development_medium_01/result.json",
+          "analyzed_bytes": 6933,
+          "sha256": "a7cf822bc23fb84358787482bb72f2f618eddd65d17f6a23abb0cef9452113a0"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/result.json",
+          "analyzed_bytes": 8497,
+          "sha256": "99614f1a21349f091db9ed1b787bf6f1e1bcf8c0d910eea1f9312a24988193b3"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_web_cms_hard_074_feature_implementation_expert_01/result.json",
+          "analyzed_bytes": 8124,
+          "sha256": "126eab2cebc1b873313c07e71875f8a2ed109bea66609bfe989590f2a1a3b8c1"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_web_cms_hard_074_integration_testing_expert_01/result.json",
+          "analyzed_bytes": 8438,
+          "sha256": "0d857a16b096f370f53dbdcc316fdf5149fdd34ee56d48f0cb100fc10f1bd9b3"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native/client_24/workflows/locobench__python_web_cms_hard_074_multi_session_development_expert_01/result.json",
+          "analyzed_bytes": 8804,
+          "sha256": "c9143d177c2b274f3ba68e4c7d84beea77f9ff361108b60375428ca7d085e9b7"
+        }
+      ]
+    }
+  },
+  "paired_workflows": [
+    {
+      "instance_id": "locobench__python_mobile_game_hard_060_bug_investigation_expert_01",
+      "predictive": {
+        "instance_id": "locobench__python_mobile_game_hard_060_bug_investigation_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_bug_investigation_expert_01:128d3f21c395",
+        "jct_seconds": 1521.6869913572446,
+        "natural_terminal": false,
+        "native_agent_jct_eligible": false,
+        "outcome": "completed",
+        "counts": {
+          "requests": 410,
+          "prompt_tokens": 81487789,
+          "logical_uncached_prompt_tokens": 732589,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 161876,
+          "actual_extend_tokens": 732589,
+          "full_match_gap_extend_tokens": 161876,
+          "native_prefill_request_samples": 554
+        },
+        "delegation_rounds": 0,
+        "tools": 403
+      },
+      "native": {
+        "instance_id": "locobench__python_mobile_game_hard_060_bug_investigation_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_bug_investigation_expert_01:128d3f21c395",
+        "jct_seconds": 1266.27355424501,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 189,
+          "prompt_tokens": 34315719,
+          "logical_uncached_prompt_tokens": 384839,
+          "logical_host_hit_tokens": 663689,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 2866,
+          "actual_extend_tokens": 384839,
+          "full_match_gap_extend_tokens": 2866,
+          "native_prefill_request_samples": 262
+        },
+        "delegation_rounds": 1,
+        "tools": 186
+      },
+      "actual_extend_difference": 347750,
+      "jct_difference_seconds": 255.41343711223453
+    },
+    {
+      "instance_id": "locobench__python_system_automation_hard_062_multi_session_development_expert_01",
+      "predictive": {
+        "instance_id": "locobench__python_system_automation_hard_062_multi_session_development_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_multi_session_development_expert_01:af2c0b13ed8f",
+        "jct_seconds": 674.1830843165517,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 65,
+          "prompt_tokens": 10017268,
+          "logical_uncached_prompt_tokens": 329892,
+          "logical_host_hit_tokens": 832,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 5051,
+          "actual_extend_tokens": 329892,
+          "full_match_gap_extend_tokens": 5051,
+          "native_prefill_request_samples": 132
+        },
+        "delegation_rounds": 1,
+        "tools": 61
+      },
+      "native": {
+        "instance_id": "locobench__python_system_automation_hard_062_multi_session_development_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_multi_session_development_expert_01:af2c0b13ed8f",
+        "jct_seconds": 472.9555794419721,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 31,
+          "prompt_tokens": 4437051,
+          "logical_uncached_prompt_tokens": 165955,
+          "logical_host_hit_tokens": 680549,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 4727,
+          "actual_extend_tokens": 165955,
+          "full_match_gap_extend_tokens": 4727,
+          "native_prefill_request_samples": 63
+        },
+        "delegation_rounds": 1,
+        "tools": 30
+      },
+      "actual_extend_difference": 163937,
+      "jct_difference_seconds": 201.2275048745796
+    },
+    {
+      "instance_id": "locobench__python_mobile_game_hard_060_cross_file_refactoring_expert_01",
+      "predictive": {
+        "instance_id": "locobench__python_mobile_game_hard_060_cross_file_refactoring_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_cross_file_refactoring_expert_01:52445db72cd0",
+        "jct_seconds": 475.46440559625626,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 58,
+          "prompt_tokens": 10514181,
+          "logical_uncached_prompt_tokens": 200901,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 156971,
+          "actual_extend_tokens": 200901,
+          "full_match_gap_extend_tokens": 156971,
+          "native_prefill_request_samples": 96
+        },
+        "delegation_rounds": 0,
+        "tools": 55
+      },
+      "native": {
+        "instance_id": "locobench__python_mobile_game_hard_060_cross_file_refactoring_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_cross_file_refactoring_expert_01:52445db72cd0",
+        "jct_seconds": 492.99136908818036,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 49,
+          "prompt_tokens": 8795491,
+          "logical_uncached_prompt_tokens": 46134,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 1809,
+          "actual_extend_tokens": 46134,
+          "full_match_gap_extend_tokens": 1809,
+          "native_prefill_request_samples": 49
+        },
+        "delegation_rounds": 0,
+        "tools": 47
+      },
+      "actual_extend_difference": 154767,
+      "jct_difference_seconds": -17.526963491924107
+    },
+    {
+      "instance_id": "locobench__python_api_gateway_hard_009_feature_implementation_expert_01",
+      "predictive": {
+        "instance_id": "locobench__python_api_gateway_hard_009_feature_implementation_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_feature_implementation_expert_01:b9a896266984",
+        "jct_seconds": 903.7370888534933,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 92,
+          "prompt_tokens": 16614257,
+          "logical_uncached_prompt_tokens": 218852,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 1735,
+          "actual_extend_tokens": 218852,
+          "full_match_gap_extend_tokens": 1735,
+          "native_prefill_request_samples": 124
+        },
+        "delegation_rounds": 0,
+        "tools": 94
+      },
+      "native": {
+        "instance_id": "locobench__python_api_gateway_hard_009_feature_implementation_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_feature_implementation_expert_01:b9a896266984",
+        "jct_seconds": 830.9721208633855,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 68,
+          "prompt_tokens": 11649334,
+          "logical_uncached_prompt_tokens": 70838,
+          "logical_host_hit_tokens": 185837,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 1569,
+          "actual_extend_tokens": 70838,
+          "full_match_gap_extend_tokens": 1569,
+          "native_prefill_request_samples": 69
+        },
+        "delegation_rounds": 0,
+        "tools": 71
+      },
+      "actual_extend_difference": 148014,
+      "jct_difference_seconds": 72.76496799010783
+    },
+    {
+      "instance_id": "locobench__python_system_automation_hard_062_cross_file_refactoring_expert_01",
+      "predictive": {
+        "instance_id": "locobench__python_system_automation_hard_062_cross_file_refactoring_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_cross_file_refactoring_expert_01:926fc6384b1c",
+        "jct_seconds": 444.32846615463495,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 63,
+          "prompt_tokens": 10089353,
+          "logical_uncached_prompt_tokens": 174281,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 132333,
+          "actual_extend_tokens": 174281,
+          "full_match_gap_extend_tokens": 132333,
+          "native_prefill_request_samples": 96
+        },
+        "delegation_rounds": 0,
+        "tools": 53
+      },
+      "native": {
+        "instance_id": "locobench__python_system_automation_hard_062_cross_file_refactoring_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_cross_file_refactoring_expert_01:926fc6384b1c",
+        "jct_seconds": 474.6642981925979,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 55,
+          "prompt_tokens": 8633844,
+          "logical_uncached_prompt_tokens": 41588,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 3816,
+          "actual_extend_tokens": 41588,
+          "full_match_gap_extend_tokens": 3816,
+          "native_prefill_request_samples": 56
+        },
+        "delegation_rounds": 0,
+        "tools": 48
+      },
+      "actual_extend_difference": 132693,
+      "jct_difference_seconds": -30.335832037962973
+    },
+    {
+      "instance_id": "locobench__python_system_networking_hard_027_bug_investigation_medium_01",
+      "predictive": {
+        "instance_id": "locobench__python_system_networking_hard_027_bug_investigation_medium_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_bug_investigation_medium_01:d5101b62f331",
+        "jct_seconds": 352.34460033103824,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 28,
+          "prompt_tokens": 4705512,
+          "logical_uncached_prompt_tokens": 179240,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 1067,
+          "actual_extend_tokens": 179240,
+          "full_match_gap_extend_tokens": 1067,
+          "native_prefill_request_samples": 65
+        },
+        "delegation_rounds": 0,
+        "tools": 27
+      },
+      "native": {
+        "instance_id": "locobench__python_system_networking_hard_027_bug_investigation_medium_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_bug_investigation_medium_01:d5101b62f331",
+        "jct_seconds": 610.5104497596622,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 52,
+          "prompt_tokens": 9333828,
+          "logical_uncached_prompt_tokens": 46596,
+          "logical_host_hit_tokens": 269524,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 842,
+          "actual_extend_tokens": 46596,
+          "full_match_gap_extend_tokens": 842,
+          "native_prefill_request_samples": 52
+        },
+        "delegation_rounds": 0,
+        "tools": 49
+      },
+      "actual_extend_difference": 132644,
+      "jct_difference_seconds": -258.1658494286239
+    },
+    {
+      "instance_id": "locobench__python_web_cms_hard_074_feature_implementation_expert_01",
+      "predictive": {
+        "instance_id": "locobench__python_web_cms_hard_074_feature_implementation_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:59819c3547f5",
+        "jct_seconds": 634.3758987281471,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 71,
+          "prompt_tokens": 11133560,
+          "logical_uncached_prompt_tokens": 196527,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 5399,
+          "actual_extend_tokens": 196527,
+          "full_match_gap_extend_tokens": 5399,
+          "native_prefill_request_samples": 106
+        },
+        "delegation_rounds": 1,
+        "tools": 72
+      },
+      "native": {
+        "instance_id": "locobench__python_web_cms_hard_074_feature_implementation_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:59819c3547f5",
+        "jct_seconds": 801.6464498527348,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 69,
+          "prompt_tokens": 10690811,
+          "logical_uncached_prompt_tokens": 73475,
+          "logical_host_hit_tokens": 185305,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 4380,
+          "actual_extend_tokens": 73475,
+          "full_match_gap_extend_tokens": 4380,
+          "native_prefill_request_samples": 72
+        },
+        "delegation_rounds": 1,
+        "tools": 95
+      },
+      "actual_extend_difference": 123052,
+      "jct_difference_seconds": -167.27055112458766
+    },
+    {
+      "instance_id": "locobench__python_game_simulation_medium_033_bug_investigation_expert_01",
+      "predictive": {
+        "instance_id": "locobench__python_game_simulation_medium_033_bug_investigation_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:a10dc6d3d84c",
+        "jct_seconds": 434.1870460258797,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 89,
+          "prompt_tokens": 11786457,
+          "logical_uncached_prompt_tokens": 400714,
+          "logical_host_hit_tokens": 138816,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 114660,
+          "actual_extend_tokens": 400714,
+          "full_match_gap_extend_tokens": 114660,
+          "native_prefill_request_samples": 173
+        },
+        "delegation_rounds": 2,
+        "tools": 106
+      },
+      "native": {
+        "instance_id": "locobench__python_game_simulation_medium_033_bug_investigation_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:a10dc6d3d84c",
+        "jct_seconds": 584.5356977926567,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 68,
+          "prompt_tokens": 9273080,
+          "logical_uncached_prompt_tokens": 292408,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 225755,
+          "actual_extend_tokens": 292408,
+          "full_match_gap_extend_tokens": 225755,
+          "native_prefill_request_samples": 122
+        },
+        "delegation_rounds": 1,
+        "tools": 71
+      },
+      "actual_extend_difference": 108306,
+      "jct_difference_seconds": -150.34865176677704
+    },
+    {
+      "instance_id": "locobench__python_game_simulation_medium_033_integration_testing_expert_01",
+      "predictive": {
+        "instance_id": "locobench__python_game_simulation_medium_033_integration_testing_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:e823ae929fb4",
+        "jct_seconds": 428.1425606859848,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 18,
+          "prompt_tokens": 2349997,
+          "logical_uncached_prompt_tokens": 141217,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 1621,
+          "actual_extend_tokens": 141217,
+          "full_match_gap_extend_tokens": 1621,
+          "native_prefill_request_samples": 49
+        },
+        "delegation_rounds": 0,
+        "tools": 19
+      },
+      "native": {
+        "instance_id": "locobench__python_game_simulation_medium_033_integration_testing_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:e823ae929fb4",
+        "jct_seconds": 732.4965557614341,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 48,
+          "prompt_tokens": 6598456,
+          "logical_uncached_prompt_tokens": 58975,
+          "logical_host_hit_tokens": 60898,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 3673,
+          "actual_extend_tokens": 58975,
+          "full_match_gap_extend_tokens": 3673,
+          "native_prefill_request_samples": 49
+        },
+        "delegation_rounds": 1,
+        "tools": 49
+      },
+      "actual_extend_difference": 82242,
+      "jct_difference_seconds": -304.35399507544935
+    },
+    {
+      "instance_id": "locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01",
+      "predictive": {
+        "instance_id": "locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:72e54424ab6d",
+        "jct_seconds": 893.3639084277675,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 79,
+          "prompt_tokens": 13901756,
+          "logical_uncached_prompt_tokens": 90753,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 5697,
+          "actual_extend_tokens": 90753,
+          "full_match_gap_extend_tokens": 5697,
+          "native_prefill_request_samples": 81
+        },
+        "delegation_rounds": 0,
+        "tools": 85
+      },
+      "native": {
+        "instance_id": "locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:72e54424ab6d",
+        "jct_seconds": 782.8627656176686,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 61,
+          "prompt_tokens": 10171774,
+          "logical_uncached_prompt_tokens": 59602,
+          "logical_host_hit_tokens": 188665,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 5205,
+          "actual_extend_tokens": 59602,
+          "full_match_gap_extend_tokens": 5205,
+          "native_prefill_request_samples": 65
+        },
+        "delegation_rounds": 0,
+        "tools": 67
+      },
+      "actual_extend_difference": 31151,
+      "jct_difference_seconds": 110.50114281009883
+    },
+    {
+      "instance_id": "locobench__python_api_gateway_hard_009_integration_testing_expert_01",
+      "predictive": {
+        "instance_id": "locobench__python_api_gateway_hard_009_integration_testing_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_integration_testing_expert_01:6e732b7fc467",
+        "jct_seconds": 665.4873311892152,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 61,
+          "prompt_tokens": 10351085,
+          "logical_uncached_prompt_tokens": 202685,
+          "logical_host_hit_tokens": 448,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 127781,
+          "actual_extend_tokens": 202685,
+          "full_match_gap_extend_tokens": 127781,
+          "native_prefill_request_samples": 97
+        },
+        "delegation_rounds": 0,
+        "tools": 57
+      },
+      "native": {
+        "instance_id": "locobench__python_api_gateway_hard_009_integration_testing_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_integration_testing_expert_01:6e732b7fc467",
+        "jct_seconds": 540.9794690879062,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 46,
+          "prompt_tokens": 7186291,
+          "logical_uncached_prompt_tokens": 178675,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 131471,
+          "actual_extend_tokens": 178675,
+          "full_match_gap_extend_tokens": 131471,
+          "native_prefill_request_samples": 79
+        },
+        "delegation_rounds": 0,
+        "tools": 41
+      },
+      "actual_extend_difference": 24010,
+      "jct_difference_seconds": 124.507862101309
+    },
+    {
+      "instance_id": "locobench__python_system_networking_hard_027_feature_implementation_medium_01",
+      "predictive": {
+        "instance_id": "locobench__python_system_networking_hard_027_feature_implementation_medium_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_feature_implementation_medium_01:1b62099d13aa",
+        "jct_seconds": 569.7381525021046,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 76,
+          "prompt_tokens": 13954817,
+          "logical_uncached_prompt_tokens": 202088,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 153533,
+          "actual_extend_tokens": 202088,
+          "full_match_gap_extend_tokens": 153533,
+          "native_prefill_request_samples": 113
+        },
+        "delegation_rounds": 0,
+        "tools": 77
+      },
+      "native": {
+        "instance_id": "locobench__python_system_networking_hard_027_feature_implementation_medium_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_feature_implementation_medium_01:1b62099d13aa",
+        "jct_seconds": 563.535705992952,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 49,
+          "prompt_tokens": 8867378,
+          "logical_uncached_prompt_tokens": 195442,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 153140,
+          "actual_extend_tokens": 195442,
+          "full_match_gap_extend_tokens": 153140,
+          "native_prefill_request_samples": 86
+        },
+        "delegation_rounds": 0,
+        "tools": 49
+      },
+      "actual_extend_difference": 6646,
+      "jct_difference_seconds": 6.202446509152651
+    },
+    {
+      "instance_id": "locobench__python_mobile_game_hard_060_feature_implementation_expert_01",
+      "predictive": {
+        "instance_id": "locobench__python_mobile_game_hard_060_feature_implementation_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_feature_implementation_expert_01:f7e4f0fa186f",
+        "jct_seconds": 671.6704692738131,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 96,
+          "prompt_tokens": 19455177,
+          "logical_uncached_prompt_tokens": 66249,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 5647,
+          "actual_extend_tokens": 66249,
+          "full_match_gap_extend_tokens": 5647,
+          "native_prefill_request_samples": 103
+        },
+        "delegation_rounds": 0,
+        "tools": 116
+      },
+      "native": {
+        "instance_id": "locobench__python_mobile_game_hard_060_feature_implementation_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_feature_implementation_expert_01:f7e4f0fa186f",
+        "jct_seconds": 813.7769675729796,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 75,
+          "prompt_tokens": 14735682,
+          "logical_uncached_prompt_tokens": 60930,
+          "logical_host_hit_tokens": 197052,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 5644,
+          "actual_extend_tokens": 60930,
+          "full_match_gap_extend_tokens": 5644,
+          "native_prefill_request_samples": 80
+        },
+        "delegation_rounds": 0,
+        "tools": 87
+      },
+      "actual_extend_difference": 5319,
+      "jct_difference_seconds": -142.10649829916656
+    },
+    {
+      "instance_id": "locobench__python_system_networking_hard_027_multi_session_development_medium_01",
+      "predictive": {
+        "instance_id": "locobench__python_system_networking_hard_027_multi_session_development_medium_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_multi_session_development_medium_01:129aba3a0a6d",
+        "jct_seconds": 634.7741774097085,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 59,
+          "prompt_tokens": 10449118,
+          "logical_uncached_prompt_tokens": 49376,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 1632,
+          "actual_extend_tokens": 49376,
+          "full_match_gap_extend_tokens": 1632,
+          "native_prefill_request_samples": 60
+        },
+        "delegation_rounds": 0,
+        "tools": 57
+      },
+      "native": {
+        "instance_id": "locobench__python_system_networking_hard_027_multi_session_development_medium_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_multi_session_development_medium_01:129aba3a0a6d",
+        "jct_seconds": 785.0004094298929,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 71,
+          "prompt_tokens": 12835193,
+          "logical_uncached_prompt_tokens": 44985,
+          "logical_host_hit_tokens": 103370,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 1623,
+          "actual_extend_tokens": 44985,
+          "full_match_gap_extend_tokens": 1623,
+          "native_prefill_request_samples": 71
+        },
+        "delegation_rounds": 0,
+        "tools": 71
+      },
+      "actual_extend_difference": 4391,
+      "jct_difference_seconds": -150.2262320201844
+    },
+    {
+      "instance_id": "locobench__python_web_cms_hard_074_multi_session_development_expert_01",
+      "predictive": {
+        "instance_id": "locobench__python_web_cms_hard_074_multi_session_development_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_multi_session_development_expert_01:458d6e4fbf02",
+        "jct_seconds": 412.58691834751517,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 64,
+          "prompt_tokens": 10049689,
+          "logical_uncached_prompt_tokens": 165465,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 125554,
+          "actual_extend_tokens": 165465,
+          "full_match_gap_extend_tokens": 125554,
+          "native_prefill_request_samples": 95
+        },
+        "delegation_rounds": 0,
+        "tools": 68
+      },
+      "native": {
+        "instance_id": "locobench__python_web_cms_hard_074_multi_session_development_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_multi_session_development_expert_01:458d6e4fbf02",
+        "jct_seconds": 576.1238727429882,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 70,
+          "prompt_tokens": 11305308,
+          "logical_uncached_prompt_tokens": 180956,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 125916,
+          "actual_extend_tokens": 180956,
+          "full_match_gap_extend_tokens": 125916,
+          "native_prefill_request_samples": 100
+        },
+        "delegation_rounds": 0,
+        "tools": 71
+      },
+      "actual_extend_difference": -15491,
+      "jct_difference_seconds": -163.536954395473
+    },
+    {
+      "instance_id": "locobench__python_game_simulation_medium_033_multi_session_development_expert_01",
+      "predictive": {
+        "instance_id": "locobench__python_game_simulation_medium_033_multi_session_development_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_multi_session_development_expert_01:73b79be19142",
+        "jct_seconds": 829.1589078465477,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 78,
+          "prompt_tokens": 11807628,
+          "logical_uncached_prompt_tokens": 69908,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 4381,
+          "actual_extend_tokens": 69908,
+          "full_match_gap_extend_tokens": 4381,
+          "native_prefill_request_samples": 80
+        },
+        "delegation_rounds": 0,
+        "tools": 71
+      },
+      "native": {
+        "instance_id": "locobench__python_game_simulation_medium_033_multi_session_development_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_multi_session_development_expert_01:73b79be19142",
+        "jct_seconds": 1448.7665114356205,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 116,
+          "prompt_tokens": 19365808,
+          "logical_uncached_prompt_tokens": 93436,
+          "logical_host_hit_tokens": 120512,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 4238,
+          "actual_extend_tokens": 93436,
+          "full_match_gap_extend_tokens": 4238,
+          "native_prefill_request_samples": 117
+        },
+        "delegation_rounds": 0,
+        "tools": 116
+      },
+      "actual_extend_difference": -23528,
+      "jct_difference_seconds": -619.6076035890728
+    },
+    {
+      "instance_id": "locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01",
+      "predictive": {
+        "instance_id": "locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01:4a49b2d20bce",
+        "jct_seconds": 439.5039356285706,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 31,
+          "prompt_tokens": 4585983,
+          "logical_uncached_prompt_tokens": 31871,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 2030,
+          "actual_extend_tokens": 31871,
+          "full_match_gap_extend_tokens": 2030,
+          "native_prefill_request_samples": 32
+        },
+        "delegation_rounds": 0,
+        "tools": 38
+      },
+      "native": {
+        "instance_id": "locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01:4a49b2d20bce",
+        "jct_seconds": 826.9188556401059,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 86,
+          "prompt_tokens": 12729380,
+          "logical_uncached_prompt_tokens": 69315,
+          "logical_host_hit_tokens": 94842,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 4253,
+          "actual_extend_tokens": 69315,
+          "full_match_gap_extend_tokens": 4253,
+          "native_prefill_request_samples": 88
+        },
+        "delegation_rounds": 1,
+        "tools": 120
+      },
+      "actual_extend_difference": -37444,
+      "jct_difference_seconds": -387.4149200115353
+    },
+    {
+      "instance_id": "locobench__python_system_automation_hard_062_bug_investigation_expert_01",
+      "predictive": {
+        "instance_id": "locobench__python_system_automation_hard_062_bug_investigation_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0",
+        "jct_seconds": 436.9057687940076,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 37,
+          "prompt_tokens": 5476312,
+          "logical_uncached_prompt_tokens": 83124,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 8285,
+          "actual_extend_tokens": 83124,
+          "full_match_gap_extend_tokens": 8285,
+          "native_prefill_request_samples": 47
+        },
+        "delegation_rounds": 2,
+        "tools": 66
+      },
+      "native": {
+        "instance_id": "locobench__python_system_automation_hard_062_bug_investigation_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0",
+        "jct_seconds": 457.0023779151961,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 32,
+          "prompt_tokens": 4642665,
+          "logical_uncached_prompt_tokens": 151863,
+          "logical_host_hit_tokens": 125517,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 450,
+          "actual_extend_tokens": 151863,
+          "full_match_gap_extend_tokens": 450,
+          "native_prefill_request_samples": 64
+        },
+        "delegation_rounds": 0,
+        "tools": 31
+      },
+      "actual_extend_difference": -68739,
+      "jct_difference_seconds": -20.09660912118852
+    },
+    {
+      "instance_id": "locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01",
+      "predictive": {
+        "instance_id": "locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d",
+        "jct_seconds": 1862.7529749516398,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 287,
+          "prompt_tokens": 41683755,
+          "logical_uncached_prompt_tokens": 737783,
+          "logical_host_hit_tokens": 1024,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 355999,
+          "actual_extend_tokens": 737783,
+          "full_match_gap_extend_tokens": 355999,
+          "native_prefill_request_samples": 405
+        },
+        "delegation_rounds": 5,
+        "tools": 299
+      },
+      "native": {
+        "instance_id": "locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d",
+        "jct_seconds": 1795.9871577182785,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 340,
+          "prompt_tokens": 51335054,
+          "logical_uncached_prompt_tokens": 815959,
+          "logical_host_hit_tokens": 513146,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 25719,
+          "actual_extend_tokens": 815959,
+          "full_match_gap_extend_tokens": 25719,
+          "native_prefill_request_samples": 464
+        },
+        "delegation_rounds": 2,
+        "tools": 356
+      },
+      "actual_extend_difference": -78176,
+      "jct_difference_seconds": 66.7658172333613
+    },
+    {
+      "instance_id": "locobench__python_system_automation_hard_062_feature_implementation_expert_01",
+      "predictive": {
+        "instance_id": "locobench__python_system_automation_hard_062_feature_implementation_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_feature_implementation_expert_01:9bea66e4871b",
+        "jct_seconds": 764.8176648756489,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 122,
+          "prompt_tokens": 23587781,
+          "logical_uncached_prompt_tokens": 107461,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 2428,
+          "actual_extend_tokens": 107461,
+          "full_match_gap_extend_tokens": 2428,
+          "native_prefill_request_samples": 124
+        },
+        "delegation_rounds": 0,
+        "tools": 127
+      },
+      "native": {
+        "instance_id": "locobench__python_system_automation_hard_062_feature_implementation_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_feature_implementation_expert_01:9bea66e4871b",
+        "jct_seconds": 654.4305575210601,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 66,
+          "prompt_tokens": 11279939,
+          "logical_uncached_prompt_tokens": 210723,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 137214,
+          "actual_extend_tokens": 210723,
+          "full_match_gap_extend_tokens": 137214,
+          "native_prefill_request_samples": 99
+        },
+        "delegation_rounds": 0,
+        "tools": 64
+      },
+      "actual_extend_difference": -103262,
+      "jct_difference_seconds": 110.3871073545888
+    },
+    {
+      "instance_id": "locobench__python_mobile_game_hard_060_integration_testing_expert_01",
+      "predictive": {
+        "instance_id": "locobench__python_mobile_game_hard_060_integration_testing_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_integration_testing_expert_01:8e07fbec81f0",
+        "jct_seconds": 645.1943256212398,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 72,
+          "prompt_tokens": 12671949,
+          "logical_uncached_prompt_tokens": 233357,
+          "logical_host_hit_tokens": 3136,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 5867,
+          "actual_extend_tokens": 233357,
+          "full_match_gap_extend_tokens": 5867,
+          "native_prefill_request_samples": 110
+        },
+        "delegation_rounds": 1,
+        "tools": 69
+      },
+      "native": {
+        "instance_id": "locobench__python_mobile_game_hard_060_integration_testing_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_integration_testing_expert_01:8e07fbec81f0",
+        "jct_seconds": 638.1167008411139,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 75,
+          "prompt_tokens": 12835729,
+          "logical_uncached_prompt_tokens": 365209,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 155185,
+          "actual_extend_tokens": 365209,
+          "full_match_gap_extend_tokens": 155185,
+          "native_prefill_request_samples": 149
+        },
+        "delegation_rounds": 1,
+        "tools": 70
+      },
+      "actual_extend_difference": -131852,
+      "jct_difference_seconds": 7.077624780125916
+    },
+    {
+      "instance_id": "locobench__python_web_cms_hard_074_integration_testing_expert_01",
+      "predictive": {
+        "instance_id": "locobench__python_web_cms_hard_074_integration_testing_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:c3b6d255ae67",
+        "jct_seconds": 1116.9905818430707,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 125,
+          "prompt_tokens": 20740920,
+          "logical_uncached_prompt_tokens": 247096,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 4157,
+          "actual_extend_tokens": 247096,
+          "full_match_gap_extend_tokens": 4157,
+          "native_prefill_request_samples": 157
+        },
+        "delegation_rounds": 1,
+        "tools": 144
+      },
+      "native": {
+        "instance_id": "locobench__python_web_cms_hard_074_integration_testing_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:c3b6d255ae67",
+        "jct_seconds": 1598.6104370011017,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 152,
+          "prompt_tokens": 26108633,
+          "logical_uncached_prompt_tokens": 383084,
+          "logical_host_hit_tokens": 51836,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 3437,
+          "actual_extend_tokens": 383084,
+          "full_match_gap_extend_tokens": 3437,
+          "native_prefill_request_samples": 215
+        },
+        "delegation_rounds": 1,
+        "tools": 163
+      },
+      "actual_extend_difference": -135988,
+      "jct_difference_seconds": -481.619855158031
+    },
+    {
+      "instance_id": "locobench__python_system_networking_hard_027_integration_testing_medium_01",
+      "predictive": {
+        "instance_id": "locobench__python_system_networking_hard_027_integration_testing_medium_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:f5e3ec41a8b6",
+        "jct_seconds": 611.3583487272263,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 36,
+          "prompt_tokens": 6404821,
+          "logical_uncached_prompt_tokens": 44757,
+          "logical_host_hit_tokens": 896,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 3608,
+          "actual_extend_tokens": 44757,
+          "full_match_gap_extend_tokens": 3608,
+          "native_prefill_request_samples": 36
+        },
+        "delegation_rounds": 0,
+        "tools": 36
+      },
+      "native": {
+        "instance_id": "locobench__python_system_networking_hard_027_integration_testing_medium_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:f5e3ec41a8b6",
+        "jct_seconds": 1076.147026810795,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 61,
+          "prompt_tokens": 11625691,
+          "logical_uncached_prompt_tokens": 222619,
+          "logical_host_hit_tokens": 77395,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 1359,
+          "actual_extend_tokens": 222619,
+          "full_match_gap_extend_tokens": 1359,
+          "native_prefill_request_samples": 100
+        },
+        "delegation_rounds": 0,
+        "tools": 63
+      },
+      "actual_extend_difference": -177862,
+      "jct_difference_seconds": -464.7886780835688
+    },
+    {
+      "instance_id": "locobench__python_api_gateway_hard_009_bug_investigation_expert_01",
+      "predictive": {
+        "instance_id": "locobench__python_api_gateway_hard_009_bug_investigation_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_bug_investigation_expert_01:e439e2a70de6",
+        "jct_seconds": 455.5464890887961,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 31,
+          "prompt_tokens": 4531995,
+          "logical_uncached_prompt_tokens": 32272,
+          "logical_host_hit_tokens": 0,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 2424,
+          "actual_extend_tokens": 32272,
+          "full_match_gap_extend_tokens": 2424,
+          "native_prefill_request_samples": 31
+        },
+        "delegation_rounds": 0,
+        "tools": 41
+      },
+      "native": {
+        "instance_id": "locobench__python_api_gateway_hard_009_bug_investigation_expert_01",
+        "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_bug_investigation_expert_01:e439e2a70de6",
+        "jct_seconds": 1079.2694839043543,
+        "natural_terminal": true,
+        "native_agent_jct_eligible": true,
+        "outcome": "completed",
+        "counts": {
+          "requests": 156,
+          "prompt_tokens": 23376119,
+          "logical_uncached_prompt_tokens": 341815,
+          "logical_host_hit_tokens": 853343,
+          "full_match_beyond_effective_hybrid_prefix_tokens": 8152,
+          "actual_extend_tokens": 341815,
+          "full_match_gap_extend_tokens": 8152,
+          "native_prefill_request_samples": 220
+        },
+        "delegation_rounds": 3,
+        "tools": 163
+      },
+      "actual_extend_difference": -309543,
+      "jct_difference_seconds": -623.7229948155582
+    }
+  ],
+  "source_sha256": {
+    "/home/longhao/experiment/ops/audit_v91b_input_work_20261020.py": "24a9d5a9e5e6d9baa8b9db32a94cca80ffec702f6963725aad9b5b6ccba74f59",
+    "/home/longhao/experiment/BeliefKV/scripts/audit_native_hybrid_reuse.py": "177d0dd9bb939cd32f14398d142b52745fa43ef7ab569795d30aba4facba73ff"
+  },
+  "scope": [
+    "All24 workflows retained, including the intervention-marked predictive result.",
+    "Native batch geometry gives executed extend work; logical cache intervals are separate.",
+    "Overlap with a FULL/effective-prefix gap is not per-layer recomputation or removable GPU time.",
+    "Request-position categories are retrospective and mutually exclusive, never online features.",
+    "Realized tasks, child counts, histories and compaction may differ; no counterfactual correction.",
+    "Physical transfer bytes are not allocated to requests using logical Host hits."
+  ]
+}

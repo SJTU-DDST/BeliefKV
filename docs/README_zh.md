@@ -2,7 +2,12 @@
 
 更新日期：2026-10-20（北京时间）
 
-**V91b 完整对照已结束，准备 V92 最新修复验证。**两侧 24 completed，
+**V92 最新修复已启动，V91b 完整对照保留为参考。**V92 于北京时间
+09:02:26 启动，09:05:41 开始真实 workflow 服务；冻结 `e8010f0` 的
+970 份源码、实际进程及配置已核对，只运行 predictive，引用 V91b native。
+启动时写入无失败或丢弃，不代表全程可靠性或性能验收，见
+[V2110](../experiments/reports/v2110_v92_actual_startup_20261020.json)。
+V91b 两侧 24 completed，
 自然 JCT 资格为 23/24；predictive 一个既有图预算收尾干预单列。
 按既定共同 1537.851s 截断、600s 起算，受限平均完成时延
 681.082/813.582s，predictive 低 16.29%；decode 吞吐
@@ -16,7 +21,15 @@
 提前量形成 parent 容量需求，但不创建 DMA ticket。保持真实服务进度、
 最后一个 child、恢复+输入/decode 预留及原生所有权检查。1118 个不同
 当前源码 CPU 用例通过；两项真实 tokenizer 复查替代初次跳过，不重复
-相加。V92 将包含此修复及下述两项控制降本，复用 V91b native，不重跑基线。
+相加。V92 已包含此修复及下述两项控制降本，不重跑 native 基线。
+
+V2111 将 V91b 完整原生 prefill 几何与逻辑未命中输入逐 token 对齐：
+predictive/native 为 4,938,458/4,555,421 token，差 383,037；
+其中 347,750（90.79%）集中于发生预算收尾干预的 mobile-game bug
+workflow。主结果继续保留全部 24 个任务，不据此删任务或修正吞吐；
+也不能把额外 prefill 全部归为新增控制成本。首个 root 输入相近，
+后续轨迹、child 与压缩工作不同；独立政策收益仍待验证，见
+[V2111](../experiments/reports/v2111_v91b_completed_input_work_partition_20261020.json)。
 
 main 新增输入预算耗尽时的规划短路，V91b 未包含：无 DLLM 且本次已有
 chunk、所有输入非空时跳过无执行消费者的候选排序，身份与原生准入保留，
