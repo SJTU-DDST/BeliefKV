@@ -5,7 +5,10 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-Latest candidate V101: V99 native is complete(36/36 completed,91 JOIN,
+Current V101 launched17:36:51 Asia/Shanghai from frozen8bdc5dc;first actual
+GPU service17:40:00. V2251 verifies972 sources/540 external inputs,incremental
+tracking and healthy writer. Preserve the frozen checkout and engine.
+V99 native is complete(36/36 completed,91 JOIN,
 11 nested JOIN). V100 launched17:12:05 Asia/Shanghai but was administratively
 stopped for background D2H submission latency(V2243);all36 outcomes remained
 unobserved. Preserve partial traces rather than treating them as natural failures.
@@ -21,7 +24,7 @@ checks(V2244/V2250). Idle-device256MiB submit/stream P50 improves51.39/51.40
 to3.85/7.75ms;1GiB207.22/207.23 to15.42/30.58ms. These are transfer canaries,
 not model contention or throughput/JCT evidence. V2249 retains all previous
 cases and passes1969 application/209 engine CPU cases.
-Freeze and restart predictive using V101. The optimization is also available
+Predictive is running using frozen V101. The optimization is also available
 to native: use V99 as a development reference and later match this kernel
 when isolating agent-policy gains. Full performance acceptance remains open.
 
@@ -31,6 +34,10 @@ Mixed/split receipts remain ambiguous; Host eviction,new observed generation
 or later FULL writer ends the association. Do not assign original Host allocation
 continuity,unique consumed bytes or speedup from these associations. The95-case
 focused CPU check(V2240) adds no runtime observations or high-frequency work.
+V2252/V2253 reconcile90 early FULL backup batches/22.95GB;no capacity-release
+or restore credit is observed yet. The live240MiB cohort submit-to-return P50
+changes207.52 to3.94ms(23/40 batches),stream54.63 to32.71ms. Equal bytes
+do not control model work/pressure,and these are not end-to-end savings.
 
 Latest order override,2026-10-20 Asia/Shanghai: pause V99 predictive and run
 native now while completing FULL preparation/capacity fixes. Predictive stopped
