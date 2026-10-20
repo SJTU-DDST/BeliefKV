@@ -5302,8 +5302,9 @@ class NativeAdmissionRuntime:
                 self._native_cache, "beliefkv_join_pressure_candidates_by_component", {},
             ).get(0, ())
             excluded = {node.node_id for node in candidate.nodes}
-            # Native evictable counts need not include waiting session pages.
-            # Test a known backed cold victim only at an actual start window.
+            # Native budgets and the published eight donors can omit referenced
+            # backed FULL. The native index is only a probe hint; reclaim must
+            # still earn fresh capacity through its live ownership checks.
             can_probe = bool(
                 not fit_current_capacity and batched
                 and blocked == "prefetch_full_capacity_budget"
@@ -5311,10 +5312,19 @@ class NativeAdmissionRuntime:
                     self._native_cache, "reclaim_beliefkv_handoff_capacity", None,
                 ))
                 and now_ms >= self._wait_capacity_probe_next_ms
-                and any(
-                    node_id not in excluded
-                    and self._live_parent_pressure_node(node_id, created)
-                    for node_id, created in waiting[:8]
+                and (
+                    any(
+                        node_id not in excluded
+                        and self._live_parent_pressure_node(node_id, created)
+                        for node_id, created in waiting[:8]
+                    )
+                    or (
+                        type(backed := getattr(
+                            getattr(self._native_cache, "tree_core", None),
+                            "full_host_duplicates", None,
+                        )) is dict
+                        and any(node_id not in excluded for node_id in backed)
+                    )
                 )
             )
             if can_probe:
