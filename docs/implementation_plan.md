@@ -5,6 +5,14 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+V98 launched2026-10-20 14:13:44 Asia/Shanghai from frozen34f9362,
+with first actual workflow service14:17:23. V2181 verifies971 frozen
+sources and507 external inputs, matching actual configuration and zero
+writer failures/drops. Predictive only; reuse completed V96 native as a
+development reference. Common36-root simultaneous workload, engine and
+capacity remain unchanged. Actual useful FULL/consumption and performance
+acceptance are pending; keep the goal active.
+
 V97 was administratively interrupted at2026-10-20 13:59:38 Asia/Shanghai
 for the user's latest-code restart, with16/36 completed and20 without terminal
 results (V2177). Preserve all partial traces and frozen code; this is not a
@@ -13,8 +21,8 @@ successor-reused FULL across6 completed JOIN waits despite positive plans.
 Start-window records and ACK counts cannot substitute for that metric.
 
 The V98 candidate passes1849 current CPU cases without skips (V2180).
-Freeze and launch predictive promptly using the same36-root common contract
-and completed V96 native development reference. No performance acceptance yet.
+It is frozen and running with the same36-root common contract and completed
+V96 native development reference. No performance acceptance yet.
 
 Post-V97 main candidate connects native EOS to critical parent capacity demand.
 Price the same safe input checkpoint before free-list constraints; include native
@@ -54,9 +62,10 @@ backed cold capacity before more backups; D2H ACK, current waiting state,
 native ownership, references, locks and inflight checks still precede release.
 Ordinary tool policy is unchanged without critical demand; Mamba PREPARE stays
 off. Actual DMA, donor-to-parent consumption and performance remain unverified.
-V97 launched2026-10-20 13:32:58 Asia/Shanghai from frozen49fc2a8,
+Historical V97 launched2026-10-20 13:32:58 Asia/Shanghai from frozen49fc2a8,
 predictive-only against completed V96 native, with the same36-root simultaneous
-arrivals/common harness/tasks/engine/capacity contract.
+arrivals/common harness/tasks/engine/capacity contract. It was administratively
+stopped13:59:38 for the EOS capacity and smaller-FULL timing fixes.
 
 V96 completed2026-10-20 13:20:32 Asia/Shanghai. V2167 applies the existing
 common600–1793.304s cutoff: decode470.235/542.871 token/s remains13.38%
