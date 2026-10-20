@@ -74,6 +74,17 @@ def test_background_urgent_and_tagged_transfers_remain_separate():
     assert report["directions"]["h2d"]["bytes"] == 40
 
 
+def test_spawn_backups_have_their_own_source_and_never_count_as_predictive_h2d():
+    spawned = {**issue(), "event": "spawn_full_prepare", "max_merged_nodes": 64}
+    report = audit_data([spawned], [transfer("d2h", 2.)], [], full_unit=10)
+    assert report["rounds"]["spawn"]["issued_batches"] == 1
+    assert report["rounds"]["spawn"]["acknowledged_full_bytes"] == 40
+    assert report["rounds"]["idle"]["issued_batches"] == 0
+    assert report["rounds"]["critical"]["issued_batches"] == 0
+    assert report["native_backup_lifecycle"]["by_source"]["spawn"]["reconciled_ack_batches"] == 1
+    assert report["directions"]["h2d"]["bytes"] == 0
+
+
 def test_ambiguous_ack_cannot_supply_background_stream_or_ack_bytes():
     ack = transfer("d2h", 2., nodes=(10, 11), tokens=4, size=40)
     ack["transfer_stream_elapsed_ms"] = 2.

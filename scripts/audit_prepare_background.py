@@ -47,7 +47,8 @@ def load_report(path):
 def audit_rounds(rows, transfers, *, byte_limit, node_limit, full_unit):
     by_command = {row["command_id"]: row for row in transfers}
     results = {}
-    for source in ("idle", "critical"):
+    sources = ("idle", "critical", "spawn") if any(row["source"] == "spawn" for row in rows) else ("idle", "critical")
+    for source in sources:
         selected = sorted(
             (row for row in rows if row["source"] == source),
             key=lambda row: row["ts_ms"],
@@ -57,7 +58,10 @@ def audit_rounds(rows, transfers, *, byte_limit, node_limit, full_unit):
             if row["ack_evidence"] == "reconciled_full_batch"
             and row["ack_transfer_command_id"] in by_command
         ]
-        limit = byte_limit if source == "idle" else 64 * 1024**2
+        limit = (
+            byte_limit if source == "idle" else 4 * 1024**3 if source == "spawn"
+            else 64 * 1024**2
+        )
         # The native budget is rounded down to a whole FULL page/token.
         rounded_limit = (limit // full_unit * full_unit) if full_unit else None
         times = [row["ts_ms"] for row in selected]
@@ -88,7 +92,10 @@ def audit_rounds(rows, transfers, *, byte_limit, node_limit, full_unit):
                 ) if rounded_limit else None
             ),
             "batches_reaching_extent_limit": sum(
-                len(row["native_nodes"]) >= (node_limit if source == "idle" else 1)
+                len(row["native_nodes"]) >= (
+                    node_limit if source == "idle" else row.get("max_merged_nodes", 64)
+                    if source == "spawn" else 1
+                )
                 for row in selected
             ),
         }
@@ -142,7 +149,7 @@ def audit_data(opportunities, transfers, host_samples, *, native=None, full_unit
         raise ValueError("duplicate completed transfer command")
     issues = [
         row for row in opportunities
-        if row.get("event") in ("idle_cold_full_prepare", "critical_parent_cold_full_prepare")
+        if row.get("event") in ("idle_cold_full_prepare", "critical_parent_cold_full_prepare", "spawn_full_prepare")
     ]
     pressure = [
         row for row in opportunities

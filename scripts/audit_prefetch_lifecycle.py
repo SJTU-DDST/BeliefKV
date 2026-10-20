@@ -410,7 +410,11 @@ def native_full_prepare_attribution(
         tokens = sum(value[1] for value in nodes.values())
         rows.append({
             **issue, "batch_index": index,
-            "source": "idle" if issue["event"] == "idle_cold_full_prepare" else "critical",
+            "source": {
+                "idle_cold_full_prepare": "idle",
+                "critical_parent_cold_full_prepare": "critical",
+                "spawn_full_prepare": "spawn",
+            }[issue["event"]],
             "issued_full_tokens": tokens,
             "issued_full_bytes_known": tokens * unit if unit is not None else None,
             "ack_evidence": "unobserved", "ack_ts_ms": None,
@@ -556,7 +560,11 @@ def native_full_prepare_attribution(
                 source: {
                     "issued_batches": sum(row["source"] == source for row in rows),
                     "reconciled_ack_batches": sum(row["source"] == source for row in acknowledged),
-                } for source in ("idle", "critical")
+                } for source in (
+                    ("idle", "critical", "spawn")
+                    if any(row["source"] == "spawn" for row in rows)
+                    else ("idle", "critical")
+                )
             },
         },
         "rows": rows,
@@ -1759,7 +1767,7 @@ def audit(arm: Path) -> dict:
             stages[row["child_request_id"]] = row
         elif event == "prepare_native_issued":
             prepared[row["command_id"]] = row
-        elif event in ("idle_cold_full_prepare", "critical_parent_cold_full_prepare"):
+        elif event in ("idle_cold_full_prepare", "critical_parent_cold_full_prepare", "spawn_full_prepare"):
             native_prepares.append(row)
         elif event in ("critical_parent_headroom", "wait_prefetch_capacity_reclaimed"):
             native_prepare_reclaims.append(row)

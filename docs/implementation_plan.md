@@ -5,6 +5,24 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Latest addition: real SPAWN, including a child delegating to grandchildren,
+queues an immediate incremental backup of the parent's published native FULL
+path. Dispatch at the first available post-forward safe point without requiring
+WAIT_JOIN or pressure. Coalesce siblings by context, skip existing Host extents,
+and continue pending increments after settled ACK. Use up to4GiB/64 extents per
+batch, retain64MiB Host headroom, and never evict another Host copy to make room.
+Other retries use200ms and inspect at most4 queued contexts. Keep native D2H
+ownership/locks and critical-restore precedence. The200ms/512MiB background and
+64MiB urgent paths remain. Do not prepare Mamba or free HBM at backup issuance.
+Later pressure reclaim still requires settled Host data and fresh cold-owner,
+identity, lock and transfer checks. A new request/epoch in the same native session
+does not cancel the backup; compaction, terminal state or generation change does.
+Account spawn D2H separately from predictive H2D. V2296 exports the isolated
+engine; V2299 qualifies2028 application/266 engine CPU cases and retains all
+previous cases. GPU acceptance must measure actual
+large-batch enqueue CPU cost, missing-Host cold-page rejections, later reclaim/use,
+and trimmed throughput/mean JCT. Keep the overall goal active.
+
 Latest user instruction supersedes older launch times and workload text in the
 long-running goal: do not start any GPU experiment or canary before
 2026-10-21T06:00:00+08:00 (Asia/Shanghai). Continue CPU optimization with the
@@ -44,7 +62,7 @@ actual FULL H2D requires a missing reusable Host copy. Service-size rejection
 associates with4.155GB next-request native FULL,not proven replaceable bytes or
 oracle JCT savings. Keep the overall performance goal unaccepted.
 
-V2289 qualifies2011 application/253 engine CPU identities against the current
+Previous V2289 qualifies2011 application/253 engine CPU identities against its
 sources and canonical patch, retaining prior contracts with three documented
 policy-dependent test renames. Offline timing analysis now handles EOS records
 without service estimates as unknown windows, preserving labels and old measured

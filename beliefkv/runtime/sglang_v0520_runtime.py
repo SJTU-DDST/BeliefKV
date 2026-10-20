@@ -113,6 +113,7 @@ if TYPE_CHECKING:
 TOOL_OFFLOAD_WAIT_MS = 1000.
 TOOL_PREFETCH_PLANNING_SLACK_MS = 250.
 IDLE_FULL_PREPARE_INTERVAL_MS = 200.
+SPAWN_FULL_PREPARE_MAX_BYTES = 4 * 1024**3
 
 
 @dataclass
@@ -540,6 +541,8 @@ class NativeAdmissionRuntime:
         ) == "1"
         self._critical_parent_demand: tuple[PrefillCandidateKey, int, int, float] | None = None
         self._cold_full_backups: dict[int, tuple[int | float, str]] = {}
+        self._spawn_full_prepares: OrderedDict[str, PrefillCandidateKey] = OrderedDict()
+        self._spawn_prepare_next_ms = 0.
         self._idle_prepare_next_ms = 0.
         self._critical_reclaim_next_ms = 0.
         self._semantic_worker = None
@@ -939,6 +942,8 @@ class NativeAdmissionRuntime:
         # Earlier handlers can cross a deadline or rearm another source.
         # Read each existing deadline at its original dispatch position.
         if self.enable_prepare_host:
+            if self._spawn_full_prepares and time.monotonic() * 1000. >= self._spawn_prepare_next_ms:
+                self.dispatch_spawn_prepare()
             if time.monotonic() * 1000. >= self._join_prepare_next_ms:
                 self.dispatch_join_prepare(waiting_queue, running_batch=running_batch)
             if time.monotonic() * 1000. >= self._tool_prepare_next_ms:
@@ -965,6 +970,8 @@ class NativeAdmissionRuntime:
     def idle_poll_timeout_ms(self) -> int:
         if self.physical_ledger.pending_count:
             return 10
+        if self._spawn_full_prepares:
+            return 50
         if self._terminal_child_reclaims:
             return 50
         if self._prefetch_service_leases:
@@ -1128,6 +1135,7 @@ class NativeAdmissionRuntime:
             self._wait_context_cache = None
             self._join_parent_cache = None
             self._terminal_child_reclaims.clear()
+            self._spawn_full_prepares.clear()
             self._terminal_root_contexts.clear()
             self._parent_capacity_handoffs.clear()
             self.tool_wait_hint = None
@@ -1197,6 +1205,8 @@ class NativeAdmissionRuntime:
                     self.demand_hints[hint.key.request_id] = hint
                     self.counts["prediction_accepted"] += 1
             for event in events:
+                if event.kind in (RuntimeEventKind.SPAWN, RuntimeEventKind.CALL):
+                    self._queue_spawn_prepare(event)
                 if self._online_tool_timing is not None:
                     self._online_tool_timing.observe(event)
                 if self._model_worker is not None and event.invocation_id is not None:
@@ -1267,6 +1277,8 @@ class NativeAdmissionRuntime:
                         invocation.context_id if invocation is not None else None
                     )
                 if context_id is not None:
+                    if event.kind is RuntimeEventKind.CONTEXT_COMPACT:
+                        self._spawn_full_prepares.pop(context_id, None)
                     key = self.context_sessions.get(context_id)
                     if event.kind is RuntimeEventKind.TOOL_START and key is not None:
                         if tool_started_keys is None:
@@ -1281,6 +1293,7 @@ class NativeAdmissionRuntime:
                             self._remember_terminal_root(key, returned)
                         invocation = self.graph.invocations.get(key.invocation_id)
                         if invocation is not None and invocation.state.terminal:
+                            self._spawn_full_prepares.pop(context_id, None)
                             self._parent_capacity_handoffs.pop(context_id, None)
                         self._tool_last_queries.pop(key, None)
                         self._tool_opportunity_cache.pop(key, None)
@@ -1299,6 +1312,10 @@ class NativeAdmissionRuntime:
                             self._tool_prefetch_survival_evidence.pop(key, None)
                         self.shadow_candidate = None
                 if event.kind is RuntimeEventKind.WORKFLOW_END:
+                    self._spawn_full_prepares = OrderedDict(
+                        (context, key) for context, key in self._spawn_full_prepares.items()
+                        if key.root_workflow_id != event.workflow_id
+                    )
                     self._online_tool_queries = {
                         key: value for key, value in self._online_tool_queries.items()
                         if key.root_workflow_id != event.workflow_id
@@ -2092,6 +2109,11 @@ class NativeAdmissionRuntime:
                 "prepare_host": self.enable_prepare_host,
                 "h2d_opportunity_sampling": self.enable_h2d_opportunity_sampling,
                 "prepare_pool_scope": "missing_full_session_path",
+                "spawn_full_prepare": {
+                    "pending_contexts": len(self._spawn_full_prepares),
+                    "max_batch_bytes": SPAWN_FULL_PREPARE_MAX_BYTES,
+                    "max_merged_nodes": 64,
+                },
                 "idle_full_prepare": {
                     "interval_ms": IDLE_FULL_PREPARE_INTERVAL_MS,
                     "native": dict(idle_prepare_stats) if isinstance(idle_prepare_stats, dict) else None,
@@ -6422,6 +6444,119 @@ class NativeAdmissionRuntime:
                     })
         return any(freed.values())
 
+    def _queue_spawn_prepare(self, event: RuntimeEvent) -> None:
+        if (
+            not self.enable_prepare_host or self.physical_disabled
+            or event.attributes.get("runtime_internal")
+        ):
+            return
+        parent = self.graph.invocations.get(event.invocation_id)
+        child = self.graph.invocations.get(event.target_invocation_id)
+        key = self.context_sessions.get(parent.context_id) if parent else None
+        workflow = self.graph.workflows.get(event.workflow_id)
+        if (
+            key is None or child is None or child.parent_invocation_id != key.invocation_id
+            or key.root_workflow_id != event.workflow_id
+            or child.workflow_id != event.workflow_id
+            or event.context_id is not None and event.context_id != key.context_id
+            or event.context_epoch is not None and event.context_epoch != key.context_epoch
+            or key.session_id is None or key.session_generation is None
+            or parent.state.terminal or workflow is None or workflow.end_ts_ms is not None
+        ):
+            self.counts["spawn_full_prepare_unbound"] += 1
+            return
+        if self._spawn_full_prepares.get(key.context_id) == key:
+            self.counts["spawn_full_prepare_coalesced"] += 1
+            return
+        self._spawn_full_prepares[key.context_id] = key
+        self._spawn_prepare_next_ms = 0.
+        self.counts["spawn_full_prepare_queued"] += 1
+
+    def dispatch_spawn_prepare(self) -> None:
+        """Back a known delegator's published FULL without waiting for pressure."""
+        if not self.enable_prepare_host or self.physical_disabled or not self._spawn_full_prepares:
+            return
+        now_ms = time.monotonic() * 1000.
+        if now_ms < self._spawn_prepare_next_ms:
+            return
+        self._spawn_prepare_next_ms = now_ms + IDLE_FULL_PREPARE_INTERVAL_MS
+        self.counts["spawn_full_prepare_checks"] += 1
+        if self._live_critical_parent_demand() is not None:
+            self.counts["spawn_full_prepare_blocked_critical"] += 1
+            return
+        if self.physical_ledger.pending_action_count("PREPARE_HOST"):
+            self.counts["spawn_full_prepare_blocked_prepare"] += 1
+            return
+        prepare = getattr(self._native_cache, "prepare_beliefkv_spawn_full", None)
+        if not callable(prepare):
+            self.counts["spawn_full_prepare_unsupported"] += len(self._spawn_full_prepares)
+            self._spawn_full_prepares.clear()
+            return
+        for context_id, key in tuple(islice(self._spawn_full_prepares.items(), 4)):
+            current = self.context_sessions.get(context_id, key)
+            invocation = self.graph.invocations.get(key.invocation_id)
+            workflow = self.graph.workflows.get(key.root_workflow_id)
+            context = self.graph.contexts.get(context_id)
+            if (
+                invocation is None or invocation.state.terminal
+                or workflow is None or workflow.end_ts_ms is not None
+                or context is None or current.context_epoch > context.epoch
+                or current.context_epoch < key.context_epoch
+                or (
+                    current.root_workflow_id, current.invocation_id,
+                    current.session_id, current.session_generation,
+                ) != (
+                    key.root_workflow_id, key.invocation_id,
+                    key.session_id, key.session_generation,
+                )
+            ):
+                self._spawn_full_prepares.pop(context_id, None)
+                self.counts["spawn_full_prepare_stale"] += 1
+                continue
+            # Backups follow an immutable native path, not a consumer request ID.
+            # The native generation check also covers the HTTP rebind gap.
+            if current != key:
+                key = current
+                self._spawn_full_prepares[context_id] = key
+            result = prepare(
+                session_id=key.session_id, session_generation=key.session_generation,
+                max_batch_bytes=SPAWN_FULL_PREPARE_MAX_BYTES,
+            )
+            issued = result["issued"]
+            if result["complete"]:
+                self._spawn_full_prepares.pop(context_id, None)
+                self.counts["spawn_full_prepare_settled_contexts"] += 1
+            elif result["reason"] in (
+                "stale_session", "unsupported_cache", "host_extent_mismatch",
+            ):
+                self._spawn_full_prepares.pop(context_id, None)
+                self.counts[f"spawn_full_prepare_retired:{result['reason']}"] += 1
+            else:
+                self._spawn_full_prepares.move_to_end(context_id)
+            if issued:
+                self._cold_full_backups.update({
+                    node: (created, "spawn") for node, created, _ in issued
+                })
+                for node, created, _ in issued:
+                    self._remember_parent_pressure_node(node, key, created)
+                self.counts["spawn_full_prepare_issued_batches"] += 1
+                self.counts["spawn_full_prepare_issued_tokens"] += sum(item[2] for item in issued)
+                if self._opportunity_writer is not None:
+                    self._opportunity_writer.record({
+                        "event": "spawn_full_prepare", "ts_ms": time.time() * 1000.,
+                        "workflow_id": key.root_workflow_id, "invocation_id": key.invocation_id,
+                        "context_id": key.context_id, "context_epoch": key.context_epoch,
+                        "session_id": key.session_id, "session_generation": key.session_generation,
+                        "native_nodes": issued, "include_mamba": False,
+                        "max_batch_bytes": SPAWN_FULL_PREPARE_MAX_BYTES,
+                        "max_merged_nodes": result["max_merged_nodes"],
+                        "scope": "spawn-triggered incremental FULL backup; no device capacity released",
+                    })
+                break
+            self.counts[f"spawn_full_prepare_no_issue:{result['reason']}"] += 1
+            if result["reason"] == "d2h_busy":
+                break
+
     def dispatch_idle_prepare(self) -> None:
         """Background FULL copies yield to all queued restoration/capacity work."""
         cache = self._native_cache
@@ -9061,6 +9196,8 @@ class NativeAdmissionRuntime:
                     settled |= valid
                     if valid:
                         self.counts[f"{source}_cold_full_backup_acked"] += 1
+                        if source == "spawn":
+                            self._spawn_prepare_next_ms = 0.
                 except (AttributeError, IndexError, KeyError, TypeError, ValueError, RuntimeError):
                     pass
             if settled and self._live_critical_parent_demand() is not None:

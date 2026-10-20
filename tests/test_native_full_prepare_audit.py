@@ -169,3 +169,19 @@ def test_audit_keeps_native_background_separate_from_semantic_prepare_and_prefet
     native = report["native_full_prepare_attribution"]["summary"]
     assert native["reconciled_ack_batches"] == 1
     assert native["batches_with_restore_association"] == 1
+
+
+def test_audit_routes_spawn_backup_to_its_own_lifecycle_source(tmp_path):
+    spawned = {**issue(), "event": "spawn_full_prepare"}
+    for relative, rows in (
+        ("opportunities/admission_opportunities.jsonl", [spawned]),
+        ("server/transfer_telemetry.jsonl", [transfer("d2h", 2.)]),
+    ):
+        path = tmp_path / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    report = audit(tmp_path)
+    assert report["native_full_prepare_attribution"]["summary"]["by_source"]["spawn"] == {
+        "issued_batches": 1, "reconciled_ack_batches": 1,
+    }
+    assert report["summary"]["join_bytes"] == report["summary"]["tool_bytes"] == 0
