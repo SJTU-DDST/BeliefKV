@@ -391,7 +391,7 @@ def inspect_session_residency_hint(cache: object, request: object) -> dict | Non
                 != normalize_native_creation_time(created)
             ):
                 return None
-            chain, current, seen = [], leaf, set()
+            chain, current = {}, leaf
             prefix = missing = 0
             device_prefix = 0
             full_device = full_available = True
@@ -400,9 +400,8 @@ def inspect_session_residency_hint(cache: object, request: object) -> dict | Non
                 if current is None:
                     return None
                 node_id = current.id
-                if node_id in seen or lookup(node_id) is not current:
+                if node_id in chain or lookup(node_id) is not current:
                     return None
-                seen.add(node_id)
                 prior = states.get(node_id) if states is not None else None
                 if prior is not None:
                     if prior is False:
@@ -413,9 +412,9 @@ def inspect_session_residency_hint(cache: object, request: object) -> dict | Non
                             full_available, pending, pending_load,
                         ) = prior
                     break
-                chain.append(current)
+                chain[node_id] = current
                 current = current.parent
-            for node in reversed(chain):
+            for node in reversed(chain.values()):
                 key = node.key
                 if (
                     getattr(key, "is_bigram", False)

@@ -5,6 +5,16 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+The next main-only simplification uses one ordered ancestry dict instead of a
+temporary list plus cycle-detection set in residency ordering. Node identity,
+namespace, transfer and native admission checks remain; no cross-call cache is
+added. V2128 retains120 differential fixtures and10 whole-planner controls with
+identical plans/counters/budgets/native reads. The8-request/64-node thread-CPU P50
+is559.091 to548.886us, and256 nodes1720.747 to1687.505us. Preserve warm-hint
+0.084/0.489us regressions. V2130 passes346 existing CPU cases. V2129 collected
+none because of a nonexistent test path; keep its raw XML. This later change
+is not in running V93 and establishes no GPU/JCT improvement.
+
 V93 is running: launched2026-10-20 10:01:29 Asia/Shanghai, first actual workflow
 GPU service10:04:26. V2126/V2127 verify frozen17478fe,970 execution sources,
 live processes/settings and1582 passing distinct CPU cases. The prelaunch GPU
