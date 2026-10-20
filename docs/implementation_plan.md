@@ -5,6 +5,31 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Current V99 launched2026-10-20 15:14:15 Asia/Shanghai from frozen
+d2b7139. Keep36 simultaneous roots,the restored
+native_in_graph_nested_2to4 profile,root-only full source,running8,
+256K/95%,Host80:20 and latest confirmed-JOIN capacity handoff.
+Run predictive first. A new native arm is conditional on final actual traces
+showing every root's initial2–4 fanout,multiple root rounds and nested spawn.
+The offline checker runs outside model execution; it neither rejects RETURN
+nor adds per-decode work. No historical native is a matched reference.
+V2195 rejects stopped V98 using real traces. V2199/V2200 pass1917 current
+CPU cases without skips,retaining all1886 previous cases.
+Keep the V2196 failed attempt: its50ms hint used a real clock; V2198
+reproduces intentional49ms/51ms expiry. Freeze the test clock and retain
+expiry-boundary tests; production TTL and sorting are unchanged.
+V2201 verifies first actual service15:17:18,972 frozen sources,525 external
+inputs and zero writer failures/drops. V2202 attaches a new observer to the
+same live driver after an observer-only import failure; no experiment restart
+or frozen launcher mutation. V2203 observes36/36 initial root rounds of2;
+a second root round is now observed but nesting remains unproven.
+V2204's early sealed prefix has3 completed JOIN waits with positive FULL plans,
+all capacity-constrained and none submitted before completion. Its25.518MB
+reused FULL was issued between client submit and native arrival; keep it
+separate from pre-completion prefetch. Useful coverage and performance
+acceptance remain open; restored initial delegation is not goal completion.
+Preserve the frozen execution checkout while main development continues.
+
 Latest user direction: restore the earlier working delegation prompt/configuration
 with minimal changes. The long-repository launcher now defaults to
 `native_in_graph_nested_2to4`. V82b frozen `ab951b9` and main have identical
