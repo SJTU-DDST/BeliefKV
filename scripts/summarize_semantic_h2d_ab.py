@@ -25,6 +25,7 @@ from beliefkv.experiments.delegation_policy import (
 from beliefkv.experiments.chat_token_cache_policy import (
     chat_token_cache_configuration, frozen_chat_token_cache_configuration,
 )
+from beliefkv.runtime.native_transfer_policy import SelectiveJoinPrefetchPolicy
 
 
 NON_EXECUTION_SOURCE_PATHS = (
@@ -547,8 +548,12 @@ def main() -> None:
     parser.add_argument("--agent-recursion-limit", type=int, default=2048)
     parser.add_argument(
         "--join-prefetch-trigger",
-        choices=("observed_eos", "report_service_or_eos"), default="observed_eos",
+        choices=("observed_eos", "report_service_or_eos", "selective_report_or_eos"),
+        default="observed_eos",
     )
+    parser.add_argument("--join-prediction-min-full-bytes", type=int, default=512 * 1024 ** 2)
+    parser.add_argument("--join-prediction-interval-ms", type=float, default=200.)
+    parser.add_argument("--join-prediction-max-candidates", type=int, default=4)
     parser.add_argument("--online-tool-timing", type=int, choices=(0, 1), default=0)
     parser.add_argument("--borrowable-parent-headroom", type=int, choices=(0, 1), default=0)
     parser.add_argument("--workload-manifest", type=Path)
@@ -577,6 +582,13 @@ def main() -> None:
     parser.add_argument("--sampling-seed", type=int, default=21)
     parser.add_argument("--repetition-id", type=int, default=0)
     args = parser.parse_args()
+    try:
+        join_prediction = SelectiveJoinPrefetchPolicy(
+            args.join_prediction_min_full_bytes, args.join_prediction_interval_ms,
+            args.join_prediction_max_candidates,
+        )
+    except ValueError as error:
+        parser.error(str(error))
     if args.tail_active_workflows <= 0 or not math.isfinite(args.warmup_seconds) or args.warmup_seconds < 0:
         parser.error("tail threshold must be positive and warmup finite and nonnegative")
     if not all(math.isfinite(value) and value >= 0 for value in (
@@ -759,6 +771,7 @@ def main() -> None:
             "prefetch_prefix_diagnostics": bool(args.prefetch_prefix_diagnostics),
             "semantic_work_statistic": args.semantic_work_statistic,
             "join_prefetch_trigger": args.join_prefetch_trigger,
+            "selective_join_prefetch": vars(join_prediction).copy(),
             "online_tool_timing": bool(args.online_tool_timing),
             "borrowable_parent_headroom": bool(args.borrowable_parent_headroom),
             "chat_token_block_cache_by_arm": token_cache,
@@ -845,6 +858,11 @@ def main() -> None:
             ),
             "requested_children_per_round": shape["children_per_round"],
             "join_prediction_semantics": (
+                "EOS default; optional remaining-token prediction only for the last "
+                "unfinished direct child, substantial missing Host-only FULL, "
+                "a positive estimated recovery deficit beyond the causal EOS-to-native "
+                "arrival window, and available or safely prepared capacity; bounded advance"
+                if args.join_prefetch_trigger == "selective_report_or_eos" else
                 "report notice plus actual decode service and causal direct-child "
                 "barrier; online report-length calibration; native no-tool EOS fallback"
                 if args.join_prefetch_trigger == "report_service_or_eos" else
@@ -1131,8 +1149,15 @@ def main() -> None:
                 raise ValueError(f"{name}: mismatched {setting}")
         expected = name == "predictive_h2d"
         observed_join = plan.get("join_prefetch_trigger") in (
-            "observed_eos", "report_service_or_eos",
+            "observed_eos", "report_service_or_eos", "selective_report_or_eos",
         )
+        if name == "predictive_h2d" and plan.get("join_prefetch_trigger") == "selective_report_or_eos":
+            observed_policy = state.get("selective_join_prefetch") or {}
+            if not observed_policy.get("enabled") or any(
+                observed_policy.get(key) != value
+                for key, value in plan["selective_join_prefetch"].items()
+            ):
+                raise ValueError(f"{name}: mismatched selective JOIN prefetch policy")
         semantic_worker_required = expected and not observed_join
         if (
             state["final_stage_prefetch"] != expected

@@ -50,6 +50,15 @@ def resume_environment(plan: dict, run_root: Path, *, python: str, port: int) ->
         "CONTEXT_TOKENIZER_PATH": (plan.get("context_lifecycle") or {}).get("tokenizer_path") or "",
         "AGENT_RECURSION_LIMIT": plan.get("recursion_limit", 2048),
         "JOIN_PREFETCH_TRIGGER": plan.get("join_prefetch_trigger", "observed_eos"),
+        "JOIN_PREDICTION_MIN_FULL_BYTES": plan.get("selective_join_prefetch", {}).get(
+            "min_full_bytes", 512 * 1024 ** 2,
+        ),
+        "JOIN_PREDICTION_INTERVAL_MS": plan.get("selective_join_prefetch", {}).get(
+            "interval_ms", 200.,
+        ),
+        "JOIN_PREDICTION_MAX_CANDIDATES": plan.get("selective_join_prefetch", {}).get(
+            "max_candidates", 4,
+        ),
         "ONLINE_TOOL_TIMING": int(plan.get("online_tool_timing", False)),
         "BORROWABLE_PARENT_HEADROOM": int(plan.get("borrowable_parent_headroom", False)),
         "SEMANTIC_REPORT_ARTIFACT": plan.get("semantic_artifact") or "",

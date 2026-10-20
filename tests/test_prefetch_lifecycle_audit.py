@@ -1038,6 +1038,46 @@ def test_lifecycle_source_full_reuse_does_not_mix_handoff_or_mamba_only(tmp_path
     assert summaries["execution_handoff"]["ack_to_first_service_ms"]["p50"] == 1000.
 
 
+def test_lifecycle_attributes_eos_takeover_at_issue_instead_of_the_old_forecast(tmp_path):
+    triggers = {
+        "early": "selective_report_service", "eos": "observed_no_tool_eos",
+        "confirmed": "confirmed_join",
+    }
+    write_rows(tmp_path / "opportunities/admission_opportunities.jsonl", [{
+        "event": "final_stage_latest_start", "child_request_id": "child",
+        "trigger_kind": "report_observed_service", "ts_ms": 0.,
+    }, *[
+        {"event": "prefetch_native_issued", "command_id": command,
+         "source": "join_ticket", "workflow_id": "w", "context_id": command,
+         "context_epoch": 1, "node_id": index, "ts_ms": 1.,
+         "child_request_id": "child", "trigger_kind": trigger}
+        for index, (command, trigger) in enumerate(triggers.items(), 1)
+    ]])
+    write_rows(tmp_path / "server/transfer_telemetry.jsonl", [
+        {"direction": "h2d", "node_ids": [index], "submit_ts_ms": 2.,
+         "complete_ts_ms": 3., "tagged_child_commits": [
+             {"command_id": command, "num_bytes": 100, "num_tokens_by_pool": {"kv": 5}},
+         ]}
+        for index, command in enumerate(triggers, 1)
+    ])
+    write_rows(tmp_path / "server/physical_action_ack.jsonl", [
+        {"command_id": command, "action": "PREFETCH_GPU", "pool_bytes": {"kv": 100}}
+        for command in triggers
+    ])
+    write_rows(tmp_path / "server/physical_action_use.jsonl", [
+        {"event": "beliefkv_prefetch_first_service", "command_id": command,
+         "ack_ts_ms": 3., "first_service_ts_ms": 4.,
+         "full_node_reused": command != "early", "full_reuse_proof_version": 2}
+        for command in triggers
+    ])
+    result = audit(tmp_path)
+    assert {row["command_id"]: row["trigger_kind"] for row in result["rows"]} == triggers
+    groups = result["summary"]["by_join_trigger"]
+    assert groups["selective_report_service"]["full_verified_reused_bytes_known"] == 0
+    assert groups["observed_no_tool_eos"]["full_verified_reused_bytes_known"] == 100
+    assert groups["confirmed_join"]["full_verified_reused_bytes_known"] == 100
+
+
 def test_lifecycle_rejects_inconsistent_ack_pool_bytes(tmp_path):
     import pytest
 

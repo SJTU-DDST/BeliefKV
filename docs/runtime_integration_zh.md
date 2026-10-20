@@ -1,8 +1,20 @@
 # BeliefKV 与 SGLang 集成说明
 
-更新日期：2026-10-05。
+更新日期：2026-10-20（北京时间）。
 
 ## 当前0.5.20入口
+
+长任务入口默认 `JOIN_PREFETCH_TRIGGER=selective_report_or_eos`，
+对应服务端 `BELIEFKV_JOIN_PREFETCH_TRIGGER`。纯 `observed_eos`
+仍可使用；旧宽泛 report 模式仅显式兼容。选择性剩余 token 路径
+由 `BELIEFKV_JOIN_PREDICTION_MIN_FULL_BYTES`（默认 536870912）、
+`BELIEFKV_JOIN_PREDICTION_INTERVAL_MS`（200）、
+`BELIEFKV_JOIN_PREDICTION_MAX_CANDIDATES`（4）约束，plan/resume
+与 runtime snapshot 保存并校验这些值。
+仅最后未完成 direct child、真实缺失大块 FULL、EOS 后窗口预计
+不足且容量可以安全落实时提前；EOS 到来不受上述可选门槛限制。
+既有 token 进度用于预测，不配置语义 worker 或新增逐层 DMA 原语。
+时间和发行归因口径见 `architecture_status_zh.md`。
 
 当前使用固定上游 `94602c9c2b7cbdb8efd5c52802dac6a1c180089e`
 及 `patches/sglang-v0.5.20-beliefkv-staging.patch`。

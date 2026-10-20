@@ -1760,7 +1760,7 @@ def audit(arm: Path) -> dict:
                 **row, "trigger_kind": (
                     "confirmed_join" if row.get("source") == "join_ticket"
                     and row.get("phase") == "confirmed"
-                    else stage.get("trigger_kind", "unrecorded_legacy")
+                    else row.get("trigger_kind") or stage.get("trigger_kind", "unrecorded_legacy")
                 ),
             }
         elif event == "final_stage_latest_start":
@@ -1971,6 +1971,10 @@ def audit(arm: Path) -> dict:
             )
         },
         "trigger_kinds": dict(Counter(row["trigger_kind"] for row in results)),
+        "by_join_trigger": {
+            trigger: source_summary([row for row in joins if row["trigger_kind"] == trigger])
+            for trigger in sorted({row["trigger_kind"] for row in joins})
+        },
         "join_bytes": sum(row["actual_bytes"] or 0 for row in joins),
         "tool_bytes": sum(row["actual_bytes"] or 0 for row in tools),
         "handoff_bytes": sum(row["actual_bytes"] or 0 for row in handoffs),

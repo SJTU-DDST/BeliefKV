@@ -12,7 +12,42 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-Latest CPU optimization: action-local FULL/Mamba capture returns as soon as it
+Latest authorized JOIN policy is `selective_report_or_eos`; the long-repository
+launcher now selects it and the spawn-FULL-qualified native engine. Keep pure
+`observed_eos` for an ablation and the old broad report mode only for explicit
+historical compatibility. EOS does not depend on the optional prediction's byte,
+cadence or service-model support gates.
+
+Use existing last-unfinished-child report/token progress, with200ms checks and
+at most4 rotated candidates. Cheap input-size filtering precedes live checkpoint
+capture; require at least512MiB genuinely missing Host-backed FULL. Predict only
+when controller submit-to-ACK plus enqueue cost exceeds the causal EOS-to-native
+arrival window. Use the deficit plus one check period, capped at1000ms advance.
+Start with a50ms protocol floor; after4 causal completed JOIN reentries use the
+P10 of up to64 recent samples, never including later GPU-service queueing.
+These are conservative controller-cost proxies, not measured exposed GPU waits.
+
+If timing is unsupported, leave optional reclaim idle and fall back to EOS.
+Earn capacity and pass bounded residency/admission checks before forecast DMA;
+cancel unconsumed speculative capacity intent on tool/epoch invalidation. Reuse
+only the bounded scalar timing decision at enqueue, while recapturing/revalidating
+native identity, checkpoint payload, ownership, capacity and transfer dependencies.
+Do not introduce a semantic worker, global child text polling or a layer-pause
+primitive. Attribute the actual issue trigger so EOS takeover is not credited
+to a pre-EOS forecast. Compare useful FULL, repeated loads, control CPU, exposed
+recovery wait and trimmed throughput/mean JCT against EOS/native on the next GPU
+run; keep the overall performance goal active.
+
+V2311 binds2257 passing application CPU cases to the final sources. The native
+engine and canonical patch are unchanged; rehash and retain the266 previously
+qualified native CPU cases without claiming a rerun. V2307 compares7 CPU tree
+cases: small-parent checks fall from206-667us to10-14us by declining speculative
+planning, while a224-node large-deficit case remains1.439-1.469ms and selects
+the same64 nodes. No GPU DMA, online population frequency or throughput/JCT
+improvement is established. Freeze against this qualification and the latest
+sources after the hold, not the superseded V102 candidate.
+
+Previous CPU optimization: action-local FULL/Mamba capture returns as soon as it
 encounters a valid pending transfer, since that dependency already rejected the
 candidate after a full snapshot. Keep default diagnostic snapshots complete and
 all fields on unblocked paths. No cross-call state cache, broader D2H/H2D queue
@@ -21,8 +56,8 @@ V2302 compares24 identical CPU path cases with equal decisions/rejection reasons
 64-node leaf blocking costs about229→7.5us, middle blocking239→115us.
 These are target-function CPU costs, not total scheduler or GPU/JCT improvement.
 V2306 qualifies2141 application/266 engine cases and retains every previous case;
-the native patch remains unchanged. Keep EOS as the default; optional report-work
-forecasting is not enabled by the historical window analysis in V2300.
+the native patch remains unchanged. V2300 itself was historical window evidence;
+the later selective policy above is enabled by the user's explicit authorization.
 
 Latest addition: real SPAWN, including a child delegating to grandchildren,
 queues an immediate incremental backup of the parent's published native FULL

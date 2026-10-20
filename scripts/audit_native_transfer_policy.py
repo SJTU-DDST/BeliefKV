@@ -61,6 +61,10 @@ def audit(arm: Path) -> dict:
                 window = transfer_start_window(
                     estimate, max_lead_ms=row["prefetch_lead_ms"], observation_spacing_ms=100.,
                 )
+            horizon = (
+                row.get("start_window_ms") if row.get("selective_report") is True
+                else window.horizon_ms if window else None
+            )
             return_lead = target["child_return_ts_ms"] - row["ts_ms"]
             eos_lead = target["native_eos_ts_ms"] - row["ts_ms"]
             forecast = forecasts.get(row["child_request_id"])
@@ -84,9 +88,16 @@ def audit(arm: Path) -> dict:
                 "upper_forecast_overtaken": (
                     forecast["upper_tokens"] <= advanced if forecast is not None else None
                 ),
-                "adaptive_start_window_ms": window.horizon_ms if window else None,
+                "adaptive_start_window_ms": horizon,
                 "adaptive_policy_would_wait_at_this_snapshot": (
-                    row["remaining_ms"] > window.horizon_ms if window else None
+                    row["remaining_ms"] > horizon if horizon is not None else None
+                ),
+                "selective_report": row.get("selective_report"),
+                "estimated_recovery_deficit_ms": row.get("estimated_recovery_deficit_ms"),
+                "eos_to_native_arrival_window_ms": row.get("eos_to_native_arrival_window_ms"),
+                "window_semantics": (
+                    "recorded selective controller-cost deficit, not exposed GPU wait"
+                    if row.get("selective_report") is True else "historical timing audit"
                 ),
                 "submit_queue_estimate_recorded": (
                     row.get("enqueue_to_submit_p90_ms") is not None
@@ -103,7 +114,10 @@ def audit(arm: Path) -> dict:
         row for row in records(arm / "server/physical_action_use.jsonl")
         if row.get("event") == "beliefkv_prefetch_first_service"
     ]
-    predicted = [row for row in joins if row["trigger_kind"] == "estimated_work"]
+    predicted = [
+        row for row in joins
+        if row["trigger_kind"] in ("estimated_work", "report_observed_service")
+    ]
     return {
         "scope": (
             "Existing live-trace diagnosis. The adaptive comparison checks the same "

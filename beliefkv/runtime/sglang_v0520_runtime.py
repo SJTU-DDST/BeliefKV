@@ -97,10 +97,12 @@ from beliefkv.runtime.native_transfer_service import (
     estimate_native_service,
     load_native_service_seed,
     native_service_planning_ceiling,
+    percentile,
     pool_shape,
 )
 from beliefkv.runtime.native_transfer_policy import (
     PrefetchResidencyBudget,
+    SelectiveJoinPrefetchPolicy,
     TransferStartWindow,
     native_residency_budget,
     transfer_start_window,
@@ -180,6 +182,8 @@ class _JoinPrefetchTicket:
     checkpoint_key: PrefillCandidateKey | None = None
     checkpoint_input_tokens: int | None = None
     restoration_complete: bool = False
+    report_start_window_ms: float | None = None
+    report_service_shape: _WaitPrefetchServiceShape | None = None
 
 
 @dataclass(frozen=True)
@@ -398,7 +402,7 @@ class NativeAdmissionRuntime:
         self.join_wait_hints: dict[str, NativeJoinWaitHint] = {}
         self.completion_lead = completion_lead
         self._completion_hints: dict[str, _CompletionReentryHint] = {}
-        self._final_stages: dict[str, _ChildFinalStage] = {}
+        self._final_stages: OrderedDict[str, _ChildFinalStage] = OrderedDict()
         self._final_request_stages: dict[str, _ChildFinalStage] = {}
         self._h2d_samples: deque[tuple[int, float]] = deque(maxlen=64)
         self._native_service_samples: deque[NativeServiceSample] = deque(maxlen=256)
@@ -526,8 +530,22 @@ class NativeAdmissionRuntime:
         self.join_prefetch_trigger = os.environ.get(
             "BELIEFKV_JOIN_PREFETCH_TRIGGER", "observed_eos",
         )
-        if self.join_prefetch_trigger not in ("observed_eos", "report_service_or_eos"):
+        if self.join_prefetch_trigger not in (
+            "observed_eos", "report_service_or_eos", "selective_report_or_eos",
+        ):
             raise ValueError("unsupported JOIN prefetch trigger")
+        self._selective_join_policy = SelectiveJoinPrefetchPolicy(
+            min_full_bytes=int(os.environ.get(
+                "BELIEFKV_JOIN_PREDICTION_MIN_FULL_BYTES", str(512 * 1024 ** 2),
+            )),
+            interval_ms=float(os.environ.get("BELIEFKV_JOIN_PREDICTION_INTERVAL_MS", "200")),
+            max_candidates=int(os.environ.get("BELIEFKV_JOIN_PREDICTION_MAX_CANDIDATES", "4")),
+        )
+        self._join_eos_arrival_pending: OrderedDict[
+            str, tuple[str, PrefillCandidateKey, PrefillCandidateKey, float]
+        ] = OrderedDict()
+        self._join_eos_arrival_samples: deque[float] = deque(maxlen=64)
+        self._join_eos_arrival_window_ms = self.eos_protocol_window_ms
         self._online_tool_timing = (
             OnlineWorkloadToolTiming()
             if os.environ.get("BELIEFKV_ONLINE_TOOL_TIMING", "0") == "1" else None
@@ -788,6 +806,7 @@ class NativeAdmissionRuntime:
         self._tool_inflight_tickets.clear()
         self._final_stages.clear()
         self._final_request_stages.clear()
+        self._join_eos_arrival_pending.clear()
         self._terminal_cache_watches.clear()
         self._terminal_child_reclaims.clear()
         self._terminal_root_contexts.clear()
@@ -910,7 +929,7 @@ class NativeAdmissionRuntime:
                 (self.enable_final_stage_prefetch or self.enable_admission_prefetch)
                 and (
                     self._eos_prefetch_keys or (
-                        self.join_prefetch_trigger == "report_service_or_eos"
+                        self._report_prediction_enabled
                         and self._final_request_stages
                         and time.monotonic() * 1000. >= self._report_candidate_next_ms
                     )
@@ -1147,6 +1166,7 @@ class NativeAdmissionRuntime:
             self._prefill_causal_cache = None
             self._final_stages.clear()
             self._final_request_stages.clear()
+            self._join_eos_arrival_pending.clear()
             self._child_report_notices.clear()
             self._discard_join_ticket("causal_mirror_discarded")
             self._confirmed_join_tickets.clear()
@@ -1312,6 +1332,7 @@ class NativeAdmissionRuntime:
                             self._tool_prefetch_survival_evidence.pop(key, None)
                         self.shadow_candidate = None
                 if event.kind is RuntimeEventKind.WORKFLOW_END:
+                    self._invalidate_join_eos_arrival(event)
                     self._spawn_full_prepares = OrderedDict(
                         (context, key) for context, key in self._spawn_full_prepares.items()
                         if key.root_workflow_id != event.workflow_id
@@ -1449,6 +1470,7 @@ class NativeAdmissionRuntime:
                         )
                     self._observe_prefetch_client_submit(event)
                 elif event.kind is RuntimeEventKind.TOOL_START:
+                    self._invalidate_join_eos_arrival(event)
                     self._child_report_notices.pop(event.invocation_id, None)
                     self._semantic_tool_counts[event.invocation_id] += 1
                     self._clear_semantic_invocation(event.invocation_id)
@@ -1460,6 +1482,10 @@ class NativeAdmissionRuntime:
                     RuntimeEventKind.RETURN, RuntimeEventKind.JOIN_SATISFIED,
                     RuntimeEventKind.JOIN_TIMEOUT, RuntimeEventKind.INVOCATION_CANCEL,
                 ):
+                    if event.kind in (
+                        RuntimeEventKind.JOIN_TIMEOUT, RuntimeEventKind.INVOCATION_CANCEL,
+                    ):
+                        self._invalidate_join_eos_arrival(event)
                     if event.invocation_id is not None:
                         self._child_report_notices.pop(event.invocation_id, None)
                         self._clear_semantic_invocation(event.invocation_id)
@@ -1480,6 +1506,7 @@ class NativeAdmissionRuntime:
                 elif event.kind in (
                     RuntimeEventKind.CONTEXT_COMPACT, RuntimeEventKind.CONTEXT_ADVANCE,
                 ):
+                    self._invalidate_join_eos_arrival(event)
                     invocation = self.graph.invocations.get(event.invocation_id)
                     context_id = event.context_id or (
                         invocation.context_id if invocation is not None else None
@@ -1679,6 +1706,15 @@ class NativeAdmissionRuntime:
         if parent is None:
             return
         join_id, parent_key = parent
+        if self.join_prefetch_trigger == "selective_report_or_eos":
+            # Preserve this causal clock pair across child RETURN cleanup.
+            pending = self._join_eos_arrival_pending
+            previous = pending.get(parent_key.context_id)
+            if previous is None or previous[:3] != (join_id, parent_key, key):
+                pending[parent_key.context_id] = (join_id, parent_key, key, ended[0])
+                pending.move_to_end(parent_key.context_id)
+                if len(pending) > 256:
+                    pending.popitem(last=False)
         previous = self._final_stages.get(join_id)
         if (
             previous is not None and previous.request_id == key.request_id
@@ -2145,6 +2181,15 @@ class NativeAdmissionRuntime:
                     self._online_tool_timing.revision if self._online_tool_timing else None
                 ),
                 "report_length_calibration_samples": len(self._report_work.ratios),
+                "selective_join_prefetch": {
+                    **asdict(self._selective_join_policy),
+                    "enabled": self.join_prefetch_trigger == "selective_report_or_eos",
+                    "max_advance_ms": self.prefetch_lead_ms,
+                    "eos_to_native_arrival_window_ms": self._join_eos_arrival_window_ms,
+                    "eos_to_native_arrival_samples": len(self._join_eos_arrival_samples),
+                    "window_statistic": "max(configured_protocol_floor, online_p10_after_4_samples)",
+                    "service_semantics": "controller_submit_to_ack_plus_enqueue; not exposed GPU wait",
+                },
                 "borrowable_parent_headroom": self._borrowable_parent_headroom,
                 "tool_predictor_disabled": bool(
                     self._model_worker is not None and self._model_worker.disabled
@@ -2681,7 +2726,7 @@ class NativeAdmissionRuntime:
             event.workflow_id, event.context_id, event.context_epoch, estimated,
             event.join_id, time.monotonic() + (
                 float(os.environ.get("ACTIVATION_WALL_CLOCK_SECONDS", "14400"))
-                if self.join_prefetch_trigger == "report_service_or_eos" else 120.
+                if self._report_prediction_enabled else 120.
             ),
             request_id=event.attributes.get("completion_stage_bound_request_id"),
         )
@@ -2856,6 +2901,14 @@ class NativeAdmissionRuntime:
         stage = self._final_stages.pop(join_id, None)
         if stage is not None and stage.request_id is not None:
             self._final_request_stages.pop(stage.request_id, None)
+        if (
+            self.join_prefetch_trigger == "selective_report_or_eos"
+            and stage is not None and self._critical_parent_demand is not None
+            and self._critical_parent_demand[0] == stage.key
+            and join_id not in self._confirmed_join_tickets
+        ):
+            self._critical_parent_demand = None
+            self.counts["selective_join_capacity_intent_invalidated"] += 1
         ticket = self._join_ticket
         if (
             ticket is not None and ticket.join_id == join_id
@@ -2935,7 +2988,7 @@ class NativeAdmissionRuntime:
 
     def _roll_final_stage(self) -> SessionH2DOpportunity | None:
         if (
-            self.join_prefetch_trigger == "report_service_or_eos"
+            self._report_prediction_enabled
             and not self._eos_prefetch_keys
         ):
             return self._roll_report_service_prefetch()
@@ -2945,9 +2998,29 @@ class NativeAdmissionRuntime:
             return
         if self._wait_prefetch_transfer_busy():
             return
-        if self._join_ticket is not None and self._live_join_ticket():
-            return
         now_ms = time.monotonic() * 1000
+        ticket = self._join_ticket
+        if ticket is not None and self._live_join_ticket():
+            if not (
+                self.join_prefetch_trigger == "selective_report_or_eos"
+                and ticket.phase == "provisional" and ticket.command_id is None
+                and ticket.report_start_window_ms is not None
+                and any(
+                    self._observed_final_eos_live(child, now_ms)
+                    for child in self._eos_prefetch_keys.values()
+                )
+            ):
+                return
+            if self._join_ticket_has_native_eos(ticket):
+                # Same parent: retain its identity and use the EOS enqueue path.
+                return
+            if (
+                self._critical_parent_demand is not None
+                and self._critical_parent_demand[0] == ticket.key
+            ):
+                self._critical_parent_demand = None
+            self._discard_join_ticket("observed_eos_preempts_report_planning")
+            self.counts["selective_join_yielded_to_eos"] += 1
         for rid, child_key in tuple(self._eos_prefetch_keys.items()):
             if not self._observed_final_eos_live(child_key, now_ms):
                 self._eos_prefetch_keys.pop(rid, None)
@@ -3088,6 +3161,88 @@ class NativeAdmissionRuntime:
             return None
         return remaining * 1000. / rate
 
+    @property
+    def _report_prediction_enabled(self) -> bool:
+        return self.join_prefetch_trigger in ("report_service_or_eos", "selective_report_or_eos")
+
+    def _report_parent_full_upper_bytes(self, key: PrefillCandidateKey) -> int:
+        tokens = self._context_tokens.get(key.context_id)
+        if tokens is None or tokens[0] != key.context_epoch or tokens[1] <= 1:
+            return 0
+        try:
+            full_unit = self._native_cache.cache_controller.mem_pool_host.entry_map[
+                "kv"
+            ].host_pool.size_per_token
+        except (AttributeError, KeyError, TypeError):
+            return 0
+        return (tokens[1] - 1) * full_unit if type(full_unit) is int and full_unit > 0 else 0
+
+    def _invalidate_join_eos_arrival(self, event: RuntimeEvent) -> None:
+        for context_id, (join_id, parent, child, _) in tuple(
+            self._join_eos_arrival_pending.items()
+        ):
+            if (
+                event.kind is RuntimeEventKind.WORKFLOW_END
+                and event.workflow_id == parent.root_workflow_id
+                or event.kind is RuntimeEventKind.JOIN_TIMEOUT and event.join_id == join_id
+                or event.kind in (
+                    RuntimeEventKind.TOOL_START, RuntimeEventKind.INVOCATION_CANCEL,
+                    RuntimeEventKind.CONTEXT_COMPACT, RuntimeEventKind.CONTEXT_ADVANCE,
+                ) and (
+                    event.invocation_id in (parent.invocation_id, child.invocation_id)
+                    or event.context_id in (parent.context_id, child.context_id)
+                )
+            ):
+                self._join_eos_arrival_pending.pop(context_id, None)
+
+    def _observe_join_eos_arrival(self, key: PrefillCandidateKey, now_ms: float) -> None:
+        pending = self._join_eos_arrival_pending.pop(key.context_id, None)
+        if pending is None:
+            return
+        join_id, parent, child, eos_ms = pending
+        join = self.graph.joins.get(join_id)
+        if not (
+            join is not None and join.satisfied and join.mode.value == "all"
+            and join.workflow_id == parent.root_workflow_id
+            and child.invocation_id in join.completed_member_ids
+            and self.graph.invocations.get(child.invocation_id) is not None
+            and self.graph.invocations[child.invocation_id].state is InvocationState.DONE
+            and key.invocation_id in join.waiter_invocation_ids
+            and key.root_workflow_id == parent.root_workflow_id
+            and key.invocation_id == parent.invocation_id
+            and key.context_epoch == parent.context_epoch + 1
+            and (key.session_id, key.session_generation)
+            == (parent.session_id, parent.session_generation)
+            and key.session_id is not None and 0 <= now_ms - eos_ms <= 10_000.
+        ):
+            self.counts["join_eos_arrival_identity_rejected"] += 1
+            return
+        elapsed = now_ms - eos_ms
+        self._join_eos_arrival_samples.append(elapsed)
+        if len(self._join_eos_arrival_samples) >= 4:
+            self._join_eos_arrival_window_ms = max(
+                self.eos_protocol_window_ms,
+                percentile(self._join_eos_arrival_samples, .1),
+            )
+        self.counts["join_eos_arrival_observed"] += 1
+        if self._opportunity_writer is not None:
+            self._opportunity_writer.record({
+                "event": "join_eos_native_arrival", "ts_ms": time.time() * 1000.,
+                "join_id": join_id, "workflow_id": key.root_workflow_id,
+                "context_id": key.context_id, "context_epoch": key.context_epoch,
+                "request_id": key.request_id, "child_request_id": child.request_id,
+                "eos_to_native_arrival_ms": elapsed,
+                "next_prediction_protocol_window_ms": self._join_eos_arrival_window_ms,
+                "scope": "causal no-tool EOS to native arrival; excludes later service queueing",
+            })
+
+    def _next_report_stages(self):
+        for _ in range(min(self._selective_join_policy.max_candidates, len(self._final_stages))):
+            join_id = next(iter(self._final_stages))
+            stage = self._final_stages[join_id]
+            self._final_stages.move_to_end(join_id)
+            yield stage
+
     def _report_planning_ceiling_ms(self, key: PrefillCandidateKey) -> float | None:
         tokens = self._context_tokens.get(key.context_id)
         if (
@@ -3122,6 +3277,7 @@ class NativeAdmissionRuntime:
             service + enqueue + SEMANTIC_FRAME_INTERVAL_MS,
         )
 
+    @timed_runtime("join_report_prefetch")
     def _roll_report_service_prefetch(self) -> SessionH2DOpportunity | None:
         if (
             not (self.enable_final_stage_prefetch or self.enable_admission_prefetch)
@@ -3132,12 +3288,25 @@ class NativeAdmissionRuntime:
         now_ms = time.monotonic() * 1000.
         if now_ms < self._report_candidate_next_ms:
             return None
-        self._report_candidate_next_ms = now_ms + SEMANTIC_FRAME_INTERVAL_MS
-        for stage in tuple(self._final_stages.values()):
+        selective = self.join_prefetch_trigger == "selective_report_or_eos"
+        policy = self._selective_join_policy
+        self._report_candidate_next_ms = now_ms + (
+            policy.interval_ms if selective else SEMANTIC_FRAME_INTERVAL_MS
+        )
+        stages = self._next_report_stages() if selective else tuple(self._final_stages.values())
+        for stage in stages:
             if stage.join_id in self._join_inflight_tickets:
                 continue
+            if selective:
+                self.counts["selective_join_candidates_checked"] += 1
+                if self._report_parent_full_upper_bytes(stage.key) < policy.min_full_bytes:
+                    self.counts["selective_join_small_or_unknown_parent"] += 1
+                    continue
             remaining = self._report_remaining_ms(stage)
             if remaining is None:
+                continue
+            if selective and remaining > 2 * self.prefetch_lead_ms:
+                self.counts["report_service_planning_deferred"] += 1
                 continue
             if remaining > 2 * self.prefetch_lead_ms:
                 ceiling = self._report_planning_ceiling_ms(stage.key)
@@ -3146,21 +3315,59 @@ class NativeAdmissionRuntime:
                     # can start yet. Near stages still recapture every live page.
                     self.counts["report_service_planning_deferred"] += 1
                     continue
+            if selective:
+                self.counts["selective_join_native_plan_checks"] += 1
             observation = self._wait_prefetch_opportunity(
                 stage.key, include_checkpoint_plan=True,
             )
             if observation is None:
+                if selective:
+                    self.counts["selective_join_no_host_restore"] += 1
                 continue
             cost_plan = self._report_restore_cost_plan(observation)
             if cost_plan.step is None:
+                if selective:
+                    self.counts["selective_join_no_host_restore"] += 1
                 continue
+            missing_full_bytes = None
+            if selective:
+                entries = self._native_cache.cache_controller.mem_pool_host.entry_map
+                missing_full_bytes = (
+                    cost_plan.required_full_tokens * entries["kv"].host_pool.size_per_token
+                )
+                if missing_full_bytes < policy.min_full_bytes:
+                    self.counts["selective_join_small_missing_full"] += 1
+                    continue
             window = self._h2d_start_window(cost_plan)
-            if self._borrowable_parent_headroom and remaining <= 2 * (
-                window.horizon_ms if window is not None else self.prefetch_lead_ms
-            ):
+            if selective:
+                if window is None:
+                    # Optional prediction needs a cost comparison. EOS never
+                    # depends on this estimator or creates speculative reclaim.
+                    self.counts["report_service_transfer_size_unsupported"] += 1
+                    continue
+                deficit = (
+                    window.service_ms + window.enqueue_ms - self._join_eos_arrival_window_ms
+                )
+                if deficit <= 0 or self.prefetch_lead_ms <= 0:
+                    self.counts["selective_join_eos_window_sufficient"] += 1
+                    continue
+                window = replace(
+                    window,
+                    horizon_ms=min(self.prefetch_lead_ms, deficit + policy.interval_ms),
+                )
                 budget = self._current_residency_budget(
                     include_evictable=True, headroom=getattr(cost_plan, "headroom", None),
                 )
+                if not self._prefetch_slot_available(stage.key, budget=budget):
+                    self.counts["selective_join_admission_budget_busy"] += 1
+                    continue
+            if self._borrowable_parent_headroom and remaining <= 2 * (
+                window.horizon_ms if window is not None else self.prefetch_lead_ms
+            ):
+                if not selective:
+                    budget = self._current_residency_budget(
+                        include_evictable=True, headroom=getattr(cost_plan, "headroom", None),
+                    )
                 # Reclaim enough for restoration and its native service reserve;
                 # unsupported DMA timing must not prevent safe capacity preparation.
                 self._set_critical_parent_demand(
@@ -3176,6 +3383,9 @@ class NativeAdmissionRuntime:
             if observation.step is None:
                 self.counts["report_service_waiting_for_cold_capacity"] += 1
                 continue
+            if selective and observation.fits_current_free_lists is not True:
+                self.counts["report_service_waiting_for_cold_capacity"] += 1
+                continue
             join = self.graph.joins[stage.join_id]
             self._join_ticket = _JoinPrefetchTicket(
                 stage.key, stage.join_id, join.mode.value,
@@ -3185,8 +3395,14 @@ class NativeAdmissionRuntime:
                 stage_bound=True,
                 work_endpoint_tokens=stage.generated_tokens
                 + remaining * (self._semantic_rate(stage.request_id) or 0.) / 1000.,
+                report_start_window_ms=window.horizon_ms if selective else None,
+                report_service_shape=(
+                    _WaitPrefetchServiceShape.from_opportunity(cost_plan) if selective else None
+                ),
             )
             self.counts["report_service_h2d_candidate"] += 1
+            if selective:
+                self.counts["selective_join_h2d_candidate"] += 1
             if self._opportunity_writer is not None:
                 self._opportunity_writer.record({
                     "event": "final_stage_latest_start", "ts_ms": time.time() * 1000.,
@@ -3194,12 +3410,26 @@ class NativeAdmissionRuntime:
                     "context_id": stage.key.context_id, "context_epoch": stage.key.context_epoch,
                     "child_invocation_id": stage.child_id, "child_request_id": stage.request_id,
                     "trigger_kind": "report_observed_service",
+                    "selective_report": selective,
                     "generated_tokens": stage.generated_tokens,
                     "expected_tokens": stage.expected_tokens, "remaining_ms": remaining,
                     "h2d_ms": window.service_ms, "start_window_ms": window.horizon_ms,
+                    "enqueue_to_submit_p90_ms": window.enqueue_ms,
+                    "prediction_early_ms": window.prediction_early_ms,
+                    "prefetch_lead_ms": self.prefetch_lead_ms,
+                    "service_sample_count": None,
+                    "service_support": "current_size_and_pool_estimator",
+                    "service_semantics": "controller_submit_to_ack; not exposed GPU wait",
                     "length_calibration_samples": len(self._report_work.ratios),
                     "required_full_tokens": observation.required_full_tokens,
                     "required_mamba_slots": observation.required_mamba_slots,
+                    **({
+                        "missing_checkpoint_full_bytes": missing_full_bytes,
+                        "eos_to_native_arrival_window_ms": self._join_eos_arrival_window_ms,
+                        "eos_to_native_arrival_samples": len(self._join_eos_arrival_samples),
+                        "estimated_recovery_deficit_ms": deficit,
+                        "prediction_policy": asdict(policy),
+                    } if selective else {}),
                     "future_queueing_in_input": False,
                 })
             return observation
@@ -3239,18 +3469,26 @@ class NativeAdmissionRuntime:
 
     def _observe_report_service(self, batch: object) -> None:
         if (
-            self.join_prefetch_trigger != "report_service_or_eos"
+            not self._report_prediction_enabled
             or not self._final_request_stages
         ):
             return
         now_ms = time.monotonic() * 1000.
         if now_ms < self._report_sample_next_ms:
             return
-        self._report_sample_next_ms = now_ms + 100.
+        selective = self.join_prefetch_trigger == "selective_report_or_eos"
+        self._report_sample_next_ms = now_ms + (
+            self._selective_join_policy.interval_ms if selective else 100.
+        )
         for request in batch.reqs:
             rid = request.rid
             stage = self._final_request_stages.get(rid)
             if stage is None or not self._live_final_stage(stage):
+                continue
+            if selective and (
+                self._report_parent_full_upper_bytes(stage.key)
+                < self._selective_join_policy.min_full_bytes
+            ):
                 continue
             outputs = getattr(request, "output_ids", ()) or ()
             scanned = self._decoded_scan_positions.get(rid, 0)
@@ -3290,6 +3528,8 @@ class NativeAdmissionRuntime:
         progress = self._semantic_progress.get(stage.request_id, ())
         if progress and time.monotonic() * 1000. - progress[-1][0] > max(
             2 * SEMANTIC_FRAME_INTERVAL_MS, min(250., self.prefetch_lead_ms),
+            2 * self._selective_join_policy.interval_ms
+            if self.join_prefetch_trigger == "selective_report_or_eos" else 0.,
         ):
             return False
         return True
@@ -5138,7 +5378,7 @@ class NativeAdmissionRuntime:
 
     def _join_ticket_has_report_service(self, ticket: _JoinPrefetchTicket) -> bool:
         if (
-            self.join_prefetch_trigger != "report_service_or_eos"
+            not self._report_prediction_enabled
             or not ticket.stage_bound or ticket.work_endpoint_tokens is None
         ):
             return False
@@ -5160,7 +5400,7 @@ class NativeAdmissionRuntime:
             if (
                 ticket is None or ticket.key != key
                 or not (
-                    native_eos
+                    native_eos or self.join_prefetch_trigger == "selective_report_or_eos"
                     or self._join_ticket_has_report_service(ticket)
                 )
             ):
@@ -5168,6 +5408,25 @@ class NativeAdmissionRuntime:
                 return False
             if native_eos:
                 return True
+            if self.join_prefetch_trigger == "selective_report_or_eos":
+                stage = self._final_stages.get(ticket.join_id)
+                remaining = self._report_remaining_ms(stage) if stage is not None else None
+                selected = ticket.report_service_shape
+                valid = bool(
+                    ticket.stage_bound and ticket.work_endpoint_tokens is not None
+                    and ticket.report_start_window_ms is not None
+                    and stage is not None and stage.key == key
+                    and selected is not None
+                    and (
+                        _WaitPrefetchServiceShape.from_opportunity(opportunity) == selected
+                        or selected.contains(opportunity)
+                    )
+                    and remaining is not None
+                    and remaining <= min(self.prefetch_lead_ms, ticket.report_start_window_ms)
+                )
+                if not valid:
+                    self.counts["selective_join_enqueue_prediction_changed"] += 1
+                return valid
         window = (
             self._h2d_start_window(opportunity, service_shape=service_shape)
             if service_shape is not None else self._h2d_start_window(opportunity)
@@ -7508,6 +7767,13 @@ class NativeAdmissionRuntime:
                     "child_invocation_id": stage.child_id if stage else None,
                     "child_request_id": stage.request_id if stage else None,
                     "phase": ticket.phase,
+                    "trigger_kind": (
+                        "confirmed_join" if ticket.phase == "confirmed"
+                        else "observed_no_tool_eos" if self._join_ticket_has_native_eos(ticket)
+                        else "selective_report_service"
+                        if ticket.report_start_window_ms is not None else "report_observed_service"
+                    ),
+                    "report_start_window_ms": ticket.report_start_window_ms,
                 })
                 if ticket.phase == "confirmed":
                     record.update({
@@ -9248,6 +9514,8 @@ class NativeAdmissionRuntime:
         }
         self.visible[key.request_id] = key
         self._visible_since[key.request_id] = time.monotonic()
+        if self._join_eos_arrival_pending:
+            self._observe_join_eos_arrival(key, self._visible_since[key.request_id] * 1000.)
         if key.session_id is not None and key.session_generation is not None:
             self.context_sessions[key.context_id] = key
         else:
@@ -10279,7 +10547,7 @@ class NativeAdmissionRuntime:
     def on_batch_completed(self, batch: object) -> tuple[str, ...]:
         """Observe the original batch and share its completed request IDs."""
         if (
-            self.join_prefetch_trigger == "report_service_or_eos"
+            self._report_prediction_enabled
             and self._final_request_stages
         ):
             self._observe_report_service(batch)
@@ -10402,7 +10670,7 @@ class NativeAdmissionRuntime:
                     report_stage = self._final_request_stages.get(key.request_id)
                     self._record_native_final_body(req, key)
                     if (
-                        self.join_prefetch_trigger == "report_service_or_eos"
+                        self._report_prediction_enabled
                         and report_stage is not None
                         and self._semantic_eos_proofs.get(key.request_id) is True
                     ):
@@ -10495,7 +10763,7 @@ class NativeAdmissionRuntime:
         # SGLang uses this drain to reach the same safe point needed for a
         # native JOIN H2D. Request it once per burst, never per decode tick.
         if self._eos_prefetch_keys or (
-            self.join_prefetch_trigger == "report_service_or_eos"
+            self._report_prediction_enabled
             and self._final_request_stages
         ):
             # Build the read-only intent before deciding whether overlap must drain.

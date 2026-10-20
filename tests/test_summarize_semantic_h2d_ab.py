@@ -748,7 +748,9 @@ def test_completed_native_predictive_pair_reports_correct_baseline(
     assert not report["isolated_policy_effect_verified"]
 
 
-@pytest.mark.parametrize("trigger", ("observed_eos", "report_service_or_eos"))
+@pytest.mark.parametrize("trigger", (
+    "observed_eos", "report_service_or_eos", "selective_report_or_eos",
+))
 def test_observed_join_summary_accepts_online_timing_without_semantic_worker(
     tmp_path, monkeypatch, trigger,
 ):
@@ -762,11 +764,15 @@ def test_observed_join_summary_accepts_online_timing_without_semantic_worker(
         join_prefetch_trigger=trigger, online_tool_timing=True,
         borrowable_parent_headroom=True, semantic_worker_configured=False, counts={},
     )
+    policy = {"min_full_bytes": 536870912, "interval_ms": 200., "max_candidates": 4}
+    if trigger == "selective_report_or_eos":
+        state["selective_join_prefetch"] = {**policy, "enabled": True}
     state_path.write_text(json.dumps(state) + "\n")
     (tmp_path / "ab_plan.json").write_text(json.dumps({
         "order": ["predictive_h2d", "native"], "join_prefetch_trigger": trigger,
         "online_tool_timing": True, "borrowable_parent_headroom": True,
         "max_completion_tokens": 16384,
+        **({"selective_join_prefetch": policy} if trigger == "selective_report_or_eos" else {}),
     }))
     monkeypatch.setattr(sys, "argv", [
         "summarize", "--run-root", str(tmp_path), "--allow-incomplete",

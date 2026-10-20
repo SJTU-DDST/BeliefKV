@@ -9,6 +9,21 @@ from beliefkv.runtime.native_transfer_service import NativeServiceEstimate
 
 
 @dataclass(frozen=True)
+class SelectiveJoinPrefetchPolicy:
+    min_full_bytes: int = 512 * 1024 ** 2
+    interval_ms: float = 200.
+    max_candidates: int = 4
+
+    def __post_init__(self) -> None:
+        if (
+            type(self.min_full_bytes) is not int or self.min_full_bytes <= 0
+            or not math.isfinite(self.interval_ms) or self.interval_ms <= 0
+            or type(self.max_candidates) is not int or not 1 <= self.max_candidates <= 64
+        ):
+            raise ValueError("invalid selective JOIN prefetch policy")
+
+
+@dataclass(frozen=True)
 class TransferStartWindow:
     service_ms: float
     enqueue_ms: float
