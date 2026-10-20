@@ -6286,6 +6286,8 @@ class NativeAdmissionRuntime:
         if record is None:
             return
         key = record[0]
+        if any(freed.values()):
+            self._invalidate_wait_transfer_observation(key)
         self.counts["parent_pressure_demoted"] += 1
         invocation = self.graph.invocations.get(key.invocation_id)
         source = "tool_wait" if invocation and invocation.state is InvocationState.WAIT_TOOL else "join_wait"

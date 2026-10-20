@@ -1,6 +1,6 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-20 (Asia/Shanghai).
+Status date: 2026-10-21 (Asia/Shanghai).
 
 Research-direction exploration is paused at the user's request. Keep the
 historical evidence and reusable auditor fixes; do not resume candidate
@@ -11,6 +11,27 @@ Current engineering contracts below retain precedence.
 
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
+
+Latest opportunity-conversion fix invalidates only a tracked donor's wait-transfer
+observation after the native parked callback reports actual freed KV. The old100ms
+empty restore cache and scan deadline could hide newly Host-only data. Reuse the
+existing invalidator to clear that owner's tool/semantic observations and rearm a
+matching tool hint. Preserve unknown owners,new generations,zero-release events,
+transfer/capacity/admission/lifecycle checks,and the existing TTL/cadence.
+No new timer,global invalidation,forecast cache or recovery ticket is introduced.
+V2336 reproduces old0 versus new1 CPU burst/reservation while90ms of the previous
+empty-cache TTL remains,both with a due and not-yet-due scan. This is a control
+proof,not GPU DMA or online performance evidence. V2338 reruns all2404 preceding
+application cases plus11 focused cases,2415 passing;rehash and retain266 unchanged
+engine cases. Freeze V103 to this qualification and keep the06:00 GPU hold.
+
+Tool timing evidence: V2335 separates10114 matched forecast records from6210
+independent declared tool waits.3880 first-forecast-late calls had only8.21ms
+median duration. For2320 non-censored calls with pre-end forecasts,last-pre-end
+absolute P50-error median is10ms and P90 is166ms. Neither subset establishes
+overall accuracy or server delivery order. V2334's659 matched replay candidates
+do not establish production cost or complete request-generation identity;do not
+add fine-grained evidence-version caches on that basis.
 
 Latest ACK control change reuses the verified ancestry of a successfully acquired
 native lock only within one synchronous multi-node ACK callback. Keep deepest-first
@@ -25,7 +46,7 @@ is small. V101 had127 tagged H2D ACK callbacks,54 multi-node,max34. Retain all s
 samples and distinguish this low-frequency optimization from online total CPU or
 throughput/JCT proof. V2333 reruns all2392 previous application cases plus12 new
 isolation/lifecycle/branch/budget cases,2404 passing. Rehash and retain266 unchanged
-engine cases. Refresh V103 to this qualification and keep the GPU hold.
+engine cases. This policy is retained by V2338;keep the GPU hold.
 
 Latest bounded control change scopes restore-protection validation to WAIT_JOIN
 inside cold-page eligibility. The old eager computation served no decision for
@@ -43,7 +64,7 @@ versus340us, all slow samples, and the unrelated older V2320a results unchanged.
 Context count is not workload root count. This does not prove worst-case,
 online total CPU or throughput/JCT improvement. V2330 reruns all2392 existing
 application CPU cases unchanged; rehash and retain266 unchanged-engine cases.
-This policy is retained by V2333; keep the2026-10-21T06:00:00+08:00 hold.
+This policy is retained by V2338; keep the2026-10-21T06:00:00+08:00 hold.
 
 Latest confirmed-JOIN eligibility fix: check for recoverable Host-only FULL or
 the necessary input-compatible Mamba checkpoint before creating a new recovery
@@ -69,7 +90,7 @@ are retained. Timing includes mocked planner callbacks, so it cannot prove
 full-planner cost, online frequency or throughput/JCT. V2326 reruns all2367
 preceding application cases and adds25 eligibility/lifecycle cases,2392 passing
 in total. Rehash and retain266 unchanged-engine cases. This policy is retained
-by the latest V2333 qualification; keep the2026-10-21T06:00:00+08:00 GPU hold.
+by the latest V2338 qualification; keep the2026-10-21T06:00:00+08:00 GPU hold.
 
 Next-run preparation uses `scripts/launch_qualified_after_hold.py`. The old
 V102 environment still pins broad report mode,250ms and an obsolete engine;
@@ -109,7 +130,7 @@ V2315 binds2307 passing application CPU cases and retains all2257 preceding
 contracts. Native engine/patch hashes are unchanged; retain the266 source-bound
 native CPU cases without claiming a rerun. Cover direct/coalesced publication,
 not-due and no-work calls, live lock/inflight/Host mutations, immediate critical
-publication and clean exception retry. Freeze V2333 or a later qualification
+publication and clean exception retry. Freeze V2338 or a later qualification
 after the2026-10-21T06:00:00+08:00 hold. Keep the full performance goal active.
 
 Latest authorized JOIN policy is `selective_report_or_eos`; the long-repository
