@@ -6649,6 +6649,9 @@ class NativeAdmissionRuntime:
                     self._prepare_probe_after_ms.pop(donor, None)
 
     def _critical_tool_donor(self, key: PrefillCandidateKey) -> bool:
+        demand = self._live_critical_parent_demand()
+        if demand is None:
+            return False
         invocation = self.graph.invocations.get(key.invocation_id)
         if (
             self.context_sessions.get(key.context_id) != key
@@ -6656,8 +6659,7 @@ class NativeAdmissionRuntime:
             or not invocation.active_tool_calls or self._terminal(key)
         ):
             return False
-        demand = self._live_critical_parent_demand()
-        return demand is not None and demand[0] != key
+        return demand[0] != key
 
     def _reclaim_critical_parent_headroom(self) -> bool:
         if not self.enable_prepare_host or self.physical_disabled:

@@ -12,6 +12,19 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Latest bounded control change checks the existing live critical-parent demand
+before donor identity/terminal work. If no beneficiary exists, return false;
+otherwise retain all tool-wait, session, terminal and different-beneficiary
+checks. No qualification cache, cadence change or native/ACK relaxation.
+V2322 reruns all2367 preceding application CPU cases unchanged; rehash and retain
+266 unchanged-engine cases. V2320a retains equal final pool candidates and valid
+samples: no-demand36-context P50 is231.7->213.7us,108-context541.5->489.1us.
+The real WAIT_JOIN-demand case keeps the same terminal-check count. Preserve
+the36-context candidate's higher mean299.3us versus232.2us; median improvement
+does not prove mean, online CPU or throughput/JCT improvement. Discard only the
+initial positive-demand fixture that selected a READY child. Refresh V103 to
+V2322 and retain the2026-10-21T06:00:00+08:00 GPU hold.
+
 Latest EOS conversion fix: an unproductive confirmed JOIN previously occupied
 the selector, preventing another parent's valid EOS from being inspected.
 After an empty plan, unavailable capacity or declined enqueue, make at most one
@@ -63,7 +76,7 @@ V2315 binds2307 passing application CPU cases and retains all2257 preceding
 contracts. Native engine/patch hashes are unchanged; retain the266 source-bound
 native CPU cases without claiming a rerun. Cover direct/coalesced publication,
 not-due and no-work calls, live lock/inflight/Host mutations, immediate critical
-publication and clean exception retry. Freeze V2319 or a later qualification
+publication and clean exception retry. Freeze V2322 or a later qualification
 after the2026-10-21T06:00:00+08:00 hold. Keep the full performance goal active.
 
 Latest authorized JOIN policy is `selective_report_or_eos`; the long-repository
