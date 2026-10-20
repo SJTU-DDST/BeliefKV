@@ -5,6 +5,30 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+V94 launched2026-10-20 10:39:55 Asia/Shanghai and first served a real workflow
+at10:43:11. V2140/V2142 verify frozen3484310,970 execution files, live settings
+and1603 passing distinct CPU cases. GPU was actually idle and V93's recorded
+driver/scheduler had exited. Only predictive is new; retain V91b native and the
+24-root16+8/900s,running8,256K,Host80:20/unchanged-engine contract. Keep its
+snapshot immutable and validate the distant-report deferral counter, useful
+pre-completion recovery, tail-excluded throughput and mean completion latency.
+V2143's10:46:29 snapshot verifies264 live distant-report deferrals and295 native
+admissions with the same scheduler identity and zero writer failures/drops. This
+confirms execution of the new branch, not exclusive CPU savings or JCT acceptance.
+
+V93 completed normally at10:38:45; V2141 preserves the driver's existing exports.
+All24 outcomes say completed, but only23 are natural/JCT-eligible. The mobile-game
+bug workflow used existing graph-budget finalization; retain and flag it rather
+than relabel or remove it. Common600–1357.683s restricted means are667.033/
+759.557s (-12.18%), throughput371.302/410.553 token/s (-9.56%). Whole mean JCT
+is707.046/829.357s. Quality remains ungraded; frontend/path differences and the
+15-second external GIL diagnostic prevent isolated KV attribution or formal clean
+pair claims. Seven FULL commands/99.779MB are reused, but only one JOIN/15.299MB
+and one tool/14.049MB start before client completion. ACK-to-service P90 is607.476ms,
+with no observed prior native reload. PREPARE has978 commands and11 linked restores.
+There are7 children, one multi-round root, no nesting and no observed handoff-replan
+branch. Do not declare the full goal achieved.
+
 Main now avoids full report-phase capture when even a conservative upper bound
 of the current timing rule cannot enter its existing two-window capacity lead.
 The bound uses the safe input, at most eight checkpoint paths and current H2D
@@ -16,7 +40,7 @@ estimator controls. V2137's64-node distant CPU P50 is519.595 to21.845us;
 V2138's saturated histories give518.919 to113.569us. Preserve near-stage about3%
 regressions and initial V2134–V2136 results. V2132 is a15-second external V93 GIL
 development profile,725 samples/0 errors, not exclusive CPU accounting or a
-clean formal performance arm. Freeze the new candidate separately after V93.
+clean formal performance arm. The candidate is now frozen separately in V94.
 
 The next main-only simplification uses one ordered ancestry dict instead of a
 temporary list plus cycle-detection set in residency ordering. Node identity,
@@ -28,7 +52,7 @@ is559.091 to548.886us, and256 nodes1720.747 to1687.505us. Preserve warm-hint
 none because of a nonexistent test path; keep its raw XML. This later change
 is not in running V93 and establishes no GPU/JCT improvement.
 
-V93 is running: launched2026-10-20 10:01:29 Asia/Shanghai, first actual workflow
+Historical V93 startup: launched2026-10-20 10:01:29 Asia/Shanghai, first actual workflow
 GPU service10:04:26. V2126/V2127 verify frozen17478fe,970 execution sources,
 live processes/settings and1582 passing distinct CPU cases. The prelaunch GPU
 sample is idle with no compute process. Only predictive is newly run, retaining
