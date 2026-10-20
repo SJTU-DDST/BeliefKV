@@ -8559,7 +8559,10 @@ class NativeAdmissionRuntime:
             ),
         )
 
-    def _register_prefetch_service_lease(self, action: PhysicalActionCompleted) -> None:
+    def _register_prefetch_service_lease(
+        self, action: PhysicalActionCompleted, *,
+        _locked_prefixes: dict[str, set[tuple[int, int | float]]] | None = None,
+    ) -> None:
         pending = self._prefetch_steps.pop(action.command_id, None)
         issue_budget = self._prefetch_issue_budgets.pop(action.command_id, None)
         if action.action != "PREFETCH_GPU" or pending is None:
@@ -8609,6 +8612,14 @@ class NativeAdmissionRuntime:
                     already_protected = True
                     protected_by_command_id = existing.command_id
                     break
+                if _locked_prefixes is not None and (
+                    prefix := _locked_prefixes.get(existing.command_id)
+                ) is not None:
+                    if (step.node_id, step.creation_time) in prefix:
+                        already_protected = True
+                        protected_by_command_id = existing.command_id
+                        break
+                    continue
                 current = cache.tree_core.node_by_id(existing.node_id)
                 visited = set()
                 while current is not None and current.id not in visited:
@@ -8727,6 +8738,8 @@ class NativeAdmissionRuntime:
             self._release_prefetch_service_lease(action.command_id, reason)
             self.counts[f"prefetch_residency_registration_skipped:{reason}"] += 1
             return
+        if lock_params is not None and _locked_prefixes is not None:
+            _locked_prefixes[action.command_id] = ancestors
         self.counts["prefetch_residency_registered"] += 1
         if self._opportunity_writer is not None:
             self._opportunity_writer.record({
@@ -9538,7 +9551,8 @@ class NativeAdmissionRuntime:
             if action.command_id in self._prefetch_steps else action
             for action in completed
         )
-        if any(action.action == "PREFETCH_GPU" for action in completed):
+        has_prefetch = any(action.action == "PREFETCH_GPU" for action in completed)
+        if has_prefetch:
             self._execution_handoff_next_ms = 0.
         self.completed_physical_actions.extend(completed)
         self._join_prepare_commands = {
@@ -9615,6 +9629,7 @@ class NativeAdmissionRuntime:
                 self._critical_reclaim_next_ms = self._report_candidate_next_ms = 0.
         # A burst's deepest node locks its FULL ancestry once; registering its
         # ancestors first would consume the budget without protecting the state.
+        locked_prefixes = {} if has_prefetch and len(completed) > 1 else None
         for action in reversed(completed):
             if (
                 action.action == "PREPARE_HOST"
@@ -9624,7 +9639,7 @@ class NativeAdmissionRuntime:
                 self._invalidate_wait_transfer_observation(key)
                 if self._critical_tool_donor(key):
                     self._critical_reclaim_next_ms = 0.
-            self._register_prefetch_service_lease(action)
+            self._register_prefetch_service_lease(action, _locked_prefixes=locked_prefixes)
             issued = self._prefetch_issue_times.pop(action.command_id, None)
             submitted = getattr(commit, "submit_ts_ms", None)
             if issued is not None and submitted is not None and self._opportunity_writer is not None:

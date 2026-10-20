@@ -12,6 +12,21 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Latest ACK control change reuses the verified ancestry of a successfully acquired
+native lock only within one synchronous multi-node ACK callback. Keep deepest-first
+registration, all per-node receipt/first-service tracking and live target identity,
+generation, residency and lifecycle checks. Do not reuse protection across callbacks,
+assume sibling coverage, or create a proof when budget/locking fails.
+
+V2331 compares complete CPU ACK callbacks on equal ledger/allocator-shaped fixtures:
+34-node parent reads596->35 and P50 1.239->1.040ms;64-node configured-bound reads
+2081->65 and P50 2.584->1.932ms. Single-node cost is unchanged and two-node improvement
+is small. V101 had127 tagged H2D ACK callbacks,54 multi-node,max34. Retain all slow
+samples and distinguish this low-frequency optimization from online total CPU or
+throughput/JCT proof. V2333 reruns all2392 previous application cases plus12 new
+isolation/lifecycle/branch/budget cases,2404 passing. Rehash and retain266 unchanged
+engine cases. Refresh V103 to this qualification and keep the GPU hold.
+
 Latest bounded control change scopes restore-protection validation to WAIT_JOIN
 inside cold-page eligibility. The old eager computation served no decision for
 WAIT_TOOL or rejected states. Tool waits still use live donor demand, hint,
@@ -28,7 +43,7 @@ versus340us, all slow samples, and the unrelated older V2320a results unchanged.
 Context count is not workload root count. This does not prove worst-case,
 online total CPU or throughput/JCT improvement. V2330 reruns all2392 existing
 application CPU cases unchanged; rehash and retain266 unchanged-engine cases.
-Refresh V103 to this qualification and retain the2026-10-21T06:00:00+08:00 hold.
+This policy is retained by V2333; keep the2026-10-21T06:00:00+08:00 hold.
 
 Latest confirmed-JOIN eligibility fix: check for recoverable Host-only FULL or
 the necessary input-compatible Mamba checkpoint before creating a new recovery
@@ -54,7 +69,7 @@ are retained. Timing includes mocked planner callbacks, so it cannot prove
 full-planner cost, online frequency or throughput/JCT. V2326 reruns all2367
 preceding application cases and adds25 eligibility/lifecycle cases,2392 passing
 in total. Rehash and retain266 unchanged-engine cases. This policy is retained
-by the latest V2330 qualification; keep the2026-10-21T06:00:00+08:00 GPU hold.
+by the latest V2333 qualification; keep the2026-10-21T06:00:00+08:00 GPU hold.
 
 Next-run preparation uses `scripts/launch_qualified_after_hold.py`. The old
 V102 environment still pins broad report mode,250ms and an obsolete engine;
@@ -94,7 +109,7 @@ V2315 binds2307 passing application CPU cases and retains all2257 preceding
 contracts. Native engine/patch hashes are unchanged; retain the266 source-bound
 native CPU cases without claiming a rerun. Cover direct/coalesced publication,
 not-due and no-work calls, live lock/inflight/Host mutations, immediate critical
-publication and clean exception retry. Freeze V2330 or a later qualification
+publication and clean exception retry. Freeze V2333 or a later qualification
 after the2026-10-21T06:00:00+08:00 hold. Keep the full performance goal active.
 
 Latest authorized JOIN policy is `selective_report_or_eos`; the long-repository
