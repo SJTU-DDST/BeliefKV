@@ -6383,12 +6383,12 @@ class NativeAdmissionRuntime:
         self, *, exclude_node_ids: tuple[int, ...] = (),
     ) -> None:
         cache = self._native_cache
-        candidates = []
         by_component = {0: [], 2: []}
         excluded = frozenset(exclude_node_ids)
-        # Native reclaim/eviction reads only the first eight entries per pool.
+        # Both native consumers use these pool tables; their generic fallback
+        # is unreachable after this publication supplies both component keys.
         limit = 8
-        fallback_left = full_left = mamba_left = limit
+        full_left = mamba_left = limit
         tree = getattr(cache, "tree_core", None)
         device_leaves = getattr(tree, "evictable_device_leaves", ())
         indexed = False
@@ -6435,7 +6435,7 @@ class NativeAdmissionRuntime:
                     ) - visited - excluded if mamba_left else set()
                     indexed = True
                     pool_ids = full_ids | mamba_ids
-                    if not fallback_left and (
+                    if (
                         len(pool_ids) * max(1, (len(pool_ids) - 1).bit_length())
                         < len(self._parent_pressure_candidates) - len(head)
                     ):
@@ -6449,11 +6449,11 @@ class NativeAdmissionRuntime:
 
         for node_id, (_, created) in chain(head, remaining_entries()):
             if indexed:
-                if not fallback_left and not (
+                if not (
                     full_left and full_ids or mamba_left and mamba_ids
                 ):
                     break
-                if not fallback_left and not (
+                if not (
                     full_left and node_id in full_ids or mamba_left and node_id in mamba_ids
                 ):
                     continue
@@ -6479,9 +6479,6 @@ class NativeAdmissionRuntime:
                 and node.write_through_pending_id is None
                 and node.load_back_pending_id is None
             ):
-                if fallback_left:
-                    candidates.append((node_id, created))
-                    fallback_left -= 1
                 if (
                     full_left
                     and node in device_leaves and node.backuped
@@ -6509,9 +6506,9 @@ class NativeAdmissionRuntime:
                 ):
                     by_component[2].append((node_id, created))
                     mamba_left -= 1
-                if not fallback_left and not full_left and not mamba_left:
+                if not full_left and not mamba_left:
                     break
-        cache.beliefkv_join_pressure_candidates = tuple(candidates)
+        cache.beliefkv_join_pressure_candidates = ()
         cache.beliefkv_join_pressure_candidates_by_component = {
             component: tuple(items) for component, items in by_component.items()
         }

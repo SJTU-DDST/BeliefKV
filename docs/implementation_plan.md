@@ -12,11 +12,46 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-GPU validation V103 started at2026-10-21T06:00:27+08:00 from frozen runtime
-commit216fd88, after the authorized hold and live idle-resource checks.
-The36 roots all delegated with initial fanout2-4. Multiple rounds/nesting,
-useful prefetch and performance remain unverified. Preserve the frozen run;
-these progress notes do not change execution sources or the comparison policy.
+V103 predictive has completed from frozen runtime216fd88; its existing driver
+has started native. All36 workflows completed and passed the shape checks:
+initial fanout2-4 for every root,12 roots with multiple rounds,126 dynamic
+children and15 nested spawns,maximum depth2. V2435 seals the complete
+predictive summary. Keep the frozen execution and the running native arm.
+
+Verified FULL submitted before the causal completion boundary is23.095GB
+for55 JOIN events and2.430GB for61 tool waits. Of70 observed JOINs,65 had
+a positive pre-completion plan;80 of2051 observed tool waits did. Separate
+post-completion restoration from this total. Eleven JOINs encountered capacity
+rejection;their subsequent native FULL restoration totals8.314GB,but this is
+not all proven pre-boundary opportunity or isolated wait savings.
+
+Background FULL backup totals168.249GB/5657 batches,mean29.74MB,with no
+byte/extent cap reached. Later3034 checks were Host-capacity blocked.
+Thirty-six critical checks saw unbacked cold pages;29 had a nearby sampled
+Host free capacity of at least one batch. Audit actual Host budget,scan coverage
+and live ownership before changing caps. Retain sampled-capacity uncertainty.
+
+The diagnostic CPU profiler intervened at2026-10-21T06:38:51.324+08:00
+through06:39:17.414+08:00. Exclude intervention and recovery from throughput
+windows;keep its provenance in development whole-run JCT rather than subtracting
+26s per workflow. V2429 identifies29 publications/96 forwards and6931 generator
+entries,not production cumulative CPU. Native performance acceptance stays open.
+
+Latest main qualification is V2434. Both native consumers read FULL/Mamba pool
+prefixes when both keys exist,so stop building the unused generic fallback.
+Preserve all owner pruning,first-eight prefix order,live commit checks and
+legacy-index compatibility. No new cache,timer or native engine modification.
+V2432 compares complete post-forward calls with frozen216fd88:36-context
+sparse wall P50265.8->173.5us;depth64/unbacked-state1194.1->246.1us.
+Dense198.5->196.0us,legacy198.6->198.3us,no-due-work1.345->1.383us.
+Keep all samples and claim no online total-CPU or throughput/JCT speedup.
+
+V2431c passes342 focused cases including pre-ticket empty filtering.
+V2433 reruns2620 prior application cases plus10 new cases,2630 pass.
+Rehash unchanged engine/patch and retain375 actual V2380 native cases.
+The lock-expiry test now uses a real long-wait forecast instead of bypassing
+the predicate's terminal validation;its lifecycle assertions stay intact.
+This main candidate is not deployed into frozen V103.
 
 V2419 seals the first306.7s prefix:754 background FULL batches,56.05GB,
 all ACKed, mean74.34MB/batch, no byte/extent limit hits. Spawn-specific
@@ -28,7 +63,7 @@ remaining native restoration, trimmed throughput and mean completion latency.
 V2418 records the existing V101/V99 development baselines, including their
 different realized recovery loads; it is not a candidate GPU result.
 
-Latest qualification is V2416. Preserve pre-ticket filtering for confirmed
+V103 runtime qualification is V2416. Preserve pre-ticket filtering for confirmed
 JOINs proven to have no recoverable Host-only input state. Deduplicate within
 the current event batch and recheck once on client submit, without selector
 polling. The existing A-empty/B-EOS test submits B on its first selection with

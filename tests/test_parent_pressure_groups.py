@@ -103,9 +103,7 @@ def test_sparse_publication_preserves_insertion_order_and_checks_live_pool_state
         nodes[120].component_data[2].host_value = None
         nodes[70].component_data[2].session_ref = 2
         runtime._publish_parent_pressure_candidates(exclude_node_ids=(50,))
-        assert cache.beliefkv_join_pressure_candidates == tuple(
-            (node_id, float(node_id)) for node_id in range(1, 9)
-        )
+        assert cache.beliefkv_join_pressure_candidates == ()
         assert cache.beliefkv_join_pressure_candidates_by_component == {
             0: ((101, 101.), (40, 40.)), 2: ((100, 100.),),
         }

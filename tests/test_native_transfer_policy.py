@@ -1315,13 +1315,18 @@ def test_partial_prepare_registers_settled_input_copies_before_remaining_backup(
 
 
 def test_pressure_maintenance_groups_contexts_and_still_expires_real_locks():
+    from dataclasses import replace
+
     runtime, hint, _, action, _, _ = locked_runtime()
     runtime._parent_pressure_candidates = {
         node: (hint.key, 2) for node in range(1, 12)
     }
     lease = runtime._prefetch_service_leases[action.command_id]
-    with patch.object(runtime, "_long_tool_wait", return_value=True), \
-        patch.object(runtime, "_refresh_prefetch_service_leases",
+    runtime.tool_wait_hints[hint.key.context_id] = replace(
+        hint, wait_p10_ms=60000., wait_p50_ms=120000., wait_p90_ms=180000.,
+        expires_monotonic_ms=(lease.expires_at + 60.) * 1000.,
+    )
+    with patch.object(runtime, "_refresh_prefetch_service_leases",
                      wraps=runtime._refresh_prefetch_service_leases) as refresh, \
         patch.object(runtime, "_live_parent_pressure_key",
                      wraps=runtime._live_parent_pressure_key) as live:
@@ -1437,7 +1442,7 @@ def test_join_prepare_publishes_current_pressure_state_once(case):
         expected = ((11, 4),) if case in (
             "backed", "new_backed", "mamba_only", "cold_report", "cold_report_live_mamba",
         ) else ()
-        assert cache.beliefkv_join_pressure_candidates == expected
+        assert cache.beliefkv_join_pressure_candidates == ()
         assert cache.beliefkv_join_pressure_candidates_by_component[0] == expected
         if case.startswith("cold_report"):
             assert runtime._live_parent_pressure_node(11, 4)
@@ -1572,7 +1577,7 @@ def test_pressure_publication_indexes_full_leaves_and_mamba_independently():
     }
     runtime._publish_parent_pressure_candidates()
     cache = runtime._native_cache
-    assert cache.beliefkv_join_pressure_candidates[:8] == tuple((n, n) for n in range(1, 9))
+    assert cache.beliefkv_join_pressure_candidates == ()
     assert cache.beliefkv_join_pressure_candidates_by_component[0] == ((11, 11),)
     assert cache.beliefkv_join_pressure_candidates_by_component[2] == tuple(
         (n, n) for n in range(1, 9)
@@ -1625,7 +1630,7 @@ def test_pressure_publication_stops_only_after_both_native_prefixes_are_complete
     try:
         runtime._publish_parent_pressure_candidates()
         first = tuple((n, n) for n in range(4, 12))
-        assert cache.beliefkv_join_pressure_candidates == first
+        assert cache.beliefkv_join_pressure_candidates == ()
         assert cache.beliefkv_join_pressure_candidates_by_component == {
             0: ((64, 64),) if sparse_pool == 0 else first,
             2: ((64, 64),) if sparse_pool == 2 else first,
@@ -1671,7 +1676,7 @@ def test_pressure_publication_uses_live_pool_indexes_without_changing_candidate_
     runtime._parent_pressure_candidates = {number: (None, number) for number in nodes}
     try:
         runtime._publish_parent_pressure_candidates()
-        assert cache.beliefkv_join_pressure_candidates == tuple((n, n) for n in range(1, 9))
+        assert cache.beliefkv_join_pressure_candidates == ()
         assert cache.beliefkv_join_pressure_candidates_by_component == {
             0: ((1024, 1024),), 2: ((1024, 1024),),
         }
@@ -1746,7 +1751,7 @@ def test_pressure_publication_excludes_restore_target_before_native_pool_limits(
     try:
         runtime._publish_parent_pressure_candidates(exclude_node_ids=excluded)
         first = tuple((n, n) for n in range(9, 17))
-        assert cache.beliefkv_join_pressure_candidates == first
+        assert cache.beliefkv_join_pressure_candidates == ()
         assert cache.beliefkv_join_pressure_candidates_by_component == {
             0: ((64, 64),) if sparse_pool == 0 else first,
             2: ((64, 64),) if sparse_pool == 2 else first,
@@ -1821,7 +1826,7 @@ def test_pressure_publication_does_not_scan_an_already_filled_pool(sparse_pool):
     try:
         runtime._publish_parent_pressure_candidates()
         first = tuple((number, number) for number in range(1, 9))
-        assert cache.beliefkv_join_pressure_candidates == first
+        assert cache.beliefkv_join_pressure_candidates == ()
         assert cache.beliefkv_join_pressure_candidates_by_component == {
             0: ((64, 64),) if sparse_pool == 0 else first,
             2: ((64, 64),) if sparse_pool == 2 else first,
@@ -1876,7 +1881,7 @@ def test_pressure_publication_indexes_candidates_when_device_leaves_are_larger(b
     try:
         runtime._publish_parent_pressure_candidates(exclude_node_ids=excluded)
         assert runtime.counts["prepare_publication_candidate_index"] == 1
-        assert cache.beliefkv_join_pressure_candidates == tuple((n, n) for n in range(1, 9))
+        assert cache.beliefkv_join_pressure_candidates == ()
         expected = ((64, 64),) if blocked == "none" else ()
         assert cache.beliefkv_join_pressure_candidates_by_component == {0: expected, 2: expected}
         assert tuple(runtime._parent_pressure_candidates) == tuple(range(1, 65))

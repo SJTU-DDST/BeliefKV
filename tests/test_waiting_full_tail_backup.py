@@ -220,7 +220,7 @@ def test_waiting_tail_keeps_native_ownership_and_dependency_checks(waiting_tail,
         runtime.context_sessions[hint.key.context_id] = replace(hint.key, context_epoch=2)
     assert runtime.refreshed_shadow_backup_step(context_id=hint.key.context_id) is None
     runtime._publish_parent_pressure_candidates()
-    assert (leaf.id, leaf.creation_time) not in cache.beliefkv_join_pressure_candidates
+    assert (leaf.id, leaf.creation_time) not in cache.beliefkv_join_pressure_candidates_by_component[0]
 
 
 def test_backed_tail_cannot_be_reclaimed_after_its_session_owner_changes(waiting_tail):
@@ -230,7 +230,7 @@ def test_backed_tail_cannot_be_reclaimed_after_its_session_owner_changes(waiting
     cache.tree_core._update_duplicate_tracking(leaf)
     runtime.refreshed_shadow_backup_step(context_id=hint.key.context_id)
     runtime._publish_parent_pressure_candidates()
-    assert (leaf.id, leaf.creation_time) in cache.beliefkv_join_pressure_candidates
+    assert (leaf.id, leaf.creation_time) in cache.beliefkv_join_pressure_candidates_by_component[0]
     cache.release_radix_session("s")
     generation = cache.ensure_session_generation("other")
     cache.session_refs.register_session_ref(NS(

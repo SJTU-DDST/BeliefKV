@@ -7,15 +7,26 @@
 重复摘要已清理；源码归档及保留范围见[整理记录](archive/research_exploration_20261020.md)。
 下文的最新工程状态与实验约束继续有效。
 
-**V103 已开始 GPU 验证。**北京时间 2026-10-21 06:00:27 从冻结
-提交 `216fd88` 启动 predictive，36 个 root 首轮均已委派 2–4 child。
-首个约 306.7 秒前缀中，后台 FULL 备份 56.05GB、754 批全部 ACK，
-平均 74.34MB/批，未触及字节或节点上限；总 H2D 127.27GB。
-这仍不证明有效预取或端到端收益，多轮/嵌套和性能验收继续开放。
-实际配置、原始前缀与口径见[架构状态](architecture_status_zh.md)及
+**V103 predictive 已完成，native 已接续运行。**冻结提交仍为
+`216fd88`。36个workflow全部completed、首轮均2–4 child，12个root
+多轮委派、126个动态child、15次嵌套spawn，形态检查通过。
+[V2435完整汇总](../experiments/reports/v2435_v103_predictive_complete_summary_20261021.json)
+确认完成前启动且被下一请求复用的FULL为JOIN23.095GB/tool2.430GB，
+对应55/61个独立等待事件；完成后恢复单列，不能全部称提前预取。
+11个JOIN仍有容量拒绝，后台备份后段仍受Host预算和扫描覆盖限制。
+native未完成，性能验收开放。CPU profiler于北京时间
+06:38:51.324–06:39:17.414介入，吞吐窗口排除介入和恢复，整轮开发
+JCT保留其来源。实际配置、原始前缀与口径见[架构状态](architecture_status_zh.md)及
 [实验注意事项](experiment_operating_notes_zh.md)。
 
-**最新资格 V2416：EOS 备份与恢复尾段可以连续推进。**confirmed
+**main最新CPU资格V2434：删除无消费者的通用压力候选表。**
+原生实际使用的FULL/Mamba各自前八项与完整owner清理保持。
+完整post-forward对照36-context稀疏P50为265.8→173.5us，
+稠密198.5→196.0us，无到期工作1.345→1.383us，保留全部样本。
+2630项应用检查通过；未变原生引擎核对来源后沿用此前375项。
+V103继续冻结216fd88，本次优化不热改入实验，也不宣称线上吞吐/JCT收益。
+
+**V103运行码资格V2416：EOS备份与恢复尾段可以连续推进。**confirmed
 JOIN 的空恢复仍在发行前过滤，空 A 不阻塞另一 EOS 的第一次选择。
 EOS 先启动冷 FULL 容量准备，再提交 parent H2D；匹配 ACK 唤醒
 现有 100ms 容量重试，部分恢复后的 Host-only 尾段不再误判完成。

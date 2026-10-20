@@ -84,7 +84,7 @@ def test_post_forward_publishes_the_same_final_pool_prefix_once():
                 runtime.dispatch_after_forward(queue2)
             publish.assert_called_once_with()
         assert signature(before) == signature(after)
-        assert len(after.beliefkv_join_pressure_candidates) == 8
+        assert after.beliefkv_join_pressure_candidates == ()
         assert len(after.beliefkv_join_pressure_candidates_by_component[0]) == 4
         assert runtime.counts["prepare_probe_backoff"] == reference.counts["prepare_probe_backoff"]
         assert not actions and not runtime.physical_ledger.pending_count
@@ -196,7 +196,7 @@ def test_critical_reclaim_publication_remains_immediate_and_background_sees_fina
         with patch("time.monotonic", return_value=now):
             runtime.dispatch_after_forward(queue)
         assert calls == ["critical", "prepare", "idle"]
-        assert cache.beliefkv_join_pressure_candidates
+        assert any(cache.beliefkv_join_pressure_candidates_by_component.values())
     finally:
         runtime.close()
 
