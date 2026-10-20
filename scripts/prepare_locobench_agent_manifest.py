@@ -220,7 +220,10 @@ def main():
         "context_token_range": [args.min_context_tokens, args.max_context_tokens],
         "gold_fields_exposed": False,
         "dataset_nature": "generated long software projects; adapted multi-agent systems workload",
-        "context_delivery": "complete frozen source in root and all child system contexts",
+        "context_delivery": (
+            "complete frozen source in root only; children receive model-selected "
+            "task descriptions and read relevant files from the shared workspace"
+        ),
         "code_transformation": "one whole-file Markdown fence removed; no semantic fixes or padding",
         "python_ast_check": "syntax only; imports, tests and task correctness are not established",
         "sandbox_python_feature_version": [3, args.sandbox_python_minor_version],

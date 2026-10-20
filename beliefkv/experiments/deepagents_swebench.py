@@ -2261,23 +2261,27 @@ then return a concise synthesis, tested evidence, and uncertainty to your parent
 
 DYNAMIC_NESTED_ROOT_PROMPT = """
 DYNAMIC MULTI-ROUND DELEGATION
-You are the parent coordinator of a software team. Actively assign substantial
-independent repository questions to task children, and integrate their evidence
-while handling the work that depends on that evidence. Project-wide investigation,
-implementation, and verification commonly expose complementary workstreams.
-Choose what to delegate, when to delegate, and how many rounds to run from the
-current task and observed evidence. Actively use parallel workstreams and further
-delegation rounds when new evidence, edits, or test results expose substantive
-independent questions. A JOIN is an opportunity to reassess the work, not a reason
-to stop delegating or to start another round automatically.
+Complete this assignment through collaboration with task children. Use the full
+project snapshot to identify substantial independent workstreams and delegate
+them while you coordinate dependencies, integration, and the overall result.
+Delegate useful investigation, implementation, review, and validation work as
+those needs arise. One early diagnostic report is not a substitute for independent
+review of later changes or validation of new behavior. After each JOIN, material
+edit, or failed test, identify the next unresolved deliverables and use further
+delegation for work that can proceed independently.
 
 For separable work, prefer two to four complementary task calls in one response;
-a single bounded child or direct work is valid when the task warrants it.
+choose the actual count and timing from the evidence. Retain dependent integration
+and small atomic steps in the parent.
 Every direct-child role can create leaf grandchildren. Assign a decomposable
-workstream when a child can usefully reconcile several independent questions;
-the optional delegation-coordinator role is not required for nesting.
-Give each branch concrete deliverables, relevant evidence, and disjoint write
-scopes. Do not assign a child's nested questions to its siblings as well.
+subsystem workstream to a child when its investigation or validation can proceed
+in parallel across independent components. Ask that child to coordinate those
+questions and reconcile the results; delegation-coordinator is optional.
+Children do not receive your full source snapshot or conversation. Give each
+branch the relevant file paths, symbols, short evidence excerpts, expected result,
+and disjoint write scopes. Children can inspect the shared /workspace checkout.
+Do not paste the entire source snapshot into task descriptions or assign a
+child's nested questions to its siblings as well.
 
 Let the task determine whether investigation, implementation, review, or validation
 is needed next. There is no fixed phase order, mandatory role, or round quota.
@@ -2289,26 +2293,29 @@ naturally when the actual assignment is complete or honestly blocked.
 
 DYNAMIC_TASK_SYSTEM_PROMPT = """
 ## Repository workstreams through task
-Use task proactively for substantial independent repository work. Each child
-already receives the complete initial project snapshot and the same mounted
-workspace; its description needs the assigned question, relevant new evidence,
-expected deliverable, and any write boundaries, not another copy of the source.
-The parent owns reconciliation and final verification.
+Use task for substantial independent repository work throughout the assignment.
+Children share the mounted /workspace checkout but do not inherit the parent's
+full project snapshot or conversation. Supply the assigned question, relevant
+file paths and symbols, short evidence excerpts, expected deliverable, and write
+boundaries. Each child reads additional source as needed. Never copy the entire
+project into a task description. The parent owns reconciliation and verification.
 
 Choose the workstreams and timing from the current assignment. Submit independent
 task calls in the same response so they run concurrently. Give concurrent writers
-disjoint files. Integrate the returned evidence, then reassess new questions after
-edits, tests, or findings; further delegation rounds may be useful. A small atomic
-step can be completed directly. Every non-leaf child can delegate bounded work
-again, so a parent can assign a decomposable question as one workstream.
+disjoint files. Integrate the returned evidence, then delegate fresh independent
+questions exposed by edits, tests, or findings. A small atomic step can be completed
+directly. Assign decomposable subsystem workstreams to direct children so they
+can coordinate their own parallel leaf tasks and return a synthesis.
 """
 
 DYNAMIC_TASK_DESCRIPTION = """Delegate one bounded repository workstream to a child.
 
 Actively use this tool for substantive independent investigation, implementation,
-review, or validation. Children already have the complete initial project source
-and shared workspace. Describe the question, new evidence, expected result, and
-disjoint write scope when edits are assigned. Choose subagent_type from the list.
+review, or validation, including new work exposed after earlier reports. Children
+share /workspace but do not receive the parent's full source snapshot or history.
+Describe the question, relevant files and symbols, short supporting evidence,
+expected result, and disjoint write scope when edits are assigned. A direct child
+can coordinate independent questions with leaf grandchildren. Choose subagent_type from the list.
 Independent task calls in one assistant response run concurrently and return their
 reports for integration. Reassess further work from new evidence after they return.
 
@@ -2318,20 +2325,25 @@ Available child types:
 
 DYNAMIC_COLLABORATIVE_TASK_INSTRUCTION = """
 Complete this assignment as a collaborating multi-agent team using task.
-Delegate substantial parts of the investigation or validation, integrate their
-reports, and do the remaining work yourself. Choose the subagent assignments,
-number, nesting, timing, and any later delegation rounds from the task and
-evidence. There is no fixed phase sequence or role requirement.
+Delegate substantial independent work, integrate the reports, and keep the
+dependent coordination work in the root. Continue using the team when new
+implementation, review, or validation needs arise after a JOIN or material edit.
+Give decomposable subsystem workstreams to children that can coordinate parallel
+leaf investigations. Supply only relevant source excerpts and paths; children
+can read the shared workspace. Choose assignments, number, nesting, timing, and
+follow-up rounds from the evidence. There is no fixed phase sequence or role requirement.
 """
 
 DYNAMIC_DIRECT_CHILD_PROMPT = """
 BOUNDED NESTED DELEGATION
 You are a direct child and have access to task for leaf grandchildren. If your
-assigned workstream contains independent substantial questions, actively consider
-delegating those questions together, then reconcile the evidence. Prefer two to
+assigned workstream contains independent substantial questions, delegate those
+questions together and reconcile the evidence. Prefer two to
 four parallel children for separable work; choose the actual count and any later
 rounds from your assignment and new evidence. This applies to every direct-child
 role, not only delegation-coordinator. Complete an atomic assignment directly.
+Grandchildren receive only your task description and their own tools; pass the
+relevant paths, symbols, short evidence, and expected result, not the whole project.
 Do not expand the overall task or delegate the same investigation twice.
 Grandchildren are leaves; the maximum spawn depth is root=0, child=1, grandchild=2.
 """
@@ -3305,7 +3317,13 @@ def _autonomous_subagents(
                     + SANDBOX_PATH_CONTRACT
                     + repository_sandbox_contract(workload)
                     + ("" if dynamic else NATIVE_CHILD_RETURN_INSTRUCTION)
-                    + _repository_context_prompt(workload)
+                    + (
+                        "\n\nThe root has the complete initial project snapshot. "
+                        "You receive only your delegated assignment and the shared "
+                        "/workspace checkout. Inspect files relevant to that assignment "
+                        "with your tools; the parent conversation is not inherited.\n"
+                        if workload.frozen_repository_context is not None else ""
+                    )
                     + (
                         DELEGATED_TASK_FOCUS_INSTRUCTION + NATIVE_CHILD_RETURN_INSTRUCTION
                         if dynamic else ""

@@ -139,7 +139,7 @@ def test_extension_reuses_qualified_sources_and_selects_distinct_original_tasks(
 @pytest.mark.parametrize("profile", [
     "native_in_graph_nested_2to4", "native_in_graph_dynamic_nested",
 ])
-def test_all_root_child_and_nested_child_prompts_receive_frozen_source(
+def test_only_root_receives_frozen_source_while_children_share_workspace(
     tmp_path, monkeypatch, profile,
 ):
     pytest.importorskip("deepagents")
@@ -197,15 +197,13 @@ def test_all_root_child_and_nested_child_prompts_receive_frozen_source(
     assert "LoCoBench-Agent" in roots[0]["system_prompt"]
     assert roots[0]["system_prompt"].count("SOURCE_SENTINEL") == 1
     assert len(child_specs) == (25 if profile == "native_in_graph_dynamic_nested" else 9)
-    assert all(spec["system_prompt"].count("SOURCE_SENTINEL") == 1 for spec in child_specs)
+    assert all("SOURCE_SENTINEL" not in spec["system_prompt"] for spec in child_specs)
+    assert all("shared /workspace checkout" in spec["system_prompt"] for spec in child_specs)
     if profile == "native_in_graph_dynamic_nested":
         assert roots[0]["system_prompt"].index("SOURCE_SENTINEL") < roots[0]["system_prompt"].index(
             "DYNAMIC MULTI-ROUND DELEGATION",
         )
-        assert all(
-            spec["system_prompt"].index("SOURCE_SENTINEL")
-            < spec["system_prompt"].index(runner.NATIVE_CHILD_RETURN_INSTRUCTION.strip())
-            for spec in child_specs
-        )
+        assert all(runner.NATIVE_CHILD_RETURN_INSTRUCTION in spec["system_prompt"]
+                   for spec in child_specs)
     assert "LoCoBench-Agent scenario" in runner._task_prompt(workload)
     assert "SOURCE_SENTINEL" not in runner._task_prompt(workload)

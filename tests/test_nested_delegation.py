@@ -1,3 +1,5 @@
+import gzip
+import hashlib
 import json
 from pathlib import Path
 import threading
@@ -73,6 +75,7 @@ class NestedFixtureModel(BaseChatModel):
                 "tools": kwargs.get("fixture_tool_names", []),
                 "tool_choice": kwargs.get("fixture_tool_choice"),
                 "bounds": (kwargs.get("extra_body") or {}).get("beliefkv_task_fanout"),
+                "root_source_present": "ROOT_SOURCE_ONLY_SENTINEL" in system,
             })
 
         def call(name, args):
@@ -137,9 +140,13 @@ def configuration(tmp_path, profile=NESTED_IN_GRAPH_PROFILE):
 
 
 @pytest.mark.parametrize("deliver_control", [False, True])
-@pytest.mark.parametrize("profile", [NESTED_IN_GRAPH_PROFILE, DYNAMIC_NESTED_IN_GRAPH_PROFILE])
+@pytest.mark.parametrize("profile,source_context", [
+    (NESTED_IN_GRAPH_PROFILE, False),
+    (DYNAMIC_NESTED_IN_GRAPH_PROFILE, False),
+    (DYNAMIC_NESTED_IN_GRAPH_PROFILE, True),
+])
 def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
-    tmp_path, monkeypatch, deliver_control, profile,
+    tmp_path, monkeypatch, deliver_control, profile, source_context,
 ):
     audit = harness.JsonlAudit(tmp_path / "audit.jsonl")
     workspace = tmp_path / "workspace"
@@ -166,6 +173,19 @@ def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
         instance_id="fixture-1", repo="fixture/repo", base_commit="abc",
         problem_statement="Controlled nested delegation.", difficulty="unknown",
     )
+    if source_context:
+        from dataclasses import replace
+        from beliefkv.experiments.long_repository_tasks import FrozenRepositoryContext
+
+        path = tmp_path / "root-source.gz"
+        raw = gzip.compress(b"ROOT_SOURCE_ONLY_SENTINEL\n" * 100, mtime=0)
+        path.write_bytes(raw)
+        workload = replace(
+            workload, task_kind="locobench_agent",
+            frozen_repository_context=FrozenRepositoryContext(
+                path, hashlib.sha256(raw).hexdigest(), 120000, 1,
+            ),
+        )
     adapter.start()
     try:
         agent = harness._build_autonomous_agent(
@@ -209,6 +229,10 @@ def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
     for event in stages:
         assert parent_by_join[event.join_id] == graph.invocations[event.invocation_id].parent_invocation_id
     first = [request for request in model._requests if request["first"]]
+    assert all(
+        request["root_source_present"] == (source_context and request["role"] == "root")
+        for request in model._requests
+    )
     if model._dynamic:
         assert not any(request["role"] == "coordinator" for request in first)
         assert sum(request["role"] == "direct" for request in first) == 7
