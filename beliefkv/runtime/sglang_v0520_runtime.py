@@ -689,6 +689,9 @@ class NativeAdmissionRuntime:
         self.visible: dict[str, PrefillCandidateKey] = {}
         self.context_sessions: dict[str, PrefillCandidateKey] = {}
         self._context_sessions_revision = 0
+        self._cold_full_owner_index_source = None
+        self._cold_full_owner_index_revision = -1
+        self._cold_full_owner_index: dict[str, tuple[PrefillCandidateKey, ...]] = {}
         self._wait_context_cache = None
         self._join_parent_cache = None
         self.physical_ledger = PhysicalTransactionLedger()
@@ -863,6 +866,7 @@ class NativeAdmissionRuntime:
         if callable(getattr(cache, "_evict_backed_join_parent", None)):
             cache.beliefkv_join_pressure_validator = self._live_parent_pressure_node
             cache.beliefkv_join_pressure_parked = self._on_parent_pressure_parked
+            cache.beliefkv_cold_full_owner_validator = self._live_cold_full_owners
 
     def _next_physical_command_id(self, kind: str) -> str:
         namespace = self._physical_command_namespace
@@ -926,7 +930,11 @@ class NativeAdmissionRuntime:
                 self._critical_parent_demand is not None
                 and self._critical_parent_demand != critical_before
             ):
-                self._reclaim_critical_parent_headroom()
+                if self._reclaim_critical_parent_headroom():
+                    # EOS may leave only milliseconds before RETURN. Consume
+                    # newly earned capacity before yielding this safe point.
+                    self.counts["critical_capacity_immediate_join_replans"] += 1
+                    self.dispatch_join_prefetch()
             if time.monotonic() * 1000. >= self._join_prepare_next_ms:
                 self.dispatch_join_prepare(waiting_queue, running_batch=running_batch)
             if time.monotonic() * 1000. >= self._tool_prepare_next_ms:
@@ -5780,6 +5788,37 @@ class NativeAdmissionRuntime:
             and not self._terminal(key)
         )
 
+    def _live_cold_full_owners(self, owners: tuple[tuple[str, int], ...]) -> bool:
+        """Authorize FULL-only reclaim only while every native owner is waiting."""
+        if not self.enable_prepare_host or self.physical_disabled or not owners:
+            return False
+        if (
+            self._cold_full_owner_index_source is not self.context_sessions
+            or self._cold_full_owner_index_revision != self._context_sessions_revision
+        ):
+            indexed: dict[str, list[PrefillCandidateKey]] = {}
+            for key in self.context_sessions.values():
+                if key.session_id is not None:
+                    indexed.setdefault(key.session_id, []).append(key)
+            self._cold_full_owner_index = {
+                session: tuple(keys) for session, keys in indexed.items()
+            }
+            self._cold_full_owner_index_source = self.context_sessions
+            self._cold_full_owner_index_revision = self._context_sessions_revision
+            self.counts["cold_full_owner_index_built"] += 1
+        for session, generation in owners:
+            keys = self._cold_full_owner_index.get(session)
+            if (
+                type(session) is not str or type(generation) is not int or not keys
+                or any(
+                    key.session_generation != generation
+                    or not self._live_parent_pressure_key(key)
+                    for key in keys
+                )
+            ):
+                return False
+        return True
+
     def _pressure_candidate_groups(self) -> dict[PrefillCandidateKey, set[int]]:
         candidates = self._parent_pressure_candidates
         if (
@@ -6323,30 +6362,32 @@ class NativeAdmissionRuntime:
         demand = self._live_critical_parent_demand()
         return demand is not None and demand[0] != key
 
-    def _reclaim_critical_parent_headroom(self) -> None:
+    def _reclaim_critical_parent_headroom(self) -> bool:
         if not self.enable_prepare_host or self.physical_disabled:
-            return
+            return False
         demand = self._live_critical_parent_demand()
         if demand is None:
-            return
+            return False
         now_ms = time.monotonic() * 1000.
         if now_ms < self._critical_reclaim_next_ms:
-            return
+            return False
         self._critical_reclaim_next_ms = now_ms + SEMANTIC_FRAME_INTERVAL_MS
         key, full_tokens, mamba_slots, _ = demand
         headroom = observe_static_full_mamba_headroom(self._native_cache)
-        if not headroom.observable or (
+        if not headroom.observable:
+            return False
+        if (
             headroom.device_full_free_tokens >= full_tokens
             and headroom.device_mamba_free_slots >= mamba_slots
         ):
-            return
+            return True
         reclaim = getattr(self._native_cache, "reclaim_beliefkv_handoff_capacity", None)
         if not callable(reclaim):
-            return
+            return False
         opportunity = self._wait_prefetch_opportunity(key)
         candidate = getattr(opportunity, "candidate", None)
         if candidate is None:
-            return
+            return False
         excluded = tuple(node.node_id for node in candidate.nodes)
         self._publish_parent_pressure_candidates(exclude_node_ids=excluded)
         prepare = getattr(self._native_cache, "prepare_beliefkv_cold_full_capacity", None)
@@ -6399,6 +6440,7 @@ class NativeAdmissionRuntime:
                         "native_nodes": issued, "include_mamba": False,
                         "scope": "native asynchronous FULL backup; no capacity released yet",
                     })
+        return any(freed.values())
 
     def dispatch_idle_prepare(self) -> None:
         """Background FULL copies yield to all queued restoration/capacity work."""

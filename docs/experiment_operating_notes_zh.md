@@ -4,6 +4,25 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+**V102 预取覆盖修复资格。**当前 V101 execution handoff 关闭、
+实际零传输；后续保持关闭，需求恢复 GB 不计作预测预取。用户已
+要求优先修复严重覆盖不足并快速重启验证。V2267/V2268 记录
+31/40 JOIN 出现容量拒绝，严格提前且复用 FULL 仅 1.119GB。
+新候选允许原生有界扫描发现未登记/共享的等待 FULL：必须逐一验证
+全部 owner 当前状态及 generation，原生引用/锁/Host 副本/在途
+条件和目标排除均通过才释放；Mamba 原位，session 引用保留。
+不能把 `session_ref > 0` 当成 GPU 活跃锁，也不能放宽真正的锁。
+合格缺副本冷页先异步备份，ACK 后仍须重查所有 owner。
+新 EOS 需求取得容量后在同一安全点重试一次预取，避免人为多等
+一轮；无容量进展不重规划。保留完整输入/Mamba/原生执行依赖。
+V2275 通过 1994 应用/224 引擎 CPU 用例，无跳过且保留既有用例。
+V2276 的 4 单位回收是 CPU allocator 受控反例，不当大块 GPU DMA
+或收益。冻结新候选后可按已有授权中断 V101 做快速验证；须先
+准备合格可启动结果，只停止经身份证明归属的资源。保留旧部分
+trace；没有终态的 workflow 单列行政中断，不计自然失败、不拼接。
+新轮同时检查 `causal_waiting_full` 实际回收、同安全点重试、
+有效提前 FULL、重复加载、PREPARE 覆盖及去长尾吞吐/JCT。
+
 **后续 predictive 必查后台 PREPARE。**每轮由
 `audit_prepare_background.py` 自动生成 `prepare_background.json`。
 报告后台与紧急 FULL 的批数/字节、均值/P50/P90/最大值、真实发行

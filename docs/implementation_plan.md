@@ -5,6 +5,34 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Current priority: fix severe prefetch coverage before enabling demand handoff.
+V2267/V2268 confirms V101 execution_handoff=false and zero handoff H2D;
+JOIN/tool source volume3.439GB contains1.829GB FULL,while strict pre-completion
+and next-request-reused FULL is1.119GB/0.0516% of all FULL H2D.
+31/40 JOIN waits observe capacity-budget rejection. Source bytes are not all early.
+
+V102 candidate uses the existing bounded native capacity scan to validate every
+session owner of a resident FULL duplicate,including shared and unregistered
+waiting owners. Recheck native generation,all-owner waiting state,device/Host
+locks,inflight transactions and excluded restore targets before FULL-only demotion.
+Keep Mamba device state and session references intact. Missing Host FULL still
+requires urgent backup and settled ACK plus fresh owner validation before reclaim.
+The owner index follows context-session binding revision;no new periodic tree scan.
+When a new EOS capacity demand earns usable capacity,retry JOIN once in the same
+post-forward safe point;no repeated planning without progress and no dependency
+or timing waiver. Keep execution handoff disabled and the common36-root contract.
+
+V2275 retains1982/211 prior cases and passes1994 application/224 engine CPU cases.
+V2276 executes the frozen V101 reclaim method and candidate on the same CPU
+allocator:shared waiting and unregistered single-owner cases change0 to4 freed
+units;an unapproved owner remains blocked. State/Host/reference identity is retained.
+Owner waiting is an explicit controlled predicate,not live GPU eligibility or gain.
+Freeze the qualified candidate before stopping V101 under the user's existing
+authorization for important coverage fixes;retain partial outcomes administratively
+and launch a fresh arm without splicing traces. Validate actual causal FULL victims,
+same-safe-point retries,early reused FULL,duplicate reloads,PREPARE coverage and
+tail-excluded throughput/JCT. No performance acceptance from these CPU checks.
+
 Latest requirement: check background PREPARE coverage in every subsequent
 predictive arm. The driver now emits prepare_background.json offline, separating
 idle/urgent FULL and semantic JOIN/tool PREPARE. Measure issued-round bytes and
