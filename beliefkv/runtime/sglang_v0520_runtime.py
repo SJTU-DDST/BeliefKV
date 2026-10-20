@@ -4662,6 +4662,7 @@ class NativeAdmissionRuntime:
             and host_full_free_tokens >= 0
             and type(anchors.reusable_input_tokens) is int
             and host_full_free_tokens < anchors.reusable_input_tokens
+            and not self._resident_parent_prepare_supported(cache)
         ):
             backed = [] if (
                 cache is self._native_cache and self.enable_prepare_host
@@ -5401,7 +5402,14 @@ class NativeAdmissionRuntime:
         )
         if candidate is not None:
             tail_leaves = self._shadow_reclaim_tail_leaves(candidate)
-            step = next_shadow_backup_step(candidate, reclaim_tail_leaves=tail_leaves)
+            step = next_shadow_backup_step(
+                candidate, reclaim_tail_leaves=tail_leaves,
+                reclaim_device_leaves=(
+                    tail_leaves if self._resident_parent_prepare_supported(
+                        self._native_cache,
+                    ) else None
+                ),
+            )
             # Settled cold copies remain reclaimable while other extents still
             # need PREPARE; publication rechecks native locks and ownership.
             self._register_backed_pressure_nodes(
@@ -5582,11 +5590,16 @@ class NativeAdmissionRuntime:
             candidate = self._refreshed_shadow_backup_candidate(
                 context_id=step.key.context_id, source=source,
             )
-        steps = (
-            shadow_backup_steps(
-                candidate, reclaim_tail_leaves=self._shadow_reclaim_tail_leaves(candidate),
-            ) if candidate is not None else ()
-        )
+        if candidate is not None:
+            tail_leaves = self._shadow_reclaim_tail_leaves(candidate)
+            steps = shadow_backup_steps(
+                candidate, reclaim_tail_leaves=tail_leaves,
+                reclaim_device_leaves=(
+                    tail_leaves if self._resident_parent_prepare_supported(cache) else None
+                ),
+            )
+        else:
+            steps = ()
         if not steps or steps[0] != step:
             self.counts["shadow_step_stale"] += 1
             return ()
@@ -5995,6 +6008,11 @@ class NativeAdmissionRuntime:
                     self.counts["prepare_backed_full_tail_registered"] += 1
                 self._remember_parent_pressure_node(node.node_id, key, node.creation_time)
 
+    @staticmethod
+    def _resident_parent_prepare_supported(cache: object) -> bool:
+        supported = getattr(cache, "supports_beliefkv_resident_parent_prepare", None)
+        return callable(supported) and supported() is True
+
     def _shadow_reclaim_tail_leaves(
         self, candidate: ActionLocalShadowCandidate | ActionLocalPrefetchCandidate,
     ) -> frozenset[int]:
@@ -6004,10 +6022,30 @@ class NativeAdmissionRuntime:
             return frozenset()
         tree = getattr(cache, "tree_core", None)
         device_leaves = getattr(tree, "evictable_device_leaves", ())
+        resident_parents = self._resident_parent_prepare_supported(cache)
         eligible = set()
         for node_id, created in dict(candidate.anchors.component_leaves).get(0, ()):
             try:
                 node = tree.node_by_id(node_id)
+                if node.id != node_id or node.creation_time != created:
+                    continue
+                if resident_parents:
+                    visited = set()
+                    while node.component_data[0].value is None:
+                        if (
+                            node.id in visited
+                            or node.component_data[0].host_value is None
+                            or node.write_through_pending_id is not None
+                            or node.load_back_pending_id is not None
+                        ):
+                            break
+                        visited.add(node.id)
+                        parent = node.parent
+                        if parent is None or tree.node_by_id(parent.id) is not parent:
+                            break
+                        node = parent
+                    else:
+                        node_id, created = node.id, node.creation_time
                 full = node.component_data[0]
                 if (
                     node.id == node_id and node.creation_time == created

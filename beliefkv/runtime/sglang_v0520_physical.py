@@ -919,9 +919,11 @@ def next_shadow_backup_step(
     candidate: ActionLocalShadowCandidate,
     *,
     reclaim_tail_leaves: frozenset[int] = frozenset(),
+    reclaim_device_leaves: frozenset[int] | None = None,
 ) -> ShadowBackupStep | None:
     steps = shadow_backup_steps(
         candidate, max_steps=1, reclaim_tail_leaves=reclaim_tail_leaves,
+        reclaim_device_leaves=reclaim_device_leaves,
     )
     return steps[0] if steps else None
 
@@ -929,8 +931,9 @@ def next_shadow_backup_step(
 def shadow_backup_steps(
     candidate: ActionLocalShadowCandidate, *, max_steps: int = 8,
     reclaim_tail_leaves: frozenset[int] = frozenset(),
+    reclaim_device_leaves: frozenset[int] | None = None,
 ) -> tuple[ShadowBackupStep, ...]:
-    """Plan one ancestor-first burst of missing FULL extents on one session path.
+    """Plan reclaimable write-back FULL, or an ancestor-first legacy burst.
 
     Existing Host extents are retained. Mamba snapshots stay with native
     demand write-back. The runtime may additionally prove idle device leaves
@@ -938,6 +941,8 @@ def shadow_backup_steps(
     """
     if type(max_steps) is not int or not 1 <= max_steps <= 16:
         raise ValueError("shadow burst must contain one to sixteen extents")
+    if reclaim_device_leaves is not None and not reclaim_device_leaves:
+        return ()
     nodes = {node.node_id: node for node in candidate.nodes}
     if len(nodes) != len(candidate.nodes):
         return ()
@@ -974,6 +979,44 @@ def shadow_backup_steps(
                 depth[node_id] = distance
     if ordered_nodes is None:
         ordered_nodes = sorted(paths, key=lambda value: (depth[value], value))
+    if reclaim_device_leaves is not None:
+        # Write-back can release one private device leaf without backing its
+        # resident ancestors. Re-evaluate demand after its ACK and demotion.
+        for node_id in reversed(ordered_nodes):
+            if node_id not in reclaim_device_leaves:
+                continue
+            node = nodes[node_id]
+            if (
+                node.full_device_tokens <= node.full_host_tokens
+                or node.full_session_refs != 1 or node.mamba_session_refs > 1
+                or node.full_device_locks or node.full_host_locks
+                or node.mamba_device_locks or node.mamba_host_locks
+            ):
+                continue
+            current = node_id
+            while nodes[current].parent_id is not None:
+                ancestor = nodes[current]
+                if (
+                    ancestor.pending_write_id is not None
+                    or ancestor.pending_load_id is not None
+                    or not (ancestor.full_device_tokens or ancestor.full_host_tokens)
+                ):
+                    break
+                current = ancestor.parent_id
+            else:
+                leaf = single_leaf_path if single_leaf_path is not None else provenance[node_id]
+                return (ShadowBackupStep(
+                    key=candidate.anchors.key,
+                    leaf_node_id=leaf,
+                    leaf_creation_time=leaves[leaf],
+                    node_id=node_id,
+                    creation_time=node.creation_time,
+                    include_mamba=False,
+                    missing_full_prefix_tokens=(
+                        node.full_device_tokens - node.full_host_tokens
+                    ),
+                ),)
+        return ()
     selected = _checkpoint_paths(
         candidate.anchors, nodes, leaves, depth,
         ordered_nodes=ordered_nodes if len(paths) == len(nodes) else None,
