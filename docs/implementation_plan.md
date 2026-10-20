@@ -5,7 +5,40 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-V95 launched2026-10-20 11:23:18 Asia/Shanghai from frozen8164200 and first
+Current V96 supersedes the historical workload below. It launched2026-10-20
+11:49:59 Asia/Shanghai from frozen63625de:36 simultaneous roots, predictive
+first, then fresh native. All36 offsets are zero and all historical native
+reference arguments are cleared. The9 projects and36 distinct original tasks
+come from the same LoCoBench-Agent archive; scenarios and435 source files are
+hash-verified. Root source lengths are105597–194277 tokens. Only root receives
+the complete project; children/grandchildren receive model-selected assignments,
+paths and short evidence, then read the shared workspace. Strengthen ongoing
+multi-round/nested collaboration without fixed assignments, generated tool calls,
+round quotas or RETURN gates. Current CPU qualification passes1784 distinct
+runtime/harness cases plus159 native cases; actual nested requests are covered.
+First real workflow service is11:53:39. V2159 verifies971 frozen sources and481
+external inputs, with no writer failures/drops. This is startup qualification,
+not complete-run throughput, useful coverage or quality acceptance.
+
+Keep running8,256K/95% compression,Host200GB/80:20,tool180s and the qualified
+V95 engine. FULL PREPARE,online tool timing and borrowable parent headroom stay
+enabled; Mamba PREPARE,execution handoff and detailed high-frequency diagnostics
+stay off. Treat critical headroom as borrowable demand, not permanently idle HBM.
+At safe waiting points back up eligible cold FULL extents, wait for ACK and
+native reference/inflight validation, reclaim capacity, then restore and consume
+the critical parent state. Do not preempt an executing LLM request.
+
+Target at least10GB JOIN/tool FULL prefetch while separately reporting actual
+transfer, pre-completion issuance followed by successor reuse, and native demand
+restoration. Do not create useless DMA to meet a byte target. Verify real
+backup-to-ACK-to-reclaim-to-parent-consumption and useful-copy losses/recompute.
+Keep the goal active until tail-excluded throughput and mean JCT improve against
+native with adequate useful coverage; startup/CPU checks are not acceptance.
+Historical V91b is not a matched comparison for these changed inputs/arrivals.
+
+V95 was administratively stopped at11:34:55 for the user's new workload.
+Preserve partial traces and immutable snapshots; infer no crash/natural failure.
+Historical V95 launched2026-10-20 11:23:18 Asia/Shanghai from frozen8164200 and first
 served a real workflow at11:26:21. V2155 verifies970 frozen sources and actual
 configuration/process identities. Keep the24-root16+8/900s,running8,
 256K,Host80:20 contract and historical V91b native reference. Its engine patch
