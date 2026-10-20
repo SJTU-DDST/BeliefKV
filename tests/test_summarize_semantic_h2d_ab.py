@@ -570,6 +570,21 @@ def test_frozen_prefix_diagnostics_rejects_a_changed_setting(tmp_path, monkeypat
         main()
 
 
+@pytest.mark.parametrize("required", (False, True))
+def test_frozen_delegation_check_cannot_be_changed_between_arms(
+    tmp_path, monkeypatch, required,
+):
+    (tmp_path / "ab_plan.json").write_text(json.dumps({
+        "delegation_shape_required_before_native": required,
+    }))
+    monkeypatch.setenv("REQUIRE_DELEGATION_SHAPE", str(int(not required)))
+    monkeypatch.setattr(sys, "argv", [
+        "summarize", "--run-root", str(tmp_path), "--verify-frozen-plan",
+    ])
+    with pytest.raises(ValueError, match="frozen delegation shape qualification"):
+        main()
+
+
 @pytest.mark.parametrize("actual", (None, False, True))
 def test_summary_requires_the_frozen_prefix_diagnostics_in_server_launch(
     tmp_path, monkeypatch, actual,

@@ -34,6 +34,9 @@ def resume_environment(plan: dict, run_root: Path, *, python: str, port: int) ->
         "ARRIVAL_RATE_PER_SECOND": plan.get("workflow_arrival_rate_per_second", 0),
         "ARRIVAL_SEED": plan.get("workflow_arrival_seed", 21),
         "ARM_ORDER": " ".join(plan["order"]), "RESUME_PENDING": 1,
+        "REQUIRE_DELEGATION_SHAPE": int(
+            plan.get("delegation_shape_required_before_native", False)
+        ),
         "HOST_SPLIT": plan["host_split"], "PORT": port,
         "HOST_NUMA_MEMORY_POLICY": plan.get("host_numa_memory_policy", "bind"),
         "SAMPLING_SEED": plan["sampling_seed"], "REPETITION_ID": plan["repetition_id"],

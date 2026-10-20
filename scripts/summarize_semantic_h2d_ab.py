@@ -592,6 +592,11 @@ def main() -> None:
     if args.verify_frozen_plan:
         root = Path(__file__).resolve().parents[1]
         plan = json.loads((args.run_root / "ab_plan.json").read_text())
+        if "delegation_shape_required_before_native" in plan and (
+            plan["delegation_shape_required_before_native"]
+            is not (os.environ.get("REQUIRE_DELEGATION_SHAPE", "0") == "1")
+        ):
+            raise ValueError("frozen delegation shape qualification setting changed")
         if "prefetch_prefix_diagnostics" in plan and (
             plan["prefetch_prefix_diagnostics"] is not bool(args.prefetch_prefix_diagnostics)
         ):
@@ -824,6 +829,9 @@ def main() -> None:
             "child_finish_chunk_shadow": True,
             "stream_http_timing_shadow": True,
             "fanout_profile": fanout,
+            "delegation_shape_required_before_native": (
+                os.environ.get("REQUIRE_DELEGATION_SHAPE", "0") == "1"
+            ),
             "delegation_contract": shape,
             "in_graph_initial_tool_choice": shape.get("root_initial_tool_choice", "task"),
             "in_graph_initial_parallel_tool_calls": True,

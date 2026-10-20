@@ -111,6 +111,15 @@ def test_resume_preserves_small_workload_comparison_population():
     assert environment["WARMUP_SECONDS"] == "0.0"
 
 
+@pytest.mark.parametrize("required", [None, False, True])
+def test_resume_preserves_frozen_delegation_check_and_legacy_default(required):
+    configuration = plan()
+    if required is not None:
+        configuration["delegation_shape_required_before_native"] = required
+    environment = resume_environment(configuration, Path("/run"), python="/python", port=18454)
+    assert environment["REQUIRE_DELEGATION_SHAPE"] == str(int(bool(required)))
+
+
 @pytest.mark.parametrize("legacy_common", [None, False, True])
 def test_resume_retains_frozen_frontend_config_without_inherited_defaults(legacy_common):
     configuration = plan()

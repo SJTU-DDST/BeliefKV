@@ -43,6 +43,7 @@ export REACTIVE_CHAT_TOKEN_BLOCK_CACHE="${REACTIVE_CHAT_TOKEN_BLOCK_CACHE:-$PRED
 export NATIVE_CHAT_TOKEN_BLOCK_CACHE="${NATIVE_CHAT_TOKEN_BLOCK_CACHE:-0}"
 export SGLANG_SOURCE_CHECKOUT="${SGLANG_SOURCE_CHECKOUT:-/home/longhao/experiment/.worktrees/sglang-v95-leaf-prepare-cpu-20261020}"
 export ARM_ORDER="${ARM_ORDER:-predictive_h2d native}"
+export REQUIRE_DELEGATION_SHAPE="${REQUIRE_DELEGATION_SHAPE:-1}"
 export PORT="${PORT:-18498}"
 export RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_locobench_long_36root_running8_20261020_v96}"
 

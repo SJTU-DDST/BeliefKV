@@ -306,11 +306,24 @@ def test_aged_warm_bypass_does_not_displace_a_stronger_causal_head():
     runtime.close()
 
 
+@pytest.fixture
+def residency_clock(monkeypatch):
+    clock = NS(now=time.monotonic())
+    timer = NS(
+        monotonic=lambda: clock.now, perf_counter=time.perf_counter, time=time.time,
+    )
+    monkeypatch.setattr("beliefkv.runtime.sglang_v0520_runtime.time", timer)
+    monkeypatch.setattr(__name__ + ".time", timer)
+    return clock
+
+
 @pytest.mark.parametrize("slots,normal,expected", (
     (1, 1, "warm"), (2, 1, "warm"), (4, 1, "head"),
     (4, 3, "warm"), (8, 3, "head"), (1, 0, "head"), (0, 3, "head"),
 ))
-def test_aged_resident_quota_uses_imminent_slots_and_fresh_native_cost(slots, normal, expected):
+def test_aged_resident_quota_uses_imminent_slots_and_fresh_native_cost(
+    slots, normal, expected, residency_clock,
+):
     from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
 
     runtime, queue, _, cache = _aged_warm_fixture(cached=True)
@@ -335,6 +348,26 @@ def test_aged_resident_quota_uses_imminent_slots_and_fresh_native_cost(slots, no
             assert runtime.counts["resident_aged_native_quota_admitted"] == 0
         cache.prefetch_gpu_session_nodes.assert_not_called()
         assert not runtime._prefetch_service_leases
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("elapsed_ms,expected", ((49., "warm"), (51., "head")))
+def test_reduced_resident_quota_respects_discovery_hint_expiry(
+    elapsed_ms, expected, residency_clock,
+):
+    from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
+
+    runtime, queue, _, cache = _aged_warm_fixture(cached=True)
+    runtime._prefetch_priority_normal_admissions = 3
+    runtime._resident_priority_normal_admissions = 3
+    residency_clock.now += elapsed_ms / 1000.
+    try:
+        budget = PrefetchResidencyBudget(4, 1024 ** 3, source="native_next_prefill")
+        with patch.object(runtime, "_current_residency_budget", return_value=budget):
+            assert select(runtime, queue).candidates[0].rid == expected
+        assert cache.inspect_beliefkv_reentry.call_count == (2 if expected == "warm" else 0)
+        cache.prefetch_gpu_session_nodes.assert_not_called()
     finally:
         runtime.close()
 

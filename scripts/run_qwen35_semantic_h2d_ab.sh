@@ -17,6 +17,7 @@ PORT="${PORT:-18454}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_joint_wait_h2d_ab_${ROOT_COUNT}root_2to4_v8c}"
 ARM_ORDER="${ARM_ORDER:-predictive_h2d}"
 RESUME_PENDING="${RESUME_PENDING:-0}"
+REQUIRE_DELEGATION_SHAPE="${REQUIRE_DELEGATION_SHAPE:-0}"
 SAMPLING_SEED="${SAMPLING_SEED:-21}"
 REPETITION_ID="${REPETITION_ID:-0}"
 ACTIVATION_WALL_CLOCK_SECONDS="${ACTIVATION_WALL_CLOCK_SECONDS:-14400}"
@@ -72,6 +73,7 @@ fi
 
 if [[ $# -ne 0 ]] \
   || [[ "$RESUME_PENDING" != "0" && "$RESUME_PENDING" != "1" ]] \
+  || [[ "$REQUIRE_DELEGATION_SHAPE" != "0" && "$REQUIRE_DELEGATION_SHAPE" != "1" ]] \
   || { [[ "$RESUME_PENDING" == "0" ]] && [[ -e "$RUN_ROOT" ]]; } \
   || { [[ "$RESUME_PENDING" == "1" ]] && [[ ! -f "$RUN_ROOT/ab_plan.json" ]]; } \
   || [[ ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] || (( ROOT_COUNT > 156 )) \
@@ -88,7 +90,7 @@ if [[ $# -ne 0 ]] \
   exit 2
 fi
 mkdir -p "$RUN_ROOT"
-export FANOUT_PROFILE HOST_NUMA_MEMORY_POLICY MAX_COMPLETION_TOKENS
+export FANOUT_PROFILE HOST_NUMA_MEMORY_POLICY MAX_COMPLETION_TOKENS REQUIRE_DELEGATION_SHAPE
 context_args=(--agent-recursion-limit "$AGENT_RECURSION_LIMIT")
 if [[ -n "$CONTEXT_COMPRESSION_TRIGGER_RATIO" ]]; then
   context_args+=(--context-compression-trigger-ratio "$CONTEXT_COMPRESSION_TRIGGER_RATIO")
@@ -148,6 +150,11 @@ for arm in $ARM_ORDER; do
     && -f "$RUN_ROOT/$arm/client_$ROOT_COUNT/summary.json" ]]; then
     printf 'Reuse collected native arm; continue with pending predictive\n'
     continue
+  fi
+  if [[ "$arm" == "native" && "$REQUIRE_DELEGATION_SHAPE" == "1" ]]; then
+    "$PYTHON" "$ROOT/scripts/audit_delegation_workload.py" \
+      --run-root "$RUN_ROOT" --require-qualified \
+      --output "$RUN_ROOT/delegation_shape_qualification.json"
   fi
   if [[ -e "$RUN_ROOT/$arm" ]]; then
     printf 'Arm directory already exists: %s\n' "$RUN_ROOT/$arm" >&2
