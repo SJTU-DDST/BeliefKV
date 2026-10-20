@@ -12,7 +12,35 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-Latest qualification is V2399. Critical reclaim reads the complete checkpoint
+Latest qualification is V2404. A WAIT_JOIN donor first checks whether the
+stored critical demand names the same invocation. Only then validate the live
+demand and its final complete key. Preserve same-invocation checkpoint rebinding,
+matching expiry checks, donor terminal validation, complete owner pruning,
+candidate order and every actual native commit guard. Add no proof cache/timer.
+
+V2402b compares complete post-forward calls. With36/108 waiting contexts and
+no critical demand,helper calls39->21/111->57,wall P50202.9->200.9us/
+438.4->431.9us. With critical demand,calls39->22/111->58,P50
+221.1->202.3us/488.6->429.1us. Candidate prefixes,native reads and physical
+outcomes match. Counts and clocks are separate.
+
+Retain V2402's unconditioned108-context critical regression: candidate mean
+969.6us versus baseline509.0us,max211.8ms. V2402a GC callbacks did not
+reproduce the pause;its exact cause remains unproved. V2402b explicitly collects
+fixture garbage after10 warmups and the separate counted call,only before all401
+alternating samples. Default GC stays enabled with unchanged thresholds during
+sampling;runtime GC is unchanged. All four new means are lower,but retain every
+original/new outlier and claim no online worst-case or throughput/JCT acceptance.
+
+V2403 reruns2576 previous application cases plus8 scope cases,2584 passing.
+Both actual CPU restore ACK orders/four live rejections rerun. Rehash and retain
+375 actual V2380 native cases;engine/patch did not change. Freeze V103 from
+V2404 with the existing36-root/running8/256K/95%/Host200GB80:20 contract,
+watcher,exact pause and2026-10-21T06:00:00+08:00 hold. No earlier GPU queries
+or preloading. V101 shared scheduler timing is disabled;background writer
+samples do not prove scheduler control time or end-to-end savings.
+
+Historical qualification V2399: critical reclaim reads the complete checkpoint
 without first filtering an H2D issue subset, probing partial pages or computing
 its budget twice. Budget calls fall2->1 and byte-allowance calls1->0. Ordinary
 H2D still defaults to live capacity and byte budgeting. Preserve ledger bounds,

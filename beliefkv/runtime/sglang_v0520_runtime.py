@@ -6186,8 +6186,10 @@ class NativeAdmissionRuntime:
                 and not (
                     ticket is not None and ticket.key == key and self._live_join_ticket()
                     or (
-                        (demand := self._live_critical_parent_demand()) is not None
-                        and demand[0] == key
+                        (demand := self._critical_parent_demand) is not None
+                        and demand[0].invocation_id == key.invocation_id
+                        and (live := self._live_critical_parent_demand()) is not None
+                        and live[0] == key
                     )
                 )
                 and not self._terminal(key)
