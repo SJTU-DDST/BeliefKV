@@ -14,8 +14,9 @@ backed cold capacity before more backups; D2H ACK, current waiting state,
 native ownership, references, locks and inflight checks still precede release.
 Ordinary tool policy is unchanged without critical demand; Mamba PREPARE stays
 off. Actual DMA, donor-to-parent consumption and performance remain unverified.
-Next run is predictive-only against completed V96 native, with the same36-root
-simultaneous arrivals/common harness/tasks/engine/capacity contract.
+V97 launched2026-10-20 13:32:58 Asia/Shanghai from frozen49fc2a8,
+predictive-only against completed V96 native, with the same36-root simultaneous
+arrivals/common harness/tasks/engine/capacity contract.
 
 V96 completed2026-10-20 13:20:32 Asia/Shanghai. V2167 applies the existing
 common600–1793.304s cutoff: decode470.235/542.871 token/s remains13.38%

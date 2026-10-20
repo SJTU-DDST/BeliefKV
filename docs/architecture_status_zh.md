@@ -24,8 +24,9 @@ V97 候选的 `_critical_tool_donor` 只检查近端关键 parent 容量需求�
 ACK 后先回收可释放冷页，再规划更多备份；工具已返回则失去
 工具等待捐赠资格，不能驱逐运行请求。选择记录增加受益 parent
 和原因，无新增逐 decode 详细观测。V2166 当前 1829 项 CPU
-检查通过；没有真实 DMA/收益验收。下一轮仅 predictive runtime
-变化，沿用 V96 native 开发参考，36-root 与共同 harness 不变。
+检查通过；没有真实 DMA/收益验收。V97 已于北京时间 2026-10-20
+13:32:58 从冻结 `49fc2a8` 启动，仅 predictive runtime 变化，
+沿用 V96 native 开发参考，36-root 与共同 harness 不变。
 
 **V96 历史启动记录。**北京时间
 2026-10-20 11:49:59 启动，冻结 `63625de`，predictive 后接全新

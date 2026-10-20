@@ -25,7 +25,8 @@ Mamba PREPARE 继续关闭；普通无关键需求工具策略保持原样。
 V2166 的 1829 项当前 CPU 检查通过。V2161/V2164 对旧 1 秒
 后备路径的证明不能替代新路径资格；计时估计器微优化已撤回。
 
-V97 只运行 predictive，复用完整 V96 native 开发参考；共同
+V97 已于北京时间 2026-10-20 13:32:58 从冻结 `49fc2a8` 启动，
+只运行 predictive，复用完整 V96 native 开发参考；共同
 任务、到达、harness、引擎、容量必须保持，实际变化仅 predictive
 runtime。少 JOIN 是动态合同没有旧首轮 task/[2,4] 约束的结果：
 V96 predictive 6 次、native 31 次，均无嵌套。不得把差异当成
