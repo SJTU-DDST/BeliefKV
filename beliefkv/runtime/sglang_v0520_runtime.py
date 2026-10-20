@@ -3095,6 +3095,12 @@ class NativeAdmissionRuntime:
                         ),
                     )
                     self.counts["observed_eos_capacity_preparation"] += 1
+                    if self._reclaim_critical_parent_headroom(
+                        _planned_opportunity=observation,
+                    ):
+                        observation = self._wait_prefetch_opportunity(
+                            stage.key, include_checkpoint_plan=True,
+                        )
             if observation is None or observation.step is None:
                 capacity_blocked = cost_plan is not None and cost_plan.step is not None
                 self.counts[
@@ -4163,7 +4169,12 @@ class NativeAdmissionRuntime:
                     )
                 self._opportunity_writer.record(no_step_record)
                 ticket.no_step_recorded = True
-            if ticket.issued_nodes:
+            remaining_restore = observation is not None and bool(
+                getattr(observation, "host_backed_full_missing_device_tokens", 0)
+                or getattr(observation, "host_backed_mamba_missing_device_nodes", 0)
+                or getattr(observation, "no_step_reason", None) == "prefetch_capacity_budget"
+            )
+            if ticket.issued_nodes and not remaining_restore:
                 if ticket.client_request_id is not None:
                     # Keep the bound consumer for residency validation until
                     # native arrival, without blocking another JOIN restore.
@@ -6825,7 +6836,9 @@ class NativeAdmissionRuntime:
             return False
         return demand[0] != key
 
-    def _reclaim_critical_parent_headroom(self) -> bool:
+    def _reclaim_critical_parent_headroom(
+        self, *, _planned_opportunity: SessionH2DOpportunity | None = None,
+    ) -> bool:
         if not self.enable_prepare_host or self.physical_disabled:
             return False
         demand = self._live_critical_parent_demand()
@@ -6847,9 +6860,16 @@ class NativeAdmissionRuntime:
         reclaim = getattr(self._native_cache, "reclaim_beliefkv_handoff_capacity", None)
         if not callable(reclaim):
             return False
-        opportunity = self._wait_prefetch_opportunity(
-            key, include_checkpoint_plan=True, apply_capacity_budget=False,
-        )
+        if (
+            isinstance(_planned_opportunity, SessionH2DOpportunity)
+            and _planned_opportunity.anchors.key == key
+            and _planned_opportunity.headroom == headroom
+        ):
+            opportunity = _planned_opportunity
+        else:
+            opportunity = self._wait_prefetch_opportunity(
+                key, include_checkpoint_plan=True, apply_capacity_budget=False,
+            )
         candidate = getattr(opportunity, "candidate", None)
         if candidate is None:
             return False
@@ -9750,6 +9770,7 @@ class NativeAdmissionRuntime:
         # A burst's deepest node locks its FULL ancestry once; registering its
         # ancestors first would consume the budget without protecting the state.
         locked_prefixes = {} if has_prefetch and len(completed) > 1 else None
+        critical_rearmed = False
         for action in reversed(completed):
             if (
                 action.action == "PREPARE_HOST"
@@ -9759,6 +9780,25 @@ class NativeAdmissionRuntime:
                 self._invalidate_wait_transfer_observation(key)
                 if self._critical_tool_donor(key):
                     self._critical_reclaim_next_ms = 0.
+            if (
+                not critical_rearmed and self.enable_prepare_host
+                and action.action == "PREFETCH_GPU"
+                and (critical := self._critical_parent_demand) is not None
+                and critical[0].context_id == action.context_id
+                and (pending := self._prefetch_steps.get(action.command_id)) is not None
+                and pending[1] == "join_ticket"
+                and (critical := self._live_critical_parent_demand()) is not None
+            ):
+                origin = pending[0].key
+                parent = self.graph.invocations.get(critical[0].invocation_id)
+                ticket = self._confirmed_join_tickets.get(parent.join_id) if parent else None
+                if origin == critical[0] or (
+                    ticket is not None and ticket.key == critical[0]
+                    and ticket.checkpoint_key == origin
+                ):
+                    self._critical_reclaim_next_ms = 0.
+                    critical_rearmed = True
+                    self.counts["critical_parent_capacity_rearmed_after_h2d"] += 1
             self._register_prefetch_service_lease(action, _locked_prefixes=locked_prefixes)
             issued = self._prefetch_issue_times.pop(action.command_id, None)
             submitted = getattr(commit, "submit_ts_ms", None)

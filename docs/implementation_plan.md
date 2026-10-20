@@ -12,7 +12,38 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-Latest qualification is V2408. This change is offline accounting only; retain
+Latest qualification is V2416. Preserve pre-ticket filtering for confirmed
+JOINs proven to have no recoverable Host-only input state. Deduplicate within
+the current event batch and recheck once on client submit, without selector
+polling. The existing A-empty/B-EOS test submits B on its first selection with
+zero extra EOS retries. Keep ownership of already-issued transfers and first use.
+
+EOS now starts critical cold FULL capacity preparation before its first parent
+H2D can block checkpoint observation. Reuse only a typed current-call snapshot
+with the exact key and unchanged headroom; otherwise recapture. A live matching
+JOIN H2D ACK rearms the existing capacity retry once per callback. Its existing
+interval is100ms, not50ms. Preserve a partially restored ticket if Host-backed
+FULL/necessary Mamba remains or the remaining plan is capacity-blocked. Add no
+timer or cross-call snapshot cache; retain native ownership and commit guards.
+
+V2410/V2411b exercise actual CPU native tree/session/allocator and backup/load
+ACKs starting at EOS with no seeded critical demand. Baseline restores2/4 units;
+candidate finishes both H2D commands before injected RETURN in either ACK order.
+The first-service observer releases both leases. EOS/ACK/RETURN clock, DMA/events,
+geometry, growth reserve and first-use observation are fixtures, not GPU proof.
+V2414 retains21 alternating samples after3 warmups: initial EOS wall P50
+1.806->2.137ms, including frontloaded D2H submission. Record the0.331ms cost;
+different completed work prevents a matched-work CPU speedup claim.
+
+V2415 reruns2602 retained application cases plus18 coordination cases,2620 pass.
+Preserve the fixed legacy-observation and bound-session fixture failures.
+Rehash unchanged native sources/patch and retain375 actual V2380 engine cases.
+Freeze V103 from V2416 with existing36-root/running8/256K/95%/Host200GB80:20,
+watcher, exact pause and2026-10-21T06:00:00+08:00 hold. Next GPU validation
+must measure EOS D2H/H2D ordering, ACK-to-tail progress, useful first use, initial
+preflight CPU and net trimmed throughput/mean JCT. Acceptance remains open.
+
+Historical qualification V2408 changes offline accounting only; retain its
 V2404 runtime behavior. The sealed dispatch funnel includes both submitted and
 submitted_partial in submitted_before_completion,with separate reason-event
 counts. Deduplicate repeated logs per JOIN/tool episode;reason counts can
