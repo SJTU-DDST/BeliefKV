@@ -5,7 +5,46 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-V94 launched2026-10-20 10:39:55 Asia/Shanghai and first served a real workflow
+V95 launched2026-10-20 11:23:18 Asia/Shanghai from frozen8164200 and first
+served a real workflow at11:26:21. V2155 verifies970 frozen sources and actual
+configuration/process identities. Keep the24-root16+8/900s,running8,
+256K,Host80:20 contract and historical V91b native reference. Its engine patch
+differs: AST review limits source changes to the private BeliefKV PREPARE entry,
+one capability method and CPU tests. Native demand/cache/scheduling methods
+remain unchanged. Preserve the historical-reference qualification.
+
+Write-back now prepares one currently reclaimable private FULL device leaf
+without requiring Host duplicates of resident ancestors. Reconsider capacity
+after ACK/native demotion; also recognize an interior device leaf exposed by
+Host-only descendants. Preserve generation/ownership/locks/pending-copy checks,
+write-through continuity, the input-safe H2D plan and latest Mamba. V2151 passes
+1620 distinct runtime cases; V2149 passes159 native cases. Real CPU hybrid-tree
+checks cover ACK protection, shared ancestors and leaf/ancestor recovery order;
+they do not execute DMA/forward. V2152's complete8-context/64-node CPU P50 is
+3.805 to3.423ms. Keep256-node P99 and legacy-engine regressions.
+
+V94 is complete; V2150 retains the existing common600–1537.851s comparison.
+Restricted means714.591/813.582s improve12.17%; throughput370.121/404.289
+token/s remains8.45% lower. All24 outcomes are completed,23 natural/JCT-eligible;
+the mobile-game feature task used existing graph-budget finalization. Quality
+is ungraded. Do not declare acceptance from lower mean completion alone.
+
+V2154 addresses prefetch-volume diagnosis using latest V94 and the cited V92.
+V94's2318 ordinary prompts all exceed100K (median170769.5); there are32 ordinary
+agents, excluding3 internal compaction requests/contexts. V92's69 FULL commands
+contain32965 tokens and serve9 successor requests; FULL denotes the attention
+KV component, not a complete agent. V92 had14 positive JOIN plans,12 with
+capacity rejection and5 with enqueue identity change; reason groups overlap.
+Latest V94 has8 JOINs/3 positive plans,924 tool episodes/8 positive plans,
+213.873MB controlled FULL and279.183MB total physical H2D. Its Host FULL high
+water is52.107/160GB, not a full pool. Native's93.119GB comes from a different
+realized path/residency policy and is not isolated removable traffic.
+Focus on effective overlapping cold working sets, not total root count:
+12/16 first-wave roots finish before V94's second batch, versus15/16 in V92.
+Changing arrivals/root count requires a new comparison contract; do not silently
+reuse old native as if its workload matched.
+
+Historical V94 launched2026-10-20 10:39:55 Asia/Shanghai and first served a real workflow
 at10:43:11. V2140/V2142 verify frozen3484310,970 execution files, live settings
 and1603 passing distinct CPU cases. GPU was actually idle and V93's recorded
 driver/scheduler had exited. Only predictive is new; retain V91b native and the
