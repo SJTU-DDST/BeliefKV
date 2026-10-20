@@ -5,18 +5,32 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-Current priority is V91b's completed predictive trace and running native control.
-Keep frozen f29717e,24 roots,16+8 arrivals/900s,running8,256K,Host80:20.
-Predictive produced24 completed outcomes; one existing graph-budget finalization
-means only23 qualify as natural-agent JCT. Independent task quality is ungraded.
-Final writer failures/drops are zero. Physical H2D is10 batches/896.635MB,
-20.353ms transfer-stream time, versus120.255GB D2H. V2093 links35 JOIN commands
-to one post-completion/pre-client-submit episode,491.663MB all first-service
-reused. One tool episode starts about452ms early and reuses8.909MB. No prefetched
-FULL is natively reloaded before first service. Logical Host-hit bytes are not
-physical DMA. Tail-excluded throughput, mean JCT and native-relative benefit remain
-unaccepted. Native's known internal freeze_gc race is followed by a successful
-launcher POST before actual workflow service; do not restart on traceback count.
+V91b's same-version pair is complete; next freeze the latest V92 predictive code.
+Keep24 roots,16+8 arrivals/900s,running8,256K,Host80:20 and the existing engine.
+Both arms have24 completed outcomes, with23/24 natural-JCT eligibility because
+predictive has one existing graph-budget finalization. Quality remains ungraded.
+In the pre-agreed common600–1537.851s window, predictive/native restricted mean
+completion latency is681.082/813.582s (-16.29%), but decode throughput is
+371.149/404.289 token/s (-8.20%). The goal is not accepted. Physical H2D is
+0.897/93.119GB;35 JOIN commands are one post-completion/pre-client-submit episode,
+not35 anticipatory events. Frontend settings and realized paths differ; no isolated
+KV-policy effect is established. Matched300–600s neighbor/context decode workers
+differ about1.13%; coarse short-prefill cohorts are near equal, fine cohorts sparse.
+
+The latest fix decouples safe capacity preparation from H2D timing support.
+V91b recorded136 unsupported-size checks and no critical-parent reclaim checks;
+these are checks, not136 independent missed opportunities. Within the existing
+near-stage lead, a live last-child report can arm restore plus native input/decode
+capacity even without a supported timing estimate. DMA still requires the original
+ticket, timing, ownership, free-capacity and dependency checks. V2106 reproduces
+the old/new behavior with zero physical commands. All1118 distinct current-source
+CPU cases pass after explicit local-tokenizer rechecks supersede two initial skips;
+two passing subtests are not extra cases. See V2107–V2109.
+V92 will include this fix and the two control reductions below, run predictive only,
+and reuse completed V91b native. Verify only two predictive runtime execution files
+changed; keep the workload/engine/frontend contract and label the historical live
+reference accurately. Useful early recovery, PREPARE cost, tail-excluded throughput
+and mean completion latency still require GPU acceptance.
 
 Main now skips causal/residency ranking only when a committed chunk has exhausted
 the current integer input budget, all native inputs are nonempty, DLLM is absent,

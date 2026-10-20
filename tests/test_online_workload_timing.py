@@ -272,6 +272,71 @@ def test_borrowed_capacity_includes_restore_and_native_service_reserve(monkeypat
         runtime.close()
 
 
+def test_unsupported_h2d_timing_prepares_capacity_without_starting_transfer(monkeypatch):
+    runtime, child, stage = report_fixture(monkeypatch)
+    try:
+        plan = NS(
+            step=NS(key=stage.key), required_full_tokens=100_000,
+            required_mamba_slots=1,
+        )
+        headroom = StaticPoolHeadroomObservation(
+            True, device_full_free_tokens=1000, device_mamba_free_slots=3,
+        )
+        assert runtime._prepare_pressure(
+            (), NS(reqs=(child,)), headroom,
+        ) == (False, False)
+        with patch.object(
+            runtime, "_wait_prefetch_opportunity", return_value=plan,
+        ), patch.object(
+            runtime, "_h2d_start_window", return_value=None,
+        ), patch.object(
+            runtime, "_current_residency_budget",
+            return_value=NS(reserve_full_tokens=4105, reserve_mamba_slots=2),
+        ):
+            assert runtime._roll_final_stage() is None
+        key, full, mamba, _ = runtime._live_critical_parent_demand()
+        assert key == stage.key and full == 104105 and mamba == 3
+        assert runtime._prepare_pressure(
+            (), NS(reqs=(child,)), headroom,
+        ) == (True, False)
+        assert runtime._join_ticket is None
+        assert runtime.physical_ledger.pending_count == 0
+        assert runtime.counts["report_service_transfer_size_unsupported"] == 1
+        runtime.context_sessions.pop(stage.key.context_id)
+        assert runtime._live_critical_parent_demand() is None
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("excluded", ("disabled", "distant", "no_restore"))
+def test_unsupported_timing_keeps_ineligible_capacity_preparation_idle(monkeypatch, excluded):
+    runtime, _, stage = report_fixture(monkeypatch)
+    try:
+        plan = NS(
+            step=None if excluded == "no_restore" else NS(key=stage.key),
+            required_full_tokens=100_000, required_mamba_slots=1,
+        )
+        if excluded == "disabled":
+            runtime._borrowable_parent_headroom = False
+        remaining = 2 * runtime.prefetch_lead_ms + 1 if excluded == "distant" else 100.
+        with patch.object(
+            runtime, "_wait_prefetch_opportunity", return_value=plan,
+        ), patch.object(
+            runtime, "_report_remaining_ms", return_value=remaining,
+        ), patch.object(
+            runtime, "_h2d_start_window", return_value=None,
+        ), patch.object(
+            runtime, "_current_residency_budget",
+            side_effect=AssertionError("ineligible demand must not read capacity"),
+        ):
+            assert runtime._roll_final_stage() is None
+        assert runtime._critical_parent_demand is None
+        assert runtime._join_ticket is None
+        assert runtime.physical_ledger.pending_count == 0
+    finally:
+        runtime.close()
+
+
 def test_soft_headroom_has_no_reclaim_when_capacity_already_suffices(monkeypatch):
     runtime, _, stage = report_fixture(monkeypatch)
     try:

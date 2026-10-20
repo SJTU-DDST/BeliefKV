@@ -1,0 +1,577 @@
+{
+  "observed_at_local": "2026-10-19T17:46:20.629004-07:00",
+  "short_report": "/home/longhao/experiment/BeliefKV/experiments/reports/v2103_v91b_short_prefill_300_600_20261020.json",
+  "short_report_sha256": "373e6578546d4254ed0fba777f5927bde6af52a95e666421de2a157edecf2b9a",
+  "analyzer_sha256": "4440fcfa3e1c68433b57ffb56696eb8f3bb2c631bf3887dfd67e3d52c694ff3f",
+  "cases": [
+    {
+      "work_bin": 512,
+      "prefix_bin": 2048,
+      "minimum_per_arm": 5,
+      "match_neighbors": false,
+      "cohort_count": 7,
+      "weight_sum": 46,
+      "matched_samples": {
+        "predictive_h2d": 55,
+        "native": 51
+      },
+      "unmatched_samples": {
+        "predictive_h2d": 181,
+        "native": 136
+      },
+      "aggregate": {
+        "worker_interval_ms": {
+          "predictive": 20.650802457028984,
+          "native": 20.67038492419165,
+          "difference_ms": -0.019582467162667427,
+          "ratio": 0.9990526317127385
+        },
+        "launch_to_processed_completion_ms": {
+          "predictive": 55.54585149849259,
+          "native": 57.92979990197018,
+          "difference_ms": -2.3839484034775893,
+          "ratio": 0.9588476326948868
+        },
+        "clipped_launch_overlap_ms": {
+          "predictive": 34.89504909943185,
+          "native": 37.25941487770397,
+          "difference_ms": -2.3643657782721164,
+          "ratio": 0.9365431318223155
+        }
+      },
+      "cohorts": [
+        {
+          "group": [
+            0,
+            133120,
+            "true"
+          ],
+          "predictive_count": 6,
+          "native_count": 5,
+          "weight": 5,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 23.82299319530527,
+              "native_mean_ms": 12.747100740671158
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 58.395876248677574,
+              "native_mean_ms": 50.778700065612796
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 34.572882970174156,
+              "native_mean_ms": 38.03159923553467
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            145408,
+            "true"
+          ],
+          "predictive_count": 9,
+          "native_count": 10,
+          "weight": 9,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 13.478321540686819,
+              "native_mean_ms": 16.578650381416082
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 48.38162750667996,
+              "native_mean_ms": 53.35040025711059
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 34.903306007385254,
+              "native_mean_ms": 36.77174997329712
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            149504,
+            "true"
+          ],
+          "predictive_count": 6,
+          "native_count": 7,
+          "weight": 6,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 20.20799011612932,
+              "native_mean_ms": 21.718367668134825
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 54.37314033508301,
+              "native_mean_ms": 58.448794092450825
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 34.16515032450358,
+              "native_mean_ms": 36.730426107134136
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            151552,
+            "true"
+          ],
+          "predictive_count": 14,
+          "native_count": 8,
+          "weight": 8,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 20.97855302106057,
+              "native_mean_ms": 20.909396116621792
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 55.58904423032488,
+              "native_mean_ms": 58.401779890060425
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 34.610491207667756,
+              "native_mean_ms": 37.4923837184906
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            157696,
+            "true"
+          ],
+          "predictive_count": 9,
+          "native_count": 7,
+          "weight": 7,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 24.522904513610733,
+              "native_mean_ms": 19.64897529355117
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 59.63956779903836,
+              "native_mean_ms": 56.267289297921316
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 35.11666340298123,
+              "native_mean_ms": 36.618313789367676
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            159744,
+            "true"
+          ],
+          "predictive_count": 5,
+          "native_count": 5,
+          "weight": 5,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 26.693797297775745,
+              "native_mean_ms": 27.698245644569397
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 61.082378196716306,
+              "native_mean_ms": 66.08665542602539
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 34.388580894470216,
+              "native_mean_ms": 38.38840961456299
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            167936,
+            "true"
+          ],
+          "predictive_count": 6,
+          "native_count": 9,
+          "weight": 6,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 19.218561705201864,
+              "native_mean_ms": 27.379153192871147
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 55.64251311620077,
+              "native_mean_ms": 64.75206449296739
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 36.423951625823975,
+              "native_mean_ms": 37.37291124131944
+            }
+          }
+        }
+      ]
+    },
+    {
+      "work_bin": 512,
+      "prefix_bin": 2048,
+      "minimum_per_arm": 5,
+      "match_neighbors": true,
+      "cohort_count": 6,
+      "weight_sum": 41,
+      "matched_samples": {
+        "predictive_h2d": 47,
+        "native": 46
+      },
+      "unmatched_samples": {
+        "predictive_h2d": 189,
+        "native": 141
+      },
+      "aggregate": {
+        "worker_interval_ms": {
+          "predictive": 19.84912536907083,
+          "native": 19.81332873877973,
+          "difference_ms": 0.03579663029109881,
+          "ratio": 1.0018066944107697
+        },
+        "launch_to_processed_completion_ms": {
+          "predictive": 54.92345545802337,
+          "native": 56.93506142342686,
+          "difference_ms": -2.01160596540349,
+          "ratio": 0.9646684149430673
+        },
+        "clipped_launch_overlap_ms": {
+          "predictive": 35.07433016190361,
+          "native": 37.12173259272116,
+          "difference_ms": -2.0474024308175487,
+          "ratio": 0.9448462588403268
+        }
+      },
+      "cohorts": [
+        {
+          "group": [
+            0,
+            133120,
+            "true",
+            "decode",
+            7,
+            "decode",
+            8
+          ],
+          "predictive_count": 5,
+          "native_count": 5,
+          "weight": 5,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 22.804266400635242,
+              "native_mean_ms": 12.747100740671158
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 57.508565711975095,
+              "native_mean_ms": 50.778700065612796
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 34.70429916381836,
+              "native_mean_ms": 38.03159923553467
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            145408,
+            "true",
+            "decode",
+            7,
+            "decode",
+            8
+          ],
+          "predictive_count": 9,
+          "native_count": 10,
+          "weight": 9,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 13.478321540686819,
+              "native_mean_ms": 16.578650381416082
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 48.38162750667996,
+              "native_mean_ms": 53.35040025711059
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 34.903306007385254,
+              "native_mean_ms": 36.77174997329712
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            149504,
+            "true",
+            "decode",
+            7,
+            "decode",
+            8
+          ],
+          "predictive_count": 6,
+          "native_count": 7,
+          "weight": 6,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 20.20799011612932,
+              "native_mean_ms": 21.718367668134825
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 54.37314033508301,
+              "native_mean_ms": 58.448794092450825
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 34.16515032450358,
+              "native_mean_ms": 36.730426107134136
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            151552,
+            "true",
+            "decode",
+            7,
+            "decode",
+            8
+          ],
+          "predictive_count": 12,
+          "native_count": 8,
+          "weight": 8,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 21.283533967410524,
+              "native_mean_ms": 20.909396116621792
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 56.41416279474894,
+              "native_mean_ms": 58.401779890060425
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 35.13062890370687,
+              "native_mean_ms": 37.4923837184906
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            157696,
+            "true",
+            "decode",
+            7,
+            "decode",
+            8
+          ],
+          "predictive_count": 9,
+          "native_count": 7,
+          "weight": 7,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 24.522904513610733,
+              "native_mean_ms": 19.64897529355117
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 59.63956779903836,
+              "native_mean_ms": 56.267289297921316
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 35.11666340298123,
+              "native_mean_ms": 36.618313789367676
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            167936,
+            "true",
+            "decode",
+            7,
+            "decode",
+            8
+          ],
+          "predictive_count": 6,
+          "native_count": 9,
+          "weight": 6,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 19.218561705201864,
+              "native_mean_ms": 27.379153192871147
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 55.64251311620077,
+              "native_mean_ms": 64.75206449296739
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 36.423951625823975,
+              "native_mean_ms": 37.37291124131944
+            }
+          }
+        }
+      ]
+    },
+    {
+      "work_bin": 16,
+      "prefix_bin": 2048,
+      "minimum_per_arm": 5,
+      "match_neighbors": false,
+      "cohort_count": 0,
+      "weight_sum": 0,
+      "matched_samples": {
+        "predictive_h2d": 0,
+        "native": 0
+      },
+      "unmatched_samples": {
+        "predictive_h2d": 236,
+        "native": 187
+      },
+      "aggregate": {
+        "worker_interval_ms": {
+          "predictive": null,
+          "native": null,
+          "difference_ms": null,
+          "ratio": null
+        },
+        "launch_to_processed_completion_ms": {
+          "predictive": null,
+          "native": null,
+          "difference_ms": null,
+          "ratio": null
+        },
+        "clipped_launch_overlap_ms": {
+          "predictive": null,
+          "native": null,
+          "difference_ms": null,
+          "ratio": null
+        }
+      },
+      "cohorts": []
+    },
+    {
+      "work_bin": 16,
+      "prefix_bin": 2048,
+      "minimum_per_arm": 5,
+      "match_neighbors": true,
+      "cohort_count": 0,
+      "weight_sum": 0,
+      "matched_samples": {
+        "predictive_h2d": 0,
+        "native": 0
+      },
+      "unmatched_samples": {
+        "predictive_h2d": 236,
+        "native": 187
+      },
+      "aggregate": {
+        "worker_interval_ms": {
+          "predictive": null,
+          "native": null,
+          "difference_ms": null,
+          "ratio": null
+        },
+        "launch_to_processed_completion_ms": {
+          "predictive": null,
+          "native": null,
+          "difference_ms": null,
+          "ratio": null
+        },
+        "clipped_launch_overlap_ms": {
+          "predictive": null,
+          "native": null,
+          "difference_ms": null,
+          "ratio": null
+        }
+      },
+      "cohorts": []
+    },
+    {
+      "work_bin": 1,
+      "prefix_bin": 2048,
+      "minimum_per_arm": 5,
+      "match_neighbors": false,
+      "cohort_count": 0,
+      "weight_sum": 0,
+      "matched_samples": {
+        "predictive_h2d": 0,
+        "native": 0
+      },
+      "unmatched_samples": {
+        "predictive_h2d": 236,
+        "native": 187
+      },
+      "aggregate": {
+        "worker_interval_ms": {
+          "predictive": null,
+          "native": null,
+          "difference_ms": null,
+          "ratio": null
+        },
+        "launch_to_processed_completion_ms": {
+          "predictive": null,
+          "native": null,
+          "difference_ms": null,
+          "ratio": null
+        },
+        "clipped_launch_overlap_ms": {
+          "predictive": null,
+          "native": null,
+          "difference_ms": null,
+          "ratio": null
+        }
+      },
+      "cohorts": []
+    },
+    {
+      "work_bin": 1,
+      "prefix_bin": 2048,
+      "minimum_per_arm": 5,
+      "match_neighbors": true,
+      "cohort_count": 0,
+      "weight_sum": 0,
+      "matched_samples": {
+        "predictive_h2d": 0,
+        "native": 0
+      },
+      "unmatched_samples": {
+        "predictive_h2d": 236,
+        "native": 187
+      },
+      "aggregate": {
+        "worker_interval_ms": {
+          "predictive": null,
+          "native": null,
+          "difference_ms": null,
+          "ratio": null
+        },
+        "launch_to_processed_completion_ms": {
+          "predictive": null,
+          "native": null,
+          "difference_ms": null,
+          "ratio": null
+        },
+        "clipped_launch_overlap_ms": {
+          "predictive": null,
+          "native": null,
+          "difference_ms": null,
+          "ratio": null
+        }
+      },
+      "cohorts": []
+    }
+  ],
+  "semantics": [
+    "Read exact short-prefill samples from an already sealed busy-window report.",
+    "A cohort has matching extend work, prefix bin and actual graph status.",
+    "Neighbor matching also fixes previous/next observed phases and batch sizes.",
+    "Both arm means use the minimum cohort count as a common descriptive weight.",
+    "Unsupported or sparse cohorts stay unmatched; no missing work is filled with zero.",
+    "Worker intervals are overlap-clipped; launch-to-completion includes result handling.",
+    "This is descriptive cross-version matching, not causal speedup or full-forward timing."
+  ]
+}

@@ -1,0 +1,252 @@
+{
+  "status": "cpu_reproduced_and_fixed_not_gpu_effectiveness_acceptance",
+  "observed_at": "2026-10-20T08:55:57.125237+08:00",
+  "baseline_commit": "ccc18bf",
+  "baseline_source_sha256": "cdbf1b963f9c0e441de7a23b5ca012ac92ac4fb59729172475f64f2b21e46d15",
+  "candidate_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "227376f0fb595a4b1f94b3d9f67589350325bc4bb30a52c9d14547d69678ca91"
+  },
+  "proof_source_sha256": "9a32ddbb0fdc37dc3719f1497b5bc93ce6e1e21e4ec3e59e0b6cfadd37eb4a78",
+  "cases": [
+    {
+      "mode": "supported",
+      "observations": {
+        "baseline": {
+          "remaining_ms": 100.0,
+          "has_transfer_ticket": true,
+          "returned_restore_plan": true,
+          "critical_capacity_armed": true,
+          "full_target_tokens": 104105,
+          "mamba_target_slots": 3,
+          "native_budget_reads": 1,
+          "prepare_pressure": [
+            true,
+            false
+          ],
+          "pending_physical_commands": 0,
+          "counts": {
+            "child_report_notice_observed": 1,
+            "final_stage_accepted": 1,
+            "admission_rank_dependencies_preserved": 2,
+            "final_request_bound": 1,
+            "report_service_h2d_candidate": 1
+          }
+        },
+        "candidate": {
+          "remaining_ms": 100.0,
+          "has_transfer_ticket": true,
+          "returned_restore_plan": true,
+          "critical_capacity_armed": true,
+          "full_target_tokens": 104105,
+          "mamba_target_slots": 3,
+          "native_budget_reads": 1,
+          "prepare_pressure": [
+            true,
+            false
+          ],
+          "pending_physical_commands": 0,
+          "counts": {
+            "child_report_notice_observed": 1,
+            "final_stage_accepted": 1,
+            "admission_rank_dependencies_preserved": 2,
+            "final_request_bound": 1,
+            "report_service_h2d_candidate": 1
+          }
+        }
+      }
+    },
+    {
+      "mode": "unsupported",
+      "observations": {
+        "baseline": {
+          "remaining_ms": 100.0,
+          "has_transfer_ticket": false,
+          "returned_restore_plan": false,
+          "critical_capacity_armed": false,
+          "full_target_tokens": null,
+          "mamba_target_slots": null,
+          "native_budget_reads": 0,
+          "prepare_pressure": [
+            false,
+            false
+          ],
+          "pending_physical_commands": 0,
+          "counts": {
+            "child_report_notice_observed": 1,
+            "final_stage_accepted": 1,
+            "admission_rank_dependencies_preserved": 2,
+            "final_request_bound": 1,
+            "report_service_transfer_size_unsupported": 1
+          }
+        },
+        "candidate": {
+          "remaining_ms": 100.0,
+          "has_transfer_ticket": false,
+          "returned_restore_plan": false,
+          "critical_capacity_armed": true,
+          "full_target_tokens": 104105,
+          "mamba_target_slots": 3,
+          "native_budget_reads": 1,
+          "prepare_pressure": [
+            true,
+            false
+          ],
+          "pending_physical_commands": 0,
+          "counts": {
+            "child_report_notice_observed": 1,
+            "final_stage_accepted": 1,
+            "admission_rank_dependencies_preserved": 2,
+            "final_request_bound": 1,
+            "report_service_transfer_size_unsupported": 1
+          }
+        }
+      }
+    },
+    {
+      "mode": "distant",
+      "observations": {
+        "baseline": {
+          "remaining_ms": 2500.0,
+          "has_transfer_ticket": false,
+          "returned_restore_plan": false,
+          "critical_capacity_armed": false,
+          "full_target_tokens": null,
+          "mamba_target_slots": null,
+          "native_budget_reads": 0,
+          "prepare_pressure": [
+            false,
+            false
+          ],
+          "pending_physical_commands": 0,
+          "counts": {
+            "child_report_notice_observed": 1,
+            "final_stage_accepted": 1,
+            "admission_rank_dependencies_preserved": 2,
+            "final_request_bound": 1,
+            "report_service_transfer_size_unsupported": 1
+          }
+        },
+        "candidate": {
+          "remaining_ms": 2500.0,
+          "has_transfer_ticket": false,
+          "returned_restore_plan": false,
+          "critical_capacity_armed": false,
+          "full_target_tokens": null,
+          "mamba_target_slots": null,
+          "native_budget_reads": 0,
+          "prepare_pressure": [
+            false,
+            false
+          ],
+          "pending_physical_commands": 0,
+          "counts": {
+            "child_report_notice_observed": 1,
+            "final_stage_accepted": 1,
+            "admission_rank_dependencies_preserved": 2,
+            "final_request_bound": 1,
+            "report_service_transfer_size_unsupported": 1
+          }
+        }
+      }
+    },
+    {
+      "mode": "disabled",
+      "observations": {
+        "baseline": {
+          "remaining_ms": 100.0,
+          "has_transfer_ticket": false,
+          "returned_restore_plan": false,
+          "critical_capacity_armed": false,
+          "full_target_tokens": null,
+          "mamba_target_slots": null,
+          "native_budget_reads": 0,
+          "prepare_pressure": [
+            false,
+            false
+          ],
+          "pending_physical_commands": 0,
+          "counts": {
+            "child_report_notice_observed": 1,
+            "final_stage_accepted": 1,
+            "admission_rank_dependencies_preserved": 2,
+            "final_request_bound": 1,
+            "report_service_transfer_size_unsupported": 1
+          }
+        },
+        "candidate": {
+          "remaining_ms": 100.0,
+          "has_transfer_ticket": false,
+          "returned_restore_plan": false,
+          "critical_capacity_armed": false,
+          "full_target_tokens": null,
+          "mamba_target_slots": null,
+          "native_budget_reads": 0,
+          "prepare_pressure": [
+            false,
+            false
+          ],
+          "pending_physical_commands": 0,
+          "counts": {
+            "child_report_notice_observed": 1,
+            "final_stage_accepted": 1,
+            "admission_rank_dependencies_preserved": 2,
+            "final_request_bound": 1,
+            "report_service_transfer_size_unsupported": 1
+          }
+        }
+      }
+    },
+    {
+      "mode": "no_restore",
+      "observations": {
+        "baseline": {
+          "remaining_ms": 100.0,
+          "has_transfer_ticket": false,
+          "returned_restore_plan": false,
+          "critical_capacity_armed": false,
+          "full_target_tokens": null,
+          "mamba_target_slots": null,
+          "native_budget_reads": 0,
+          "prepare_pressure": [
+            false,
+            false
+          ],
+          "pending_physical_commands": 0,
+          "counts": {
+            "child_report_notice_observed": 1,
+            "final_stage_accepted": 1,
+            "admission_rank_dependencies_preserved": 2,
+            "final_request_bound": 1
+          }
+        },
+        "candidate": {
+          "remaining_ms": 100.0,
+          "has_transfer_ticket": false,
+          "returned_restore_plan": false,
+          "critical_capacity_armed": false,
+          "full_target_tokens": null,
+          "mamba_target_slots": null,
+          "native_budget_reads": 0,
+          "prepare_pressure": [
+            false,
+            false
+          ],
+          "pending_physical_commands": 0,
+          "counts": {
+            "child_report_notice_observed": 1,
+            "final_stage_accepted": 1,
+            "admission_rank_dependencies_preserved": 2,
+            "final_request_bound": 1
+          }
+        }
+      }
+    }
+  ],
+  "scope": [
+    "Pinned real report-service method versus current; other runtime AST is equal.",
+    "Live synthetic JOIN, child GPU-service progress and native reserve fixture.",
+    "Missing timing may arm only advisory capacity preparation, never a DMA ticket or command.",
+    "Supported, disabled, distant and no-restore cases retain the original observations.",
+    "No allocator/GPU initialized; throughput, reclaimable online bytes and JCT are unproven."
+  ]
+}
