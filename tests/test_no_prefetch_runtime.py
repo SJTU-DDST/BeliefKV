@@ -18,8 +18,12 @@ def test_no_prefetch_dispatch_keeps_both_prepare_sources(monkeypatch):
         runtime.dispatch_after_forward(queue, running_batch=running)
         runtime.dispatch_join_prefetch.assert_not_called()
         runtime.dispatch_tool_prefetch.assert_not_called()
-        runtime.dispatch_join_prepare.assert_called_once_with(queue, running_batch=running)
-        runtime.dispatch_tool_prepare.assert_called_once_with(queue, running_batch=running)
+        runtime.dispatch_join_prepare.assert_called_once_with(
+            queue, running_batch=running, _defer_pressure_publication=True,
+        )
+        runtime.dispatch_tool_prepare.assert_called_once_with(
+            queue, running_batch=running, _defer_pressure_publication=True,
+        )
         assert runtime.enable_prepare_host and runtime.enable_resident_first
         assert runtime._semantic_worker is None
         assert not runtime.physical_ledger.pending_count

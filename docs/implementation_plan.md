@@ -12,6 +12,26 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Latest CPU control change coalesces ordinary JOIN/tool PREPARE candidate
+publication within one post-forward call. Selectors request publication only
+when they reach their existing publication branch; publish the final live native
+pool state once before background PREPARE. Standalone calls and critical-reclaim
+publication remain immediate. Keep flags local to this call; do not cache
+cross-round state or alter source deadlines, native checks, DMA, ACK or admission.
+V2313 compares7 native-index-shaped CPU cases,201 samples after10 warmups.
+When both sources are due,36 waiting contexts/64 segments fall284->234us P50,
+108 contexts641->554us. Final per-pool candidate prefixes are equal, and one-source
+cases are unchanged. Context count is not root count; retain36-root workload.
+Legacy fixtures without the native leaf/LRU indexes take a compatibility path
+and cannot establish the indexed path's cost. GPU acceptance remains open.
+
+V2315 binds2307 passing application CPU cases and retains all2257 preceding
+contracts. Native engine/patch hashes are unchanged; retain the266 source-bound
+native CPU cases without claiming a rerun. Cover direct/coalesced publication,
+not-due and no-work calls, live lock/inflight/Host mutations, immediate critical
+publication and clean exception retry. Freeze V2315 or a later qualification
+after the2026-10-21T06:00:00+08:00 hold. Keep the full performance goal active.
+
 Latest authorized JOIN policy is `selective_report_or_eos`; the long-repository
 launcher now selects it and the spawn-FULL-qualified native engine. Keep pure
 `observed_eos` for an ablation and the old broad report mode only for explicit
@@ -38,14 +58,14 @@ to a pre-EOS forecast. Compare useful FULL, repeated loads, control CPU, exposed
 recovery wait and trimmed throughput/mean JCT against EOS/native on the next GPU
 run; keep the overall performance goal active.
 
-V2311 binds2257 passing application CPU cases to the final sources. The native
+The earlier V2311 bound2257 passing application CPU cases to its sources. The native
 engine and canonical patch are unchanged; rehash and retain the266 previously
 qualified native CPU cases without claiming a rerun. V2307 compares7 CPU tree
 cases: small-parent checks fall from206-667us to10-14us by declining speculative
 planning, while a224-node large-deficit case remains1.439-1.469ms and selects
 the same64 nodes. No GPU DMA, online population frequency or throughput/JCT
-improvement is established. Freeze against this qualification and the latest
-sources after the hold, not the superseded V102 candidate.
+improvement is established. The V2315 qualification above supersedes this source
+snapshot; do not launch the superseded V102 candidate.
 
 Previous CPU optimization: action-local FULL/Mamba capture returns as soon as it
 encounters a valid pending transfer, since that dependency already rejected the

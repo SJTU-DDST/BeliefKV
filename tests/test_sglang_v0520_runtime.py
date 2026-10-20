@@ -644,8 +644,12 @@ def test_after_forward_rechecks_clock_after_prior_handler_crosses_deadline():
         runtime.dispatch_after_forward(queue, running_batch=running)
     runtime.dispatch_tool_prefetch.assert_called_once_with()
     assert runtime.counts["tool_prefetch_scan_deferred"] == 0
-    runtime.dispatch_join_prepare.assert_called_once_with(queue, running_batch=running)
-    runtime.dispatch_tool_prepare.assert_called_once_with(queue, running_batch=running)
+    runtime.dispatch_join_prepare.assert_called_once_with(
+        queue, running_batch=running, _defer_pressure_publication=True,
+    )
+    runtime.dispatch_tool_prepare.assert_called_once_with(
+        queue, running_batch=running, _defer_pressure_publication=True,
+    )
     runtime.close()
 
 

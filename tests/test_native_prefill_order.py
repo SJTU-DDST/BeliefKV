@@ -277,8 +277,12 @@ def test_native_order_keeps_prepare_lifecycle_and_completion_callbacks(native_ru
     runtime.dispatch_tool_prefetch = Mock()
     waiting, running = [], NS(reqs=[])
     runtime.dispatch_after_forward(waiting, running_batch=running)
-    runtime.dispatch_join_prepare.assert_called_once_with(waiting, running_batch=running)
-    runtime.dispatch_tool_prepare.assert_called_once_with(waiting, running_batch=running)
+    runtime.dispatch_join_prepare.assert_called_once_with(
+        waiting, running_batch=running, _defer_pressure_publication=True,
+    )
+    runtime.dispatch_tool_prepare.assert_called_once_with(
+        waiting, running_batch=running, _defer_pressure_publication=True,
+    )
     runtime.dispatch_join_prefetch.assert_not_called()
     runtime.dispatch_tool_prefetch.assert_not_called()
     runtime.on_events((

@@ -963,10 +963,22 @@ class NativeAdmissionRuntime:
         if self.enable_prepare_host:
             if self._spawn_full_prepares and time.monotonic() * 1000. >= self._spawn_prepare_next_ms:
                 self.dispatch_spawn_prepare()
+            publish_pressure = False
             if time.monotonic() * 1000. >= self._join_prepare_next_ms:
-                self.dispatch_join_prepare(waiting_queue, running_batch=running_batch)
+                publish_pressure = self.dispatch_join_prepare(
+                    waiting_queue, running_batch=running_batch,
+                    _defer_pressure_publication=True,
+                ) is True
             if time.monotonic() * 1000. >= self._tool_prepare_next_ms:
-                self.dispatch_tool_prepare(waiting_queue, running_batch=running_batch)
+                tool_publication = self.dispatch_tool_prepare(
+                    waiting_queue, running_batch=running_batch,
+                    _defer_pressure_publication=True,
+                )
+                publish_pressure = tool_publication is True or publish_pressure
+            if publish_pressure:
+                # These D2H selectors do not reclaim device capacity. Publish
+                # their final live candidates once, before background backup.
+                self._publish_parent_pressure_candidates()
             if time.monotonic() * 1000. >= self._idle_prepare_next_ms:
                 self.dispatch_idle_prepare()
 
@@ -6881,8 +6893,9 @@ class NativeAdmissionRuntime:
     @timed_runtime("join_prepare")
     def dispatch_join_prepare(
         self, waiting_queue: Sequence[object] = (), *, running_batch: object = None,
-    ) -> None:
-        """Back up waiting parents under pressure; never evict at this safe point."""
+        _defer_pressure_publication: bool = False,
+    ) -> bool | None:
+        """Back waiting parents; return True only for deferred publication."""
         cache = self._native_cache
         if not self.enable_prepare_host or cache is None or self.physical_disabled:
             return
@@ -6905,10 +6918,14 @@ class NativeAdmissionRuntime:
             return
         self._prune_parent_pressure_candidates()
         if not full_pressure:
-            self._publish_parent_pressure_candidates()
             self.counts["prepare_mamba_pressure_only"] += 1
+            if _defer_pressure_publication:
+                return True
+            self._publish_parent_pressure_candidates()
             return
         if not parents:
+            if _defer_pressure_publication:
+                return True
             self._publish_parent_pressure_candidates()
             return
         candidates = []
@@ -6961,6 +6978,8 @@ class NativeAdmissionRuntime:
             )
             break
         # Native PREPARE cannot reclaim memory; publish once after its lock changes.
+        if _defer_pressure_publication:
+            return True
         self._publish_parent_pressure_candidates()
 
     def _live_tool_hint(
@@ -6997,8 +7016,9 @@ class NativeAdmissionRuntime:
     @timed_runtime("tool_prepare")
     def dispatch_tool_prepare(
         self, waiting_queue: Sequence[object] = (), *, running_batch: object = None,
-    ) -> None:
-        """Back predicted long waits or tool-idle donors for a critical restore."""
+        _defer_pressure_publication: bool = False,
+    ) -> bool | None:
+        """Back tool waits; return True only for deferred publication."""
         if not self.enable_prepare_host or self.physical_disabled or self._native_cache is None:
             return
         now_ms = time.monotonic() * 1000
@@ -7070,6 +7090,8 @@ class NativeAdmissionRuntime:
                 )
                 break
             self._prepare_probe_after_ms[step.key] = now_ms + 250.
+        if _defer_pressure_publication:
+            return True
         self._publish_parent_pressure_candidates()
 
     def _reconcile_tool_prefetch_ticket(self, ticket: _ToolPrefetchTicket) -> bool | None:
