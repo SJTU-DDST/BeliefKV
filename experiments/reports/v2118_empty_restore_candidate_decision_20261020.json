@@ -1,0 +1,27 @@
+{
+  "status": "candidate_rejected_not_a_production_optimization",
+  "candidate_patch": "diff --git a/beliefkv/runtime/sglang_v0520_physical.py b/beliefkv/runtime/sglang_v0520_physical.py\nindex 713e06e..636447b 100644\n--- a/beliefkv/runtime/sglang_v0520_physical.py\n+++ b/beliefkv/runtime/sglang_v0520_physical.py\n@@ -505,7 +505,8 @@ def has_host_backed_missing_copy(\n         single_leaf = components[0][0][0] if len(components[0]) == 1 else None\n         single_path_nodes = None\n         for leaf_id, node in leaves.items():\n-            path = set()\n+            # The first ancestry has no previously validated shared nodes.\n+            path = set() if checked else checked\n             while node is not None:\n                 node_id = node.id\n                 if (\n@@ -513,12 +514,13 @@ def has_host_backed_missing_copy(\n                     or tree.node_by_id(node_id) is not node\n                 ):\n                     return None\n-                prior = checked.get(node_id)\n+                prior = checked.get(node_id) if path is not checked else None\n                 if prior is not None:\n                     if prior is not node:\n                         return None\n                     break\n-                path.add(node_id)\n+                if path is not checked:\n+                    path.add(node_id)\n                 full, state = node.component_data[0], node.component_data[2]\n                 if (full.value is None or len(full.value) == 0) and (\n                     full.host_value is not None and len(full.host_value) > 0\n",
+  "candidate_patch_sha256": "81d16bef8335afea5d3d25a8995b1a33dc3f1fc763527ab0ae6d1ed7d0043807",
+  "candidate_checks": 529,
+  "functional_fixture_controls": 180,
+  "action": "Remove exactly this candidate patch; retain the earlier d9827c5 reader.",
+  "reasons": [
+    "Complete64-node resident/diagnostics-off P50 improves only0.645us out of101.915us.",
+    "Four-node resident/diagnostics-off P50 regresses0.043us.",
+    "Positive-restore64-node diagnostics-on P50 regresses48.110us.",
+    "The alias/branching complexity is not justified by these small, inconsistent whole-path results.",
+    "No online mutation revision covers native no-DMA demotion, so do not extend negative-cache duration.",
+    "Passing correctness checks alone do not establish useful control savings or GPU/JCT benefit."
+  ],
+  "source_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/v2116_empty_restore_complete_dispatch_cpu_20261020.json": "9841d7456b401a1dce9a6bac7d6a8e14df7456090dbe058a018f61feca8e36f8",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/v2117_empty_restore_path_cpu_checks_20261020.xml": "2d8173cf1cc17db29f0260a050060e9e1cf1d2c6757cf86cd9c1c5852f949a12",
+    "/home/longhao/experiment/ops/record_v93_empty_restore_decision_20261020.py": "e467793d4552e28d566887235312008caf1604669f3b765106bf4d39be6d599e"
+  },
+  "scope": [
+    "This records the measured candidate and reason for not shipping it.",
+    "The current V92 execution snapshot was never changed.",
+    "The529 candidate-only cases are not current-source rechecks after removal.",
+    "V92 final comparison and actual capacity-preparation opportunities take priority."
+  ]
+}

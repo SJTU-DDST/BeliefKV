@@ -5,22 +5,19 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-V92 is running from the frozen e8010f0 snapshot: launched at2026-10-20 09:02:26
-Asia/Shanghai, with real workflow service from09:05:41. V2110 verifies970 source
-files, actual processes and launch settings. Only predictive is newly run; V91b
-native is the historical reference. Initial zero writer failures/drops establish
-neither whole-run reliability nor performance acceptance. Keep the snapshot immutable.
-V91b's same-version pair is complete.
-Keep24 roots,16+8 arrivals/900s,running8,256K,Host80:20 and the existing engine.
-Both arms have24 completed outcomes, with23/24 natural-JCT eligibility because
-predictive has one existing graph-budget finalization. Quality remains ungraded.
-In the pre-agreed common600–1537.851s window, predictive/native restricted mean
-completion latency is681.082/813.582s (-16.29%), but decode throughput is
-371.149/404.289 token/s (-8.20%). The goal is not accepted. Physical H2D is
-0.897/93.119GB;35 JOIN commands are one post-completion/pre-client-submit episode,
-not35 anticipatory events. Frontend settings and realized paths differ; no isolated
-KV-policy effect is established. Matched300–600s neighbor/context decode workers
-differ about1.13%; coarse short-prefill cohorts are near equal, fine cohorts sparse.
+V92 completed at2026-10-20 09:39:11 Asia/Shanghai from frozen e8010f0.
+All24 outcomes are natural completed and JCT-eligible, with zero writer failures
+or drops. Quality remains ungraded. V91b native is the completed historical
+reference. Keep24 roots,16+8 arrivals/900s,running8,256K,Host80:20 and the engine.
+V2121 follows the pre-agreed common600–1402.181s window: restricted mean
+completion latency613.936/778.398s (-21.13%), decode throughput366.917/413.726
+token/s (-11.31%). Full mean JCT is662.251/829.357s (-20.15%). The full goal
+is not achieved. Different frontend switches and realized paths prevent isolated
+KV attribution. Physical H2D is1.628/93.119GB. All69 controlled FULL commands/
+675.123MB are reused, but only4 independent JOIN events issue before JOIN
+completion and reuse483.881MB. All issue after native EOS; tool prefetch is zero.
+There are16 dynamic children,5 multi-round roots and no observed nesting.
+Do not regenerate the completed comparison or HTML timeline unnecessarily.
 
 The latest fix decouples safe capacity preparation from H2D timing support.
 V91b recorded136 unsupported-size checks and no critical-parent reclaim checks;
@@ -52,7 +49,7 @@ namespace, transfer and final native validation. V2114 passes597 related CPU cas
 V2113 separately checks120 differential fixture layouts and8 whole-planner controls
 with identical plans, counters, budgets and native lookups. The8-request/64-node
 thread-CPU P50 is560.634 to534.131us, and16 requests587.058 to555.254us.
-Keep the single-request warm-hint0.026us regression. This is not in live V92 and
+Keep the single-request warm-hint0.026us regression. This is not in completed V92 and
 does not establish GPU/JCT improvement.
 
 V2112/V2115 seal an initial V92 prefix:38 FULL receipts/296.038MB all have
@@ -64,7 +61,42 @@ with no observed before-first-service native reload; expiry alone is not waste
 or a reason to extend protection. Next inspect safe waiting-agent backup versus
 actually reclaimable leaves, and remove repeated ineffective scanning only with
 sound native invalidation. Continue the immutable V92 snapshot absent a confirmed
-material bug; these independently sealed prefixes are not a whole-run result.
+material bug; these independently sealed prefixes are historical, not a whole-run result.
+
+Reject the next empty-restore ancestry candidate rather than ship branches for a
+0.645us64-node diagnostics-off whole-tool-dispatch improvement. V2116 preserves
+all12 controls, including positive-restore regressions; V2117's529 passing cases
+and180 differential fixtures concern that unshipped candidate. V2118 retains its
+exact patch. The empty-restore reader is restored to d9827c5; do not count this as a new
+production optimization. Native no-DMA demotion has no uniform invalidation
+revision, so do not lengthen the negative cache to an entire waiting episode.
+
+V2119 aligns727 observed tool start/end pairs in16 sealed client files to the35
+critical-capacity checks and finds no overlapping client tool wait. This cohort
+does not justify lowering the tool-offload threshold, identify rejected leaves
+with agents, or establish that HBM contains no cold cache. V2120's already covered
+300–600s window has nearly identical7.92 decode batch but452.593 versus481.983
+token/s; predictive also executes170395 extra prefill tokens. The600–900s batches
+are4.228 versus6.542. Keep realized work and control cost separate. This report
+was produced while V92 collected; V2121 now seals completed outcomes and the
+existing standard comparison/timeline exports. The last workflow was not restarted.
+
+The next fix addresses a real client-submit handoff inside the final event drain.
+The ticket is rebound to the new consumer while the current call holds the old
+key. Replan once only for the same confirmed ticket and proven old checkpoint,
+through fresh epoch/capacity/native checks. Do not reuse old steps or grant ACK
+credit. Native visibility, missing checkpoint, changed generation, cancellation
+and a second invalidation still stop. V2122 reproduces the old failure; V2124
+pins the old dispatcher and shows0 versus4 new-epoch reservations with no receipts.
+Eight ordinary complete-dispatch controls retain records/reservations/native reads;
+small timing regressions are retained, not claimed as performance gains.
+V2125 passes1582 distinct current-source cases with no skips, including8 new
+handoff cases and real local-tokenizer checks. Two passing subtests are not
+additional cases; real SWE Docker is unselected. Freeze V93 with this fix and
+the residency-reader reduction. Only two runtime execution files differ from V92,
+three from the V91b native reference; workload, engine and frontend settings stay.
+Launch predictive only after an actual idle-resource check. Validate the replan
+counter, true first-service reuse and tail-excluded throughput/JCT; keep /goal active.
 
 Main now skips causal/residency ranking only when a committed chunk has exhausted
 the current integer input budget, all native inputs are nonempty, DLLM is absent,

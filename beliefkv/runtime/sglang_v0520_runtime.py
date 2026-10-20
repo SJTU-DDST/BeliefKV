@@ -3572,7 +3572,7 @@ class NativeAdmissionRuntime:
             self._join_ticket = None
 
     @timed_runtime("join_prefetch")
-    def dispatch_join_prefetch(self) -> None:
+    def dispatch_join_prefetch(self, *, _retry_client_submit: bool = True) -> None:
         """Restore a bounded reusable prefix burst, without granting admission."""
         if self._join_inflight_tickets:
             if self._wait_prefetch_transfer_busy():
@@ -3708,8 +3708,9 @@ class NativeAdmissionRuntime:
             )
             self._yield_confirmed_join_ticket()
             return
+        selected_key = ticket.key
         commands = self._issue_wait_prefetch_steps(
-            ticket.key, getattr(observation, "steps", ()) or (step,),
+            selected_key, getattr(observation, "steps", ()) or (step,),
             source="join_ticket", service_shape=service_shape,
             _selection_opportunity=observation,
         )
@@ -3724,6 +3725,15 @@ class NativeAdmissionRuntime:
             if stage is not None and ticket.phase == "provisional":
                 stage.issued_nodes = ticket.issued_nodes
             self.counts[f"join_prefetch_{ticket.phase}_issued"] += len(commands)
+        elif (
+            _retry_client_submit and self._join_ticket is ticket
+            and ticket.phase == "confirmed" and ticket.key != selected_key
+            and ticket.checkpoint_key == selected_key and self._live_join_ticket(ticket)
+        ):
+            # Submission can rebind this ticket during the final event drain.
+            # Replan once for the proven consumer; never reuse the old steps.
+            self.counts["join_prefetch_client_handoff_replanned"] += 1
+            self.dispatch_join_prefetch(_retry_client_submit=False)
         else:
             self._yield_confirmed_join_ticket()
 

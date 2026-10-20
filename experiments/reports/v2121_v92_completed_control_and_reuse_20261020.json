@@ -1,0 +1,243 @@
+{
+  "status": "completed_gpu_validation_goal_not_achieved",
+  "observed_at": "2026-10-20T09:45:45.741990+08:00",
+  "finished_at": "2026-10-20T09:39:11.857892+08:00",
+  "driver_and_recorded_scheduler_exited": true,
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92",
+  "execution_commit": "e8010f0",
+  "native_reference_commit": "f29717e",
+  "native_reference_scope": {
+    "kind": "historical_native_reference",
+    "selection": "fixed reference recorded in collection plan",
+    "reference_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b",
+    "reference_code_commit": "f29717ec027a542c758f59d48c7223b1f90056c5",
+    "current_code_commit": "e8010f0c0e56bd20e726c79c9b8692b47435444a",
+    "reference_plan_sha256": "9f2bcd60d7c5716cdec13d216ee199f3d4d3002079c82191e871054677153862",
+    "same_engine_patch": true,
+    "matched_configuration_fields": [
+      "workload_sha256",
+      "root_count",
+      "arrival_schedule",
+      "server_running",
+      "context_tokens",
+      "context_lifecycle",
+      "max_completion_tokens",
+      "host_gb",
+      "host_split",
+      "mamba_full_memory_ratio",
+      "mem_fraction_static",
+      "native_write_policy",
+      "fanout_profile",
+      "sampling_seed",
+      "temperature",
+      "sandbox_command_timeout_s",
+      "activation_wall_clock_seconds",
+      "child_final_report_shadow",
+      "model_request_timeout_seconds",
+      "host_numa_node",
+      "host_numa_memory_policy"
+    ],
+    "configuration_differences": {},
+    "unrecorded_configuration_fields": [],
+    "formal_paired_evidence": false,
+    "semantics": "Development comparison against a preselected historical native run; task pairing does not match live trajectories. Patch equality alone does not prove every native/client path unchanged.",
+    "reused_cached_native_metrics": true,
+    "native_metrics_cache": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/native_policy_comparison.json",
+      "sha256": "c09a5814ecbffbf77c947a8e2eb46b5d11b3f93db28181075208cfa2e2e2f663"
+    }
+  },
+  "same_task_set": true,
+  "same_physical_pool_capacity": true,
+  "outcomes": {
+    "completed": 24,
+    "natural_and_jct_eligible": 24,
+    "quality": "ungraded"
+  },
+  "primary_policy": {
+    "rule": "In each arm, after its final workflow arrival, find the first terminal event leaving fewer than minimum_active workflows. Use the earlier arm boundary for both arms; never choose a boundary from GPU utilization, throughput or JCT advantage.",
+    "minimum_active": 4,
+    "warmup_seconds": 600.0,
+    "individual_tail_boundaries_seconds": {
+      "predictive_h2d": 1402.1813759765625,
+      "native": 1537.8509243164062
+    },
+    "common_cutoff_seconds": 1402.1813759765625
+  },
+  "metrics": {
+    "predictive_h2d": {
+      "restricted_mean_completion_seconds": 613.9357652791341,
+      "completed_at_common_cutoff": 21,
+      "decode_tokens_per_second": 366.9170200338827,
+      "gpu_utilization_mean": 98.31352970544184,
+      "weighted_decode_batch": 5.7861326064766905,
+      "prefill_worker_interval_seconds": 105.08313818359375,
+      "whole_run_mean_jct_seconds": 662.2505879592305,
+      "whole_run_collection_seconds": 1981.576123578474,
+      "whole_run_output_tokens": 631909,
+      "whole_run_transfers": {
+        "native_d2h": {
+          "count": 2115,
+          "bytes": 101458513920,
+          "kv_bytes": 39516180480,
+          "mamba_bytes": 61942333440
+        },
+        "PREPARE_HOST_d2h": {
+          "count": 834,
+          "bytes": 21951098880,
+          "kv_bytes": 21951098880
+        },
+        "PREFETCH_GPU_h2d": {
+          "count": 69,
+          "bytes": 675123200,
+          "kv_bytes": 675123200
+        },
+        "native_h2d": {
+          "count": 12,
+          "bytes": 953098240,
+          "kv_bytes": 824320000,
+          "mamba_bytes": 128778240
+        }
+      }
+    },
+    "native": {
+      "restricted_mean_completion_seconds": 778.3975400187175,
+      "completed_at_common_cutoff": 15,
+      "decode_tokens_per_second": 413.72563604580205,
+      "gpu_utilization_mean": 99.34348477284074,
+      "weighted_decode_batch": 7.237564873455163,
+      "prefill_worker_interval_seconds": 112.39088500976563,
+      "whole_run_mean_jct_seconds": 829.357265592902,
+      "whole_run_collection_seconds": 1802.2706571184099,
+      "whole_run_output_tokens": 654275,
+      "whole_run_transfers": {
+        "native_d2h": {
+          "count": 3115,
+          "bytes": 158388326400,
+          "kv_bytes": 50021437440,
+          "mamba_bytes": 108366888960
+        },
+        "native_h2d": {
+          "count": 159,
+          "bytes": 93118607360,
+          "kv_bytes": 72256532480,
+          "mamba_bytes": 20862074880
+        }
+      }
+    }
+  },
+  "changes": {
+    "restricted_mean_completion_change_fraction": -0.21128249549147948,
+    "decode_throughput_change_fraction": -0.11313926895924176,
+    "full_mean_jct_change_fraction": -0.2014893756482714
+  },
+  "delegation": {
+    "dynamic_subagent_count": 16,
+    "natural_child_return_count": 16,
+    "nested_spawn_count": 0,
+    "root_delegation_round_count": 16,
+    "nested_delegation_round_count": 0,
+    "workflows_with_multiple_root_rounds": 5
+  },
+  "restore": {
+    "controlled_full_commands": 69,
+    "controlled_full_bytes": 675123200,
+    "controlled_full_reused_bytes": 675123200,
+    "before_native_eos_commands": 0,
+    "before_join_completed_independent_events": 4,
+    "before_join_completed_reused_full_bytes": 483880960,
+    "tool_commands": 0,
+    "tool_wait_events_with_observed_plan": 3,
+    "tool_wait_events_observed": 623,
+    "before_first_service_native_reload": 0,
+    "ack_to_first_service_ms": {
+      "count": 69,
+      "p50": 717.2744140625,
+      "p90": 10719.7294921875,
+      "max": 11240.82958984375
+    },
+    "issue_to_submit_ms": {
+      "count": 69,
+      "p50": 3.167724609375,
+      "p90": 5.79833984375,
+      "max": 5.79833984375
+    },
+    "prepare_commands": 834,
+    "prepare_commands_with_observed_restore": 62,
+    "prepare_with_later_same_node_pool_d2h": 0,
+    "join_plan_causal_changed_events": 5
+  },
+  "physical_h2d_source_counts": {
+    "controller_batches": 22,
+    "total_bytes": 1628221440,
+    "controlled_bytes": 675123200,
+    "controlled_batches": 10,
+    "controlled_only_batches": 10,
+    "native_only_batches": 12,
+    "mixed_batches": 0,
+    "mixed_source_batches": 0,
+    "predictive_bytes": 675123200,
+    "predictive_batches": 10,
+    "execution_handoff_bytes": 0,
+    "execution_handoff_batches": 0,
+    "unknown_controlled_bytes": 0,
+    "unknown_controlled_batches": 0,
+    "native_bytes": 953098240,
+    "native_batches": 12
+  },
+  "final_counts": {
+    "critical_parent_headroom_checks": 35,
+    "physical_receipt_failed": 0,
+    "report_service_transfer_size_unsupported": 113,
+    "join_prepare_issued": 356,
+    "tool_prepare_issued": 478
+  },
+  "next_action": "Inspect the five enqueue_causal_changed JOIN episodes and their actual ticket/epoch transitions, plus capacity-limited positive plans. Do not start another GPU run solely for the rejected tiny reader change.",
+  "source_sha256": {
+    "/home/longhao/experiment/ops/v92_headroom_control_20261020.state.json": "1e4cd6189aadab05bd5b6ae2c91de8684cd7343aa5005aa59e30eee786ae5afb",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/v2110_v92_actual_startup_20261020.json": "79c5308fb9dcd3f0c0056bd7a59d2558c37ed63333ad7417f4d969ed02015072",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/comparison.json": "7207d734269a379353653bc460c88ce5d3af58843c82baa5870f438277afc07a",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/native_reference_comparison.json": "7bb0207686c584ea89b74c0cfb5397bd360d5f3fd6d3bf76edb7e33ed5492f58",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/prefetch_lifecycle.json": "fef9d8df1f0d429014502f703dc57c59c8d590b18deb7a40c79d8d91e61dbb4f",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/native_h2d_sources.json": "bc165bb1f9e77eeff577e97864c188126cb1c0d1e5767823ba98d5b5d8bf583d",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_bug_investigation_expert_01/result.json": "9b2d7c402533e7567de41cbbe4c0928e04851474944d72810a8202d29a2b8f1d",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01/result.json": "9ac0e6294a6b77e46f66cf93f8c71dc3b139d216e6b5ae3b810baf0d2c09ffe5",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/result.json": "8a968153633311f3916235fd78c8031baf1eb20faff0dda861f6f42cedec1054",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_integration_testing_expert_01/result.json": "c34d9719db754eabec89432871a9607dfafd7b97f16838889c3b4b327a08d860",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_bug_investigation_expert_01/result.json": "ac47e4a2fcc187be18201a79e9d6f6ef3e8e77f3dff56d9e3cd9642a76af6a3d",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01/result.json": "e493af99e4b3f6a819cffbdb1cf125b13f82193a840a5dbb66a0fcf21aa2fc41",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_integration_testing_expert_01/result.json": "8d515f63da9ba9fd366df484d739760b38468acdd2c318c4b360a41d57f8ce64",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_multi_session_development_expert_01/result.json": "a9bdac5ac5b65f1ef61c43a20c89c227ce50f68705c6649ba86429eb2ca7aee9",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_bug_investigation_expert_01/result.json": "0db5180ae6159a32e9faeae5ebdbc95c48fa8cb52e73e0a1bcc7fe7c59b3e3cf",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_cross_file_refactoring_expert_01/result.json": "dbb274ecd07070b7d591f71fd5c1f4d11c80b2c3af57c4371d678141d283d912",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_feature_implementation_expert_01/result.json": "081b6d7aaf6727fd39ab06ba550c8a4fbfed2ae4e7d4c8dd1b4704382bad9c8f",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_integration_testing_expert_01/result.json": "8bd75ff61e031d09c1dfc30c2c6b222ac7ca8e1f79f3e3ef9d1ba8d686b1ab3b",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_bug_investigation_expert_01/result.json": "74faade688056c7406847fcb83951fbf647678b9af7c952f7fb2731a10b7ebed",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_cross_file_refactoring_expert_01/result.json": "d0590e2349a81cf5e31351ea951e1a8fa89481c8e0edf4144055c239f830ff91",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_feature_implementation_expert_01/result.json": "f6144cf88efc045442f95002cdbb244acd80ccbf5e6ae04638ed4b91ba9e247e",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_multi_session_development_expert_01/result.json": "adece8e811b0484b71783e56c89f5550a3a1778717eccaed994545d23ce530af",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_bug_investigation_medium_01/result.json": "c146711576fb54f34fff76b6f255d4c4aa7a260f1dcdcacfe3bbf4c5a003cff8",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_feature_implementation_medium_01/result.json": "3ef91c27f0e0954fa7fd043ef8e9bfaeaac30a1cd18c276cb882ae4d34cfe67e",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_integration_testing_medium_01/result.json": "6c069ebb47106199a749f552c7caa644615e7b2ce85ffb74c5507aca7cb1ade7",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_multi_session_development_medium_01/result.json": "9051efcbc48fa30713e2936b538a705312ab201fd195f7564b98f45b140bd034",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/result.json": "4bbbc0b8cdb5e76389eb1f9924f9803c67fbb697a680b181ba7ad470559e47ca",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_feature_implementation_expert_01/result.json": "fd9903564eb1d723d9b6337bae9b5c29a32343532978d2360c593798543d02be",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_integration_testing_expert_01/result.json": "ece1e79d28e2821e6057ebaae3c39943acc2521acac0ecd0df99205ad281948b",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_multi_session_development_expert_01/result.json": "0efde76f8c400a76fe3d12bdb262c381be137e0b42484adff77dfc9716ce0a72",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/timelines/predictive_h2d.html": "c3890d97b217483d5736159e7befc532580f6d1e09314cae982cc26fadf939d7",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/timelines/predictive_h2d.json.gz": "97fa3911d0f75cd179ae44361c3411df415baa8f612674f14858c414b221bb55",
+    "/home/longhao/experiment/ops/audit_v92_completed_20261020.py": "04f25cd9b7a209dd4d97800287a4729ee51e0f322965040a9b8e8cf386c5d689"
+  },
+  "scope": [
+    "The existing driver completed comparison and timeline export; neither is regenerated.",
+    "All24 predictive outcomes are natural; this supersedes earlier collecting status.",
+    "The completed historical native is reused, not a new same-version pair.",
+    "Tasks, arrival settings and pools agree; realized paths and frontend switches differ.",
+    "JCT improvement is descriptive full-system evidence, not an isolated KV-policy effect.",
+    "Throughput remains lower, so the full goal is active.",
+    "All69 controlled FULL commands are reused, but only four independent events begin before JOIN.",
+    "All controlled starts are after native EOS; do not call69 commands predictive-before-child-EOS events.",
+    "Logical next-request Host hits must not be equated with physical native H2D.",
+    "No guard, forced delegation, changed token budget, prefill delayer or running snapshot edit."
+  ]
+}

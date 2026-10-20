@@ -1,0 +1,2024 @@
+{
+  "status": "cpu_dispatch_comparison_not_gpu_or_jct_acceptance",
+  "baseline_commit": "d9827c5",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/event_channel.py": "032a8929a01ed19bfd67bf655b42c525ae830ce74dd55e790b69bd32ffc4ece3",
+    "beliefkv/runtime/sglang_v0520_observer.py": "40db188bb8b3854d39be9606106094ef9d83c6f1b92d2d51fbff3ffe39f158e0",
+    "beliefkv/runtime/sglang_v0520_physical.py": "6c7b7994d88e749ae009ab164d8b5f2c1d31142c0f91cb7ffdddf63ac62ecb9d",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "227376f0fb595a4b1f94b3d9f67589350325bc4bb30a52c9d14547d69678ca91"
+  },
+  "candidate_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_physical.py": "a8f79b03196724cc2e956e5557c4d8a4c7328409ef8581161f71c9036de60375"
+  },
+  "benchmark_source_sha256": "9566f0f0c9379fe8b24c19bb39cd8890f5a2a18d65997479464085789cdc8f98",
+  "functional_controls": [
+    {
+      "second_leaf": false,
+      "input_tokens": 0,
+      "input_checkpoint_only": false,
+      "change": "resident",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 0,
+      "input_checkpoint_only": false,
+      "change": "full_missing",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 0,
+      "input_checkpoint_only": false,
+      "change": "older_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 0,
+      "input_checkpoint_only": false,
+      "change": "selected_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 0,
+      "input_checkpoint_only": false,
+      "change": "first_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 0,
+      "input_checkpoint_only": false,
+      "change": "later_path_cycle",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 0,
+      "input_checkpoint_only": false,
+      "change": "stale_anchor",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 0,
+      "input_checkpoint_only": false,
+      "change": "absent_component",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 0,
+      "input_checkpoint_only": false,
+      "change": "unbacked_full",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 0,
+      "input_checkpoint_only": true,
+      "change": "resident",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 0,
+      "input_checkpoint_only": true,
+      "change": "full_missing",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 0,
+      "input_checkpoint_only": true,
+      "change": "older_state",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 0,
+      "input_checkpoint_only": true,
+      "change": "selected_state",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 0,
+      "input_checkpoint_only": true,
+      "change": "first_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 0,
+      "input_checkpoint_only": true,
+      "change": "later_path_cycle",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 0,
+      "input_checkpoint_only": true,
+      "change": "stale_anchor",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 0,
+      "input_checkpoint_only": true,
+      "change": "absent_component",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 0,
+      "input_checkpoint_only": true,
+      "change": "unbacked_full",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 2,
+      "input_checkpoint_only": false,
+      "change": "resident",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 2,
+      "input_checkpoint_only": false,
+      "change": "full_missing",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 2,
+      "input_checkpoint_only": false,
+      "change": "older_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 2,
+      "input_checkpoint_only": false,
+      "change": "selected_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 2,
+      "input_checkpoint_only": false,
+      "change": "first_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 2,
+      "input_checkpoint_only": false,
+      "change": "later_path_cycle",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 2,
+      "input_checkpoint_only": false,
+      "change": "stale_anchor",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 2,
+      "input_checkpoint_only": false,
+      "change": "absent_component",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 2,
+      "input_checkpoint_only": false,
+      "change": "unbacked_full",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 2,
+      "input_checkpoint_only": true,
+      "change": "resident",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 2,
+      "input_checkpoint_only": true,
+      "change": "full_missing",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 2,
+      "input_checkpoint_only": true,
+      "change": "older_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 2,
+      "input_checkpoint_only": true,
+      "change": "selected_state",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 2,
+      "input_checkpoint_only": true,
+      "change": "first_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 2,
+      "input_checkpoint_only": true,
+      "change": "later_path_cycle",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 2,
+      "input_checkpoint_only": true,
+      "change": "stale_anchor",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 2,
+      "input_checkpoint_only": true,
+      "change": "absent_component",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 2,
+      "input_checkpoint_only": true,
+      "change": "unbacked_full",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 4,
+      "input_checkpoint_only": false,
+      "change": "resident",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 4,
+      "input_checkpoint_only": false,
+      "change": "full_missing",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 4,
+      "input_checkpoint_only": false,
+      "change": "older_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 4,
+      "input_checkpoint_only": false,
+      "change": "selected_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 4,
+      "input_checkpoint_only": false,
+      "change": "first_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 4,
+      "input_checkpoint_only": false,
+      "change": "later_path_cycle",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 4,
+      "input_checkpoint_only": false,
+      "change": "stale_anchor",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 4,
+      "input_checkpoint_only": false,
+      "change": "absent_component",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 4,
+      "input_checkpoint_only": false,
+      "change": "unbacked_full",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 4,
+      "input_checkpoint_only": true,
+      "change": "resident",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 4,
+      "input_checkpoint_only": true,
+      "change": "full_missing",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 4,
+      "input_checkpoint_only": true,
+      "change": "older_state",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 4,
+      "input_checkpoint_only": true,
+      "change": "selected_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 4,
+      "input_checkpoint_only": true,
+      "change": "first_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 4,
+      "input_checkpoint_only": true,
+      "change": "later_path_cycle",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 4,
+      "input_checkpoint_only": true,
+      "change": "stale_anchor",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 4,
+      "input_checkpoint_only": true,
+      "change": "absent_component",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 4,
+      "input_checkpoint_only": true,
+      "change": "unbacked_full",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 8,
+      "input_checkpoint_only": false,
+      "change": "resident",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 8,
+      "input_checkpoint_only": false,
+      "change": "full_missing",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 8,
+      "input_checkpoint_only": false,
+      "change": "older_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 8,
+      "input_checkpoint_only": false,
+      "change": "selected_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 8,
+      "input_checkpoint_only": false,
+      "change": "first_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 8,
+      "input_checkpoint_only": false,
+      "change": "later_path_cycle",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 8,
+      "input_checkpoint_only": false,
+      "change": "stale_anchor",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 8,
+      "input_checkpoint_only": false,
+      "change": "absent_component",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 8,
+      "input_checkpoint_only": false,
+      "change": "unbacked_full",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 8,
+      "input_checkpoint_only": true,
+      "change": "resident",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 8,
+      "input_checkpoint_only": true,
+      "change": "full_missing",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 8,
+      "input_checkpoint_only": true,
+      "change": "older_state",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 8,
+      "input_checkpoint_only": true,
+      "change": "selected_state",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 8,
+      "input_checkpoint_only": true,
+      "change": "first_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 8,
+      "input_checkpoint_only": true,
+      "change": "later_path_cycle",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 8,
+      "input_checkpoint_only": true,
+      "change": "stale_anchor",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 8,
+      "input_checkpoint_only": true,
+      "change": "absent_component",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": 8,
+      "input_checkpoint_only": true,
+      "change": "unbacked_full",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": null,
+      "input_checkpoint_only": false,
+      "change": "resident",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": null,
+      "input_checkpoint_only": false,
+      "change": "full_missing",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": null,
+      "input_checkpoint_only": false,
+      "change": "older_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": null,
+      "input_checkpoint_only": false,
+      "change": "selected_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": null,
+      "input_checkpoint_only": false,
+      "change": "first_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": null,
+      "input_checkpoint_only": false,
+      "change": "later_path_cycle",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": null,
+      "input_checkpoint_only": false,
+      "change": "stale_anchor",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": null,
+      "input_checkpoint_only": false,
+      "change": "absent_component",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": null,
+      "input_checkpoint_only": false,
+      "change": "unbacked_full",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": null,
+      "input_checkpoint_only": true,
+      "change": "resident",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": null,
+      "input_checkpoint_only": true,
+      "change": "full_missing",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": null,
+      "input_checkpoint_only": true,
+      "change": "older_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": null,
+      "input_checkpoint_only": true,
+      "change": "selected_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": null,
+      "input_checkpoint_only": true,
+      "change": "first_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": null,
+      "input_checkpoint_only": true,
+      "change": "later_path_cycle",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": null,
+      "input_checkpoint_only": true,
+      "change": "stale_anchor",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": null,
+      "input_checkpoint_only": true,
+      "change": "absent_component",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": false,
+      "input_tokens": null,
+      "input_checkpoint_only": true,
+      "change": "unbacked_full",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 0,
+      "input_checkpoint_only": false,
+      "change": "resident",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 0,
+      "input_checkpoint_only": false,
+      "change": "full_missing",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 0,
+      "input_checkpoint_only": false,
+      "change": "older_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 0,
+      "input_checkpoint_only": false,
+      "change": "selected_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 0,
+      "input_checkpoint_only": false,
+      "change": "first_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 0,
+      "input_checkpoint_only": false,
+      "change": "later_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 0,
+      "input_checkpoint_only": false,
+      "change": "stale_anchor",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 0,
+      "input_checkpoint_only": false,
+      "change": "absent_component",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 0,
+      "input_checkpoint_only": false,
+      "change": "unbacked_full",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 0,
+      "input_checkpoint_only": true,
+      "change": "resident",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 0,
+      "input_checkpoint_only": true,
+      "change": "full_missing",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 0,
+      "input_checkpoint_only": true,
+      "change": "older_state",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 0,
+      "input_checkpoint_only": true,
+      "change": "selected_state",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 0,
+      "input_checkpoint_only": true,
+      "change": "first_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 0,
+      "input_checkpoint_only": true,
+      "change": "later_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 0,
+      "input_checkpoint_only": true,
+      "change": "stale_anchor",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 0,
+      "input_checkpoint_only": true,
+      "change": "absent_component",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 0,
+      "input_checkpoint_only": true,
+      "change": "unbacked_full",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 2,
+      "input_checkpoint_only": false,
+      "change": "resident",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 2,
+      "input_checkpoint_only": false,
+      "change": "full_missing",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 2,
+      "input_checkpoint_only": false,
+      "change": "older_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 2,
+      "input_checkpoint_only": false,
+      "change": "selected_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 2,
+      "input_checkpoint_only": false,
+      "change": "first_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 2,
+      "input_checkpoint_only": false,
+      "change": "later_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 2,
+      "input_checkpoint_only": false,
+      "change": "stale_anchor",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 2,
+      "input_checkpoint_only": false,
+      "change": "absent_component",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 2,
+      "input_checkpoint_only": false,
+      "change": "unbacked_full",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 2,
+      "input_checkpoint_only": true,
+      "change": "resident",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 2,
+      "input_checkpoint_only": true,
+      "change": "full_missing",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 2,
+      "input_checkpoint_only": true,
+      "change": "older_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 2,
+      "input_checkpoint_only": true,
+      "change": "selected_state",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 2,
+      "input_checkpoint_only": true,
+      "change": "first_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 2,
+      "input_checkpoint_only": true,
+      "change": "later_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 2,
+      "input_checkpoint_only": true,
+      "change": "stale_anchor",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 2,
+      "input_checkpoint_only": true,
+      "change": "absent_component",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 2,
+      "input_checkpoint_only": true,
+      "change": "unbacked_full",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 4,
+      "input_checkpoint_only": false,
+      "change": "resident",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 4,
+      "input_checkpoint_only": false,
+      "change": "full_missing",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 4,
+      "input_checkpoint_only": false,
+      "change": "older_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 4,
+      "input_checkpoint_only": false,
+      "change": "selected_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 4,
+      "input_checkpoint_only": false,
+      "change": "first_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 4,
+      "input_checkpoint_only": false,
+      "change": "later_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 4,
+      "input_checkpoint_only": false,
+      "change": "stale_anchor",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 4,
+      "input_checkpoint_only": false,
+      "change": "absent_component",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 4,
+      "input_checkpoint_only": false,
+      "change": "unbacked_full",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 4,
+      "input_checkpoint_only": true,
+      "change": "resident",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 4,
+      "input_checkpoint_only": true,
+      "change": "full_missing",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 4,
+      "input_checkpoint_only": true,
+      "change": "older_state",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 4,
+      "input_checkpoint_only": true,
+      "change": "selected_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 4,
+      "input_checkpoint_only": true,
+      "change": "first_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 4,
+      "input_checkpoint_only": true,
+      "change": "later_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 4,
+      "input_checkpoint_only": true,
+      "change": "stale_anchor",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 4,
+      "input_checkpoint_only": true,
+      "change": "absent_component",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 4,
+      "input_checkpoint_only": true,
+      "change": "unbacked_full",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 8,
+      "input_checkpoint_only": false,
+      "change": "resident",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 8,
+      "input_checkpoint_only": false,
+      "change": "full_missing",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 8,
+      "input_checkpoint_only": false,
+      "change": "older_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 8,
+      "input_checkpoint_only": false,
+      "change": "selected_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 8,
+      "input_checkpoint_only": false,
+      "change": "first_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 8,
+      "input_checkpoint_only": false,
+      "change": "later_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 8,
+      "input_checkpoint_only": false,
+      "change": "stale_anchor",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 8,
+      "input_checkpoint_only": false,
+      "change": "absent_component",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 8,
+      "input_checkpoint_only": false,
+      "change": "unbacked_full",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 8,
+      "input_checkpoint_only": true,
+      "change": "resident",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 8,
+      "input_checkpoint_only": true,
+      "change": "full_missing",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 8,
+      "input_checkpoint_only": true,
+      "change": "older_state",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 8,
+      "input_checkpoint_only": true,
+      "change": "selected_state",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 8,
+      "input_checkpoint_only": true,
+      "change": "first_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 8,
+      "input_checkpoint_only": true,
+      "change": "later_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 8,
+      "input_checkpoint_only": true,
+      "change": "stale_anchor",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 8,
+      "input_checkpoint_only": true,
+      "change": "absent_component",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": 8,
+      "input_checkpoint_only": true,
+      "change": "unbacked_full",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": null,
+      "input_checkpoint_only": false,
+      "change": "resident",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": null,
+      "input_checkpoint_only": false,
+      "change": "full_missing",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": null,
+      "input_checkpoint_only": false,
+      "change": "older_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": null,
+      "input_checkpoint_only": false,
+      "change": "selected_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": null,
+      "input_checkpoint_only": false,
+      "change": "first_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": null,
+      "input_checkpoint_only": false,
+      "change": "later_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": null,
+      "input_checkpoint_only": false,
+      "change": "stale_anchor",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": null,
+      "input_checkpoint_only": false,
+      "change": "absent_component",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": null,
+      "input_checkpoint_only": false,
+      "change": "unbacked_full",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": null,
+      "input_checkpoint_only": true,
+      "change": "resident",
+      "result": false,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": null,
+      "input_checkpoint_only": true,
+      "change": "full_missing",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": null,
+      "input_checkpoint_only": true,
+      "change": "older_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": null,
+      "input_checkpoint_only": true,
+      "change": "selected_state",
+      "result": true,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": null,
+      "input_checkpoint_only": true,
+      "change": "first_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": null,
+      "input_checkpoint_only": true,
+      "change": "later_path_cycle",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": null,
+      "input_checkpoint_only": true,
+      "change": "stale_anchor",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": null,
+      "input_checkpoint_only": true,
+      "change": "absent_component",
+      "result": null,
+      "results_equal": true
+    },
+    {
+      "second_leaf": true,
+      "input_tokens": null,
+      "input_checkpoint_only": true,
+      "change": "unbacked_full",
+      "result": false,
+      "results_equal": true
+    }
+  ],
+  "control_result_categories": {
+    "False": 62,
+    "True": 48,
+    "None": 70
+  },
+  "cases": [
+    {
+      "depth": 4,
+      "layout": "resident",
+      "diagnostics": false,
+      "issued_commands": 0,
+      "complete_outputs_equal": true,
+      "native_reads": {
+        "session_snapshot": 1,
+        "node_lookup": 7
+      },
+      "canonical_state_sha256": "66f99c95b778594876897ff70cee3f5e059865d5a06598841bfcb0f41f95d5d5",
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 0.07123495909090909,
+            "p50_ms": 0.070722,
+            "p99_ms": 0.082734,
+            "max_ms": 0.128028
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 0.07043579545454545,
+            "p50_ms": 0.069893,
+            "p99_ms": 0.081947,
+            "max_ms": 0.127074
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 0.07083982727272728,
+            "p50_ms": 0.070765,
+            "p99_ms": 0.074507,
+            "max_ms": 0.079427
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 0.07003528636363636,
+            "p50_ms": 0.069976,
+            "p99_ms": 0.073632,
+            "max_ms": 0.078586
+          }
+        }
+      }
+    },
+    {
+      "depth": 4,
+      "layout": "resident",
+      "diagnostics": true,
+      "issued_commands": 0,
+      "complete_outputs_equal": true,
+      "native_reads": {
+        "session_snapshot": 1,
+        "node_lookup": 7
+      },
+      "canonical_state_sha256": "23f3ce69e975400fa6ba300ac2e8cf2ae0f0380c75b93dc0075dc6ae1ac09520",
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 0.08068060909090909,
+            "p50_ms": 0.080444,
+            "p99_ms": 0.087297,
+            "max_ms": 0.088048
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 0.07989388181818181,
+            "p50_ms": 0.07962,
+            "p99_ms": 0.086583,
+            "max_ms": 0.087084
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 0.08021941818181819,
+            "p50_ms": 0.079594,
+            "p99_ms": 0.096535,
+            "max_ms": 0.145785
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 0.07941998181818181,
+            "p50_ms": 0.078811,
+            "p99_ms": 0.095768,
+            "max_ms": 0.144966
+          }
+        }
+      }
+    },
+    {
+      "depth": 4,
+      "layout": "host_only",
+      "diagnostics": false,
+      "issued_commands": 4,
+      "complete_outputs_equal": true,
+      "native_reads": {
+        "session_snapshot": 1,
+        "node_lookup": 8
+      },
+      "canonical_state_sha256": "6116bbea1473a42c3b504ba63968ee2efa0791bb3b05809bfd863a7fd937f1e5",
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 0.35936606818181815,
+            "p50_ms": 0.358031,
+            "p99_ms": 0.378439,
+            "max_ms": 0.399568
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 0.35847605909090907,
+            "p50_ms": 0.357123,
+            "p99_ms": 0.377493,
+            "max_ms": 0.398617
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 0.35454605,
+            "p50_ms": 0.353411,
+            "p99_ms": 0.386306,
+            "max_ms": 0.394123
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 0.35366467727272727,
+            "p50_ms": 0.352555,
+            "p99_ms": 0.385437,
+            "max_ms": 0.393105
+          }
+        }
+      }
+    },
+    {
+      "depth": 4,
+      "layout": "host_only",
+      "diagnostics": true,
+      "issued_commands": 4,
+      "complete_outputs_equal": true,
+      "native_reads": {
+        "session_snapshot": 1,
+        "node_lookup": 8
+      },
+      "canonical_state_sha256": "a9bfa222cf4a3b85efae0bbb83fae974146f2b7862c67de29be28010e4e6bdc8",
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 0.40709381818181817,
+            "p50_ms": 0.405423,
+            "p99_ms": 0.433402,
+            "max_ms": 0.434572
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 0.4061695090909091,
+            "p50_ms": 0.404493,
+            "p99_ms": 0.432464,
+            "max_ms": 0.433377
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 0.4059342909090909,
+            "p50_ms": 0.404447,
+            "p99_ms": 0.430058,
+            "max_ms": 0.455015
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 0.40499542727272725,
+            "p50_ms": 0.403463,
+            "p99_ms": 0.429146,
+            "max_ms": 0.453672
+          }
+        }
+      }
+    },
+    {
+      "depth": 64,
+      "layout": "resident",
+      "diagnostics": false,
+      "issued_commands": 0,
+      "complete_outputs_equal": true,
+      "native_reads": {
+        "session_snapshot": 1,
+        "node_lookup": 67
+      },
+      "canonical_state_sha256": "ed52a53105d3afcf223dfccea16850a2a27788cec2b4bd104654a7bc9a5167c3",
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 0.10232146818181818,
+            "p50_ms": 0.101915,
+            "p99_ms": 0.108911,
+            "max_ms": 0.111712
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 0.10147832272727272,
+            "p50_ms": 0.101116,
+            "p99_ms": 0.108111,
+            "max_ms": 0.110957
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 0.10166082727272727,
+            "p50_ms": 0.10127,
+            "p99_ms": 0.109214,
+            "max_ms": 0.110148
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 0.10085053636363636,
+            "p50_ms": 0.10042,
+            "p99_ms": 0.108416,
+            "max_ms": 0.109281
+          }
+        }
+      }
+    },
+    {
+      "depth": 64,
+      "layout": "resident",
+      "diagnostics": true,
+      "issued_commands": 0,
+      "complete_outputs_equal": true,
+      "native_reads": {
+        "session_snapshot": 1,
+        "node_lookup": 67
+      },
+      "canonical_state_sha256": "3f35eec3308911d00c79029573ffc6034f891c28a5600093d80d76f0bc99b305",
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 0.11207151818181818,
+            "p50_ms": 0.111826,
+            "p99_ms": 0.118215,
+            "max_ms": 0.119083
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 0.11128143181818181,
+            "p50_ms": 0.111048,
+            "p99_ms": 0.117392,
+            "max_ms": 0.118164
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 0.11029845909090909,
+            "p50_ms": 0.109867,
+            "p99_ms": 0.119675,
+            "max_ms": 0.129054
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 0.10954850000000001,
+            "p50_ms": 0.109051,
+            "p99_ms": 0.122963,
+            "max_ms": 0.129639
+          }
+        }
+      }
+    },
+    {
+      "depth": 64,
+      "layout": "host_only",
+      "diagnostics": false,
+      "issued_commands": 64,
+      "complete_outputs_equal": true,
+      "native_reads": {
+        "session_snapshot": 1,
+        "node_lookup": 68
+      },
+      "canonical_state_sha256": "d400b839996722a968db16a5112db5bddecfa348c9cd1b2e19239a0b34ece7f8",
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 1.625308209090909,
+            "p50_ms": 1.624887,
+            "p99_ms": 1.68591,
+            "max_ms": 1.886136
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 1.624211568181818,
+            "p50_ms": 1.623726,
+            "p99_ms": 1.684244,
+            "max_ms": 1.884687
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 1.6208248681818183,
+            "p50_ms": 1.620369,
+            "p99_ms": 1.68024,
+            "max_ms": 1.729671
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 1.6196985681818181,
+            "p50_ms": 1.619241,
+            "p99_ms": 1.679055,
+            "max_ms": 1.728543
+          }
+        }
+      }
+    },
+    {
+      "depth": 64,
+      "layout": "host_only",
+      "diagnostics": true,
+      "issued_commands": 64,
+      "complete_outputs_equal": true,
+      "native_reads": {
+        "session_snapshot": 1,
+        "node_lookup": 68
+      },
+      "canonical_state_sha256": "51a225d45bbfbcf8d0d3fe11a3e984b905d5b40aef7e8ef5a3844aaf6d35fcb4",
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 1.9378783227272727,
+            "p50_ms": 1.924756,
+            "p99_ms": 2.146723,
+            "max_ms": 2.169097
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 1.9365664545454546,
+            "p50_ms": 1.923419,
+            "p99_ms": 2.145417,
+            "max_ms": 2.167589
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 2.020921027272727,
+            "p50_ms": 1.972866,
+            "p99_ms": 2.176334,
+            "max_ms": 10.299226
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 2.0195823,
+            "p50_ms": 1.97146,
+            "p99_ms": 2.174656,
+            "max_ms": 10.297274
+          }
+        }
+      }
+    },
+    {
+      "depth": 256,
+      "layout": "resident",
+      "diagnostics": false,
+      "issued_commands": 0,
+      "complete_outputs_equal": true,
+      "native_reads": {
+        "session_snapshot": 1,
+        "node_lookup": 259
+      },
+      "canonical_state_sha256": "f163088ea4f90a1462f5a70ebfa36b16fdc32ff4f70528b297f477155595debd",
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 0.19891182727272727,
+            "p50_ms": 0.198246,
+            "p99_ms": 0.213417,
+            "max_ms": 0.217567
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 0.1981014090909091,
+            "p50_ms": 0.197437,
+            "p99_ms": 0.212636,
+            "max_ms": 0.216538
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 0.19727179090909092,
+            "p50_ms": 0.196753,
+            "p99_ms": 0.215111,
+            "max_ms": 0.21659
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 0.19649335454545455,
+            "p50_ms": 0.195956,
+            "p99_ms": 0.214575,
+            "max_ms": 0.216656
+          }
+        }
+      }
+    },
+    {
+      "depth": 256,
+      "layout": "resident",
+      "diagnostics": true,
+      "issued_commands": 0,
+      "complete_outputs_equal": true,
+      "native_reads": {
+        "session_snapshot": 1,
+        "node_lookup": 259
+      },
+      "canonical_state_sha256": "3ae1d1ec713f9feafa514166c29396e09dbebf343d208f1e89d607d233966ef2",
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 0.21501357272727273,
+            "p50_ms": 0.213968,
+            "p99_ms": 0.231406,
+            "max_ms": 0.234708
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 0.21419754545454545,
+            "p50_ms": 0.213144,
+            "p99_ms": 0.230599,
+            "max_ms": 0.233849
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 0.20778299090909091,
+            "p50_ms": 0.206788,
+            "p99_ms": 0.232354,
+            "max_ms": 0.242364
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 0.20697640909090909,
+            "p50_ms": 0.206,
+            "p99_ms": 0.231562,
+            "max_ms": 0.241361
+          }
+        }
+      }
+    },
+    {
+      "depth": 256,
+      "layout": "host_only",
+      "diagnostics": false,
+      "issued_commands": 64,
+      "complete_outputs_equal": true,
+      "native_reads": {
+        "session_snapshot": 1,
+        "node_lookup": 68
+      },
+      "canonical_state_sha256": "90bd5cea5c6f319375fa92fec26136d7a5263cf05c6e06f95819e9ca20a6d697",
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 2.7580199,
+            "p50_ms": 2.504249,
+            "p99_ms": 3.648936,
+            "max_ms": 3.710294
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 2.7576479863636365,
+            "p50_ms": 2.502864,
+            "p99_ms": 3.646706,
+            "max_ms": 3.704574
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 2.7722290545454547,
+            "p50_ms": 2.520491,
+            "p99_ms": 3.51827,
+            "max_ms": 3.624347
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 2.7714677181818184,
+            "p50_ms": 2.518936,
+            "p99_ms": 3.516223,
+            "max_ms": 3.622149
+          }
+        }
+      }
+    },
+    {
+      "depth": 256,
+      "layout": "host_only",
+      "diagnostics": true,
+      "issued_commands": 64,
+      "complete_outputs_equal": true,
+      "native_reads": {
+        "session_snapshot": 1,
+        "node_lookup": 68
+      },
+      "canonical_state_sha256": "549613b55d3e179fd49985df4648511d4dca07bfdbd36a00cb8c4040bc5ef16e",
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 3.780617190909091,
+            "p50_ms": 3.768547,
+            "p99_ms": 3.987869,
+            "max_ms": 4.237641
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 3.7829949,
+            "p50_ms": 3.76887,
+            "p99_ms": 4.101257,
+            "max_ms": 4.26417
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 220,
+            "mean_ms": 3.9307574272727273,
+            "p50_ms": 3.739013,
+            "p99_ms": 14.002117,
+            "max_ms": 14.090296
+          },
+          "wall_ms": {
+            "count": 220,
+            "mean_ms": 3.9301189227272726,
+            "p50_ms": 3.737972,
+            "p99_ms": 13.999911,
+            "max_ms": 14.088042
+          }
+        }
+      }
+    }
+  ],
+  "scope": [
+    "Only the empty-restore reader differs from pinned physical source.",
+    "Complete dispatch_tool_prefetch, including unchanged runtime and reservation code.",
+    "Synthetic read-only radix and copy/allocator stand-ins; no real GPU service.",
+    "Same clocks and command namespaces; compare all records, counts and expectations.",
+    "Preserve native reads, unknown/cycle handling, independent paths and positive restores.",
+    "No changed retry window, expanded negative cache or skipped transfer validation.",
+    "V92 stays frozen and does not contain this candidate or d9827c5's reader change."
+  ]
+}

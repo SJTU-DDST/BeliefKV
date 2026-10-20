@@ -1,0 +1,290 @@
+{
+  "status": "sealed_temporal_overlap_not_physical_reclaimability_or_speedup",
+  "collection_commit": "e8010f0c0e56bd20e726c79c9b8692b47435444a",
+  "sealed_audit_finished_at": "2026-10-20T09:13:59.950121+08:00",
+  "client_clock_offset_ms": 1785829736899.4219,
+  "client_files": 16,
+  "observed_tool_starts": 727,
+  "observed_tool_ends": 727,
+  "critical_checks": 35,
+  "counts": {
+    "checks_with_observed_tool_wait": 0
+  },
+  "observations": [
+    {
+      "ts_ms": 1792458562454.9333,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458562577.5466,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458562688.7898,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458562798.3337,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458562911.1611,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458563020.6985,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458563131.105,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458563242.1711,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458563352.188,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458563462.3926,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458563571.9988,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458563684.257,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458563795.0051,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458563905.4304,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458564078.6987,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458564183.2705,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458564295.3452,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458564407.4348,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458564518.568,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458564629.2075,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458564740.599,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458564854.0195,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458564997.1785,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458565107.2632,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458612607.7512,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_bug_investigation_medium_01:d5101b62f331:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458612718.939,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_bug_investigation_medium_01:d5101b62f331:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458612832.766,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_bug_investigation_medium_01:d5101b62f331:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458612933.6235,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_bug_investigation_medium_01:d5101b62f331:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458613035.8616,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_bug_investigation_medium_01:d5101b62f331:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458613137.2812,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_bug_investigation_medium_01:d5101b62f331:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458613239.0044,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_bug_investigation_medium_01:d5101b62f331:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458613341.044,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_bug_investigation_medium_01:d5101b62f331:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458613443.3306,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_bug_investigation_medium_01:d5101b62f331:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458613545.1116,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_bug_investigation_medium_01:d5101b62f331:context:root",
+      "active_client_tool_waits": []
+    },
+    {
+      "ts_ms": 1792458613648.0564,
+      "critical_context_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_bug_investigation_medium_01:d5101b62f331:context:root",
+      "active_client_tool_waits": []
+    }
+  ],
+  "decision": "These35 checks do not supply evidence that lowering the one-second tool offload threshold would produce another waiting-tool victim. Do not change that threshold from this cohort.",
+  "source_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/v2112_v92_initial_wait_prefetch_20261020.json.gz": "58eeebc12bd1b73e913b17b7abd1c0d7b8959e20542ee5bc089fe337c28ba8f6",
+    "/home/longhao/experiment/ops/audit_v92_critical_tool_overlap_20261020.py": "a3d904776e4b9e179d7c35ee457ee7c3884feef5b7ce8f77ee65fa19faedee1c"
+  },
+  "sealed_prefixes": {
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 6509982,
+      "complete_prefix_sha256": "36abcaa7eebfce15ae4575d04675cf9b5ab2b049d9a8e2e083090c1dc331add2",
+      "first_read_limit_bytes": 6509982
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_bug_investigation_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 319796,
+      "complete_prefix_sha256": "ac7ce21f01067243a139cff47644e31a973e46b3299019feb50465e98516048f",
+      "first_read_limit_bytes": 319796
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_multi_session_development_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 258157,
+      "complete_prefix_sha256": "5d4749e5deb92680d017cc1c399d04c92875e5cde30c6614a2c5bb8b09819627",
+      "first_read_limit_bytes": 258157
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_bug_investigation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 490672,
+      "complete_prefix_sha256": "ff80464dc331a2a5baab460f930cd0fe66780ebfa8fda87e77f68d8e2252ddfd",
+      "first_read_limit_bytes": 490672
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_integration_testing_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 193177,
+      "complete_prefix_sha256": "fc9b8546c908fdfbf435ab59b7663a041744aac0b8e6e4d3ff08587b57bbb717",
+      "first_read_limit_bytes": 193177
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_bug_investigation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 466355,
+      "complete_prefix_sha256": "7af12f62069f9f7079bcaa55c734d8cc9cac1ffeb44a7343b9df6490fe0e8602",
+      "first_read_limit_bytes": 466355
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_multi_session_development_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 200206,
+      "complete_prefix_sha256": "0200529ac7c908c1821ac23c99ab35033e86d7718502a100ee1d4c312d740c01",
+      "first_read_limit_bytes": 200206
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_multi_session_development_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 162448,
+      "complete_prefix_sha256": "b7f38e7ea6969d362a8ff3717f1f315888d77d3693e20bb82695b88d5c8a5427",
+      "first_read_limit_bytes": 162448
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_integration_testing_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 290386,
+      "complete_prefix_sha256": "1e53099f6ad2a0b2a6994df6ca96a9c1d9ffdc17f9c4465d27f6d7526c31474d",
+      "first_read_limit_bytes": 290386
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_integration_testing_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 214657,
+      "complete_prefix_sha256": "8f436d057fc4ca91ab5934e91aa18497cb68d52fe63a7f20c57438177d28ffda",
+      "first_read_limit_bytes": 214657
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 272155,
+      "complete_prefix_sha256": "03df94432986df8bca8ff6317da9de260e4414d44fc46bedbe0814fa63c6a63e",
+      "first_read_limit_bytes": 272155
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 217358,
+      "complete_prefix_sha256": "6d28e56894c01c88e822fdc7cb3dfc5a94396745e9d876cfe9b8b42e14b4ff57",
+      "first_read_limit_bytes": 217358
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_feature_implementation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 279164,
+      "complete_prefix_sha256": "eafb4690728db174a71d10261de3fecd62b90917f7536b1856c82080e6dae00f",
+      "first_read_limit_bytes": 279164
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_bug_investigation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 294244,
+      "complete_prefix_sha256": "0596c447931aa6c1dac971d86fa16cb7af67c9520c8bba686fb38926706a9994",
+      "first_read_limit_bytes": 294244
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 294157,
+      "complete_prefix_sha256": "2d383e4867d7f8f734a06ec081851ff35ba6a98b3f79b74ce45387872d090060",
+      "first_read_limit_bytes": 294157
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_feature_implementation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 263557,
+      "complete_prefix_sha256": "bdd31427ca0b8b4f0de8b1b8873e9ab5970ec2b0393b81e45356c6d93225d378",
+      "first_read_limit_bytes": 263557
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v92/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 199915,
+      "complete_prefix_sha256": "60d131e3ec6b4ccdbb8b6296916074725e3bfeb5d98f680dda87e4af72d61744",
+      "first_read_limit_bytes": 199915
+    }
+  },
+  "scope": [
+    "All source lengths and SHA256 values match the original V2112 prefixes.",
+    "Use paired scheduler wall/monotonic clocks, not client timestamps as wall time.",
+    "An observed client tool interval is not proof of the scheduler's delivered state.",
+    "No overlapping client tool interval is not proof that HBM contains no cold cache.",
+    "Do not identify any1935 rejected leaves with an agent from these temporal records.",
+    "No native reference, ownership, transfer or prediction threshold was weakened."
+  ]
+}
