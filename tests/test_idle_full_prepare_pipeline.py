@@ -60,13 +60,13 @@ def test_idle_prepare_tracks_issuance_without_any_capacity_or_prefetch_credit():
         runtime.close()
 
 
-def test_background_checks_wait_400ms_without_accumulating_missed_rounds():
+def test_background_checks_wait_200ms_without_accumulating_missed_rounds():
     runtime, cache, _ = fixture()
     try:
         with patch.object(runtime, "_live_critical_parent_demand", return_value=None):
             for now, expected in (
-                (1., 1), (1.1, 1), (1.399, 1), (1.4, 2),
-                (5., 3), (5., 3), (5.399, 3), (5.4, 4),
+                (1., 1), (1.1, 1), (1.199, 1), (1.2, 2),
+                (5., 3), (5., 3), (5.199, 3), (5.2, 4),
             ):
                 with patch(
                     "beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
@@ -74,6 +74,24 @@ def test_background_checks_wait_400ms_without_accumulating_missed_rounds():
                 ):
                     runtime.dispatch_idle_prepare()
                 assert cache.prepare_beliefkv_idle_full.call_count == expected
+    finally:
+        runtime.close()
+
+
+def test_empty_incremental_index_skips_native_scanning_at_the_shorter_cadence():
+    runtime, cache, _ = fixture()
+    cache._beliefkv_unbacked_full = {}
+    try:
+        for now in (1., 1.2, 1.4):
+            with patch(
+                "beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+                return_value=now,
+            ):
+                runtime.dispatch_idle_prepare()
+        cache.prepare_beliefkv_idle_full.assert_not_called()
+        assert runtime.counts["idle_full_prepare_checks"] == 3
+        assert runtime.counts["idle_full_prepare_empty_dirty_checks"] == 3
+        assert runtime.counts["idle_full_prepare_native_calls"] == 0
     finally:
         runtime.close()
 
@@ -133,6 +151,7 @@ def test_empty_round_and_native_aggregate_are_recorded_without_extra_node_scan()
             runtime.dispatch_idle_prepare()
         runtime._record_runtime_state()
         state = rows[-1]
+        assert state["idle_full_prepare"]["interval_ms"] == 200.
         assert state["counts"]["idle_full_prepare_empty_native_calls"] == 1
         assert state["idle_full_prepare"]["native"] == cache.beliefkv_idle_full_prepare_stats
         assert state["idle_full_prepare"]["native"] is not cache.beliefkv_idle_full_prepare_stats

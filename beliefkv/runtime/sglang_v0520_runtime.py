@@ -112,7 +112,7 @@ if TYPE_CHECKING:
 
 TOOL_OFFLOAD_WAIT_MS = 1000.
 TOOL_PREFETCH_PLANNING_SLACK_MS = 250.
-IDLE_FULL_PREPARE_INTERVAL_MS = 400.
+IDLE_FULL_PREPARE_INTERVAL_MS = 200.
 
 
 @dataclass
@@ -471,6 +471,7 @@ class NativeAdmissionRuntime:
             raise ValueError("wait prefetch contexts must be one or two")
         self._prediction_maintenance_next_ms = 0.
         self._prediction_maintenance_graph_version = -1
+        self._wait_prediction_maintenance_deferred = False
         self._lease_refresh_signature = None
         self._lease_refresh_next_ms = 0.
         self.semantic_work_statistic = os.environ.get(
@@ -914,6 +915,18 @@ class NativeAdmissionRuntime:
             )
         ):
             self.dispatch_join_prefetch()
+        if (
+            self.enable_prepare_host and self._critical_parent_demand is not None
+            and self._critical_parent_demand != critical_before
+        ):
+            if self._reclaim_critical_parent_headroom():
+                # EOS may leave only milliseconds before RETURN. Consume
+                # newly earned capacity before tool forecasting or yielding.
+                self.counts["critical_capacity_immediate_join_replans"] += 1
+                self.dispatch_join_prefetch()
+        if self._wait_prediction_maintenance_deferred:
+            self._wait_prediction_maintenance_deferred = False
+            self._maintain_wait_predictions(time.monotonic() * 1000.)
         if self._tool_ticket is not None or self._tool_inflight_tickets or (
             self.enable_tool_prefetch and self.tool_wait_hints
         ):
@@ -926,15 +939,6 @@ class NativeAdmissionRuntime:
         # Earlier handlers can cross a deadline or rearm another source.
         # Read each existing deadline at its original dispatch position.
         if self.enable_prepare_host:
-            if (
-                self._critical_parent_demand is not None
-                and self._critical_parent_demand != critical_before
-            ):
-                if self._reclaim_critical_parent_headroom():
-                    # EOS may leave only milliseconds before RETURN. Consume
-                    # newly earned capacity before yielding this safe point.
-                    self.counts["critical_capacity_immediate_join_replans"] += 1
-                    self.dispatch_join_prefetch()
             if time.monotonic() * 1000. >= self._join_prepare_next_ms:
                 self.dispatch_join_prepare(waiting_queue, running_batch=running_batch)
             if time.monotonic() * 1000. >= self._tool_prepare_next_ms:
@@ -1914,6 +1918,7 @@ class NativeAdmissionRuntime:
     @timed_runtime("scheduler_maintenance")
     def scheduler_step(
         self, waiting_queue: Sequence[object] = (), *, defer_observations: bool = False,
+        defer_wait_predictions: bool = False,
     ) -> None:
         self._prefill_cycle_active = True
         self._prefill_residency_scan = None
@@ -1928,6 +1933,31 @@ class NativeAdmissionRuntime:
         now_ms = time.monotonic() * 1000
         if self._terminal_child_reclaims and now_ms >= self._terminal_child_reclaim_next_ms:
             self._retry_terminal_child_reclaims(now_ms=now_ms)
+        self._wait_prediction_maintenance_deferred = defer_wait_predictions
+        if not defer_wait_predictions:
+            self._maintain_wait_predictions(now_ms)
+        expired = self.physical_ledger.expire()
+        if expired:
+            self.counts["physical_expired"] += len(expired)
+            self._discard_prefetch_tracking("physical_expired", expired)
+            lease = self._admission_lease
+            if lease is not None and lease.command_id in expired:
+                self._admission_lease = None
+                self.counts["admission_prefetch_expired"] += 1
+        ticket = self._join_ticket
+        if expired and ticket is not None and ticket.command_id in expired:
+            ticket.command_id = None
+            self.counts["join_prefetch_expired"] += 1
+        if ticket is not None and not self._live_join_ticket():
+            self._discard_join_ticket(
+                "expired" if time.monotonic() >= ticket.expires_at
+                else "safe_point_invalidated"
+            )
+        if not defer_observations:
+            self.sample_runtime_observations(waiting_queue, now_ms=now_ms)
+
+    def _maintain_wait_predictions(self, now_ms: float) -> None:
+        """Refresh advisory wait forecasts after launch when overlap permits."""
         if (
             self._final_stages or self.tool_wait_hints
             or self.join_wait_hints or self._completion_hints
@@ -1974,25 +2004,6 @@ class NativeAdmissionRuntime:
                 for context in (contexts[offset:] + contexts[:offset])[:8]:
                     self._submit_tool_wait(context)
                 self._scan_offsets["tool_wait"] = (offset + 8) % len(contexts)
-        expired = self.physical_ledger.expire()
-        if expired:
-            self.counts["physical_expired"] += len(expired)
-            self._discard_prefetch_tracking("physical_expired", expired)
-            lease = self._admission_lease
-            if lease is not None and lease.command_id in expired:
-                self._admission_lease = None
-                self.counts["admission_prefetch_expired"] += 1
-        ticket = self._join_ticket
-        if expired and ticket is not None and ticket.command_id in expired:
-            ticket.command_id = None
-            self.counts["join_prefetch_expired"] += 1
-        if ticket is not None and not self._live_join_ticket():
-            self._discard_join_ticket(
-                "expired" if time.monotonic() >= ticket.expires_at
-                else "safe_point_invalidated"
-            )
-        if not defer_observations:
-            self.sample_runtime_observations(waiting_queue, now_ms=now_ms)
 
     def _maintain_prediction_state(self, now_ms: float) -> None:
         if not (
@@ -2910,17 +2921,6 @@ class NativeAdmissionRuntime:
             self.enable_final_stage_prefetch or self.enable_admission_prefetch
         ) or self.physical_disabled or not self._eos_prefetch_keys:
             return
-        enough_service = len(self._h2d_samples) >= 3
-        if not enough_service:
-            native_h2d = 0
-            for sample in self._native_service_samples:
-                native_h2d += sample.direction == "h2d"
-                if native_h2d >= 3:
-                    enough_service = True
-                    break
-        if not enough_service:
-            self.counts["final_stage_no_h2d_service_evidence"] += 1
-            return
         if self._wait_prefetch_transfer_busy():
             return
         if self._join_ticket is not None and self._live_join_ticket():
@@ -2999,31 +2999,8 @@ class NativeAdmissionRuntime:
                 continue
             if required_bytes <= 0:
                 continue
-            # Use measured synchronized H2D ACKs, including queueing. A lack
-            # of evidence leaves this signal advisory, not a transfer permit.
-            shape = pool_shape(
-                observation.required_full_tokens, observation.required_mamba_slots,
-            )
-            estimate = self._estimate_h2d_service(required_bytes, shape=shape)
-            if estimate is None:
-                self.counts["prefetch_service_size_unsupported"] += 1
-                self._record_wait_prefetch_plan(
-                    "join_ticket", stage.key, observation,
-                    reason="service_size_unsupported", remaining_ms=remaining_ms,
-                )
-                continue
-            window = transfer_start_window(
-                estimate, max_lead_ms=self.prefetch_lead_ms,
-                observation_spacing_ms=SEMANTIC_FRAME_INTERVAL_MS,
-                minimum_advance_ms=self.join_prefetch_min_advance_ms,
-            )
-            if window is None:
-                self.counts["prefetch_service_exceeds_lead_window"] += 1
-                self._record_wait_prefetch_plan(
-                    "join_ticket", stage.key, observation,
-                    reason="service_exceeds_lead", remaining_ms=remaining_ms,
-                )
-                continue
+            # EOS is an observed completion, not an ETA. A cold-start or
+            # out-of-range service estimate must not gate its remaining window.
             if not self._prefetch_slot_available(
                 stage.key, budget=self._current_residency_budget(
                     include_evictable=True, headroom=getattr(observation, "headroom", None),
@@ -3032,12 +3009,12 @@ class NativeAdmissionRuntime:
                 self.counts["semantic_h2d_admission_budget_busy"] += 1
                 self._record_wait_prefetch_plan(
                     "join_ticket", stage.key, observation,
-                    reason="admission_budget_busy", remaining_ms=remaining_ms, window=window,
+                    reason="admission_budget_busy", remaining_ms=remaining_ms,
                 )
                 continue
             self._record_wait_prefetch_plan(
                 "join_ticket", stage.key, observation,
-                reason="start_window", remaining_ms=remaining_ms, window=window,
+                reason="start_window", remaining_ms=remaining_ms,
             )
             join = self.graph.joins[stage.join_id]
             self._join_ticket = _JoinPrefetchTicket(
@@ -3060,13 +3037,13 @@ class NativeAdmissionRuntime:
                     "remaining_ms": remaining_ms,
                     "trigger_kind": "observed_no_tool_eos",
                     "native_eos_age_ms": now_ms - self._semantic_finished[rid][0],
-                    "h2d_ms": window.service_ms,
-                    "enqueue_to_submit_p90_ms": window.enqueue_ms,
-                    "prediction_early_ms": window.prediction_early_ms,
-                    "start_window_ms": window.horizon_ms,
+                    "h2d_ms": None,
+                    "enqueue_to_submit_p90_ms": None,
+                    "prediction_early_ms": None,
+                    "start_window_ms": None,
                     "prefetch_lead_ms": self.prefetch_lead_ms,
-                    "service_sample_count": estimate.sample_count,
-                    "service_support": estimate.support,
+                    "service_sample_count": None,
+                    "service_support": "not_required_observed_eos",
                     "required_bytes": required_bytes,
                     "context_id": stage.key.context_id,
                     "context_epoch": stage.key.context_epoch,
@@ -5157,15 +5134,18 @@ class NativeAdmissionRuntime:
         if source == "join_ticket" and ticket is not None and ticket.phase == "confirmed":
             return True
         if source == "join_ticket":
+            native_eos = ticket is not None and self._join_ticket_has_native_eos(ticket)
             if (
                 ticket is None or ticket.key != key
                 or not (
-                    self._join_ticket_has_native_eos(ticket)
+                    native_eos
                     or self._join_ticket_has_report_service(ticket)
                 )
             ):
                 self.counts["join_prefetch_requires_native_eos"] += 1
                 return False
+            if native_eos:
+                return True
         window = (
             self._h2d_start_window(opportunity, service_shape=service_shape)
             if service_shape is not None else self._h2d_start_window(opportunity)
@@ -6460,6 +6440,9 @@ class NativeAdmissionRuntime:
         if isinstance(dirty, dict):
             self.counts["idle_full_prepare_dirty_nodes_last"] = len(dirty)
             self.counts["idle_full_prepare_checks_with_dirty_index"] += bool(dirty)
+            if not dirty:
+                self.counts["idle_full_prepare_empty_dirty_checks"] += 1
+                return
         if self._live_critical_parent_demand() is not None:
             self.counts["idle_full_prepare_blocked_critical_demand"] += 1
             self.counts["idle_full_prepare_blocked_critical_with_dirty_index"] += bool(dirty)

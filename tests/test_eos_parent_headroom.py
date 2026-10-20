@@ -7,6 +7,7 @@ from unittest.mock import patch
 import pytest
 
 from beliefkv.core.events import RuntimeEventKind
+from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
 from tests.test_sglang_v0520_runtime import event, req
 from tests.test_wait_prefetch_batch import provisional_join_batch_fixture
 
@@ -31,14 +32,15 @@ def test_eos_prepares_checkpoint_capacity_even_without_supported_dma_timing(capa
             runtime, "_wait_prefetch_opportunity", return_value=opportunity,
         ) as inspect, patch.object(
             runtime, "_current_residency_budget",
-            return_value=NS(reserve_full_tokens=4104, reserve_mamba_slots=2),
+            return_value=PrefetchResidencyBudget(1, 1_000_000, 4104, 2),
         ), patch.object(
             runtime, "_estimate_h2d_service", return_value=None,
         ), patch.object(
             runtime, "_report_remaining_ms",
             side_effect=AssertionError("EOS must not require a report forecast"),
         ):
-            assert runtime._roll_final_stage() is None
+            selected = runtime._roll_final_stage()
+            assert (selected is None) is capacity_blocked
             inspect.assert_called_once_with(key, include_checkpoint_plan=True)
             parent, full, mamba, expires = runtime._live_critical_parent_demand()
             assert parent == key
@@ -47,7 +49,7 @@ def test_eos_prepares_checkpoint_capacity_even_without_supported_dma_timing(capa
         assert runtime.counts["observed_eos_capacity_preparation"] == 1
         assert runtime.counts["observed_eos_capacity_blocked"] == int(capacity_blocked)
         assert runtime.counts["observed_eos_no_host_target"] == 0
-        assert runtime._join_ticket is None
+        assert (runtime._join_ticket is None) is capacity_blocked
         assert not runtime.physical_ledger.pending_count
         cache.prefetch_gpu_session_nodes.assert_not_called()
     finally:
@@ -83,11 +85,12 @@ def test_eos_capacity_requires_live_eos_parent_checkpoint_and_feature(excluded):
             runtime, "_wait_prefetch_opportunity", return_value=opportunity,
         ), patch.object(
             runtime, "_current_residency_budget",
-            side_effect=AssertionError("no valid restore demand"),
+            return_value=PrefetchResidencyBudget(1, 1_000_000, 4104, 2),
         ), patch.object(
             runtime, "_estimate_h2d_service", return_value=None,
         ):
-            assert runtime._roll_final_stage() is None
+            selected = runtime._roll_final_stage()
+            assert (selected is None) is (excluded != "feature_disabled")
         assert runtime._critical_parent_demand is None
         assert not runtime.physical_ledger.pending_count
         cache.prefetch_gpu_session_nodes.assert_not_called()
@@ -111,7 +114,7 @@ def test_eos_capacity_activates_a_just_started_unhinted_tool_donor():
             runtime, "_wait_prefetch_opportunity", return_value=opportunity,
         ), patch.object(
             runtime, "_current_residency_budget",
-            return_value=NS(reserve_full_tokens=4104, reserve_mamba_slots=2),
+            return_value=PrefetchResidencyBudget(1, 1_000_000, 4104, 2),
         ), patch.object(runtime, "_estimate_h2d_service", return_value=None):
             runtime._roll_final_stage()
             runtime.on_events((event(

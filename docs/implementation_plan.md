@@ -5,6 +5,51 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Latest user instruction supersedes older launch times and workload text in the
+long-running goal: do not start any GPU experiment or canary before
+2026-10-21T06:00:00+08:00 (Asia/Shanghai). Continue CPU optimization with the
+goal active. V101 was administratively stopped at2026-10-20T18:43:11+08:00
+(V2277); V102 is frozen and has NOT started. A one-time pause marker and
+ops/gpu_hold_until_20261021_0600.json record this hold; it is not a daily rule.
+After that deadline, freeze the latest CPU-qualified sources and recheck user
+instructions and resources before launching, rather than starting stale V102.
+Keep36 simultaneous LoCoBench roots,running8,256K/95%,Host80:20.
+Priorities: account for every EOS-backed JOIN restore opportunity and explicit
+zero-byte/capacity outcomes; inspect native asynchronous scheduling and move or
+remove added control work that blocks overlap; improve causal FULL donors and
+background backup coverage. CPU proofs do not establish GPU/JCT improvements.
+
+Latest CPU candidate replaces400ms/1GiB background FULL preparation with
+200ms/512MiB under the user's new instruction. Keep64MiB urgent chunks,
+one background batch, Host headroom, incremental FULL-only copies and ACK-before-
+reclaim. An empty incremental index skips the native scan; overdue rounds do not
+accumulate. Audit actual snapshot configuration rather than applying new caps
+to old traces.
+
+Observed EOS now bypasses obsolete H2D sample-count/size-support and repeated
+start-window prediction gates. Preserve live EOS, parent/checkpoint identity,
+capacity/lease budgets, final enqueue revalidation and native data dependencies.
+Native asynchronous scheduling is already enabled. Preserve its future-token,
+forward/WAR/result/delayed-sample order; on supportedTP1/PP1 overlap only, move
+advisory wait-prediction maintenance after forward and behind EOS dispatch plus
+its same-safe-point capacity retry. Keep events, ACK/expiry and admission safety
+before selection. No new GPU experiment was started.
+
+V2283 independently audits the stopped V101 trace:86 JOIN episodes,62 with a
+positive FULL plan before completion,29 early submitted and next-request-reused
+(3.202GB FULL).41 saw capacity rejection;4 saw service-size unsupported.
+Reasons overlap.21 without any positive FULL plan have no recorded native FULL
+Host-hit on their next request. EOS should guarantee an opportunity check;
+actual FULL H2D requires a missing reusable Host copy. Service-size rejection
+associates with4.155GB next-request native FULL,not proven replaceable bytes or
+oracle JCT savings. Keep the overall performance goal unaccepted.
+
+V2289 qualifies2011 application/253 engine CPU identities against the current
+sources and canonical patch, retaining prior contracts with three documented
+policy-dependent test renames. Offline timing analysis now handles EOS records
+without service estimates as unknown windows, preserving labels and old measured
+records. No GPU experiment is started or automatically authorized by this receipt.
+
 Current priority: fix severe prefetch coverage before enabling demand handoff.
 V2267/V2268 confirms V101 execution_handoff=false and zero handoff H2D;
 JOIN/tool source volume3.439GB contains1.829GB FULL,while strict pre-completion

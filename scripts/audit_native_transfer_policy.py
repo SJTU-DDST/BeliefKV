@@ -51,14 +51,16 @@ def audit(arm: Path) -> dict:
                 continue
             # These service estimates were recorded at the decision. Future
             # RETURN/EOS labels are used only for error reporting below.
-            estimate = NativeServiceEstimate(
-                row["h2d_ms"], row["h2d_ms"],
-                row.get("enqueue_to_submit_p90_ms"),
-                row["service_sample_count"], row["service_support"],
-            )
-            window = transfer_start_window(
-                estimate, max_lead_ms=row["prefetch_lead_ms"], observation_spacing_ms=100.,
-            )
+            window = None
+            if isinstance(row.get("h2d_ms"), (int, float)):
+                estimate = NativeServiceEstimate(
+                    row["h2d_ms"], row["h2d_ms"],
+                    row.get("enqueue_to_submit_p90_ms"),
+                    row["service_sample_count"], row["service_support"],
+                )
+                window = transfer_start_window(
+                    estimate, max_lead_ms=row["prefetch_lead_ms"], observation_spacing_ms=100.,
+                )
             return_lead = target["child_return_ts_ms"] - row["ts_ms"]
             eos_lead = target["native_eos_ts_ms"] - row["ts_ms"]
             forecast = forecasts.get(row["child_request_id"])
@@ -75,7 +77,7 @@ def audit(arm: Path) -> dict:
                 "lead_to_eos_ms": eos_lead, "lead_to_child_return_ms": return_lead,
                 "error_against_eos_ms": row["remaining_ms"] - eos_lead,
                 "error_against_return_ms": row["remaining_ms"] - return_lead,
-                "recorded_h2d_p90_ms": row["h2d_ms"],
+                "recorded_h2d_p90_ms": row.get("h2d_ms"),
                 "center_forecast_overtaken": (
                     forecast["remaining_tokens"] <= advanced if forecast is not None else None
                 ),
@@ -110,6 +112,7 @@ def audit(arm: Path) -> dict:
         ),
         "limitations": [
             "Historical triggers without an enqueue estimate use zero extra submit delay.",
+            "Triggers without a recorded service estimate have no adaptive-window comparison.",
             "JOIN trigger snapshots are clustered by request and are not independent samples.",
             "The runtime phase/work model is unchanged; future EOS/RETURN labels are evaluation only.",
             "Transfer ACK and first service intervals are not exposed GPU stalls or an oracle speedup.",
