@@ -112,6 +112,7 @@ if TYPE_CHECKING:
 
 TOOL_OFFLOAD_WAIT_MS = 1000.
 TOOL_PREFETCH_PLANNING_SLACK_MS = 250.
+IDLE_FULL_PREPARE_INTERVAL_MS = 400.
 
 
 @dataclass
@@ -6404,7 +6405,7 @@ class NativeAdmissionRuntime:
         now_ms = time.monotonic() * 1000.
         if now_ms < self._idle_prepare_next_ms:
             return
-        self._idle_prepare_next_ms = now_ms + 100.
+        self._idle_prepare_next_ms = now_ms + IDLE_FULL_PREPARE_INTERVAL_MS
         if (
             self._live_critical_parent_demand() is not None
             or self.physical_ledger.pending_count

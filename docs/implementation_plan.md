@@ -20,8 +20,13 @@ eviction-time catch-up. V2231 passes1950 application/205 engine CPU cases.
 Freeze this candidate and recheck source,engine,native summary/timeline and
 idle resources before a fresh predictive run.
 
+The400ms/1GiB replacement passes1951 application/208 engine CPU cases
+(V2237),retaining all V2231 cases. Keep the old candidate frozen and use
+the isolated batched engine. CPU metadata/lock tests do not prove real DMA
+speed,overlap or a native-relative throughput/JCT improvement.
+
 The next main candidate separates idle and urgent FULL copying. Idle queues
-permit one batch up to256MiB/8 extents,with100ms cadence and32-node checks,
+permit one batch up to1GiB/32 extents,with400ms cadence and32-node checks,
 preserving one batch of Host space and never evicting another Host copy.
 Only capacity-blocked critical restoration after the existing backed-capacity
 scan is exhausted permits small64MiB D2H chunks. Reuse native segmentation,
@@ -29,9 +34,14 @@ backup locks and ACKs; reclaim before H2D planning and permit subsequent D2H
 while parent H2D remains in flight. Retain full-input/decode/Mamba dependencies.
 Neither equal directional rates,perfect overlap nor submitted-DMA preemption
 is assumed. Referenced waiting agents keep the existing session-safe PREPARE
-path; the generic idle sweep only handles unreferenced cold FULL data.
+path; the non-indexed compatibility sweep only handles unreferenced cold FULL data.
 
-Cache commit/split/unevict publishes one coalesced dirty FULL entry. A100ms
+The user requested a proportional fourfold increase from100ms/256MiB.
+The old continuous-copy queue was withdrawn before GPU launch(V2233).
+Keep the nominal2.5GiB/s byte budget,not a guaranteed transfer rate.
+Do not wait to fill a batch or accumulate missed background rounds.
+
+Cache commit/split/unevict publishes one coalesced dirty FULL entry. A400ms
 post-forward loop consumes at most32 entries and copies only missing extents,
 including stable prefixes of running/shared requests under native read locks.
 Do not wait for eviction after a100MiB backup grows by900MiB; V2230 tests this

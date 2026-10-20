@@ -2907,7 +2907,7 @@ index 6815679..a143793 100644
      def evict_device_end(self, component_type: ComponentType) -> None:
          """Finish the component's device-eviction walk."""
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..49eb950 100644
+index d417d7d..3827a3c 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -4,9 +4,10 @@ import atexit
@@ -3589,7 +3589,7 @@ index d417d7d..49eb950 100644
 +                    and not any(cd.host_lock_ref for cd in node.component_data)
 +                ):
 +                    candidates.append((node_id, node.creation_time, len(full.value)))
-+                    if len(candidates) >= 8:
++                    if len(candidates) >= 32:
 +                        break
 +            issued = self._prepare_beliefkv_cold_full_nodes(
 +                tuple(candidates), exclude_node_ids=exclude_node_ids,
@@ -3623,7 +3623,7 @@ index d417d7d..49eb950 100644
 +                )
 +            ):
 +                candidates.append((node.id, node.creation_time, len(full.value)))
-+                if len(candidates) >= 8:
++                if len(candidates) >= 32:
 +                    break
 +        issued = self._prepare_beliefkv_cold_full_nodes(
 +            tuple(candidates), exclude_node_ids=exclude_node_ids, idle=True,
@@ -3661,7 +3661,7 @@ index d417d7d..49eb950 100644
 +            return ()
 +        # Amortize background launch costs. Only a capacity-blocked urgent
 +        # restore uses small chunks; the directions need not have equal rates.
-+        max_bytes = (256 if idle else 64) * 1024 * 1024
++        max_bytes = (1024 if idle else 64) * 1024 * 1024
 +        chunk_tokens = max(page, (max_bytes // unit // page) * page)
 +        host_free = host_pool.available_size()
 +        if idle:
@@ -3710,7 +3710,7 @@ index d417d7d..49eb950 100644
 +                    continue
 +                queued.append((node_id, created, units))
 +                limit -= units
-+                if not idle or limit <= 0 or len(queued) >= 8:
++                if not idle or limit <= 0 or len(queued) >= 32:
 +                    break
 +        finally:
 +            if queued:
@@ -5443,10 +5443,10 @@ index 0000000..ee51548
 +    cache._execute_and_commit_kv_backup.assert_not_called()
 diff --git a/test/srt/test_beliefkv_cold_full_prepare.py b/test/srt/test_beliefkv_cold_full_prepare.py
 new file mode 100644
-index 0000000..c817e98
+index 0000000..4534304
 --- /dev/null
 +++ b/test/srt/test_beliefkv_cold_full_prepare.py
-@@ -0,0 +1,503 @@
+@@ -0,0 +1,552 @@
 +"""Cold FULL capacity preparation using real CPU trees and explicit ACK boundaries."""
 +
 +from types import SimpleNamespace as NS
@@ -5474,7 +5474,7 @@ index 0000000..c817e98
 +        write_queue=[], load_queue=[], ack_write_queue=[], ack_load_queue=[],
 +        start_writing=Mock(),
 +        mem_pool_host=NS(
-+            size_per_token=16 * 1024 * 1024, available_size=lambda: 32,
++            size_per_token=16 * 1024 * 1024, available_size=lambda: 128,
 +        ),
 +    )
 +    cache.beliefkv_join_pressure_validator = lambda *_: False
@@ -5671,7 +5671,7 @@ index 0000000..c817e98
 +    import torch
 +
 +    cache, allocator, _, _, leaf, target = fixture(hybrid_cache)
-+    cache.cache_controller.mem_pool_host.size_per_token = (256 if idle else 64) * 1024 * 1024
++    cache.cache_controller.mem_pool_host.size_per_token = (1024 if idle else 64) * 1024 * 1024
 +    original = leaf.component_data[ComponentType.FULL].value.clone()
 +    state = leaf.component_data[ComponentType.MAMBA].value
 +    install_cpu_enqueue(cache)
@@ -5727,9 +5727,56 @@ index 0000000..c817e98
 +    issued = cache.prepare_beliefkv_idle_full()
 +    assert {item[0] for item in issued} == {leaf.id, other.id}
 +    total_bytes = sum(item[2] for item in issued) * cache.cache_controller.mem_pool_host.size_per_token
-+    assert 64 * 1024 * 1024 < total_bytes <= 256 * 1024 * 1024
++    assert 64 * 1024 * 1024 < total_bytes <= 1024 * 1024 * 1024
 +    cache.cache_controller.start_writing.assert_called_once_with()
 +    assert cache.prepare_beliefkv_cold_full_capacity(full_tokens=10_000) == ()
++
++
++def test_background_can_fill_one_gib_without_releasing_device_capacity(hybrid_cache):
++    cache, allocator, _, _, leaf, _ = fixture(hybrid_cache)
++    install_cpu_enqueue(cache)
++    unit = cache.cache_controller.mem_pool_host.size_per_token = 512 * 1024 * 1024
++    available = allocator.available_size()
++    issued = cache.prepare_beliefkv_idle_full()
++    assert issued == ((leaf.id, leaf.creation_time, 2),)
++    assert sum(item[2] for item in issued) * unit == 1024 * 1024 * 1024
++    assert allocator.available_size() == available
++    assert leaf.component_data[ComponentType.MAMBA].host_value is None
++    cache.cache_controller.start_writing.assert_called_once_with()
++
++
++def test_background_merges_more_than_eight_extents_in_one_native_batch(hybrid_cache):
++    cache, _, _, _, leaf, _ = fixture(hybrid_cache)
++    expected = {leaf.id}
++    other, _ = insert_session(cache, list(range(100, 109)), "cold-segments")
++    cache.release_radix_session("cold-segments")
++    while len(other.component_data[ComponentType.FULL].value) > 1:
++        expected.add(other.id)
++        split = cache.tree_core.split_idle_device_full_suffix(
++            other.id, other.creation_time, 1,
++        )
++        assert split is not None
++        cache._apply_cache_actions(split[1])
++        other = other.parent
++    expected.add(other.id)
++    assert cache.enable_beliefkv_incremental_prepare()
++    install_cpu_enqueue(cache)
++    unit = cache.cache_controller.mem_pool_host.size_per_token = 32 * 1024 * 1024
++    issued = cache.prepare_beliefkv_idle_full()
++    assert {item[0] for item in issued} == expected
++    assert len(issued) == 10
++    assert 256 * 1024 * 1024 < sum(item[2] for item in issued) * unit <= 1024 * 1024 * 1024
++    cache.cache_controller.start_writing.assert_called_once_with()
++
++
++def test_background_keeps_one_gib_host_headroom_when_only_a_partial_batch_fits(hybrid_cache):
++    cache, _, _, _, leaf, _ = fixture(hybrid_cache)
++    install_cpu_enqueue(cache)
++    cache.cache_controller.mem_pool_host.available_size = lambda: 65
++    issued = cache.prepare_beliefkv_idle_full()
++    assert issued == ((leaf.id, leaf.creation_time, 1),)
++    assert leaf.component_data[ComponentType.MAMBA].host_value is None
++    assert len(leaf.component_data[ComponentType.FULL].host_value) == 1
 +
 +
 +def test_sparse_backed_index_does_not_hide_unbacked_cold_leaves(hybrid_cache):
@@ -5876,7 +5923,9 @@ index 0000000..c817e98
 +    copied = 0
 +    for _ in range(4):
 +        issued = cache.prepare_beliefkv_idle_full()
-+        assert issued and len(issued) <= 8
++        if not issued:
++            break
++        assert len(issued) <= 32
 +        copied += sum(item[2] for item in issued)
 +        assert allocator.available_size() == available
 +        cache.writing_check(finish_count=1)

@@ -57,6 +57,24 @@ def test_idle_prepare_tracks_issuance_without_any_capacity_or_prefetch_credit():
         runtime.close()
 
 
+def test_background_checks_wait_400ms_without_accumulating_missed_rounds():
+    runtime, cache, _ = fixture()
+    try:
+        with patch.object(runtime, "_live_critical_parent_demand", return_value=None):
+            for now, expected in (
+                (1., 1), (1.1, 1), (1.399, 1), (1.4, 2),
+                (5., 3), (5., 3), (5.399, 3), (5.4, 4),
+            ):
+                with patch(
+                    "beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+                    return_value=now,
+                ):
+                    runtime.dispatch_idle_prepare()
+                assert cache.prepare_beliefkv_idle_full.call_count == expected
+    finally:
+        runtime.close()
+
+
 @pytest.mark.parametrize("blocked", (
     "disabled", "physical_disabled", "critical", "prepare_pending",
     "prefetch_pending", "old_engine", "cadence",
