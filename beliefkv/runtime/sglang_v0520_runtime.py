@@ -6162,13 +6162,6 @@ class NativeAdmissionRuntime:
     def _live_parent_pressure_key(self, key: PrefillCandidateKey) -> bool:
         parent = self.graph.invocations.get(key.invocation_id)
         ticket = self._join_ticket
-        restoring_parent = (
-            ticket is not None and ticket.key == key and self._live_join_ticket()
-            or (
-                (demand := self._live_critical_parent_demand()) is not None
-                and demand[0] == key
-            )
-        )
         return bool(
             self.enable_prepare_host and not self.physical_disabled
             and self.context_sessions.get(key.context_id) == key
@@ -6177,7 +6170,13 @@ class NativeAdmissionRuntime:
                 and self._join_parent_key(parent.join_id) == key
                 # A report notice can precede its child's service by seconds.
                 # Protect the actual restore window, not the whole report phase.
-                and not restoring_parent
+                and not (
+                    ticket is not None and ticket.key == key and self._live_join_ticket()
+                    or (
+                        (demand := self._live_critical_parent_demand()) is not None
+                        and demand[0] == key
+                    )
+                )
                 or parent.state is InvocationState.WAIT_TOOL and self._long_tool_wait(key)
             )
             and not self._terminal(key)

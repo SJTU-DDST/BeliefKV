@@ -12,19 +12,23 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-Latest bounded control change checks the existing live critical-parent demand
-before donor identity/terminal work. If no beneficiary exists, return false;
-otherwise retain all tool-wait, session, terminal and different-beneficiary
-checks. No qualification cache, cadence change or native/ACK relaxation.
-V2322 reruns all2367 preceding application CPU cases unchanged; rehash and retain
-266 unchanged-engine cases. V2320a retains equal final pool candidates and valid
-samples: no-demand36-context P50 is231.7->213.7us,108-context541.5->489.1us.
-The real WAIT_JOIN-demand case keeps the same terminal-check count. Preserve
-the36-context candidate's higher mean299.3us versus232.2us; median improvement
-does not prove mean, online CPU or throughput/JCT improvement. Discard only the
-initial positive-demand fixture that selected a READY child. V2322 qualifies
-that change; refresh V103 to the current V2326 qualification and retain
-the2026-10-21T06:00:00+08:00 GPU hold.
+Latest bounded control change scopes restore-protection validation to WAIT_JOIN
+inside cold-page eligibility. The old eager computation served no decision for
+WAIT_TOOL or rejected states. Tool waits still use live donor demand, hint,
+session and terminal checks; keep the previous no-beneficiary early return.
+No qualification cache, cadence change or native/ACK relaxation is introduced.
+
+V2327a profiles current native-index-shaped PREPARE. V2328 compares only the
+changed guard on identical fixtures: live-demand checks per round57->39 for36
+waiting contexts and165->111 for108; with a real beneficiary, terminal checks
+110->92 and326->272. Final pool prefixes and24 native node reads per round are
+equal. Positive-demand post-forward P50 falls333->303us and772->677us.
+No-demand improvements are smaller; retain the36-context candidate max803us
+versus340us, all slow samples, and the unrelated older V2320a results unchanged.
+Context count is not workload root count. This does not prove worst-case,
+online total CPU or throughput/JCT improvement. V2330 reruns all2392 existing
+application CPU cases unchanged; rehash and retain266 unchanged-engine cases.
+Refresh V103 to this qualification and retain the2026-10-21T06:00:00+08:00 hold.
 
 Latest confirmed-JOIN eligibility fix: check for recoverable Host-only FULL or
 the necessary input-compatible Mamba checkpoint before creating a new recovery
@@ -49,8 +53,8 @@ cases retain selection. The extra boundary check is not free: empty-case P50
 are retained. Timing includes mocked planner callbacks, so it cannot prove
 full-planner cost, online frequency or throughput/JCT. V2326 reruns all2367
 preceding application cases and adds25 eligibility/lifecycle cases,2392 passing
-in total. Rehash and retain266 unchanged-engine cases. Freeze V103 to this
-qualification and keep the2026-10-21T06:00:00+08:00 GPU hold.
+in total. Rehash and retain266 unchanged-engine cases. This policy is retained
+by the latest V2330 qualification; keep the2026-10-21T06:00:00+08:00 GPU hold.
 
 Next-run preparation uses `scripts/launch_qualified_after_hold.py`. The old
 V102 environment still pins broad report mode,250ms and an obsolete engine;
@@ -90,7 +94,7 @@ V2315 binds2307 passing application CPU cases and retains all2257 preceding
 contracts. Native engine/patch hashes are unchanged; retain the266 source-bound
 native CPU cases without claiming a rerun. Cover direct/coalesced publication,
 not-due and no-work calls, live lock/inflight/Host mutations, immediate critical
-publication and clean exception retry. Freeze V2326 or a later qualification
+publication and clean exception retry. Freeze V2330 or a later qualification
 after the2026-10-21T06:00:00+08:00 hold. Keep the full performance goal active.
 
 Latest authorized JOIN policy is `selective_report_or_eos`; the long-repository
