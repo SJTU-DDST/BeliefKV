@@ -537,6 +537,8 @@ class NativeAdmissionRuntime:
             "BELIEFKV_BORROWABLE_PARENT_HEADROOM", "0",
         ) == "1"
         self._critical_parent_demand: tuple[PrefillCandidateKey, int, int, float] | None = None
+        self._cold_full_backups: dict[int, tuple[int | float, str]] = {}
+        self._idle_prepare_next_ms = 0.
         self._critical_reclaim_next_ms = 0.
         self._semantic_worker = None
         self._semantic_score_threshold = .5
@@ -884,6 +886,10 @@ class NativeAdmissionRuntime:
         """Plan immutable waiting contexts after native forward submission."""
         if running_batch is not None:
             self._native_running_batch = running_batch
+        critical_before = self._critical_parent_demand
+        if self.enable_prepare_host and critical_before is not None:
+            # ACKed donor capacity is reusable before this iteration's H2D plan.
+            self._reclaim_critical_parent_headroom()
         if (
             self._join_ticket is not None or self._confirmed_join_tickets
             or self._join_inflight_tickets
@@ -911,12 +917,17 @@ class NativeAdmissionRuntime:
         # Earlier handlers can cross a deadline or rearm another source.
         # Read each existing deadline at its original dispatch position.
         if self.enable_prepare_host:
-            if self._critical_parent_demand is not None:
+            if (
+                self._critical_parent_demand is not None
+                and self._critical_parent_demand != critical_before
+            ):
                 self._reclaim_critical_parent_headroom()
             if time.monotonic() * 1000. >= self._join_prepare_next_ms:
                 self.dispatch_join_prepare(waiting_queue, running_batch=running_batch)
             if time.monotonic() * 1000. >= self._tool_prepare_next_ms:
                 self.dispatch_tool_prepare(waiting_queue, running_batch=running_batch)
+            if time.monotonic() * 1000. >= self._idle_prepare_next_ms:
+                self.dispatch_idle_prepare()
 
     def predictor_fileno(self) -> int | None:
         if self._semantic_worker is not None:
@@ -6301,6 +6312,8 @@ class NativeAdmissionRuntime:
         return demand is not None and demand[0] != key
 
     def _reclaim_critical_parent_headroom(self) -> None:
+        if not self.enable_prepare_host or self.physical_disabled:
+            return
         demand = self._live_critical_parent_demand()
         if demand is None:
             return
@@ -6324,13 +6337,20 @@ class NativeAdmissionRuntime:
             return
         excluded = tuple(node.node_id for node in candidate.nodes)
         self._publish_parent_pressure_candidates(exclude_node_ids=excluded)
+        prepare = getattr(self._native_cache, "prepare_beliefkv_cold_full_capacity", None)
         # No allocator pages are permanently reserved. The native transaction
         # rechecks references, locks, pending transfers and valid Host copies.
         freed = reclaim(
             full_tokens=full_tokens, mamba_slots=mamba_slots,
             exclude_node_ids=excluded, collect_diagnostics=True,
+            **({"collect_cold_full_candidates": True} if (
+                callable(prepare) and self.enable_prepare_host and not self.physical_disabled
+            ) else {}),
         )
         self.counts["critical_parent_headroom_checks"] += 1
+        if any(freed.values()):
+            self._invalidate_wait_transfer_observation(key)
+            self._report_candidate_next_ms = self._tool_prefetch_next_ms = 0.
         if self._opportunity_writer is not None:
             self._opportunity_writer.record({
                 "event": "critical_parent_headroom", "ts_ms": time.time() * 1000.,
@@ -6341,6 +6361,64 @@ class NativeAdmissionRuntime:
                 "capacity": getattr(self._native_cache, "beliefkv_handoff_last_capacity", None),
                 "active_llm_preempted": False,
             })
+        capacity = getattr(self._native_cache, "beliefkv_handoff_last_capacity", None)
+        if (
+            self.enable_prepare_host and not self.physical_disabled
+            and isinstance(capacity, dict)
+            and capacity.get("full_target_satisfied") is False
+            and not capacity.get("native_full_scan_truncated")
+            and not capacity.get("transaction_truncated")
+            and callable(prepare)
+            and not self.physical_ledger.pending_action_count("PREPARE_HOST")
+            and self._live_critical_parent_demand() == demand
+        ):
+            issued = prepare(full_tokens=full_tokens, exclude_node_ids=excluded)
+            if issued:
+                self._cold_full_backups.update({
+                    node_id: (created, "critical") for node_id, created, _ in issued
+                })
+                self.counts["critical_cold_full_backup_issued"] += len(issued)
+                if self._opportunity_writer is not None:
+                    self._opportunity_writer.record({
+                        "event": "critical_parent_cold_full_prepare",
+                        "ts_ms": time.time() * 1000.,
+                        "workflow_id": key.root_workflow_id,
+                        "context_id": key.context_id, "context_epoch": key.context_epoch,
+                        "native_nodes": issued, "include_mamba": False,
+                        "scope": "native asynchronous FULL backup; no capacity released yet",
+                    })
+
+    def dispatch_idle_prepare(self) -> None:
+        """Background FULL copies yield to all queued restoration/capacity work."""
+        cache = self._native_cache
+        prepare = getattr(cache, "prepare_beliefkv_idle_full", None)
+        if (
+            not self.enable_prepare_host or self.physical_disabled
+            or not callable(prepare)
+        ):
+            return
+        now_ms = time.monotonic() * 1000.
+        if now_ms < self._idle_prepare_next_ms:
+            return
+        self._idle_prepare_next_ms = now_ms + 100.
+        if (
+            self._live_critical_parent_demand() is not None
+            or self.physical_ledger.pending_count
+        ):
+            return
+        issued = prepare()
+        if issued:
+            self._cold_full_backups.update({
+                node_id: (created, "idle") for node_id, created, _ in issued
+            })
+            self.counts["idle_cold_full_backup_issued"] += len(issued)
+            self.counts["idle_cold_full_backup_tokens"] += sum(item[2] for item in issued)
+            if self._opportunity_writer is not None:
+                self._opportunity_writer.record({
+                    "event": "idle_cold_full_prepare", "ts_ms": time.time() * 1000.,
+                    "native_nodes": issued, "include_mamba": False,
+                    "scope": "one bounded asynchronous FULL batch; no capacity released yet",
+                })
 
     def _prepare_probe_due(self, key: PrefillCandidateKey, now_ms: float) -> bool:
         if len(self._prepare_probe_after_ms) > 512:
@@ -8909,6 +8987,31 @@ class NativeAdmissionRuntime:
                 self._h2d_service_estimates.clear()
             elif self._h2d_service_estimates:
                 self.counts["h2d_service_cache_retained_after_d2h"] += 1
+        if self._cold_full_backups and (
+            getattr(commit, "direction", None) == "d2h"
+            and getattr(commit, "status", None) == "completed"
+        ):
+            settled = False
+            for node_id in getattr(commit, "node_ids", ()):
+                pending = self._cold_full_backups.pop(node_id, None)
+                if pending is None:
+                    continue
+                created, source = pending
+                try:
+                    node = cache.tree_core.node_by_id(node_id)
+                    valid = bool(
+                        node.creation_time == created
+                        and node.component_data[0].host_value is not None
+                        and node.write_through_pending_id is None
+                        and node_id not in cache.ongoing_write_through
+                    )
+                    settled |= valid
+                    if valid:
+                        self.counts[f"{source}_cold_full_backup_acked"] += 1
+                except (AttributeError, IndexError, KeyError, TypeError, ValueError, RuntimeError):
+                    pass
+            if settled and self._live_critical_parent_demand() is not None:
+                self._critical_reclaim_next_ms = self._report_candidate_next_ms = 0.
         # A burst's deepest node locks its FULL ancestry once; registering its
         # ancestors first would consume the budget without protecting the state.
         for action in reversed(completed):

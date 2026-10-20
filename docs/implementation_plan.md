@@ -5,6 +5,37 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Latest order override,2026-10-20 Asia/Shanghai: pause V99 predictive and run
+native now while completing FULL preparation/capacity fixes. Predictive stopped
+16:01:47 with30 completed/6 without terminal evidence; retain its partial trace.
+Native launched16:03:18 and first served16:06:10 from unchanged frozen
+d2b7139/V95 engine,with the same36 simultaneous roots and restored common
+delegation contract. V2211/V2212/V2215 record ownership,source and baseline
+flags. Do not combine the old partial arm with a fresh predictive retry.
+Keep this order over the historical predictive-first text below.
+
+The next main candidate separates idle and urgent FULL copying. Idle queues
+permit one batch up to256MiB/8 extents,with100ms cadence and32-node checks,
+preserving one batch of Host space and never evicting another Host copy.
+Only capacity-blocked critical restoration after the existing backed-capacity
+scan is exhausted permits small64MiB D2H chunks. Reuse native segmentation,
+backup locks and ACKs; reclaim before H2D planning and permit subsequent D2H
+while parent H2D remains in flight. Retain full-input/decode/Mamba dependencies.
+Neither equal directional rates,perfect overlap nor submitted-DMA preemption
+is assumed. Referenced waiting agents keep the existing session-safe PREPARE
+path; the generic idle sweep only handles unreferenced cold FULL data.
+
+Incremental synchronization uses immutable FULL prefixes plus newly appended
+radix extents. Keep valid Host prefixes,copy only missing suffixes at idle
+preparation or immediately before required cold eviction,and do not add a
+per-token dirty scan or periodic Mamba backup. V2223 proves only private engine
+paths changed; V2224–V2226 cover the context-growth/native-ACK regression.
+Earlier V2219/V2220 pass1947 application/200 engine cases,retaining all1917/159.
+V2222 measures0.223us incremental Python dispatch with an empty backend only.
+Actual scan/DMA/SM costs,useful FULL volume and tail-excluded throughput/JCT
+remain GPU acceptance items. Freeze CPU-qualified code before predictive
+retry; no current performance goal is considered achieved.
+
 Current V99 launched2026-10-20 15:14:15 Asia/Shanghai from frozen
 d2b7139. Keep36 simultaneous roots,the restored
 native_in_graph_nested_2to4 profile,root-only full source,running8,

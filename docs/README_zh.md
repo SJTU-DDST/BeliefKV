@@ -2,6 +2,26 @@
 
 更新日期：2026-10-20（北京时间）
 
+**当前按用户要求改为 native 优先。**V99 predictive 于北京时间
+2026-10-20 16:01:47 行政停止，保留 30 completed 和 6 项无终态
+轨迹，不把后者算自然失败（V2211）。同配置 native 于 16:03:18
+启动，16:06:10 首次真实服务（V2212/V2215）；36 root 同时到达、
+旧嵌套委派、root-only 源码、running8、256K/95%、Host80:20 均保留。
+关闭 BeliefKV admission/预取及前端 token cache，972 份冻结源码核对
+通过，writer 无丢失/失败。下方 predictive-first 是此前启动记录。
+
+main 的下一候选将空闲备份与紧急容量交接分开：空闲队列每 100ms
+最多检查 32 个原生 FULL 冷节点，合并至多 8 段/256MiB 一批；
+不驱逐其他 Host 数据，保留一批 Host 空间，不备份 Mamba。
+关键 parent 恢复缺容量且现成副本回收检查已耗尽时，才采用至多
+64MiB 的小块备份、ACK 后回收、parent H2D 与后续 D2H 衔接。
+不假定双向等速或完全重叠，也不阻塞等待整轮卸载结束。
+FULL 的已备份前缀保持不变，增长部分按新 radix extent 增量补齐；
+选择在需要驱逐时补齐，而非增加逐 token 同步或周期全树扫描。
+实现与控制成本范围见[架构状态](architecture_status_zh.md)顶部。
+新 predictive 必须使用完成修复、CPU 验证和冻结的候选，从新服务端
+重跑；旧的部分 predictive 不拼接为一个完整实验。
+
 **当前：V99 已从最新冻结代码启动。**北京时间 2026-10-20
 15:14:15 启动，冻结 `d2b7139`，36 root 同时到达，恢复
 `native_in_graph_nested_2to4`，包含 confirmed JOIN 容量交接修复。
