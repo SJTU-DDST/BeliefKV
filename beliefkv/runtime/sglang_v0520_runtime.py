@@ -6189,9 +6189,10 @@ class NativeAdmissionRuntime:
                         and demand[0] == key
                     )
                 )
+                and not self._terminal(key)
+                # Both long-wait paths validate this tool owner as nonterminal.
                 or parent.state is InvocationState.WAIT_TOOL and self._long_tool_wait(key)
             )
-            and not self._terminal(key)
         )
 
     def _live_cold_full_owners(self, owners: tuple[tuple[str, int], ...]) -> bool:

@@ -12,7 +12,31 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-Latest qualification is V2381. Close two urgent FULL progress failures before
+Latest qualification is V2389. Remove only the repeated outer terminal check
+for a tool pressure owner: both ordinary live-hint and critical-tool paths
+already prove it in the current long-wait call. Retain the JOIN terminal
+check, every actual native demotion guard, current owner/generation, locks,
+inflight and Host ACK. No cross-call proof cache, publication prefix, timer,
+candidate limit or native engine change is introduced.
+
+V2387 alternates old/new guard methods within complete post-forward PREPARE
+calls. A plain fixed-clock function replaces the older Mock clock. Ordinary
+36/108-context terminal calls fall54->36/162->108, wall P50
+213.8->200.4us/477.6->440.3us. With critical demand, calls92->74/272->218,
+P50229.0->218.4us/526.8->490.2us. Native reads, published order and physical
+actions are equal. Retain every sample; candidate ordinary36-context max
+315us still exceeds baseline286us. These native-shaped CPU fixtures prove
+neither worst-case, whole-run CPU nor throughput/JCT improvement.
+
+V2388 reruns all2532 prior application cases plus20 tool/JOIN proof-boundary
+cases,2552 passing. V2387 also reruns both native CPU restore ACK orders and
+four live rejection cases with current runtime. Rehash the unchanged engine
+and patch and retain375 actual V2380 native cases, without claiming another
+engine suite execution. Freeze V103 from V2389; preserve36 simultaneous
+roots/running8/256K/95%/Host200GB80:20, the existing watcher and exact
+2026-10-21T06:00:00+08:00 GPU hold. Performance acceptance remains open.
+
+Historical qualification V2381: close two urgent FULL progress failures before
 the next GPU run. An unfinished native scan previously blocked emergency copy
 while critical demand also suppressed background/SPAWN backup. Permit the
 existing one-extent/64MiB read-only copy before scan completion only with a
@@ -44,13 +68,13 @@ Ordinary complete native calls are essentially unchanged: one-of-eight P50
 105.6->104.7us, all-eight386.6->384.5us; retain every wall/thread sample.
 V2381 reruns2532 application and375 native cases, including16 cold-ACK/scan
 provenance cases. Canonical tree is b019d9e995b2061634cc8fc60903c2c14b913b2b.
-Freeze V103 to this qualification; preserve the existing watcher, exact pause,
+V2389 supersedes this qualification; preserve the existing watcher, exact pause,
 36 simultaneous roots/running8/256K/95%/Host200GB80:20 and the
 2026-10-21T06:00:00+08:00 hold. Measure copy-to-reclaim latency, useful FULL
 restore and first service, total control cost, trimmed throughput and mean JCT.
 Overall performance acceptance remains open.
 
-V2383-V2385 extend CPU evidence without changing runtime or native sources.
+Historical V2383-V2385 extended CPU evidence without changing runtime or native sources.
 V2384 exercises actual HybridCacheController.load, CPU allocation, native
 start_loading, per-command receipts/loading ACK and runtime reconciliation.
 An available two-unit FULL prefix starts while donor D2H is pending. Both
@@ -96,7 +120,7 @@ helpers. Complete only method loading, keep all assertions, and include all
 63 cases plus 12 new discovery cases. V2370 reruns 2521 application cases
 against the candidate engine and 284 old native cases, with 359 native cases
 passing in total. Canonical tree is e404e730a57f4e5343b53aaeac6a846a67b622e9.
-V2381 supersedes this qualification; preserve the current watcher, exact pause,
+V2389 supersedes this qualification; preserve the current watcher, exact pause,
 36-root workload and 2026-10-21T06:00:00+08:00 GPU hold. Performance remains open.
 
 V2359 retains the V2355 inherited FULL fix before
@@ -128,7 +152,7 @@ V2355 reruns all 2494 prior application and 266 prior native cases, adding
 7/18 cases: 2501 application and 284 native cases pass. Native validation is
 an actual rerun, not the historical hash-only retention described below.
 Canonical engine tree is 8a51dfa7b90d600f29439807c8d676c9db12319c.
-V2381 supersedes this qualification; retain V2355 as historical native validation. Preserve
+V2389 supersedes this qualification; retain V2355 as historical native validation. Preserve
 the existing watcher and the
 2026-10-21T06:00:00+08:00 GPU hold, and keep performance acceptance open.
 
@@ -169,7 +193,7 @@ max3.633ms versus2.097ms baseline and all slow samples;no worst-case claim.
 Real native ancestry validation,production issuance telemetry,GPU DMA and
 online population are not measured. V2349 reruns all2462 prior application
 cases plus32 new cases,2494 passing;rehash and retain266 unchanged-engine
-cases. V2381 supersedes this historical qualification; preserve the GPU hold.
+cases. V2389 supersedes this historical qualification; preserve the GPU hold.
 
 Latest empty-target change also restricts FULL to the deepest input-compatible
 checkpoint and its ancestors on each FULL path. A Host-only output tail alone
@@ -184,7 +208,7 @@ FULL ancestor496->514us and Mamba-only398->405us. Empty A plus actionable EOS B
 changes2 planner calls to B only,extra EOS attempts1->0 and keeps1 burst/4 CPU
 reservations. This does not establish online population,total CPU or GPU/JCT
 benefit. V2344 reruns all2437 preceding cases plus25 new cases,2462 passing;
-rehash and retain266 unchanged-engine cases. This policy is retained by V2381;retain
+rehash and retain266 unchanged-engine cases. This policy is retained by V2389;retain
 the2026-10-21T06:00:00+08:00 GPU hold.
 Preserve the original V2343 run with2461 passing/1 failing. V2345 reproduces
 the failed native-check assertion by advancing only the warm hint's50ms TTL.
@@ -215,7 +239,7 @@ once and build the owner index once,but the old caller issues0 CPU bursts and
 the new caller1 burst/1 reservation. Both due/not-yet-due scans are covered;
 this is not online frequency,GPU timing or performance proof.
 V2341 reruns all2415 preceding cases plus22 new cases,2437 passing;rehash and
-retain266 unchanged-engine cases. This policy is retained by V2381;keep the hold.
+retain266 unchanged-engine cases. This policy is retained by V2389;keep the hold.
 
 Tool timing evidence: V2335 separates10114 matched forecast records from6210
 independent declared tool waits.3880 first-forecast-late calls had only8.21ms
@@ -238,7 +262,7 @@ is small. V101 had127 tagged H2D ACK callbacks,54 multi-node,max34. Retain all s
 samples and distinguish this low-frequency optimization from online total CPU or
 throughput/JCT proof. V2333 reruns all2392 previous application cases plus12 new
 isolation/lifecycle/branch/budget cases,2404 passing. Rehash and retain266 unchanged
-engine cases. This policy is retained by V2381;keep the GPU hold.
+engine cases. This policy is retained by V2389;keep the GPU hold.
 
 Latest bounded control change scopes restore-protection validation to WAIT_JOIN
 inside cold-page eligibility. The old eager computation served no decision for
@@ -256,7 +280,7 @@ versus340us, all slow samples, and the unrelated older V2320a results unchanged.
 Context count is not workload root count. This does not prove worst-case,
 online total CPU or throughput/JCT improvement. V2330 reruns all2392 existing
 application CPU cases unchanged; rehash and retain266 unchanged-engine cases.
-This policy is retained by V2381; keep the2026-10-21T06:00:00+08:00 hold.
+This policy is retained by V2389; keep the2026-10-21T06:00:00+08:00 hold.
 
 Latest confirmed-JOIN eligibility fix: check for recoverable Host-only FULL or
 the necessary input-compatible Mamba checkpoint before creating a new recovery
@@ -282,7 +306,7 @@ are retained. Timing includes mocked planner callbacks, so it cannot prove
 full-planner cost, online frequency or throughput/JCT. V2326 reruns all2367
 preceding application cases and adds25 eligibility/lifecycle cases,2392 passing
 in total. Rehash and retain266 unchanged-engine cases. This policy is retained
-by the latest V2381 qualification; keep the2026-10-21T06:00:00+08:00 GPU hold.
+by the latest V2389 qualification; keep the2026-10-21T06:00:00+08:00 GPU hold.
 
 Next-run preparation uses `scripts/launch_qualified_after_hold.py`. The old
 V102 environment still pins broad report mode,250ms and an obsolete engine;
@@ -322,7 +346,7 @@ V2315 binds2307 passing application CPU cases and retains all2257 preceding
 contracts. Native engine/patch hashes are unchanged; retain the266 source-bound
 native CPU cases without claiming a rerun. Cover direct/coalesced publication,
 not-due and no-work calls, live lock/inflight/Host mutations, immediate critical
-publication and clean exception retry. Freeze V2381 or a later qualification
+publication and clean exception retry. Freeze V2389 or a later qualification
 after the2026-10-21T06:00:00+08:00 hold. Keep the full performance goal active.
 
 Latest authorized JOIN policy is `selective_report_or_eos`; the long-repository
