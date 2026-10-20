@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from collections import Counter, OrderedDict, deque
 from collections.abc import Sequence
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field, replace
 from heapq import nsmallest
 from itertools import chain, count, islice
@@ -443,6 +444,7 @@ class NativeAdmissionRuntime:
         self._resident_priority_promoted: str | None = None
         self._resident_priority_details: dict | None = None
         self._native_running_batch: object | None = None
+        self._capacity_waiting_queue: Sequence[object] = ()
         self._native_max_running: int | None = None
         self._native_prefill_slots: int | None = None
         self._native_page_size = 1
@@ -798,6 +800,7 @@ class NativeAdmissionRuntime:
         self._prefill_residency_scan = None
         self._prefill_causal_cache = None
         self._prefill_cycle_active = False
+        self._capacity_waiting_queue = ()
         self._residency_ordering_hints.clear()
         self.counts["residency_ordering_hint_feedback_unserved"] += len(
             self._residency_hint_admissions,
@@ -920,6 +923,7 @@ class NativeAdmissionRuntime:
         self, waiting_queue: Sequence[object] = (), *, running_batch: object = None,
     ) -> None:
         """Plan immutable waiting contexts after native forward submission."""
+        self._capacity_waiting_queue = waiting_queue
         if running_batch is not None:
             self._native_running_batch = running_batch
         critical_before = self._critical_parent_demand
@@ -6209,7 +6213,10 @@ class NativeAdmissionRuntime:
             )
         )
 
-    def _live_cold_full_owners(self, owners: tuple[tuple[str, int], ...]) -> bool:
+    def _live_cold_full_owners(
+        self, owners: tuple[tuple[str, int], ...], *,
+        queued_requests: dict[PrefillCandidateKey, object] | None = None,
+    ) -> bool:
         """Authorize FULL-only reclaim only while every native owner is waiting."""
         if not self.enable_prepare_host or self.physical_disabled or not owners:
             return False
@@ -6233,12 +6240,82 @@ class NativeAdmissionRuntime:
                 type(session) is not str or type(generation) is not int or not keys
                 or any(
                     key.session_generation != generation
-                    or not self._live_parent_pressure_key(key)
+                    or not (
+                        self._live_parent_pressure_key(key)
+                        or queued_requests is not None
+                        and (request := queued_requests.get(key)) is not None
+                        and self._live_queued_full_request(key, request)
+                    )
                     for key in keys
                 )
             ):
                 return False
         return True
+
+    def _live_queued_full_request(self, key: PrefillCandidateKey, request: object) -> bool:
+        kv = getattr(request, "kv", None)
+        budget = self._residency_budget
+        if (
+            budget.source != "native_next_prefill"
+            or type(budget.request_slots) is not int or budget.request_slots <= 0
+            or kv is None or getattr(kv, "req_pool_idx", False) is not None
+            or any(
+                type(value := getattr(kv, name, None)) is not int or value != 0
+                for name in ("kv_allocated_len", "kv_committed_len")
+            )
+            or getattr(request, "is_retracted", True) is not False
+            or getattr(request, "retracted_stain", True) is not False
+            or (outputs := getattr(request, "output_ids", None)) is None or len(outputs)
+            or not callable(getattr(request, "finished", None)) or request.finished()
+            or self._executable_waiting_key(request) != key
+            or any(active is request for active in getattr(self._native_running_batch, "reqs", ()))
+            or not any(
+                waiting is request for waiting in islice(
+                    self._capacity_waiting_queue, budget.request_slots, 512,
+                )
+            )
+        ):
+            return False
+        return self.graph.invocations[key.invocation_id].state is InvocationState.RUNNING_LLM
+
+    @contextmanager
+    def _queued_full_donor_scope(self, key: PrefillCandidateKey):
+        """Authorize native FULL checks only for unstarted requests behind the frontier."""
+        cache = self._native_cache
+        original = getattr(cache, "beliefkv_cold_full_owner_validator", None)
+        demand = (
+            self._live_critical_parent_demand() if self._capacity_waiting_queue else None
+        )
+        budget = self._residency_budget
+        requests = {}
+        if (
+            demand is not None and demand[0] == key
+            and getattr(original, "__self__", None) is self
+            and getattr(original, "__func__", None) is NativeAdmissionRuntime._live_cold_full_owners
+            and budget.source == "native_next_prefill"
+            and type(budget.request_slots) is int and budget.request_slots > 0
+        ):
+            protected = {lease.key.context_id for lease in self._prefetch_service_leases.values()}
+            for request in islice(self._capacity_waiting_queue, budget.request_slots, 512):
+                candidate = self.visible.get(getattr(request, "rid", None))
+                if (
+                    candidate is not None and candidate.invocation_id != key.invocation_id
+                    and candidate.context_id not in protected
+                    and self._live_queued_full_request(candidate, request)
+                ):
+                    requests[candidate] = request
+        if requests:
+            def validate(owners):
+                return self._live_cold_full_owners(
+                    owners, queued_requests=requests,
+                ) if self._live_critical_parent_demand() == demand else original(owners)
+
+            cache.beliefkv_cold_full_owner_validator = validate
+        try:
+            yield len(requests)
+        finally:
+            if requests:
+                cache.beliefkv_cold_full_owner_validator = original
 
     def _pressure_candidate_groups(self) -> dict[PrefillCandidateKey, set[int]]:
         candidates = self._parent_pressure_candidates
@@ -6333,6 +6410,7 @@ class NativeAdmissionRuntime:
         """Reuse the owner index already validated by this native reclaim."""
         if freed.get(0, 0) <= 0 or not (
             self._tool_opportunity_cache or self._semantic_target_cache or self.tool_wait_hints
+            or self._residency_ordering_hints or self._reentry_observations
         ) or (
             self._cold_full_owner_index_source is not self.context_sessions
             or self._cold_full_owner_index_revision != self._context_sessions_revision
@@ -6375,6 +6453,8 @@ class NativeAdmissionRuntime:
                         ):
                             invalidated.add(key)
                             self._invalidate_wait_transfer_observation(key)
+                            self._residency_ordering_hints.pop(key, None)
+                            self._reentry_observations.pop(key, None)
             except (AttributeError, IndexError, KeyError, TypeError, ValueError, RuntimeError):
                 continue
 
@@ -6897,76 +6977,77 @@ class NativeAdmissionRuntime:
         excluded = tuple(node.node_id for node in candidate.nodes)
         self._publish_parent_pressure_candidates(exclude_node_ids=excluded)
         prepare = getattr(self._native_cache, "prepare_beliefkv_cold_full_capacity", None)
-        # No allocator pages are permanently reserved. The native transaction
-        # rechecks references, locks, pending transfers and valid Host copies.
-        freed = reclaim(
-            full_tokens=full_tokens, mamba_slots=mamba_slots,
-            exclude_node_ids=excluded, collect_diagnostics=True,
-            **({"collect_cold_full_candidates": True} if (
-                callable(prepare) and self.enable_prepare_host and not self.physical_disabled
-            ) else {}),
-        )
-        self.counts["critical_parent_headroom_checks"] += 1
-        if any(freed.values()):
-            self._invalidate_causal_full_donor_observations(freed)
-            self._invalidate_wait_transfer_observation(key)
-            self._report_candidate_next_ms = self._tool_prefetch_next_ms = 0.
-        if self._opportunity_writer is not None:
-            self._opportunity_writer.record({
-                "event": "critical_parent_headroom", "ts_ms": time.time() * 1000.,
-                "workflow_id": key.root_workflow_id, "context_id": key.context_id,
-                "full_target_tokens": full_tokens, "mamba_target_slots": mamba_slots,
-                "freed_units": freed,
-                "victims": getattr(self._native_cache, "beliefkv_handoff_last_victims", ()),
-                "capacity": getattr(self._native_cache, "beliefkv_handoff_last_capacity", None),
-                "active_llm_preempted": False,
-            })
-        capacity = getattr(self._native_cache, "beliefkv_handoff_last_capacity", None)
-        if (
-            self.enable_prepare_host and not self.physical_disabled
-            and isinstance(capacity, dict)
-            and capacity.get("full_target_satisfied") is False
-            and not capacity.get("transaction_truncated")
-            and callable(prepare)
-            and not self.physical_ledger.pending_action_count("PREPARE_HOST")
-            and self._live_critical_parent_demand() == demand
-        ):
-            if capacity.get("native_full_scan_truncated"):
-                if not getattr(
-                    self._native_cache, "beliefkv_handoff_cold_full_candidates", (),
-                ):
-                    return any(freed.values())
-                backed = getattr(
-                    getattr(self._native_cache, "tree_core", None),
-                    "full_host_duplicates", None,
-                )
-                if (
-                    type(backed) is not dict or len(backed) > len(excluded)
-                ):
-                    return any(freed.values())
-                excluded_ids = set(excluded)
-                if any(node_id not in excluded_ids for node_id in backed):
-                    return any(freed.values())
-                # The native index rules out a backed alternative outside the
-                # target. The unfinished walk need not delay a read-only copy.
-                self.counts["critical_no_backed_full_copy_scan_shortcut"] += 1
-            issued = prepare(full_tokens=full_tokens, exclude_node_ids=excluded)
-            if issued:
-                self._cold_full_backups.update({
-                    node_id: (created, "critical") for node_id, created, _ in issued
+        with self._queued_full_donor_scope(key) as queued_candidates:
+            # Native transactions retain all reference, lock, Host and DMA guards.
+            freed = reclaim(
+                full_tokens=full_tokens, mamba_slots=mamba_slots,
+                exclude_node_ids=excluded, collect_diagnostics=True,
+                **({"collect_cold_full_candidates": True} if (
+                    callable(prepare) and self.enable_prepare_host and not self.physical_disabled
+                ) else {}),
+            )
+            self.counts["critical_parent_headroom_checks"] += 1
+            self.counts["critical_queued_full_donor_checks"] += bool(queued_candidates)
+            if any(freed.values()):
+                self._invalidate_causal_full_donor_observations(freed)
+                self._invalidate_wait_transfer_observation(key)
+                self._report_candidate_next_ms = self._tool_prefetch_next_ms = 0.
+            if self._opportunity_writer is not None:
+                self._opportunity_writer.record({
+                    "event": "critical_parent_headroom", "ts_ms": time.time() * 1000.,
+                    "workflow_id": key.root_workflow_id, "context_id": key.context_id,
+                    "full_target_tokens": full_tokens, "mamba_target_slots": mamba_slots,
+                    "freed_units": freed, "queued_full_donor_candidates": queued_candidates,
+                    "victims": getattr(self._native_cache, "beliefkv_handoff_last_victims", ()),
+                    "capacity": getattr(self._native_cache, "beliefkv_handoff_last_capacity", None),
+                    "active_llm_preempted": False,
                 })
-                self.counts["critical_cold_full_backup_issued"] += len(issued)
-                if self._opportunity_writer is not None:
-                    self._opportunity_writer.record({
-                        "event": "critical_parent_cold_full_prepare",
-                        "ts_ms": time.time() * 1000.,
-                        "workflow_id": key.root_workflow_id,
-                        "context_id": key.context_id, "context_epoch": key.context_epoch,
-                        "native_nodes": issued, "include_mamba": False,
-                        "before_scan_complete": bool(capacity.get("native_full_scan_truncated")),
-                        "scope": "native asynchronous FULL backup; no capacity released yet",
+            capacity = getattr(self._native_cache, "beliefkv_handoff_last_capacity", None)
+            if (
+                self.enable_prepare_host and not self.physical_disabled
+                and isinstance(capacity, dict)
+                and capacity.get("full_target_satisfied") is False
+                and not capacity.get("transaction_truncated")
+                and callable(prepare)
+                and not self.physical_ledger.pending_action_count("PREPARE_HOST")
+                and self._live_critical_parent_demand() == demand
+            ):
+                if capacity.get("native_full_scan_truncated"):
+                    if not getattr(
+                        self._native_cache, "beliefkv_handoff_cold_full_candidates", (),
+                    ):
+                        return any(freed.values())
+                    backed = getattr(
+                        getattr(self._native_cache, "tree_core", None),
+                        "full_host_duplicates", None,
+                    )
+                    if (
+                        type(backed) is not dict or len(backed) > len(excluded)
+                    ):
+                        return any(freed.values())
+                    excluded_ids = set(excluded)
+                    if any(node_id not in excluded_ids for node_id in backed):
+                        return any(freed.values())
+                    # The native index rules out a backed alternative outside the
+                    # target. The unfinished walk need not delay a read-only copy.
+                    self.counts["critical_no_backed_full_copy_scan_shortcut"] += 1
+                issued = prepare(full_tokens=full_tokens, exclude_node_ids=excluded)
+                if issued:
+                    self._cold_full_backups.update({
+                        node_id: (created, "critical") for node_id, created, _ in issued
                     })
-        return any(freed.values())
+                    self.counts["critical_cold_full_backup_issued"] += len(issued)
+                    if self._opportunity_writer is not None:
+                        self._opportunity_writer.record({
+                            "event": "critical_parent_cold_full_prepare",
+                            "ts_ms": time.time() * 1000.,
+                            "workflow_id": key.root_workflow_id,
+                            "context_id": key.context_id, "context_epoch": key.context_epoch,
+                            "native_nodes": issued, "include_mamba": False,
+                            "before_scan_complete": bool(capacity.get("native_full_scan_truncated")),
+                            "scope": "native asynchronous FULL backup; no capacity released yet",
+                        })
+            return any(freed.values())
 
     def _queue_spawn_prepare(self, event: RuntimeEvent) -> None:
         if (

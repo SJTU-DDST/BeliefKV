@@ -19,7 +19,21 @@ native未完成，性能验收开放。CPU profiler于北京时间
 JCT保留其来源。实际配置、原始前缀与口径见[架构状态](architecture_status_zh.md)及
 [实验注意事项](experiment_operating_notes_zh.md)。
 
-**main最新CPU资格V2434：删除无消费者的通用压力候选表。**
+**main最新CPU资格V2445：关键容量事务可使用尚未启动的队尾FULL。**
+要求原生请求row为空、没有私有KV和生成输出且无retraction，保留
+下一批准入前沿和恢复保护；实时复核队列、身份和所有原生提交检查。
+只回收FULL、保留Mamba与session引用，事务结束恢复原validator。
+V2442b加入旧版工具等待正对照后，确认旧版排队供体只能恢复半程，
+新版两种ACK顺序均完成CPU链路；不能外推旧trace中的机会数量。
+2667项应用检查通过，未变引擎沿用此前375项。工具初始EOS P50
+2065.4→2065.8us，保留最大样本退化；GPU净收益仍需验证。
+
+V2438同轮600–800秒完整窗口的输出吞吐为554.65/571.60 token/s，
+predictive仍低约2.97%；相近几何的32个decode worker分桶均值接近。
+V2437的native600–900秒不完整，不能据其报告获胜。完整JCT仍待native。
+详见[架构状态](architecture_status_zh.md)及[执行计划](implementation_plan.md)。
+
+**V2434历史CPU资格：删除无消费者的通用压力候选表。**
 原生实际使用的FULL/Mamba各自前八项与完整owner清理保持。
 完整post-forward对照36-context稀疏P50为265.8→173.5us，
 稠密198.5→196.0us，无到期工作1.345→1.383us，保留全部样本。

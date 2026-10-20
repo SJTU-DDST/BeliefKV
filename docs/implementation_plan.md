@@ -37,7 +37,42 @@ windows;keep its provenance in development whole-run JCT rather than subtracting
 26s per workflow. V2429 identifies29 publications/96 forwards and6931 generator
 entries,not production cumulative CPU. Native performance acceptance stays open.
 
-Latest main qualification is V2434. Both native consumers read FULL/Mamba pool
+Latest main qualification is V2445. A critical parent capacity transaction
+can temporarily authorize native FULL reclaim from unstarted queued requests
+behind the measured next-prefill frontier. Require no native request row,
+private allocation/committed KV,output or retraction;recheck live identity,
+queue position and running exclusion at each owner validation. Preserve
+current beneficiary/restoration protection,all native shared-owner/generation/
+lock/Host/inflight checks,Mamba and session refs. Restore the original callback
+on all exits;no global owner cache or new timer. Invalidate only current donor
+residency/reentry observations after real FULL release.
+
+V2442b requires baseline WAIT_TOOL to finish the real CPU EOS pipeline as a
+positive control,then compares a queued donor:baseline finishes1/2 H2D chunks,
+candidate completes1 D2H and2 H2D in either ACK order before injected RETURN.
+Row/output/frontier rejections remain. Share only byte-identical observer/
+physical exports and the runtime geometry fixture alias;retain V2442 as
+preliminary without its missing explicit positive control.
+
+V2444 reruns2630 retained cases plus37 new cases,2667 pass. Engine/patch
+unchanged:rehash and retain375 actual native cases. V2443 initial WAIT_TOOL
+EOS wall P502065.4->2065.8us,max2240.8->2466.3us;queued1949.1us has
+different semantic state and is not a same-state acceleration. Dense/sparse
+common post-forward P50190.3->191.0us/166.3->166.1us,no-due-work
+1.449->1.550us;retain all outliers. DMA/clocks/geometry/growth reserve/first
+service are fixtures,and old rejected-node queue membership is unknown.
+Next GPU run must measure eligible queued victims,actual early reuse,donor
+reloads/fairness and net trimmed throughput/mean JCT. V103 remains frozen.
+
+V2438 seals a complete same-round600-800s window:predictive/native output
+554.65/571.60 token/s,-2.97%,decode weighted batch7.883/7.835. V2440 has
+mean contexts104925/84233 and32 matched batch/context/graph worker bins,
+ratio0.9824-1.0265,mean0.9998. These descriptive bins are not identical
+demand or isolated CUDA kernels;prefill lacks similarly populated bins.
+V2437 native600-900s was not yet complete and must not support a speedup
+claim. Keep it as incomplete evidence. Final native completion/JCT is pending.
+
+Historical V2434 qualification:both native consumers read FULL/Mamba pool
 prefixes when both keys exist,so stop building the unused generic fallback.
 Preserve all owner pruning,first-eight prefix order,live commit checks and
 legacy-index compatibility. No new cache,timer or native engine modification.
