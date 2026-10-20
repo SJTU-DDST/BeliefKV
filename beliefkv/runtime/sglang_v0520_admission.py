@@ -98,12 +98,14 @@ def _request_key(
     if known_keys is not None:
         known = known_keys.get(request_id)
         if known is not None and (
-            known.request_id, known.root_workflow_id, known.invocation_id,
-            known.context_id, known.context_epoch, known.attempt_id,
-            known.session_id, known.session_generation,
-        ) == (
-            request_id, workflow_id, invocation_id, context_id,
-            epoch, attempt, session_id, session_generation,
+            known.request_id == request_id
+            and known.root_workflow_id == workflow_id
+            and known.invocation_id == invocation_id
+            and known.context_id == context_id
+            and known.context_epoch == epoch
+            and known.attempt_id == attempt
+            and known.session_id == session_id
+            and known.session_generation == session_generation
         ):
             return known
     return PrefillCandidateKey(

@@ -19,6 +19,10 @@ chunk、所有输入非空时跳过无执行消费者的候选排序，身份与
 V2096 的实际 root 活跃峰值为 16、均值 9.062，第二批前已结束 12/16
 个首批 root；但 V2097 的 native 运行中前缀已恢复 91.821GB，不能把
 predictive 的低 H2D 直接当双方均无压力，也不急于改动当前到达合同。
+main 后续将已绑定身份的两份临时比较元组改为逐字段比较，实时 metadata/
+session 检查保持。现有 355 项 CPU 检查通过，18 组完整规划+选择一致，
+48 请求常规规划 CPU P50 451.400→442.968us；三个单请求小回退保留。
+该修改也不在 V91b 内，见 V2098–V2100，不据此宣称 GPU/JCT 收益。
 
 此前 V89 predictive 为 22 个
 completed、2 个 TemplateError，全程无 child/JOIN；刚初始化的 native

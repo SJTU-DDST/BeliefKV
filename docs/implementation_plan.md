@@ -34,6 +34,13 @@ native prefix already has155 H2D batches/91.821GB including Mamba. Do not infer
 that both arms lack migration demand from predictive's small H2D, change arrivals
 mid-pair, or subtract logical Host hits from physical DMA. Finish the control and
 separate residency, hybrid reuse/recomputation and realized-work differences.
+Main's subsequent identity binder removes two temporary comparison tuples while
+rechecking all live metadata, attempt and normalized session fields. Existing355
+CPU tests pass;18 complete planner+selector controls retain identical plans,
+selections and counters. Both module references must use the pinned binder for
+the baseline. The48-request normal P50 is451.400 to442.968us; preserve three
+single-request0.024/0.046/0.089us regressions. V2098–V2100 are CPU evidence only;
+the live V91b snapshot contains neither this change nor the exhausted-budget skip.
 
 The confirmed V89 compaction error is CPU-fixed:
 V89 predictive finished22 completed and2 TemplateErrors, with no child/JOIN.

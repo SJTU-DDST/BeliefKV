@@ -26,6 +26,11 @@ V2096 的实际活跃 root 数不是 GPU running 数；第二批前首批已结�
 12/16，不能以配置 24 当峰值并发 24。V2097 的 native 前缀已记录
 91.821GB H2D，完成配对前不得把 predictive 少迁移直接归为双方均无需求，
 也不将逻辑 Host 命中缺口与这份物理 DMA 直接相减。
+已绑定身份比较降本仍逐次验证 metadata、attempt 和归一化 session；
+不得为省分配复用旧 epoch 或旧授权。V2098 的完整规划+选择两侧必须同时
+替换 runtime 和 admission 中的 binder 引用，防止基线间接使用新函数。
+355 项现有 CPU 检查通过；18 组完整结果一致，三个单请求小回退保留。
+见 V2100。V91b 不含这次后续修改，CPU 降幅仍不作 GPU/JCT 收益。
 
 V89 predictive 为 22 completed、2 个真实 TemplateError，无 child/JOIN；
 native 初始化后行政停止，未记录 native workflow。driver 的 63.173GB
