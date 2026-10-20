@@ -1135,6 +1135,7 @@ class NativeAdmissionRuntime:
                 deltas, previous_version=graph_version, affected_invocations=affected,
             )
             tool_wait_refreshes: dict[str, None] | None = None
+            tool_started_keys: set[PrefillCandidateKey] | None = None
             terminal_returns = {
                 event.invocation_id: event
                 for event in events if event.kind is RuntimeEventKind.RETURN
@@ -1239,13 +1240,11 @@ class NativeAdmissionRuntime:
                     )
                 if context_id is not None:
                     key = self.context_sessions.get(context_id)
-                    if (
-                        event.kind is RuntimeEventKind.TOOL_START and key is not None
-                        and self._critical_tool_donor(key)
-                    ):
-                        self._prepare_probe_after_ms.pop(key, None)
-                        self._tool_prepare_next_ms = 0.
-                        self.counts["critical_tool_boundary_rearmed"] += 1
+                    if event.kind is RuntimeEventKind.TOOL_START and key is not None:
+                        if tool_started_keys is None:
+                            tool_started_keys = {key}
+                        else:
+                            tool_started_keys.add(key)
                     if key is not None and self._terminal(key):
                         self._track_terminal_cache(key)
                         returned = terminal_returns.get(key.invocation_id)
@@ -1451,6 +1450,14 @@ class NativeAdmissionRuntime:
             }
             for join_id in sorted(returned_joins):
                 self._resume_remaining_child_report_stage(join_id)
+            if tool_started_keys:
+                # The graph already reflects the whole event batch; wait for
+                # confirmed ticket/client binding before checking its donors.
+                for key in tool_started_keys:
+                    if self._critical_tool_donor(key):
+                        self._prepare_probe_after_ms.pop(key, None)
+                        self._tool_prepare_next_ms = 0.
+                        self.counts["critical_tool_boundary_rearmed"] += 1
             self._refresh_prefetch_service_leases()
             self.join_wait_hints = {
                 join_id: hint for join_id, hint in self.join_wait_hints.items()
@@ -6241,15 +6248,30 @@ class NativeAdmissionRuntime:
             return None
         key, _, _, expires = demand
         parent = self.graph.invocations.get(key.invocation_id)
-        if (
-            time.monotonic() >= expires or parent is None
-            or parent.state is not InvocationState.WAIT_JOIN
-            or self.context_sessions.get(key.context_id) != key
-            or self._terminal(key)
-        ):
+        if time.monotonic() >= expires or parent is None:
             self._critical_parent_demand = None
             return None
-        return demand
+        if (
+            parent.state is InvocationState.WAIT_JOIN
+            and self.context_sessions.get(key.context_id) == key
+            and not self._terminal(key)
+        ):
+            return demand
+        ticket = self._confirmed_join_tickets.get(parent.join_id)
+        if (
+            ticket is not None and ticket.phase == "confirmed"
+            and (ticket.key == key or ticket.checkpoint_key == key)
+            and self._live_join_ticket(ticket)
+        ):
+            # RETURN and client submission may precede native arrival. Preserve
+            # capacity work only through that ticket's proven checkpoint handoff.
+            if ticket.key != key:
+                self.counts["critical_parent_demand_client_bound"] += 1
+            demand = (ticket.key, demand[1], demand[2], min(expires, ticket.expires_at))
+            self._critical_parent_demand = demand
+            return demand
+        self._critical_parent_demand = None
+        return None
 
     def _set_critical_parent_demand(
         self, key: PrefillCandidateKey, full_tokens: int, mamba_slots: int,

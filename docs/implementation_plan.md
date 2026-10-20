@@ -5,6 +5,20 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+New main candidate preserves critical capacity preparation through a proven
+confirmed JOIN ticket into client reentry, stopping at native request arrival.
+Match the ticket's old safe checkpoint/current consumer, keep the earlier
+original-demand/ticket deadline, and retain expiry, compaction, cancellation,
+session/generation and native-arrival invalidation. Do not treat arbitrary
+READY/RUNNING_LLM agents as critical or promise first-service coordination.
+Move TOOL_START donor checks after all batch ticket/client bindings and coalesce
+by context so intermediate metadata ordering cannot discard valid demand.
+V2187 compares verified frozen V98 methods across5 graph/ticket sequences:
+old0/5 versus candidate5/5 retain capacity; no DMA is issued in this proof.
+V2186 passes1886 current CPU cases, including37 new identity/lifecycle cases.
+The running V98 snapshot is unchanged; actual capacity and performance remain
+unverified for this candidate. Do not credit CPU eligibility as useful prefetch.
+
 V98 launched2026-10-20 14:13:44 Asia/Shanghai from frozen34f9362,
 with first actual workflow service14:17:23. V2181 verifies971 frozen
 sources and507 external inputs, matching actual configuration and zero
@@ -31,8 +45,9 @@ No report forecast or supported DMA timing is required for capacity preparation;
 physical transfers retain their existing independent checks. Distinguish capacity
 rejection from no Host restore target. V2175 passes420 relevant current CPU cases;
 V2176 reproduces the frozen49fc2a8 omission before the fix, with no DMA credit.
-The stopped V97 snapshot is unchanged. Demand still requires WAIT_JOIN and
-current EOS evidence; unlock-through-first-service coordination is not complete.
+The stopped V97 snapshot is unchanged. Frozen V98 demand still requires WAIT_JOIN
+and current EOS evidence. Main's ticket handoff ends before native visibility;
+unlock-through-first-service coordination is not claimed complete.
 
 A bounded FULL-only timing fallback uses recent measured larger payloads when
 ordinary estimates have no support. Keep raw ACK/queue durations without byte
