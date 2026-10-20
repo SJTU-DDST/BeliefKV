@@ -6879,12 +6879,30 @@ class NativeAdmissionRuntime:
             self.enable_prepare_host and not self.physical_disabled
             and isinstance(capacity, dict)
             and capacity.get("full_target_satisfied") is False
-            and not capacity.get("native_full_scan_truncated")
             and not capacity.get("transaction_truncated")
             and callable(prepare)
             and not self.physical_ledger.pending_action_count("PREPARE_HOST")
             and self._live_critical_parent_demand() == demand
         ):
+            if capacity.get("native_full_scan_truncated"):
+                if not getattr(
+                    self._native_cache, "beliefkv_handoff_cold_full_candidates", (),
+                ):
+                    return any(freed.values())
+                backed = getattr(
+                    getattr(self._native_cache, "tree_core", None),
+                    "full_host_duplicates", None,
+                )
+                if (
+                    type(backed) is not dict or len(backed) > len(excluded)
+                ):
+                    return any(freed.values())
+                excluded_ids = set(excluded)
+                if any(node_id not in excluded_ids for node_id in backed):
+                    return any(freed.values())
+                # The native index rules out a backed alternative outside the
+                # target. The unfinished walk need not delay a read-only copy.
+                self.counts["critical_no_backed_full_copy_scan_shortcut"] += 1
             issued = prepare(full_tokens=full_tokens, exclude_node_ids=excluded)
             if issued:
                 self._cold_full_backups.update({
@@ -6898,6 +6916,7 @@ class NativeAdmissionRuntime:
                         "workflow_id": key.root_workflow_id,
                         "context_id": key.context_id, "context_epoch": key.context_epoch,
                         "native_nodes": issued, "include_mamba": False,
+                        "before_scan_complete": bool(capacity.get("native_full_scan_truncated")),
                         "scope": "native asynchronous FULL backup; no capacity released yet",
                     })
         return any(freed.values())
