@@ -843,6 +843,10 @@ class NativeAdmissionRuntime:
 
     def attach_native_cache(self, cache: object) -> None:
         self._native_cache = cache
+        incremental = getattr(cache, "enable_beliefkv_incremental_prepare", None)
+        if self.enable_prepare_host and not self.physical_disabled and callable(incremental):
+            if incremental() is True:
+                self.counts["incremental_full_tracking_enabled"] += 1
         self._residency_pool_bytes = None
         try:
             entries = cache.host_pool_group.entry_map

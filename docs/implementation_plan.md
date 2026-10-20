@@ -14,6 +14,12 @@ delegation contract. V2211/V2212/V2215 record ownership,source and baseline
 flags. Do not combine the old partial arm with a fresh predictive retry.
 Keep this order over the historical predictive-first text below.
 
+The old0c965ed continuation was withdrawn16:30:07 before any GPU launch.
+The user requires continuous asynchronous FULL synchronization,not merely
+eviction-time catch-up. V2231 passes1950 application/205 engine CPU cases.
+Freeze this candidate and recheck source,engine,native summary/timeline and
+idle resources before a fresh predictive run.
+
 The next main candidate separates idle and urgent FULL copying. Idle queues
 permit one batch up to256MiB/8 extents,with100ms cadence and32-node checks,
 preserving one batch of Host space and never evicting another Host copy.
@@ -25,13 +31,16 @@ Neither equal directional rates,perfect overlap nor submitted-DMA preemption
 is assumed. Referenced waiting agents keep the existing session-safe PREPARE
 path; the generic idle sweep only handles unreferenced cold FULL data.
 
-Incremental synchronization uses immutable FULL prefixes plus newly appended
-radix extents. Keep valid Host prefixes,copy only missing suffixes at idle
-preparation or immediately before required cold eviction,and do not add a
-per-token dirty scan or periodic Mamba backup. V2223 proves only private engine
-paths changed; V2224–V2226 cover the context-growth/native-ACK regression.
-Earlier V2219/V2220 pass1947 application/200 engine cases,retaining all1917/159.
-V2222 measures0.223us incremental Python dispatch with an empty backend only.
+Cache commit/split/unevict publishes one coalesced dirty FULL entry. A100ms
+post-forward loop consumes at most32 entries and copies only missing extents,
+including stable prefixes of running/shared requests under native read locks.
+Do not wait for eviction after a100MiB backup grows by900MiB; V2230 tests this
+with scaled CPU metadata,not an actual1GiB DMA. Keep Host prefixes and Mamba
+boundaries intact; retain native ACK and active-lock protections. No per-token
+tree scan or periodic Mamba backup. V2228 identifies the explicit optional
+commit observer as added common-path work; do not claim unchanged ordinary
+ASTs or zero overhead. V2232 measures0.237us coalesced publication,37.6us for
+a32-node metadata round,and0.213us empty-backend dispatch increment.
 Actual scan/DMA/SM costs,useful FULL volume and tail-excluded throughput/JCT
 remain GPU acceptance items. Freeze CPU-qualified code before predictive
 retry; no current performance goal is considered achieved.

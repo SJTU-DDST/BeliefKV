@@ -27,6 +27,20 @@ def fixture():
     return runtime, cache, key
 
 
+@pytest.mark.parametrize("enabled,disabled", ((True, False), (False, False), (True, True)))
+def test_incremental_full_tracking_is_attached_only_for_enabled_prepare(enabled, disabled):
+    runtime, cache, _ = fixture()
+    runtime.enable_prepare_host = enabled
+    runtime.physical_disabled = disabled
+    cache.enable_beliefkv_incremental_prepare = Mock(return_value=True)
+    try:
+        runtime.attach_native_cache(cache)
+        expected = enabled and not disabled
+        assert cache.enable_beliefkv_incremental_prepare.call_count == int(expected)
+        assert runtime.counts["incremental_full_tracking_enabled"] == int(expected)
+    finally:
+        runtime.close()
+
 def test_idle_prepare_tracks_issuance_without_any_capacity_or_prefetch_credit():
     runtime, cache, _ = fixture()
     try:
