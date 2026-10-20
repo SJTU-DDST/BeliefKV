@@ -8027,16 +8027,23 @@ class NativeAdmissionRuntime:
         return max(0, budget.byte_limit - occupied)
 
     def _live_wait_prefetch(self, key: PrefillCandidateKey, source: str) -> bool:
-        context = self.graph.contexts.get(key.context_id)
-        if self.physical_disabled or context is None or context.epoch != key.context_epoch or (
-            self.context_sessions.get(key.context_id) != key and not (
-                source == "join_ticket" and self._pending_confirmed_join_submit(key)
-            )
-        ):
-            return False
         if source == "join_ticket":
             ticket = self._join_ticket
-            return ticket is not None and ticket.key == key and self._live_join_ticket()
+            if ticket is None or ticket.key != key:
+                return False
+            if self.context_sessions.get(key.context_id) == key:
+                return self._live_join_ticket(ticket)
+            pending = self._pending_confirmed_join_ticket(key.context_id, key.context_epoch)
+            # The lookup just validated this exact ticket, within this call.
+            return (
+                pending is not None and pending.key == key
+                and (pending is ticket or self._live_join_ticket(ticket))
+            )
+        context = self.graph.contexts.get(key.context_id)
+        if self.physical_disabled or context is None or context.epoch != key.context_epoch or (
+            self.context_sessions.get(key.context_id) != key
+        ):
+            return False
         if source == "tool_wait":
             hint = self._live_tool_hint(key)
             ticket = self._tool_ticket

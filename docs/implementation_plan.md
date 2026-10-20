@@ -12,6 +12,24 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Latest JOIN source check reuses only the exact ticket already validated by the
+pending-client lookup in this same call. A distinct pending object still needs
+selected-ticket validation. Keep each node's fresh source check,map/context
+membership,epoch,terminal/expiry handling and pending ACK ownership. Ordinary
+JOINs retain the complete ticket check;tools retain context/hint guards. No new
+cache,timer,configuration or native API.
+
+V2346 profiles qualified dispatch;V2347 replaces only the source guard in9
+equal-state CPU cases. Client-bound34/64-node ticket checks fall75->40 and
+135->70;complete application dispatch P50 falls1.174->1.071ms and
+2.001->1.830ms. Targets,full expectations,bytes and budgets are identical.
+Tools/unbound JOINs are essentially unchanged. Retain the64-node candidate
+max3.633ms versus2.097ms baseline and all slow samples;no worst-case claim.
+Real native ancestry validation,production issuance telemetry,GPU DMA and
+online population are not measured. V2349 reruns all2462 prior application
+cases plus32 new cases,2494 passing;rehash and retain266 unchanged-engine
+cases. Freeze V103 to V2349 and preserve the06:00 GPU hold.
+
 Latest empty-target change also restricts FULL to the deepest input-compatible
 checkpoint and its ancestors on each FULL path. A Host-only output tail alone
 cannot trigger detailed recovery planning or a confirmed ticket. Unknown input
@@ -25,7 +43,7 @@ FULL ancestor496->514us and Mamba-only398->405us. Empty A plus actionable EOS B
 changes2 planner calls to B only,extra EOS attempts1->0 and keeps1 burst/4 CPU
 reservations. This does not establish online population,total CPU or GPU/JCT
 benefit. V2344 reruns all2437 preceding cases plus25 new cases,2462 passing;
-rehash and retain266 unchanged-engine cases. Freeze V103 to V2344 and retain
+rehash and retain266 unchanged-engine cases. This policy is retained by V2349;retain
 the2026-10-21T06:00:00+08:00 GPU hold.
 Preserve the original V2343 run with2461 passing/1 failing. V2345 reproduces
 the failed native-check assertion by advancing only the warm hint's50ms TTL.
@@ -56,7 +74,7 @@ once and build the owner index once,but the old caller issues0 CPU bursts and
 the new caller1 burst/1 reservation. Both due/not-yet-due scans are covered;
 this is not online frequency,GPU timing or performance proof.
 V2341 reruns all2415 preceding cases plus22 new cases,2437 passing;rehash and
-retain266 unchanged-engine cases. This policy is retained by V2344;keep the hold.
+retain266 unchanged-engine cases. This policy is retained by V2349;keep the hold.
 
 Tool timing evidence: V2335 separates10114 matched forecast records from6210
 independent declared tool waits.3880 first-forecast-late calls had only8.21ms
@@ -79,7 +97,7 @@ is small. V101 had127 tagged H2D ACK callbacks,54 multi-node,max34. Retain all s
 samples and distinguish this low-frequency optimization from online total CPU or
 throughput/JCT proof. V2333 reruns all2392 previous application cases plus12 new
 isolation/lifecycle/branch/budget cases,2404 passing. Rehash and retain266 unchanged
-engine cases. This policy is retained by V2344;keep the GPU hold.
+engine cases. This policy is retained by V2349;keep the GPU hold.
 
 Latest bounded control change scopes restore-protection validation to WAIT_JOIN
 inside cold-page eligibility. The old eager computation served no decision for
@@ -97,7 +115,7 @@ versus340us, all slow samples, and the unrelated older V2320a results unchanged.
 Context count is not workload root count. This does not prove worst-case,
 online total CPU or throughput/JCT improvement. V2330 reruns all2392 existing
 application CPU cases unchanged; rehash and retain266 unchanged-engine cases.
-This policy is retained by V2344; keep the2026-10-21T06:00:00+08:00 hold.
+This policy is retained by V2349; keep the2026-10-21T06:00:00+08:00 hold.
 
 Latest confirmed-JOIN eligibility fix: check for recoverable Host-only FULL or
 the necessary input-compatible Mamba checkpoint before creating a new recovery
@@ -123,7 +141,7 @@ are retained. Timing includes mocked planner callbacks, so it cannot prove
 full-planner cost, online frequency or throughput/JCT. V2326 reruns all2367
 preceding application cases and adds25 eligibility/lifecycle cases,2392 passing
 in total. Rehash and retain266 unchanged-engine cases. This policy is retained
-by the latest V2344 qualification; keep the2026-10-21T06:00:00+08:00 GPU hold.
+by the latest V2349 qualification; keep the2026-10-21T06:00:00+08:00 GPU hold.
 
 Next-run preparation uses `scripts/launch_qualified_after_hold.py`. The old
 V102 environment still pins broad report mode,250ms and an obsolete engine;
@@ -163,7 +181,7 @@ V2315 binds2307 passing application CPU cases and retains all2257 preceding
 contracts. Native engine/patch hashes are unchanged; retain the266 source-bound
 native CPU cases without claiming a rerun. Cover direct/coalesced publication,
 not-due and no-work calls, live lock/inflight/Host mutations, immediate critical
-publication and clean exception retry. Freeze V2344 or a later qualification
+publication and clean exception retry. Freeze V2349 or a later qualification
 after the2026-10-21T06:00:00+08:00 hold. Keep the full performance goal active.
 
 Latest authorized JOIN policy is `selective_report_or_eos`; the long-repository
