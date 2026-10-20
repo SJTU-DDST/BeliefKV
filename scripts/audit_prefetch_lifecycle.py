@@ -388,6 +388,197 @@ def transfer_parts(transfer: dict) -> list[dict]:
     return parts
 
 
+def native_full_prepare_attribution(
+    issues: Sequence[dict], transfers: Sequence[dict], reclaims: Sequence[dict],
+    uses: dict, host_evictions: Sequence[dict] | None, *, full_unit: int | None,
+) -> dict:
+    """Audit untagged background copies without granting semantic prefetch credit."""
+    rows, pending, copies, events = [], defaultdict(set), {}, []
+    unit = full_unit if type(full_unit) is int and full_unit > 0 else None
+    for index, issue in enumerate(issues):
+        nodes = {}
+        for node_id, created, tokens in issue["native_nodes"]:
+            if (
+                type(node_id) is not int or node_id < 0 or node_id in nodes
+                or type(created) not in (int, float) or not math.isfinite(created)
+                or type(tokens) is not int or tokens <= 0
+            ):
+                raise ValueError("invalid native FULL prepare identity")
+            nodes[node_id] = (created, tokens)
+        if not nodes or issue.get("include_mamba") is not False:
+            raise ValueError("native FULL prepare must contain only FULL extents")
+        tokens = sum(value[1] for value in nodes.values())
+        rows.append({
+            **issue, "batch_index": index,
+            "source": "idle" if issue["event"] == "idle_cold_full_prepare" else "critical",
+            "issued_full_tokens": tokens,
+            "issued_full_bytes_known": tokens * unit if unit is not None else None,
+            "ack_evidence": "unobserved", "ack_ts_ms": None,
+            "acknowledged_full_bytes": None, "capacity_releases": [],
+            "restore_associations": [], "copy_end_observations": [],
+        })
+        events.append((issue["ts_ms"], 0, index, nodes))
+    if rows:
+        for transfer in transfers:
+            direction = transfer.get("direction")
+            if transfer.get("status") != "completed" or direction not in ("d2h", "h2d"):
+                continue
+            field = "complete_ts_ms" if direction == "d2h" else "submit_ts_ms"
+            if transfer.get(field) is not None:
+                events.append((transfer[field], 1 if direction == "d2h" else 4, 0, transfer))
+        for eviction in host_evictions or ():
+            if eviction.get("pool") in ("full", "kv"):
+                events.append((eviction["ts_ms"], 2, 0, eviction))
+        for reclaim in reclaims:
+            events.append((reclaim["ts_ms"], 3, 0, reclaim))
+
+    def end_copy(node_id, when, reason):
+        prior = copies.pop(node_id, None)
+        if prior is not None:
+            rows[prior]["copy_end_observations"].append({
+                "node_id": node_id, "ts_ms": when, "reason": reason,
+            })
+
+    identities = [
+        {node: (created, tokens) for node, created, tokens in row["native_nodes"]}
+        for row in rows
+    ]
+    for when, kind, index, payload in sorted(events, key=lambda event: event[:3]):
+        if kind == 0:
+            for node_id, identity in payload.items():
+                prior = copies.get(node_id)
+                if prior is not None and identities[prior][node_id][0] != identity[0]:
+                    end_copy(node_id, when, "new_node_generation")
+                pending[node_id].add(index)
+        elif kind == 2:
+            end_copy(payload["node_id"], when, "host_eviction")
+        elif kind == 1:
+            parts = transfer_parts(payload)
+            full_nodes = {
+                node for part in parts if part["pool_units"].get("kv", 0) > 0
+                for node in part["node_ids"]
+            }
+            for node in full_nodes:
+                end_copy(node, when, "later_full_d2h")
+            candidates = set().union(*(pending[node] for node in full_nodes)) if full_nodes else set()
+            pools = payload.get("num_tokens_by_pool") or {}
+            for candidate in sorted(candidates):
+                row = rows[candidate]
+                exact = (
+                    len(candidates) == 1
+                    and set(payload.get("node_ids", ())) == set(identities[candidate])
+                    and pools.get("kv", 0) == row["issued_full_tokens"]
+                    and not any(count for pool, count in pools.items() if pool != "kv")
+                    and not payload.get("tagged_child_commits")
+                    and all(part["command_id"] is None for part in parts)
+                    and type(payload.get("actual_bytes")) is int
+                    and payload["actual_bytes"] > 0
+                    and (unit is None or payload["actual_bytes"] == row["issued_full_tokens"] * unit)
+                )
+                row.update({
+                    "ack_evidence": "reconciled_full_batch" if exact else "ambiguous_node_or_pool_batch",
+                    "ack_ts_ms": when,
+                    "ack_transfer_command_id": payload.get("command_id"),
+                    "acknowledged_full_bytes": payload["actual_bytes"] if exact else None,
+                })
+                for node in identities[candidate]:
+                    pending[node].discard(candidate)
+                    if exact:
+                        copies[node] = candidate
+        elif kind == 3:
+            for victim in payload.get("victims") or ():
+                node = victim["node_id"]
+                prior = copies.get(node)
+                freed = victim.get("freed_units") or {}
+                tokens = freed.get("0", freed.get(0, 0))
+                if (
+                    prior is not None and rows[prior]["ack_ts_ms"] < when
+                    and victim.get("creation_time") == identities[prior][node][0]
+                    and type(tokens) is int and tokens > 0
+                ):
+                    rows[prior]["capacity_releases"].append({
+                        **victim, "ts_ms": when, "full_tokens": tokens,
+                        "full_bytes_known": tokens * unit if unit is not None else None,
+                        "reclaim_event": payload["event"],
+                    })
+        else:
+            for part in transfer_parts(payload):
+                if part["pool_units"].get("kv", 0) <= 0:
+                    continue
+                command = part["command_id"]
+                use = uses.get(command, {})
+                service = use.get("first_service_ts_ms")
+                for node in part["node_ids"]:
+                    prior = copies.get(node)
+                    if prior is None or rows[prior]["ack_ts_ms"] >= when:
+                        continue
+                    verified = (
+                        use.get("full_node_reused") is True
+                        and type(use.get("full_reuse_proof_version")) is int
+                        and use["full_reuse_proof_version"] >= 2
+                        and node in (use.get("reused_full_node_ids") or ())
+                        and type(service) in (int, float) and math.isfinite(service)
+                        and service >= when
+                    )
+                    rows[prior]["restore_associations"].append({
+                        "node_id": node, "submit_ts_ms": when,
+                        "transfer_command_id": payload.get("command_id"),
+                        "controlled_command_id": command,
+                        "node_pool_evidence": part["node_pool_evidence"],
+                        "controlled_full_first_service_verified": verified,
+                        "first_service_request_id": use.get("request_id") if verified else None,
+                        "host_eviction_evidence_available": host_evictions is not None,
+                    })
+    acknowledged = [row for row in rows if row["ack_evidence"] == "reconciled_full_batch"]
+    restores = [restore for row in rows for restore in row["restore_associations"]]
+    return {
+        "summary": {
+            "issued_batches": len(rows),
+            "issued_nodes": sum(len(row["native_nodes"]) for row in rows),
+            "issued_full_tokens": sum(row["issued_full_tokens"] for row in rows),
+            "issued_full_bytes_known": sum(row["issued_full_bytes_known"] or 0 for row in rows),
+            "issued_full_bytes_unknown_batches": sum(row["issued_full_bytes_known"] is None for row in rows),
+            "reconciled_ack_batches": len(acknowledged),
+            "ambiguous_ack_batches": sum(row["ack_evidence"] == "ambiguous_node_or_pool_batch" for row in rows),
+            "ack_unobserved_batches": sum(row["ack_evidence"] == "unobserved" for row in rows),
+            "acknowledged_full_bytes": sum(row["acknowledged_full_bytes"] for row in acknowledged),
+            "batches_with_capacity_release": sum(bool(row["capacity_releases"]) for row in rows),
+            "observed_released_full_tokens": sum(
+                release["full_tokens"] for row in rows for release in row["capacity_releases"]
+            ),
+            "batches_with_restore_association": sum(bool(row["restore_associations"]) for row in rows),
+            "restore_node_associations": len(restores),
+            "restore_associations_with_verified_controlled_first_service": sum(
+                restore["controlled_full_first_service_verified"] for restore in restores
+            ),
+            "host_eviction_evidence_available": host_evictions is not None,
+            "by_source": {
+                source: {
+                    "issued_batches": sum(row["source"] == source for row in rows),
+                    "reconciled_ack_batches": sum(row["source"] == source for row in acknowledged),
+                } for source in ("idle", "critical")
+            },
+        },
+        "rows": rows,
+        "semantics": (
+            "Native untagged FULL backups, separate from semantic PREPARE and predictive "
+            "H2D. Issuance observation may follow device submission. ACK bytes require "
+            "one matching issued batch, identical published node set and FULL units, "
+            "no other pool/tagged child, and byte reconciliation when unit size is known. "
+            "Splits or merged/partial receipts stay ambiguous. A later possible FULL "
+            "writer, observed FULL Host eviction or new observed node generation ends "
+            "the source association. Capacity release additionally matches creation time "
+            "and observed native freed units; repeated releases are cumulative events, "
+            "not unique or simultaneously free capacity. H2D links remain node/pool "
+            "associations; legacy mixed pools cannot prove per-node bytes. Verified "
+            "controlled first service proves that H2D allocation's FULL use, not complete "
+            "Host allocation continuity or unique consumption of the original backup. "
+            "Native first-service proof, unobserved eviction/split lineage and byte-level "
+            "forward consumption remain unknown; no avoided wait or speedup is assigned."
+        ),
+    }
+
+
 def prepare_restore_attribution(
     prepared: dict, transfers: list[dict], host_evictions: list[dict] | None = None,
 ) -> list[dict]:
@@ -1548,6 +1739,7 @@ def wait_event_attribution(
 
 def audit(arm: Path) -> dict:
     issued, prepared, parks, leases, stages = {}, {}, [], defaultdict(list), {}
+    native_prepares, native_prepare_reclaims = [], []
     prepare_selections = []
     terminal_reclaims, parent_handoff_services, parent_handoff_lookaheads = [], [], []
     parent_handoff_rearms = []
@@ -1567,6 +1759,10 @@ def audit(arm: Path) -> dict:
             stages[row["child_request_id"]] = row
         elif event == "prepare_native_issued":
             prepared[row["command_id"]] = row
+        elif event in ("idle_cold_full_prepare", "critical_parent_cold_full_prepare"):
+            native_prepares.append(row)
+        elif event in ("critical_parent_headroom", "wait_prefetch_capacity_reclaimed"):
+            native_prepare_reclaims.append(row)
         elif event == "parent_pressure_demoted":
             parks.append(row)
         elif event == "prepare_candidate_selected":
@@ -1749,6 +1945,12 @@ def audit(arm: Path) -> dict:
         row for row in records(eviction_path) if row["event"] == "host_block_evicted"
     ] if eviction_path.exists() else None
     prepare_restores = prepare_restore_attribution(prepared, transfers, host_evictions)
+    status_path = arm / "server/native_telemetry_status.json"
+    status = json.loads(status_path.read_text()) if status_path.exists() else {}
+    native_prepared = native_full_prepare_attribution(
+        native_prepares, transfers, native_prepare_reclaims, uses, host_evictions,
+        full_unit=(status.get("host_pool_evidence") or {}).get("full", {}).get("bytes_per_unit"),
+    )
     wait_events = wait_event_attribution(arm, wait_observations, issued, results, clock_offset)
     summary = {
         "join_commands": len(joins), "tool_commands": len(tools),
@@ -1841,6 +2043,7 @@ def audit(arm: Path) -> dict:
         ),
         "prepare_host_lifetime": prepare_host_lifetime_summary(prepare_restores, host_evictions),
         "prepare_selection": prepare_selection_summary(prepare_selections, prepare_restores),
+        "native_full_prepare": native_prepared["summary"],
         "wait_events": wait_events["summary"],
         "terminal_capacity_handoff": terminal_capacity_summary(
             terminal_reclaims, parent_handoff_services, parent_handoff_lookaheads,
@@ -1894,6 +2097,7 @@ def audit(arm: Path) -> dict:
         ),
         "prepare_consumption": consumed,
         "prepare_restore_attribution": prepare_restores,
+        "native_full_prepare_attribution": native_prepared,
         "prepare_attribution_semantics": (
             "Latest observed D2H writer per node/pool. A later D2H is not proof "
             "of byte overwrite or duplicate transfer: Host eviction/reallocation, "
@@ -1938,7 +2142,7 @@ def main() -> None:
             key: value for key, value in report.items()
             if key not in (
                 "rows", "prepare_consumption", "prepare_restore_attribution",
-                "wait_event_attribution",
+                "native_full_prepare_attribution", "wait_event_attribution",
             )
         }
     args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")

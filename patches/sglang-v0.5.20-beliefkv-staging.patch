@@ -1,3 +1,32 @@
+diff --git a/python/sglang/kernels/jit/csrc/kvcacheio/staged_write_back.cuh b/python/sglang/kernels/jit/csrc/kvcacheio/staged_write_back.cuh
+index 9332264..82fce2e 100644
+--- a/python/sglang/kernels/jit/csrc/kvcacheio/staged_write_back.cuh
++++ b/python/sglang/kernels/jit/csrc/kvcacheio/staged_write_back.cuh
+@@ -81,12 +81,20 @@ inline void copy_page_first_pages_fallback(
+     const size_t src_page_bytes = static_cast<size_t>(page_size * src_stride0 * elem_size);
+     const size_t dst_page_bytes = static_cast<size_t>(page_size * dst_stride0 * elem_size);
+     RuntimeCheck(src_page_bytes == dst_page_bytes, "Source and destination page spans must match");
+-    for (const auto page_offset : irange(num_pages)) {
++    for (int64_t page_begin = 0; page_begin < num_pages;) {
++      int64_t page_end = page_begin + 1;
++      // Staging pages are contiguous; merge adjacent Host destinations as well.
++      while (page_end < num_pages &&
++             dst_indices_ptr[page_end * page_size] == dst_indices_ptr[(page_end - 1) * page_size] + page_size) {
++        ++page_end;
++      }
+       const char* src_ptr = static_cast<const char*>(src_ptrs[tensor_id].data_ptr()) +
+-                            static_cast<size_t>(page_offset * page_size * src_stride0 * elem_size);
++                            static_cast<size_t>(page_begin * page_size * src_stride0 * elem_size);
+       char* dst_ptr = static_cast<char*>(dst_ptrs[tensor_id].data_ptr()) +
+-                      static_cast<size_t>(dst_indices_ptr[page_offset * page_size] * dst_stride0 * elem_size);
+-      RuntimeDeviceCheck(cudaMemcpyAsync(dst_ptr, src_ptr, src_page_bytes, cudaMemcpyDeviceToHost, stream));
++                      static_cast<size_t>(dst_indices_ptr[page_begin * page_size] * dst_stride0 * elem_size);
++      const size_t span_bytes = static_cast<size_t>(page_end - page_begin) * src_page_bytes;
++      RuntimeDeviceCheck(cudaMemcpyAsync(dst_ptr, src_ptr, span_bytes, cudaMemcpyDeviceToHost, stream));
++      page_begin = page_end;
+     }
+   }
+ }
 diff --git a/python/sglang/srt/arg_groups/fields/schedule.py b/python/sglang/srt/arg_groups/fields/schedule.py
 index de4267d..ff1fd92 100644
 --- a/python/sglang/srt/arg_groups/fields/schedule.py
@@ -5999,6 +6028,134 @@ index 0000000..4534304
 +        leaf.component_data[ComponentType.MAMBA].lock_ref = 1
 +    assert tree.split_idle_device_full_suffix(leaf.id, leaf.creation_time, 1) is None
 +    assert leaf.parent is original_parent
+diff --git a/test/srt/test_beliefkv_contiguous_host_copy.py b/test/srt/test_beliefkv_contiguous_host_copy.py
+new file mode 100644
+index 0000000..bb3f7fa
+--- /dev/null
++++ b/test/srt/test_beliefkv_contiguous_host_copy.py
+@@ -0,0 +1,122 @@
++"""Compile the actual Host fallback with CPU copy stubs and exhaustive layouts."""
++
++from pathlib import Path
++import subprocess
++
++
++def test_actual_page_first_fallback_preserves_bytes_and_coalesces_contiguous_pages(tmp_path):
++    root = Path(__file__).resolve().parents[2]
++    header = root / "python/sglang/kernels/jit/csrc/kvcacheio/staged_write_back.cuh"
++    source = header.read_text()
++    body = source.split("inline void copy_page_first_pages_fallback(", 1)[1]
++    body = "inline void copy_page_first_pages_fallback(" + body.split(
++        "inline bool try_copy_page_first_pages_batch(", 1,
++    )[0]
++    prelude = r"""
++#include <cassert>
++#include <cstdint>
++#include <cstring>
++#include <iostream>
++#include <stdexcept>
++#include <vector>
++using cudaStream_t = int;
++constexpr int cudaMemcpyDeviceToHost = 0;
++int calls = 0;
++int cudaMemcpyAsync(void* dst, const void* src, size_t n, int, int) {
++  ++calls;
++  std::memcpy(dst, src, n);
++  return 0;
++}
++namespace tvm::ffi {
++struct TensorView {
++  unsigned char* data;
++  int64_t row_stride;
++  int bytes;
++  int dtype() const { return bytes; }
++  int64_t stride(int) const { return row_stride; }
++  void* data_ptr() const { return data; }
++};
++}
++namespace host {
++inline int64_t dtype_bytes(int bytes) { return bytes; }
++template <typename... Args>
++void RuntimeCheck(bool good, Args...) {
++  if (!good) throw std::runtime_error("invalid tensor");
++}
++inline void RuntimeDeviceCheck(int code) { assert(code == 0); }
++struct Range {
++  int64_t end_value;
++  struct Iterator {
++    int64_t value;
++    int64_t operator*() const { return value; }
++    Iterator& operator++() { ++value; return *this; }
++    bool operator!=(Iterator other) const { return value != other.value; }
++  };
++  Iterator begin() const { return {0}; }
++  Iterator end() const { return {end_value}; }
++};
++inline Range irange(int64_t n) { return {n}; }
++}
++"""
++    main = r"""
++void check(const std::vector<int64_t>& pages, int64_t page_size, int bytes) {
++  constexpr int64_t stride = 3;
++  const size_t width = page_size * stride * bytes;
++  std::vector<unsigned char> k(pages.size() * width), v(k.size());
++  for (size_t i = 0; i < k.size(); ++i) {
++    k[i] = static_cast<unsigned char>(i * 7 + 3);
++    v[i] = static_cast<unsigned char>(i * 13 + 11);
++  }
++  std::vector<unsigned char> dst_k(16 * width, 157), dst_v(dst_k);
++  auto expected_k = dst_k, expected_v = dst_v;
++  std::vector<int64_t> indices;
++  for (size_t i = 0; i < pages.size(); ++i) {
++    for (int64_t token = 0; token < page_size; ++token)
++      indices.push_back(pages[i] * page_size + token);
++    std::memcpy(expected_k.data() + pages[i] * width, k.data() + i * width, width);
++    std::memcpy(expected_v.data() + pages[i] * width, v.data() + i * width, width);
++  }
++  calls = 0;
++  copy_page_first_pages_fallback(
++    {{k.data(), stride, bytes}, {v.data(), stride, bytes}},
++    {{dst_k.data(), stride, bytes}, {dst_v.data(), stride, bytes}},
++    indices.data(), static_cast<int64_t>(pages.size()), page_size, 0);
++  assert(dst_k == expected_k && dst_v == expected_v);
++  assert(calls <= static_cast<int>(pages.size() * 2));
++}
++int main() {
++  for (int64_t page_size : {1, 2, 8}) {
++    for (int bytes : {1, 2, 4}) {
++      for (int length = 0; length <= 5; ++length) {
++        int patterns = 1;
++        for (int j = 0; j < length; ++j) patterns *= 4;
++        for (int pattern = 0; pattern < patterns; ++pattern) {
++          int digits = pattern;
++          std::vector<int64_t> pages;
++          for (int j = 0; j < length; ++j) {
++            pages.push_back(digits % 4);
++            digits /= 4;
++          }
++          check(pages, page_size, bytes);
++        }
++      }
++      check({0, 1, 2, 3, 4, 5, 6, 7}, page_size, bytes);
++      assert(calls == 2);
++      check({0, 1, 4, 5, 9}, page_size, bytes);
++      assert(calls == 6);
++      check({4, 3, 2, 1, 0}, page_size, bytes);
++      assert(calls == 10);
++    }
++  }
++  std::cout << "exhaustive byte equivalence and copy-call boundaries passed\n";
++}
++"""
++    program = tmp_path / "host_copy.cpp"
++    executable = tmp_path / "host_copy"
++    program.write_text(prelude + body + main)
++    subprocess.run(
++        ["g++", "-std=c++17", "-O2", "-Wall", "-Werror", str(program), "-o", str(executable)],
++        check=True, capture_output=True, text=True,
++    )
++    result = subprocess.run([str(executable)], check=True, capture_output=True, text=True)
++    assert "boundaries passed" in result.stdout
 diff --git a/test/srt/test_beliefkv_execution_handoff.py b/test/srt/test_beliefkv_execution_handoff.py
 new file mode 100644
 index 0000000..deaf243

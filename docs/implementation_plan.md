@@ -5,6 +5,33 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Latest candidate V101: V99 native is complete(36/36 completed,91 JOIN,
+11 nested JOIN). V100 launched17:12:05 Asia/Shanghai but was administratively
+stopped for background D2H submission latency(V2243);all36 outcomes remained
+unobserved. Preserve partial traces rather than treating them as natural failures.
+V2242 reconciles67 early untagged FULL backup batches/13.94GB;these are not
+JOIN/tool predictive H2D. Submit-to-issue-observation wall P50/P90 is230.02/
+290.63ms,not pure CPU or removable JCT.
+
+Coalesce consecutive Host destinations only inside the existing native staging
+chunk. Keep64-page staging,400ms/1GiB background policy,64MiB urgent chunks,
+fragmented/reversed/duplicate write order,locks,ACKs,H2D and Mamba dependencies.
+Original/candidate each pass7 actual GPU layouts with bitwise/untouched-slot
+checks(V2244/V2250). Idle-device256MiB submit/stream P50 improves51.39/51.40
+to3.85/7.75ms;1GiB207.22/207.23 to15.42/30.58ms. These are transfer canaries,
+not model contention or throughput/JCT evidence. V2249 retains all previous
+cases and passes1969 application/209 engine CPU cases.
+Freeze and restart predictive using V101. The optimization is also available
+to native: use V99 as a development reference and later match this kernel
+when isolating agent-policy gains. Full performance acceptance remains open.
+
+Offline lifecycle auditing now reconciles untagged native FULL backup batches,
+same-creation capacity releases and later restore/controlled-first-use evidence.
+Mixed/split receipts remain ambiguous; Host eviction,new observed generation
+or later FULL writer ends the association. Do not assign original Host allocation
+continuity,unique consumed bytes or speedup from these associations. The95-case
+focused CPU check(V2240) adds no runtime observations or high-frequency work.
+
 Latest order override,2026-10-20 Asia/Shanghai: pause V99 predictive and run
 native now while completing FULL preparation/capacity fixes. Predictive stopped
 16:01:47 with30 completed/6 without terminal evidence; retain its partial trace.
