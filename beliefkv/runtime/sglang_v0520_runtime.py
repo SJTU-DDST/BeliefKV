@@ -3939,8 +3939,25 @@ class NativeAdmissionRuntime:
             self._confirmed_join_tickets[ticket.join_id] = ticket
             self._join_ticket = None
 
+    def _try_eos_after_blocked_confirmed(self, ticket: _JoinPrefetchTicket) -> None:
+        if (
+            ticket.phase != "confirmed" or ticket.command_id is not None
+            or not self._eos_prefetch_keys
+            or self._join_ticket is not None and self._join_ticket is not ticket
+        ):
+            return
+        # Keep the confirmed ticket in its map for later demand recovery. It
+        # cannot issue now; give an observed EOS one attempt in this safe point.
+        self._join_ticket = None
+        self.counts["confirmed_join_yielded_to_observed_eos"] += 1
+        self.dispatch_join_prefetch(
+            _retry_client_submit=False, _prefer_observed_eos=True,
+        )
+
     @timed_runtime("join_prefetch")
-    def dispatch_join_prefetch(self, *, _retry_client_submit: bool = True) -> None:
+    def dispatch_join_prefetch(
+        self, *, _retry_client_submit: bool = True, _prefer_observed_eos: bool = False,
+    ) -> None:
         """Restore a bounded reusable prefix burst, without granting admission."""
         if self._join_inflight_tickets:
             if self._wait_prefetch_transfer_busy():
@@ -3959,7 +3976,8 @@ class NativeAdmissionRuntime:
         ):
             self._join_inflight_tickets[ticket.join_id] = ticket
             self._join_ticket = None
-        self._select_confirmed_join_ticket()
+        if not _prefer_observed_eos:
+            self._select_confirmed_join_ticket()
         observation = self._roll_final_stage()
         ticket = self._join_ticket
         if ticket is None or not self._live_join_ticket():
@@ -4068,6 +4086,8 @@ class NativeAdmissionRuntime:
                     self._discard_join_ticket("prefix_resident_or_unavailable")
             else:
                 self._yield_confirmed_join_ticket()
+            if not _prefer_observed_eos:
+                self._try_eos_after_blocked_confirmed(ticket)
             return
         if observation.fits_current_free_lists is not True:
             self.counts["semantic_h2d_no_free_capacity"] += 1
@@ -4075,6 +4095,8 @@ class NativeAdmissionRuntime:
                 "join_ticket", ticket.key, observation, reason="no_cold_capacity",
             )
             self._yield_confirmed_join_ticket()
+            if not _prefer_observed_eos:
+                self._try_eos_after_blocked_confirmed(ticket)
             return
         selected_key = ticket.key
         commands = self._issue_wait_prefetch_steps(
@@ -4104,6 +4126,8 @@ class NativeAdmissionRuntime:
             self.dispatch_join_prefetch(_retry_client_submit=False)
         else:
             self._yield_confirmed_join_ticket()
+            if not _prefer_observed_eos:
+                self._try_eos_after_blocked_confirmed(ticket)
 
     def _submit_tool_wait(self, context_id: str) -> None:
         if self._online_tool_timing is not None:

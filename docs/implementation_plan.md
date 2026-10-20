@@ -12,6 +12,19 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Latest EOS conversion fix: an unproductive confirmed JOIN previously occupied
+the selector, preventing another parent's valid EOS from being inspected.
+After an empty plan, unavailable capacity or declined enqueue, make at most one
+same-safe-point EOS attempt while retaining the unfinished confirmed ticket in
+its map. Do not mark it restored or change in-flight ownership, live identities,
+capacity or ACK checks. Productive confirmed recovery retains priority. No EOS
+means no added planning scan; no new cadence or background worker is introduced.
+V2319 binds2367 passing application CPU cases, retaining all2355 previous cases
+and adding12 checks. Retain266 rehashed unchanged-engine cases. The same-state
+CPU proof changes0 native callbacks to1 burst/4 reservations; it is not GPU
+DMA, online-frequency or performance proof. Refresh V103 to this qualification
+and keep the2026-10-21T06:00:00+08:00 GPU hold.
+
 Next-run preparation uses `scripts/launch_qualified_after_hold.py`. The old
 V102 environment still pins broad report mode,250ms and an obsolete engine;
 never launch it just because the shell defaults have changed. Freeze V103 from
@@ -50,7 +63,7 @@ V2315 binds2307 passing application CPU cases and retains all2257 preceding
 contracts. Native engine/patch hashes are unchanged; retain the266 source-bound
 native CPU cases without claiming a rerun. Cover direct/coalesced publication,
 not-due and no-work calls, live lock/inflight/Host mutations, immediate critical
-publication and clean exception retry. Freeze V2317 or a later qualification
+publication and clean exception retry. Freeze V2319 or a later qualification
 after the2026-10-21T06:00:00+08:00 hold. Keep the full performance goal active.
 
 Latest authorized JOIN policy is `selective_report_or_eos`; the long-repository
