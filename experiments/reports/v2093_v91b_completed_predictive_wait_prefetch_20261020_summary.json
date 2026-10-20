@@ -1,0 +1,1738 @@
+{
+  "summary": {
+    "join_commands": 35,
+    "tool_commands": 1,
+    "handoff_commands": 0,
+    "by_source": {
+      "execution_handoff": {
+        "issued_commands": 0,
+        "acknowledged_commands": 0,
+        "actual_bytes": 0,
+        "full_transfer_commands": 0,
+        "full_reused_commands": 0,
+        "full_not_reused_commands": 0,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 0,
+        "full_verified_reused_bytes_known": 0,
+        "full_reuse_proof_versions": {},
+        "native_reloaded_prefetched_full_before_first_service": 0,
+        "full_reuse_by_residency": [],
+        "mamba_forward_verified_commands": 0,
+        "ack_to_first_service_ms": {
+          "count": 0
+        }
+      },
+      "join_ticket": {
+        "issued_commands": 35,
+        "acknowledged_commands": 35,
+        "actual_bytes": 491663360,
+        "full_transfer_commands": 35,
+        "full_reused_commands": 35,
+        "full_not_reused_commands": 0,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 491663360,
+        "full_verified_reused_bytes_known": 491663360,
+        "full_reuse_proof_versions": {
+          "2": 35
+        },
+        "native_reloaded_prefetched_full_before_first_service": 0,
+        "full_reuse_by_residency": [
+          {
+            "native_locked_at_registration": false,
+            "protection_reason_at_registration": "covered_by_existing_lock",
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 33,
+            "full_reused_commands": 33,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 443965440,
+            "full_verified_reused_bytes_known": 443965440,
+            "full_reuse_proof_versions": {
+              "2": 33
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 33,
+              "p50": 317.69287109375,
+              "p90": 317.750341796875,
+              "max": 317.759765625
+            }
+          },
+          {
+            "native_locked_at_registration": true,
+            "protection_reason_at_registration": "native_locked",
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 2,
+            "full_reused_commands": 2,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 47697920,
+            "full_verified_reused_bytes_known": 47697920,
+            "full_reuse_proof_versions": {
+              "2": 2
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 2,
+              "p50": 298.0904541015625,
+              "p90": 313.8290283203125,
+              "max": 317.763671875
+            }
+          }
+        ],
+        "mamba_forward_verified_commands": 0,
+        "ack_to_first_service_ms": {
+          "count": 35,
+          "p50": 317.69287109375,
+          "p90": 317.7515625,
+          "max": 317.763671875
+        }
+      },
+      "tool_wait": {
+        "issued_commands": 1,
+        "acknowledged_commands": 1,
+        "actual_bytes": 8908800,
+        "full_transfer_commands": 1,
+        "full_reused_commands": 1,
+        "full_not_reused_commands": 0,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 8908800,
+        "full_verified_reused_bytes_known": 8908800,
+        "full_reuse_proof_versions": {
+          "2": 1
+        },
+        "native_reloaded_prefetched_full_before_first_service": 0,
+        "full_reuse_by_residency": [
+          {
+            "native_locked_at_registration": true,
+            "protection_reason_at_registration": "native_locked",
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 1,
+            "full_reused_commands": 1,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 8908800,
+            "full_verified_reused_bytes_known": 8908800,
+            "full_reuse_proof_versions": {
+              "2": 1
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 1,
+              "p50": 1250.152099609375,
+              "p90": 1250.152099609375,
+              "max": 1250.152099609375
+            }
+          }
+        ],
+        "mamba_forward_verified_commands": 0,
+        "ack_to_first_service_ms": {
+          "count": 1,
+          "p50": 1250.152099609375,
+          "p90": 1250.152099609375,
+          "max": 1250.152099609375
+        }
+      }
+    },
+    "trigger_kinds": {
+      "unrecorded_legacy": 1,
+      "confirmed_join": 35
+    },
+    "join_bytes": 491663360,
+    "tool_bytes": 8908800,
+    "handoff_bytes": 0,
+    "join_submitted_before_eos": 0,
+    "full_reused": 36,
+    "full_not_reused": 0,
+    "full_use_unknown": 0,
+    "full_reuse_proof_versions": {
+      "2": 36
+    },
+    "mamba_forward_verified": 0,
+    "redemoted_before_first_service": 0,
+    "native_reloaded_before_first_service": 0,
+    "native_reloaded_prefetched_full_before_first_service": 0,
+    "native_reloaded_prefetched_mamba_before_first_service": 0,
+    "native_reload_pool_associations_by_evidence": {
+      "kv": {
+        "reconciled_native_receipt": 0,
+        "legacy_batch_pool_presence": 0
+      },
+      "mamba": {
+        "reconciled_native_receipt": 0,
+        "legacy_batch_pool_presence": 0
+      }
+    },
+    "issue_to_submit_ms": {
+      "count": 36,
+      "p50": 7.08544921875,
+      "p90": 7.08544921875,
+      "max": 7.08544921875
+    },
+    "enqueue_to_submit_ms": {
+      "count": 36,
+      "p50": 6.868092343211174,
+      "p90": 6.868092343211174,
+      "max": 6.868092343211174
+    },
+    "submit_to_ack_ms": {
+      "count": 36,
+      "p50": 20.96827980130911,
+      "p90": 22.724369540810585,
+      "max": 24.48045928031206
+    },
+    "ack_to_first_service_ms": {
+      "count": 36,
+      "p50": 317.6954345703125,
+      "p90": 317.7535400390625,
+      "max": 1250.152099609375
+    },
+    "join_submit_after_eos_ms": {
+      "count": 0
+    },
+    "completion_lead_ms": {
+      "count": 1,
+      "p50": 451.677734375,
+      "p90": 451.677734375,
+      "max": 451.677734375
+    },
+    "pressure_events": 64,
+    "pressure_events_with_prior_prepare_ack": 31,
+    "unique_prepared_nodes_demoted": 31,
+    "prepare_issued_commands": 1010,
+    "prepare_acknowledged_commands": 1010,
+    "prepare_commands_with_observed_restore": 41,
+    "prepare_commands_with_native_restore": 7,
+    "prepare_commands_with_controlled_restore": 35,
+    "prepare_commands_without_observed_restore": 969,
+    "prepare_commands_with_later_node_pool_d2h": 0,
+    "prepare_commands_with_host_eviction_before_later_d2h": 0,
+    "prepare_host_lifetime": {
+      "host_eviction_evidence_available": true,
+      "command_categories": {
+        "no_restore": 969,
+        "before_observed_eviction_only": 41,
+        "after_observed_eviction_only": 0,
+        "mixed": 0,
+        "unknown_eviction_evidence": 0
+      },
+      "restore_node_pool_associations": {
+        "before_observed_eviction": 42,
+        "after_observed_eviction": 0,
+        "unknown": 0
+      },
+      "by_pool": {
+        "kv": {
+          "prepared_commands": 1010,
+          "commands_with_observed_eviction": 1,
+          "ack_to_first_observed_eviction_ms": {
+            "count": 1,
+            "p50": 22523.415283203125,
+            "p90": 22523.415283203125,
+            "max": 22523.415283203125
+          }
+        }
+      },
+      "repeated_context_epoch_node_creation_groups": 0,
+      "additional_prepares_on_same_identity": 0,
+      "max_commands_on_same_identity": 1,
+      "prepare_identity_evidence_missing_commands": 0,
+      "scope": "Node/pool associations, not allocation continuity or model-forward reuse. A restore after observed Host eviction cannot establish consumption of the original prepared copy. Eviction latency stops at the next observed same-node/pool D2H write; absent eviction records are not zero evictions. Reported latencies include only observed evictions, excluding censored copies. Repeated context/epoch/node/creation identities are not exact duplicate bytes and do not establish the same wait episode across splits."
+    },
+    "prepare_selection": {
+      "candidate_records": 142,
+      "records_without_command_id": 0,
+      "burst_records": 134,
+      "explicit_burst_commands": 1010,
+      "acknowledged_burst_commands": 1010,
+      "by_source": {
+        "join_prepare": {
+          "candidate_records": 10,
+          "acknowledged_command_records": 10,
+          "direct_reclaim_potential_commands": 8,
+          "zero_direct_reclaim_potential_commands": 2,
+          "direct_reclaim_potential_unknown_commands": 0,
+          "selected_transfer_bytes_known": 202547200.0,
+          "selected_transfer_bytes_unknown_records": 0,
+          "zero_direct_reclaim_selected_transfer_bytes_known": 144179200.0,
+          "missing_full_prefix_tokens": {
+            "count": 10,
+            "p50": 11232.0,
+            "p90": 23167.899999999994,
+            "max": 33472.0
+          }
+        },
+        "tool_wait": {
+          "candidate_records": 132,
+          "acknowledged_command_records": 132,
+          "direct_reclaim_potential_commands": 110,
+          "zero_direct_reclaim_potential_commands": 22,
+          "direct_reclaim_potential_unknown_commands": 0,
+          "selected_transfer_bytes_known": 3899371520.0,
+          "selected_transfer_bytes_unknown_records": 0,
+          "zero_direct_reclaim_selected_transfer_bytes_known": 1760378880.0,
+          "missing_full_prefix_tokens": {
+            "count": 132,
+            "p50": 23380.5,
+            "p90": 117713.1,
+            "max": 197537.0
+          }
+        }
+      },
+      "scope": "Candidate selection-time estimates, not reclaimed bytes, DMA bytes or forward-use credit. Zero direct reclaim may be a necessary ancestor backup before an exclusive checkpoint becomes reclaimable. Match ACKs by command ID only; legacy records without it remain unassociated. Missing candidate estimates remain unknown. For a burst, candidate transfer/reclaim estimates describe the selected first extent only; explicit burst IDs link additional per-node receipts without multiplying this estimate or granting reuse credit."
+    },
+    "wait_events": {
+      "observed_wait_events": 886,
+      "records_without_wait_event_identity": 0,
+      "plan_timing": {
+        "by_source": {
+          "join_ticket": {
+            "observed_wait_events": 13,
+            "first_plan_relative_to_completion_ms": {
+              "count": 13,
+              "p50": -21.382568359375,
+              "p90": 50.435693359375016,
+              "max": 110.384521484375
+            },
+            "first_positive_full_plan_relative_to_completion_ms": {
+              "count": 3,
+              "p50": -22.373291015625,
+              "p90": -21.580712890625,
+              "max": -21.382568359375
+            },
+            "plan_timing_categories": {
+              "no_plan_observation_before_completion": {
+                "independent_events": 5,
+                "max_snapshot_pre_completion_full_bytes_known": 0,
+                "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0,
+                "early_started_and_reused_full_bytes": 0
+              },
+              "only_zero_full_plan_before_completion": {
+                "independent_events": 5,
+                "max_snapshot_pre_completion_full_bytes_known": 0,
+                "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0,
+                "early_started_and_reused_full_bytes": 0
+              },
+              "positive_full_plan_before_completion": {
+                "independent_events": 3,
+                "max_snapshot_pre_completion_full_bytes_known": 825651200,
+                "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+                "remaining_native_full_host_hit_bytes_known": 2907176960,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0,
+                "early_started_and_reused_full_bytes": 0
+              }
+            }
+          },
+          "tool_wait": {
+            "observed_wait_events": 873,
+            "first_plan_relative_to_completion_ms": {
+              "count": 873,
+              "p50": -49.906494140625,
+              "p90": 27.135302734375003,
+              "max": 362.84814453125
+            },
+            "first_positive_full_plan_relative_to_completion_ms": {
+              "count": 6,
+              "p50": -997.6383056640625,
+              "p90": -824.8572998046875,
+              "max": -815.697998046875
+            },
+            "plan_timing_categories": {
+              "no_plan_observation_before_completion": {
+                "independent_events": 353,
+                "max_snapshot_pre_completion_full_bytes_known": 0,
+                "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0,
+                "early_started_and_reused_full_bytes": 0
+              },
+              "only_zero_full_plan_before_completion": {
+                "independent_events": 514,
+                "max_snapshot_pre_completion_full_bytes_known": 0,
+                "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0,
+                "early_started_and_reused_full_bytes": 0
+              },
+              "positive_full_plan_before_completion": {
+                "independent_events": 6,
+                "max_snapshot_pre_completion_full_bytes_known": 70983680,
+                "max_snapshot_pre_completion_fitting_full_bytes_known": 8908800,
+                "remaining_native_full_host_hit_bytes_known": 65536000,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 1,
+                "early_started_and_reused_full_bytes": 8908800
+              }
+            }
+          }
+        }
+      },
+      "by_source": {
+        "join_ticket": {
+          "observed_events": 13,
+          "events_with_observed_full_plan": 3,
+          "events_with_capacity_observation": 0,
+          "events_with_capacity_condition": {
+            "none": 0,
+            "full_only": 0,
+            "mamba_only": 0,
+            "both": 0
+          },
+          "max_snapshot_full_bytes_under_mamba_only_shortfall_known": 0,
+          "max_snapshot_planned_full_bytes_known": 825651200,
+          "planned_full_bytes_unknown_events": 0,
+          "events_with_early_reused_full": 0,
+          "completion_boundary_unknown_events": 0,
+          "events_first_observed_after_completion": 5,
+          "events_with_tool_ids_outside_request_round": 0,
+          "early_started_and_reused_full_bytes": 0,
+          "post_completion_reused_full_by_phase": {
+            "completion_to_client_submit": {
+              "events_with_reused_full": 1,
+              "full_bytes": 491663360,
+              "unknown_or_unordered_boundary_events": 0
+            },
+            "client_submit_to_native_arrival": {
+              "events_with_reused_full": 0,
+              "full_bytes": 0,
+              "unknown_or_unordered_boundary_events": 0
+            },
+            "native_arrival_to_first_service": {
+              "events_with_reused_full": 0,
+              "full_bytes": 0,
+              "unknown_or_unordered_boundary_events": 0
+            }
+          },
+          "remaining_native_full_host_hit_bytes_known": 2907176960,
+          "remaining_native_full_evidence_unknown_events": 0,
+          "plan_evidence_categories": {
+            "only_zero_full_plan": {
+              "independent_events": 10,
+              "events_with_known_completion_boundary": 10,
+              "remaining_native_full_host_hit_bytes_known": 0,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            },
+            "positive_full_plan": {
+              "independent_events": 3,
+              "events_with_known_completion_boundary": 3,
+              "remaining_native_full_host_hit_bytes_known": 2907176960,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            }
+          },
+          "restore_burst_size_evidence": {
+            "one_to_fifteen_nodes_observed": {
+              "independent_events": 1,
+              "events_with_known_completion_boundary": 1,
+              "remaining_native_full_host_hit_bytes_known": 64225280,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            },
+            "only_empty_plan_observed": {
+              "independent_events": 10,
+              "events_with_known_completion_boundary": 10,
+              "remaining_native_full_host_hit_bytes_known": 0,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            },
+            "sixteen_or_more_nodes_observed": {
+              "independent_events": 2,
+              "events_with_known_completion_boundary": 2,
+              "remaining_native_full_host_hit_bytes_known": 2842951680,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            }
+          },
+          "residual_native_demand_by_observed_planning_evidence": {
+            "observed_plan_reasons": {
+              "no_restore_plan": {
+                "independent_events": 13,
+                "events_with_known_completion_boundary": 13,
+                "remaining_native_full_host_hit_bytes_known": 2907176960,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              },
+              "service_size_unsupported": {
+                "independent_events": 1,
+                "events_with_known_completion_boundary": 1,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              },
+              "start_window": {
+                "independent_events": 2,
+                "events_with_known_completion_boundary": 2,
+                "remaining_native_full_host_hit_bytes_known": 2907176960,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              },
+              "submitted": {
+                "independent_events": 1,
+                "events_with_known_completion_boundary": 1,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              }
+            },
+            "observed_planning_no_step_reasons": {
+              "no_host_backed_missing_copy": {
+                "independent_events": 10,
+                "events_with_known_completion_boundary": 10,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              },
+              "no_reusable_input_restore_step": {
+                "independent_events": 1,
+                "events_with_known_completion_boundary": 1,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              },
+              "prefetch_capacity_budget": {
+                "independent_events": 2,
+                "events_with_known_completion_boundary": 2,
+                "remaining_native_full_host_hit_bytes_known": 2907176960,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              }
+            },
+            "observed_planning_blocked_details": {
+              "input_checkpoint_unavailable_or_already_resident": {
+                "independent_events": 1,
+                "events_with_known_completion_boundary": 1,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              },
+              "prefetch_full_capacity_budget": {
+                "independent_events": 2,
+                "events_with_known_completion_boundary": 2,
+                "remaining_native_full_host_hit_bytes_known": 2907176960,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              }
+            },
+            "observed_no_live_details": {}
+          },
+          "planning_gap_semantics": "One count per independent wait per observed reason, regardless of repeated samples. Evidence categories partition waits; reason/detail groups overlap and must not be summed. Zero or missing plans do not prove zero physical demand. Residual bytes are next-request native FULL Host hits, not a proven pre-boundary opportunity, exclusive rejection cause or oracle speedup. Burst categories partition waits by the largest explicitly observed plan, not lifetime node commands. A sixteen-node plan is not proof of truncation or that a larger early transfer would fit capacity or the service window.",
+          "client_submit_to_native_arrival_ms": {
+            "count": 13,
+            "p50": 98.75341796875,
+            "p90": 120.065185546875,
+            "max": 230.079833984375
+          },
+          "client_submit_to_http_request_ms": {
+            "count": 13,
+            "p50": 24.93212890625,
+            "p90": 27.97998046875,
+            "max": 86.265625
+          },
+          "http_request_to_body_sent_ms": {
+            "count": 13,
+            "p50": 1.116943359375,
+            "p90": 2.2966796875,
+            "max": 2.81396484375
+          },
+          "body_sent_to_native_arrival_ms": {
+            "count": 13,
+            "p50": 73.053466796875,
+            "p90": 93.561083984375,
+            "max": 142.131103515625
+          },
+          "http_request_to_response_headers_ms": {
+            "count": 13,
+            "p50": 627.3798828125,
+            "p90": 2290.612939453126,
+            "max": 10053.797119140625
+          },
+          "body_sent_to_api_received_ms": {
+            "count": 13,
+            "p50": 7.065673828125,
+            "p90": 9.266455078125,
+            "max": 88.021240234375
+          },
+          "api_received_to_chat_conversion_ms": {
+            "count": 13,
+            "p50": 33.472900390625,
+            "p90": 35.56533203125,
+            "max": 35.869384765625
+          },
+          "chat_conversion_ms": {
+            "count": 13,
+            "p50": 22.538818359375,
+            "p90": 25.650927734375,
+            "max": 27.028076171875
+          },
+          "chat_conversion_to_tokenized_ms": {
+            "count": 13,
+            "p50": 3.52978515625,
+            "p90": 3.956591796875,
+            "max": 4.1630859375
+          },
+          "tokenized_to_dispatch_ms": {
+            "count": 13,
+            "p50": 0.006591796875,
+            "p90": 0.0078125,
+            "max": 0.008056640625
+          },
+          "dispatch_to_scheduler_received_ms": {
+            "count": 13,
+            "p50": 8.330322265625,
+            "p90": 15.01123046875,
+            "max": 22.58935546875
+          },
+          "scheduler_received_to_queue_registered_ms": {
+            "count": 13,
+            "p50": 0.137451171875,
+            "p90": 0.151025390625,
+            "max": 0.51708984375
+          },
+          "client_submit_to_first_service_ms": {
+            "count": 13,
+            "p50": 529.273193359375,
+            "p90": 2164.124023437501,
+            "max": 9967.06787109375
+          },
+          "submit_to_first_service_ms": {
+            "count": 13,
+            "p50": 429.993896484375,
+            "p90": 2055.943212890626,
+            "max": 9854.725341796875
+          },
+          "last_ack_to_first_service_ms": {
+            "count": 1,
+            "p50": 315.31005859375,
+            "p90": 315.31005859375,
+            "max": 315.31005859375
+          },
+          "full_expiration_commands_by_stage": {},
+          "full_expiration_bytes_by_stage": {}
+        },
+        "tool_wait": {
+          "observed_events": 873,
+          "events_with_observed_full_plan": 6,
+          "events_with_capacity_observation": 0,
+          "events_with_capacity_condition": {
+            "none": 0,
+            "full_only": 0,
+            "mamba_only": 0,
+            "both": 0
+          },
+          "max_snapshot_full_bytes_under_mamba_only_shortfall_known": 0,
+          "max_snapshot_planned_full_bytes_known": 70983680,
+          "planned_full_bytes_unknown_events": 0,
+          "events_with_early_reused_full": 1,
+          "completion_boundary_unknown_events": 0,
+          "events_first_observed_after_completion": 353,
+          "events_with_tool_ids_outside_request_round": 0,
+          "early_started_and_reused_full_bytes": 8908800,
+          "post_completion_reused_full_by_phase": {
+            "completion_to_client_submit": {
+              "events_with_reused_full": 0,
+              "full_bytes": 0,
+              "unknown_or_unordered_boundary_events": 0
+            },
+            "client_submit_to_native_arrival": {
+              "events_with_reused_full": 0,
+              "full_bytes": 0,
+              "unknown_or_unordered_boundary_events": 0
+            },
+            "native_arrival_to_first_service": {
+              "events_with_reused_full": 0,
+              "full_bytes": 0,
+              "unknown_or_unordered_boundary_events": 0
+            }
+          },
+          "remaining_native_full_host_hit_bytes_known": 65536000,
+          "remaining_native_full_evidence_unknown_events": 0,
+          "plan_evidence_categories": {
+            "only_zero_full_plan": {
+              "independent_events": 867,
+              "events_with_known_completion_boundary": 867,
+              "remaining_native_full_host_hit_bytes_known": 0,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            },
+            "positive_full_plan": {
+              "independent_events": 6,
+              "events_with_known_completion_boundary": 6,
+              "remaining_native_full_host_hit_bytes_known": 65536000,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 1
+            }
+          },
+          "restore_burst_size_evidence": {
+            "one_to_fifteen_nodes_observed": {
+              "independent_events": 6,
+              "events_with_known_completion_boundary": 6,
+              "remaining_native_full_host_hit_bytes_known": 65536000,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 1
+            },
+            "only_empty_plan_observed": {
+              "independent_events": 867,
+              "events_with_known_completion_boundary": 867,
+              "remaining_native_full_host_hit_bytes_known": 0,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            }
+          },
+          "residual_native_demand_by_observed_planning_evidence": {
+            "observed_plan_reasons": {
+              "before_start_window": {
+                "independent_events": 6,
+                "events_with_known_completion_boundary": 6,
+                "remaining_native_full_host_hit_bytes_known": 65536000,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 1
+              },
+              "no_restore_plan": {
+                "independent_events": 873,
+                "events_with_known_completion_boundary": 873,
+                "remaining_native_full_host_hit_bytes_known": 65536000,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 1
+              },
+              "start_window": {
+                "independent_events": 1,
+                "events_with_known_completion_boundary": 1,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 1
+              },
+              "submitted": {
+                "independent_events": 1,
+                "events_with_known_completion_boundary": 1,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 1
+              }
+            },
+            "observed_planning_no_step_reasons": {
+              "no_host_backed_missing_copy": {
+                "independent_events": 868,
+                "events_with_known_completion_boundary": 868,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 1
+              },
+              "prefetch_capacity_budget": {
+                "independent_events": 6,
+                "events_with_known_completion_boundary": 6,
+                "remaining_native_full_host_hit_bytes_known": 65536000,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 1
+              }
+            },
+            "observed_planning_blocked_details": {
+              "prefetch_full_capacity_budget": {
+                "independent_events": 6,
+                "events_with_known_completion_boundary": 6,
+                "remaining_native_full_host_hit_bytes_known": 65536000,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 1
+              }
+            },
+            "observed_no_live_details": {}
+          },
+          "planning_gap_semantics": "One count per independent wait per observed reason, regardless of repeated samples. Evidence categories partition waits; reason/detail groups overlap and must not be summed. Zero or missing plans do not prove zero physical demand. Residual bytes are next-request native FULL Host hits, not a proven pre-boundary opportunity, exclusive rejection cause or oracle speedup. Burst categories partition waits by the largest explicitly observed plan, not lifetime node commands. A sixteen-node plan is not proof of truncation or that a larger early transfer would fit capacity or the service window.",
+          "client_submit_to_native_arrival_ms": {
+            "count": 873,
+            "p50": 117.402099609375,
+            "p90": 162.17695312500004,
+            "max": 1021.519287109375
+          },
+          "client_submit_to_http_request_ms": {
+            "count": 873,
+            "p50": 29.171142578125,
+            "p90": 38.63012695312502,
+            "max": 512.124267578125
+          },
+          "http_request_to_body_sent_ms": {
+            "count": 872,
+            "p50": 0.9970703125,
+            "p90": 6.400732421874999,
+            "max": 220.89111328125
+          },
+          "body_sent_to_native_arrival_ms": {
+            "count": 872,
+            "p50": 85.5654296875,
+            "p90": 115.2932373046875,
+            "max": 512.82373046875
+          },
+          "http_request_to_response_headers_ms": {
+            "count": 873,
+            "p50": 214.135986328125,
+            "p90": 1813.6141113281267,
+            "max": 14647.5791015625
+          },
+          "body_sent_to_api_received_ms": {
+            "count": 856,
+            "p50": 11.67822265625,
+            "p90": 23.1368408203125,
+            "max": 443.867431640625
+          },
+          "api_received_to_chat_conversion_ms": {
+            "count": 873,
+            "p50": 30.2216796875,
+            "p90": 35.135009765625,
+            "max": 41.01953125
+          },
+          "chat_conversion_ms": {
+            "count": 873,
+            "p50": 28.081298828125,
+            "p90": 46.143994140625026,
+            "max": 487.751220703125
+          },
+          "chat_conversion_to_tokenized_ms": {
+            "count": 873,
+            "p50": 4.786376953125,
+            "p90": 5.71103515625,
+            "max": 8.5654296875
+          },
+          "tokenized_to_dispatch_ms": {
+            "count": 873,
+            "p50": 0.00732421875,
+            "p90": 0.008544921875,
+            "max": 0.01416015625
+          },
+          "dispatch_to_scheduler_received_ms": {
+            "count": 873,
+            "p50": 7.5849609375,
+            "p90": 16.883593750000003,
+            "max": 296.863037109375
+          },
+          "scheduler_received_to_queue_registered_ms": {
+            "count": 873,
+            "p50": 0.1376953125,
+            "p90": 0.150146484375,
+            "max": 0.236572265625
+          },
+          "client_submit_to_first_service_ms": {
+            "count": 873,
+            "p50": 173.65185546875,
+            "p90": 1766.8241699218752,
+            "max": 14639.618896484375
+          },
+          "submit_to_first_service_ms": {
+            "count": 873,
+            "p50": 45.550048828125,
+            "p90": 1592.176806640625,
+            "max": 14540.90869140625
+          },
+          "last_ack_to_first_service_ms": {
+            "count": 1,
+            "p50": 1286.116455078125,
+            "p90": 1286.116455078125,
+            "max": 1286.116455078125
+          },
+          "full_expiration_commands_by_stage": {},
+          "full_expiration_bytes_by_stage": {}
+        }
+      }
+    },
+    "terminal_capacity_handoff": {
+      "reclaim_records": 38,
+      "terminal_contexts": 38,
+      "freed_device_units": {
+        "0": 354445,
+        "2": 162
+      },
+      "freed_host_units": {
+        "0": 843
+      },
+      "freed_device_bytes_known": {
+        "0": 7259033600,
+        "2": 10431037440
+      },
+      "freed_host_bytes_known": {
+        "0": 17264640
+      },
+      "freed_device_units_with_unknown_byte_size": {},
+      "freed_host_units_with_unknown_byte_size": {},
+      "terminal_children": 13,
+      "by_invocation_scope": {
+        "dynamic_subagent": {
+          "reclaim_records": 13,
+          "terminal_contexts": 13,
+          "freed_device_units": {
+            "0": 31774,
+            "2": 40
+          },
+          "freed_host_units": {},
+          "freed_device_bytes_known": {
+            "0": 650731520,
+            "2": 2575564800
+          },
+          "freed_host_bytes_known": {},
+          "freed_device_units_with_unknown_byte_size": {},
+          "freed_host_units_with_unknown_byte_size": {}
+        },
+        "runtime_internal": {
+          "reclaim_records": 1,
+          "terminal_contexts": 1,
+          "freed_device_units": {
+            "0": 96767,
+            "2": 25
+          },
+          "freed_host_units": {},
+          "freed_device_bytes_known": {
+            "0": 1981788160,
+            "2": 1609728000
+          },
+          "freed_host_bytes_known": {},
+          "freed_device_units_with_unknown_byte_size": {},
+          "freed_host_units_with_unknown_byte_size": {}
+        },
+        "workflow_root": {
+          "reclaim_records": 24,
+          "terminal_contexts": 24,
+          "freed_device_units": {
+            "0": 225904,
+            "2": 97
+          },
+          "freed_host_units": {
+            "0": 843
+          },
+          "freed_device_bytes_known": {
+            "0": 4626513920,
+            "2": 6245744640
+          },
+          "freed_host_bytes_known": {
+            "0": 17264640
+          },
+          "freed_device_units_with_unknown_byte_size": {},
+          "freed_host_units_with_unknown_byte_size": {}
+        }
+      },
+      "parent_first_services": 13,
+      "parent_services_with_prior_device_release": 13,
+      "last_child_return_to_first_service_ms": {
+        "count": 13,
+        "p50": 631.54931640625,
+        "p90": 2253.953369140626,
+        "max": 10066.2099609375
+      },
+      "request_wait_ms": {
+        "count": 13,
+        "p50": 537.5843429937959,
+        "p90": 2200.1714173704395,
+        "max": 9968.079495243728
+      },
+      "restore_lookahead_records": 0,
+      "parent_services_with_prior_restore_lookahead": 0,
+      "restore_lookahead_to_first_service_ms": {
+        "count": 0
+      },
+      "queue_wait_before_restore_lookahead_ms": {
+        "count": 0
+      },
+      "sibling_release_windows": {
+        "observed_join_events": 13,
+        "completion_unobserved_events": 0,
+        "joins_with_sibling_device_release_before_join": 0,
+        "joins_with_early_reused_full_after_sibling_release": 0,
+        "early_reused_full_bytes_after_sibling_release_known": 0,
+        "cumulative_sibling_device_release_before_join": {
+          "reclaim_records": 0,
+          "terminal_contexts": 0,
+          "freed_device_units": {},
+          "freed_host_units": {},
+          "freed_device_bytes_known": {},
+          "freed_host_bytes_known": {},
+          "freed_device_units_with_unknown_byte_size": {},
+          "freed_host_units_with_unknown_byte_size": {}
+        },
+        "sibling_device_release_lead_ms": {
+          "count": 0
+        },
+        "rows": [
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:59819c3547f5",
+            "context_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:59819c3547f5:context:root",
+            "join_id": "deepagents-join:b69a0ce11462a5a8",
+            "completion_ts_ms": 1792453706481.8484,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_multi_session_development_expert_01:af2c0b13ed8f",
+            "context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_multi_session_development_expert_01:af2c0b13ed8f:context:root",
+            "join_id": "deepagents-join:d879491ec14de1ec",
+            "completion_ts_ms": 1792453732164.3464,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:c3b6d255ae67",
+            "context_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:c3b6d255ae67:context:root",
+            "join_id": "deepagents-join:71cc9c4470e44496",
+            "completion_ts_ms": 1792453766565.0747,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0",
+            "context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+            "join_id": "deepagents-join:3d7eedc1b8a3c120",
+            "completion_ts_ms": 1792453801115.5269,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0",
+            "context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+            "join_id": "deepagents-join:a6c4832958b8acb5",
+            "completion_ts_ms": 1792453900040.906,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d",
+            "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d:context:root",
+            "join_id": "deepagents-join:8ba9aa732bf656ba",
+            "completion_ts_ms": 1792454330232.2637,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_integration_testing_expert_01:8e07fbec81f0",
+            "context_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_integration_testing_expert_01:8e07fbec81f0:context:root",
+            "join_id": "deepagents-join:5f7d7d9f6c50c062",
+            "completion_ts_ms": 1792454654704.7664,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d",
+            "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d:context:root",
+            "join_id": "deepagents-join:99a2dd71ff197768",
+            "completion_ts_ms": 1792454706262.8286,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:a10dc6d3d84c",
+            "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:a10dc6d3d84c:context:root",
+            "join_id": "deepagents-join:05060b5fc734bc29",
+            "completion_ts_ms": 1792454757621.76,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:a10dc6d3d84c",
+            "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:a10dc6d3d84c:context:root",
+            "join_id": "deepagents-join:9e6a3e5b1512957b",
+            "completion_ts_ms": 1792454843714.3503,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d",
+            "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d:context:root",
+            "join_id": "deepagents-join:db347dcdec35d4f7",
+            "completion_ts_ms": 1792455201044.5542,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d",
+            "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d:context:root",
+            "join_id": "deepagents-join:d2054e490c26344d",
+            "completion_ts_ms": 1792455319929.0244,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d",
+            "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d:context:root",
+            "join_id": "deepagents-join:2395909c8cffaf27",
+            "completion_ts_ms": 1792455405683.0164,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          }
+        ],
+        "semantics": "Independent observed JOIN episodes, not all workload JOINs. Actual allocator release uses scheduler wall time; complete JOIN uses the existing client-clock offset conversion. Only explicitly identified dynamic subagents link by workflow/parent context/JOIN. Host-only or post-JOIN releases cannot support pre-JOIN H2D. A command qualifies only with the existing proof of actual pre-JOIN submission and FULL reuse by the following request. Temporal association does not prove exclusive capacity, child-to-parent page identity, that these bytes were necessary for prefetch, or a native-relative saving. Cumulative releases are not simultaneously free capacity; transferred FULL bytes are command receipts, not a count of unique pages. Unobserved JOIN completion leaves the release window unknown."
+      },
+      "rows": [
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:59819c3547f5",
+          "context_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:59819c3547f5:context:root",
+          "join_id": "deepagents-join:b69a0ce11462a5a8",
+          "request_id": "beliefkv:01a15691-0325-7d40-8fb1-c2256a29fd2f",
+          "freed_device_units_before_service": {
+            "0": 5801,
+            "2": 3
+          },
+          "last_child_return_to_first_service_ms": 709.623779296875,
+          "request_wait_ms": 589.3120327964425,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_multi_session_development_expert_01:af2c0b13ed8f",
+          "context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_multi_session_development_expert_01:af2c0b13ed8f:context:root",
+          "join_id": "deepagents-join:d879491ec14de1ec",
+          "request_id": "beliefkv:01a15691-6771-7281-82bd-aba30accf69c",
+          "freed_device_units_before_service": {
+            "0": 4623,
+            "2": 4
+          },
+          "last_child_return_to_first_service_ms": 631.54931640625,
+          "request_wait_ms": 537.5843429937959,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:c3b6d255ae67",
+          "context_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:c3b6d255ae67:context:root",
+          "join_id": "deepagents-join:71cc9c4470e44496",
+          "request_id": "beliefkv:01a15691-edd4-79e2-808e-38418f97c41b",
+          "freed_device_units_before_service": {
+            "0": 3426,
+            "2": 3
+          },
+          "last_child_return_to_first_service_ms": 1038.360107421875,
+          "request_wait_ms": 1000.7064463570714,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0",
+          "context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+          "join_id": "deepagents-join:3d7eedc1b8a3c120",
+          "request_id": "beliefkv:01a15692-74ca-7e52-bacd-eaff4ee0ec9d",
+          "freed_device_units_before_service": {
+            "0": 3371,
+            "2": 3
+          },
+          "last_child_return_to_first_service_ms": 1078.909423828125,
+          "request_wait_ms": 1079.1802499443293,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0",
+          "context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+          "join_id": "deepagents-join:a6c4832958b8acb5",
+          "request_id": "beliefkv:01a15693-f735-7272-aa97-60f662c6bcc2",
+          "freed_device_units_before_service": {
+            "0": 3604,
+            "2": 2
+          },
+          "last_child_return_to_first_service_ms": 804.9990234375,
+          "request_wait_ms": 679.5294946059585,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d",
+          "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d:context:root",
+          "join_id": "deepagents-join:8ba9aa732bf656ba",
+          "request_id": "beliefkv:01a1569a-87a6-7803-901f-eba7229b504d",
+          "freed_device_units_before_service": {
+            "0": 1563,
+            "2": 4
+          },
+          "last_child_return_to_first_service_ms": 251.9267578125,
+          "request_wait_ms": 121.21393997222185,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_integration_testing_expert_01:8e07fbec81f0",
+          "context_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_integration_testing_expert_01:8e07fbec81f0:context:root",
+          "join_id": "deepagents-join:5f7d7d9f6c50c062",
+          "request_id": "beliefkv:01a1569f-7b26-7c03-8214-c3866da42c25",
+          "freed_device_units_before_service": {
+            "0": 1592,
+            "2": 4
+          },
+          "last_child_return_to_first_service_ms": 10066.2099609375,
+          "request_wait_ms": 9968.079495243728,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d",
+          "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d:context:root",
+          "join_id": "deepagents-join:99a2dd71ff197768",
+          "request_id": "beliefkv:01a156a0-447d-73b1-90d2-c6012522d51c",
+          "freed_device_units_before_service": {
+            "0": 559,
+            "2": 2
+          },
+          "last_child_return_to_first_service_ms": 319.15576171875,
+          "request_wait_ms": 214.32657539844513,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:a10dc6d3d84c",
+          "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:a10dc6d3d84c:context:root",
+          "join_id": "deepagents-join:05060b5fc734bc29",
+          "request_id": "beliefkv:01a156a1-0d27-77c3-9fbe-8226ea79bd39",
+          "freed_device_units_before_service": {
+            "0": 1800,
+            "2": 2
+          },
+          "last_child_return_to_first_service_ms": 2547.71435546875,
+          "request_wait_ms": 2480.419209226966,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:a10dc6d3d84c",
+          "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:a10dc6d3d84c:context:root",
+          "join_id": "deepagents-join:9e6a3e5b1512957b",
+          "request_id": "beliefkv:01a156a2-5d7d-7bf1-b0ce-337673fa0948",
+          "freed_device_units_before_service": {
+            "0": 780,
+            "2": 2
+          },
+          "last_child_return_to_first_service_ms": 499.931396484375,
+          "request_wait_ms": 203.06341163814068,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d",
+          "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d:context:root",
+          "join_id": "deepagents-join:db347dcdec35d4f7",
+          "request_id": "beliefkv:01a156a7-d13b-72e0-a04e-8564d8f68b1e",
+          "freed_device_units_before_service": {
+            "0": 850,
+            "2": 3
+          },
+          "last_child_return_to_first_service_ms": 137.19921875,
+          "request_wait_ms": 118.35410073399544,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d",
+          "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d:context:root",
+          "join_id": "deepagents-join:d2054e490c26344d",
+          "request_id": "beliefkv:01a156a9-a1a0-7e13-b326-9cd1b124534e",
+          "freed_device_units_before_service": {
+            "0": 590,
+            "2": 2
+          },
+          "last_child_return_to_first_service_ms": 260.43310546875,
+          "request_wait_ms": 118.78049932420254,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d",
+          "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d:context:root",
+          "join_id": "deepagents-join:2395909c8cffaf27",
+          "request_id": "beliefkv:01a156aa-f0a2-78e3-a0e1-b0a2da47efb6",
+          "freed_device_units_before_service": {
+            "0": 3215,
+            "2": 6
+          },
+          "last_child_return_to_first_service_ms": 268.79833984375,
+          "request_wait_ms": 122.3735986277461,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        }
+      ],
+      "semantics": "Actual terminal-suffix allocator release, linked to the first observed completed parent GPU batch, not kernel start; RETURN delivery observation and service observation use scheduler wall time, not client event time; not exclusive slot ownership, predictive H2D reuse, avoided D2H bytes, or a native-relative latency saving. Restore lookahead is selection evidence, not submission/ACK evidence. Aggregate releases include internal calls; scope breakdown and terminal_children use explicit invocation-create metadata or recorded runtime scope, never ID spelling. Only confirmed dynamic subagents link to JOIN parent services; absent metadata stays unknown. Missing pool byte sizes stay unknown."
+    },
+    "parent_capacity_restore_retries": {
+      "rearm_records": 0,
+      "rearmed_requests": 0,
+      "rearmed_requests_with_observed_parent_service": 0,
+      "scope": "linked child allocator release enables a demand retry; not pre-boundary H2D"
+    }
+  },
+  "input_jsonl_prefixes": {
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 26563961,
+      "complete_prefix_sha256": "b5f798609e307594ed95e73fab59d7eff71353ebb21f7f6f9ac8ef9799de3a99",
+      "first_read_limit_bytes": 26563961
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/server/transfer_telemetry.jsonl": {
+      "complete_prefix_bytes": 2129997,
+      "complete_prefix_sha256": "de15ff1133150c3d53185bc38015ff7100eee21e0fa0bb6fbf74049cf2327e94",
+      "first_read_limit_bytes": 2129997
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/server/runtime_events.sglang.jsonl": {
+      "complete_prefix_bytes": 4331797,
+      "complete_prefix_sha256": "f257779e11229a49f5b5f3e7dab964bc19bda903c44f8f75fa9031754bcd70aa",
+      "first_read_limit_bytes": 4331797
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/server/physical_action_use.jsonl": {
+      "complete_prefix_bytes": 36617,
+      "complete_prefix_sha256": "ada453561ac676874c90d0052ee0ad539a5b771351d664a2aadcbd5cca8ef5bc",
+      "first_read_limit_bytes": 36617
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/server/physical_action_ack.jsonl": {
+      "complete_prefix_bytes": 471669,
+      "complete_prefix_sha256": "79531c859e00da5269bded5828f350ca12c0b8bb8f20724f22981f77408fc4ae",
+      "first_read_limit_bytes": 471669
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/server/eviction_attribution.jsonl": {
+      "complete_prefix_bytes": 2328647,
+      "complete_prefix_sha256": "a5ab07d0b2e83923642102435b3989566db63f81050345a1e8becea33b6bfe60",
+      "first_read_limit_bytes": 2328647
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_integration_testing_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 447925,
+      "complete_prefix_sha256": "35c8bbbc3f0f15667d351be655ac54eda18e8994e3236d754e88625e3aeb3a43",
+      "first_read_limit_bytes": 447925
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 335224,
+      "complete_prefix_sha256": "606b2dce1084929462698ac38c9d46a72c52c8f372c54754f6b34d3d10fe33b4",
+      "first_read_limit_bytes": 335224
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_bug_investigation_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 164304,
+      "complete_prefix_sha256": "c8b97cece497f8203558f85e54f92085b15f40e0efc3a448f092e4c808074f73",
+      "first_read_limit_bytes": 164304
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_multi_session_development_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 351683,
+      "complete_prefix_sha256": "0e691fc457bb33abf3b0085298758264ee5254afaddff75ee722e360ad8b68cc",
+      "first_read_limit_bytes": 351683
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_bug_investigation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 2394431,
+      "complete_prefix_sha256": "fb6bf66825fd1ae66c7a522aaa6c5bd908929df2573180cb631678360804bdcb",
+      "first_read_limit_bytes": 2394431
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_integration_testing_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 112805,
+      "complete_prefix_sha256": "27cbd9a6875eb3216875ab76857e303835b81a973981c19efcc3a5ff39e9ce62",
+      "first_read_limit_bytes": 112805
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_bug_investigation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 210067,
+      "complete_prefix_sha256": "e262497dcb3c52c2d81622e469478780308c7f4b7fca4f9864bf91cf8bd5c86e",
+      "first_read_limit_bytes": 210067
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_multi_session_development_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 416755,
+      "complete_prefix_sha256": "d8bc05baef90056cff71adcf5a8219a3acd9540f7c0a9df271888bb638df188d",
+      "first_read_limit_bytes": 416755
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_bug_investigation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 646670,
+      "complete_prefix_sha256": "6564882f73a450bc0072b5ec6a78189c6389346b6b4cf7adbca6de5f122f864d",
+      "first_read_limit_bytes": 646670
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_multi_session_development_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 452930,
+      "complete_prefix_sha256": "a41cefd7f50a7566335dd26c24513167977ceba46d2e38dfdbebb2d728c3de09",
+      "first_read_limit_bytes": 452930
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_feature_implementation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 752254,
+      "complete_prefix_sha256": "2301bdb5b7882a962e425a4b59103c2c3c5e455068cf0dcc85eda6d100fa43bc",
+      "first_read_limit_bytes": 752254
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_integration_testing_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 812697,
+      "complete_prefix_sha256": "d2b8ff5c21bb0a9e50a6cbca621c05814720ddf1133c562801955d74ff3e115c",
+      "first_read_limit_bytes": 812697
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 349557,
+      "complete_prefix_sha256": "e6cba571d371386b93ab827cbf145cfb7cf052227e994e0d3953552fb87b08a7",
+      "first_read_limit_bytes": 349557
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_integration_testing_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 217687,
+      "complete_prefix_sha256": "cda2b49a0b5fa28280acf6d9041b39954b91a197cecebf978cd724b1c04ec792",
+      "first_read_limit_bytes": 217687
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 486419,
+      "complete_prefix_sha256": "9e89b849215d5d77abb8d84695c667ce61c3c92cdda2071767f646de450804b1",
+      "first_read_limit_bytes": 486419
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 551089,
+      "complete_prefix_sha256": "c38e62b75fc164520492d3010936d5742a293ad1e15f4d4ce1d7f4254d5166e8",
+      "first_read_limit_bytes": 551089
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_feature_implementation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 436766,
+      "complete_prefix_sha256": "e59425a1508a7431be5a448db73a4faab46a596942c3b81858c89b35bfee7d03",
+      "first_read_limit_bytes": 436766
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_multi_session_development_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 388772,
+      "complete_prefix_sha256": "416ad913841e2dfaf013fa2d38763f51d214ac4838b717fd7f8edc49b2bff4e4",
+      "first_read_limit_bytes": 388772
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_bug_investigation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 355948,
+      "complete_prefix_sha256": "25ececa8981bef72d0a690c0acb1f83f36b611a6befd5a3b236a0409f7077c3d",
+      "first_read_limit_bytes": 355948
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 203260,
+      "complete_prefix_sha256": "38b8857743ae0391d6fb838c1fbe59cc6063f42c0a2822187c6ec910c5700e61",
+      "first_read_limit_bytes": 203260
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_feature_implementation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 626941,
+      "complete_prefix_sha256": "933a4d2792638723a3999242630faab6cb7a0186bbfcf7e5b13b7af9d7630711",
+      "first_read_limit_bytes": 626941
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_feature_implementation_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 462211,
+      "complete_prefix_sha256": "3a499b54d370f0e191b53da0875af8df55bb123f409f47326ee6e84a7f2d9b85",
+      "first_read_limit_bytes": 462211
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_integration_testing_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 350021,
+      "complete_prefix_sha256": "1ebb56ba389c2ad64f8821f1da21d26e7b79d7f031fac8eef20bcb5a1893265d",
+      "first_read_limit_bytes": 350021
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 2060231,
+      "complete_prefix_sha256": "a4497c5c8858b8806f45a7101f55c6704e59ca603ed75b1b3b292a852062fe6f",
+      "first_read_limit_bytes": 2060231
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_integration_testing_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 186537,
+      "complete_prefix_sha256": "c289e3e9ffc06d25c5828f19823b2e81e1c482b91f9f96f2a4f62ed284eaaea7",
+      "first_read_limit_bytes": 186537
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_cross_file_refactoring_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 54330,
+      "complete_prefix_sha256": "3eef44912f7520e6cb5330656f682902b7c1e86a72c66cddff73ab8b3a260671",
+      "first_read_limit_bytes": 54330
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_bug_investigation_medium_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 26231,
+      "complete_prefix_sha256": "69b32bd44220afc75ed11558e78b147c4892419fdcb92de280128d86deaab5f5",
+      "first_read_limit_bytes": 26231
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_multi_session_development_medium_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 55318,
+      "complete_prefix_sha256": "6396b5505b402d728945360e625c94ae9824a5d4d4734e866b48a5f9e3550fe7",
+      "first_read_limit_bytes": 55318
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_bug_investigation_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 384186,
+      "complete_prefix_sha256": "88de52cbd67b9b6e32c1cf6c8f99af21682b38669a3bef7c410cdb91f119f52e",
+      "first_read_limit_bytes": 384186
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_integration_testing_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 16879,
+      "complete_prefix_sha256": "687daf84ad8f9a0bf5d60f695f600b38d497724b48c43b31a2eaa4c8102f69fd",
+      "first_read_limit_bytes": 16879
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_bug_investigation_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 29102,
+      "complete_prefix_sha256": "a9ca8e7219ba8f4f9abfe6a6f488f85a96c24817b5bedba6bb1e92ab33379e25",
+      "first_read_limit_bytes": 29102
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_multi_session_development_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 179756,
+      "complete_prefix_sha256": "25b6cd98427c1fbee6d0a82e891e1ace4dea02ba8ddf9b7bf4183c64c810c214",
+      "first_read_limit_bytes": 179756
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_bug_investigation_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 335283,
+      "complete_prefix_sha256": "70194b8d729ff8d49cd0728a342f7a4412e96bd3cfe9abcfabd2a81309ad4b06",
+      "first_read_limit_bytes": 335283
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_multi_session_development_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 73104,
+      "complete_prefix_sha256": "9801da52ab0fabf7f44cb000306b63051d252f7aa6285066c0d1274f6ca296d5",
+      "first_read_limit_bytes": 73104
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_feature_implementation_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 114335,
+      "complete_prefix_sha256": "7b645c79df5be5a51ec79c6abef46df475a9cf31f5fc526a4ad399e93f3b0519",
+      "first_read_limit_bytes": 114335
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_integration_testing_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 285163,
+      "complete_prefix_sha256": "7e42b55d7a57d5fd345e9644dd593bb9ed8895948feb45034b57286ff589229d",
+      "first_read_limit_bytes": 285163
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_cross_file_refactoring_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 58993,
+      "complete_prefix_sha256": "c245ae7434f3fface31747d64a1988205879dedf87668f7afea3ecb2e64baf9e",
+      "first_read_limit_bytes": 58993
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_integration_testing_medium_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 33786,
+      "complete_prefix_sha256": "db948c05668fd6e48470f0fe6ee830b3bb746f7f5e69289db642609782933d39",
+      "first_read_limit_bytes": 33786
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 74010,
+      "complete_prefix_sha256": "fe466383f41fd4d702cfa5ca20da72be8a687c7b1b3be682d5eb2402afcc0a99",
+      "first_read_limit_bytes": 74010
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 86242,
+      "complete_prefix_sha256": "69757f924d93ed9a43b5769f22eeb917902140f26fabaf1b1edea7472096fb4b",
+      "first_read_limit_bytes": 86242
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_feature_implementation_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 168522,
+      "complete_prefix_sha256": "e89ce21f00d587d2eedaf1ceba03f798c04932bac6d8baf98933b22f877f1673",
+      "first_read_limit_bytes": 168522
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_multi_session_development_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 59942,
+      "complete_prefix_sha256": "0fdf37c9b50ee1a5605e17aafb81ac1394528fdfcb68fedb85125eb18c38c711",
+      "first_read_limit_bytes": 59942
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_bug_investigation_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 394723,
+      "complete_prefix_sha256": "23d436c9990f1390ac5737ab82475145ad9c6619046016b990ebf5715fd7d43a",
+      "first_read_limit_bytes": 394723
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 29075,
+      "complete_prefix_sha256": "13436eef916ad58bd354ccba530bfb3df18ffc05f243126ab6b30135bc860a21",
+      "first_read_limit_bytes": 29075
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_feature_implementation_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 89977,
+      "complete_prefix_sha256": "6f86cabc89f78f11fef3ade76560762e5d908abf1eaf9f5b076f8d48e7f457b6",
+      "first_read_limit_bytes": 89977
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_feature_implementation_medium_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 71199,
+      "complete_prefix_sha256": "4f5f2083952d5e4c147b2757ceeac5fc74a0e2fb50c99e971a1deea650247cb3",
+      "first_read_limit_bytes": 71199
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_integration_testing_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 57158,
+      "complete_prefix_sha256": "84f9f2e49ce3227b5d8c5c2cbf3c7893cdfae5bde31cd6c1ab03530a73132fcb",
+      "first_read_limit_bytes": 57158
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 990203,
+      "complete_prefix_sha256": "336f0f5eebecde808eb3a89d992457d28d32a5fcfb82722b87014c54bfbc7a4b",
+      "first_read_limit_bytes": 990203
+    },
+    "experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/server/runtime_audit.jsonl": {
+      "complete_prefix_bytes": 491273910,
+      "complete_prefix_sha256": "b8548aa408d6072b20e6b15293aa770b8440327542dc1f2f0c5b467ff50f0eb4",
+      "first_read_limit_bytes": 491273910
+    }
+  },
+  "collection_code_commit": "f29717ec027a542c758f59d48c7223b1f90056c5",
+  "audit_started_at_local": "2026-10-20T08:23:23.429748+08:00",
+  "audit_finished_at_local": "2026-10-20T08:23:27.641436+08:00",
+  "helper_sha256": "1bb8064854266d012423ce3bf4eea5b3aa1865a1fcc59308642ee645e7361db3",
+  "prefix_semantics": "Each JSONL is capped at its first-read stat size and last complete line. Repeated reads must match length and SHA256; this is not an atomic cross-file snapshot. Demand handoff remains separate from early prefetch.",
+  "sealed_dispatch_funnel": {
+    "sources": {
+      "join_ticket": {
+        "event_counts": {
+          "observed_events": 13,
+          "completion_observed": 13,
+          "positive_full_plan_before_completion": 3,
+          "start_before_completion": 2,
+          "submitted_before_completion": 0,
+          "start_without_submit_before_completion": 2
+        },
+        "events_with_observed_reason_before_completion": {
+          "no_restore_plan": 7,
+          "start_window": 2,
+          "service_size_unsupported": 1
+        },
+        "events_with_observed_no_step_reason_before_completion": {
+          "no_host_backed_missing_copy": 5,
+          "prefetch_capacity_budget": 2
+        }
+      },
+      "tool_wait": {
+        "event_counts": {
+          "observed_events": 873,
+          "completion_observed": 873,
+          "positive_full_plan_before_completion": 6,
+          "start_before_completion": 1,
+          "submitted_before_completion": 1,
+          "start_without_submit_before_completion": 0
+        },
+        "events_with_observed_reason_before_completion": {
+          "no_restore_plan": 520,
+          "before_start_window": 6,
+          "start_window": 1,
+          "submitted": 1
+        },
+        "events_with_observed_no_step_reason_before_completion": {
+          "no_host_backed_missing_copy": 515,
+          "prefetch_capacity_budget": 6
+        }
+      }
+    },
+    "reclaim_record_count": 7
+  },
+  "detail_file": "v2093_v91b_completed_predictive_wait_prefetch_20261020.json.gz",
+  "detail_uncompressed_sha256": "38421b2a4843d5af1e5079c0dbf94c683ce173261940990c5496ee576fee7718"
+}

@@ -9160,11 +9160,33 @@ class NativeAdmissionRuntime:
         self._prefetch_priority_partial_restore_details = None
         self._resident_priority_promoted = None
         self._resident_priority_details = None
-        if self._native_prefill_order or self._tool_timing_only and len(tagged) < 2:
-            # Tool-only inference has no local output-demand submission to
-            # preserve. Without competing tagged slots, ordering cannot change.
+        drained_chunk = False
+        if (
+            self._tool_timing_only and not self._native_prefill_order and len(tagged) >= 2
+            and type(remaining_chunk := getattr(adder, "rem_chunk_tokens", None)) is int
+            and remaining_chunk == 0
+            and getattr(adder, "dllm_config", None) is None
+            and getattr(adder, "can_run_list", None)
+        ):
+            try:
+                # Native prefix matching leaves at least one input token.
+                # A committed chunk has no input budget for these candidates.
+                drained_chunk = all(
+                    len(getattr(req, "origin_input_ids", ())) > 0
+                    for req in native_order
+                )
+            except (AttributeError, TypeError):
+                pass
+        if (
+            self._native_prefill_order
+            or self._tool_timing_only and len(tagged) < 2
+            or drained_chunk
+        ):
+            # Tool-only inference has no local output-demand submission. Ranking
+            # cannot help a single candidate or an input-budget-exhausted pass.
             self.counts[
                 "native_prefill_order_plans" if self._native_prefill_order
+                else "drained_chunk_prefill_plans" if drained_chunk
                 else "noncompeting_prefill_plans"
             ] += 1
             return compile_native_prefill_plan(

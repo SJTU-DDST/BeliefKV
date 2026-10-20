@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="11" time="7.562" timestamp="2026-10-19T17:04:24.783320-07:00" hostname="ddst-12"><testcase classname="tests.test_drained_chunk_control" name="test_drained_chunk_keeps_current_identity_checks_and_next_batch_reserve" time="0.001" /><testcase classname="tests.test_drained_chunk_control" name="test_uncertain_or_executable_pass_still_uses_normal_planning[empty_batch]" time="0.001" /><testcase classname="tests.test_drained_chunk_control" name="test_uncertain_or_executable_pass_still_uses_normal_planning[remaining_tokens]" time="0.001" /><testcase classname="tests.test_drained_chunk_control" name="test_uncertain_or_executable_pass_still_uses_normal_planning[unknown_chunk]" time="0.001" /><testcase classname="tests.test_drained_chunk_control" name="test_uncertain_or_executable_pass_still_uses_normal_planning[dllm]" time="0.001" /><testcase classname="tests.test_drained_chunk_control" name="test_uncertain_or_executable_pass_still_uses_normal_planning[empty_input]" time="0.001" /><testcase classname="tests.test_drained_chunk_control" name="test_uncertain_or_executable_pass_still_uses_normal_planning[unknown_input]" time="0.001" /><testcase classname="tests.test_drained_chunk_control" name="test_uncertain_or_executable_pass_still_uses_normal_planning[untagged_empty_input]" time="0.001" /><testcase classname="tests.test_drained_chunk_control" name="test_uncertain_or_executable_pass_still_uses_normal_planning[demand_predictions]" time="0.001" /><testcase classname="tests.test_drained_chunk_control" name="test_real_native_adder_rejects_cold_and_hot_input_without_chunk_budget[0]" time="7.280"><failure message="AttributeError: property 'rem_total_tokens' of 'PrefillAdder' object has no setter">prefix = 0
+
+    @pytest.mark.parametrize("prefix", (0, 128))
+    def test_real_native_adder_rejects_cold_and_hot_input_without_chunk_budget(prefix):
+        from sglang.srt.managers.schedule_batch import Req
+        from sglang.srt.managers.schedule_policy import AddReqResult, PrefillAdder
+    
+        assert Req._compute_max_prefix_len(NS(return_logprob=False), 129) == 128
+        adder = PrefillAdder.__new__(PrefillAdder)
+        adder.page_size = 64
+        adder.rem_chunk_tokens = 0
+        adder.rem_input_tokens = 12288
+        adder.rem_total_token_offset = 0
+&gt;       adder.rem_total_tokens = 1_000_000
+        ^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: property 'rem_total_tokens' of 'PrefillAdder' object has no setter
+
+tests/test_drained_chunk_control.py:95: AttributeError</failure></testcase><testcase classname="tests.test_drained_chunk_control" name="test_real_native_adder_rejects_cold_and_hot_input_without_chunk_budget[128]" time="0.001"><failure message="AttributeError: property 'rem_total_tokens' of 'PrefillAdder' object has no setter">prefix = 128
+
+    @pytest.mark.parametrize("prefix", (0, 128))
+    def test_real_native_adder_rejects_cold_and_hot_input_without_chunk_budget(prefix):
+        from sglang.srt.managers.schedule_batch import Req
+        from sglang.srt.managers.schedule_policy import AddReqResult, PrefillAdder
+    
+        assert Req._compute_max_prefix_len(NS(return_logprob=False), 129) == 128
+        adder = PrefillAdder.__new__(PrefillAdder)
+        adder.page_size = 64
+        adder.rem_chunk_tokens = 0
+        adder.rem_input_tokens = 12288
+        adder.rem_total_token_offset = 0
+&gt;       adder.rem_total_tokens = 1_000_000
+        ^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: property 'rem_total_tokens' of 'PrefillAdder' object has no setter
+
+tests/test_drained_chunk_control.py:95: AttributeError</failure></testcase></testsuite></testsuites>

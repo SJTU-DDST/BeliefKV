@@ -1,0 +1,1388 @@
+{
+  "status": "live_prefix_audit_not_complete_or_performance_acceptance",
+  "observed_at": "2026-10-20T08:06:27.801015+08:00",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d",
+  "collection_commit": "f29717e",
+  "client_request_count": 1624,
+  "native_request_count": 1622,
+  "requests_without_client_metadata": 0,
+  "full_match_gaps_ge_512": 30,
+  "gap_requests_by_role": {
+    "root": 22,
+    "child": 8
+  },
+  "gap_request_rows": [
+    {
+      "role": "root",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a1568f-3b8e-76f3-8916-b1f9cdc42883",
+      "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_bug_investigation_medium_01:d5101b62f331",
+      "context_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_bug_investigation_medium_01:d5101b62f331:context:root",
+      "context_epoch": 0,
+      "effective_prefix": 4096,
+      "full_hit": 4703,
+      "full_gap": 607,
+      "prompt_tokens": 156853,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 152757,
+      "full_match_gap_extend_tokens": 607
+    },
+    {
+      "role": "root",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a1568f-5e7a-7bd2-ae0a-54edc6068306",
+      "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0",
+      "context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0:context:root",
+      "context_epoch": 0,
+      "effective_prefix": 131882,
+      "full_hit": 135273,
+      "full_gap": 3391,
+      "prompt_tokens": 135737,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 3855,
+      "full_match_gap_extend_tokens": 3391
+    },
+    {
+      "role": "root",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a1568f-5e45-7981-8fbe-d1e13e8e1d56",
+      "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:f5e3ec41a8b6",
+      "context_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:f5e3ec41a8b6:context:root",
+      "context_epoch": 0,
+      "effective_prefix": 153408,
+      "full_hit": 156425,
+      "full_gap": 3017,
+      "prompt_tokens": 156993,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 3585,
+      "full_match_gap_extend_tokens": 3017
+    },
+    {
+      "role": "root",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a1568f-5f46-7332-a03b-e261aa2669cf",
+      "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:59819c3547f5",
+      "context_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:59819c3547f5:context:root",
+      "context_epoch": 0,
+      "effective_prefix": 126976,
+      "full_hit": 128882,
+      "full_gap": 1906,
+      "prompt_tokens": 129940,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 2964,
+      "full_match_gap_extend_tokens": 1906
+    },
+    {
+      "role": "root",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a1568f-6031-7902-9871-17dd93cd233d",
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:72e54424ab6d",
+      "context_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:72e54424ab6d:context:root",
+      "context_epoch": 0,
+      "effective_prefix": 128981,
+      "full_hit": 130837,
+      "full_gap": 1856,
+      "prompt_tokens": 131825,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 2844,
+      "full_match_gap_extend_tokens": 1856
+    },
+    {
+      "role": "root",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a1568f-6136-7812-b92a-176df01f75a5",
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_bug_investigation_expert_01:e439e2a70de6",
+      "context_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_bug_investigation_expert_01:e439e2a70de6:context:root",
+      "context_epoch": 0,
+      "effective_prefix": 128981,
+      "full_hit": 130837,
+      "full_gap": 1856,
+      "prompt_tokens": 131271,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 2290,
+      "full_match_gap_extend_tokens": 1856
+    },
+    {
+      "role": "root",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a1568f-63c0-7ca0-bfc3-94915b189ca0",
+      "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d",
+      "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d:context:root",
+      "context_epoch": 0,
+      "effective_prefix": 114996,
+      "full_hit": 116985,
+      "full_gap": 1989,
+      "prompt_tokens": 117867,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 2871,
+      "full_match_gap_extend_tokens": 1989
+    },
+    {
+      "role": "root",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a1568f-63fc-79c3-9845-10dd1e4898be",
+      "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01:4a49b2d20bce",
+      "context_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01:4a49b2d20bce:context:root",
+      "context_epoch": 0,
+      "effective_prefix": 127424,
+      "full_hit": 128882,
+      "full_gap": 1458,
+      "prompt_tokens": 129545,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 2121,
+      "full_match_gap_extend_tokens": 1458
+    },
+    {
+      "role": "root",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a1568f-63e5-7183-98d8-c32c557e19c7",
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_feature_implementation_expert_01:f7e4f0fa186f",
+      "context_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_feature_implementation_expert_01:f7e4f0fa186f:context:root",
+      "context_epoch": 0,
+      "effective_prefix": 152128,
+      "full_hit": 155831,
+      "full_gap": 3703,
+      "prompt_tokens": 156723,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 4595,
+      "full_match_gap_extend_tokens": 3703
+    },
+    {
+      "role": "root",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a1568f-6430-7ac3-827d-e396d4da31dc",
+      "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_multi_session_development_expert_01:73b79be19142",
+      "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_multi_session_development_expert_01:73b79be19142:context:root",
+      "context_epoch": 0,
+      "effective_prefix": 114996,
+      "full_hit": 116985,
+      "full_gap": 1989,
+      "prompt_tokens": 117737,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 2741,
+      "full_match_gap_extend_tokens": 1989
+    },
+    {
+      "role": "child",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a1568f-ea9d-7cb0-a630-bccf82c502da",
+      "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_multi_session_development_expert_01:af2c0b13ed8f",
+      "context_id": "deepagents-context:c119709cfdc3254a",
+      "context_epoch": 0,
+      "effective_prefix": 0,
+      "full_hit": 3710,
+      "full_gap": 3710,
+      "prompt_tokens": 135013,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 135013,
+      "full_match_gap_extend_tokens": 3710
+    },
+    {
+      "role": "child",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a15690-117f-7b42-a936-a0ee0a3cd873",
+      "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:59819c3547f5",
+      "context_id": "deepagents-context:a5e897f9113856d0",
+      "context_epoch": 0,
+      "effective_prefix": 3648,
+      "full_hit": 4731,
+      "full_gap": 1083,
+      "prompt_tokens": 128662,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 125014,
+      "full_match_gap_extend_tokens": 1083
+    },
+    {
+      "role": "root",
+      "first_observed_invocation_request": false,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [
+        "read_file"
+      ],
+      "previous_client_request": "beliefkv:01a15690-4ba2-78f1-a65b-0d9f5a0ba08f",
+      "request_id": "beliefkv:01a15690-5cdf-7721-a6b3-71a9f8b55929",
+      "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:e823ae929fb4",
+      "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:e823ae929fb4:context:root",
+      "context_epoch": 6,
+      "effective_prefix": 120692,
+      "full_hit": 122099,
+      "full_gap": 1407,
+      "prompt_tokens": 123444,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 2752,
+      "full_match_gap_extend_tokens": 1407
+    },
+    {
+      "role": "child",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a15690-9725-7a60-982c-720ced114ff2",
+      "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d",
+      "context_id": "deepagents-context:72eff9967759a277",
+      "context_epoch": 0,
+      "effective_prefix": 3648,
+      "full_hit": 4318,
+      "full_gap": 670,
+      "prompt_tokens": 116766,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 113118,
+      "full_match_gap_extend_tokens": 670
+    },
+    {
+      "role": "child",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a15690-bce4-78c0-b4d7-eb283c56d75a",
+      "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:c3b6d255ae67",
+      "context_id": "deepagents-context:0a6f1165b5fa6312",
+      "context_epoch": 0,
+      "effective_prefix": 126528,
+      "full_hit": 128548,
+      "full_gap": 2020,
+      "prompt_tokens": 128683,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 2155,
+      "full_match_gap_extend_tokens": 2020
+    },
+    {
+      "role": "child",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a15691-3346-79c1-9ebe-e87cbdb01112",
+      "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_bug_investigation_expert_01:f6b2a7f39ec0",
+      "context_id": "deepagents-context:d95ca1160bebec0c",
+      "context_epoch": 0,
+      "effective_prefix": 131072,
+      "full_hit": 134942,
+      "full_gap": 3870,
+      "prompt_tokens": 135221,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 4149,
+      "full_match_gap_extend_tokens": 3870
+    },
+    {
+      "role": "root",
+      "first_observed_invocation_request": false,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [
+        "write_todos"
+      ],
+      "previous_client_request": "beliefkv:01a15692-03ce-7bd1-8729-75934c922c4b",
+      "request_id": "beliefkv:01a15692-2d77-77c1-b260-224bee689518",
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:72e54424ab6d",
+      "context_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:72e54424ab6d:context:root",
+      "context_epoch": 13,
+      "effective_prefix": 153621,
+      "full_hit": 155284,
+      "full_gap": 1663,
+      "prompt_tokens": 155750,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 2129,
+      "full_match_gap_extend_tokens": 1663
+    },
+    {
+      "role": "root",
+      "first_observed_invocation_request": false,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [
+        "read_file"
+      ],
+      "previous_client_request": "beliefkv:01a15695-4184-7e22-966e-d2d603200d18",
+      "request_id": "beliefkv:01a15695-7f9e-7c60-adfc-1f4f1884f610",
+      "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:59819c3547f5",
+      "context_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:59819c3547f5:context:root",
+      "context_epoch": 27,
+      "effective_prefix": 153471,
+      "full_hit": 154750,
+      "full_gap": 1279,
+      "prompt_tokens": 156054,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 2583,
+      "full_match_gap_extend_tokens": 1279
+    },
+    {
+      "role": "root",
+      "first_observed_invocation_request": false,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [
+        "execute"
+      ],
+      "previous_client_request": "beliefkv:01a15695-cb1d-7832-a28d-3345c25d737c",
+      "request_id": "beliefkv:01a15695-df39-74d2-9245-bf6be94a4cf8",
+      "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_multi_session_development_expert_01:73b79be19142",
+      "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_multi_session_development_expert_01:73b79be19142:context:root",
+      "context_epoch": 25,
+      "effective_prefix": 140212,
+      "full_hit": 140915,
+      "full_gap": 703,
+      "prompt_tokens": 142160,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 1948,
+      "full_match_gap_extend_tokens": 703
+    },
+    {
+      "role": "root",
+      "first_observed_invocation_request": false,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [
+        "read_file"
+      ],
+      "previous_client_request": "beliefkv:01a15696-b474-7221-a4a8-1a45f44b5627",
+      "request_id": "beliefkv:01a15696-c2ec-7c63-b033-2746ba5d7dea",
+      "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_multi_session_development_expert_01:73b79be19142",
+      "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_multi_session_development_expert_01:73b79be19142:context:root",
+      "context_epoch": 33,
+      "effective_prefix": 147956,
+      "full_hit": 148659,
+      "full_gap": 703,
+      "prompt_tokens": 149077,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 1121,
+      "full_match_gap_extend_tokens": 703
+    },
+    {
+      "role": "root",
+      "first_observed_invocation_request": false,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [
+        "read_file"
+      ],
+      "previous_client_request": "beliefkv:01a15697-d421-7dc2-981b-dc49589c0e84",
+      "request_id": "beliefkv:01a15697-de18-76f0-97b5-26a292ab0d7e",
+      "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_multi_session_development_medium_01:129aba3a0a6d",
+      "context_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_multi_session_development_medium_01:129aba3a0a6d:context:root",
+      "context_epoch": 53,
+      "effective_prefix": 195723,
+      "full_hit": 196426,
+      "full_gap": 703,
+      "prompt_tokens": 197255,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 1532,
+      "full_match_gap_extend_tokens": 703
+    },
+    {
+      "role": "child",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a1569a-a2ff-7423-9136-4ea05dc6a37c",
+      "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d",
+      "context_id": "deepagents-context:f798e8d1cf0a3b25",
+      "context_epoch": 0,
+      "effective_prefix": 0,
+      "full_hit": 116650,
+      "full_gap": 116650,
+      "prompt_tokens": 116836,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 116836,
+      "full_match_gap_extend_tokens": 116650
+    },
+    {
+      "role": "root",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a1569c-d90d-76b2-86ac-0266ccfee430",
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_cross_file_refactoring_expert_01:52445db72cd0",
+      "context_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_cross_file_refactoring_expert_01:52445db72cd0:context:root",
+      "context_epoch": 0,
+      "effective_prefix": 0,
+      "full_hit": 155831,
+      "full_gap": 155831,
+      "prompt_tokens": 156676,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 156676,
+      "full_match_gap_extend_tokens": 155831
+    },
+    {
+      "role": "root",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a1569c-dea2-7f71-8308-81ef5c98166e",
+      "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_feature_implementation_medium_01:1b62099d13aa",
+      "context_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_feature_implementation_medium_01:1b62099d13aa:context:root",
+      "context_epoch": 0,
+      "effective_prefix": 4096,
+      "full_hit": 156425,
+      "full_gap": 152329,
+      "prompt_tokens": 157147,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 153051,
+      "full_match_gap_extend_tokens": 152329
+    },
+    {
+      "role": "root",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a1569c-e008-7332-98ee-174cce6e7b02",
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_integration_testing_expert_01:6e732b7fc467",
+      "context_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_integration_testing_expert_01:6e732b7fc467:context:root",
+      "context_epoch": 0,
+      "effective_prefix": 4096,
+      "full_hit": 130837,
+      "full_gap": 126741,
+      "prompt_tokens": 131643,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 127547,
+      "full_match_gap_extend_tokens": 126741
+    },
+    {
+      "role": "root",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a1569c-e356-74a1-b561-6cb3d30d32a3",
+      "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:a10dc6d3d84c",
+      "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:a10dc6d3d84c:context:root",
+      "context_epoch": 0,
+      "effective_prefix": 4096,
+      "full_hit": 116985,
+      "full_gap": 112889,
+      "prompt_tokens": 117472,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 113376,
+      "full_match_gap_extend_tokens": 112889
+    },
+    {
+      "role": "root",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a1569c-e33f-70f0-85a6-3c53ec924c95",
+      "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_multi_session_development_expert_01:458d6e4fbf02",
+      "context_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_multi_session_development_expert_01:458d6e4fbf02:context:root",
+      "context_epoch": 0,
+      "effective_prefix": 4096,
+      "full_hit": 128882,
+      "full_gap": 124786,
+      "prompt_tokens": 129812,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 125716,
+      "full_match_gap_extend_tokens": 124786
+    },
+    {
+      "role": "root",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a1569c-e541-7a21-9144-272614750cb1",
+      "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_cross_file_refactoring_expert_01:926fc6384b1c",
+      "context_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_cross_file_refactoring_expert_01:926fc6384b1c:context:root",
+      "context_epoch": 0,
+      "effective_prefix": 4096,
+      "full_hit": 135273,
+      "full_gap": 131177,
+      "prompt_tokens": 136071,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 131975,
+      "full_match_gap_extend_tokens": 131177
+    },
+    {
+      "role": "child",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a1569e-122e-7cc2-a92a-c2011ce756b1",
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_integration_testing_expert_01:8e07fbec81f0",
+      "context_id": "deepagents-context:1f7dc3f7eea4e6c7",
+      "context_epoch": 0,
+      "effective_prefix": 0,
+      "full_hit": 4731,
+      "full_gap": 4731,
+      "prompt_tokens": 155608,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 155608,
+      "full_match_gap_extend_tokens": 4731
+    },
+    {
+      "role": "child",
+      "first_observed_invocation_request": true,
+      "first_after_compaction": false,
+      "follows_observed_join": false,
+      "tools_since_previous_request": [],
+      "previous_client_request": null,
+      "request_id": "beliefkv:01a156a0-6398-7630-8f05-56dd6ab8651b",
+      "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01:9c3131b5f68d",
+      "context_id": "deepagents-context:ec386f5c1fe55934",
+      "context_epoch": 0,
+      "effective_prefix": 4096,
+      "full_hit": 116650,
+      "full_gap": 112554,
+      "prompt_tokens": 116821,
+      "host_hit_tokens": 0,
+      "mamba_host_hit_slots": 0,
+      "extend_tokens": 112725,
+      "full_match_gap_extend_tokens": 112554
+    }
+  ],
+  "same_session_prefix_probes": 1587,
+  "service": {
+    "totals": {
+      "extend_tokens": 4000634,
+      "full_match_gap_extend_tokens": 1105384,
+      "samples_without_native_request": 1
+    },
+    "prefill_batches": 2269,
+    "batch_groups": {
+      "without_full_match_gap": {
+        "batches": 1192,
+        "single_request_batches": 1185,
+        "request_samples": 1199,
+        "role_set:root": 880,
+        "role_set:child": 311,
+        "role_set:child+root": 1,
+        "worker_interval_ms": {
+          "count": 1192,
+          "sum": 114199.45395644754,
+          "min": 2.7881404384970665,
+          "p50": 89.101143181324,
+          "p90": 201.54906390234828,
+          "p99": 265.6152093224227,
+          "max": 3618.748800829053
+        },
+        "single_request_worker_interval_ms": {
+          "count": 1185,
+          "sum": 113464.95324652642,
+          "min": 2.7881404384970665,
+          "p50": 89.22059834003448,
+          "p90": 201.51049457490447,
+          "p99": 262.5831817463043,
+          "max": 3618.748800829053
+        }
+      },
+      "with_full_match_gap": {
+        "batches": 1076,
+        "single_request_batches": 1059,
+        "request_samples": 1095,
+        "role_set:root": 866,
+        "role_set:child": 209,
+        "role_set:child+root": 1,
+        "worker_interval_ms": {
+          "count": 1076,
+          "sum": 100467.04808063805,
+          "min": 2.89826188236475,
+          "p50": 64.75215218961239,
+          "p90": 204.82217567041516,
+          "p99": 277.19987696036696,
+          "max": 342.484381981194
+        },
+        "single_request_worker_interval_ms": {
+          "count": 1059,
+          "sum": 97779.52499315143,
+          "min": 2.89826188236475,
+          "p50": 63.953145407140255,
+          "p90": 203.43660786747938,
+          "p99": 277.2637600824237,
+          "max": 342.484381981194
+        }
+      },
+      "unknown_geometry_or_identity": {
+        "batches": 1,
+        "single_request_batches": 1,
+        "request_samples": 1,
+        "role_set:": 1,
+        "worker_interval_ms": {
+          "count": 1,
+          "sum": 2.961275167763233,
+          "min": 2.961275167763233,
+          "p50": 2.961275167763233,
+          "p90": 2.961275167763233,
+          "p99": 2.961275167763233,
+          "max": 2.961275167763233
+        },
+        "single_request_worker_interval_ms": {
+          "count": 1,
+          "sum": 2.961275167763233,
+          "min": 2.961275167763233,
+          "p50": 2.961275167763233,
+          "p90": 2.961275167763233,
+          "p99": 2.961275167763233,
+          "max": 2.961275167763233
+        }
+      }
+    },
+    "semantics": "Token overlap is native extend geometry at full-match/effective-prefix positions, not per-layer kernel work. Whole batch worker intervals are not allocated to gap tokens or interpreted as removable GPU time."
+  },
+  "transfers": {
+    "by_direction_and_shape": {
+      "d2h:full_and_mamba": {
+        "batches": 721,
+        "bytes": 51921510400,
+        "full_tokens": {
+          "count": 721,
+          "sum": 268406,
+          "min": 1,
+          "p50": 103,
+          "p90": 962.0,
+          "p99": 4184.5999999999885,
+          "max": 8545
+        },
+        "mamba_slots": {
+          "count": 721,
+          "sum": 721,
+          "min": 1,
+          "p50": 1,
+          "p90": 1.0,
+          "p99": 1.0,
+          "max": 1
+        },
+        "nodes_per_batch": {
+          "count": 721,
+          "sum": 721,
+          "min": 1,
+          "p50": 1,
+          "p90": 1.0,
+          "p99": 1.0,
+          "max": 1
+        },
+        "transfer_stream_ms": {
+          "count": 721,
+          "sum": 2537.739104270935,
+          "min": 1.3266880512237549,
+          "p50": 2.0444159507751465,
+          "p90": 7.218016147613525,
+          "p99": 21.5149631500243,
+          "max": 41.43471908569336
+        },
+        "submit_to_ack_ms": {
+          "count": 721,
+          "sum": 22187.29256093502,
+          "min": 1.5409458428621292,
+          "p50": 2.6339394971728325,
+          "p90": 141.00327342748642,
+          "p99": 243.19277871400092,
+          "max": 283.0653339624405
+        },
+        "submit_to_complete_union_ms": 22187.13232421875,
+        "full_lt_512_token_batches": 605
+      },
+      "d2h:full_only": {
+        "batches": 1114,
+        "bytes": 44820111360,
+        "full_tokens": {
+          "count": 1114,
+          "sum": 2188482,
+          "min": 1,
+          "p50": 398.0,
+          "p90": 4096.0,
+          "p99": 32768.0,
+          "max": 32768
+        },
+        "mamba_slots": {
+          "count": 1114,
+          "sum": 0,
+          "min": 0,
+          "p50": 0.0,
+          "p90": 0.0,
+          "p99": 0.0,
+          "max": 0
+        },
+        "nodes_per_batch": {
+          "count": 1114,
+          "sum": 1915,
+          "min": 1,
+          "p50": 1.0,
+          "p90": 5.0,
+          "p99": 8.0,
+          "max": 8
+        },
+        "transfer_stream_ms": {
+          "count": 1114,
+          "sum": 10922.333256671205,
+          "min": 0.01583999954164028,
+          "p50": 2.196671962738037,
+          "p90": 21.731162071228027,
+          "p99": 150.07983795166015,
+          "max": 157.1892547607422
+        },
+        "submit_to_ack_ms": {
+          "count": 1114,
+          "sum": 16794.956523925066,
+          "min": 0.23113097995519638,
+          "p50": 2.7799741365015507,
+          "p90": 27.53091780468822,
+          "p99": 165.3323431126772,
+          "max": 234.2896331101656
+        },
+        "submit_to_complete_union_ms": 16794.83056640625,
+        "full_lt_512_token_batches": 604
+      },
+      "h2d:full_only": {
+        "batches": 8,
+        "bytes": 404971520,
+        "full_tokens": {
+          "count": 8,
+          "sum": 19774,
+          "min": 430,
+          "p50": 661.0,
+          "p90": 6144.399999999998,
+          "p99": 12474.639999999998,
+          "max": 13178
+        },
+        "mamba_slots": {
+          "count": 8,
+          "sum": 0,
+          "min": 0,
+          "p50": 0.0,
+          "p90": 0.0,
+          "p99": 0.0,
+          "max": 0
+        },
+        "nodes_per_batch": {
+          "count": 8,
+          "sum": 8,
+          "min": 1,
+          "p50": 1.0,
+          "p90": 1.0,
+          "p99": 1.0,
+          "max": 1
+        },
+        "transfer_stream_ms": {
+          "count": 8,
+          "sum": 9.418464109301567,
+          "min": 0.2271679937839508,
+          "p50": 0.3372800052165985,
+          "p90": 2.8095808506011952,
+          "p99": 5.680122952461241,
+          "max": 5.999072074890137
+        },
+        "submit_to_ack_ms": {
+          "count": 8,
+          "sum": 394.8215628042817,
+          "min": 11.654471047222614,
+          "p50": 54.28559146821499,
+          "p90": 62.629058957099915,
+          "p99": 69.26411399617791,
+          "max": 70.00134233385324
+        },
+        "submit_to_complete_union_ms": 394.82080078125,
+        "full_lt_512_token_batches": 3
+      }
+    },
+    "unique_d2h_anchors": 2636,
+    "d2h_anchor_occurrences": 2636,
+    "anchors_with_multiple_d2h": 0,
+    "d2h_commands_followed_by_same_anchor_h2d_ack": 8,
+    "semantics": "An anchor may cover other FULL nodes. Same-anchor later ACK is only an association, not per-component first-service reuse; unmatched D2H is not classified as wasted. Submit/ACK envelopes and transfer stream time are not measured scheduler CPU blocking or JCT savings."
+  },
+  "host_pool_evidence": {
+    "full": {
+      "bytes_per_unit": 20480,
+      "capacity_units": 7812501,
+      "d2h_ack_units": 2456888,
+      "evicted_bytes": 379289600,
+      "evicted_units": 18520,
+      "eviction_calls": 99,
+      "h2d_ack_units": 19774,
+      "h2d_units_after_first_host_eviction": 19774,
+      "high_water": {
+        "used_bytes": 49920512000,
+        "used_units": 2437525
+      }
+    },
+    "mamba": {
+      "bytes_per_unit": 64389120,
+      "capacity_units": 622,
+      "d2h_ack_units": 721,
+      "evicted_bytes": 6374522880,
+      "evicted_units": 99,
+      "eviction_calls": 99,
+      "h2d_ack_units": 0,
+      "h2d_units_after_first_host_eviction": 0,
+      "high_water": {
+        "used_bytes": 40050032640,
+        "used_units": 622
+      }
+    }
+  },
+  "request_cache_evidence": {
+    "after_first_full_host_eviction": {
+      "cached_tokens_device": 17416412,
+      "cached_tokens_host": 139264,
+      "mamba_host_hit_slots": 0,
+      "prompt_tokens": 17736207,
+      "request_count": 101,
+      "requests_with_full_host_hit": 2,
+      "requests_with_mamba_host_hit": 0,
+      "uncached_prompt_tokens": 180531
+    },
+    "after_first_host_eviction": {
+      "cached_tokens_device": 17416412,
+      "cached_tokens_host": 139264,
+      "mamba_host_hit_slots": 0,
+      "prompt_tokens": 17736207,
+      "request_count": 101,
+      "requests_with_full_host_hit": 2,
+      "requests_with_mamba_host_hit": 0,
+      "uncached_prompt_tokens": 180531
+    },
+    "after_first_mamba_host_eviction": {
+      "cached_tokens_device": 17416412,
+      "cached_tokens_host": 139264,
+      "mamba_host_hit_slots": 0,
+      "prompt_tokens": 17736207,
+      "request_count": 101,
+      "requests_with_full_host_hit": 2,
+      "requests_with_mamba_host_hit": 0,
+      "uncached_prompt_tokens": 180531
+    },
+    "all": {
+      "cached_tokens_device": 271196897,
+      "cached_tokens_host": 145152,
+      "mamba_host_hit_slots": 0,
+      "prompt_tokens": 275343293,
+      "request_count": 1624,
+      "requests_with_full_host_hit": 7,
+      "requests_with_mamba_host_hit": 0,
+      "uncached_prompt_tokens": 4001244
+    }
+  },
+  "context_prefix_reuse_evidence": {
+    "counts": {
+      "new_or_changed_prompt_tokens": 1310576,
+      "previously_served_common_prefix_tokens": 269315118,
+      "previously_served_prefix_recompute_proxy_tokens": 57076,
+      "request_probes": 1624,
+      "requests_with_prefix_recompute_proxy": 1549,
+      "with_prior_served_prompt": 1589,
+      "without_prior_served_prompt": 35
+    },
+    "semantics": "Previously served same-session input-prefix loss, not newly appended input or a per-layer FULL/Mamba recomputation count.",
+    "tracked_context_count": 35,
+    "tracking_limit": 1024
+  },
+  "host_block_eviction_attribution": {
+    "available": true,
+    "counts": {
+      "full_evictions": 100,
+      "mamba_evictions": 99,
+      "request_probes": 821
+    },
+    "evicted_units_by_pool": {
+      "full": 19363,
+      "mamba": 99
+    },
+    "full_reaccess_semantics": "exact prefix match plus request device/host cached-token intervals; remaining evicted FULL interval is attributed to recomputation",
+    "identity_semantics": "run-keyed HMAC over exact cache namespace and radix token prefix; raw token IDs are not written",
+    "mamba_reaccess_semantics": "exact prefix revisit is observable, but native telemetry does not expose the Mamba hit location per node",
+    "pending_blocks_by_pool": {
+      "full": 100,
+      "mamba": 99
+    },
+    "pending_latest_evicted_units_by_pool": {
+      "full": 19363,
+      "mamba": 99
+    },
+    "probe_prefix_length_overflow": 0,
+    "recomputed_full_units": 0,
+    "reused_full_units": 0
+  },
+  "record_counts": {
+    "action_ack": 933,
+    "action_use": 1,
+    "audit": 71964,
+    "events": 3240,
+    "eviction_attribution": 4260,
+    "host_pool": 3113,
+    "transfer": 1843
+  },
+  "writer_error": null,
+  "failed_records": 0,
+  "dropped_records": 0,
+  "finished_outcomes": [
+    {
+      "instance_id": "locobench__python_api_gateway_hard_009_bug_investigation_expert_01",
+      "outcome": "completed",
+      "error": null,
+      "duration_seconds": 455.5464890887961,
+      "natural_terminal": true
+    },
+    {
+      "instance_id": "locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01",
+      "outcome": "completed",
+      "error": null,
+      "duration_seconds": 893.3639084277675,
+      "natural_terminal": true
+    },
+    {
+      "instance_id": "locobench__python_api_gateway_hard_009_feature_implementation_expert_01",
+      "outcome": "completed",
+      "error": null,
+      "duration_seconds": 903.7370888534933,
+      "natural_terminal": true
+    },
+    {
+      "instance_id": "locobench__python_game_simulation_medium_033_integration_testing_expert_01",
+      "outcome": "completed",
+      "error": null,
+      "duration_seconds": 428.1425606859848,
+      "natural_terminal": true
+    },
+    {
+      "instance_id": "locobench__python_game_simulation_medium_033_multi_session_development_expert_01",
+      "outcome": "completed",
+      "error": null,
+      "duration_seconds": 829.1589078465477,
+      "natural_terminal": true
+    },
+    {
+      "instance_id": "locobench__python_mobile_game_hard_060_feature_implementation_expert_01",
+      "outcome": "completed",
+      "error": null,
+      "duration_seconds": 671.6704692738131,
+      "natural_terminal": true
+    },
+    {
+      "instance_id": "locobench__python_system_automation_hard_062_bug_investigation_expert_01",
+      "outcome": "completed",
+      "error": null,
+      "duration_seconds": 436.9057687940076,
+      "natural_terminal": true
+    },
+    {
+      "instance_id": "locobench__python_system_automation_hard_062_multi_session_development_expert_01",
+      "outcome": "completed",
+      "error": null,
+      "duration_seconds": 674.1830843165517,
+      "natural_terminal": true
+    },
+    {
+      "instance_id": "locobench__python_system_networking_hard_027_bug_investigation_medium_01",
+      "outcome": "completed",
+      "error": null,
+      "duration_seconds": 352.34460033103824,
+      "natural_terminal": true
+    },
+    {
+      "instance_id": "locobench__python_system_networking_hard_027_integration_testing_medium_01",
+      "outcome": "completed",
+      "error": null,
+      "duration_seconds": 611.3583487272263,
+      "natural_terminal": true
+    },
+    {
+      "instance_id": "locobench__python_system_networking_hard_027_multi_session_development_medium_01",
+      "outcome": "completed",
+      "error": null,
+      "duration_seconds": 634.7741774097085,
+      "natural_terminal": true
+    },
+    {
+      "instance_id": "locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01",
+      "outcome": "completed",
+      "error": null,
+      "duration_seconds": 439.5039356285706,
+      "natural_terminal": true
+    },
+    {
+      "instance_id": "locobench__python_web_cms_hard_074_feature_implementation_expert_01",
+      "outcome": "completed",
+      "error": null,
+      "duration_seconds": 634.3758987281471,
+      "natural_terminal": true
+    },
+    {
+      "instance_id": "locobench__python_web_cms_hard_074_integration_testing_expert_01",
+      "outcome": "completed",
+      "error": null,
+      "duration_seconds": 1116.9905818430707,
+      "natural_terminal": true
+    }
+  ],
+  "sources": [
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 210067,
+      "analyzed_bytes": 210067,
+      "sha256": "e262497dcb3c52c2d81622e469478780308c7f4b7fca4f9864bf91cf8bd5c86e",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 486419,
+      "analyzed_bytes": 486419,
+      "sha256": "9e89b849215d5d77abb8d84695c667ce61c3c92cdda2071767f646de450804b1",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 551089,
+      "analyzed_bytes": 551089,
+      "sha256": "c38e62b75fc164520492d3010936d5742a293ad1e15f4d4ce1d7f4254d5166e8",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_integration_testing_expert_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 180294,
+      "analyzed_bytes": 180294,
+      "sha256": "a3c6c92c1935b101f15f283c343e350ea79a3405f950ab7538becc3b973a49f3",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 539125,
+      "analyzed_bytes": 539125,
+      "sha256": "50c8655204eebf536cc8037e597e42c28e3ea9267df71cad6a94162874b222fc",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 1050613,
+      "analyzed_bytes": 1050613,
+      "sha256": "a0c1d6be6a99110a0d87aa4e2826f04ce88976035273b440e7c32fa3962a08f6",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_integration_testing_expert_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 112805,
+      "analyzed_bytes": 112805,
+      "sha256": "27cbd9a6875eb3216875ab76857e303835b81a973981c19efcc3a5ff39e9ce62",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_multi_session_development_expert_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 452930,
+      "analyzed_bytes": 452930,
+      "sha256": "a41cefd7f50a7566335dd26c24513167977ceba46d2e38dfdbebb2d728c3de09",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 1593392,
+      "analyzed_bytes": 1593392,
+      "sha256": "191f7cbba3c0a2fd7b1f2b16c626a6bbdfa969bbc0bd5bce5e0f4e0b3668fc0c",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 208263,
+      "analyzed_bytes": 208263,
+      "sha256": "07e8d47c97a79c102ebf025ff98ea960268e0d6fbd7d3f4621283368459d8df1",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 626941,
+      "analyzed_bytes": 626941,
+      "sha256": "933a4d2792638723a3999242630faab6cb7a0186bbfcf7e5b13b7af9d7630711",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_integration_testing_expert_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 283873,
+      "analyzed_bytes": 283873,
+      "sha256": "9ce238f05de3da6105593809b158e0d911710a36dfd7fe3d198307f94bb62ffe",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_bug_investigation_expert_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 355948,
+      "analyzed_bytes": 355948,
+      "sha256": "25ececa8981bef72d0a690c0acb1f83f36b611a6befd5a3b236a0409f7077c3d",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 220802,
+      "analyzed_bytes": 220802,
+      "sha256": "09ba41faed9ec6019a199a9fd049666c997c645fb19e8310483550297ed3dae2",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 225437,
+      "analyzed_bytes": 225437,
+      "sha256": "dd53dd2a61047cdeae7bb521750a0da6ccf42de23a63447ea5a9eecf6f20bd98",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_multi_session_development_expert_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 416755,
+      "analyzed_bytes": 416755,
+      "sha256": "d8bc05baef90056cff71adcf5a8219a3acd9540f7c0a9df271888bb638df188d",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_bug_investigation_medium_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 164304,
+      "analyzed_bytes": 164304,
+      "sha256": "c8b97cece497f8203558f85e54f92085b15f40e0efc3a448f092e4c808074f73",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_feature_implementation_medium_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 274740,
+      "analyzed_bytes": 274740,
+      "sha256": "3978e7557ebb354b9f7f0291b185cf41435f5eee10d178c8ee14424b42158dcc",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_integration_testing_medium_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 217687,
+      "analyzed_bytes": 217687,
+      "sha256": "cda2b49a0b5fa28280acf6d9041b39954b91a197cecebf978cd724b1c04ec792",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_multi_session_development_medium_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 351683,
+      "analyzed_bytes": 351683,
+      "sha256": "0e691fc457bb33abf3b0085298758264ee5254afaddff75ee722e360ad8b68cc",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 203260,
+      "analyzed_bytes": 203260,
+      "sha256": "38b8857743ae0391d6fb838c1fbe59cc6063f42c0a2822187c6ec910c5700e61",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_feature_implementation_expert_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 436766,
+      "analyzed_bytes": 436766,
+      "sha256": "e59425a1508a7431be5a448db73a4faab46a596942c3b81858c89b35bfee7d03",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_integration_testing_expert_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 812697,
+      "analyzed_bytes": 812697,
+      "sha256": "d2b8ff5c21bb0a9e50a6cbca621c05814720ddf1133c562801955d74ff3e115c",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_multi_session_development_expert_01/runtime_events.deepagents.jsonl",
+      "observed_size_bytes": 266282,
+      "analyzed_bytes": 266282,
+      "sha256": "c86792d53a78be9b714dc9cabd921fa5b761c13adb21e64e41b368fce0d9e79d",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/server/runtime_events.sglang.jsonl",
+      "observed_size_bytes": 3283718,
+      "analyzed_bytes": 3283718,
+      "sha256": "da90d74fdd3c0ea99a7a8086e45822c9966d217308a11bfc3da7a76ee2ff8bcb",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/server/eviction_attribution.jsonl",
+      "observed_size_bytes": 1652450,
+      "analyzed_bytes": 1652450,
+      "sha256": "46f5b1b7d3fb49327fec615049a7e287497c6f72e1f5e70889eafbb10cb6a12d",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/server/runtime_audit.jsonl",
+      "observed_size_bytes": 336565364,
+      "analyzed_bytes": 336565364,
+      "sha256": "030e8389a99cdbbf215d14db7591c0b44b63d39f94c917ffd5a59823f6c02175",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/server/native_telemetry_status.json",
+      "analyzed_bytes": 10890,
+      "sha256": "299e4b980b2863c6c63a649048545c9f736be7da54956cffd9d096102a40ffde"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/server/transfer_telemetry.jsonl",
+      "observed_size_bytes": 1610065,
+      "analyzed_bytes": 1610065,
+      "sha256": "9208eaa2bf3a4c506716577aa5a945e3c2e8cad6b3d3db53d18b3e569b66ae86",
+      "discarded_tail_bytes": 0
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_bug_investigation_expert_01/result.json",
+      "analyzed_bytes": 9069,
+      "sha256": "ca38ef210fd6d5e27d16d2b0ac79c4b13ff7763497c446078a8205dc087fc43f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01/result.json",
+      "analyzed_bytes": 9837,
+      "sha256": "d55ce499ca9a27715aab40741cd2912074837f9bcbfd4306a2b5f88eab6b7f69"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/result.json",
+      "analyzed_bytes": 8131,
+      "sha256": "0d528a97478e096de1cd209da6943be247deff1e476c04fdf9eb7e45ee110d2e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_integration_testing_expert_01/result.json",
+      "analyzed_bytes": 7487,
+      "sha256": "e21f2cb350e23a42b76cb4668716ec1ff28a99420d6390a2056cd9b37438850d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_game_simulation_medium_033_multi_session_development_expert_01/result.json",
+      "analyzed_bytes": 7379,
+      "sha256": "2bc3d3a38443c097aefa554e585350b74d09f0d5cdfc5432ea8acf41d9059da7"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_mobile_game_hard_060_feature_implementation_expert_01/result.json",
+      "analyzed_bytes": 7677,
+      "sha256": "0097b67b08c4f6b94bec2fefdc6d0f1601afb2cf87379078188dba9099d5c4f6"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_bug_investigation_expert_01/result.json",
+      "analyzed_bytes": 16240,
+      "sha256": "5cb398c0497c4ae0fa07751e52a5a2275d71037f6fb9a5890696ff6ff1fcef46"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_automation_hard_062_multi_session_development_expert_01/result.json",
+      "analyzed_bytes": 12646,
+      "sha256": "687f649ee74712d668f07c8db3dc868c8465177459136655fe45c36b841848a3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_bug_investigation_medium_01/result.json",
+      "analyzed_bytes": 8467,
+      "sha256": "7254fe4eaa8819c14a254379da985bb64cd2c4ca30676da091ec00198abb564f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_integration_testing_medium_01/result.json",
+      "analyzed_bytes": 6906,
+      "sha256": "e46e17c72defb472de6662e5678195bd6044fa322faaf29bbf4b47d1fd70ae37"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_system_networking_hard_027_multi_session_development_medium_01/result.json",
+      "analyzed_bytes": 8626,
+      "sha256": "a8897f103504bf38886ce8b2f72d98fb51a20f6a2b7f6ce8467e7e11e6cb3adb"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/result.json",
+      "analyzed_bytes": 8085,
+      "sha256": "1e9bfb961e693da6773ad6d3a84a75e1f362542cb1aed28e97d55cf878b5ac1c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_feature_implementation_expert_01/result.json",
+      "analyzed_bytes": 9607,
+      "sha256": "17ebeab26c5195db4058380bb40ec6aba4e9c6aca524f02491be44bdf49612b2"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_long_24root_running8_20261020_v91b/predictive_h2d/client_24/workflows/locobench__python_web_cms_hard_074_integration_testing_expert_01/result.json",
+      "analyzed_bytes": 9164,
+      "sha256": "0906dbf82635955b6421ebf9a796421fe85239bfb0d15c7994dc6a6768b1dd60"
+    }
+  ],
+  "auditor_source_sha256": {
+    "/home/longhao/experiment/ops/audit_v91b_live_hybrid_20261020.py": "9450bf4aa7bf915692d317992aa213cbc6444848768153bc6c8caab35cbf0c58",
+    "/home/longhao/experiment/BeliefKV/scripts/audit_native_hybrid_reuse.py": "177d0dd9bb939cd32f14398d142b52745fa43ef7ab569795d30aba4facba73ff",
+    "/home/longhao/experiment/BeliefKV/scripts/audit_native_system_costs.py": "a9262996530573c11cc2bbdaf6184a87443b30e02fbd8f983c74e5bbbb862952"
+  },
+  "scope": [
+    "Complete-line prefixes are sealed independently; files are not atomic across streams.",
+    "Client metadata is read from client_24, not the historical helper's client_156 default.",
+    "Missing client/native linkage remains unknown.",
+    "FULL matches beyond an effective hybrid checkpoint are not automatically lost useful KV.",
+    "Whole prefill worker intervals are not exclusive GPU cost or removable JCT.",
+    "The live run's experimental sources and configuration are unchanged."
+  ]
+}

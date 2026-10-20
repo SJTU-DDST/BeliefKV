@@ -2,12 +2,23 @@
 
 更新日期：2026-10-20（北京时间）
 
-**当前运行 V91b predictive 优先对照。**冻结代码 `f29717e` 于北京时间
-2026-10-20 07:43:32 启动，07:46:31 已有真实 workflow GPU 服务。
-24 root、16+8/900s、running 8、256K、Host80:20；737 个不同 CPU
-检查用例与来源核对通过，实际启动配置无差异，初次核查写盘失败/丢弃均 0。
-native 随后运行；迁移压力、有效复用、去长尾吞吐及平均 JCT 尚待验收。
-见 [V2086](../experiments/reports/v2086_v91b_actual_startup_20261020.json)。
+**V91b predictive 已结束，native 已自动开始。**冻结代码 `f29717e`，
+24 root、16+8/900s、running 8、256K、Host80:20 保持。predictive
+24 个 completed 中 23 个满足自然 JCT 口径，一个有既有图预算收尾干预，
+不能把该项计为自然完成。10 批物理 H2D/896.63MB；35 条 JOIN 命令
+属于一个完成后、提交前恢复事件，491.66MB FULL 均首次复用；另一次工具
+提前约 452ms 恢复并复用 8.91MB。无首次服务前重复加载。去长尾性能、
+任务质量和相对 native 收益仍待验收，见 V2093/V2094。
+
+main 新增输入预算耗尽时的规划短路，V91b 未包含：无 DLLM 且本次已有
+chunk、所有输入非空时跳过无执行消费者的候选排序，身份与原生准入保留，
+下一批仍预留 4096 token。313 项 CPU 检查通过；8 请求/64 节点夹具的
+完整规划 CPU P50 560.94→27.22us，两组可执行控制小回退完整保留。
+这不是 GPU/JCT 结果，见
+[V2095](../experiments/reports/v2095_drained_chunk_control_review_20261020_zh.md)。
+V2096 的实际 root 活跃峰值为 16、均值 9.062，第二批前已结束 12/16
+个首批 root；但 V2097 的 native 运行中前缀已恢复 91.821GB，不能把
+predictive 的低 H2D 直接当双方均无压力，也不急于改动当前到达合同。
 
 此前 V89 predictive 为 22 个
 completed、2 个 TemplateError，全程无 child/JOIN；刚初始化的 native

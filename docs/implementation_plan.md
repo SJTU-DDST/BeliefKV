@@ -5,16 +5,35 @@ Status date: 2026-10-20 (Asia/Shanghai).
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-Current priority is V91b's fresh GPU trace and remaining control/migration costs.
-Frozen f29717e launched at2026-10-20 07:43:32 Asia/Shanghai; first actual workflow
-service is07:46:31. Keep24 roots,16+8 arrivals/900s,running8,256K,Host80:20.
-All737 distinct CPU cases pass, with four final rechecks replacing earlier same-name
-executions rather than being added twice. The real SWE Docker case is unselected.
-Startup source/configuration match and initial writer failures/drops are zero.
-See V2086. Predictive precedes native on the same frozen task/code. Useful migration,
-consumption, tail-excluded throughput and mean JCT remain unaccepted.
-The observed generic tracebacks are the known internal freeze_gc startup race;
-the launcher successfully POSTs after health and before actual workflow requests.
+Current priority is V91b's completed predictive trace and running native control.
+Keep frozen f29717e,24 roots,16+8 arrivals/900s,running8,256K,Host80:20.
+Predictive produced24 completed outcomes; one existing graph-budget finalization
+means only23 qualify as natural-agent JCT. Independent task quality is ungraded.
+Final writer failures/drops are zero. Physical H2D is10 batches/896.635MB,
+20.353ms transfer-stream time, versus120.255GB D2H. V2093 links35 JOIN commands
+to one post-completion/pre-client-submit episode,491.663MB all first-service
+reused. One tool episode starts about452ms early and reuses8.909MB. No prefetched
+FULL is natively reloaded before first service. Logical Host-hit bytes are not
+physical DMA. Tail-excluded throughput, mean JCT and native-relative benefit remain
+unaccepted. Native's known internal freeze_gc race is followed by a successful
+launcher POST before actual workflow service; do not restart on traceback count.
+
+Main now skips causal/residency ranking only when a committed chunk has exhausted
+the current integer input budget, all native inputs are nonempty, DLLM is absent,
+and tool-only timing has at least two tagged candidates. Identity, terminal and
+native admission checks remain; next-batch input reserve stays4096. Restored budget
+resumes ordinary planning. All313 CPU cases pass, including the11 new cases rather
+than324 distinct cases. Pinned full-planner controls agree across12 scenes;
+8-request/64-node exhausted CPU P50 is560.940 to27.215us, with520 to0 native
+lookups. Preserve two available-budget0.77%/0.99% regressions and initial V2090
+results. V91b does not contain this change; do not restart a clean GPU pair for
+unproven microbenchmark gains. See V2095; online frequency and GPU/JCT remain unknown.
+V2096 reconstructs16 peak and9.062 time-weighted active roots;12/16 first-wave
+roots end before the900s second arrival. These are not GPU slots. V2097's live
+native prefix already has155 H2D batches/91.821GB including Mamba. Do not infer
+that both arms lack migration demand from predictive's small H2D, change arrivals
+mid-pair, or subtract logical Host hits from physical DMA. Finish the control and
+separate residency, hybrid reuse/recomputation and realized-work differences.
 
 The confirmed V89 compaction error is CPU-fixed:
 V89 predictive finished22 completed and2 TemplateErrors, with no child/JOIN.
