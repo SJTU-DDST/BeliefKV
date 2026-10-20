@@ -2939,7 +2939,7 @@ index 6815679..a143793 100644
      def evict_device_end(self, component_type: ComponentType) -> None:
          """Finish the component's device-eviction walk."""
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..09d404d 100644
+index d417d7d..47d77b7 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -4,9 +4,10 @@ import atexit
@@ -3430,57 +3430,55 @@ index d417d7d..09d404d 100644
 +        if diagnosis is not None:
 +            diagnosis["published_waiting_candidates"] = len(waiting)
 +
++        scan = None
++        full_scanned = full_selected = 0
++        full_scan_started = full_scan_needed = False
++
 +        pending = list(reversed(candidates))
 +        attempts = 0
 +        native_considered = False
++        mamba_considered = False
 +        while attempts < max_nodes:
 +            need_full = self._component_available_size(BASE_COMPONENT_TYPE) < full_tokens
 +            need_mamba = self._component_available_size(ComponentType.MAMBA) < mamba_slots
 +            if not need_full and not need_mamba:
 +                break
 +            if not pending:
-+                if native_considered:
-+                    break
-+                native_considered = True
++                if not native_considered:
++                    leaves = self.tree_core.evictable_device_leaves
++                    scan = getattr(self, "_beliefkv_handoff_full_scan", None)
++                    full_scan_needed = need_full
++                    full_scan_started = need_full and not scan
++                    if full_scan_started:
++                        duplicates = getattr(self.tree_core, "full_host_duplicates", None)
++                        if (
++                            not collect_cold_full_candidates
++                            and type(duplicates) is dict and len(duplicates) < len(leaves)
++                        ):
++                            scan = deque(node for node in duplicates.values() if node in leaves)
++                            self._beliefkv_handoff_full_scan_source = "settled_full_host_duplicates"
++                        else:
++                            scan = deque(leaves)
++                            self._beliefkv_handoff_full_scan_source = (
++                                "device_leaves_cold_prepare" if collect_cold_full_candidates
++                                else "device_leaves_dense_index"
++                                if type(duplicates) is dict else "device_leaves_legacy"
++                            )
++                        self._beliefkv_handoff_full_scan = scan
++                    elif not need_full:
++                        scan = None
++                        self._beliefkv_handoff_full_scan = None
++                    native_considered = True
 +                candidates = []
-+                scanned = selected = 0
-+                leaves = self.tree_core.evictable_device_leaves
-+                scan = getattr(self, "_beliefkv_handoff_full_scan", None)
-+                new_scan = need_full and not scan
-+                if new_scan:
-+                    duplicates = getattr(self.tree_core, "full_host_duplicates", None)
-+                    if (
-+                        not collect_cold_full_candidates
-+                        and type(duplicates) is dict and len(duplicates) < len(leaves)
-+                    ):
-+                        # This native index is maintained at backup/load ACKs.
-+                        # Filter its lazy stale entries before the bounded scan.
-+                        scan = deque(
-+                            node for node in duplicates.values() if node in leaves
-+                        )
-+                        self._beliefkv_handoff_full_scan_source = (
-+                            "settled_full_host_duplicates"
-+                        )
-+                    else:
-+                        # A dense index also includes interior nodes. Preserve
-+                        # the native leaf walk instead of looking up every leaf.
-+                        scan = deque(leaves)
-+                        self._beliefkv_handoff_full_scan_source = (
-+                            "device_leaves_cold_prepare" if collect_cold_full_candidates
-+                            else "device_leaves_dense_index"
-+                            if type(duplicates) is dict else "device_leaves_legacy"
-+                        )
-+                    self._beliefkv_handoff_full_scan = scan
-+                elif not need_full:
-+                    scan = None
-+                    self._beliefkv_handoff_full_scan = None
-+                while scan and scanned < max_nodes and selected < 8:
++                planned_full = 0
++                missing_full = full_tokens - self._component_available_size(BASE_COMPONENT_TYPE)
++                while scan and full_scanned < max_nodes and full_selected < 8:
 +                    node = scan.popleft()
 +                    if node.id in excluded:
 +                        if diagnosis is not None:
 +                            diagnosis["native_full_excluded"] += 1
 +                        continue
-+                    scanned += 1
++                    full_scanned += 1
 +                    reason = (
 +                        "not_current_device_leaf" if node not in leaves else
 +                        "unbacked" if not node.backuped else
@@ -3500,14 +3498,17 @@ index d417d7d..09d404d 100644
 +                            node.id, node.creation_time,
 +                            "causal_waiting_full" if causal_full else "unreferenced_cache",
 +                        ))
-+                        selected += 1
++                        full_selected += 1
++                        full = node.component_data[BASE_COMPONENT_TYPE]
++                        tokens = len(full.value) if full.value is not None else 0
 +                        if diagnosis is not None:
-+                            full = node.component_data[BASE_COMPONENT_TYPE]
-+                            diagnosis["native_full_selected_tokens"] += (
-+                                len(full.value) if full.value is not None else 0
-+                            )
++                            diagnosis["native_full_selected_tokens"] += tokens
 +                            if causal_full:
 +                                diagnosis["causal_full_selected"] = diagnosis.get("causal_full_selected", 0) + 1
++                        if not need_mamba:
++                            planned_full += tokens
++                            if planned_full >= missing_full:
++                                break
 +                    else:
 +                        if (
 +                            collect_cold_full_candidates and reason == "unbacked"
@@ -3534,23 +3535,8 @@ index d417d7d..09d404d 100644
 +                        if diagnosis is not None:
 +                            reasons = diagnosis["native_full_rejections"]
 +                            reasons[reason] = reasons.get(reason, 0) + 1
-+                if diagnosis is not None:
-+                    diagnosis["native_full_scanned"] = scanned
-+                    diagnosis["native_full_selected"] = selected
-+                    diagnosis["native_full_scan_truncated"] = bool(scan)
-+                    diagnosis["native_full_scan_cycle_started"] = bool(new_scan)
-+                    diagnosis["native_full_scan_remaining"] = len(scan) if scan is not None else 0
-+                    if need_full:
-+                        diagnosis["native_full_scan_source"] = getattr(
-+                            self, "_beliefkv_handoff_full_scan_source",
-+                            "device_leaves_legacy",
-+                        )
-+                        duplicates = getattr(self.tree_core, "full_host_duplicates", None)
-+                        diagnosis["native_full_backed_index_size"] = (
-+                            len(duplicates) if type(duplicates) is dict else None
-+                        )
-+                    diagnosis["native_fallback_considered"] = True
-+                if need_mamba:
++                if need_mamba and not mamba_considered:
++                    mamba_considered = True
 +                    lru = getattr(self.tree_core, "lru_lists", {}).get(ComponentType.MAMBA)
 +                    node = lru.get_lru_no_lock() if lru is not None else None
 +                    scanned = 0
@@ -3676,12 +3662,26 @@ index d417d7d..09d404d 100644
 +                    # its identity, causal wait and references before freeing it.
 +                    pending.append((parent.id, parent.creation_time, scope))
 +        if diagnosis is not None:
++            if native_considered:
++                diagnosis["native_full_scanned"] = full_scanned
++                diagnosis["native_full_selected"] = full_selected
++                diagnosis["native_full_scan_truncated"] = bool(scan)
++                diagnosis["native_full_scan_cycle_started"] = bool(full_scan_started)
++                diagnosis["native_full_scan_remaining"] = len(scan) if scan is not None else 0
++                if full_scan_needed:
++                    diagnosis["native_full_scan_source"] = getattr(
++                        self, "_beliefkv_handoff_full_scan_source", "device_leaves_legacy",
++                    )
++                    duplicates = getattr(self.tree_core, "full_host_duplicates", None)
++                    diagnosis["native_full_backed_index_size"] = (
++                        len(duplicates) if type(duplicates) is dict else None
++                    )
++                diagnosis["native_fallback_considered"] = True
 +            diagnosis["transaction_attempts"] = attempts
 +            diagnosis["transaction_truncated"] = attempts >= max_nodes and (
-+                bool(pending) or not native_considered and (
-+                    self._component_available_size(BASE_COMPONENT_TYPE) < full_tokens
-+                    or self._component_available_size(ComponentType.MAMBA) < mamba_slots
-+                )
++                bool(pending)
++                or self._component_available_size(BASE_COMPONENT_TYPE) < full_tokens
++                or self._component_available_size(ComponentType.MAMBA) < mamba_slots
 +            )
 +            diagnosis["freed_units"] = {int(ct): count for ct, count in tracker.items()}
 +            diagnosis["free_full_tokens_after"] = self._component_available_size(BASE_COMPONENT_TYPE)
@@ -6689,12 +6689,193 @@ index 0000000..bb3f7fa
 +    )
 +    result = subprocess.run([str(executable)], check=True, capture_output=True, text=True)
 +    assert "boundaries passed" in result.stdout
+diff --git a/test/srt/test_beliefkv_demand_driven_full_scan.py b/test/srt/test_beliefkv_demand_driven_full_scan.py
+new file mode 100644
+index 0000000..fe9fe96
+--- /dev/null
++++ b/test/srt/test_beliefkv_demand_driven_full_scan.py
+@@ -0,0 +1,175 @@
++"""Discover native recovery victims only while allocator capacity is missing."""
++
++from collections import Counter
++from unittest.mock import Mock
++
++import pytest
++
++from sglang.srt.mem_cache.unified_cache.component_type import ComponentType as CT
++from test_beliefkv_terminal_capacity import hybrid_cache, insert_session
++
++
++def fixture(hybrid_cache, *, referenced=True, count=8, backed_states=False):
++    cache, allocator, pool = hybrid_cache
++    nodes = []
++    for index in range(count):
++        node, _ = insert_session(cache, [100 + index, 1000 + index], "waiting")
++        nodes.append(node)
++    if not referenced:
++        cache.release_radix_session("waiting")
++    for node in nodes:
++        full = node.component_data[CT.FULL]
++        full.host_value = full.value.clone()
++        if backed_states:
++            state = node.component_data[CT.MAMBA]
++            state.host_value = state.value.clone()
++        cache.tree_core._update_duplicate_tracking(node)
++
++    class OrderedLeaves(set):
++        iterations = 0
++
++        def __iter__(self):
++            self.iterations += 1
++            return (node for node in nodes if set.__contains__(self, node))
++
++    cache.tree_core.evictable_device_leaves = OrderedLeaves(
++        cache.tree_core.evictable_device_leaves,
++    )
++    cache.is_write_back = True
++    cache.beliefkv_join_pressure_candidates = ()
++    cache.beliefkv_join_pressure_validator = lambda *_: False
++    cache.beliefkv_cold_full_owner_validator = Mock(return_value=True)
++    return cache, allocator, pool, nodes
++
++
++@pytest.mark.parametrize("hybrid_cache", (32,), indirect=True)
++@pytest.mark.parametrize("referenced", (False, True))
++def test_first_sufficient_victim_stops_discovery_without_skipping_commit_validation(
++    hybrid_cache, referenced,
++):
++    cache, allocator, pool, nodes = fixture(hybrid_cache, referenced=referenced)
++    available = allocator.available_size()
++    state_available = pool.mamba_allocator.available_size()
++    assert cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=available + 2, mamba_slots=0, collect_diagnostics=True,
++    )[int(CT.FULL)] == 2
++    diagnosis = cache.beliefkv_handoff_last_capacity
++    assert diagnosis["native_full_scanned"] == 1
++    assert diagnosis["native_full_selected"] == 1
++    assert diagnosis["transaction_attempts"] == 1
++    assert diagnosis["native_full_scan_remaining"] == 7
++    assert diagnosis["full_target_satisfied"]
++    assert nodes[0].component_data[CT.FULL].value is None
++    assert all(node.component_data[CT.FULL].value is not None for node in nodes[1:])
++    assert cache.beliefkv_cold_full_owner_validator.call_count == (2 if referenced else 0)
++    if referenced:
++        assert pool.mamba_allocator.available_size() == state_available
++        assert all(node.component_data[CT.MAMBA].value is not None for node in nodes)
++    cache._execute_and_commit_kv_backup.assert_not_called()
++
++
++@pytest.mark.parametrize("hybrid_cache", (32,), indirect=True)
++@pytest.mark.parametrize("changed", ("owner", "lock", "pending", "host_lost", "creation"))
++def test_rejected_first_transaction_continues_with_the_next_native_victim(
++    hybrid_cache, changed,
++):
++    cache, allocator, _, nodes = fixture(hybrid_cache)
++    first = nodes[0]
++    check = cache._beliefkv_causal_full_owner_refs
++    calls = Counter()
++
++    def revalidate(node, **kwargs):
++        calls[node.id] += 1
++        if node is first and calls[node.id] == 2:
++            if changed == "owner":
++                return None
++            if changed == "lock":
++                node.component_data[CT.FULL].lock_ref = 1
++            elif changed == "pending":
++                node.load_back_pending_id = node.id
++            elif changed == "host_lost":
++                node.component_data[CT.FULL].host_value = None
++            else:
++                node.creation_time += 1
++        return check(node, **kwargs)
++
++    cache._beliefkv_causal_full_owner_refs = revalidate
++    available = allocator.available_size()
++    assert cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=available + 2, mamba_slots=0, collect_diagnostics=True,
++    ) == {int(CT.FULL): 2}
++    assert first.component_data[CT.FULL].value is not None
++    assert nodes[1].component_data[CT.FULL].value is None
++    assert allocator.available_size() == available + 2
++    assert calls[first.id] == calls[nodes[1].id] == 2
++    diagnosis = cache.beliefkv_handoff_last_capacity
++    assert diagnosis["native_full_selected"] == 2
++    assert diagnosis["transaction_attempts"] == 2
++    cache._execute_and_commit_kv_backup.assert_not_called()
++
++
++@pytest.mark.parametrize("hybrid_cache", (32,), indirect=True)
++def test_mamba_iteration_survives_each_previous_victim_leaving_its_lru(hybrid_cache):
++    cache, allocator, pool, _ = fixture(
++        hybrid_cache, referenced=False, backed_states=True,
++    )
++    available, states = allocator.available_size(), pool.mamba_allocator.available_size()
++    assert cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=available, mamba_slots=states + 3, collect_diagnostics=True,
++    ) == {int(CT.MAMBA): 3}
++    assert allocator.available_size() == available
++    assert pool.mamba_allocator.available_size() == states + 3
++    assert cache.beliefkv_handoff_last_capacity["transaction_attempts"] == 3
++    assert cache.beliefkv_handoff_last_capacity["native_full_scanned"] == 0
++    assert cache.beliefkv_handoff_last_capacity["mamba_target_satisfied"]
++    cache._execute_and_commit_kv_backup.assert_not_called()
++
++
++@pytest.mark.parametrize("hybrid_cache", (32,), indirect=True)
++def test_fitting_capacity_does_not_start_a_native_scan(hybrid_cache):
++    cache, allocator, _, _ = fixture(hybrid_cache)
++    leaves = cache.tree_core.evictable_device_leaves
++    cache._beliefkv_causal_full_donor = Mock(side_effect=AssertionError("no capacity shortfall"))
++    assert cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=allocator.available_size(), mamba_slots=0, collect_diagnostics=True,
++    ) == {}
++    assert leaves.iterations == 0
++    assert not cache.beliefkv_handoff_last_capacity["native_fallback_considered"]
++
++
++@pytest.mark.parametrize("hybrid_cache", (32,), indirect=True)
++@pytest.mark.parametrize("max_nodes", (1, 2))
++def test_scan_and_transaction_budgets_are_preserved_across_capacity_retries(
++    hybrid_cache, max_nodes,
++):
++    cache, allocator, _, _ = fixture(hybrid_cache)
++    target = allocator.available_size() + 4
++    assert cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=target, mamba_slots=0, max_nodes=max_nodes,
++        collect_diagnostics=True,
++    ) == {int(CT.FULL): 2 * max_nodes}
++    diagnosis = cache.beliefkv_handoff_last_capacity
++    assert diagnosis["native_full_scanned"] == max_nodes
++    assert diagnosis["transaction_attempts"] == max_nodes
++    assert diagnosis["transaction_truncated"] is (max_nodes == 1)
++    if max_nodes == 1:
++        assert cache.reclaim_beliefkv_handoff_capacity(
++            full_tokens=target, mamba_slots=0, max_nodes=max_nodes,
++            collect_diagnostics=True,
++        ) == {int(CT.FULL): 2}
++    assert allocator.available_size() == target
++    assert cache.beliefkv_handoff_last_capacity["full_target_satisfied"]
++
++
++@pytest.mark.parametrize("hybrid_cache", (32,), indirect=True)
++def test_eight_candidate_limit_still_bounds_native_discovery(hybrid_cache):
++    cache, allocator, _, _ = fixture(hybrid_cache, count=10)
++    available = allocator.available_size()
++    assert cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=available + 20, mamba_slots=0, collect_diagnostics=True,
++    ) == {int(CT.FULL): 16}
++    diagnosis = cache.beliefkv_handoff_last_capacity
++    assert diagnosis["native_full_selected"] == 8
++    assert diagnosis["transaction_attempts"] == 8
++    assert diagnosis["native_full_scan_truncated"]
++    assert not diagnosis["full_target_satisfied"]
 diff --git a/test/srt/test_beliefkv_execution_handoff.py b/test/srt/test_beliefkv_execution_handoff.py
 new file mode 100644
-index 0000000..deaf243
+index 0000000..5f547f5
 --- /dev/null
 +++ b/test/srt/test_beliefkv_execution_handoff.py
-@@ -0,0 +1,824 @@
+@@ -0,0 +1,826 @@
 +"""CPU checks for read-only reentry and cold-only capacity exchange."""
 +
 +import ast
@@ -6747,6 +6928,8 @@ index 0000000..deaf243
 +        "_evict_device_leaf", "_preserve_mamba_reentry_node",
 +        "_prepare_beliefkv_full_demote", "_can_beliefkv_full_demote",
 +        "_reclaim_beliefkv_full_preserving_mamba",
++        "_beliefkv_causal_full_donor", "_beliefkv_causal_full_owner_refs",
++        "_beliefkv_full_covering_sessions",
 +        "_demote", "_accumulate_tracker",
 +    }]
 +    module = ast.Module(body=[
