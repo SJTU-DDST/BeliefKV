@@ -9,10 +9,18 @@
 
 后续 baseline 清单、公开代码边界和仅调度消融见
 [相关工作总表第 6.5-6.6 节](related_work_comparison_2026-07-21_zh.md#baseline-scheduling-ablations)。
-新增 JOIN-priority-only / OurScheduler-only / KV-only / Full 的待实施矩阵，
-以及 Pythia 等候选；本次只完成调研方案，不代表适配或 GPU 对比已完成。
+当前 V109 完整收尾后优先进行内部 JOIN-priority-only /
+OurScheduler-only / KV-only / 工程对齐 Native，再做外部 baseline。
+Full 直接复用 V109，不重跑；用户允许四个消融使用最新 CPU 优化后的代码，
+记录版本差异，此轮按快速开发比较解释。
+独立开关和接续器的最终顺序与冻结检查通过 V2573 全部 3058 项 CPU
+用例，保留 3023 项并新增 35 项，V2574 绑定源码；准备登记 V110，
+下一组 GPU 尚未启动。各组对齐前端
+token cache，V109 untouched native 单列。
+本周（北京时间 10 月 19–21 日）的核心设计、已完成优化及 GPU/CPU
+证据边界见[架构状态开头](architecture_status_zh.md)。
 
-**最新 main CPU 资格
+**内部开关之前的 CPU 资格
 [V2566](../experiments/reports/v2566_eos_free_prefix_qualified_cpu_sources_20261021.json)：**
 3023 项应用实际通过，保留 2919 项，新增 14 项并纳入 90 项已有部分
 恢复用例；未改引擎 405 项仅核对。首次有效 EOS 恢复可先提交当前空闲

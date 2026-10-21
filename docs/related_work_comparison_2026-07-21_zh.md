@@ -460,9 +460,10 @@ LMCache、Mooncake、Parrot 和集群 PD-disaggregation 系统仍是基础设施
 
 ### 6.6 本次请求：调度消融、必要外部对照与实施次序
 
-本节是 2026-10-21 联网调研后的待实施方案。本次只更新现有研究和关键
-状态文档，不安装竞品、不改生产路径、不改变 V109 的冻结代码和接续
-native。研究假设是“只调整请求顺序可能无法获得完整系统的 JCT/吞吐
+本节是 2026-10-21 联网调研后的方案。用户进一步要求 V109 完整收尾后
+先进行内部对比；独立开关与接续器的最终配置通过 V2573 的 3058 项
+CPU 检查，V2574 绑定源码，外部适配仍未实施。
+不改变 V109 的冻结代码和接续 native。研究假设是“只调整请求顺序可能无法获得完整系统的 JCT/吞吐
 收益”，不是预先指定调度消融必须失败。
 
 #### 6.6.1 先完成能分辨因果来源的内部对照
@@ -494,7 +495,10 @@ restore-ready-only 或无限 root 插队。
 PREPARE_HOST、resident-first 和最终阶段优先。实现时增加明确的条件名、
 启动后真实配置核验和动作审计，不能仅关闭两个 prefetch 开关就声称
 已经移除 KV 管理。先用小型 CPU/短 workload 验证仅调度组确实没有
-自定义迁移动作，再安排完整比较；本次尚未实现这些开关。
+自定义迁移动作，再安排完整比较。`BELIEFKV_INTERNAL_COMPARISON_MODE`
+区分 `full/join_priority_only/scheduler_only/kv_only/native_matched`；
+实际运行时状态与物理动作同时核查，不只看环境变量。独立 CPU 资格与
+GPU 登记以当前执行计划为准。
 
 如果 `OurScheduler-only` 更快，应如实报告，重新限定 KV 管理的价值。
 如果 JCT 更短而吞吐下降，则同时报告其 trade-off、HBM miss/需求
@@ -514,9 +518,12 @@ H2D、batch 填充与等待。不能通过人为等待 GPU、剥夺老化或刻�
 
 实施顺序：
 
-1. 先做 Native / JOIN-priority-only / OurScheduler-only / Full，补齐用户
-   要求的因果对照；KV-only 随独立开关完成后补入。不把这一步当成
-   外部论文方法已复现。
+1. 当前 V109 完整收尾后，先做内部矩阵，Full 直接复用 V109，
+   不重复运行。依次执行 JOIN-priority-only / OurScheduler-only /
+   KV-only / 工程对齐 Native。用户明确允许四组直接用最新代码及新增
+   CPU 优化；记录与 V109 的应用版本差异，本轮为开发判断，不称为严格
+   同版本因果归因。各组对齐前端 token cache，V109 untouched native
+   单列，不把这一矩阵当成外部论文方法已复现。
 2. 外部第一批优先 CONCUR、ThunderAgent、Continuum，分别覆盖反馈
    准入、program 工作集、TTL+调度。Agentix 同时核对正式算法与代码，
    是调度主张的重要对照，不能被简单 parent 优先替代。

@@ -347,6 +347,19 @@ class NativeAdmissionRuntime:
         tool_timing_sha256: str | None = None,
         enable_tool_prefetch: bool = False,
     ) -> None:
+        self.internal_comparison_mode = os.environ.get(
+            "BELIEFKV_INTERNAL_COMPARISON_MODE", "full",
+        )
+        if self.internal_comparison_mode not in (
+            "full", "join_priority_only", "scheduler_only", "kv_only",
+        ):
+            raise ValueError("unsupported internal runtime comparison mode")
+        self._custom_kv_management = self.internal_comparison_mode not in (
+            "join_priority_only", "scheduler_only",
+        )
+        self._join_priority_pending: dict[str, str] = {}
+        self._join_priority_promoted: str | None = None
+        self._join_priority_normal_admissions = 4
         stage_setting = os.environ.get("BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH", "0")
         if stage_setting not in ("0", "1"):
             raise ValueError("final stage prefetch setting must be 0 or 1")
@@ -712,6 +725,14 @@ class NativeAdmissionRuntime:
         self._model_worker = None
         if self._tool_timing_only and self._online_tool_timing is None:
             self._model_worker = NativePredictorWorker(*self._tool_model_arguments)
+        if not self._custom_kv_management and (
+            enable_local_predictor or enable_admission_prefetch
+            or enable_final_stage_prefetch or enable_confirmed_join_canary
+            or self.enable_prepare_host or self.enable_tool_prefetch
+            or self.enable_execution_handoff or self._borrowable_parent_headroom
+            or self._tool_timing_only or self._online_tool_timing is not None
+        ):
+            raise ValueError("scheduling-only comparison cannot enable custom KV management")
         if enable_local_predictor:
             if predictor_sha256 is None or predictor_artifact_path is None:
                 raise ValueError("local admission predictor requires a calibrated artifact")
@@ -893,7 +914,7 @@ class NativeAdmissionRuntime:
     def attach_native_cache(self, cache: object) -> None:
         self._native_cache = cache
         incremental = getattr(cache, "enable_beliefkv_incremental_prepare", None)
-        if self.enable_prepare_host and not self.physical_disabled and callable(incremental):
+        if self._custom_kv_management and self.enable_prepare_host and not self.physical_disabled and callable(incremental):
             if incremental() is True:
                 self.counts["incremental_full_tracking_enabled"] += 1
         self._residency_pool_bytes = None
@@ -908,7 +929,7 @@ class NativeAdmissionRuntime:
                 self._residency_pool_bytes = full_unit, mamba_unit
         except (AttributeError, KeyError, TypeError):
             pass
-        if callable(getattr(cache, "_evict_backed_join_parent", None)):
+        if self._custom_kv_management and callable(getattr(cache, "_evict_backed_join_parent", None)):
             cache.beliefkv_join_pressure_validator = self._live_parent_pressure_node
             cache.beliefkv_join_pressure_parked = self._on_parent_pressure_parked
             cache.beliefkv_cold_full_owner_validator = self._live_cold_full_owners
@@ -1194,6 +1215,7 @@ class NativeAdmissionRuntime:
             self._wait_context_cache = None
             self._join_parent_cache = None
             self._terminal_child_reclaims.clear()
+            self._join_priority_pending.clear()
             self._spawn_full_prepares.clear()
             self._terminal_root_contexts.clear()
             self._parent_capacity_handoffs.clear()
@@ -1259,6 +1281,26 @@ class NativeAdmissionRuntime:
                             self._join_by_invocation.setdefault(member, set()).add(join.join_id)
                 elif event.kind is RuntimeEventKind.JOIN_WAIT and event.join_id and event.invocation_id:
                     self._join_by_invocation.setdefault(event.invocation_id, set()).add(event.join_id)
+            if self.internal_comparison_mode == "join_priority_only":
+                for event, delta in zip(events, deltas):
+                    if event.kind in (
+                        RuntimeEventKind.RETURN, RuntimeEventKind.JOIN_WAIT,
+                        RuntimeEventKind.JOIN_SATISFIED,
+                    ) or event.kind is RuntimeEventKind.LLM_RESULT and event.attributes.get("terminal"):
+                        for invocation_id in delta.awakened_invocations:
+                            invocation = self.graph.invocations.get(invocation_id)
+                            join = self.graph.joins.get(invocation.join_id) if invocation else None
+                            if join is not None and join.satisfied and invocation_id in join.waiter_invocation_ids:
+                                self._join_priority_pending[invocation_id] = join.join_id
+                    for invocation_id in delta.completed_invocations:
+                        self._join_priority_pending.pop(invocation_id, None)
+                if any(event.kind is RuntimeEventKind.WORKFLOW_END for event in events):
+                    self._join_priority_pending = {
+                        invocation_id: join_id
+                        for invocation_id, join_id in self._join_priority_pending.items()
+                        if not self.graph.invocations[invocation_id].state.terminal
+                        and self.graph.workflows[self.graph.invocations[invocation_id].workflow_id].end_ts_ms is None
+                    }
             for hint in hints:
                 if self._terminal(hint.key):
                     self.counts["terminal_prediction_ignored"] += 1
@@ -2185,6 +2227,8 @@ class NativeAdmissionRuntime:
                 "clock_sample_span_ms": after_ms - before_ms,
                 "final": final, "counts": dict(self.counts),
                 "physical_disabled": self.physical_disabled,
+                "internal_comparison_mode": self.internal_comparison_mode,
+                "custom_kv_management": self._custom_kv_management,
                 "final_stage_prefetch": self.enable_final_stage_prefetch,
                 "final_stage_priority": (
                     self.enable_final_stage_priority
@@ -4617,6 +4661,8 @@ class NativeAdmissionRuntime:
 
     def register_physical_action(self, expected: PhysicalActionExpectation) -> None:
         """Accept only a live causal identity; this does not issue the transfer."""
+        if not self._custom_kv_management:
+            raise PhysicalReceiptError("custom KV actions disabled by the scheduling-only comparison")
         context = self.graph.contexts.get(expected.context_id)
         if (
             self.physical_disabled or context is None
@@ -4776,6 +4822,8 @@ class NativeAdmissionRuntime:
             self.counts["terminal_cache_watch_anchors_gone"] += 1
 
     def _remember_terminal_root(self, key: PrefillCandidateKey, event: RuntimeEvent) -> None:
+        if not self._custom_kv_management:
+            return
         invocation = self.graph.invocations.get(key.invocation_id)
         context = self.graph.contexts.get(key.context_id)
         if (
@@ -4800,6 +4848,8 @@ class NativeAdmissionRuntime:
             self.counts["terminal_root_provenance_expired"] += 1
 
     def _retire_ended_workflow_roots(self, workflow_id: str) -> None:
+        if not self._custom_kv_management:
+            return
         workflow = self.graph.workflows.get(workflow_id)
         retire = getattr(self._native_cache, "retire_beliefkv_child_session", None)
         if workflow is None or workflow.end_ts_ms is None or not callable(retire):
@@ -4830,6 +4880,8 @@ class NativeAdmissionRuntime:
             self._apply_terminal_child_reclaim(reclaim, retry=False)
 
     def _retire_terminal_child(self, key: PrefillCandidateKey, event: RuntimeEvent) -> None:
+        if not self._custom_kv_management:
+            return
         child = self.graph.invocations.get(key.invocation_id)
         context = self.graph.contexts.get(key.context_id)
         retire = getattr(self._native_cache, "retire_beliefkv_child_session", None)
@@ -4906,6 +4958,8 @@ class NativeAdmissionRuntime:
     def _apply_terminal_child_reclaim(
         self, reclaim: _TerminalChildReclaim, *, retry: bool,
     ) -> None:
+        if not self._custom_kv_management:
+            return
         key = reclaim.key
         result = self._native_cache.retire_beliefkv_child_session(
             session_id=key.session_id, session_generation=key.session_generation,
@@ -10594,6 +10648,42 @@ class NativeAdmissionRuntime:
         self._prefetch_priority_partial_restore_details = None
         self._resident_priority_promoted = None
         self._resident_priority_details = None
+        if self.internal_comparison_mode == "join_priority_only":
+            self._join_priority_promoted = None
+            ordered = [
+                (index, request) for index, request in tagged
+                if (key := keys[index]) is not None
+                and self.visible.get(key.request_id) == key and not self._terminal(key)
+            ]
+            now = time.monotonic()
+            ordered.sort(key=lambda pair: (
+                0 if now - self._visible_since.get(pair[1].rid, now) >= 10. else 1,
+                self._visible_since.get(pair[1].rid, now)
+                if now - self._visible_since.get(pair[1].rid, now) >= 10. else 0.,
+                pair[0],
+            ))
+            if (
+                ordered and self._join_priority_normal_admissions >= 4
+                and now - self._visible_since.get(ordered[0][1].rid, now) < 10.
+            ):
+                for position, (index, request) in enumerate(ordered):
+                    key = keys[index]
+                    join_id = self._join_priority_pending.get(key.invocation_id)
+                    join = self.graph.joins.get(join_id)
+                    if (
+                        join is not None and join.satisfied
+                        and key.invocation_id in join.waiter_invocation_ids
+                        and self._executable_waiting_key(request, key=key) == key
+                    ):
+                        if position:
+                            ordered.insert(0, ordered.pop(position))
+                            self._join_priority_promoted = request.rid
+                            self.counts["join_only_priority_ordered"] += 1
+                        break
+            return compile_native_prefill_plan(
+                [keys[index] for index, _ in ordered],
+                semantic_revision=self.semantic_revision,
+            )
         drained_chunk = self._native_prefill_input_budget_exhausted(
             native_order, adder=adder, tagged_count=len(tagged),
         )
@@ -11115,6 +11205,15 @@ class NativeAdmissionRuntime:
     ) -> None:
         if getattr(req, "beliefkv_metadata", None) is not None:
             self.counts["native_admitted" if admitted else f"native_{result}"] += 1
+            if admitted and self.internal_comparison_mode == "join_priority_only":
+                promoted = req.rid == self._join_priority_promoted
+                self._join_priority_normal_admissions = (
+                    0 if promoted else min(4, self._join_priority_normal_admissions + 1)
+                )
+                key = self.visible.get(req.rid)
+                if key is not None:
+                    self._join_priority_pending.pop(key.invocation_id, None)
+                self.counts["join_only_priority_admitted"] += int(promoted)
             if self._prefetch_admission_hints.pop(req.rid, None) is not None:
                 self.counts[
                     "prefetch_admission_hint_admitted" if admitted

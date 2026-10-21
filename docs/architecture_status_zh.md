@@ -6,14 +6,58 @@
 与实验继续按下文最新约定执行。[整理记录](archive/research_exploration_20261020.md)
 列出已清理的一次性源码及归档位置。
 
-**后续 baseline 调研与调度消融方案已更新，尚未适配或启动。**
+**本周设计与优化小结（北京时间 2026-10-19 至 10-21）。**
+核心是把动态 workflow 的等待/恢复边界与原生 KV 数据面、容量及请求
+准入一起管理：等待时先备份可复用 FULL 前缀，需要恢复前准备容量，
+JOIN/tool 预取后通过有界驻留和就绪优先准入尽快消费。实际动作仍核对
+原生页/extent、共享引用、session/epoch 和必要 Mamba 依赖；当前未启用
+自适应层数预取或新写一套异步 GPU scheduler。
+
+- 备份：spawn 后增量备份最多 4GiB/64 extents，嵌套 delegator 同样处理；
+  后台每 200ms 最多 512MiB，只补未备份的不可变 FULL，不预备份 Mamba。
+- 容量：验证 tool/JOIN 等待 owner、共享祖先和未开始的排队请求，按实际
+  缺口回收；紧急缺 Host 副本时以 64MiB D2H 小批推进，ACK 后安全释放，
+  再与 parent H2D 协调。修复 confirmed JOIN 重绑、空 ticket 和尾部恢复。
+- 消费：缩短恢复到执行的脱节；工具预取保留 Host 源副本至同一服务租约
+  结束，初始 ACK 后 2 秒、真实就绪/提交后的扩展最多到 ACK 后 10 秒。
+  同工具仍等待且到期时，安全驱逐设备副本，无须再 D2H。
+- 控制：EOS-only 默认删除无效 child 进度预测；合并 PREPARE/ACK 发布，
+  复用同一次规划的身份/覆盖检查，跳过空 Host 预算、无竞争和已耗尽
+  chunk 的无效工作，非必要诊断改为关闭。保留原生 overlap 与最终校验。
+- 工作负载/实验：36 个同时到达的独立 LoCoBench 任务、root 原文与 child
+  任务上下文分开，恢复动态多轮/嵌套委派；256K/95%、running/decode 有效
+  上限 12，服务端和请求种子均固定 21，工具上限 180 秒。
+- 最新 CPU 候选：在线工具只对相关历史更新重估，同查询 CDF 共用条件
+  分母；首个 EOS 恢复先提交能放下的完整连续 extent，再回收尾部容量。
+  这些在 V109 冻结后完成，尚不能算该轮 GPU 收益。
+
+V109 已完成 predictive：52 次 JOIN 提前复用 9.475GB、45 次工具提前
+复用 4.198GB FULL；JOIN/tool ACK→首服 P90 为 1.042/2.120 秒。
+另外 19.089GB JOIN 完成后恢复单列为需求恢复。36/36 completed、
+平均 JCT 1895.55 秒；匹配 native 尚在运行，不能提前宣称净性能提升。
+
+**当前对照结束后先执行内部矩阵，直接复用 V109 Full。**
 [相关工作总表第 6.6 节](related_work_comparison_2026-07-21_zh.md#baseline-scheduling-ablations)
 区分 JOIN-priority-only、OurScheduler-only、KV-only 与 Full；仅调度组
 保留原生 HiCache/需求恢复，关闭我们的主动 KV 动作，不预设其一定更慢。
 外部按 program 调度、反馈准入、工具生命周期、graph/prediction KV
 筛选，新增 Pythia；公开实现缺项与论文重实现分列。V109 冻结与接续不变。
+独立内部开关与接续器已通过
+[V2569 CPU 回归](../experiments/reports/v2569_internal_comparison_qualified_cpu_20261021.xml)：
+3056 项全部通过，保留原 3023 项并新增 33 项。实际 shell 启动环境、
+JOIN 非 HBM 命中也能优先、配额/老化、禁止主动物理动作及等待前轮退出
+均有检查；未改引擎仍为 `53335e6`，本次仅核对补丁/树一致性，不称重跑
+405 项原生检查。[V2570](../experiments/reports/v2570_internal_comparison_cpu_sources_20261021.json)
+记录当时源码。用户最新确认：四个消融/工程对齐组直接使用最新 main，
+包括后续 CPU 优化，完整系统直接复用 V109，不重跑。依次为 JOIN 优先、
+仅调度、仅 KV、工程对齐 Native；前端 token cache 与 V109 predictive
+对齐。记录 Full/消融的应用版本差异，此轮是快速开发比较，不是严格的
+同版本因果归因。最终 [V2573 回归](../experiments/reports/v2573_internal_comparison_latest_no_full_cpu_20261021.xml)
+3058 项全部通过，保留原 3023 项并新增 35 项；
+[V2574](../experiments/reports/v2574_internal_comparison_latest_cpu_sources_20261021.json)
+绑定最新源码与冻结检查。准备登记 V110，不热加载 V109。
 
-**最新 main CPU 资格为 V2566；V109 predictive 已完成，匹配 native 正在运行。**
+**内部开关加入前的 CPU 资格为 V2566；V109 predictive 已完成，匹配 native 正在运行。**
 第一轮有效 EOS 恢复在完整计划放不下、但当前空闲 HBM 能容纳连续完整
 FULL extent 时，先提交这个严格子前缀，再用已有的有界尾部回收准备
 剩余容量。只使用同一次同步规划的 closure 和新预算，不跨安全点缓存。

@@ -12,14 +12,32 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-Future baseline research and the scheduling ablation plan are updated in
+The user's latest execution order is: finish the frozen V109 pair, then run
+internal controls before any external baseline adaptation or standalone new
+optimization experiment. Reuse V109 Full; do not rerun it for this matrix.
+The user explicitly authorizes the latest qualified code, including the newer
+CPU optimizations, for JOIN-priority-only, OurScheduler-only, KV-only and
+engineering-matched Native. Freeze these four arms together on the unchanged
+native engine. Match the frontend token cache to V109 predictive. Record the
+Full/controls application-version difference: this is a development comparison,
+not strict same-version causal attribution. Retain untouched V109 native
+separately; do not attribute its frontend cost difference to KV policy.
+
+Baseline research and the scheduling ablation plan are updated in
 [related-work section 6.6](related_work_comparison_2026-07-21_zh.md#baseline-scheduling-ablations).
 Separate JOIN-priority-only, OurScheduler-only, KV-only and Full. Keep native
 HiCache/demand recovery in scheduling-only arms, disable all custom KV actions,
 and retain bounded priority/aging without fabricated restore ACKs or leases.
 Add Pythia to the external shortlist; distinguish public artifacts from complete
-paper reimplementations. This is a future plan, not implemented adapters or
-performance evidence. Do not change the frozen V109 pair for this research.
+paper reimplementations. Independent internal switches and the after-pair runner
+pass final V2573:3058 application cases,retaining3023 and adding35.
+V2574 binds the latest no-Full-rerun order and source-freeze guards before
+V110 registration. Unchanged engine53335e6 is patch/tree verified,not rerun.
+External adapters remain unimplemented. Do not change
+the frozen V109 pair. The runner must wait for complete postprocessing and exact
+watcher/driver exit, check new holds and idle resources, freeze effective controls,
+and reject custom physical actions in scheduling-only arms. Keep ordinary native
+HiCache, layer dependencies and session correctness in every arm.
 
 Main CPU qualification is nowV2566:actually rerun3023 application cases,
 retain all2919 identities,add14 EOS/capacity/session/ACK controls and newly

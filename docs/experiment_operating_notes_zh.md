@@ -9,13 +9,30 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 删除，详见[整理记录](archive/research_exploration_20261020.md)；原始 trace、
 冻结检出及当前 GPU 预约约束保持有效。
 
-后续 baseline 按[总表第 6.6 节](related_work_comparison_2026-07-21_zh.md#baseline-scheduling-ablations)
+当前 V109 predictive/native 对照完整收尾后，优先执行内部矩阵，再适配外部
+baseline。复用 V109 Full，不重跑；用户确认消融可直接使用最新代码，
+包括随后 CPU 优化。四组统一冻结最新应用和同一引擎，依次跑
+JOIN-priority-only、OurScheduler-only、KV-only、工程对齐 Native，
+前端 token cache 与 V109 predictive 对齐。记录版本差异，不将此次快速
+开发比较称为严格同版本因果消融。保留 V109 untouched native 作另外的
+端到端参照，不用前端差异证明 KV 创新。继续 36root/256K/95%、running12、Host200GB80:20、
+服务端/请求 seed21、工具180s。按固定去长尾窗口和全体 JCT/工作量报告，
+不预设只调度组一定更差。
+
+内部/外部 baseline 按[总表第 6.6 节](related_work_comparison_2026-07-21_zh.md#baseline-scheduling-ablations)
 实施。JOIN-priority-only 与 OurScheduler-only 保留原生缓存/需求恢复，
 关闭自定义迁移、PREPARE、容量及驻留管理；不能用现有 reactive arm
 冒充。公平对齐非核心前端工程、实际容量、seed21 和 batch12，记录真实
-轨迹及去长尾口径，不预设调度组必须输。当前仅更新方案，不修改 V109。
+轨迹及去长尾口径，不预设调度组必须输。新独立开关/接续器通过 V2569
+全部 3056 项 CPU 检查，保留 3023 项并新增 33 项，V2570 绑定源码。
+最终不重跑 Full 的顺序和冻结检查通过 V2573 全部 3058 项 CPU 用例，
+保留原 3023 项并新增 35 项，V2574 绑定源码。准备登记 V110；下一组 GPU 尚未启动，
+必须等待 V109 收尾和原 watcher/driver 的真实退出。
+初次范围回归 V2568 因未显式绑定原生引擎/tokenizer 而跳过 22 项原资格
+用例，并额外收集了不在原资格内的 Docker 用例，不能用于资格验收；
+V2569 已指定相同引擎和真实 tokenizer，重跑原全部身份与新增检查，无跳过。
 
-**最新 main CPU 资格 V2566，不修改 V109 的冻结对照。**
+**内部开关加入前的 CPU 资格 V2566，不修改 V109 的冻结对照。**
 首次有效 provisional EOS 恢复先尝试当前自由容量可容纳的完整连续
 FULL 子前缀，再执行既有有界尾部回收。不提前拆分不完整首节点，
 不越过输入/decode 预留，不改变最终 drain、epoch/session 和回执校验。

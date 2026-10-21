@@ -183,6 +183,56 @@ def test_native_policy_baseline_rejects_predictive_mix_before_launch(tmp_path: P
     assert not run_root.exists()
 
 
+@pytest.mark.parametrize("comparison", (
+    "full", "join_priority_only", "scheduler_only", "kv_only", "native_matched",
+))
+def test_internal_comparison_effective_environment_before_gpu_launch(tmp_path, comparison):
+    import sys
+    from beliefkv.experiments.internal_comparison import arm_environment
+
+    binary = tmp_path / "bin"
+    binary.mkdir()
+    capture = binary / "bash"
+    capture.write_text(
+        "#!" + sys.executable + "\n"
+        "import json,os,sys\n"
+        'print(json.dumps({"environment":dict(os.environ),"arguments":sys.argv[1:]}))\n'
+    )
+    capture.chmod(0o755)
+    artifact = tmp_path / "model.json"
+    artifact.write_text("{}")
+    run = tmp_path / "probe"
+    environment = arm_environment({
+        "PYTHON": sys.executable, "RUN_ROOT": str(run), "ROOT_COUNT": "1",
+        "PORT": "1", "SGLANG_SOURCE_CHECKOUT": str(tmp_path / "engine"),
+        "TOOL_TIMING_ARTIFACT": str(artifact), "TRANSFER_SERVICE_SEED": str(artifact),
+        "BELIEFKV_EXPERIMENT_PAUSE_FILE": str(tmp_path / "pause"),
+    }, comparison)
+    result = subprocess.run(
+        ["/bin/bash", str(SCRIPT)],
+        env={**os.environ, **environment, "PATH": str(binary) + os.pathsep + os.environ["PATH"]},
+        text=True, capture_output=True, timeout=10,
+    )
+    assert result.returncode == 1, result.stderr
+    payload = json.loads(next(row for row in (run / "server.log").read_text().splitlines()
+                              if row.startswith("{")))
+    actual = payload["environment"]
+    custom_kv = comparison in ("full", "kv_only")
+    assert actual["BELIEFKV_ENABLE_PREPARE_HOST"] == str(int(custom_kv))
+    assert actual["BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH"] == str(int(custom_kv))
+    assert actual["BELIEFKV_ENABLE_TOOL_PREFETCH"] == str(int(custom_kv))
+    assert actual["BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY"] == str(int(comparison in ("full", "scheduler_only")))
+    assert actual["BELIEFKV_ENABLE_RESIDENT_FIRST"] == str(int(comparison in ("full", "scheduler_only")))
+    assert actual["BELIEFKV_CHAT_TOKEN_BLOCK_CACHE"] == "1"
+    if not custom_kv:
+        assert not actual.get("BELIEFKV_TOOL_TIMING_ARTIFACT")
+        assert actual.get("BELIEFKV_BORROWABLE_PARENT_HEADROOM", "0") == "0"
+    assert ("--enable-beliefkv-admission" in payload["arguments"]) is (comparison != "native_matched")
+    launch = json.loads((run / "server/launch_configuration.json").read_text())
+    assert launch["internal_comparison_mode"] == comparison
+    assert launch["chat_token_block_cache"] is True
+
+
 @pytest.mark.parametrize("mode,native,host_gb", (
     ("reactive", False, "200"), ("predictive_h2d", False, "200"),
     ("off", True, "200"), ("off", True, "0"),
@@ -264,6 +314,7 @@ def test_effective_policy_environment_without_launching_gpu(
         "native_policy_baseline": native,
         "prefetch_prefix_diagnostics": prefix_diagnostics == "1",
         "server_random_seed": 21,
+        "internal_comparison_mode": "full",
     }
     if host_gb == "0":
         assert arguments[arguments.index("--max-total-tokens") + 1] == "1798992"

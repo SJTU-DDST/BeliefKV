@@ -257,10 +257,14 @@ if [[ "$AB_MODE" != "off" ]]; then
     fi
   fi
 fi
+if [[ "${BELIEFKV_INTERNAL_COMPARISON_MODE:-full}" == "kv_only" ]]; then
+  ab_env+=(BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY=0 BELIEFKV_ENABLE_RESIDENT_FIRST=0)
+fi
 jq -n --argjson cache "$CHAT_TOKEN_BLOCK_CACHE" --argjson native "$NATIVE_POLICY_BASELINE" \
   --argjson prefixes "$PREFETCH_PREFIX_DIAGNOSTICS" \
   --argjson seed "$SERVER_RANDOM_SEED" \
-  '{schema_version: 1, chat_token_block_cache: ($cache == 1), native_policy_baseline: ($native == 1), prefetch_prefix_diagnostics: ($prefixes == 1), server_random_seed: $seed}' \
+  --arg comparison "${BELIEFKV_INTERNAL_COMPARISON_MODE:-full}" \
+  '{schema_version: 1, chat_token_block_cache: ($cache == 1), native_policy_baseline: ($native == 1), prefetch_prefix_diagnostics: ($prefixes == 1), server_random_seed: $seed, internal_comparison_mode: $comparison}' \
   > "$RUN_ROOT/server/launch_configuration.json"
 setsid env -u BELIEFKV_FULL_MAMBA_HOST_SPLIT "${unset_env[@]}" \
   "${ab_env[@]}" \
