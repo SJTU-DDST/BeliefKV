@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import fields, replace
+from copy import copy, deepcopy
+from dataclasses import FrozenInstanceError, asdict, fields, replace
+import json
+import pickle
 from types import SimpleNamespace as NS
 
 import pytest
@@ -79,6 +82,45 @@ def test_key_subclass_and_foreign_values_do_not_share_authorization():
     assert subtype != key
     assert key != tuple(getattr(key, field.name) for field in fields(key))
     assert len({key, subtype}) == 2
+
+
+@pytest.mark.parametrize("roundtrip", (
+    copy, deepcopy,
+    lambda key: pickle.loads(pickle.dumps(key, protocol=4)),
+    lambda key: pickle.loads(pickle.dumps(key, protocol=pickle.HIGHEST_PROTOCOL)),
+    lambda key: PrefillCandidateKey(**json.loads(json.dumps(asdict(key)))),
+), ids=("copy", "deepcopy", "pickle4", "pickle_latest", "json"))
+def test_identity_roundtrip_keeps_live_selection_and_rejects_changed_attempt(roundtrip):
+    request = _req("tagged", epoch=2, attempt=3)
+    request.session_id, request.session_generation = "session", 4
+    key = _key(request)
+    restored = roundtrip(key)
+    assert type(restored) is type(key)
+    assert asdict(restored) == asdict(key)
+    assert {key: "authorized"}[restored] == "authorized"
+    plan = compile_native_prefill_plan((restored,), semantic_revision=7)
+    selection = select_native_prefill_candidates(
+        (request,), plan=plan, current_semantic_revision=7,
+    )
+    assert selection.candidates == (request,)
+    assert not selection.rejected
+    request.cache_request_handle.attempt_id += 1
+    selection = select_native_prefill_candidates(
+        (request,), plan=plan, current_semantic_revision=7,
+    )
+    assert not selection.candidates
+    assert selection.rejected == ((request.rid, "identity_changed"),)
+
+
+@pytest.mark.parametrize("field", [field.name for field in fields(PrefillCandidateKey)])
+def test_identity_fields_remain_immutable_after_roundtrip(field):
+    key = pickle.loads(pickle.dumps(_key(_req("tagged"))))
+    bound = {key: "authorized"}
+    original = getattr(key, field)
+    with pytest.raises(FrozenInstanceError):
+        setattr(key, field, None)
+    assert getattr(key, field) == original
+    assert bound[key] == "authorized"
 
 
 @pytest.mark.parametrize("streaming_session", (False, True))

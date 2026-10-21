@@ -7,6 +7,17 @@
 重复摘要已清理；源码归档及保留范围见[整理记录](archive/research_exploration_20261020.md)。
 下文的最新工程状态与实验约束继续有效。
 
+**最新 main CPU 候选：压缩不可变请求身份的存储，保留全部实时检查。**
+`PrefillCandidateKey` 使用 slots；[V2582 CPU 对照](../experiments/reports/v2582_prefill_identity_storage_cpu_20261021.json)
+用各自的身份类运行同一套维护、队列检查、完整规划和实时选择。
+普通 12/64/156 队列的 CPU 中位约降低 1.77%/2.23%/1.78%，
+64 队列复制身份控制组慢约 1.63%；全部样本和长样本保留。
+身份记录及字典占用约 192B→96B，不含引用字段对象。
+[V2586](../experiments/reports/v2586_identity_storage_final_cpu_20261021.xml)
+3080 项全部通过、无跳过，保留原 3067 项并新增 13 项；
+[V2587](../experiments/reports/v2587_identity_storage_cpu_sources_20261021.json)
+绑定源码。这不是 GPU/JCT 收益，不热加载进 V111 的四组冻结实验。
+
 **最新：V111 已于北京时间 2026-10-21 17:56 启动 JOIN-priority-only。**
 冻结 `e0420fe`，引擎仍为 `53335e6`；17:59 核实服务端实际
 running12/seed21/256K、前端 cache 开启，主动 KV/PREPARE/预取/
@@ -15,6 +26,9 @@ handoff/locality 关闭；普通配额为 4，满配额允许越过 aged 队首�
 watcher/driver 真实身份存活。状态为仓库外
 `../ops/v111_internal_20261021.registration.state.json`。
 四组依次接续，Full 复用 V109；暂无完成的消融性能结论。
+18:16 核实仍在首组，已记录 33 次 JOIN 优先准入、31 次越过 aged
+队首排序，5 个 workflow 已有结果；无用工具预测、预测维护和自定义
+物理动作仍为 0。完成结果不能从这个运行前缀推断。
 
 **V110 首组于北京时间 17:33 因 JOIN-only 消融策略修正而停止。**
 旧 aged 队首会压掉已满四次普通准入配额的 JOIN 提升；现在改为配额内

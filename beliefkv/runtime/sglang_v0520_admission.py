@@ -15,7 +15,7 @@ from typing import Mapping, Sequence, TypeVar
 ReqT = TypeVar("ReqT")
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class PrefillCandidateKey:
     request_id: str
     root_workflow_id: str

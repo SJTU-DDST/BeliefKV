@@ -12,6 +12,21 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Latest main CPU candidate: use slots for immutable PrefillCandidateKey storage;
+retain all live identity,terminal,session,generation and admission checks.
+V2582 binds separate old/new admission modules and identity classes to the
+same runtime maintenance,queue inspection,complete planning and live selector.
+For ordinary12/64/156 queues,CPU medians improve1.77%/2.23%/1.78%.
+The64-request copied-key control is1.63% slower;retain all101 alternating
+samples,normal GC and outliers. Instance+dictionary storage falls192->96B,
+excluding referenced fields. This is not native matching,allocation,DMA,
+GPU-throughput or JCT evidence. V2586 reruns all3067 prior CPU identities and
+adds13:3080 pass with no skips and2 subtests;V2587 binds sources.
+V2581 passes160 focused cases. V2583's module-wide run adds one out-of-scope
+Docker skip;preserve it as a scope diagnostic,not final qualification.
+Do not hot-load this small candidate into the four frozen V111 controls.
+The engine is unchanged;do not claim its405 checks were rerun.
+
 Latest execution: V111 starts JOIN-priority-only at2026-10-21 17:56:44 Beijing,
 frozen applicatione0420fe and unchanged engine53335e6. At17:59 actual
 running12/seed21/context262144,frontend cache and independent runtime controls
@@ -22,6 +37,14 @@ and custom physical-action counts are0. Client manifest exists;exact watcher
 `../ops/v111_internal_20261021.registration.state.json`.
 Run the four controls sequentially,reuse V109 Full,and keep performance
 acceptance pending until completed comparisons.
+At18:16 exact watcher/driver identities remain alive;33 JOIN priority admissions,
+31 aged-head bypass orderings and5 workflow result files are observed.
+Unused tool-prediction/maintenance and custom physical-action counts remain0.
+At18:13 independently sealed workflow prefixes show36 delegated roots,5 roots
+with multiple rounds and81 dynamic children;no nesting is observed yet.
+These are growing prefixes,not completed performance or workload qualification.
+V2585's zero prefetch-wait-plan observations in a scheduling-only arm do not
+mean no actual JOINs or no native demand H2D.
 
 Previous debugging segment: V110 JOIN-priority-only was deliberately stopped at17:33
 Beijing for a control-policy correction. Both exact driver/watcher identities

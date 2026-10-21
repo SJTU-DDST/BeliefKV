@@ -6,6 +6,29 @@
 与实验继续按下文最新约定执行。[整理记录](archive/research_exploration_20261020.md)
 列出已清理的一次性源码及归档位置。
 
+**最新 main CPU 候选：不可变请求身份使用 slots，未部署进 V111。**
+CPU 剖析显示身份解析、终态检查仍占规划夹具的较大部分；不删除这些
+检查，只减少 `PrefillCandidateKey` 的实例字典和字段访问成本。
+[V2582](../experiments/reports/v2582_prefill_identity_storage_cpu_20261021.json)
+比较 `a6210ee` 和候选各自实际 admission 模块、身份类及规划结果，
+通过同一 runtime 的维护、队列检查、完整规划与实时选择；不使用
+候选身份类替代 baseline。6 个夹具的顺序、身份、图、计数和 pending
+状态一致，正常 GC、101 个交替样本及全部长样本保留。普通 12/64/156
+队列 CPU 中位为约 97.85→96.11、385.49→376.90、682.31→670.14us；
+复制身份控制中 64 队列慢约 1.63%，其余两组约快 1.18%–1.60%。
+身份实例及字典占用约 192B→96B，不含被引用的字符串等字段对象。
+夹具不覆盖 native 页匹配、allocator、DMA 或 GPU/JCT。
+
+[V2586 最终资格](../experiments/reports/v2586_identity_storage_final_cpu_20261021.xml)
+实际重跑全部 3067 个既有 CPU 用例并新增 13 个，3080 项全部通过、
+无跳过，另有 2 个 subtest；
+[V2587](../experiments/reports/v2587_identity_storage_cpu_sources_20261021.json)
+绑定源码。新增检查覆盖 copy/deepcopy、pickle/JSON/哈希以及
+序列化后实时 attempt 变化拒绝和字段不可变。V2581 先行 160 项通过；
+V2583 按整个模块运行时额外收集并跳过一个原资格外 Docker 检查，
+保留为范围诊断，不代替最终无跳过资格。引擎未改，不称重跑 405 项
+原生资格。四组 V111 继续冻结 `e0420fe`/V2579，不改变版本或配置。
+
 **最新：V111 于北京时间 2026-10-21 17:56:44 启动首组 JOIN-priority-only。**
 应用冻结 `e0420fe`、引擎 `53335e6`；Full 仍复用 `ed06f53` 的 V109。
 17:59 核实实际 running12/seed21/context262144、前端 cache 开启，
@@ -15,6 +38,12 @@
 driver 3757990 的启动身份均核实存活。状态：
 `../ops/v111_internal_20261021.registration.state.json`。
 四组按既定顺序接续，尚无完成的消融结果或新增性能验收。
+18:16 再核实 watcher/driver 的真实启动身份存活，33 次 JOIN 优先准入、
+31 次越过 aged 队首排序，5 个 workflow 已写结果。无用工具预测、
+预测维护、自定义物理动作均为 0；仍为运行前缀。18:13 的独立封闭
+workflow 前缀有 36 个 root 均已委派、5 个 root 多轮、81 个动态 child，
+暂未观测嵌套，不能当整轮工作负载形态。V2585 预取审计在仅调度组
+没有等待计划记录是开关边界，不表示实际没有 JOIN 或原生恢复。
 
 **此前 V110 因 JOIN-only 消融策略问题于北京时间 17:33 停止。**
 CPU 复现确认，旧 JOIN-only 即使累计四次普通准入，只要队首已老化
