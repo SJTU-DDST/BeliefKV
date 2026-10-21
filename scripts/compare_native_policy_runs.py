@@ -198,12 +198,20 @@ def native_reference_metadata(current_run: Path, reference_run: Path) -> dict:
         "workload_sha256", "root_count", "arrival_schedule", "server_running",
         "context_tokens", "context_lifecycle", "max_completion_tokens", "host_gb", "host_split",
         "mamba_full_memory_ratio", "mem_fraction_static", "native_write_policy",
-        "fanout_profile", "sampling_seed", "temperature", "sandbox_command_timeout_s",
+        "fanout_profile", "sampling_seed", "server_random_seed", "temperature", "sandbox_command_timeout_s",
         "activation_wall_clock_seconds", "child_final_report_shadow",
         "model_request_timeout_seconds",
         "host_numa_node", "host_numa_memory_policy",
     )
     recorded = [field for field in fields if field in current and field in reference]
+    observed_seeds = {}
+    for name, path in (
+        ("current_predictive", current_run / "predictive_h2d"),
+        ("reference_native", reference_run / "native"),
+    ):
+        info = path / "server/server_info.json"
+        value = json.loads(info.read_bytes()).get("random_seed") if info.exists() else None
+        observed_seeds[name] = value if type(value) is int else None
     return {
         "kind": "historical_native_reference",
         "selection": (
@@ -224,6 +232,11 @@ def native_reference_metadata(current_run: Path, reference_run: Path) -> dict:
             for field in recorded if current[field] != reference[field]
         },
         "unrecorded_configuration_fields": [field for field in fields if field not in recorded],
+        "observed_server_random_seeds": observed_seeds,
+        "same_observed_server_random_seed": (
+            observed_seeds["current_predictive"] == observed_seeds["reference_native"]
+            if all(value is not None for value in observed_seeds.values()) else None
+        ),
         "formal_paired_evidence": False,
         "semantics": (
             "Development comparison against a preselected historical native run; "

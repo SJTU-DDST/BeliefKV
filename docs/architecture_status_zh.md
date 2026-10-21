@@ -6,8 +6,36 @@
 与实验继续按下文最新约定执行。[整理记录](archive/research_exploration_20261020.md)
 列出已清理的一次性源码及归档位置。
 
+**当前验证切换为 batch12 的新 predictive/native 对照，固定种子 21。**
+36 个 LoCoBench root 仍同时到达，256K/95%、Host200GB80:20 保持。
+本引擎从 admitted running batch 直接形成 decode batch，因此本轮设
+`MAX_RUNNING_REQUESTS=12`，有效 decode 上限也为 12；不混同为独立的
+decode 切片参数。长任务入口默认改为 12。两侧重新启动服务端，
+均显式传 `--random-seed 21`，请求 `sampling_seed=21`；启动前核对真实
+`server_info.random_seed/max_running_requests`，写入冻结计划、恢复配置
+及汇总，后续实验继续沿用 21。历史 V108/V103 的真实服务端种子为
+488387661/1029041560，只能保留为历史证据，不能改写成已固定。
+固定种子不保证动态 batching 下生成轨迹完全一致，未启用确定性慢内核。
+
+本轮纳入工具预取 Host 副本随服务租约保留、超期且仍等待同一工具时
+安全无 D2H 回收，以及 Host 无一页预算时跳过后台脏索引扫描。
+新增控制优化仅对现有 100ms 缓存中仍有效的空工具目标跳过驻留预算；
+新目标仍先检查恢复槽位再规划长前缀。备份 ACK、真实冷页释放和身份
+变化沿用原唤醒/失效路径，不新增轮询或延长观察有效期。
+V2539 的“先规划后检查预算”原型虽通过功能检查，却使无槽位正目标
+路径明显变慢，已经撤回；保留原始 CPU 证据，不将它用于 GPU 候选。
+最终 CPU 资格与局部对照见
+[V2545](../experiments/reports/v2545_tool_batch12_qualified_cpu_sources_20261021.json)、
+[V2543](../experiments/reports/v2543_tool_cached_empty_restore_control_cpu_20261021.json)。
+实际重跑 2893 项应用用例并保留全部原 2878 项，另有 12 项启动边界用例；
+未改引擎 405 项仅核对源码和既有通过记录。缓存空目标选择中位约
+42–43→18–19us，真实目标与无槽位对照基本持平；仅为局部 CPU 替身成本。
+V109 计划先 predictive，成功后接新 native；running8 历史 native 不作
+本轮主对照。结果验收仍看共同去长尾吞吐、平均 JCT、实际工作量、
+有效提前 FULL 复用、重复恢复及容量压力，不预先宣称 batch12 有净收益。
+
 **后续实验默认仅用 EOS 启动提前 JOIN 恢复，剩余工作量预取关闭。**
-最新 CPU 资格为
+此前 EOS-only CPU 资格为
 [V2532](../experiments/reports/v2532_join_eos_only_qualified_cpu_sources_20261021.json)：
 实际重跑 2810 项应用用例，保留原 2801 项并新增 9 项；未改引擎
 `53335e6` 的 405 项通过记录和源码重新核对，未声称重跑。

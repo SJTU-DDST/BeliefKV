@@ -12,7 +12,34 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-Main's latest qualification isV2532:EOS-only JOIN prefetch defaults. Actually
+Current authorized validation is a fresh predictive-first/native batch12 pair,
+V109, with all36 LoCoBench roots arriving together. Keep256K/95%,Host200GB80:20,
+EOS-only JOIN,tool timing/prefetch,PREPARE,headroom and ready admission;handoff
+remains off. Set MAX_RUNNING_REQUESTS=12 in both arms;this engine decodes its
+admitted running batch,so12 is also the effective decode cap. No separate
+decode slicing or deterministic-kernel mode is introduced.
+
+Use server_random_seed21 and request sampling_seed21 for this and subsequent
+experiments. Pass the server seed explicitly,freeze/preserve it on resume,
+verify actual server_info before workload and reject a mismatch. V108/V103
+actual historical server seeds488387661/1029041560 remain recorded as different;
+do not rewrite them or claim identical dynamic trajectories from a fixed seed.
+Fresh batch12 native is required;historical running8 native is secondary only.
+
+Final qualificationV2545 actually reruns2893 application cases,retaining all2878
+prior identities,plus12 separate launcher cases;unchanged engine53335e6's405
+checks are source/report verified,not rerun.
+Include the already-qualified tool Host retention/expiry demotion and idle
+Host-budget shortcut. Skip residency budgeting only for a still-valid cached
+empty tool target;keep admission ahead of fresh long-prefix planning and all
+native enqueue checks. Existing100ms TTL and event invalidations are unchanged.
+V2539's planning-first prototype regressed no-slot positive paths and was
+discarded. Preserve that evidence;use V2543 for the final selector measurement,
+without extrapolating fixture CPU savings to online seconds or throughput.
+V109's operator must check both actual running/seed values and stop owned
+processes on physical disable,telemetry failure or a newer user hold.
+
+The preceding qualification isV2532:EOS-only JOIN prefetch defaults. Actually
 rerun2810 application cases,retaining2801 and adding9. Source/report-verify
 the unchanged53335e6 engine's405 passing cases without claiming a rerun.
 Set the long-repository default and new qualification to observed_eos;the

@@ -142,8 +142,10 @@ def current_cpu(hold):
 
 def environment(plan, cpu, checkout, engine):
     policy = cpu["latest_policy"]
+    running = policy.get("server_running", 8)
     if (
-        plan["root_count"] != 36 or plan["server_running"] != 8
+        running not in (8, 12)
+        or plan["root_count"] != 36 or plan["server_running"] != running
         or plan["fanout_profile"] != "native_in_graph_nested_2to4"
         or plan["host_split"] != "80:20"
         or plan["context_tokens"] != 262144
@@ -161,6 +163,7 @@ def environment(plan, cpu, checkout, engine):
         "PYTHONPATH": str(checkout), "CUDA_VISIBLE_DEVICES": "0",
         "TOKENIZERS_PARALLELISM": "false", "SGLANG_SOURCE_CHECKOUT": str(engine),
         "WORKLOAD_MANIFEST": str(checkout / MANIFEST),
+        "SERVER_RANDOM_SEED": str(policy.get("server_random_seed", 21)),
         "JOIN_PREFETCH_TRIGGER": policy["join_prefetch_trigger"],
         "JOIN_PREDICTION_MIN_FULL_BYTES": str(policy["selective_prediction_min_missing_full_bytes"]),
         "JOIN_PREDICTION_INTERVAL_MS": str(policy["selective_prediction_interval_ms"]),

@@ -50,6 +50,15 @@ def test_resume_derives_environment_from_frozen_configuration_including_arrivals
     assert environment["PREPARE_HOST"] == "1"
     assert environment["ARM_ORDER"] == "native predictive_h2d"
     assert environment["SEMANTIC_REPORT_ARTIFACT"] == "/models/semantic.json"
+    assert environment["SERVER_RANDOM_SEED"] == "21"
+
+
+def test_resume_keeps_server_seed_independent_from_request_sampling_seed():
+    configuration = plan()
+    configuration["server_random_seed"] = 1234
+    environment = resume_environment(configuration, Path("/run"), python="/python", port=18454)
+    assert environment["SERVER_RANDOM_SEED"] == "1234"
+    assert environment["SAMPLING_SEED"] == "21"
 
 
 def test_resume_retains_historical_native_reference_across_development_iterations():

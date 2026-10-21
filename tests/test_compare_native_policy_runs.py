@@ -95,6 +95,32 @@ def test_historical_reference_records_configuration_differences_without_claiming
     assert "root_count" in metadata["matched_configuration_fields"]
     assert "workload_sha256" in metadata["unrecorded_configuration_fields"]
     assert "host_numa_memory_policy" in metadata["unrecorded_configuration_fields"]
+    assert "server_random_seed" in metadata["unrecorded_configuration_fields"]
+    assert metadata["same_observed_server_random_seed"] is None
+
+
+def test_historical_reference_reports_actual_seed_difference_when_old_plan_omits_it(tmp_path):
+    current, reference = tmp_path / "current", tmp_path / "reference"
+    for root in (current, reference):
+        root.mkdir()
+        (root / "ab_plan.json").write_text(json.dumps({
+            "code_commit": "version", "sglang_patch_sha256": "engine",
+        }))
+    configuration = json.loads((current / "ab_plan.json").read_text())
+    configuration["server_random_seed"] = 21
+    (current / "ab_plan.json").write_text(json.dumps(configuration))
+    for path, seed in (
+        (current / "predictive_h2d/server", 21),
+        (reference / "native/server", 1029041560),
+    ):
+        path.mkdir(parents=True)
+        (path / "server_info.json").write_text(json.dumps({"random_seed": seed}))
+    metadata = native_reference_metadata(current, reference)
+    assert metadata["same_observed_server_random_seed"] is False
+    assert metadata["observed_server_random_seeds"] == {
+        "current_predictive": 21, "reference_native": 1029041560,
+    }
+    assert "server_random_seed" in metadata["unrecorded_configuration_fields"]
 
 
 def test_native_reference_reuses_completed_metrics_only_with_matching_bins(tmp_path):

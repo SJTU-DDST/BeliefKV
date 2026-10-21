@@ -441,6 +441,7 @@ def summarize(arm: Path) -> dict | None:
         "max_completion_tokens": harness_config.get("max_completion_tokens"),
         "context_lifecycle": harness_config.get("context_lifecycle"),
         "server_running": server_info.get("max_running_requests"),
+        "server_random_seed": server_info.get("random_seed"),
         "server_context_tokens": server_info.get("context_length"),
         "server_launch_chat_token_block_cache": launch.get("chat_token_block_cache"),
         "server_launch_prefetch_prefix_diagnostics": launch.get("prefetch_prefix_diagnostics"),
@@ -529,6 +530,7 @@ def main() -> None:
     parser.add_argument("--verify-frozen-plan", action="store_true")
     parser.add_argument("--root-count", type=int, default=36)
     parser.add_argument("--server-running", type=int, default=48)
+    parser.add_argument("--server-random-seed", type=int, default=21)
     parser.add_argument("--tail-active-workflows", type=int, default=48)
     parser.add_argument("--warmup-seconds", type=float, default=600.)
     parser.add_argument("--arm-order", default="predictive_h2d native")
@@ -601,9 +603,13 @@ def main() -> None:
         or args.native_reference_cache is not None
     ) and args.native_reference_run is None:
         parser.error("native reference artifacts require --native-reference-run")
+    if not 0 <= args.server_random_seed <= 4294967295:
+        parser.error("server random seed must be an integer from 0 to 4294967295")
     if args.verify_frozen_plan:
         root = Path(__file__).resolve().parents[1]
         plan = json.loads((args.run_root / "ab_plan.json").read_text())
+        if "server_random_seed" in plan and plan["server_random_seed"] != args.server_random_seed:
+            raise ValueError("frozen server random seed configuration changed")
         if "delegation_shape_required_before_native" in plan and (
             plan["delegation_shape_required_before_native"]
             is not (os.environ.get("REQUIRE_DELEGATION_SHAPE", "0") == "1")
@@ -897,6 +903,11 @@ def main() -> None:
             ),
             "max_completion_tokens": args.max_completion_tokens,
             "sampling_seed": args.sampling_seed, "temperature": 0., "host_numa_node": 1,
+            "server_random_seed": args.server_random_seed,
+            "server_seed_semantics": (
+                "explicit common SGLang launch random_seed; actual server_info verified "
+                "before workload; does not imply batch-invariant kernels or identical trajectories"
+            ),
             "mem_fraction_static": .94,
             "host_gb": 200, "host_split": args.host_split,
             "host_numa_memory_policy": os.environ.get("HOST_NUMA_MEMORY_POLICY", "preferred"),
@@ -1092,6 +1103,11 @@ def main() -> None:
             and arm.get("context_lifecycle") != plan["context_lifecycle"]
         ):
             raise ValueError(f"{name}: mismatched dynamic history or model context configuration")
+        if (
+            "server_random_seed" in plan
+            and arm.get("server_random_seed") != plan["server_random_seed"]
+        ):
+            raise ValueError(f"{name}: mismatched server random seed in actual server configuration")
         for actual, expected in (
             ("server_running", "server_running"),
             ("server_context_tokens", "context_tokens"),

@@ -19,6 +19,7 @@ ARM_ORDER="${ARM_ORDER:-predictive_h2d}"
 RESUME_PENDING="${RESUME_PENDING:-0}"
 REQUIRE_DELEGATION_SHAPE="${REQUIRE_DELEGATION_SHAPE:-0}"
 SAMPLING_SEED="${SAMPLING_SEED:-21}"
+SERVER_RANDOM_SEED="${SERVER_RANDOM_SEED:-21}"
 REPETITION_ID="${REPETITION_ID:-0}"
 ACTIVATION_WALL_CLOCK_SECONDS="${ACTIVATION_WALL_CLOCK_SECONDS:-14400}"
 MODEL_REQUEST_TIMEOUT_SECONDS="${MODEL_REQUEST_TIMEOUT_SECONDS:-$ACTIVATION_WALL_CLOCK_SECONDS}"
@@ -87,6 +88,8 @@ if [[ $# -ne 0 ]] \
   || { [[ "$poisson_arrivals" == "1" ]] && [[ "$ARRIVAL_BATCH_SIZE" != "0" || "$ARRIVAL_BATCH_INTERVAL_MS" != "0" ]]; } \
   || [[ ! "$ARRIVAL_SEED" =~ ^[0-9]+$ ]] \
   || [[ ! "$SAMPLING_SEED" =~ ^[0-9]+$ || ! "$REPETITION_ID" =~ ^[0-9]+$ ]] \
+  || [[ ! "$SERVER_RANDOM_SEED" =~ ^(0|[1-9][0-9]{0,9})$ ]] \
+  || (( SERVER_RANDOM_SEED > 4294967295 )) \
   || [[ "$EXECUTION_HANDOFF" != "0" && "$EXECUTION_HANDOFF" != "1" ]] \
   || [[ "$ARM_ORDER" != "predictive_h2d reactive" && "$ARM_ORDER" != "reactive predictive_h2d" && "$ARM_ORDER" != "predictive_h2d" && "$ARM_ORDER" != "reactive" && "$ARM_ORDER" != "native predictive_h2d" && "$ARM_ORDER" != "predictive_h2d native" ]]; then
   printf 'Usage: RUN_ROOT=<new path> ROOT_COUNT=108|112|128|156 ARRIVAL_BATCH_SIZE=0|64|108 ARRIVAL_BATCH_INTERVAL_MS=0|3600000 FANOUT_PROFILE=native_in_graph_2to4 ARM_ORDER="predictive_h2d native"|"predictive_h2d reactive"|predictive_h2d|reactive SAMPLING_SEED=21 REPETITION_ID=0 ACTIVATION_WALL_CLOCK_SECONDS=14400 PORT=18454 bash %s\n' "$0" >&2
@@ -139,6 +142,7 @@ if [[ "$RESUME_PENDING" == "0" ]]; then
   --semantic-work-statistic "$SEMANTIC_WORK_STATISTIC" \
   --eos-protocol-window-ms "$EOS_PROTOCOL_WINDOW_MS" \
   --sampling-seed "$SAMPLING_SEED" --repetition-id "$REPETITION_ID" \
+  --server-random-seed "$SERVER_RANDOM_SEED" \
   "${reference_args[@]}" \
   --workload-manifest "${WORKLOAD_MANIFEST:-$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json}"
 fi
@@ -151,6 +155,7 @@ fi
 for arm in $ARM_ORDER; do
   "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
     --run-root "$RUN_ROOT" --verify-frozen-plan \
+    --server-random-seed "$SERVER_RANDOM_SEED" \
     --prefetch-prefix-diagnostics "$PREFETCH_PREFIX_DIAGNOSTICS"
   if [[ "$RESUME_PENDING" == "1" && "$arm" == "native" \
     && -f "$RUN_ROOT/$arm/client_$ROOT_COUNT/summary.json" ]]; then
@@ -187,6 +192,7 @@ for arm in $ARM_ORDER; do
   set +e
   env "$arm_cache_env=$arm_token_cache" \
     NATIVE_POLICY_BASELINE="$baseline" AB_MODE="$mode" ROOT_COUNT="$ROOT_COUNT" PORT="$PORT" SAMPLING_SEED="$SAMPLING_SEED" \
+    SERVER_RANDOM_SEED="$SERVER_RANDOM_SEED" \
     BELIEFKV_CHAT_TOKEN_BLOCK_CACHE="$arm_token_cache" \
     MAX_RUNNING_REQUESTS="$MAX_RUNNING_REQUESTS" \
     ARRIVAL_BATCH_SIZE="$ARRIVAL_BATCH_SIZE" ARRIVAL_BATCH_INTERVAL_MS="$ARRIVAL_BATCH_INTERVAL_MS" \

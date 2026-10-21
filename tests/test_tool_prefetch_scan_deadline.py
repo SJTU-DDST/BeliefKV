@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from beliefkv.runtime.native_transfer_policy import TransferStartWindow
+from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget, TransferStartWindow
 from beliefkv.runtime.sglang_v0520_physical import PrefetchLoadStep
 from beliefkv.runtime.sglang_v0520_runtime import SEMANTIC_FRAME_INTERVAL_MS
 from tests.test_tool_predictive_transfers import event, tool_runtime
@@ -116,5 +116,55 @@ def test_an_eligible_capacity_blocked_wait_keeps_the_existing_retry_cadence():
             runtime._roll_tool_prefetch()
         assert runtime._tool_prefetch_next_ms - now <= SEMANTIC_FRAME_INTERVAL_MS
         assert not runtime.counts["tool_prefetch_scan_deadline_coalesced"]
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("cached", (False, True))
+def test_cached_empty_tool_target_skips_budget_and_fresh_target_keeps_gate(cached):
+    runtime, hint = tool_runtime()
+    now = hint.issued_monotonic_ms
+    if cached:
+        runtime._tool_opportunity_cache[hint.key] = (now + 100., NS(step=None))
+    try:
+        with patch(
+            "beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=now / 1000.,
+        ), patch.object(runtime, "_wait_prefetch_opportunity", return_value=NS(step=None)) as inspect, \
+             patch.object(runtime, "_current_residency_budget",
+                          return_value=PrefetchResidencyBudget(1, 1024**3)) as budget:
+            runtime._roll_tool_prefetch()
+        assert inspect.call_count == int(not cached)
+        assert budget.call_count == int(not cached)
+        assert runtime._tool_ticket is None
+        assert runtime._tool_prefetch_next_ms - now <= SEMANTIC_FRAME_INTERVAL_MS
+        assert runtime.counts["tool_prefetch_no_restore_target"] == 1
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("cached,slots", ((False, 0), (False, 1), (True, 0), (True, 1)))
+def test_positive_tool_target_keeps_live_admission_budget(cached, slots):
+    runtime, hint = tool_runtime()
+    now = hint.issued_monotonic_ms
+    headroom = NS(observable=True)
+    opportunity = NS(
+        step=PrefetchLoadStep(hint.key, 1, 2, 1, 2),
+        fits_current_free_lists=True, headroom=headroom,
+    )
+    if cached:
+        runtime._tool_opportunity_cache[hint.key] = (now + 100., opportunity)
+    try:
+        with patch(
+            "beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=now / 1000.,
+        ), patch.object(runtime, "_wait_prefetch_opportunity", return_value=opportunity), \
+             patch.object(runtime, "_current_residency_budget",
+                          return_value=PrefetchResidencyBudget(slots, 1024**3)) as budget, \
+             patch.object(runtime, "_h2d_start_window",
+                          return_value=TransferStartWindow(200., 0., 500.)) as window:
+            runtime._roll_tool_prefetch()
+        budget.assert_called_once_with(include_evictable=True)
+        assert (runtime._tool_ticket is not None) is bool(slots)
+        assert window.call_count == bool(slots)
+        assert runtime.counts["tool_prefetch_admission_budget_busy"] == int(not slots)
     finally:
         runtime.close()

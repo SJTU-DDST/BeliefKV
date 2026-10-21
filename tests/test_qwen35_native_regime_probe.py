@@ -137,7 +137,7 @@ def test_pair_driver_passes_frozen_frontend_to_probe(
         "import json,os; from pathlib import Path; "
         'Path(os.environ["RUN_ROOT"] + ".frontend.json").write_text('
         'json.dumps({key: value for key, value in os.environ.items() '
-        'if key.endswith("CHAT_TOKEN_BLOCK_CACHE")})); '
+        'if key.endswith("CHAT_TOKEN_BLOCK_CACHE") or key == "SERVER_RANDOM_SEED"})); '
         "raise SystemExit(1)'"
     )
     run_root = tmp_path / "run"
@@ -152,6 +152,7 @@ def test_pair_driver_passes_frozen_frontend_to_probe(
             "ROOT_COUNT": "1", "ARRIVAL_BATCH_SIZE": "0",
             "ARRIVAL_BATCH_INTERVAL_MS": "0", "ARRIVAL_RATE_PER_SECOND": "0",
             "ARM_ORDER": arm_order, "NATIVE_REFERENCE_RUN": "",
+            "SERVER_RANDOM_SEED": "1234",
             "NATIVE_REFERENCE_TIMELINE": "", "NATIVE_REFERENCE_CACHE": "",
             "BELIEFKV_CHAT_TOKEN_BLOCK_CACHE": str(int(enabled)),
             environment_name: str(int(not enabled)),
@@ -165,6 +166,7 @@ def test_pair_driver_passes_frozen_frontend_to_probe(
     )
     assert actual[environment_name] == str(int(enabled))
     assert actual["BELIEFKV_CHAT_TOKEN_BLOCK_CACHE"] == str(int(enabled))
+    assert actual["SERVER_RANDOM_SEED"] == "1234"
 
 
 def test_native_policy_baseline_rejects_predictive_mix_before_launch(tmp_path: Path) -> None:
@@ -199,7 +201,7 @@ def test_effective_policy_environment_without_launching_gpu(
         "#!/bin/sh\nexec " + executable + " -c '"
         'import json,os,sys;print(json.dumps({"environment":'
         '{k:v for k,v in os.environ.items() if k.startswith("BELIEFKV_")'
-        ' or k=="SGLANG_SOURCE_CHECKOUT"},'
+        ' or k in ("SGLANG_SOURCE_CHECKOUT","SERVER_RANDOM_SEED")},'
         '"arguments":sys.argv[1:]}))'
         "' \"$@\"\n"
     )
@@ -229,6 +231,7 @@ def test_effective_policy_environment_without_launching_gpu(
             "DEVICE_FULL_TOKENS": "1798992" if host_gb == "0" else "",
             "DEVICE_MAMBA_SLOTS": "513" if host_gb == "0" else "",
             "PREPARE_HOST": "1", "ENABLE_TOOL_TIMING": "1", "PORT": "1",
+            "SERVER_RANDOM_SEED": "21",
             "CONFIRMED_JOIN_CANARY": "0",
             "SEMANTIC_REPORT_ARTIFACT": str(artifact),
             "TOOL_TIMING_ARTIFACT": str(artifact),
@@ -250,6 +253,7 @@ def test_effective_policy_environment_without_launching_gpu(
     payload = json.loads(next(line for line in rows if line.startswith("{")))
     environment, arguments = payload["environment"], payload["arguments"]
     assert environment["SGLANG_SOURCE_CHECKOUT"] == str(tmp_path / "candidate-engine")
+    assert environment["SERVER_RANDOM_SEED"] == "21"
     cache_enabled = cache_override == "1" if cache_override is not None else not native
     assert environment["BELIEFKV_CHAT_TOKEN_BLOCK_CACHE"] == str(int(cache_enabled))
     assert environment["BELIEFKV_PREFETCH_PREFIX_DIAGNOSTICS"] == (
@@ -259,6 +263,7 @@ def test_effective_policy_environment_without_launching_gpu(
         "schema_version": 1, "chat_token_block_cache": cache_enabled,
         "native_policy_baseline": native,
         "prefetch_prefix_diagnostics": prefix_diagnostics == "1",
+        "server_random_seed": 21,
     }
     if host_gb == "0":
         assert arguments[arguments.index("--max-total-tokens") + 1] == "1798992"
@@ -293,3 +298,59 @@ def test_probe_without_host_is_native_only(tmp_path, mode):
     )
     assert result.returncode == 2
     assert not run_root.exists()
+
+
+@pytest.mark.parametrize("seed", (None, "0", "1234"))
+def test_native_launcher_passes_an_explicit_seed_without_starting_sglang(tmp_path, seed):
+    import sys
+
+    model = tmp_path / "model"
+    model.mkdir()
+    (model / "config.json").write_text("{}")
+    cuda = tmp_path / "cuda"
+    (cuda / "bin").mkdir(parents=True)
+    (cuda / "lib").mkdir()
+    (cuda / "bin/nvcc").write_text("")
+    (cuda / "bin/nvcc").chmod(0o755)
+    for name in ("libcudart.so.13", "libcudart.so"):
+        (cuda / "lib" / name).write_text("")
+    python = tmp_path / "capture-python"
+    python.write_text(
+        f"#!{sys.executable}\n"
+        "import json,sys\n"
+        'if sys.argv[1:3] == ["-m", "sglang.launch_server"]:\n'
+        "    print(json.dumps(sys.argv[3:]))\n"
+    )
+    python.chmod(0o755)
+    environment = {
+        name: value for name, value in os.environ.items()
+        if not name.startswith("BELIEFKV_") and name != "SERVER_RANDOM_SEED"
+    }
+    environment.update({
+        "PYTHON": str(python), "MODEL_PATH": str(model), "CUDA_HOME": str(cuda),
+        "HICACHE_SIZE_GB": "0", "ENABLE_SESSION_RADIX_CACHE": "0",
+        "SGLANG_SOURCE_CHECKOUT": "", "SGLANG_PATCH_FLAVOR": "staging",
+        "SGLANG_NATIVE_SESSION_CLOSE_RECLAIM": "0", "CUDA_VISIBLE_DEVICES": "99999",
+    })
+    if seed is not None:
+        environment["SERVER_RANDOM_SEED"] = seed
+    result = subprocess.run(
+        ["/bin/bash", str(SCRIPT.with_name("launch_qwen35_native_v0520.sh"))],
+        env=environment, text=True, capture_output=True, timeout=5,
+    )
+    assert result.returncode == 0, result.stderr
+    arguments = json.loads(result.stdout)
+    assert arguments.count("--random-seed") == 1
+    assert arguments[arguments.index("--random-seed") + 1] == (seed or "21")
+
+
+@pytest.mark.parametrize("seed", ("-1", "4294967296", "invalid"))
+def test_probe_rejects_invalid_server_seeds_before_creating_a_run(tmp_path, seed):
+    run = tmp_path / "run"
+    result = subprocess.run(
+        ["/bin/bash", str(SCRIPT)],
+        env={**os.environ, "RUN_ROOT": str(run), "SERVER_RANDOM_SEED": seed},
+        text=True, capture_output=True, timeout=5,
+    )
+    assert result.returncode == 2
+    assert not run.exists()

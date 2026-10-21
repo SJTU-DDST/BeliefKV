@@ -40,6 +40,7 @@ def resume_environment(plan: dict, run_root: Path, *, python: str, port: int) ->
         "HOST_SPLIT": plan["host_split"], "PORT": port,
         "HOST_NUMA_MEMORY_POLICY": plan.get("host_numa_memory_policy", "bind"),
         "SAMPLING_SEED": plan["sampling_seed"], "REPETITION_ID": plan["repetition_id"],
+        "SERVER_RANDOM_SEED": plan.get("server_random_seed", 21),
         "ACTIVATION_WALL_CLOCK_SECONDS": plan["activation_wall_clock_seconds"],
         "MODEL_REQUEST_TIMEOUT_SECONDS": plan.get("model_request_timeout_seconds", 600.),
         "MAX_COMPLETION_TOKENS": plan.get("max_completion_tokens", 8192),

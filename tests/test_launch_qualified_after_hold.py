@@ -103,6 +103,7 @@ def test_latest_policy_overrides_stale_plan_without_changing_workload():
     assert env["EXECUTION_HANDOFF"] == "0"
     assert env["ROOT_COUNT"] == "36"
     assert env["MAX_RUNNING_REQUESTS"] == "8"
+    assert env["SERVER_RANDOM_SEED"] == "21"
     assert env["MODEL_CONTEXT_TOKENS"] == env["CONTEXT_WINDOW_TOKENS"] == "262144"
     assert env["CONTEXT_COMPRESSION_TRIGGER_RATIO"] == "0.95"
     assert env["ARRIVAL_BATCH_SIZE"] == env["ARRIVAL_BATCH_INTERVAL_MS"] == "0"
@@ -129,6 +130,42 @@ def test_eos_only_policy_overrides_a_stale_prediction_plan():
     assert env["PREPARE_HOST"] == env["ENABLE_TOOL_TIMING"] == "1"
     assert env["BORROWABLE_PARENT_HEADROOM"] == "1"
     assert env["EXECUTION_HANDOFF"] == "0"
+
+
+def test_qualified_server_seed_overrides_a_stale_plan_for_a_fresh_iteration():
+    configuration = current_plan()
+    configuration["server_random_seed"] = 1234
+    proof = {**policy(), "server_random_seed": 21}
+    env = launcher.environment(
+        configuration, {"latest_policy": proof}, Path("/frozen"), Path("/engine"),
+    )
+    assert env["SERVER_RANDOM_SEED"] == "21"
+    assert configuration["server_random_seed"] == 1234
+
+
+def test_batch12_freezes_both_arms_with_the_same_running_cap_and_seed():
+    configuration = current_plan()
+    configuration["server_running"] = 12
+    proof = {**policy(), "server_running": 12, "server_random_seed": 21}
+    env = launcher.environment(
+        configuration, {"latest_policy": proof}, Path("/frozen"), Path("/engine"),
+    )
+    assert env["MAX_RUNNING_REQUESTS"] == "12"
+    assert env["SERVER_RANDOM_SEED"] == env["SAMPLING_SEED"] == "21"
+    assert env["ARM_ORDER"] == "predictive_h2d native"
+    assert env["NATIVE_REFERENCE_RUN"] == ""
+    assert configuration["server_running"] == 12
+
+
+@pytest.mark.parametrize("qualified,planned", ((12, 8), (8, 12), (16, 16)))
+def test_batch_change_requires_matching_supported_qualification(qualified, planned):
+    configuration = current_plan()
+    configuration["server_running"] = planned
+    with pytest.raises(ValueError, match="36-root contract"):
+        launcher.environment(
+            configuration, {"latest_policy": {**policy(), "server_running": qualified}},
+            Path("/frozen"), Path("/engine"),
+        )
 
 
 @pytest.mark.parametrize("field,value", (

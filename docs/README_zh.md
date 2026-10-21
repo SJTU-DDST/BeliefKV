@@ -7,8 +7,24 @@
 重复摘要已清理；源码归档及保留范围见[整理记录](archive/research_exploration_20261020.md)。
 下文的最新工程状态与实验约束继续有效。
 
+**当前验证为 V109：batch12，新跑 predictive 后接 native，固定种子21。**
+36个root同时到达、256K/95%、Host200GB80:20保持；两侧running/decode
+有效上限12，服务端`random_seed=21`、请求`sampling_seed=21`。
+服务端种子进入CLI、冻结计划、续跑、真实配置启动校验及结果汇总，
+后续实验继续使用21。历史V108/V103服务端种子不同，不作为新batch12主对照，
+固定种子也不保证动态workflow轨迹相同。
+
+[V2545 CPU资格](../experiments/reports/v2545_tool_batch12_qualified_cpu_sources_20261021.json)
+绑定工具Host副本保留/安全超期回收、空Host预算扫描短路、EOS-only、
+缓存空工具目标预算短路及batch12配置。
+2893项应用及12项启动边界实际通过；未改引擎405项仅核对源码/通过记录。
+[V2543局部CPU对照](../experiments/reports/v2543_tool_cached_empty_restore_control_cpu_20261021.json)
+保留完整样本；V2539先规划后查槽位的回退原型已撤回。新目标继续先检查
+槽位，不新增轮询、缓存期限或GPU同步。以本轮去长尾吞吐、平均JCT、
+工作量与有效迁移复用验收，不能先宣称已取得GPU收益。
+
 **后续实验默认关闭剩余工作量预取，仅用EOS启动提前JOIN恢复。**
-[V2532资格](../experiments/reports/v2532_join_eos_only_qualified_cpu_sources_20261021.json)
+此前[V2532资格](../experiments/reports/v2532_join_eos_only_qualified_cpu_sources_20261021.json)
 实际重跑2810项应用，保留2801项并新增9项；未改引擎53335e6的405项
 源码和通过记录核对后沿用。入口默认`observed_eos`，资格启动与运行
 检查识别该模式，旧计划不会重新开启。最终准入元数据及EOS/confirmed、

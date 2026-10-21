@@ -294,6 +294,63 @@ def test_initialize_records_explicit_long_budget_and_manifest_selection(tmp_path
     assert "historical native references" in plan["scope"]
     assert plan["native_reference_run"] == str(tmp_path / "native-reference")
     assert plan["formal_repetition_order"] == ["predictive_h2d native"]
+    assert plan["server_random_seed"] == 21
+
+
+@pytest.mark.parametrize("seed", (0, 1234, 4294967295))
+def test_initialize_records_an_independent_explicit_server_seed(tmp_path, monkeypatch, seed):
+    manifest = tmp_path / "workload.json"
+    manifest.write_text(json.dumps({"workloads": [{"instance_id": "task"}]}))
+    monkeypatch.setattr(sys, "argv", [
+        "summarize", "--run-root", str(tmp_path), "--initialize", "--root-count", "1",
+        "--workload-manifest", str(manifest), "--server-random-seed", str(seed),
+    ])
+    main()
+    plan = json.loads((tmp_path / "ab_plan.json").read_text())
+    assert plan["server_random_seed"] == seed
+    assert plan["sampling_seed"] == 21
+    assert "does not imply" in plan["server_seed_semantics"]
+
+
+@pytest.mark.parametrize("seed", (-1, 4294967296))
+def test_initialize_rejects_server_seed_outside_the_native_range(tmp_path, monkeypatch, seed):
+    monkeypatch.setattr(sys, "argv", [
+        "summarize", "--run-root", str(tmp_path), "--initialize",
+        "--server-random-seed", str(seed),
+    ])
+    with pytest.raises(SystemExit) as error:
+        main()
+    assert error.value.code == 2
+    assert not (tmp_path / "ab_plan.json").exists()
+
+
+def test_frozen_plan_rejects_a_changed_server_seed_before_source_validation(tmp_path, monkeypatch):
+    (tmp_path / "ab_plan.json").write_text(json.dumps({"server_random_seed": 21}))
+    monkeypatch.setattr(sys, "argv", [
+        "summarize", "--run-root", str(tmp_path), "--verify-frozen-plan",
+        "--server-random-seed", "22",
+    ])
+    with pytest.raises(ValueError, match="frozen server random seed"):
+        main()
+
+
+def test_summary_reports_the_actual_server_seed(tmp_path):
+    _, server = fixture(tmp_path)
+    (server / "server_info.json").write_text(json.dumps({"random_seed": 21}))
+    assert summarize(tmp_path)["server_random_seed"] == 21
+
+
+@pytest.mark.parametrize("seed", (None, 22))
+def test_final_summary_rejects_missing_or_changed_actual_server_seed(tmp_path, monkeypatch, seed):
+    arm = tmp_path / "predictive_h2d"
+    _, server = fixture(arm)
+    (server / "server_info.json").write_text(json.dumps({"random_seed": seed}))
+    (tmp_path / "ab_plan.json").write_text(json.dumps({
+        "order": ["predictive_h2d"], "server_random_seed": 21,
+    }))
+    monkeypatch.setattr(sys, "argv", ["summarize", "--run-root", str(tmp_path)])
+    with pytest.raises(ValueError, match="mismatched server random seed"):
+        main()
 
 
 def test_long_project_sources_and_small_workload_cutoff_are_frozen(tmp_path, monkeypatch):

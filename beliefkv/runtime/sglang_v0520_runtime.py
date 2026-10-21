@@ -7567,13 +7567,21 @@ class NativeAdmissionRuntime:
         for hint, remaining in sorted(candidates, key=lambda item: item[1]):
             if self._live_tool_hint(hint.key) is None:
                 continue
+            cached = self._tool_opportunity_cache.get(hint.key)
+            from_cache = cached is not None and now_ms < cached[0]
+            # A still-valid empty observation needs no restoration budget.
+            # Keep the admission gate before fresh, potentially long planning.
+            if from_cache and (cached[1] is None or cached[1].step is None):
+                self.counts["tool_prefetch_no_restore_target"] += 1
+                self._record_wait_prefetch_plan(
+                    "tool_wait", hint.key, cached[1], reason="no_restore_plan",
+                )
+                continue
             if budget is None:
                 budget = self._current_residency_budget(include_evictable=True)
             if not self._prefetch_slot_available(hint.key, budget=budget):
                 self.counts["tool_prefetch_admission_budget_busy"] += 1
                 continue
-            cached = self._tool_opportunity_cache.get(hint.key)
-            from_cache = cached is not None and now_ms < cached[0]
             if from_cache:
                 opportunity = cached[1]
             else:

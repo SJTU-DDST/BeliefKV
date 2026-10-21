@@ -8,6 +8,7 @@ PORT="${PORT:-18454}"
 ROOT_COUNT="${ROOT_COUNT:-108}"
 MAX_RUNNING_REQUESTS="${MAX_RUNNING_REQUESTS:-48}"
 SAMPLING_SEED="${SAMPLING_SEED:-21}"
+SERVER_RANDOM_SEED="${SERVER_RANDOM_SEED:-21}"
 MAX_COMPLETION_TOKENS="${MAX_COMPLETION_TOKENS:-16384}"
 MODEL_REQUEST_TIMEOUT_SECONDS="${MODEL_REQUEST_TIMEOUT_SECONDS:-${ACTIVATION_WALL_CLOCK_SECONDS:-14400}}"
 MODEL_CONTEXT_TOKENS="${MODEL_CONTEXT_TOKENS:-131072}"
@@ -104,6 +105,8 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || { (( ARRIVAL_BATCH_SIZE > 0 )) && (( ARRIVAL_BATCH_INTERVAL_MS == 0 )); } \
   || { [[ "$ARRIVAL_BATCH_SIZE" == "0" ]] && [[ "$ARRIVAL_BATCH_INTERVAL_MS" != "0" ]]; } \
   || [[ ! "$SAMPLING_SEED" =~ ^[0-9]+$ ]] \
+  || [[ ! "$SERVER_RANDOM_SEED" =~ ^(0|[1-9][0-9]{0,9})$ ]] \
+  || (( SERVER_RANDOM_SEED > 4294967295 )) \
   || [[ ! "$MAX_RUNNING_REQUESTS" =~ ^[1-9][0-9]{0,3}$ ]] \
   || [[ ! "$AGENT_RECURSION_LIMIT" =~ ^[1-9][0-9]{0,5}$ ]] \
   || [[ "$JOIN_PREFETCH_TRIGGER" != "observed_eos" && "$JOIN_PREFETCH_TRIGGER" != "report_service_or_eos" && "$JOIN_PREFETCH_TRIGGER" != "selective_report_or_eos" ]] \
@@ -256,7 +259,8 @@ if [[ "$AB_MODE" != "off" ]]; then
 fi
 jq -n --argjson cache "$CHAT_TOKEN_BLOCK_CACHE" --argjson native "$NATIVE_POLICY_BASELINE" \
   --argjson prefixes "$PREFETCH_PREFIX_DIAGNOSTICS" \
-  '{schema_version: 1, chat_token_block_cache: ($cache == 1), native_policy_baseline: ($native == 1), prefetch_prefix_diagnostics: ($prefixes == 1)}' \
+  --argjson seed "$SERVER_RANDOM_SEED" \
+  '{schema_version: 1, chat_token_block_cache: ($cache == 1), native_policy_baseline: ($native == 1), prefetch_prefix_diagnostics: ($prefixes == 1), server_random_seed: $seed}' \
   > "$RUN_ROOT/server/launch_configuration.json"
 setsid env -u BELIEFKV_FULL_MAMBA_HOST_SPLIT "${unset_env[@]}" \
   "${ab_env[@]}" \
@@ -265,6 +269,7 @@ setsid env -u BELIEFKV_FULL_MAMBA_HOST_SPLIT "${unset_env[@]}" \
   ENABLE_SESSION_RADIX_CACHE=1 HOST_NUMA_NODE=1 \
   HOST_NUMA_MEMORY_POLICY="$HOST_NUMA_MEMORY_POLICY" \
   MEM_FRACTION_STATIC=0.94 MAX_RUNNING_REQUESTS="$MAX_RUNNING_REQUESTS" \
+  SERVER_RANDOM_SEED="$SERVER_RANDOM_SEED" \
   CONTEXT_LENGTH="$MODEL_CONTEXT_TOKENS" \
   "${telemetry_env[@]}" \
   SGLANG_PATCH_FLAVOR="$SGLANG_PATCH_FLAVOR" \
@@ -294,8 +299,8 @@ fi
 curl --silent --show-error --max-time 10 --fail \
   --output "$RUN_ROOT/server/server_info.json" "$BASE_URL/server_info"
 jq --exit-status --argjson running "$MAX_RUNNING_REQUESTS" \
-  --argjson context "$MODEL_CONTEXT_TOKENS" \
-  '.max_running_requests == $running and .context_length == $context' \
+  --argjson context "$MODEL_CONTEXT_TOKENS" --argjson seed "$SERVER_RANDOM_SEED" \
+  '.max_running_requests == $running and .context_length == $context and .random_seed == $seed' \
   "$RUN_ROOT/server/server_info.json" >/dev/null
 
 # Skipped warmup can race the engine's POST with HTTP startup.

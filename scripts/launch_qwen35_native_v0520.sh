@@ -12,6 +12,7 @@ HOST="${HOST:-127.0.0.1}"
 PORT="${PORT:-18000}"
 MEM_FRACTION_STATIC="${MEM_FRACTION_STATIC:-0.90}"
 MAX_RUNNING_REQUESTS="${MAX_RUNNING_REQUESTS:-48}"
+SERVER_RANDOM_SEED="${SERVER_RANDOM_SEED:-21}"
 CONTEXT_LENGTH="${CONTEXT_LENGTH:-131072}"
 CHUNKED_PREFILL_SIZE="${CHUNKED_PREFILL_SIZE:-4096}"
 HICACHE_SIZE_GB="${HICACHE_SIZE_GB:-200}"
@@ -25,6 +26,12 @@ HICACHE_WRITE_POLICY="${HICACHE_WRITE_POLICY:-write_back}"
 ENABLE_SESSION_RADIX_CACHE="${ENABLE_SESSION_RADIX_CACHE:-0}"
 CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}"
 BELIEFKV_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+if [[ ! "$SERVER_RANDOM_SEED" =~ ^(0|[1-9][0-9]{0,9})$ ]] \
+    || (( SERVER_RANDOM_SEED > 4294967295 )); then
+  printf 'SERVER_RANDOM_SEED must be an integer from 0 to 4294967295\n' >&2
+  exit 2
+fi
 
 if [[ "${SGLANG_PATCH_FLAVOR}" == native_session_close \
     && -z "${SGLANG_SOURCE_CHECKOUT}" ]]; then
@@ -230,6 +237,7 @@ server_args=(
   --mem-fraction-static "${MEM_FRACTION_STATIC}"
   --chunked-prefill-size "${CHUNKED_PREFILL_SIZE}"
   --max-running-requests "${MAX_RUNNING_REQUESTS}"
+  --random-seed "${SERVER_RANDOM_SEED}"
   --reasoning-parser qwen3
   --tool-call-parser qwen3_coder
   --enable-metrics
