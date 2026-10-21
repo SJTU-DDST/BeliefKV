@@ -12,6 +12,50 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Latest complete GPU result isV107:36/36 completed,exit0 at12:33:03 Beijing,
+frozen893a7da/V2494b/dd082e3. The HTML and historical V103 native comparison
+are complete. Common trimmed600-3357.585s decode539.567/528.366 token/s
+is+2.12%;full mean JCT2186.465/2370.073s is-7.75%,22/36 pairs shorter.
+Common native-agent eligibility is35;predictive has no guard intervention.
+Output1867784/2024180 tokens and trajectories differ. Do not isolate prefetch
+causality or accept the entire goal from one modest positive run. Complete
+V106 had mean JCT2009.148s but trimmed throughput still1.22% below native.
+
+V2502 seals V107's full migration evidence:65 JOIN waits early-reuse25.098GB
+FULL;69 tool waits early-reuse3.533GB. Of3124 observed tool waits,93 have a
+positive pre-completion FULL plan and71 submit early. FULL byte reuse is
+3.533/3.639GB,97.1%;coverage,not general transfer inaccuracy,is the main gap.
+Forty-eight waits encounter capacity rejection at some point;some later
+succeed. Subsequent1.113TB broad Host hits do not prove earlier opportunities.
+
+V2505 separates explicit tool backup44 commands/0.365GB from common background
+backup6043 batches/168.123GB. Tool parking538 node actions spans120 context/
+epochs and releases6.904GB FULL/93 Mamba slots. Of119 rounds with a matching
+active tool,115 still wait at least1s after first parking;this is hindsight
+remaining wait,not formal predictor accuracy or net benefit. Independent
+prefetch lead P50/P90 is572/1098ms;two non-reused targets start9.346/28.693s
+early. Their native queue waits are64ms/10.220s,not the entire ACK-to-service.
+
+Current main qualification isV2508b. Release physical locks at their existing
+deadline,but preserve only an exact submitted JOIN/tool consumer's identity
+for one bounded admission attempt. Recheck identity/executability and complete
+native residency;preserve four ordinary turns and existing protected priorities.
+No timer,worker,capacity reservation or DMA. Skip inspection if an existing
+priority wins and stop at the first ready hint. Clear on the first actual
+native attempt,including decline,or lifecycle termination.
+V2506b reruns2752 preceding app cases plus30,2782 pass;unchanged engine379
+cases are source/report-verified and retained,not rerun. V2504b's no-hint
+native-hook benchmark is roughly flat;36-candidate mean/max are slightly
+higher despite lower medians. Keep both initial/b reports and all samples.
+Rare real-prefix inspection cost and GPU effects remain unverified.
+
+Next tool-policy priorities:cost-aware offload eligibility instead of a single
+fixed1s threshold;Host coverage and budget for genuinely reclaimable waiters;
+over-early tail calibration;and prompt consumption after tool completion.
+Do not create extra round trips to inflate prefetch volume. No background
+batch reaches512MiB inV107;raising only that cap does not address observed
+Host-budget and bounded-scan limits.
+
 V103 predictive/native both completed from frozen runtime216fd88; the driver
 exited0 and produced both HTML timelines and the policy comparison.
 Both arms completed36/36. Predictive passed the shape checks:
@@ -133,7 +177,7 @@ This unprofiled fixed development window is not isolated prefetch causality
 or full mean-JCT acceptance. At09:49 Beijing V105 has17/36 completed with
 verified live driver/watcher and no observed runtime failure.
 
-Latest main qualification isV2494b. An already committed chunk with zero
+V107's runtime qualification isV2494b. An already committed chunk with zero
 remaining input budget cannot admit another positive-input request:the native
 matcher leaves at least one token. After terminal cleanup,skip the unneeded
 plan,selection and prefix work while retaining the current chunk and next-batch

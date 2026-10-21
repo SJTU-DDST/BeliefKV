@@ -440,6 +440,7 @@ class NativeAdmissionRuntime:
         ] = {}
         self._prefetch_issue_budgets: dict[str, PrefetchResidencyBudget] = {}
         self._prefetch_service_leases: dict[str, _PrefetchServiceLease] = {}
+        self._prefetch_admission_hints: dict[str, PrefillCandidateKey] = {}
         self._tool_prefetch_survival_evidence: OrderedDict[
             PrefillCandidateKey, tuple[NativeToolWaitHint, bool]
         ] = OrderedDict()
@@ -806,6 +807,7 @@ class NativeAdmissionRuntime:
     def close(self) -> None:
         for command in tuple(self._prefetch_service_leases):
             self._release_prefetch_service_lease(command, "shutdown")
+        self._prefetch_admission_hints.clear()
         self._discard_prefetch_tracking("shutdown")
         self._prefill_residency_scan = None
         self._prefill_causal_cache = None
@@ -8511,6 +8513,32 @@ class NativeAdmissionRuntime:
                 return
         self._prefetch_service_leases.pop(command_id)
         self._lease_refresh_signature = None
+        if (
+            reason == "service_window_expired" and lease.demand_ready
+            and lease.lock_params is not None and lease.protected_bytes > 0
+            and lease.source in ("join_ticket", "tool_wait")
+        ):
+            current = self.context_sessions.get(lease.key.context_id)
+            if (
+                current is not None and self.visible.get(current.request_id) == current
+                and current.root_workflow_id == lease.key.root_workflow_id
+                and current.invocation_id == lease.key.invocation_id
+                and current.attempt_id == lease.key.attempt_id
+                and current.session_id == lease.key.session_id
+                and current.session_generation == lease.key.session_generation
+                and current.context_epoch in (
+                    lease.key.context_epoch, lease.key.context_epoch + 1,
+                )
+                and (
+                    current.request_id != lease.key.request_id
+                    or lease.source == "join_ticket" and current == lease.key
+                )
+                and not self._terminal(current)
+            ):
+                # Release physical protection on time. Only the submitted
+                # consumer's identity survives until a real admission attempt.
+                self._prefetch_admission_hints[current.request_id] = current
+                self.counts["prefetch_admission_hint_retained"] += 1
         evidence = (
             self._tool_prefetch_survival_evidence.get(lease.key)
             if reason == "service_window_expired" and lease.source == "tool_wait"
@@ -10037,6 +10065,7 @@ class NativeAdmissionRuntime:
 
     def _forget_session(self, request_id: str) -> None:
         self._visible_since.pop(request_id, None)
+        self._prefetch_admission_hints.pop(request_id, None)
         for context_id, key in tuple(self.context_sessions.items()):
             if key.request_id == request_id:
                 self._tool_last_queries.pop(key, None)
@@ -10671,6 +10700,41 @@ class NativeAdmissionRuntime:
                     ))
                 if inspected == 8:
                     break
+        if (
+            self._prefetch_admission_hints and ordered
+            and self._prefetch_priority_normal_admissions >= 4
+            and not priority_candidates
+        ):
+            inspected = 0
+            for candidate in ordered:
+                rid = candidate[1].rid
+                hint = self._prefetch_admission_hints.get(rid)
+                if hint is None:
+                    continue
+                key = keys[candidate[0]]
+                if key != hint or self._executable_waiting_key(candidate[1], key=key) is None:
+                    self._prefetch_admission_hints.pop(rid, None)
+                    continue
+                observation = self._read_request_reentry(candidate[1], key=key, refresh=True)
+                inspected += 1
+                if (
+                    observation is not None
+                    and type(observation.get("device_checkpoint_tokens")) is int
+                    and observation["device_checkpoint_tokens"] > 0
+                    and type(observation.get("missing_full_tokens")) is int
+                    and observation["missing_full_tokens"] == 0
+                    and type(observation.get("missing_mamba_slots")) is int
+                    and observation["missing_mamba_slots"] == 0
+                ):
+                    # Live protected restores keep precedence. This hint adds
+                    # neither a residency claim nor another restoration.
+                    priority_candidates.append((math.inf, 3, candidate, "prefetch_advisory"))
+                    break
+                else:
+                    self._prefetch_admission_hints.pop(rid, None)
+                    self.counts["prefetch_admission_hint_not_ready"] += 1
+                if inspected == 8:
+                    break
         if priority_candidates:
             chosen = min(priority_candidates, key=lambda item: item[:2])
             source = chosen[3]
@@ -10915,6 +10979,11 @@ class NativeAdmissionRuntime:
     ) -> None:
         if getattr(req, "beliefkv_metadata", None) is not None:
             self.counts["native_admitted" if admitted else f"native_{result}"] += 1
+            if self._prefetch_admission_hints.pop(req.rid, None) is not None:
+                self.counts[
+                    "prefetch_admission_hint_admitted" if admitted
+                    else "prefetch_admission_hint_declined"
+                ] += 1
             if admitted:
                 if req.rid == self._workflow_work_promoted:
                     self.counts["workflow_work_head_admitted"] += 1
@@ -11206,6 +11275,7 @@ class NativeAdmissionRuntime:
                         )
                         self.counts["workflow_completed_output_tokens_charged"] += tokens
                 del self.visible[rid]
+                self._prefetch_admission_hints.pop(rid, None)
                 self._visible_since.pop(rid, None)
                 self.demand_hints.pop(rid, None)
                 session_key = self.context_sessions.get(context_id)
