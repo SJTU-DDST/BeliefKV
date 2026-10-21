@@ -35,7 +35,10 @@ V2574 binds the latest no-Full-rerun order and source-freeze guards before
 V110 registration. At17:22 Beijing,V110 is registered and waiting for V109:
 application5ddb43a,Full referenceed06f53,watcher3710508. State is
 `../ops/v110_internal_20261021.registration.state.json` relative to repo root.
-No new GPU arm has started. Unchanged engine53335e6 is patch/tree verified,not rerun.
+V109 completed at17:22:56;V110 has automatically started JOIN-priority-only.
+At17:26 actual running12/seed21/context262144 and runtime controls match:
+frontend cache on,custom KV/PREPARE/JOIN-tool H2D/handoff/locality off.
+Client manifest exists. Unchanged engine53335e6 is patch/tree verified,not rerun.
 External adapters remain unimplemented. Do not change
 the frozen V109 pair. The runner must wait for complete postprocessing and exact
 watcher/driver exit, check new holds and idle resources, freeze effective controls,

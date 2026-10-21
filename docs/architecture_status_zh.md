@@ -34,7 +34,11 @@ JOIN/tool 预取后通过有界驻留和就绪优先准入尽快消费。实际�
 V109 已完成 predictive：52 次 JOIN 提前复用 9.475GB、45 次工具提前
 复用 4.198GB FULL；JOIN/tool ACK→首服 P90 为 1.042/2.120 秒。
 另外 19.089GB JOIN 完成后恢复单列为需求恢复。36/36 completed、
-平均 JCT 1895.55 秒；匹配 native 尚在运行，不能提前宣称净性能提升。
+平均 JCT 1895.55 秒。匹配 native 也已完成 36/36，平均 JCT 2384.88 秒；
+28/36 个配对任务 predictive 更短。共同去长尾 600–2693.745 秒内，
+decode 输出 573.25/558.47 token/s（约 +2.65%）。全程输出
+1736639/2027956 token、请求 6475/8102，动态工作量及前端成本仍有差异，
+不能把原始 JCT 差异全部归因于预取或 KV 策略。
 
 **当前对照结束后先执行内部矩阵，直接复用 V109 Full。**
 [相关工作总表第 6.6 节](related_work_comparison_2026-07-21_zh.md#baseline-scheduling-ablations)
@@ -56,10 +60,13 @@ JOIN 非 HBM 命中也能优先、配额/老化、禁止主动物理动作及等
 3058 项全部通过，保留原 3023 项并新增 35 项；
 [V2574](../experiments/reports/v2574_internal_comparison_latest_cpu_sources_20261021.json)
 绑定最新源码与冻结检查。V110 已于北京时间 17:22 登记，冻结 `5ddb43a`，
-复用 V109 Full `ed06f53`；后台状态为 `waiting_previous_comparison`，
-尚未启动下一组 GPU。登记与状态位于
+复用 V109 Full `ed06f53`。V109 于 17:22:56 完整收尾后，V110 自动启动
+JOIN-priority-only，当前状态 `running_join_priority_only`。17:26 核实
+真实 running12/seed21/256K，前端 cache 开启，主动 KV、PREPARE、
+JOIN/tool 预取、handoff 与 resident-first 全部关闭，物理账本未禁用；
+client manifest 已产生。登记与状态位于
 `../ops/v110_internal_20261021.registration{,.state}.json`（相对仓库根目录）。
-接续器 PID 3710508 已核实存活；V109 原 watcher/driver 继续运行，不热加载。
+接续器 PID 3710508 已核实存活；不重跑 Full，不热加载 V109。
 
 **内部开关加入前的 CPU 资格为 V2566；V109 predictive 已完成，匹配 native 正在运行。**
 第一轮有效 EOS 恢复在完整计划放不下、但当前空闲 HBM 能容纳连续完整

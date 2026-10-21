@@ -28,8 +28,10 @@ JOIN-priority-only、OurScheduler-only、KV-only、工程对齐 Native，
 最终不重跑 Full 的顺序和冻结检查通过 V2573 全部 3058 项 CPU 用例，
 保留原 3023 项并新增 35 项，V2574 绑定源码。V110 于 17:22 登记，
 冻结 5ddb43a，后台 `waiting_previous_comparison`，watcher PID 3710508
-存活；Full 复用 ed06f53 的 V109。下一组 GPU 尚未启动，必须等待
-V109 收尾和原 watcher/driver 的真实退出。登记/状态为仓库外
+存活；Full 复用 ed06f53 的 V109。V109 于 17:22:56 完整收尾后，
+V110 自动开始 JOIN-priority-only；17:26 核实 running12/seed21/256K、
+前端 cache 开启，主动 KV/PREPARE/预取/handoff/locality 全部关闭，
+client manifest 已产生。登记/状态为仓库外
 `../ops/v110_internal_20261021.registration{,.state}.json`。
 初次范围回归 V2568 因未显式绑定原生引擎/tokenizer 而跳过 22 项原资格
 用例，并额外收集了不在原资格内的 Docker 用例，不能用于资格验收；

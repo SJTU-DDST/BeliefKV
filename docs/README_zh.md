@@ -15,7 +15,8 @@ Full 直接复用 V109，不重跑；用户允许四个消融使用最新 CPU �
 记录版本差异，此轮按快速开发比较解释。
 独立开关和接续器的最终顺序与冻结检查通过 V2573 全部 3058 项 CPU
 用例，保留 3023 项并新增 35 项，V2574 绑定源码。V110 已于北京时间
-17:22 登记，冻结 5ddb43a，后台等待 V109 完整收尾；下一组 GPU 尚未启动。
+17:22 登记，冻结 5ddb43a。V109 于 17:22:56 收尾，V110 已自动启动
+JOIN-priority-only；17:26 的真实配置与只调度开关核对通过。
 各组对齐前端
 token cache，V109 untouched native 单列。
 本周（北京时间 10 月 19–21 日）的核心设计、已完成优化及 GPU/CPU
@@ -31,13 +32,16 @@ token cache，V109 untouched native 单列。
 证明先 enqueue 后 reclaim；首批载荷不同且未计尾部 H2D，不能称整体
 恢复加速。保留整批可放控制组约 3.3% 中位增幅及 GC 长样本。
 
-**V109 predictive 已完成 36/36，平均 JCT 1895.55 秒，native 已接续。**
+**V109 predictive/native 均完成 36/36，内部首组已接续。**
+两侧平均 JCT 1895.55/2384.88 秒，28/36 个配对任务 predictive 更短；
+共同去长尾窗口 decode 输出 573.25/558.47 token/s（约 +2.65%）。
+两侧输出量和请求数不同，且前端成本存在差异，不能全归于预取。
 [V2562 完整审计](../experiments/reports/v2562_v109_complete_wait_prefetch_20261021_summary.json)
 归因 66/67 个实际 JOIN，52 个提前复用 9.475GB FULL；另 19.089GB
 在完成后恢复。工具 45 个等待提前复用 4.198GB。
 [predictive HTML](../experiments/raw/qwen35_locobench_long_36root_running12_20261021_v109/timelines/predictive_h2d.html)
 已生成。两侧继续冻结 ed06f53/V2545，新的 CPU 优化未用于 V109；
-完整新 native 结果仍待完成，不能先宣称本轮性能提升。
+完整对照已产出，机制增量由接续的内部比较进一步区分。
 
 **此前 main CPU 资格
 [V2560](../experiments/reports/v2560_online_tool_cdf_qualified_cpu_sources_20261021.json)：**
