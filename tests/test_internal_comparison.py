@@ -100,6 +100,7 @@ def test_join_only_keeps_native_order_when_priority_not_eligible(monkeypatch, re
             runtime._join_priority_normal_admissions = 3
         elif restriction == "aged_head":
             runtime._visible_since[requests[0].rid] = time.monotonic() - 11.
+            runtime._join_priority_normal_admissions = 3
         elif restriction == "stale_epoch":
             requests[1].beliefkv_metadata["context_epoch"] = 1
         else:
@@ -126,6 +127,174 @@ def test_join_only_consumes_priority_once_on_actual_admission(monkeypatch):
             observed(11, Kind.TOOL_END, invocation_id="parent"),
         ))
         assert not runtime._join_priority_pending
+    finally:
+        runtime.close()
+
+
+def test_join_only_aged_head_keeps_four_ordinary_turns_between_promotions(monkeypatch):
+    runtime, requests = join_fixture(monkeypatch)
+    try:
+        runtime._visible_since[requests[0].rid] = time.monotonic() - 11.
+        runtime.on_events((
+            observed(20, Kind.INVOCATION_CREATE, invocation_id="parent2", context_id="ctx-parent2"),
+            observed(
+                21, Kind.INVOCATION_CREATE, invocation_id="child2", context_id="ctx-child2",
+                parent_invocation_id="parent2", relation_type=RelationType.SPAWN,
+            ),
+            observed(22, Kind.JOIN_CREATE, join_id="join2", member_invocation_ids=("child2",)),
+            observed(23, Kind.JOIN_WAIT, invocation_id="parent2", join_id="join2"),
+            observed(24, Kind.RETURN, invocation_id="child2"),
+        ))
+        second = request("parent2")
+        runtime.register_visible_request(second)
+        plan = runtime.plan_native_prefill([*requests, second], running_batch=None, adder=None)
+        assert plan.prioritized[0].invocation_id == "parent"
+        runtime.on_prefill_candidate_result(requests[1], admitted=True, result="CONTINUE")
+        assert runtime._join_priority_normal_admissions == 0
+        for index in range(4):
+            plan = runtime.plan_native_prefill([requests[0], second], running_batch=None, adder=None)
+            assert plan.prioritized[0].invocation_id == "normal"
+            name = f"ordinary-{index}"
+            runtime.on_events((observed(
+                30 + index, Kind.INVOCATION_CREATE, invocation_id=name, context_id=f"ctx-{name}",
+            ),))
+            ordinary = request(name)
+            runtime.register_visible_request(ordinary)
+            runtime.on_prefill_candidate_result(ordinary, admitted=True, result="CONTINUE")
+        plan = runtime.plan_native_prefill([requests[0], second], running_batch=None, adder=None)
+        assert plan.prioritized[0].invocation_id == "parent2"
+        assert runtime.counts["join_only_priority_aged_head_bypass"] == 2
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("mode", tuple(SCHEDULING_ONLY))
+def test_scheduling_only_tool_events_do_not_attempt_a_missing_predictor(monkeypatch, mode):
+    configure(monkeypatch, mode)
+    runtime = NativeAdmissionRuntime()
+    try:
+        runtime.on_events((
+            observed(0, Kind.WORKFLOW_START),
+            observed(1, Kind.INVOCATION_CREATE, invocation_id="agent", context_id="ctx-agent"),
+        ))
+        runtime.register_visible_request(request("agent"))
+        runtime._submit_tool_wait = Mock(side_effect=AssertionError("no timing consumer"))
+        runtime.on_events((
+            observed(2, Kind.TOOL_START, invocation_id="agent"),
+            observed(3, Kind.TOOL_END, invocation_id="agent"),
+        ))
+        runtime._submit_tool_wait.assert_not_called()
+        assert runtime.graph.invocations["agent"].state.value == "ready"
+    finally:
+        runtime.close()
+
+
+def test_join_only_discards_advisory_report_metadata_before_graph_maintenance(monkeypatch):
+    runtime, _ = join_fixture(monkeypatch)
+    try:
+        version = runtime.graph.graph_version
+        runtime.on_events((observed(
+            40, Kind.STRUCTURED_ACTION, invocation_id="child", context_id="ctx-child",
+            attributes={"beliefkv_child_completion_intent": True,
+                        "child_completion_signal_kind": "stage",
+                        "estimated_final_report_tokens": 128},
+        ),))
+        assert runtime.graph.graph_version == version
+        assert not runtime._final_stages
+        assert not runtime._child_report_notices
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("mode", tuple(SCHEDULING_ONLY))
+def test_scheduling_only_skips_decode_bookkeeping_but_observes_completion(monkeypatch, mode):
+    configure(monkeypatch, mode)
+    runtime = NativeAdmissionRuntime()
+    item = request("agent")
+    item.origin_input_ids, item.output_ids = (1, 2), [3]
+    item.finished = lambda: False
+    try:
+        runtime.register_visible_request(item)
+        batch = NS(reqs=[item])
+        assert runtime.on_batch_completed(batch) == ()
+        assert not runtime._context_tokens
+        assert item.rid in runtime.visible
+        item.finished = lambda: True
+        assert runtime.on_batch_completed(batch) == (item.rid,)
+        assert runtime._context_tokens["ctx-agent"][:3] == (0, 2, 1)
+        assert item.rid not in runtime.visible
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("mode", tuple(SCHEDULING_ONLY))
+def test_scheduling_only_preserves_read_only_first_service_feedback(monkeypatch, mode):
+    configure(monkeypatch, mode)
+    runtime = NativeAdmissionRuntime()
+    item = request("agent")
+    item.origin_input_ids, item.output_ids = (1, 2), [3]
+    item.finished = lambda: False
+    item.cached_tokens_device = 16
+    item._cache_breakdown_computed = True
+    item.retracted_stain = False
+    try:
+        runtime.register_visible_request(item)
+        runtime._residency_hint_admissions[item.rid] = (
+            id(item), runtime.visible[item.rid], 16,
+        )
+        assert runtime.on_batch_completed(NS(reqs=[item])) == ()
+        assert runtime.counts["residency_ordering_hint_native_observed"] == 1
+        assert not runtime._residency_hint_admissions
+        assert not runtime._context_tokens
+        assert item.rid in runtime.visible
+    finally:
+        runtime.close()
+
+
+def test_scheduler_only_final_child_ranking_reads_live_output_without_decode_bookkeeping(monkeypatch):
+    configure(monkeypatch, "scheduler_only")
+    runtime = NativeAdmissionRuntime()
+    try:
+        runtime.on_events((
+            observed(0, Kind.WORKFLOW_START),
+            observed(1, Kind.INVOCATION_CREATE, invocation_id="parent", context_id="ctx-parent"),
+            observed(
+                2, Kind.INVOCATION_CREATE, invocation_id="child", context_id="ctx-child",
+                parent_invocation_id="parent", relation_type=RelationType.SPAWN,
+            ),
+            observed(3, Kind.JOIN_CREATE, join_id="join", member_invocation_ids=("child",)),
+            observed(4, Kind.JOIN_WAIT, invocation_id="parent", join_id="join"),
+        ))
+        runtime.register_visible_request(request("parent"))
+        child = request("child")
+        child.beliefkv_metadata["context_epoch"] = 1
+        child.origin_input_ids, child.output_ids = (1, 2), [3] * 40
+        child.finished = lambda: False
+        runtime.on_events((
+            observed(
+                5, Kind.STRUCTURED_ACTION, invocation_id="child", context_id="ctx-child",
+                context_epoch=0, join_id="join",
+                attributes={"beliefkv_child_completion_intent": True,
+                            "child_completion_signal_kind": "stage",
+                            "estimated_final_report_tokens": 128},
+            ),
+            observed(
+                6, Kind.LLM_SUBMIT, invocation_id="child", context_id="ctx-child",
+                context_epoch=1, attributes={"request_id": child.rid},
+            ),
+        ))
+        runtime.register_visible_request(child)
+        stage, key = runtime._final_stages["join"], runtime.visible[child.rid]
+        assert runtime.on_batch_completed(NS(reqs=[child])) == ()
+        assert not runtime._context_tokens
+        assert runtime._final_admission_work(
+            stage, key, child, now_ms=time.monotonic() * 1000.,
+        ) == (88., "notice_budget")
+        child.output_ids.extend([3] * 20)
+        assert runtime._final_admission_work(
+            stage, key, child, now_ms=time.monotonic() * 1000.,
+        ) == (68., "notice_budget")
     finally:
         runtime.close()
 

@@ -7,6 +7,23 @@
 重复摘要已清理；源码归档及保留范围见[整理记录](archive/research_exploration_20261020.md)。
 下文的最新工程状态与实验约束继续有效。
 
+**最新：V110 首组于北京时间 17:33 因 JOIN-only 消融策略修正而停止。**
+旧 aged 队首会压掉已满四次普通准入配额的 JOIN 提升；现在改为配额内
+有界提升，同时删除仅调度模式没有消费者的预测维护和 decode 记账。
+完成、只读首次服务及 OurScheduler 最终 child 排序保留并验证。
+V110 原始前缀与停止回执保留；V111 准备重启四组，Full 继续复用 V109。
+修复后最终 [V2579 回归](../experiments/reports/v2579_internal_comparison_final_fixed_cpu_20261021.xml)
+3067 项全部通过，无跳过；保留 V2573 的 3058 项身份并新增 9 项，
+[V2580](../experiments/reports/v2580_internal_comparison_fixed_cpu_sources_20261021.json)
+绑定执行源码。老化用例的预期已按新配额语义调整。
+局部 CPU 对照与资格边界见[架构状态开头](architecture_status_zh.md)。
+
+按用户授权，本次内部矩阵继续选 batch12：V109 同 seed 配对的平均 JCT
+约降低 20.52%、共同去长尾吞吐约提高 2.65%。历史 batch8 的吞吐优势
+约 11.00%、平均 JCT 约降低 11.16%，但代码、服务端 seed 和轨迹不同，
+不能当作 batch8 优于 batch12 的受控证据。四组与 V109 Full 保持 batch12，
+不混用 batch，不为本次矩阵重跑 Full。
+
 后续 baseline 清单、公开代码边界和仅调度消融见
 [相关工作总表第 6.5-6.6 节](related_work_comparison_2026-07-21_zh.md#baseline-scheduling-ablations)。
 当前 V109 完整收尾后优先进行内部 JOIN-priority-only /

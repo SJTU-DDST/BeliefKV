@@ -6,6 +6,41 @@
 与实验继续按下文最新约定执行。[整理记录](archive/research_exploration_20261020.md)
 列出已清理的一次性源码及归档位置。
 
+**最新：V110 因 JOIN-only 消融策略问题于北京时间 17:33 停止，准备 V111。**
+CPU 复现确认，旧 JOIN-only 即使累计四次普通准入，只要队首已老化
+10 秒仍禁止提升已提交、已解锁 parent。修正为每四次普通准入后允许一次
+有界提升，普通 aged 请求仍按 FIFO 获取普通名额；不要求 HBM 命中，
+也不绕过原生容量检查。这是在加强待比较的简单 baseline，不预设它更慢。
+
+停止段保留了 6 个 JOIN_SATISFIED 和 1 次提升记录；其余不能全部归因
+于老化门槛，也可能尚未提交或本来就在队首。另有 5200 次未配置工具
+预测尝试、11163 次预测维护 sweep。现在仅调度组不再尝试工具预测，
+JOIN-only 在进入图维护前忽略无用途的 final-report 提示；
+OurScheduler-only 仍保留最终 child 的排序信息，并直接读请求的生成进度。
+未完成 decode 无消费者时跳过上下文记账，完成回调和只读首次服务反馈保留。
+
+[V2576 CPU 对照](../experiments/reports/v2576_ordering_only_control_cpu_20261021.json)
+保留 101 个交替样本、正常 GC 和全部长样本。12 个 fixture 中要求的
+完成 ID、visible/session、代际和物理 pending 状态一致；明确允许无消费者的
+未完成上下文计数不同。batch12 的仅调度 runtime 回调中位从约
+5.75–7.36us 降到 1.48–1.88us，Full 控制的同一回调基本持平。
+这不是完整 scheduler、GPU 吞吐或 JCT 收益。最终
+[V2579 回归](../experiments/reports/v2579_internal_comparison_final_fixed_cpu_20261021.xml)
+3067 项全部通过，无跳过，保留 V2573 的 3058 项身份并新增 9 项；
+[V2580](../experiments/reports/v2580_internal_comparison_fixed_cpu_sources_20261021.json)
+绑定源码。原老化用例按新配额语义更新预期，不称行为完全未变。
+
+V110 watcher/driver 的真实身份均已退出，所属进程/容器释放，停止回执为
+`experiments/raw/qwen35_locobench_long_36root_running12_internal_20261021_v110/server_reservation_cutoff.json`。
+旧段按 debug 中断保存，不作完成的消融结果。V111 继续用最新修复代码
+运行四组，Full 直接复用 V109；下方 V110 “运行中”文字保留为当时记录。
+
+本次内部矩阵选择 batch12，与复用的 V109 Full 一致。同 seed 的 V109
+配对结果为平均 JCT 约降低 20.52%、共同去长尾吞吐约提高 2.65%。
+历史 batch8 吞吐约提高 11.00%、平均 JCT 约降低 11.16%，但旧代码、
+服务端 seed、上下文和执行轨迹有差异，尚不能据此判定 batch8 更优。
+不以跨 batch 的 Full/消融差异证明机制增量，也不为此重跑 Full。
+
 **本周设计与优化小结（北京时间 2026-10-19 至 10-21）。**
 核心是把动态 workflow 的等待/恢复边界与原生 KV 数据面、容量及请求
 准入一起管理：等待时先备份可复用 FULL 前缀，需要恢复前准备容量，

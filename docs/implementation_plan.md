@@ -12,6 +12,30 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Latest execution: V110 JOIN-priority-only was deliberately stopped at17:33
+Beijing for a control-policy correction. Both exact driver/watcher identities
+and owned GPU processes have exited. Preserve its raw prefix and explicit
+debug cutoff; do not treat it as a completed or naturally failed workflow run.
+CPU reproduction shows an aged head suppressing JOIN priority even after four
+ordinary admissions. Permit one bounded promotion after four ordinary turns,
+keep ordinary aged FIFO and native admission, and strengthen the simple baseline.
+Remove unused tool-prediction attempts in ordering-only modes, discard unused
+report metadata in JOIN-only, and avoid unfinished decode context bookkeeping
+without consumers. Keep completion, first-service feedback and OurScheduler's
+live final-child ranking. V2576 is a local CPU callback comparison,not aggregate
+GPU/JCT evidence. Final V2579 qualification passes3067 cases with no skips,
+retains all3058 V2573 identities and adds9;V2580 binds execution sources.
+The existing aged-head case changes its expectation to the new quota policy,
+so identity retention does not imply unchanged behavior. Reuse V109 Full,
+run only the same four latest-code internal arms,and keep the goal unaccepted.
+
+The user authorizes selecting batch8 or12 for the stronger advantage. Keep12
+for this V109-based internal matrix: its seed21 paired mean JCT falls20.52%
+and common trimmed throughput improves2.65%. Historical batch8 shows11.00%
+throughput and11.16% mean-JCT gains,but differs in code,server seeds,contexts
+and dynamic work. It is not a controlled batch comparison. Match all four
+controls to batch12 Full rather than mixing batches or repeating Full.
+
 The user's latest execution order is: finish the frozen V109 pair, then run
 internal controls before any external baseline adaptation or standalone new
 optimization experiment. Reuse V109 Full; do not rerun it for this matrix.
@@ -45,7 +69,7 @@ watcher/driver exit, check new holds and idle resources, freeze effective contro
 and reject custom physical actions in scheduling-only arms. Keep ordinary native
 HiCache, layer dependencies and session correctness in every arm.
 
-Main CPU qualification is nowV2566:actually rerun3023 application cases,
+Prior standalone optimization qualificationV2566:actually rerun3023 application cases,
 retain all2919 identities,add14 EOS/capacity/session/ACK controls and newly
 include90 existing partial-extent cases. Unchanged53335e6 engine405 is
 source/report verified,not rerun.

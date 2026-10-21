@@ -143,7 +143,8 @@ def register(args) -> None:
         raise ValueError("register this internal matrix behind the current native comparison")
     candidate = previous["candidate"]
     revision = qualified.command(["git", "-C", str(ROOT), "rev-parse", "HEAD"])
-    checkout = ROOT.parent / f".worktrees/beliefkv-internal-v110-frozen-{revision[:12]}-20261021"
+    run_label = args.run_root.name.rsplit("_", 1)[-1]
+    checkout = ROOT.parent / f".worktrees/beliefkv-internal-{run_label}-frozen-{revision[:12]}-20261021"
     if checkout.exists():
         raise FileExistsError("preserve the existing frozen internal controls")
     subprocess.run(

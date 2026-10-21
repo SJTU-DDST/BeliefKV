@@ -83,7 +83,18 @@ def validate_runtime(mode: str, state: dict) -> None:
         for name in (
             "physical_registered", "native_physical_completed",
             "incremental_full_tracking_enabled", "terminal_child_reclaim_calls",
-            "terminal_root_reclaim_calls",
+            "terminal_root_reclaim_calls", "tool_wait_predictor_unavailable",
         ):
             if counts.get(name, 0):
                 raise ValueError(f"{mode}: unexpected custom KV action: {name}")
+    if mode == "join_priority_only" and (
+        state.get("join_only_priority_ordinary_quota") != 4
+        or state.get("join_only_priority_allows_aged_head_after_quota") is not True
+    ):
+        raise ValueError("JOIN-only priority must retain a bounded turn after aged heads")
+    if mode == "join_priority_only" and any(
+        state.get("counts", {}).get(name, 0) for name in (
+            "prediction_maintenance_sweeps", "final_stage_accepted", "child_report_notice_observed",
+        )
+    ):
+        raise ValueError("JOIN-only comparison is maintaining unused report predictions")

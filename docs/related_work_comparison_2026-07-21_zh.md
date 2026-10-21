@@ -490,6 +490,23 @@ PREPARE_HOST、工具预测卸载、关键 parent 容量预留/冷 donor 选择�
 命中才获得优先级，数据依赖与需求恢复仍由原生处理；不能把它偷偷改成
 restore-ready-only 或无限 root 插队。
 
+V110 调试后将简单 JOIN-only 的配额语义明确为：累计四次普通准入后
+可提升一个真正解锁、已提交的 parent，即使原生队首已老化 10 秒；
+随后重置配额，普通老化请求仍按 FIFO 使用普通名额。旧实现额外要求
+队首未老化，会在高压下压掉这一策略，旧调试段不进入完成比较。
+仅调度模式还需移除无消费者的工具预测、decode 上下文记账；JOIN-only
+不处理 final-report 预测提示，而 OurScheduler-only 保留自己的最终 child
+排序元数据与只读首次服务反馈。V111 用最新修复代码重跑四组，
+仍按用户要求复用 V109 Full，记录版本差异。
+修复后 V2579 为 3067 项全部通过、无跳过，保留原 3058 项身份并新增
+9 项；V2580 绑定源码，老化用例按新配额语义更新预期。
+
+本次内部矩阵选 batch12，以保持与复用的 V109 Full 相同的 batch。
+V109 同 seed 配对平均 JCT 约降低 20.52%、去长尾吞吐约提高 2.65%；
+历史 batch8 为吞吐约 +11.00%、JCT 约 -11.16%，但代码、seed、
+上下文和工作轨迹不同，不能用来认定 batch8 更优。用户允许择优不
+改变对照边界：不混用 batch8 消融和 batch12 Full 证明机制收益。
+
 现有 `reactive` arm 不是 `OurScheduler-only`：
 `scripts/run_qwen35_native_regime_probe.sh` 的非 off 分支仍可打开
 PREPARE_HOST、resident-first 和最终阶段优先。实现时增加明确的条件名、

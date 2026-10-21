@@ -1064,6 +1064,12 @@ class NativeAdmissionRuntime:
         filtered = []
         submitted_origins = None
         for event in events:
+            if self.internal_comparison_mode == "join_priority_only" and (
+                event.attributes.get(SEMANTIC_TEXT) is True
+                or event.kind is RuntimeEventKind.STRUCTURED_ACTION
+                and event.attributes.get(CHILD_COMPLETION_INTENT) is True
+            ):
+                continue
             if (
                 (self.enable_admission_prefetch or self.enable_final_stage_prefetch)
                 and self._continuing_joins and event.kind is RuntimeEventKind.LLM_SUBMIT
@@ -1254,6 +1260,7 @@ class NativeAdmissionRuntime:
                 deltas, previous_version=graph_version, affected_invocations=affected,
             )
             tool_wait_refreshes: dict[str, None] | None = None
+            refresh_tool_waits = self._custom_kv_management
             tool_started_keys: set[PrefillCandidateKey] | None = None
             terminal_returns = {
                 event.invocation_id: event
@@ -1521,7 +1528,9 @@ class NativeAdmissionRuntime:
                         if hint.key.root_workflow_id != event.workflow_id
                     }
                     self.shadow_candidate = None
-                if event.kind in (RuntimeEventKind.TOOL_START, RuntimeEventKind.TOOL_END) and context_id is not None:
+                if refresh_tool_waits and event.kind in (
+                    RuntimeEventKind.TOOL_START, RuntimeEventKind.TOOL_END,
+                ) and context_id is not None:
                     if len(events) == 1:
                         self._submit_tool_wait(context_id)
                     else:
@@ -2229,6 +2238,9 @@ class NativeAdmissionRuntime:
                 "physical_disabled": self.physical_disabled,
                 "internal_comparison_mode": self.internal_comparison_mode,
                 "custom_kv_management": self._custom_kv_management,
+                "join_only_priority_ordinary_quota": 4,
+                "join_only_priority_allows_aged_head_after_quota": True,
+                "join_only_pending_parents": len(self._join_priority_pending),
                 "final_stage_prefetch": self.enable_final_stage_prefetch,
                 "final_stage_priority": (
                     self.enable_final_stage_priority
@@ -10664,7 +10676,6 @@ class NativeAdmissionRuntime:
             ))
             if (
                 ordered and self._join_priority_normal_admissions >= 4
-                and now - self._visible_since.get(ordered[0][1].rid, now) < 10.
             ):
                 for position, (index, request) in enumerate(ordered):
                     key = keys[index]
@@ -10679,6 +10690,8 @@ class NativeAdmissionRuntime:
                             ordered.insert(0, ordered.pop(position))
                             self._join_priority_promoted = request.rid
                             self.counts["join_only_priority_ordered"] += 1
+                            if now - self._visible_since.get(ordered[1][1].rid, now) >= 10.:
+                                self.counts["join_only_priority_aged_head_bypass"] += 1
                         break
             return compile_native_prefill_plan(
                 [keys[index] for index, _ in ordered],
@@ -11374,10 +11387,11 @@ class NativeAdmissionRuntime:
             pending_by_context or lease_contexts or self._parent_capacity_handoffs
             or self._residency_hint_admissions
         )
+        only_completed = self._tool_timing_only or not self._custom_kv_management
         for req in batch.reqs:
             finished = req.finished()
-            # Tool timing consumes the completed model request, not decode progress.
-            if self._tool_timing_only and not finished and not observe_service:
+            # Timing and ordering-only policies do not consume decode progress.
+            if only_completed and not finished and not observe_service:
                 continue
             rid = req.rid
             if finished:
@@ -11489,7 +11503,7 @@ class NativeAdmissionRuntime:
                 visible_key is not None
                 and (key := visible_key).session_id is not None
                 and key.session_generation is not None
-                and (finished or not self._tool_timing_only)
+                and (finished or not only_completed)
             ):
                 self._context_tokens[key.context_id] = (
                     key.context_epoch,
