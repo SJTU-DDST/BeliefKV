@@ -13,6 +13,14 @@
 资源空闲且没有新预约时按需开始。目标继续 active，性能尚未验收；
 保留负结果、工作量差异和 guard 排除，不通过挑选结果保证 Full 获胜。
 
+最新 CPU 减负仅合并 simple JOIN 排序中重复的到达时间读取和十秒年龄判断，
+保留 FIFO、tie、缺失/未来时间、JOIN 配额和全部 live 检查。
+V2623 的 101 交替样本完整控制对照中，48/128 老化或混合队列约改善
+2.1%–2.8%；8 个全新请求约慢 0.15%，负例保留，不外推 GPU/JCT。
+V2624 保留全部 3537 项并新增 13 项，3550 全通过、无跳过，另有 2 个
+subtest；V2625 绑定源码。V112 已因更新暂停标记取消且进程退出，
+没有 GPU 实验；最新登记由 V113 接替。
+
 新增 `BELIEFKV_PREFILL_SCHEDULING_POLICY=join_priority`：Full 保留 KV
 管理，但完整请求排序与 JOIN-only 共用 aged FIFO/native 顺序、JOIN
 唤醒及独立配额；跳过因果、驻留和恢复插队排序。旧 `workflow` 配置
@@ -25,11 +33,11 @@
 
 [下一轮配置](../configs/migration/next_predictive_baselines_20261022.json)
 准备了相同 batch8/seed21/36root/256K 的 Full、JOIN-only、工程对齐
-native；保护、复杂排序及其他消融按需补跑。新配置还需冻结及执行接续，
+native；保护、复杂排序及其他消融按需补跑。新入口负责冻结与定时接续，
 不能用旧 V111 的 batch12 接续器绕过配置校验，也不混用 batch12 Full
 作为 batch8 对照。新的 `scripts/run_fresh_internal_comparison.py` 独立冻结
 完整三组，定时登记及实时状态分别位于仓库外
-`../ops/v112_fresh_batch8_20261022.registration{,.state}.json`，以回执为准。
+`../ops/v113_fresh_batch8_20261022.registration{,.state}.json`，以回执为准。
 截止前只等待，不探测 GPU 或预分配 Host；到时复核源码、精确暂停标记和资源。
 [V2618](../experiments/reports/v2618_fresh_batch8_qualified_cpu_20261021.xml)
 保留全部 3493 项并新增 44 项，3537 全通过、无跳过，另有 2 个 subtest；

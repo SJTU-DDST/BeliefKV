@@ -21,9 +21,11 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 不要用旧 batch12 Full 作对照。新入口
 `scripts/run_fresh_internal_comparison.py` 单独冻结最新 main、保留三个新 arm；
 旧 V111 接续器仍校验 batch12，不得绕过参数校验启动 batch8。定时登记与
-实时状态为 `../ops/v112_fresh_batch8_20261022.registration{,.state}.json`，
+实时状态为 `../ops/v113_fresh_batch8_20261022.registration{,.state}.json`，
 以回执为准。若登记后 main 再变化，启动前拒绝旧候选；启动后各组固定同一
 冻结版本以维持比较口径。新的暂停标记或延后预约会停止接续。
+V112 旧登记已因 CPU 更新取消，真实进程已退出，没有 GPU 实验；
+保留其取消回执，不覆盖原登记。V113 使用新资格。
 
 Full 显式采用 `PREFILL_SCHEDULING_POLICY=join_priority`、
 `PREFETCH_RESIDENCY_PROTECTION=0`，保留 EOS/tool 预取、增量 PREPARE 和
@@ -32,7 +34,10 @@ Full 显式采用 `PREFILL_SCHEDULING_POLICY=join_priority`、
 以去长尾吞吐和平均/受限 JCT 不劣于最强简单基线为验收，记录输出、
 工具、请求、guard/正确性口径；负结果不能省略。V2613 的 3493 项及
 额外 17 项 EOS CPU 检查均通过，V2614 绑定此前源码。最新 V2618 保留全部
-3493 项并新增 44 项，3537 全通过、无跳过，另有 2 个 subtest，V2620 绑定源码。
+3493 项并新增 44 项，3537 全通过、无跳过，另有 2 个 subtest，V2620 绑定此前源码。
+最新 V2624 保留全部 3537 项并新增 13 项，3550 全通过、无跳过，另有 2 个
+subtest，V2625 绑定 simple JOIN 年龄排序去重后的源码。V2623 完整 CPU
+对照保留 8 请求全新队列约 0.15% 的变慢，不把局部 CPU 收益当作 GPU 验收。
 完整完成但仅因 guard 未通过 native gate 的 arm 保留非零原退出码、精确资格
 排除及原始 trace，独立完成审计后可继续控制组；系统无效、缺失 workflow、
 配置不符、未知退出或物理错误仍停止。没有新 GPU 收益或自动性能验收。

@@ -10772,11 +10772,11 @@ class NativeAdmissionRuntime:
                 and self.visible.get(key.request_id) == key and not self._terminal(key)
             ]
             now = time.monotonic()
+            visible_since = self._visible_since.get
             ordered.sort(key=lambda pair: (
-                0 if now - self._visible_since.get(pair[1].rid, now) >= 10. else 1,
-                self._visible_since.get(pair[1].rid, now)
-                if now - self._visible_since.get(pair[1].rid, now) >= 10. else 0.,
-                pair[0],
+                (0, since, pair[0])
+                if now - (since := visible_since(pair[1].rid, now)) >= 10.
+                else (1, 0., pair[0])
             ))
             candidate = None
             if (

@@ -13,6 +13,15 @@
 不抢占他人 GPU。工作目标 active，Full 不劣于 native/最强简单基线且
 有可归因的 KV 增量是验收门槛，不能将该目标当作当前已有结论。
 
+最新 CPU 更新仅将 simple JOIN 排序的重复到达时间读取/十秒年龄判断
+合并为每个请求一次，保留全部排序与 live 语义。V2623 使用固定同一时钟、
+101 个交替样本、正常 GC 和独立旧 planner，完整维护/检查/规划/选择状态一致。
+48 个 recent/aged/mixed 请求的墙钟中位约改善 0.89%/2.20%/2.12%；
+128 个约改善 2.07%/2.78%/2.50%；8 个 recent 约慢 0.15%，保留所有样本。
+这不是 GPU/JCT 证据。V2624 保留全部 3537 项并新增 13 项，3550 全通过、
+无跳过，另有 2 个 subtest，V2625 绑定源码。V112 的旧 CPU watcher
+已因更新暂停标记退出，没有使用 GPU；V113 接替其定时登记。
+
 新增 `BELIEFKV_PREFILL_SCHEDULING_POLICY=join_priority|workflow`。
 `join_priority` 让 Full 的整个 prefill 排序共用 JOIN-only 路径，包括
 无 JOIN 候选或 JOIN 配额未满时；关闭因果、驻留/恢复插队及额外队尾
@@ -54,7 +63,7 @@ post-forward 约 1.80us，无等待 agent 的 PREPARE 分发约 3.94us，
 新鲜三组冻结/定时入口为 `scripts/run_fresh_internal_comparison.py`。
 V2618 保留全部 3493 项并新增 44 项，3537 全通过、无跳过，另有 2 个
 subtest；V2620 绑定源码。登记/状态回执为
-`../ops/v112_fresh_batch8_20261022.registration{,.state}.json`，以实际回执为准。
+`../ops/v113_fresh_batch8_20261022.registration{,.state}.json`，以实际回执为准。
 截止前只等待；源码变化、新预约、错误遥测或配置均阻止启动/继续。
 完整完成但 guard 排除的 arm 保留原退出码，不误报为 GPU 失败或性能验收。
 不复用 batch12 Full 作 batch8 因果对照，不改变 harness 提前截断来制造收益。

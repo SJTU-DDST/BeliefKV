@@ -21,6 +21,16 @@ Keep the goal active. Non-inferiority to native and the strongest simple control
 plus independent useful KV benefit,is the acceptance criterion,not a claimed result.
 Retain negative outcomes,guard exclusions and realized-work/quality differences.
 
+Latest CPU change merges repeated visible-arrival lookup and exact ten-second
+age evaluation per simple-JOIN candidate. No queue policy,live check,JOIN quota
+or KV behavior changes. V2623 alternates101 samples with normal GC and a pinned
+old planner;complete maintenance,inspection,planning,selection,graph,counters
+and pending state match. Aged/mixed48/128 queues improve about2.1-2.8% locally;
+8 recent requests regress0.15%. Retain negative/all raw samples,not a GPU claim.
+V2624 retains all3537 and adds13:3550 pass,no skips,plus2 subtests;V2625 binds
+sources. V112's old CPU-only watcher cancelled on the new marker and exited
+without a GPU run. V113 replaces that registration at the same deadline.
+
 Current CPU implementation: BELIEFKV_PREFILL_SCHEDULING_POLICY=join_priority
 lets Full reuse the entire JOIN-only planning branch,also between priority turns
 and with no pending JOIN. Skip causal/residency/recovery ranking and capacity
@@ -60,7 +70,7 @@ configs/migration/next_predictive_baselines_20261022.json:
 batch8/seed21 Full,JOIN-only and matched native,with protection/complex-order
 controls conditional on evidence. V2618 retains all3493 cases and adds44:
 3537 pass,no skips,plus2 subtests;V2620 binds sources. The dated registration/state
-receipts are ../ops/v112_fresh_batch8_20261022.registration{,.state}.json.
+receipts are ../ops/v113_fresh_batch8_20261022.registration{,.state}.json.
 Read their actual status;the operator stays CPU-only before the deadline and
 rejects stale main,new holds,incorrect effective settings and failed telemetry.
 Fully completed guard-excluded arms retain original process exits and exact
