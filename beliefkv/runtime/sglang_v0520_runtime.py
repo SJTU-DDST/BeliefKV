@@ -9679,6 +9679,24 @@ class NativeAdmissionRuntime:
             else {}
         )
 
+    def _frontier_probes_backed_off(
+        self, waiting_queue: Sequence[object], *, now_ms: float,
+    ) -> bool:
+        inspected = 0
+        for request in waiting_queue:
+            if getattr(request, "beliefkv_metadata", None) is None:
+                continue
+            if inspected == 512:
+                break
+            key = _request_key(request, known_keys=self.visible)
+            if (
+                key is None or self.visible.get(key.request_id) != key
+                or now_ms >= self._frontier_probe_after_ms.get(key, 0.)
+            ):
+                return False
+            inspected += 1
+        return True
+
     @timed_runtime("frontier_restore")
     def dispatch_frontier_restore(
         self, waiting_queue: Sequence[object], *, running_batch: object,
@@ -9700,6 +9718,11 @@ class NativeAdmissionRuntime:
         self._observe_native_admission_capacity(running_batch=running_batch, adder=None)
         slots = self._current_residency_budget().request_slots
         if slots < 1:
+            return
+        if self._frontier_probe_after_ms and self._frontier_probes_backed_off(
+            waiting_queue, now_ms=now_ms,
+        ):
+            self.counts["frontier_restore_backoff_skipped_plans"] += 1
             return
         if not callable(getattr(self._native_cache, "prefetch_gpu_session_nodes", None)):
             return
@@ -9725,18 +9748,27 @@ class NativeAdmissionRuntime:
                 getattr(self._native_cache, "session_refs", None),
                 "snapshot_latest_session_leaf_anchors", None,
             )
-            if not callable(snapshot) or snapshot(
-                key.session_id, key.session_generation, max_leaves=8,
-            ) is None:
+            leaves = (
+                snapshot(key.session_id, key.session_generation, max_leaves=8)
+                if callable(snapshot) else None
+            )
+            if leaves is None:
                 # New contexts may share global cache, but native matching can
                 # handle them without a second long-input prefix search here.
-                self._frontier_probe_after_ms[key] = float("inf")
+                # Missing anchors can still be published while this request waits.
+                continue
+            if has_host_backed_missing_copy(self._native_cache, ContextSessionAnchors(
+                key, leaves, now_ms / 1000.,
+            )) is False:
+                # All anchored states, including historical ones, have no
+                # recoverable missing copy. Unknown metadata still falls through.
+                self.counts["frontier_restore_empty_metadata_checks"] += 1
                 continue
             observed = self._read_request_reentry(request, key=key)
             if observed is None or not (
                 observed["missing_full_tokens"] or observed["missing_mamba_slots"]
             ):
-                self._frontier_probe_after_ms[key] = float("inf")
+                # Queued resident pages may be evicted without changing the key.
                 continue
             anchors = self._request_reentry_anchors(request)
             if anchors is None:
