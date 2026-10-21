@@ -302,6 +302,7 @@ class _PrefetchServiceLease:
     demand_ready: bool = False
     reentry_ready_at: float | None = None
     client_submitted_at: float | None = None
+    host_lock_params: object | None = None
 
 
 @dataclass
@@ -8511,6 +8512,59 @@ class NativeAdmissionRuntime:
                         "scope": "receipt retained; no unsafe release retry",
                     })
                 return
+        if lease.host_lock_params is not None:
+            # Record the successful device unlock before any later operation
+            # can fail; a retained Host receipt must never unlock it twice.
+            self._prefetch_service_leases[command_id] = replace(
+                lease, lock_params=None, protected_bytes=0,
+            )
+            try:
+                invocation = self.graph.invocations.get(lease.key.invocation_id)
+                reclaim = getattr(
+                    self._native_cache, "reclaim_beliefkv_expired_tool_prefetch", None,
+                )
+                if (
+                    reason == "service_window_expired" and lease.source == "tool_wait"
+                    and not lease.demand_ready and callable(reclaim)
+                    and not self.physical_disabled
+                    and self.context_sessions.get(lease.key.context_id) == lease.key
+                    and invocation is not None and invocation.state is InvocationState.WAIT_TOOL
+                    and invocation.active_tool_calls
+                    and invocation.updated_ts_ms == lease.wait_revision
+                    and not self._terminal(lease.key)
+                ):
+                    amounts = dict(lease.pool_bytes)
+                    self.counts["tool_prefetch_expiry_reclaim_calls"] += 1
+                    freed = reclaim(
+                        lease.node_id, lease.creation_time,
+                        session_id=lease.key.session_id,
+                        session_generation=lease.key.session_generation,
+                        include_full=amounts.get("kv", amounts.get("full", 0)) > 0,
+                        include_mamba=amounts.get("mamba", 0) > 0,
+                    )
+                    if any(freed.values()):
+                        self._invalidate_wait_transfer_observation(lease.key)
+                        self.counts["tool_prefetch_expiry_reclaimed_nodes"] += 1
+                        self.counts["tool_prefetch_expiry_freed_full_tokens"] += freed.get(0, 0)
+                        self.counts["tool_prefetch_expiry_freed_mamba_slots"] += freed.get(2, 0)
+                        if self._opportunity_writer is not None:
+                            self._opportunity_writer.record({
+                                "event": "tool_prefetch_expiry_reclaimed",
+                                "ts_ms": time.time() * 1000., "command_id": command_id,
+                                "context_id": lease.key.context_id,
+                                "context_epoch": lease.key.context_epoch,
+                                "node_id": lease.node_id, "freed_units": freed,
+                                "scope": "same active tool; retained Host copy; no D2H",
+                            })
+                self._native_cache.tree_core.dec_host_lock_ref(
+                    lease.node_id, lease.host_lock_params,
+                )
+                self.counts["tool_prefetch_host_lock_released"] += 1
+            except (AttributeError, AssertionError, KeyError, TypeError, ValueError, RuntimeError):
+                self.physical_disabled = True
+                self._prefetch_lock_release_failures.add(command_id)
+                self.counts["tool_prefetch_host_release_failed"] += 1
+                return
         self._prefetch_service_leases.pop(command_id)
         self._lease_refresh_signature = None
         if (
@@ -8582,6 +8636,7 @@ class NativeAdmissionRuntime:
                 "request_id": getattr(request, "rid", None),
                 "native_locked": lease.lock_params is not None,
                 "protected_bytes": lease.protected_bytes,
+                "host_native_locked": lease.host_lock_params is not None,
                 "scope": "native lock released; not reuse proof",
             })
 
@@ -9007,6 +9062,32 @@ class NativeAdmissionRuntime:
         lease = replace(lease, lock_params=lock_params, protected_bytes=protected_bytes)
         self._prefetch_service_leases[action.command_id] = lease
         self._lease_refresh_signature = None
+        retain_host = getattr(cache, "retain_beliefkv_prefetch_host", None)
+        if (
+            source == "tool_wait" and callable(retain_host)
+            and not self.physical_disabled
+            and (lock_params is not None or protected_by_command_id is not None)
+        ):
+            amounts = dict(action.pool_bytes)
+            try:
+                host_lock_params = retain_host(
+                    step.node_id, step.creation_time,
+                    include_full=amounts.get("kv", amounts.get("full", 0)) > 0,
+                    include_mamba=amounts.get("mamba", 0) > 0,
+                )
+                if host_lock_params is not None:
+                    lease = replace(lease, host_lock_params=host_lock_params)
+                    self._prefetch_service_leases[action.command_id] = lease
+                    if getattr(host_lock_params, "node_id", None) != step.node_id:
+                        raise ValueError("prefetch Host receipt names another node")
+                    self.counts["tool_prefetch_host_lock_acquired"] += 1
+                else:
+                    self.counts["tool_prefetch_host_copy_unavailable"] += 1
+            except (AttributeError, AssertionError, KeyError, TypeError, ValueError, RuntimeError):
+                self.physical_disabled = True
+                self._prefetch_lock_release_failures.add(action.command_id)
+                self.counts["tool_prefetch_host_lock_acquire_failed"] += 1
+                return
         reason = self._prefetch_lease_invalid_reason(lease)
         if reason is not None:
             self._release_prefetch_service_lease(action.command_id, reason)
@@ -9025,6 +9106,7 @@ class NativeAdmissionRuntime:
                 "pool_bytes": dict(action.pool_bytes),
                 "lease_ms": (lease.expires_at - now) * 1000,
                 "native_locked": lock_params is not None,
+                "host_native_locked": lease.host_lock_params is not None,
                 "protected_bytes": protected_bytes,
                 "protection_reason": protection_reason,
                 "protected_by_command_id": protected_by_command_id,

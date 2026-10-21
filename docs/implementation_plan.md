@@ -12,6 +12,34 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Main's latest CPU qualification isV2524,engine53335e6:actually rerun2801
+application and405 native cases,including19/20 new cases. Tool prefetch
+retains each actual transferred pool/node's source through paired native
+Host receipts while its HBM service protection remains. Do not assume a
+deepest Host anchor protects all FULL ancestor duplicates. No new timer,
+worker or D2H;ordinary native methods are not changed by this candidate.
+Initial lease remains ACK+prefetch_lead_ms+1000ms,currently2s. Actual READY
+gets up to3s submission grace,capped at ACK+10s;actual submitted/visible
+demand also ends at ACK+10s. First use/pressure/identity changes can end it sooner.
+On expiry,only the same still-active tool with no submitted demand may
+reclaim:unlock HBM,keep Host pinned during fresh native current-session/
+checkpoint/exclusive-reference/lock/transfer checks,then unpin Host.
+Never force eviction of active/shared/inflight/submitted consumers.
+Keep remaining receipts on failure;do not retry a completed device unlock.
+V2520 measures added native pin/unpin P5010.93/9.90/14.21us for FULL/Mamba/
+both,and small exclusive expiry94.07us. This excludes longer proof paths,
+whole-hook contention,DMA and GPU/JCT. Preserve all samples and V108's source.
+
+V2518 resolves V106's60 early JOINs and26.251GB post-completion FULL.
+There are73 events:60 early reused,4 positive-before-but-submitted-after,
+3 positive-only-after,and6 zero-before. Five of the latter have no later
+native FULL Host hit;one later has2.346GB,not proof of an early opportunity.
+Thirteen already-early events contribute16.192GB later tails;seven wholly
+late events contribute10.059GB. The four late starts have5.94-18.26ms
+planning lead,0.81-6.74ms late first submits,and actual free-FULL deficits
+in their snapshots. Do not attribute all uncovered H2D to missing Host-only
+copies or assign unprofiled startup latency to one function.
+
 V108 is currently running,launched at2026-10-21T13:01:44+08:00 from frozen
 aefa203/V2508b and dd082e3. Keep36 simultaneous LoCoBench roots,running8,
 256K/95%,Host200GB80:20,selective/EOS,PREPARE,no handoff and historical
@@ -31,7 +59,7 @@ earlier opportunities. Separate wait-time HBM hits,missing backup and
 post-return queue eviction before changing tool windows. This is a collecting
 prefix with independent per-file seals,not whole-run/atomic evidence.
 
-Main's latest CPU qualification isV2516:actually rerun2782 application and
+The preceding CPU qualification isV2516:actually rerun2782 application and
 385 native cases(the previous379 plus6);V2511 retains57 focused cases.
 The independently qualified engine d44bc34 checks an empty idle Host
 budget before scanning a nonempty dirty index. Preserve pending-copy

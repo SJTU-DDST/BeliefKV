@@ -7,6 +7,21 @@
 重复摘要已清理；源码归档及保留范围见[整理记录](archive/research_exploration_20261020.md)。
 下文的最新工程状态与实验约束继续有效。
 
+**main最新CPU资格
+[V2524](../experiments/reports/v2524_tool_host_retention_qualified_cpu_sources_20261021.json)，
+独立引擎53335e6，未用于V108。**2801项应用/405项引擎全部实际重跑，
+包含19/20项新增用例。工具预取按实际节点/池保留Host副本至同一服务租约
+结束；当前初始ACK后2秒，真实完成/提交后的扩展仍不超过ACK后10秒。
+到期仍等待同一工具时，原生安全检查通过才直接释放设备副本，无D2H；
+活跃、共享、在途或已提交消费者不强制驱逐。无新增周期/worker。
+新增Host获取/释放约10–14us/节点、小型独占回收约94us，仅为CPU操作成本。
+
+[V2518](../experiments/reports/v2518_v106_join_post_completion_cpu_20261021.json)
+解释V106的26.251GB完成后恢复：13个已提前JOIN的尾部16.192GB，
+加7个全晚JOIN的10.059GB。73个事件中60个提前复用，4个有早计划但
+迟提交、3个只在完成后出现正计划、6个仅早期零计划；不是全部缺Host-only
+副本。四个迟提交都有当时FULL容量缺口及极短规划提前量。
+
 **当前GPU实验为V108，已于北京时间13:01:44启动。**冻结aefa203/V2508b、
 引擎dd082e3，保持36个同时到达root/running8/256K/95%/Host200GB80:20，
 选择性预测/EOS、PREPARE和关闭handoff，只复用历史V103 native。
@@ -18,7 +33,7 @@
 完成前正计划，全部提前复用97.65MB。后继141.99GB原生FULL Host-hit
 不能倒推为工具等待时的可用机会，需区分等待期与返回后排队期的驱逐。
 
-**main最新CPU资格为
+**上一版CPU资格为
 [V2516](../experiments/reports/v2516_idle_host_budget_qualified_cpu_sources_20261021.json)：**
 2782项应用与385项引擎用例全部实际重跑通过，后者为原379项加6项。
 新Host预算候选d44bc34不包含于V108。无预算时跳过
