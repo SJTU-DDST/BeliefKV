@@ -30,6 +30,41 @@ present. Early runtime is not physically disabled and telemetry has no
 dropped/failed records or writer error. Fix effectiveness and end-to-end
 acceptance are still pending.
 
+V2475 seals the V105 mid-run prefix:JOIN38 observed,37 positive early FULL
+plans,34 events with early submitted reason,35 with physically early submission
+and verified first reuse,5.574GB FULL. Keep reason coverage distinct from
+per-command physical evidence. Tool617 waits,35 positive plans,26 early reused,
+0.874GB. Last ACK-to-service P90 is1.007/1.457s JOIN/tool;no early target's
+repeat native load/demotion in this prefix. No matching same-consumer bound
+issue occurs yet,so V2461's specific repaired branch still lacks GPU coverage.
+
+V2476's complete600-1000s window gives V105/V103 native decode throughput
+571.37/547.32 token/s,+4.39%,weighted batch7.894/7.854,GPU99.05%/98.26%.
+Prefill worker intervals29.645/35.867s and submitted requests779/885 differ.
+This unprofiled fixed development window is not isolated prefetch causality
+or full mean-JCT acceptance. At09:49 Beijing V105 has17/36 completed with
+verified live driver/watcher and no observed runtime failure.
+
+Latest main qualification isV2474. Share the local terminal scan's parsed
+keys with the immediately following advisory prefill plan only when runtime,
+graph/semantic/session revisions and queue object order match. Reparse unknown
+keys;retain final terminal and selector's live identity validation. Empty/single
+queues retain legacy scans. Add no cross-cycle cache,timer or worker.
+V2470b measures actual old/current native hooks plus scheduler maintenance:
+36/108 candidates,resident-first enabled,P50365.534->342.411us and
+900.284->811.428us;identity calls108->72/324->216 with unchanged terminal
+checks,selection,graph and counters. Preserve V2470's first single-queue
+regression;the corrected path still costs about0.56us extra. Common
+post-forward is essentially flat,not universally faster.
+
+V2472b reruns2709 prior application cases plus30 new,2739 pass. V2473b
+reruns375 native cases plus1 noncompeting guard,376 pass;not rehash-only
+retention. V2471b exports engine a98aaf44acb8e6dfbe9bf6d58a027449b1a9c9db,
+changing only the BeliefKV prefill hook and tests. Native-baseline bypass,
+allocator,overlap and migration are unchanged. V105 remains frozen c119a35/
+b019d9e:do not hot-edit it or attribute this new CPU optimization to its results.
+Use its latest trace to decide the next frozen GPU candidate.
+
 V104 was administratively stopped for verified fixes at09:14:21+08:00,
 with31 completed and5 without terminal outcomes at cutoff. Keep the
 debug-fix stop receipt;these five are censored,not natural incompletes.
@@ -67,7 +102,7 @@ intervention and is not a clean net-throughput acceptance result. Preserve
 V2447's complete unprofiled fixed windows and require intervention/recovery
 exclusion for the final throughput analysis.
 
-Latest main qualification isV2464,with2709 application cases actually passed
+Historical V2464 qualification has2709 application cases actually passed
 (2677 retained plus32 new);rehash unchanged engine sources and retain375
 previously executed native cases. V104 remains preserved at2c377da;
 V105 runs the qualified replacement against completed V103 native.

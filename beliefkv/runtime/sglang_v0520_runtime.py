@@ -121,6 +121,16 @@ IDLE_FULL_PREPARE_INTERVAL_MS = 200.
 SPAWN_FULL_PREPARE_MAX_BYTES = 4 * 1024**3
 
 
+@dataclass(frozen=True)
+class _NativePrefillQueueInspection:
+    owner: object = field(repr=False)
+    semantic_revision: int
+    graph_version: int
+    sessions_revision: int
+    entries: tuple[tuple[object, PrefillCandidateKey | None], ...] = field(repr=False)
+    terminal_request_ids: tuple[str, ...]
+
+
 @dataclass
 class _AdmissionPrefetchLease:
     key: PrefillCandidateKey
@@ -9969,6 +9979,27 @@ class NativeAdmissionRuntime:
             and self._terminal(key)
         )
 
+    def inspect_native_prefill_queue(
+        self, native_order: Sequence[object],
+    ) -> _NativePrefillQueueInspection:
+        """Share parsed identities with the immediately following advisory plan."""
+        revision = (
+            self.semantic_revision, self.graph.graph_version,
+            self._context_sessions_revision,
+        )
+        entries, terminal = [], []
+        for req in native_order:
+            key = _request_key(req, known_keys=self.visible)
+            entries.append((req, key))
+            if (
+                key is not None and key.request_id in self.visible
+                and self._terminal(key)
+            ):
+                terminal.append(key.request_id)
+        return _NativePrefillQueueInspection(
+            self, *revision, tuple(entries), tuple(terminal),
+        )
+
     def retire_terminal_request(self, request_id: str) -> None:
         if request_id in self.visible:
             del self.visible[request_id]
@@ -10300,7 +10331,8 @@ class NativeAdmissionRuntime:
 
     @timed_runtime("admission_plan")
     def plan_native_prefill(
-        self, native_order: Sequence[object], *, running_batch: object, adder: object
+        self, native_order: Sequence[object], *, running_batch: object, adder: object,
+        _queue_inspection: _NativePrefillQueueInspection | None = None,
     ) -> NativePrefillPlan:
         self._workflow_work_promoted = None
         self._observe_native_admission_capacity(running_batch=running_batch, adder=adder)
@@ -10315,10 +10347,41 @@ class NativeAdmissionRuntime:
             tagged.append((index, req))
         if len(native_order) > 512:
             self.counts["candidate_bound"] += 1
-        keys = {
-            index: _request_key(req, known_keys=self.visible)
-            for index, req in tagged
-        }
+        inspected = None
+        if (
+            isinstance(_queue_inspection, _NativePrefillQueueInspection)
+            and _queue_inspection.owner is self
+            and not _queue_inspection.terminal_request_ids
+            and (
+                _queue_inspection.semantic_revision, _queue_inspection.graph_version,
+                _queue_inspection.sessions_revision,
+            ) == (
+                self.semantic_revision, self.graph.graph_version,
+                self._context_sessions_revision,
+            )
+            and len(_queue_inspection.entries) == len(native_order)
+            and all(
+                req is entry[0]
+                for req, entry in zip(native_order, _queue_inspection.entries)
+            )
+        ):
+            inspected = _queue_inspection.entries
+        # This call-local reuse is advisory. The final terminal check below and
+        # the selector's current request/session identity check remain live.
+        if inspected is None:
+            keys = {
+                index: _request_key(req, known_keys=self.visible)
+                for index, req in tagged
+            }
+        else:
+            keys = {
+                index: (
+                    inspected[index][1]
+                    if inspected[index][1] is not None
+                    else _request_key(req, known_keys=self.visible)
+                )
+                for index, req in tagged
+            }
         self._final_priority_promoted = None
         self._final_priority_native_rank = None
         self._prefetch_priority_promoted = None

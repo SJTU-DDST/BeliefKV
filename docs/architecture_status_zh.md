@@ -24,6 +24,46 @@ watcher PID `2359215`、start_ticks `671552367`。36-root/running8/
 HTTP200，首批长输入已进入 prefill。早期观测未见 physical_disabled、
 writer_error、dropped/failed 记录；修复效果和净性能仍待验收。
 
+[V2475 的 V105 中期封闭前缀](../experiments/reports/v2475_v105_mid_wait_prefetch_20261021_summary.json)
+观测 38 个 JOIN，37 个有完成前正 FULL 计划，34 个有完成前提交
+reason，35 个实际提前启动并确认复用 **5.574GB FULL**。两种计数
+证据不同，不拿 reason 漏斗替代逐命令提交/复用证明。工具 617 轮中
+35 轮有正计划，26 轮提前复用 **0.874GB FULL**。JOIN/tool
+最后 ACK→首次服务 P90 为 **1.007/1.457 秒**；该前缀未见已预取
+目标首次服务前再次原生加载或驱逐。尚未出现与 V2461 同类的
+“绑定新请求后再发行”命令，不能声称特定分支已有 GPU 验证。
+
+[V2476 完整高负载窗口 600–1000 秒](../experiments/reports/v2476_v105_v103_native_busy_600_1000_20261021.json)
+的 V105/历史 V103 native decode 吞吐为 **571.37/547.32 token/s**
+（约 +4.39%），加权 batch 为 7.894/7.854，GPU 利用率
+99.05%/98.26%。预填充 worker 区间累计为 29.645/35.867 秒，
+提交请求 779/885，输入工作量、轨迹和恢复量不同，不能全归为预取。
+该窗口两侧均完整，无 GPU profiler 介入；它仍只是开发固定窗口，
+不是整轮平均 JCT 或独立迁移收益验收。北京时间 09:49 的实时核对为
+17/36 completed，driver/watcher 存活、无已知运行错误。
+
+**main 最新 CPU 资格 V2474：复用同一安全点的队列身份解析。**
+终态扫描、排序规划、最终选择原来各解析一次同一请求。现在仅将
+本次终态扫描的 key 交给紧接的 advisory planner；runtime 实例、
+图/语义/session revision 或队列对象次序改变即回到实时解析。
+未知 key 仍重新解析；规划末尾终态与 selector 的完整实时身份校验
+保留。空/单候选走原扫描，不增加跨轮缓存、周期或 worker。
+
+[V2470b 完整原生 hook CPU 对照](../experiments/reports/v2470b_prefill_queue_inspection_control_cpu_20261021.json)
+在 resident-first 开启时，36/108 个候选的身份解析调用
+108→72/324→216，终态检查次数不变；P50 **365.534→342.411us**
+及 **900.284→811.428us**。选择结果、图及计数相同，保留全部长样本
+和默认 GC。V2470 的单候选约 +3.6us 回退保留，修正后的单候选仍有
+约 **+0.56us** 固定增量；普通稠密/稀疏 post-forward P50 为
+193.580→194.828us、167.661→167.339us，不宣称所有路径降本。
+
+V2472b **2739 项应用**与 V2473b **376 项原生**检查均实际重跑通过，
+覆盖旧 2709/375 项及新增 30/1 项。V2471b 导出引擎树
+`a98aaf44acb8e6dfbe9bf6d58a027449b1a9c9db`，仅改 BeliefKV
+prefill hook 和测试；native baseline 分支、allocator、overlap、
+传输路径保持。V2474 绑定最新来源；V105 仍冻结 `c119a35` 和旧
+`b019d9e` 引擎，不将本次 CPU 降本归给运行中的 V105。
+
 **V104 已为验证修复而行政中断。**北京时间 09:14:21 的 cutoff 记录
 31 个 completed、5 个尚无终态，不记作自然 incomplete，也不据此
 计算整轮平均 JCT。停止仅针对验证身份的自有进程/容器，释放回执无
@@ -50,7 +90,7 @@ driver PID `2142467`、start_ticks `671199167`；只跑 predictive，复用 V103
 首次消费所有权。原实现与成本证据见下文 V2325/V2326，本次没有
 为相同逻辑增加分支、扫描或周期。
 
-**main 最新 CPU 资格为 V2464；V105 正在验证两处运行时修复。**
+**V2464 历史运行资格；V105 正在验证两处运行时修复。**
 [V2461 的同一封闭前缀审计](../experiments/reports/v2461_v104_large_bound_parent_cpu_20261021.json)
 确认 207696-token parent 的 36 笔 client-bound JOIN 恢复租约始终
 被当成 speculative；原生入队至首次 worker 服务约 19.493 秒，

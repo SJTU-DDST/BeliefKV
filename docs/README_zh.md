@@ -31,6 +31,22 @@ V103 native。driver PID `2360761`，watcher `2359215`；健康检查
 HTTP200、36个workflow已创建并开始长输入prefill。修复效果与净性能
 仍待验证，新暂停或已确认运行错误照常处理。
 
+[V2475 中期前缀](../experiments/reports/v2475_v105_mid_wait_prefetch_20261021_summary.json)
+中 JOIN35个提前复用5.574GB FULL、工具26轮0.874GB，ACK→服务
+P90为1.007/1.457秒，未见该前缀目标首次服务前重复加载或驱逐。
+[V2476 完整600–1000秒窗口](../experiments/reports/v2476_v105_v103_native_busy_600_1000_20261021.json)
+吞吐为571.37/547.32 token/s，约+4.39%；工作量和轨迹不同，
+仍不能作独立预取归因或整轮JCT验收。09:49实时为17/36 completed。
+
+**main最新CPU资格V2474：删除同一安全点的一轮身份重解析。**
+复用终态扫描结果供紧接的advisory plan使用，保留最终终态和实时
+身份校验；空/单候选走原路径，不新增跨轮缓存或周期。
+[V2470b完整hook对照](../experiments/reports/v2470b_prefill_queue_inspection_control_cpu_20261021.json)
+在36/108候选、resident-first开启时P50为365.5→342.4us/
+900.3→811.4us；单候选仍约+0.56us，保留早期回退和全部样本。
+2739项应用、376项原生检查均实际重跑通过。V105仍冻结c119a35/
+b019d9e，本优化尚未GPU验证，不归入其当前窗口收益。
+
 V104于09:14:21为验证修复而行政中断，cutoff时31个completed、
 5个无终态，后者不记自然incomplete。[V2465封闭审计](../experiments/reports/v2465_v104_debug_stop_wait_prefetch_20261021_summary.json)
 中JOIN50个提前复用13.194GB FULL，工具122轮提前复用6.970GB；
@@ -41,7 +57,7 @@ V104于09:14:21为验证修复而行政中断，cutoff时31个completed、
 选择即发行，额外EOS重试为0。本次相关62项CPU回归通过。
 容量不足、不可观测及已有在途传输继续保留各自语义，不新增周期。
 
-**main最新CPU资格V2464：修复绑定JOIN消费与后续容量回收。**
+**V2464历史运行资格：修复绑定JOIN消费与后续容量回收。**
 同一V104封闭前缀的大parent有36笔绑定恢复未转为需求租约，
 入队至首次worker服务约19.493秒；现在对完整key/当前session/
 可执行状态匹配的JOIN识别同请求消费，保留原配额、老化及原生准入。
