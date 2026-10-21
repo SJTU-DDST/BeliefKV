@@ -22,6 +22,9 @@
 保留完整样本；V2539先规划后查槽位的回退原型已撤回。新目标继续先检查
 槽位，不新增轮询、缓存期限或GPU同步。以本轮去长尾吞吐、平均JCT、
 工作量与有效迁移复用验收，不能先宣称已取得GPU收益。
+V109已于北京时间2026-10-21 15:02:27启动，冻结ed06f53/53335e6；
+15:05真实配置检查通过，健康200，当前predictive就绪，native随后自动运行。
+状态见`/home/longhao/experiment/ops/v109_batch12_20261021.state.json`。
 
 **后续实验默认关闭剩余工作量预取，仅用EOS启动提前JOIN恢复。**
 此前[V2532资格](../experiments/reports/v2532_join_eos_only_qualified_cpu_sources_20261021.json)

@@ -38,6 +38,10 @@ discarded. Preserve that evidence;use V2543 for the final selector measurement,
 without extrapolating fixture CPU savings to online seconds or throughput.
 V109's operator must check both actual running/seed values and stop owned
 processes on physical disable,telemetry failure or a newer user hold.
+V109 started at15:02:27 Beijing from frozened06f53/engine53335e6. At15:05,
+actual server_info confirms running12/seed21/context262144 and health200.
+Predictive is active;fresh native is queued by the same driver. No completed
+pair result or GPU performance acceptance is available yet.
 
 The preceding qualification isV2532:EOS-only JOIN prefetch defaults. Actually
 rerun2810 application cases,retaining2801 and adding9. Source/report-verify

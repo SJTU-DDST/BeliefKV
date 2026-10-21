@@ -29,6 +29,10 @@ CPU回退，已撤回；V2543才是最终版本对照，V2545为最终CPU资格�
 不把局部CPU测量或Host命中数量当作端到端收益。
 实验自动检查两侧真实running12/seed21、迁移disabled和遥测错误；
 出错只停止本轮已验证归属的进程。完成后生成两侧HTML及去长尾对照。
+V109于北京时间2026-10-21 15:02:27启动，冻结ed06f53/引擎53335e6；
+15:05核实服务端running12、seed21、262144上下文及健康200。
+当前predictive服务就绪，新native由同一driver接续；结果尚未完成。
+状态：`/home/longhao/experiment/ops/v109_batch12_20261021.state.json`。
 
 **后续实验使用EOS-only默认配置，此前CPU资格V2532。**长任务入口默认
 `observed_eos`，新资格覆盖旧计划中的预测开关；启动检查要求实际
