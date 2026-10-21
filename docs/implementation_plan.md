@@ -46,7 +46,40 @@ intervention and is not a clean net-throughput acceptance result. Preserve
 V2447's complete unprofiled fixed windows and require intervention/recovery
 exclusion for the final throughput analysis.
 
-Latest main qualification isV2452;V104 stays frozen2c377da. Initial donor
+Latest main qualification isV2464,with2709 application cases actually passed
+(2677 retained plus32 new);rehash unchanged engine sources and retain375
+previously executed native cases. V104 stays frozen2c377da until its qualified
+V105 replacement;reuse completed V103 native rather than rerun the baseline.
+
+V2461 reuses the same independently sealed V104 prefixes. A207696-token
+parent has36 bound JOIN leases remaining speculative and no demand-ready
+promotion;native queue to first worker service is19.493s. Thirty-six other
+requests begin first service meanwhile,six queued later. This proves the
+identity-recognition omission,not that the target fit then or19s causal savings.
+Allow a same-request JOIN consumer only with exact full key,current session,
+RUNNING_LLM and no active tools/children. Retain lease quota,10s demand
+expiry,aging and actual native admission. Ordinary tool leases keep their
+different-consumer requirement.
+
+Initial and tail capacity reclaim now share the existing live critical
+parent's queued FULL donor scope. Keep every frontier/private-row/owner/
+Host/lock/inflight/identity check,Mamba and session refs. Corrected native
+CPU guards show two eligible paths failing on the baseline and releasing4
+FULL units on the candidate,with12 unsafe paths rejected. V2462 matched
+physical-work EOS wall P502018.587->2089.235us,consumer refresh/planning
+147.042->173.194us;the latter performs different semantic work. Common
+dense/sparse post-forward194.468->195.079us/168.506->168.450us.
+Retain all samples and do not claim these fixes reduce control cost.
+
+A deterministic source-freezing regression also requires preserving the
+temporary Git index timestamp via copy2. Keep the earlier isolated snapshot
+failure and passing recheck;its original cause is unproved. V2464 seals
+corrected source/allocator tests and current code. Stop only the owned V104
+identities if still running,record a debug-fix cutoff,then launch frozen V105.
+Measure bound-demand recognition,ACK-to-service,repeated restoration,
+donor reload/fairness,useful early FULL,trimmed throughput and mean JCT.
+
+Historical main qualification V2452:initial donor
 collection reuses membership proved by its current queue-tail iterator.
 Native owner callbacks still reread live queue position,running/private KV/
 output state and identity/generation. Keep frontier/512-entry bounds,all
@@ -62,8 +95,8 @@ first-service observation remain fixtures.
 V2451 reruns2667 retained cases plus10 new cases,2677 pass. Engine unchanged:
 rehash and retain375 prior native cases. V2449 kept5 missing-engine skips;
 V2449b explicitly selects the engine and passes84 focused cases. V2452 seals
-current sources and the benchmark. Do not interrupt V104 merely to deploy
-this small local CPU reduction;use its new trace for the next decision.
+then-current sources and the benchmark. This small local CPU reduction alone
+does not justify interrupting V104;the later verified bugs above do.
 
 V2453b reuses exactly V2453's independently sealed prefixes. All21 critical
 transactions meet FULL targets. Actual victim releases of2.154GB/128 records

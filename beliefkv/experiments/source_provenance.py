@@ -55,8 +55,8 @@ def _tree_with_patch(
             index = Path(_git(repository, "rev-parse", "--git-path", "index"))
             if not index.is_absolute():
                 index = repository / index
-            # Preserve staged additions and intent-to-add without touching the real index.
-            shutil.copyfile(index, temporary_index)
+            # Keep staged entries and the timestamp Git uses for racy-content checks.
+            shutil.copy2(index, temporary_index)
             subprocess.run(
                 ("git", "add", "-u"),
                 cwd=repository,

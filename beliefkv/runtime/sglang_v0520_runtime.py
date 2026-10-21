@@ -5654,12 +5654,13 @@ class NativeAdmissionRuntime:
                 )
                 self.counts["wait_prefetch_backed_capacity_probe"] += 1
             self._publish_parent_pressure_candidates(exclude_node_ids=excluded)
-            freed = reclaim(
-                full_tokens=opportunity.required_full_tokens + budget.reserve_full_tokens,
-                mamba_slots=opportunity.required_mamba_slots + budget.reserve_mamba_slots,
-                exclude_node_ids=excluded,
-                **({"collect_diagnostics": True} if collect_diagnostics else {}),
-            )
+            with self._queued_full_donor_scope(key):
+                freed = reclaim(
+                    full_tokens=opportunity.required_full_tokens + budget.reserve_full_tokens,
+                    mamba_slots=opportunity.required_mamba_slots + budget.reserve_mamba_slots,
+                    exclude_node_ids=excluded,
+                    **({"collect_diagnostics": True} if collect_diagnostics else {}),
+                )
             observed = getattr(
                 self._native_cache, "beliefkv_handoff_last_capacity", None,
             )
@@ -5849,12 +5850,13 @@ class NativeAdmissionRuntime:
         collect_diagnostics = (
             self._opportunity_writer is not None and self.enable_h2d_opportunity_sampling
         )
-        freed = reclaim(
-            full_tokens=target_tokens + budget.reserve_full_tokens,
-            mamba_slots=budget.reserve_mamba_slots,
-            exclude_node_ids=excluded,
-            **({"collect_diagnostics": True} if collect_diagnostics else {}),
-        )
+        with self._queued_full_donor_scope(key):
+            freed = reclaim(
+                full_tokens=target_tokens + budget.reserve_full_tokens,
+                mamba_slots=budget.reserve_mamba_slots,
+                exclude_node_ids=excluded,
+                **({"collect_diagnostics": True} if collect_diagnostics else {}),
+            )
         if freed:
             self._invalidate_causal_full_donor_observations(freed)
             self.counts["wait_prefetch_tail_cold_reclaimed"] += 1
@@ -8736,6 +8738,7 @@ class NativeAdmissionRuntime:
                 )
                 # Consecutive receipts sharing a frozen key reuse this scan's match.
                 submitted = lease.key is submitted_consumer
+                # A client-bound JOIN step already names its eventual consumer.
                 if not submitted and keys and any(
                     key.context_id == lease.key.context_id
                     and key.invocation_id == lease.key.invocation_id
@@ -8745,7 +8748,15 @@ class NativeAdmissionRuntime:
                     and key.context_epoch in (
                         lease.key.context_epoch, lease.key.context_epoch + 1,
                     )
-                    and key.request_id != lease.key.request_id
+                    and (
+                        key.request_id != lease.key.request_id
+                        or lease.source == "join_ticket" and key == lease.key
+                        and self.context_sessions.get(key.context_id) == key
+                        and invocation is not None
+                        and invocation.state is InvocationState.RUNNING_LLM
+                        and not invocation.active_tool_calls
+                        and not invocation.blocking_child_ids
+                    )
                     for key in keys
                 ):
                     submitted = True
@@ -10539,6 +10550,7 @@ class NativeAdmissionRuntime:
                     if (
                         key.request_id != lease.key.request_id
                         or lease.source == "execution_handoff"
+                        or lease.source == "join_ticket" and key == lease.key
                     )
                     and lease.key.invocation_id == key.invocation_id
                     and lease.key.root_workflow_id == key.root_workflow_id

@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 import subprocess
 
 import pytest
 
-from beliefkv.experiments.source_provenance import git_source_state, sha256_file
+from beliefkv.experiments.source_provenance import _tree_with_patch, git_source_state, sha256_file
 
 
 def _git(root: Path, *args: str) -> None:
@@ -73,6 +74,28 @@ def test_patch_validation_preserves_staged_additions_and_the_real_index(tmp_path
     original_index = index.read_bytes()
 
     assert git_source_state(root, canonical_patch=patch)["canonical_patch"]["matches_worktree"]
+    assert index.read_bytes() == original_index
+
+
+def test_temporary_index_keeps_racy_git_timestamp_detection(tmp_path):
+    root = _repository(tmp_path)
+    _git(root, "config", "core.trustctime", "false")
+    source = root / "runtime.py"
+    index = root / ".git/index"
+    initial = source.stat()
+    os.utime(source, ns=(initial.st_atime_ns, initial.st_mtime_ns - 5_000_000_000))
+    _git(root, "update-index", "--refresh")
+    original = source.stat()
+    original_index = index.read_bytes()
+    source.write_text("value = 2\n")
+    os.utime(source, ns=(original.st_atime_ns, original.st_mtime_ns))
+    os.utime(index, ns=(index.stat().st_atime_ns, original.st_mtime_ns))
+
+    tree = _tree_with_patch(root, None)
+
+    assert subprocess.check_output(
+        ("git", "show", f"{tree}:runtime.py"), cwd=root, text=True,
+    ) == "value = 2\n"
     assert index.read_bytes() == original_index
 
 
