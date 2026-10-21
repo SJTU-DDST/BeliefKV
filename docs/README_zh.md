@@ -53,8 +53,19 @@ HTTP200且prefill/decode已服务，不重复启动、不热改冻结码。
 引擎dd082e3，配置及V103 native参照保持；watcher2686204按精确
 进程身份、完整后处理、两次空闲和Host预检接续，新暂停/来源变化/
 上一轮错误会阻止启动。[V2495](../experiments/reports/v2495_v107_followup_waiter_cpu_20261021.xml)
-的8项CPU等待边界检查通过。10:59的V106为23/36 completed，
-其余待终态，不以局部完成均值或固定窗口作为整轮验收。
+的8项CPU等待边界检查通过。11:16的V106为35/36 completed、
+无结果错误，最后一个待终态，不以局部完成均值作整轮验收。
+
+[V2496后段审计](../experiments/reports/v2496_v106_late_wait_prefetch_20261021_summary.json)
+确认JOIN51个提前复用19.831GB FULL、工具58轮4.929GB，ACK→服务
+P90为1.493/1.909秒。
+[V2499同前缀诊断](../experiments/reports/v2499_v106_late_consumer_queues_cpu_20261021.json)
+另发现20.944/26.620秒原生排队长尾，其间有其他请求准入，但不能据此
+证明目标当时可执行。工具真实覆盖锁已到期后才出现首个其他服务，
+驻留保护与准入机会的协同仍待定位；不直接延长全部租约。JOIN在EOS
+时没有正恢复计划，服务时的Host-hit不能倒推为EOS时的预取机会。
+固定600–2400秒分段仍未显示稳定吞吐获胜，上下文和轨迹不同，后段与
+离线CPU验证并行；保持目标未验收，冻结V107接续安排不变。
 
 [V2478历史后段前缀](../experiments/reports/v2478_v105_late_wait_prefetch_20261021_summary.json)
 中JOIN47个提前复用10.610GB FULL、工具69轮2.624GB，ACK→服务
@@ -106,7 +117,7 @@ V104于09:14:21为验证修复而行政中断，cutoff时31个completed、
 
 **confirmed ticket 空目标过滤已复核。**已知安全输入没有Host-backed
 缺失FULL/必要Mamba时，创建前跳过；空A不占住选择器，B第一次
-选择即发行，额外EOS重试为0。本次相关62项CPU回归通过。
+选择即发行，额外EOS重试为0。本轮相关95项CPU回归通过。
 容量不足、不可观测及已有在途传输继续保留各自语义，不新增周期。
 
 **V2464历史运行资格：修复绑定JOIN消费与后续容量回收。**

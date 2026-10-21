@@ -74,8 +74,33 @@ historical V103 native. Watcher2686204,start_ticks672178029;state:
 Require exact V106 identities to exit,normal completion and complete HTML/
 comparison artifacts before two idle checks and Host preflight. New holds,
 source changes or an observed prior problem prevent launch. V2495 passes8
-waiting-boundary CPU cases with GPU queries/Popen trapped. At10:59 Beijing
-V106 has23/36 completed;remaining outcomes are pending,not incompletes.
+waiting-boundary CPU cases with GPU queries/Popen trapped. At11:16 Beijing
+V106 has35/36 completed with no result errors;the last outcome is pending,
+not an incomplete. Do not compute full-run JCT from the finished subset.
+
+V2496 seals a later V106 prefix:57 JOINs,54 positive pre-completion FULL plans,
+51 early-reused19.831GB FULL;1312 tool waits,89 positive plans,58 early-reused
+4.929GB FULL. Last ACK-to-service P90 is1.493/1.909s. One2.191MB FULL
+command lacks reuse and has a later native-load association at legacy batch/pool
+presence granularity;do not classify that whole1.127GB native batch as waste.
+
+V2499 reuses exactly those sealed prefixes. Two consumers wait20.944/26.620s
+from explicit native queue registration to first run_batch;53/34 other requests
+start first,including7/8 later arrivals. These are admission opportunities,not
+proof that either target fit. The JOIN has no Host-backed missing copy at EOS;
+its2.346GB Host-hit observation belongs to first service,not EOS or arrival.
+The tool's actual owning lock expires10.317s after ACK,before the first other
+service10.413s after its queue registration. Demand was recognized but no
+priority admission recorded. Investigate protection versus admission opportunities
+and the complete-residency requirement for parent priority;do not extend all
+leases or claim the full waits are removable. This turn adds an offline helper,
+not production instrumentation or a change to the frozen V107 candidate.
+
+V2497/V2498's complete fixed600-1200/1200-1800/1800-2400s windows give
+decode532.793/543.412,516.540/516.732 and531.617/552.462 token/s
+predictive/native. Visible contexts average116.1K/105.6K;trajectories differ,
+and later intervals overlap offline CPU validation. These remain development
+diagnostics,not isolated control-cost attribution or full performance acceptance.
 
 V2478 is a historical late V105 prefix:JOIN53 observed,51 positive early
 FULL plans,47 early reused10.610GB;tool1311 waits,89 positive plans,69
@@ -183,7 +208,7 @@ pre-completion plans,50 early submitted/reused,13.194GB FULL;tool2584 waits,
 Separate all post-completion restoration and broad subsequent native Host
 hits. Do not use this interrupted prefix as a complete mean-JCT result.
 
-Rechecked confirmed-ticket eligibility on current main:62 focused CPU cases
+Rechecked confirmed-ticket eligibility on current main:95 focused CPU cases
 pass. Proven-empty safe-input FULL/required-Mamba restores are filtered before
 ticket construction. Empty A leaves the first selection to observed-EOS B,
 with zero additional EOS retries. Coalesced completion events share one probe;
