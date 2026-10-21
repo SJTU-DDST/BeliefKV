@@ -31,6 +31,9 @@ def arm_environment(common: dict[str, str], mode: str) -> dict[str, str]:
         "BELIEFKV_ENABLE_PREPARE_HOST": str(int(custom_kv)),
         "BELIEFKV_ENABLE_EXECUTION_HANDOFF": "0",
         "BELIEFKV_ENABLE_RESIDENT_FIRST": str(int(mode in ("full", "scheduler_only"))),
+        "BELIEFKV_ENABLE_JOIN_PARENT_PRIORITY": str(int(
+            mode in ("full", "scheduler_only", "join_priority_only")
+        )),
         "BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY": str(int(mode in ("full", "scheduler_only"))),
         "BELIEFKV_NATIVE_PREFILL_ORDER": str(int(mode in ("kv_only", "native_matched"))),
         "BELIEFKV_WORKFLOW_ATTAINED_WORK": common.get("BELIEFKV_WORKFLOW_ATTAINED_WORK", "0"),
@@ -70,6 +73,7 @@ def validate_runtime(mode: str, state: dict) -> None:
         "tool_prefetch": mode in ("full", "kv_only"),
         "borrowable_parent_headroom": mode in ("full", "kv_only"),
         "resident_first": mode in ("full", "scheduler_only"),
+        "join_parent_priority": mode in ("full", "scheduler_only", "join_priority_only"),
         "final_stage_priority": mode in ("full", "scheduler_only"),
         "prefill_ordering_mode": "native" if mode == "kv_only" else "workflow",
         "execution_handoff": False,

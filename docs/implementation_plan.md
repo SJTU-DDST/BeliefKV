@@ -12,7 +12,36 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-Latest main CPU candidate: use slots for immutable PrefillCandidateKey storage;
+Latest user override: finish the running V111 OurScheduler-only arm and its
+HTML/audits/cleanup,then pause GPU experimentation. Do not start KV-only or
+engineering-matched Native automatically. At2026-10-21 19:04 Beijing,a CPU
+boundary monitor is registered in
+`../ops/v111_internal_20261021.registration.pause_after.json`.
+It waits for the exact driver to exit and postprocessing to begin,then sets
+the global pause marker;the frozen supervisor finishes cleanup before its
+next-arm cancellation check. Keep completed and pending arms explicit and
+do not automatically resume. Do not hot-load the active arm.
+Implement bounded actual-JOIN parent priority in Full/OurScheduler without
+requiring HBM hits,and consider a live last-blocking-child turn without
+requiring final-report metadata. Reuse causal state and ordinary-admission
+quotas;retain native capacity/dependencies and avoid new periodic work.
+Implementation is complete on main:Full/OurScheduler enable explicit
+JOIN-parent priority;KV-only/native order disable it. Consume a wakeup on
+actual first admission,not a rejected NO_TOKEN attempt;invalidate old waits
+and terminal records. Protected restore turns keep precedence. Parent and
+last-child boosts share the ordinary-admission quota. Last-child fallback
+checks actual WAIT_JOIN waiters via the existing incident-JOIN index,without
+requiring final-report metadata;do not promote timed-out or tool-blocked
+waiters. Running decode is not preempted.
+V2600 retains all3110 prior CPU identities and adds38:3148 pass,no skips,
+plus2 subtests;V2601 binds current sources. V2598 is the3146-case precursor
+before the extra live-waiter guards. The engine is unchanged,not405 rerun.
+V2597's64-candidate,two-plan,101-sample nontriggering CPU control preserves
+order/completion state:planning P50 about1.092->1.086ms,P991.134->1.172ms;
+completion-callback P5030.53->31.12us. Do not infer positive-case cost,
+whole-scheduler improvement or GPU/JCT gains.
+
+Previous main CPU candidate: use slots for immutable PrefillCandidateKey storage;
 retain all live identity,terminal,session,generation and admission checks.
 V2582 binds separate old/new admission modules and identity classes to the
 same runtime maintenance,queue inspection,complete planning and live selector.
@@ -45,8 +74,8 @@ OurScheduler-only starts at2026-10-21 18:46:58 Beijing;exact watcher3757643
 and driver3924731 identities are alive. Actual running12/seed21/context262144
 and scheduling-only controls are checked. All four controls retain frozen
 applicatione0420fe/engine53335e6;Full remains V109ed06f53.
-Continue KV-only then engineering-matched Native without a Full rerun or
-standalone new experiment. State:
+Finish this second arm and pause;keep KV-only and engineering-matched Native
+pending without a Full rerun or standalone new experiment. State:
 `../ops/v111_internal_20261021.registration.state.json`.
 Keep the goal active and performance acceptance pending.
 

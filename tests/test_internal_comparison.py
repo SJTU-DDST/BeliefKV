@@ -39,8 +39,10 @@ def request(name):
     )
 
 
-def join_fixture(monkeypatch, *, return_before_wait=False):
-    configure(monkeypatch, "join_priority_only")
+def join_fixture(monkeypatch, *, return_before_wait=False, mode="join_priority_only"):
+    configure(monkeypatch, mode)
+    if mode == "full":
+        monkeypatch.setenv("BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH", "0")
     runtime = NativeAdmissionRuntime()
     runtime.on_events((
         observed(0, Kind.WORKFLOW_START),
@@ -165,6 +167,198 @@ def test_join_only_aged_head_keeps_four_ordinary_turns_between_promotions(monkey
         assert plan.prioritized[0].invocation_id == "parent2"
         assert runtime.counts["join_only_priority_aged_head_bypass"] == 2
         assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("mode", ("full", "scheduler_only"))
+@pytest.mark.parametrize("before", (False, True))
+def test_full_scheduler_promotes_join_parent_without_hbm_or_prediction(monkeypatch, mode, before):
+    runtime, requests = join_fixture(monkeypatch, mode=mode, return_before_wait=before)
+    try:
+        runtime._visible_since[requests[0].rid] = time.monotonic() - 11.
+        runtime._read_request_residency_hint = Mock(return_value=None)
+        runtime._read_request_reentry = Mock(side_effect=AssertionError("no HBM requirement"))
+        plan = runtime.plan_native_prefill(requests, running_batch=None, adder=None)
+        assert plan.prioritized[0].invocation_id == "parent"
+        assert runtime.counts["join_parent_priority_ordered"] == 1
+        assert runtime.counts["join_parent_priority_aged_head_bypass"] == 1
+        runtime.on_prefill_candidate_result(requests[1], admitted=False, result="NO_TOKEN")
+        assert runtime._join_priority_pending == {"parent": "join"}
+        runtime.on_prefill_candidate_result(requests[1], admitted=True, result="CONTINUE")
+        assert not runtime._join_priority_pending
+        assert runtime.counts["join_parent_priority_admitted"] == 1
+        assert runtime._prefetch_priority_normal_admissions == 0
+        assert runtime._join_priority_normal_admissions == 0
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("restriction", (
+    "join_quota", "shared_quota", "stale_epoch", "active_tool", "stale_session", "new_join",
+))
+def test_full_join_parent_priority_retains_live_guards_and_shared_quota(monkeypatch, restriction):
+    runtime, requests = join_fixture(monkeypatch, mode="full")
+    runtime.enable_resident_first = False
+    try:
+        if restriction == "join_quota":
+            runtime._join_priority_normal_admissions = 3
+        elif restriction == "shared_quota":
+            runtime._prefetch_priority_normal_admissions = 3
+        elif restriction == "stale_epoch":
+            requests[1].beliefkv_metadata["context_epoch"] = 1
+        elif restriction == "stale_session":
+            requests[1].session_generation = 2
+        elif restriction == "active_tool":
+            runtime.graph.invocations["parent"].active_tool_calls["tool"] = ("execute", 0.)
+        else:
+            runtime.on_events((
+                observed(20, Kind.INVOCATION_CREATE, invocation_id="child2", context_id="ctx-child2"),
+                observed(21, Kind.JOIN_CREATE, join_id="join2", member_invocation_ids=("child2",)),
+                observed(22, Kind.JOIN_WAIT, invocation_id="parent", join_id="join2"),
+            ))
+            assert "parent" not in runtime._join_priority_pending
+        runtime.plan_native_prefill(requests, running_batch=None, adder=None)
+        assert runtime._join_priority_promoted is None
+        assert runtime.counts["join_parent_priority_ordered"] == 0
+    finally:
+        runtime.close()
+
+
+def last_child_fixture(monkeypatch, *, mode="full", remaining=1):
+    configure(monkeypatch, mode)
+    monkeypatch.setenv("BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH", "0")
+    runtime = NativeAdmissionRuntime()
+    runtime.on_events((
+        observed(0, Kind.WORKFLOW_START),
+        observed(1, Kind.INVOCATION_CREATE, invocation_id="normal", context_id="ctx-normal"),
+        observed(2, Kind.INVOCATION_CREATE, invocation_id="parent", context_id="ctx-parent"),
+        observed(3, Kind.INVOCATION_CREATE, invocation_id="child", context_id="ctx-child"),
+        observed(4, Kind.INVOCATION_CREATE, invocation_id="sibling", context_id="ctx-sibling"),
+        observed(5, Kind.JOIN_CREATE, join_id="join", member_invocation_ids=("child", "sibling")),
+        observed(6, Kind.JOIN_WAIT, invocation_id="parent", join_id="join"),
+    ))
+    if remaining == 1:
+        runtime.on_events((observed(7, Kind.RETURN, invocation_id="sibling"),))
+    normal, child = request("normal"), request("child")
+    for item in (normal, child):
+        runtime.register_visible_request(item)
+    runtime._visible_since[normal.rid] = time.monotonic() - 11.
+    runtime._read_request_residency_hint = Mock(return_value=None)
+    runtime._read_request_reentry = Mock(side_effect=AssertionError("no new cache scan"))
+    return runtime, normal, child
+
+
+@pytest.mark.parametrize("mode", ("full", "scheduler_only"))
+@pytest.mark.parametrize("remaining", (1, 2))
+def test_last_join_child_uses_observed_dependencies_without_report_notice(monkeypatch, mode, remaining):
+    runtime, normal, child = last_child_fixture(monkeypatch, mode=mode, remaining=remaining)
+    try:
+        plan = runtime.plan_native_prefill([normal, child], running_batch=None, adder=None)
+        assert plan.prioritized[0].invocation_id == ("child" if remaining == 1 else "normal")
+        assert runtime.counts["join_last_child_priority_ordered"] == int(remaining == 1)
+        assert not runtime._final_stages
+        if remaining == 1:
+            runtime.on_prefill_candidate_result(child, admitted=True, result="CONTINUE")
+            assert runtime.counts["join_last_child_priority_admitted"] == 1
+            assert runtime._prefetch_priority_normal_admissions == 0
+            assert runtime._final_priority_normal_admissions == 0
+            next_plan = runtime.plan_native_prefill([normal, child], running_batch=None, adder=None)
+            assert next_plan.prioritized[0].invocation_id == "normal"
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("restriction", (
+    "shared_quota", "final_quota", "active_tool", "stale_epoch", "stale_session", "no_waiter",
+    "join_timeout", "waiter_tools",
+))
+def test_last_join_child_priority_keeps_live_dependencies_and_fairness(monkeypatch, restriction):
+    runtime, normal, child = last_child_fixture(monkeypatch)
+    try:
+        if restriction == "shared_quota":
+            runtime._prefetch_priority_normal_admissions = 3
+        elif restriction == "final_quota":
+            runtime._final_priority_normal_admissions = 3
+        elif restriction == "active_tool":
+            runtime.on_events((observed(8, Kind.TOOL_START, invocation_id="child"),))
+        elif restriction == "stale_epoch":
+            child.beliefkv_metadata["context_epoch"] = 1
+        elif restriction == "stale_session":
+            child.session_generation = 2
+        elif restriction == "join_timeout":
+            runtime.on_events((observed(8, Kind.JOIN_TIMEOUT, invocation_id="parent", join_id="join"),))
+        elif restriction == "waiter_tools":
+            runtime.graph.invocations["parent"].active_tool_calls["tool"] = ("execute", 0.)
+        else:
+            runtime.graph.joins["join"].waiter_invocation_ids.clear()
+        plan = runtime.plan_native_prefill([normal, child], running_batch=None, adder=None)
+        assert plan.prioritized[0].invocation_id == "normal"
+        assert runtime._final_priority_promoted is None
+        assert runtime.counts["join_last_child_priority_ordered"] == 0
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+def test_parent_boost_cannot_be_followed_by_child_boost_before_four_ordinary_admissions(monkeypatch):
+    runtime, normal, child = last_child_fixture(monkeypatch)
+    try:
+        runtime.on_events((
+            observed(10, Kind.INVOCATION_CREATE, invocation_id="parent2", context_id="ctx-parent2"),
+            observed(11, Kind.INVOCATION_CREATE, invocation_id="child2", context_id="ctx-child2"),
+            observed(12, Kind.JOIN_CREATE, join_id="join2", member_invocation_ids=("child2",)),
+            observed(13, Kind.JOIN_WAIT, invocation_id="parent2", join_id="join2"),
+            observed(14, Kind.RETURN, invocation_id="child2"),
+        ))
+        parent = request("parent2")
+        runtime.register_visible_request(parent)
+        plan = runtime.plan_native_prefill([normal, child, parent], running_batch=None, adder=None)
+        assert plan.prioritized[0].invocation_id == "parent2"
+        runtime.on_prefill_candidate_result(parent, admitted=True, result="CONTINUE")
+        for index in range(4):
+            plan = runtime.plan_native_prefill([normal, child], running_batch=None, adder=None)
+            assert plan.prioritized[0].invocation_id == "normal"
+            runtime.on_prefill_candidate_result(normal, admitted=True, result="CONTINUE")
+        plan = runtime.plan_native_prefill([normal, child], running_batch=None, adder=None)
+        assert plan.prioritized[0].invocation_id == "child"
+    finally:
+        runtime.close()
+
+
+def test_protected_restore_priority_keeps_precedence_over_join_parent(monkeypatch):
+    from beliefkv.runtime.sglang_v0520_runtime import _PrefetchServiceLease
+
+    runtime, requests = join_fixture(monkeypatch, mode="full")
+    runtime.enable_resident_first = False
+    try:
+        normal, parent = requests
+        runtime._visible_since[parent.rid] = time.monotonic() - 11.
+        key = runtime.visible[normal.rid]
+        runtime._prefetch_service_leases["restore"] = _PrefetchServiceLease(
+            key=key, command_id="restore", node_id=1, creation_time=1,
+            source="execution_handoff", wait_revision=None,
+            acknowledged_at=time.monotonic(), expires_at=time.monotonic() + 10.,
+            pool_bytes=(), demand_ready=True,
+        )
+        plan = runtime.plan_native_prefill([parent, normal], running_batch=None, adder=None)
+        assert plan.prioritized[0].invocation_id == "normal"
+        assert runtime._prefetch_priority_promoted == normal.rid
+        assert runtime._join_priority_promoted is None
+        assert runtime._join_priority_pending == {"parent": "join"}
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("mode", ("full", "scheduler_only", "join_priority_only", "kv_only"))
+def test_join_parent_priority_mode_is_explicit(monkeypatch, mode):
+    configure(monkeypatch, mode)
+    monkeypatch.setenv("BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH", "0")
+    runtime = NativeAdmissionRuntime()
+    try:
+        assert runtime.enable_join_parent_priority is (mode != "kv_only")
     finally:
         runtime.close()
 

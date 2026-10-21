@@ -6,7 +6,38 @@
 与实验继续按下文最新约定执行。[整理记录](archive/research_exploration_20261020.md)
 列出已清理的一次性源码及归档位置。
 
-**最新 main CPU 候选：不可变请求身份使用 slots，未部署进 V111。**
+**最新用户指令：第二组结束后暂停 GPU 实验，并补齐两类 JOIN 排序。**
+V111 OurScheduler-only 继续冻结执行；19:04 登记的独立 CPU 监护在
+driver 结束、进入 postprocessing 后设置暂停标记，保留本组 HTML、
+审计和清理，不接续 KV-only 或工程对齐 native。请求状态：
+`../ops/v111_internal_20261021.registration.pause_after.json`。
+新 main 将简单 JOIN-only 中的真实解锁记录用于 Full/OurScheduler：
+parent 已提交且依赖满足即可获得有界排序，不要求 HBM 命中；
+最后一个仍阻塞真实 JOIN waiter 的 child 可在没有报告提示时获得有界
+提升。复用因果图和现有普通准入配额，不增加预测、轮询或抢占 running
+请求；保留原生容量与依赖检查。新代码只做 CPU 验证，不进入当前冻结组。
+
+实现已完成：Full/OurScheduler 默认启用 `BELIEFKV_ENABLE_JOIN_PARENT_PRIORITY`，
+KV-only 与原生顺序关闭。真实 JOIN 唤醒记录与物理恢复 ticket 分离；
+第一条后继实际准入后消耗，NO_TOKEN 不消耗，新 JOIN 等待或终态使旧记录失效。
+有保护的恢复请求仍优先；parent/最后 child 的显式提升后，至少完成四次
+普通准入才再次提升两类对象。最后 child 复用既有 causal class 和 incident
+JOIN 索引，只在确有候选时验证 parent 仍为 WAIT_JOIN；超时、工具依赖、
+陈旧 session/epoch 不获得提升，不依赖剩余 token 预测或报告提示。
+这只调整待准入请求，不抢占 running decode，也不证明 child 即将结束。
+
+[V2600 最终 CPU 回归](../experiments/reports/v2600_join_priority_final_qualified_cpu_20261021.xml)
+保留原 3110 项并新增 38 项，3148 项全部通过、无跳过，另有 2 个
+subtest；[V2601](../experiments/reports/v2601_join_priority_cpu_sources_20261021.json)
+绑定当前源码。V2598 是补充真实 waiter 检查之前的 3146 项先行回归。
+引擎仍为 `53335e6`，未重跑独立引擎 405 项资格。
+[V2597 CPU 控制](../experiments/reports/v2597_join_priority_planning_control_cpu_20261021.json)
+使用 64 个候选、两次规划、101 次轮换采样和相同 residency 替身，
+不触发新提升；顺序及完成回调状态一致。规划 P50 约 1.092→1.086ms，
+P99 约 1.134→1.172ms，完成回调 P50 约 30.53→31.12us。仅说明该合成
+控制的局部成本，不代表正例成本、完整 scheduler、DMA 或 JCT 收益。
+
+**此前 main CPU 优化：不可变请求身份使用 slots，未部署进 V111。**
 CPU 剖析显示身份解析、终态检查仍占规划夹具的较大部分；不删除这些
 检查，只减少 `PrefillCandidateKey` 的实例字典和字段访问成本。
 [V2582](../experiments/reports/v2582_prefill_identity_storage_cpu_20261021.json)
@@ -74,8 +105,8 @@ subtest；[V2594](../experiments/reports/v2594_join_reentry_cpu_sources_20261021
 
 V111 四组仍统一冻结 `e0420fe`/V2579 和引擎 `53335e6`，不热加载。
 watcher 3757643、第二组 driver 3924731 的真实启动身份已核实；
-OurScheduler-only 保留排序，主动 KV/PREPARE/预取/handoff 关闭，随后
-接续 KV-only、工程对齐 native。Full 复用 V109 `ed06f53`。状态：
+OurScheduler-only 保留排序，主动 KV/PREPARE/预取/handoff 关闭；按最新
+要求，本组结束并收尾后暂停，其余两组保留待续。Full 复用 V109 `ed06f53`。状态：
 `../ops/v111_internal_20261021.registration.state.json`。目标继续未验收。
 
 **此前 V110 因 JOIN-only 消融策略问题于北京时间 17:33 停止。**

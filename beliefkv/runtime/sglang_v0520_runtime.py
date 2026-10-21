@@ -418,6 +418,13 @@ class NativeAdmissionRuntime:
         if native_order_setting not in ("0", "1"):
             raise ValueError("native prefill order setting must be 0 or 1")
         self._native_prefill_order = native_order_setting == "1"
+        join_priority_setting = os.environ.get("BELIEFKV_ENABLE_JOIN_PARENT_PRIORITY", "1")
+        if join_priority_setting not in ("0", "1"):
+            raise ValueError("JOIN parent priority setting must be 0 or 1")
+        self.enable_join_parent_priority = (
+            join_priority_setting == "1" and not self._native_prefill_order
+            and self.internal_comparison_mode != "kv_only"
+        )
         self._workflow_attained_work_enabled = (
             os.environ.get("BELIEFKV_WORKFLOW_ATTAINED_WORK", "0") == "1"
         )
@@ -538,6 +545,7 @@ class NativeAdmissionRuntime:
         self._final_priority_normal_admissions = 4
         self._final_priority_promoted: str | None = None
         self._final_priority_native_rank: int | None = None
+        self._join_last_child_priority_promoted: str | None = None
         self._join_ticket: _JoinPrefetchTicket | None = None
         self._confirmed_join_tickets: dict[str, _JoinPrefetchTicket] = {}
         self._empty_join_reentry_origins: dict[str, PrefillCandidateKey] = {}
@@ -1288,8 +1296,10 @@ class NativeAdmissionRuntime:
                             self._join_by_invocation.setdefault(member, set()).add(join.join_id)
                 elif event.kind is RuntimeEventKind.JOIN_WAIT and event.join_id and event.invocation_id:
                     self._join_by_invocation.setdefault(event.invocation_id, set()).add(event.join_id)
-            if self.internal_comparison_mode == "join_priority_only":
+            if self.enable_join_parent_priority:
                 for event, delta in zip(events, deltas):
+                    if event.kind is RuntimeEventKind.JOIN_WAIT and event.invocation_id:
+                        self._join_priority_pending.pop(event.invocation_id, None)
                     if event.kind in (
                         RuntimeEventKind.RETURN, RuntimeEventKind.JOIN_WAIT,
                         RuntimeEventKind.JOIN_SATISFIED,
@@ -2238,6 +2248,9 @@ class NativeAdmissionRuntime:
                 "physical_disabled": self.physical_disabled,
                 "internal_comparison_mode": self.internal_comparison_mode,
                 "custom_kv_management": self._custom_kv_management,
+                "join_parent_priority": self.enable_join_parent_priority,
+                "join_priority_ordinary_quota": 4,
+                "join_priority_pending_parents": len(self._join_priority_pending),
                 "join_only_priority_ordinary_quota": 4,
                 "join_only_priority_allows_aged_head_after_quota": True,
                 "join_only_pending_parents": len(self._join_priority_pending),
@@ -10597,6 +10610,41 @@ class NativeAdmissionRuntime:
         self.counts["drained_chunk_prefill_skipped"] += 1
         return True
 
+    def _join_parent_priority_candidate(
+        self, ordered: list[tuple[int, object]],
+        keys: dict[int, PrefillCandidateKey | None],
+    ) -> tuple[int, object] | None:
+        for candidate in ordered:
+            key = keys[candidate[0]]
+            if key is None:
+                continue
+            join = self.graph.joins.get(self._join_priority_pending.get(key.invocation_id))
+            if (
+                join is not None and join.satisfied
+                and key.invocation_id in join.waiter_invocation_ids
+                and self._executable_waiting_key(candidate[1], key=key) == key
+            ):
+                return candidate
+        return None
+
+    def _last_join_child_has_waiting_parent(self, key: PrefillCandidateKey) -> bool:
+        for join_id in self._join_by_invocation.get(key.invocation_id, ()):
+            join = self.graph.joins.get(join_id)
+            if (
+                join is None or join.satisfied or join.workflow_id != key.root_workflow_id
+                or join.member_invocation_ids - join.completed_member_ids != {key.invocation_id}
+            ):
+                continue
+            for waiter_id in join.waiter_invocation_ids:
+                parent = self.graph.invocations.get(waiter_id)
+                if (
+                    parent is not None and parent.state is InvocationState.WAIT_JOIN
+                    and parent.join_id == join_id and not parent.active_tool_calls
+                    and parent.workflow_id == key.root_workflow_id
+                ):
+                    return True
+        return False
+
     @timed_runtime("admission_plan")
     def plan_native_prefill(
         self, native_order: Sequence[object], *, running_batch: object, adder: object,
@@ -10652,6 +10700,8 @@ class NativeAdmissionRuntime:
             }
         self._final_priority_promoted = None
         self._final_priority_native_rank = None
+        self._join_last_child_priority_promoted = None
+        self._join_priority_promoted = None
         self._prefetch_priority_promoted = None
         self._parent_handoff_priority_promoted = None
         self._prefetch_priority_native_rank = None
@@ -10661,7 +10711,6 @@ class NativeAdmissionRuntime:
         self._resident_priority_promoted = None
         self._resident_priority_details = None
         if self.internal_comparison_mode == "join_priority_only":
-            self._join_priority_promoted = None
             ordered = [
                 (index, request) for index, request in tagged
                 if (key := keys[index]) is not None
@@ -10675,24 +10724,17 @@ class NativeAdmissionRuntime:
                 pair[0],
             ))
             if (
-                ordered and self._join_priority_normal_admissions >= 4
+                self.enable_join_parent_priority and self._join_priority_pending
+                and ordered and self._join_priority_normal_admissions >= 4
             ):
-                for position, (index, request) in enumerate(ordered):
-                    key = keys[index]
-                    join_id = self._join_priority_pending.get(key.invocation_id)
-                    join = self.graph.joins.get(join_id)
-                    if (
-                        join is not None and join.satisfied
-                        and key.invocation_id in join.waiter_invocation_ids
-                        and self._executable_waiting_key(request, key=key) == key
-                    ):
-                        if position:
-                            ordered.insert(0, ordered.pop(position))
-                            self._join_priority_promoted = request.rid
-                            self.counts["join_only_priority_ordered"] += 1
-                            if now - self._visible_since.get(ordered[1][1].rid, now) >= 10.:
-                                self.counts["join_only_priority_aged_head_bypass"] += 1
-                        break
+                candidate = self._join_parent_priority_candidate(ordered, keys)
+                if candidate is not None and candidate != ordered[0]:
+                    ordered.remove(candidate)
+                    ordered.insert(0, candidate)
+                    self._join_priority_promoted = candidate[1].rid
+                    self.counts["join_only_priority_ordered"] += 1
+                    if now - self._visible_since.get(ordered[1][1].rid, now) >= 10.:
+                        self.counts["join_only_priority_aged_head_bypass"] += 1
             return compile_native_prefill_plan(
                 [keys[index] for index, _ in ordered],
                 semantic_revision=self.semantic_revision,
@@ -10758,9 +10800,18 @@ class NativeAdmissionRuntime:
         work_baseline_ranks: dict[int, tuple] | None = (
             {} if self._workflow_attained_work_enabled else None
         )
+        last_join_children = []
+        queued_join_parent = False
 
         def waiting_rank(pair: tuple[int, object]) -> tuple:
+            nonlocal queued_join_parent
             index, request = pair
+            if ranks[index][0] == 0:
+                last_join_children.append(pair)
+            if self._join_priority_pending:
+                key = keys[index]
+                if key is not None and key.invocation_id in self._join_priority_pending:
+                    queued_join_parent = True
             since = self._visible_since.get(getattr(request, "rid", ""), now_ms / 1000.)
             if now_ms / 1000. - since >= 10.:
                 return (-1, since, index, index)
@@ -10967,16 +11018,28 @@ class NativeAdmissionRuntime:
                 ):
                     # Live protected restores keep precedence. This hint adds
                     # neither a residency claim nor another restoration.
-                    priority_candidates.append((math.inf, 3, candidate, "prefetch_advisory"))
+                    priority_candidates.append((math.inf, 4, candidate, "prefetch_advisory"))
                     break
                 else:
                     self._prefetch_admission_hints.pop(rid, None)
                     self.counts["prefetch_admission_hint_not_ready"] += 1
                 if inspected == 8:
                     break
+        if (
+            self.enable_join_parent_priority and queued_join_parent and ordered
+            and self._join_priority_normal_admissions >= 4
+            and self._prefetch_priority_normal_admissions >= 4
+        ):
+            candidate = self._join_parent_priority_candidate(ordered, keys)
+            if candidate is not None:
+                # Protected restore turns keep precedence; this causal turn requires
+                # neither a speculative transfer nor an HBM-hit claim.
+                priority_candidates.append((math.inf, 3, candidate, "join_parent"))
+        join_parent_chosen = False
         if priority_candidates:
             chosen = min(priority_candidates, key=lambda item: item[:2])
             source = chosen[3]
+            join_parent_chosen = source == "join_parent"
             candidate = chosen[2]
             native_rank = ordered.index(candidate)
             # Preserve ordinary admissions while allowing fully restored
@@ -11045,6 +11108,11 @@ class NativeAdmissionRuntime:
                 if source == "parent_handoff":
                     self._parent_handoff_priority_promoted = candidate[1].rid
                     self.counts["parent_handoff_priority_ordered"] += 1
+                elif source == "join_parent":
+                    self._join_priority_promoted = candidate[1].rid
+                    self.counts["join_parent_priority_ordered"] += 1
+                    if aged_head:
+                        self.counts["join_parent_priority_aged_head_bypass"] += 1
                 else:
                     self._prefetch_priority_promoted = candidate[1].rid
                     self.counts["prefetch_priority_ordered"] += 1
@@ -11056,9 +11124,9 @@ class NativeAdmissionRuntime:
                         self.counts["prefetch_priority_partial_restore_ordered"] += 1
                 self._prefetch_priority_native_rank = native_rank
                 self._prefetch_priority_aged_head_bypassed = aged_head
-                if aged_head:
+                if aged_head and source != "join_parent":
                     self.counts["prefetch_priority_aged_head_bounded_bypass"] += 1
-            elif aged_head:
+            elif aged_head and source != "join_parent":
                 self.counts["prefetch_priority_aged_head_kept"] += 1
         if (
             (
@@ -11070,6 +11138,7 @@ class NativeAdmissionRuntime:
             and self._final_priority_normal_admissions >= 4
             and self._prefetch_priority_normal_admissions >= 4
             and self._prefetch_priority_promoted is None
+            and not join_parent_chosen
             and self._parent_handoff_priority_promoted is None and ordered
             and time.monotonic() - self._visible_since.get(
                 getattr(ordered[0][1], "rid", ""), time.monotonic(),
@@ -11119,6 +11188,40 @@ class NativeAdmissionRuntime:
                     self._final_priority_native_rank = native_rank
                     self.counts["final_priority_ordered"] += 1
         if (
+            (
+                self.enable_final_stage_priority
+                if self.enable_final_stage_priority is not None
+                else self.enable_admission_prefetch or self.enable_final_stage_prefetch
+            )
+            and last_join_children and len(ordered) > 1
+            and self._final_priority_normal_admissions >= 4
+            and self._prefetch_priority_normal_admissions >= 4
+            and not join_parent_chosen
+            and self._prefetch_priority_promoted is None
+            and self._parent_handoff_priority_promoted is None
+            and self._final_priority_promoted is None
+            and ranks[ordered[0][0]][0] != 0
+        ):
+            # Reuse the cached causal classification: class zero means this
+            # child alone still blocks an observed JOIN with actual waiters.
+            for candidate in ordered[1:]:
+                index, request = candidate
+                if (
+                    ranks[index][0] != 0 or keys[index] is None
+                    or self._executable_waiting_key(request, key=keys[index]) is None
+                    or not self._last_join_child_has_waiting_parent(keys[index])
+                ):
+                    continue
+                self._final_priority_native_rank = ordered.index(candidate)
+                if waiting_ranks[ordered[0][0]][0] == -1:
+                    self.counts["join_last_child_priority_aged_head_bypass"] += 1
+                ordered.remove(candidate)
+                ordered.insert(0, candidate)
+                self._final_priority_promoted = request.rid
+                self._join_last_child_priority_promoted = request.rid
+                self.counts["join_last_child_priority_ordered"] += 1
+                break
+        if (
             self.enable_resident_first and len(ordered) > 1
             and min(
                 self._prefetch_priority_normal_admissions,
@@ -11126,6 +11229,7 @@ class NativeAdmissionRuntime:
             ) >= 1
             and self._prefetch_priority_promoted is None
             and self._parent_handoff_priority_promoted is None
+            and self._join_priority_promoted is None
             and self._final_priority_promoted is None
             and waiting_ranks[ordered[0][0]][0] == -1
         ):
@@ -11218,7 +11322,10 @@ class NativeAdmissionRuntime:
     ) -> None:
         if getattr(req, "beliefkv_metadata", None) is not None:
             self.counts["native_admitted" if admitted else f"native_{result}"] += 1
-            if admitted and self.internal_comparison_mode == "join_priority_only":
+            if admitted and self.enable_join_parent_priority and (
+                self._join_priority_pending or self._join_priority_normal_admissions < 4
+                or self._join_priority_promoted is not None
+            ):
                 promoted = req.rid == self._join_priority_promoted
                 self._join_priority_normal_admissions = (
                     0 if promoted else min(4, self._join_priority_normal_admissions + 1)
@@ -11226,7 +11333,12 @@ class NativeAdmissionRuntime:
                 key = self.visible.get(req.rid)
                 if key is not None:
                     self._join_priority_pending.pop(key.invocation_id, None)
-                self.counts["join_only_priority_admitted"] += int(promoted)
+                if promoted:
+                    self.counts[
+                        "join_only_priority_admitted"
+                        if self.internal_comparison_mode == "join_priority_only"
+                        else "join_parent_priority_admitted"
+                    ] += 1
             if self._prefetch_admission_hints.pop(req.rid, None) is not None:
                 self.counts[
                     "prefetch_admission_hint_admitted" if admitted
@@ -11270,6 +11382,7 @@ class NativeAdmissionRuntime:
                 if req.rid in (
                     self._prefetch_priority_promoted, self._final_priority_promoted,
                     self._parent_handoff_priority_promoted, self._resident_priority_promoted,
+                    self._join_priority_promoted,
                 ):
                     # Locality turns keep accruing the ordinary quota for
                     # restore/final-stage priorities, so those can still run.
@@ -11290,6 +11403,8 @@ class NativeAdmissionRuntime:
                             })
                     if req.rid == self._parent_handoff_priority_promoted:
                         self.counts["parent_handoff_priority_admitted"] += 1
+                    if req.rid == self._join_priority_promoted:
+                        self._join_priority_promoted = None
                     if req.rid == self._prefetch_priority_promoted:
                         self.counts["prefetch_priority_admitted"] += 1
                         if self._prefetch_priority_complete_ready_quota is not None:
@@ -11322,6 +11437,9 @@ class NativeAdmissionRuntime:
                 elif req.rid == self._final_priority_promoted:
                     self._final_priority_normal_admissions = 0
                     self.counts["final_priority_admitted"] += 1
+                    if req.rid == self._join_last_child_priority_promoted:
+                        self.counts["join_last_child_priority_admitted"] += 1
+                        self._join_last_child_priority_promoted = None
                     stage = self._final_request_stages.get(req.rid)
                     if stage is not None and self._opportunity_writer is not None:
                         self._opportunity_writer.record({

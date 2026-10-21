@@ -7,7 +7,20 @@
 重复摘要已清理；源码归档及保留范围见[整理记录](archive/research_exploration_20261020.md)。
 下文的最新工程状态与实验约束继续有效。
 
-**最新 main CPU 候选：压缩不可变请求身份的存储，保留全部实时检查。**
+**最新执行要求：第二组 OurScheduler-only 完整收尾后暂停 V111。**
+北京时间 2026-10-21 19:04 已登记独立 CPU 监护：
+`../ops/v111_internal_20261021.registration.pause_after.json`。
+等待第二组 driver 结束并进入 postprocessing 后设置全局暂停标记，
+保留 HTML、审计及清理；KV-only、工程对齐 native 留待用户恢复实验。
+当前冻结代码不变。main 已补齐不依赖 HBM 命中的 JOIN parent 有界优先，
+以及无收尾提示时最后一个真实 JOIN 阻塞 child 的有界提升；不热加载或
+据 CPU 检查宣称新的 GPU 收益。后续 batch8/seed21 的约定保留。
+[V2600](../experiments/reports/v2600_join_priority_final_qualified_cpu_20261021.xml)
+保留原 3110 项并新增 38 项，3148 项全部通过、无跳过；
+[V2601](../experiments/reports/v2601_join_priority_cpu_sources_20261021.json)
+绑定当前源码。新优先策略与恢复提升共用普通准入配额，引擎未改。
+
+**此前 main CPU 优化：压缩不可变请求身份的存储，保留全部实时检查。**
 `PrefillCandidateKey` 使用 slots；[V2582 CPU 对照](../experiments/reports/v2582_prefill_identity_storage_cpu_20261021.json)
 用各自的身份类运行同一套维护、队列检查、完整规划和实时选择。
 普通 12/64/156 队列的 CPU 中位约降低 1.77%/2.23%/1.78%，
@@ -30,8 +43,8 @@ JCT 为 1830.28/1704.12/2055.63 秒。JOIN-only 相对 Full 分别为
 版本、动态工作量和前端存在差异，不能据此宣称 KV 管理必然负收益。
 
 第二组于北京时间 2026-10-21 18:46:58 接续，仍冻结应用 `e0420fe`、
-引擎 `53335e6`、running12/seed21/256K。随后自动执行 KV-only、工程对齐
-native；Full 继续复用 V109，不重跑。状态为仓库外
+引擎 `53335e6`、running12/seed21/256K。按最新要求，第二组结束后暂停，
+KV-only、工程对齐 native 不启动；Full 继续复用 V109，不重跑。状态为仓库外
 `../ops/v111_internal_20261021.registration.state.json`。
 [V2592 独立 JOIN 审计](../experiments/reports/v2592_join_reentry_service_final_busy_20261021.json)
 不依赖预取计划；600–1200 秒实际 JOIN 入队至首次服务 P50 为

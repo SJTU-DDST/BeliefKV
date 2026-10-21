@@ -9,7 +9,21 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 删除，详见[整理记录](archive/research_exploration_20261020.md)；原始 trace、
 冻结检出及当前 GPU 预约约束保持有效。
 
-**main 新 CPU 候选与正在运行的内部矩阵分开记录。**
+**最新要求覆盖下方旧的四组连续执行约定：第二组结束后暂停。**
+V111 当前 OurScheduler-only 不改配置；19:04 已登记 CPU 边界监护，
+请求为 `../ops/v111_internal_20261021.registration.pause_after.json`。
+只在当前 driver 已退出、主监护进入本组 postprocessing 后创建
+`/tmp/beliefkv-experiments.paused`，不得提前中断本组。主监护完成 HTML、
+审计和清理后，在启动第三组前看到暂停标记；保留已完成两组和待续两组，
+不得把用户暂停记为自然 workflow 失败或矩阵完成，不自动恢复。
+main 的 JOIN parent/最后阻塞 child 排序改动只做 CPU 检查，不热加载。
+V2600 保留原 3110 项并新增 38 项，3148 全部通过、无跳过，V2601
+绑定源码。Full/OurScheduler 开启 JOIN parent 优先，KV-only 与原生顺序
+关闭；真实唤醒记录不等于有 Host-only 数据或物理恢复 ticket。新的有界
+提升保留四次普通准入配额和已有恢复保护，不新增预测/周期或抢占 decode。
+引擎无改动，不能称重跑 405 项独立原生资格；GPU 效果仍待验证。
+
+**此前身份存储 CPU 优化与正在运行的内部矩阵分开记录。**
 请求身份改为 slots 后，V2582 用各自身份类验证同一完整规划/选择
 CPU 夹具，普通队列中位约改善 1.77%–2.23%；保留 64 队列复制身份
 控制约 1.63% 的变慢。实例加字典约 192B→96B，不含引用字段。
@@ -32,7 +46,8 @@ HTML/审计/清理已完成。[V2595](../experiments/reports/v2595_v111_join_onl
 四个控制继续冻结 `e0420fe`、引擎 `53335e6`，Full 复用 V109 `ed06f53`。
 当前第二组实际 running12/seed21/256K，前端 cache 开启，保留排序、
 关闭主动 KV/PREPARE/预取/handoff。watcher 3757643、driver 3924731
-真实启动身份已核实。随后接续 KV-only、工程对齐 native，不加新实验。
+真实启动身份已核实。按最新要求，第二组完整收尾后暂停，不启动
+KV-only、工程对齐 native 或其他 GPU 实验。
 登记和状态为 `../ops/v111_internal_20261021.registration{,.state}.json`。
 
 仅调度组没有预取等待计划，不代表没有 JOIN。新增独立 JOIN 服务审计
