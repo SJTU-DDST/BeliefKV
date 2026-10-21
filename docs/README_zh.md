@@ -2,10 +2,13 @@
 
 更新日期：2026-10-21（北京时间）
 
-方向探索已按用户要求暂停。研究结论集中保留在
-[研究记录](research/non_scheduling_directions_20261016_zh.md)，一次性脚本和
-重复摘要已清理；源码归档及保留范围见[整理记录](archive/research_exploration_20261020.md)。
-下文的最新工程状态与实验约束继续有效。
+用户最新要求重新论证现有设计的 OSDI/EuroSys 定位并优化设计。
+最新[设计复核与候选机制](research/design_review_osdi_eurosys_20261021_zh.md)
+区分已实现机制、已有工作覆盖和待验证假设：动态 spawn/JCT 本身不作独有
+贡献；研究重点是按真实阻塞/恢复协调增量容量准备、恢复依赖和有界执行。
+旧[研究记录](research/non_scheduling_directions_20261016_zh.md)及已撤下
+方向保留历史语境，不自动恢复；归档范围见[整理记录](archive/research_exploration_20261020.md)。
+GPU 时限、当前工程状态和性能验收要求继续有效。
 
 **最新目标：以有效的简单排序为骨架，证明 KV 管理的额外收益。**
 北京时间 **2026-10-22 06:00 前禁止 GPU 实验**；这是一次性预约，不是每日规则。
@@ -18,8 +21,8 @@
 V2623 的 101 交替样本完整控制对照中，48/128 老化或混合队列约改善
 2.1%–2.8%；8 个全新请求约慢 0.15%，负例保留，不外推 GPU/JCT。
 V2624 保留全部 3537 项并新增 13 项，3550 全通过、无跳过，另有 2 个
-subtest；V2625 绑定源码。V112 已因更新暂停标记取消且进程退出，
-没有 GPU 实验；最新登记由 V113 接替。
+subtest；V2625 绑定源码。V112/V113 的旧登记因更新而取消且进程退出，
+没有 GPU 实验；文档复核后由 V114 更新冻结登记，runtime/配置保持不变。
 
 新增 `BELIEFKV_PREFILL_SCHEDULING_POLICY=join_priority`：Full 保留 KV
 管理，但完整请求排序与 JOIN-only 共用 aged FIFO/native 顺序、JOIN
@@ -37,7 +40,7 @@ native；保护、复杂排序及其他消融按需补跑。新入口负责冻�
 不能用旧 V111 的 batch12 接续器绕过配置校验，也不混用 batch12 Full
 作为 batch8 对照。新的 `scripts/run_fresh_internal_comparison.py` 独立冻结
 完整三组，定时登记及实时状态分别位于仓库外
-`../ops/v113_fresh_batch8_20261022.registration{,.state}.json`，以回执为准。
+`../ops/v114_fresh_batch8_20261022.registration{,.state}.json`，以回执为准。
 截止前只等待，不探测 GPU 或预分配 Host；到时复核源码、精确暂停标记和资源。
 [V2618](../experiments/reports/v2618_fresh_batch8_qualified_cpu_20261021.xml)
 保留全部 3493 项并新增 44 项，3537 全通过、无跳过，另有 2 个 subtest；

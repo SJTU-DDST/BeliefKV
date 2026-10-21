@@ -2,12 +2,25 @@
 
 Status date: 2026-10-21 (Asia/Shanghai).
 
-Research-direction exploration is paused at the user's request. Keep the
-historical evidence and reusable auditor fixes; do not resume candidate
-searches or GPU experiments from old research instructions. One-off sources
-and duplicate summaries were removed after a verified archive was created.
-See [the consolidation record](archive/research_exploration_20261020.md).
-Current engineering contracts below retain precedence.
+The latest user request reopens research justification of the current three
+mechanisms for OSDI/EuroSys. Follow
+[the design review](research/design_review_osdi_eurosys_20261021_zh.md):
+dynamic spawn and JCT are not exclusive contributions; compare against
+TokenCake,Agentix,TOPAS,KVFlow and tool-lifecycle policies. Selective incremental
+capacity preparation,dependency-aware restoration and bounded continuation
+execution remain hypotheses,not accepted novelty or deployed performance.
+Do not automatically resume unrelated rejected historical directions.
+Archived evidence remains in [the consolidation record](archive/research_exploration_20261020.md).
+The GPU hold and engineering contracts retain precedence.
+
+Research implementation order:finish the common Full/JOIN/native controls first;
+then check eligible dirty bytes and reclaimable-backed capacity against restore
+shortfall,selectively prepare missing donors,and measure exposed recovery waits.
+Only then add a separately controlled root-fair last-child/continuation budget
+or a cost/pressure-aware tool decision. Keep simple JOIN as a strong common
+skeleton. No new score or complex rank is accepted without incremental evidence.
+Do not claim fixed1.5s first-service guarantees or inherit97% predictor accuracy
+without current episode-level,coverage,calibration and byte-weighted evidence.
 
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
@@ -29,7 +42,9 @@ and pending state match. Aged/mixed48/128 queues improve about2.1-2.8% locally;
 8 recent requests regress0.15%. Retain negative/all raw samples,not a GPU claim.
 V2624 retains all3537 and adds13:3550 pass,no skips,plus2 subtests;V2625 binds
 sources. V112's old CPU-only watcher cancelled on the new marker and exited
-without a GPU run. V113 replaces that registration at the same deadline.
+without a GPU run. V113 also cancels for this documentation refresh;V114
+re-freezes the unchanged runtime/configuration after matching V2624/V2625
+sources. These3550 checks and405 engine checks are not rerun this turn.
 
 Current CPU implementation: BELIEFKV_PREFILL_SCHEDULING_POLICY=join_priority
 lets Full reuse the entire JOIN-only planning branch,also between priority turns
@@ -70,7 +85,7 @@ configs/migration/next_predictive_baselines_20261022.json:
 batch8/seed21 Full,JOIN-only and matched native,with protection/complex-order
 controls conditional on evidence. V2618 retains all3493 cases and adds44:
 3537 pass,no skips,plus2 subtests;V2620 binds sources. The dated registration/state
-receipts are ../ops/v113_fresh_batch8_20261022.registration{,.state}.json.
+receipts are ../ops/v114_fresh_batch8_20261022.registration{,.state}.json.
 Read their actual status;the operator stays CPU-only before the deadline and
 rejects stale main,new holds,incorrect effective settings and failed telemetry.
 Fully completed guard-excluded arms retain original process exits and exact

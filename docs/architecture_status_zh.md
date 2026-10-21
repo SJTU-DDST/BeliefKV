@@ -2,9 +2,12 @@
 
 更新日期：2026-10-21（北京时间）。
 
-研究方向探索已暂停，保留研究证据和有效审计修正；当前工程优化、验证
-与实验继续按下文最新约定执行。[整理记录](archive/research_exploration_20261020.md)
-列出已清理的一次性源码及归档位置。
+用户最新要求重新论证当前三个设计点及 OSDI/EuroSys 定位。
+[设计复核](research/design_review_osdi_eurosys_20261021_zh.md)以 TokenCake、
+Agentix、TOPAS、KVFlow 和工具期管理为强对照，将容量准备、恢复依赖和
+有界执行联动列为待验证机制，不宣称已成立新颖性或性能收益。
+旧研究证据与归档保留，不自动恢复其他已撤下方向。
+[整理记录](archive/research_exploration_20261020.md)列出历史源码归档位置。
 
 **最新目标与实现：简单 JOIN 排序加 KV 管理，逐项验证复杂机制。**
 用户规定北京时间 2026-10-22 06:00 前不使用 GPU。新的单次 hold 为
@@ -20,7 +23,15 @@
 128 个约改善 2.07%/2.78%/2.50%；8 个 recent 约慢 0.15%，保留所有样本。
 这不是 GPU/JCT 证据。V2624 保留全部 3537 项并新增 13 项，3550 全通过、
 无跳过，另有 2 个 subtest，V2625 绑定源码。V112 的旧 CPU watcher
-已因更新暂停标记退出，没有使用 GPU；V113 接替其定时登记。
+已因更新暂停标记退出，没有使用 GPU；V113 同样在文档复核后取消，
+由 V114 更新冻结登记。此轮仅文档变化，复用经 SHA 核对的 V2624/V2625
+资格，不宣称重新执行 3550 项或 405 项引擎检查。
+
+当前实际实现与原始叙述的边界：后台备份是 post-forward 安全点按 dirty
+index 提交异步 FULL D2H，不是独立线程每轮遍历全 HBM；工具概率主要
+判断已进入 WAIT_TOOL 后的剩余等待。Host 副本不授予回收权限，分层复制
+也不等于同比例降低 token allocator 容量。未来选择性备份、root 公平
+预算/继续执行阶段及成本感知工具决策仍是候选，不混入基本三组对照。
 
 新增 `BELIEFKV_PREFILL_SCHEDULING_POLICY=join_priority|workflow`。
 `join_priority` 让 Full 的整个 prefill 排序共用 JOIN-only 路径，包括
@@ -63,7 +74,7 @@ post-forward 约 1.80us，无等待 agent 的 PREPARE 分发约 3.94us，
 新鲜三组冻结/定时入口为 `scripts/run_fresh_internal_comparison.py`。
 V2618 保留全部 3493 项并新增 44 项，3537 全通过、无跳过，另有 2 个
 subtest；V2620 绑定源码。登记/状态回执为
-`../ops/v113_fresh_batch8_20261022.registration{,.state}.json`，以实际回执为准。
+`../ops/v114_fresh_batch8_20261022.registration{,.state}.json`，以实际回执为准。
 截止前只等待；源码变化、新预约、错误遥测或配置均阻止启动/继续。
 完整完成但 guard 排除的 arm 保留原退出码，不误报为 GPU 失败或性能验收。
 不复用 batch12 Full 作 batch8 因果对照，不改变 harness 提前截断来制造收益。

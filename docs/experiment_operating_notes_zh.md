@@ -4,10 +4,11 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
-方向探索按用户要求暂停。历史研究中的“继续探索”或“goal active”保留其
-原始语境，不构成当前执行指令。一次性源码已移入可复核归档并从工作目录
-删除，详见[整理记录](archive/research_exploration_20261020.md)；原始 trace、
-冻结检出及当前 GPU 预约约束保持有效。
+用户最新要求重新复核当前三个设计点与顶会定位，按
+[设计复核](research/design_review_osdi_eurosys_20261021_zh.md)推进。
+该要求不自动恢复旧研究记录中其他被撤下的方向。历史一次性源码的可复核
+归档见[整理记录](archive/research_exploration_20261020.md)；
+原始 trace、冻结检出及 GPU 预约约束保持有效。
 
 **最新预约覆盖下文旧的暂停要求：北京时间 2026-10-22 06:00 前禁用 GPU。**
 新 hold 是 `../ops/gpu_hold_until_20261022_0600.json`，旧日期自动接续
@@ -21,11 +22,13 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 不要用旧 batch12 Full 作对照。新入口
 `scripts/run_fresh_internal_comparison.py` 单独冻结最新 main、保留三个新 arm；
 旧 V111 接续器仍校验 batch12，不得绕过参数校验启动 batch8。定时登记与
-实时状态为 `../ops/v113_fresh_batch8_20261022.registration{,.state}.json`，
+实时状态为 `../ops/v114_fresh_batch8_20261022.registration{,.state}.json`，
 以回执为准。若登记后 main 再变化，启动前拒绝旧候选；启动后各组固定同一
 冻结版本以维持比较口径。新的暂停标记或延后预约会停止接续。
 V112 旧登记已因 CPU 更新取消，真实进程已退出，没有 GPU 实验；
-保留其取消回执，不覆盖原登记。V113 使用新资格。
+保留其取消回执，不覆盖原登记。V113 在文档复核后同样取消，由 V114
+更新冻结登记；runtime/配置无变化，核对并复用 V2624/V2625，不能称本轮
+重新跑过测试。先完成基本同配置对照，新研究候选按实际瓶颈单独消融。
 
 Full 显式采用 `PREFILL_SCHEDULING_POLICY=join_priority`、
 `PREFETCH_RESIDENCY_PROTECTION=0`，保留 EOS/tool 预取、增量 PREPARE 和
