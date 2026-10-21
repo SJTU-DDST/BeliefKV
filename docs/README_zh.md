@@ -25,18 +25,31 @@ predictive更短；实际请求量6734/8195、输出量1749958/2024180 token，
 不能将全部差异归因于预取。自动去长尾窗口600–3184.053秒包含profiler；
 干净固定窗口见V2447，当前不据自动窗口宣称净吞吐获胜。
 
-**V105 predictive 已于北京时间 09:15:16 启动。**冻结运行码 `c119a35`，
-资格V2464；36-root/running8/256K/95%/Host200GB80:20保持，复用
-V103 native。driver PID `2360761`，watcher `2359215`；健康检查
-HTTP200、36个workflow已创建并开始长输入prefill。修复效果与净性能
-仍待验证，新暂停或已确认运行错误照常处理。
+**V105于北京时间10:15:49正常完成，36/36 completed。**冻结c119a35/
+V2464，原配置及V103 native参照保持，HTML与完整对照已生成。
+[V2484完整验收](../experiments/reports/v2484_v105_complete_validation_20261021.json)
+的平均JCT为1973.204/2370.073秒，低16.75%，23/36个配对更短；
+实际请求/输出不同，两侧不同guard任务使共同原生agent资格为34。
+共同去长尾窗口600–2952.711秒吞吐529.65/538.76 token/s，
+**仍低1.69%，目标未验收**，不以早期有利窗口替代完整结果。
 
-**V106已注册接续，等待V105完整结束。**冻结d2aaa51、资格V2474、
-引擎a98aaf4，配置及V103 native参照保持。watcher2536748按精确
-进程身份、完整后处理和空闲资源检查接续；8项CPU等待边界用例通过。
-新暂停、来源变化或V105错误会阻止启动，目前不是新GPU结果。
+[V2481完整迁移审计](../experiments/reports/v2481_v105_complete_wait_prefetch_20261021_summary.json)
+确认JOIN64次提前复用14.194GB FULL、工具80轮2.873GB，合计17.067GB；
+完成后18.599GB JOIN FULL另列。ACK→服务P90为1.042/2.092秒，
+无首次消费前重复原生加载/驱逐。最大60.51秒工具样本来自预测提前
+58.272秒，而入队后仅等2.241秒，不能当成60秒调度阻塞。
+[V2482分段](../experiments/reports/v2482_v105_v103_native_trimmed_segments_20261021.json)
+及[V2483几何匹配](../experiments/reports/v2483_v105_v103_native_trimmed_geometry_20261021.json)
+显示后期batch下降及短prefill仍是待处理项；共同权重短prefill区间
+慢12.69%，worker区间不是kernel时间或可直接扣除的JCT。
 
-[V2478最新前缀](../experiments/reports/v2478_v105_late_wait_prefetch_20261021_summary.json)
+**V106已于北京时间10:16:17接续启动predictive。**冻结d2aaa51、
+资格V2474、引擎a98aaf4，配置及V103 native参照保持。watcher2536748、
+driver2558207已完成旧进程退出、完整后处理、空闲及Host预检；
+HTTP200且prefill/decode已服务，不重复启动、不热改冻结码。
+8项CPU等待边界用例通过，继续检查最新运行错误与实际收益。
+
+[V2478历史后段前缀](../experiments/reports/v2478_v105_late_wait_prefetch_20261021_summary.json)
 中JOIN47个提前复用10.610GB FULL、工具69轮2.624GB，ACK→服务
 P90为1.042/1.897秒，无前缀内首次服务前重复加载/驱逐。
 [V2479绑定消费验证](../experiments/reports/v2479_v105_bound_consumer_validation_20261021.json)

@@ -14,27 +14,59 @@
 95% 压缩和 Host200GB80:20 已核对，PREPARE、工具预取和选择性
 预测/EOS 启用，handoff、语义 worker 及共享路径详细计时关闭。
 
-**V105 predictive 已于北京时间 09:15:16 启动。**冻结运行码 `c119a35`，
-CPU 资格 V2464，driver PID `2360761`、start_ticks `671557916`；
-watcher PID `2359215`、start_ticks `671552367`。36-root/running8/
-256K/95%/Host200GB80:20、EOS 与选择性预测、PREPARE 保持，handoff
-关闭，只跑 predictive 并复用 V103 native。新状态为
-`/home/longhao/experiment/ops/v105_bound_join_fix_20261021.state.json`。
-启动已核对冻结来源及旧资源释放；36 个 workflow 已创建、健康检查
-HTTP200，首批长输入已进入 prefill。早期观测未见 physical_disabled、
-writer_error、dropped/failed 记录；修复效果和净性能仍待验收。
+**V105 predictive 已于北京时间 10:15:49 正常结束，36/36 completed。**
+冻结运行码 `c119a35`、资格 V2464，保留 36-root/running8/256K/95%/
+Host200GB80:20、选择性预测/EOS、PREPARE，handoff 关闭。
+HTML、完整对照及清理回执已生成，只复用历史 V103 native。
+133 个动态 child、16 个 root 多轮委派、4 次嵌套 spawn，最大深度 2。
 
-**V106 接续已注册，等待 V105 完整结束。**候选冻结 `d2aaa51`，
-资格 V2474，引擎树 `a98aaf4`；36-root/running8/256K/95%/
-Host200GB80:20 及 V103 native 参照保持。watcher PID `2536748`、
-start_ticks `671866780`，状态为
+[V2484 完整验收记录](../experiments/reports/v2484_v105_complete_validation_20261021.json)
+显示平均 JCT 为 predictive/native **1973.204/2370.073 秒，下降
+16.75%**，23/36 个任务 predictive 更短；两侧各有一个 guard 介入
+完成，位置不同，共同 native-agent 合格配对为 34 个，不能沿用 V103
+自身的 35 个共同配对。实际请求 7394/8195、输出 1709670/2024180
+token，不把全部 JCT 差异归因于迁移。共同去长尾截止为 2952.711 秒，
+预热 600 秒、活跃阈值 4，decode 吞吐 **529.65/538.76 token/s，
+仍低 1.69%**；截至共同截止的 restricted JCT 为 1944.931/2170.807 秒，
+完成数 33/25。目标仍未验收，不以早期 +4.39% 窗口代替完整结论。
+
+[V2481 完整封闭审计](../experiments/reports/v2481_v105_complete_wait_prefetch_20261021_summary.json)
+中，75 个 JOIN 有 70 个完成前正 FULL 计划，64 个提前启动并确认
+复用 **14.194GB FULL**；工具 2479 轮有 100 个正计划，80 个提前复用
+**2.873GB FULL**，合计 **17.067GB**。另 **18.599GB JOIN FULL**
+在完成后至原生入队前恢复，单列为需求恢复。JOIN/tool 最后 ACK→
+首次服务 P90 为 **1.042/2.092 秒**，完整受控目标无首次服务前
+重复原生加载或驱逐。正计划没有转为提前复用的 6 个 JOIN 均有
+完成后恢复，包含两次准入预算忙、极短 EOS 窗口及容量拒绝；不能
+将完成后传输算入提前预取，不能用 submitted reason 计数替代物理证据。
+
+[V2482 分段](../experiments/reports/v2482_v105_v103_native_trimmed_segments_20261021.json)
+显示后段 batch 下降参与吞吐回落；600–1200/1200–1800 秒吞吐
+约 +2.33%/+3.48%，1800–2400/2400–截止约 -4.67%/-8.11%。
+[V2483 几何匹配](../experiments/reports/v2483_v105_v103_native_trimmed_geometry_20261021.json)
+对 61 个 batch8 分桶按共同样本权重比较，worker 区间约慢 **0.36%**；
+26 个短单请求 prefill 分桶仍慢 **12.69%**，部分分桶慢 23%–49%。
+这是 worker 墙钟和分桶诊断，不是 kernel 时间、逐函数成本或因果收益；
+共享路径详细计时关闭，不能声称控制总成本已测清。
+
+两次工具预取物理锁在服务前过期，但 FULL 最终均复用且无重复加载。
+其中最大 ACK→服务约 60.51 秒：实际工具执行 60.085 秒，传输提前
+58.272 秒，请求入队后仅等 2.241 秒。这是工具预测过早的样本，
+不误记为 60 秒准入阻塞，也不据此无限延长租约。后台 FULL 备份
+5795 批/169.909GB，平均 29.32MB/批、发行间隔 P50 408.96ms；
+Host 预算受限与有界扫描覆盖仍待优化，未备份冷页拒绝仍可见。
+
+**V106 已于北京时间 10:16:17 接续启动，当前运行 predictive。**
+冻结 `d2aaa51`、资格 V2474、引擎树 `a98aaf4`，沿用相同配置及
+V103 native；watcher PID `2536748`、start_ticks `671866780`，
+driver PID `2558207`、start_ticks `671924094`。状态为
 `/home/longhao/experiment/ops/v106_local_prefill_20261021.state.json`。
-只在验证 V105 watcher/driver 身份退出、完整结果/HTML/对照后处理、
-两次 GPU 空闲检查及 Host 预检之后启动；新暂停、来源变化或上一轮
-运行错误阻止接续。V2480b 的 8 个 CPU 等待边界用例通过，V2480
-首次测试收集的参数错误保留。此处是已排队候选，不是新 GPU 结果。
+已验证 V105 进程退出、完整后处理、两次空闲检查及 Host 预检；
+健康检查 HTTP200，长输入及普通 prefill/decode 已服务。保留 V2480b
+的 8 个等待边界 CPU 用例和 V2480 首次收集失败。不得重复启动或
+热改冻结树，继续核对运行错误、首次消费和净性能。
 
-[V2478 最新封闭前缀](../experiments/reports/v2478_v105_late_wait_prefetch_20261021_summary.json)
+[V2478 历史后段封闭前缀](../experiments/reports/v2478_v105_late_wait_prefetch_20261021_summary.json)
 中，53 个 JOIN 有 51 个完成前正 FULL 计划，47 个实际提前复用
 **10.610GB FULL**；工具 1311 轮中 89 个正计划，69 个提前复用
 **2.624GB FULL**。JOIN/tool 最后 ACK→服务 P90 为

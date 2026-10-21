@@ -19,28 +19,55 @@ initial fanout2-4 for every root,12 roots with multiple rounds,126 dynamic
 children and15 nested spawns,maximum depth2. V2435 seals the complete
 predictive summary. Preserve both completed arms and their frozen execution.
 
-V105 predictive launched at2026-10-21T09:15:16+08:00 from frozen c119a35,
-qualificationV2464. Driver2360761,start_ticks671557916;watcher2359215,
-start_ticks671552367. Same36 simultaneous roots,running8,256K/95%,
-Host200GB80:20,selective/EOS,PREPARE and no handoff. Reuse V103 native.
-State:`/home/longhao/experiment/ops/v105_bound_join_fix_20261021.state.json`.
-Frozen source checks,owned-resource release and idle checks passed;36 workflow
-directories exist,health returns200 and first long-input prefill samples are
-present. Early runtime is not physically disabled and telemetry has no
-dropped/failed records or writer error. Fix effectiveness and end-to-end
-acceptance are still pending.
+V105 completed36/36 at2026-10-21T10:15:49+08:00,exit0. Frozen c119a35/
+V2464 retains36 simultaneous roots,running8,256K/95%,Host200GB80:20,
+selective/EOS,PREPARE and no handoff. Complete HTML and V103 native comparison
+exist. Shape:133 dynamic children,16 multi-round roots,4 nested spawns,depth2.
 
-V106 followup is registered,not yet a GPU result. Frozen app d2aaa51,
-qualificationV2474 and engine a98aaf4 retain the36-root/running8/256K/95%/
-Host200GB80:20 setup and V103 native reference. Watcher2536748,
-start_ticks671866780;state:
-`/home/longhao/experiment/ops/v106_local_prefill_20261021.state.json`.
-Wait for exact V105 watcher/driver exit,completed artifacts including HTML
-and native reference comparison,two idle GPU checks and Host preflight.
-New holds,changed sources or a V105 failure prevent launch. V2480b passes8
-CPU waiting-boundary cases;keep V2480's corrected test-collection failure.
+V2484 seals the complete validation. Mean JCT1973.204/2370.073s is16.75%
+lower,23/36 tasks shorter;one guard completion in each arm affects different
+tasks,so native-agent common eligibility is34,not35. Requests7394/8195 and
+output1709670/2024180 tokens differ. Under the existing minimum-active4/
+warmup600 rule,the common cutoff is2952.711s;trimmed decode throughput
+529.65/538.76 token/s is still1.69% lower. Restricted latency at that cutoff
+is1944.931/2170.807s,33/25 completed. Keep the goal active and unaccepted;
+neither the early favorable window nor full-run JCT proves the KV-policy effect.
 
-V2478 is the latest sealed V105 prefix:JOIN53 observed,51 positive early
+V2481's complete sealed lifecycle has75 JOINs,70 positive early FULL plans,
+64 early-started/reused14.194GB FULL;2479 tool waits,100 positive plans,
+80 early-reused2.873GB,total17.067GB. Another18.599GB JOIN FULL is restored
+after completion and before native arrival;keep it separate. Last ACK-to-service
+P90 is1.042/2.092s;no controlled target repeats a native load/demotion before
+first use. All six positive early JOINs without early reuse have post-completion
+restoration. Inspect short EOS windows,admission budget and physical capacity,
+not submitted-reason counts alone.
+
+V2482 partitions the whole trimmed interval;later batch reduction contributes
+to the throughput deficit. V2483's common-count weighting gives matched batch8
+worker intervals0.36% slower across61 bins and short single-request prefill
+12.69% slower across26 bins;some short bins retain23-49% excess. These are
+descriptive worker intervals,not kernels or removable JCT. Detailed shared-path
+timing is disabled;do not claim aggregate control cost is measured.
+
+Two tool predictions expire their actual lock before service but retain FULL
+first reuse without repeat loading. The worst60.51s ACK-to-service sample has
+a60.085s tool,58.272s early issue and only2.241s native-arrival-to-service.
+Do not label it60s admission delay or extend all leases. Background FULL
+prepare has5795 batches/169.909GB,29.32MB mean;Host-budget limits and bounded
+dirty-scan coverage remain unresolved,with observed cold-unbacked rejections.
+
+V106 launched at2026-10-21T10:16:17+08:00 after verified V105 completion,
+postprocessing,two idle checks and Host preflight. Frozen app d2aaa51,
+qualificationV2474 and engine a98aaf4 retain the same configuration/reference.
+Watcher2536748,start_ticks671866780;driver2558207,start_ticks671924094.
+State:`/home/longhao/experiment/ops/v106_local_prefill_20261021.state.json`.
+Health returns200 and actual prefill/decode service is observed. Do not launch
+another driver or hot-edit its source. V2480b passes8 waiting-boundary CPU
+cases;preserve V2480's corrected collection failure. Watch new user holds and
+physical/writer failures;measure the latest candidate rather than assuming
+its local CPU improvement changes throughput.
+
+V2478 is a historical late V105 prefix:JOIN53 observed,51 positive early
 FULL plans,47 early reused10.610GB;tool1311 waits,89 positive plans,69
 early reused2.624GB. Last ACK-to-service P90 is1.042/1.897s with no
 early target repeat native load/demotion. Fifty tool episodes encounter
