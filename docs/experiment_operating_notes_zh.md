@@ -12,14 +12,18 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 **最新预约覆盖下文旧的暂停要求：北京时间 2026-10-22 06:00 前禁用 GPU。**
 新 hold 是 `../ops/gpu_hold_until_20261022_0600.json`，旧日期自动接续
 已禁用；全局暂停标记包含新截止时间。到时可按需实验，但必须核对
-最新源码资格、冻结输入、GPU/DRAM/端口和用户是否有新预约。当前没有
-启动或登记新 GPU driver。只做 CPU 优化、历史 trace 分析及配置准备。
+最新源码资格、冻结输入、GPU/DRAM/端口和用户是否有新预约。
+截止前不启动 GPU driver，不探测 GPU 或预分配 Host。定时进程只做 CPU 等待。
 
 下一轮按 `configs/migration/next_predictive_baselines_20261022.json`
 使用 batch8/seed21、36 同时到达 root、256K/95%、Host200GB80:20，
 工具上限仍为 180 秒。先新 Full，再同配置 JOIN-only 和工程对齐 native；
-不要用旧 batch12 Full 作对照。新计划的冻结及接续尚待完成，旧 V111
-接续器仍校验 batch12，不得通过跳过真实参数验证强行启动 batch8。
+不要用旧 batch12 Full 作对照。新入口
+`scripts/run_fresh_internal_comparison.py` 单独冻结最新 main、保留三个新 arm；
+旧 V111 接续器仍校验 batch12，不得绕过参数校验启动 batch8。定时登记与
+实时状态为 `../ops/v112_fresh_batch8_20261022.registration{,.state}.json`，
+以回执为准。若登记后 main 再变化，启动前拒绝旧候选；启动后各组固定同一
+冻结版本以维持比较口径。新的暂停标记或延后预约会停止接续。
 
 Full 显式采用 `PREFILL_SCHEDULING_POLICY=join_priority`、
 `PREFETCH_RESIDENCY_PROTECTION=0`，保留 EOS/tool 预取、增量 PREPARE 和
@@ -27,7 +31,11 @@ Full 显式采用 `PREFILL_SCHEDULING_POLICY=join_priority`、
 最后 child/局部性及额外保护保留为条件对照；不未经测量一并叠加。
 以去长尾吞吐和平均/受限 JCT 不劣于最强简单基线为验收，记录输出、
 工具、请求、guard/正确性口径；负结果不能省略。V2613 的 3493 项及
-额外 17 项 EOS CPU 检查均通过，V2614 绑定源码，尚无新 GPU 收益。
+额外 17 项 EOS CPU 检查均通过，V2614 绑定此前源码。最新 V2618 保留全部
+3493 项并新增 44 项，3537 全通过、无跳过，另有 2 个 subtest，V2620 绑定源码。
+完整完成但仅因 guard 未通过 native gate 的 arm 保留非零原退出码、精确资格
+排除及原始 trace，独立完成审计后可继续控制组；系统无效、缺失 workflow、
+配置不符、未知退出或物理错误仍停止。没有新 GPU 收益或自动性能验收。
 
 **此前状态：V111 停止与独立收尾。**
 V111 第二组在北京时间 2026-10-21 19:44 返回退出码 1；36/36 completed，

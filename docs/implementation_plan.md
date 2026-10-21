@@ -46,15 +46,27 @@ are1736639/1556460/1741754/2027956. V2611's independent600-1200s JOIN queue-to-s
 P50 is608.90/331.70/11407.35/12340.70ms. Different cohorts and work prevent
 causal attribution;these results justify testing the simpler common skeleton.
 
-Next CPU priorities:measure actual positive-transfer control and empty-opportunity
-paths;remove unconsumed high-frequency work;check incremental PREPARE coverage,
-capacity and first-use waiting. Freeze and adapt execution of
+V2619 measures positive-transfer and empty-opportunity CPU paths on the same
+sources,not an old/new speedup comparison. JOIN4/16/64-node planning,registration
+and issuance tracking P50 is361/774/2506us;tool460/873/2650us. Deep ancestry
+tracking remains a target. No-source maintenance/post-forward is1.80us,
+no-wait PREPARE dispatch3.94us with zero capacity reads. Scalar enqueue stand-ins
+exclude real DMA/allocator,writer contention and GPU/JCT effects.
+
+Next CPU priorities:remove unconsumed high-frequency work;check incremental
+PREPARE coverage,capacity and first-use waiting. The fresh execution entrypoint
+scripts/run_fresh_internal_comparison.py freezes all three arms of
 configs/migration/next_predictive_baselines_20261022.json:
-fresh batch8/seed21 Full,JOIN-only and matched native,with protection/complex-order
-controls conditional on evidence. The configuration is CPU prepared;freezing
-and timed execution are still pending. Do not invoke V111's batch12-only
+batch8/seed21 Full,JOIN-only and matched native,with protection/complex-order
+controls conditional on evidence. V2618 retains all3493 cases and adds44:
+3537 pass,no skips,plus2 subtests;V2620 binds sources. The dated registration/state
+receipts are ../ops/v112_fresh_batch8_20261022.registration{,.state}.json.
+Read their actual status;the operator stays CPU-only before the deadline and
+rejects stale main,new holds,incorrect effective settings and failed telemetry.
+Fully completed guard-excluded arms retain original process exits and exact
+eligibility exclusions through postprocessing;unknown failures stop the matrix.
+Postprocessing never accepts performance. Do not invoke V111's batch12-only
 operator with mismatched inputs,or reuse batch12 Full as the batch8 reference.
-No new GPU driver is registered or running yet.
 
 Previous accepted implementation: reduce recovery privileges. Full and JOIN-only
 share the same actual-JOIN selection branch, aged FIFO/native order and independent

@@ -27,7 +27,14 @@
 准备了相同 batch8/seed21/36root/256K 的 Full、JOIN-only、工程对齐
 native；保护、复杂排序及其他消融按需补跑。新配置还需冻结及执行接续，
 不能用旧 V111 的 batch12 接续器绕过配置校验，也不混用 batch12 Full
-作为 batch8 对照。当前尚未启动 GPU 或登记新的 GPU driver。
+作为 batch8 对照。新的 `scripts/run_fresh_internal_comparison.py` 独立冻结
+完整三组，定时登记及实时状态分别位于仓库外
+`../ops/v112_fresh_batch8_20261022.registration{,.state}.json`，以回执为准。
+截止前只等待，不探测 GPU 或预分配 Host；到时复核源码、精确暂停标记和资源。
+[V2618](../experiments/reports/v2618_fresh_batch8_qualified_cpu_20261021.xml)
+保留全部 3493 项并新增 44 项，3537 全通过、无跳过，另有 2 个 subtest；
+V2620 绑定源码。完整完成但触发 guard 的 arm 单列原退出码和资格排除，
+不覆盖旧失败状态，也不自动验收性能。
 
 **此前实现：削减恢复特权。**
 Full 与 JOIN-only 共用真实 JOIN parent 的选择、aged FIFO/native 顺序和

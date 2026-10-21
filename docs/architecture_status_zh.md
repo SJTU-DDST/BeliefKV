@@ -41,10 +41,22 @@ V2613 保留全部 3456 项并新增 37 项，3493 全通过、无跳过，另�
 subtest；V2614 绑定源码。V2615 在简单排序/额外保护关闭下额外通过
 17 项 EOS 实例，确认预取没有随排序关闭；不是新的 GPU 资格。
 
-下一步 CPU 工作是核查正例迁移控制、无机会路径、PREPARE 增量覆盖和
-首次消费等待，保持无用即删；准备同一批配置的 batch8 Full/JOIN-only/
-工程对齐 native，按结果补保护及复杂排序对照。具体配置见
-`configs/migration/next_predictive_baselines_20261022.json`，冻结和接续仍待完成。
+V2619 补齐正例及空转控制的同源码 CPU 校准，不是新旧策略收益对照。
+4/16/64 节点 JOIN 规划、登记及首次复用追踪 P50 约 361/774/2506us，
+tool 约 460/873/2650us；深链前缀追踪仍值得优化。无候选维护加
+post-forward 约 1.80us，无等待 agent 的 PREPARE 分发约 3.94us，
+不读取容量。正例使用 scalar native stand-ins，没有 DMA/真实 allocator，
+不能外推整轮成本、GPU/JCT 或后台 writer 的 GIL 争用。
+
+继续核查 PREPARE 增量覆盖、容量及首次消费等待，保持无用即删；
+同一版 batch8 Full/JOIN-only/工程对齐 native 按结果补保护及复杂排序对照。
+具体配置见 `configs/migration/next_predictive_baselines_20261022.json`；
+新鲜三组冻结/定时入口为 `scripts/run_fresh_internal_comparison.py`。
+V2618 保留全部 3493 项并新增 44 项，3537 全通过、无跳过，另有 2 个
+subtest；V2620 绑定源码。登记/状态回执为
+`../ops/v112_fresh_batch8_20261022.registration{,.state}.json`，以实际回执为准。
+截止前只等待；源码变化、新预约、错误遥测或配置均阻止启动/继续。
+完整完成但 guard 排除的 arm 保留原退出码，不误报为 GPU 失败或性能验收。
 不复用 batch12 Full 作 batch8 因果对照，不改变 harness 提前截断来制造收益。
 
 **此前实现：JOIN 主排序对齐 JOIN-only，恢复保护可在真实压力下撤销。**

@@ -244,14 +244,15 @@ def register(args) -> None:
     }, indent=2))
 
 
-def observe_arm(mode: str, arm: Path) -> None:
+def observe_arm(mode: str, arm: Path, *, max_running_requests: int = 12) -> None:
     protection = None
     scheduling = None
     info = arm / "server/server_info.json"
     if info.exists():
         observed = load(info)
         expected = {
-            "max_running_requests": 12, "random_seed": 21, "context_length": 262144,
+            "max_running_requests": max_running_requests,
+            "random_seed": 21, "context_length": 262144,
             "enable_beliefkv_admission": mode != "native_matched",
         }
         for field, value in expected.items():

@@ -4,6 +4,13 @@
 用途：研究定位、reference policy 设计、原生系统部署和论文 baseline 选择。
 范围：合并此前整理的 Agent serving、workflow scheduling 和 KV-cache 工作，并加入截至本日期检索到的最新直接竞品。2026-09-14 增量检索重点覆盖 arXiv 2026 年 7-9 月的新稿与旧表漏项。
 
+当前工程对照入口为 `scripts/run_fresh_internal_comparison.py`：北京时间
+2026-10-22 06:00 前只做 CPU 等待；之后核对资格、冻结版本、暂停标记和
+空闲资源再运行新 batch8 Full/JOIN-only/工程对齐 native。V2618 的 3537 项
+CPU 用例全部通过、无跳过，V2620 绑定源码；这不构成 GPU 性能验收。
+原始非零退出码、guard 排除和动态工作量单列；不重写此前 V111 失败状态。
+本文竞品调查的历史证据边界保持原样，本次未重新检索外部论文或适配新竞品。
+
 2026-10-21 更新重点是第 6.5-6.6 节的 baseline 筛选、调度消融和适配顺序，重新核对
 论文、作者仓库及公开实现的缺项。TokenCake 官方地址已修正并可访问；
 其 README 明确预测预取尚未实现。Continuum 公开预览版仍不含论文
