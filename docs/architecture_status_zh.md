@@ -6,20 +6,29 @@
 机制或实验。[整理记录](archive/research_exploration_20261020.md)列出已清理
 的一次性源码及归档位置；当前工程状态以下文 main 的最新记录为准。
 
-**GPU 进度：V103 predictive 已完成，native 已接续运行。**
+**GPU 进度：V103 predictive/native 均已完成，driver 正常退出。**
 运行码为冻结提交 `216fd88`，36 个 workflow 全部 completed；每个 root
 初次委派 2–4 child，12 个 root 多轮委派，126 个动态 child、15 次
-嵌套 spawn，最大深度 2，全部形态检查通过。实际 running8、256K、
+嵌套 spawn，最大深度 2，以上为 predictive 形态；native 也为
+36/36 completed，两侧 HTML 和对照汇总均已生成。实际 running8、256K、
 95% 压缩和 Host200GB80:20 已核对，PREPARE、工具预取和选择性
 预测/EOS 启用，handoff、语义 worker 及共享路径详细计时关闭。
 
-**V104 已注册接续，尚未启动 GPU。**冻结运行码 `2c377da`，使用
+**V104 predictive 已于北京时间 08:15:28 接续启动。**冻结运行码 `2c377da`，使用
 V2445 的 2667 项应用资格及同一原生引擎；36-root 同时到达、
 running8、256K/95%、Host200GB80:20 保持。接续 watcher PID
-`2106412`，等待 V103 watcher/driver 的 PID 与 start_ticks 身份退出、
-完整 native 后处理及 GPU 空闲；只跑 predictive，复用 V103 native。
+`2106412` 已确认旧进程身份退出、完整 native 后处理及 GPU 空闲，
+driver PID `2142467`、start_ticks `671199167`；只跑 predictive，复用 V103 native。
 状态位于 `/home/longhao/experiment/ops/v104_queued_full_20261021.state.json`。
 新的用户暂停、来源改变或已确认运行错误会阻止启动或停止本次运行。
+
+**confirmed ticket 空目标过滤已在当前 main 复核。**创建前确认安全
+输入没有可恢复的 Host-backed 缺失 FULL 或必要 Mamba 时直接跳过；
+同批 RETURN/JOIN 去重，空 A 不占选择器，B 首次选择即发行，
+额外 EOS 重试为 0。本次相关 62 项 CPU 回归通过。容量不足不等于
+没有恢复数据；不可观测对象不能当空目标，已发行传输保留 ACK/
+首次消费所有权。原实现与成本证据见下文 V2325/V2326，本次没有
+为相同逻辑增加分支、扫描或周期。
 
 [V2435 完整 predictive 汇总](../experiments/reports/v2435_v103_predictive_complete_summary_20261021.json)
 中，JOIN/tool 在完成前启动且被下一请求确认复用的 FULL 分别为
@@ -28,7 +37,17 @@ running8、256K/95%、Host200GB80:20 保持。接续 watcher PID
 有正 FULL 计划。JOIN 总恢复 37.986GB FULL，工具总恢复
 2.806GB；完成后的恢复不计入提前预取。11 个 JOIN 出现容量预算
 拒绝，对应后继原生 FULL 恢复约 8.314GB；不能将这些残余字节全部
-当成完成前已有机会。native 对照尚未完成，未取得性能验收结论。
+当成完成前已有机会。完整对照仍未取得独立策略收益验收结论。
+
+[V103 完整对照](../experiments/raw/qwen35_locobench_long_36root_running8_20261021_v103/native_policy_comparison.json)
+的完整平均 JCT 为 predictive/native **1957.031/2370.073 秒**，
+26/36 个配对任务 predictive 更短。共同 native-agent 资格为 35 个；
+native 另一个 completed 带 guard 介入，不能默认为自然完成。
+实际 LLM 请求量 6734/8195、输出 1749958/2024180 token，模型
+轨迹和前端缓存也有差异，平均 JCT 差异不能全部归为预取贡献。
+共同去长尾截止为 3184.053 秒、预热 600 秒、最少活跃 workflow 为 4；
+自动吞吐窗口仍包含 profiler 介入，须排除介入及恢复后再用于净收益验收。
+V2447 的既有完整干净固定窗口保留，不能凭选定窗口替代整体验收。
 
 后台 FULL 备份共 5657 批、168.249GB，平均 29.74MB/批，无字节/
 extent 上限命中。完整后段有 3034 次检查受 Host 容量阻塞；36 次冷
@@ -82,7 +101,7 @@ V2444 实跑旧 2630 项和新增 37 项，共 **2667 项应用检查通过**；
 分桶的 worker 区间均值比例范围 0.9824–1.0265，均值 0.9998。
 这些是描述性分桶，不是相同轨迹或 GPU kernel 测量，prefill 样本仍
 不足以形成同等强度的配对结论。V2437 的 native 600–900 秒窗口不完整，
-保留文件但不得据其固定分母报告吞吐优势。完整配对 JCT 仍待 native。
+保留文件但不得据其固定分母报告吞吐优势。完整配对 JCT 见顶部最新记录。
 
 **V2434 历史 CPU 资格：不再构造原生消费者不会读取的通用候选表。**
 两个原生消费者均先读取 FULL/Mamba 各自的前八项；发布器同时提供两池

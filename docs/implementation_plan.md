@@ -12,20 +12,39 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-V103 predictive has completed from frozen runtime216fd88; its existing driver
-has started native. All36 workflows completed and passed the shape checks:
+V103 predictive/native both completed from frozen runtime216fd88; the driver
+exited0 and produced both HTML timelines and the policy comparison.
+Both arms completed36/36. Predictive passed the shape checks:
 initial fanout2-4 for every root,12 roots with multiple rounds,126 dynamic
 children and15 nested spawns,maximum depth2. V2435 seals the complete
-predictive summary. Keep the frozen execution and the running native arm.
+predictive summary. Preserve both completed arms and their frozen execution.
 
-V104 is registered to follow V103,not yet GPU-started. Frozen runtime2c377da
+V104 predictive launched at2026-10-21T08:15:28+08:00. Frozen runtime2c377da
 uses V2445 and the unchanged native tree,36 simultaneous roots,running8,
-256K/95% and Host200GB80:20. Watcher2106412 waits for exact V103 watcher/
-driver start identities to exit,completed native postprocessing and an idle GPU.
+256K/95% and Host200GB80:20. Watcher2106412 verified exact V103 watcher/
+driver exit identities,completed postprocessing and idle GPU checks.
+Driver PID2142467,start_ticks671199167.
 Run predictive only against V103 native. State is
 `/home/longhao/experiment/ops/v104_queued_full_20261021.state.json`.
 Honor new user holds/pauses,verify frozen sources again,and stop on observed
 physical or writer failures. Do not duplicate either driver.
+
+Rechecked confirmed-ticket eligibility on current main:62 focused CPU cases
+pass. Proven-empty safe-input FULL/required-Mamba restores are filtered before
+ticket construction. Empty A leaves the first selection to observed-EOS B,
+with zero additional EOS retries. Coalesced completion events share one probe;
+capacity shortages,unknown observations and issued transfer ownership retain
+their existing semantics. Do not add polling or another eligibility cache.
+
+Completed V103 full mean JCT is1957.031/2370.073s predictive/native;
+26/36 paired tasks favor predictive. Native-agent common eligibility is35,
+with one native completed result involving a guard intervention. Actual LLM
+requests6734/8195 and output1749958/2024180 tokens differ;this is not isolated
+prefetch attribution. The common tail cutoff is3184.053s,warmup600s,
+minimum active4. Its automatic throughput window contains the known profiler
+intervention and is not a clean net-throughput acceptance result. Preserve
+V2447's complete unprofiled fixed windows and require intervention/recovery
+exclusion for the final throughput analysis.
 
 Verified FULL submitted before the causal completion boundary is23.095GB
 for55 JOIN events and2.430GB for61 tool waits. Of70 observed JOINs,65 had
@@ -79,7 +98,8 @@ mean contexts104925/84233 and32 matched batch/context/graph worker bins,
 ratio0.9824-1.0265,mean0.9998. These descriptive bins are not identical
 demand or isolated CUDA kernels;prefill lacks similarly populated bins.
 V2437 native600-900s was not yet complete and must not support a speedup
-claim. Keep it as incomplete evidence. Final native completion/JCT is pending.
+claim. Keep it as incomplete evidence. Completed JCT is now available above;
+clean whole-window throughput and causal source attribution remain open.
 
 Historical V2434 qualification:both native consumers read FULL/Mamba pool
 prefixes when both keys exist,so stop building the unused generic fallback.

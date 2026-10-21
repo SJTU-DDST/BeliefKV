@@ -7,22 +7,33 @@
 重复摘要已清理；源码归档及保留范围见[整理记录](archive/research_exploration_20261020.md)。
 下文的最新工程状态与实验约束继续有效。
 
-**V103 predictive 已完成，native 已接续运行。**冻结提交仍为
+**V103 predictive/native 均已完成，driver 正常退出。**冻结提交仍为
 `216fd88`。36个workflow全部completed、首轮均2–4 child，12个root
-多轮委派、126个动态child、15次嵌套spawn，形态检查通过。
+多轮委派、126个动态child、15次嵌套spawn，以上为predictive形态；
+native也为36/36 completed。两侧HTML及对照汇总已生成。
 [V2435完整汇总](../experiments/reports/v2435_v103_predictive_complete_summary_20261021.json)
 确认完成前启动且被下一请求复用的FULL为JOIN23.095GB/tool2.430GB，
 对应55/61个独立等待事件；完成后恢复单列，不能全部称提前预取。
 11个JOIN仍有容量拒绝，后台备份后段仍受Host预算和扫描覆盖限制。
-native未完成，性能验收开放。CPU profiler于北京时间
+性能验收仍开放。CPU profiler于北京时间
 06:38:51.324–06:39:17.414介入，吞吐窗口排除介入和恢复，整轮开发
 JCT保留其来源。实际配置、原始前缀与口径见[架构状态](architecture_status_zh.md)及
 [实验注意事项](experiment_operating_notes_zh.md)。
 
-**V104 已注册等待 V103 结束。**冻结运行码 `2c377da`，36-root/
+完整平均JCT为predictive/native 1957.031/2370.073秒，26/36个任务
+predictive更短；实际请求量6734/8195、输出量1749958/2024180 token，
+不能将全部差异归因于预取。自动去长尾窗口600–3184.053秒包含profiler；
+干净固定窗口见V2447，当前不据自动窗口宣称净吞吐获胜。
+
+**V104 predictive 已于北京时间 08:15:28 接续启动。**冻结运行码 `2c377da`，36-root/
 running8/256K/95%/Host200GB80:20 保持；仅接续 predictive 并复用
-V103 native。watcher `2106412` 核对旧进程身份、后处理和 GPU
-空闲后启动，目前未开始 GPU；新暂停或已确认运行错误照常处理。
+V103 native。watcher `2106412` 已核对旧进程身份、后处理和 GPU
+空闲，driver PID `2142467`；新暂停或已确认运行错误照常处理。
+
+**confirmed ticket 空目标过滤已复核。**已知安全输入没有Host-backed
+缺失FULL/必要Mamba时，创建前跳过；空A不占住选择器，B第一次
+选择即发行，额外EOS重试为0。本次相关62项CPU回归通过。
+容量不足、不可观测及已有在途传输继续保留各自语义，不新增周期。
 
 **main最新CPU资格V2445：关键容量事务可使用尚未启动的队尾FULL。**
 要求原生请求row为空、没有私有KV和生成输出且无retraction，保留
@@ -35,7 +46,7 @@ V2442b加入旧版工具等待正对照后，确认旧版排队供体只能恢�
 
 V2438同轮600–800秒完整窗口的输出吞吐为554.65/571.60 token/s，
 predictive仍低约2.97%；相近几何的32个decode worker分桶均值接近。
-V2437的native600–900秒不完整，不能据其报告获胜。完整JCT仍待native。
+V2437的native600–900秒不完整，不能据其报告获胜。完整JCT见顶部最新记录。
 详见[架构状态](architecture_status_zh.md)及[执行计划](implementation_plan.md)。
 
 **V2434历史CPU资格：删除无消费者的通用压力候选表。**

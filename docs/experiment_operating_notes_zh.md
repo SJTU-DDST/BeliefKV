@@ -9,20 +9,34 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 删除，详见[整理记录](archive/research_exploration_20261020.md)；原始 trace、
 冻结检出及当前 GPU 预约约束保持有效。
 
-**当前 GPU 实验为 V103，predictive 已完成，native 已接续运行。**
+**V103 predictive/native 均已完成，driver 正常退出。**
 运行码仍冻结在 `216fd88`，36-root/running8/256K/95%/Host200GB80:20
 保持。36 个 workflow 全部 completed，首轮均 2–4 child；
 12 个 root 多轮、126 个动态 child、15 次嵌套 spawn，形态检查通过。
-不要重复启动 driver/native，也不要将后续 main 修改热换入 V103。
+以上形态为 predictive；native 也为 36/36 completed，两侧 HTML 与
+对照汇总已生成。保留原始证据，不要重复启动 V103 driver/native。
 对照仍包含已约定的前端缓存差异，不作独立预取归因。
 
-V104 接续已注册，运行码冻结为 `2c377da`，目前仍等待 V103，
-尚未启动 GPU。watcher PID `2106412` 按 V103 watcher/driver 的
-PID+start_ticks 等待，完整 native 后处理和 GPU 空闲后只跑 predictive，
+V104 predictive 已于北京时间 08:15:28 接续启动，运行码冻结为 `2c377da`。
+watcher PID `2106412` 已按 V103 watcher/driver 的 PID+start_ticks
+确认旧进程退出、完整 native 后处理和 GPU 空闲；driver PID `2142467`、
+start_ticks `671199167`。本轮只跑 predictive，
 直接复用 V103 native；不再新增 native。36-root/running8/256K/95%/
 Host200GB80:20 保持，新用户暂停、来源变化及物理/写入错误均要处理。
 接续状态为 `/home/longhao/experiment/ops/v104_queued_full_20261021.state.json`；
 不要重复启动接续或修改冻结源码。
+
+confirmed ticket 的前置空目标过滤已复核，相关 62 项 CPU 回归通过：
+没有安全输入的 Host-backed 缺失 FULL/必要 Mamba 时不创建；
+空 A 不占第一次选择，B 无需额外 EOS 重试。容量不足、不可观测
+和已有发行命令不能作为“空恢复”删除，不为此新增周期或缓存。
+
+完整平均 JCT 为 predictive/native 1957.031/2370.073 秒，配对
+26/36 个任务 predictive 更短；共同 native-agent 资格为 35 个，
+另一 native completed 有 guard 介入。实际请求/输出工作量不同，
+不得将完整差异归因于预取。共同去长尾截止 3184.053 秒、预热
+600 秒、活跃阈值 4；自动吞吐窗口包含下述 profiler 介入，必须
+进一步排除介入及恢复后才能验收净吞吐，既有 V2447 干净固定窗口保留。
 
 [V2435 完整 predictive 汇总](../experiments/reports/v2435_v103_predictive_complete_summary_20261021.json)
 中，完成前启动且被下一请求确认复用的 FULL 为 JOIN23.095GB/
@@ -64,7 +78,7 @@ V2438 是两侧均完整的同轮600–800秒窗口，输出吞吐
 554.65/571.60 token/s，predictive低约2.97%。V2440的32个
 batch/上下文/graph分桶worker区间比例均值0.9998；上下文工作量
 不同，不能称因果配对。V2437的native600–900秒窗口尚不完整，
-保留文件但不得用固定300秒分母声称获胜，完整JCT仍待native结束。
+保留文件但不得用固定300秒分母声称获胜，完整JCT已由顶部最新记录承接。
 
 **V2434 历史 CPU 资格。**
 FULL/Mamba 两池前缀均发布时，原生不会读取通用fallback，故不再
