@@ -6252,7 +6252,10 @@ class NativeAdmissionRuntime:
                 return False
         return True
 
-    def _live_queued_full_request(self, key: PrefillCandidateKey, request: object) -> bool:
+    def _live_queued_full_request(
+        self, key: PrefillCandidateKey, request: object, *,
+        _queue_tail_member: bool = False,
+    ) -> bool:
         kv = getattr(request, "kv", None)
         budget = self._residency_budget
         if (
@@ -6269,7 +6272,7 @@ class NativeAdmissionRuntime:
             or not callable(getattr(request, "finished", None)) or request.finished()
             or self._executable_waiting_key(request) != key
             or any(active is request for active in getattr(self._native_running_batch, "reqs", ()))
-            or not any(
+            or not _queue_tail_member and not any(
                 waiting is request for waiting in islice(
                     self._capacity_waiting_queue, budget.request_slots, 512,
                 )
@@ -6301,7 +6304,11 @@ class NativeAdmissionRuntime:
                 if (
                     candidate is not None and candidate.invocation_id != key.invocation_id
                     and candidate.context_id not in protected
-                    and self._live_queued_full_request(candidate, request)
+                    # This iterator proves membership only for initial collection.
+                    # Each native owner check revalidates the live queue below.
+                    and self._live_queued_full_request(
+                        candidate, request, _queue_tail_member=True,
+                    )
                 ):
                     requests[candidate] = request
         if requests:

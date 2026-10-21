@@ -46,6 +46,50 @@ intervention and is not a clean net-throughput acceptance result. Preserve
 V2447's complete unprofiled fixed windows and require intervention/recovery
 exclusion for the final throughput analysis.
 
+Latest main qualification isV2452;V104 stays frozen2c377da. Initial donor
+collection reuses membership proved by its current queue-tail iterator.
+Native owner callbacks still reread live queue position,running/private KV/
+output state and identity/generation. Keep frontier/512-entry bounds,all
+native guards and transaction callback restoration;add no owner cache/timer.
+V2450 plain-list scopes include the same8 owner checks:64/128 donors wall
+P50524.956->403.032us/1067.038->722.580us. Ordinary post-forward
+dense/sparse P50188.947->189.898us/168.644->169.264us,no-due-work
+1.478->1.506us;retain all samples rather than claim universal speedup.
+Both baseline/current native CPU EOS paths finish1 D2H+2 H2D in either ACK
+order;row/output/frontier remain rejected. Clocks,DMA/geometry,growth and
+first-service observation remain fixtures.
+
+V2451 reruns2667 retained cases plus10 new cases,2677 pass. Engine unchanged:
+rehash and retain375 prior native cases. V2449 kept5 missing-engine skips;
+V2449b explicitly selects the engine and passes84 focused cases. V2452 seals
+current sources and the benchmark. Do not interrupt V104 merely to deploy
+this small local CPU reduction;use its new trace for the next decision.
+
+V2453b reuses exactly V2453's independently sealed prefixes. All21 critical
+transactions meet FULL targets. Actual victim releases of2.154GB/128 records
+have an owner mapped to an explicit native queue interval before first
+run_batch;2.578GB remain incompletely mapped and0.142GB have no observed
+queue owner. Candidate counts are not actual queued-victim proof. Do not
+match later reloads by recyclable node ID alone or treat broad later Host
+hits as the exact released bytes. V2453 kept unknown byte units;V2453b uses
+the exact Host FULL capacity ratio without changing its counts or prefixes.
+
+V2455 early lifecycle:JOIN25 positive pre-completion plans,22 submitted,
+21 early reused/2.888GB FULL;tool14 positive plans among279 observed waits,
+12 early reused/0.602GB. A large parent still has2.117GB missing FULL blocked
+before completion;2.012GB restored after completion stays separate. Its
+request then waits19.493s from native queue registration to first service.
+Keep this unresolved capacity/admission case and causal-change rejection
+for investigation;do not delete source validation or credit all4.180GB of
+the next request's broad Host-hit measure as a missed early transfer.
+
+V2448 merges complete unprofiled V103 windows600-2000 and2400-3184.053s,
+using the previously retained conservative2000-2400 exclusion. Decode tokens
+1152502/1147776 imply only+0.41%;late weighted batch5.963/7.267 differs.
+V2454 current V104 versus historical V103 native600-800s is573.23/571.60
+token/s at weighted decode batch7.844/7.835. These are development evidence,
+not an end-to-end or isolated prefetch win. Keep the main goal active.
+
 Verified FULL submitted before the causal completion boundary is23.095GB
 for55 JOIN events and2.430GB for61 tool waits. Of70 observed JOINs,65 had
 a positive pre-completion plan;80 of2051 observed tool waits did. Separate
@@ -65,7 +109,7 @@ windows;keep its provenance in development whole-run JCT rather than subtracting
 26s per workflow. V2429 identifies29 publications/96 forwards and6931 generator
 entries,not production cumulative CPU. Native performance acceptance stays open.
 
-Latest main qualification is V2445. A critical parent capacity transaction
+Historical main qualification V2445 introduced a critical parent capacity transaction
 can temporarily authorize native FULL reclaim from unstarted queued requests
 behind the measured next-prefill frontier. Require no native request row,
 private allocation/committed KV,output or retraction;recheck live identity,
