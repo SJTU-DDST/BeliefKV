@@ -55,7 +55,11 @@ JOIN 非 HBM 命中也能优先、配额/老化、禁止主动物理动作及等
 同版本因果归因。最终 [V2573 回归](../experiments/reports/v2573_internal_comparison_latest_no_full_cpu_20261021.xml)
 3058 项全部通过，保留原 3023 项并新增 35 项；
 [V2574](../experiments/reports/v2574_internal_comparison_latest_cpu_sources_20261021.json)
-绑定最新源码与冻结检查。准备登记 V110，不热加载 V109。
+绑定最新源码与冻结检查。V110 已于北京时间 17:22 登记，冻结 `5ddb43a`，
+复用 V109 Full `ed06f53`；后台状态为 `waiting_previous_comparison`，
+尚未启动下一组 GPU。登记与状态位于
+`../ops/v110_internal_20261021.registration{,.state}.json`（相对仓库根目录）。
+接续器 PID 3710508 已核实存活；V109 原 watcher/driver 继续运行，不热加载。
 
 **内部开关加入前的 CPU 资格为 V2566；V109 predictive 已完成，匹配 native 正在运行。**
 第一轮有效 EOS 恢复在完整计划放不下、但当前空闲 HBM 能容纳连续完整

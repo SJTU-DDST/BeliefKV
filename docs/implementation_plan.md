@@ -32,7 +32,10 @@ Add Pythia to the external shortlist; distinguish public artifacts from complete
 paper reimplementations. Independent internal switches and the after-pair runner
 pass final V2573:3058 application cases,retaining3023 and adding35.
 V2574 binds the latest no-Full-rerun order and source-freeze guards before
-V110 registration. Unchanged engine53335e6 is patch/tree verified,not rerun.
+V110 registration. At17:22 Beijing,V110 is registered and waiting for V109:
+application5ddb43a,Full referenceed06f53,watcher3710508. State is
+`../ops/v110_internal_20261021.registration.state.json` relative to repo root.
+No new GPU arm has started. Unchanged engine53335e6 is patch/tree verified,not rerun.
 External adapters remain unimplemented. Do not change
 the frozen V109 pair. The runner must wait for complete postprocessing and exact
 watcher/driver exit, check new holds and idle resources, freeze effective controls,
