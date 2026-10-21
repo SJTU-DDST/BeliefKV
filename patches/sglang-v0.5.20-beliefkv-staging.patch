@@ -1149,7 +1149,7 @@ index 7811e44..5cf4df9 100755
          self.mamba_track_mask_next_cpu = None
          self.mamba_decode_batch_idx_cpu = None
 diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
-index 743c8af..0eb6e73 100644
+index 743c8af..3be5eea 100644
 --- a/python/sglang/srt/managers/scheduler.py
 +++ b/python/sglang/srt/managers/scheduler.py
 @@ -725,9 +725,152 @@ class Scheduler(
@@ -1661,7 +1661,7 @@ index 743c8af..0eb6e73 100644
      def get_num_allocatable_reqs(
          self,
          running_bs: int,
-@@ -3754,6 +4108,56 @@ class Scheduler(
+@@ -3754,6 +4108,64 @@ class Scheduler(
  
          return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
  
@@ -1699,6 +1699,14 @@ index 743c8af..0eb6e73 100644
 +                    req,
 +                )
 +            self.waiting_queue = remaining
++        if (
++            inspection is not None
++            and getattr(adder, "rem_chunk_tokens", None) == 0
++            and getattr(
++                runtime, "skip_exhausted_native_prefill", lambda *args, **kwargs: False
++            )(self.waiting_queue, running_batch=running_batch, adder=adder)
++        ):
++            return ()
 +        from beliefkv.runtime.sglang_v0520_admission import (
 +            select_native_prefill_candidates,
 +        )
@@ -1718,7 +1726,7 @@ index 743c8af..0eb6e73 100644
      def _get_new_batch_prefill_raw(
          self,
          prefill_delayer_single_pass: Optional[PrefillDelayerSinglePassExecutor],
-@@ -3871,7 +4275,8 @@ class Scheduler(
+@@ -3871,7 +4283,8 @@ class Scheduler(
              mamba_allocator.alloc_group_begin(len(self.waiting_queue))
          buffer_pipeline = self.tree_cache.buffer_pipeline
          # Get requests from the waiting queue to a new prefill batch
@@ -1728,7 +1736,7 @@ index 743c8af..0eb6e73 100644
              if self.enable_lora and not self.can_schedule_lora_req(req, running_loras):
                  continue
  
-@@ -3897,6 +4302,12 @@ class Scheduler(
+@@ -3897,6 +4310,12 @@ class Scheduler(
                  ):
                      break
  
@@ -1741,7 +1749,7 @@ index 743c8af..0eb6e73 100644
              if self.enable_hicache_storage:
                  prefetch_done = self.tree_cache.check_prefetch_progress(
                      req.cache_request_handle
-@@ -3932,6 +4343,10 @@ class Scheduler(
+@@ -3932,6 +4351,10 @@ class Scheduler(
                  has_chunked_req=(self.chunked_req is not None),
                  truncation_align_size=self.truncation_align_size,
              )
@@ -1752,7 +1760,7 @@ index 743c8af..0eb6e73 100644
  
              if self.enable_lora:
                  running_loras.add(req.lora_id)
-@@ -3963,6 +4378,18 @@ class Scheduler(
+@@ -3963,6 +4386,18 @@ class Scheduler(
                              req.kv.mamba_pool_idx.unsqueeze(-1)
                          )
                          req.kv.mamba_pool_idx = None
@@ -1771,7 +1779,7 @@ index 743c8af..0eb6e73 100644
                  break
  
          if mamba_allocator is not None:
-@@ -4254,6 +4681,9 @@ class Scheduler(
+@@ -4254,6 +4689,9 @@ class Scheduler(
          batch.launch_ts = time.monotonic()
          batch.after_idle_gap = self._sched_idled
          self._sched_idled = False
@@ -1781,7 +1789,7 @@ index 743c8af..0eb6e73 100644
  
          # Accumulate the prefill-token counter used by the HRRN scheduling policy. Decode / prebuilt batches contribute 0.
          if batch.extend_num_tokens:
-@@ -4622,6 +5052,10 @@ class Scheduler(
+@@ -4622,6 +5060,10 @@ class Scheduler(
          elif batch.forward_mode.is_idle():
              self.batch_result_processor.process_batch_result_idle(batch, result)
  
@@ -1792,7 +1800,7 @@ index 743c8af..0eb6e73 100644
          self._record_step_counters(batch, result)
  
          self.metrics_reporter.log_batch_result_stats(batch, result)
-@@ -4634,6 +5068,24 @@ class Scheduler(
+@@ -4634,6 +5076,24 @@ class Scheduler(
          self.maybe_send_health_check_signal()
          self.metrics_reporter.update_device_timer()
  
@@ -1817,7 +1825,7 @@ index 743c8af..0eb6e73 100644
      def _record_step_counters(
          self, batch: ScheduleBatch, result: GenerationBatchResult
      ) -> None:
-@@ -5215,6 +5667,9 @@ class Scheduler(
+@@ -5215,6 +5675,9 @@ class Scheduler(
          }
  
      def abort_request(self, recv_req: AbortReq):
@@ -1827,7 +1835,7 @@ index 743c8af..0eb6e73 100644
          if (chunked_req := self.chunked_req) is not None:
              if recv_req.abort_all or chunked_req.rid.startswith(recv_req.rid):
                  self._pending_chunked_abort_req = chunked_req
-@@ -5369,6 +5824,25 @@ class Scheduler(
+@@ -5369,6 +5832,25 @@ class Scheduler(
                  else:
                      req.to_finish = FINISH_ABORT()
  
@@ -1853,7 +1861,7 @@ index 743c8af..0eb6e73 100644
      def _pause_engine(self) -> Tuple[List[Req], int]:
          raise NotImplementedError()
  
-@@ -5642,6 +6116,8 @@ class Scheduler(
+@@ -5642,6 +6124,8 @@ class Scheduler(
  
      def maybe_sleep_on_idle(self):
          if self.idle_sleeper is not None:
@@ -1862,7 +1870,7 @@ index 743c8af..0eb6e73 100644
              self.idle_sleeper.maybe_sleep()
  
      def handle_freeze_gc(self, recv_req: FreezeGCReq):
-@@ -5652,6 +6128,17 @@ class Scheduler(
+@@ -5652,6 +6136,17 @@ class Scheduler(
  
      def handle_shutdown(self, recv_req: ShutdownReq):
          # Break the event loop; the finally in run_scheduler_process releases resources.
@@ -10418,10 +10426,10 @@ index 0000000..0bc5e7e
 +    cache._execute_and_commit_kv_backup.assert_not_called()
 diff --git a/test/srt/test_beliefkv_scheduler_hook.py b/test/srt/test_beliefkv_scheduler_hook.py
 new file mode 100644
-index 0000000..98650d1
+index 0000000..ca36e52
 --- /dev/null
 +++ b/test/srt/test_beliefkv_scheduler_hook.py
-@@ -0,0 +1,1141 @@
+@@ -0,0 +1,1231 @@
 +"""BeliefKV scheduler safe-point contract, without model/GPU dependencies."""
 +
 +import ast
@@ -11088,15 +11096,105 @@ index 0000000..98650d1
 +                    semantic_revision=1,
 +                    inspect_native_prefill_queue=inspect,
 +                    terminal_waiting_request_ids=lambda queue: (),
++                    skip_exhausted_native_prefill=lambda *args, **kwargs: self.fail(
++                        "a noncompeting queue must not add an exhausted-pass probe"
++                    ),
 +                    plan_native_prefill=lambda queue, **kwargs: calls.append(kwargs) or "plan",
 +                    on_prefill_selection=lambda rejected: None,
 +                )
 +                with patch.dict(sys.modules, {adapter.__name__: adapter}):
 +                    self.assertEqual(
-+                        scheduler._beliefkv_prefill_candidates(object(), object()),
++                        scheduler._beliefkv_prefill_candidates(
++                            object(), SimpleNamespace(rem_chunk_tokens=0),
++                        ),
 +                        tuple(scheduler.waiting_queue),
 +                    )
 +                self.assertIsNone(calls[0]["_queue_inspection"])
++
++    def test_exhausted_chunk_skip_keeps_terminal_cleanup_before_skipping_candidates(self):
++        scheduler = Hook()
++        ended = SimpleNamespace(rid="ended")
++        waiting = [SimpleNamespace(rid="a"), SimpleNamespace(rid="b")]
++        scheduler.waiting_queue = [ended, *waiting]
++        scheduler._beliefkv_registered_request_ids = {"ended", "a", "b"}
++        calls = []
++        scheduler._release_aborted_request = lambda req: calls.append(("release", req.rid))
++        scheduler.beam_coordinator = SimpleNamespace(
++            retire_group=lambda req: calls.append(("beam", req.rid)),
++        )
++        scheduler.ipc_channels = SimpleNamespace(
++            send_to_tokenizer=SimpleNamespace(
++                send_output=lambda message, req: calls.append(("abort", req.rid)),
++            ),
++        )
++        running, adder = object(), SimpleNamespace(rem_chunk_tokens=0)
++
++        def skip(queue, **kwargs):
++            self.assertEqual(queue, waiting)
++            self.assertIs(kwargs["running_batch"], running)
++            self.assertIs(kwargs["adder"], adder)
++            calls.append(("skip", tuple(req.rid for req in queue)))
++            return True
++
++        scheduler.beliefkv_runtime = SimpleNamespace(
++            inspect_native_prefill_queue=lambda queue: SimpleNamespace(
++                terminal_request_ids=("ended",),
++            ),
++            retire_terminal_request=lambda rid: calls.append(("retire", rid)),
++            skip_exhausted_native_prefill=skip,
++        )
++        with patch.dict(sys.modules, {"beliefkv.runtime.sglang_v0520_admission": None}):
++            self.assertEqual(scheduler._beliefkv_prefill_candidates(running, adder), ())
++        self.assertEqual(scheduler.waiting_queue, waiting)
++        self.assertEqual(scheduler._beliefkv_registered_request_ids, {"a", "b"})
++        self.assertEqual(calls, [
++            ("retire", "ended"), ("release", "ended"), ("beam", "ended"),
++            ("abort", "ended"), ("skip", ("a", "b")),
++        ])
++
++    def test_exhausted_skip_refusal_keeps_the_normal_plan_and_live_selector(self):
++        scheduler = Hook()
++        scheduler.waiting_queue = [object(), object()]
++        calls = []
++        scheduler.beliefkv_runtime = SimpleNamespace(
++            semantic_revision=7,
++            inspect_native_prefill_queue=lambda queue: SimpleNamespace(terminal_request_ids=()),
++            skip_exhausted_native_prefill=lambda *args, **kwargs: calls.append("skip") or False,
++            plan_native_prefill=lambda *args, **kwargs: calls.append("plan") or "plan",
++            on_prefill_selection=lambda rejected: calls.append(("rejected", rejected)),
++        )
++        adapter = types.ModuleType("beliefkv.runtime.sglang_v0520_admission")
++        adapter.select_native_prefill_candidates = lambda queue, **kwargs: (
++            calls.append("select") or SimpleNamespace(candidates=tuple(queue), rejected=())
++        )
++        with patch.dict(sys.modules, {adapter.__name__: adapter}):
++            selected = scheduler._beliefkv_prefill_candidates(
++                object(), SimpleNamespace(rem_chunk_tokens=0),
++            )
++        self.assertEqual(selected, tuple(scheduler.waiting_queue))
++        self.assertEqual(calls, ["skip", "plan", "select", ("rejected", ())])
++
++    def test_nonzero_chunk_budget_does_not_invoke_the_skip_callback(self):
++        scheduler = Hook()
++        scheduler.waiting_queue = [object(), object()]
++        scheduler.beliefkv_runtime = SimpleNamespace(
++            semantic_revision=7,
++            inspect_native_prefill_queue=lambda queue: SimpleNamespace(terminal_request_ids=()),
++            skip_exhausted_native_prefill=lambda *args, **kwargs: self.fail("budget remains"),
++            plan_native_prefill=lambda *args, **kwargs: "plan",
++            on_prefill_selection=lambda rejected: None,
++        )
++        adapter = types.ModuleType("beliefkv.runtime.sglang_v0520_admission")
++        adapter.select_native_prefill_candidates = lambda queue, **kwargs: SimpleNamespace(
++            candidates=tuple(queue), rejected=(),
++        )
++        with patch.dict(sys.modules, {adapter.__name__: adapter}):
++            self.assertEqual(
++                scheduler._beliefkv_prefill_candidates(
++                    object(), SimpleNamespace(rem_chunk_tokens=64),
++                ),
++                tuple(scheduler.waiting_queue),
++            )
 +
 +    def test_native_prefill_filters_before_prefix_match_and_allocation(self):
 +        tree = ast.parse(SCHEDULER.read_text(encoding="utf-8"))

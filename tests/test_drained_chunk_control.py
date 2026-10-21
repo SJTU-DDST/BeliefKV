@@ -115,3 +115,70 @@ def test_real_native_adder_rejects_cold_and_hot_input_without_chunk_budget(prefi
     )
     assert not isinstance(admitted, AddReqResult)
     assert admitted.extend_len > 0
+
+
+def test_exhausted_skip_preserves_committed_chunk_and_next_batch_capacity():
+    runtime, requests, adder = _scene()
+    continued = adder.can_run_list[0]
+    running = NS(reqs=[NS(rid="running")])
+    runtime._prefill_causal_ranks = Mock(side_effect=AssertionError("unneeded ranking"))
+    runtime.inspect_context_h2d_opportunity = Mock(side_effect=AssertionError("unneeded H2D"))
+    try:
+        assert runtime.skip_exhausted_native_prefill(
+            requests, running_batch=running, adder=adder,
+        )
+        assert adder.can_run_list == [continued]
+        assert adder.rem_chunk_tokens == 0
+        assert runtime._native_running_batch is running
+        assert runtime._native_input_reserve == 4096
+        assert runtime._native_chunk_input_reserve == 4096
+        assert set(runtime.visible) == {request.rid for request in requests}
+        assert runtime.counts["drained_chunk_prefill_skipped"] == 1
+        assert not runtime.physical_ledger.pending_count
+        adder.rem_chunk_tokens = 64
+        assert not runtime.skip_exhausted_native_prefill(
+            requests, running_batch=running, adder=adder,
+        )
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("change", (
+    "empty_batch", "remaining_tokens", "negative_budget", "boolean_budget",
+    "unknown_chunk", "dllm", "empty_input", "unknown_input",
+    "untagged_empty_input", "single_tagged", "demand_predictions", "native_order",
+))
+def test_exhausted_skip_keeps_unknown_and_potentially_executable_requests(change):
+    runtime, requests, adder = _scene()
+    if change == "empty_batch":
+        adder.can_run_list = []
+    elif change == "remaining_tokens":
+        adder.rem_chunk_tokens = 64
+    elif change == "negative_budget":
+        adder.rem_chunk_tokens = -1
+    elif change == "boolean_budget":
+        adder.rem_chunk_tokens = False
+    elif change == "unknown_chunk":
+        adder.rem_chunk_tokens = None
+    elif change == "dllm":
+        adder.dllm_config = object()
+    elif change in ("empty_input", "unknown_input"):
+        requests[0].origin_input_ids = () if change == "empty_input" else None
+    elif change == "untagged_empty_input":
+        requests.append(NS(rid="plain", beliefkv_metadata=None, origin_input_ids=()))
+    elif change == "single_tagged":
+        requests = requests[:1]
+    elif change == "demand_predictions":
+        runtime._tool_timing_only = False
+    else:
+        runtime._native_prefill_order = True
+    runtime._observe_native_admission_capacity = Mock()
+    try:
+        assert not runtime.skip_exhausted_native_prefill(
+            requests, running_batch=None, adder=adder,
+        )
+        runtime._observe_native_admission_capacity.assert_not_called()
+        assert not runtime.counts["drained_chunk_prefill_skipped"]
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()

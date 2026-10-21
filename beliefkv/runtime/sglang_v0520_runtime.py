@@ -10329,6 +10329,43 @@ class NativeAdmissionRuntime:
             ),
         }
 
+    def _native_prefill_input_budget_exhausted(
+        self, native_order: Sequence[object], *, adder: object,
+        tagged_count: int | None = None,
+    ) -> bool:
+        if tagged_count is not None and tagged_count < 2:
+            return False
+        if not (
+            self._tool_timing_only and not self._native_prefill_order
+            and type(remaining := getattr(adder, "rem_chunk_tokens", None)) is int
+            and remaining == 0
+            and getattr(adder, "dllm_config", None) is None
+            and getattr(adder, "can_run_list", None)
+        ):
+            return False
+        try:
+            if tagged_count is None:
+                tagged_count = sum(
+                    getattr(req, "beliefkv_metadata", None) is not None
+                    for req in native_order
+                )
+            # Native prefix matching leaves at least one input token.
+            return tagged_count >= 2 and all(
+                len(getattr(req, "origin_input_ids", ())) > 0
+                for req in native_order
+            )
+        except (AttributeError, TypeError):
+            return False
+
+    def skip_exhausted_native_prefill(
+        self, native_order: Sequence[object], *, running_batch: object, adder: object,
+    ) -> bool:
+        if not self._native_prefill_input_budget_exhausted(native_order, adder=adder):
+            return False
+        self._observe_native_admission_capacity(running_batch=running_batch, adder=adder)
+        self.counts["drained_chunk_prefill_skipped"] += 1
+        return True
+
     @timed_runtime("admission_plan")
     def plan_native_prefill(
         self, native_order: Sequence[object], *, running_batch: object, adder: object,
@@ -10392,23 +10429,9 @@ class NativeAdmissionRuntime:
         self._prefetch_priority_partial_restore_details = None
         self._resident_priority_promoted = None
         self._resident_priority_details = None
-        drained_chunk = False
-        if (
-            self._tool_timing_only and not self._native_prefill_order and len(tagged) >= 2
-            and type(remaining_chunk := getattr(adder, "rem_chunk_tokens", None)) is int
-            and remaining_chunk == 0
-            and getattr(adder, "dllm_config", None) is None
-            and getattr(adder, "can_run_list", None)
-        ):
-            try:
-                # Native prefix matching leaves at least one input token.
-                # A committed chunk has no input budget for these candidates.
-                drained_chunk = all(
-                    len(getattr(req, "origin_input_ids", ())) > 0
-                    for req in native_order
-                )
-            except (AttributeError, TypeError):
-                pass
+        drained_chunk = self._native_prefill_input_budget_exhausted(
+            native_order, adder=adder, tagged_count=len(tagged),
+        )
         if (
             self._native_prefill_order
             or self._tool_timing_only and len(tagged) < 2

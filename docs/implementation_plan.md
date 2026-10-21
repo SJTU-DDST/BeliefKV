@@ -98,7 +98,42 @@ This unprofiled fixed development window is not isolated prefetch causality
 or full mean-JCT acceptance. At09:49 Beijing V105 has17/36 completed with
 verified live driver/watcher and no observed runtime failure.
 
-Latest main qualification isV2474. Share the local terminal scan's parsed
+Latest main qualification isV2494b. An already committed chunk with zero
+remaining input budget cannot admit another positive-input request:the native
+matcher leaves at least one token. After terminal cleanup,skip the unneeded
+plan,selection and prefix work while retaining the current chunk and next-batch
+capacity observation. Unknown/empty input,DLLM,single queues,positive budgets
+and native-order mode retain the ordinary live selector/native admission.
+
+V2490b's actual old/current maintenance plus native hook gives exhausted-pass
+P50288.292->136.178us at36 candidates,579.775->282.684us at108 and
+2968.127->1455.876us at512. Queue,graph,nonremoved counters and next-batch
+capacity match. Retain V2490's first+2.8us single-candidate regression;the fix
+avoids its extra callback,but executable single queues still show about+0.44us.
+Keep all samples/default GC and executable controls. The421 old V105 passes
+do not justify extrapolating fixture savings into wall time or JCT.
+
+V2492b reruns all2739 retained application cases plus13,2752 pass.
+V2493b reruns376 retained native cases plus3,379 pass. V2494b binds the
+corrected exportV2491b/tree dd082e3367822f75e184af547db29e405cca4223.
+Keep the first full suites/export/benchmark and focused87-caseV2489.
+V106 remains d2aaa51/a98aaf4;do not hot-edit or interrupt a healthy run for
+this local CPU optimization,and do not credit its benefit to V106.
+
+Latest V106 sealed prefixV2487 has25 JOINs,24 positive early FULL plans/
+early reused4.213GB;14 tools early reused0.632GB. Pending boundaries remain
+unknown. Its complete600-800s fixed windowV2486 gives570.145/571.600 token/s,
+about-0.25%,weighted batch7.909/7.835. This is not complete-run acceptance.
+
+V2485 confirms2997/2987 short single-request V105/native prefills all replay
+CUDA graphs. V2488 retains194/192 sampled short-prefill phase records:
+selection wall means7.97/12.81ms,run_batch37.89/44.28ms and result processing
+both about10.66ms. These unpaired means differ in work/context;do not infer
+universal phase improvement or equate clipped worker intervals with forward/
+kernel time. Predictive post-launch physical mean0.570ms remains a target;
+its GPU overlap prevents direct addition to worker time or subtraction from JCT.
+
+V2474 remains V106's frozen qualification. Share the local terminal scan's parsed
 keys with the immediately following advisory prefill plan only when runtime,
 graph/semantic/session revisions and queue object order match. Reparse unknown
 keys;retain final terminal and selector's live identity validation. Empty/single

@@ -63,7 +63,27 @@ P90为1.007/1.457秒，未见该前缀目标首次服务前重复加载或驱逐
 吞吐为571.37/547.32 token/s，约+4.39%；工作量和轨迹不同，
 仍不能作独立预取归因或整轮JCT验收。09:49实时为17/36 completed。
 
-**main最新CPU资格V2474：删除同一安全点的一轮身份重解析。**
+**main最新CPU资格V2494b：删除输入预算耗尽后的无效候选工作。**
+已有chunk用尽预算且无法再接纳正输入请求时，终态清理后跳过规划、
+选择和前缀检查，保留当前chunk与下一批容量预留；其他请求继续走
+完整实时身份及原生准入。修正版
+[V2490b对照](../experiments/reports/v2490b_drained_prefill_control_cpu_20261021.json)
+的36/108/512候选P50为288→136us/580→283us/2968→1456us。
+首版单候选回退保留，修正版普通单候选仍约+0.44us，不宣称全面变快。
+[V2494b资格](../experiments/reports/v2494b_drained_prefill_qualified_cpu_sources_20261021.json)
+对应实际重跑2752项应用/379项原生检查，引擎dd082e3；V106仍运行
+d2aaa51/a98aaf4，未热改，也不将新CPU降本算入其GPU结果。
+
+[V2487 V106前缀](../experiments/reports/v2487_v106_current_wait_prefetch_20261021_summary.json)
+确认JOIN24个提前复用4.213GB FULL、工具14轮0.632GB。
+[V2486完整600–800秒窗口](../experiments/reports/v2486_v106_v103_native_busy_600_800_20261021.json)
+吞吐570.145/571.600 token/s，约-0.25%，整轮JCT/吞吐仍待完成。
+[V2485原始时钟](../experiments/reports/v2485_v105_short_prefill_overlap_20261021.json)
+及[V2488阶段采样](../experiments/reports/v2488_v105_prefill_turnover_20261021.json)
+确认短prefill均使用CUDA graph；worker分桶差距不能直接当作相同
+比例的forward/kernel回退，仍需按阶段及相邻批次定位剩余成本。
+
+**V2474是V106运行资格：删除同一安全点的一轮身份重解析。**
 复用终态扫描结果供紧接的advisory plan使用，保留最终终态和实时
 身份校验；空/单候选走原路径，不新增跨轮缓存或周期。
 [V2470b完整hook对照](../experiments/reports/v2470b_prefill_queue_inspection_control_cpu_20261021.json)
