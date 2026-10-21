@@ -12,6 +12,40 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+V108 is currently running,launched at2026-10-21T13:01:44+08:00 from frozen
+aefa203/V2508b and dd082e3. Keep36 simultaneous LoCoBench roots,running8,
+256K/95%,Host200GB80:20,selective/EOS,PREPARE,no handoff and historical
+V103 native. At13:17 it is running_predictive with actual prefill/decode and
+no telemetry writer error/drop/failure. Watcher3000344/start_ticks672914775;
+driver3000827/start_ticks672916720;state:
+`/home/longhao/experiment/ops/v108_unlocked_consumer_20261021.state.json`.
+V2510 passes11 launch-boundary CPU cases. Do not duplicate the run,hot-edit
+its frozen source or treat partial completion as whole-run performance.
+
+V2517 seals V108 at13:19:22 observed JOINs,21 positive pre-completion plans
+all early-reuse1.851GB;294 tool waits,only4 positive pre-completion plans,
+all early-reuse97.65MB. Before completion135 episodes record no Host-backed
+missing copy;159 first plan observations occur after completion. Subsequent
+native FULL Host hits141.99GB and queue-to-service P5015.04s do not prove
+earlier opportunities. Separate wait-time HBM hits,missing backup and
+post-return queue eviction before changing tool windows. This is a collecting
+prefix with independent per-file seals,not whole-run/atomic evidence.
+
+Main's latest CPU qualification isV2516:actually rerun2782 application and
+385 native cases(the previous379 plus6);V2511 retains57 focused cases.
+The independently qualified engine d44bc34 checks an empty idle Host
+budget before scanning a nonempty dirty index. Preserve pending-copy
+ownership,retry order and native final capacity checks. Remove retired
+identities through the existing observer;no timer,worker or physical-state
+cache. Native retirement adds an inactive conditional,not byte-identical code.
+V2512 keeps all101 alternating samples/default GC:32 dirty nodes/no budget
+P50 is78.270->2.535us. Positive-budget locked controls rise3.130->4.127us
+(one node) and38.141->40.037us(32);empty-index control is roughly flat.
+Retirement rises0.104->0.300us/node with the index and0.096->0.105us without.
+The old refused-enqueue control has a1.8ms maximum;do not hide the ordinary
+positive-path increase behind its mean. These are CPU fixture costs,not
+actual throughput/JCT savings. V108's code remains unchanged.
+
 Latest complete GPU result isV107:36/36 completed,exit0 at12:33:03 Beijing,
 frozen893a7da/V2494b/dd082e3. The HTML and historical V103 native comparison
 are complete. Common trimmed600-3357.585s decode539.567/528.366 token/s
@@ -36,7 +70,7 @@ remaining wait,not formal predictor accuracy or net benefit. Independent
 prefetch lead P50/P90 is572/1098ms;two non-reused targets start9.346/28.693s
 early. Their native queue waits are64ms/10.220s,not the entire ACK-to-service.
 
-Current main qualification isV2508b. Release physical locks at their existing
+V108's frozen application qualification isV2508b. Release physical locks at their existing
 deadline,but preserve only an exact submitted JOIN/tool consumer's identity
 for one bounded admission attempt. Recheck identity/executability and complete
 native residency;preserve four ordinary turns and existing protected priorities.
@@ -111,7 +145,7 @@ cases;preserve V2480's corrected collection failure. Watch new user holds and
 physical/writer failures;measure the latest candidate rather than assuming
 its local CPU improvement changes throughput.
 
-V107 is registered after V106,not yet a GPU result. Frozen app893a7da,
+V107's historical registration followed V106;it has now completed. Frozen app893a7da,
 qualificationV2494b and engine dd082e3 retain the same configuration and
 historical V103 native. Watcher2686204,start_ticks672178029;state:
 `/home/longhao/experiment/ops/v107_drained_prefill_20261021.state.json`.
