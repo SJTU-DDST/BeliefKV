@@ -216,7 +216,8 @@ V2510 的 11 个启动边界 CPU 用例通过，不重复启动历史进程。
 
 [V108/V103 论文制图包](../experiments/reports/v108_vs_v103_native_figures_20261021/index.html)
 另有[简洁中文版总览](../experiments/reports/v108_vs_v103_native_figures_20261021/index_zh.html)，
-内嵌五组原图，配中文关键指标表、简短图注和对照限制，可单文件离线查看。
+内嵌四组性能图，开头列出请求、工具调用及输出 token 差异，并列总 H2D/D2H、
+JOIN/tool H2D、提前备份 D2H 及完成前确认复用的 FULL，配简短图注和对照限制，可离线查看。
 提供完整 36+36 个 workflow 的 JCT ECDF/配对、完成进度、吞吐与队列时序、
 服务器请求时延及工作量变化；含嵌入字体的 PDF、SVG、450dpi PNG、
 逐点 CSV、封闭绘图数据和 SHA256 来源记录。完整 JCT 不按资格过滤，

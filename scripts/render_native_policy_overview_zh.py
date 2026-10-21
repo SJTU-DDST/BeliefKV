@@ -18,7 +18,175 @@ def read_csv(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(stream))
 
 
-def render_overview(report: Path, output: Path) -> None:
+def capture_transfer_metrics(report: Path, comparison_path: Path, audit_path: Path) -> None:
+    comparison_raw = comparison_path.read_bytes()
+    audit_raw = audit_path.read_bytes()
+    comparison = json.loads(comparison_raw)
+    audit = json.loads(audit_raw)["summary"]
+    totals = {}
+    for arm, run in comparison["runs"].items():
+        totals[arm] = {}
+        for direction in ("h2d", "d2h"):
+            parts = [
+                part for name, part in run["transfers"].items()
+                if name.endswith(f"_{direction}")
+            ]
+            totals[arm][direction] = {
+                key: sum(part.get(key, 0) for part in parts)
+                for key in ("bytes", "kv_bytes", "mamba_bytes")
+            }
+    controlled = comparison["runs"]["predictive_h2d"]["h2d_sources"]["categories"][
+        "predictive"]
+    by_source = {
+        source: {
+            "bytes": audit["by_source"][source]["actual_bytes"],
+            "kv_bytes": audit["by_source"][source]["full_transferred_bytes_known"],
+        }
+        for source in ("join_ticket", "tool_wait")
+    }
+    for values in by_source.values():
+        values["mamba_bytes"] = values["bytes"] - values["kv_bytes"]
+    if sum(values["bytes"] for values in by_source.values()) != controlled["bytes"]:
+        raise ValueError("JOIN/tool audit bytes disagree with the comparison")
+    background = audit["native_full_prepare"]
+    explicit = comparison["runs"]["predictive_h2d"]["transfers"]["PREPARE_HOST_d2h"]
+    data = {
+        "schema_version": 1,
+        "scope": "Full-run completed transfers; decimal GB = 10^9 bytes",
+        "sources": {
+            str(path.resolve()): {"sha256": hashlib.sha256(raw).hexdigest()}
+            for path, raw in (
+                (comparison_path, comparison_raw), (audit_path, audit_raw),
+            )
+        },
+        "totals": totals,
+        "controlled_h2d": {
+            key: controlled[key] for key in ("bytes", "kv_bytes", "mamba_bytes")
+        },
+        "controlled_h2d_by_source": by_source,
+        "early_reused_full": {
+            source: {
+                "events": audit["wait_events"]["by_source"][source][
+                    "events_with_early_reused_full"],
+                "bytes": audit["wait_events"]["by_source"][source][
+                    "early_started_and_reused_full_bytes"],
+            }
+            for source in ("join_ticket", "tool_wait")
+        },
+        "prepare_d2h": {
+            "background_full_bytes": background["acknowledged_full_bytes"],
+            "explicit_full_bytes": explicit["kv_bytes"],
+            "explicit_mamba_bytes": explicit.get("mamba_bytes", 0),
+            "unreconciled_background_issued_full_bytes": (
+                background["issued_full_bytes_known"] - background["acknowledged_full_bytes"]
+            ),
+        },
+        "accounting": {
+            "totals": "Each completed payload counted once, including controlled transfers",
+            "controlled_h2d": "JOIN/tool source; can include post-completion restoration",
+            "early_reused_full": "Started before JOIN/tool completion and verified next-request reuse",
+            "prepare_d2h": "Reconciled background/spawn/critical backups plus explicit PREPARE_HOST; already included in total D2H",
+        },
+    }
+    (report / "transfer_metrics.json").write_text(
+        json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8",
+    )
+
+
+def render_transfer_summary(report: Path) -> str:
+    path = report / "transfer_metrics.json"
+    if not path.exists():
+        return ""
+    data = json.loads(path.read_text(encoding="utf-8"))
+    totals = data["totals"]
+    rows = []
+    csv_rows = []
+    for direction in ("h2d", "d2h"):
+        native = totals["native"][direction]
+        predictive = totals["predictive_h2d"][direction]
+        delta = (predictive["bytes"] / native["bytes"] - 1) * 100
+        cells = []
+        for values in (native, predictive):
+            cells.append(
+                f"<td>{values['bytes'] / 1e9:,.3f}"
+                f"<small>FULL {values['kv_bytes'] / 1e9:,.3f} · "
+                f"Mamba {values['mamba_bytes'] / 1e9:,.3f}</small></td>"
+            )
+        rows.append(
+            f"<tr><th>{direction.upper()} 总量</th>{''.join(cells)}"
+            f"<td>{delta:+.2f}%</td></tr>"
+        )
+        for arm, values in (("native", native), ("predictive_h2d", predictive)):
+            csv_rows.append({
+                "metric": f"total_{direction}", "arm": arm, **values,
+            })
+    prepare = data["prepare_d2h"]
+    background = prepare["background_full_bytes"]
+    explicit = prepare["explicit_full_bytes"]
+    explicit_mamba = prepare["explicit_mamba_bytes"]
+    breakdown = []
+    details = (
+        ("controlled_h2d", "JOIN/tool H2D 下发合计", data["controlled_h2d"]),
+        ("join_h2d", "其中：JOIN H2D", data["controlled_h2d_by_source"]["join_ticket"]),
+        ("tool_h2d", "其中：tool H2D", data["controlled_h2d_by_source"]["tool_wait"]),
+        ("prepare_d2h", "提前备份 D2H 合计", {
+            "bytes": background + explicit + explicit_mamba,
+            "kv_bytes": background + explicit, "mamba_bytes": explicit_mamba,
+        }),
+        ("background_d2h", "其中：后台 / spawn / 容量备份", {
+            "bytes": background, "kv_bytes": background, "mamba_bytes": 0,
+        }),
+        ("explicit_prepare_d2h", "其中：显式 PREPARE_HOST", {
+            "bytes": explicit + explicit_mamba,
+            "kv_bytes": explicit, "mamba_bytes": explicit_mamba,
+        }),
+    )
+    for key, label, values in details:
+        breakdown.append(
+            f"<tr><th>{label}</th><td>{values['kv_bytes'] / 1e9:,.3f}</td>"
+            f"<td>{values['mamba_bytes'] / 1e9:,.3f}</td>"
+            f"<td>{values['bytes'] / 1e9:,.3f}</td></tr>"
+        )
+        csv_rows.append({"metric": key, "arm": "predictive_h2d", **values})
+    early = data["early_reused_full"]
+    join, tool = early["join_ticket"], early["tool_wait"]
+    for source, values in early.items():
+        csv_rows.append({
+            "metric": f"{source}_early_reused_full", "arm": "predictive_h2d",
+            "bytes": values["bytes"], "kv_bytes": values["bytes"],
+            "mamba_bytes": "", "events": values["events"],
+        })
+    with (report / "transfer_metrics.csv").open(
+        "w", newline="", encoding="utf-8",
+    ) as stream:
+        writer = csv.DictWriter(
+            stream, fieldnames=("metric", "arm", "bytes", "kv_bytes", "mamba_bytes", "events"),
+        )
+        writer.writeheader()
+        writer.writerows(csv_rows)
+    return f"""
+<div class="section-heading"><h2>KV 迁移与提前传输</h2>
+<a href="transfer_metrics.csv">传输 CSV</a></div>
+<table aria-label="H2D 与 D2H 总传输量">
+<thead><tr><th>全程传输量（GB）</th><th>V103 native</th>
+<th>V108 predictive</th><th>变化</th></tr></thead>
+<tbody>{''.join(rows)}</tbody></table>
+<table aria-label="预测 H2D 与提前备份 D2H 分项">
+<thead><tr><th>V108 分项（GB）</th><th>FULL KV</th><th>Mamba</th><th>合计</th></tr></thead>
+<tbody>{''.join(breakdown)}</tbody></table>
+<p class="finding"><strong>完成前启动、且被下一请求确认复用的 FULL KV：</strong>
+JOIN {join['events']} 次 / {join['bytes'] / 1e9:.3f} GB，
+tool {tool['events']} 次 / {tool['bytes'] / 1e9:.3f} GB，
+合计 {(join['bytes'] + tool['bytes']) / 1e9:.3f} GB。次数按独立 JOIN/tool 等待事件统计。</p>
+<p class="scope">所有容量均取全程已完成传输，1 GB = 10⁹ 字节。
+JOIN/tool 下发量包含完成后的恢复；完成前预取另按实际启动与首次复用证据确认。
+提前备份 D2H 已包含在总 D2H 中，不能再次相加；其中后台备份沿用原生 D2H 记账。
+有 {prepare['unreconciled_background_issued_full_bytes'] / 1e9:.3f} GB 后台下发量无法唯一匹配 ACK，
+未计入已归因的提前备份量。</p>
+"""
+
+
+def render_overview(report: Path, output: Path) -> int:
     metrics = {row["metric"]: row for row in read_csv(report / "summary_metrics.csv")}
     pairs = read_csv(report / "workflow_pairs.csv")
     events = read_csv(report / "workflow_events.csv")
@@ -39,6 +207,9 @@ def render_overview(report: Path, output: Path) -> None:
 
     table = []
     for key, label, divisor, unit in (
+        ("llm_requests", "LLM 请求数", 1, "次"),
+        ("tool_calls", "工具调用数", 1, "次"),
+        ("output_tokens", "输出 token", 1, "token"),
         ("jct_mean_seconds", "平均 JCT", 60, "min"),
         ("jct_p50_seconds", "JCT 中位数", 60, "min"),
         ("jct_p95_seconds", "JCT P95", 60, "min"),
@@ -47,10 +218,11 @@ def render_overview(report: Path, output: Path) -> None:
         ("server_request_latency_p95_s", "服务端请求时延 P95", 1, "s"),
     ):
         row = metrics[key]
+        number_format = ",.0f" if unit in ("次", "token") else ",.2f"
         table.append(
             f"<tr><th>{label}</th>"
-            f"<td>{float(row['native']) / divisor:,.2f} {unit}</td>"
-            f"<td>{float(row['predictive']) / divisor:,.2f} {unit}</td>"
+            f"<td>{float(row['native']) / divisor:{number_format}} {unit}</td>"
+            f"<td>{float(row['predictive']) / divisor:{number_format}} {unit}</td>"
             f"<td>{change(key)}</td></tr>"
         )
 
@@ -87,15 +259,6 @@ def render_overview(report: Path, output: Path) -> None:
             f"P95 {change('server_request_latency_p95_s')}，并未全面下降。"
             "服务端配对记录数与客户端逻辑调用数采用不同口径；这里不是 TTFT。",
         ),
-        (
-            "paired_workload", "实际调用工作量与 JCT 变化",
-            "左图比较同一任务的模型调用次数；右图横轴为调用数相对变化，"
-            "纵轴为 JCT 相对变化。右下方表示调用更多但 JCT 更短，"
-            "左下方表示调用更少且 JCT 更短。",
-            f"总模型调用数 {change('llm_requests')}，输出 token "
-            f"{change('output_tokens')}；各任务内部仍有大幅增减，"
-            "不能将 JCT 变化全部归因于调度或预取。",
-        ),
     )
     sections = []
     navigation = []
@@ -129,6 +292,10 @@ def render_overview(report: Path, output: Path) -> None:
         "renderer_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "image_sha256": image_hashes,
     }
+    transfers = render_transfer_summary(report)
+    if transfers:
+        metadata["transfer_metrics_sha256"] = hashlib.sha256(
+            (report / "transfer_metrics.json").read_bytes()).hexdigest()
     document = f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -154,6 +321,7 @@ table{{width:100%;border-collapse:collapse;margin:18px 0;font-variant-numeric:ta
 th,td{{padding:8px 10px;border-bottom:1px solid #e2e5e9;text-align:right}}
 th:first-child{{text-align:left}}
 tbody th{{font-weight:400}}
+td small{{display:block;font-size:11px;color:#545b64;line-height:1.5}}
 thead{{font-size:13px;color:#545b64}}
 section{{padding:22px 0 16px;border-top:1px solid #dce0e4;scroll-margin-top:16px}}
 .section-heading{{display:flex;align-items:baseline;justify-content:space-between;gap:12px}}
@@ -183,12 +351,13 @@ section{{break-inside:avoid}}details{{display:block}}}}
 <span><i class="line" aria-hidden="true"></i>V108 predictive</span></div>
 </header>
 <nav aria-label="图表目录">{''.join(navigation)}</nav>
-<table aria-label="主要性能指标">
+<table aria-label="主要性能与工作量指标">
 <thead><tr><th>指标</th><th>V103 native</th><th>V108 predictive</th><th>变化</th></tr></thead>
 <tbody>{''.join(table)}</tbody>
 </table>
 <p class="scope">吞吐取共同窗口 {begin:.2f}–{end:.2f} min，其余表项取全程。
 每侧仅一轮实验，未绘制跨实验置信区间；这些时序不是跨负载的吞吐—延迟曲线。</p>
+{transfers}
 <main>{''.join(sections)}</main>
 <details>
 <summary>统计口径与对照限制</summary>
@@ -203,6 +372,7 @@ section{{break-inside:avoid}}details{{display:block}}}}
 <footer>
 <a href="index.html">完整英文图注</a> ·
 <a href="summary_metrics.csv">指标 CSV</a> ·
+{('<a href="transfer_metrics.json">迁移来源与口径</a> ·' if transfers else '')}
 <a href="workflow_pairs.csv">逐任务 CSV</a> ·
 <a href="provenance.json">来源与校验</a>
 </footer>
@@ -214,18 +384,27 @@ section{{break-inside:avoid}}details{{display:block}}}}
     source_copy = report / Path(__file__).name
     if source_copy.resolve() != Path(__file__).resolve():
         shutil.copyfile(__file__, source_copy)
+    return len(figures)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--report-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--comparison", type=Path)
+    parser.add_argument("--prefetch-audit", type=Path)
     args = parser.parse_args()
     report = args.report_dir.resolve()
+    if bool(args.comparison) != bool(args.prefetch_audit):
+        parser.error("--comparison and --prefetch-audit must be provided together")
+    if args.comparison:
+        capture_transfer_metrics(
+            report, args.comparison.resolve(), args.prefetch_audit.resolve(),
+        )
     output = args.output.resolve() if args.output else report / "index_zh.html"
-    render_overview(report, output)
+    figure_count = render_overview(report, output)
     print(json.dumps({
-        "output": str(output), "embedded_figures": 5,
+        "output": str(output), "embedded_figures": figure_count,
         "bytes": output.stat().st_size,
     }, ensure_ascii=False, indent=2))
 
