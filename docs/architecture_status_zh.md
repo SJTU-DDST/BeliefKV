@@ -13,7 +13,44 @@
 外部按 program 调度、反馈准入、工具生命周期、graph/prediction KV
 筛选，新增 Pythia；公开实现缺项与论文重实现分列。V109 冻结与接续不变。
 
-**最新 main CPU 资格为 V2560；V109 两侧仍固定为 ed06f53/V2545。**
+**最新 main CPU 资格为 V2566；V109 predictive 已完成，匹配 native 正在运行。**
+第一轮有效 EOS 恢复在完整计划放不下、但当前空闲 HBM 能容纳连续完整
+FULL extent 时，先提交这个严格子前缀，再用已有的有界尾部回收准备
+剩余容量。只使用同一次同步规划的 closure 和新预算，不跨安全点缓存。
+最终 enqueue 仍 drain 事件并核对身份、session、容量和原生回执；
+ACK 不表示剩余 FULL/Mamba 已就绪，也不授予 parent 执行资格。
+没有完整 extent 可放、仅缺 Mamba、工具、confirmed JOIN 和后续 burst
+继续走原路径，不新增周期、worker 或窗口。
+
+[V2563c CPU 对照](../experiments/reports/v2563c_eos_free_prefix_control_cpu_20261021.json)
+保留 101 个交替样本及正常 GC，验证 4/52 节点的首批提交在冷回收前，
+对照组保持相同动作顺序。首个原生 enqueue 入口中位约 567→352us、
+552→417us；不是 DMA 开始时间。正例首批载荷不同、尾部 H2D 未计入，
+不能推算完整恢复收益。52 节点整批已能放下的 dispatch 中位仍增加
+约 3.3%，保留全部 GC 长样本，不宣称所有路径或最坏成本改善。
+V2563/V2563b 未给 pinned baseline 绑定相同 headroom 替身，恢复分支
+不同，保留为诊断但不作为公平开销证据；V2563c 已修正。
+[V2566 资格](../experiments/reports/v2566_eos_free_prefix_qualified_cpu_sources_20261021.json)
+实际重跑 3023 项应用用例，保留原 2919 项，新增 14 项 EOS/容量/身份/
+ACK 用例并纳入 90 项已有的部分恢复用例。引擎 `53335e6` 未改，
+405 项仅核对源码/既有通过记录。新优化未热加载进 V109。
+
+**V109 predictive 完整结果：36/36 completed，持续 3643.45 秒。**
+平均 JCT 1895.55 秒、P50 1856.65 秒，实际输出 1736639 token。
+67 个实际 JOIN 中，
+[V2562 完整审计](../experiments/reports/v2562_v109_complete_wait_prefetch_20261021_summary.json)
+归因 66 个；57 个有完成前正 FULL 计划，52 个提前复用 9.475GB FULL，
+另 19.089GB 在完成后恢复须分列。1929 个已归因工具等待中 62 个早期
+正计划，45 个提前复用 4.198GB。JOIN/tool 最后 ACK→服务 P90 约
+1.042/2.120 秒。4 个有 start_window 却迟提交的 JOIN，仅约 9–10ms
+规划提前量，其中 3 个快照有 FULL 容量缺口；这些记录不是函数独占
+计时，也不能证明新路径当时一定能容纳完整 extent 或隐藏全部恢复。
+[predictive HTML](../experiments/raw/qwen35_locobench_long_36root_running12_20261021_v109/timelines/predictive_h2d.html)
+及清理回执已生成，native 已接续并核实 running12/seed21/256K、
+原生 admission。两侧仍固定 `ed06f53/V2545` 与引擎 `53335e6`，
+尚无完整 matched-native 性能结论。
+
+**此前 main CPU 资格为 V2560。**
 在线工具 CDF 的各端点改为共用本次查询的正条件生存分母，删除重复查询；
 保留原分位数、删失/尾部无支持拒绝、workflow/run 回退及重试间隔。
 不新增缓存、周期、worker 或物理动作。

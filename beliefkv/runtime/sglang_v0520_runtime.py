@@ -5236,12 +5236,22 @@ class NativeAdmissionRuntime:
             self.counts["wait_prefetch_empty_restore_shortcut"] += 1
         if opportunity is None or opportunity.step is None or not apply_capacity_budget:
             return opportunity
+        return self._budget_wait_prefetch_opportunity(
+            key, opportunity, fit_current_capacity=fit_current_capacity, batched=batched,
+        )
+
+    def _budget_wait_prefetch_opportunity(
+        self, key: PrefillCandidateKey, opportunity: SessionH2DOpportunity, *,
+        fit_current_capacity: bool, batched: bool,
+        budget: PrefetchResidencyBudget | None = None,
+    ) -> SessionH2DOpportunity:
         candidate = getattr(opportunity, "candidate", None)
         if candidate is None or not opportunity.headroom.observable:
             return opportunity
-        budget = self._current_residency_budget(
-            include_evictable=True, headroom=opportunity.headroom,
-        )
+        if budget is None:
+            budget = self._current_residency_budget(
+                include_evictable=True, headroom=opportunity.headroom,
+            )
         headroom = opportunity.headroom
         full_limit = max(
             0, headroom.device_full_free_tokens
@@ -5657,8 +5667,40 @@ class NativeAdmissionRuntime:
             opportunity.partial_full_step is not None and callable(splitter)
         ):
             return opportunity
+        ticket = self._join_ticket if source == "join_ticket" else None
+        budget = None
+        if (
+            ticket is not None and ticket.key == key
+            and ticket.phase == "provisional" and not ticket.issued_nodes
+            and callable(getattr(self._native_cache, "prefetch_gpu_session_nodes", None))
+            and self._join_ticket_has_native_eos(ticket)
+        ):
+            budget = self._current_residency_budget(
+                include_evictable=True, headroom=opportunity.headroom,
+            )
+            if opportunity.headroom.device_full_free_tokens > budget.reserve_full_tokens:
+                # Submit complete extents that already fit before scanning cold
+                # donors. Existing post-enqueue reclaim prepares the missing tail.
+                free_prefix = self._budget_wait_prefetch_opportunity(
+                    key, opportunity, fit_current_capacity=True, batched=True, budget=budget,
+                )
+                free_prefix = revalidate_prefetch_subset(free_prefix, opportunity.steps)
+                if free_prefix is not None and (
+                    0 < free_prefix.required_full_tokens < opportunity.required_full_tokens
+                ):
+                    self.counts["observed_eos_free_prefix_before_reclaim"] += 1
+                    if free_prefix.capacity_budget is not None:
+                        free_prefix = replace(
+                            free_prefix, capacity_budget={
+                                **free_prefix.capacity_budget,
+                                "partial_full_tokens": 0,
+                                "capacity_refresh_source": "free_eos_prefix_before_reclaim",
+                            },
+                        )
+                    return free_prefix
         excluded = tuple(node.node_id for node in candidate.nodes)
-        budget = self._current_residency_budget(include_evictable=True)
+        if budget is None:
+            budget = self._current_residency_budget(include_evictable=True)
         freed, diagnosis = {}, None
         collect_diagnostics = (
             self._opportunity_writer is not None

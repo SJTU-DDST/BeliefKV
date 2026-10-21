@@ -13,6 +13,24 @@
 以及 Pythia 等候选；本次只完成调研方案，不代表适配或 GPU 对比已完成。
 
 **最新 main CPU 资格
+[V2566](../experiments/reports/v2566_eos_free_prefix_qualified_cpu_sources_20261021.json)：**
+3023 项应用实际通过，保留 2919 项，新增 14 项并纳入 90 项已有部分
+恢复用例；未改引擎 405 项仅核对。首次有效 EOS 恢复可先提交当前空闲
+容量容得下的完整连续 FULL 前缀，再沿现有尾部回收准备容量；
+身份、预算、原生回执及完整状态依赖保持，不新增周期/worker。
+[V2563c 对照](../experiments/reports/v2563c_eos_free_prefix_control_cpu_20261021.json)
+证明先 enqueue 后 reclaim；首批载荷不同且未计尾部 H2D，不能称整体
+恢复加速。保留整批可放控制组约 3.3% 中位增幅及 GC 长样本。
+
+**V109 predictive 已完成 36/36，平均 JCT 1895.55 秒，native 已接续。**
+[V2562 完整审计](../experiments/reports/v2562_v109_complete_wait_prefetch_20261021_summary.json)
+归因 66/67 个实际 JOIN，52 个提前复用 9.475GB FULL；另 19.089GB
+在完成后恢复。工具 45 个等待提前复用 4.198GB。
+[predictive HTML](../experiments/raw/qwen35_locobench_long_36root_running12_20261021_v109/timelines/predictive_h2d.html)
+已生成。两侧继续冻结 ed06f53/V2545，新的 CPU 优化未用于 V109；
+完整新 native 结果仍待完成，不能先宣称本轮性能提升。
+
+**此前 main CPU 资格
 [V2560](../experiments/reports/v2560_online_tool_cdf_qualified_cpu_sources_20261021.json)：**
 2919 项应用实际重跑，保留原 2906 项并新增 13 项；未改引擎 405 项
 仅核对源码/通过记录。在线工具 CDF 共用本次正条件生存分母，

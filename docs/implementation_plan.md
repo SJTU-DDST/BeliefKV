@@ -21,7 +21,41 @@ Add Pythia to the external shortlist; distinguish public artifacts from complete
 paper reimplementations. This is a future plan, not implemented adapters or
 performance evidence. Do not change the frozen V109 pair for this research.
 
-Main CPU qualification is nowV2560:actually rerun2919 application cases,
+Main CPU qualification is nowV2566:actually rerun3023 application cases,
+retain all2919 identities,add14 EOS/capacity/session/ACK controls and newly
+include90 existing partial-extent cases. Unchanged53335e6 engine405 is
+source/report verified,not rerun.
+
+For the first live provisional EOS burst only,submit a strict continuous
+complete FULL prefix fitting current free capacity before the existing
+bounded tail reclaim. Reuse only this synchronous call's closure and fresh
+budget,not cross-safe-point physical state. Keep reserve,final event drain,
+identity/generation checks and native receipts. No complete fitting extent,
+state-only shortfall,tool,confirmed and later bursts retain original order.
+No new timer,worker,window,admission permission or full-state-ready claim.
+
+V2563c retains101 alternating samples/normal GC. In4/52-node fixtures,the
+first native-enqueue entry P50 falls567->352us/552->417us. This is not DMA
+timing;positive first payloads differ and tail H2D is excluded. The52-node
+whole-fit dispatch P50 still increases about3.3%;retain all GC outliers and
+do not claim all-path/worst-case improvement. V2563/V2563b had an unbound
+pinned-baseline headroom stub and different fallback branches;retain them
+as diagnostics only. V2563c binds both variants consistently.
+
+V109 predictive completes36/36 over3643.45s,mean JCT1895.55s,P501856.65s,
+output1736639 tokens. HTML and cleanup receipts are generated. Native is
+now running with actual running12/seed21/context262144/native admission.
+Both retain frozened06f53/V2545 and53335e6;do not hot-load the CPU candidate.
+V2562 attributes66 of67 actual JOINs:57 early positive plans and52 early
+reuses9.475GB FULL;another19.089GB after completion remains separate.
+Of1929 attributed tool waits,62 early positive plans and45 early reuses
+consume4.198GB FULL. JOIN/tool lastACK->service P90 is1.042/2.120s.
+Four recorded starts submit late with only9-10ms lead;three snapshots have
+FULL capacity deficits. This is not function-exclusive timing or proof of
+a fitting complete-extent counterfactual. Fresh native and next-candidate
+GPU checks remain required before performance acceptance.
+
+Previous CPU qualificationV2560:actually rerun2919 application cases,
 retain all2906 previous identities and add13 scalar-survival boundary/censor
 controls. The unchanged53335e6 engine's405 sources and passing report are
 verified,not rerun. Share only the positive per-query conditioning denominator

@@ -87,9 +87,9 @@ def batch_fixture(source, *, partial=False, node_count=4, completed_join=True):
     return runtime, key, opportunity, cache, reserved
 
 
-def provisional_join_batch_fixture():
+def provisional_join_batch_fixture(*, node_count=4):
     runtime, key, opportunity, cache, reserved = batch_fixture(
-        "join_ticket", completed_join=False,
+        "join_ticket", completed_join=False, node_count=node_count,
     )
     runtime.on_events((event(
         7, RuntimeEventKind.LLM_SUBMIT, invocation_id="child",
