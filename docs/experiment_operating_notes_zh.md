@@ -9,7 +9,16 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 删除，详见[整理记录](archive/research_exploration_20261020.md)；原始 trace、
 冻结检出及当前 GPU 预约约束保持有效。
 
-**最新状态优先于下方 V110 启动记录：V110 已在 17:33 因消融策略修正停止。**
+**最新状态：V111 已于北京时间 2026-10-21 17:56:44 启动 JOIN-priority-only。**
+冻结应用 `e0420fe`、引擎 `53335e6`，Full 复用 V109 `ed06f53`。
+17:59 真实服务端 running12/seed21/256K 和 runtime 独立开关核对通过，
+前端 cache 开启，主动 KV/PREPARE/预取/handoff/locality 关闭；
+quota=4 且满配额允许 aged 队首后的提升，无用工具预测和预测维护为 0。
+客户端 manifest 已产生，真实 watcher/driver 均存活。登记和状态为
+`../ops/v111_internal_20261021.registration{,.state}.json`。
+四组自动接续，当前不是完成的消融结果。
+
+**此前 V110 已在 17:33 因消融策略修正停止。**
 真实 watcher/driver 和所属进程均已退出；原始数据及 debug 停止回执保留。
 旧 JOIN-only 在 aged 队首出现后会压掉已满足四次普通准入配额的提升，
 不能据此测试用户要求的强 parent 优先 baseline。新规则每四次普通
@@ -23,9 +32,10 @@ V2576 只记录 runtime 回调局部 CPU 成本，不能外推整轮秒数或吞
 不能称行为未变。V111 使用该资格重新运行四组；Full 仍直接复用 V109。
 
 用户授权在 batch8/12 中择优后，本次内部矩阵继续用 batch12，以复用
-同 seed 配对 V109：平均 JCT 约降低 20.52%、去长尾吞吐约提高 2.65%。
-历史 batch8 为吞吐约 +11.00%、JCT 约 -11.16%，但代码、seed 和轨迹
-有差异，不构成受控的 batch 比较。四个条件统一 batch12，不混用
+同 seed 配对 V109：全程平均 JCT 约降低 20.52%、共同去长尾受限平均
+JCT 约降低 13.44%、吞吐约提高 2.65%。历史 batch8 为吞吐约 +11.00%、
+全程 JCT 约 -11.16%、共同去长尾受限平均 JCT 约 -9.77%，但代码、
+seed 和轨迹有差异，不构成受控的 batch 比较。四个条件统一 batch12，不混用
 batch8 消融与 batch12 Full，也不为这次比较重复跑 Full。
 
 当前 V109 predictive/native 对照完整收尾后，优先执行内部矩阵，再适配外部

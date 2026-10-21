@@ -12,7 +12,18 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-Latest execution: V110 JOIN-priority-only was deliberately stopped at17:33
+Latest execution: V111 starts JOIN-priority-only at2026-10-21 17:56:44 Beijing,
+frozen applicatione0420fe and unchanged engine53335e6. At17:59 actual
+running12/seed21/context262144,frontend cache and independent runtime controls
+pass checks. Custom KV/PREPARE/prefetch/handoff/locality are off;quota4 allows
+a bounded promoted turn after aged heads. Unused tool-prediction/maintenance
+and custom physical-action counts are0. Client manifest exists;exact watcher
+3757643/driver3757990 identities are alive. State:
+`../ops/v111_internal_20261021.registration.state.json`.
+Run the four controls sequentially,reuse V109 Full,and keep performance
+acceptance pending until completed comparisons.
+
+Previous debugging segment: V110 JOIN-priority-only was deliberately stopped at17:33
 Beijing for a control-policy correction. Both exact driver/watcher identities
 and owned GPU processes have exited. Preserve its raw prefix and explicit
 debug cutoff; do not treat it as a completed or naturally failed workflow run.
@@ -30,9 +41,10 @@ so identity retention does not imply unchanged behavior. Reuse V109 Full,
 run only the same four latest-code internal arms,and keep the goal unaccepted.
 
 The user authorizes selecting batch8 or12 for the stronger advantage. Keep12
-for this V109-based internal matrix: its seed21 paired mean JCT falls20.52%
-and common trimmed throughput improves2.65%. Historical batch8 shows11.00%
-throughput and11.16% mean-JCT gains,but differs in code,server seeds,contexts
+for this V109-based internal matrix: its seed21 paired full-run mean JCT
+falls20.52%,common trimmed restricted mean JCT falls13.44%,and trimmed
+throughput improves2.65%. Historical batch8 shows11.00% throughput,11.16%
+full-run mean-JCT and9.77% trimmed restricted mean-JCT gains,but differs in code,server seeds,contexts
 and dynamic work. It is not a controlled batch comparison. Match all four
 controls to batch12 Full rather than mixing batches or repeating Full.
 

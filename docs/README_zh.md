@@ -7,20 +7,30 @@
 重复摘要已清理；源码归档及保留范围见[整理记录](archive/research_exploration_20261020.md)。
 下文的最新工程状态与实验约束继续有效。
 
-**最新：V110 首组于北京时间 17:33 因 JOIN-only 消融策略修正而停止。**
+**最新：V111 已于北京时间 2026-10-21 17:56 启动 JOIN-priority-only。**
+冻结 `e0420fe`，引擎仍为 `53335e6`；17:59 核实服务端实际
+running12/seed21/256K、前端 cache 开启，主动 KV/PREPARE/预取/
+handoff/locality 关闭；普通配额为 4，满配额允许越过 aged 队首。
+无用工具预测和预测维护计数均为 0，客户端 manifest 已生成，
+watcher/driver 真实身份存活。状态为仓库外
+`../ops/v111_internal_20261021.registration.state.json`。
+四组依次接续，Full 复用 V109；暂无完成的消融性能结论。
+
+**V110 首组于北京时间 17:33 因 JOIN-only 消融策略修正而停止。**
 旧 aged 队首会压掉已满四次普通准入配额的 JOIN 提升；现在改为配额内
 有界提升，同时删除仅调度模式没有消费者的预测维护和 decode 记账。
 完成、只读首次服务及 OurScheduler 最终 child 排序保留并验证。
-V110 原始前缀与停止回执保留；V111 准备重启四组，Full 继续复用 V109。
+V110 原始前缀与停止回执保留；V111 使用修复代码重启四组，Full 继续复用 V109。
 修复后最终 [V2579 回归](../experiments/reports/v2579_internal_comparison_final_fixed_cpu_20261021.xml)
 3067 项全部通过，无跳过；保留 V2573 的 3058 项身份并新增 9 项，
 [V2580](../experiments/reports/v2580_internal_comparison_fixed_cpu_sources_20261021.json)
 绑定执行源码。老化用例的预期已按新配额语义调整。
 局部 CPU 对照与资格边界见[架构状态开头](architecture_status_zh.md)。
 
-按用户授权，本次内部矩阵继续选 batch12：V109 同 seed 配对的平均 JCT
-约降低 20.52%、共同去长尾吞吐约提高 2.65%。历史 batch8 的吞吐优势
-约 11.00%、平均 JCT 约降低 11.16%，但代码、服务端 seed 和轨迹不同，
+按用户授权，本次内部矩阵继续选 batch12：V109 同 seed 配对的全程平均
+JCT 约降低 20.52%，共同去长尾受限平均 JCT 约降低 13.44%、吞吐约提高
+2.65%。历史 batch8 的吞吐优势约 11.00%、全程平均 JCT 约降低 11.16%
+（共同去长尾受限平均约降低 9.77%），但代码、服务端 seed 和轨迹不同，
 不能当作 batch8 优于 batch12 的受控证据。四组与 V109 Full 保持 batch12，
 不混用 batch，不为本次矩阵重跑 Full。
 
