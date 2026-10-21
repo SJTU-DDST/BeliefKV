@@ -7,6 +7,22 @@
 重复摘要已清理；源码归档及保留范围见[整理记录](archive/research_exploration_20261020.md)。
 下文的最新工程状态与实验约束继续有效。
 
+**最新 main CPU 资格
+[V2554](../experiments/reports/v2554_online_tool_dependency_qualified_cpu_sources_20261021.json)：**
+2906项应用实际重跑，保留原2893项并新增13项；未改引擎405项核对后沿用。
+在线工具预测只因当前调用及相关workflow/run历史变化而提前重算，
+保留相关/删失样本、历史淘汰/重建和原重试间隔。版本表受原历史LRU约束，
+不加周期、worker或物理状态缓存。
+[V2552 CPU对照](../experiments/reports/v2552_online_tool_dependency_control_cpu_20261021.json)
+中403次基础估计一致，321次历史更新不相关；无关更新路径中位104–183→5–6us，
+普通跳过/相关更新仍有约1–4us新增成本，不外推整轮收益。
+V109两侧继续用冻结ed06f53/V2545，新main优化尚未GPU验收。
+
+[V2555最新封闭前缀](../experiments/reports/v2555_v109_busy_wait_prefetch_20261021_summary.json)
+截至15:22：29个已归因JOIN提前复用4.262GB FULL，5/337个工具等待
+提前复用44.278MB。工具后继253.068GB原生Host-hit不能倒推为预取机会；
+29个JOIN也不是全部JOIN总数的覆盖率。保持阶段与整轮结果区分。
+
 **当前验证为 V109：batch12，新跑 predictive 后接 native，固定种子21。**
 36个root同时到达、256K/95%、Host200GB80:20保持；两侧running/decode
 有效上限12，服务端`random_seed=21`、请求`sampling_seed=21`。

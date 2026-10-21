@@ -567,7 +567,9 @@ class NativeAdmissionRuntime:
             OnlineWorkloadToolTiming()
             if os.environ.get("BELIEFKV_ONLINE_TOOL_TIMING", "0") == "1" else None
         )
-        self._online_tool_queries: dict[PrefillCandidateKey, tuple[float, int, float]] = {}
+        self._online_tool_queries: dict[
+            PrefillCandidateKey, tuple[float, tuple | None, float]
+        ] = {}
         self._report_work = OnlineReportWork()
         self._report_sample_next_ms = 0.
         self._report_candidate_next_ms = 0.
@@ -4306,7 +4308,9 @@ class NativeAdmissionRuntime:
             self.tool_wait_hints.pop(context_id, None)
             return
         now_ms = time.monotonic() * 1000.
-        revision = self._online_tool_timing.revision
+        revision = self._online_tool_timing.estimate_revision(
+            key.root_workflow_id, key.invocation_id,
+        )
         previous = self._online_tool_queries.get(key)
         if previous is not None and previous[:2] == (invocation.updated_ts_ms, revision) and now_ms < previous[2]:
             return

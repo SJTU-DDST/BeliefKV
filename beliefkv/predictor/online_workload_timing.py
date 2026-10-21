@@ -28,6 +28,7 @@ class OnlineWorkloadToolTiming:
         self._open_by_invocation: dict[tuple, dict[tuple, tuple[tuple, float]]] = {}
         self.samples: OrderedDict[tuple, deque] = OrderedDict()
         self._curves: dict[tuple, KaplanMeierCurve] = {}
+        self._history_revisions: dict[tuple, int] = {}
         self.revision = 0
 
     def observe(self, event) -> None:
@@ -66,9 +67,11 @@ class OnlineWorkloadToolTiming:
                 history.append((float(duration), completed))
                 self.samples.move_to_end(key)
                 self._curves.pop(key, None)
+                self._history_revisions[key] = self.revision + 1
             while len(self.samples) > self.max_keys:
                 key, _ = self.samples.popitem(last=False)
                 self._curves.pop(key, None)
+                self._history_revisions.pop(key, None)
             self.revision += 1
         elif event.kind in (
             RuntimeEventKind.RETURN, RuntimeEventKind.INVOCATION_CANCEL,
@@ -84,6 +87,19 @@ class OnlineWorkloadToolTiming:
     def _discard_open_invocation(self, owner: tuple) -> None:
         for identity in self._open_by_invocation.pop(owner, ()):
             self.open.pop(identity, None)
+
+    def estimate_revision(self, workflow: str, invocation: str) -> tuple | None:
+        active = self._open_by_invocation.get((workflow, invocation), {})
+        if len(active) != 1:
+            return None
+        identity, (signature, started) = next(iter(active.items()))
+        # Both histories can affect fallback. An unrelated completion can also
+        # evict either history, so absence is part of this bounded witness.
+        return (
+            identity, started,
+            self._history_revisions.get((workflow, *signature)),
+            self._history_revisions.get(("*", *signature)),
+        )
 
     def estimate(self, workflow: str, invocation: str, *, now_ms: float) -> OnlineToolEstimate | None:
         active = self._open_by_invocation.get((workflow, invocation), {})

@@ -12,6 +12,32 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Main CPU qualification is nowV2554:actually rerun2906 application cases,
+retain all2893 previous identities and add13;unchanged engine53335e6's405
+cases are source/report verified,not rerun. Advisory online-tool retry witnesses
+now follow the active call and both command-matching workflow/run histories.
+Unrelated completions no longer bypass existing retry deadlines. Preserve
+invalidation on related/censored samples,LRU eviction/recreation and call
+changes;bound the version map by the existing256-key history LRU. No new
+timer,worker,physical-state cache or prefetch window. Retain150/500/1000ms
+retries and current survival/causal validation.
+
+V2552 replays sealed currentV109 histories:321/403 live single-call history
+updates are unrelated;all403 underlying estimate controls match. Complete
+unrelated-update query P50 falls104-183 to5-6us. Ordinary unchanged queries
+increase about1us,related updates2.5-4.1us,due retries0.6-1.7us. Keep101
+alternating samples/default GC and the added bookkeeping costs;do not infer
+actual saved online queries,aggregate CPU or JCT. Forecast emissions can be
+less frequent;identical underlying estimators do not prove identical traces.
+The runningV109 pair stays frozen ated06f53/V2545;do not hot-load this candidate.
+
+V2555 seals the15:22 V109 prefix:29 attributed JOIN waits each have an early
+positive FULL plan and early reuse,total4.262GB. This is not all-JOIN coverage.
+Of337 observed tool waits,5 early positive plans all submit/reuse44.278MB;
+successor253.068GB native FULL Host hits do not prove pre-return demand.
+Keep observing capacity,Host retention/expiry and eventual fresh-native
+trimmed throughput/JCT;no final acceptance from this prefix.
+
 Current authorized validation is a fresh predictive-first/native batch12 pair,
 V109, with all36 LoCoBench roots arriving together. Keep256K/95%,Host200GB80:20,
 EOS-only JOIN,tool timing/prefetch,PREPARE,headroom and ready admission;handoff

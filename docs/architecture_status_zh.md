@@ -6,6 +6,34 @@
 与实验继续按下文最新约定执行。[整理记录](archive/research_exploration_20261020.md)
 列出已清理的一次性源码及归档位置。
 
+**最新 main CPU 资格为 V2554；正在运行的 V109 仍固定为 ed06f53/V2545。**
+工具在线预测的重试记录从全局完成样本版本改为当前工具身份、开始时间及
+同命令的 workflow/run 两级历史版本。无关命令完成不再提前打断原有重试
+间隔；相关样本（含删失）、历史 LRU 淘汰/重建、当前调用变化仍使观察失效。
+历史版本表与已有最多 256 项历史同步回收，不引入轮询、worker、物理页
+缓存或新预取窗口；150/500/1000ms 预测重试与实时条件生存检查保持。
+基础估计器不变，不宣称预测准确率已提高或完整发行序列逐项不变。
+[V2554 资格](../experiments/reports/v2554_online_tool_dependency_qualified_cpu_sources_20261021.json)
+实际重跑 2906 项应用用例，保留全部 2893 项并新增 13 项；未改引擎
+`53335e6` 的 405 项源码及既有通过记录核对后沿用。
+[V2552 CPU 对照](../experiments/reports/v2552_online_tool_dependency_control_cpu_20261021.json)
+保留正常 GC、101 个交替样本和最新 trace 的独立完整行前缀：403 次活跃
+单工具依赖检查中 321 次全局更新不相关，403 次基础估计完全一致。
+无关更新后的完整预测提交中位 104–183→5–6us；普通未变路径增加约
+1us，相关更新增加约 2.5–4.1us，到期重试约增加 0.6–1.7us。
+这些是局部 CPU 成本和依赖检查，不是实际省掉的线上查询数或整轮 CPU/JCT。
+新优化留待后续 GPU 验证，V109 predictive/native 均继续使用相同冻结代码。
+
+[V2555 的 V109 15:22 封闭前缀](../experiments/reports/v2555_v109_busy_wait_prefetch_20261021_summary.json)
+已归因 29 个 JOIN 等待，29 个均有早期正 FULL 计划并提前复用 4.262GB，
+这些后继未见剩余原生 FULL Host-hit；这不是全部 JOIN 总数的覆盖率。
+337 个已观测工具等待中 5 个早期正计划均提交并提前复用，共 44.278MB；
+工具后继仍有 253.068GB 原生 FULL Host-hit，不能倒推为等待期可提前恢复需求。
+JOIN 最后 ACK→首次服务 P50/P90 为 592/1060ms，工具为 1154/1277ms。
+该前缀未见预取 FULL 到期或首次服务前重复原生加载；Host FULL 尚未出现
+容量回收，但 Mamba 已有池回收。各 JSONL 独立封闭不是原子快照，
+未完成 native 对照，不能由阶段命中率推断吞吐、JCT 或最终目标已达成。
+
 **当前验证切换为 batch12 的新 predictive/native 对照，固定种子 21。**
 36 个 LoCoBench root 仍同时到达，256K/95%、Host200GB80:20 保持。
 本引擎从 admitted running batch 直接形成 decode batch，因此本轮设
