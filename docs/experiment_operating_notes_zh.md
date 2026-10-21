@@ -22,13 +22,16 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 不要用旧 batch12 Full 作对照。新入口
 `scripts/run_fresh_internal_comparison.py` 单独冻结最新 main、保留三个新 arm；
 旧 V111 接续器仍校验 batch12，不得绕过参数校验启动 batch8。定时登记与
-实时状态为 `../ops/v114_fresh_batch8_20261022.registration{,.state}.json`，
+实时状态为 `../ops/v115_fresh_batch8_20261022.registration{,.state}.json`，
 以回执为准。若登记后 main 再变化，启动前拒绝旧候选；启动后各组固定同一
 冻结版本以维持比较口径。新的暂停标记或延后预约会停止接续。
 V112 旧登记已因 CPU 更新取消，真实进程已退出，没有 GPU 实验；
-保留其取消回执，不覆盖原登记。V113 在文档复核后同样取消，由 V114
-更新冻结登记；runtime/配置无变化，核对并复用 V2624/V2625，不能称本轮
-重新跑过测试。先完成基本同配置对照，新研究候选按实际瓶颈单独消融。
+保留其取消回执，不覆盖原登记。V113 在文档复核后取消，V114 在本轮 CPU
+归因路径优化后取消；V115 使用 V2633/V2634 资格：保留此前 3550 项并新增
+84 项，3634 全通过、无跳过，另有 2 个 subtest。配置与引擎不变，独立
+405 项引擎检查未重跑。V2631 的环境绑定跳过诊断保留；后续显式绑定冻结
+引擎和本地 tokenizer，原资格范围外的 Docker 用例明确 deselect。
+先完成基本同配置对照，新研究候选按实际瓶颈单独消融。
 
 Full 显式采用 `PREFILL_SCHEDULING_POLICY=join_priority`、
 `PREFETCH_RESIDENCY_PROTECTION=0`，保留 EOS/tool 预取、增量 PREPARE 和

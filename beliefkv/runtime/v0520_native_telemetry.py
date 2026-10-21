@@ -16,6 +16,7 @@ import atexit
 from array import array
 from bisect import bisect_left, bisect_right, insort
 from collections import Counter, OrderedDict
+from contextlib import contextmanager
 import ctypes
 import hashlib
 from itertools import islice
@@ -1794,6 +1795,48 @@ class NativeReactiveTelemetry:
         self._unacked_prefetch_use[action.command_id] = action
         self._track_prefetch_use(action, None)
 
+    @contextmanager
+    def _prefetch_issuance_scope(self):
+        """Share ancestry reads only across one synchronous native burst."""
+        previous = getattr(self, "_prefetch_prefix_lengths", None)
+        self._prefetch_prefix_lengths = {}
+        try:
+            yield
+        finally:
+            self._prefetch_prefix_lengths = previous
+
+    @staticmethod
+    def _prefetch_prefix_length(
+        node: Any, lengths: dict[int, tuple[Any, int, int]],
+    ) -> int | None:
+        path = []
+        current = node
+        for _ in range(4096):
+            if current is None:
+                return None
+            known = lengths.get(id(current))
+            if known is not None and known[0] is current:
+                prefix, depth = known[1:]
+                break
+            parent = getattr(current, "parent", None)
+            if parent is None:
+                prefix = depth = 0
+                break
+            key = getattr(current, "key", None)
+            if key is None:
+                return None
+            path.append((current, len(key)))
+            current = parent
+        else:
+            return None
+        if depth + len(path) >= 4096:
+            return None
+        for current, size in reversed(path):
+            prefix += size
+            depth += 1
+            lengths[id(current)] = (current, prefix, depth)
+        return prefix if depth else None
+
     def on_prefetch_discarded(self, command_id: str, reason: str) -> None:
         action = self._unacked_prefetch_use.pop(command_id, None)
         if action is None:
@@ -1825,12 +1868,17 @@ class NativeReactiveTelemetry:
         nodes = []
         prefixes = {}
         capture_prefixes = getattr(self, "_prefetch_prefix_diagnostics", False)
+        lengths = getattr(self, "_prefetch_prefix_lengths", None)
         tree_core = getattr(self._cache, "tree_core", None)
         for node_id in action.node_ids:
             try:
                 node = tree_core.node_by_id(node_id)
-                path = self._node_key_path(node)
-                prefix_len = sum(map(len, path)) if path is not None else None
+                if lengths is not None and not capture_prefixes:
+                    path = None
+                    prefix_len = self._prefetch_prefix_length(node, lengths)
+                else:
+                    path = self._node_key_path(node)
+                    prefix_len = sum(map(len, path)) if path is not None else None
                 full_value = node.component_data[0].value
                 mamba_value = node.component_data[2].value if len(node.component_data) > 2 else None
                 nodes.append((

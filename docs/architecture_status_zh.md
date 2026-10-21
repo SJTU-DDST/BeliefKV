@@ -22,10 +22,17 @@ Agentix、TOPAS、KVFlow 和工具期管理为强对照，将容量准备、恢�
 48 个 recent/aged/mixed 请求的墙钟中位约改善 0.89%/2.20%/2.12%；
 128 个约改善 2.07%/2.78%/2.50%；8 个 recent 约慢 0.15%，保留所有样本。
 这不是 GPU/JCT 证据。V2624 保留全部 3537 项并新增 13 项，3550 全通过、
-无跳过，另有 2 个 subtest，V2625 绑定源码。V112 的旧 CPU watcher
-已因更新暂停标记退出，没有使用 GPU；V113 同样在文档复核后取消，
-由 V114 更新冻结登记。此轮仅文档变化，复用经 SHA 核对的 V2624/V2625
-资格，不宣称重新执行 3550 项或 405 项引擎检查。
+无跳过，另有 2 个 subtest，V2625 绑定源码。V112/V113/V114 的旧 CPU watcher
+已因更新暂停标记退出，没有使用 GPU；最新由 V115 更新冻结登记。
+
+最新预取提交归因只在同步批次内共享祖先长度，按实际提交数量启用，16
+节点以内保留原路径；异常或退出后释放，不跨轮缓存树结构。
+V2632 的 40 个完整路径对照保持全部物理目标、pending credit、记录和
+expectation。记录开启/native 预算的 32 节点约改善 1.8%–2.3%，64 节点
+约改善 7.1%–8.6%；小批仍有约 0.1%–1.7% P50 退化，不能外推 GPU/JCT。
+V2633 保留此前 3550 项并新增 84 项：3634 通过、无跳过，另有 2 个
+subtest，V2634 绑定源码。引擎 53335e6 未改变，独立 405 项未重跑。
+详见[CPU 记录](reports/2026-10/prefetch_issuance_control_cpu_20261021_zh.md)。
 
 当前实际实现与原始叙述的边界：后台备份是 post-forward 安全点按 dirty
 index 提交异步 FULL D2H，不是独立线程每轮遍历全 HBM；工具概率主要
@@ -74,7 +81,7 @@ post-forward 约 1.80us，无等待 agent 的 PREPARE 分发约 3.94us，
 新鲜三组冻结/定时入口为 `scripts/run_fresh_internal_comparison.py`。
 V2618 保留全部 3493 项并新增 44 项，3537 全通过、无跳过，另有 2 个
 subtest；V2620 绑定源码。登记/状态回执为
-`../ops/v114_fresh_batch8_20261022.registration{,.state}.json`，以实际回执为准。
+`../ops/v115_fresh_batch8_20261022.registration{,.state}.json`，以实际回执为准。
 截止前只等待；源码变化、新预约、错误遥测或配置均阻止启动/继续。
 完整完成但 guard 排除的 arm 保留原退出码，不误报为 GPU 失败或性能验收。
 不复用 batch12 Full 作 batch8 因果对照，不改变 harness 提前截断来制造收益。

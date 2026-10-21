@@ -16,13 +16,22 @@ GPU 时限、当前工程状态和性能验收要求继续有效。
 资源空闲且没有新预约时按需开始。目标继续 active，性能尚未验收；
 保留负结果、工作量差异和 guard 排除，不通过挑选结果保证 Full 获胜。
 
-最新 CPU 减负仅合并 simple JOIN 排序中重复的到达时间读取和十秒年龄判断，
+最新 CPU 优化在单次原生预取提交记录循环内共享祖先长度读取，退出即释放；
+按实际提交量启用，16 节点以内保留原路径。V2632 的 40 个完整路径对照
+保留物理目标、pending credit、归因和完整 expectation：开启记录/native
+预算时，32 节点约改善 1.8%–2.3%，64 节点约改善 7.1%–8.6%；小批仍有
+约 0.1%–1.7% P50 退化，保留全部样本，不外推 GPU/JCT。
+[CPU 证据与边界](reports/2026-10/prefetch_issuance_control_cpu_20261021_zh.md)
+记录初版负例、部分提交和最终资格。V2633 保留全部 3550 项并新增 84 项，
+3634 全通过、无跳过，另有 2 个 subtest，V2634 绑定源码。
+
+此前 CPU 减负仅合并 simple JOIN 排序中重复的到达时间读取和十秒年龄判断，
 保留 FIFO、tie、缺失/未来时间、JOIN 配额和全部 live 检查。
 V2623 的 101 交替样本完整控制对照中，48/128 老化或混合队列约改善
 2.1%–2.8%；8 个全新请求约慢 0.15%，负例保留，不外推 GPU/JCT。
 V2624 保留全部 3537 项并新增 13 项，3550 全通过、无跳过，另有 2 个
-subtest；V2625 绑定源码。V112/V113 的旧登记因更新而取消且进程退出，
-没有 GPU 实验；文档复核后由 V114 更新冻结登记，runtime/配置保持不变。
+subtest；V2625 绑定源码。V112/V113/V114 的旧登记因更新而取消且进程退出，
+没有 GPU 实验；最新 CPU 资格由 V115 更新冻结登记，配置/引擎不变。
 
 新增 `BELIEFKV_PREFILL_SCHEDULING_POLICY=join_priority`：Full 保留 KV
 管理，但完整请求排序与 JOIN-only 共用 aged FIFO/native 顺序、JOIN
@@ -40,7 +49,7 @@ native；保护、复杂排序及其他消融按需补跑。新入口负责冻�
 不能用旧 V111 的 batch12 接续器绕过配置校验，也不混用 batch12 Full
 作为 batch8 对照。新的 `scripts/run_fresh_internal_comparison.py` 独立冻结
 完整三组，定时登记及实时状态分别位于仓库外
-`../ops/v114_fresh_batch8_20261022.registration{,.state}.json`，以回执为准。
+`../ops/v115_fresh_batch8_20261022.registration{,.state}.json`，以回执为准。
 截止前只等待，不探测 GPU 或预分配 Host；到时复核源码、精确暂停标记和资源。
 [V2618](../experiments/reports/v2618_fresh_batch8_qualified_cpu_20261021.xml)
 保留全部 3493 项并新增 44 项，3537 全通过、无跳过，另有 2 个 subtest；

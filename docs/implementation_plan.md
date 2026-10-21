@@ -34,7 +34,19 @@ Keep the goal active. Non-inferiority to native and the strongest simple control
 plus independent useful KV benefit,is the acceptance criterion,not a claimed result.
 Retain negative outcomes,guard exclusions and realized-work/quality differences.
 
-Latest CPU change merges repeated visible-arrival lookup and exact ten-second
+Latest CPU change scopes common prefix-length reads to one synchronous
+prefetch-issuance loop,after native enqueue and before any further event/cache
+mutation. Use actual outcomes,not planned size;bursts of16 or fewer keep the old
+path. V2632 compares40 complete CPU paths with101 alternating samples:
+all targets,pending credit,records and expectations match. Recorded/native-budget
+32-node P50 improves1.8-2.3%,64-node improves7.1-8.6%;small paths still regress
+about0.1-1.7%. Retain raw/negative cases;no GPU or JCT gain is claimed.
+V2633 retains all3550 cases and adds84:3634 pass,no skips,plus2 subtests.
+V2634 binds current sources. V114 is cancelled;V115 replaces its freeze.
+Engine53335e6 is unchanged;its independent405 checks were not rerun.
+See[the CPU evidence](reports/2026-10/prefetch_issuance_control_cpu_20261021_zh.md).
+
+Previous CPU change merges repeated visible-arrival lookup and exact ten-second
 age evaluation per simple-JOIN candidate. No queue policy,live check,JOIN quota
 or KV behavior changes. V2623 alternates101 samples with normal GC and a pinned
 old planner;complete maintenance,inspection,planning,selection,graph,counters
@@ -42,9 +54,9 @@ and pending state match. Aged/mixed48/128 queues improve about2.1-2.8% locally;
 8 recent requests regress0.15%. Retain negative/all raw samples,not a GPU claim.
 V2624 retains all3537 and adds13:3550 pass,no skips,plus2 subtests;V2625 binds
 sources. V112's old CPU-only watcher cancelled on the new marker and exited
-without a GPU run. V113 also cancels for this documentation refresh;V114
-re-freezes the unchanged runtime/configuration after matching V2624/V2625
-sources. These3550 checks and405 engine checks are not rerun this turn.
+without a GPU run. V113 cancels for the documentation refresh;V114 froze that
+revision without rerunning its tests. V114 now also cancels for the CPU change
+above. Keep the separate historical qualification evidence.
 
 Current CPU implementation: BELIEFKV_PREFILL_SCHEDULING_POLICY=join_priority
 lets Full reuse the entire JOIN-only planning branch,also between priority turns
@@ -74,7 +86,7 @@ causal attribution;these results justify testing the simpler common skeleton.
 V2619 measures positive-transfer and empty-opportunity CPU paths on the same
 sources,not an old/new speedup comparison. JOIN4/16/64-node planning,registration
 and issuance tracking P50 is361/774/2506us;tool460/873/2650us. Deep ancestry
-tracking remains a target. No-source maintenance/post-forward is1.80us,
+tracking is reduced by the scoped optimization above. No-source maintenance/post-forward is1.80us,
 no-wait PREPARE dispatch3.94us with zero capacity reads. Scalar enqueue stand-ins
 exclude real DMA/allocator,writer contention and GPU/JCT effects.
 
@@ -85,7 +97,7 @@ configs/migration/next_predictive_baselines_20261022.json:
 batch8/seed21 Full,JOIN-only and matched native,with protection/complex-order
 controls conditional on evidence. V2618 retains all3493 cases and adds44:
 3537 pass,no skips,plus2 subtests;V2620 binds sources. The dated registration/state
-receipts are ../ops/v114_fresh_batch8_20261022.registration{,.state}.json.
+receipts are ../ops/v115_fresh_batch8_20261022.registration{,.state}.json.
 Read their actual status;the operator stays CPU-only before the deadline and
 rejects stale main,new holds,incorrect effective settings and failed telemetry.
 Fully completed guard-excluded arms retain original process exits and exact

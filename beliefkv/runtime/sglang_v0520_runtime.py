@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from collections import Counter, OrderedDict, deque
 from collections.abc import Sequence
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import asdict, dataclass, field, replace
 from heapq import nsmallest
 from itertools import chain, count, islice
@@ -8229,6 +8229,17 @@ class NativeAdmissionRuntime:
         self._record_prefetch_issued(command_id, step, source, issue_wall_ms, outcome)
         return command_id
 
+    @contextmanager
+    def _prefetch_issue_observation_scope(self):
+        """The issue-record loop does not deliver events or mutate the native tree."""
+        observer = getattr(self.prefetch_issued_callback, "__self__", None)
+        scope = getattr(observer, "_prefetch_issuance_scope", None)
+        if callable(scope):
+            with scope():
+                yield
+        else:
+            yield
+
     def _record_prefetch_issued(
         self, command_id: str, step: PrefetchLoadStep, source: str,
         issue_wall_ms: float, outcome: object,
@@ -8537,12 +8548,16 @@ class NativeAdmissionRuntime:
             beliefkv_before_enqueue=before_enqueue,
         )
         issued = []
-        for command, step, outcome in zip(commands, steps, outcomes):
-            if not outcome.issued or outcome.node_id != step.node_id or command not in registered:
-                self.physical_disabled = True
-                raise PhysicalReceiptError("native wait burst has no matching reservation")
-            issued.append(command)
-            self._record_prefetch_issued(command, step, source, issued_at, outcome)
+        # Small bursts do not amortize a shared ancestry index.
+        with (
+            self._prefetch_issue_observation_scope() if len(outcomes) > 16 else nullcontext()
+        ):
+            for command, step, outcome in zip(commands, steps, outcomes):
+                if not outcome.issued or outcome.node_id != step.node_id or command not in registered:
+                    self.physical_disabled = True
+                    raise PhysicalReceiptError("native wait burst has no matching reservation")
+                issued.append(command)
+                self._record_prefetch_issued(command, step, source, issued_at, outcome)
         for command in registered.difference(issued):
             self.physical_ledger.cancel_unsubmitted(command)
             self._prefetch_steps.pop(command, None)
@@ -8615,12 +8630,15 @@ class NativeAdmissionRuntime:
             beliefkv_before_enqueue=before_enqueue,
         )
         issued = []
-        for command, step, outcome in zip(commands, steps, outcomes):
-            if not outcome.issued or outcome.node_id != step.node_id or command not in registered:
-                self.physical_disabled = True
-                raise PhysicalReceiptError("native handoff burst has no matching reservation")
-            issued.append(command)
-            self._record_prefetch_issued(command, step, "execution_handoff", issued_at, outcome)
+        with (
+            self._prefetch_issue_observation_scope() if len(outcomes) > 16 else nullcontext()
+        ):
+            for command, step, outcome in zip(commands, steps, outcomes):
+                if not outcome.issued or outcome.node_id != step.node_id or command not in registered:
+                    self.physical_disabled = True
+                    raise PhysicalReceiptError("native handoff burst has no matching reservation")
+                issued.append(command)
+                self._record_prefetch_issued(command, step, "execution_handoff", issued_at, outcome)
         for command in registered.difference(issued):
             self.physical_ledger.cancel_unsubmitted(command)
             self._prefetch_steps.pop(command, None)
