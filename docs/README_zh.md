@@ -31,6 +31,18 @@ V103 native。driver PID `2360761`，watcher `2359215`；健康检查
 HTTP200、36个workflow已创建并开始长输入prefill。修复效果与净性能
 仍待验证，新暂停或已确认运行错误照常处理。
 
+**V106已注册接续，等待V105完整结束。**冻结d2aaa51、资格V2474、
+引擎a98aaf4，配置及V103 native参照保持。watcher2536748按精确
+进程身份、完整后处理和空闲资源检查接续；8项CPU等待边界用例通过。
+新暂停、来源变化或V105错误会阻止启动，目前不是新GPU结果。
+
+[V2478最新前缀](../experiments/reports/v2478_v105_late_wait_prefetch_20261021_summary.json)
+中JOIN47个提前复用10.610GB FULL、工具69轮2.624GB，ACK→服务
+P90为1.042/1.897秒，无前缀内首次服务前重复加载/驱逐。
+[V2479绑定消费验证](../experiments/reports/v2479_v105_bound_consumer_validation_20261021.json)
+另确认68笔、2.757GB完成后恢复均转为需求并复用，最大等待1.071秒；
+该部分不加入提前预取。5条跟踪过期仍有真正覆盖锁，数据均被复用。
+
 [V2475 中期前缀](../experiments/reports/v2475_v105_mid_wait_prefetch_20261021_summary.json)
 中 JOIN35个提前复用5.574GB FULL、工具26轮0.874GB，ACK→服务
 P90为1.007/1.457秒，未见该前缀目标首次服务前重复加载或驱逐。

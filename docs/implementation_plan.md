@@ -30,6 +30,32 @@ present. Early runtime is not physically disabled and telemetry has no
 dropped/failed records or writer error. Fix effectiveness and end-to-end
 acceptance are still pending.
 
+V106 followup is registered,not yet a GPU result. Frozen app d2aaa51,
+qualificationV2474 and engine a98aaf4 retain the36-root/running8/256K/95%/
+Host200GB80:20 setup and V103 native reference. Watcher2536748,
+start_ticks671866780;state:
+`/home/longhao/experiment/ops/v106_local_prefill_20261021.state.json`.
+Wait for exact V105 watcher/driver exit,completed artifacts including HTML
+and native reference comparison,two idle GPU checks and Host preflight.
+New holds,changed sources or a V105 failure prevent launch. V2480b passes8
+CPU waiting-boundary cases;keep V2480's corrected test-collection failure.
+
+V2478 is the latest sealed V105 prefix:JOIN53 observed,51 positive early
+FULL plans,47 early reused10.610GB;tool1311 waits,89 positive plans,69
+early reused2.624GB. Last ACK-to-service P90 is1.042/1.897s with no
+early target repeat native load/demotion. Fifty tool episodes encounter
+capacity rejection;the existing backed-index/published-donor probe already
+handles positive hints. Do not infer a missing reclaim path from an empty
+initial step or treat broad subsequent Host hits as proven early opportunity.
+
+V2479 reuses exactly V2478's prefixes:68 client-bound same-consumer JOIN
+commands across2 requests,2.757GB FULL,all demand-recognized and first-reused,
+max ACK-to-service1.071s. This covers the repaired GPU branch;the restoration
+is after completion,not anticipatory bytes or a paired19s saving. Five expired
+covered receipt records own no physical lock;their owning command stays locked
+until service and all five are reused without reloading. Do not classify them
+as protection failures or change leases just to remove the diagnostic count.
+
 V2475 seals the V105 mid-run prefix:JOIN38 observed,37 positive early FULL
 plans,34 events with early submitted reason,35 with physically early submission
 and verified first reuse,5.574GB FULL. Keep reason coverage distinct from

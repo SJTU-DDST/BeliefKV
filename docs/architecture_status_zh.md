@@ -24,13 +24,40 @@ watcher PID `2359215`、start_ticks `671552367`。36-root/running8/
 HTTP200，首批长输入已进入 prefill。早期观测未见 physical_disabled、
 writer_error、dropped/failed 记录；修复效果和净性能仍待验收。
 
+**V106 接续已注册，等待 V105 完整结束。**候选冻结 `d2aaa51`，
+资格 V2474，引擎树 `a98aaf4`；36-root/running8/256K/95%/
+Host200GB80:20 及 V103 native 参照保持。watcher PID `2536748`、
+start_ticks `671866780`，状态为
+`/home/longhao/experiment/ops/v106_local_prefill_20261021.state.json`。
+只在验证 V105 watcher/driver 身份退出、完整结果/HTML/对照后处理、
+两次 GPU 空闲检查及 Host 预检之后启动；新暂停、来源变化或上一轮
+运行错误阻止接续。V2480b 的 8 个 CPU 等待边界用例通过，V2480
+首次测试收集的参数错误保留。此处是已排队候选，不是新 GPU 结果。
+
+[V2478 最新封闭前缀](../experiments/reports/v2478_v105_late_wait_prefetch_20261021_summary.json)
+中，53 个 JOIN 有 51 个完成前正 FULL 计划，47 个实际提前复用
+**10.610GB FULL**；工具 1311 轮中 89 个正计划，69 个提前复用
+**2.624GB FULL**。JOIN/tool 最后 ACK→服务 P90 为
+**1.042/1.897 秒**，该前缀无首次服务前重复原生加载或驱逐。
+工具仍有 50 个独立事件遇到容量拒绝；原有 backed-index/已发布
+供体 probe 已覆盖有提示的情形，不能仅因初始 step 为空认定漏回收，
+也不能将其后宽口径 Host-hit 当成当时必定可用的预取数据。
+
+[V2479 精确消费者审计](../experiments/reports/v2479_v105_bound_consumer_validation_20261021.json)
+复用 V2478 的相同封闭前缀，确认 2 个客户端绑定后的 JOIN 消费请求、
+68 笔恢复、**2.757GB FULL** 均识别为 demand-ready 并首次复用，
+ACK→服务最大 **1.071 秒**。这些是完成后的需求恢复，单列且不加入
+上文提前预取；该特定修复分支已有 GPU 覆盖，不代表相对旧例省下
+19 秒。5 条过期跟踪记录没有独立物理锁，真正的覆盖锁均保留到
+首次服务，5 条数据仍被复用，无重复加载；不能把它们当成锁保护失败。
+
 [V2475 的 V105 中期封闭前缀](../experiments/reports/v2475_v105_mid_wait_prefetch_20261021_summary.json)
 观测 38 个 JOIN，37 个有完成前正 FULL 计划，34 个有完成前提交
 reason，35 个实际提前启动并确认复用 **5.574GB FULL**。两种计数
 证据不同，不拿 reason 漏斗替代逐命令提交/复用证明。工具 617 轮中
 35 轮有正计划，26 轮提前复用 **0.874GB FULL**。JOIN/tool
 最后 ACK→首次服务 P90 为 **1.007/1.457 秒**；该前缀未见已预取
-目标首次服务前再次原生加载或驱逐。尚未出现与 V2461 同类的
+目标首次服务前再次原生加载或驱逐。该中期前缀尚未出现与 V2461 同类的
 “绑定新请求后再发行”命令，不能声称特定分支已有 GPU 验证。
 
 [V2476 完整高负载窗口 600–1000 秒](../experiments/reports/v2476_v105_v103_native_busy_600_1000_20261021.json)
