@@ -40,6 +40,7 @@ from beliefkv.runtime.sglang_v0520_admission import (
     NativePrefillPlan,
     PrefillCandidateKey,
     compile_native_prefill_plan,
+    select_native_prefill_candidates,
 )
 from beliefkv.runtime.sglang_v0520_prediction import (
     NativeDemandHint,
@@ -9737,9 +9738,26 @@ class NativeAdmissionRuntime:
                 if until > now_ms and key.request_id in by_id
                 and self.visible.get(key.request_id) == key
             }
-        for key in plan.prioritized[:min(2, slots)]:
+        frontier = plan.prioritized[:slots]
+        if len(plan.prioritized) != len(waiting_queue):
+            selection = select_native_prefill_candidates(
+                waiting_queue, plan=plan, current_semantic_revision=self.semantic_revision,
+            )
+            frontier_ids = {
+                getattr(request, "rid", None)
+                for request in selection.candidates[:slots]
+            }
+            frontier = tuple(
+                key for key in plan.prioritized if key.request_id in frontier_ids
+            )
+        probes = 0
+        for key in frontier:
             if now_ms < self._frontier_probe_after_ms.get(key, 0.):
                 continue
+            # Backed-off heads do not consume this pass's inspection budget.
+            if probes == 2:
+                break
+            probes += 1
             self._frontier_probe_after_ms[key] = now_ms + 200.
             request = by_id.get(key.request_id)
             if request is None or self._executable_waiting_key(request) != key:

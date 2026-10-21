@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from beliefkv.control.causal_graph import InvocationState as State
+from beliefkv.runtime.sglang_v0520_admission import NativePrefillPlan
 from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
 from tests.test_execution_handoff import runtime_with_requests
 
@@ -18,7 +19,9 @@ def fixture(monkeypatch):
     cache.session_refs = NS(snapshot_latest_session_leaf_anchors=Mock(return_value=((0, ((1, 1.),)),)))
     runtime._observe_native_admission_capacity = Mock()
     runtime._current_residency_budget = Mock(return_value=PrefetchResidencyBudget(1, 1024**3))
-    runtime.plan_native_prefill = Mock(return_value=NS(prioritized=(runtime.visible[requests[0].rid],)))
+    runtime.plan_native_prefill = Mock(return_value=NativePrefillPlan(
+        runtime.semantic_revision, (runtime.visible[requests[0].rid],),
+    ))
     return runtime, requests, cache
 
 
@@ -134,12 +137,137 @@ def test_a_due_candidate_prevents_a_whole_queue_backoff_skip(monkeypatch):
     runtime, requests, cache = fixture(monkeypatch)
     keys = tuple(runtime.visible[req.rid] for req in requests)
     runtime._frontier_probe_after_ms[keys[0]] = float("inf")
-    runtime.plan_native_prefill.return_value = NS(prioritized=(keys[2],))
+    runtime.plan_native_prefill.return_value = NativePrefillPlan(runtime.semantic_revision, (keys[2],))
     cache.session_refs.snapshot_latest_session_leaf_anchors.return_value = None
     try:
         runtime.dispatch_frontier_restore(requests, running_batch=None)
         runtime.plan_native_prefill.assert_called_once()
         assert keys[2] in runtime._frontier_probe_after_ms
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("head_deadline", (10200., float("inf")))
+def test_backed_off_heads_do_not_hide_a_due_candidate_inside_available_slots(
+    monkeypatch, head_deadline,
+):
+    runtime, requests, cache = fixture(monkeypatch)
+    keys = tuple(runtime.visible[request.rid] for request in requests)
+    runtime._current_residency_budget.return_value = PrefetchResidencyBudget(3, 1024**3)
+    runtime.plan_native_prefill.return_value = NativePrefillPlan(runtime.semantic_revision, keys)
+    runtime._frontier_probe_after_ms.update({key: head_deadline for key in keys[:2]})
+    runtime._issue_handoff_prefetch_steps = Mock(return_value=("third",))
+    try:
+        with patch(
+            "beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=10.051,
+        ), patch(
+            "beliefkv.runtime.sglang_v0520_runtime.inspect_session_h2d_opportunity",
+            return_value=NS(steps=("third",), fits_current_free_lists=True),
+        ):
+            runtime.dispatch_frontier_restore(requests, running_batch=None)
+        assert [call.args[0] for call in cache.inspect_beliefkv_reentry.call_args_list] == [requests[2]]
+        runtime._issue_handoff_prefetch_steps.assert_called_once()
+        ticket = runtime._issue_handoff_prefetch_steps.call_args.args[0]
+        assert ticket.key == keys[2]
+        assert runtime._frontier_probe_after_ms[keys[2]] == float("inf")
+        assert runtime._execution_handoff is None
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("slots", (1, 2))
+def test_probe_rotation_cannot_cross_the_current_slot_frontier(monkeypatch, slots):
+    runtime, requests, cache = fixture(monkeypatch)
+    keys = tuple(runtime.visible[request.rid] for request in requests)
+    runtime._current_residency_budget.return_value = PrefetchResidencyBudget(slots, 1024**3)
+    runtime.plan_native_prefill.return_value = NativePrefillPlan(runtime.semantic_revision, keys)
+    runtime._frontier_probe_after_ms.update({key: float("inf") for key in keys[:2]})
+    runtime._issue_handoff_prefetch_steps = Mock()
+    try:
+        with patch(
+            "beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=10.051,
+        ):
+            runtime.dispatch_frontier_restore(requests, running_batch=None)
+        cache.session_refs.snapshot_latest_session_leaf_anchors.assert_not_called()
+        cache.inspect_beliefkv_reentry.assert_not_called()
+        runtime._issue_handoff_prefetch_steps.assert_not_called()
+        assert keys[2] not in runtime._frontier_probe_after_ms
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("slots,restore", ((3, False), (4, True)))
+@pytest.mark.parametrize("rejected_tagged_request", (False, True))
+def test_native_positions_and_rejected_requests_use_the_existing_selection_frontier(
+    monkeypatch, slots, restore, rejected_tagged_request,
+):
+    runtime, requests, cache = fixture(monkeypatch)
+    keys = tuple(runtime.visible[request.rid] for request in requests)
+    runtime._current_residency_budget.return_value = PrefetchResidencyBudget(slots, 1024**3)
+    runtime.plan_native_prefill.return_value = NativePrefillPlan(runtime.semantic_revision, keys)
+    runtime._frontier_probe_after_ms.update({key: float("inf") for key in keys[:2]})
+    runtime._issue_handoff_prefetch_steps = Mock(return_value=("third",))
+    plain = NS(rid="native", beliefkv_metadata=None)
+    queue = [requests[0], plain, *requests[1:]]
+    if rejected_tagged_request:
+        queue.insert(0, NS(rid="unknown", beliefkv_metadata={}))
+    try:
+        with patch(
+            "beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=10.051,
+        ), patch(
+            "beliefkv.runtime.sglang_v0520_runtime.inspect_session_h2d_opportunity",
+            return_value=NS(steps=("third",), fits_current_free_lists=True),
+        ):
+            runtime.dispatch_frontier_restore(queue, running_batch=None)
+        assert runtime._issue_handoff_prefetch_steps.call_count == int(restore)
+        assert [call.args[0] for call in cache.inspect_beliefkv_reentry.call_args_list] == (
+            [requests[2]] if restore else []
+        )
+        assert (keys[2] in runtime._frontier_probe_after_ms) is restore
+        assert queue[1 if rejected_tagged_request else 0] is requests[0]
+        assert queue[2 if rejected_tagged_request else 1] is plain
+        assert runtime._execution_handoff is None
+    finally:
+        runtime.close()
+
+
+def test_two_probe_budget_rotates_after_resident_heads_without_reordering(monkeypatch):
+    from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
+
+    runtime, requests, cache = fixture(monkeypatch)
+    keys = tuple(runtime.visible[request.rid] for request in requests)
+    runtime.prefill_scheduling_policy = "join_priority"
+    runtime.plan_native_prefill = NativeAdmissionRuntime.plan_native_prefill.__get__(runtime)
+    runtime._current_residency_budget.return_value = PrefetchResidencyBudget(3, 1024**3)
+    inspect = cache.inspect_beliefkv_reentry.side_effect
+    cache.inspect_beliefkv_reentry.side_effect = lambda request: (
+        inspect(request) if request is requests[2] else {
+            "missing_full_tokens": 0, "missing_mamba_slots": 0,
+        }
+    )
+    runtime._issue_handoff_prefetch_steps = Mock(return_value=("third",))
+    try:
+        with patch(
+            "beliefkv.runtime.sglang_v0520_runtime.inspect_session_h2d_opportunity",
+            return_value=NS(steps=("third",), fits_current_free_lists=True),
+        ):
+            with patch(
+                "beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=10.,
+            ):
+                runtime.dispatch_frontier_restore(requests, running_batch=None)
+            assert [call.args[0] for call in cache.inspect_beliefkv_reentry.call_args_list] == requests[:2]
+            runtime._issue_handoff_prefetch_steps.assert_not_called()
+            assert keys[2] not in runtime._frontier_probe_after_ms
+            with patch(
+                "beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=10.051,
+            ):
+                runtime.dispatch_frontier_restore(requests, running_batch=None)
+            assert [call.args[0] for call in cache.inspect_beliefkv_reentry.call_args_list] == requests
+            runtime._issue_handoff_prefetch_steps.assert_called_once()
+        plan = runtime.plan_native_prefill(requests, running_batch=None, adder=None)
+        assert plan.prioritized == keys
+        assert runtime._execution_handoff is None
+        assert not runtime.physical_ledger.pending_count
     finally:
         runtime.close()
 
