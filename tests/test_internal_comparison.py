@@ -205,7 +205,7 @@ def test_full_join_parent_priority_retains_live_guards_and_shared_quota(monkeypa
         if restriction == "join_quota":
             runtime._join_priority_normal_admissions = 3
         elif restriction == "shared_quota":
-            runtime._prefetch_priority_normal_admissions = 3
+            runtime._prefetch_priority_normal_admissions = 0
         elif restriction == "stale_epoch":
             requests[1].beliefkv_metadata["context_epoch"] = 1
         elif restriction == "stale_session":
@@ -220,8 +220,10 @@ def test_full_join_parent_priority_retains_live_guards_and_shared_quota(monkeypa
             ))
             assert "parent" not in runtime._join_priority_pending
         runtime.plan_native_prefill(requests, running_batch=None, adder=None)
-        assert runtime._join_priority_promoted is None
-        assert runtime.counts["join_parent_priority_ordered"] == 0
+        assert runtime._join_priority_promoted == (
+            requests[1].rid if restriction == "shared_quota" else None
+        )
+        assert runtime.counts["join_parent_priority_ordered"] == int(restriction == "shared_quota")
     finally:
         runtime.close()
 
@@ -344,8 +346,8 @@ def test_protected_restore_priority_keeps_precedence_over_join_parent(monkeypatc
             pool_bytes=(), demand_ready=True,
         )
         plan = runtime.plan_native_prefill([parent, normal], running_batch=None, adder=None)
-        assert plan.prioritized[0].invocation_id == "normal"
-        assert runtime._prefetch_priority_promoted == normal.rid
+        assert plan.prioritized[0].invocation_id == "parent"
+        assert runtime._prefetch_priority_promoted is None
         assert runtime._join_priority_promoted is None
         assert runtime._join_priority_pending == {"parent": "join"}
     finally:

@@ -6,36 +6,51 @@
 与实验继续按下文最新约定执行。[整理记录](archive/research_exploration_20261020.md)
 列出已清理的一次性源码及归档位置。
 
-**最新用户指令：第二组结束后暂停 GPU 实验，并补齐两类 JOIN 排序。**
-V111 OurScheduler-only 继续冻结执行；19:04 登记的独立 CPU 监护在
-driver 结束、进入 postprocessing 后设置暂停标记，保留本组 HTML、
-审计和清理，不接续 KV-only 或工程对齐 native。请求状态：
-`../ops/v111_internal_20261021.registration.pause_after.json`。
-新 main 将简单 JOIN-only 中的真实解锁记录用于 Full/OurScheduler：
-parent 已提交且依赖满足即可获得有界排序，不要求 HBM 命中；
-最后一个仍阻塞真实 JOIN waiter 的 child 可在没有报告提示时获得有界
-提升。复用因果图和现有普通准入配额，不增加预测、轮询或抢占 running
-请求；保留原生容量与依赖检查。新代码只做 CPU 验证，不进入当前冻结组。
+**最新实现：JOIN 主排序对齐 JOIN-only，恢复保护可在真实压力下撤销。**
+Full 与 JOIN-only 直接共用 JOIN 选择分支：aged FIFO/native 顺序选中真实
+解锁、已提交且可执行的 parent，采用独立的四次普通准入配额。不依赖
+HBM 命中，不受恢复提升配额约束；已在首位的 parent 也不会被后续恢复
+排序覆盖。NO_TOKEN 不消耗唤醒，首次实际准入消耗，新等待和终态使旧记录失效。
+最后 child 的有界策略保留，且不能覆盖已选中的 JOIN parent。
 
-实现已完成：Full/OurScheduler 默认启用 `BELIEFKV_ENABLE_JOIN_PARENT_PRIORITY`，
-KV-only 与原生顺序关闭。真实 JOIN 唤醒记录与物理恢复 ticket 分离；
-第一条后继实际准入后消耗，NO_TOKEN 不消耗，新 JOIN 等待或终态使旧记录失效。
-有保护的恢复请求仍优先；parent/最后 child 的显式提升后，至少完成四次
-普通准入才再次提升两类对象。最后 child 复用既有 causal class 和 incident
-JOIN 索引，只在确有候选时验证 parent 仍为 WAIT_JOIN；超时、工具依赖、
-陈旧 session/epoch 不获得提升，不依赖剩余 token 预测或报告提示。
-这只调整待准入请求，不抢占 running decode，也不证明 child 即将结束。
+普通恢复、容量交接及过期恢复提示的提升仅限当前因果类别；aged 队首
+不被恢复状态越过。删除旧的动态恢复配额及为其追加的完整/部分恢复检查。
+真实 FULL/Mamba 短缺经当前 checkpoint 与增长预留复核后，才撤销其他
+context 的额外驻留锁，再交给原生回收。原生 NO_TOKEN 也可撤销一组
+保护；只减自己的准确锁回执，Host 源副本锁仍保留到原有生命周期结束。
+租约中的身份、ACK、传输量和首次服务归因保留，不能把撤锁记为已释放
+同等 HBM。仅有租约记录不再排除压力候选或队尾 donor；引用、共享、
+在途 DMA、Host 副本和 native allocator 检查继续决定实际能否回收。
 
-[V2600 最终 CPU 回归](../experiments/reports/v2600_join_priority_final_qualified_cpu_20261021.xml)
-保留原 3110 项并新增 38 项，3148 项全部通过、无跳过，另有 2 个
-subtest；[V2601](../experiments/reports/v2601_join_priority_cpu_sources_20261021.json)
-绑定当前源码。V2598 是补充真实 waiter 检查之前的 3146 项先行回归。
-引擎仍为 `53335e6`，未重跑独立引擎 405 项资格。
-[V2597 CPU 控制](../experiments/reports/v2597_join_priority_planning_control_cpu_20261021.json)
-使用 64 个候选、两次规划、101 次轮换采样和相同 residency 替身，
-不触发新提升；顺序及完成回调状态一致。规划 P50 约 1.092→1.086ms，
-P99 约 1.134→1.172ms，完成回调 P50 约 30.53→31.12us。仅说明该合成
-控制的局部成本，不代表正例成本、完整 scheduler、DMA 或 JCT 收益。
+新增独立 `BELIEFKV_PREFETCH_RESIDENCY_PROTECTION=0|1`，默认 1，
+默认保护有界且可撤销。设为 0 时，ACK 后只追踪首次服务，跳过保护用
+closure 扫描、额外 HBM 锁和工具源副本锁；原生传输与执行依赖保留。
+启动器记录请求设置，runtime 记录有效设置，内部对照核验两者。
+离线生命周期审计单列保护撤销，不把它当作页面驱逐或释放字节，也不把
+追踪记录后来到期当成保护持续到期；后续确证复用仍保留。
+尚未启动开/关保护的 GPU 对照，不能宣称保护必然有害或吞吐已经改善。
+[V2608 最终 CPU 回归](../experiments/reports/v2608_revocable_recovery_qualified_cpu_20261021.xml)
+3456 项全部通过、无跳过，另有 2 个 subtest；保留 V2600 全部 3148 项
+历史身份，同时补跑完整受影响模块并加入新用例。
+[V2609](../experiments/reports/v2609_revocable_recovery_cpu_sources_20261021.json)
+绑定本次源码；V2606 是补齐撤锁审计之前的 3454 项通过记录。
+历史测试标识保留，但旧的跨类别恢复提升、租约排除和丢弃追踪预期已明确更新。
+引擎仍为 `53335e6`，没有改动或重跑独立 405 项引擎资格。
+[V2604 CPU 控制](../experiments/reports/v2604_revocable_recovery_control_cpu_20261021.json)
+用 64 个候选、两次规划和 101 轮采样验证未触发新策略时的局部路径：
+顺序、原生检查数及完成回调状态一致；规划 P50 约 1.116→1.103ms，
+P99 约 1.141→1.136ms；完成回调 P50 约 30.64→31.95us，保留变慢数据。
+不能由此宣称正例成本、整个 scheduler 或 GPU/JCT 已改善。
+
+**V111 已停止，GPU 实验暂停。**
+第二组于北京时间 2026-10-21 19:44 返回退出码 1；36/36 completed、
+36/36 system JCT eligible、35/36 native-agent JCT eligible。
+`locobench__python_web_cms_hard_074_integration_testing_expert_01`
+因 `guard_intervened_completion` 未通过启动器的全体 native gate；
+不是已证实的 GPU 故障。原 `stopped_for_investigation` 和边界监护失败
+回执保留，另已激活全局暂停标记；不自动重跑或进入第三组。下文运行描述
+保留历史语境，以本段为准。第二组 HTML、审计和工作目录清理已用冻结
+版本独立完成；原失败状态没有改写。新 main 不热加载进冻结实验。
 
 **此前 main CPU 优化：不可变请求身份使用 slots，未部署进 V111。**
 CPU 剖析显示身份解析、终态检查仍占规划夹具的较大部分；不删除这些
@@ -60,7 +75,7 @@ V2583 按整个模块运行时额外收集并跳过一个原资格外 Docker 检
 保留为范围诊断，不代替最终无跳过资格。引擎未改，不称重跑 405 项
 原生资格。四组 V111 继续冻结 `e0420fe`/V2579，不改变版本或配置。
 
-**最新：V111 JOIN-priority-only 已完成，OurScheduler-only 于 18:46:58 接续。**
+**此前记录：V111 JOIN-priority-only 完成，OurScheduler-only 于 18:46:58 接续。**
 首组 36/36 completed，持续 2801.85 秒，6904 次模型请求、8799 次工具、
 1556460 个输出 token。实际 73 轮委派/JOIN、128 个动态 child，未观测
 嵌套；不能声称该组证明了嵌套收益。最终 43 次有界 JOIN 优先准入、

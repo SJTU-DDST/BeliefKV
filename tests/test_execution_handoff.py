@@ -215,6 +215,7 @@ def test_wait_child_state_change_invalidates_descendant_depth(monkeypatch):
 
 def test_terminal_model_return_does_not_retain_join_dependency_cache(monkeypatch):
     runtime, (cold, warm, parent), _ = runtime_with_requests(monkeypatch)
+    runtime.enable_join_parent_priority = False
     runtime.enable_resident_first = False
     runtime.on_events((
         RuntimeEvent(
@@ -762,7 +763,8 @@ def test_demand_handoff_pins_restored_cache_until_service_or_allocation_pressure
     assert lease.protected_bytes == action.num_bytes
     cache.tree_core.inc_lock_ref.assert_called_once_with(1)
     runtime.on_prefill_candidate_result(req("other"), admitted=False, result="NO_TOKEN")
-    assert not runtime._prefetch_service_leases
+    assert runtime._prefetch_service_leases[action.command_id].lock_params is None
+    assert runtime._prefetch_service_leases[action.command_id].protected_bytes == 0
     cache.tree_core.dec_lock_ref.assert_called_once_with(1, receipt)
     assert not runtime.physical_disabled
     runtime.close()
@@ -822,7 +824,9 @@ def test_handoff_extents_share_one_request_slot_and_release_together_on_pressure
     assert runtime._prefetch_service_leases["extent-2"].lock_params is receipts[2]
     assert runtime._prefetch_service_leases["extent-2"].protected_bytes == 2020
     runtime.on_prefill_candidate_result(req("other"), admitted=False, result="NO_TOKEN")
-    assert not runtime._prefetch_service_leases
+    assert len(runtime._prefetch_service_leases) == 2
+    assert all(lease.lock_params is None and lease.protected_bytes == 0
+               for lease in runtime._prefetch_service_leases.values())
     cache.tree_core.dec_lock_ref.assert_any_call(1, receipts[1])
     cache.tree_core.dec_lock_ref.assert_any_call(2, receipts[2])
     assert cache.tree_core.dec_lock_ref.call_count == 2

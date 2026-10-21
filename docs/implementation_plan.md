@@ -12,34 +12,49 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-Latest user override: finish the running V111 OurScheduler-only arm and its
-HTML/audits/cleanup,then pause GPU experimentation. Do not start KV-only or
-engineering-matched Native automatically. At2026-10-21 19:04 Beijing,a CPU
-boundary monitor is registered in
-`../ops/v111_internal_20261021.registration.pause_after.json`.
-It waits for the exact driver to exit and postprocessing to begin,then sets
-the global pause marker;the frozen supervisor finishes cleanup before its
-next-arm cancellation check. Keep completed and pending arms explicit and
-do not automatically resume. Do not hot-load the active arm.
-Implement bounded actual-JOIN parent priority in Full/OurScheduler without
-requiring HBM hits,and consider a live last-blocking-child turn without
-requiring final-report metadata. Reuse causal state and ordinary-admission
-quotas;retain native capacity/dependencies and avoid new periodic work.
-Implementation is complete on main:Full/OurScheduler enable explicit
-JOIN-parent priority;KV-only/native order disable it. Consume a wakeup on
-actual first admission,not a rejected NO_TOKEN attempt;invalidate old waits
-and terminal records. Protected restore turns keep precedence. Parent and
-last-child boosts share the ordinary-admission quota. Last-child fallback
-checks actual WAIT_JOIN waiters via the existing incident-JOIN index,without
-requiring final-report metadata;do not promote timed-out or tool-blocked
-waiters. Running decode is not preempted.
-V2600 retains all3110 prior CPU identities and adds38:3148 pass,no skips,
-plus2 subtests;V2601 binds current sources. V2598 is the3146-case precursor
-before the extra live-waiter guards. The engine is unchanged,not405 rerun.
-V2597's64-candidate,two-plan,101-sample nontriggering CPU control preserves
-order/completion state:planning P50 about1.092->1.086ms,P991.134->1.172ms;
-completion-callback P5030.53->31.12us. Do not infer positive-case cost,
-whole-scheduler improvement or GPU/JCT gains.
+Latest accepted implementation: reduce recovery privileges. Full and JOIN-only
+share the same actual-JOIN selection branch, aged FIFO/native order and independent
+four-ordinary-admission quota. Restore readiness cannot override a selected JOIN
+parent or impose an extra shared quota. Consume the wakeup on real admission,
+not NO_TOKEN; keep session/epoch/tool/terminal guards and last-child fairness.
+Ordinary restore/handoff/advisory priority is confined to the same causal class
+and cannot bypass aged heads. Remove dynamic reduced restore quotas and their
+additional complete/partial checkpoint cost reads.
+
+Only after actual shortage, reconciled against the current checkpoint and growth
+reserve, revoke our own post-ACK device locks on donor contexts before native
+reclaim. Native NO_TOKEN may revoke one protection group. Retain exact receipts
+on uncertain unlock and stop physical actions; never unlock native execution or
+DMA ownership. Keep first-service tracking and bounded tool Host source locks.
+Lease metadata alone no longer excludes pressure/queued donors. Actual reclaim
+still validates references, shared ownership, settled Host copies and native
+allocator constraints. Unlocking protected closure bytes is not evidence of
+freeing those bytes.
+
+Independent ablation: BELIEFKV_PREFETCH_RESIDENCY_PROTECTION=0|1, default1.
+Zero skips extra post-ACK closure planning, device locks and tool source locks
+while preserving transfers, execution dependencies and first-service attribution.
+Record requested launch and effective runtime settings and validate agreement.
+Compare on/off using the same batch/seed/tasks and other controls; report whole
+and trimmed JCT, parent service wait, repeated H2D, recomputation and realized
+work. Offline lifecycle auditing keeps revocation separate from eviction or
+freed bytes and does not mistake a later tracking expiry for lock expiration.
+No GPU ablation or performance acceptance yet. V2608 passes3456 cases,no skips,
+plus2 subtests;it retains all3148 V2600 identities,collects affected modules
+completely and adds policy cases. V2609 binds the current sources. V2606 is the
+3454-case precursor before the audit changes. Historical test identities
+are retained with explicitly changed policy expectations. The engine remains
+53335e6, not changed or independently rerun for405 checks.
+
+V111 stops at2026-10-21 19:44 Beijing with client exit1:36/36 completed,
+36/36 system-JCT eligible,35/36 native-agent-JCT eligible. One
+guard_intervened_completion fails the launcher's all-native gate. Preserve
+stopped_for_investigation and the boundary-monitor error; a separate global
+pause marker is now active. Finish CPU-only audits/HTML/cleanup without silently
+declaring the failed arm or matrix successful. These frozen-version CPU-only
+audits,HTML and workspace cleanup are now complete. Do not launch the third arm or
+any new GPU experiment. New main changes are not hot-loaded into frozen V111.
+Older running-state paragraphs below are historical, superseded by this state.
 
 Previous main CPU candidate: use slots for immutable PrefillCandidateKey storage;
 retain all live identity,terminal,session,generation and admission checks.

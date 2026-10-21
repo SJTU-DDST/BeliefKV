@@ -58,6 +58,20 @@ def full_reuse_summary(full: list[dict]) -> dict:
     }
 
 
+def protection_revocation_summary(rows: list[dict]) -> dict:
+    commands = [
+        [event for event in row.get("lease_events", ())
+         if event["event"] == "prefetch_protection_revoked"]
+        for row in rows
+    ]
+    return {
+        "protection_revoked_commands": sum(bool(events) for events in commands),
+        "protection_revocation_reasons": dict(Counter(
+            event.get("reason", "unknown") for events in commands for event in events
+        )),
+    }
+
+
 def full_residency_summary(full: list[dict]) -> list[dict]:
     groups = defaultdict(list)
     for row in full:
@@ -79,6 +93,7 @@ def full_residency_summary(full: list[dict]) -> list[dict]:
             "native_locked_at_registration": locked,
             "protection_reason_at_registration": protection_reason,
             "last_observed_release_reason": reason,
+            **protection_revocation_summary(group),
             **full_reuse_summary(group),
             "ack_to_first_service_ms": distribution(
                 row["ack_to_first_service_ms"] for row in group
@@ -98,6 +113,7 @@ def source_summary(rows: list[dict]) -> dict:
         "acknowledged_commands": sum(row["actual_bytes"] is not None for row in rows),
         "actual_bytes": sum(row["actual_bytes"] or 0 for row in rows),
         **full_reuse_summary(full),
+        **protection_revocation_summary(rows),
         "full_reuse_by_residency": full_residency_summary(full),
         "mamba_forward_verified_commands": sum(row["mamba_forward_verified"] for row in rows),
         "ack_to_first_service_ms": distribution(row["ack_to_first_service_ms"] for row in rows),
@@ -945,6 +961,7 @@ def full_expiration_evidence(
         if (
             registered.get("native_locked") is not True
             or released.get("reason") != "service_window_expired"
+            or any(event["event"] == "prefetch_protection_revoked" for event in events)
         ):
             continue
         when = released.get("ts_ms")
@@ -1789,6 +1806,7 @@ def audit(arm: Path) -> dict:
             parent_handoff_rearms.append(row)
         elif event in (
             "prefetch_residency_registered", "prefetch_residency_released",
+            "prefetch_protection_revoked",
             "prefetch_reentry_ready", "prefetch_client_submitted", "prefetch_demand_submitted",
         ):
             leases[row["command_id"]].append(row)
@@ -2100,7 +2118,9 @@ def audit(arm: Path) -> dict:
             "last observed release reason in log order; absent evidence stays unknown. "
             "Groups are lifecycle associations, not isolated causes. Lease expiry "
             "does not imply a reuse miss, nor does registration prove continuous "
-            "protection until service; Mamba-only transfers are excluded."
+            "protection until service; Mamba-only transfers are excluded. Pressure "
+            "revocation is reported separately and is not eviction or freed-byte "
+            "evidence. A later tracking expiry is not another lock expiration."
         ),
         "native_reload_attribution_semantics": (
             "Node/pool overlap before first service, not proof of repeated physical "

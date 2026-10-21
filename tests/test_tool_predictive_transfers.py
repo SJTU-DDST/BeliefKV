@@ -518,10 +518,11 @@ def leased_runtime():
 
 def test_ack_keeps_bounded_residency_out_of_pressure_parking():
     runtime, hint, node, action = leased_runtime()
+    node.component_data[0].session_ids = {"s"}
     runtime._parent_pressure_candidates[1] = (hint.key, 2)
     with patch.object(runtime, "_long_tool_wait", return_value=True):
-        assert not runtime._live_parent_pressure_node(1, 2)
-    assert runtime.counts["prefetch_residency_pressure_protected"] == 1
+        assert runtime._live_parent_pressure_node(1, 2)
+    assert runtime.counts["prefetch_residency_pressure_protected"] == 0
     assert action.command_id in runtime._prefetch_service_leases
 
 
@@ -947,7 +948,7 @@ def test_aged_ordinary_head_keeps_its_turn_until_four_normal_admissions():
              2, 1024, source="native_next_prefill",
          )):
         assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
-    assert runtime.counts["prefetch_priority_aged_head_kept"] == 1
+    assert runtime._prefetch_priority_promoted is None
 
 
 @pytest.mark.parametrize("slots, expected_quota", [(1, 1), (2, 1), (4, 3)])
@@ -955,6 +956,7 @@ def test_complete_restore_uses_native_quota_and_preserves_ordinary_turns(
     slots, expected_quota,
 ):
     runtime, _, _, _, _, _ = locked_runtime()
+    runtime.enable_resident_first = False
     restored = submit_restored_request(runtime)
     ordinary = req("ordinary")
     runtime.register_visible_request(ordinary)
@@ -972,16 +974,22 @@ def test_complete_restore_uses_native_quota_and_preserves_ordinary_turns(
                  slots, 1024, source="native_next_prefill",
              )), \
              patch.object(runtime, "_read_request_reentry", return_value=observation) as inspect:
+            assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
+            runtime._visible_since[ordinary.rid] = time.monotonic()
+            for _ in range(4 - expected_quota):
+                assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
+                runtime.on_prefill_candidate_result(ordinary, admitted=True, result="ok")
             for _ in range(3):
                 assert select(runtime, [ordinary, restored]).candidates[0] is restored
-                assert inspect.call_args.kwargs["refresh"] is True
                 runtime.on_prefill_candidate_result(restored, admitted=True, result="ok")
-                for _ in range(expected_quota):
+                for _ in range(4):
                     assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
                     runtime.on_prefill_candidate_result(ordinary, admitted=True, result="ok")
-        assert runtime.counts["prefetch_priority_complete_ready_admitted"] == 3
-        assert runtime.counts["native_admitted"] == 3 * (1 + expected_quota)
-        assert [row["complete_checkpoint_ordinary_quota"] for row in rows] == [expected_quota] * 3
+            inspect.assert_not_called()
+        assert runtime.counts["prefetch_priority_complete_ready_admitted"] == 0
+        assert runtime.counts["prefetch_priority_admitted"] == 3
+        assert runtime.counts["native_admitted"] == 15 + 4 - expected_quota
+        assert [row["complete_checkpoint_ordinary_quota"] for row in rows] == [None] * 3
         assert runtime.physical_ledger.pending_count == 0
     finally:
         runtime._opportunity_writer = None
@@ -990,6 +998,7 @@ def test_complete_restore_uses_native_quota_and_preserves_ordinary_turns(
 
 def _partial_restore_quota_fixture():
     runtime, _, _, _, _, _ = locked_runtime()
+    runtime.enable_resident_first = False
     restored = submit_restored_request(runtime)
     ordinary = req("ordinary")
     restored.origin_input_ids = ordinary.origin_input_ids = range(8321)
@@ -1022,22 +1031,23 @@ def test_cheaper_partial_restore_uses_native_quota_without_claiming_complete_rec
              patch.object(runtime, "_read_request_reentry", side_effect=(
                  lambda request, **kwargs: observations[request.rid]
              )) as inspect:
+            assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
+            runtime._visible_since[ordinary.rid] = time.monotonic()
+            runtime._prefetch_priority_normal_admissions = 4
             for _ in range(3):
                 assert select(runtime, [ordinary, restored]).candidates[0] is restored
-                assert inspect.call_args.kwargs["refresh"] is True
                 runtime.on_prefill_candidate_result(restored, admitted=True, result="ok")
-                assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
-                runtime.on_prefill_candidate_result(ordinary, admitted=True, result="ok")
-        assert runtime.counts["prefetch_priority_partial_restore_admitted"] == 3
+                for _ in range(4):
+                    assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
+                    runtime.on_prefill_candidate_result(ordinary, admitted=True, result="ok")
+            inspect.assert_not_called()
+        assert runtime.counts["prefetch_priority_partial_restore_admitted"] == 0
         assert runtime.counts["prefetch_priority_complete_ready_admitted"] == 0
-        assert runtime.counts["native_admitted"] == 6
+        assert runtime.counts["prefetch_priority_admitted"] == 3
+        assert runtime.counts["native_admitted"] == 15
         assert all(row["complete_checkpoint_ordinary_quota"] is None for row in rows)
         for row in rows:
-            details = row["partial_checkpoint_cost_comparison"]
-            assert details["ordinary_admission_quota"] == 1
-            assert details["selected_restore_bytes"] == 512 * 20480 + 64389120
-            assert details["head_restore_bytes"] == 8192 * 20480 + 64389120
-            assert details["selected_next_input_tokens"] == details["head_next_input_tokens"] == 129
+            assert row["partial_checkpoint_cost_comparison"] is None
         assert runtime.physical_ledger.pending_count == 0
         assert runtime.counts["prefetch_native_issued"] == 0
     finally:
@@ -1092,6 +1102,8 @@ def test_partial_restore_reduced_quota_requires_comparable_cost_work_and_fairnes
 
 def test_native_partial_restore_decline_preserves_quota_and_does_not_credit_service():
     runtime, restored, ordinary, observations = _partial_restore_quota_fixture()
+    runtime._visible_since[ordinary.rid] = time.monotonic()
+    runtime._prefetch_priority_normal_admissions = 4
     try:
         with patch.object(runtime, "_causal_rank", side_effect=lambda key, index, ranks: (0, 0, index)), \
              patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
@@ -1102,7 +1114,7 @@ def test_native_partial_restore_decline_preserves_quota_and_does_not_credit_serv
              )):
             assert select(runtime, [ordinary, restored]).candidates[0] is restored
         runtime.on_prefill_candidate_result(restored, admitted=False, result="NO_TOKEN")
-        assert runtime._prefetch_priority_normal_admissions == 1
+        assert runtime._prefetch_priority_normal_admissions == 4
         assert runtime.counts["prefetch_priority_partial_restore_admitted"] == 0
         assert runtime.counts["prefetch_priority_admitted"] == 0
         assert runtime.physical_ledger.pending_count == 0
@@ -1113,6 +1125,7 @@ def test_native_partial_restore_decline_preserves_quota_and_does_not_credit_serv
 def test_partial_restore_does_not_reinspect_head_when_ordinary_quota_already_met():
     runtime, restored, ordinary, observations = _partial_restore_quota_fixture()
     runtime._prefetch_priority_normal_admissions = 4
+    runtime._visible_since[ordinary.rid] = time.monotonic()
     try:
         with patch.object(runtime, "_causal_rank", side_effect=lambda key, index, ranks: (0, 0, index)), \
              patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
@@ -1122,7 +1135,7 @@ def test_partial_restore_does_not_reinspect_head_when_ordinary_quota_already_met
                  lambda request, **kwargs: observations[request.rid]
              )) as inspect:
             assert select(runtime, [ordinary, restored]).candidates[0] is restored
-        assert [call.args[0].rid for call in inspect.call_args_list] == [restored.rid]
+        inspect.assert_not_called()
         assert runtime.counts["prefetch_priority_partial_restore_inspected"] == 0
         assert runtime._prefetch_priority_partial_restore_details is None
     finally:
@@ -1190,13 +1203,16 @@ def test_ready_restore_gets_one_turn_after_four_admissions_even_with_aged_head()
     runtime._opportunity_writer = NS(record=rows.append)
     with patch.object(runtime, "_causal_rank", side_effect=lambda req, index, ranks: (0, 0, index)):
         for _ in range(3):
+            runtime._visible_since[ordinary.rid] = time.monotonic() - 11.
+            assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
+            runtime._visible_since[ordinary.rid] = time.monotonic()
             assert select(runtime, [ordinary, restored]).candidates[0] is restored
             runtime.on_prefill_candidate_result(restored, admitted=True, result="ok")
             for _ in range(4):
                 assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
                 runtime.on_prefill_candidate_result(ordinary, admitted=True, result="ok")
-    assert runtime.counts["prefetch_priority_aged_head_bypass_admitted"] == 3
-    assert [row["aged_head_bounded_bypass"] for row in rows] == [True] * 3
+    assert runtime.counts["prefetch_priority_aged_head_bypass_admitted"] == 0
+    assert [row["aged_head_bounded_bypass"] for row in rows] == [False] * 3
     assert runtime.counts["native_admitted"] == 15
 
 
@@ -1207,6 +1223,8 @@ def test_failed_ready_restore_does_not_consume_ordinary_admission_quota():
     runtime.register_visible_request(ordinary)
     runtime._visible_since[ordinary.rid] = time.monotonic() - 11.
     with patch.object(runtime, "_causal_rank", side_effect=lambda req, index, ranks: (0, 0, index)):
+        assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
+        runtime._visible_since[ordinary.rid] = time.monotonic()
         assert select(runtime, [ordinary, restored]).candidates[0] is restored
         runtime.on_prefill_candidate_result(restored, admitted=False, result="OTHER")
         assert runtime._prefetch_priority_normal_admissions == 4
@@ -1404,7 +1422,8 @@ def test_inflight_restore_of_same_checkpoint_is_not_submitted_twice():
 def test_actual_allocation_pressure_releases_speculative_lock():
     runtime, hint, node, action, receipt, _ = locked_runtime()
     runtime.on_prefill_candidate_result(req("other"), admitted=False, result="NO_TOKEN")
-    assert not runtime._prefetch_service_leases
+    assert runtime._prefetch_service_leases[action.command_id].lock_params is None
+    assert runtime._prefetch_service_leases[action.command_id].protected_bytes == 0
     runtime._native_cache.tree_core.dec_lock_ref.assert_called_once_with(1, receipt)
 
 

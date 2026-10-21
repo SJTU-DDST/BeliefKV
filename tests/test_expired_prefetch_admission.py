@@ -39,6 +39,8 @@ def expired_consumer(monkeypatch):
         restored.rid: runtime.visible[restored.rid],
     }
     clock[0] = 110.847
+    runtime._visible_since[ordinary.rid] = clock[0]
+    runtime._visible_since[restored.rid] = clock[0]
     try:
         yield runtime, restored, ordinary, cache, action
     finally:
@@ -57,6 +59,15 @@ def test_expired_consumer_gets_only_a_bounded_turn_without_relocking(expired_con
     assert not runtime._prefetch_service_leases
     assert runtime.physical_ledger.pending_count == 0
     assert runtime.counts["prefetch_native_issued"] == 0
+
+
+def test_expired_hint_cannot_bypass_an_aged_head_even_with_its_quota(expired_consumer):
+    runtime, restored, ordinary, cache, _ = expired_consumer
+    runtime._visible_since[ordinary.rid] = 80.
+    runtime._prefetch_priority_normal_admissions = 4
+    assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
+    cache.inspect_beliefkv_reentry.assert_not_called()
+    assert restored.rid in runtime._prefetch_admission_hints
 
 
 @pytest.mark.parametrize("observation", (

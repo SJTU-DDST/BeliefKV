@@ -1038,6 +1038,63 @@ def test_lifecycle_source_full_reuse_does_not_mix_handoff_or_mamba_only(tmp_path
     assert summaries["execution_handoff"]["ack_to_first_service_ms"]["p50"] == 1000.
 
 
+def test_pressure_revocation_is_tracked_without_claiming_eviction_or_losing_reuse(tmp_path):
+    command = "restored"
+    events = [
+        {"event": "prefetch_residency_registered", "command_id": command,
+         "ts_ms": 110., "native_locked": True, "protection_reason": "native_locked"},
+        {"event": "prefetch_protection_revoked", "command_id": command,
+         "ts_ms": 120., "reason": "allocation_pressure", "protected_bytes": 10000},
+        {"event": "prefetch_residency_released", "command_id": command,
+         "ts_ms": 140., "reason": "service_window_expired", "native_locked": False},
+    ]
+    write_rows(tmp_path / "opportunities/admission_opportunities.jsonl", [{
+        "event": "prefetch_native_issued", "command_id": command,
+        "source": "join_ticket", "workflow_id": "w", "context_id": "c",
+        "context_epoch": 1, "node_id": 10, "ts_ms": 100.,
+    }, *events])
+    write_rows(tmp_path / "server/transfer_telemetry.jsonl", [{
+        "direction": "h2d", "node_ids": [10], "submit_ts_ms": 101.,
+        "complete_ts_ms": 110., "tagged_child_commits": [{
+            "command_id": command, "num_bytes": 100, "num_tokens_by_pool": {"kv": 5},
+        }],
+    }])
+    write_rows(tmp_path / "server/physical_action_ack.jsonl", [{
+        "command_id": command, "action": "PREFETCH_GPU", "pool_bytes": {"kv": 100},
+    }])
+    write_rows(tmp_path / "server/physical_action_use.jsonl", [{
+        "event": "beliefkv_prefetch_first_service", "command_id": command,
+        "ack_ts_ms": 110., "first_service_ts_ms": 200., "full_node_reused": True,
+        "full_reuse_proof_version": 2,
+    }])
+    result = audit(tmp_path)
+    [row] = result["rows"]
+    assert row["lease_events"] == events
+    summary = result["summary"]["by_source"]["join_ticket"]
+    assert summary["protection_revoked_commands"] == 1
+    assert summary["protection_revocation_reasons"] == {"allocation_pressure": 1}
+    assert summary["full_verified_reused_bytes_known"] == 100
+    assert result["summary"]["redemoted_before_first_service"] == 0
+    assert full_expiration_evidence([row], 130., 150., 160., 200.) == []
+    [group] = summary["full_reuse_by_residency"]
+    assert group["native_locked_at_registration"] is True
+    assert group["last_observed_release_reason"] == "service_window_expired"
+    assert group["protection_revoked_commands"] == 1
+
+
+def test_a_tracking_only_registration_does_not_create_lock_expiration_evidence():
+    action = {
+        "command_id": "tracking", "pool_bytes": {"kv": 100}, "ack_ts_ms": 110.,
+        "lease_events": [
+            {"event": "prefetch_residency_registered", "native_locked": False,
+             "protection_reason": "disabled", "ts_ms": 110.},
+            {"event": "prefetch_residency_released", "reason": "service_window_expired",
+             "ts_ms": 120.},
+        ],
+    }
+    assert full_expiration_evidence([action], 115., 125., 130., 140.) == []
+
+
 def test_lifecycle_attributes_eos_takeover_at_issue_instead_of_the_old_forecast(tmp_path):
     triggers = {
         "early": "selective_report_service", "eos": "observed_no_tool_eos",

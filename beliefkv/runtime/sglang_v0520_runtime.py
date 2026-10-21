@@ -461,6 +461,12 @@ class NativeAdmissionRuntime:
         ] = {}
         self._prefetch_issue_budgets: dict[str, PrefetchResidencyBudget] = {}
         self._prefetch_service_leases: dict[str, _PrefetchServiceLease] = {}
+        protection_setting = os.environ.get("BELIEFKV_PREFETCH_RESIDENCY_PROTECTION", "1")
+        if protection_setting not in ("0", "1"):
+            raise ValueError("prefetch residency protection must be 0 or 1")
+        self.enable_prefetch_residency_protection = (
+            protection_setting == "1" and self._custom_kv_management
+        )
         self._prefetch_admission_hints: dict[str, PrefillCandidateKey] = {}
         self._tool_prefetch_survival_evidence: OrderedDict[
             PrefillCandidateKey, tuple[NativeToolWaitHint, bool]
@@ -2249,6 +2255,10 @@ class NativeAdmissionRuntime:
                 "internal_comparison_mode": self.internal_comparison_mode,
                 "custom_kv_management": self._custom_kv_management,
                 "join_parent_priority": self.enable_join_parent_priority,
+                "join_priority_order": "aged_fifo_then_native;independent_four_admission_quota",
+                "restore_priority_scope": "same_causal_class;no_aged_head_bypass",
+                "prefetch_residency_protection": self.enable_prefetch_residency_protection,
+                "prefetch_protection_revocable_on_pressure": True,
                 "join_priority_ordinary_quota": 4,
                 "join_priority_pending_parents": len(self._join_priority_pending),
                 "join_only_priority_ordinary_quota": 4,
@@ -6309,13 +6319,6 @@ class NativeAdmissionRuntime:
         record = self._parent_pressure_candidates.get(node_id)
         if record is None or record[1] != creation_time:
             return False
-        self._refresh_prefetch_service_leases(context_id=record[0].context_id)
-        if any(
-            lease.node_id == node_id and lease.creation_time == creation_time
-            for lease in self._prefetch_service_leases.values()
-        ):
-            self.counts["prefetch_residency_pressure_protected"] += 1
-            return False
         try:
             node = self._native_cache.tree_core.node_by_id(node_id)
             if node.creation_time != creation_time:
@@ -6438,12 +6441,10 @@ class NativeAdmissionRuntime:
             and budget.source == "native_next_prefill"
             and type(budget.request_slots) is int and budget.request_slots > 0
         ):
-            protected = {lease.key.context_id for lease in self._prefetch_service_leases.values()}
             for request in islice(self._capacity_waiting_queue, budget.request_slots, 512):
                 candidate = self.visible.get(getattr(request, "rid", None))
                 if (
                     candidate is not None and candidate.invocation_id != key.invocation_id
-                    and candidate.context_id not in protected
                     # This iterator proves membership only for initial collection.
                     # Each native owner check revalidates the live queue below.
                     and self._live_queued_full_request(
@@ -6506,21 +6507,6 @@ class NativeAdmissionRuntime:
             return
         groups = self._pressure_candidate_groups()
         self._refresh_prefetch_service_leases()
-        protected = {
-            (lease.node_id, lease.creation_time)
-            for lease in self._prefetch_service_leases.values()
-        }
-        for node_id, created in protected:
-            record = self._parent_pressure_candidates.get(node_id)
-            if record is None or record[1] != created:
-                continue
-            self.counts["prefetch_residency_pressure_protected"] += 1
-            del self._parent_pressure_candidates[node_id]
-            del self._parent_pressure_positions[node_id]
-            members = groups[record[0]]
-            members.remove(node_id)
-            if not members:
-                del groups[record[0]]
         for key, members in tuple(groups.items()):
             if not self._live_parent_pressure_key(key):
                 for node_id in members:
@@ -7122,6 +7108,15 @@ class NativeAdmissionRuntime:
                     self.counts["critical_parent_capacity_refresh_satisfied"] += 1
                     return True
         excluded = tuple(node.node_id for node in candidate.nodes)
+        # Free only our optional post-ACK locks after observing a real shortage.
+        # Native reclaim still validates references, copies and in-flight DMA.
+        for command, lease in tuple(self._prefetch_service_leases.items()):
+            if lease.key.context_id != key.context_id and lease.lock_params is not None:
+                self._release_prefetch_service_lease(
+                    command, "critical_parent_capacity", keep_tracking=True,
+                )
+                if self.physical_disabled:
+                    return False
         self._publish_parent_pressure_candidates(exclude_node_ids=excluded)
         prepare = getattr(self._native_cache, "prepare_beliefkv_cold_full_capacity", None)
         with self._queued_full_donor_scope(key) as queued_candidates:
@@ -8626,9 +8621,12 @@ class NativeAdmissionRuntime:
 
     def _release_prefetch_service_lease(
         self, command_id: str, reason: str, *, request: object | None = None,
+        keep_tracking: bool = False,
     ) -> None:
         lease = self._prefetch_service_leases.get(command_id)
         if lease is None or command_id in self._prefetch_lock_release_failures:
+            return
+        if keep_tracking and lease.lock_params is None:
             return
         if lease.lock_params is not None:
             try:
@@ -8645,6 +8643,25 @@ class NativeAdmissionRuntime:
                         "scope": "receipt retained; no unsafe release retry",
                     })
                 return
+            self._prefetch_service_leases[command_id] = replace(
+                lease, lock_params=None, protected_bytes=0,
+            )
+        if keep_tracking:
+            self._lease_refresh_signature = None
+            self.counts[f"prefetch_protection_revoked:{reason}"] += 1
+            if self._opportunity_writer is not None:
+                self._opportunity_writer.record({
+                    "event": "prefetch_protection_revoked",
+                    "ts_ms": time.time() * 1000., "command_id": command_id,
+                    "source": lease.source, "reason": reason,
+                    "context_id": lease.key.context_id,
+                    "context_epoch": lease.key.context_epoch,
+                    "node_id": lease.node_id, "node_creation_time": lease.creation_time,
+                    "protected_bytes": lease.protected_bytes,
+                    "host_native_locked": lease.host_lock_params is not None,
+                    "scope": "own optional device lock released; tracking retained; not freed bytes",
+                })
+            return
         if lease.host_lock_params is not None:
             # Record the successful device unlock before any later operation
             # can fail; a retained Host receipt must never unlock it twice.
@@ -9058,6 +9075,30 @@ class NativeAdmissionRuntime:
         reason = self._prefetch_lease_invalid_reason(lease)
         if reason is not None:
             self.counts[f"prefetch_residency_registration_skipped:{reason}"] += 1
+            return
+        if not self.enable_prefetch_residency_protection:
+            self._prefetch_service_leases[action.command_id] = lease
+            self._lease_refresh_signature = None
+            self.counts["prefetch_residency_registered"] += 1
+            if self._opportunity_writer is not None:
+                self._opportunity_writer.record({
+                    "event": "prefetch_residency_registered", "ts_ms": time.time() * 1000.,
+                    "command_id": action.command_id, "source": source,
+                    "context_id": step.key.context_id, "context_epoch": step.key.context_epoch,
+                    "session_id": step.key.session_id,
+                    "session_generation": step.key.session_generation,
+                    "node_id": step.node_id, "node_creation_time": step.creation_time,
+                    "pool_bytes": dict(action.pool_bytes),
+                    "lease_ms": (lease.expires_at - now) * 1000.,
+                    "native_locked": False, "host_native_locked": False,
+                    "protected_bytes": 0, "protection_reason": "disabled",
+                    "protected_by_command_id": None, "budget": None,
+                    "residency_issue_budget": (
+                        vars(issue_budget).copy() if issue_budget is not None else None
+                    ),
+                    "protection_request_slots": 0, "protection_slot_role": None,
+                    "scope": "first-service tracking only; no extra post-ACK lock",
+                })
             return
         budget = self._residency_budget
         protection_slots = budget.request_slots
@@ -10710,7 +10751,10 @@ class NativeAdmissionRuntime:
         self._prefetch_priority_partial_restore_details = None
         self._resident_priority_promoted = None
         self._resident_priority_details = None
-        if self.internal_comparison_mode == "join_priority_only":
+        if self.internal_comparison_mode == "join_priority_only" or (
+            self.enable_join_parent_priority and self._join_priority_pending
+            and self._join_priority_normal_admissions >= 4
+        ):
             ordered = [
                 (index, request) for index, request in tagged
                 if (key := keys[index]) is not None
@@ -10723,6 +10767,7 @@ class NativeAdmissionRuntime:
                 if now - self._visible_since.get(pair[1].rid, now) >= 10. else 0.,
                 pair[0],
             ))
+            candidate = None
             if (
                 self.enable_join_parent_priority and self._join_priority_pending
                 and ordered and self._join_priority_normal_admissions >= 4
@@ -10732,13 +10777,18 @@ class NativeAdmissionRuntime:
                     ordered.remove(candidate)
                     ordered.insert(0, candidate)
                     self._join_priority_promoted = candidate[1].rid
-                    self.counts["join_only_priority_ordered"] += 1
+                    prefix = (
+                        "join_only" if self.internal_comparison_mode == "join_priority_only"
+                        else "join_parent"
+                    )
+                    self.counts[f"{prefix}_priority_ordered"] += 1
                     if now - self._visible_since.get(ordered[1][1].rid, now) >= 10.:
-                        self.counts["join_only_priority_aged_head_bypass"] += 1
-            return compile_native_prefill_plan(
-                [keys[index] for index, _ in ordered],
-                semantic_revision=self.semantic_revision,
-            )
+                        self.counts[f"{prefix}_priority_aged_head_bypass"] += 1
+            if self.internal_comparison_mode == "join_priority_only" or candidate is not None:
+                return compile_native_prefill_plan(
+                    [keys[index] for index, _ in ordered],
+                    semantic_revision=self.semantic_revision,
+                )
         drained_chunk = self._native_prefill_input_budget_exhausted(
             native_order, adder=adder, tagged_count=len(tagged),
         )
@@ -10801,17 +10851,10 @@ class NativeAdmissionRuntime:
             {} if self._workflow_attained_work_enabled else None
         )
         last_join_children = []
-        queued_join_parent = False
-
         def waiting_rank(pair: tuple[int, object]) -> tuple:
-            nonlocal queued_join_parent
             index, request = pair
             if ranks[index][0] == 0:
                 last_join_children.append(pair)
-            if self._join_priority_pending:
-                key = keys[index]
-                if key is not None and key.invocation_id in self._join_priority_pending:
-                    queued_join_parent = True
             since = self._visible_since.get(getattr(request, "rid", ""), now_ms / 1000.)
             if now_ms / 1000. - since >= 10.:
                 return (-1, since, index, index)
@@ -10928,25 +10971,21 @@ class NativeAdmissionRuntime:
         ):
             work_selected = ordered[0][1].rid
         priority_candidates = []
-        ready_restores = len({
-            lease.key for lease in self._prefetch_service_leases.values()
-            if lease.demand_ready
-        })
-        budget = self._current_residency_budget() if ready_restores else self._residency_budget
-        slots = budget.request_slots
-        restore_stride = max(1, min(
-            4, math.ceil(max(0, slots - ready_restores) / max(1, ready_restores)),
-        )) if ready_restores and budget.source == "native_next_prefill" else 4
+        same_class = (
+            ranks[ordered[0][0]][:2]
+            if ordered and waiting_ranks[ordered[0][0]][0] != -1 else None
+        )
         if (
-            ready_restores
-            and self._prefetch_priority_normal_admissions >= restore_stride
-            and ordered
+            self._prefetch_service_leases and same_class is not None
+            and self._prefetch_priority_normal_admissions >= 4
         ):
             restores_by_context: dict[str, list[_PrefetchServiceLease]] = {}
             for lease in self._prefetch_service_leases.values():
                 if lease.demand_ready:
                     restores_by_context.setdefault(lease.key.context_id, []).append(lease)
             for candidate in ordered:
+                if ranks[candidate[0]][:2] != same_class:
+                    continue
                 key = keys[candidate[0]]
                 if key is None:
                     continue
@@ -10970,12 +11009,14 @@ class NativeAdmissionRuntime:
                         candidate, "prefetch",
                     ))
         if (
-            self.enable_resident_first and ordered
+            self.enable_resident_first and same_class is not None
             and self._parent_capacity_handoffs
             and self._prefetch_priority_normal_admissions >= 4
         ):
             inspected = 0
             for candidate in ordered:
+                if ranks[candidate[0]][:2] != same_class:
+                    continue
                 key = keys[candidate[0]]
                 handoff = self._live_parent_capacity_handoff(key) if key is not None else None
                 if handoff is None:
@@ -10991,12 +11032,14 @@ class NativeAdmissionRuntime:
                 if inspected == 8:
                     break
         if (
-            self._prefetch_admission_hints and ordered
+            self._prefetch_admission_hints and same_class is not None
             and self._prefetch_priority_normal_admissions >= 4
             and not priority_candidates
         ):
             inspected = 0
             for candidate in ordered:
+                if ranks[candidate[0]][:2] != same_class:
+                    continue
                 rid = candidate[1].rid
                 hint = self._prefetch_admission_hints.get(rid)
                 if hint is None:
@@ -11016,8 +11059,8 @@ class NativeAdmissionRuntime:
                     and type(observation.get("missing_mamba_slots")) is int
                     and observation["missing_mamba_slots"] == 0
                 ):
-                    # Live protected restores keep precedence. This hint adds
-                    # neither a residency claim nor another restoration.
+                    # Within this causal class, a live restore precedes a hint.
+                    # The hint adds neither protection nor another restoration.
                     priority_candidates.append((math.inf, 4, candidate, "prefetch_advisory"))
                     break
                 else:
@@ -11025,109 +11068,21 @@ class NativeAdmissionRuntime:
                     self.counts["prefetch_admission_hint_not_ready"] += 1
                 if inspected == 8:
                     break
-        if (
-            self.enable_join_parent_priority and queued_join_parent and ordered
-            and self._join_priority_normal_admissions >= 4
-            and self._prefetch_priority_normal_admissions >= 4
-        ):
-            candidate = self._join_parent_priority_candidate(ordered, keys)
-            if candidate is not None:
-                # Protected restore turns keep precedence; this causal turn requires
-                # neither a speculative transfer nor an HBM-hit claim.
-                priority_candidates.append((math.inf, 3, candidate, "join_parent"))
-        join_parent_chosen = False
         if priority_candidates:
             chosen = min(priority_candidates, key=lambda item: item[:2])
             source = chosen[3]
-            join_parent_chosen = source == "join_parent"
             candidate = chosen[2]
             native_rank = ordered.index(candidate)
-            # Preserve ordinary admissions while allowing fully restored
-            # checkpoints to use the measured next-batch consumption quota.
-            head = keys[ordered[0][0]]
-            priority_now = time.monotonic()
-            aged_head = head is not None and (
-                priority_now - self._visible_since.get(head.request_id, priority_now) >= 10.
-            )
-            ordinary_quota = 4 if aged_head else restore_stride
-            complete_ready = False
-            partial_restore_details = None
-            if (
-                aged_head and source == "prefetch" and native_rank > 0
-                and budget.source == "native_next_prefill"
-                and budget.request_slots > 0 and restore_stride < 4
-            ):
-                self.counts["prefetch_priority_complete_ready_inspected"] += 1
-                observation = self._read_request_reentry(
-                    candidate[1], key=keys[candidate[0]], refresh=True,
-                )
-                complete_ready = bool(
-                    observation is not None
-                    and type(observation.get("missing_full_tokens")) is int
-                    and observation["missing_full_tokens"] == 0
-                    and type(observation.get("missing_mamba_slots")) is int
-                    and observation["missing_mamba_slots"] == 0
-                    and type(observation.get("device_checkpoint_tokens")) is int
-                    and observation["device_checkpoint_tokens"] > 0
-                )
-                if complete_ready:
-                    ordinary_quota = restore_stride
-                elif (
-                    self._residency_pool_bytes is not None
-                    and self._prefetch_priority_normal_admissions < ordinary_quota
-                    and ranks[candidate[0]][:2] <= ranks[ordered[0][0]][:2]
-                ):
-                    selected_cost = self._request_restore_cost(candidate[1], observation)
-                    if (
-                        selected_cost is not None and selected_cost[0] > 0
-                        and observation["missing_full_tokens"] < observation["checkpoint_tokens"]
-                    ):
-                        self.counts["prefetch_priority_partial_restore_inspected"] += 1
-                        head_observation = self._read_request_reentry(
-                            ordered[0][1], key=head, refresh=True,
-                        )
-                        head_cost = self._request_restore_cost(ordered[0][1], head_observation)
-                        if (
-                            head_cost is not None and selected_cost[0] < head_cost[0]
-                            and selected_cost[1] <= head_cost[1]
-                        ):
-                            ordinary_quota = restore_stride
-                            partial_restore_details = {
-                                "head_request_id": ordered[0][1].rid,
-                                "head_restore_bytes": head_cost[0],
-                                "selected_restore_bytes": selected_cost[0],
-                                "head_next_input_tokens": head_cost[1],
-                                "selected_next_input_tokens": selected_cost[1],
-                                "ordinary_admission_quota": ordinary_quota,
-                                "evidence": "fresh_native_reentry;native_admission_remains",
-                            }
-            ordinary_quota_met = self._prefetch_priority_normal_admissions >= ordinary_quota
-            if native_rank > 0 and ordinary_quota_met:
+            if native_rank > 0:
                 ordered.remove(candidate)
                 ordered.insert(0, candidate)
                 if source == "parent_handoff":
                     self._parent_handoff_priority_promoted = candidate[1].rid
                     self.counts["parent_handoff_priority_ordered"] += 1
-                elif source == "join_parent":
-                    self._join_priority_promoted = candidate[1].rid
-                    self.counts["join_parent_priority_ordered"] += 1
-                    if aged_head:
-                        self.counts["join_parent_priority_aged_head_bypass"] += 1
                 else:
                     self._prefetch_priority_promoted = candidate[1].rid
                     self.counts["prefetch_priority_ordered"] += 1
-                    if complete_ready:
-                        self._prefetch_priority_complete_ready_quota = ordinary_quota
-                        self.counts["prefetch_priority_complete_ready_ordered"] += 1
-                    elif partial_restore_details is not None:
-                        self._prefetch_priority_partial_restore_details = partial_restore_details
-                        self.counts["prefetch_priority_partial_restore_ordered"] += 1
                 self._prefetch_priority_native_rank = native_rank
-                self._prefetch_priority_aged_head_bypassed = aged_head
-                if aged_head and source != "join_parent":
-                    self.counts["prefetch_priority_aged_head_bounded_bypass"] += 1
-            elif aged_head and source != "join_parent":
-                self.counts["prefetch_priority_aged_head_kept"] += 1
         if (
             (
                 self.enable_final_stage_priority
@@ -11138,7 +11093,6 @@ class NativeAdmissionRuntime:
             and self._final_priority_normal_admissions >= 4
             and self._prefetch_priority_normal_admissions >= 4
             and self._prefetch_priority_promoted is None
-            and not join_parent_chosen
             and self._parent_handoff_priority_promoted is None and ordered
             and time.monotonic() - self._visible_since.get(
                 getattr(ordered[0][1], "rid", ""), time.monotonic(),
@@ -11196,7 +11150,6 @@ class NativeAdmissionRuntime:
             and last_join_children and len(ordered) > 1
             and self._final_priority_normal_admissions >= 4
             and self._prefetch_priority_normal_admissions >= 4
-            and not join_parent_chosen
             and self._prefetch_priority_promoted is None
             and self._parent_handoff_priority_promoted is None
             and self._final_priority_promoted is None
@@ -11475,7 +11428,7 @@ class NativeAdmissionRuntime:
                     ]
                     for lease in victims:
                         self._release_prefetch_service_lease(
-                            lease.command_id, "allocation_pressure",
+                            lease.command_id, "allocation_pressure", keep_tracking=True,
                         )
 
     def on_batch_selected(self, batch: object) -> None:

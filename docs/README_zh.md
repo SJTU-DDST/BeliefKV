@@ -7,18 +7,31 @@
 重复摘要已清理；源码归档及保留范围见[整理记录](archive/research_exploration_20261020.md)。
 下文的最新工程状态与实验约束继续有效。
 
-**最新执行要求：第二组 OurScheduler-only 完整收尾后暂停 V111。**
-北京时间 2026-10-21 19:04 已登记独立 CPU 监护：
-`../ops/v111_internal_20261021.registration.pause_after.json`。
-等待第二组 driver 结束并进入 postprocessing 后设置全局暂停标记，
-保留 HTML、审计及清理；KV-only、工程对齐 native 留待用户恢复实验。
-当前冻结代码不变。main 已补齐不依赖 HBM 命中的 JOIN parent 有界优先，
-以及无收尾提示时最后一个真实 JOIN 阻塞 child 的有界提升；不热加载或
-据 CPU 检查宣称新的 GPU 收益。后续 batch8/seed21 的约定保留。
-[V2600](../experiments/reports/v2600_join_priority_final_qualified_cpu_20261021.xml)
-保留原 3110 项并新增 38 项，3148 项全部通过、无跳过；
-[V2601](../experiments/reports/v2601_join_priority_cpu_sources_20261021.json)
-绑定当前源码。新优先策略与恢复提升共用普通准入配额，引擎未改。
+**最新实现：削减恢复特权，GPU 实验保持暂停。**
+Full 与 JOIN-only 共用真实 JOIN parent 的选择、aged FIFO/native 顺序和
+四次普通准入配额；JOIN 提升不再受恢复提升配额约束。有资格的 JOIN
+parent 不会被普通恢复请求抢先。普通恢复优先只在同一因果类别内生效，
+不再越过 aged 队首，也不为降低配额额外读取完整/部分恢复成本。
+实际容量不足时允许撤销我们自己增加的 ACK 后驻留锁；租约记录保留
+用于首次服务归因，不再仅因存在记录就排除回收候选。原生引用、
+在途 DMA、Host 副本及分配器正确性检查保留。
+
+默认保留有界、可撤销的保护。独立设置
+`BELIEFKV_PREFETCH_RESIDENCY_PROTECTION=0` 可关闭 ACK 后额外锁，
+保留传输、依赖和首次服务追踪；启动记录和运行时记录分别核对请求值与
+实际值。后续开关对照需保持同 batch/seed/任务配置，尚未取得 GPU 性能结论。
+[V2608 CPU 回归](../experiments/reports/v2608_revocable_recovery_qualified_cpu_20261021.xml)
+保留 V2600 的全部 3148 项历史身份并扩展至 3456 项，全部通过、无跳过，
+另有 2 个 subtest；旧策略断言已按新策略更新。
+[V2609](../experiments/reports/v2609_revocable_recovery_cpu_sources_20261021.json)
+绑定本次源码，引擎未改。此资格包含新增用例和补跑的完整受影响模块。
+
+V111 第二组在北京时间 2026-10-21 19:44 返回退出码 1：36/36 completed，
+system JCT 资格 36/36，native-agent JCT 资格 35/36；一条
+`guard_intervened_completion` 未通过启动器的全体 native gate。
+保留 `stopped_for_investigation`，不能当成 GPU 崩溃或未完成 workflow。
+全局暂停标记已生效，不启动 KV-only、工程对齐 native 或新的 GPU 实验。
+下文“正在运行”及四组接续描述保留历史语境，以本段最新状态为准。
 
 **此前 main CPU 优化：压缩不可变请求身份的存储，保留全部实时检查。**
 `PrefillCandidateKey` 使用 slots；[V2582 CPU 对照](../experiments/reports/v2582_prefill_identity_storage_cpu_20261021.json)
@@ -31,7 +44,7 @@
 [V2587](../experiments/reports/v2587_identity_storage_cpu_sources_20261021.json)
 绑定源码。这不是 GPU/JCT 收益，不热加载进 V111 的四组冻结实验。
 
-**最新：V111 JOIN-priority-only 已完成 36/36，OurScheduler-only 正在运行。**
+**此前记录：V111 JOIN-priority-only 完成，随后启动 OurScheduler-only。**
 首组持续 2801.85 秒，最终 43 次 JOIN 优先准入，自定义物理动作、
 无用工具预测及预测维护均为 0；73 轮动态委派、128 个 child，未观测嵌套。
 [V2595 完整比较](../experiments/reports/v2595_v111_join_only_completed_comparison_20261021.json)

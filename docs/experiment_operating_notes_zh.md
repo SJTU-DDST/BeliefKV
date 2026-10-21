@@ -9,19 +9,30 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 删除，详见[整理记录](archive/research_exploration_20261020.md)；原始 trace、
 冻结检出及当前 GPU 预约约束保持有效。
 
-**最新要求覆盖下方旧的四组连续执行约定：第二组结束后暂停。**
-V111 当前 OurScheduler-only 不改配置；19:04 已登记 CPU 边界监护，
-请求为 `../ops/v111_internal_20261021.registration.pause_after.json`。
-只在当前 driver 已退出、主监护进入本组 postprocessing 后创建
-`/tmp/beliefkv-experiments.paused`，不得提前中断本组。主监护完成 HTML、
-审计和清理后，在启动第三组前看到暂停标记；保留已完成两组和待续两组，
-不得把用户暂停记为自然 workflow 失败或矩阵完成，不自动恢复。
-main 的 JOIN parent/最后阻塞 child 排序改动只做 CPU 检查，不热加载。
-V2600 保留原 3110 项并新增 38 项，3148 全部通过、无跳过，V2601
-绑定源码。Full/OurScheduler 开启 JOIN parent 优先，KV-only 与原生顺序
-关闭；真实唤醒记录不等于有 Host-only 数据或物理恢复 ticket。新的有界
-提升保留四次普通准入配额和已有恢复保护，不新增预测/周期或抢占 decode。
+**最新要求：GPU 已暂停，当前只做 CPU 优化与既有 trace 收尾。**
+V111 第二组在北京时间 2026-10-21 19:44 返回退出码 1；36/36 completed，
+system JCT 资格 36/36，native-agent JCT 资格 35/36。一条
+`guard_intervened_completion` 使启动脚本的全体 native gate 返回失败；
+不把它记成未完成 workflow 或已证实的 GPU 故障。保留原失败状态和
+`../ops/v111_internal_20261021.registration.pause_after.json` 中的边界异常；
+另已激活 `/tmp/beliefkv-experiments.paused`。不启动第三组或新 GPU 实验。
+可独立补做 HTML、审计和工作目录清理，但不得改写原失败为矩阵成功。
+
+main 的 Full/JOIN-only 共用真实 JOIN 主选择和独立四次普通准入配额，
+不再由恢复提升抢先或限制 JOIN。普通恢复优先限定同一因果类别且不能
+越过 aged 队首。真正容量不足时，准确撤销我们自己加的 ACK 后锁，
+保留首次服务追踪及 native 正确性依赖；存在租约不再直接排除候选。
+默认开启有界可撤销保护。后续独立消融设
+`BELIEFKV_PREFETCH_RESIDENCY_PROTECTION=0`，仅关闭额外 ACK 后锁及其
+closure 规划，不关闭预取、传输依赖、JOIN 排序或首次服务追踪。
+启动请求和实际 runtime 设置必须一致。开关对照使用相同 batch、seed、
+任务与其余策略，报告平均/去长尾 JCT、关键 parent 等待、重复 H2D、
+重算及工作量；不以是否超时作为验收，也不把不同轨迹当作相同工作量。
+V2608 保留全部 3148 项历史身份并扩展至 3456 项，全部通过、无跳过，
+另有 2 个 subtest；新用例及受影响模块整体补跑均计入资格，旧策略断言
+按新语义更新。V2609 绑定源码，V2600/V2601 仅为此前策略的资格。
 引擎无改动，不能称重跑 405 项独立原生资格；GPU 效果仍待验证。
+第二组 HTML、审计及工作目录清理已通过冻结版本独立完成。
 
 **此前身份存储 CPU 优化与正在运行的内部矩阵分开记录。**
 请求身份改为 slots 后，V2582 用各自身份类验证同一完整规划/选择
@@ -33,7 +44,7 @@ V2581 的 160 项范围回归及完整回归均未使用 GPU；引擎无改动�
 405 项引擎检查。不据局部 CPU/存储收益宣称吞吐或 JCT 已提升。
 V111 四组继续统一冻结 `e0420fe`/V2579，不热加载此候选或改用新资格。
 
-**最新状态：V111 首组 36/36 完成，OurScheduler-only 于 18:46:58 接续。**
+**此前启动记录：V111 首组完成，OurScheduler-only 于 18:46:58 接续。**
 首组 43 次 JOIN 优先准入、32 次 aged 队首后排序，自定义物理动作、
 无用工具预测和维护均为 0。73 轮委派/JOIN、128 个 child，未观测嵌套。
 HTML/审计/清理已完成。[V2595](../experiments/reports/v2595_v111_join_only_completed_comparison_20261021.json)

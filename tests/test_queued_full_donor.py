@@ -137,8 +137,15 @@ def test_no_queue_override_without_the_runtime_authority_or_with_a_restore_lease
             runtime._prefetch_service_leases["restore"] = NS(key=donor)
         original = cache.beliefkv_cold_full_owner_validator
         with runtime._queued_full_donor_scope(parent) as candidates:
-            assert candidates == 0
-            assert cache.beliefkv_cold_full_owner_validator is original
+            if change == "protected_restore":
+                assert candidates == 1
+                assert cache.beliefkv_cold_full_owner_validator((
+                    (donor.session_id, donor.session_generation),
+                ))
+            else:
+                assert candidates == 0
+                assert cache.beliefkv_cold_full_owner_validator is original
+        assert cache.beliefkv_cold_full_owner_validator is original
     finally:
         runtime._prefetch_service_leases.clear()
         runtime.close()

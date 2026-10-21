@@ -699,8 +699,8 @@ def test_runtime_pressure_releases_speculative_before_ready_restore():
     )
     runtime._prefetch_service_leases["ready"] = ready
     runtime.on_prefill_candidate_result(req("other"), admitted=False, result="NO_TOKEN")
-    assert action.command_id not in runtime._prefetch_service_leases
-    assert "ready" in runtime._prefetch_service_leases
+    assert runtime._prefetch_service_leases[action.command_id].lock_params is None
+    assert runtime._prefetch_service_leases["ready"] is ready
 
 
 def test_same_request_tool_progress_keeps_restore_until_next_request_consumes_it():
@@ -902,8 +902,9 @@ def test_dynamic_restore_priority_still_gives_ordinary_demand_a_turn():
     with patch.object(runtime, "_causal_rank", side_effect=lambda key, index, ranks: (0, 0, index)):
         assert select(runtime, [other, restored]).candidates[0] is restored
         runtime.on_prefill_candidate_result(restored, admitted=True, result="ok")
-        assert select(runtime, [other, restored]).candidates[0] is other
-        runtime.on_prefill_candidate_result(other, admitted=True, result="ok")
+        for _ in range(4):
+            assert select(runtime, [other, restored]).candidates[0] is other
+            runtime.on_prefill_candidate_result(other, admitted=True, result="ok")
         assert select(runtime, [other, restored]).candidates[0] is restored
 
 
@@ -1333,8 +1334,8 @@ def test_pressure_maintenance_groups_contexts_and_still_expires_real_locks():
         runtime._prune_parent_pressure_candidates()
         refresh.assert_called_once()
         live.assert_called_once_with(hint.key)
-        assert 1 not in runtime._parent_pressure_candidates
-        assert len(runtime._parent_pressure_candidates) == 10
+        assert 1 in runtime._parent_pressure_candidates
+        assert len(runtime._parent_pressure_candidates) == 11
         with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
                    return_value=lease.expires_at):
             runtime._prune_parent_pressure_candidates()

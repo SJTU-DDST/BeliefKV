@@ -512,8 +512,11 @@ V111 首组 JOIN-priority-only 已完成 36/36，43 次有界 JOIN 优先准入�
 V2595 同时保留原始 native 的 3 个 agent-JCT 资格排除和独立分组。
 
 OurScheduler-only 于北京时间 2026-10-21 18:46:58 接续；四组仍冻结
-`e0420fe`/`53335e6`、running12/seed21/256K。最新用户要求本组完整收尾
-后暂停；19:04 已登记 CPU 边界监护，不启动 KV-only 或工程对齐 native。
+`e0420fe`/`53335e6`、running12/seed21/256K。第二组于 19:44 返回退出码 1：
+36/36 completed，system JCT 资格 36/36，native-agent JCT 资格 35/36；
+一条 `guard_intervened_completion` 未通过全体 native gate，不能记成
+GPU 崩溃或未完成 workflow。失败状态保留，全局暂停标记已生效；
+不启动 KV-only 或工程对齐 native。
 Full 继续复用 V109。后续身份存储优化、独立 JOIN 审计和 Host-hit
 口径修正均不热加载。V2593 全部 3110 项 CPU 检查通过、无跳过，保留
 V2586 的 3080 项并新增 30 项，V2594 绑定当前源码；不是新的 GPU 验收。
@@ -524,11 +527,18 @@ V2592 不要求预取计划，按首次 root 到达的 600–1200 秒匹配真�
 或 H2D；实际 controller 分池回执仍是迁移字节的依据。
 用户要求将有效的简单 JOIN parent 优先合入 Full，并考虑最后一个 child
 优先。main 据真实 JOIN 解锁/等待关系增加有界排序，保留原生准入和
-恢复优先、普通名额；这是待 GPU 验证的新实现，不混入当前冻结结果。
-新实现通过 V2600 全部 3148 项 CPU 检查、无跳过，保留原 3110 项并新增
-38 项，V2601 绑定源码。它补齐 Full/OurScheduler 的无 HBM 命中要求
-parent 提升，以及无报告提示但确有 WAIT_JOIN waiter 的最后 child 提升；
-两者共用有界配额，不把这项改动当作已经取得 KV 因果收益。
+普通名额；这是待 GPU 验证的新实现，不混入当前冻结结果。
+最新 main 进一步共用 Full/JOIN-only 的 JOIN 选择、aged FIFO/native
+顺序和独立四次普通准入配额，恢复状态不再让普通请求跨类别或 aged
+队首抢先。真实容量压力可准确撤销自己的额外驻留锁；保留首次服务归因，
+租约记录本身不再排除回收候选，原生正确性依赖保留。另设
+`BELIEFKV_PREFETCH_RESIDENCY_PROTECTION=0|1` 独立比较 ACK 后额外保护；
+默认有界且可撤销，尚未做 GPU 开关对照。V2600/V2601 为此前策略资格，
+不再绑定新候选。V2608 保留原 3148 项身份并扩展至 3456 项，全部通过、
+无跳过，另有 2 个 subtest；V2609 绑定源码。测试名称保留，旧恢复
+特权断言按新策略明确更新。离线审计分开记录撤销保护、实际回收和复用。
+后续比较不能把 Full/对照输出 token 和委派次数差异归为纯 KV 收益，
+也不能用“是否超时”代替 JCT、恢复等待、重复加载和重算的验收。
 
 本次内部矩阵选 batch12，以保持与复用的 V109 Full 相同的 batch。
 V109 同 seed 配对全程平均 JCT 约降低 20.52%、共同去长尾受限平均 JCT

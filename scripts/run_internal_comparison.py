@@ -204,7 +204,14 @@ def register(args) -> None:
             {"path": str(path), "sha256": sha256_file(path)} for path in sorted(inputs)
         ],
         "environment": environment,
-        "policy_configuration": {mode: arm_environment({}, mode) for mode in ORDER},
+        "policy_configuration": {
+            mode: arm_environment({
+                "BELIEFKV_PREFETCH_RESIDENCY_PROTECTION": environment.get(
+                    "BELIEFKV_PREFETCH_RESIDENCY_PROTECTION",
+                    environment.get("PREFETCH_RESIDENCY_PROTECTION", "1"),
+                ),
+            }, mode) for mode in ORDER
+        },
         "scope": (
             "User-authorized development comparison: reuse V109 Full without rerunning "
             "it; run four controls on latest qualified main including newer CPU "
@@ -234,6 +241,7 @@ def register(args) -> None:
 
 
 def observe_arm(mode: str, arm: Path) -> None:
+    protection = None
     info = arm / "server/server_info.json"
     if info.exists():
         observed = load(info)
@@ -249,9 +257,10 @@ def observe_arm(mode: str, arm: Path) -> None:
         observed = load(launch)
         if observed.get("chat_token_block_cache") is not True or observed.get("internal_comparison_mode") != mode:
             raise ValueError(f"{mode}: actual frontend/comparison configuration differs")
+        protection = observed.get("prefetch_residency_protection_requested")
     runtime = qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
     if runtime is not None or mode == "native_matched":
-        validate_runtime(mode, runtime or {})
+        validate_runtime(mode, runtime or {}, residency_protection=protection)
     telemetry = arm / "server/native_telemetry_status.json"
     if telemetry.exists() and any(load(telemetry).get(name) for name in (
         "writer_error", "dropped_records", "failed_records",

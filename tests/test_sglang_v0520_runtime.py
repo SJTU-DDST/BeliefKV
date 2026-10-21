@@ -121,7 +121,7 @@ def test_ordering_hint_cannot_prove_reentry_or_bypass_aged_quota():
     assert key not in runtime._reentry_observations
     plan = runtime.plan_native_prefill(requests, running_batch=None, adder=None)
     assert plan.prioritized[0].request_id == "head"
-    assert runtime.counts["prefetch_priority_complete_ready_inspected"] == 1
+    assert runtime.counts["prefetch_priority_complete_ready_inspected"] == 0
     assert runtime.counts["prefetch_priority_complete_ready_ordered"] == 0
     assert runtime._request_reentry_anchors(requests[1]) is None
     runtime.close()

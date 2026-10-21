@@ -186,7 +186,9 @@ def test_native_policy_baseline_rejects_predictive_mix_before_launch(tmp_path: P
 @pytest.mark.parametrize("comparison", (
     "full", "join_priority_only", "scheduler_only", "kv_only", "native_matched",
 ))
-def test_internal_comparison_effective_environment_before_gpu_launch(tmp_path, comparison):
+def test_internal_comparison_effective_environment_before_gpu_launch(
+    tmp_path, comparison, *, protection="1",
+):
     import sys
     from beliefkv.experiments.internal_comparison import arm_environment
 
@@ -207,6 +209,7 @@ def test_internal_comparison_effective_environment_before_gpu_launch(tmp_path, c
         "PORT": "1", "SGLANG_SOURCE_CHECKOUT": str(tmp_path / "engine"),
         "TOOL_TIMING_ARTIFACT": str(artifact), "TRANSFER_SERVICE_SEED": str(artifact),
         "BELIEFKV_EXPERIMENT_PAUSE_FILE": str(tmp_path / "pause"),
+        "PREFETCH_RESIDENCY_PROTECTION": protection,
     }, comparison)
     result = subprocess.run(
         ["/bin/bash", str(SCRIPT)],
@@ -218,6 +221,9 @@ def test_internal_comparison_effective_environment_before_gpu_launch(tmp_path, c
                               if row.startswith("{")))
     actual = payload["environment"]
     custom_kv = comparison in ("full", "kv_only")
+    assert actual["BELIEFKV_PREFETCH_RESIDENCY_PROTECTION"] == (
+        protection if custom_kv else "0"
+    )
     assert actual["BELIEFKV_ENABLE_PREPARE_HOST"] == str(int(custom_kv))
     assert actual["BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH"] == str(int(custom_kv))
     assert actual["BELIEFKV_ENABLE_TOOL_PREFETCH"] == str(int(custom_kv))
@@ -231,6 +237,15 @@ def test_internal_comparison_effective_environment_before_gpu_launch(tmp_path, c
     launch = json.loads((run / "server/launch_configuration.json").read_text())
     assert launch["internal_comparison_mode"] == comparison
     assert launch["chat_token_block_cache"] is True
+    assert launch["prefetch_residency_protection_requested"] is (
+        protection == "1" and custom_kv
+    )
+
+
+def test_disabled_post_ack_protection_reaches_the_launcher_without_a_gpu(tmp_path):
+    test_internal_comparison_effective_environment_before_gpu_launch(
+        tmp_path, "full", protection="0",
+    )
 
 
 @pytest.mark.parametrize("mode,native,host_gb", (
@@ -313,6 +328,7 @@ def test_effective_policy_environment_without_launching_gpu(
         "schema_version": 1, "chat_token_block_cache": cache_enabled,
         "native_policy_baseline": native,
         "prefetch_prefix_diagnostics": prefix_diagnostics == "1",
+        "prefetch_residency_protection_requested": True,
         "server_random_seed": 21,
         "internal_comparison_mode": "full",
     }

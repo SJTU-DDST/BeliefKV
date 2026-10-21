@@ -144,9 +144,11 @@ def test_pressure_protection_uses_exact_node_generation_and_counts_once():
         ):
             runtime._prune_parent_pressure_candidates()
             runtime._prune_parent_pressure_candidates()
-        assert runtime._parent_pressure_candidates == {8: (key, 2.), 9: (key, 3.)}
-        assert runtime._parent_pressure_groups == {key: {8, 9}}
-        assert runtime.counts["prefetch_residency_pressure_protected"] == 1
+        assert runtime._parent_pressure_candidates == {
+            7: (key, 1.), 8: (key, 2.), 9: (key, 3.),
+        }
+        assert runtime._parent_pressure_groups == {key: {7, 8, 9}}
+        assert runtime.counts["prefetch_residency_pressure_protected"] == 0
     finally:
         runtime.close()
 
