@@ -19,15 +19,36 @@ initial fanout2-4 for every root,12 roots with multiple rounds,126 dynamic
 children and15 nested spawns,maximum depth2. V2435 seals the complete
 predictive summary. Preserve both completed arms and their frozen execution.
 
-V104 predictive launched at2026-10-21T08:15:28+08:00. Frozen runtime2c377da
+V105 predictive launched at2026-10-21T09:15:16+08:00 from frozen c119a35,
+qualificationV2464. Driver2360761,start_ticks671557916;watcher2359215,
+start_ticks671552367. Same36 simultaneous roots,running8,256K/95%,
+Host200GB80:20,selective/EOS,PREPARE and no handoff. Reuse V103 native.
+State:`/home/longhao/experiment/ops/v105_bound_join_fix_20261021.state.json`.
+Frozen source checks,owned-resource release and idle checks passed;36 workflow
+directories exist,health returns200 and first long-input prefill samples are
+present. Early runtime is not physically disabled and telemetry has no
+dropped/failed records or writer error. Fix effectiveness and end-to-end
+acceptance are still pending.
+
+V104 was administratively stopped for verified fixes at09:14:21+08:00,
+with31 completed and5 without terminal outcomes at cutoff. Keep the
+debug-fix stop receipt;these five are censored,not natural incompletes.
+Old watcher's nonzero driver exit follows the deliberate stop,not a
+spontaneous crash. It launched at08:15:28+08:00;frozen runtime2c377da
 uses V2445 and the unchanged native tree,36 simultaneous roots,running8,
 256K/95% and Host200GB80:20. Watcher2106412 verified exact V103 watcher/
 driver exit identities,completed postprocessing and idle GPU checks.
 Driver PID2142467,start_ticks671199167.
 Run predictive only against V103 native. State is
 `/home/longhao/experiment/ops/v104_queued_full_20261021.state.json`.
-Honor new user holds/pauses,verify frozen sources again,and stop on observed
-physical or writer failures. Do not duplicate either driver.
+Do not restart that driver. Honor new user holds/pauses and physical/writer
+failures in the V105 watcher.
+
+V2465 seals stopped V104 JSONL prefixes:JOIN68 observed,61 positive
+pre-completion plans,50 early submitted/reused,13.194GB FULL;tool2584 waits,
+146 positive pre-completion plans,128 submitted,122 early reused,6.970GB.
+Separate all post-completion restoration and broad subsequent native Host
+hits. Do not use this interrupted prefix as a complete mean-JCT result.
 
 Rechecked confirmed-ticket eligibility on current main:62 focused CPU cases
 pass. Proven-empty safe-input FULL/required-Mamba restores are filtered before
@@ -48,8 +69,8 @@ exclusion for the final throughput analysis.
 
 Latest main qualification isV2464,with2709 application cases actually passed
 (2677 retained plus32 new);rehash unchanged engine sources and retain375
-previously executed native cases. V104 stays frozen2c377da until its qualified
-V105 replacement;reuse completed V103 native rather than rerun the baseline.
+previously executed native cases. V104 remains preserved at2c377da;
+V105 runs the qualified replacement against completed V103 native.
 
 V2461 reuses the same independently sealed V104 prefixes. A207696-token
 parent has36 bound JOIN leases remaining speculative and no demand-ready
@@ -74,8 +95,8 @@ Retain all samples and do not claim these fixes reduce control cost.
 A deterministic source-freezing regression also requires preserving the
 temporary Git index timestamp via copy2. Keep the earlier isolated snapshot
 failure and passing recheck;its original cause is unproved. V2464 seals
-corrected source/allocator tests and current code. Stop only the owned V104
-identities if still running,record a debug-fix cutoff,then launch frozen V105.
+corrected source/allocator tests and current code. V104's owned identities
+were stopped with an explicit debug-fix cutoff;frozen V105 has launched.
 Measure bound-demand recognition,ACK-to-service,repeated restoration,
 donor reload/fairness,useful early FULL,trimmed throughput and mean JCT.
 

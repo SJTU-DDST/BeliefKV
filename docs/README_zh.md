@@ -25,10 +25,16 @@ predictive更短；实际请求量6734/8195、输出量1749958/2024180 token，
 不能将全部差异归因于预取。自动去长尾窗口600–3184.053秒包含profiler；
 干净固定窗口见V2447，当前不据自动窗口宣称净吞吐获胜。
 
-**V104 predictive 已于北京时间 08:15:28 接续启动。**冻结运行码 `2c377da`，36-root/
-running8/256K/95%/Host200GB80:20 保持；仅接续 predictive 并复用
-V103 native。watcher `2106412` 已核对旧进程身份、后处理和 GPU
-空闲，driver PID `2142467`；新暂停或已确认运行错误照常处理。
+**V105 predictive 已于北京时间 09:15:16 启动。**冻结运行码 `c119a35`，
+资格V2464；36-root/running8/256K/95%/Host200GB80:20保持，复用
+V103 native。driver PID `2360761`，watcher `2359215`；健康检查
+HTTP200、36个workflow已创建并开始长输入prefill。修复效果与净性能
+仍待验证，新暂停或已确认运行错误照常处理。
+
+V104于09:14:21为验证修复而行政中断，cutoff时31个completed、
+5个无终态，后者不记自然incomplete。[V2465封闭审计](../experiments/reports/v2465_v104_debug_stop_wait_prefetch_20261021_summary.json)
+中JOIN50个提前复用13.194GB FULL，工具122轮提前复用6.970GB；
+完成后恢复另列，不据中断前缀计算整轮平均JCT。
 
 **confirmed ticket 空目标过滤已复核。**已知安全输入没有Host-backed
 缺失FULL/必要Mamba时，创建前跳过；空A不占住选择器，B第一次
@@ -42,8 +48,8 @@ V103 native。watcher `2106412` 已核对旧进程身份、后处理和 GPU
 初始与尾段回收也补齐已有关键parent的队尾FULL供体授权。
 2709项应用检查通过，未变引擎沿用此前375项；同物理工作EOS
 P50约2019→2089us，修复不等于降本或已经节省19秒。
-V104不热改，准备从冻结最新代码接续V105 predictive并复用V103 native；
-中断保存明确cutoff，性能验收仍开放。
+V104未热改且保存明确cutoff，V105已从冻结最新代码接续并复用V103 native；
+性能验收仍开放。
 
 **V2452历史CPU资格：队尾供体收集删除重复队列遍历。**
 从当前队尾迭代收集候选时复用该次成员关系，原生每次owner检查仍

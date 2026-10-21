@@ -17,14 +17,33 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 对照汇总已生成。保留原始证据，不要重复启动 V103 driver/native。
 对照仍包含已约定的前端缓存差异，不作独立预取归因。
 
-V104 predictive 已于北京时间 08:15:28 接续启动，运行码冻结为 `2c377da`。
+V105 predictive 已于北京时间 09:15:16 从冻结 `c119a35` 启动，资格
+V2464；driver PID `2360761`、start_ticks `671557916`，watcher
+PID `2359215`、start_ticks `671552367`。仍为 36-root/running8/
+256K/95%/Host200GB80:20、EOS/选择性预测及 PREPARE，handoff 关闭，
+只复用 V103 native。状态为
+`/home/longhao/experiment/ops/v105_bound_join_fix_20261021.state.json`。
+健康检查已 HTTP200，36 个 workflow 已创建并有首批长输入 prefill
+记录，早期未见物理禁用或丢失/失败写入。继续检查新用户暂停、冻结
+来源、恢复首次消费和净性能，不能以启动成功代替收益验收。
+
+V104 于北京时间 09:14:21 为验证修复而行政中断：cutoff 时 31 个
+completed、5 个没有终态；不把后者计自然 incomplete，不计算完整
+平均 JCT。自有进程/容器按身份停止，释放回执无残留或错误；
+旧 watcher 因主动停止记录 driver 非零退出，不是自发崩溃。
+历史 V104 于 08:15:28 启动，运行码冻结为 `2c377da`。
 watcher PID `2106412` 已按 V103 watcher/driver 的 PID+start_ticks
 确认旧进程退出、完整 native 后处理和 GPU 空闲；driver PID `2142467`、
 start_ticks `671199167`。本轮只跑 predictive，
 直接复用 V103 native；不再新增 native。36-root/running8/256K/95%/
 Host200GB80:20 保持，新用户暂停、来源变化及物理/写入错误均要处理。
 接续状态为 `/home/longhao/experiment/ops/v104_queued_full_20261021.state.json`；
-不要重复启动接续或修改冻结源码。
+不要重复启动旧接续或修改冻结源码。
+
+V2465 保存中断后的封闭 trace：JOIN 68 个中 61 个完成前正计划，
+50 个提前提交/复用 13.194GB FULL；工具 2584 轮中 146 个正计划，
+128 个提前提交、122 个提前复用 6.970GB。完成后恢复单列；后继宽
+Host-hit 不自动等于完成前的恢复机会，中断结果不作整轮性能验收。
 
 confirmed ticket 的前置空目标过滤已复核，相关 62 项 CPU 回归通过：
 没有安全输入的 Host-backed 缺失 FULL/必要 Mamba 时不创建；
@@ -38,7 +57,7 @@ confirmed ticket 的前置空目标过滤已复核，相关 62 项 CPU 回归通
 600 秒、活跃阈值 4；自动吞吐窗口包含下述 profiler 介入，必须
 进一步排除介入及恢复后才能验收净吞吐，既有 V2447 干净固定窗口保留。
 
-**main 最新 CPU 资格为 V2464，准备接续 V105 predictive。**
+**main 最新 CPU 资格为 V2464，V105 predictive 已接续。**
 2709 项应用检查实跑通过，含旧 2677 项及新增 32 项；引擎未改，
 核对来源后保留此前 375 项。V2461 在相同封闭前缀确认大 parent 的
 36 笔绑定恢复未识别为需求消费；完整 key/当前 session/可执行
@@ -49,10 +68,10 @@ RUNNING_LLM 的同请求 JOIN 现可使用原有需求租约及有界优先准�
 限制保持。V2462 同物理工作 EOS P50 2018.587→2089.235us，
 普通 post-forward 基本持平；不能以修复正确性宣称控制成本下降。
 临时 Git index 使用保留时间戳的复制并有确定回归，旧孤立快照
-失败原始原因仍未证明。V104 若仍运行，只按已验证 PID+start_ticks
-停止自有进程/容器，保存 cutoff/未完成结果；行政停止不记自然失败，
-也不据中断前缀计算整轮平均 JCT。随后从冻结最新代码启动 V105，
-复用 V103 native，重点验首次消费、提前 FULL、供体重载及净性能。
+失败原始原因仍未证明。V104 已按验证身份停止并保留 cutoff；
+行政停止不记自然失败，不据中断前缀计算整轮平均 JCT。V105 使用
+冻结最新代码并复用 V103 native，重点验首次消费、提前 FULL、
+供体重载及净性能。
 
 **V2452 历史 CPU 资格；V104 运行码冻结 `2c377da`。**
 候选构造仅复用当前队尾迭代已证明的成员关系；每次原生 owner

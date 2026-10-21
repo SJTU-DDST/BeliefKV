@@ -14,13 +14,33 @@
 95% 压缩和 Host200GB80:20 已核对，PREPARE、工具预取和选择性
 预测/EOS 启用，handoff、语义 worker 及共享路径详细计时关闭。
 
-**V104 predictive 已于北京时间 08:15:28 接续启动。**冻结运行码 `2c377da`，使用
+**V105 predictive 已于北京时间 09:15:16 启动。**冻结运行码 `c119a35`，
+CPU 资格 V2464，driver PID `2360761`、start_ticks `671557916`；
+watcher PID `2359215`、start_ticks `671552367`。36-root/running8/
+256K/95%/Host200GB80:20、EOS 与选择性预测、PREPARE 保持，handoff
+关闭，只跑 predictive 并复用 V103 native。新状态为
+`/home/longhao/experiment/ops/v105_bound_join_fix_20261021.state.json`。
+启动已核对冻结来源及旧资源释放；36 个 workflow 已创建、健康检查
+HTTP200，首批长输入已进入 prefill。早期观测未见 physical_disabled、
+writer_error、dropped/failed 记录；修复效果和净性能仍待验收。
+
+**V104 已为验证修复而行政中断。**北京时间 09:14:21 的 cutoff 记录
+31 个 completed、5 个尚无终态，不记作自然 incomplete，也不据此
+计算整轮平均 JCT。停止仅针对验证身份的自有进程/容器，释放回执无
+剩余资源或错误。它于 08:15:28 从冻结运行码 `2c377da` 启动，使用
 V2445 的 2667 项应用资格及同一原生引擎；36-root 同时到达、
 running8、256K/95%、Host200GB80:20 保持。接续 watcher PID
 `2106412` 已确认旧进程身份退出、完整 native 后处理及 GPU 空闲，
 driver PID `2142467`、start_ticks `671199167`；只跑 predictive，复用 V103 native。
-状态位于 `/home/longhao/experiment/ops/v104_queued_full_20261021.state.json`。
-新的用户暂停、来源改变或已确认运行错误会阻止启动或停止本次运行。
+历史状态位于 `/home/longhao/experiment/ops/v104_queued_full_20261021.state.json`，
+行政中断以 run 内 `server_reservation_cutoff.json` 为准；旧 watcher
+因主动停止记录非零退出，不是自发实验崩溃。
+
+[V2465 中断 trace 审计](../experiments/reports/v2465_v104_debug_stop_wait_prefetch_20261021_summary.json)
+观测 68 个 JOIN，61 个有完成前正 FULL 计划，50 个提前提交并确认
+复用 **13.194GB FULL**；工具 2584 轮中 146 个有完成前正计划，
+128 个提前提交、122 个提前复用 **6.970GB FULL**。完成后恢复单列，
+宽口径后继 Host-hit 不当成当时漏传需求；此处不是完整轮次性能结果。
 
 **confirmed ticket 空目标过滤已在当前 main 复核。**创建前确认安全
 输入没有可恢复的 Host-backed 缺失 FULL 或必要 Mamba 时直接跳过；
@@ -30,7 +50,7 @@ driver PID `2142467`、start_ticks `671199167`；只跑 predictive，复用 V103
 首次消费所有权。原实现与成本证据见下文 V2325/V2326，本次没有
 为相同逻辑增加分支、扫描或周期。
 
-**main 最新 CPU 资格为 V2464；计划用 V105 验证两处运行时修复。**
+**main 最新 CPU 资格为 V2464；V105 正在验证两处运行时修复。**
 [V2461 的同一封闭前缀审计](../experiments/reports/v2461_v104_large_bound_parent_cpu_20261021.json)
 确认 207696-token parent 的 36 笔 client-bound JOIN 恢复租约始终
 被当成 speculative；原生入队至首次 worker 服务约 19.493 秒，
@@ -57,8 +77,8 @@ V2463e 实跑全部旧 2677 项及新增 32 项，共 **2709 项应用检查通�
 未变引擎核对来源后保留此前实跑 375 项，V2464 绑定当前来源。
 另以独立回归证明临时 Git index 需保留时间戳，现改用 `copy2`，
 防止冻结时漏掉相同 stat 的内容变化；此前孤立快照失败的原始原因
-仍未证明。V104 不热改，资格冻结后接续 V105 predictive 并复用
-V103 native；若中断 V104，保留明确 cutoff 与行政中断口径。
+仍未证明。V104 未热改，已保留明确 cutoff；V105 predictive 从
+冻结修复码接续并复用 V103 native。
 
 **V2452 历史 CPU 资格：队尾供体构造删除重复队列扫描。**
 队尾供体构造原来对每个候选重新扫描同一队列。现在仅在实时队尾
