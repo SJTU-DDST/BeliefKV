@@ -210,6 +210,7 @@ def main():
             "beliefkv/runtime/sglang_v0520_admission.py",
             "beliefkv/experiments/internal_comparison.py",
             "beliefkv/policy/workflow_completion.py",
+            "beliefkv/policy/workflow_frontier.py",
             "scripts/benchmark_join_priority_kv_cpu.py",
         )
     }

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from beliefkv.control.causal_graph import ExecutionMode
+from beliefkv.policy.workflow_frontier import observed_completion_frontier
 
 
 class WorkflowCompletionOrder:
@@ -14,7 +14,7 @@ class WorkflowCompletionOrder:
         self.focus: str | None = None
         self.used = 0
         self.fair_turn = False
-        self._widths: dict[str, int] = {}
+        self._widths: dict[str, int | None] = {}
         self._admitted: set[str] = set()
 
     def invalidate(self, workflow_id: str) -> None:
@@ -24,19 +24,13 @@ class WorkflowCompletionOrder:
             if self.focus == workflow_id:
                 self.focus, self.used = None, 0
 
-    def width(self, workflow_id: str) -> int:
+    def width(self, workflow_id: str) -> int | None:
         if workflow_id not in self._widths:
-            workflow = self.graph.workflows.get(workflow_id)
-            invocations = self.graph.invocations
-            active = {
-                identity for identity in workflow.invocation_ids
-                if not invocations[identity].state.terminal
-                and invocations[identity].execution_mode is ExecutionMode.FOREGROUND
-            } if workflow is not None else set()
-            # This is the visible branch count, never a remaining-work estimate.
-            self._widths[workflow_id] = sum(
-                not (invocations[identity].child_invocation_ids & active)
-                for identity in active
+            frontier = observed_completion_frontier(self.graph, workflow_id)
+            # Awaited background tasks count; width is never remaining work.
+            self._widths[workflow_id] = (
+                len(frontier.leaf_ids)
+                if frontier.leaf_ids and not frontier.unknown_dependency_ids else None
             )
         return self._widths[workflow_id]
 
@@ -44,13 +38,17 @@ class WorkflowCompletionOrder:
         if not ordered or self.fair_turn:
             return ordered
         present = {keys[index].root_workflow_id for index, _ in ordered}
+        widths = {workflow: self.width(workflow) for workflow in present}
+        if any(value is None for value in widths.values()):
+            self.focus, self.used = None, 0
+            return ordered
         if self.focus not in present:
             self.used = 0
             first = {}
             for position, (index, _) in enumerate(ordered):
                 first.setdefault(keys[index].root_workflow_id, position)
             self.focus = min(present, key=lambda workflow: (
-                self.width(workflow), attained.get(workflow, 0), first[workflow],
+                widths[workflow], attained.get(workflow, 0), first[workflow],
             ))
         selected, others = [], []
         for pair in ordered:
