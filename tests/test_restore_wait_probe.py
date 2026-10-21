@@ -120,3 +120,39 @@ def test_observed_span_includes_interlayer_dispatch_and_preserves_wait_accountin
     assert abs(row["layers"][0]["cpu_wait_enqueue_ms"] - 1.) < 1e-6
     assert abs(row["layers"][1]["cpu_wait_enqueue_ms"] - 2.) < 1e-6
     assert "CPU submission gaps" in row["span_semantics"]
+
+
+def test_state_fence_and_later_full_layer_are_both_measured_without_synchronizing():
+    device = Device()
+    probe = RestoreWaitProbe(every=1)
+    sample = probe.begin(batch(), device)
+    state_event = object()
+    observed = []
+
+    def wait_event(event):
+        assert event is state_event
+        observed.append(event)
+        device.clock += 5.
+
+    device.wait_event = wait_event
+    sample.wait_state(state_event, 38, 0)
+    sample.wait(device, 38, 0)
+    assert len(observed) == 1 and device.event_count == 4
+    assert probe.poll() == []
+    device.ready = True
+    row, = probe.poll()
+    assert row["gpu_pre_forward_state_dependency_wait_ms"] == 5.
+    assert row["gpu_layer_dependency_wait_ms"] == 44.
+    assert row["layers"][0]["dependency_kind"] == "pre_forward_state"
+    assert row["layers"][1]["layer"] == 38
+    assert row["pre_forward_state_last_layer"] == 38
+
+
+def test_state_wait_honors_capture_without_extra_timing_events():
+    device = Device()
+    device.wait_event = lambda event: device.wait(2)
+    probe = RestoreWaitProbe(every=1)
+    sample = probe.begin(batch(), device)
+    device.capturing = True
+    sample.wait_state(object(), 38, 0)
+    assert device.clock == 3. and device.event_count == 0

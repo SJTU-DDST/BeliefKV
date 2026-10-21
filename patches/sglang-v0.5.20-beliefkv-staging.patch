@@ -706,10 +706,18 @@ index e66cee0..5c8c9d5 100644
      checkpoint_counts = extend_seq_lens // checkpoint_every_n_tokens
      checkpoint_cu_starts = torch.zeros(checkpoint_counts.numel() + 1, dtype=torch.int64)
 diff --git a/python/sglang/srt/managers/cache_controller.py b/python/sglang/srt/managers/cache_controller.py
-index b9a134e..d0dd6eb 100644
+index b9a134e..e2dfbc3 100644
 --- a/python/sglang/srt/managers/cache_controller.py
 +++ b/python/sglang/srt/managers/cache_controller.py
-@@ -77,6 +77,7 @@ class LayerDoneCounter:
+@@ -56,6 +56,7 @@ class LayerLoadingEvent:
+         self._num_layers = num_layers
+         self.load_events = [device_module.Event() for _ in range(num_layers)]
+         self.start_event = device_module.Event()  # start event on controller stream
++        self.state_ready_event = None
+ 
+     def complete(self, layer_index: int):
+         assert 0 <= layer_index < self._num_layers
+@@ -77,6 +78,7 @@ class LayerDoneCounter:
          self.events = [LayerLoadingEvent(num_layers) for _ in range(self.num_counters)]
          self.producer_index = -1
          self.consumer_index = -1
@@ -717,7 +725,7 @@ index b9a134e..d0dd6eb 100644
  
      def update_producer(self):
          self.producer_index = (self.producer_index + 1) % self.num_counters
-@@ -91,11 +92,16 @@ class LayerDoneCounter:
+@@ -91,11 +93,29 @@ class LayerDoneCounter:
      def wait_until(self, threshold: int):
          if self.consumer_index < 0:
              return
@@ -727,6 +735,19 @@ index b9a134e..d0dd6eb 100644
 +            self.beliefkv_wait_probe.wait(event, threshold, self.consumer_index)
 +        else:
 +            event.wait(threshold)
++
++    def wait_until_state(self, threshold: int):
++        if self.consumer_index < 0:
++            return
++        state = getattr(self.events[self.consumer_index], "state_ready_event", None)
++        if state is None:
++            self.wait_until(threshold)
++        elif self.beliefkv_wait_probe is not None and callable(
++            getattr(self.beliefkv_wait_probe, "wait_state", None)
++        ):
++            self.beliefkv_wait_probe.wait_state(state, threshold, self.consumer_index)
++        else:
++            device_module.current_stream().wait_event(state)
  
      def reset(self):
          self.producer_index = -1
@@ -735,7 +756,7 @@ index b9a134e..d0dd6eb 100644
  
  
  class CacheOperation:
-@@ -108,12 +114,15 @@ class CacheOperation:
+@@ -108,12 +128,15 @@ class CacheOperation:
          node_id: int,
          priority: Optional[int] = None,
          pool_transfers: Optional[List[PoolTransfer]] = None,
@@ -751,7 +772,7 @@ index b9a134e..d0dd6eb 100644
  
          self.id = CacheOperation.counter
          CacheOperation.counter += 1
-@@ -168,12 +177,22 @@ class CacheOperation:
+@@ -168,12 +191,22 @@ class CacheOperation:
              pool_transfers=CacheOperation._merge_pool_transfers(ops),
          )
          merged_op.node_ids = node_ids
@@ -774,7 +795,7 @@ index b9a134e..d0dd6eb 100644
  class HiCacheAck(NamedTuple):
      start_event: device_module.Event
      finish_event: device_module.Event
-@@ -185,6 +204,11 @@ class HiCacheAck(NamedTuple):
+@@ -185,6 +218,13 @@ class HiCacheAck(NamedTuple):
      # Total bytes moved by the op across all pools, including draft piggyback
      # and sidecar transfers that the per-pool token counts exclude.
      num_bytes: int = 0
@@ -783,10 +804,20 @@ index b9a134e..d0dd6eb 100644
 +    submit_mono: Optional[float] = None
 +    unacked_bytes_at_submit: Optional[int] = None
 +    enqueue_to_submit_ms: Optional[float] = None
++    transfer_segments: tuple = ()
++    state_ready_event: object = None
  
  
  @dataclass
-@@ -795,6 +819,7 @@ class HiCacheController:
+@@ -749,6 +789,7 @@ class HiCacheController:
+         )
+ 
+     def reset(self):
++        self.resume_beliefkv_loading()
+         self.storage_stop_event.set()
+ 
+         self.write_queue.clear()
+@@ -795,6 +836,7 @@ class HiCacheController:
          device_indices: torch.Tensor,
          priority: Optional[int] = None,
          node_id: int = -1,
@@ -794,7 +825,7 @@ index b9a134e..d0dd6eb 100644
      ) -> Optional[torch.Tensor]:
          """
          Back up KV caches from device memory to host memory.
-@@ -802,12 +827,33 @@ class HiCacheController:
+@@ -802,12 +844,33 @@ class HiCacheController:
          host_indices = self.mem_pool_host.alloc(len(device_indices))
          if host_indices is None:
              return None
@@ -830,7 +861,7 @@ index b9a134e..d0dd6eb 100644
      def start_writing(self) -> None:
          if len(self.write_queue) == 0:
              return
-@@ -816,6 +862,11 @@ class HiCacheController:
+@@ -816,6 +879,11 @@ class HiCacheController:
          host_indices, device_indices, pool_transfers = self._move_write_operation(op)
          self.write_queue.clear()
  
@@ -842,7 +873,7 @@ index b9a134e..d0dd6eb 100644
          completion = self.l2_transfer_engine.submit_device_to_host(
              self._l2_transfers(host_indices, device_indices, pool_transfers)
          )
-@@ -829,6 +880,16 @@ class HiCacheController:
+@@ -829,6 +897,16 @@ class HiCacheController:
                  timing_enabled=completion.timing_enabled,
                  num_tokens_by_pool=self._num_tokens_by_pool(op),
                  num_bytes=self._transfer_num_bytes(op),
@@ -859,7 +890,7 @@ index b9a134e..d0dd6eb 100644
              )
          )
  
-@@ -843,6 +904,7 @@ class HiCacheController:
+@@ -843,6 +921,7 @@ class HiCacheController:
          host_indices: torch.Tensor,
          priority: Optional[int] = None,
          node_id: int = -1,
@@ -867,7 +898,7 @@ index b9a134e..d0dd6eb 100644
      ) -> Optional[torch.Tensor]:
          """
          Load KV caches from host memory to device memory.
-@@ -850,9 +912,14 @@ class HiCacheController:
+@@ -850,9 +929,14 @@ class HiCacheController:
          device_indices = self.mem_pool_device_allocator.alloc(len(host_indices))
          if device_indices is None:
              return None
@@ -884,7 +915,42 @@ index b9a134e..d0dd6eb 100644
          return device_indices
  
      def move_indices(
-@@ -957,6 +1024,11 @@ class HiCacheController:
+@@ -938,7 +1022,25 @@ class HiCacheController:
+     ) -> list[L2Transfer]:
+         return self._l2_transfers(host_indices, device_indices, pool_transfers)
+ 
+-    def start_loading(self) -> int:
++    def _beliefkv_split_prefetch_transfers(self, transfers):
++        return (), transfers
++
++    def resume_beliefkv_loading(self, *, expired_only: bool = False) -> bool:
++        continuation = getattr(self, "_beliefkv_load_continuation", None)
++        if continuation is None:
++            return False
++        if expired_only and time.monotonic() < self._beliefkv_load_resume_at:
++            return False
++        # Clear only after successful submission; a launch error must not
++        # silently publish uninitialized pages or lose their native ownership.
++        continuation()
++        self._beliefkv_load_continuation = None
++        return True
++
++    def start_loading(self, *, beliefkv_prefetch_tier: str = "complete") -> int:
++        if beliefkv_prefetch_tier not in ("complete", "eager", "pipeline"):
++            raise ValueError("unsupported prefetch restore tier")
++        self.resume_beliefkv_loading()
+         if len(self.load_queue) == 0:
+             return -1
+ 
+@@ -947,6 +1049,7 @@ class HiCacheController:
+         host_indices, device_indices, pool_transfers = self._move_op_indices(op)
+         self.load_queue.clear()
+         producer_event = self.layer_done_counter.events[producer_id]
++        producer_event.state_ready_event = None
+         producer_event.start_event.record()
+ 
+         if self.load_fence_stream is not None:
+@@ -957,8 +1060,80 @@ class HiCacheController:
                  self.load_fence_stream
              )
  
@@ -893,10 +959,80 @@ index b9a134e..d0dd6eb 100644
 +        )
 +        submit_ts_ms = time.time() * 1000.0
 +        submit_mono = time.monotonic()
++        transfers = self._l2_load_transfers(host_indices, device_indices, pool_transfers)
++        split = (
++            self._beliefkv_split_prefetch_transfers(transfers)
++            if beliefkv_prefetch_tier != "complete"
++            and all(child.beliefkv_command_id is not None for child in getattr(op, "_receipt_ops", (op,)))
++            else None
++        )
++        if beliefkv_prefetch_tier != "complete":
++            stats = getattr(self, "beliefkv_restore_tier_stats", None)
++            if stats is None:
++                stats = self.beliefkv_restore_tier_stats = {}
++            name = beliefkv_prefetch_tier if split is not None else "native_fallback"
++            stats[name] = stats.get(name, 0) + 1
++        if split is not None:
++            states, full = split
++            state = self.l2_transfer_engine.submit_host_to_device(
++                states, start_event=producer_event.start_event,
++                layer_num=self.layer_num if states else 0,
++            )
++            producer_event.state_ready_event = state.finish_event
++            depth = self.layer_num
++            if beliefkv_prefetch_tier == "pipeline" and full:
++                # First nonempty FULL layer; hybrid global layer IDs may be sparse.
++                depth = next((
++                    layer + 1 for layer in range(self.layer_num)
++                    if any(t.layer_mapper is None or t.layer_mapper(layer) is not None for t in full)
++                ), self.layer_num)
++            head = self.l2_transfer_engine.submit_host_to_device(
++                full, start_event=state.finish_event, layer_num=depth,
++                on_layer_done=producer_event.complete,
++            )
++
++            def finish():
++                tail = (
++                    self.l2_transfer_engine.submit_host_to_device(
++                        full, start_event=head.finish_event, layer_start=depth,
++                        layer_num=self.layer_num, on_layer_done=producer_event.complete,
++                    )
++                    if depth < self.layer_num else head
++                )
++                segments = (
++                    (state.start_event, state.finish_event),
++                    (head.start_event, head.finish_event),
++                )
++                if tail is not head:
++                    segments += ((tail.start_event, tail.finish_event),)
++                self.ack_load_queue.append(HiCacheAck(
++                    start_event=state.start_event, finish_event=tail.finish_event,
++                    node_ids=op.node_ids, num_tokens=len(op.device_indices),
++                    timing_enabled=state.timing_enabled and head.timing_enabled and tail.timing_enabled,
++                    num_tokens_by_pool=self._num_tokens_by_pool(op),
++                    num_bytes=self._transfer_num_bytes(op), child_receipts=self._child_receipts(op),
++                    submit_ts_ms=submit_ts_ms, submit_mono=submit_mono,
++                    unacked_bytes_at_submit=unacked_bytes,
++                    enqueue_to_submit_ms=max(0., (
++                        submit_mono - min(child.enqueue_mono for child in getattr(op, "_receipt_ops", (op,)))
++                    ) * 1000.),
++                    transfer_segments=segments,
++                    state_ready_event=state.finish_event,
++                ))
++
++            if depth < self.layer_num:
++                self._beliefkv_load_continuation = finish
++                self._beliefkv_load_resume_at = submit_mono + .2
++            else:
++                finish()
++            return producer_id
          completion = self.l2_transfer_engine.submit_host_to_device(
-             self._l2_load_transfers(host_indices, device_indices, pool_transfers),
+-            self._l2_load_transfers(host_indices, device_indices, pool_transfers),
++            transfers,
              start_event=producer_event.start_event,
-@@ -973,6 +1045,16 @@ class HiCacheController:
+             on_layer_done=producer_event.complete,
+             layer_num=self.layer_num,
+@@ -973,6 +1148,16 @@ class HiCacheController:
                  timing_enabled=completion.timing_enabled,
                  num_tokens_by_pool=self._num_tokens_by_pool(op),
                  num_bytes=self._transfer_num_bytes(op),
@@ -1941,7 +2077,7 @@ index 1b63fb6..385711b 100644
      def _release_req_states_on_failure(self, rids: Iterable[str]):
          """Release rid_to_state entries created for a failed handler.
 diff --git a/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py b/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
-index 17b3774..2e60f8d 100644
+index 17b3774..cf9273c 100644
 --- a/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
 +++ b/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
 @@ -327,10 +327,23 @@ class HybridCacheController(BaseHiCacheController):
@@ -2011,7 +2147,31 @@ index 17b3774..2e60f8d 100644
          return host_indices
  
      def _move_op_indices(
-@@ -518,6 +548,10 @@ class HybridCacheController(BaseHiCacheController):
+@@ -433,6 +463,23 @@ class HybridCacheController(BaseHiCacheController):
+             )
+         return transfers
+ 
++    def _beliefkv_split_prefetch_transfers(self, transfers):
++        entries = self.mem_pool_host.entry_map
++        if not set(entries) <= {PoolName.KV, PoolName.MAMBA}:
++            return None
++        full_entry, state_entry = entries.get(PoolName.KV), entries.get(PoolName.MAMBA)
++        full, state = [], []
++        for transfer in transfers:
++            if transfer.is_draft:
++                return None
++            if full_entry is not None and transfer.host_pool is full_entry.host_pool:
++                full.append(transfer)
++            elif state_entry is not None and transfer.host_pool is state_entry.host_pool:
++                state.append(transfer)
++            else:
++                return None
++        return state, full
++
+     def _l2_load_transfers(
+         self,
+         host_indices: torch.Tensor,
+@@ -518,6 +565,10 @@ class HybridCacheController(BaseHiCacheController):
          priority: Optional[int] = None,
          node_id: int = -1,
          extra_pools: Optional[list[PoolTransfer]] = None,
@@ -2022,7 +2182,7 @@ index 17b3774..2e60f8d 100644
      ) -> Optional[torch.Tensor]:
          need_load_kv = host_indices.numel() > 0
  
-@@ -533,25 +567,61 @@ class HybridCacheController(BaseHiCacheController):
+@@ -533,25 +584,61 @@ class HybridCacheController(BaseHiCacheController):
              if device_indices is None:
                  return None
  
@@ -2097,7 +2257,7 @@ index 17b3774..2e60f8d 100644
          return device_indices
  
      def prefetch(
-@@ -875,6 +945,8 @@ class HybridCacheController(BaseHiCacheController):
+@@ -875,6 +962,8 @@ class HybridCacheController(BaseHiCacheController):
          extra_pools: Optional[list[PoolTransfer]],
          kv_device_indices: Optional[torch.Tensor] = None,
          kv_host_indices: Optional[torch.Tensor] = None,
@@ -2106,7 +2266,7 @@ index 17b3774..2e60f8d 100644
      ) -> Optional[list[PoolTransfer]]:
          """Allocate unresolved side-pool device indices atomically."""
          if not extra_pools:
-@@ -904,7 +976,7 @@ class HybridCacheController(BaseHiCacheController):
+@@ -904,7 +993,7 @@ class HybridCacheController(BaseHiCacheController):
              evict_fn = entry.device_evict_fn
              size = len(pool.host_indices)
              indices = alloc_fn(size)
@@ -2173,8 +2333,29 @@ index 006b52a..83c96cf 100644
          )
      kv_host_pool = build_kv_host_pool(
          kv_pool=kv_pool,
+diff --git a/python/sglang/srt/mem_cache/l2_transfer.py b/python/sglang/srt/mem_cache/l2_transfer.py
+index f80afd9..821c196 100644
+--- a/python/sglang/srt/mem_cache/l2_transfer.py
++++ b/python/sglang/srt/mem_cache/l2_transfer.py
+@@ -78,6 +78,7 @@ class L2TransferEngine:
+         layer_num: int,
+         start_event=None,
+         on_layer_done=None,
++        layer_start: int = 0,
+     ) -> TransferCompletion:
+         start_event = self._start_event(start_event)
+         ack_start, ack_finish, timing_enabled = make_timing_event_pair()
+@@ -85,7 +86,7 @@ class L2TransferEngine:
+         with device_module.stream(self.host_to_device_stream):
+             start_event.wait(self.host_to_device_stream)
+             ack_start.record()
+-            for layer_id in range(layer_num):
++            for layer_id in range(layer_start, layer_num):
+                 for transfer in transfers:
+                     local_layer_id = (
+                         transfer.layer_mapper(layer_id)
 diff --git a/python/sglang/srt/mem_cache/memory_pool.py b/python/sglang/srt/mem_cache/memory_pool.py
-index 28333df..3c05cf9 100644
+index 28333df..b2a9ada 100644
 --- a/python/sglang/srt/mem_cache/memory_pool.py
 +++ b/python/sglang/srt/mem_cache/memory_pool.py
 @@ -1467,11 +1467,19 @@ class HybridReqToTokenPool(ReqToTokenPool):
@@ -2199,6 +2380,19 @@ index 28333df..3c05cf9 100644
                  ping_pong_tensor
              )
          return select_index
+@@ -1554,7 +1562,11 @@ class HybridReqToTokenPool(ReqToTokenPool):
+             and self.layer_transfer_counter.consumer_index >= 0
+         ):
+             last_mamba_layer = max(self.mamba_map)
+-            self.layer_transfer_counter.wait_until(last_mamba_layer - self.start_layer)
++            wait_state = getattr(
++                self.layer_transfer_counter, "wait_until_state",
++                self.layer_transfer_counter.wait_until,
++            )
++            wait_state(last_mamba_layer - self.start_layer)
+         self.mamba_pool.copy_from(src_index, dst_index)
+ 
+     def get_speculative_mamba2_params_all_layers(self) -> MambaPool.SpeculativeState:
 diff --git a/python/sglang/srt/mem_cache/radix_cache.py b/python/sglang/srt/mem_cache/radix_cache.py
 index e7bee63..41abf6b 100644
 --- a/python/sglang/srt/mem_cache/radix_cache.py
@@ -2962,7 +3156,7 @@ index 6815679..a143793 100644
      def evict_device_end(self, component_type: ComponentType) -> None:
          """Finish the component's device-eviction walk."""
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..3c33335 100644
+index d417d7d..e42d0c3 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -4,9 +4,11 @@ import atexit
@@ -3094,7 +3288,7 @@ index d417d7d..3c33335 100644
          result = self.tree_core.evict_device_leaf(node_id, self.is_write_back)
          self._free_values(result.device_frees, result.host_frees)
          if self._tracks_write_through_unbacked_evictions():
-@@ -801,6 +873,1328 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -801,6 +873,1353 @@ class UnifiedRadixCache(BasePrefixCache):
          self._accumulate_tracker(tracker, result.tracker)
          return result.is_dropped
  
@@ -3951,6 +4145,7 @@ index d417d7d..3c33335 100644
 +            stats = self.beliefkv_idle_full_prepare_stats = Counter()
 +        stats["checks"] += 1
 +        stats["max_batch_bytes"] = BELIEFKV_IDLE_FULL_PREPARE_MAX_BYTES
++        selective = getattr(self, "beliefkv_idle_prepare_policy", "all") == "cold"
 +        dirty = getattr(self, "_beliefkv_unbacked_full", None)
 +        if dirty is not None:
 +            stats["dirty_nodes_last"] = len(dirty)
@@ -4025,6 +4220,8 @@ index d417d7d..3c33335 100644
 +                    stats["pending_h2d_nodes"] += 1
 +                elif any(cd.host_lock_ref for cd in node.component_data):
 +                    stats["host_locked_nodes"] += 1
++                elif selective and not self._beliefkv_idle_full_is_cold(node):
++                    stats["hot_or_unknown_owner_nodes"] += 1
 +                else:
 +                    candidates.append((node_id, node.creation_time, len(full.value)))
 +                    stats["eligible_nodes"] += 1
@@ -4090,6 +4287,28 @@ index d417d7d..3c33335 100644
 +                scan.appendleft(parent)
 +                ancestors.add(parent.id)
 +        return issued
++
++    def _beliefkv_idle_full_is_cold(self, node) -> bool:
++        """Cheap backup eligibility; this is not permission to evict a page."""
++        if any(cd.lock_ref for cd in node.component_data):
++            return False
++        full = node.component_data[BASE_COMPONENT_TYPE]
++        if full.session_ref == 0:
++            return not full.session_ids
++        owners = full.session_ids
++        validate = getattr(self, "beliefkv_backup_full_owner_validator", None)
++        if (
++            not callable(validate) or type(owners) is not set
++            or not owners or len(owners) != full.session_ref
++        ):
++            # Inherited/shared coverage needs a subtree proof for eviction.
++            # Background selection never pays for that proof.
++            return False
++        tracker = self.session_refs
++        generations = tracker._session_generations
++        if any(owner not in generations or owner in tracker._closed_session_ids for owner in owners):
++            return False
++        return validate(tuple((owner, generations[owner]) for owner in owners)) is True
 +
 +    def prepare_beliefkv_spawn_full(
 +        self, *, session_id: str, session_generation: int,
@@ -4423,7 +4642,7 @@ index d417d7d..3c33335 100644
      def _evict_components(
          self,
          request_by_type: dict[ComponentType, int],
-@@ -851,6 +2245,11 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -851,6 +2270,11 @@ class UnifiedRadixCache(BasePrefixCache):
              # on a shared pool, released enough bytes to satisfy its allocation.
              if tracker[ct] >= request_cnt or target_reached(ct):
                  continue
@@ -4435,7 +4654,7 @@ index d417d7d..3c33335 100644
              self.tree_core.evict_device_start(ct, request_cnt)
              try:
                  while True:
-@@ -861,6 +2260,21 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -861,6 +2285,21 @@ class UnifiedRadixCache(BasePrefixCache):
                      else:
                          backup_kv = self._evict_device_leaf(node_id, tracker)
                      if node_id is not None and backup_kv is not None:
@@ -4457,7 +4676,7 @@ index d417d7d..3c33335 100644
                          # Deferred demote: run the D->H backup, demote only on success.
                          written = self._execute_and_commit_kv_backup(
                              backup_kv, write_back=True
-@@ -892,7 +2306,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -892,7 +2331,9 @@ class UnifiedRadixCache(BasePrefixCache):
              isinstance(self.tree_core, UnifiedTreeCore)
              and self.host_memory_mode == "cache"
              and self.cache_controller is not None
@@ -4468,7 +4687,7 @@ index d417d7d..3c33335 100644
          )
  
      def _record_dropped_tokens(self, dropped_tokens: int, reason: str) -> None:
-@@ -955,6 +2371,18 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -955,6 +2396,18 @@ class UnifiedRadixCache(BasePrefixCache):
              return DecLockRefResult()
          return self.tree_core.dec_host_lock_ref(node_id, params)
  
@@ -4487,7 +4706,7 @@ index d417d7d..3c33335 100644
      @rank_consensus(same_params=["req.rid", "is_insert", "kv_len_to_handle"])
      def cache_finished_req(
          self, req: Req, is_insert: bool = True, *, kv_len_to_handle: int, **kwargs
-@@ -1078,7 +2506,7 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1078,7 +2531,7 @@ class UnifiedRadixCache(BasePrefixCache):
              self._dec_req_lock(req, skip_swa=req.swa_prefix_lock_released)
  
          if is_insert and result is not None and result.last_device_node is not None:
@@ -4496,7 +4715,7 @@ index d417d7d..3c33335 100644
  
          # cleanup
          for comp in self._components_tuple:
-@@ -1309,6 +2737,13 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1309,6 +2762,13 @@ class UnifiedRadixCache(BasePrefixCache):
              return 0
          result = self.tree_core.drive_host_eviction(component_type, num_tokens)
          self._free_values(result.device_frees, result.host_frees)
@@ -4510,7 +4729,7 @@ index d417d7d..3c33335 100644
          return result.tracker.get(component_type, 0)
  
      # ---- Decode retraction ----
-@@ -1518,8 +2953,238 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1518,8 +2978,238 @@ class UnifiedRadixCache(BasePrefixCache):
  
      # ---- HiCache: Backup / LoadBack ----
  
@@ -4750,7 +4969,7 @@ index d417d7d..3c33335 100644
      ) -> int:
          """Run a backup action top-down, stopping at the first failed backup."""
          if self.buffer_pipeline is not None:
-@@ -1532,14 +3197,23 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1532,14 +3222,23 @@ class UnifiedRadixCache(BasePrefixCache):
              return 0
          written = 0
          for node_id in action.node_ids:
@@ -4776,7 +4995,7 @@ index d417d7d..3c33335 100644
              )
              if host_indices is None:
                  return 0
-@@ -1554,6 +3228,406 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1554,6 +3253,425 @@ class UnifiedRadixCache(BasePrefixCache):
              written = len(host_indices)
          return written
  
@@ -5087,13 +5306,15 @@ index d417d7d..3c33335 100644
 +        )
 +        return PrefetchGpuNodeResult(True, node_id, started)
 +
-+    def _start_beliefkv_prefetch_loads(self) -> bool:
++    def _start_beliefkv_prefetch_loads(self, *, restore_tier: str = "complete") -> bool:
 +        controller = self.cache_controller
 +        queue = getattr(controller, "load_queue", ())
 +        if queue and all(op.beliefkv_command_id is not None for op in queue):
 +            # No native prefill load is stolen; remember the producer for any
 +            # request that matches these pages before the synchronized ACK.
-+            producer = controller.start_loading()
++            producer = controller.start_loading(
++                **({"beliefkv_prefetch_tier": restore_tier} if restore_tier != "complete" else {})
++            )
 +            if producer >= 0:
 +                self._beliefkv_prefetch_consumer_index = producer
 +                return True
@@ -5108,6 +5329,7 @@ index d417d7d..3c33335 100644
 +        leaf_creation_time: int | float,
 +        nodes: tuple[tuple[NodeId, int | float, bool, str], ...],
 +        beliefkv_before_enqueue: Callable[[CacheOperation], bool],
++        restore_tier: str = "complete",
 +    ) -> tuple[PrefetchGpuNodeResult, ...]:
 +        """Enqueue one ancestor-first burst under the caller's live budgets.
 +
@@ -5115,7 +5337,9 @@ index d417d7d..3c33335 100644
 +        Each node keeps its own command, allocation, locks and ACK receipt.
 +        """
 +        if (
-+            type(nodes) is not tuple or not nodes
++            restore_tier not in ("complete", "eager", "pipeline")
++            or restore_tier != "complete" and not self.supports_beliefkv_restore_tiers()
++            or type(nodes) is not tuple or not nodes
 +            or any(type(item) is not tuple or len(item) != 4 for item in nodes)
 +            or any(
 +                type(node_id) is not int
@@ -5153,8 +5377,19 @@ index d417d7d..3c33335 100644
 +        finally:
 +            # A later rejection cannot strand earlier successful allocations.
 +            if issued:
-+                started = self._start_beliefkv_prefetch_loads()
++                started = self._start_beliefkv_prefetch_loads(restore_tier=restore_tier)
 +        return tuple(result._replace(load_started=started) for result in issued)
++
++    def supports_beliefkv_restore_tiers(self) -> bool:
++        return (
++            self.supports_beliefkv_overlap_prefetch()
++            and callable(getattr(self.cache_controller, "resume_beliefkv_loading", None))
++            and set(getattr(self, "tree_components", ())) <= {BASE_COMPONENT_TYPE, ComponentType.MAMBA}
++            and getattr(getattr(self, "req_to_token_pool", None), "mamba_ckpt_pool", None) is None
++        )
++
++    def advance_beliefkv_prefetch(self) -> bool:
++        return self.cache_controller.resume_beliefkv_loading(expired_only=True)
 +
 +    def beliefkv_prefetch_can_admit(self, command_ids: tuple[str, ...]) -> bool:
 +        """Use native layer fences for FULL; wait for state before deferred COW."""
@@ -5162,6 +5397,9 @@ index d417d7d..3c33335 100644
 +            return False
 +        pending = set(command_ids)
 +        controller = self.cache_controller
++        resume = getattr(controller, "resume_beliefkv_loading", None)
++        if callable(resume):
++            resume()
 +        for op in controller.load_queue:
 +            if op.beliefkv_command_id not in pending:
 +                continue
@@ -5175,7 +5413,7 @@ index d417d7d..3c33335 100644
 +            ]
 +            if any(dict(receipt.num_tokens_by_pool).get("mamba", 0) for receipt in receipts):
 +                # Use the transfer's own event, not a reusable layer-ring slot.
-+                if not ack.finish_event.query():
++                if getattr(ack, "state_ready_event", None) is None and not ack.finish_event.query():
 +                    return False
 +            pending.difference_update(receipt.command_id for receipt in receipts)
 +        return not pending
@@ -5183,7 +5421,7 @@ index d417d7d..3c33335 100644
      @staticmethod
      def _backup_publish_node_ids(
          node_id: NodeId, comp_xfers: dict[ComponentType, list[PoolTransfer]]
-@@ -1574,18 +3648,77 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1574,18 +3692,77 @@ class UnifiedRadixCache(BasePrefixCache):
              CacheTransferPhase.BACKUP_HOST, kv_xfer, comp_xfers
          )
  
@@ -5263,7 +5501,7 @@ index d417d7d..3c33335 100644
          )
  
      def _track_write_through_node(
-@@ -1627,10 +3760,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1627,10 +3804,10 @@ class UnifiedRadixCache(BasePrefixCache):
              updated_node_ids,
          )
  
@@ -5276,7 +5514,7 @@ index d417d7d..3c33335 100644
  
          lock_node_id, lock_params, publish_node_ids = self.ongoing_write_through.pop(
              ack_id
-@@ -1643,15 +3776,26 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1643,15 +3820,26 @@ class UnifiedRadixCache(BasePrefixCache):
              # suffix; the prefix fragment must be persisted as well.
              for node_id in publish_node_ids:
                  self.write_backup_storage(node_id)
@@ -5304,7 +5542,7 @@ index d417d7d..3c33335 100644
              return False
  
          host_anchor_params = self.inc_host_lock_ref(node_id).to_dec_params()
-@@ -1675,6 +3819,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1675,6 +3863,10 @@ class UnifiedRadixCache(BasePrefixCache):
                  result=result,
                  ancestor_lock_params=ancestor_lock_params,
                  host_anchor_params=host_anchor_params,
@@ -5315,7 +5553,7 @@ index d417d7d..3c33335 100644
              )
              return success
          finally:
-@@ -1690,9 +3838,34 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1690,9 +3882,34 @@ class UnifiedRadixCache(BasePrefixCache):
          result: IncLockRefResult,
          ancestor_lock_params: DecLockRefParams,
          host_anchor_params: DecLockRefParams,
@@ -5351,7 +5589,7 @@ index d417d7d..3c33335 100644
          kv_tokens = len(kv_xfer.host_indices)
          sidecar_xfers = self._build_sidecar_transfers(
              CacheTransferPhase.LOAD_BACK, kv_xfer, comp_xfers
-@@ -1703,7 +3876,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1703,7 +3920,8 @@ class UnifiedRadixCache(BasePrefixCache):
          # when the Full-KV load is skipped by thresholding. max(1, ...): an
          # entirely empty spec (e.g. foreign-pin rejection) must never report
          # success, even at load_back_threshold <= 0.
@@ -5361,7 +5599,7 @@ index d417d7d..3c33335 100644
              mem_quota is not None and kv_tokens + result.delta > mem_quota
          ):
              self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -1714,6 +3888,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1714,6 +3932,10 @@ class UnifiedRadixCache(BasePrefixCache):
              self.token_to_kv_pool_allocator, "c128_attn_allocator", None
          )
          if c128_allocator is not None:
@@ -5372,7 +5610,7 @@ index d417d7d..3c33335 100644
              c128_num_pages = _c128_transfer_num_pages(
                  comp_xfers.get(ComponentType.C128, ()),
                  c128_allocator.page_size,
-@@ -1727,6 +3905,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1727,6 +3949,10 @@ class UnifiedRadixCache(BasePrefixCache):
  
          avail = self._component_available_size(ComponentType.FULL)
          if avail < kv_tokens:
@@ -5383,7 +5621,7 @@ index d417d7d..3c33335 100644
              needed = kv_tokens - avail
              self.evict_for_alloc(EvictParams(num_tokens=needed))
              if self._component_available_size(ComponentType.FULL) < kv_tokens:
-@@ -1741,6 +3923,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1741,6 +3967,9 @@ class UnifiedRadixCache(BasePrefixCache):
              host_indices=kv_xfer.host_indices,
              node_id=node_id,
              extra_pools=aux_xfers or None,
@@ -5393,7 +5631,7 @@ index d417d7d..3c33335 100644
          )
  
          self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -3130,10 +5315,24 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3130,10 +5359,24 @@ class UnifiedRadixCache(BasePrefixCache):
              while self.ongoing_write_through:
                  for ack in cc.ack_write_queue:
                      ack.finish_event.synchronize()
@@ -5419,7 +5657,7 @@ index d417d7d..3c33335 100644
                  cc.ack_write_queue.clear()
                  assert len(self.ongoing_write_through) == 0
              return
-@@ -3154,11 +5353,122 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3154,11 +5397,130 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_write_queue.pop(0)
              ack.finish_event.synchronize()
@@ -5440,6 +5678,14 @@ index d417d7d..3c33335 100644
 +            )
              finish_count -= 1
  
++    @staticmethod
++    def _beliefkv_ack_stream_elapsed_ms(ack) -> float:
++        segments = getattr(ack, "transfer_segments", ())
++        return (
++            sum(start.elapsed_time(finish) for start, finish in segments)
++            if segments else ack.start_event.elapsed_time(ack.finish_event)
++        )
++
 +    def _emit_hicache_transfer_commit(
 +        self,
 +        direction: str,
@@ -5514,7 +5760,7 @@ index d417d7d..3c33335 100644
 +        stream_elapsed_ms = None
 +        if ack.timing_enabled:
 +            try:
-+                stream_elapsed_ms = ack.start_event.elapsed_time(ack.finish_event)
++                stream_elapsed_ms = self._beliefkv_ack_stream_elapsed_ms(ack)
 +            except (RuntimeError, ValueError):
 +                logger.warning("HiCache transfer stream timing unavailable")
 +        event = HiCacheTransferCommit(
@@ -5543,7 +5789,26 @@ index d417d7d..3c33335 100644
      def _log_write_ack_metrics(self, ack: HiCacheAck) -> None:
          """Record D->H backup volume and duration for a completed write ack."""
          if self.metrics_collector is None:
-@@ -3200,6 +5510,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3171,7 +5533,7 @@ class UnifiedRadixCache(BasePrefixCache):
+         if ack.num_bytes > 0:
+             self.metrics_collector.increment_backup_num_bytes(ack.num_bytes)
+         if ack.timing_enabled:
+-            duration_ms = ack.start_event.elapsed_time(ack.finish_event)
++            duration_ms = self._beliefkv_ack_stream_elapsed_ms(ack)
+             self.metrics_collector.observe_backup_duration(duration_ms / 1000.0)
+ 
+     def loading_check(self, finish_count: Optional[int] = None) -> None:
+@@ -3179,6 +5541,9 @@ class UnifiedRadixCache(BasePrefixCache):
+         cc = self.cache_controller
+         if cc is None:
+             return
++        resume = getattr(cc, "resume_beliefkv_loading", None)
++        if callable(resume):
++            resume(expired_only=True)
+         if finish_count is None:
+             # Every rank must enter the all_reduce below; ongoing_load_back can
+             # diverge across ranks.
+@@ -3200,6 +5565,8 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_load_queue.pop(0)
              ack.finish_event.synchronize()
@@ -5552,7 +5817,7 @@ index d417d7d..3c33335 100644
              for ack_id in ack.node_ids:
                  if (
                      self.buffer_pipeline is not None
-@@ -3211,6 +5523,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3211,6 +5578,8 @@ class UnifiedRadixCache(BasePrefixCache):
                  self.dec_host_lock_ref(node, host_lock_params)
                  # Unpin the loaded nodes; host copies stay as reclaimable duplicates.
                  self.tree_core.finish_load_back(node)
@@ -5561,7 +5826,12 @@ index d417d7d..3c33335 100644
  
              if self.metrics_collector is not None:
                  for pool, num_tokens in (ack.num_tokens_by_pool or {}).items():
-@@ -3225,6 +5539,13 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3221,10 +5590,17 @@ class UnifiedRadixCache(BasePrefixCache):
+                 if ack.num_bytes > 0:
+                     self.metrics_collector.increment_load_back_num_bytes(ack.num_bytes)
+                 if ack.timing_enabled:
+-                    duration_ms = ack.start_event.elapsed_time(ack.finish_event)
++                    duration_ms = self._beliefkv_ack_stream_elapsed_ms(ack)
                      self.metrics_collector.observe_load_back_duration(
                          duration_ms / 1000.0
                      )
@@ -5575,7 +5845,7 @@ index d417d7d..3c33335 100644
              finish_count -= 1
  
      # ---- HiCache: Scheduler Entry Points ----
-@@ -3236,7 +5557,7 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3236,7 +5612,7 @@ class UnifiedRadixCache(BasePrefixCache):
      ) -> Optional[tuple[torch.Tensor, NodeId]]:
          """Prepare KV cache loading from host to device.
          Returns (device_indices, last_node), or None when buffer-mode
@@ -5584,7 +5854,7 @@ index d417d7d..3c33335 100644
          if self.buffer_pipeline is not None:
              return self.buffer_pipeline.init_load_back(params)
          best_match_node_id = params.best_match_node
-@@ -3255,6 +5576,11 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3255,6 +5631,11 @@ class UnifiedRadixCache(BasePrefixCache):
                  and (req.swa_host_hit_length > 0 or req.mamba_host_hit_length > 0)
              )
          ):
@@ -5596,7 +5866,7 @@ index d417d7d..3c33335 100644
              if self.load_back(best_match_node_id, mem_quota, req=req):
                  new_indices = self.tree_core.collect_full_device_indices(
                      best_match_node_id, last_best_match_device_node_id
-@@ -3341,9 +5667,31 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3341,9 +5722,31 @@ class UnifiedRadixCache(BasePrefixCache):
          if self.linker is not None:
              return self.linker.start_layer_wise_loading()
          if self.cache_controller is not None:
@@ -9077,10 +9347,10 @@ index 0000000..44d2402
 +    assert component._session_leaves["s"] == {old, latest}
 diff --git a/test/srt/test_beliefkv_layer_wait_probe.py b/test/srt/test_beliefkv_layer_wait_probe.py
 new file mode 100644
-index 0000000..6a07ed3
+index 0000000..ac4cef6
 --- /dev/null
 +++ b/test/srt/test_beliefkv_layer_wait_probe.py
-@@ -0,0 +1,42 @@
+@@ -0,0 +1,65 @@
 +"""The optional probe must preserve native load wait semantics."""
 +
 +import ast
@@ -9123,6 +9393,29 @@ index 0000000..6a07ed3
 +    counter.reset()
 +    assert counter.beliefkv_wait_probe is None
 +    assert counter.consumer_index == -1
++
++
++def test_state_copy_waits_only_its_recorded_dependency_and_legacy_keeps_layer_wait():
++    counter = counter_class()(40)
++    waits = []
++    counter.wait_until_state.__func__.__globals__["device_module"] = SimpleNamespace(
++        current_stream=lambda: SimpleNamespace(wait_event=lambda event: waits.append(event)),
++    )
++    counter.set_consumer(0)
++    counter.events[0].wait = lambda layer: waits.append(layer)
++    counter.wait_until_state(38)
++    assert waits == [38]
++    state = object()
++    counter.events[0].state_ready_event = state
++    counter.wait_until_state(38)
++    assert waits == [38, state]
++    captured = []
++    counter.beliefkv_wait_probe = SimpleNamespace(
++        wait_state=lambda event, layer, consumer: captured.append((event, layer, consumer)),
++    )
++    counter.wait_until_state(38)
++    assert captured == [(state, 38, 0)]
++    assert waits == [38, state]
 diff --git a/test/srt/test_beliefkv_lifecycle.py b/test/srt/test_beliefkv_lifecycle.py
 new file mode 100644
 index 0000000..1db16d8
@@ -10668,6 +10961,187 @@ index 0000000..0bc5e7e
 +    assert leaf.component_data[CT.MAMBA].value is leaf_state
 +    assert request_pool.mamba_allocator.available_size() == state_available + int(not shared)
 +    cache._execute_and_commit_kv_backup.assert_not_called()
+diff --git a/test/srt/test_beliefkv_restore_tiers.py b/test/srt/test_beliefkv_restore_tiers.py
+new file mode 100644
+index 0000000..2e9f61a
+--- /dev/null
++++ b/test/srt/test_beliefkv_restore_tiers.py
+@@ -0,0 +1,175 @@
++"""CPU transfer-order and lifecycle proofs for dependency-based restore tiers."""
++
++from types import SimpleNamespace as NS
++from unittest.mock import Mock, patch
++
++import pytest
++import contextlib
++
++from test_beliefkv_transfer_receipts import (
++    CacheOperation, HiCacheController, controller, indices,
++)
++from test_beliefkv_unified_ack import AckCache
++from test_beliefkv_shadow_dispatch import fixture as shadow_fixture
++
++
++def fixture():
++    cache = controller()
++    cache.layer_num = 8
++    cache._l2_load_transfers = lambda *_: [NS(layer_mapper=lambda layer: layer if layer in (3, 7) else None)]
++    calls = []
++
++    def submit(transfers, **kwargs):
++        start = NS(elapsed_time=Mock(return_value=2.))
++        finish = NS(query=Mock(return_value=False))
++        calls.append((transfers, kwargs, start, finish))
++        if kwargs.get("on_layer_done"):
++            for layer in range(kwargs.get("layer_start", 0), kwargs["layer_num"]):
++                kwargs["on_layer_done"](layer)
++        return NS(start_event=start, finish_event=finish, timing_enabled=True)
++
++    cache.l2_transfer_engine.submit_host_to_device = submit
++    cache.load_queue.append(CacheOperation(indices(10), indices(10), 1, beliefkv_command_id="p1"))
++    return cache, calls
++
++
++def test_pipeline_copies_only_first_actual_full_layer_and_retains_full_receipt():
++    cache, calls = fixture()
++    assert cache.start_loading(beliefkv_prefetch_tier="pipeline") == 0
++    assert [item[1]["layer_num"] for item in calls] == [0, 4]
++    assert cache.layer_done_counter.events[0].complete.call_args_list[-1].args == (3,)
++    assert cache.ack_load_queue == []
++    assert cache._beliefkv_load_continuation is not None
++    assert cache.resume_beliefkv_loading()
++    assert calls[-1][1]["layer_start"] == 4
++    assert calls[-1][1]["layer_num"] == 8
++    assert len(cache.ack_load_queue) == 1
++    ack = cache.ack_load_queue[0]
++    assert ack.node_ids == [1] and ack.num_tokens == 10 and ack.num_bytes == 100
++    assert ack.child_receipts[0].command_id == "p1"
++    assert ack.finish_event is calls[-1][3]
++    assert ack.state_ready_event is calls[0][3]
++    assert len(ack.transfer_segments) == 3
++    assert not cache.resume_beliefkv_loading()
++
++
++def test_native_start_resumes_tail_before_advancing_the_layer_ring():
++    cache, calls = fixture()
++    cache.start_loading(beliefkv_prefetch_tier="pipeline")
++    cache.load_queue.append(CacheOperation(indices(1), indices(1), 2))
++    cache.start_loading()
++    assert calls[2][1]["layer_start"] == 4
++    assert calls[3][1]["layer_num"] == 8
++    assert cache.layer_done_counter.update_producer.call_count == 2
++    assert [ack.node_ids for ack in cache.ack_load_queue] == [[1], [2]]
++    assert cache.layer_done_counter.events[0].state_ready_event is None
++
++
++def test_eager_has_no_deferred_tail_and_native_has_no_extra_stages():
++    for tier, count in (("eager", 2), ("complete", 1)):
++        cache, calls = fixture()
++        cache.start_loading(beliefkv_prefetch_tier=tier)
++        assert len(calls) == count
++        assert len(cache.ack_load_queue) == 1
++        assert not cache.resume_beliefkv_loading()
++
++
++def test_unclaimed_prefetch_finishes_after_200ms_without_publishing_early_ack():
++    cache, calls = fixture()
++    with patch("time.monotonic", return_value=10.):
++        cache.start_loading(beliefkv_prefetch_tier="pipeline")
++    with patch("time.monotonic", return_value=10.199):
++        assert not cache.resume_beliefkv_loading(expired_only=True)
++    assert cache.ack_load_queue == []
++    with patch("time.monotonic", return_value=10.2):
++        assert cache.resume_beliefkv_loading(expired_only=True)
++    assert len(calls) == 3 and len(cache.ack_load_queue) == 1
++
++
++@pytest.mark.parametrize("tier", ("pipeline", "eager"))
++def test_native_work_merged_into_burst_always_uses_original_pipeline(tier):
++    cache, calls = fixture()
++    cache.load_queue.append(CacheOperation(indices(1), indices(1), 2))
++    cache.start_loading(beliefkv_prefetch_tier=tier)
++    assert len(calls) == 1
++    assert cache.ack_load_queue[0].node_ids == [1, 2]
++    assert not cache.resume_beliefkv_loading()
++
++
++def test_failed_tail_submission_retains_ownership_and_never_publishes_ack():
++    cache, _ = fixture()
++    cache.start_loading(beliefkv_prefetch_tier="pipeline")
++    cache.l2_transfer_engine.submit_host_to_device = Mock(side_effect=RuntimeError("launch"))
++    with pytest.raises(RuntimeError, match="launch"):
++        cache.resume_beliefkv_loading()
++    assert cache.ack_load_queue == [] and cache._beliefkv_load_continuation is not None
++
++
++def test_state_transfer_finishes_before_full_and_is_not_a_full_ack():
++    cache, calls = fixture()
++    state = NS(layer_mapper=lambda layer: layer)
++    cache._beliefkv_split_prefetch_transfers = lambda full: ([state], full)
++    cache.start_loading(beliefkv_prefetch_tier="pipeline")
++    assert calls[0][0] == [state] and calls[0][1]["layer_num"] == 8
++    assert calls[1][1]["start_event"] is calls[0][3]
++    assert cache.layer_done_counter.events[0].state_ready_event is calls[0][3]
++    assert cache.ack_load_queue == []
++
++
++def test_transfer_timing_sums_stage_service_and_excludes_the_cpu_pause():
++    cache, calls = fixture()
++    cache.start_loading(beliefkv_prefetch_tier="pipeline")
++    cache.resume_beliefkv_loading()
++    assert AckCache._beliefkv_ack_stream_elapsed_ms(cache.ack_load_queue[0]) == 6.
++    assert all(item[2].elapsed_time.call_count == 1 for item in calls)
++
++
++def test_l2_continuation_copies_only_remaining_layers_and_records_their_fences():
++    from sglang.srt.mem_cache import l2_transfer as transfer
++
++    pool = NS(layer_num=8, load_to_device_per_layer=Mock())
++    indices = NS(is_cuda=False)
++    part = transfer.L2Transfer(pool, object(), indices, indices)
++    engine = transfer.L2TransferEngine.__new__(transfer.L2TransferEngine)
++    engine.io_backend, engine.host_to_device_stream = "kernel", object()
++    module = NS(stream=lambda _: contextlib.nullcontext())
++    start, finish = Mock(), Mock()
++    with patch.object(transfer, "device_module", module), patch.object(
++        transfer, "make_timing_event_pair", return_value=(start, finish, True),
++    ):
++        ready = Mock()
++        engine.submit_host_to_device(
++            [part], layer_num=8, layer_start=4, start_event=Mock(), on_layer_done=ready,
++        )
++    assert [item.args[3] for item in pool.load_to_device_per_layer.call_args_list] == [4, 5, 6, 7]
++    assert [item.args[0] for item in ready.call_args_list] == [4, 5, 6, 7]
++
++
++def test_recorded_state_dependency_admits_before_full_ack_without_cpu_synchronize():
++    cache, *_ = shadow_fixture()
++    cache.linker = None
++    controller = cache.cache_controller
++    controller.load_fence_stream = object()
++    controller.load_queue = []
++    full_finish = Mock()
++    full_finish.query.return_value = False
++    state_ready = object()
++    controller.ack_load_queue = [NS(
++        finish_event=full_finish, state_ready_event=state_ready,
++        child_receipts=(NS(command_id="p1", num_tokens_by_pool=(("kv", 10), ("mamba", 1))),),
++    )]
++    controller.resume_beliefkv_loading = Mock()
++    assert cache.beliefkv_prefetch_can_admit(("p1",))
++    controller.resume_beliefkv_loading.assert_called_once()
++    full_finish.query.assert_not_called()
++    full_finish.synchronize.assert_not_called()
++
++
++@pytest.mark.parametrize("quantized", (False, True))
++def test_quantized_state_copy_without_the_new_fence_keeps_the_legacy_restore_path(quantized):
++    cache, *_ = shadow_fixture()
++    cache.linker = None
++    cache.cache_controller.load_fence_stream = object()
++    cache.cache_controller.resume_beliefkv_loading = Mock()
++    cache.req_to_token_pool = NS(mamba_ckpt_pool=object() if quantized else None)
++    assert cache.supports_beliefkv_restore_tiers() is (not quantized)
 diff --git a/test/srt/test_beliefkv_scheduler_hook.py b/test/srt/test_beliefkv_scheduler_hook.py
 new file mode 100644
 index 0000000..ca36e52
@@ -11905,6 +12379,62 @@ index 0000000..ca36e52
 +
 +if __name__ == "__main__":
 +    unittest.main()
+diff --git a/test/srt/test_beliefkv_selective_backup.py b/test/srt/test_beliefkv_selective_backup.py
+new file mode 100644
+index 0000000..dcfbfd7
+--- /dev/null
++++ b/test/srt/test_beliefkv_selective_backup.py
+@@ -0,0 +1,50 @@
++"""Selective background backup never treats execution locks as coldness."""
++
++from unittest.mock import Mock
++
++import pytest
++
++from sglang.srt.mem_cache.unified_cache.component_type import ComponentType as CT
++from test_beliefkv_cold_full_prepare import fixture, install_cpu_enqueue
++from test_beliefkv_terminal_capacity import hybrid_cache, insert_session
++
++
++@pytest.mark.parametrize("waiting", (False, True))
++@pytest.mark.parametrize("locked", (False, True))
++def test_only_direct_waiting_owners_or_unowned_cold_nodes_are_selected(hybrid_cache, waiting, locked):
++    cache, _, _, _, leaf, _ = fixture(hybrid_cache)
++    install_cpu_enqueue(cache)
++    insert_session(cache, [1, 2, 3, 4, 5, 6], "owner")
++    cache.enable_beliefkv_incremental_prepare()
++    cache.beliefkv_idle_prepare_policy = "cold"
++    cache.beliefkv_backup_full_owner_validator = Mock(return_value=waiting)
++    if locked:
++        cache.inc_lock_ref(leaf.id)
++    result = cache.prepare_beliefkv_idle_full()
++    assert bool(result) is (waiting and not locked)
++    assert leaf.component_data[CT.FULL].value is not None
++    assert leaf.component_data[CT.MAMBA].host_value is None
++    assert cache.beliefkv_backup_full_owner_validator.call_count == int(not locked)
++
++
++def test_unknown_shared_coverage_is_skipped_without_a_subtree_walk(hybrid_cache):
++    cache, _, _, _, leaf, _ = fixture(hybrid_cache)
++    cache.enable_beliefkv_incremental_prepare()
++    cache.beliefkv_idle_prepare_policy = "cold"
++    leaf.component_data[CT.FULL].session_ref = 2
++    leaf.component_data[CT.FULL].session_ids = {"partial"}
++    cache._beliefkv_full_covering_sessions = Mock(side_effect=AssertionError("no subtree scan"))
++    assert cache.prepare_beliefkv_idle_full() == ()
++    assert leaf.id in cache._beliefkv_unbacked_full
++
++
++def test_newly_blocked_owner_is_rechecked_without_rebuilding_the_dirty_index(hybrid_cache):
++    cache, _, _, _, leaf, _ = fixture(hybrid_cache)
++    install_cpu_enqueue(cache)
++    insert_session(cache, [1, 2, 3, 4, 5, 6], "owner")
++    cache.enable_beliefkv_incremental_prepare()
++    cache.beliefkv_idle_prepare_policy = "cold"
++    cache.beliefkv_backup_full_owner_validator = Mock(return_value=False)
++    assert cache.prepare_beliefkv_idle_full() == ()
++    cache.beliefkv_backup_full_owner_validator.return_value = True
++    assert cache.prepare_beliefkv_idle_full() == ((leaf.id, leaf.creation_time, 2),)
 diff --git a/test/srt/test_beliefkv_session_anchors.py b/test/srt/test_beliefkv_session_anchors.py
 new file mode 100644
 index 0000000..f8adad2
@@ -11984,10 +12514,10 @@ index 0000000..f8adad2
 +    assert tracker.snapshot_released_session_leaf_anchors("session", generation) is None
 diff --git a/test/srt/test_beliefkv_shadow_dispatch.py b/test/srt/test_beliefkv_shadow_dispatch.py
 new file mode 100644
-index 0000000..34a72ca
+index 0000000..16a4d0f
 --- /dev/null
 +++ b/test/srt/test_beliefkv_shadow_dispatch.py
-@@ -0,0 +1,1496 @@
+@@ -0,0 +1,1499 @@
 +"""CPU-only action-local shadow dispatch tests, without importing the GPU runtime."""
 +
 +import ast
@@ -12048,6 +12578,9 @@ index 0000000..34a72ca
 +        "_start_beliefkv_prefetch_loads",
 +        "beliefkv_prefetch_can_admit",
 +        "supports_beliefkv_overlap_prefetch",
++        "supports_beliefkv_restore_tiers",
++        "advance_beliefkv_prefetch",
++        "_beliefkv_ack_stream_elapsed_ms",
 +        "ready_to_load_host_cache",
 +        "init_load_back",
 +        "load_back",
@@ -14917,10 +15450,10 @@ index 0000000..c7f98e5
 +    assert cache.tree_core._can_reclaim_full_host_duplicate(node)
 diff --git a/test/srt/test_beliefkv_transfer_receipts.py b/test/srt/test_beliefkv_transfer_receipts.py
 new file mode 100644
-index 0000000..04f9ddd
+index 0000000..909001c
 --- /dev/null
 +++ b/test/srt/test_beliefkv_transfer_receipts.py
-@@ -0,0 +1,678 @@
+@@ -0,0 +1,681 @@
 +"""CPU-only coverage for per-operation HiCache transfer receipts."""
 +
 +import ast
@@ -14986,6 +15519,8 @@ index 0000000..04f9ddd
 +                "_num_tokens_by_pool",
 +                "load",
 +                "start_loading",
++                "resume_beliefkv_loading",
++                "_beliefkv_split_prefetch_transfers",
 +            },
 +        )
 +    )
@@ -14995,6 +15530,7 @@ index 0000000..04f9ddd
 +        {
 +            "write", "load", "_num_tokens_by_pool", "_transfer_num_bytes",
 +            "_resolve_device_transfers",
++            "_beliefkv_split_prefetch_transfers",
 +        },
 +    )
 +    hybrid.bases = [ast.Name(id="HiCacheController", ctx=ast.Load())]
@@ -15601,10 +16137,10 @@ index 0000000..04f9ddd
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_unified_ack.py b/test/srt/test_beliefkv_unified_ack.py
 new file mode 100644
-index 0000000..6320bf9
+index 0000000..873baf5
 --- /dev/null
 +++ b/test/srt/test_beliefkv_unified_ack.py
-@@ -0,0 +1,387 @@
+@@ -0,0 +1,388 @@
 +"""CPU-only tests for UnifiedRadixCache's optional post-commit observer."""
 +
 +import ast
@@ -15641,6 +16177,7 @@ index 0000000..6320bf9
 +            "_finish_write_through_ack",
 +            "_emit_hicache_transfer_commit",
 +            "_log_write_ack_metrics",
++            "_beliefkv_ack_stream_elapsed_ms",
 +        }
 +    ]
 +    events = [

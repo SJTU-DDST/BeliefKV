@@ -2,22 +2,24 @@
 
 Status date: 2026-10-22 (Asia/Shanghai).
 
-The latest user request reopens research justification of the current three
-mechanisms for OSDI/EuroSys. Follow
+The latest user request authorizes implementing selective backup,dependency
+restore tiers and execution-frontier tool recovery before the fresh comparison.
+Follow [the revision](research/completion_and_restore_revision_20261022_zh.md) and
 [the design review](research/design_review_osdi_eurosys_20261021_zh.md):
 dynamic spawn and JCT are not exclusive contributions; compare against
 TokenCake,Agentix,TOPAS,KVFlow and tool-lifecycle policies. Selective incremental
 capacity preparation,dependency-aware restoration and bounded continuation
-execution remain hypotheses,not accepted novelty or deployed performance.
+execution are CPU-checked mechanisms/candidates,not accepted novelty or GPU performance.
 Do not automatically resume unrelated rejected historical directions.
 Archived evidence remains in [the consolidation record](archive/research_exploration_20261020.md).
 The GPU hold and engineering contracts retain precedence.
 
-Research implementation order:finish the common Full/JOIN/native controls first;
-then check eligible dirty bytes and reclaimable-backed capacity against restore
-shortfall,selectively prepare missing donors,and measure exposed recovery waits.
-Only then add a separately controlled root-fair last-child/continuation budget
-or a cost/pressure-aware tool decision. Keep simple JOIN as a strong common
+Research implementation order:the user supersedes the controls-first restriction.
+Use bounded cold-owner filtering instead of a global capacity-gap optimizer.
+Ordinary tools restore at the execution frontier;keep timing for pressure offload.
+Use actual state-first/prefix/tail primitives and measure exposed waits.
+Keep workflow_completion as a separately controlled admission-quantum candidate.
+Keep simple JOIN as a strong common
 skeleton. No new score or complex rank is accepted without incremental evidence.
 Do not claim fixed1.5s first-service guarantees or inherit97% predictor accuracy
 without current episode-level,coverage,calibration and byte-weighted evidence.
@@ -34,7 +36,16 @@ Keep the goal active. Non-inferiority to native and the strongest simple control
 plus independent useful KV benefit,is the acceptance criterion,not a claimed result.
 Retain negative outcomes,guard exclusions and realized-work/quality differences.
 
-Latest offline evidence: tool request rounds are now rebuilt independently of
+Current online changes and evidence are in the revision above. V116's waiting
+process exited after its hold marker changed. The replacement requires final
+application/engine qualification;no GPU performance is accepted.
+Final application qualification V2671/V2672 retains3737 cases and passes3739,
+with no skips and2 subtests;the historical Docker deselection stays explicit.
+Engine V2663/V2664 passes467 cases,with no skips and46 subtests. V2673 records
+the final main revision and replacement V117 registration. Workflow-completion
+ordering stays conditional;the primary three arms keep simple JOIN ordering.
+
+Previous offline evidence: tool request rounds are now rebuilt independently of
 controller/prefetch logs,using the real structured-action enum and whole-round
 tool ends. All arms postprocess both JOIN/tool reentry before cleanup,with no
 new scheduler observation. V2640/V2641 select ready cohorts in600-2520.937s;
@@ -45,8 +56,8 @@ unmatched controller groups with tool P50~2ms and successor queue P50~10.08s;
 missing plans do not prove missing physical opportunities. Test the common
 simple-JOIN skeleton first,not larger prefetch/backup volumes.
 V2642 retains all3634 and adds58:3692 pass,no skips,plus2 subtests.
-V2643 binds current sources. V115 is cancelled;V116 freezes this offline update.
-Online runtime,configuration and engine remain unchanged.
+V2643 binds that revision. V116 froze that offline update before the present
+runtime,configuration and engine changes.
 See[the independent reentry audit](reports/2026-10/tool_reentry_baseline_audit_20261021_zh.md).
 
 Previous CPU change scopes common prefix-length reads to one synchronous

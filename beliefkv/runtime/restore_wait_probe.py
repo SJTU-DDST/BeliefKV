@@ -14,10 +14,13 @@ class _Sample:
     counts: Counter
     layers: dict = field(default_factory=dict)
 
-    def wait(self, loading_event, layer: int, consumer: int) -> None:
+    def wait(self, loading_event, layer: int, consumer: int, *, state: bool = False) -> None:
         if layer in self.layers or self.device.is_current_stream_capturing():
             self.counts["duplicate_or_captured_wait"] += 1
-            loading_event.wait(layer)
+            if state:
+                self.device.current_stream().wait_event(loading_event)
+            else:
+                loading_event.wait(layer)
             return
         stream = self.device.current_stream()
         start = self.device.Event(enable_timing=True)
@@ -25,12 +28,19 @@ class _Sample:
         cpu_start = time.monotonic()
         thread_start = time.thread_time_ns()
         start.record(stream=stream)
-        loading_event.wait(layer)
+        if state:
+            stream.wait_event(loading_event)
+        else:
+            loading_event.wait(layer)
         finish.record(stream=stream)
         self.layers[layer] = (
             consumer, start, finish, cpu_start, time.monotonic(),
             thread_start, time.thread_time_ns(),
         )
+
+    def wait_state(self, event, last_layer: int, consumer: int) -> None:
+        self.metadata["pre_forward_state_last_layer"] = last_layer
+        self.wait(event, -1, consumer, state=True)
 
 
 class RestoreWaitProbe:
@@ -62,7 +72,7 @@ class RestoreWaitProbe:
             "hicache_consumer_index": batch.hicache_consumer_index,
             "sampling_interval": self.every,
             "semantics": (
-                "CUDA compute-stream events around native per-layer load waits; "
+                "CUDA compute-stream events around native per-layer and pre-forward state load waits; "
                 "includes event overhead; sampled batch stall, not per-request "
                 "queue wait or an oracle end-to-end speedup"
             ),
@@ -85,6 +95,7 @@ class RestoreWaitProbe:
             layers = [{
                 "layer": layer, "consumer_index": consumer,
                 "gpu_wait_ms": max(0., start.elapsed_time(finish)),
+                "dependency_kind": "pre_forward_state" if layer == -1 else "layer",
                 "cpu_wait_enqueue_ms": max(0., (cpu_finish - cpu_start) * 1000.),
             } for layer, (consumer, start, finish, cpu_start, cpu_finish, _, _)
                 in sample.layers.items()]
@@ -94,13 +105,16 @@ class RestoreWaitProbe:
             records.append({
                 **sample.metadata, "layers": layers,
                 "gpu_layer_dependency_wait_ms": sum(row["gpu_wait_ms"] for row in layers),
+                "gpu_pre_forward_state_dependency_wait_ms": sum(
+                    row["gpu_wait_ms"] for row in layers if row["layer"] == -1
+                ),
                 "gpu_layer_dependency_wait_max_ms": max(row["gpu_wait_ms"] for row in layers),
                 "gpu_observed_layer_span_ms": max(0., first[1].elapsed_time(last[2])),
                 "cpu_observed_layer_span_ms": max(0., (last[4] - first[3]) * 1000.),
                 "thread_cpu_observed_layer_span_ms": max(0., (last[6] - first[5]) / 1e6),
                 "cpu_layer_wait_enqueue_ms": sum(row["cpu_wait_enqueue_ms"] for row in layers),
                 "span_semantics": (
-                    "first observed layer-wait start through last observed wait end; "
+                    "first observed dependency-wait start through last observed wait end; "
                     "GPU span includes kernels and CPU submission gaps between layers; "
                     "CPU span includes dispatch between waits; neither is a complete "
                     "forward or exclusive kernel duration. Thread CPU span excludes "

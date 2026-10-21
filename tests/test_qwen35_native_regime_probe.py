@@ -341,6 +341,9 @@ def test_effective_policy_environment_without_launching_gpu(
         "prefetch_prefix_diagnostics": prefix_diagnostics == "1",
         "prefetch_residency_protection_requested": True,
         "prefill_scheduling_policy_requested": "workflow",
+        "tool_restore_mode_requested": "speculative",
+        "idle_prepare_policy_requested": "cold",
+        "restore_tiers_requested": "complete",
         "server_random_seed": 21,
         "internal_comparison_mode": "full",
     }

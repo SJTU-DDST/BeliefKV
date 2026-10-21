@@ -10,20 +10,29 @@
 方向保留历史语境，不自动恢复；归档范围见[整理记录](archive/research_exploration_20261020.md)。
 GPU 时限、当前工程状态和性能验收要求继续有效。
 
+本次按用户授权实现[选择性备份与完成前沿修订](research/completion_and_restore_revision_20261022_zh.md)：
+周期备份不再覆盖所有 dirty 页；普通工具改为准入前沿恢复，时长模型仍用于卸载；
+引擎接入状态 fence、首个 FULL 层和 tail 续传。workflow_completion
+按 workflow 分配有界连续准入，作为独立消融保留。GPU 加速和新颖性尚未成立。
+V116 已取消，替代登记将在最终应用/引擎资格通过后绑定最新 main。
+本轮最终应用 3739 项及原生 467 项 CPU 检查通过，无跳过；
+Docker 沙箱用例沿用此前的显式排除。最终源码与实验登记见
+`experiments/reports/v2673_completion_recovery_qualification_20261022.json`。
+
 **最新目标：以有效的简单排序为骨架，证明 KV 管理的额外收益。**
 北京时间 **2026-10-22 06:00 前禁止 GPU 实验**；这是一次性预约，不是每日规则。
 已设置新暂停记录，停用旧自动接续。之后仅在最新代码通过 CPU 资格、
 资源空闲且没有新预约时按需开始。目标继续 active，性能尚未验收；
 保留负结果、工作量差异和 guard 排除，不通过挑选结果保证 Full 获胜。
 
-最新离线审计独立重建工具请求轮次，所有对照组自动生成 JOIN/tool 重入
+此前离线审计独立重建工具请求轮次，所有对照组自动生成 JOIN/tool 重入
 报告，不给调度器新增观测。历史完成 cohort 中 Full 工具后继排队 P50
 7.12s、JOIN-only 2.06s；32K–64K 分桶仍为 9.55/1.91s，但 >=128K 桶
 Full 更快。不同代码与轨迹仅作定位，不能换算成 KV/JCT 因果收益。
 [审计与人口偏差](reports/2026-10/tool_reentry_baseline_audit_20261021_zh.md)
 保留未知轮次、短工具漏观测和时钟边界。V2642 保留 3634 项并新增 58 项，
 3692 全通过、无跳过，另有 2 个 subtest，V2643 绑定源码。
-V115 因离线后处理更新取消；V116 接替登记，运行时/配置/引擎不变。
+V115 因离线后处理更新取消；V116 接替的是当时运行时/配置/引擎不变的修订。
 
 此前在线 CPU 优化在单次原生预取提交记录循环内共享祖先长度读取，退出即释放；
 按实际提交量启用，16 节点以内保留原路径。V2632 的 40 个完整路径对照
@@ -46,7 +55,8 @@ subtest；V2625 绑定源码。V112/V113/V114 的旧登记因更新而取消且�
 管理，但完整请求排序与 JOIN-only 共用 aged FIFO/native 顺序、JOIN
 唤醒及独立配额；跳过因果、驻留和恢复插队排序。旧 `workflow` 配置
 保留作对照，代码默认值未静默改变。下一轮显式选择简单排序、
-关闭额外 ACK 后保护；EOS/tool 预取及增量 PREPARE 保留。
+关闭额外 ACK 后保护。当前保留 EOS JOIN 预取和增量 PREPARE，
+工具提前预取改为显式对照，默认使用准入前沿恢复。
 [V2613](../experiments/reports/v2613_join_priority_kv_qualified_cpu_20261021.xml)
 保留全部 3456 项并新增 37 项，3493 全部通过、无跳过，另有 2 个 subtest；
 [V2614](../experiments/reports/v2614_join_priority_kv_cpu_sources_20261021.json)

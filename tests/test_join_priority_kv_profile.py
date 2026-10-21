@@ -139,3 +139,39 @@ def test_unknown_profile_is_rejected(monkeypatch, invalid):
     monkeypatch.setenv("BELIEFKV_PREFILL_SCHEDULING_POLICY", invalid)
     with pytest.raises(ValueError, match="prefill scheduling policy"):
         NativeAdmissionRuntime()
+
+
+@pytest.mark.parametrize("mode", ("full", "scheduler_only", "join_priority_only", "kv_only"))
+def test_new_memory_controls_are_explicit_and_runtime_checked(monkeypatch, tmp_path, mode):
+    environment = arm_environment({
+        "TOOL_RESTORE_MODE": "execution", "RESTORE_TIERS": "dependency",
+        "IDLE_PREPARE_POLICY": "cold", "PREFILL_SCHEDULING_POLICY": "workflow_completion",
+    }, mode)
+    for name, value in environment.items():
+        monkeypatch.setenv(name, value)
+    for name in ("ONLINE_TOOL_TIMING", "BORROWABLE_PARENT_HEADROOM"):
+        monkeypatch.setenv("BELIEFKV_" + name, environment[name])
+    runtime = NativeAdmissionRuntime(event_socket_path=str(tmp_path / "runtime.sock"))
+    runtime._opportunity_writer = Mock()
+    try:
+        runtime._restore_tiers_supported = True
+        runtime._record_runtime_state()
+        state = runtime._opportunity_writer.record.call_args.args[0]
+        custom = mode in ("full", "kv_only")
+        validate_runtime(
+            mode, state, scheduling_policy="workflow_completion",
+            tool_restore_mode="execution", idle_prepare_policy="cold",
+            restore_tiers="dependency" if custom else "complete",
+        )
+        assert state["tool_prefetch"] is False
+        assert state["execution_frontier_restore"] is custom
+        assert runtime._completion_order is not None if mode in ("full", "scheduler_only") else runtime._completion_order is None
+        if custom:
+            state["restore_tiers_supported"] = False
+            with pytest.raises(ValueError, match="restore_tiers_supported"):
+                validate_runtime(
+                    mode, state, tool_restore_mode="execution", restore_tiers="dependency",
+                )
+    finally:
+        runtime._opportunity_writer = None
+        runtime.close()

@@ -21,8 +21,13 @@ def arm_environment(common: dict[str, str], mode: str) -> dict[str, str]:
         "BELIEFKV_PREFILL_SCHEDULING_POLICY",
         common.get("PREFILL_SCHEDULING_POLICY", "workflow"),
     )
-    if scheduling not in ("workflow", "join_priority"):
-        raise ValueError("prefill scheduling policy must be workflow or join_priority")
+    if scheduling not in ("workflow", "join_priority", "workflow_completion"):
+        raise ValueError("unsupported prefill scheduling policy")
+    tool_restore = common.get(
+        "BELIEFKV_TOOL_RESTORE_MODE", common.get("TOOL_RESTORE_MODE", "speculative"),
+    )
+    if tool_restore not in ("speculative", "execution"):
+        raise ValueError("unsupported tool restore mode")
     workflow_ordering = scheduling == "workflow" and mode in ("full", "scheduler_only")
     if mode == "join_priority_only":
         scheduling = "join_priority"
@@ -43,6 +48,14 @@ def arm_environment(common: dict[str, str], mode: str) -> dict[str, str]:
         "EXECUTION_HANDOFF": "0",
         "BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH": str(int(custom_kv)),
         "BELIEFKV_ENABLE_TOOL_PREFETCH": str(int(custom_kv)),
+        "BELIEFKV_TOOL_RESTORE_MODE": tool_restore if custom_kv else "speculative",
+        "TOOL_RESTORE_MODE": tool_restore if custom_kv else "speculative",
+        "BELIEFKV_IDLE_PREPARE_POLICY": common.get(
+            "BELIEFKV_IDLE_PREPARE_POLICY", common.get("IDLE_PREPARE_POLICY", "cold"),
+        ),
+        "BELIEFKV_RESTORE_TIERS": common.get(
+            "BELIEFKV_RESTORE_TIERS", common.get("RESTORE_TIERS", "complete"),
+        ) if custom_kv else "complete",
         "BELIEFKV_ENABLE_PREPARE_HOST": str(int(custom_kv)),
         "PREFETCH_RESIDENCY_PROTECTION": protection if custom_kv else "0",
         "BELIEFKV_PREFETCH_RESIDENCY_PROTECTION": protection if custom_kv else "0",
@@ -79,6 +92,9 @@ def arm_environment(common: dict[str, str], mode: str) -> dict[str, str]:
 def validate_runtime(
     mode: str, state: dict, *, residency_protection: bool | None = None,
     scheduling_policy: str | None = None,
+    tool_restore_mode: str = "speculative",
+    idle_prepare_policy: str | None = None,
+    restore_tiers: str | None = None,
 ) -> None:
     """Check observed effective controls, not just the requested environment."""
     if mode not in MODES:
@@ -87,13 +103,15 @@ def validate_runtime(
         if state:
             raise ValueError("matched native unexpectedly enabled the custom runtime")
         return
-    workflow_ordering = state.get("prefill_scheduling_policy") != "join_priority"
+    workflow_ordering = state.get("prefill_scheduling_policy") == "workflow"
+    if tool_restore_mode not in ("speculative", "execution"):
+        raise ValueError("unsupported requested tool restore mode")
     expected = {
         "internal_comparison_mode": mode,
         "custom_kv_management": mode in ("full", "kv_only"),
         "prepare_host": mode in ("full", "kv_only"),
         "final_stage_prefetch": mode in ("full", "kv_only"),
-        "tool_prefetch": mode in ("full", "kv_only"),
+        "tool_prefetch": mode in ("full", "kv_only") and tool_restore_mode == "speculative",
         "borrowable_parent_headroom": mode in ("full", "kv_only"),
         "resident_first": mode in ("full", "scheduler_only") and workflow_ordering,
         "join_parent_priority": mode in ("full", "scheduler_only", "join_priority_only"),
@@ -102,12 +120,23 @@ def validate_runtime(
         "execution_handoff": False,
         "physical_disabled": False,
     }
+    if tool_restore_mode == "execution":
+        expected["execution_frontier_restore"] = mode in ("full", "kv_only")
+        expected["tool_restore_mode"] = (
+            tool_restore_mode if mode in ("full", "kv_only") else "speculative"
+        )
+    if idle_prepare_policy is not None:
+        expected["idle_prepare_policy"] = idle_prepare_policy
+    if restore_tiers is not None:
+        expected["restore_tiers"] = restore_tiers
+        if restore_tiers == "dependency" and mode in ("full", "kv_only"):
+            expected["restore_tiers_supported"] = True
     if residency_protection is not None:
         expected["prefetch_residency_protection"] = (
             residency_protection and mode in ("full", "kv_only")
         )
     if scheduling_policy is not None:
-        if scheduling_policy not in ("workflow", "join_priority"):
+        if scheduling_policy not in ("workflow", "join_priority", "workflow_completion"):
             raise ValueError("unsupported requested scheduling policy")
         expected["prefill_scheduling_policy"] = (
             "native" if mode == "kv_only" else

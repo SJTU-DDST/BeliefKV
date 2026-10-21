@@ -2,7 +2,11 @@
 
 更新日期：2026-10-22（北京时间）。
 
-用户最新要求重新论证当前三个设计点及 OSDI/EuroSys 定位。
+用户最新要求实现低成本选择性备份、依赖恢复档位及执行前沿工具恢复。
+[本轮修订](research/completion_and_restore_revision_20261022_zh.md)记录复制/
+续传、状态 fence、增量筛选和 CPU 证据。workflow_completion
+提供 workflow 范围的有界连续准入，暂作独立消融；不当作性能保证。
+V116 已取消且未使用 GPU，替代登记需绑定最终应用/引擎资格。
 [设计复核](research/design_review_osdi_eurosys_20261021_zh.md)以 TokenCake、
 Agentix、TOPAS、KVFlow 和工具期管理为强对照，将容量准备、恢复依赖和
 有界执行联动列为待验证机制，不宣称已成立新颖性或性能收益。
@@ -16,7 +20,7 @@ Agentix、TOPAS、KVFlow 和工具期管理为强对照，将容量准备、恢�
 不抢占他人 GPU。工作目标 active，Full 不劣于 native/最强简单基线且
 有可归因的 KV 增量是验收门槛，不能将该目标当作当前已有结论。
 
-最新 CPU 更新仅将 simple JOIN 排序的重复到达时间读取/十秒年龄判断
+此前 CPU 更新将 simple JOIN 排序的重复到达时间读取/十秒年龄判断
 合并为每个请求一次，保留全部排序与 live 语义。V2623 使用固定同一时钟、
 101 个交替样本、正常 GC 和独立旧 planner，完整维护/检查/规划/选择状态一致。
 48 个 recent/aged/mixed 请求的墙钟中位约改善 0.89%/2.20%/2.12%；
@@ -47,8 +51,9 @@ subtest，V2634 绑定源码。引擎 53335e6 未改变，独立 405 项未重�
 当前实际实现与原始叙述的边界：后台备份是 post-forward 安全点按 dirty
 index 提交异步 FULL D2H，不是独立线程每轮遍历全 HBM；工具概率主要
 判断已进入 WAIT_TOOL 后的剩余等待。Host 副本不授予回收权限，分层复制
-也不等于同比例降低 token allocator 容量。未来选择性备份、root 公平
-预算/继续执行阶段及成本感知工具决策仍是候选，不混入基本三组对照。
+也不等于同比例降低 token allocator 容量。本轮接入了上述选择性备份、
+依赖档位和工具执行前沿；workflow_completion 继续单独消融，
+不混入基本三组的简单 JOIN 排序。
 
 新增 `BELIEFKV_PREFILL_SCHEDULING_POLICY=join_priority|workflow`。
 `join_priority` 让 Full 的整个 prefill 排序共用 JOIN-only 路径，包括

@@ -140,7 +140,7 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || [[ "$PROFILE_SHARED_PATH" != "0" && "$PROFILE_SHARED_PATH" != "1" ]] \
   || [[ "$PREFETCH_PREFIX_DIAGNOSTICS" != "0" && "$PREFETCH_PREFIX_DIAGNOSTICS" != "1" ]] \
   || [[ "$PREFETCH_RESIDENCY_PROTECTION" != "0" && "$PREFETCH_RESIDENCY_PROTECTION" != "1" ]] \
-  || [[ "$PREFILL_SCHEDULING_POLICY" != "workflow" && "$PREFILL_SCHEDULING_POLICY" != "join_priority" ]] \
+  || [[ "$PREFILL_SCHEDULING_POLICY" != "workflow" && "$PREFILL_SCHEDULING_POLICY" != "join_priority" && "$PREFILL_SCHEDULING_POLICY" != "workflow_completion" ]] \
   || [[ ! "$PREFETCH_LEAD_MS" =~ ^[0-9]+$ ]] \
   || [[ "$SEMANTIC_WORK_STATISTIC" != upper && "$SEMANTIC_WORK_STATISTIC" != center ]] \
   || [[ ! "$EOS_PROTOCOL_WINDOW_MS" =~ ^[0-9]+$ ]] || (( EOS_PROTOCOL_WINDOW_MS < 50 || EOS_PROTOCOL_WINDOW_MS > 500 )) \
@@ -275,7 +275,10 @@ jq -n --argjson cache "$CHAT_TOKEN_BLOCK_CACHE" --argjson native "$NATIVE_POLICY
   --arg comparison "${BELIEFKV_INTERNAL_COMPARISON_MODE:-full}" \
   --argjson protection "$PREFETCH_RESIDENCY_PROTECTION" \
   --arg scheduling "$PREFILL_SCHEDULING_POLICY" \
-  '{schema_version: 1, chat_token_block_cache: ($cache == 1), native_policy_baseline: ($native == 1), prefetch_prefix_diagnostics: ($prefixes == 1), prefetch_residency_protection_requested: ($protection == 1), prefill_scheduling_policy_requested: $scheduling, server_random_seed: $seed, internal_comparison_mode: $comparison}' \
+  --arg tool_restore "${BELIEFKV_TOOL_RESTORE_MODE:-speculative}" \
+  --arg idle_prepare "${BELIEFKV_IDLE_PREPARE_POLICY:-cold}" \
+  --arg restore_tiers "${BELIEFKV_RESTORE_TIERS:-complete}" \
+  '{schema_version: 1, chat_token_block_cache: ($cache == 1), native_policy_baseline: ($native == 1), prefetch_prefix_diagnostics: ($prefixes == 1), prefetch_residency_protection_requested: ($protection == 1), prefill_scheduling_policy_requested: $scheduling, tool_restore_mode_requested: $tool_restore, idle_prepare_policy_requested: $idle_prepare, restore_tiers_requested: $restore_tiers, server_random_seed: $seed, internal_comparison_mode: $comparison}' \
   > "$RUN_ROOT/server/launch_configuration.json"
 setsid env -u BELIEFKV_FULL_MAMBA_HOST_SPLIT "${unset_env[@]}" \
   "${ab_env[@]}" \

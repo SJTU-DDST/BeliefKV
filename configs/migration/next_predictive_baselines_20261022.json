@@ -23,6 +23,9 @@
     "PREFILL_SCHEDULING_POLICY": "join_priority",
     "PREFETCH_RESIDENCY_PROTECTION": "0",
     "EXECUTION_HANDOFF": "0",
+    "TOOL_RESTORE_MODE": "execution",
+    "RESTORE_TIERS": "dependency",
+    "IDLE_PREPARE_POLICY": "cold",
     "JOIN_PREFETCH_TRIGGER": "observed_eos",
     "PREDICTION_MAINTENANCE_INTERVAL_MS": "100",
     "PROFILE_SHARED_PATH": "0",
@@ -36,6 +39,26 @@
     "native_matched"
   ],
   "conditional_controls": {
+    "full_speculative_tools": {
+      "mode": "full",
+      "overrides": {"TOOL_RESTORE_MODE": "speculative"}
+    },
+    "full_all_dirty_backup": {
+      "mode": "full",
+      "overrides": {"IDLE_PREPARE_POLICY": "all"}
+    },
+    "full_complete_restore": {
+      "mode": "full",
+      "overrides": {"RESTORE_TIERS": "complete"}
+    },
+    "full_workflow_completion": {
+      "mode": "full",
+      "overrides": {"PREFILL_SCHEDULING_POLICY": "workflow_completion"}
+    },
+    "scheduler_workflow_completion": {
+      "mode": "scheduler_only",
+      "overrides": {"PREFILL_SCHEDULING_POLICY": "workflow_completion"}
+    },
     "full_post_ack_protection": {
       "mode": "full",
       "overrides": {"PREFETCH_RESIDENCY_PROTECTION": "1"}

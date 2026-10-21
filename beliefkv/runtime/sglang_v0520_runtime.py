@@ -426,8 +426,8 @@ class NativeAdmissionRuntime:
             and self.internal_comparison_mode != "kv_only"
         )
         scheduling_setting = os.environ.get("BELIEFKV_PREFILL_SCHEDULING_POLICY", "workflow")
-        if scheduling_setting not in ("workflow", "join_priority"):
-            raise ValueError("prefill scheduling policy must be workflow or join_priority")
+        if scheduling_setting not in ("workflow", "join_priority", "workflow_completion"):
+            raise ValueError("prefill scheduling policy must be workflow, join_priority or workflow_completion")
         self.prefill_scheduling_policy = (
             "native" if self._native_prefill_order else
             "join_priority" if self.internal_comparison_mode == "join_priority_only"
@@ -437,6 +437,8 @@ class NativeAdmissionRuntime:
             os.environ.get("BELIEFKV_WORKFLOW_ATTAINED_WORK", "0") == "1"
             and self.prefill_scheduling_policy != "join_priority"
         )
+        if self.prefill_scheduling_policy == "workflow_completion":
+            self._workflow_attained_work_enabled = True
         self._workflow_attained_output_tokens: dict[str, int] = {}
         self._workflow_work_promoted: str | None = None
         self.predictor_sha256 = predictor_sha256
@@ -570,13 +572,16 @@ class NativeAdmissionRuntime:
         self.enable_final_stage_prefetch = enable_final_stage_prefetch
         self.enable_resident_first = os.environ.get(
             "BELIEFKV_ENABLE_RESIDENT_FIRST", "1",
-        ) == "1" and self.prefill_scheduling_policy != "join_priority"
+        ) == "1" and self.prefill_scheduling_policy not in ("join_priority", "workflow_completion")
         priority_setting = os.environ.get("BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY")
         self.enable_final_stage_priority = (
-            False if self.prefill_scheduling_policy == "join_priority"
+            False if self.prefill_scheduling_policy in ("join_priority", "workflow_completion")
             else None if priority_setting is None else priority_setting == "1"
         )
         self.enable_prepare_host = os.environ.get("BELIEFKV_ENABLE_PREPARE_HOST", "1") == "1"
+        self.idle_prepare_policy = os.environ.get("BELIEFKV_IDLE_PREPARE_POLICY", "cold")
+        if self.idle_prepare_policy not in ("cold", "all"):
+            raise ValueError("idle prepare policy must be cold or all")
         sampling_setting = os.environ.get("BELIEFKV_H2D_OPPORTUNITY_SAMPLING", "0")
         if sampling_setting not in ("0", "1"):
             raise ValueError("H2D opportunity sampling setting must be 0 or 1")
@@ -668,6 +673,7 @@ class NativeAdmissionRuntime:
         self._admission_lease: _AdmissionPrefetchLease | None = None
         self.shadow_candidate: ActionLocalShadowCandidate | None = None
         self._native_cache: object | None = None
+        self._restore_tiers_supported = False
         self._residency_pool_bytes: tuple[int, int] | None = None
         self._residency_request_counts: tuple[int, int, int | None] | None = None
         self._context_tokens: dict[str, tuple[int, int, int, bool]] = {}
@@ -696,6 +702,18 @@ class NativeAdmissionRuntime:
         if tool_setting not in ("0", "1"):
             raise ValueError("tool prefetch setting must be 0 or 1")
         self.enable_tool_prefetch = enable_tool_prefetch or tool_setting == "1"
+        self.tool_restore_mode = os.environ.get("BELIEFKV_TOOL_RESTORE_MODE", "speculative")
+        if self.tool_restore_mode not in ("speculative", "execution"):
+            raise ValueError("tool restore mode must be speculative or execution")
+        self.enable_frontier_restore = (
+            self._custom_kv_management and self.enable_tool_prefetch
+            and self.tool_restore_mode == "execution"
+        )
+        self.enable_tool_prefetch = self.enable_tool_prefetch and not self.enable_frontier_restore
+        self.restore_tiers = os.environ.get("BELIEFKV_RESTORE_TIERS", "complete")
+        if self.restore_tiers not in ("complete", "dependency"):
+            raise ValueError("restore tiers must be complete or dependency")
+        self._frontier_probe_after_ms: dict[PrefillCandidateKey, float] = {}
         self.enable_execution_handoff = os.environ.get(
             "BELIEFKV_ENABLE_EXECUTION_HANDOFF",
             "1" if (
@@ -753,7 +771,7 @@ class NativeAdmissionRuntime:
             enable_local_predictor or enable_admission_prefetch
             or enable_final_stage_prefetch or enable_confirmed_join_canary
             or self.enable_prepare_host or self.enable_tool_prefetch
-            or self.enable_execution_handoff or self._borrowable_parent_headroom
+            or self.enable_execution_handoff or self.enable_frontier_restore or self._borrowable_parent_headroom
             or self._tool_timing_only or self._online_tool_timing is not None
         ):
             raise ValueError("scheduling-only comparison cannot enable custom KV management")
@@ -772,6 +790,12 @@ class NativeAdmissionRuntime:
         self._noncontinuing_joins: set[str] = set()
         self._continuing_joins: set[str] = set()
         self.frontier = CausalFrontierScheduler(self.graph)
+        from beliefkv.policy.workflow_completion import WorkflowCompletionOrder
+
+        self._completion_order = (
+            WorkflowCompletionOrder(self.graph)
+            if self.prefill_scheduling_policy == "workflow_completion" else None
+        )
         self.visible: dict[str, PrefillCandidateKey] = {}
         self.context_sessions: dict[str, PrefillCandidateKey] = {}
         self._context_sessions_revision = 0
@@ -937,10 +961,16 @@ class NativeAdmissionRuntime:
 
     def attach_native_cache(self, cache: object) -> None:
         self._native_cache = cache
+        supports = getattr(cache, "supports_beliefkv_restore_tiers", None)
+        self._restore_tiers_supported = (
+            self.restore_tiers == "dependency" and callable(supports) and supports() is True
+        )
         incremental = getattr(cache, "enable_beliefkv_incremental_prepare", None)
         if self._custom_kv_management and self.enable_prepare_host and not self.physical_disabled and callable(incremental):
             if incremental() is True:
                 self.counts["incremental_full_tracking_enabled"] += 1
+                cache.beliefkv_idle_prepare_policy = self.idle_prepare_policy
+                cache.beliefkv_backup_full_owner_validator = self._live_backup_full_owners
         self._residency_pool_bytes = None
         try:
             entries = cache.host_pool_group.entry_map
@@ -1017,6 +1047,8 @@ class NativeAdmissionRuntime:
         if self._wait_prediction_maintenance_deferred:
             self._wait_prediction_maintenance_deferred = False
             self._maintain_wait_predictions(time.monotonic() * 1000.)
+        if self.enable_frontier_restore:
+            self.dispatch_frontier_restore(waiting_queue, running_batch=running_batch)
         if self._tool_ticket is not None or self._tool_inflight_tickets or (
             self.enable_tool_prefetch and self.tool_wait_hints
         ):
@@ -1239,6 +1271,8 @@ class NativeAdmissionRuntime:
             self._noncontinuing_joins.clear()
             self._continuing_joins.clear()
             self.frontier = CausalFrontierScheduler(self.graph)
+            if self._completion_order is not None:
+                self._completion_order = type(self._completion_order)(self.graph)
             self.demand_hints.clear()
             self._last_model_signature = None
             self.context_sessions.clear()
@@ -1279,6 +1313,9 @@ class NativeAdmissionRuntime:
             self.counts["causal_mirror_discarded"] += 1
             raise
         else:
+            if self._completion_order is not None:
+                for workflow_id in {event.workflow_id for event in events}:
+                    self._completion_order.invalidate(workflow_id)
             affected = self._update_active_tool_census(deltas, previous_version=graph_version)
             self._update_wait_context_cache(
                 deltas, previous_version=graph_version, affected_invocations=affected,
@@ -2253,6 +2290,10 @@ class NativeAdmissionRuntime:
             idle_prepare_stats = getattr(
                 self._native_cache, "beliefkv_idle_full_prepare_stats", None,
             )
+            restore_tier_stats = getattr(
+                getattr(self._native_cache, "cache_controller", None),
+                "beliefkv_restore_tier_stats", None,
+            )
             before_ms = time.monotonic() * 1000.
             wall_ms = time.time() * 1000.
             after_ms = time.monotonic() * 1000.
@@ -2307,6 +2348,12 @@ class NativeAdmissionRuntime:
                 "workflow_attained_work": self._workflow_attained_work_enabled,
                 "workflow_work_metric": "completed_request_output_tokens",
                 "workflow_work_accounts": len(self._workflow_attained_output_tokens),
+                "workflow_completion_focus": (
+                    self._completion_order.focus if self._completion_order is not None else None
+                ),
+                "workflow_completion_quantum": (
+                    self._completion_order.quantum if self._completion_order is not None else None
+                ),
                 "execution_handoff": self.enable_execution_handoff,
                 "overlap_prefetch_supported": self.can_prefetch_during_overlap(),
                 "execution_handoff_request_id": (
@@ -2334,6 +2381,14 @@ class NativeAdmissionRuntime:
                     self._model_worker is not None and self._model_worker.disabled
                 ),
                 "tool_prefetch": self.enable_tool_prefetch,
+                "tool_restore_mode": self.tool_restore_mode,
+                "execution_frontier_restore": self.enable_frontier_restore,
+                "restore_tiers": self.restore_tiers,
+                "restore_tiers_supported": self._restore_tiers_supported,
+                "restore_tiers_native": (
+                    dict(restore_tier_stats) if isinstance(restore_tier_stats, dict) else {}
+                ),
+                "idle_prepare_policy": self.idle_prepare_policy,
                 "tool_prefetch_planning_slack_ms": TOOL_PREFETCH_PLANNING_SLACK_MS,
                 "prefetch_lead_ms": self.prefetch_lead_ms,
                 "join_prefetch_min_advance_ms": self.join_prefetch_min_advance_ms,
@@ -6367,13 +6422,7 @@ class NativeAdmissionRuntime:
             )
         )
 
-    def _live_cold_full_owners(
-        self, owners: tuple[tuple[str, int], ...], *,
-        queued_requests: dict[PrefillCandidateKey, object] | None = None,
-    ) -> bool:
-        """Authorize FULL-only reclaim only while every native owner is waiting."""
-        if not self.enable_prepare_host or self.physical_disabled or not owners:
-            return False
+    def _full_owner_index(self) -> dict[str, tuple[PrefillCandidateKey, ...]]:
         if (
             self._cold_full_owner_index_source is not self.context_sessions
             or self._cold_full_owner_index_revision != self._context_sessions_revision
@@ -6388,8 +6437,18 @@ class NativeAdmissionRuntime:
             self._cold_full_owner_index_source = self.context_sessions
             self._cold_full_owner_index_revision = self._context_sessions_revision
             self.counts["cold_full_owner_index_built"] += 1
+        return self._cold_full_owner_index
+
+    def _live_cold_full_owners(
+        self, owners: tuple[tuple[str, int], ...], *,
+        queued_requests: dict[PrefillCandidateKey, object] | None = None,
+    ) -> bool:
+        """Authorize FULL-only reclaim only while every native owner is waiting."""
+        if not self.enable_prepare_host or self.physical_disabled or not owners:
+            return False
+        index = self._full_owner_index()
         for session, generation in owners:
-            keys = self._cold_full_owner_index.get(session)
+            keys = index.get(session)
             if (
                 type(session) is not str or type(generation) is not int or not keys
                 or any(
@@ -6402,6 +6461,32 @@ class NativeAdmissionRuntime:
                     )
                     for key in keys
                 )
+            ):
+                return False
+        return True
+
+    def _live_backup_full_owners(self, owners: tuple[tuple[str, int], ...]) -> bool:
+        """Back only observed blocked owners; do not confer reclaim authority."""
+        if not self.enable_prepare_host or self.physical_disabled or not owners:
+            return False
+        # Reuse the session index maintained for safe donor checks. No graph
+        # traversal, prefix planning or tool-duration prediction per dirty node.
+        index = self._full_owner_index()
+        for session, generation in owners:
+            keys = index.get(session)
+            if type(session) is not str or type(generation) is not int or not keys or any(
+                key.session_generation != generation
+                or (inv := self.graph.invocations.get(key.invocation_id)) is None
+                or inv.context_id != key.context_id or inv.workflow_id != key.root_workflow_id
+                or (context := self.graph.contexts.get(key.context_id)) is None
+                or context.epoch != key.context_epoch
+                or context.workflow_id != key.root_workflow_id
+                or inv.state not in (
+                    InvocationState.WAIT_JOIN, InvocationState.WAIT_CHILD,
+                    InvocationState.WAIT_TOOL,
+                )
+                or self._terminal(key)
+                for key in keys
             ):
                 return False
         return True
@@ -8546,6 +8631,7 @@ class NativeAdmissionRuntime:
                 for command, step in zip(commands, steps)
             ),
             beliefkv_before_enqueue=before_enqueue,
+            **self._restore_tier_arguments("eager"),
         )
         issued = []
         # Small bursts do not amortize a shared ancestry index.
@@ -8628,6 +8714,7 @@ class NativeAdmissionRuntime:
                 for command, step in zip(commands, steps)
             ),
             beliefkv_before_enqueue=before_enqueue,
+            **self._restore_tier_arguments("pipeline"),
         )
         issued = []
         with (
@@ -9575,10 +9662,107 @@ class NativeAdmissionRuntime:
 
     def _live_execution_handoff(self, ticket: _ExecutionHandoffTicket) -> bool:
         return bool(
-            self.enable_execution_handoff and not self.physical_disabled
+            (self.enable_execution_handoff or self.enable_frontier_restore) and not self.physical_disabled
+            and not (self.enable_frontier_restore and (
+                self._join_ticket is not None or self._confirmed_join_tickets
+                or self._eos_prefetch_keys
+                or self._critical_parent_demand is not None
+            ))
             and time.monotonic() < ticket.expires_at
             and self._executable_waiting_key(ticket.request) == ticket.key
         )
+
+    def _restore_tier_arguments(self, tier: str) -> dict:
+        return (
+            {"restore_tier": tier}
+            if self.restore_tiers == "dependency" and self._restore_tiers_supported
+            else {}
+        )
+
+    @timed_runtime("frontier_restore")
+    def dispatch_frontier_restore(
+        self, waiting_queue: Sequence[object], *, running_batch: object,
+    ) -> None:
+        """Issue once at an executable frontier; never hold admission for a ticket."""
+        if (
+            not self.enable_frontier_restore or self.physical_disabled or not waiting_queue
+            or self._native_cache is None or self._execution_handoff is not None
+            or self._join_ticket is not None or self._confirmed_join_tickets
+            or self._eos_prefetch_keys
+            or self._critical_parent_demand is not None
+            or self.physical_ledger.pending_action_count("PREFETCH_GPU")
+        ):
+            return
+        now_ms = time.monotonic() * 1000.
+        if now_ms < self._execution_handoff_next_ms:
+            return
+        self._execution_handoff_next_ms = now_ms + 50.
+        self._observe_native_admission_capacity(running_batch=running_batch, adder=None)
+        slots = self._current_residency_budget().request_slots
+        if slots < 1:
+            return
+        if not callable(getattr(self._native_cache, "prefetch_gpu_session_nodes", None)):
+            return
+        available_commands = self.physical_ledger.max_pending - self.physical_ledger.pending_count
+        if available_commands < 1:
+            return
+        plan = self.plan_native_prefill(waiting_queue, running_batch=running_batch, adder=None)
+        by_id = {getattr(request, "rid", None): request for request in waiting_queue}
+        if len(self._frontier_probe_after_ms) > 512:
+            self._frontier_probe_after_ms = {
+                key: until for key, until in self._frontier_probe_after_ms.items()
+                if until > now_ms and key.request_id in by_id
+                and self.visible.get(key.request_id) == key
+            }
+        for key in plan.prioritized[:min(2, slots)]:
+            if now_ms < self._frontier_probe_after_ms.get(key, 0.):
+                continue
+            self._frontier_probe_after_ms[key] = now_ms + 200.
+            request = by_id.get(key.request_id)
+            if request is None or self._executable_waiting_key(request) != key:
+                continue
+            snapshot = getattr(
+                getattr(self._native_cache, "session_refs", None),
+                "snapshot_latest_session_leaf_anchors", None,
+            )
+            if not callable(snapshot) or snapshot(
+                key.session_id, key.session_generation, max_leaves=8,
+            ) is None:
+                # New contexts may share global cache, but native matching can
+                # handle them without a second long-input prefix search here.
+                self._frontier_probe_after_ms[key] = float("inf")
+                continue
+            observed = self._read_request_reentry(request, key=key)
+            if observed is None or not (
+                observed["missing_full_tokens"] or observed["missing_mamba_slots"]
+            ):
+                self._frontier_probe_after_ms[key] = float("inf")
+                continue
+            anchors = self._request_reentry_anchors(request)
+            if anchors is None:
+                continue
+            opportunity = inspect_session_h2d_opportunity(
+                self._native_cache, anchors,
+                max_steps=min(64, available_commands),
+                fit_current_capacity=True,
+            )
+            if (
+                opportunity is None or not opportunity.steps
+                or opportunity.fits_current_free_lists is not True
+            ):
+                self.counts["frontier_restore_native_fallback"] += 1
+                continue
+            ticket = _ExecutionHandoffTicket(key, request, time.monotonic() + 2.)
+            self._execution_handoff = ticket
+            try:
+                commands = self._issue_handoff_prefetch_steps(ticket, opportunity.steps)
+            finally:
+                self._execution_handoff = None
+            if commands:
+                self._frontier_probe_after_ms[key] = float("inf")
+                self.counts["frontier_restore_issued"] += len(commands)
+                self.counts["frontier_restore_beneficiaries"] += 1
+                return
 
     def _clear_execution_handoff(self, reason: str) -> None:
         ticket = self._execution_handoff
@@ -9660,6 +9844,9 @@ class NativeAdmissionRuntime:
         self, waiting_queue: Sequence[object], *, running_batch: object,
     ) -> None:
         """Restore one imminent queued beneficiary while other GPU work continues."""
+        if self.enable_frontier_restore:
+            self.dispatch_frontier_restore(waiting_queue, running_batch=running_batch)
+            return
         if not self.enable_execution_handoff or self.physical_disabled or self._native_cache is None:
             return
         ticket = self._execution_handoff
@@ -10780,7 +10967,7 @@ class NativeAdmissionRuntime:
         self._prefetch_priority_partial_restore_details = None
         self._resident_priority_promoted = None
         self._resident_priority_details = None
-        if self.prefill_scheduling_policy == "join_priority" or (
+        if self.prefill_scheduling_policy in ("join_priority", "workflow_completion") or (
             self.enable_join_parent_priority and self._join_priority_pending
             and self._join_priority_normal_admissions >= 4
         ):
@@ -10813,7 +11000,14 @@ class NativeAdmissionRuntime:
                     self.counts[f"{prefix}_priority_ordered"] += 1
                     if now - self._visible_since.get(ordered[1][1].rid, now) >= 10.:
                         self.counts[f"{prefix}_priority_aged_head_bypass"] += 1
-            if self.prefill_scheduling_policy == "join_priority" or candidate is not None:
+            if self._completion_order is not None and candidate is None and all(
+                keys[index].invocation_id in self.graph.invocations for index, _ in ordered
+            ):
+                ordered = self._completion_order.order(
+                    ordered, keys, attained=self._workflow_attained_output_tokens,
+                    critical=lambda key: self.frontier.admission_rank(key.invocation_id)[0] == 0,
+                )
+            if self.prefill_scheduling_policy in ("join_priority", "workflow_completion") or candidate is not None:
                 return compile_native_prefill_plan(
                     [keys[index] for index, _ in ordered],
                     semantic_revision=self.semantic_revision,
@@ -11327,6 +11521,11 @@ class NativeAdmissionRuntime:
                     else "prefetch_admission_hint_declined"
                 ] += 1
             if admitted:
+                if self._completion_order is not None and (key := self.visible.get(req.rid)) is not None:
+                    self._completion_order.admitted(
+                        key.root_workflow_id, req.rid,
+                        priority_override=req.rid == self._join_priority_promoted,
+                    )
                 if req.rid == self._workflow_work_promoted:
                     self.counts["workflow_work_head_admitted"] += 1
                     self._workflow_work_promoted = None
@@ -11495,6 +11694,8 @@ class NativeAdmissionRuntime:
                 continue
             rid = req.rid
             if finished:
+                if self._completion_order is not None:
+                    self._completion_order.completed(req.rid)
                 if completed_ids is None:
                     completed_ids = []
                 completed_ids.append(rid)

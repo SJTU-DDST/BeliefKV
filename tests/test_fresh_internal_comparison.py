@@ -179,6 +179,45 @@ def test_full_is_always_fresh_and_first():
         launcher.campaign_environment({}, spec, Path("/frozen"), Path("/engine"), 18524)
 
 
+@pytest.mark.parametrize("fault", (
+    None, "patch", "engine", "removed_case", "skipped", "failed", "duplicate", "report_changed",
+))
+def test_replacement_engine_must_retain_and_bind_its_complete_cpu_checks(tmp_path, fault):
+    previous, report = tmp_path / "previous.xml", tmp_path / "current.xml"
+    previous.write_text('<testsuite><testcase classname="engine" name="old"/></testsuite>')
+    added = '<testcase classname="engine" name="new"/>'
+    old = '<testcase classname="engine" name="old"/>'
+    if fault == "removed_case":
+        old = ""
+    elif fault == "skipped":
+        added = '<testcase classname="engine" name="new"><skipped/></testcase>'
+    elif fault == "failed":
+        added = '<testcase classname="engine" name="new"><failure/></testcase>'
+    elif fault == "duplicate":
+        added = old
+    report.write_text("<testsuite>" + old + added + "</testsuite>")
+    certificate = tmp_path / "engine.json"
+    certificate.write_text(json.dumps({
+        "engine_checkout": str(tmp_path / "engine"),
+        "tree": "tree", "canonical_patch_sha256": "patch",
+        "report": str(report), "report_sha256": launcher.sha256_file(report),
+        "previous_report": str(previous), "previous_report_sha256": launcher.sha256_file(previous),
+    }))
+    if fault == "report_changed":
+        report.write_text(report.read_text() + "\n")
+    arguments = {
+        "engine": tmp_path / ("different" if fault == "engine" else "engine"),
+        "patch_sha256": "different" if fault == "patch" else "patch",
+    }
+    if fault is None:
+        result = launcher.verify_engine_qualification(certificate, **arguments)
+        assert result["passing_cases"] == 2 and result["retained_cases"] == 1
+        assert result["gpu_validation_pending"]
+    else:
+        with pytest.raises(ValueError):
+            launcher.verify_engine_qualification(certificate, **arguments)
+
+
 def summary(*, guarded=False):
     return {
         "workflow_count": 2, "completed_workflows": 2,

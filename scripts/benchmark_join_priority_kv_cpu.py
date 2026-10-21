@@ -140,6 +140,7 @@ def measure(size, samples):
             ("full_workflow", "full", "workflow"),
             ("full_join_priority", "full", "join_priority"),
             ("join_only", "join_priority_only", "join_priority"),
+            ("full_workflow_completion", "full", "workflow_completion"),
         )
     }
     values = {name: {"wall_us": [], "cpu_us": []} for name in fixtures}
@@ -208,6 +209,7 @@ def main():
             "beliefkv/runtime/sglang_v0520_runtime.py",
             "beliefkv/runtime/sglang_v0520_admission.py",
             "beliefkv/experiments/internal_comparison.py",
+            "beliefkv/policy/workflow_completion.py",
             "scripts/benchmark_join_priority_kv_cpu.py",
         )
     }

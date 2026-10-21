@@ -12,6 +12,7 @@ from pathlib import Path
 import subprocess
 import sys
 import time
+import xml.etree.ElementTree as ET
 from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -75,6 +76,8 @@ def campaign_environment(
         "JOIN_PREFETCH_TRIGGER": "observed_eos", "EXECUTION_HANDOFF": "0",
         "PREFILL_SCHEDULING_POLICY": "join_priority",
         "PREFETCH_RESIDENCY_PROTECTION": "0",
+        "TOOL_RESTORE_MODE": "execution", "IDLE_PREPARE_POLICY": "cold",
+        "RESTORE_TIERS": "dependency",
     }
     if any(common.get(name) != value for name, value in required.items()):
         raise ValueError("fresh campaign differs from the qualified batch8 workload and policy")
@@ -94,8 +97,45 @@ def campaign_environment(
     return env
 
 
+def verify_engine_qualification(path: Path, *, engine: Path, patch_sha256: str) -> dict:
+    certificate = load(path)
+    if (
+        Path(certificate["engine_checkout"]).resolve() != engine.resolve()
+        or certificate["canonical_patch_sha256"] != patch_sha256
+    ):
+        raise ValueError("engine CPU qualification belongs to different sources")
+    identities = []
+    for name in ("previous_report", "report"):
+        report = Path(certificate[name])
+        if sha256_file(report) != certificate[name + "_sha256"]:
+            raise ValueError("engine CPU report changed")
+        root = ET.parse(report).getroot()
+        rows = [(row.get("classname"), row.get("name")) for row in root.iter("testcase")]
+        if (
+            not rows or len(rows) != len(set(rows))
+            or any(list(root.iter(tag)) for tag in ("failure", "error", "skipped"))
+        ):
+            raise ValueError("engine CPU report contains missing, duplicate or unsuccessful checks")
+        identities.append(set(rows))
+    if not identities[0] <= identities[1]:
+        raise ValueError("engine CPU qualification dropped previously required checks")
+    return {
+        "certificate": str(path), "tree": certificate["tree"],
+        "passing_cases": len(identities[1]), "retained_cases": len(identities[0]),
+        "gpu_validation_pending": True,
+    }
+
+
 def verify(plan: dict, *, require_latest_main: bool = False) -> None:
     comparison.verify_sources(plan)
+    qualification = plan.get("engine_cpu_qualification")
+    if qualification is not None:
+        verified = verify_engine_qualification(
+            Path(qualification["certificate"]), engine=Path(plan["engine_checkout"]),
+            patch_sha256=plan["source_sha256"]["patches/sglang-v0.5.20-beliefkv-staging.patch"],
+        )
+        if verified != qualification or verified["tree"] != plan["engine_tree"]:
+            raise ValueError("engine qualification no longer matches the registered tree")
     if require_latest_main:
         development = Path(plan["development_checkout"])
         _require_clean(development)
@@ -207,7 +247,15 @@ def register(args) -> None:
         ["git", "-C", str(ROOT), "worktree", "add", "--detach", str(checkout), revision],
         check=True, capture_output=True,
     )
-    engine = Path(base["engine_checkout"])
+    engine = args.engine_checkout or Path(base["engine_checkout"])
+    engine_qualification = None
+    if bool(args.engine_checkout) != bool(args.engine_qualification):
+        raise ValueError("a replacement engine requires its CPU source qualification")
+    if args.engine_qualification is not None:
+        engine_qualification = verify_engine_qualification(
+            args.engine_qualification.resolve(), engine=engine,
+            patch_sha256=sources["patches/sglang-v0.5.20-beliefkv-staging.patch"],
+        )
     link = checkout / "third_party/sglang-v0.5.20"
     if not link.exists():
         link.symlink_to(engine, target_is_directory=True)
@@ -226,6 +274,12 @@ def register(args) -> None:
     inputs.update(Path(env[name]) for name in (
         "H2D_SEED_ARTIFACT", "TOOL_TIMING_ARTIFACT", "TRANSFER_SERVICE_SEED",
     ))
+    if engine_qualification is not None:
+        certificate = load(args.engine_qualification)
+        inputs.update((
+            args.engine_qualification.resolve(), Path(certificate["report"]),
+            Path(certificate["previous_report"]),
+        ))
     inputs.update(Path(env["CONTEXT_TOKENIZER_PATH"]) / name for name in (
         "config.json", "tokenizer_config.json", "tokenizer.json",
     ))
@@ -234,9 +288,15 @@ def register(args) -> None:
         **authorization, "gpu_not_before": deadline(hold).isoformat(),
         "development_checkout": str(ROOT), "code_commit": revision,
         "execution_checkout": str(checkout), "engine_checkout": str(engine),
-        "engine_tree": base["engine_tree"],
+        "engine_tree": (
+            engine_qualification["tree"] if engine_qualification is not None else base["engine_tree"]
+        ),
         "cpu_report": str(args.cpu_report.resolve()), "passing_cpu_cases": count,
-        "engine_qualification": "unchanged qualified engine; independent suite not rerun",
+        "engine_qualification": (
+            "replacement engine; independent CPU suite rerun, GPU validation pending"
+            if engine_qualification is not None else "unchanged qualified engine; independent suite not rerun"
+        ),
+        **({"engine_cpu_qualification": engine_qualification} if engine_qualification is not None else {}),
         "source_sha256": sources,
         "external_inputs": [
             {"path": str(path), "sha256": sha256_file(path)} for path in sorted(inputs)
@@ -403,6 +463,8 @@ def main() -> None:
     parser.add_argument("--base-registration", type=Path)
     parser.add_argument("--cpu-report", type=Path)
     parser.add_argument("--cpu-sources", type=Path)
+    parser.add_argument("--engine-checkout", type=Path)
+    parser.add_argument("--engine-qualification", type=Path)
     parser.add_argument("--registration", type=Path)
     parser.add_argument("--run-root", type=Path)
     parser.add_argument("--port", type=int, default=18524)
