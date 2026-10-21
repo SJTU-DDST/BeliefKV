@@ -122,7 +122,7 @@ def current_cpu(hold):
             raise ValueError(f"qualification helper changed: {path}")
     policy = cpu["latest_policy"]
     if (
-        policy["join_prefetch_trigger"] != "selective_report_or_eos"
+        policy["join_prefetch_trigger"] not in ("observed_eos", "selective_report_or_eos")
         or policy["execution_handoff"] is not False
         or policy["observed_eos_requires_service_forecast"] is not False
         or policy["mamba_prepare"] is not False
@@ -317,16 +317,17 @@ def runtime_failure(candidate, telemetry, runtime):
         if runtime.get("physical_disabled") is True:
             return "physical_actions_disabled"
         env = candidate["environment"]
+        selective = env["JOIN_PREFETCH_TRIGGER"] == "selective_report_or_eos"
         expected = {
             "min_full_bytes": int(env["JOIN_PREDICTION_MIN_FULL_BYTES"]),
             "interval_ms": float(env["JOIN_PREDICTION_INTERVAL_MS"]),
             "max_candidates": int(env["JOIN_PREDICTION_MAX_CANDIDATES"]),
-        }
+        } if selective else {}
         policy = runtime.get("selective_join_prefetch") or {}
         if (
             runtime.get("join_prefetch_trigger") != env["JOIN_PREFETCH_TRIGGER"]
             or runtime.get("execution_handoff") is not False
-            or not policy.get("enabled")
+            or policy.get("enabled") is not selective
             or any(policy.get(key) != value for key, value in expected.items())
         ):
             return "frozen_runtime_configuration_mismatch"

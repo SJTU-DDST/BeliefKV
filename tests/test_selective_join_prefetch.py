@@ -212,8 +212,9 @@ def test_tool_boundary_discards_unconsumed_forecast_capacity_intent(monkeypatch)
         runtime.close()
 
 
-def test_eos_immediately_takes_over_without_forecast_size_or_cadence_gates(monkeypatch):
+def assert_eos_skips_forecast_gates(monkeypatch, trigger):
     runtime, child, stage, plan = selective_fixture(monkeypatch)
+    runtime.join_prefetch_trigger = trigger
     plan.required_full_tokens = 1
     runtime._report_candidate_next_ms = time.monotonic() * 1000. + 60_000.
     child_key = runtime.visible[child.rid]
@@ -230,6 +231,34 @@ def test_eos_immediately_takes_over_without_forecast_size_or_cadence_gates(monke
             assert runtime._roll_final_stage() is plan
             assert runtime._wait_prefetch_timing_valid(stage.key, plan, "join_ticket")
         assert runtime._join_ticket.report_start_window_ms is None
+    finally:
+        runtime.close()
+
+
+def test_eos_immediately_takes_over_without_forecast_size_or_cadence_gates(monkeypatch):
+    assert_eos_skips_forecast_gates(monkeypatch, "selective_report_or_eos")
+
+
+def test_eos_only_issues_without_forecast_size_or_cadence_gates(monkeypatch):
+    assert_eos_skips_forecast_gates(monkeypatch, "observed_eos")
+
+
+def test_eos_only_skips_report_planning_and_decode_progress_sampling(monkeypatch):
+    runtime, child, _, _ = selective_fixture(monkeypatch)
+    runtime.join_prefetch_trigger = "observed_eos"
+    progress = tuple(runtime._semantic_progress[child.rid])
+    try:
+        with patch.object(runtime, "_roll_report_service_prefetch",
+                          side_effect=AssertionError("report selection is disabled")), \
+            patch.object(runtime, "_observe_report_service",
+                         side_effect=AssertionError("report progress is disabled")), \
+            patch.object(runtime, "_wait_prefetch_opportunity",
+                         side_effect=AssertionError("no native capture before EOS")):
+            assert runtime._roll_final_stage() is None
+            assert runtime.on_batch_completed(NS(reqs=(child,))) == ()
+        assert tuple(runtime._semantic_progress[child.rid]) == progress
+        assert runtime._join_ticket is None
+        assert runtime._critical_parent_demand is None
     finally:
         runtime.close()
 

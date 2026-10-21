@@ -118,6 +118,19 @@ def test_latest_policy_overrides_stale_plan_without_changing_workload():
     assert configuration == original
 
 
+def test_eos_only_policy_overrides_a_stale_prediction_plan():
+    configuration = current_plan()
+    proof = {**policy(), "join_prefetch_trigger": "observed_eos"}
+    env = launcher.environment(
+        configuration, {"latest_policy": proof}, Path("/frozen"), Path("/engine"),
+    )
+    assert env["JOIN_PREFETCH_TRIGGER"] == "observed_eos"
+    assert configuration["join_prefetch_trigger"] == "report_service_or_eos"
+    assert env["PREPARE_HOST"] == env["ENABLE_TOOL_TIMING"] == "1"
+    assert env["BORROWABLE_PARENT_HEADROOM"] == "1"
+    assert env["EXECUTION_HANDOFF"] == "0"
+
+
 @pytest.mark.parametrize("field,value", (
     ("root_count", 24), ("server_running", 48), ("host_split", "70:30"),
     ("fanout_profile", "native_dynamic_1to4"), ("context_tokens", 131072),
@@ -266,6 +279,17 @@ def test_live_runtime_accepts_current_policy_and_unavailable_startup_observation
     assert launcher.runtime_failure(frozen, {}, runtime_state()) is None
 
 
+@pytest.mark.parametrize("enabled", (False, True, None))
+def test_live_eos_only_runtime_requires_prediction_to_be_disabled(enabled):
+    frozen = candidate()
+    frozen["environment"]["JOIN_PREFETCH_TRIGGER"] = "observed_eos"
+    runtime = runtime_state()
+    runtime["join_prefetch_trigger"] = "observed_eos"
+    runtime["selective_join_prefetch"] = {"enabled": enabled}
+    expected = None if enabled is False else "frozen_runtime_configuration_mismatch"
+    assert launcher.runtime_failure(frozen, {}, runtime) == expected
+
+
 @pytest.mark.parametrize("field,value", (
     ("join_prefetch_trigger", "report_service_or_eos"), ("execution_handoff", True),
     ("selective_join_prefetch", {"enabled": False}),
@@ -367,6 +391,21 @@ def test_current_cpu_validates_bound_sources_before_freezing(cpu_qualification):
     assert observed == path
     assert current["suites"]["application"]["source_sha256"][str(source)] == launcher.sha256_file(source)
     assert engine["actual_tree"] == proof["canonical_patch"]["actual_tree"]
+
+
+@pytest.mark.parametrize("trigger", ("observed_eos", "report_service_or_eos", "unknown"))
+def test_current_cpu_accepts_qualified_eos_only_and_rejects_other_modes(
+    cpu_qualification, trigger,
+):
+    path, proof, _ = cpu_qualification
+    proof["latest_policy"]["join_prefetch_trigger"] = trigger
+    path.write_text(json.dumps(proof))
+    if trigger == "observed_eos":
+        _, current, _ = launcher.current_cpu({"latest_cpu_qualification": str(path)})
+        assert current["latest_policy"]["join_prefetch_trigger"] == trigger
+    else:
+        with pytest.raises(ValueError, match="authorized current policy"):
+            launcher.current_cpu({"latest_cpu_qualification": str(path)})
 
 
 def test_changed_qualification_refreshes_snapshot_in_fresh_cpu_interpreter(

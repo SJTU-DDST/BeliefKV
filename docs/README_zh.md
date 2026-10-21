@@ -7,7 +7,18 @@
 重复摘要已清理；源码归档及保留范围见[整理记录](archive/research_exploration_20261020.md)。
 下文的最新工程状态与实验约束继续有效。
 
-**main最新CPU资格
+**后续实验默认关闭剩余工作量预取，仅用EOS启动提前JOIN恢复。**
+[V2532资格](../experiments/reports/v2532_join_eos_only_qualified_cpu_sources_20261021.json)
+实际重跑2810项应用，保留2801项并新增9项；未改引擎53335e6的405项
+源码和通过记录核对后沿用。入口默认`observed_eos`，资格启动与运行
+检查识别该模式，旧计划不会重新开启。最终准入元数据及EOS/confirmed、
+tool、PREPARE和关键容量准备保留；选择性模式仅显式对照时启用。
+[V2529模式对照](../experiments/reports/v2529_join_eos_only_control_cpu_20261021.json)
+中原生计划后拒绝从约0.37–1.70ms降到约1us，到期进度回调
+13.54→2.35us。仅为CPU替身/局部回调，不能外推整轮CPU秒数或GPU收益。
+初次资格因旧测试标识变化被拒，最终采用保留旧标识的V2531b完整重跑。
+
+**前一版CPU资格
 [V2524](../experiments/reports/v2524_tool_host_retention_qualified_cpu_sources_20261021.json)，
 独立引擎53335e6，未用于V108。**2801项应用/405项引擎全部实际重跑，
 包含19/20项新增用例。工具预取按实际节点/池保留Host副本至同一服务租约
@@ -22,16 +33,30 @@
 迟提交、3个只在完成后出现正计划、6个仅早期零计划；不是全部缺Host-only
 副本。四个迟提交都有当时FULL容量缺口及极短规划提前量。
 
-**当前GPU实验为V108，已于北京时间13:01:44启动。**冻结aefa203/V2508b、
+**V108已于北京时间14:10:20正常完成，36/36 completed、exit0。**
+13:01:44启动，HTML/完整对照/清理已完成。冻结aefa203/V2508b、
 引擎dd082e3，保持36个同时到达root/running8/256K/95%/Host200GB80:20，
 选择性预测/EOS、PREPARE和关闭handoff，只复用历史V103 native。
-13:17仍正常prefill/decode，无遥测writer error/丢弃/失败；不重复启动、
-不热改冻结来源。启动边界11项CPU检查通过，完整性能结论尚待本轮结束。
+共同去长尾600–3494.819秒吞吐582.128/524.451 token/s（+11.00%），
+完整平均JCT2105.471/2370.073秒（-11.16%），输出2128479/2024180
+token（+5.15%）。上下文和轨迹仍不同，不作独立预取因果验收。
+[V2528完整审计](../experiments/reports/v2528_v108_complete_wait_prefetch_20261021_summary.json)
+确认58个JOIN提前复用23.530GB FULL、工具73轮2.651GB。剩余工作量
+路径检查6201个候选、201次原生计划、75次长度校准，实际传输为零；
+因此后续默认关闭。不重复启动已结束实验。
 
-[V2517的13:19封闭前缀](../experiments/reports/v2517_v108_early_wait_prefetch_20261021_summary.json)
-显示JOIN21个完成前正计划全部提前复用1.851GB；工具294轮只有4个
-完成前正计划，全部提前复用97.65MB。后继141.99GB原生FULL Host-hit
-不能倒推为工具等待时的可用机会，需区分等待期与返回后排队期的驱逐。
+[V2525的13:55封闭前缀](../experiments/reports/v2525_v108_late_wait_prefetch_20261021_summary.json)
+显示JOIN64个完成前正计划中57个提前复用23.464GB FULL，完成后
+23.895GB另列；工具2493轮中83个早期正计划、73个提前复用2.651GB。
+后继884.104GB原生FULL Host-hit不能倒推为等待时可用机会。
+保留早期V2517；这里是中期前缀，完整结果以V2528为准。
+
+[V2527固定600–2400秒](../experiments/reports/v2527_v108_v103_native_busy_throughput_20261021.json)
+的V108/历史native吞吐593.167/537.535 token/s（+10.35%）；
+[V2526几何匹配](../experiments/reports/v2526_v108_v103_native_busy_geometry_20261021.json)
+显示平均可见上下文87497/105573 token，匹配batch8的worker区间仍慢
+0.62%、短单请求prefill慢8.00%。不能把原始窗口优势全归于预取，
+也不能把GPU利用率高当作控制或准入成本消失；V108完整结果见上文。
 
 **上一版CPU资格为
 [V2516](../experiments/reports/v2516_idle_host_budget_qualified_cpu_sources_20261021.json)：**
@@ -44,12 +69,17 @@
 索引的退出节点增加约0.20us/节点。保留全部样本，不外推为JCT/GPU收益。
 后台周期与批次上限不变，普通native退出多一个未启用observer条件判断。
 
-**最新完整结果为V107：36/36 completed，12:33:03正常退出。**
+**此前完整结果V107：36/36 completed，12:33:03正常退出。**
 冻结893a7da/V2494b/dd082e3，HTML和历史V103 native对照已生成。
 共同去长尾600–3357.585秒吞吐539.567/528.366 token/s（+2.12%），
 完整平均JCT2186.465/2370.073秒（-7.75%），22/36个配对更短。
 共同原生agent资格35个；输出及轨迹不同，不作为独立预取或最终目标验收。
 V106也已完整结束，平均JCT2009.148秒，去长尾吞吐仍低1.22%。
+
+V107实际输出少7.73%，与平均JCT低7.75%量级接近，需保留工作量
+混杂；中位JCT反而为2392.693/2010.107秒，共同窗口decode batch为
+7.446/7.579。平均完成时间、执行顺序与相同工作下的服务效率分别分析，
+不能将平均JCT差直接视为独立迁移收益。
 
 [V2502完整审计](../experiments/reports/v2502_v107_complete_wait_prefetch_20261021_summary.json)
 确认JOIN65个提前复用25.098GB FULL、工具69轮3.533GB。工具3124个

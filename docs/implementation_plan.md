@@ -12,7 +12,27 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-Main's latest CPU qualification isV2524,engine53335e6:actually rerun2801
+Main's latest qualification isV2532:EOS-only JOIN prefetch defaults. Actually
+rerun2810 application cases,retaining2801 and adding9. Source/report-verify
+the unchanged53335e6 engine's405 passing cases without claiming a rerun.
+Set the long-repository default and new qualification to observed_eos;the
+launcher accepts both qualified modes and checks that EOS-only actually
+disables selective prediction. Keep selective_report_or_eos explicitly
+available for controls. Existing runtime mode gates skip report-progress
+sampling,candidate/native-plan checks,report-length calibration and causal
+EOS-arrival-window learning. Preserve final-report admission metadata,
+EOS/confirmed restores,tool timing/prefetch,PREPARE and critical capacity.
+
+V2529 retains101 alternating samples/default GC. Cheap rejects fall4.02-17.12
+to0.82-0.99us;32/224-node capture-then-reject cases367.77/1699.50 to1.12/1.17us.
+Batch8 due progress callback13.54->2.35us,throttled2.52->2.14us. Native trees
+are CPU substitutes;do not multiply these values by online counts into total
+CPU,JCT or throughput. A positive deficit control deliberately loses its
+pre-EOS selection in EOS-only mode;future coverage equivalence is not proven.
+InitialV2531 passed2810 functional cases but qualification rejected a renamed
+old test identity. Restore that identity and use the completeV2531b rerun.
+
+The preceding qualification isV2524,engine53335e6:actually rerun2801
 application and405 native cases,including19/20 new cases. Tool prefetch
 retains each actual transferred pool/node's source through paired native
 Host receipts while its HBM service protection remains. Do not assume a
@@ -40,24 +60,47 @@ planning lead,0.81-6.74ms late first submits,and actual free-FULL deficits
 in their snapshots. Do not attribute all uncovered H2D to missing Host-only
 copies or assign unprofiled startup latency to one function.
 
-V108 is currently running,launched at2026-10-21T13:01:44+08:00 from frozen
+V108 completed36/36,exit0 at2026-10-21T14:10:20+08:00. It launched13:01:44 from frozen
 aefa203/V2508b and dd082e3. Keep36 simultaneous LoCoBench roots,running8,
 256K/95%,Host200GB80:20,selective/EOS,PREPARE,no handoff and historical
-V103 native. At13:17 it is running_predictive with actual prefill/decode and
-no telemetry writer error/drop/failure. Watcher3000344/start_ticks672914775;
+V103 native. HTML/comparison/cleanup artifacts are complete.
+Historical watcher3000344/start_ticks672914775;
 driver3000827/start_ticks672916720;state:
 `/home/longhao/experiment/ops/v108_unlocked_consumer_20261021.state.json`.
-V2510 passes11 launch-boundary CPU cases. Do not duplicate the run,hot-edit
-its frozen source or treat partial completion as whole-run performance.
+V2510 passes11 launch-boundary CPU cases. Do not restart the historical run.
+Common trimmed600-3494.819s throughput582.128/524.451 token/s is+11.00%;
+full mean JCT2105.471/2370.073s is-11.16%,19/36 pairs shorter,and output
+2128479/2024180 tokens is+5.15%. Context/trajectory differences remain;do
+not attribute a single development comparison to isolated prefetch effects.
 
-V2517 seals V108 at13:19:22 observed JOINs,21 positive pre-completion plans
-all early-reuse1.851GB;294 tool waits,only4 positive pre-completion plans,
-all early-reuse97.65MB. Before completion135 episodes record no Host-backed
-missing copy;159 first plan observations occur after completion. Subsequent
-native FULL Host hits141.99GB and queue-to-service P5015.04s do not prove
-earlier opportunities. Separate wait-time HBM hits,missing backup and
-post-return queue eviction before changing tool windows. This is a collecting
-prefix with independent per-file seals,not whole-run/atomic evidence.
+V2528 complete audit:84 JOINs,70 early positive plans,58 early reused23.530GB
+FULL;24.030GB post-completion restores and2.497GB remaining native FULL
+hits are separate. Tool3104 waits,83 early positive plans,79 early submits,
+73 early reused2.651GB. Final state has6201 selective candidate checks,
+201 native-plan checks,75 report-length calibrations,and zero report-service/
+selective H2D candidates or transfers. EOS and confirmed transfers remain
+distinct. These online counts are not online durations;shared profiling is off.
+
+V2525 supersedes the early V2517 prefix with a13:55 collection:68 JOINs,
+64 positive pre-completion plans,57 early submits/reuses and23.464GB FULL.
+Another23.895GB is restored after completion but before native arrival;
+these successors have no remaining native FULL Host-hit evidence. Of2493
+tool waits,83 have early positive plans,79 submit early and73 early-reuse
+2.651GB. JOIN last-ACK-to-service P50/P90 is649/1127ms;tool1.187/3.367s.
+Subsequent884.104GB tool-successor native FULL hits do not prove wait-time
+opportunities. Separate HBM hits,missing backup and post-return eviction.
+Keep V2517;individual source seals are not an atomic or completed-run result.
+
+V2527 compares complete fixed600-2400s V108/V103-native windows:decode
+593.167/537.535 token/s(+10.35%),GPU98.27/97.65%,weighted batch7.877/7.854.
+V2526 records average visible context87497/105573 tokens. With common smaller
+counts as weights,52 matched batch8 bins give worker11.496/11.426ms(+0.62%);
+23 short single-request prefill bins give9.401/8.705ms(+8.00%). These are
+descriptive worker intervals,not kernels,identical work or isolated overhead.
+Do not attribute raw throughput improvement to prefetch without accounting
+for context difference;V108 is still running. Shared profiling is disabled.
+Prioritize useful coverage and short-prefill turnover while preserving batch
+fill,and measure exposed restore/admission waits rather than transfer bytes.
 
 The preceding CPU qualification isV2516:actually rerun2782 application and
 385 native cases(the previous379 plus6);V2511 retains57 focused cases.
@@ -74,7 +117,7 @@ The old refused-enqueue control has a1.8ms maximum;do not hide the ordinary
 positive-path increase behind its mean. These are CPU fixture costs,not
 actual throughput/JCT savings. V108's code remains unchanged.
 
-Latest complete GPU result isV107:36/36 completed,exit0 at12:33:03 Beijing,
+The preceding complete GPU result isV107:36/36 completed,exit0 at12:33:03 Beijing,
 frozen893a7da/V2494b/dd082e3. The HTML and historical V103 native comparison
 are complete. Common trimmed600-3357.585s decode539.567/528.366 token/s
 is+2.12%;full mean JCT2186.465/2370.073s is-7.75%,22/36 pairs shorter.
@@ -82,6 +125,13 @@ Common native-agent eligibility is35;predictive has no guard intervention.
 Output1867784/2024180 tokens and trajectories differ. Do not isolate prefetch
 causality or accept the entire goal from one modest positive run. Complete
 V106 had mean JCT2009.148s but trimmed throughput still1.22% below native.
+
+InV107 output falls7.73%,close to the7.75% mean-JCT difference;this signals
+realized-work confounding,not proof that all benefit comes from trajectories.
+Median JCT is2392.693/2010.107s and trimmed weighted batch7.446/7.579.
+Separate completion-order effects,generated work and service efficiency;
+do not normalize these aggregates into a causal speedup or claim universal
+latency improvement. GPU utilization alone does not exclude CPU/memory stalls.
 
 V2502 seals V107's full migration evidence:65 JOIN waits early-reuse25.098GB
 FULL;69 tool waits early-reuse3.533GB. Of3124 observed tool waits,93 have a
@@ -956,10 +1006,10 @@ not-due and no-work calls, live lock/inflight/Host mutations, immediate critical
 publication and clean exception retry. Freeze the latest qualification above
 after the2026-10-21T06:00:00+08:00 hold. Keep the full performance goal active.
 
-Latest authorized JOIN policy is `selective_report_or_eos`; the long-repository
-launcher now selects it and the spawn-FULL-qualified native engine. Keep pure
-`observed_eos` for an ablation and the old broad report mode only for explicit
-historical compatibility. EOS does not depend on the optional prediction's byte,
+The following describes the optional `selective_report_or_eos` implementation,
+disabled by default sinceV2532. The current long-repository launcher selects
+`observed_eos`;keep selective and broad report modes only for explicit controls
+or historical compatibility. EOS does not depend on optional prediction's byte,
 cadence or service-model support gates.
 
 Use existing last-unfinished-child report/token progress, with200ms checks and
