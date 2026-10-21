@@ -154,7 +154,11 @@ def attach_service(episodes, native_events, service_events):
         event = native.get(rid)
         if event is None:
             continue
-        expected = row["workflow_id"], row["parent_invocation_id"], row["context_id"], row["context_epoch"]
+        expected = (
+            row["workflow_id"],
+            row["invocation_id"] if "invocation_id" in row else row["parent_invocation_id"],
+            row["context_id"], row["context_epoch"],
+        )
         if identity(event) != expected:
             row["status"] = "native_identity_mismatch"
             continue

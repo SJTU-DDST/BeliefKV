@@ -1,6 +1,6 @@
 # BeliefKV 实验注意事项
 
-更新日期：2026-10-21（北京时间）。本文是当前实验的执行约束，不是新增 agent
+更新日期：2026-10-22（北京时间）。本文是当前实验的执行约束，不是新增 agent
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
@@ -22,7 +22,7 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 不要用旧 batch12 Full 作对照。新入口
 `scripts/run_fresh_internal_comparison.py` 单独冻结最新 main、保留三个新 arm；
 旧 V111 接续器仍校验 batch12，不得绕过参数校验启动 batch8。定时登记与
-实时状态为 `../ops/v115_fresh_batch8_20261022.registration{,.state}.json`，
+实时状态为 `../ops/v116_fresh_batch8_20261022.registration{,.state}.json`，
 以回执为准。若登记后 main 再变化，启动前拒绝旧候选；启动后各组固定同一
 冻结版本以维持比较口径。新的暂停标记或延后预约会停止接续。
 V112 旧登记已因 CPU 更新取消，真实进程已退出，没有 GPU 实验；
@@ -32,6 +32,13 @@ V112 旧登记已因 CPU 更新取消，真实进程已退出，没有 GPU 实�
 405 项引擎检查未重跑。V2631 的环境绑定跳过诊断保留；后续显式绑定冻结
 引擎和本地 tokenizer，原资格范围外的 Docker 用例明确 deselect。
 先完成基本同配置对照，新研究候选按实际瓶颈单独消融。
+
+V115 随后因独立工具重入审计/后处理更新而取消。V116 使用 V2642/V2643：
+保留此前 3634 项并新增 58 项，3692 全通过、无跳过，另有 2 个 subtest，
+1 项原范围外 Docker 用例明确 deselect。在线 runtime/配置/引擎不变。
+各组后处理在 cleanup 前自动生成 `join_reentry_service.json` 与
+`tool_reentry_service.json`，不要求控制器日志。ready cohort、已服务条件
+分布、未知轮次和客户端/服务端各自时钟均须保留；逻辑 Host-hit 不是 DMA。
 
 Full 显式采用 `PREFILL_SCHEDULING_POLICY=join_priority`、
 `PREFETCH_RESIDENCY_PROTECTION=0`，保留 EOS/tool 预取、增量 PREPARE 和

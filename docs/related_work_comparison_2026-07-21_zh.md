@@ -1,8 +1,8 @@
 # BeliefKV 相关工作与竞品对比总表
 
-更新日期：2026-10-21
+更新日期：2026-10-22（工程状态；外部论文复核截至 2026-10-21）
 用途：研究定位、reference policy 设计、原生系统部署和论文 baseline 选择。
-范围：合并此前整理的 Agent serving、workflow scheduling 和 KV-cache 工作，并加入截至本日期检索到的最新直接竞品。2026-09-14 增量检索重点覆盖 arXiv 2026 年 7-9 月的新稿与旧表漏项。
+范围：合并此前整理的 Agent serving、workflow scheduling 和 KV-cache 工作，并加入各次检索日期内核实的直接竞品。2026-09-14 增量检索重点覆盖 arXiv 2026 年 7-9 月的新稿与旧表漏项。
 
 当前工程对照入口为 `scripts/run_fresh_internal_comparison.py`：北京时间
 2026-10-22 06:00 前只做 CPU 等待；之后核对资格、冻结版本、暂停标记和
@@ -14,9 +14,14 @@ CPU 用例全部通过、无跳过，V2620 绑定源码；这不构成 GPU 性�
 此前 V114 复用年龄排序去重后的 V2624/V2625 资格，3550 项 CPU 用例此前全通过、
 无跳过；V112/V113 CPU watcher 已取消且未使用 GPU。简单 baseline 同样采用
 这项无策略变化的 CPU 优化，不通过额外保留重复工作削弱它。
-最新 V115 使用预取提交归因优化后的 V2633/V2634，3634 项通过、无跳过，
+此前 V115 使用预取提交归因优化后的 V2633/V2634，3634 项通过、无跳过，
 另有 2 个 subtest；V114 的旧 CPU watcher 取消，没有 GPU 实验。
 配置、引擎和基本对照顺序不变，CPU 改善不作为 KV 的独立性能收益。
+最新 V116 使用独立工具/JOIN 重入后处理后的 V2642/V2643，3692 项通过、
+无跳过，另有 2 个 subtest。V115 取消且未使用 GPU；运行时与配置保持不变。
+历史工具排队的新增证据见
+[审计记录](reports/2026-10/tool_reentry_baseline_audit_20261021_zh.md)，
+不同轨迹及旧版本仅作定位，不作为胜过竞品或 KV 增量收益的证明。
 
 用户本次要求重新论证 OSDI/EuroSys 设计定位，见
 [最新设计复核](research/design_review_osdi_eurosys_20261021_zh.md)。

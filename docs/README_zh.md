@@ -1,6 +1,6 @@
 # BeliefKV 文档导航
 
-更新日期：2026-10-21（北京时间）
+更新日期：2026-10-22（北京时间）
 
 用户最新要求重新论证现有设计的 OSDI/EuroSys 定位并优化设计。
 最新[设计复核与候选机制](research/design_review_osdi_eurosys_20261021_zh.md)
@@ -16,7 +16,16 @@ GPU 时限、当前工程状态和性能验收要求继续有效。
 资源空闲且没有新预约时按需开始。目标继续 active，性能尚未验收；
 保留负结果、工作量差异和 guard 排除，不通过挑选结果保证 Full 获胜。
 
-最新 CPU 优化在单次原生预取提交记录循环内共享祖先长度读取，退出即释放；
+最新离线审计独立重建工具请求轮次，所有对照组自动生成 JOIN/tool 重入
+报告，不给调度器新增观测。历史完成 cohort 中 Full 工具后继排队 P50
+7.12s、JOIN-only 2.06s；32K–64K 分桶仍为 9.55/1.91s，但 >=128K 桶
+Full 更快。不同代码与轨迹仅作定位，不能换算成 KV/JCT 因果收益。
+[审计与人口偏差](reports/2026-10/tool_reentry_baseline_audit_20261021_zh.md)
+保留未知轮次、短工具漏观测和时钟边界。V2642 保留 3634 项并新增 58 项，
+3692 全通过、无跳过，另有 2 个 subtest，V2643 绑定源码。
+V115 因离线后处理更新取消；V116 接替登记，运行时/配置/引擎不变。
+
+此前在线 CPU 优化在单次原生预取提交记录循环内共享祖先长度读取，退出即释放；
 按实际提交量启用，16 节点以内保留原路径。V2632 的 40 个完整路径对照
 保留物理目标、pending credit、归因和完整 expectation：开启记录/native
 预算时，32 节点约改善 1.8%–2.3%，64 节点约改善 7.1%–8.6%；小批仍有
@@ -31,7 +40,7 @@ V2623 的 101 交替样本完整控制对照中，48/128 老化或混合队列�
 2.1%–2.8%；8 个全新请求约慢 0.15%，负例保留，不外推 GPU/JCT。
 V2624 保留全部 3537 项并新增 13 项，3550 全通过、无跳过，另有 2 个
 subtest；V2625 绑定源码。V112/V113/V114 的旧登记因更新而取消且进程退出，
-没有 GPU 实验；最新 CPU 资格由 V115 更新冻结登记，配置/引擎不变。
+没有 GPU 实验；V115 对应上述在线 CPU 优化，后续由 V116 更新冻结登记。
 
 新增 `BELIEFKV_PREFILL_SCHEDULING_POLICY=join_priority`：Full 保留 KV
 管理，但完整请求排序与 JOIN-only 共用 aged FIFO/native 顺序、JOIN
@@ -49,7 +58,7 @@ native；保护、复杂排序及其他消融按需补跑。新入口负责冻�
 不能用旧 V111 的 batch12 接续器绕过配置校验，也不混用 batch12 Full
 作为 batch8 对照。新的 `scripts/run_fresh_internal_comparison.py` 独立冻结
 完整三组，定时登记及实时状态分别位于仓库外
-`../ops/v115_fresh_batch8_20261022.registration{,.state}.json`，以回执为准。
+`../ops/v116_fresh_batch8_20261022.registration{,.state}.json`，以回执为准。
 截止前只等待，不探测 GPU 或预分配 Host；到时复核源码、精确暂停标记和资源。
 [V2618](../experiments/reports/v2618_fresh_batch8_qualified_cpu_20261021.xml)
 保留全部 3493 项并新增 44 项，3537 全通过、无跳过，另有 2 个 subtest；

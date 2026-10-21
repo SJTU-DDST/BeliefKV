@@ -300,6 +300,12 @@ def postprocess(plan: dict, mode: str, run: Path) -> None:
              "--output", str(arm / "prepare_background.json")],
             check=True, capture_output=True,
         )
+    for kind in ("join", "tool"):
+        subprocess.run(
+            [sys.executable, str(script_root / f"audit_{kind}_reentry_service.py"),
+             "--arm", f"{mode}={arm}", "--output", str(arm / f"{kind}_reentry_service.json")],
+            check=True, capture_output=True,
+        )
     with (run / f"{mode}.timeline_export.json").open("x") as output:
         subprocess.run(
             [sys.executable, str(script_root / "render_p6_execution_timeline.py"),

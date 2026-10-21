@@ -1,6 +1,6 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-21 (Asia/Shanghai).
+Status date: 2026-10-22 (Asia/Shanghai).
 
 The latest user request reopens research justification of the current three
 mechanisms for OSDI/EuroSys. Follow
@@ -34,7 +34,22 @@ Keep the goal active. Non-inferiority to native and the strongest simple control
 plus independent useful KV benefit,is the acceptance criterion,not a claimed result.
 Retain negative outcomes,guard exclusions and realized-work/quality differences.
 
-Latest CPU change scopes common prefix-length reads to one synchronous
+Latest offline evidence: tool request rounds are now rebuilt independently of
+controller/prefetch logs,using the real structured-action enum and whole-round
+tool ends. All arms postprocess both JOIN/tool reentry before cleanup,with no
+new scheduler observation. V2640/V2641 select ready cohorts in600-2520.937s;
+successor service can follow the cohort end. Historical Full/JOIN-only tool
+queue P50 is7.12/2.06s,32K-64K is9.55/1.91s,but Full wins the>=128K bucket.
+Different code,work and eligibility prevent causal attribution. V2645 finds2517
+unmatched controller groups with tool P50~2ms and successor queue P50~10.08s;
+missing plans do not prove missing physical opportunities. Test the common
+simple-JOIN skeleton first,not larger prefetch/backup volumes.
+V2642 retains all3634 and adds58:3692 pass,no skips,plus2 subtests.
+V2643 binds current sources. V115 is cancelled;V116 freezes this offline update.
+Online runtime,configuration and engine remain unchanged.
+See[the independent reentry audit](reports/2026-10/tool_reentry_baseline_audit_20261021_zh.md).
+
+Previous CPU change scopes common prefix-length reads to one synchronous
 prefetch-issuance loop,after native enqueue and before any further event/cache
 mutation. Use actual outcomes,not planned size;bursts of16 or fewer keep the old
 path. V2632 compares40 complete CPU paths with101 alternating samples:
@@ -42,7 +57,7 @@ all targets,pending credit,records and expectations match. Recorded/native-budge
 32-node P50 improves1.8-2.3%,64-node improves7.1-8.6%;small paths still regress
 about0.1-1.7%. Retain raw/negative cases;no GPU or JCT gain is claimed.
 V2633 retains all3550 cases and adds84:3634 pass,no skips,plus2 subtests.
-V2634 binds current sources. V114 is cancelled;V115 replaces its freeze.
+V2634 binds that revision. V114 is cancelled;V115 replaced its freeze.
 Engine53335e6 is unchanged;its independent405 checks were not rerun.
 See[the CPU evidence](reports/2026-10/prefetch_issuance_control_cpu_20261021_zh.md).
 
@@ -97,7 +112,7 @@ configs/migration/next_predictive_baselines_20261022.json:
 batch8/seed21 Full,JOIN-only and matched native,with protection/complex-order
 controls conditional on evidence. V2618 retains all3493 cases and adds44:
 3537 pass,no skips,plus2 subtests;V2620 binds sources. The dated registration/state
-receipts are ../ops/v115_fresh_batch8_20261022.registration{,.state}.json.
+receipts are ../ops/v116_fresh_batch8_20261022.registration{,.state}.json.
 Read their actual status;the operator stays CPU-only before the deadline and
 rejects stale main,new holds,incorrect effective settings and failed telemetry.
 Fully completed guard-excluded arms retain original process exits and exact
