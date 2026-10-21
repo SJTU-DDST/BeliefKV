@@ -210,6 +210,10 @@ def register(args) -> None:
                     "BELIEFKV_PREFETCH_RESIDENCY_PROTECTION",
                     environment.get("PREFETCH_RESIDENCY_PROTECTION", "1"),
                 ),
+                "BELIEFKV_PREFILL_SCHEDULING_POLICY": environment.get(
+                    "BELIEFKV_PREFILL_SCHEDULING_POLICY",
+                    environment.get("PREFILL_SCHEDULING_POLICY", "workflow"),
+                ),
             }, mode) for mode in ORDER
         },
         "scope": (
@@ -242,6 +246,7 @@ def register(args) -> None:
 
 def observe_arm(mode: str, arm: Path) -> None:
     protection = None
+    scheduling = None
     info = arm / "server/server_info.json"
     if info.exists():
         observed = load(info)
@@ -258,9 +263,13 @@ def observe_arm(mode: str, arm: Path) -> None:
         if observed.get("chat_token_block_cache") is not True or observed.get("internal_comparison_mode") != mode:
             raise ValueError(f"{mode}: actual frontend/comparison configuration differs")
         protection = observed.get("prefetch_residency_protection_requested")
+        scheduling = observed.get("prefill_scheduling_policy_requested")
     runtime = qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
     if runtime is not None or mode == "native_matched":
-        validate_runtime(mode, runtime or {}, residency_protection=protection)
+        validate_runtime(
+            mode, runtime or {}, residency_protection=protection,
+            scheduling_policy=scheduling,
+        )
     telemetry = arm / "server/native_telemetry_status.json"
     if telemetry.exists() and any(load(telemetry).get(name) for name in (
         "writer_error", "dropped_records", "failed_records",

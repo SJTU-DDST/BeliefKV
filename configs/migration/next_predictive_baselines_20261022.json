@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "status": "configuration_prepared_execution_pending",
+  "timezone": "Asia/Shanghai",
+  "gpu_not_before": "2026-10-22T06:00:00+08:00",
+  "hold_file": "/home/longhao/experiment/ops/gpu_hold_until_20261022_0600.json",
+  "performance_accepted": false,
+  "common_environment": {
+    "ROOT_COUNT": "36",
+    "MAX_RUNNING_REQUESTS": "8",
+    "SERVER_RANDOM_SEED": "21",
+    "SAMPLING_SEED": "21",
+    "MODEL_CONTEXT_TOKENS": "262144",
+    "CONTEXT_WINDOW_TOKENS": "262144",
+    "CONTEXT_COMPRESSION_TRIGGER_RATIO": "0.95",
+    "ARRIVAL_BATCH_SIZE": "0",
+    "ARRIVAL_BATCH_INTERVAL_MS": "0",
+    "HOST_SPLIT": "80:20",
+    "HICACHE_SIZE_GB": "200",
+    "HICACHE_WRITE_POLICY": "write_back",
+    "FANOUT_PROFILE": "native_in_graph_nested_2to4",
+    "WORKLOAD_MANIFEST": "configs/workloads/locobench_agent_long_36root_20261020.json",
+    "PREFILL_SCHEDULING_POLICY": "join_priority",
+    "PREFETCH_RESIDENCY_PROTECTION": "0",
+    "EXECUTION_HANDOFF": "0",
+    "JOIN_PREFETCH_TRIGGER": "observed_eos",
+    "PREDICTION_MAINTENANCE_INTERVAL_MS": "100",
+    "PROFILE_SHARED_PATH": "0",
+    "PREFETCH_PREFIX_DIAGNOSTICS": "0",
+    "H2D_OPPORTUNITY_SAMPLING": "0",
+    "TERMINAL_CACHE_DIAGNOSTICS": "0"
+  },
+  "order": [
+    "full",
+    "join_priority_only",
+    "native_matched"
+  ],
+  "conditional_controls": {
+    "full_post_ack_protection": {
+      "mode": "full",
+      "overrides": {"PREFETCH_RESIDENCY_PROTECTION": "1"}
+    },
+    "full_workflow_ordering": {
+      "mode": "full",
+      "overrides": {"PREFILL_SCHEDULING_POLICY": "workflow"}
+    },
+    "scheduler_only": {
+      "mode": "scheduler_only",
+      "overrides": {"PREFILL_SCHEDULING_POLICY": "workflow"}
+    },
+    "kv_only": {
+      "mode": "kv_only",
+      "overrides": {}
+    }
+  },
+  "execution_requirements": [
+    "CPU-qualified and freshly frozen main sources; same native engine for all arms",
+    "No GPU probing or experiment before the user deadline",
+    "Idle GPU and owned experiment/process/port checks before releasing the exact pause marker",
+    "Predictive first; stop on physical correctness, configuration or telemetry failure",
+    "Same batch8, seed21, frontend cache, capacity, tasks, arrivals and harness across primary arms",
+    "Keep original exit codes, guard exclusions, whole-run outcomes and realized work",
+    "Treat older batch12 or different-code runs as descriptive references, not paired controls",
+    "No automatic performance acceptance from task completion or reduced output length"
+  ],
+  "primary_metrics": [
+    "Common busy-window decode output tokens per second",
+    "Mean workflow JCT and common-cutoff restricted completion time",
+    "Independent JOIN/tool completion-to-first-service timing",
+    "Verified useful anticipatory FULL and residual demand H2D",
+    "Repeated restore, recomputation and unbacked cold-capacity outcomes",
+    "Control CPU cost, output tokens, requests, delegation rounds and guard/quality cohorts"
+  ]
+}

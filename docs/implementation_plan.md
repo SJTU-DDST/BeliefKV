@@ -12,7 +12,51 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
-Latest accepted implementation: reduce recovery privileges. Full and JOIN-only
+Latest user goal: no GPU experiment before2026-10-22 06:00 Asia/Shanghai.
+This is a one-time hold, not the removed recurring midnight rule. The new hold
+is ../ops/gpu_hold_until_20261022_0600.json;the pause marker carries this deadline
+and old dated automatic operators are disabled. After the deadline,launch only
+current CPU-qualified/frozen sources on idle resources with no newer hold.
+Keep the goal active. Non-inferiority to native and the strongest simple control,
+plus independent useful KV benefit,is the acceptance criterion,not a claimed result.
+Retain negative outcomes,guard exclusions and realized-work/quality differences.
+
+Current CPU implementation: BELIEFKV_PREFILL_SCHEDULING_POLICY=join_priority
+lets Full reuse the entire JOIN-only planning branch,also between priority turns
+and with no pending JOIN. Skip causal/residency/recovery ranking and capacity
+queue bypass;retain all KV controls and native execution dependencies. The old
+workflow profile remains available and is still the code default. Last-child
+priority/locality remain in that profile;do not claim they are active in the
+simple profile or add them before establishing incremental benefit.
+The next configuration explicitly chooses simple JOIN ordering and disables
+extra post-ACK protection,without disabling EOS/tool prefetch or PREPARE.
+
+V2613 retains all3456 prior identities and adds37:3493 pass,no skips,plus2 subtests;
+V2614 binds sources. V2615 additionally runs17 EOS cases with simple ordering and
+protection off. V2612 is CPU-only maintenance/planning/selection on8/48/128 neutral
+queues:Full workflow->simple median106.31->50.40,329.18->206.89,733.69->520.89us.
+Simple Full/control ordering,graph and pending state match;normal GC and all101
+samples remain. No native cache or active DMA is modeled,so do not extrapolate
+whole-runtime overhead or GPU speedup.
+
+V2610 adds completed V111 OurScheduler-only to the same600-2520.937s comparison.
+Full/JOIN-only/scheduler-only/native decode580.52/592.37/576.00/562.09tok/s,
+restricted mean JCT1830.28/1704.12/1835.56/2055.63s. Their whole output counts
+are1736639/1556460/1741754/2027956. V2611's independent600-1200s JOIN queue-to-service
+P50 is608.90/331.70/11407.35/12340.70ms. Different cohorts and work prevent
+causal attribution;these results justify testing the simpler common skeleton.
+
+Next CPU priorities:measure actual positive-transfer control and empty-opportunity
+paths;remove unconsumed high-frequency work;check incremental PREPARE coverage,
+capacity and first-use waiting. Freeze and adapt execution of
+configs/migration/next_predictive_baselines_20261022.json:
+fresh batch8/seed21 Full,JOIN-only and matched native,with protection/complex-order
+controls conditional on evidence. The configuration is CPU prepared;freezing
+and timed execution are still pending. Do not invoke V111's batch12-only
+operator with mismatched inputs,or reuse batch12 Full as the batch8 reference.
+No new GPU driver is registered or running yet.
+
+Previous accepted implementation: reduce recovery privileges. Full and JOIN-only
 share the same actual-JOIN selection branch, aged FIFO/native order and independent
 four-ordinary-admission quota. Restore readiness cannot override a selected JOIN
 parent or impose an extra shared quota. Consume the wakeup on real admission,

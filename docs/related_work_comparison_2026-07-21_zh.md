@@ -511,7 +511,23 @@ V111 首组 JOIN-priority-only 已完成 36/36，43 次有界 JOIN 优先准入�
 版本、前端和动态输出差异使这仍是开发比较，工程对齐 native 尚待完成。
 V2595 同时保留原始 native 的 3 个 agent-JCT 资格排除和独立分组。
 
-OurScheduler-only 于北京时间 2026-10-21 18:46:58 接续；四组仍冻结
+最新 CPU 方案将有效的简单基线用作 Full 排序骨架：
+`BELIEFKV_PREFILL_SCHEDULING_POLICY=join_priority` 保留 KV 管理，完整排序
+共用 JOIN-only 路径，关闭驻留/恢复/因果排名和容量绕行；workflow
+配置中的最后 child/局部性作为后续条件对照。V2613 全部 3493 项通过、
+无跳过，V2614 绑定源码，额外 V2615 的 17 项 EOS 检查通过。V2612 的
+中立队列 CPU 降本不是 GPU/JCT 收益。新配置见
+`configs/migration/next_predictive_baselines_20261022.json`，待冻结接续：
+2026-10-22 06:00 北京时间后，fresh batch8/seed21 Full、JOIN-only、
+工程对齐 native。以额外 KV 增量为门槛；不得预设复杂 Full 必须胜出，
+不得删去负结果或用减少输出、guard 截断制造收益。
+
+V2610 纳入已结束的 OurScheduler-only：共同去长尾吞吐
+Full/JOIN-only/OurScheduler-only/native 为 580.52/592.37/576.00/562.09 token/s，
+受限平均 JCT 为 1830.28/1704.12/1835.56/2055.63 秒；各组实际工作量有差异。
+V2611 的 JOIN 首服等待进一步支持先比较简单排序。新预约前只做 CPU 工作。
+
+此前 OurScheduler-only 于北京时间 2026-10-21 18:46:58 接续；四组仍冻结
 `e0420fe`/`53335e6`、running12/seed21/256K。第二组于 19:44 返回退出码 1：
 36/36 completed，system JCT 资格 36/36，native-agent JCT 资格 35/36；
 一条 `guard_intervened_completion` 未通过全体 native gate，不能记成

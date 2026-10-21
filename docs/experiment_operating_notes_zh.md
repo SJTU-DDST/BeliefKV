@@ -9,7 +9,27 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 删除，详见[整理记录](archive/research_exploration_20261020.md)；原始 trace、
 冻结检出及当前 GPU 预约约束保持有效。
 
-**最新要求：GPU 已暂停，当前只做 CPU 优化与既有 trace 收尾。**
+**最新预约覆盖下文旧的暂停要求：北京时间 2026-10-22 06:00 前禁用 GPU。**
+新 hold 是 `../ops/gpu_hold_until_20261022_0600.json`，旧日期自动接续
+已禁用；全局暂停标记包含新截止时间。到时可按需实验，但必须核对
+最新源码资格、冻结输入、GPU/DRAM/端口和用户是否有新预约。当前没有
+启动或登记新 GPU driver。只做 CPU 优化、历史 trace 分析及配置准备。
+
+下一轮按 `configs/migration/next_predictive_baselines_20261022.json`
+使用 batch8/seed21、36 同时到达 root、256K/95%、Host200GB80:20，
+工具上限仍为 180 秒。先新 Full，再同配置 JOIN-only 和工程对齐 native；
+不要用旧 batch12 Full 作对照。新计划的冻结及接续尚待完成，旧 V111
+接续器仍校验 batch12，不得通过跳过真实参数验证强行启动 batch8。
+
+Full 显式采用 `PREFILL_SCHEDULING_POLICY=join_priority`、
+`PREFETCH_RESIDENCY_PROTECTION=0`，保留 EOS/tool 预取、增量 PREPARE 和
+原生正确性依赖，完整排序与 JOIN-only 同构。复杂 workflow 排序、
+最后 child/局部性及额外保护保留为条件对照；不未经测量一并叠加。
+以去长尾吞吐和平均/受限 JCT 不劣于最强简单基线为验收，记录输出、
+工具、请求、guard/正确性口径；负结果不能省略。V2613 的 3493 项及
+额外 17 项 EOS CPU 检查均通过，V2614 绑定源码，尚无新 GPU 收益。
+
+**此前状态：V111 停止与独立收尾。**
 V111 第二组在北京时间 2026-10-21 19:44 返回退出码 1；36/36 completed，
 system JCT 资格 36/36，native-agent JCT 资格 35/36。一条
 `guard_intervened_completion` 使启动脚本的全体 native gate 返回失败；

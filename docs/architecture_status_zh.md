@@ -6,7 +6,48 @@
 与实验继续按下文最新约定执行。[整理记录](archive/research_exploration_20261020.md)
 列出已清理的一次性源码及归档位置。
 
-**最新实现：JOIN 主排序对齐 JOIN-only，恢复保护可在真实压力下撤销。**
+**最新目标与实现：简单 JOIN 排序加 KV 管理，逐项验证复杂机制。**
+用户规定北京时间 2026-10-22 06:00 前不使用 GPU。新的单次 hold 为
+`../ops/gpu_hold_until_20261022_0600.json`；全局暂停标记保留，旧日期的
+自动接续禁用。时间到后仍需最新资格、冻结来源、空闲资源和无新预约，
+不抢占他人 GPU。工作目标 active，Full 不劣于 native/最强简单基线且
+有可归因的 KV 增量是验收门槛，不能将该目标当作当前已有结论。
+
+新增 `BELIEFKV_PREFILL_SCHEDULING_POLICY=join_priority|workflow`。
+`join_priority` 让 Full 的整个 prefill 排序共用 JOIN-only 路径，包括
+无 JOIN 候选或 JOIN 配额未满时；关闭因果、驻留/恢复插队及额外队尾
+容量绕行，保留 KV 控制、数据依赖及原生准入。此配置不自动叠加最后
+child 优先；已有最后 child/局部性策略仍在 workflow 配置，后续按需比较。
+默认值 workflow 保留，下一轮配置显式采用 join_priority 和额外保护关闭，
+不是声称新策略已在旧实验中生效。启动请求、有效 runtime 和控制环境
+记录并核验该选择。
+
+[V2610 最新四组比较](../experiments/reports/v2610_v111_latest_four_arm_comparison_20261021.json)
+纳入已结束的 OurScheduler-only。共同窗口 600–2520.937 秒，
+Full/JOIN-only/OurScheduler-only/native 吞吐约 580.52/592.37/576.00/562.09
+token/s，受限平均 JCT 1830.28/1704.12/1835.56/2055.63 秒。
+全程输出为 1736639/1556460/1741754/2027956 token；不是相同实际工作量。
+[V2611 独立 JOIN 审计](../experiments/reports/v2611_v111_latest_join_service_cpu_audit_20261021.json)
+600–1200 秒入队到首服 P50 为 608.90/331.70/11407.35/12340.70ms。
+这些是不同样本队列的关联，不能据此把全部差异归因于 KV 或排序。
+
+[V2612 CPU 对照](../experiments/reports/v2612_join_priority_kv_profile_cpu_20261021.json)
+使用相同图、普通队列和正常 GC，轮换 101 个样本；Full 简单配置与
+JOIN-only 的顺序、图及 pending 相同。8/48/128 队列完整维护、规划、
+选择 P50 约 106.31→50.40、329.18→206.89、733.69→520.89us，
+JOIN-only 对照约 50.14/204.73/514.51us。夹具没有 native cache、DMA
+或活跃迁移，不能推断整个控制路径成本或 GPU/JCT 收益。
+V2613 保留全部 3456 项并新增 37 项，3493 全通过、无跳过，另有 2 个
+subtest；V2614 绑定源码。V2615 在简单排序/额外保护关闭下额外通过
+17 项 EOS 实例，确认预取没有随排序关闭；不是新的 GPU 资格。
+
+下一步 CPU 工作是核查正例迁移控制、无机会路径、PREPARE 增量覆盖和
+首次消费等待，保持无用即删；准备同一批配置的 batch8 Full/JOIN-only/
+工程对齐 native，按结果补保护及复杂排序对照。具体配置见
+`configs/migration/next_predictive_baselines_20261022.json`，冻结和接续仍待完成。
+不复用 batch12 Full 作 batch8 因果对照，不改变 harness 提前截断来制造收益。
+
+**此前实现：JOIN 主排序对齐 JOIN-only，恢复保护可在真实压力下撤销。**
 Full 与 JOIN-only 直接共用 JOIN 选择分支：aged FIFO/native 顺序选中真实
 解锁、已提交且可执行的 parent，采用独立的四次普通准入配额。不依赖
 HBM 命中，不受恢复提升配额约束；已在首位的 parent 也不会被后续恢复

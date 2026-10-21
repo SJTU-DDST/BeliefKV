@@ -187,7 +187,7 @@ def test_native_policy_baseline_rejects_predictive_mix_before_launch(tmp_path: P
     "full", "join_priority_only", "scheduler_only", "kv_only", "native_matched",
 ))
 def test_internal_comparison_effective_environment_before_gpu_launch(
-    tmp_path, comparison, *, protection="1",
+    tmp_path, comparison, *, protection="1", scheduling="workflow",
 ):
     import sys
     from beliefkv.experiments.internal_comparison import arm_environment
@@ -210,6 +210,7 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
         "TOOL_TIMING_ARTIFACT": str(artifact), "TRANSFER_SERVICE_SEED": str(artifact),
         "BELIEFKV_EXPERIMENT_PAUSE_FILE": str(tmp_path / "pause"),
         "PREFETCH_RESIDENCY_PROTECTION": protection,
+        "PREFILL_SCHEDULING_POLICY": scheduling,
     }, comparison)
     result = subprocess.run(
         ["/bin/bash", str(SCRIPT)],
@@ -227,8 +228,9 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
     assert actual["BELIEFKV_ENABLE_PREPARE_HOST"] == str(int(custom_kv))
     assert actual["BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH"] == str(int(custom_kv))
     assert actual["BELIEFKV_ENABLE_TOOL_PREFETCH"] == str(int(custom_kv))
-    assert actual["BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY"] == str(int(comparison in ("full", "scheduler_only")))
-    assert actual["BELIEFKV_ENABLE_RESIDENT_FIRST"] == str(int(comparison in ("full", "scheduler_only")))
+    workflow = comparison in ("full", "scheduler_only") and scheduling == "workflow"
+    assert actual["BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY"] == str(int(workflow))
+    assert actual["BELIEFKV_ENABLE_RESIDENT_FIRST"] == str(int(workflow))
     assert actual["BELIEFKV_CHAT_TOKEN_BLOCK_CACHE"] == "1"
     if not custom_kv:
         assert not actual.get("BELIEFKV_TOOL_TIMING_ARTIFACT")
@@ -240,11 +242,20 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
     assert launch["prefetch_residency_protection_requested"] is (
         protection == "1" and custom_kv
     )
+    assert launch["prefill_scheduling_policy_requested"] == (
+        "join_priority" if comparison == "join_priority_only" else scheduling
+    )
 
 
 def test_disabled_post_ack_protection_reaches_the_launcher_without_a_gpu(tmp_path):
     test_internal_comparison_effective_environment_before_gpu_launch(
         tmp_path, "full", protection="0",
+    )
+
+
+def test_full_join_priority_profile_keeps_kv_and_reaches_the_launcher_without_a_gpu(tmp_path):
+    test_internal_comparison_effective_environment_before_gpu_launch(
+        tmp_path, "full", protection="0", scheduling="join_priority",
     )
 
 
@@ -329,6 +340,7 @@ def test_effective_policy_environment_without_launching_gpu(
         "native_policy_baseline": native,
         "prefetch_prefix_diagnostics": prefix_diagnostics == "1",
         "prefetch_residency_protection_requested": True,
+        "prefill_scheduling_policy_requested": "workflow",
         "server_random_seed": 21,
         "internal_comparison_mode": "full",
     }

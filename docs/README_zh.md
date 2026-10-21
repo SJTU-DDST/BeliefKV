@@ -7,7 +7,29 @@
 重复摘要已清理；源码归档及保留范围见[整理记录](archive/research_exploration_20261020.md)。
 下文的最新工程状态与实验约束继续有效。
 
-**最新实现：削减恢复特权，GPU 实验保持暂停。**
+**最新目标：以有效的简单排序为骨架，证明 KV 管理的额外收益。**
+北京时间 **2026-10-22 06:00 前禁止 GPU 实验**；这是一次性预约，不是每日规则。
+已设置新暂停记录，停用旧自动接续。之后仅在最新代码通过 CPU 资格、
+资源空闲且没有新预约时按需开始。目标继续 active，性能尚未验收；
+保留负结果、工作量差异和 guard 排除，不通过挑选结果保证 Full 获胜。
+
+新增 `BELIEFKV_PREFILL_SCHEDULING_POLICY=join_priority`：Full 保留 KV
+管理，但完整请求排序与 JOIN-only 共用 aged FIFO/native 顺序、JOIN
+唤醒及独立配额；跳过因果、驻留和恢复插队排序。旧 `workflow` 配置
+保留作对照，代码默认值未静默改变。下一轮显式选择简单排序、
+关闭额外 ACK 后保护；EOS/tool 预取及增量 PREPARE 保留。
+[V2613](../experiments/reports/v2613_join_priority_kv_qualified_cpu_20261021.xml)
+保留全部 3456 项并新增 37 项，3493 全部通过、无跳过，另有 2 个 subtest；
+[V2614](../experiments/reports/v2614_join_priority_kv_cpu_sources_20261021.json)
+绑定本次源码。额外 V2615 在下一轮配置下通过 17 项 EOS 检查。
+
+[下一轮配置](../configs/migration/next_predictive_baselines_20261022.json)
+准备了相同 batch8/seed21/36root/256K 的 Full、JOIN-only、工程对齐
+native；保护、复杂排序及其他消融按需补跑。新配置还需冻结及执行接续，
+不能用旧 V111 的 batch12 接续器绕过配置校验，也不混用 batch12 Full
+作为 batch8 对照。当前尚未启动 GPU 或登记新的 GPU driver。
+
+**此前实现：削减恢复特权。**
 Full 与 JOIN-only 共用真实 JOIN parent 的选择、aged FIFO/native 顺序和
 四次普通准入配额；JOIN 提升不再受恢复提升配额约束。有资格的 JOIN
 parent 不会被普通恢复请求抢先。普通恢复优先只在同一因果类别内生效，
@@ -24,7 +46,7 @@ parent 不会被普通恢复请求抢先。普通恢复优先只在同一因果�
 保留 V2600 的全部 3148 项历史身份并扩展至 3456 项，全部通过、无跳过，
 另有 2 个 subtest；旧策略断言已按新策略更新。
 [V2609](../experiments/reports/v2609_revocable_recovery_cpu_sources_20261021.json)
-绑定本次源码，引擎未改。此资格包含新增用例和补跑的完整受影响模块。
+绑定此前源码，引擎未改。此资格包含新增用例和补跑的完整受影响模块。
 
 V111 第二组在北京时间 2026-10-21 19:44 返回退出码 1：36/36 completed，
 system JCT 资格 36/36，native-agent JCT 资格 35/36；一条

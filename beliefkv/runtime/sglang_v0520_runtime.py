@@ -425,8 +425,17 @@ class NativeAdmissionRuntime:
             join_priority_setting == "1" and not self._native_prefill_order
             and self.internal_comparison_mode != "kv_only"
         )
+        scheduling_setting = os.environ.get("BELIEFKV_PREFILL_SCHEDULING_POLICY", "workflow")
+        if scheduling_setting not in ("workflow", "join_priority"):
+            raise ValueError("prefill scheduling policy must be workflow or join_priority")
+        self.prefill_scheduling_policy = (
+            "native" if self._native_prefill_order else
+            "join_priority" if self.internal_comparison_mode == "join_priority_only"
+            else scheduling_setting
+        )
         self._workflow_attained_work_enabled = (
             os.environ.get("BELIEFKV_WORKFLOW_ATTAINED_WORK", "0") == "1"
+            and self.prefill_scheduling_policy != "join_priority"
         )
         self._workflow_attained_output_tokens: dict[str, int] = {}
         self._workflow_work_promoted: str | None = None
@@ -561,10 +570,11 @@ class NativeAdmissionRuntime:
         self.enable_final_stage_prefetch = enable_final_stage_prefetch
         self.enable_resident_first = os.environ.get(
             "BELIEFKV_ENABLE_RESIDENT_FIRST", "1",
-        ) == "1"
+        ) == "1" and self.prefill_scheduling_policy != "join_priority"
         priority_setting = os.environ.get("BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY")
         self.enable_final_stage_priority = (
-            None if priority_setting is None else priority_setting == "1"
+            False if self.prefill_scheduling_policy == "join_priority"
+            else None if priority_setting is None else priority_setting == "1"
         )
         self.enable_prepare_host = os.environ.get("BELIEFKV_ENABLE_PREPARE_HOST", "1") == "1"
         sampling_setting = os.environ.get("BELIEFKV_H2D_OPPORTUNITY_SAMPLING", "0")
@@ -2255,6 +2265,7 @@ class NativeAdmissionRuntime:
                 "internal_comparison_mode": self.internal_comparison_mode,
                 "custom_kv_management": self._custom_kv_management,
                 "join_parent_priority": self.enable_join_parent_priority,
+                "prefill_scheduling_policy": self.prefill_scheduling_policy,
                 "join_priority_order": "aged_fifo_then_native;independent_four_admission_quota",
                 "restore_priority_scope": "same_causal_class;no_aged_head_bypass",
                 "prefetch_residency_protection": self.enable_prefetch_residency_protection,
@@ -10751,7 +10762,7 @@ class NativeAdmissionRuntime:
         self._prefetch_priority_partial_restore_details = None
         self._resident_priority_promoted = None
         self._resident_priority_details = None
-        if self.internal_comparison_mode == "join_priority_only" or (
+        if self.prefill_scheduling_policy == "join_priority" or (
             self.enable_join_parent_priority and self._join_priority_pending
             and self._join_priority_normal_admissions >= 4
         ):
@@ -10784,7 +10795,7 @@ class NativeAdmissionRuntime:
                     self.counts[f"{prefix}_priority_ordered"] += 1
                     if now - self._visible_since.get(ordered[1][1].rid, now) >= 10.:
                         self.counts[f"{prefix}_priority_aged_head_bypass"] += 1
-            if self.internal_comparison_mode == "join_priority_only" or candidate is not None:
+            if self.prefill_scheduling_policy == "join_priority" or candidate is not None:
                 return compile_native_prefill_plan(
                     [keys[index] for index, _ in ordered],
                     semantic_revision=self.semantic_revision,

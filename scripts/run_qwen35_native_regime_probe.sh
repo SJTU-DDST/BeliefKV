@@ -57,6 +57,7 @@ TOOL_TIMING_ARTIFACT="${TOOL_TIMING_ARTIFACT:-$ROOT/experiments/models/qwen35_na
 ENABLE_TOOL_TIMING="${ENABLE_TOOL_TIMING:-1}"
 PREFETCH_LEAD_MS="${PREFETCH_LEAD_MS:-1000}"
 PREFETCH_RESIDENCY_PROTECTION="${BELIEFKV_PREFETCH_RESIDENCY_PROTECTION:-${PREFETCH_RESIDENCY_PROTECTION:-1}}"
+PREFILL_SCHEDULING_POLICY="${BELIEFKV_PREFILL_SCHEDULING_POLICY:-${PREFILL_SCHEDULING_POLICY:-workflow}}"
 JOIN_PREFETCH_MIN_ADVANCE_MS="${JOIN_PREFETCH_MIN_ADVANCE_MS:-0}"
 TOOL_PREFETCH_MIN_ADVANCE_MS="${TOOL_PREFETCH_MIN_ADVANCE_MS:-0}"
 PARALLEL_WAIT_PREFETCH="${PARALLEL_WAIT_PREFETCH:-0}"
@@ -139,6 +140,7 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || [[ "$PROFILE_SHARED_PATH" != "0" && "$PROFILE_SHARED_PATH" != "1" ]] \
   || [[ "$PREFETCH_PREFIX_DIAGNOSTICS" != "0" && "$PREFETCH_PREFIX_DIAGNOSTICS" != "1" ]] \
   || [[ "$PREFETCH_RESIDENCY_PROTECTION" != "0" && "$PREFETCH_RESIDENCY_PROTECTION" != "1" ]] \
+  || [[ "$PREFILL_SCHEDULING_POLICY" != "workflow" && "$PREFILL_SCHEDULING_POLICY" != "join_priority" ]] \
   || [[ ! "$PREFETCH_LEAD_MS" =~ ^[0-9]+$ ]] \
   || [[ "$SEMANTIC_WORK_STATISTIC" != upper && "$SEMANTIC_WORK_STATISTIC" != center ]] \
   || [[ ! "$EOS_PROTOCOL_WINDOW_MS" =~ ^[0-9]+$ ]] || (( EOS_PROTOCOL_WINDOW_MS < 50 || EOS_PROTOCOL_WINDOW_MS > 500 )) \
@@ -155,6 +157,7 @@ fi
 export BELIEFKV_CHAT_TOKEN_BLOCK_CACHE="$CHAT_TOKEN_BLOCK_CACHE"
 export BELIEFKV_PREFETCH_PREFIX_DIAGNOSTICS="$PREFETCH_PREFIX_DIAGNOSTICS"
 export BELIEFKV_PREFETCH_RESIDENCY_PROTECTION="$PREFETCH_RESIDENCY_PROTECTION"
+export BELIEFKV_PREFILL_SCHEDULING_POLICY="$PREFILL_SCHEDULING_POLICY"
 "$PYTHON" -c 'import json,sys; rows=json.load(open(sys.argv[1]))["workloads"]; count=int(sys.argv[2]); assert count <= len(rows), "requested roots exceed manifest"; assert len({row["instance_id"] for row in rows[:count]}) == count, "duplicate workload"' "$MANIFEST" "$ROOT_COUNT"
 if [[ -n "$WORKFLOW_ARRIVAL_SCHEDULE" ]]; then
   PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -c 'import json,sys; from pathlib import Path; from beliefkv.experiments.arrival_schedule import load_workflow_arrivals; rows=json.load(open(sys.argv[1]))["workloads"][:int(sys.argv[2])]; load_workflow_arrivals(Path(sys.argv[3]), instance_ids=[row["instance_id"] for row in rows])' "$MANIFEST" "$ROOT_COUNT" "$WORKFLOW_ARRIVAL_SCHEDULE"
@@ -263,12 +266,16 @@ fi
 if [[ "${BELIEFKV_INTERNAL_COMPARISON_MODE:-full}" == "kv_only" ]]; then
   ab_env+=(BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY=0 BELIEFKV_ENABLE_RESIDENT_FIRST=0)
 fi
+if [[ "$PREFILL_SCHEDULING_POLICY" == "join_priority" ]]; then
+  ab_env+=(BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY=0 BELIEFKV_ENABLE_RESIDENT_FIRST=0)
+fi
 jq -n --argjson cache "$CHAT_TOKEN_BLOCK_CACHE" --argjson native "$NATIVE_POLICY_BASELINE" \
   --argjson prefixes "$PREFETCH_PREFIX_DIAGNOSTICS" \
   --argjson seed "$SERVER_RANDOM_SEED" \
   --arg comparison "${BELIEFKV_INTERNAL_COMPARISON_MODE:-full}" \
   --argjson protection "$PREFETCH_RESIDENCY_PROTECTION" \
-  '{schema_version: 1, chat_token_block_cache: ($cache == 1), native_policy_baseline: ($native == 1), prefetch_prefix_diagnostics: ($prefixes == 1), prefetch_residency_protection_requested: ($protection == 1), server_random_seed: $seed, internal_comparison_mode: $comparison}' \
+  --arg scheduling "$PREFILL_SCHEDULING_POLICY" \
+  '{schema_version: 1, chat_token_block_cache: ($cache == 1), native_policy_baseline: ($native == 1), prefetch_prefix_diagnostics: ($prefixes == 1), prefetch_residency_protection_requested: ($protection == 1), prefill_scheduling_policy_requested: $scheduling, server_random_seed: $seed, internal_comparison_mode: $comparison}' \
   > "$RUN_ROOT/server/launch_configuration.json"
 setsid env -u BELIEFKV_FULL_MAMBA_HOST_SPLIT "${unset_env[@]}" \
   "${ab_env[@]}" \

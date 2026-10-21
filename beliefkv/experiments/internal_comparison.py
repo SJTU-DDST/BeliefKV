@@ -17,6 +17,15 @@ def arm_environment(common: dict[str, str], mode: str) -> dict[str, str]:
     )
     if protection not in ("0", "1"):
         raise ValueError("prefetch residency protection must be 0 or 1")
+    scheduling = common.get(
+        "BELIEFKV_PREFILL_SCHEDULING_POLICY",
+        common.get("PREFILL_SCHEDULING_POLICY", "workflow"),
+    )
+    if scheduling not in ("workflow", "join_priority"):
+        raise ValueError("prefill scheduling policy must be workflow or join_priority")
+    workflow_ordering = scheduling == "workflow" and mode in ("full", "scheduler_only")
+    if mode == "join_priority_only":
+        scheduling = "join_priority"
     native = mode == "native_matched"
     settings = {
         **common,
@@ -37,12 +46,14 @@ def arm_environment(common: dict[str, str], mode: str) -> dict[str, str]:
         "BELIEFKV_ENABLE_PREPARE_HOST": str(int(custom_kv)),
         "PREFETCH_RESIDENCY_PROTECTION": protection if custom_kv else "0",
         "BELIEFKV_PREFETCH_RESIDENCY_PROTECTION": protection if custom_kv else "0",
+        "PREFILL_SCHEDULING_POLICY": scheduling,
+        "BELIEFKV_PREFILL_SCHEDULING_POLICY": scheduling,
         "BELIEFKV_ENABLE_EXECUTION_HANDOFF": "0",
-        "BELIEFKV_ENABLE_RESIDENT_FIRST": str(int(mode in ("full", "scheduler_only"))),
+        "BELIEFKV_ENABLE_RESIDENT_FIRST": str(int(workflow_ordering)),
         "BELIEFKV_ENABLE_JOIN_PARENT_PRIORITY": str(int(
             mode in ("full", "scheduler_only", "join_priority_only")
         )),
-        "BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY": str(int(mode in ("full", "scheduler_only"))),
+        "BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY": str(int(workflow_ordering)),
         "BELIEFKV_NATIVE_PREFILL_ORDER": str(int(mode in ("kv_only", "native_matched"))),
         "BELIEFKV_WORKFLOW_ATTAINED_WORK": common.get("BELIEFKV_WORKFLOW_ATTAINED_WORK", "0"),
         "BELIEFKV_EMIT_SEMANTIC_TEXT": "0",
@@ -67,6 +78,7 @@ def arm_environment(common: dict[str, str], mode: str) -> dict[str, str]:
 
 def validate_runtime(
     mode: str, state: dict, *, residency_protection: bool | None = None,
+    scheduling_policy: str | None = None,
 ) -> None:
     """Check observed effective controls, not just the requested environment."""
     if mode not in MODES:
@@ -75,6 +87,7 @@ def validate_runtime(
         if state:
             raise ValueError("matched native unexpectedly enabled the custom runtime")
         return
+    workflow_ordering = state.get("prefill_scheduling_policy") != "join_priority"
     expected = {
         "internal_comparison_mode": mode,
         "custom_kv_management": mode in ("full", "kv_only"),
@@ -82,9 +95,9 @@ def validate_runtime(
         "final_stage_prefetch": mode in ("full", "kv_only"),
         "tool_prefetch": mode in ("full", "kv_only"),
         "borrowable_parent_headroom": mode in ("full", "kv_only"),
-        "resident_first": mode in ("full", "scheduler_only"),
+        "resident_first": mode in ("full", "scheduler_only") and workflow_ordering,
         "join_parent_priority": mode in ("full", "scheduler_only", "join_priority_only"),
-        "final_stage_priority": mode in ("full", "scheduler_only"),
+        "final_stage_priority": mode in ("full", "scheduler_only") and workflow_ordering,
         "prefill_ordering_mode": "native" if mode == "kv_only" else "workflow",
         "execution_handoff": False,
         "physical_disabled": False,
@@ -92,6 +105,13 @@ def validate_runtime(
     if residency_protection is not None:
         expected["prefetch_residency_protection"] = (
             residency_protection and mode in ("full", "kv_only")
+        )
+    if scheduling_policy is not None:
+        if scheduling_policy not in ("workflow", "join_priority"):
+            raise ValueError("unsupported requested scheduling policy")
+        expected["prefill_scheduling_policy"] = (
+            "native" if mode == "kv_only" else
+            "join_priority" if mode == "join_priority_only" else scheduling_policy
         )
     for field, value in expected.items():
         if state.get(field) != value:
