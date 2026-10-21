@@ -21,7 +21,33 @@ Add Pythia to the external shortlist; distinguish public artifacts from complete
 paper reimplementations. This is a future plan, not implemented adapters or
 performance evidence. Do not change the frozen V109 pair for this research.
 
-Main CPU qualification is nowV2554:actually rerun2906 application cases,
+Main CPU qualification is nowV2560:actually rerun2919 application cases,
+retain all2906 previous identities and add13 scalar-survival boundary/censor
+controls. The unchanged53335e6 engine's405 sources and passing report are
+verified,not rerun. Share only the positive per-query conditioning denominator
+across online-tool CDF endpoints;keep quantiles,censoring,unsupported tails,
+workflow/run fallback and retries. No new timer,worker,cache or physical action.
+
+V2558 replays independently sealed currentV109 histories:2174 estimates match
+exactly,including quantiles,CDF,scope and support. With101 alternating samples
+and normal GC,the three complete due-query CPU P50s fall80-141 to61-102us.
+Ordinary skips are effectively unchanged;some related updates add about1-2us.
+Do not infer whole-run CPU,accuracy,coverage,throughput or JCT savings.
+This candidate is not hot-loaded intoV109;both arms remain at ed06f53/V2545.
+
+V2556 seals the15:49 V109 prefix:57 attributed JOINs,54 early positive plans,
+49 early submissions/reuses and8.859GB FULL. The additional16.285GB restored
+after completion stays separate. Of1456 observed tool waits,62 early positive
+plans and45 early submissions/reuses consume4.198GB FULL;total tool FULL
+transfer4.546GB includes18 nonreused commands. Only64.70MB is explicitly
+attributed to protection expiry,not all nonreuse. JOIN/tool lastACK->service
+P90 is1.050/2.120s;no native FULL reload before first service is observed.
+Successor786.931GB native tool Host hits are not proven pre-return opportunity.
+At16:00 Beijing35/36 results say completed and watcher/driver are live.
+Keep partial attribution separate from total JOIN coverage,independent file
+prefixes separate from atomic snapshots,and wait for the fresh native arm.
+
+Previous CPU qualificationV2554:actually rerun2906 application cases,
 retain all2893 previous identities and add13;unchanged engine53335e6's405
 cases are source/report verified,not rerun. Advisory online-tool retry witnesses
 now follow the active call and both command-matching workflow/run histories.

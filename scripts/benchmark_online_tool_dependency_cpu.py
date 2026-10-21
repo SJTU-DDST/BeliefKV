@@ -67,7 +67,10 @@ def hint_value(runtime, key):
     )
 
 
-def measure(classes, model_classes, *, signature, history, case, samples):
+def measure(
+    classes, model_classes, *, signature, history, case, samples,
+    baseline_scoped_history_retries=False,
+):
     now = 1_000_000.
     with patch("time.monotonic", lambda: now):
         variants = {
@@ -112,7 +115,9 @@ def measure(classes, model_classes, *, signature, history, case, samples):
             for name, (runtime, _) in variants.items()
         }
         if case == "unrelated_completion":
-            assert supported["baseline"] == samples + 10
+            assert supported["baseline"] == (
+                0 if baseline_scoped_history_retries else samples + 10
+            )
             assert supported["candidate"] == 0
             assert hint_value(*variants["baseline"]) == hint_value(*variants["candidate"])
         return {
@@ -207,6 +212,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--arm", type=Path, required=True)
     parser.add_argument("--baseline", default="ed06f53")
+    parser.add_argument("--baseline-scoped-history-retries", action="store_true")
     parser.add_argument("--samples", type=int, default=101)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -232,6 +238,7 @@ def main():
             {"baseline": before, "candidate": NativeAdmissionRuntime},
             {"baseline": before_model, "candidate": OnlineWorkloadToolTiming},
             signature=signature, history=history, case=case, samples=args.samples,
+            baseline_scoped_history_retries=args.baseline_scoped_history_retries,
         )
         for signature, history in histories
         for case in ("unchanged", "unrelated_completion", "related_completion", "retry_due")
@@ -242,6 +249,7 @@ def main():
         "status": "cpu_forecast_dependency_measurement_not_gpu_acceptance",
         "observed_at": datetime.now(timezone.utc).isoformat(),
         "baseline_revision": args.baseline, "baseline_sources": bindings | model_bindings,
+        "baseline_scoped_history_retries": args.baseline_scoped_history_retries,
         "source_sha256": sources, "gc_enabled": gc.isenabled(),
         "samples_per_variant": args.samples, "observed_trace_replay": replay,
         "cases": cases,

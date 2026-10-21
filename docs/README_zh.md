@@ -13,6 +13,22 @@
 以及 Pythia 等候选；本次只完成调研方案，不代表适配或 GPU 对比已完成。
 
 **最新 main CPU 资格
+[V2560](../experiments/reports/v2560_online_tool_cdf_qualified_cpu_sources_20261021.json)：**
+2919 项应用实际重跑，保留原 2906 项并新增 13 项；未改引擎 405 项
+仅核对源码/通过记录。在线工具 CDF 共用本次正条件生存分母，
+不新增缓存、周期或物理动作，预测语义与原重试保持。
+[V2558 对照](../experiments/reports/v2558_online_tool_cdf_control_cpu_20261021.json)
+中 2174 次估计完全相同，到期提交 CPU 中位 80–141→61–102us；
+普通跳过基本持平，部分相关更新增加约 1–2us，不外推整轮收益。
+V109 两侧仍冻结 ed06f53/V2545，不热加载。
+
+[V2556 的 15:49 前缀](../experiments/reports/v2556_v109_late_wait_prefetch_20261021_summary.json)
+确认 49 个 JOIN 提前复用 8.859GB FULL、45 个工具等待提前复用
+4.198GB；另 16.285GB JOIN 完成后恢复须单列。工具 18 条未复用，
+明确保护到期约 64.70MB，不将二者等同。北京时间 16:00 已有
+35/36 completed 结果，监护与 driver 存活；尚无完整新 native 对照。
+
+**此前 main CPU 资格
 [V2554](../experiments/reports/v2554_online_tool_dependency_qualified_cpu_sources_20261021.json)：**
 2906项应用实际重跑，保留原2893项并新增13项；未改引擎405项核对后沿用。
 在线工具预测只因当前调用及相关workflow/run历史变化而提前重算，

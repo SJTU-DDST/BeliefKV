@@ -124,8 +124,12 @@ class OnlineWorkloadToolTiming:
             if not all(math.isfinite(value) for value in values):
                 continue
             times = sorted({duration - elapsed for duration, _ in history if duration > elapsed})
+            # Finite quantiles share one positive conditioning population.
+            base = curve.survival(elapsed)
             cdf = tuple(
-                (future, 1. - curve.conditional_survival(elapsed, future))
+                (future, 1. - max(
+                    0., min(1., curve.survival(elapsed + future) / base),
+                ))
                 for future in times
             )
             return OnlineToolEstimate(*values, cdf, len(history), scope)
