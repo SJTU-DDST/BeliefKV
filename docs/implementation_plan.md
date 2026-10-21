@@ -12,6 +12,15 @@ Current engineering contracts below retain precedence.
 Development checkout: `/home/longhao/experiment/BeliefKV`, branch `main`.
 Make subsequent code changes, validation and commits in this checkout.
 
+Future baseline research and the scheduling ablation plan are updated in
+[related-work section 6.6](related_work_comparison_2026-07-21_zh.md#baseline-scheduling-ablations).
+Separate JOIN-priority-only, OurScheduler-only, KV-only and Full. Keep native
+HiCache/demand recovery in scheduling-only arms, disable all custom KV actions,
+and retain bounded priority/aging without fabricated restore ACKs or leases.
+Add Pythia to the external shortlist; distinguish public artifacts from complete
+paper reimplementations. This is a future plan, not implemented adapters or
+performance evidence. Do not change the frozen V109 pair for this research.
+
 Main CPU qualification is nowV2554:actually rerun2906 application cases,
 retain all2893 previous identities and add13;unchanged engine53335e6's405
 cases are source/report verified,not rerun. Advisory online-tool retry witnesses

@@ -6,6 +6,13 @@
 与实验继续按下文最新约定执行。[整理记录](archive/research_exploration_20261020.md)
 列出已清理的一次性源码及归档位置。
 
+**后续 baseline 调研与调度消融方案已更新，尚未适配或启动。**
+[相关工作总表第 6.6 节](related_work_comparison_2026-07-21_zh.md#baseline-scheduling-ablations)
+区分 JOIN-priority-only、OurScheduler-only、KV-only 与 Full；仅调度组
+保留原生 HiCache/需求恢复，关闭我们的主动 KV 动作，不预设其一定更慢。
+外部按 program 调度、反馈准入、工具生命周期、graph/prediction KV
+筛选，新增 Pythia；公开实现缺项与论文重实现分列。V109 冻结与接续不变。
+
 **最新 main CPU 资格为 V2554；正在运行的 V109 仍固定为 ed06f53/V2545。**
 工具在线预测的重试记录从全局完成样本版本改为当前工具身份、开始时间及
 同命令的 workflow/run 两级历史版本。无关命令完成不再提前打断原有重试

@@ -4,11 +4,13 @@
 用途：研究定位、reference policy 设计、原生系统部署和论文 baseline 选择。
 范围：合并此前整理的 Agent serving、workflow scheduling 和 KV-cache 工作，并加入截至本日期检索到的最新直接竞品。2026-09-14 增量检索重点覆盖 arXiv 2026 年 7-9 月的新稿与旧表漏项。
 
-2026-10-21 更新重点是第 6.5 节的 baseline 筛选和适配顺序，重新核对
+2026-10-21 更新重点是第 6.5-6.6 节的 baseline 筛选、调度消融和适配顺序，重新核对
 论文、作者仓库及公开实现的缺项。TokenCake 官方地址已修正并可访问；
 其 README 明确预测预取尚未实现。Continuum 公开预览版仍不含论文
 估计器。补充 Ask the Tool 的工具进度信号对照，修正 InferCept 的会议
-为 ICML 2024。第 6.4 节保留 10 月 12 日方案；最新优先级以 6.5 为准。
+为 ICML 2024。本次继续补入 Pythia，明确 `JOIN-priority-only` 与
+`OurScheduler-only` 的区别，并记录近期 PackServe/Lachesis 的适用边界。
+第 6.4 节保留 10 月 12 日方案；候选见 6.5，本次实施顺序和消融以 6.6 为准。
 其余未重新核验条目保留历史调研日期，不能据此声称已完成当前
 Qwen3.5 / SGLang 0.5.20 上的复现。
 
@@ -36,7 +38,8 @@ Qwen3.5 / SGLang 0.5.20 上的复现。
 保留通用 `PolicyInput/PolicyOutput` 和中立 physical trace 是为了 BeliefKV 自身调试、oracle 和
 未来离线复放，不表示当前正在搭建完整竞品框架。P8 根据稳定 workload、论文代码和真实
 metadata 条件重新实现值得保留的 baseline，不恢复整套早期草图。
-2026-10-21 的后续候选和实现优先级见第 6.5 节；该清单尚不是已完成的适配。
+2026-10-21 的后续候选见第 6.5 节；本次请求的调度消融与实施顺序见第 6.6 节。
+这些是后续计划，尚不是已完成的适配。
 
 ## 2. 当前结论
 
@@ -77,6 +80,7 @@ Continuum 的跨工具 KV 生命周期** 三者交集中的剩余空间，不能
 | [Astraea](https://arxiv.org/abs/2512.14142), arXiv 2025 | 多状态 Agent request；单/双 A100；vLLM | session lifecycle、MLFQ queue、KV context | prefill profile、API 类别均值、生成长度 oracle | token-cost demotion、I/O promotion、HRRN+aging；压力下 Preserve/Swap/Discard min-waste | 报告平均 JCT 最高降低 25.5% | **概念高重叠、证据需谨慎。** 生命周期调度和三态 KV policy 已覆盖；结果依赖 generation-length oracle 和重加权 API latency，且未发现公开代码。
 | [KVFlow](https://openreview.net/pdf?id=5Iw1nDtYmT), NeurIPS 2025 | 固定或可抽象的多 Agent workflow；SGLang hierarchical radix cache | Agent Step Graph、agent 和 KV node | workflow 执行图、steps-to-execution | node-level eviction、CPU->GPU next-step prefetch、共享 prefix 最小距离 | 单 workflow 最高 1.83x，多 workflow 最高 2.19x | **最高优先级。** 覆盖图感知 future-use eviction/prefetch；对在线展开、循环、未知 consumer 和弱元数据支持有限。代码已公开并已在本地复现。
 | [TokenCake](https://arxiv.org/abs/2510.18586v5), 2026-09-28 修订稿 | function-call-heavy MAS；coding/deep research | workflow graph、critical-path agent | workflow 结构、criticality、工具事件和返回预测 | 论文：Temporal offload/predictive upload；Spatial reserved/shared pool | 论文报告 E2E latency 降低 47.06%，有效 GPU 利用率提升 16.9 个百分点 | **最高优先级。** [官方仓库](https://github.com/pku-lemonade/TokenCake)已公开；README 标明 vLLM v0.22.0、事件驱动备份与需求恢复，预测预取仍在开发。公开实现和完整论文策略必须分列。
+| [Pythia](https://arxiv.org/abs/2604.25899v2), 2026-05-14 修订稿 | 多 Agent serving；节点缓存与集群调度 | workflow/role 注解、历史执行模式和 prompt composition | 用 profiling 合成执行模式，估计后继、输出长度及可构造的 prompt | Belady-like 替换、提前构造/计算后继缓存、lookahead scheduling，另有集群 autoscaling | 同时优化吞吐和 workflow JCT | **联合设计的重要对照。** 不只是预声明 DAG；支持从历史模式表达动态执行。当前须核实其 profiling/prompt 输入能否真实取得，单卡只适配缓存和本地排序，不把集群伸缩收益移入；本次未核实官方可运行 artifact。
 | [PBKV](https://arxiv.org/abs/2605.06472), arXiv 2026 | 动态 Agent workflow | workflow 内未来多步 Agent invocation、cache entry | 历史 workflow + 当前 task context；预测未来数步 Agent | prediction-based reuse score、保守 eviction 和 prefetch | 动态 workflow 相对 LRU 最高 1.85x；静态 workflow 相对 KVFlow 最高 1.26x | **当前最直接的预测竞品。** 已覆盖“预测 next agents/多步 continuation 再管理 KV”；BeliefKV 的 context tree/Markov predictor 本身不再新颖。必须比较弱元数据、校准/OOD、action-criticality 和联合物理执行。
 | [CacheScout](https://arxiv.org/abs/2608.14624), arXiv 2026-07 | 无预定义 DAG 的动态 MAS；vLLM 0.11；单机多卡实验 | Agent prefix anchor、在线 Agent transition | 从 prompt-prefix block hash 推断 Agent identity；无需框架标识；在线一阶转移矩阵 | survival-aware eviction、CPU offload、基于可预测度门控的后台 top-1 anchor warmup | cache hit +10-18 pp；mean TTFT -18%-45%；峰值吞吐 +19%-57% | **对原预测路线构成直接否定。** 已覆盖“无图、无接口、在线 Markov + eviction/prefetch”；其局限是一阶 workload-global 转移、偏静态 Agent anchor，未联合 task JCT/fairness、session dynamic suffix 和 execution admission。未发现公开代码。
 | [TOPAS](https://arxiv.org/abs/2608.25523), arXiv 2026-08 | 单 A100 80GB；SGLang 0.5.3；已知共同 DAG | post-decision resident-prefix set + admitted-request set | task DAG、Agent 映射、剩余 stage/service 估计、prefix movement cost | 小 Agent 池枚举；大池 greedy add/pair/drop/swap；联合 HBM residency、CPU/GPU movement、admission 和 aging | synthetic mean/p99 JCT 最高 -39.8%/-49.4%；MetaGPT mean -9.8%/-22% | **对 JointPlan 构成最直接竞争。** 已联合最长剩余路径、下游复用、movement、preemption 和公平性；缺口是所有 task 共用已知 DAG，未处理 opaque dynamic workflow、真实异步 PCIe contention/shared ownership。未发现公开代码。
@@ -100,6 +104,7 @@ Continuum 的跨工具 KV 生命周期** 三者交集中的剩余空间，不能
 | [AgentServe](https://arxiv.org/abs/2603.10342), arXiv 2026 | cold prefill、resume prefill、short decode | TPOT feedback 调整 resume-prefill budget 和 decode SM reservation；CUDA Green Context | 单消费级 GPU；3B-8B；3-6 concurrent agents | **单卡计算面强邻近。** 已覆盖 observation/resume-prefill admission 和 decode 隔离；不做 KV offload/prefetch。BeliefKV 应将其视为 compute-plane baseline，而非重复创新。
 | [AgentServeSim](https://arxiv.org/abs/2606.09613), arXiv 2026 v3 | Program Control Block、因果 successor release、Retention/Dispatch Plane | trace-driven discrete-event simulation；组合 TTL/pressure-aware retention 与 FCFS/PLAS dispatch | vLLM 0.19；B200/RTX PRO 6000 校准；SWE-bench/BFCL | **评测方法强邻近。** 实机 JCT 误差约 5.5%；压力案例中 TTL+FCFS 反而恶化 JCT，而 pressure-aware TTL+PLAS 才改善，说明 retention-only 不足。可用于 P8 搜索和反例生成，不能替代真实物理实验。
 | SAGA, HPDC 2026 | Agent Execution Graph、workflow-atomic unit | reuse-aware graph、session-affinity batching + work stealing、Agent Fair Share | 64-GPU cluster；SWE-bench/WebArena | 覆盖 workflow atomicity、KV continuity 和 completion-time fairness；集群方案，不直接解决单卡 PCIe/HBM，但 fairness 主张会与 BeliefKV 冲突。
+| [PackServe](https://arxiv.org/abs/2609.33224), 2026-09-27 预印本 | 集群 request packing、prefix locality、token SLO | 白盒模型估计 prefill/decode 干扰，在 SLO 内合并请求与实例 | 64 H20 GPU 评测及生产集群；目标是 GPU-hours | 近期强邻近系统；当前单卡无实例收缩动作，不列第一轮必跑方法。扩展到多副本或 SLO/成本主张时补入，不能用其单卡子策略冒充完整系统。
 | [HexAGenT](https://arxiv.org/abs/2605.16637), arXiv 2026 | online-revealed workflow DAG | standalone completion horizon、SLO miss risk；联合 prefill/decode placement 和 queue priority | 异构 A100/H100/H200 PD-disaggregated cluster | 覆盖在线 DAG、criticality 和 workflow SLO；BeliefKV 不能只以“在线展开 DAG + 关键路径调度”作为创新。
 | Kairos, arXiv 2025 | 在线分析出的 workflow 与 agent remaining latency | workflow-aware priority + memory-aware dispatcher | public-cloud shared LLM；4xA40 | 覆盖动态 workflow 历史学习、remaining-latency priority 和 memory-aware dispatch；不是 KV residency，且依赖多实例调度。
 | [Justitia](https://arxiv.org/abs/2510.17015), arXiv 2026 v2 | task-parallel Agent、memory-centric agent cost | 预测 fair completion order、virtual-time fair queue、selective pampering | shared GPU servers | **fairness 强基线。** 已覆盖 task-parallel Agent 的 completion fairness；BeliefKV 的 bounded-lag fairness 必须对比它或给出不适用边界。
@@ -122,6 +127,7 @@ Continuum 的跨工具 KV 生命周期** 三者交集中的剩余空间，不能
 | [EpiCache](https://arxiv.org/abs/2509.17396), ICML 2026 | block-wise prefill、episodic semantic compression、layer-wise budget | 单会话长上下文、lossy compression；不是并发 workflow 调度。
 | [IntentKV](https://arxiv.org/abs/2606.09916), arXiv 2026 | 跨轮 QueryMemory、intent-aware KV pruning | 对长 session history 做 token-level lossy reduction；与 exact object residency 正交，但可能削弱 BeliefKV 的 HBM pressure 机会，必须作为组合/敏感性实验。
 | [UltraQuant](https://arxiv.org/abs/2606.20474), arXiv 2026 v3 | context-heavy Agent 的 4-bit KV quantization | AMD CDNA4 上用 Claude Code trace replay 报告高于 BF16/FP8 的 qualified throughput；属于表示层和质量约束分支，可减少但不会消除调度压力。
+| [Lachesis](https://arxiv.org/abs/2610.08378), 2026-10-06 预印本 | 按 turn/subagent/worker 的状态生命周期在 HBM 与 high-bandwidth flash 间放置并释放 KV segment | 与 child 终态释放的动机相关，但核心约束是 HBF 写寿命，证据为 trace-driven simulation；当前 HBM/DRAM 实机不直接具备该介质和目标，列相关工作及条件扩展。
 | [ArborKV](https://arxiv.org/abs/2605.22106), ICML 2026 | Tree-of-Thought active branch/ancestor value、lazy rehydration | 可借鉴分支 survival/value，但目标是 tree reasoning，不是多 workflow 单卡 serving。
 | Preble, ICLR 2025 | 分布式 prompt-sharing scheduler，联合 cache reuse 与负载均衡 | 强 prefix-locality baseline；没有 Agent workflow 语义，主要是多副本分布式。
 | InfiniGen, OSDI 2024 | 基于 attention 的动态 KV prefetch/selection | 低层长上下文 KV 管理；可与 workflow policy 正交组合。
@@ -410,6 +416,7 @@ announce/最终报告行为、工具环境和任务 prompt 在各条件保持一
 | 第二批，论文主张中重要 | KVFlow | Agent Step Graph 距离驱逐、共享 prefix 和重叠 CPU-to-GPU 预取 | [论文](https://arxiv.org/abs/2507.07400)、[作者仓库](https://github.com/PanZaifeng/KVFlow)可得；仓库同时包含 ScaleSim，锁定对应策略；已知图组按原假设，动态观察图扩展另命名 |
 | 第二批，coding 主对照 | CacheWise | tool metadata 的 reuse 预测、prefix-aware 调度和 eviction | [论文](https://arxiv.org/abs/2606.16824)、[数据与预测代码](https://github.com/cachewise-project/cachewise-coding-traces)可得；未核实完整 serving artifact，移植策略时报告复现范围 |
 | 第二批，调度主对照 | Agentix，早期名 Autellix | program 累计服务/调用依赖驱动的优先级与抢占，降低 HOL blocking | [NSDI 2026 正式论文](https://www.usenix.org/conference/nsdi26/presentation/luo)、[早期稿](https://arxiv.org/abs/2502.13965)可得；以正式版本核对算法，本次未核实可运行作者仓库，不把普通优先级队列冒充 Agentix |
+| 第二批，联合设计主对照 | Pythia | 从 workflow profiling 合成执行模式，联合 speculative cache management 和 lookahead scheduling | [v2 论文](https://arxiv.org/abs/2604.25899v2)、[机制正文](https://arxiv.org/html/2604.25899v2)可得；本次未核实官方可运行 artifact。动态模式学习、prompt composition 和局部策略须保留；集群 autoscaling 另表，不把第三方 inspired-by 仓库视作作者代码 |
 | 第二批，预测主对照 | CacheScout | 在线 agent 转移学习、eviction 和主动 prefetch，无预定义图 | [论文](https://arxiv.org/abs/2608.14624)可得；本次未核实官方可运行代码，按论文重实现并保留 prefix-anchor 语义 |
 | 第二批，预测主对照 | PBKV | 历史和当前上下文联合预测未来多步 agent 调用，保守 eviction/prefetch | [论文](https://arxiv.org/abs/2605.06472)可得；本次未核实官方可运行代码，不用一阶转移表替代其预测器 |
 | 补充工具基线 | InferCept | interception 期间 Preserve/Swap/Discard 的成本选择 | [ICML 2024 正式论文](https://proceedings.mlr.press/v235/abhyankar24a.html)、[作者代码](https://github.com/WukLab/InferCept)可得；提取策略到统一底座，旧 vLLM 原生结果另表 |
@@ -448,6 +455,131 @@ LMCache、Mooncake、Parrot 和集群 PD-disaggregation 系统仍是基础设施
 或邻近工作候选；当前优先覆盖单卡 agent 工作集和迁移/准入决策。
 若后续扩展到多 GPU、远端 KV 或更换数据面，再独立增加相应原生系统
 对照，不能以单卡策略移植宣称已经验证其集群能力。
+
+<a id="baseline-scheduling-ablations"></a>
+
+### 6.6 本次请求：调度消融、必要外部对照与实施次序
+
+本节是 2026-10-21 联网调研后的待实施方案。本次只更新现有研究和关键
+状态文档，不安装竞品、不改生产路径、不改变 V109 的冻结代码和接续
+native。研究假设是“只调整请求顺序可能无法获得完整系统的 JCT/吞吐
+收益”，不是预先指定调度消融必须失败。
+
+#### 6.6.1 先完成能分辨因果来源的内部对照
+
+| 条件 | 请求调度 | KV 管理 | 主要检验 |
+|---|---|---|---|
+| Native | 原生顺序与准入 | 原生 prefix cache、HiCache、需求恢复和回收 | 无新增策略时的性能 |
+| JOIN-priority-only | 只对真正 JOIN 解锁且已提交的 parent 做有界优先；沿用相同老化及优先名额限制 | 同 Native | 简单 parent 优先是否已能解释收益，以及是否牺牲吞吐或公平性 |
+| OurScheduler-only | 保留当前可独立定义的 JOIN/tool-return、最终 child、workflow 排序、老化和只读 locality 规则 | 同 Native；关闭全部 BeliefKV 主动 KV 动作 | 完整请求调度本身能解释多少收益 |
+| KV-only | 原生请求顺序；仍检查真实执行容量和数据依赖 | BeliefKV 备份、卸载、预取及生命周期管理 | KV 机制在没有新增排序时的增量；作为补充因子消融 |
+| Full BeliefKV | 当前完整调度 | 当前完整 KV 管理 | 调度与 KV 协同是否超出单独机制 |
+
+“只保留调度”必须关闭 JOIN/tool 预测 H2D、后台及 spawn 增量
+PREPARE_HOST、工具预测卸载、关键 parent 容量预留/冷 donor 选择、
+语义化 child 终态释放、额外 HBM/Host 驻留租约、confirmed ticket
+恢复和需求 handoff。普通原生 session close、引用释放、需求 H2D/D2H
+和正确性依赖仍执行；不能关闭 HiCache 或删去必要 Mamba 恢复，制造
+一个没有正常缓存能力的对照。
+
+保持同一个可独立运行的 ranking 函数与配额。当前部分“恢复就绪优先”
+来自我们实际迁移的 ACK/租约；移除迁移后不能伪造 ACK 或租约来凑齐
+排序分支。只读 native HBM 命中/依赖就绪可保留，恢复派生的分支自然
+没有候选，并在开关清单中登记。`JOIN-priority-only` 不要求完整 HBM
+命中才获得优先级，数据依赖与需求恢复仍由原生处理；不能把它偷偷改成
+restore-ready-only 或无限 root 插队。
+
+现有 `reactive` arm 不是 `OurScheduler-only`：
+`scripts/run_qwen35_native_regime_probe.sh` 的非 off 分支仍可打开
+PREPARE_HOST、resident-first 和最终阶段优先。实现时增加明确的条件名、
+启动后真实配置核验和动作审计，不能仅关闭两个 prefetch 开关就声称
+已经移除 KV 管理。先用小型 CPU/短 workload 验证仅调度组确实没有
+自定义迁移动作，再安排完整比较；本次尚未实现这些开关。
+
+如果 `OurScheduler-only` 更快，应如实报告，重新限定 KV 管理的价值。
+如果 JCT 更短而吞吐下降，则同时报告其 trade-off、HBM miss/需求
+H2D、batch 填充与等待。不能通过人为等待 GPU、剥夺老化或刻意选择
+最差优先配额来获得用户预期结论，也不能把各组效果简单相加当作机制收益。
+
+#### 6.6.2 外部方法按要排除的解释安排
+
+| 问题 | 必要方法 | 适配重点 |
+|---|---|---|
+| 是否只是 program 调度有效 | Agentix/Autellix、ThunderAgent | 前者保留正式论文的优先级/抢占/老化；后者保留 program 工作集与 phase/elapsed-time 管理。两者不等于简单 parent 优先 |
+| 是否只是限制活跃 agent 减少 thrashing | CONCUR | 按原控制单元、cache 信号和更新规则实现；准入之外的等待从外部到达计入 JCT，不把 active-agent window 偷换成 max-running |
+| 是否只是工具期保留/卸载得当 | Continuum；InferCept 补充 | tool-specific TTL 与 Program-FCFS 联动；或 Preserve/Swap/Discard。完整保留估计器、成本项与超期行为 |
+| 是否已被 graph-aware KV 管理覆盖 | KVFlow、TokenCake | 对应 ASG/steps-to-execution，或时间/空间调度和 reserved/shared pool；保留真实可得图与重要度输入 |
+| 是否只是工具 metadata 或动态执行预测 | CacheWise、CacheScout、PBKV | 分别保留 coding-tool 预测、在线转移/anchor、多步 workflow 预测；不强制三者改用我们的预测器 |
+| 是否已被缓存与 lookahead 联合设计覆盖 | Pythia | 核实历史 profiling、角色和 prompt composition 接口；保留其模式合成和局部 cache/scheduling，单卡不比较 autoscaling |
+
+实施顺序：
+
+1. 先做 Native / JOIN-priority-only / OurScheduler-only / Full，补齐用户
+   要求的因果对照；KV-only 随独立开关完成后补入。不把这一步当成
+   外部论文方法已复现。
+2. 外部第一批优先 CONCUR、ThunderAgent、Continuum，分别覆盖反馈
+   准入、program 工作集、TTL+调度。Agentix 同时核对正式算法与代码，
+   是调度主张的重要对照，不能被简单 parent 优先替代。
+3. 接着完成 KVFlow 和 TokenCake；TokenCake 公开实现与补全预测上传
+   的论文重实现分开命名。若完整代码难以取得，不能把缺机制的公开版
+   作为唯一证据宣布战胜该论文。
+4. coding/动态预测主张需要补齐 CacheWise、CacheScout/PBKV；
+   联合 workflow/cache 主张需要补齐 Pythia。它们不是只列 related
+   work 就足够的条目，先完成机制和输入兼容性验证再进入主表。
+
+TOPAS 是 joint residency/admission 的重要条件对照，使用共同支持的
+已知 DAG 组；ScaleSim 只在 invocation distance 真实可得的场景上线，
+不提供未来完整轨迹冒充在线输入。SAGA 是 workflow JCT/fairness 的
+强集群对照，当前只能明确命名本地机制适配；多 GPU 时再比较完整系统。
+AugServe 和 Ask the Tool 分别适合工具主导/有真实进度的补充组。
+PackServe 的集群 packing、Lachesis 的 HBF 写寿命，以及近似
+KV pruning/quantization 不进入当前单卡 exact-KV 第一轮主表；
+后续相应扩展时再纳入，不能将“当前不直接适配”表述成这些方案无效。
+
+#### 6.6.3 对齐当前条件并分开完整系统收益与 KV 因果收益
+
+- 以启动时最新冻结配置为准。当前约定为 36 个同时到达 LoCoBench
+  root、256K/95%、running/decode 有效上限 12、Host 200GB 80:20、
+  工具上限 180s，服务端和请求种子均为 21。比较真实 FULL/Mamba
+  allocator 容量，不能只比较配置百分比。
+- 所有方法使用同一 model、prompt、harness、工具限制、初始任务、
+  外部到达和观测等级；内部分配、活跃 agent 数、TTL 和 eviction
+  可以按其算法变化，并给予相同的开发调参预算。动态轨迹和生成工作量
+  仍须报告，固定种子不等于请求轨迹完全相同。
+- 仅调度消融与 Full 对齐前端 token cache 等非核心优化。当前完整
+  predictive/native 可以分别启用/关闭前端 cache，但这个差异不能
+  计为 KV 创新；保留 untouched native，并另设非核心工程一致的 native
+  作为机制对照，避免用不对齐的前端成本解释 KV 因果收益。
+- 统一 SGLang 数据面只共享物理正确性接口，各方法独立决策。结果叫
+  `method-adapted-sglang`；作者原栈单列，并配它自己的 native。
+  本次未核实公开 artifact 不等于证明作者没有代码。未来适配时再锁定
+  论文版本、仓库 commit、缺项、算法到代码映射和模型兼容性。
+- 先验证混合状态语义。无法保持 Qwen3.5 FULL+Mamba 正确性的原栈，
+  在共同支持的纯 Attention 模型上另做双方对比，不删除必要状态，
+  也不把模型不同的两次绝对性能相除。
+- 主报所有外部到达 workflow 的 JCT、完成/未完成情况、公平性；
+  同时按预冻结规则剔除工具长尾后的繁忙吞吐，保留完整长尾结果。
+  诊断记录实际输入/输出量、KV miss/重算、需求与提前 H2D、
+  ACK→首次消费及同步控制成本，不用传输 GB 或 ACK 数替代净性能。
+
+本次新增/重新核验的一手入口：
+
+- [SGLang HiCache 设计与原生写回/重叠传输](https://docs.sglang.io/docs/advanced_features/hicache_design)。
+- [Agentix NSDI 2026](https://www.usenix.org/conference/nsdi26/presentation/luo)；
+  [CONCUR](https://arxiv.org/abs/2601.22705)；
+  [ThunderAgent 作者代码](https://github.com/ThunderAgent-org/ThunderAgent)。
+- [Continuum v7](https://arxiv.org/abs/2511.02230v7) 与
+  [预览版 README](https://github.com/Hanchenli/vllm-continuum)；
+  [TokenCake README 的实现边界](https://github.com/pku-lemonade/TokenCake)；
+  [KVFlow/ScaleSim 作者代码](https://github.com/PanZaifeng/KVFlow)。
+- [Pythia v2 正文](https://arxiv.org/html/2604.25899v2)；
+  [CacheWise](https://arxiv.org/abs/2606.16824) 与
+  [数据/工具时长预测代码](https://github.com/cachewise-project/cachewise-coding-traces)；
+  [CacheScout](https://arxiv.org/abs/2608.14624)；
+  [PBKV](https://arxiv.org/abs/2605.06472)。
+- [PackServe](https://arxiv.org/abs/2609.33224)；
+  [Lachesis](https://arxiv.org/abs/2610.08378)。这两项本次只登记场景边界，
+  不以它们的论文结果证明当前单卡收益或可复现性。
 
 ## 7. 指标映射
 

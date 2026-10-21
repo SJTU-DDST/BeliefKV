@@ -9,6 +9,12 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 删除，详见[整理记录](archive/research_exploration_20261020.md)；原始 trace、
 冻结检出及当前 GPU 预约约束保持有效。
 
+后续 baseline 按[总表第 6.6 节](related_work_comparison_2026-07-21_zh.md#baseline-scheduling-ablations)
+实施。JOIN-priority-only 与 OurScheduler-only 保留原生缓存/需求恢复，
+关闭自定义迁移、PREPARE、容量及驻留管理；不能用现有 reactive arm
+冒充。公平对齐非核心前端工程、实际容量、seed21 和 batch12，记录真实
+轨迹及去长尾口径，不预设调度组必须输。当前仅更新方案，不修改 V109。
+
 **最新 main CPU 资格 V2554，不修改正在运行的 V109 两侧。**
 工具在线预测改用当前调用及匹配命令的 workflow/run 历史版本；
 无关完成不再让等待工具绕过原重试间隔，相关/删失样本、历史淘汰重建、

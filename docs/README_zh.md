@@ -7,6 +7,11 @@
 重复摘要已清理；源码归档及保留范围见[整理记录](archive/research_exploration_20261020.md)。
 下文的最新工程状态与实验约束继续有效。
 
+后续 baseline 清单、公开代码边界和仅调度消融见
+[相关工作总表第 6.5-6.6 节](related_work_comparison_2026-07-21_zh.md#baseline-scheduling-ablations)。
+新增 JOIN-priority-only / OurScheduler-only / KV-only / Full 的待实施矩阵，
+以及 Pythia 等候选；本次只完成调研方案，不代表适配或 GPU 对比已完成。
+
 **最新 main CPU 资格
 [V2554](../experiments/reports/v2554_online_tool_dependency_qualified_cpu_sources_20261021.json)：**
 2906项应用实际重跑，保留原2893项并新增13项；未改引擎405项核对后沿用。
