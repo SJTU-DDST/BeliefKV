@@ -14,8 +14,12 @@ class _Sample:
     counts: Counter
     layers: dict = field(default_factory=dict)
 
-    def wait(self, loading_event, layer: int, consumer: int, *, state: bool = False) -> None:
-        if layer in self.layers or self.device.is_current_stream_capturing():
+    def wait(
+        self, loading_event, layer: int, consumer: int, *,
+        state: bool = False, record_layer: int | None = None,
+    ) -> None:
+        key = layer if record_layer is None else record_layer
+        if key in self.layers or self.device.is_current_stream_capturing():
             self.counts["duplicate_or_captured_wait"] += 1
             if state:
                 self.device.current_stream().wait_event(loading_event)
@@ -33,14 +37,20 @@ class _Sample:
         else:
             loading_event.wait(layer)
         finish.record(stream=stream)
-        self.layers[layer] = (
+        self.layers[key] = (
             consumer, start, finish, cpu_start, time.monotonic(),
             thread_start, time.thread_time_ns(),
         )
 
     def wait_state(self, event, last_layer: int, consumer: int) -> None:
         self.metadata["pre_forward_state_last_layer"] = last_layer
+        self.metadata["pre_forward_state_wait_kind"] = "dedicated_event"
         self.wait(event, -1, consumer, state=True)
+
+    def wait_state_layer(self, loading_event, last_layer: int, consumer: int) -> None:
+        self.metadata["pre_forward_state_last_layer"] = last_layer
+        self.metadata["pre_forward_state_wait_kind"] = "layer_fallback"
+        self.wait(loading_event, last_layer, consumer, record_layer=-1)
 
 
 class RestoreWaitProbe:

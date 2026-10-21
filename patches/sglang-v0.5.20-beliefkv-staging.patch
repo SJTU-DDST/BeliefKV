@@ -706,7 +706,7 @@ index e66cee0..5c8c9d5 100644
      checkpoint_counts = extend_seq_lens // checkpoint_every_n_tokens
      checkpoint_cu_starts = torch.zeros(checkpoint_counts.numel() + 1, dtype=torch.int64)
 diff --git a/python/sglang/srt/managers/cache_controller.py b/python/sglang/srt/managers/cache_controller.py
-index b9a134e..e2dfbc3 100644
+index b9a134e..92ae767 100644
 --- a/python/sglang/srt/managers/cache_controller.py
 +++ b/python/sglang/srt/managers/cache_controller.py
 @@ -56,6 +56,7 @@ class LayerLoadingEvent:
@@ -725,7 +725,7 @@ index b9a134e..e2dfbc3 100644
  
      def update_producer(self):
          self.producer_index = (self.producer_index + 1) % self.num_counters
-@@ -91,11 +93,29 @@ class LayerDoneCounter:
+@@ -91,11 +93,35 @@ class LayerDoneCounter:
      def wait_until(self, threshold: int):
          if self.consumer_index < 0:
              return
@@ -741,7 +741,13 @@ index b9a134e..e2dfbc3 100644
 +            return
 +        state = getattr(self.events[self.consumer_index], "state_ready_event", None)
 +        if state is None:
-+            self.wait_until(threshold)
++            probe = self.beliefkv_wait_probe
++            if probe is not None and callable(getattr(probe, "wait_state_layer", None)):
++                probe.wait_state_layer(
++                    self.events[self.consumer_index], threshold, self.consumer_index
++                )
++            else:
++                self.wait_until(threshold)
 +        elif self.beliefkv_wait_probe is not None and callable(
 +            getattr(self.beliefkv_wait_probe, "wait_state", None)
 +        ):
@@ -756,7 +762,7 @@ index b9a134e..e2dfbc3 100644
  
  
  class CacheOperation:
-@@ -108,12 +128,15 @@ class CacheOperation:
+@@ -108,12 +134,15 @@ class CacheOperation:
          node_id: int,
          priority: Optional[int] = None,
          pool_transfers: Optional[List[PoolTransfer]] = None,
@@ -772,7 +778,7 @@ index b9a134e..e2dfbc3 100644
  
          self.id = CacheOperation.counter
          CacheOperation.counter += 1
-@@ -168,12 +191,22 @@ class CacheOperation:
+@@ -168,12 +197,22 @@ class CacheOperation:
              pool_transfers=CacheOperation._merge_pool_transfers(ops),
          )
          merged_op.node_ids = node_ids
@@ -795,7 +801,7 @@ index b9a134e..e2dfbc3 100644
  class HiCacheAck(NamedTuple):
      start_event: device_module.Event
      finish_event: device_module.Event
-@@ -185,6 +218,13 @@ class HiCacheAck(NamedTuple):
+@@ -185,6 +224,13 @@ class HiCacheAck(NamedTuple):
      # Total bytes moved by the op across all pools, including draft piggyback
      # and sidecar transfers that the per-pool token counts exclude.
      num_bytes: int = 0
@@ -809,7 +815,7 @@ index b9a134e..e2dfbc3 100644
  
  
  @dataclass
-@@ -749,6 +789,7 @@ class HiCacheController:
+@@ -749,6 +795,7 @@ class HiCacheController:
          )
  
      def reset(self):
@@ -817,7 +823,7 @@ index b9a134e..e2dfbc3 100644
          self.storage_stop_event.set()
  
          self.write_queue.clear()
-@@ -795,6 +836,7 @@ class HiCacheController:
+@@ -795,6 +842,7 @@ class HiCacheController:
          device_indices: torch.Tensor,
          priority: Optional[int] = None,
          node_id: int = -1,
@@ -825,7 +831,7 @@ index b9a134e..e2dfbc3 100644
      ) -> Optional[torch.Tensor]:
          """
          Back up KV caches from device memory to host memory.
-@@ -802,12 +844,33 @@ class HiCacheController:
+@@ -802,12 +850,33 @@ class HiCacheController:
          host_indices = self.mem_pool_host.alloc(len(device_indices))
          if host_indices is None:
              return None
@@ -861,7 +867,7 @@ index b9a134e..e2dfbc3 100644
      def start_writing(self) -> None:
          if len(self.write_queue) == 0:
              return
-@@ -816,6 +879,11 @@ class HiCacheController:
+@@ -816,6 +885,11 @@ class HiCacheController:
          host_indices, device_indices, pool_transfers = self._move_write_operation(op)
          self.write_queue.clear()
  
@@ -873,7 +879,7 @@ index b9a134e..e2dfbc3 100644
          completion = self.l2_transfer_engine.submit_device_to_host(
              self._l2_transfers(host_indices, device_indices, pool_transfers)
          )
-@@ -829,6 +897,16 @@ class HiCacheController:
+@@ -829,6 +903,16 @@ class HiCacheController:
                  timing_enabled=completion.timing_enabled,
                  num_tokens_by_pool=self._num_tokens_by_pool(op),
                  num_bytes=self._transfer_num_bytes(op),
@@ -890,7 +896,7 @@ index b9a134e..e2dfbc3 100644
              )
          )
  
-@@ -843,6 +921,7 @@ class HiCacheController:
+@@ -843,6 +927,7 @@ class HiCacheController:
          host_indices: torch.Tensor,
          priority: Optional[int] = None,
          node_id: int = -1,
@@ -898,7 +904,7 @@ index b9a134e..e2dfbc3 100644
      ) -> Optional[torch.Tensor]:
          """
          Load KV caches from host memory to device memory.
-@@ -850,9 +929,14 @@ class HiCacheController:
+@@ -850,9 +935,14 @@ class HiCacheController:
          device_indices = self.mem_pool_device_allocator.alloc(len(host_indices))
          if device_indices is None:
              return None
@@ -915,7 +921,7 @@ index b9a134e..e2dfbc3 100644
          return device_indices
  
      def move_indices(
-@@ -938,7 +1022,25 @@ class HiCacheController:
+@@ -938,7 +1028,25 @@ class HiCacheController:
      ) -> list[L2Transfer]:
          return self._l2_transfers(host_indices, device_indices, pool_transfers)
  
@@ -942,7 +948,7 @@ index b9a134e..e2dfbc3 100644
          if len(self.load_queue) == 0:
              return -1
  
-@@ -947,6 +1049,7 @@ class HiCacheController:
+@@ -947,6 +1055,7 @@ class HiCacheController:
          host_indices, device_indices, pool_transfers = self._move_op_indices(op)
          self.load_queue.clear()
          producer_event = self.layer_done_counter.events[producer_id]
@@ -950,7 +956,7 @@ index b9a134e..e2dfbc3 100644
          producer_event.start_event.record()
  
          if self.load_fence_stream is not None:
-@@ -957,8 +1060,80 @@ class HiCacheController:
+@@ -957,8 +1066,80 @@ class HiCacheController:
                  self.load_fence_stream
              )
  
@@ -1032,7 +1038,7 @@ index b9a134e..e2dfbc3 100644
              start_event=producer_event.start_event,
              on_layer_done=producer_event.complete,
              layer_num=self.layer_num,
-@@ -973,6 +1148,16 @@ class HiCacheController:
+@@ -973,6 +1154,16 @@ class HiCacheController:
                  timing_enabled=completion.timing_enabled,
                  num_tokens_by_pool=self._num_tokens_by_pool(op),
                  num_bytes=self._transfer_num_bytes(op),
@@ -9347,10 +9353,10 @@ index 0000000..44d2402
 +    assert component._session_leaves["s"] == {old, latest}
 diff --git a/test/srt/test_beliefkv_layer_wait_probe.py b/test/srt/test_beliefkv_layer_wait_probe.py
 new file mode 100644
-index 0000000..ac4cef6
+index 0000000..1dff3d4
 --- /dev/null
 +++ b/test/srt/test_beliefkv_layer_wait_probe.py
-@@ -0,0 +1,65 @@
+@@ -0,0 +1,110 @@
 +"""The optional probe must preserve native load wait semantics."""
 +
 +import ast
@@ -9416,6 +9422,51 @@ index 0000000..ac4cef6
 +    counter.wait_until_state(38)
 +    assert captured == [(state, 38, 0)]
 +    assert waits == [38, state]
++
++
++def test_state_layer_probe_preserves_threshold_and_later_model_layer_wait():
++    counter = counter_class()(40)
++    calls = []
++    event = counter.events[0]
++    event.wait = lambda layer: calls.append(("native", layer))
++
++    def measured_state(loading_event, layer, consumer):
++        assert loading_event is event
++        calls.append(("state", layer, consumer))
++        loading_event.wait(layer)
++
++    def measured_layer(loading_event, layer, consumer):
++        assert loading_event is event
++        calls.append(("layer", layer, consumer))
++        loading_event.wait(layer)
++
++    counter.beliefkv_wait_probe = SimpleNamespace(
++        wait_state_layer=measured_state, wait=measured_layer,
++    )
++    counter.wait_until_state(38)
++    assert calls == []
++    counter.set_consumer(0)
++    counter.wait_until_state(38)
++    counter.wait_until(38)
++    assert calls == [
++        ("state", 38, 0), ("native", 38),
++        ("layer", 38, 0), ("native", 38),
++    ]
++
++
++def test_state_layer_probe_remains_compatible_with_legacy_layer_only_probe():
++    counter = counter_class()(40)
++    calls = []
++    counter.events[0].wait = lambda layer: calls.append(("native", layer))
++
++    def measured(event, layer, consumer):
++        calls.append(("layer", layer, consumer))
++        event.wait(layer)
++
++    counter.set_consumer(0)
++    counter.beliefkv_wait_probe = SimpleNamespace(wait=measured)
++    counter.wait_until_state(38)
++    assert calls == [("layer", 38, 0), ("native", 38)]
 diff --git a/test/srt/test_beliefkv_lifecycle.py b/test/srt/test_beliefkv_lifecycle.py
 new file mode 100644
 index 0000000..1db16d8

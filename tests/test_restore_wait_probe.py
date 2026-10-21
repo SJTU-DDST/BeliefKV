@@ -156,3 +156,49 @@ def test_state_wait_honors_capture_without_extra_timing_events():
     device.capturing = True
     sample.wait_state(object(), 38, 0)
     assert device.clock == 3. and device.event_count == 0
+
+
+def test_legacy_state_wait_is_distinct_from_later_wait_at_the_same_layer():
+    device = Device()
+    probe = RestoreWaitProbe(every=1)
+    sample = probe.begin(batch(), device)
+    waits = []
+    durations = iter((7., 1.5))
+
+    def wait(layer):
+        waits.append(layer)
+        device.clock += next(durations)
+
+    loading_event = NS(wait=wait)
+    sample.wait_state_layer(loading_event, 38, 0)
+    sample.wait(loading_event, 38, 0)
+    assert waits == [38, 38]
+    assert device.event_count == 4
+    assert probe.poll() == []
+    device.ready = True
+    row, = probe.poll()
+    assert row["gpu_pre_forward_state_dependency_wait_ms"] == 7.
+    assert row["gpu_layer_dependency_wait_ms"] == 8.5
+    assert row["pre_forward_state_last_layer"] == 38
+    assert row["pre_forward_state_wait_kind"] == "layer_fallback"
+    assert [(item["layer"], item["dependency_kind"]) for item in row["layers"]] == [
+        (-1, "pre_forward_state"), (38, "layer"),
+    ]
+
+
+def test_legacy_state_wait_capture_and_duplicate_keep_the_native_threshold():
+    device = Device()
+    probe = RestoreWaitProbe(every=1)
+    sample = probe.begin(batch(), device)
+    device.capturing = True
+    sample.wait_state_layer(device, 38, 0)
+    assert device.clock == 39. and device.event_count == 0
+    device.capturing = False
+    sample.wait_state_layer(device, 38, 0)
+    sample.wait_state_layer(device, 38, 0)
+    assert device.clock == 117. and device.event_count == 2
+    device.ready = True
+    row, = probe.poll()
+    assert row["gpu_pre_forward_state_dependency_wait_ms"] == 39.
+    assert row["layers"][0]["layer"] == -1
+    assert probe.snapshot()["counts"]["duplicate_or_captured_wait"] == 2

@@ -160,6 +160,63 @@ fixture 不做真实 DMA，也不证明物理 Full 行为与 JOIN-only 相同。
 CPU 正确性通过不证明有 GPU 性能提升；当前也没有证据证明这些差异
 已经足以构成 OSDI/EuroSys 的独立贡献。
 
+## 7. 工具调用究竟与 Agentix 有什么区别
+
+不能将 Agentix 的 program 描述为静态计算图，也不能说它没有考虑工具。
+其 process table 和执行流显式覆盖外部中断；§4.2 的 PLAS/ATLAS 则主要
+根据已获得的 LLM 服务设置优先级。工具等待不是该服务量本身。
+这是“已经支持工具”和“进一步用当前外部等待改变资源决策”的区别。
+
+例如一个 JOIN 仍有两条必需分支：A 已进入外部等待，B 正等待 LLM；
+另一 workflow C 只剩一个已就绪调用。若能够保守确认 A 的等待足以
+覆盖 B 的让步，可以先服务 C，而不推迟该 JOIN。但是“分支在等工具”
+本身不提供这个保证；外部工具可能马上返回。必须使用线上已观察到的
+持续时间或经校准的条件分布，不能拿 trace 的未来结束时间当决策输入。
+本项目现有后继提交人口中，这类并行工具阻塞样本很少，尚不适合设为
+默认机制。其调度价值也并非由“多 agent”这个名称自动产生。
+
+另一个更贴近当前负载的候选是：两个 continuation 在同一程序服务档，
+一个可以直接执行，另一个必须腾出容量、恢复必要状态。原优先级的顺序
+可能与实际完成时间的顺序不同。但始终选择热请求会使大状态程序饥饿，
+并且缺少剩余生成长度时无法证明热请求更早完成。因此只在同档、
+相近等待预算中比较已知的暴露恢复成本，未知代价保留原次序。
+这也是待验收候选，不是 Agentix 在所有场景下的缺陷证明。
+
+## 8. 进一步搜索后的筛选和实施边界
+
+FastServe 的 NSDI 2026 论文已用多级反馈队列和分布式 KV 管理减少
+交互生成延迟；不能把 MLFQ 或抢占本身再包装成新设计。
+AgentInfer 官方公开设计也结合有界排队老化、当前计算阶段、HBM 压力
+与短工具等待的状态保留。它是实现级近邻，不能用其功能描述替代独立的
+性能证据，但足以提醒我们：“工具感知 + 压力阈值”不是可靠的新颖性主张。
+TokenCake/ThunderAgent 继续是时间、容量和 program 工作集方面的
+直接近邻，需要相同信息和同底座对照。
+
+当前择优顺序：
+
+1. 保留已验证过的简单 JOIN 优先作为默认主排序。按实际阻塞依赖识别
+   最后 child，不用 foreground/background 标签猜测关键性。已经修正
+   `workflow_completion` 候选的依赖展开；该候选仍不等同剩余工作预测。
+2. 先建立 root 共享的真实模型服务账户，再实现 Agentix 风格的离散
+   服务档和有界老化，防止每次新 child/新请求重新领取短任务优待。
+   已完成的 `program_service.py` 只验证继承语义，没有连接执行器，
+   不能登记为完整 Agentix baseline。实际接线时必须说明 batch 内服务
+   归属规则，不能用输出 token 或带排队的请求墙钟冒充模型服务。
+3. 在相同程序调度上单独增加当前有效 checkpoint、必要恢复依赖和容量
+   协调，再比较 JCT、忙时吞吐、重复 H2D、重算和额外 CPU 工作。
+   恢复便宜的偏好不得跨档覆盖公平性，也不得重新引入逐 decode 步
+   全图扫描和长前缀匹配。
+4. 工具阶段 slack 与学习调度保留为条件分支。先证明机会规模和分布
+   稳定，再承担预测、训练及在线控制成本。纯离线排序不能重放生成
+   轨迹和容量变化，不能被当作真实 JCT 提升。
+
+审计恢复证据时还确认一个测量缺陷：旧 native 的 Mamba 前置等待使用
+普通 layer fence，采样器将它记作最后状态层；新专用状态事件则记作
+`pre_forward_state`。旧的总等待采样已经包括该等待，不能声称旧 trace
+完全漏记 Mamba 等待。现已对齐两个路径的分类，见
+`docs/experiments/restore_wait_attribution_20261022_zh.md`。
+修正不改变实际 barrier、传输顺序或调度优先级，也不产生 JCT 收益结论。
+
 ## 原始来源
 
 - Agentix，NSDI 2026，§2、§4.2，Algorithm 1：
@@ -187,3 +244,7 @@ CPU 正确性通过不证明有 GPU 性能提升；当前也没有证据证明�
   https://arxiv.org/html/2510.18586v5
 - ThunderAgent，作者公开稿：
   https://arxiv.org/html/2602.13692v1
+- FastServe，NSDI 2026；早期公开稿始于 2023：
+  https://www.usenix.org/conference/nsdi26/presentation/wu-bingyang
+- AgentInfer 官方调度设计，2026-08-12 修订版说明：
+  https://github.com/openJiuwen-ai/agent-infer/blob/main/design/module/scheduling/progress-ttl-scheduling.md
