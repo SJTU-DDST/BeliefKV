@@ -27,24 +27,41 @@ Docker skip;preserve it as a scope diagnostic,not final qualification.
 Do not hot-load this small candidate into the four frozen V111 controls.
 The engine is unchanged;do not claim its405 checks were rerun.
 
-Latest execution: V111 starts JOIN-priority-only at2026-10-21 17:56:44 Beijing,
-frozen applicatione0420fe and unchanged engine53335e6. At17:59 actual
-running12/seed21/context262144,frontend cache and independent runtime controls
-pass checks. Custom KV/PREPARE/prefetch/handoff/locality are off;quota4 allows
-a bounded promoted turn after aged heads. Unused tool-prediction/maintenance
-and custom physical-action counts are0. Client manifest exists;exact watcher
-3757643/driver3757990 identities are alive. State:
+Latest execution: V111 JOIN-priority-only completes36/36 in2801.85s.
+It records43 bounded JOIN-priority admissions,32 aged-head bypass orderings,
+and zero unused tool prediction,maintenance or custom physical actions.
+There are73 delegation/JOIN rounds and128 dynamic children;no nesting is
+observed. HTML,audits and workspace cleanup complete normally.
+V2595 uses the three-arm common trimmed600-2520.937s workload window:
+Full/JOIN-only/original-native decode580.52/592.37/562.09 tok/s,
+restricted mean JCT1830.28/1704.12/2055.63s. JOIN-only beats reused Full
+by2.04% decode,6.89% restricted mean JCT and9.55% whole-run mean JCT.
+Full still moves fewer physical bytes,but has not beaten simple JOIN priority.
+Preserve code,frontend,output and trajectory differences;the original native
+also has3 native-agent-JCT exclusions explicitly retained in the report.
+Do not claim a causal KV gain or universal negative KV effect from this run.
+
+OurScheduler-only starts at2026-10-21 18:46:58 Beijing;exact watcher3757643
+and driver3924731 identities are alive. Actual running12/seed21/context262144
+and scheduling-only controls are checked. All four controls retain frozen
+applicatione0420fe/engine53335e6;Full remains V109ed06f53.
+Continue KV-only then engineering-matched Native without a Full rerun or
+standalone new experiment. State:
 `../ops/v111_internal_20261021.registration.state.json`.
-Run the four controls sequentially,reuse V109 Full,and keep performance
-acceptance pending until completed comparisons.
-At18:16 exact watcher/driver identities remain alive;33 JOIN priority admissions,
-31 aged-head bypass orderings and5 workflow result files are observed.
-Unused tool-prediction/maintenance and custom physical-action counts remain0.
-At18:13 independently sealed workflow prefixes show36 delegated roots,5 roots
-with multiple rounds and81 dynamic children;no nesting is observed yet.
-These are growing prefixes,not completed performance or workload qualification.
-V2585's zero prefetch-wait-plan observations in a scheduling-only arm do not
-mean no actual JOINs or no native demand H2D.
+Keep the goal active and performance acceptance pending.
+
+New offline JOIN reentry auditing uses actual wait/satisfaction and the
+unique next parent submit,without prefetch-plan records. Keep pending events,
+terminal/new-wait barriers and complete service identities;never subtract or
+sum timestamps across client/server clocks. V2592's600-1200s cohort,relative
+to first workflow arrival,has12/16/16 served Full/JOIN-only/native events.
+Queue-to-service P50 is608.90/331.70/12340.70ms,client-ready-to-submit about
+61-63ms. Different event cohorts are descriptive,not causal event pairs.
+Hybrid logical Host-hit spans can include resident FULL with Host copies;
+never convert them into physical missing FULL or DMA bytes. Engine matching
+is reproduced on CPU without modifying the engine.
+V2593 retains all3080 V2586 identities and adds30:3110 pass,no skips,plus2
+subtests. V2594 binds current sources. Do not hot-load these offline changes.
 
 Previous debugging segment: V110 JOIN-priority-only was deliberately stopped at17:33
 Beijing for a control-policy correction. Both exact driver/watcher identities
@@ -70,6 +87,12 @@ throughput improves2.65%. Historical batch8 shows11.00% throughput,11.16%
 full-run mean-JCT and9.77% trimmed restricted mean-JCT gains,but differs in code,server seeds,contexts
 and dynamic work. It is not a controlled batch comparison. Match all four
 controls to batch12 Full rather than mixing batches or repeating Full.
+Latest user steering: finish this batch12 internal matrix first. If Full's
+advantage remains unclear,default all subsequent experiments to batch8 and
+retain server/request seed21. Do not change the active arms. Future batch8
+controls need batch8 Full/native references;the current runner's batch12
+registration and effective-config checks must be deliberately updated and
+qualified before such a switch,not bypassed.
 
 The user's latest execution order is: finish the frozen V109 pair, then run
 internal controls before any external baseline adaptation or standalone new

@@ -1067,6 +1067,8 @@ def wait_plan_gap_summary(rows: list[dict]) -> dict:
             "and must not be summed. Zero or missing plans do not prove zero physical "
             "demand. Residual bytes are next-request native FULL Host hits, not a proven "
             "pre-boundary opportunity, exclusive rejection cause or oracle speedup. "
+            "Hybrid Host-hit spans may include resident FULL pages with Host copies "
+            "and must not be converted into physical DMA bytes. "
             "Burst categories partition waits by the largest explicitly observed plan, "
             "not lifetime node commands. A sixteen-node plan is not proof of truncation "
             "or that a larger early transfer would fit capacity or the service window."

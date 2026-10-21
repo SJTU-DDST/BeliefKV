@@ -768,6 +768,7 @@ def busy_window_statistics(
             "LLM output lengths separately belong to the request completion window.",
             "Worker intervals are scheduler/worker wall intervals, not CUDA kernel durations.",
             "Input/cache token counts belong to submission, not the actual GPU-service window.",
+            "Logical Host-hit prefix tokens can include resident FULL pages with Host copies in hybrid caches; multiplying them by bytes per token does not measure physical H2D.",
             "Transfer payloads and measured batch durations belong to the physical submission window.",
             "Only completed transfer receipts are included; live pending batches are not credited.",
             "Physical batch durations are counted once, even when payload sources share a batch.",

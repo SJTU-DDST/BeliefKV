@@ -18,17 +18,26 @@
 [V2587](../experiments/reports/v2587_identity_storage_cpu_sources_20261021.json)
 绑定源码。这不是 GPU/JCT 收益，不热加载进 V111 的四组冻结实验。
 
-**最新：V111 已于北京时间 2026-10-21 17:56 启动 JOIN-priority-only。**
-冻结 `e0420fe`，引擎仍为 `53335e6`；17:59 核实服务端实际
-running12/seed21/256K、前端 cache 开启，主动 KV/PREPARE/预取/
-handoff/locality 关闭；普通配额为 4，满配额允许越过 aged 队首。
-无用工具预测和预测维护计数均为 0，客户端 manifest 已生成，
-watcher/driver 真实身份存活。状态为仓库外
+**最新：V111 JOIN-priority-only 已完成 36/36，OurScheduler-only 正在运行。**
+首组持续 2801.85 秒，最终 43 次 JOIN 优先准入，自定义物理动作、
+无用工具预测及预测维护均为 0；73 轮动态委派、128 个 child，未观测嵌套。
+[V2595 完整比较](../experiments/reports/v2595_v111_join_only_completed_comparison_20261021.json)
+使用三组共同去长尾窗口 600–2520.937 秒：Full / JOIN-only / 原始 native
+的 decode 吞吐为 580.52/592.37/562.09 token/s，共同截止受限平均
+JCT 为 1830.28/1704.12/2055.63 秒。JOIN-only 相对 Full 分别为
+吞吐 +2.04%、受限平均 JCT -6.89%；全程平均 JCT 1714.44/1895.55 秒
+（-9.55%）。Full 暂未胜过简单 JOIN 优先，不预设 KV 管理已经取得增量。
+版本、动态工作量和前端存在差异，不能据此宣称 KV 管理必然负收益。
+
+第二组于北京时间 2026-10-21 18:46:58 接续，仍冻结应用 `e0420fe`、
+引擎 `53335e6`、running12/seed21/256K。随后自动执行 KV-only、工程对齐
+native；Full 继续复用 V109，不重跑。状态为仓库外
 `../ops/v111_internal_20261021.registration.state.json`。
-四组依次接续，Full 复用 V109；暂无完成的消融性能结论。
-18:16 核实仍在首组，已记录 33 次 JOIN 优先准入、31 次越过 aged
-队首排序，5 个 workflow 已有结果；无用工具预测、预测维护和自定义
-物理动作仍为 0。完成结果不能从这个运行前缀推断。
+[V2592 独立 JOIN 审计](../experiments/reports/v2592_join_reentry_service_final_busy_20261021.json)
+不依赖预取计划；600–1200 秒实际 JOIN 入队至首次服务 P50 为
+Full 608.90ms、JOIN-only 331.70ms、native 12340.70ms，不能把全部收益
+归于预取。新审计及 Host-hit 口径修正通过 V2593 全部 3110 项 CPU 检查、
+无跳过，V2594 绑定当前源码；不热加载进 V111。
 
 **V110 首组于北京时间 17:33 因 JOIN-only 消融策略修正而停止。**
 旧 aged 队首会压掉已满四次普通准入配额的 JOIN 提升；现在改为配额内
@@ -47,6 +56,10 @@ JCT 约降低 20.52%，共同去长尾受限平均 JCT 约降低 13.44%、吞吐
 （共同去长尾受限平均约降低 9.77%），但代码、服务端 seed 和轨迹不同，
 不能当作 batch8 优于 batch12 的受控证据。四组与 V109 Full 保持 batch12，
 不混用 batch，不为本次矩阵重跑 Full。
+用户最新约定：先完成当前 batch12 内部矩阵；若完整系统优势仍不明显，
+后续实验默认 batch8，服务端和请求 seed21 保持。当前四组不改 batch；
+后续 batch8 的消融与 Full/native 必须使用相同 batch，不能拿 batch12
+Full 当 batch8 的因果对照。
 
 后续 baseline 清单、公开代码边界和仅调度消融见
 [相关工作总表第 6.5-6.6 节](related_work_comparison_2026-07-21_zh.md#baseline-scheduling-ablations)。

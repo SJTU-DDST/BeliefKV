@@ -29,21 +29,54 @@ V2583 按整个模块运行时额外收集并跳过一个原资格外 Docker 检
 保留为范围诊断，不代替最终无跳过资格。引擎未改，不称重跑 405 项
 原生资格。四组 V111 继续冻结 `e0420fe`/V2579，不改变版本或配置。
 
-**最新：V111 于北京时间 2026-10-21 17:56:44 启动首组 JOIN-priority-only。**
-应用冻结 `e0420fe`、引擎 `53335e6`；Full 仍复用 `ed06f53` 的 V109。
-17:59 核实实际 running12/seed21/context262144、前端 cache 开启，
-主动 KV/PREPARE/JOIN-tool 预取/handoff/locality 关闭，配额 4 及
-满配额允许 aged 队首后的提升生效。无用工具预测、预测维护和自定义
-物理动作计数均为 0，客户端 manifest 已生成；watcher 3757643、
-driver 3757990 的启动身份均核实存活。状态：
-`../ops/v111_internal_20261021.registration.state.json`。
-四组按既定顺序接续，尚无完成的消融结果或新增性能验收。
-18:16 再核实 watcher/driver 的真实启动身份存活，33 次 JOIN 优先准入、
-31 次越过 aged 队首排序，5 个 workflow 已写结果。无用工具预测、
-预测维护、自定义物理动作均为 0；仍为运行前缀。18:13 的独立封闭
-workflow 前缀有 36 个 root 均已委派、5 个 root 多轮、81 个动态 child，
-暂未观测嵌套，不能当整轮工作负载形态。V2585 预取审计在仅调度组
-没有等待计划记录是开关边界，不表示实际没有 JOIN 或原生恢复。
+**最新：V111 JOIN-priority-only 已完成，OurScheduler-only 于 18:46:58 接续。**
+首组 36/36 completed，持续 2801.85 秒，6904 次模型请求、8799 次工具、
+1556460 个输出 token。实际 73 轮委派/JOIN、128 个动态 child，未观测
+嵌套；不能声称该组证明了嵌套收益。最终 43 次有界 JOIN 优先准入、
+32 次越过 aged 队首排序，自定义物理动作、无用工具预测和维护均为 0。
+HTML、完整审计与工作目录清理已完成。
+
+[V2595](../experiments/reports/v2595_v111_join_only_completed_comparison_20261021.json)
+的三组共同去长尾窗口为 600–2520.937 秒，由最早少于 4 个活跃 workflow
+的边界决定，不根据性能挑选：
+
+| 指标 | V109 Full | V111 JOIN-only | V109 原始 native |
+|---|---:|---:|---:|
+| 共同截止受限平均 JCT，秒 | 1830.28 | 1704.12 | 2055.63 |
+| 去长尾 decode，token/s | 580.52 | 592.37 | 562.09 |
+| 全程平均 JCT，秒，辅助指标 | 1895.55 | 1714.44 | 2384.88 |
+| 全程输出 token | 1736639 | 1556460 | 2027956 |
+
+JOIN-only 相对 Full 的去长尾吞吐 +2.04%、受限平均 JCT -6.89%、
+全程平均 JCT -9.55%，21/36 个配对任务更短。Full 原生 H2D 1.861TB
+加受控 H2D 35.750GB，低于 JOIN-only 的原生 2.411TB，却没有整体胜出。
+35.750GB 含完成后恢复，不能全称提前预取。版本、轨迹、输出及原始 native
+前端成本不同；native 另有 3 个 agent-JCT 资格排除，V2595 保留显式分组。
+这不是同轨迹因果验收，也不能证明所有 KV 机制必然负收益。
+
+新增[独立 JOIN 服务审计](../scripts/audit_join_reentry_service.py)按真实等待、
+解锁和下一 parent 请求归因，不要求预取计划。保留未提交/未服务事件，
+不跨终态或下一 JOIN 借用请求，验证完整请求身份，客户端与服务端时钟分开。
+[V2592](../experiments/reports/v2592_join_reentry_service_final_busy_20261021.json)
+按首次 root 到达的 600–1200 秒取样，Full/JOIN-only/native 各 12/16/16
+个 JOIN 均获首次服务，入队至服务 P50 为 608.90/331.70/12340.70ms；
+客户端解锁至提交 P50 约 61–63ms。样本不同，不能据此对事件逐一配对，
+但简单优先调度独立缩短了可见排队，不应把全部 JCT 优势归于 KV。
+
+原生混合 cache 的逻辑 Host-hit 跨度可能包含已有 Host 副本的驻留 FULL，
+不等于 Host-only FULL；不能乘每 token 大小作为实际 DMA 或缺页。
+CPU 调用实际引擎匹配方法复现了 FULL 全驻留时仍报告 Host-hit 的情况。
+物理字节仍以 controller 的分池回执为准，引擎没有修改。
+[V2593](../experiments/reports/v2593_join_reentry_qualified_cpu_20261021.xml)
+实际保留原 3080 项并新增 30 项，3110 项全部通过、无跳过，另有 2 个
+subtest；[V2594](../experiments/reports/v2594_join_reentry_cpu_sources_20261021.json)
+绑定当前源码。它是离线审计资格，不是新的 GPU 性能验收。
+
+V111 四组仍统一冻结 `e0420fe`/V2579 和引擎 `53335e6`，不热加载。
+watcher 3757643、第二组 driver 3924731 的真实启动身份已核实；
+OurScheduler-only 保留排序，主动 KV/PREPARE/预取/handoff 关闭，随后
+接续 KV-only、工程对齐 native。Full 复用 V109 `ed06f53`。状态：
+`../ops/v111_internal_20261021.registration.state.json`。目标继续未验收。
 
 **此前 V110 因 JOIN-only 消融策略问题于北京时间 17:33 停止。**
 CPU 复现确认，旧 JOIN-only 即使累计四次普通准入，只要队首已老化
@@ -80,6 +113,9 @@ V110 watcher/driver 的真实身份均已退出，所属进程/容器释放，�
 JCT 约降低 11.16%（共同去长尾受限平均约降低 9.77%），但旧代码、
 服务端 seed、上下文和执行轨迹有差异，尚不能据此判定 batch8 更优。
 不以跨 batch 的 Full/消融差异证明机制增量，也不为此重跑 Full。
+最新用户约定是完成当前 batch12 内部矩阵后，若 Full 优势仍不明显，
+后续实验默认 batch8，并继续固定两侧 seed21。当前实验不改配置；
+未来 batch8 消融需要同 batch 的 Full/native，不复用 batch12 作因果对照。
 
 **本周设计与优化小结（北京时间 2026-10-19 至 10-21）。**
 核心是把动态 workflow 的等待/恢复边界与原生 KV 数据面、容量及请求
