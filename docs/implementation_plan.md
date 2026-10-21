@@ -67,6 +67,16 @@ cases;preserve V2480's corrected collection failure. Watch new user holds and
 physical/writer failures;measure the latest candidate rather than assuming
 its local CPU improvement changes throughput.
 
+V107 is registered after V106,not yet a GPU result. Frozen app893a7da,
+qualificationV2494b and engine dd082e3 retain the same configuration and
+historical V103 native. Watcher2686204,start_ticks672178029;state:
+`/home/longhao/experiment/ops/v107_drained_prefill_20261021.state.json`.
+Require exact V106 identities to exit,normal completion and complete HTML/
+comparison artifacts before two idle checks and Host preflight. New holds,
+source changes or an observed prior problem prevent launch. V2495 passes8
+waiting-boundary CPU cases with GPU queries/Popen trapped. At10:59 Beijing
+V106 has23/36 completed;remaining outcomes are pending,not incompletes.
+
 V2478 is a historical late V105 prefix:JOIN53 observed,51 positive early
 FULL plans,47 early reused10.610GB;tool1311 waits,89 positive plans,69
 early reused2.624GB. Last ACK-to-service P90 is1.042/1.897s with no

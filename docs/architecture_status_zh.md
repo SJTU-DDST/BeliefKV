@@ -66,6 +66,17 @@ driver PID `2558207`、start_ticks `671924094`。状态为
 的 8 个等待边界 CPU 用例和 V2480 首次收集失败。不得重复启动或
 热改冻结树，继续核对运行错误、首次消费和净性能。
 
+**V107 已注册接续，等待 V106 完整结束。**冻结运行码 `893a7da`、
+资格 V2494b、引擎 `dd082e3`，36-root/running8/256K/95%/
+Host200GB80:20 和 V103 native 参照保持。watcher PID `2686204`、
+start_ticks `672178029`，状态为
+`/home/longhao/experiment/ops/v107_drained_prefill_20261021.state.json`。
+只有 V106 精确进程身份退出、正常完成且 HTML/完整对照等后处理通过，
+再做两次空闲检查与 Host 预检才启动；新暂停、来源变化或上一轮
+运行错误阻止接续。V2495 的 8 项 CPU 等待边界检查通过，验证了
+等待阶段不查询 GPU、不启动 driver。10:59 的 V106 核对为 23/36
+completed，其余尚未终态，不据已完成子集计算整轮 JCT。
+
 [V2478 历史后段封闭前缀](../experiments/reports/v2478_v105_late_wait_prefetch_20261021_summary.json)
 中，53 个 JOIN 有 51 个完成前正 FULL 计划，47 个实际提前复用
 **10.610GB FULL**；工具 1311 轮中 89 个正计划，69 个提前复用

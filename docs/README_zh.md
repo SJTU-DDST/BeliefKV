@@ -49,6 +49,13 @@ driver2558207已完成旧进程退出、完整后处理、空闲及Host预检；
 HTTP200且prefill/decode已服务，不重复启动、不热改冻结码。
 8项CPU等待边界用例通过，继续检查最新运行错误与实际收益。
 
+**V107已注册在V106完整结束后接续。**冻结893a7da、资格V2494b、
+引擎dd082e3，配置及V103 native参照保持；watcher2686204按精确
+进程身份、完整后处理、两次空闲和Host预检接续，新暂停/来源变化/
+上一轮错误会阻止启动。[V2495](../experiments/reports/v2495_v107_followup_waiter_cpu_20261021.xml)
+的8项CPU等待边界检查通过。10:59的V106为23/36 completed，
+其余待终态，不以局部完成均值或固定窗口作为整轮验收。
+
 [V2478历史后段前缀](../experiments/reports/v2478_v105_late_wait_prefetch_20261021_summary.json)
 中JOIN47个提前复用10.610GB FULL、工具69轮2.624GB，ACK→服务
 P90为1.042/1.897秒，无前缀内首次服务前重复加载/驱逐。
