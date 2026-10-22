@@ -63,11 +63,46 @@ generation，并拒绝同一生命周期内编号变化；session ID、namespace
 完整 token、停止条件和本轮完成时钟仍严格校验。
 服务端冻结快照保持不变；客户端修复另行测试、冻结和登记。
 
+## 本轮实际 GPU 检查
+
+服务端冻结 `552b09d`，客户端冻结 `4d0b32b`，
+客户端与服务端只有已登记的四个客户端/测试文件不同；
+原生 receipt、sampling、clock、token capture 模块的哈希一致。
+引擎为登记的 `cc9772c6c5c4` 树。
+
+- V2963 的 67 项聚焦 CPU 检查通过。
+- V2964/V2965 的 4703 项、原有 2 个 subtest 通过，
+  保留 V2960 全部 4694 项；真实 Docker progress 的既有范围外
+  deselect 保持不变。V2962 为文件名错误导致的空测试调用，
+  原报告保留，不计入通过资格。
+- V2966：预先指定的 24/24 个真实 GPU 请求全部通过。
+  原生输入共 3538312 token，输出共 8841 token，
+  单请求输入为 114454–208158 token，24 次均保留原生 stop 结束。
+  另以原生 telemetry 对齐 24 个 submit 和 24 个 result 及全部输出
+  token；writer 失败记录为零。
+- 8 个原生 session 完成 HTTP close；其中 5 个 session 的本轮
+  generation 与源不同，生命周期内保持一致。没有将 close 的
+  HTTP 回执当作物理 KV 释放 ACK。
+
+V2966 单独验证了实际 GPU 进程、来源和参数；
+microcheck 自身的摘要仍保留 `gpu_process_verified=false`，
+避免一个通用 HTTP 客户端自行签发外部 GPU 资格。
+两处的 `gpu_replay_qualified` 与 `performance_accepted` 均为 false。
+本轮不是完整因果运行，没有 live policy，也没有测量输出强制和
+delayed sampling 的共同观测成本，不能用于 JCT 或吞吐归因。
+
+数据面检查完成后已正常关闭本轮服务及其已核实归属的子进程。
+最终复核无 GPU compute process，GPU 空闲为 143142 MiB，
+端口 18552 已释放。操作记录为 V130c 原始目录中的
+`qualification_cleanup.json`；没有恢复每日停机规则。
+
 主要证据：
 
 - `v128_full_complete_20261023_zh.md`：Full 完整结果及 V2915–V2917。
 - `v128_no_tool_prepare_findings_20261023_zh.md`：关闭后台及工具模型组。
 - `v129_exact_source_requalified_20261023_zh.md`：真实源及 guard 资格。
 - V2958/V2959：完整源依赖与精确 token 审计。
+- V2963–V2966：session 修复、保留全部旧检查的 CPU 资格及实际 GPU
+  数据面检查。原始请求与回执位于 V130c 的 `smoke/`。
 
 工作目标仍未验收，需要同工作量的 Full、native 和最强简单调度对照。
