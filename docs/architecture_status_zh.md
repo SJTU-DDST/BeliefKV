@@ -2,6 +2,14 @@
 
 更新日期：2026-10-22（北京时间）。
 
+V124b已完成，36/36系统测量有效、35/36无guard合格；完整平均JCT
+2262.19s，历史native2223.38s，目标仍未达成。600--1800s decode约
+579.95/516.94 token/s，但上下文、请求和输出轨迹不同，不作为因果收益。
+[最新完整核查与排队备份补丁](experiments/v124b_complete_findings_and_queued_backup_20261022_zh.md)
+记录V2795--V2802证据。V125已接续schedule_only，使用原冻结代码。
+main额外补齐200ms后台范围内对未分配执行槽的排队owner的只读FULL备份，
+不扩展回收权限；4064项CPU通过，GPU收益待后续验证，不进入V125矩阵。
+
 最新 Full 为 V124b：简单 JOIN 排序、短工具有界续接、普通 frontier
 restore 关闭。按用户新要求，V125 在其正常收集并释放资源后顺序执行
 同配置组件消融，见[消融矩阵](experiments/module_ablations_v125_20261022_zh.md)；

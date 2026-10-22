@@ -613,6 +613,8 @@ class NativeAdmissionRuntime:
         self.idle_prepare_policy = os.environ.get("BELIEFKV_IDLE_PREPARE_POLICY", "cold")
         if self.idle_prepare_policy not in ("cold", "all"):
             raise ValueError("idle prepare policy must be cold or all")
+        self._idle_backup_queue_scope = False
+        self._idle_backup_queued_requests: dict[PrefillCandidateKey, object] | None = None
         sampling_setting = os.environ.get("BELIEFKV_H2D_OPPORTUNITY_SAMPLING", "0")
         if sampling_setting not in ("0", "1"):
             raise ValueError("H2D opportunity sampling setting must be 0 or 1")
@@ -2390,6 +2392,10 @@ class NativeAdmissionRuntime:
                 },
                 "idle_full_prepare": {
                     "interval_ms": IDLE_FULL_PREPARE_INTERVAL_MS,
+                    "queued_owner_backup": (
+                        self.enable_prepare_host and self.enable_background_prepare
+                        and self.idle_prepare_policy == "cold"
+                    ),
                     "native": dict(idle_prepare_stats) if isinstance(idle_prepare_stats, dict) else None,
                 },
                 "latest_full_session_branches_retired": getattr(
@@ -6524,7 +6530,7 @@ class NativeAdmissionRuntime:
         return True
 
     def _live_backup_full_owners(self, owners: tuple[tuple[str, int], ...]) -> bool:
-        """Back only observed blocked owners; do not confer reclaim authority."""
+        """Back blocked or proven unstarted owners; no reclaim authority."""
         if not self.enable_prepare_host or self.physical_disabled or not owners:
             return False
         # Reuse the session index maintained for safe donor checks. No graph
@@ -6539,9 +6545,13 @@ class NativeAdmissionRuntime:
                 or (context := self.graph.contexts.get(key.context_id)) is None
                 or context.epoch != key.context_epoch
                 or context.workflow_id != key.root_workflow_id
-                or inv.state not in (
-                    InvocationState.WAIT_JOIN, InvocationState.WAIT_CHILD,
-                    InvocationState.WAIT_TOOL,
+                or not (
+                    inv.state in (
+                        InvocationState.WAIT_JOIN, InvocationState.WAIT_CHILD,
+                        InvocationState.WAIT_TOOL,
+                    )
+                    or inv.state is InvocationState.RUNNING_LLM
+                    and self._idle_backup_queued_owner(key)
                 )
                 or self._terminal(key)
                 for key in keys
@@ -6549,16 +6559,32 @@ class NativeAdmissionRuntime:
                 return False
         return True
 
-    def _live_queued_full_request(
-        self, key: PrefillCandidateKey, request: object, *,
-        _queue_tail_member: bool = False,
+    def _idle_backup_queued_owner(self, key: PrefillCandidateKey) -> bool:
+        if not self._idle_backup_queue_scope:
+            return False
+        if self._idle_backup_queued_requests is None:
+            self._idle_backup_queued_requests = {
+                candidate: request
+                for request in islice(self._capacity_waiting_queue, 512)
+                if (candidate := self.visible.get(getattr(request, "rid", None))) is not None
+            }
+            self.counts["idle_full_prepare_queued_index_builds"] += 1
+        request = self._idle_backup_queued_requests.get(key)
+        return bool(
+            request is not None
+            and self._unallocated_waiting_full_request(key, request)
+            and any(
+                waiting is request for waiting in islice(self._capacity_waiting_queue, 512)
+            )
+        )
+
+    def _unallocated_waiting_full_request(
+        self, key: PrefillCandidateKey, request: object,
     ) -> bool:
+        """Native request has not entered service or acquired mutable KV."""
         kv = getattr(request, "kv", None)
-        budget = self._residency_budget
         if (
-            budget.source != "native_next_prefill"
-            or type(budget.request_slots) is not int or budget.request_slots <= 0
-            or kv is None or getattr(kv, "req_pool_idx", False) is not None
+            kv is None or getattr(kv, "req_pool_idx", False) is not None
             or any(
                 type(value := getattr(kv, name, None)) is not int or value != 0
                 for name in ("kv_allocated_len", "kv_committed_len")
@@ -6569,6 +6595,19 @@ class NativeAdmissionRuntime:
             or not callable(getattr(request, "finished", None)) or request.finished()
             or self._executable_waiting_key(request) != key
             or any(active is request for active in getattr(self._native_running_batch, "reqs", ()))
+        ):
+            return False
+        return self.graph.invocations[key.invocation_id].state is InvocationState.RUNNING_LLM
+
+    def _live_queued_full_request(
+        self, key: PrefillCandidateKey, request: object, *,
+        _queue_tail_member: bool = False,
+    ) -> bool:
+        budget = self._residency_budget
+        if (
+            budget.source != "native_next_prefill"
+            or type(budget.request_slots) is not int or budget.request_slots <= 0
+            or not self._unallocated_waiting_full_request(key, request)
             or not _queue_tail_member and not any(
                 waiting is request for waiting in islice(
                     self._capacity_waiting_queue, budget.request_slots, 512,
@@ -7495,7 +7534,17 @@ class NativeAdmissionRuntime:
                 self.counts["idle_full_prepare_blocked_prefetch_transaction"] += 1
             return
         self.counts["idle_full_prepare_native_calls"] += 1
-        issued = prepare()
+        previous_scope, previous_requests = (
+            self._idle_backup_queue_scope, self._idle_backup_queued_requests,
+        )
+        self._idle_backup_queue_scope = self.idle_prepare_policy == "cold"
+        self._idle_backup_queued_requests = None
+        try:
+            issued = prepare()
+        finally:
+            self._idle_backup_queue_scope, self._idle_backup_queued_requests = (
+                previous_scope, previous_requests,
+            )
         if issued:
             self.counts["idle_full_prepare_issued_batches"] += 1
             self._cold_full_backups.update({
