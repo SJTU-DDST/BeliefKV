@@ -139,6 +139,43 @@ def test_existing_lifecycle_proof_is_preserved_without_reassigning_consumed_byte
     assert report["native_backup_lifecycle"]["restore_node_associations"] == 1
 
 
+@pytest.mark.parametrize("pool,expected", (("full", 0), ("mamba", 1)))
+def test_native_backup_fallback_respects_observed_host_eviction(pool, expected):
+    report = audit_data(
+        [issue()], [transfer("d2h", 2.), transfer("h2d", 4.)], [],
+        full_unit=10,
+        host_evictions=[{
+            "event": "host_block_evicted", "pool": pool, "node_id": 10, "ts_ms": 3.,
+        }],
+    )
+    assert report["native_backup_lifecycle"]["host_eviction_evidence_available"] is True
+    assert report["native_backup_lifecycle"]["restore_node_associations"] == expected
+    assert report["rounds"]["idle"]["acknowledged_full_bytes"] == 40
+    assert report["directions"]["h2d"]["bytes"] == 40
+
+
+@pytest.mark.parametrize("evictions,available", ((None, False), ([], True)))
+def test_native_backup_fallback_keeps_missing_and_empty_eviction_evidence_distinct(
+    evictions, available,
+):
+    report = audit_data(
+        [issue()], [transfer("d2h", 2.), transfer("h2d", 4.)], [],
+        full_unit=10, host_evictions=evictions,
+    )
+    assert report["native_backup_lifecycle"]["host_eviction_evidence_available"] is available
+    assert report["native_backup_lifecycle"]["restore_node_associations"] == 1
+
+
+def test_existing_lifecycle_remains_authoritative_when_fallback_evictions_are_supplied():
+    native = run([issue()], [transfer("d2h", 2.), transfer("h2d", 4.)])
+    report = audit_data(
+        [issue()], [transfer("d2h", 2.), transfer("h2d", 4.)], [],
+        native=native, full_unit=10,
+        host_evictions=[{"pool": "full", "node_id": 10, "ts_ms": 3.}],
+    )
+    assert report["native_backup_lifecycle"] == native["summary"]
+
+
 def test_runtime_configuration_and_skip_counts_are_read_from_existing_snapshots():
     state = {
         "event": "admission_runtime_state", "ts_ms": 30.,
@@ -211,6 +248,10 @@ def test_cli_reuses_sealed_prefix_when_arm_path_changes_from_relative_to_absolut
     report.write_text(json.dumps(lifecycle))
     with paths[0].open("a") as stream:
         stream.write(json.dumps(transfer("d2h", 20., nodes=(99,))) + "\n")
+    eviction_path = arm / "server/eviction_attribution.jsonl"
+    eviction_path.write_text(json.dumps({
+        "event": "host_block_evicted", "pool": "full", "node_id": 10, "ts_ms": 3.,
+    }) + "\n")
     output = tmp_path / "result.json"
     script = Path(__file__).resolve().parents[1] / "scripts/audit_prepare_background.py"
     result = subprocess.run(
@@ -221,3 +262,49 @@ def test_cli_reuses_sealed_prefix_when_arm_path_changes_from_relative_to_absolut
     assert result.returncode == 0, result.stderr
     data = json.loads(output.read_bytes())
     assert data["directions"]["d2h"]["completed_batches"] == 1
+    assert data["native_backup_lifecycle"] == lifecycle["native_full_prepare_attribution"]["summary"]
+    assert str(eviction_path.resolve()) not in data["input_jsonl_prefixes"]
+
+
+@pytest.mark.parametrize("eviction_file", ("missing", "empty", "full", "mamba"))
+def test_standalone_cli_seals_host_eviction_evidence_and_ends_full_copy_association(
+    tmp_path, eviction_file,
+):
+    arm = tmp_path / "arm"
+    server = arm / "server"
+    server.mkdir(parents=True)
+    opportunities = arm / "opportunities"
+    opportunities.mkdir()
+    (opportunities / "admission_opportunities.jsonl").write_text(
+        json.dumps(issue()) + "\n"
+    )
+    (server / "transfer_telemetry.jsonl").write_text(
+        "".join(json.dumps(row) + "\n" for row in (
+            transfer("d2h", 2.), transfer("h2d", 4.),
+        ))
+    )
+    eviction_path = server / "eviction_attribution.jsonl"
+    if eviction_file != "missing":
+        rows = (
+            [] if eviction_file == "empty" else [{
+                "event": "host_block_evicted", "pool": eviction_file,
+                "node_id": 10, "ts_ms": 3.,
+            }]
+        )
+        eviction_path.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    output = tmp_path / "report.json"
+    script = Path(__file__).resolve().parents[1] / "scripts/audit_prepare_background.py"
+    result = subprocess.run(
+        [sys.executable, str(script), "--arm", str(arm), "--output", str(output)],
+        capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    data = json.loads(output.read_bytes())
+    lifecycle = data["native_backup_lifecycle"]
+    assert lifecycle["host_eviction_evidence_available"] is (eviction_file != "missing")
+    assert lifecycle["restore_node_associations"] == (eviction_file != "full")
+    assert lifecycle["acknowledged_full_bytes"] == 40
+    assert data["directions"]["h2d"]["bytes"] == 40
+    assert (str(eviction_path) in data["input_jsonl_prefixes"]) is (
+        eviction_file != "missing"
+    )

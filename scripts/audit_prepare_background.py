@@ -131,7 +131,7 @@ def semantic_prepare_rounds(opportunities, completed, *, full_unit):
 
 
 def audit_data(opportunities, transfers, host_samples, *, native=None, full_unit=None,
-               byte_limit=1024**3, node_limit=32, window_ms=60_000):
+               host_evictions=None, byte_limit=1024**3, node_limit=32, window_ms=60_000):
     if window_ms <= 0:
         raise ValueError("window_ms must be positive")
     states = [row for row in opportunities if row.get("event") == "admission_runtime_state"]
@@ -156,7 +156,7 @@ def audit_data(opportunities, transfers, host_samples, *, native=None, full_unit
         if row.get("event") in ("critical_parent_headroom", "wait_prefetch_capacity_reclaimed")
     ]
     native = native if native is not None else native_full_prepare_attribution(
-        issues, completed, pressure, {}, None, full_unit=full_unit,
+        issues, completed, pressure, {}, host_evictions, full_unit=full_unit,
     )
     times = [
         row[field] for row in completed for field in ("submit_ts_ms", "complete_ts_ms")
@@ -343,6 +343,12 @@ def main():
     opportunities = list(sealed(args.arm / "opportunities/admission_opportunities.jsonl"))
     transfers = list(sealed(args.arm / "server/transfer_telemetry.jsonl"))
     host_samples = list(sealed(args.arm / "server/host_pool_telemetry.jsonl"))
+    native = lifecycle.get("native_full_prepare_attribution") if lifecycle else None
+    eviction_path = args.arm / "server/eviction_attribution.jsonl"
+    host_evictions = (
+        [row for row in sealed(eviction_path) if row.get("event") == "host_block_evicted"]
+        if native is None and eviction_path.exists() else None
+    )
     census = args.arm / "server/native_capacity_census.json"
     capacity = load_report(census)["capacity"] if census.exists() else {}
     tokens, size = capacity.get("host_full_tokens"), capacity.get("host_full_bytes")
@@ -352,7 +358,7 @@ def main():
     )
     result = audit_data(
         opportunities, transfers, host_samples, full_unit=unit,
-        native=lifecycle.get("native_full_prepare_attribution") if lifecycle else None,
+        native=native, host_evictions=host_evictions,
     )
     result.update({
         "arm": str(args.arm), "input_jsonl_prefixes": sealed.prefixes,

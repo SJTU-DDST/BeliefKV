@@ -84,6 +84,20 @@ V2862进一步确认4条enqueue_causal_changed均在0.61--5.49ms内向绑定
 缺少Host副本不等于已证明可回收；先与Full的后台备份结果比较。
 新审计与既有相关CPU回归250项通过，未修改在线路径或放宽安全条件。
 
+V128的no_tool_duration_model现已完成36/36系统测量、34/36无guard合格，
+退出码1；监督器已接续no_child_reclaim，随后仍为Full/native。
+完整平均JCT1992.80s包含两个图预算guard，不能当作自然完成性能。
+Harness共92个JOIN，控制器关联86个完成等待；64个完成前有正FULL计划，
+63个提前传输并确认复用15.85GB。后台5722批备份166.81GB FULL，
+平均29.15MB，没有触及512MiB字节上限；6358轮因Host预算在扫描前退出，
+末次仍有3541个dirty节点。优先核查Host容量及备份选择，不盲目加大批量。
+与关闭后台备份相比，请求总数仅差0.26%，输出却相差14.5%，逐workflow
+三项工作量同时接近5%的为0/36，不能从两组JCT推断模块收益。
+main补齐独立后台备份审计的Host驱逐证据，41项CPU检查通过；
+同封存前缀的传输量和关联数不变，没有在线性能改动。
+[最新完整工具模型消融](experiments/v128_no_tool_prepare_findings_20261023_zh.md)
+记录V2874--V2880、guard和完整证据；当前冻结矩阵不变，性能目标仍未达到。
+
 main 新增独立的 `native_in_graph_reusable_nested` profile：稳定 handle
 保存私有 graph state，每轮 fresh invocation/JOIN，原生 session 普通续用、
 压缩时换代；物理 KV 丢弃不改变逻辑历史。休眠最新 checkpoint 按 HBM、
