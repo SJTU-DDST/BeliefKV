@@ -103,8 +103,14 @@ def register() -> None:
         raise ValueError(f"{BRIDGE_ENV} must be 0 or 1")
     if setting == "0":
         return
+    from sglang.srt.environ import envs
     from sglang.srt.plugins.hook_registry import HookRegistry, HookType
 
+    if not envs.SGLANG_ENABLE_DELAY_SAMPLE.get():
+        raise ValueError(
+            "causal replay requires SGLANG_ENABLE_DELAY_SAMPLE=1 so sampling "
+            "observes the previous committed output while forward remains overlapped"
+        )
     HookRegistry.register(
         "sglang.srt.managers.scheduler.Scheduler.get_output_streamer_class",
         _streamer_hook, HookType.AFTER,

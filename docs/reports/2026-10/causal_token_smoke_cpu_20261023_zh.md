@@ -45,3 +45,8 @@ GPU 检查沿用相同模型、seed21、256K context、running8、Host200GB、
 
 当前仍未取得该入口的真实 GPU 结果。同轨迹 Full/native/简单调度
 比较及 KV 管理的增量收益尚未证明，目标继续 active。
+
+后续源码核查在 GPU 启动前发现 helper 还需覆盖原生 overlap 的延迟
+进度及终态额外采样。原 V130 保留为未启动的旧计划；后续受控组共同
+启用原生 delayed sampling。修复与 CPU 复现见
+[overlap 采样修复](causal_overlap_sampling_fix_cpu_20261023_zh.md)。

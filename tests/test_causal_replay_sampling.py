@@ -53,6 +53,49 @@ def test_exhausted_sequence_requires_native_stop_and_never_invents_an_extra_eos(
     assert torch.equal(logits, original)
 
 
+def test_native_finished_overlap_rows_keep_their_original_logits():
+    processor = CapturedOutputLogitsProcessor()
+    active = parameters("active", [3, 4, 9], [3])
+    finished = parameters("finished", [7, 9], [7, 9])
+    finished["__req__"].finished = lambda: True
+    original = torch.randn(2, 16)
+    before = original.clone()
+    result = processor(original, [finished, active])
+    assert torch.equal(result[0], before[0])
+    assert result[1].argmax().item() == 4
+    assert finished["__req__"].output_ids == [7, 9]
+
+
+def test_all_native_finished_rows_are_passed_through_without_an_extra_forced_eos():
+    finished = parameters("finished", [7, 9], [7, 9])
+    finished["__req__"].finished = lambda: True
+    original = torch.randn(1, 16)
+    before = original.clone()
+    assert CapturedOutputLogitsProcessor()(original, [finished]) is original
+    assert torch.equal(original, before)
+
+
+def test_native_delayed_sampling_order_preserves_tokens_and_the_terminal_overlap_tail():
+    processor = CapturedOutputLogitsProcessor()
+    current = parameters("a", [3, 4, 9])
+    req = current["__req__"]
+    req.finished = lambda: len(req.output_ids) >= 3
+    pending, sampled = None, []
+    for _ in range(4):
+        # Native runs this forward, commits the prior result, then samples here.
+        if pending is not None:
+            req.output_ids.append(pending)
+        logits = torch.zeros(1, 16)
+        result = processor(logits, [current])
+        if req.finished():
+            assert torch.equal(result, torch.zeros(1, 16))
+            break
+        pending = result.argmax().item()
+        sampled.append(pending)
+    assert sampled == [3, 4, 9]
+    assert req.output_ids == [3, 4, 9]
+
+
 @pytest.mark.parametrize("change", (
     "foreign_req", "duplicate_req", "missing_req", "missing_payload",
     "divergent_output", "out_of_vocab", "negative_token", "noninteger_token",

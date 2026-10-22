@@ -110,6 +110,26 @@ def test_actual_native_hook_registry_keeps_the_original_scheduler_factory_contra
     assert issubclass(selected, FakeBase) and selected.has_additional_customized_info
 
 
+@pytest.mark.parametrize("delayed", (False, True))
+def test_enabled_plugin_requires_native_delayed_sampling_to_avoid_stale_req_progress(
+    monkeypatch, delayed,
+):
+    native_root(monkeypatch)
+    from sglang.srt.plugins.hook_registry import HookRegistry
+
+    monkeypatch.setattr(HookRegistry, "_hooks", defaultdict(list))
+    monkeypatch.setenv(bridge.BRIDGE_ENV, "1")
+    monkeypatch.setenv("SGLANG_ENABLE_DELAY_SAMPLE", "1" if delayed else "0")
+    if delayed:
+        bridge.register()
+        target = "sglang.srt.managers.scheduler.Scheduler.get_output_streamer_class"
+        assert len(HookRegistry._hooks[target]) == 1
+    else:
+        with pytest.raises(ValueError, match="SGLANG_ENABLE_DELAY_SAMPLE"):
+            bridge.register()
+        assert not HookRegistry._hooks
+
+
 def test_actual_native_output_payload_carries_receipts_once_without_a_log_flush(req, monkeypatch):
     root = native_root(monkeypatch)
     path = root / "test/registered/unit/managers/test_output_streamer_customized_info.py"

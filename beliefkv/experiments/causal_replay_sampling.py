@@ -26,8 +26,8 @@ class CapturedOutputLogitsProcessor:
             or len(custom_param_list) != logits.shape[0]
         ):
             raise ValueError("replay requires one parameter entry per logits row")
-        targets, seen = [], set()
-        for parameters in custom_param_list:
+        targets, active_rows, seen = [], [], set()
+        for row, parameters in enumerate(custom_param_list):
             replay = parameters.get(PARAMETER_KEY) if type(parameters) is dict else None
             req = parameters.get("__req__") if type(parameters) is dict else None
             request = replay.get("request_id") if type(replay) is dict else None
@@ -37,6 +37,10 @@ class CapturedOutputLogitsProcessor:
             ):
                 raise ValueError("missing, duplicate or mismatched native replay request")
             seen.add(request)
+            # Overlap can sample once more after the previous result ended Req.
+            # Native discards that result; leave its original logits untouched.
+            if getattr(req, "finished", lambda: False)():
+                continue
             tokens, output = replay.get("output_token_ids"), req.output_ids
             if not isinstance(tokens, (list, tuple)) or not 0 <= len(output) < len(tokens):
                 raise ValueError("native request failed to stop at its recorded boundary")
@@ -47,8 +51,16 @@ class CapturedOutputLogitsProcessor:
             if type(target) is not int or not 0 <= target < logits.shape[1]:
                 raise ValueError("recorded next token is outside the native vocabulary")
             targets.append(target)
+            active_rows.append(row)
         if targets:
             indices = torch.tensor(targets, dtype=torch.int64, device=logits.device)
-            logits.fill_(-float("inf"))
-            logits.scatter_(1, indices[:, None], 0.)
+            if len(targets) == logits.shape[0]:
+                logits.fill_(-float("inf"))
+                logits.scatter_(1, indices[:, None], 0.)
+            else:
+                rows = torch.tensor(active_rows, dtype=torch.int64, device=logits.device)
+                selected = logits.index_select(0, rows)
+                selected.fill_(-float("inf"))
+                selected.scatter_(1, indices[:, None], 0.)
+                logits.index_copy_(0, rows, selected)
         return logits
