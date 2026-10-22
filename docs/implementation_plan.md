@@ -12,6 +12,10 @@ No slot/KV reservation or per-token observation is introduced. Apply the same
 available scheduling control to future strong scheduling-only baselines.
 See [the continuity implementation](experiments/tool_continuity_v124_20261022_zh.md).
 GPU performance remains unaccepted pending the new complete-workflow results.
+V2780/V2781 passes3984 CPU cases plus2 subtests,retaining the preceding complete
+3982/3928 identities. V124 failed historical-default verification before any GPU
+launch;preserve its state. V124b retries with explicit historical controls and
+an independent four-ordinary-admission bound for tool jumps over aged queues.
 
 The latest user request disables ordinary execution-frontier restore by default
 and makes complete workflow JCT, including normal tails, the primary criterion.

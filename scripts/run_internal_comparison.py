@@ -244,7 +244,10 @@ def register(args) -> None:
     }, indent=2))
 
 
-def observe_arm(mode: str, arm: Path, *, max_running_requests: int = 12) -> None:
+def observe_arm(
+    mode: str, arm: Path, *, max_running_requests: int = 12,
+    legacy_execution_frontier_restore: bool | None = None,
+) -> None:
     protection = None
     scheduling = None
     tool_restore, idle_prepare, restore_tiers = "speculative", None, None
@@ -273,7 +276,9 @@ def observe_arm(mode: str, arm: Path, *, max_running_requests: int = 12) -> None
         idle_prepare = observed.get("idle_prepare_policy_requested")
         restore_tiers = observed.get("restore_tiers_requested")
         last_child = observed.get("join_last_child_priority_requested")
-        frontier = observed.get("execution_frontier_restore_requested")
+        frontier = observed.get(
+            "execution_frontier_restore_requested", legacy_execution_frontier_restore,
+        )
         continuity = observed.get("tool_continuity_requested")
     runtime = qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
     if runtime is not None or mode == "native_matched":

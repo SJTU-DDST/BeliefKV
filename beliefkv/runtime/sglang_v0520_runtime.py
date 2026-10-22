@@ -446,6 +446,7 @@ class NativeAdmissionRuntime:
             else None
         )
         self._tool_continuity_promoted: str | None = None
+        self._tool_continuity_normal_admissions = 4
         last_child_setting = os.environ.get("BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY", "0")
         if last_child_setting not in ("0", "1"):
             raise ValueError("JOIN last child priority setting must be 0 or 1")
@@ -2343,6 +2344,9 @@ class NativeAdmissionRuntime:
                     {
                         "short_gap_seconds": self._tool_continuity.short_gap_seconds,
                         "max_segment_requests": self._tool_continuity.max_rounds,
+                        "aged_bypass_ordinary_quota": 4,
+                        "ordinary_admissions_since_priority":
+                            self._tool_continuity_normal_admissions,
                         "credit_scope": "root_workflow;earned_once_per_request",
                         "counts": dict(self._tool_continuity.counts),
                         "segments": len(self._tool_continuity.segments),
@@ -11624,15 +11628,21 @@ class NativeAdmissionRuntime:
             return
         inherited, position = selected
         target = floor
+        allows_aged = self._tool_continuity_normal_admissions >= 4
         for preceding in range(floor, position):
             arrival = self._visible_since.get(ordered[preceding][1].rid, now)
-            if now - arrival >= 10. or arrival <= inherited:
+            if arrival <= inherited or now - arrival >= 10. and not allows_aged:
                 target = preceding + 1
         if target < position:
+            aged_bypassed = any(
+                now - self._visible_since.get(ordered[index][1].rid, now) >= 10.
+                for index in range(target, position)
+            )
             pair = ordered.pop(position)
             ordered.insert(target, pair)
             self._tool_continuity_promoted = pair[1].rid
             self.counts["tool_continuity_priority_ordered"] += 1
+            self.counts["tool_continuity_priority_aged_bypass_ordered"] += int(aged_bypassed)
 
     def on_prefill_selection(self, rejected: tuple[tuple[str, str], ...]) -> None:
         self.counts.update(reason for _, reason in rejected)
@@ -11658,11 +11668,16 @@ class NativeAdmissionRuntime:
             if admitted and self._tool_continuity is not None:
                 key = self.visible.get(req.rid)
                 if key is not None:
-                    self._tool_continuity.admitted(
+                    promoted = req.rid == self._tool_continuity_promoted
+                    new_admission = self._tool_continuity.admitted(
                         key, arrival=self._visible_since.get(req.rid, time.monotonic()),
-                        promoted=req.rid == self._tool_continuity_promoted,
+                        promoted=promoted,
                     )
-                    if req.rid == self._tool_continuity_promoted:
+                    if new_admission:
+                        self._tool_continuity_normal_admissions = (
+                            0 if promoted else min(4, self._tool_continuity_normal_admissions + 1)
+                        )
+                    if promoted:
                         self._tool_continuity_promoted = None
             if admitted and (
                 self.enable_join_parent_priority or self.enable_join_last_child_priority

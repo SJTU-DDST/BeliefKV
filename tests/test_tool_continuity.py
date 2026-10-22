@@ -261,6 +261,47 @@ def test_continuation_preserves_join_fairness_identity_and_native_fallback(monke
         runtime.close()
 
 
+def test_aged_queue_cannot_disable_all_short_tool_continuity(monkeypatch):
+    monkeypatch.setattr("time.monotonic", lambda: 22.)
+    runtime, normal, successor = runtime_round(monkeypatch)
+    try:
+        runtime._tool_continuity_normal_admissions = 3
+        plan = runtime.plan_native_prefill([normal, successor], running_batch=None, adder=None)
+        assert plan.prioritized[0].request_id == normal.rid
+        runtime._tool_continuity_normal_admissions = 4
+        plan = runtime.plan_native_prefill([normal, successor], running_batch=None, adder=None)
+        assert plan.prioritized[0].request_id == successor.rid
+        assert runtime.counts["tool_continuity_priority_aged_bypass_ordered"] == 1
+        runtime.on_prefill_candidate_result(successor, admitted=False, result="NO_TOKEN")
+        assert runtime._tool_continuity_normal_admissions == 4
+        runtime.on_prefill_candidate_result(successor, admitted=True, result="CONTINUE")
+        assert runtime._tool_continuity_normal_admissions == 0
+        for _ in range(5):
+            runtime.on_prefill_candidate_result(successor, admitted=True, result="CONTINUE")
+        assert runtime._tool_continuity_normal_admissions == 0
+        runtime.on_prefill_candidate_result(normal, admitted=True, result="CONTINUE")
+        assert runtime._tool_continuity_normal_admissions == 1
+    finally:
+        runtime.close()
+
+
+def test_continuity_keeps_its_aged_fairness_budget_independent_of_join(monkeypatch):
+    monkeypatch.setattr("time.monotonic", lambda: 22.)
+    runtime, normal, successor = runtime_round(monkeypatch)
+    try:
+        runtime._visible_since[normal.rid] = 21.
+        runtime._join_priority_pending["parent"] = "join"
+        runtime._join_priority_normal_admissions = 4
+        runtime._tool_continuity_normal_admissions = 0
+        plan = runtime.plan_native_prefill([successor, normal], running_batch=None, adder=None)
+        assert plan.prioritized[0].request_id == normal.rid
+        runtime.on_prefill_candidate_result(normal, admitted=True, result="CONTINUE")
+        assert runtime.counts["join_parent_priority_admitted"] == 1
+        assert runtime._tool_continuity_normal_admissions == 1
+    finally:
+        runtime.close()
+
+
 @pytest.mark.parametrize("mode", ("full", "scheduler_only", "join_priority_only", "kv_only", "native_matched"))
 def test_continuity_control_is_explicit_and_native_kv_modes_remain_independent(mode):
     env = arm_environment({"PREFILL_SCHEDULING_POLICY": "join_priority"}, mode)

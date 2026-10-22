@@ -120,7 +120,10 @@ def verify_reference(plan: dict, state: dict) -> dict:
     outcomes = {}
     for mode in REFERENCE_ORDER:
         arm = root / mode
-        fresh.observe(mode, arm, final=True)
+        fresh.observe(
+            mode, arm, final=True,
+            legacy_execution_frontier_restore=mode == "full",
+        )
         outcomes[mode] = fresh.completed_arm(
             load(arm / "client_36/summary.json"), state["original_exit_codes"][mode], 36,
         )

@@ -16,6 +16,20 @@ from scripts import run_fresh_internal_comparison as launcher
 SPEC = Path(__file__).resolve().parents[1] / "configs/migration/next_predictive_baselines_20261022.json"
 
 
+def test_historical_frontier_default_is_explicit_and_does_not_change_current_observation(
+    tmp_path, monkeypatch,
+):
+    observer = Mock()
+    monkeypatch.setattr(launcher.comparison, "observe_arm", observer)
+    launcher.observe("full", tmp_path, legacy_execution_frontier_restore=True)
+    observer.assert_called_once_with(
+        "full", tmp_path, max_running_requests=8, legacy_execution_frontier_restore=True,
+    )
+    observer.reset_mock()
+    launcher.observe("full", tmp_path)
+    observer.assert_called_once_with("full", tmp_path, max_running_requests=8)
+
+
 @pytest.fixture
 def held(tmp_path, monkeypatch):
     marker = tmp_path / "pause"

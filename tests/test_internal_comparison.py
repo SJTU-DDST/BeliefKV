@@ -39,6 +39,30 @@ def request(name):
     )
 
 
+@pytest.mark.parametrize("explicit,legacy,expected", (
+    (None, True, True), (None, None, None), (False, True, False), (True, False, True),
+))
+def test_launch_frontier_control_precedes_explicit_historical_default(
+    tmp_path, monkeypatch, explicit, legacy, expected,
+):
+    from scripts import run_internal_comparison as operator
+
+    server = tmp_path / "server"
+    server.mkdir()
+    launch = {
+        "chat_token_block_cache": True, "internal_comparison_mode": "full",
+        "tool_restore_mode_requested": "execution",
+    }
+    if explicit is not None:
+        launch["execution_frontier_restore_requested"] = explicit
+    (server / "launch_configuration.json").write_text(json.dumps(launch))
+    monkeypatch.setattr(operator.qualified, "last_runtime_state", Mock(return_value={"sample": True}))
+    validator = Mock()
+    monkeypatch.setattr(operator, "validate_runtime", validator)
+    operator.observe_arm("full", tmp_path, legacy_execution_frontier_restore=legacy)
+    assert validator.call_args.kwargs["execution_frontier_restore"] is expected
+
+
 def join_fixture(
     monkeypatch, *, return_before_wait=False, mode="join_priority_only", scheduling=None,
     tool_continuity=None,
