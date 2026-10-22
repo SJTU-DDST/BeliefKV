@@ -90,6 +90,13 @@ def _tool_key(event: RuntimeEvent) -> tuple[str, str, str]:
     )
 
 
+def _tool_wait_diagnostic(event: RuntimeEvent) -> bool:
+    return (
+        event.kind is Kind.TOOL_WAIT_OBSERVATION
+        and event.attributes.get("source") == "deepagents_tool_wait_shadow"
+    )
+
+
 def compile_causal_replay(
     events: Iterable[RuntimeEvent], native_events: Iterable[dict],
 ) -> CausalReplayPlan:
@@ -105,6 +112,7 @@ def compile_causal_replay(
         if not (
             event.kind is Kind.STRUCTURED_ACTION
             and event.attributes.get("diagnostic_only") is True
+            or _tool_wait_diagnostic(event)
         )
     )
     by_id = {}
@@ -171,6 +179,36 @@ def compile_causal_replay(
         raise CausalReplayError("event belongs to an unknown workflow")
     if not launches.keys() <= creates.keys():
         raise CausalReplayError("launch target was not created")
+
+    aliases = defaultdict(list)
+    for key, start in tool_starts.items():
+        for identifier in {
+            start.attributes.get("tool_run_id"), start.attributes.get("tool_call_id"),
+        } - {None}:
+            aliases[(*key[:2], identifier)].append(key)
+    for observation in raw:
+        if not _tool_wait_diagnostic(observation):
+            continue
+        candidates = [
+            key for key in aliases.get(_tool_key(observation), ())
+            if tool_starts[key].ts_ms <= observation.ts_ms < tool_ends[key].ts_ms
+            and all(
+                observation.attributes.get(name) is None
+                or observation.attributes[name] in {
+                    tool_starts[key].attributes.get(name), key[2],
+                }
+                for name in ("tool_run_id", "tool_call_id")
+            )
+        ]
+        if len(candidates) != 1:
+            raise CausalReplayError("trace-only tool observation lacks one active original tool")
+        start = tool_starts[candidates[0]]
+        elapsed = observation.attributes.get("tool_elapsed_ms")
+        if (
+            type(elapsed) not in (int, float) or not math.isfinite(elapsed)
+            or abs(elapsed - (observation.ts_ms - start.ts_ms)) > 1.
+        ):
+            raise CausalReplayError("trace-only tool elapsed time disagrees with its start")
 
     native_results = {
         row["attributes"]["request_id"]: row

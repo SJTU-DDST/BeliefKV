@@ -236,6 +236,61 @@ def test_diagnostic_progress_does_not_create_a_frozen_decode_timer():
     assert event_node_id(trace.named["diagnostic"].event_id) not in plan.dependency_graph()
 
 
+def tool_wait_shadow(trace, *, name="observation", when=113., invocation="root", **changes):
+    start = trace.named["tool-start-wait"]
+    start.attributes["tool_call_id"] = "call-wait"
+    attributes = {
+        "source": "deepagents_tool_wait_shadow", "tool_call_id": "call-wait",
+        "tool_elapsed_ms": when - start.ts_ms,
+        "tool_wait_shape_eta_ms_p50": 1000.,
+        **changes,
+    }
+    return trace.add(
+        name, Kind.TOOL_WAIT_OBSERVATION, when,
+        invocation_id=invocation, attributes=attributes,
+    )
+
+
+def test_known_tool_wait_shadow_is_verified_and_stays_out_of_live_control_and_release_timers():
+    baseline = sequential_trace()
+    original = compile_causal_replay(baseline.ordered(), baseline.native)
+    trace = sequential_trace()
+    observation = tool_wait_shadow(trace)
+    plan = compile_causal_replay(trace.ordered(), trace.native)
+    assert plan.omitted_diagnostic_events == 1
+    assert event_node_id(observation.event_id) not in plan.dependency_graph()
+    assert plan.dependency_graph() == original.dependency_graph()
+    assert evaluate_causal_plan(plan, {"r0": 5., "r1": 7.}) == evaluate_causal_plan(
+        original, {"r0": 5., "r1": 7.},
+    )
+
+
+@pytest.mark.parametrize("change", (
+    "foreign_call", "foreign_invocation", "before_start", "after_end",
+    "bad_elapsed", "nan_elapsed", "unknown_source",
+))
+def test_tool_wait_shadow_does_not_hide_foreign_mistimed_or_unsupported_events(change):
+    trace = sequential_trace()
+    options = {}
+    if change == "foreign_call":
+        options["tool_call_id"] = "foreign"
+    elif change == "foreign_invocation":
+        options["invocation"] = "foreign"
+    elif change == "before_start":
+        options["when"] = 107.
+    elif change == "after_end":
+        options["when"] = 119.
+    elif change == "bad_elapsed":
+        options["tool_elapsed_ms"] = 999.
+    elif change == "nan_elapsed":
+        options["tool_elapsed_ms"] = float("nan")
+    else:
+        options["source"] = "potential_live_control_observation"
+    tool_wait_shadow(trace, **options)
+    with pytest.raises(CausalReplayError):
+        compile_causal_replay(trace.ordered(), trace.native)
+
+
 def test_non_diagnostic_completion_notice_stays_after_real_native_completion():
     trace = sequential_trace()
     trace.add(
