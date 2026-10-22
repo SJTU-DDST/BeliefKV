@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "beliefkv-causal-replay-bridge"
+version = "0.1.0"
+description = "Isolated SGLang entry point for auxiliary causal replay."
+requires-python = ">=3.10"
+
+[project.entry-points."sglang.srt.plugins"]
+beliefkv_causal_replay = "beliefkv.experiments.causal_replay_native:register"
+
+[tool.setuptools]
+packages = []
