@@ -232,8 +232,13 @@ def test_full_join_parent_priority_retains_live_guards_and_shared_quota(monkeypa
         runtime.close()
 
 
-def last_child_fixture(monkeypatch, *, mode="full", remaining=1):
+def last_child_fixture(
+    monkeypatch, *, mode="full", remaining=1, scheduling=None, last_child_priority=False,
+):
     configure(monkeypatch, mode)
+    if scheduling is not None:
+        monkeypatch.setenv("BELIEFKV_PREFILL_SCHEDULING_POLICY", scheduling)
+    monkeypatch.setenv("BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY", str(int(last_child_priority)))
     monkeypatch.setenv("BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH", "0")
     runtime = NativeAdmissionRuntime()
     runtime.on_events((

@@ -434,6 +434,13 @@ class NativeAdmissionRuntime:
             "join_priority" if self.internal_comparison_mode == "join_priority_only"
             else scheduling_setting
         )
+        last_child_setting = os.environ.get("BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY", "0")
+        if last_child_setting not in ("0", "1"):
+            raise ValueError("JOIN last child priority setting must be 0 or 1")
+        self.enable_join_last_child_priority = (
+            last_child_setting == "1" and self.prefill_scheduling_policy == "join_priority"
+            and self.internal_comparison_mode != "kv_only"
+        )
         self._workflow_attained_work_enabled = (
             os.environ.get("BELIEFKV_WORKFLOW_ATTAINED_WORK", "0") == "1"
             and self.prefill_scheduling_policy != "join_priority"
@@ -2307,6 +2314,7 @@ class NativeAdmissionRuntime:
                 "internal_comparison_mode": self.internal_comparison_mode,
                 "custom_kv_management": self._custom_kv_management,
                 "join_parent_priority": self.enable_join_parent_priority,
+                "join_last_child_priority": self.enable_join_last_child_priority,
                 "prefill_scheduling_policy": self.prefill_scheduling_policy,
                 "join_priority_order": "aged_fifo_then_native;independent_four_admission_quota",
                 "restore_priority_scope": "same_causal_class;no_aged_head_bypass",
@@ -11050,6 +11058,25 @@ class NativeAdmissionRuntime:
                     self.counts[f"{prefix}_priority_ordered"] += 1
                     if now - self._visible_since.get(ordered[1][1].rid, now) >= 10.:
                         self.counts[f"{prefix}_priority_aged_head_bypass"] += 1
+            if (
+                self.enable_join_last_child_priority and candidate is None
+                and len(ordered) > 1 and self._join_priority_normal_admissions >= 4
+            ):
+                for pair in ordered:
+                    key = keys[pair[0]]
+                    if (
+                        self._last_join_child_has_waiting_parent(key)
+                        and self._executable_waiting_key(pair[1], key=key) == key
+                    ):
+                        # Parent and sole-child boosts spend the same bounded turn.
+                        if pair != ordered[0]:
+                            if now - self._visible_since.get(ordered[0][1].rid, now) >= 10.:
+                                self.counts["join_last_child_priority_aged_head_bypass"] += 1
+                            ordered.remove(pair)
+                            ordered.insert(0, pair)
+                            self._join_last_child_priority_promoted = pair[1].rid
+                            self.counts["join_last_child_priority_ordered"] += 1
+                        break
             if self._completion_order is not None and candidate is None and all(
                 keys[index].invocation_id in self.graph.invocations for index, _ in ordered
             ):
@@ -11548,23 +11575,34 @@ class NativeAdmissionRuntime:
     ) -> None:
         if getattr(req, "beliefkv_metadata", None) is not None:
             self.counts["native_admitted" if admitted else f"native_{result}"] += 1
-            if admitted and self.enable_join_parent_priority and (
+            if admitted and (
+                self.enable_join_parent_priority or self.enable_join_last_child_priority
+            ) and (
                 self._join_priority_pending or self._join_priority_normal_admissions < 4
                 or self._join_priority_promoted is not None
+                or self._join_last_child_priority_promoted is not None
             ):
-                promoted = req.rid == self._join_priority_promoted
+                parent_promoted = req.rid == self._join_priority_promoted
+                child_promoted = (
+                    self.enable_join_last_child_priority
+                    and req.rid == self._join_last_child_priority_promoted
+                )
+                promoted = parent_promoted or child_promoted
                 self._join_priority_normal_admissions = (
                     0 if promoted else min(4, self._join_priority_normal_admissions + 1)
                 )
                 key = self.visible.get(req.rid)
                 if key is not None:
                     self._join_priority_pending.pop(key.invocation_id, None)
-                if promoted:
+                if parent_promoted:
                     self.counts[
                         "join_only_priority_admitted"
                         if self.internal_comparison_mode == "join_priority_only"
                         else "join_parent_priority_admitted"
                     ] += 1
+                if child_promoted:
+                    self.counts["join_last_child_priority_admitted"] += 1
+                    self._join_last_child_priority_promoted = None
             if self._prefetch_admission_hints.pop(req.rid, None) is not None:
                 self.counts[
                     "prefetch_admission_hint_admitted" if admitted

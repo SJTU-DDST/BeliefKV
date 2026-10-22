@@ -284,6 +284,71 @@ deselect 一个 Docker 沙箱测试。引擎未修改，沿用 V2698 的独立�
 数据、旧策略测试等，并漏设本地 tokenizer；该报告保留且不计入资格，
 也不据 V2722 声称全仓测试全部通过。
 
+## 10. V122：先验证实际阻塞者，再增加复杂调度
+
+V122 使用修复无效委派后的同一份冻结源码，执行顺序为 Full、JOIN-only、
+工程对齐 native。Full 已结束：36/36 completed，全部通过系统和无 guard
+agent JCT 资格；没有 child cancel、JOIN timeout 或 guard 干预。平均
+workflow JCT 为 1899.64 秒，makespan 3410.30 秒。任务答案尚未独立评分，
+对照组仍在运行，不能将这些绝对值当成对 native 的加速。
+
+最新独立人口 V2726 使用提交之前的事件建立依赖快照，覆盖 68 个 JOIN
+后继及 5804 个有首次服务证据的工具后继。JOIN 排队到服务 P50/P90 为
+340.44/951.70ms；工具轮次 P50 为 9.81ms，工具后继排队 P50 为 11.59s。
+其中 1948 个工具后继提交时已是某个实际等待 JOIN 的唯一剩余 child，
+其排队 P50 为 8.274s。只有 19/5804 个提交快照还存在另一必需分支的
+工具等待。这支持先验证真实唯一阻塞者的有界优先，不支持立即将
+并行长工具的 slack 预测设为主要机制。排队时长仍不是可直接扣除的 JCT。
+
+JOIN FULL 传输 21.830GB、确认复用 21.609GB，其中只有完成前启动且由下一
+请求确认复用的 36 次、7.892GB 属于严格提前传输。完成至客户端提交、
+客户端提交至服务端到达窗口的复用继续单列，不能把全部 21.609GB 当作
+完成前预取。普通执行前沿恢复还有约 27.341GB 在首次服务前失去已观察
+驻留；尚未证明全部原因，也不能把这些字节全部算作浪费或重复 DMA。
+
+本轮新增一个独立候选开关 `JOIN_LAST_CHILD_PRIORITY=1`，默认关闭。
+当前简单 `join_priority` 分支原本提前返回，旧 workflow 分支的最后
+child 优先没有生效；新开关只在以下条件下将队列中的 child 前移：
+
+- JOIN 尚未满足，且只有该 child 未完成，确实存在当前 WAIT_JOIN parent。
+- 请求、context epoch、session generation 及当前可执行状态仍有效。
+- 已累积四次普通准入；parent 与 child 共用这一个优先额度，parent 优先。
+- 实际准入才消耗额度，规划、容量失败及已经排在首位的 child 不消耗额度。
+
+候选复用已有 JOIN 索引，只在 prefill 竞争时检查，不增加 KV 扫描、前缀
+匹配、剩余 token 预测或逐 decode 图维护。KV-only 和 native 不启用。
+对照时必须对 Full 与调度控制同时开启，并将后者标为 parent+last-child
+优先，不能继续假称与旧 parent-only JOIN-only 完全相同。V122 的运行源码
+保持冻结，不中途打开此开关。
+
+最终 V2731 的完整 CPU 维护、检查、规划和选择 fixture 保留正常 GC、
+交替顺序和全部 101 个样本。在 queue48 的无候选/尾部候选两种情况下，
+开启候选比同次测量的关闭路径分别增加约 24.7/30.9us；queue128 为约
+68.9/76.2us。关闭路径的选择与固定基线一致。基线仅固定旧 planner，
+其他辅助方法共享，不能将它当作完整旧 runtime 的性能比较。这是可测
+的额外成本；fixture 不含真实 native cache、DMA 或模型执行，也不能
+预测 GPU JCT。初版 V2727 仍保留，不据跨次绝对时间推导加速。
+
+V2730 对上一轮全部 109 个测试模块重新运行，3846 项和 2 个 subtest
+通过；无 skip，仍明确排除同一个 Docker 沙箱测试。V2732 对比 V2722，
+确认保留全部 3795 个测试身份并新增 51 项，并绑定当前应用源码。V2729
+因遗漏 `SGLANG_SOURCE_CHECKOUT` 环境而跳过 21 个真实 native fixture，
+保留该报告但不用于资格。引擎没有改动，仍绑定 V2698 的合格树
+`1fd609df4835e1b7cace5ea4e7d45f2b0061d259`。这些结果均不是 GPU 性能验收。
+
+后续更强对照应忠实接入 Agentix 式 program 服务继承、离散队列、抢占及
+防饥饿，而不是将上述简单 child 优先称为 Agentix。当前程序服务参考核
+仍没有连接 executor，不能作为已完成 baseline。KV 协调的贡献必须在
+同一程序调度、同一可见依赖信息下单独测量。
+
+2026-10-22 再次检索还核对了正式 NSDI 2026 的 JITServe 论文：它根据
+复合请求的应用级 SLO，利用历史相关模式推断 LLM 调用之间的潜在依赖，
+分配阶段预算，并进行 SLO 感知的批处理和 KV 管理。这与“只优化单次调用
+不能保证应用整体完成表现”直接相关，不能把应用整体目标笼统声称为
+空白。它不应被概括为本项目的工具等待 slack 策略；其依赖与预算估计
+也不能直接当成动态 agent 未来工具或完整 DAG 的在线真值。当前 trace
+中并行工具阻塞机会较少，尚不据此启用新的 prefill 延迟或工具 slack。
+
 ## 原始来源
 
 - Agentix，NSDI 2026，§2、§4.2，Algorithm 1：
@@ -315,3 +380,5 @@ deselect 一个 Docker 沙箱测试。引擎未修改，沿用 V2698 的独立�
   https://www.usenix.org/conference/nsdi26/presentation/wu-bingyang
 - AgentInfer 官方调度设计，2026-08-12 修订版说明：
   https://github.com/openJiuwen-ai/agent-infer/blob/main/design/module/scheduling/progress-ttl-scheduling.md
+- JITServe，NSDI 2026，正式论文：
+  https://www.usenix.org/system/files/nsdi26-zhong.pdf

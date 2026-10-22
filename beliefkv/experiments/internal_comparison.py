@@ -31,6 +31,16 @@ def arm_environment(common: dict[str, str], mode: str) -> dict[str, str]:
     workflow_ordering = scheduling == "workflow" and mode in ("full", "scheduler_only")
     if mode == "join_priority_only":
         scheduling = "join_priority"
+    last_child = common.get(
+        "BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY",
+        common.get("JOIN_LAST_CHILD_PRIORITY", "0"),
+    )
+    if last_child not in ("0", "1"):
+        raise ValueError("JOIN last child priority must be 0 or 1")
+    last_child = str(int(
+        last_child == "1" and scheduling == "join_priority"
+        and mode in ("full", "scheduler_only", "join_priority_only")
+    ))
     native = mode == "native_matched"
     settings = {
         **common,
@@ -66,6 +76,8 @@ def arm_environment(common: dict[str, str], mode: str) -> dict[str, str]:
         "BELIEFKV_ENABLE_JOIN_PARENT_PRIORITY": str(int(
             mode in ("full", "scheduler_only", "join_priority_only")
         )),
+        "JOIN_LAST_CHILD_PRIORITY": last_child,
+        "BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY": last_child,
         "BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY": str(int(workflow_ordering)),
         "BELIEFKV_NATIVE_PREFILL_ORDER": str(int(mode in ("kv_only", "native_matched"))),
         "BELIEFKV_WORKFLOW_ATTAINED_WORK": common.get("BELIEFKV_WORKFLOW_ATTAINED_WORK", "0"),
@@ -95,6 +107,7 @@ def validate_runtime(
     tool_restore_mode: str = "speculative",
     idle_prepare_policy: str | None = None,
     restore_tiers: str | None = None,
+    join_last_child_priority: bool | None = None,
 ) -> None:
     """Check observed effective controls, not just the requested environment."""
     if mode not in MODES:
@@ -134,6 +147,11 @@ def validate_runtime(
     if residency_protection is not None:
         expected["prefetch_residency_protection"] = (
             residency_protection and mode in ("full", "kv_only")
+        )
+    if join_last_child_priority is not None:
+        expected["join_last_child_priority"] = (
+            join_last_child_priority
+            and mode in ("full", "scheduler_only", "join_priority_only")
         )
     if scheduling_policy is not None:
         if scheduling_policy not in ("workflow", "join_priority", "workflow_completion"):

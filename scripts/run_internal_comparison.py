@@ -248,6 +248,7 @@ def observe_arm(mode: str, arm: Path, *, max_running_requests: int = 12) -> None
     protection = None
     scheduling = None
     tool_restore, idle_prepare, restore_tiers = "speculative", None, None
+    last_child = None
     info = arm / "server/server_info.json"
     if info.exists():
         observed = load(info)
@@ -269,6 +270,7 @@ def observe_arm(mode: str, arm: Path, *, max_running_requests: int = 12) -> None
         tool_restore = observed.get("tool_restore_mode_requested", "speculative")
         idle_prepare = observed.get("idle_prepare_policy_requested")
         restore_tiers = observed.get("restore_tiers_requested")
+        last_child = observed.get("join_last_child_priority_requested")
     runtime = qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
     if runtime is not None or mode == "native_matched":
         validate_runtime(
@@ -276,6 +278,7 @@ def observe_arm(mode: str, arm: Path, *, max_running_requests: int = 12) -> None
             scheduling_policy=scheduling,
             tool_restore_mode=tool_restore, idle_prepare_policy=idle_prepare,
             restore_tiers=restore_tiers,
+            join_last_child_priority=last_child,
         )
     telemetry = arm / "server/native_telemetry_status.json"
     if telemetry.exists() and any(load(telemetry).get(name) for name in (

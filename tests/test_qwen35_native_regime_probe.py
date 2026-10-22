@@ -187,7 +187,7 @@ def test_native_policy_baseline_rejects_predictive_mix_before_launch(tmp_path: P
     "full", "join_priority_only", "scheduler_only", "kv_only", "native_matched",
 ))
 def test_internal_comparison_effective_environment_before_gpu_launch(
-    tmp_path, comparison, *, protection="1", scheduling="workflow",
+    tmp_path, comparison, *, protection="1", scheduling="workflow", last_child="0",
 ):
     import sys
     from beliefkv.experiments.internal_comparison import arm_environment
@@ -211,6 +211,7 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
         "BELIEFKV_EXPERIMENT_PAUSE_FILE": str(tmp_path / "pause"),
         "PREFETCH_RESIDENCY_PROTECTION": protection,
         "PREFILL_SCHEDULING_POLICY": scheduling,
+        "JOIN_LAST_CHILD_PRIORITY": last_child,
     }, comparison)
     result = subprocess.run(
         ["/bin/bash", str(SCRIPT)],
@@ -245,6 +246,12 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
     assert launch["prefill_scheduling_policy_requested"] == (
         "join_priority" if comparison == "join_priority_only" else scheduling
     )
+    expected_child = (
+        last_child == "1" and comparison in ("full", "scheduler_only", "join_priority_only")
+        and (scheduling == "join_priority" or comparison == "join_priority_only")
+    )
+    assert actual["BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY"] == str(int(expected_child))
+    assert launch["join_last_child_priority_requested"] is expected_child
 
 
 def test_disabled_post_ack_protection_reaches_the_launcher_without_a_gpu(tmp_path):
@@ -256,6 +263,15 @@ def test_disabled_post_ack_protection_reaches_the_launcher_without_a_gpu(tmp_pat
 def test_full_join_priority_profile_keeps_kv_and_reaches_the_launcher_without_a_gpu(tmp_path):
     test_internal_comparison_effective_environment_before_gpu_launch(
         tmp_path, "full", protection="0", scheduling="join_priority",
+    )
+
+
+@pytest.mark.parametrize("comparison", (
+    "full", "join_priority_only", "scheduler_only", "kv_only", "native_matched",
+))
+def test_last_join_child_control_reaches_the_real_launcher_without_gpu(tmp_path, comparison):
+    test_internal_comparison_effective_environment_before_gpu_launch(
+        tmp_path, comparison, protection="0", scheduling="join_priority", last_child="1",
     )
 
 
@@ -341,6 +357,7 @@ def test_effective_policy_environment_without_launching_gpu(
         "prefetch_prefix_diagnostics": prefix_diagnostics == "1",
         "prefetch_residency_protection_requested": True,
         "prefill_scheduling_policy_requested": "workflow",
+        "join_last_child_priority_requested": False,
         "tool_restore_mode_requested": "speculative",
         "idle_prepare_policy_requested": "cold",
         "restore_tiers_requested": "complete",

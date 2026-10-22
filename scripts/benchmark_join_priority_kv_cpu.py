@@ -196,14 +196,100 @@ def measure(size, samples):
             runtime.close()
 
 
+def measure_last_child(baseline, *, size, scenario, samples):
+    fixtures = {
+        name: fixture("full", "join_priority", size, runtime_class=runtime_class)
+        for name, runtime_class in (
+            ("baseline", baseline), ("disabled", NativeAdmissionRuntime),
+            ("enabled", NativeAdmissionRuntime),
+        )
+    }
+    costs = {name: {"wall_us": [], "cpu_us": []} for name in fixtures}
+    calls = 10
+    running = NS(reqs=[])
+    adder = NS(max_running_requests=8, rem_input_tokens=8192, page_size=16)
+    try:
+        for name, (runtime, queue) in fixtures.items():
+            runtime.enable_join_last_child_priority = name == "enabled"
+            runtime._join_priority_normal_admissions = 3 if scenario == "quota" else 4
+            runtime._visible_since = {req.rid: 9. for req in queue}
+            for req in queue:
+                key = runtime.visible[req.rid]
+                child = runtime.graph.invocations[key.invocation_id]
+                parent = runtime.graph.invocations[child.parent_invocation_id]
+                join = next(
+                    join for join in runtime.graph.joins.values()
+                    if not join.satisfied and child.invocation_id in join.member_invocation_ids
+                )
+                parent.join_id = join.join_id
+                runtime._join_by_invocation[child.invocation_id] = {join.join_id}
+                if scenario == "none" or scenario == "tail" and req is not queue[-1]:
+                    join.waiter_invocation_ids.clear()
+            initial_graph = runtime.graph.snapshot()
+        with patch("time.monotonic", lambda: 20.):
+            for sample in range(samples + 20):
+                selections = {}
+                order = tuple(fixtures)
+                for name in order if sample % 2 else reversed(order):
+                    runtime, queue = fixtures[name]
+                    wall, cpu = time.perf_counter_ns(), time.thread_time_ns()
+                    for _ in range(calls):
+                        runtime.scheduler_step(queue, defer_observations=True)
+                        inspection = runtime.inspect_native_prefill_queue(queue)
+                        plan = runtime.plan_native_prefill(
+                            queue, running_batch=running, adder=adder,
+                            _queue_inspection=inspection,
+                        )
+                        selected = select_native_prefill_candidates(
+                            queue, plan=plan, current_semantic_revision=runtime.semantic_revision,
+                        )
+                    elapsed_wall = (time.perf_counter_ns() - wall) / calls / 1000.
+                    elapsed_cpu = (time.thread_time_ns() - cpu) / calls / 1000.
+                    if sample >= 20:
+                        costs[name]["wall_us"].append(elapsed_wall)
+                        costs[name]["cpu_us"].append(elapsed_cpu)
+                    selections[name] = [req.rid for req in selected.candidates]
+                    expected = (
+                        [queue[-1].rid, *(req.rid for req in queue[:-1])]
+                        if name == "enabled" and scenario == "tail"
+                        else [req.rid for req in queue]
+                    )
+                    if (
+                        selections[name] != expected or selected.rejected
+                        or runtime.graph.snapshot() != initial_graph
+                        or runtime.physical_ledger.pending_count
+                    ):
+                        raise AssertionError("sole-child order, causal graph or physical state changed")
+                if selections["baseline"] != selections["disabled"]:
+                    raise AssertionError("disabled sole-child control changed the old queue order")
+        return {
+            "queue_size": size, "scenario": scenario, "calls_per_sample": calls,
+            "scope": "Complete CPU maintenance, inspection, planning and selection; no native cache, DMA or JCT prediction.",
+            "disabled_selection_matches_pinned_baseline": True,
+            "enabled_expected_selection_verified": True,
+            "costs": {
+                name: {
+                    clock: {"p50_us": median(rows), "samples_us": rows}
+                    for clock, rows in clocks.items()
+                } for name, clocks in costs.items()
+            },
+        }
+    finally:
+        for runtime, _ in fixtures.values():
+            runtime.close()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--samples", type=int, default=101)
     parser.add_argument("--baseline", help="Compare this revision's actual planner on identical aging queues")
+    parser.add_argument("--last-child", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.samples < 1 or args.output.exists() or not gc.isenabled():
         parser.error("positive samples, normal GC and a new output are required")
+    if args.last_child and not args.baseline:
+        parser.error("--last-child requires a pinned baseline planner")
     sources = {
         path: sha256_file(ROOT / path) for path in (
             "beliefkv/runtime/sglang_v0520_runtime.py",
@@ -225,6 +311,9 @@ def main():
             "identity classes are shared. Fixed same-clock aging, normal GC, all samples retained."
         ) if baseline else None,
         "cases": [
+            measure_last_child(baseline, size=size, scenario=scenario, samples=args.samples)
+            for size in (8, 48, 128) for scenario in ("none", "quota", "tail", "all")
+        ] if args.last_child else [
             measure_aging(baseline, size=size, pattern=pattern, samples=args.samples)
             for size in (8, 48, 128) for pattern in ("recent", "aged", "mixed")
         ] if baseline else [measure(size, args.samples) for size in (8, 48, 128)],
