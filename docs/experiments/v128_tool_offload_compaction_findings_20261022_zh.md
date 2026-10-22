@@ -91,6 +91,36 @@ V2860 对最新完整组重新封存和审计：
 大计划容量与从 EOS 到 confirmed/client request 的交接。不能据该逻辑量
 直接给出可提前传输字节或 oracle 收益。
 
+### 交接与容量的进一步区分
+
+V2862 使用新增离线审计 `scripts/audit_join_enqueue_handoff.py`，逐条匹配
+旧计划拒绝前的 confirmed_join_client_bound 与拒绝后的原生提交。要求
+workflow/JOIN/context 一致、消费请求恰好前进一个 epoch、checkpoint
+epoch 仍为原值、原生 session 和 generation 不变，同时检查文件顺序、
+调度器墙钟及对应 FULL ACK。
+
+4 条 enqueue_causal_changed 都有安全重试，拒绝到首批新提交分别为
+0.611084、1.570068、5.489014、1.776611ms。因此这些拒绝不能作为恢复
+任务丢失的证据，也不支持绕过提交前的事件排空或身份复核。报告单列
+首个重试批次、已观测 ACK 字节及后续计划原因，不将提交当作首次复用
+或 JCT 收益。
+
+两个大案例的实际容量仍然不足：
+
+- 一次含预留的 FULL 目标为 200908 token，空闲仅 186；一次回收释放
+  28501 token 后仍不足，叶节点检查记录 25 次 unbacked、2 次
+  session_referenced。
+- 另一次含预留目标为 204301 token，空闲 3725；扫描 64 个节点均记录
+  unbacked，扫描尚未完成，实际未释放容量。
+
+unbacked 表示没有可直接使用的 Host 副本，不证明页面已冷或可安全回收；
+相关引用、活跃 owner 与在途复制仍需原生检查。这些数据来自主动关闭
+后台备份的组，应与 Full 的相同诊断比较，不能为了消除预期消融差异而
+放宽安全回收条件或更改当前冻结实验。
+
+V2861 为上述新审计及已有生命周期、批量预取、种子接续的聚焦 CPU
+回归，共 250 项通过。不是完整 GPU 启动资格或性能达标证据。
+
 V2857 已确认，同任务集的 36 roots 来自 9 个项目，每项目 4 个 root
 共享同一仓库文本。child 使用独立提示词，不代表同项目其他 root 不再
 需要该物理前缀；parent 私有冷后缀与仍有活跃 owner 的共享祖先应分别
@@ -101,6 +131,8 @@ V2857 已确认，同任务集的 36 roots 来自 9 个项目，每项目 4 个 
 - `experiments/reports/v2860_v128_no_background_complete_lifecycle_20261022.json.gz`
 - `experiments/reports/v2860_v128_no_background_complete_lifecycle_20261022_summary.json`
 - `experiments/reports/v2857_v127_initial_root_prefix_sharing_20261022.json`
+- `experiments/reports/v2862_v128_join_enqueue_handoff_20261022.json`
+- `experiments/reports/v2861_join_handoff_analysis_cpu_20261022.xml`
 
 V2860 保留各 JSONL 完整前缀字节数及 SHA-256，不改写冻结组自带报告。
 完整 JCT、guard、普通长尾和逐任务工作量仍按现行比较口径保留；等待

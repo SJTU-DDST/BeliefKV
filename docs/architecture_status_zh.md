@@ -69,6 +69,10 @@ V128的no_background_prepare已完整结束，36/36无guard合格、退出码0�
 本轮仅一次内部压缩调用12.31s，直接调用占所属workflow约0.366%，
 不能据此推断移除压缩的净JCT收益。[完整工具卸载与压缩核查](experiments/v128_tool_offload_compaction_findings_20261022_zh.md)
 记录V2860及原始事件口径。运行组、后续Full/native的冻结策略不变。
+V2862进一步确认4条enqueue_causal_changed均在0.61--5.49ms内向绑定
+的新请求重试，不能误算为恢复任务丢失。大计划的真实容量短缺仍存在，
+缺少Host副本不等于已证明可回收；先与Full的后台备份结果比较。
+新审计与既有相关CPU回归250项通过，未修改在线路径或放宽安全条件。
 
 main 新增独立的 `native_in_graph_reusable_nested` profile：稳定 handle
 保存私有 graph state，每轮 fresh invocation/JOIN，原生 session 普通续用、
