@@ -3,13 +3,9 @@ from __future__ import annotations
 from bisect import bisect_right
 from dataclasses import dataclass
 from math import inf
-from operator import itemgetter
 from typing import Any, Mapping
 
 from beliefkv.predictor.types import RemainingTimePrediction
-
-
-_STEP_TIME = itemgetter(0)
 
 
 @dataclass(frozen=True)
@@ -33,12 +29,14 @@ class KaplanMeierCurve:
         self.sample_count = 0
         self.event_count = 0
         self._steps: list[tuple[float, float]] = []
+        self._step_times: tuple[float, ...] = ()
 
     def fit(self, samples: list[tuple[float, bool]]) -> "KaplanMeierCurve":
         if not samples:
             self.sample_count = 0
             self.event_count = 0
             self._steps = []
+            self._step_times = ()
             return self
         grouped: dict[float, list[bool]] = {}
         for duration, completed in samples:
@@ -61,12 +59,13 @@ class KaplanMeierCurve:
         self.sample_count = len(samples)
         self.event_count = event_count
         self._steps = steps
+        self._step_times = tuple(step[0] for step in steps)
         return self
 
     def survival(self, time_ms: float) -> float:
         if time_ms < 0:
             return 1.0
-        index = bisect_right(self._steps, time_ms, key=_STEP_TIME)
+        index = bisect_right(self._step_times, time_ms)
         return self._steps[index - 1][1] if index else 1.0
 
     def conditional_survival(self, elapsed_ms: float, future_ms: float) -> float:
@@ -123,6 +122,7 @@ class KaplanMeierCurve:
             previous_time = time_ms
             previous_survival = survival
         curve._steps = steps
+        curve._step_times = tuple(step[0] for step in steps)
         return curve
 
 
