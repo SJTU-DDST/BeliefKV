@@ -48,7 +48,12 @@ CPU资格范围。V2846含该额外跳过的记录、V2848缺少两个旧参数�
 记录均保留且不作为启动依据；最终V2850恢复全部旧ID。
 
 V128接续登记为../ops/v128_eos_seeded_modules_resume_20261022.registration.json，
-进度以同名registration.state.json为准。CPU资格不代表GPU性能已达标。
+进度以同名registration.state.json为准。应用冻结于04191b0，原生引擎仍为
+1fd609df4835e1b7cace5ea4e7d45f2b0061d259；全部在线源码与V127一致。
+首项链接及后处理完成，22:50:40启动no_background_prepare；
+22:54:49核查watcher/driver均存活，实际后台prepare关闭，工具预取、
+JOIN/EOS预取和resident-first保留，种子/源码检查通过，已开始prefill/
+decode且无错误。CPU资格及运行启动不代表GPU性能已达标。
 
 ## 最新运行前缀证据
 

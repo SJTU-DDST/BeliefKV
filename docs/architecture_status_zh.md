@@ -42,8 +42,10 @@ V2841对72个历史workflow核查，原有token、请求及JCT字段全部保留
 
 V127首项已完成36/36系统测量，35/36无guard合格，完整平均JCT2073.53s；
 最后一个任务因图预算收尾同时带有语义未完成和guard排除，旧监督器因此
-停止。收集器修复保留原退出码及质量排除，准备复用首项并接续剩余五组，
-不将其改成自然完成或重跑整组。[V127接续与覆盖诊断](experiments/v127_guarded_prefix_resume_20261022_zh.md)
+停止。收集器修复保留原退出码及质量排除；V128已复用首项并于22:50:40
+接续no_background_prepare，后续仍为其余消融、Full和native。
+V2850/V2851保留全部4221项旧检查并新增52项，4273项及2个subtest
+通过，在线源码与V127一致。[V127接续与覆盖诊断](experiments/v127_guarded_prefix_resume_20261022_zh.md)
 保留最新工具预取、容量和后台备份证据，GPU净收益仍待完整比较。
 
 main 新增独立的 `native_in_graph_reusable_nested` profile：稳定 handle
