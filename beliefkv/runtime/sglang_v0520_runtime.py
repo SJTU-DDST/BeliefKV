@@ -112,6 +112,7 @@ from beliefkv.runtime.native_transfer_policy import (
     transfer_start_window,
 )
 from beliefkv.runtime.tool_continuity import ToolContinuationPolicy
+from beliefkv.runtime.subagent_retention import DormantSubagentRetention
 
 if TYPE_CHECKING:
     from beliefkv.core.events import RuntimeEvent
@@ -654,6 +655,9 @@ class NativeAdmissionRuntime:
         self._critical_parent_demand: tuple[PrefillCandidateKey, int, int, float] | None = None
         self._cold_full_backups: dict[int, tuple[int | float, str]] = {}
         self._spawn_full_prepares: OrderedDict[str, PrefillCandidateKey] = OrderedDict()
+        self._subagent_retention = (
+            DormantSubagentRetention.from_environment() if self._custom_kv_management else None
+        )
         self._spawn_prepare_next_ms = 0.
         self._idle_prepare_next_ms = 0.
         self._critical_reclaim_next_ms = 0.
@@ -1054,6 +1058,8 @@ class NativeAdmissionRuntime:
         self._capacity_waiting_queue = waiting_queue
         if running_batch is not None:
             self._native_running_batch = running_batch
+        if self._subagent_retention is not None:
+            self._subagent_retention.dispatch(self)
         critical_before = self._critical_parent_demand
         if self.enable_prepare_host and critical_before is not None:
             # ACKed donor capacity is reusable before this iteration's H2D plan.
@@ -1143,6 +1149,8 @@ class NativeAdmissionRuntime:
             return 50
         if self._terminal_child_reclaims:
             return 50
+        if self._subagent_retention is not None and self._subagent_retention.work:
+            return 200
         if self._prefetch_service_leases:
             return 100
         if self._tool_timing_only and any(
@@ -1321,6 +1329,11 @@ class NativeAdmissionRuntime:
             if self._tool_continuity is not None:
                 self._tool_continuity.clear()
             self._spawn_full_prepares.clear()
+            if self._subagent_retention is not None:
+                # Losing the causal mirror revokes every physical authority.
+                self._subagent_retention.states.clear()
+                self._subagent_retention.work.clear()
+                self._subagent_retention.pending_resumes.clear()
             self._terminal_root_contexts.clear()
             self._parent_capacity_handoffs.clear()
             self.tool_wait_hint = None
@@ -1421,6 +1434,21 @@ class NativeAdmissionRuntime:
                     self.demand_hints[hint.key.request_id] = hint
                     self.counts["prediction_accepted"] += 1
             for event in events:
+                if self._subagent_retention is not None:
+                    if event.kind is RuntimeEventKind.INVOCATION_CREATE:
+                        self._subagent_retention.activate(event, runtime=self)
+                        self._subagent_retention.observe_delegation(event)
+                    elif event.kind is RuntimeEventKind.LLM_SUBMIT:
+                        self._subagent_retention.started(event)
+                    elif event.kind is RuntimeEventKind.INVOCATION_CANCEL:
+                        self._subagent_retention.cancel(event)
+                    elif event.kind is RuntimeEventKind.WORKFLOW_END:
+                        self._subagent_retention.end(
+                            event.workflow_id,
+                            labels_complete=event.attributes.get("reuse_labels_complete") is True,
+                        )
+                    elif event.attributes.get("subagent_context_close") is True:
+                        self._subagent_retention.close_context(event)
                 if event.kind in (RuntimeEventKind.SPAWN, RuntimeEventKind.CALL):
                     self._queue_spawn_prepare(event)
                 if self._online_tool_timing is not None:
@@ -1505,6 +1533,8 @@ class NativeAdmissionRuntime:
                         self._track_terminal_cache(key)
                         returned = terminal_returns.get(key.invocation_id)
                         if returned is not None:
+                            if self._subagent_retention is not None:
+                                self._subagent_retention.remember(key, returned)
                             self._retire_terminal_child(key, returned)
                             self._remember_terminal_root(key, returned)
                         invocation = self.graph.invocations.get(key.invocation_id)
@@ -2383,6 +2413,10 @@ class NativeAdmissionRuntime:
                 "prepare_host": self.enable_prepare_host,
                 "background_prepare": self.enable_background_prepare,
                 "terminal_child_reclaim": self.enable_terminal_child_reclaim,
+                "subagent_retention": (
+                    self._subagent_retention.describe()
+                    if self._subagent_retention is not None else None
+                ),
                 "h2d_opportunity_sampling": self.enable_h2d_opportunity_sampling,
                 "prepare_pool_scope": "missing_full_session_path",
                 "spawn_full_prepare": {

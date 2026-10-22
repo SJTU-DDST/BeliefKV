@@ -2,11 +2,22 @@
 
 更新日期：2026-10-22（北京时间）。
 
+main 新增独立的 `native_in_graph_reusable_nested` profile：稳定 handle
+保存私有 graph state，每轮 fresh invocation/JOIN，原生 session 普通续用、
+压缩时换代；物理 KV 丢弃不改变逻辑历史。休眠最新 checkpoint 按 HBM、
+Host、重算分层选择，复用原生增量 D2H/ACK 和安全回收，边界概率模型
+冷启动为预算 MRU。all/drop/LRU/selective 使用相同会话 API 与 prompt，
+初始 36 roots、running/decode8；新机制 GPU 收益尚待验证。
+[实现与评价口径](experiments/reusable_subagents_implementation_20261022_zh.md)
+记录 CPU 用例、控制成本和成本模型先验边界。默认关闭，不进入冻结 V125。
+
 V124b已完成，36/36系统测量有效、35/36无guard合格；完整平均JCT
 2262.19s，历史native2223.38s，目标仍未达成。600--1800s decode约
 579.95/516.94 token/s，但上下文、请求和输出轨迹不同，不作为因果收益。
 [最新完整核查与排队备份补丁](experiments/v124b_complete_findings_and_queued_backup_20261022_zh.md)
-记录V2795--V2802证据。V125已接续schedule_only，使用原冻结代码。
+记录V2795--V2802证据。V125 schedule_only已完成，平均JCT1875.68s，
+输出1560515 token；Full为1820060 token，两组均启用短工具连续性，
+不能作为该模块的单独收益。V125已接续kv_only，使用原冻结代码。
 main额外补齐200ms后台范围内对未分配执行槽的排队owner的只读FULL备份，
 不扩展回收权限；4064项CPU通过，GPU收益待后续验证，不进入V125矩阵。
 
@@ -16,8 +27,8 @@ restore 关闭。按用户新要求，V125 在其正常收集并释放资源后�
 不因研究新 workload 改动本轮任务。新增默认保持行为的后台备份和
 终态 child 回收开关，用于将紧急备份与周期备份、终态回收与其他 KV
 机制分开验证。[跨轮复用 subagent 的选择性状态保留](research/reusable_subagent_retention_20261022_zh.md)
-另作研究，含 V2792/V2794 同前缀容量/历史缺失证据、会话与 activation 分离、
-分层保留、低频实例复用预测及 36 roots 先行的配置建议，尚无收益结论。
+含 V2792/V2794 同前缀容量/历史缺失证据及上述新 profile 的实现边界，
+GPU 收益和复用概率校准仍无结论。
 
 用户最新要求普通 execution-frontier restore 默认关闭，JCT 以完整 workflow
 且保留普通长尾为主；异常工具排除需具体证据及配对口径。JOIN/EOS、增量

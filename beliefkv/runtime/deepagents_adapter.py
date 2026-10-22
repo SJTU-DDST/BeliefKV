@@ -60,6 +60,9 @@ from beliefkv.runtime.clock_evidence import (
     local_monotonic_clock_domain,
 )
 from beliefkv.runtime.tool_wait_shadow import ToolWaitShadowTimer
+from beliefkv.runtime.reusable_subagents import (
+    ReusableSubagentRegistry, SubagentSessionError, reuse_features,
+)
 
 if TYPE_CHECKING:
     from beliefkv.predictor.tool_window_shadow import FrozenToolWindowShadow
@@ -194,6 +197,9 @@ class _PendingTask:
     join_id: str
     tool_run_id: str | None = None
     terminal: bool = False
+    context_epoch: int = 0
+    agent_handle: str | None = None
+    resumed: bool = False
 
 
 @dataclass(frozen=True)
@@ -289,6 +295,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         eos_shadow: bool = False,
         eos_low_prob_shadow: bool = False,
         eos_top_hit_shadow: bool = False,
+        reusable_subagents: ReusableSubagentRegistry | None = None,
     ) -> None:
         super().__init__()
         if root_metadata.relation_type != RelationType.ROOT.value:
@@ -311,6 +318,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self.allowed_subagent_types = allowed_subagent_types
         self.workspace_digest_provider = workspace_digest_provider
         self.native_radix_sessions = native_radix_sessions
+        if reusable_subagents is not None and reusable_subagents.workflow_id != root_metadata.root_workflow_id:
+            raise ValueError("reusable subagent registry belongs to another workflow")
+        self.reusable_subagents = reusable_subagents
         self._project_tool_history = project_tool_history
         self._project_id = project_id
         self._tool_wait_shadow_timer = tool_wait_shadow_timer
@@ -418,7 +428,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         )
         self._publish(events, control=True)
 
-    def finish(self, *, outcome: str) -> None:
+    def finish(self, *, outcome: str, natural_completion: bool = False) -> None:
         with self._publication_lock:
             with self._lock:
                 if not self._started:
@@ -439,10 +449,16 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 self._event(
                     RuntimeEventKind.WORKFLOW_END,
                     ts_ms=ts_ms,
-                    attributes={"outcome": outcome, "source": "deepagents"},
+                    attributes={
+                        "outcome": outcome, "source": "deepagents",
+                        **({"reuse_labels_complete": natural_completion}
+                           if self.reusable_subagents is not None else {}),
+                    },
                 ),
             )
             self._publish(events, control=True)
+            if self.reusable_subagents is not None:
+                self.reusable_subagents.finish()
 
     def stop_tool_wait_shadow(self) -> None:
         with self._publication_lock:
@@ -505,6 +521,37 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             if pending is None or pending.child_invocation_id != task.invocation_id:
                 raise ValueError("runtime task handle does not belong to this adapter")
         return {self.INVOCATION_METADATA_KEY: task.invocation_id}
+
+    def invocation_scope_for_call(self, call_id: str) -> dict[str, str]:
+        with self._lock:
+            pending = self._pending_tasks[call_id]
+            return {self.INVOCATION_METADATA_KEY: pending.child_invocation_id}
+
+    def close_reusable_subagent(self, handle: str, config: Mapping[str, Any]) -> None:
+        registry = self.reusable_subagents
+        if registry is None:
+            raise SubagentSessionError("reusable sessions are disabled")
+        scoped = (config.get("metadata") or {}).get(
+            self.INVOCATION_METADATA_KEY, self.root_metadata.invocation_id,
+        )
+        with self._lock:
+            identity = self._identities.get(scoped)
+            if identity is None:
+                raise SubagentSessionError("unknown calling invocation")
+            session = registry.close(handle, owner_context_id=identity.metadata.context_id)
+        self._publish((self._event(
+            RuntimeEventKind.STRUCTURED_ACTION,
+            invocation_id=session.invocation_id, context_id=session.context_id,
+            context_epoch=max(0, session.epoch),
+            attributes={
+                "source": "reusable_subagent", "subagent_context_close": True,
+                "agent_handle": handle,
+            },
+        ),), control=True)
+        if self.native_radix_sessions is not None:
+            self.native_radix_sessions.retire(
+                self.root_metadata.root_workflow_id, session.context_id,
+            )
 
     def complete_runtime_task(
         self,
@@ -767,6 +814,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 epoch = previous_epoch + 1
                 self._model_epochs[invocation_id] = epoch
                 metadata = replace(base, context_epoch=epoch)
+                if self.reusable_subagents is not None:
+                    self.reusable_subagents.note_epoch(invocation_id, epoch)
                 self._model_metadata[key] = metadata
                 self._run_invocation[key] = invocation_id
                 satisfied = self._first_satisfied_join_by_parent.get(invocation_id)
@@ -1574,12 +1623,17 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 with self._lock:
                     self._ignored_tool_runs.add(key)
                 return
-            pending = self._bind_task_run(
-                key,
-                parent_invocation_id,
-                payload,
-                kwargs,
-            )
+            try:
+                pending = self._bind_task_run(
+                    key,
+                    parent_invocation_id,
+                    payload,
+                    kwargs,
+                )
+            except SubagentSessionError:
+                with self._lock:
+                    self._ignored_tool_runs.add(key)
+                return
             with self._lock:
                 self._run_invocation[key] = pending.child_invocation_id
             return
@@ -1812,9 +1866,11 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             return
         self._finish_ordinary_tool(key, output=None, error=error)
 
-    @staticmethod
-    def _task_arguments_valid(payload: Any) -> bool:
+    def _task_arguments_valid(self, payload: Any) -> bool:
         from deepagents.middleware.subagents import TaskToolSchema
+        if self.reusable_subagents is not None:
+            from beliefkv.runtime.reusable_subagent_middleware import ReusableTaskSchema
+            TaskToolSchema = ReusableTaskSchema
 
         # Match the actual tool boundary before declaring physical dependencies.
         try:
@@ -1851,24 +1907,21 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             child_suffix = _digest(f"{parent_invocation_id}:{tool_call_id}")
             child_invocation_id = f"deepagents-invocation:{child_suffix}"
             child_context_id = f"deepagents-context:{child_suffix}"
-            metadata = BeliefKVRequestMetadata(
-                root_workflow_id=self.root_metadata.root_workflow_id,
-                invocation_id=child_invocation_id,
-                context_id=child_context_id,
-                context_epoch=0,
-                agent_definition_id=subagent_type,
-                agent_instance_id=child_invocation_id,
-                parent_invocation_id=parent_invocation_id,
-                parent_context_id=parent.context_id,
-                relation_type=RelationType.SPAWN.value,
-                context_mode=ContextMode.FRESH.value,
-                execution_mode=ExecutionMode.BACKGROUND.value,
-                return_target_id=parent_invocation_id,
-                join_id=join_id,
-                full_prompt_replay_guaranteed=(
-                    parent.full_prompt_replay_guaranteed
-                ),
-            )
+            context_epoch, agent_handle, resumed = 0, None, False
+            if self.reusable_subagents is not None:
+                try:
+                    activation = self.reusable_subagents.reserve(
+                        call_id=tool_call_id, invocation_id=child_invocation_id,
+                        owner_context_id=parent.context_id, role=subagent_type,
+                        description=description, agent_id=args.get("agent_id"),
+                    )
+                except SubagentSessionError:
+                    continue
+                child_context_id = activation.context_id
+                context_epoch, agent_handle, resumed = (
+                    max(0, activation.initial_epoch - int(activation.resumed)),
+                    activation.handle, activation.resumed,
+                )
             pending = _PendingTask(
                 tool_call_id=tool_call_id,
                 parent_invocation_id=parent_invocation_id,
@@ -1878,6 +1931,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 description_chars=description_chars,
                 description_sha256=description_sha256,
                 join_id=join_id,
+                context_epoch=context_epoch,
+                agent_handle=agent_handle,
+                resumed=resumed,
             )
             pending_items.append(pending)
             events.extend(
@@ -1887,13 +1943,13 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                         ts_ms=ts_ms,
                         invocation_id=child_invocation_id,
                         context_id=child_context_id,
-                        context_epoch=0,
+                        context_epoch=context_epoch,
                         parent_invocation_id=parent_invocation_id,
                         parent_context_id=parent.context_id,
                         agent_definition_id=subagent_type,
-                        agent_instance_id=child_invocation_id,
+                        agent_instance_id=agent_handle or child_invocation_id,
                         relation_type=RelationType.SPAWN,
-                        context_mode=ContextMode.FRESH,
+                        context_mode=ContextMode.RESUME if resumed else ContextMode.FRESH,
                         execution_mode=ExecutionMode.BACKGROUND,
                         return_target_id=parent_invocation_id,
                         join_id=join_id,
@@ -1902,6 +1958,11 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                             "source": "deepagents_task",
                             "description_chars": description_chars,
                             "description_sha256": description_sha256,
+                            **({
+                                "reusable_subagent": True, "agent_handle": agent_handle,
+                                "resumed": resumed,
+                                "reuse_features": reuse_features(description),
+                            } if agent_handle is not None else {}),
                         },
                     ),
                     self._event(
@@ -1919,6 +1980,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     ),
                 )
             )
+        if not pending_items:
+            return ()
         child_ids = tuple(item.child_invocation_id for item in pending_items)
         events.extend(
             (
@@ -1950,13 +2013,15 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                         root_workflow_id=self.root_metadata.root_workflow_id,
                         invocation_id=pending.child_invocation_id,
                         context_id=pending.child_context_id,
-                        context_epoch=0,
+                        context_epoch=pending.context_epoch,
                         agent_definition_id=pending.subagent_type,
-                        agent_instance_id=pending.child_invocation_id,
+                        agent_instance_id=pending.agent_handle or pending.child_invocation_id,
                         parent_invocation_id=parent_invocation_id,
                         parent_context_id=parent.context_id,
                         relation_type=RelationType.SPAWN.value,
-                        context_mode=ContextMode.FRESH.value,
+                        context_mode=(
+                            ContextMode.RESUME if pending.resumed else ContextMode.FRESH
+                        ).value,
                         execution_mode=ExecutionMode.BACKGROUND.value,
                         return_target_id=parent_invocation_id,
                         join_id=join_id,
@@ -1965,6 +2030,10 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                         ),
                     )
                 )
+                if pending.agent_handle is not None:
+                    self._model_epochs[pending.child_invocation_id] = (
+                        pending.context_epoch if pending.resumed else -1
+                    )
                 self._pending_by_parent.setdefault(parent_invocation_id, []).append(
                     pending.tool_call_id
                 )
@@ -1988,6 +2057,25 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         subagent_type = str(inputs.get("subagent_type") or "general-purpose")
         with self._lock:
             candidate_ids = list(self._pending_by_parent.get(parent_invocation_id, ()))
+            if self.reusable_subagents is not None:
+                matches = [
+                    self._pending_tasks[candidate_id] for candidate_id in candidate_ids
+                    if (candidate := self._pending_tasks[candidate_id]).tool_run_id is None
+                    and not candidate.terminal
+                    and candidate.subagent_type == subagent_type
+                    and candidate.description_sha256 == description_sha256
+                    and (
+                        (candidate.agent_handle if candidate.resumed else None)
+                        == inputs.get("agent_id")
+                    )
+                    and (requested_id is None or candidate_id == str(requested_id))
+                ]
+                if not matches:
+                    raise SubagentSessionError("task has no matching reusable activation")
+                pending = matches[0]
+                pending.tool_run_id = tool_run_id
+                self._task_run_to_call[tool_run_id] = pending.tool_call_id
+                return pending
             pending = None
             if requested_id is not None:
                 pending = self._pending_tasks.get(str(requested_id))
@@ -2045,6 +2133,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             if pending.terminal:
                 return ()
             pending.terminal = True
+            if cancelled and self.reusable_subagents is not None:
+                self.reusable_subagents.abort(tool_call_id)
             missing_stage_notice = (
                 not cancelled
                 and pending.child_invocation_id not in self._announced_child_ids
@@ -2094,6 +2184,10 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     "source": "deepagents_task",
                     "outcome": "error" if cancelled else "completed",
                     "context_retired": True,
+                    **(
+                        self.reusable_subagents.return_attributes(tool_call_id)
+                        if self.reusable_subagents is not None and not cancelled else {}
+                    ),
                     "exception_type": type(error).__name__ if error else None,
                     **(
                         {"child_report_status": child_report_status}
@@ -2623,6 +2717,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             elif (
                 event.kind in {RuntimeEventKind.RETURN, RuntimeEventKind.INVOCATION_CANCEL}
                 and event.context_id is not None
+                and event.attributes.get("context_retired") is not False
             ):
                 sessions.retire(event.workflow_id, event.context_id)
             elif event.kind == RuntimeEventKind.WORKFLOW_END:

@@ -2,9 +2,13 @@
 
 NESTED_IN_GRAPH_PROFILE = "native_in_graph_nested_2to4"
 DYNAMIC_NESTED_IN_GRAPH_PROFILE = "native_in_graph_dynamic_nested"
+REUSABLE_NESTED_IN_GRAPH_PROFILE = "native_in_graph_reusable_nested"
+DYNAMIC_NESTED_IN_GRAPH_PROFILES = frozenset({
+    DYNAMIC_NESTED_IN_GRAPH_PROFILE, REUSABLE_NESTED_IN_GRAPH_PROFILE,
+})
 NESTED_COORDINATOR_ROLE = "delegation-coordinator"
 NESTED_IN_GRAPH_PROFILES = frozenset({
-    NESTED_IN_GRAPH_PROFILE, DYNAMIC_NESTED_IN_GRAPH_PROFILE,
+    NESTED_IN_GRAPH_PROFILE, *DYNAMIC_NESTED_IN_GRAPH_PROFILES,
 })
 SUBAGENT_FANOUT_PROFILES = (
     "natural",
@@ -15,6 +19,7 @@ SUBAGENT_FANOUT_PROFILES = (
     "native_in_graph_2to4",
     NESTED_IN_GRAPH_PROFILE,
     DYNAMIC_NESTED_IN_GRAPH_PROFILE,
+    REUSABLE_NESTED_IN_GRAPH_PROFILE,
 )
 IN_GRAPH_SUBAGENT_PROFILES = frozenset({
     "native_in_graph_1to4", "native_in_graph_2to4", *NESTED_IN_GRAPH_PROFILES,
@@ -28,7 +33,7 @@ def delegation_contract(profile: str) -> dict:
     if profile not in SUBAGENT_FANOUT_PROFILES:
         raise ValueError("unsupported subagent fan-out profile")
     nested = profile in NESTED_IN_GRAPH_PROFILES
-    dynamic = profile == DYNAMIC_NESTED_IN_GRAPH_PROFILE
+    dynamic = profile in DYNAMIC_NESTED_IN_GRAPH_PROFILES
     in_graph = profile in IN_GRAPH_SUBAGENT_PROFILES
     bounded_initial = profile in TWO_TO_FOUR_IN_GRAPH_PROFILES
     contract = {
@@ -63,5 +68,14 @@ def delegation_contract(profile: str) -> dict:
             nested_initial_tool_choice="auto",
             fixed_role_sequence=False,
             natural_final_response_rejected=False,
+        )
+    if profile == REUSABLE_NESTED_IN_GRAPH_PROFILE:
+        contract.update(
+            persistent_subagent_handles=True,
+            private_history_replay=True,
+            fresh_invocation_per_activation=True,
+            physical_retention_affects_prompt=False,
+            concurrent_writers_per_handle=1,
+            reuse_api="task(description, subagent_type, agent_id=None);close_agent(agent_id)",
         )
     return contract

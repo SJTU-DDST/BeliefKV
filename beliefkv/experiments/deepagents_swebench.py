@@ -43,6 +43,8 @@ from beliefkv.experiments.arrival_schedule import (
 )
 from beliefkv.experiments.delegation_policy import (
     DYNAMIC_NESTED_IN_GRAPH_PROFILE,
+    DYNAMIC_NESTED_IN_GRAPH_PROFILES,
+    REUSABLE_NESTED_IN_GRAPH_PROFILE,
     IN_GRAPH_SUBAGENT_PROFILES,
     NESTED_COORDINATOR_ROLE,
     NESTED_IN_GRAPH_PROFILE,
@@ -50,6 +52,10 @@ from beliefkv.experiments.delegation_policy import (
     SUBAGENT_FANOUT_PROFILES,
     TWO_TO_FOUR_IN_GRAPH_PROFILES,
     delegation_contract,
+)
+from beliefkv.runtime.reusable_subagents import ReusableSubagentRegistry
+from beliefkv.runtime.reusable_subagent_middleware import (
+    REUSABLE_DELEGATION_PROMPT, ReusableSubAgentMiddleware,
 )
 from beliefkv.experiments.sandbox_progress import observe_output
 from beliefkv.predictor.project_tool_history import ProjectToolHistory
@@ -1735,6 +1741,10 @@ class DeepAgentsExperimentConfig:
             raise ValueError("EOS top-hit shadow requires child EOS shadow")
         if self.subagent_fanout_profile not in SUBAGENT_FANOUT_PROFILES:
             raise ValueError("unsupported subagent fan-out profile")
+        if self.subagent_fanout_profile == REUSABLE_NESTED_IN_GRAPH_PROFILE and (
+            self.mode != "autonomous" or not self.native_radix_sessions
+        ):
+            raise ValueError("reusable subagents require autonomous native radix sessions")
         if (
             self.stop_after_first_native_join
             and self.subagent_fanout_profile != "native_subagent_2to3"
@@ -2576,6 +2586,8 @@ def _autonomous_fanout_prompt(
         return NATIVE_IN_GRAPH_1TO4_PROMPT
     if config.subagent_fanout_profile == "native_in_graph_2to4":
         return NATIVE_IN_GRAPH_2TO4_PROMPT
+    if config.subagent_fanout_profile == REUSABLE_NESTED_IN_GRAPH_PROFILE:
+        return DYNAMIC_NESTED_ROOT_PROMPT + "\n" + REUSABLE_DELEGATION_PROMPT
     if config.subagent_fanout_profile == DYNAMIC_NESTED_IN_GRAPH_PROFILE:
         return DYNAMIC_NESTED_ROOT_PROMPT
     if config.subagent_fanout_profile == NESTED_IN_GRAPH_PROFILE:
@@ -3293,7 +3305,7 @@ def _autonomous_subagents(
         include_nested_coordinator
         and config.subagent_fanout_profile in NESTED_IN_GRAPH_PROFILES
     )
-    dynamic = config.subagent_fanout_profile == DYNAMIC_NESTED_IN_GRAPH_PROFILE
+    dynamic = config.subagent_fanout_profile in DYNAMIC_NESTED_IN_GRAPH_PROFILES
     if nested:
         specs = ((
             NESTED_COORDINATOR_ROLE,
@@ -3398,7 +3410,8 @@ def _autonomous_subagents(
         )
         if nested and (dynamic or name == NESTED_COORDINATOR_ROLE):
             subagents[-1]["middleware"].extend([
-                PrivateStateIsolatingSubAgentMiddleware(
+                _task_middleware(
+                    config, adapter,
                     backend=backend,
                     private_state_keys=CONTEXT_LIFECYCLE_PRIVATE_STATE_KEYS,
                     **({
@@ -3420,6 +3433,13 @@ def _autonomous_subagents(
     return subagents
 
 
+def _task_middleware(config, adapter, **kwargs):
+    if config.subagent_fanout_profile == REUSABLE_NESTED_IN_GRAPH_PROFILE:
+        kwargs.pop("system_prompt", None)
+        return ReusableSubAgentMiddleware(adapter=adapter, **kwargs)
+    return PrivateStateIsolatingSubAgentMiddleware(**kwargs)
+
+
 def _build_autonomous_agent(
     config: DeepAgentsExperimentConfig,
     workload: SweBenchWorkload,
@@ -3438,7 +3458,7 @@ def _build_autonomous_agent(
         TodoListMiddleware(),
         _filesystem_middleware(backend, allow_direct_edits=True),
     ]
-    dynamic = config.subagent_fanout_profile == DYNAMIC_NESTED_IN_GRAPH_PROFILE
+    dynamic = config.subagent_fanout_profile in DYNAMIC_NESTED_IN_GRAPH_PROFILES
     if delegation_enabled and dynamic:
         middleware.insert(0, DynamicDelegationPromptMiddleware())
     elif delegation_enabled and config.subagent_fanout_profile in IN_GRAPH_SUBAGENT_PROFILES:
@@ -3454,7 +3474,8 @@ def _build_autonomous_agent(
         ))
     if delegation_enabled:
         middleware.append(
-            PrivateStateIsolatingSubAgentMiddleware(
+            _task_middleware(
+                config, adapter,
                 backend=backend,
                 private_state_keys=CONTEXT_LIFECYCLE_PRIVATE_STATE_KEYS,
                 **({
@@ -3570,7 +3591,7 @@ def _run_autonomous(
     plan_payload: dict[str, Any] | None = None
     prompt = _task_prompt(workload, workspace=backend.workspace)
     delegation_enabled = True
-    if config.subagent_fanout_profile == DYNAMIC_NESTED_IN_GRAPH_PROFILE:
+    if config.subagent_fanout_profile in DYNAMIC_NESTED_IN_GRAPH_PROFILES:
         prompt += "\n\n" + DYNAMIC_COLLABORATIVE_TASK_INSTRUCTION.strip()
     if config.subagent_fanout_profile == "parallel_analysis_2to3":
         planner = _model(config, adapter, deadline_controller).with_structured_output(
@@ -4232,6 +4253,17 @@ def _trace_summary(path: Path) -> dict[str, Any]:
         and item.get("target_invocation_id") is not None
     ]
     children = {str(item["target_invocation_id"]) for item in spawn_records}
+    reusable_creates = [
+        item for item in records if item.get("kind") == "invocation_create"
+        and (item.get("attributes") or {}).get("reusable_subagent") is True
+    ]
+    resumed_invocations = {
+        item["invocation_id"] for item in reusable_creates
+        if (item.get("attributes") or {}).get("resumed") is True
+    }
+    started_invocations = {
+        item["invocation_id"] for item in records if item.get("kind") == "llm_submit"
+    }
     root_invocations = {
         str(item["invocation_id"])
         for item in records
@@ -4448,6 +4480,11 @@ def _trace_summary(path: Path) -> dict[str, Any]:
         "event_count": len(records),
         "event_counts": dict(sorted(counts.items())),
         "dynamic_subagent_count": len(children),
+        "reusable_subagent_handle_count": len({
+            item["attributes"]["agent_handle"] for item in reusable_creates
+        }),
+        "subagent_resume_declared_count": len(resumed_invocations),
+        "subagent_resume_started_count": len(resumed_invocations & started_invocations),
         "natural_child_return_count": len(returned_children),
         "root_return_count": len(returned_roots),
         "child_cancel_count": len(cancelled_children),
@@ -4730,6 +4767,10 @@ def _run_workflow(
         trace_sink,
         root_metadata,
         control_sink=control_sink,
+        reusable_subagents=(
+            ReusableSubagentRegistry(workflow_id)
+            if config.subagent_fanout_profile == REUSABLE_NESTED_IN_GRAPH_PROFILE else None
+        ),
         native_radix_sessions=(
             NativeRadixSessionLeases(
                 lambda session_id: close_native_radix_session(
@@ -4836,7 +4877,15 @@ def _run_workflow(
                 error_text = f"{type(deadline_error).__name__}: {deadline_error}"
                 outcome = "error"
         try:
-            adapter.finish(outcome=outcome)
+            adapter.finish(
+                outcome=outcome,
+                natural_completion=(
+                    outcome == "completed" and error_text is None
+                    and not result.get("guard_ever_intervened")
+                    and not result.get("guard_forcing_completion")
+                    and not result.get("protocol_repair_failed")
+                ),
+            )
         except BaseException as finish_error:
             if error_text is None:
                 error_text = f"{type(finish_error).__name__}: {finish_error}"
@@ -5351,6 +5400,18 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
         ),
         "dynamic_subagent_count": sum(
             int(item.get("trace", {}).get("dynamic_subagent_count", 0))
+            for item in results
+        ),
+        "reusable_subagent_handle_count": sum(
+            int(item.get("trace", {}).get("reusable_subagent_handle_count", 0))
+            for item in results
+        ),
+        "subagent_resume_declared_count": sum(
+            int(item.get("trace", {}).get("subagent_resume_declared_count", 0))
+            for item in results
+        ),
+        "subagent_resume_started_count": sum(
+            int(item.get("trace", {}).get("subagent_resume_started_count", 0))
             for item in results
         ),
         "subagent_fanout_profile": config.subagent_fanout_profile,

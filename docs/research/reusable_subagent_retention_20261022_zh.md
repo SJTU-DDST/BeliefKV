@@ -1,8 +1,45 @@
 # 跨轮复用 subagent 的选择性状态保留
 
-日期：2026-10-22，北京时间。本文是新方向的可行性论证与实现计划，
-不是已实现机制或性能结论。V124b Full 及后续 V125 消融继续使用当前
+日期：2026-10-22，北京时间。原论证中的持久会话、分层保留和边界预测
+现已接入 main 的独立可选 profile，CPU 正确性已验证；GPU 收益与概率
+校准仍待新 workload 验证。V124b Full 及后续 V125 消融继续使用原
 workload；不在矩阵中间更换 prompt、会话语义或 root 数量。
+
+## 已落地的范围
+
+实现及验证说明见
+[跨轮复用实现记录](../experiments/reusable_subagents_implementation_20261022_zh.md)。
+新 profile 为 `native_in_graph_reusable_nested`。原 profile 的任务语义
+不变；默认 `BELIEFKV_SUBAGENT_RETENTION=off`，不构造休眠状态控制器。
+
+- `ReusableSubagentRegistry` 在 workflow 内保存稳定 handle、私有 graph
+  state 和 transcript。`task(..., agent_id=...)` 创建新的 invocation 和 JOIN，
+  不复活旧 DONE；同 handle 仅允许一个 writer，关闭和 workflow 结束清理。
+- RETURN 不关闭可复用会话。原生 radix session 在普通 resume 时继续使用；
+  物理状态丢失后仍重放同一私有历史，原生 generation 可重新建立。压缩
+  关闭旧 session；resume 的第一条请求即可压缩，不提前推进 create epoch。
+- 原生安全点管理休眠状态：短暂、可撤销的 HBM 宽限；缺失 FULL 增量备份
+  和必要 Mamba checkpoint 的异步备份；ACK 后释放独占 HBM；低价值状态
+  通过原生终态后缀接口释放物理 KV，但逻辑 handle 仍可再次使用。
+- 仅检查最新 path，按物理 extent identity 对预算去重，不保存全部旧
+  checkpoint。保留预算对最新路径作保守核算；与活跃上下文已共享的
+  页面没有精确计算其边际容量价值，不能声称这已是最优容量分配。
+- 有界 scope hashing、返回结果未解决项、角色、实际复用次数以及后续
+  真实委派的范围相似性只在语义边界更新。先用预算 MRU，足够正负样本后
+  使用收缩的在线特征分桶概率和价值排序。正标签延迟到新 invocation
+  实际提交模型调用；执行前取消与未完成 workflow 不记负例。
+
+选择性与 LRU 初始 dormant Host 预算均为 32GiB，可撤销 HBM 预算 2GiB，
+宽限最多 1s。这些是独立 profile 的初始参数，尚未 GPU 调优。价值模型
+当前显式采用重算速度和传输速度的冷启动先验，并对完整 H2D 作保守成本
+扣除；它还不是基于实测暴露等待的 JCT 模型，也不声称接近 oracle。
+概率校准、项目留出和 regret 对比仍是后续工作。
+
+四组对照使用完全相同的 API、prompt、任务和逻辑会话能力：
+`all` 保持原生可撤销软缓存，不强迫全部返回状态立即 D2H；`drop`
+释放物理 KV；`lru` 在同预算内保留近期状态；`selective` 执行分层选择。
+新配置单独保存于 `configs/migration/reusable_subagent_retention_20261022.json`，
+36 roots、running/decode8、seed21、256K 与 95% 压缩，待当前 V125 完成后验证。
 
 ## 研究判断
 
@@ -118,7 +155,7 @@ Host 占用、Host 淘汰字节也都不等于有用工作集大小。
 
 ### 一、把会话生命周期与执行依赖分开
 
-目前 `deepagents_adapter._declare_tasks` 为每次 tool_call_id 创建新的
+原有非复用 profile 的 `deepagents_adapter._declare_task_group` 为每次 tool_call_id 创建新的
 child invocation/context；`_complete_task_events` 在 RETURN 上设置
 `context_retired=True`。`CausalGraph._on_reactivate` 拒绝 terminal invocation。
 `NativeAdmissionRuntime._retire_terminal_child` 则安全回收无引用私有后缀。
