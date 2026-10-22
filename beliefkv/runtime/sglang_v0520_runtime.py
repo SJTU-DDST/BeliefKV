@@ -111,6 +111,7 @@ from beliefkv.runtime.native_transfer_policy import (
     native_residency_budget,
     transfer_start_window,
 )
+from beliefkv.runtime.tool_continuity import ToolContinuationPolicy
 
 if TYPE_CHECKING:
     from beliefkv.core.events import RuntimeEvent
@@ -434,6 +435,17 @@ class NativeAdmissionRuntime:
             "join_priority" if self.internal_comparison_mode == "join_priority_only"
             else scheduling_setting
         )
+        continuity_setting = os.environ.get("BELIEFKV_ENABLE_TOOL_CONTINUITY", "1")
+        if continuity_setting not in ("0", "1"):
+            raise ValueError("tool continuity setting must be 0 or 1")
+        self._tool_continuity = (
+            ToolContinuationPolicy()
+            if continuity_setting == "1"
+            and self.prefill_scheduling_policy == "join_priority"
+            and self.internal_comparison_mode != "kv_only"
+            else None
+        )
+        self._tool_continuity_promoted: str | None = None
         last_child_setting = os.environ.get("BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY", "0")
         if last_child_setting not in ("0", "1"):
             raise ValueError("JOIN last child priority setting must be 0 or 1")
@@ -1293,6 +1305,8 @@ class NativeAdmissionRuntime:
             self._join_parent_cache = None
             self._terminal_child_reclaims.clear()
             self._join_priority_pending.clear()
+            if self._tool_continuity is not None:
+                self._tool_continuity.clear()
             self._spawn_full_prepares.clear()
             self._terminal_root_contexts.clear()
             self._parent_capacity_handoffs.clear()
@@ -1326,6 +1340,9 @@ class NativeAdmissionRuntime:
             self.counts["causal_mirror_discarded"] += 1
             raise
         else:
+            if self._tool_continuity is not None:
+                for event in events:
+                    self._tool_continuity.observe(event)
             if self._completion_order is not None:
                 for workflow_id in {event.workflow_id for event in events}:
                     self._completion_order.invalidate(workflow_id)
@@ -2321,6 +2338,17 @@ class NativeAdmissionRuntime:
                 "join_parent_priority": self.enable_join_parent_priority,
                 "join_last_child_priority": self.enable_join_last_child_priority,
                 "prefill_scheduling_policy": self.prefill_scheduling_policy,
+                "tool_continuity": self._tool_continuity is not None,
+                "tool_continuity_policy": (
+                    {
+                        "short_gap_seconds": self._tool_continuity.short_gap_seconds,
+                        "max_segment_requests": self._tool_continuity.max_rounds,
+                        "credit_scope": "root_workflow;earned_once_per_request",
+                        "counts": dict(self._tool_continuity.counts),
+                        "segments": len(self._tool_continuity.segments),
+                        "ready_segments": len(self._tool_continuity.ready),
+                    } if self._tool_continuity is not None else None
+                ),
                 "join_priority_order": "aged_fifo_then_native;independent_four_admission_quota",
                 "restore_priority_scope": "same_causal_class;no_aged_head_bypass",
                 "prefetch_residency_protection": self.enable_prefetch_residency_protection,
@@ -10565,6 +10593,9 @@ class NativeAdmissionRuntime:
 
     def retire_terminal_request(self, request_id: str) -> None:
         if request_id in self.visible:
+            if self._tool_continuity is not None:
+                key = self.visible[request_id]
+                self._tool_continuity.discard(key.root_workflow_id, key.invocation_id)
             del self.visible[request_id]
             self._visible_since.pop(request_id, None)
             self.demand_hints.pop(request_id, None)
@@ -10579,6 +10610,8 @@ class NativeAdmissionRuntime:
             key = _request_key(req)
             if key is None or key.request_id not in self.visible:
                 raise ValueError("requeued request has no live tagged identity")
+            if is_retracted and self._tool_continuity is not None:
+                self._tool_continuity.retracted(key)
             old_hint = self.tool_wait_hints.get(key.context_id)
             if old_hint is not None and old_hint.key != key:
                 self.tool_wait_hints.pop(key.context_id)
@@ -10971,6 +11004,7 @@ class NativeAdmissionRuntime:
         _queue_inspection: _NativePrefillQueueInspection | None = None,
     ) -> NativePrefillPlan:
         self._workflow_work_promoted = None
+        self._tool_continuity_promoted = None
         self._observe_native_admission_capacity(running_batch=running_batch, adder=adder)
         # Reuse causal classification only; residency, hint expiry and aging
         # remain live because native allocation may change between the two calls.
@@ -11047,11 +11081,13 @@ class NativeAdmissionRuntime:
                 else (1, 0., pair[0])
             ))
             candidate = None
+            critical_head = False
             if (
                 self.enable_join_parent_priority and self._join_priority_pending
                 and ordered and self._join_priority_normal_admissions >= 4
             ):
                 candidate = self._join_parent_priority_candidate(ordered, keys)
+                critical_head = candidate is not None
                 if candidate is not None and candidate != ordered[0]:
                     ordered.remove(candidate)
                     ordered.insert(0, candidate)
@@ -11073,6 +11109,7 @@ class NativeAdmissionRuntime:
                         self._last_join_child_has_waiting_parent(key)
                         and self._executable_waiting_key(pair[1], key=key) == key
                     ):
+                        critical_head = True
                         # Parent and sole-child boosts spend the same bounded turn.
                         if pair != ordered[0]:
                             if now - self._visible_since.get(ordered[0][1].rid, now) >= 10.:
@@ -11090,6 +11127,9 @@ class NativeAdmissionRuntime:
                     critical=lambda key: self.frontier.admission_rank(key.invocation_id)[0] == 0,
                 )
             if self.prefill_scheduling_policy in ("join_priority", "workflow_completion") or candidate is not None:
+                self._order_tool_continuation(
+                    ordered, keys, now=now, protected_head=critical_head,
+                )
                 return compile_native_prefill_plan(
                     [keys[index] for index, _ in ordered],
                     semantic_revision=self.semantic_revision,
@@ -11559,6 +11599,41 @@ class NativeAdmissionRuntime:
             self._last_model_signature = signature
             self._model_worker.submit(tuple(tasks))
 
+    def _order_tool_continuation(
+        self, ordered: list[tuple[int, object]],
+        keys: dict[int, PrefillCandidateKey | None], *,
+        now: float, protected_head: bool,
+    ) -> None:
+        policy = self._tool_continuity
+        if policy is None or not policy.ready or len(ordered) < 2:
+            return
+        floor = int(protected_head)
+        selected = None
+        for position in range(floor + 1, len(ordered)):
+            index, req = ordered[position]
+            key = keys[index]
+            arrival = self._visible_since.get(req.rid, now)
+            if key is None or now - arrival >= 10.:
+                continue
+            inherited = policy.inherited_arrival(key, arrival=arrival)
+            if inherited is not None and self._executable_waiting_key(req, key=key) == key:
+                choice = inherited, position
+                if selected is None or choice < selected:
+                    selected = choice
+        if selected is None:
+            return
+        inherited, position = selected
+        target = floor
+        for preceding in range(floor, position):
+            arrival = self._visible_since.get(ordered[preceding][1].rid, now)
+            if now - arrival >= 10. or arrival <= inherited:
+                target = preceding + 1
+        if target < position:
+            pair = ordered.pop(position)
+            ordered.insert(target, pair)
+            self._tool_continuity_promoted = pair[1].rid
+            self.counts["tool_continuity_priority_ordered"] += 1
+
     def on_prefill_selection(self, rejected: tuple[tuple[str, str], ...]) -> None:
         self.counts.update(reason for _, reason in rejected)
 
@@ -11580,6 +11655,15 @@ class NativeAdmissionRuntime:
     ) -> None:
         if getattr(req, "beliefkv_metadata", None) is not None:
             self.counts["native_admitted" if admitted else f"native_{result}"] += 1
+            if admitted and self._tool_continuity is not None:
+                key = self.visible.get(req.rid)
+                if key is not None:
+                    self._tool_continuity.admitted(
+                        key, arrival=self._visible_since.get(req.rid, time.monotonic()),
+                        promoted=req.rid == self._tool_continuity_promoted,
+                    )
+                    if req.rid == self._tool_continuity_promoted:
+                        self._tool_continuity_promoted = None
             if admitted and (
                 self.enable_join_parent_priority or self.enable_join_last_child_priority
             ) and (
@@ -11908,6 +11992,8 @@ class NativeAdmissionRuntime:
             if visible_key is not None and finished:
                 context_id = visible_key.context_id
                 key = visible_key
+                if self._tool_continuity is not None:
+                    self._tool_continuity.completed(key, now=time.monotonic())
                 if self._workflow_attained_work_enabled:
                     workflow = self.graph.workflows.get(key.root_workflow_id)
                     if workflow is not None and workflow.end_ts_ms is None:
@@ -11941,6 +12027,9 @@ class NativeAdmissionRuntime:
             if getattr(abort, "abort_all", False) or rid.startswith(abort.rid)
         ]
         for rid in removed:
+            if self._tool_continuity is not None:
+                key = self.visible[rid]
+                self._tool_continuity.discard(key.root_workflow_id, key.invocation_id)
             if self._residency_hint_admissions.pop(rid, None) is not None:
                 self.counts["residency_ordering_hint_feedback_unserved"] += 1
             del self.visible[rid]
@@ -11950,6 +12039,8 @@ class NativeAdmissionRuntime:
             self.semantic_revision += 1
         for context_id, key in tuple(self.context_sessions.items()):
             if getattr(abort, "abort_all", False) or key.request_id.startswith(abort.rid):
+                if self._tool_continuity is not None:
+                    self._tool_continuity.discard(key.root_workflow_id, key.invocation_id)
                 del self.context_sessions[context_id]
                 self._context_session_changed(context_id)
                 self._context_tokens.pop(context_id, None)

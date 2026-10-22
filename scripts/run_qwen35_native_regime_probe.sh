@@ -60,6 +60,7 @@ PREFETCH_RESIDENCY_PROTECTION="${BELIEFKV_PREFETCH_RESIDENCY_PROTECTION:-${PREFE
 PREFILL_SCHEDULING_POLICY="${BELIEFKV_PREFILL_SCHEDULING_POLICY:-${PREFILL_SCHEDULING_POLICY:-workflow}}"
 JOIN_LAST_CHILD_PRIORITY="${BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY:-${JOIN_LAST_CHILD_PRIORITY:-0}}"
 EXECUTION_FRONTIER_RESTORE="${BELIEFKV_ENABLE_FRONTIER_RESTORE:-${EXECUTION_FRONTIER_RESTORE:-0}}"
+TOOL_CONTINUITY="${BELIEFKV_ENABLE_TOOL_CONTINUITY:-${TOOL_CONTINUITY:-1}}"
 JOIN_PREFETCH_MIN_ADVANCE_MS="${JOIN_PREFETCH_MIN_ADVANCE_MS:-0}"
 TOOL_PREFETCH_MIN_ADVANCE_MS="${TOOL_PREFETCH_MIN_ADVANCE_MS:-0}"
 PARALLEL_WAIT_PREFETCH="${PARALLEL_WAIT_PREFETCH:-0}"
@@ -144,6 +145,7 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || [[ "$PREFETCH_RESIDENCY_PROTECTION" != "0" && "$PREFETCH_RESIDENCY_PROTECTION" != "1" ]] \
   || [[ "$JOIN_LAST_CHILD_PRIORITY" != "0" && "$JOIN_LAST_CHILD_PRIORITY" != "1" ]] \
   || [[ "$EXECUTION_FRONTIER_RESTORE" != "0" && "$EXECUTION_FRONTIER_RESTORE" != "1" ]] \
+  || [[ "$TOOL_CONTINUITY" != "0" && "$TOOL_CONTINUITY" != "1" ]] \
   || [[ "$PREFILL_SCHEDULING_POLICY" != "workflow" && "$PREFILL_SCHEDULING_POLICY" != "join_priority" && "$PREFILL_SCHEDULING_POLICY" != "workflow_completion" ]] \
   || [[ ! "$PREFETCH_LEAD_MS" =~ ^[0-9]+$ ]] \
   || [[ "$SEMANTIC_WORK_STATISTIC" != upper && "$SEMANTIC_WORK_STATISTIC" != center ]] \
@@ -164,6 +166,7 @@ export BELIEFKV_PREFETCH_RESIDENCY_PROTECTION="$PREFETCH_RESIDENCY_PROTECTION"
 export BELIEFKV_PREFILL_SCHEDULING_POLICY="$PREFILL_SCHEDULING_POLICY"
 export BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY="$JOIN_LAST_CHILD_PRIORITY"
 export BELIEFKV_ENABLE_FRONTIER_RESTORE="$EXECUTION_FRONTIER_RESTORE"
+export BELIEFKV_ENABLE_TOOL_CONTINUITY="$TOOL_CONTINUITY"
 "$PYTHON" -c 'import json,sys; rows=json.load(open(sys.argv[1]))["workloads"]; count=int(sys.argv[2]); assert count <= len(rows), "requested roots exceed manifest"; assert len({row["instance_id"] for row in rows[:count]}) == count, "duplicate workload"' "$MANIFEST" "$ROOT_COUNT"
 if [[ -n "$WORKFLOW_ARRIVAL_SCHEDULE" ]]; then
   PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -c 'import json,sys; from pathlib import Path; from beliefkv.experiments.arrival_schedule import load_workflow_arrivals; rows=json.load(open(sys.argv[1]))["workloads"][:int(sys.argv[2])]; load_workflow_arrivals(Path(sys.argv[3]), instance_ids=[row["instance_id"] for row in rows])' "$MANIFEST" "$ROOT_COUNT" "$WORKFLOW_ARRIVAL_SCHEDULE"
@@ -283,10 +286,11 @@ jq -n --argjson cache "$CHAT_TOKEN_BLOCK_CACHE" --argjson native "$NATIVE_POLICY
   --arg scheduling "$PREFILL_SCHEDULING_POLICY" \
   --argjson last_child "$JOIN_LAST_CHILD_PRIORITY" \
   --argjson frontier "$EXECUTION_FRONTIER_RESTORE" \
+  --argjson continuity "$TOOL_CONTINUITY" \
   --arg tool_restore "${BELIEFKV_TOOL_RESTORE_MODE:-speculative}" \
   --arg idle_prepare "${BELIEFKV_IDLE_PREPARE_POLICY:-cold}" \
   --arg restore_tiers "${BELIEFKV_RESTORE_TIERS:-complete}" \
-  '{schema_version: 1, chat_token_block_cache: ($cache == 1), native_policy_baseline: ($native == 1), prefetch_prefix_diagnostics: ($prefixes == 1), prefetch_residency_protection_requested: ($protection == 1), prefill_scheduling_policy_requested: $scheduling, join_last_child_priority_requested: ($last_child == 1), execution_frontier_restore_requested: ($frontier == 1), tool_restore_mode_requested: $tool_restore, idle_prepare_policy_requested: $idle_prepare, restore_tiers_requested: $restore_tiers, server_random_seed: $seed, internal_comparison_mode: $comparison}' \
+  '{schema_version: 1, chat_token_block_cache: ($cache == 1), native_policy_baseline: ($native == 1), prefetch_prefix_diagnostics: ($prefixes == 1), prefetch_residency_protection_requested: ($protection == 1), prefill_scheduling_policy_requested: $scheduling, join_last_child_priority_requested: ($last_child == 1), execution_frontier_restore_requested: ($frontier == 1), tool_continuity_requested: ($continuity == 1), tool_restore_mode_requested: $tool_restore, idle_prepare_policy_requested: $idle_prepare, restore_tiers_requested: $restore_tiers, server_random_seed: $seed, internal_comparison_mode: $comparison}' \
   > "$RUN_ROOT/server/launch_configuration.json"
 setsid env -u BELIEFKV_FULL_MAMBA_HOST_SPLIT "${unset_env[@]}" \
   "${ab_env[@]}" \

@@ -1,0 +1,303 @@
+from dataclasses import replace
+from types import SimpleNamespace as NS
+from unittest.mock import Mock
+
+import pytest
+
+from beliefkv.core.events import RuntimeEvent, RuntimeEventKind as Kind
+from beliefkv.experiments.internal_comparison import arm_environment, validate_runtime
+from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey as Key
+from beliefkv.runtime.tool_continuity import ToolContinuationPolicy
+from tests.test_internal_comparison import join_fixture, observed, request
+
+
+def key(round=0, *, invocation="normal", workflow="wf"):
+    return Key(
+        f"{invocation}-{round}", workflow, invocation, f"ctx-{invocation}",
+        round, 0, f"session-{invocation}", 1,
+    )
+
+
+def tool(kind, *, ts=100., run="tool", invocation="normal", workflow="wf", **kwargs):
+    return RuntimeEvent(
+        f"{kind.value}-{run}-{ts}", ts, kind, workflow,
+        invocation_id=invocation, context_id=f"ctx-{invocation}",
+        attributes={"tool_run_id": run}, **kwargs,
+    )
+
+
+def completed_policy(*, max_rounds=4):
+    policy = ToolContinuationPolicy(max_rounds=max_rounds)
+    policy.admitted(key(), arrival=1., promoted=False)
+    policy.completed(key(), now=10.)
+    return policy
+
+
+def short_round(policy, *, invocation="normal", workflow="wf", ts=100.):
+    policy.observe(tool(Kind.TOOL_START, ts=ts, invocation=invocation, workflow=workflow))
+    policy.observe(tool(Kind.TOOL_END, ts=ts + 20., invocation=invocation, workflow=workflow))
+
+
+def test_short_tools_inherit_segment_arrival_and_spend_earned_credit():
+    policy = completed_policy()
+    short_round(policy)
+    assert policy.inherited_arrival(key(1), arrival=10.1) == 1.
+    policy.admitted(key(1), arrival=10.1, promoted=True)
+    assert policy.segments[("wf", "normal")].rounds == 2
+    assert policy.segments[("wf", "normal")].arrival == 1.
+    assert policy.credits == {"wf": 2}
+    policy.completed(key(1), now=11.)
+    short_round(policy, ts=200.)
+    policy.credits["wf"] = 0
+    assert policy.inherited_arrival(key(2), arrival=11.1) is None
+    policy.admitted(key(2), arrival=11.1, promoted=False)
+    assert policy.segments[("wf", "normal")].arrival == 11.1
+    assert policy.credits == {"wf": 3}
+
+
+def test_parallel_tools_require_whole_round_completion_and_duration():
+    policy = completed_policy()
+    policy.observe(tool(Kind.TOOL_START, ts=100., run="a"))
+    policy.observe(tool(Kind.TOOL_START, ts=150., run="b"))
+    policy.observe(tool(Kind.TOOL_END, ts=200., run="b"))
+    assert policy.inherited_arrival(key(1), arrival=10.1) is None
+    policy.observe(tool(Kind.TOOL_END, ts=300., run="a"))
+    assert policy.inherited_arrival(key(1), arrival=10.1) == 1.
+    policy.observe(tool(Kind.TOOL_END, ts=300., run="a"))
+    assert policy.counts["short_tool_rounds"] == 1
+
+
+@pytest.mark.parametrize("fault", (
+    "long_tool", "long_client_gap", "negative_gap", "missing_start", "negative_tool",
+    "changed_session", "changed_generation", "changed_context", "skipped_epoch",
+    "same_request", "compaction", "cancel", "spawn", "join", "workflow_end",
+    "terminal_result", "internal_summary", "unknown_submit", "missing_run",
+))
+def test_unproven_or_expired_continuity_falls_back_without_privilege(fault):
+    policy = completed_policy()
+    successor, arrival = key(1), 10.1
+    if fault == "missing_start":
+        policy.observe(tool(Kind.TOOL_END))
+    elif fault == "negative_tool":
+        policy.observe(tool(Kind.TOOL_START, ts=100.))
+        policy.observe(tool(Kind.TOOL_END, ts=99.))
+    elif fault == "missing_run":
+        policy.observe(replace(tool(Kind.TOOL_START), attributes={}))
+    else:
+        policy.observe(tool(Kind.TOOL_START, ts=100.))
+        policy.observe(tool(Kind.TOOL_END, ts=1200. if fault == "long_tool" else 120.))
+    if fault == "long_client_gap":
+        arrival = 11.001
+    elif fault == "negative_gap":
+        arrival = 9.9
+    elif fault == "changed_session":
+        successor = replace(successor, session_id="new-session")
+    elif fault == "changed_generation":
+        successor = replace(successor, session_generation=2)
+    elif fault == "changed_context":
+        successor = replace(successor, context_id="new-context")
+    elif fault == "skipped_epoch":
+        successor = replace(successor, context_epoch=2)
+    elif fault == "same_request":
+        successor = key()
+    elif fault in ("compaction", "cancel", "spawn", "join", "workflow_end", "terminal_result"):
+        kind = {
+            "compaction": Kind.CONTEXT_COMPACT, "cancel": Kind.INVOCATION_CANCEL,
+            "spawn": Kind.SPAWN, "join": Kind.JOIN_WAIT, "workflow_end": Kind.WORKFLOW_END,
+            "terminal_result": Kind.LLM_RESULT,
+        }[fault]
+        policy.observe(replace(tool(kind), attributes={"terminal": fault == "terminal_result"}))
+    elif fault in ("internal_summary", "unknown_submit"):
+        policy.observe(replace(
+            tool(Kind.LLM_SUBMIT), context_epoch=3 if fault == "unknown_submit" else 1,
+            attributes={"runtime_internal": fault == "internal_summary", "request_id": "other"},
+        ))
+    assert policy.inherited_arrival(successor, arrival=arrival) is None
+
+
+def test_native_completion_is_required_and_completion_before_events_can_arrive_late():
+    policy = ToolContinuationPolicy()
+    policy.admitted(key(), arrival=1., promoted=False)
+    short_round(policy)
+    assert not policy.ready
+    policy.admitted(key(), arrival=1., promoted=False)
+    policy.completed(key(), now=10.)
+    policy.observe(replace(
+        tool(Kind.LLM_SUBMIT), context_epoch=1, attributes={"request_id": key(1).request_id},
+    ))
+    assert policy.inherited_arrival(key(1), arrival=10.1) is None
+
+
+def test_segment_budget_yields_even_when_siblings_earn_credit():
+    policy = completed_policy()
+    for index in range(1, 5):
+        sibling = key(0, invocation=f"sibling{index}")
+        policy.admitted(sibling, arrival=2., promoted=False)
+    for round in range(1, 4):
+        short_round(policy, ts=round * 100.)
+        policy.admitted(key(round), arrival=10. + round * .1, promoted=True)
+        policy.completed(key(round), now=10. + round * .1)
+    assert ("wf", "normal") not in policy.segments
+    assert policy.counts["segment_budget_yields"] == 1
+    assert policy.inherited_arrival(key(4), arrival=10.5) is None
+
+
+def test_one_ordinary_turn_earns_three_bounded_short_successors_without_siblings():
+    policy = completed_policy()
+    for round in range(1, 4):
+        short_round(policy, ts=round * 100.)
+        arrival = 10. + round * .1
+        assert policy.inherited_arrival(key(round), arrival=arrival) == 1.
+        policy.admitted(key(round), arrival=arrival, promoted=True)
+        policy.completed(key(round), now=arrival)
+    assert policy.credits["wf"] == 0
+    assert policy.counts["priority_admissions"] == 3
+    assert not policy.ready
+
+
+def test_siblings_share_credit_but_cannot_inherit_each_others_age():
+    policy = completed_policy()
+    short_round(policy)
+    assert policy.inherited_arrival(key(1, invocation="sibling"), arrival=10.1) is None
+    other = key(0, invocation="sibling")
+    policy.admitted(other, arrival=3., promoted=False)
+    policy.completed(other, now=10.)
+    short_round(policy, invocation="sibling")
+    policy.credits["wf"] = 1
+    policy.admitted(key(1), arrival=10.1, promoted=True)
+    assert policy.inherited_arrival(key(1, invocation="sibling"), arrival=10.1) is None
+
+
+def test_chunks_and_retractions_never_mint_new_request_credit():
+    policy = ToolContinuationPolicy()
+    for _ in range(5):
+        policy.admitted(key(), arrival=1., promoted=False)
+    assert policy.credits["wf"] == 3
+    policy.retracted(key())
+    policy.admitted(key(), arrival=1., promoted=False)
+    assert policy.credits["wf"] == 3
+    policy.completed(key(), now=10.)
+    short_round(policy)
+    assert policy.inherited_arrival(key(1), arrival=10.1) is None
+
+
+@pytest.mark.parametrize("configuration", (
+    {"short_gap_seconds": 0}, {"short_gap_seconds": float("nan")},
+    {"short_gap_seconds": True}, {"max_rounds": 1}, {"max_rounds": 2.5},
+))
+def test_invalid_bounds_are_rejected(configuration):
+    with pytest.raises(ValueError):
+        ToolContinuationPolicy(**configuration)
+
+
+def runtime_round(monkeypatch, *, mode="full", continuity=True):
+    monkeypatch.setenv("BELIEFKV_ENABLE_TOOL_CONTINUITY", str(int(continuity)))
+    runtime, requests = join_fixture(
+        monkeypatch, mode=mode, scheduling="join_priority", tool_continuity=continuity,
+    )
+    runtime._join_priority_pending.clear()
+    first, normal = requests
+    runtime._visible_since[first.rid] = 10.
+    runtime._visible_since[normal.rid] = 11.
+    runtime.on_prefill_candidate_result(first, admitted=True, result="CONTINUE")
+    first.finished = lambda: True
+    first.output_ids = [1]
+    runtime.on_batch_completed(NS(reqs=[first]))
+    runtime.on_events((
+        tool(Kind.TOOL_START, ts=100.),
+        tool(Kind.TOOL_END, ts=120.),
+        observed(
+            130, Kind.LLM_SUBMIT, invocation_id="normal", context_id="ctx-normal",
+            context_epoch=1, attributes={"request_id": "successor"},
+        ),
+    ))
+    successor = request("normal")
+    successor.rid = "successor"
+    successor.beliefkv_metadata["context_epoch"] = 1
+    runtime.register_visible_request(successor)
+    for name in ("_read_request_reentry", "_read_request_residency_hint", "_prefill_causal_ranks"):
+        monkeypatch.setattr(runtime, name, Mock(side_effect=AssertionError("no extra KV planning")))
+    return runtime, normal, successor
+
+
+@pytest.mark.parametrize("mode", ("full", "scheduler_only", "join_priority_only"))
+def test_actual_short_tool_successor_reuses_age_with_all_scheduling_modes(monkeypatch, mode):
+    monkeypatch.setattr("time.monotonic", lambda: 12.)
+    runtime, normal, successor = runtime_round(monkeypatch, mode=mode)
+    try:
+        plan = runtime.plan_native_prefill([normal, successor], running_batch=None, adder=None)
+        assert [candidate.request_id for candidate in plan.prioritized] == [successor.rid, normal.rid]
+        assert runtime._visible_since[successor.rid] == 12.
+        runtime.on_prefill_candidate_result(successor, admitted=False, result="NO_TOKEN")
+        assert runtime._tool_continuity.counts["priority_admissions"] == 0
+        plan = runtime.plan_native_prefill([normal, successor], running_batch=None, adder=None)
+        runtime.on_prefill_candidate_result(successor, admitted=True, result="CONTINUE")
+        runtime.on_prefill_candidate_result(successor, admitted=True, result="CONTINUE")
+        assert runtime._tool_continuity.counts["priority_admissions"] == 1
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("constraint", ("disabled", "aged", "older", "join", "active_tool", "stale_session"))
+def test_continuation_preserves_join_fairness_identity_and_native_fallback(monkeypatch, constraint):
+    monkeypatch.setattr("time.monotonic", lambda: 12.)
+    runtime, normal, successor = runtime_round(monkeypatch, continuity=constraint != "disabled")
+    try:
+        if constraint == "aged":
+            runtime._visible_since[normal.rid] = 1.
+        elif constraint == "older":
+            runtime._visible_since[normal.rid] = 9.
+        elif constraint == "join":
+            runtime._join_priority_pending["parent"] = "join"
+        elif constraint == "active_tool":
+            runtime.graph.invocations["normal"].active_tool_calls["active"] = ("execute", 100.)
+        elif constraint == "stale_session":
+            successor.session_generation = 2
+        plan = runtime.plan_native_prefill([normal, successor], running_batch=None, adder=None)
+        assert plan.prioritized[0].request_id == normal.rid
+        assert runtime._tool_continuity_promoted is None
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("mode", ("full", "scheduler_only", "join_priority_only", "kv_only", "native_matched"))
+def test_continuity_control_is_explicit_and_native_kv_modes_remain_independent(mode):
+    env = arm_environment({"PREFILL_SCHEDULING_POLICY": "join_priority"}, mode)
+    expected = str(int(mode in ("full", "scheduler_only", "join_priority_only")))
+    assert env["TOOL_CONTINUITY"] == env["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == expected
+    env = arm_environment({"TOOL_CONTINUITY": "0"}, mode)
+    assert env["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == "0"
+
+
+def test_runtime_telemetry_exposes_effective_continuity_and_bounds(monkeypatch):
+    monkeypatch.setattr("time.monotonic", lambda: 12.)
+    runtime, normal, successor = runtime_round(monkeypatch, mode="join_priority_only")
+    runtime._opportunity_writer = Mock()
+    try:
+        runtime._record_runtime_state()
+        state = runtime._opportunity_writer.record.call_args.args[0]
+        assert state["tool_continuity"] is True
+        assert state["tool_continuity_policy"]["max_segment_requests"] == 4
+        validate_runtime(
+            "join_priority_only", state, tool_continuity=True, scheduling_policy="join_priority",
+        )
+        state["tool_continuity"] = False
+        with pytest.raises(ValueError, match="tool_continuity"):
+            validate_runtime("join_priority_only", state, tool_continuity=True)
+    finally:
+        runtime._opportunity_writer = None
+        runtime.close()
+
+
+@pytest.mark.parametrize("ready", (False, True))
+def test_cpu_benchmark_models_a_real_successor_after_native_completion(ready):
+    from scripts.benchmark_tool_continuity_cpu import exercise, fixture
+
+    runtime, queue = fixture(8, enabled=True, ready=ready)
+    try:
+        order = exercise(runtime, queue)
+        assert order[0] == queue[-1 if ready else 0].rid
+        assert len(order) == len(queue)
+    finally:
+        runtime.close()

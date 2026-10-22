@@ -41,10 +41,13 @@ def request(name):
 
 def join_fixture(
     monkeypatch, *, return_before_wait=False, mode="join_priority_only", scheduling=None,
+    tool_continuity=None,
 ):
     configure(monkeypatch, mode)
     if scheduling is not None:
         monkeypatch.setenv("BELIEFKV_PREFILL_SCHEDULING_POLICY", scheduling)
+    if tool_continuity is not None:
+        monkeypatch.setenv("BELIEFKV_ENABLE_TOOL_CONTINUITY", str(int(tool_continuity)))
     if mode == "full":
         monkeypatch.setenv("BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH", "0")
     runtime = NativeAdmissionRuntime()

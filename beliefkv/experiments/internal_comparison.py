@@ -50,6 +50,15 @@ def arm_environment(common: dict[str, str], mode: str) -> dict[str, str]:
         last_child == "1" and scheduling == "join_priority"
         and mode in ("full", "scheduler_only", "join_priority_only")
     ))
+    continuity = common.get(
+        "BELIEFKV_ENABLE_TOOL_CONTINUITY", common.get("TOOL_CONTINUITY", "1"),
+    )
+    if continuity not in ("0", "1"):
+        raise ValueError("tool continuity must be 0 or 1")
+    continuity = str(int(
+        continuity == "1" and scheduling == "join_priority"
+        and mode in ("full", "scheduler_only", "join_priority_only")
+    ))
     native = mode == "native_matched"
     settings = {
         **common,
@@ -89,6 +98,8 @@ def arm_environment(common: dict[str, str], mode: str) -> dict[str, str]:
         )),
         "JOIN_LAST_CHILD_PRIORITY": last_child,
         "BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY": last_child,
+        "TOOL_CONTINUITY": continuity,
+        "BELIEFKV_ENABLE_TOOL_CONTINUITY": continuity,
         "BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY": str(int(workflow_ordering)),
         "BELIEFKV_NATIVE_PREFILL_ORDER": str(int(mode in ("kv_only", "native_matched"))),
         "BELIEFKV_WORKFLOW_ATTAINED_WORK": common.get("BELIEFKV_WORKFLOW_ATTAINED_WORK", "0"),
@@ -120,6 +131,7 @@ def validate_runtime(
     restore_tiers: str | None = None,
     join_last_child_priority: bool | None = None,
     execution_frontier_restore: bool | None = None,
+    tool_continuity: bool | None = None,
 ) -> None:
     """Check observed effective controls, not just the requested environment."""
     if mode not in MODES:
@@ -175,6 +187,12 @@ def validate_runtime(
         expected["prefill_scheduling_policy"] = (
             "native" if mode == "kv_only" else
             "join_priority" if mode == "join_priority_only" else scheduling_policy
+        )
+    if tool_continuity is not None:
+        expected["tool_continuity"] = (
+            tool_continuity
+            and state.get("prefill_scheduling_policy") == "join_priority"
+            and mode in ("full", "scheduler_only", "join_priority_only")
         )
     for field, value in expected.items():
         if state.get(field) != value:

@@ -53,10 +53,17 @@ def reference_ready(plan: dict, state: dict, *, alive=reservation.alive) -> bool
     raise ValueError(f"reference campaign did not finish normally: {status}")
 
 
-def candidate_environment(reference: dict, checkout: Path, port: int) -> dict[str, str]:
+def candidate_environment(
+    reference: dict, checkout: Path, port: int, *, tool_continuity: bool = False,
+) -> dict[str, str]:
     if tuple(reference["order"]) != REFERENCE_ORDER:
         raise ValueError("reference must contain Full, JOIN-only and matched native")
     common = dict(reference["environment"])
+    # Reconstruct historical controls independently of newer runtime defaults.
+    if "BELIEFKV_ENABLE_FRONTIER_RESTORE" not in common:
+        common.setdefault("EXECUTION_FRONTIER_RESTORE", "1")
+    if "BELIEFKV_ENABLE_TOOL_CONTINUITY" not in common:
+        common.setdefault("TOOL_CONTINUITY", "0")
     manifest = Path(common["WORKLOAD_MANIFEST"]).relative_to(reference["execution_checkout"])
     common["WORKLOAD_MANIFEST"] = str(manifest)
     spec = {"common_environment": common, "order": list(REFERENCE_ORDER)}
@@ -74,12 +81,17 @@ def candidate_environment(reference: dict, checkout: Path, port: int) -> dict[st
     candidate = arm_environment({
         **environment,
         "EXECUTION_FRONTIER_RESTORE": "0", "BELIEFKV_ENABLE_FRONTIER_RESTORE": "0",
+        "TOOL_CONTINUITY": str(int(tool_continuity)),
+        "BELIEFKV_ENABLE_TOOL_CONTINUITY": str(int(tool_continuity)),
     }, "full")
     changed = {
         name for name in baseline.keys() | candidate.keys()
         if baseline.get(name) != candidate.get(name)
     }
-    if changed != {"EXECUTION_FRONTIER_RESTORE", "BELIEFKV_ENABLE_FRONTIER_RESTORE"}:
+    expected_changes = {"EXECUTION_FRONTIER_RESTORE", "BELIEFKV_ENABLE_FRONTIER_RESTORE"}
+    if tool_continuity:
+        expected_changes.update(("TOOL_CONTINUITY", "BELIEFKV_ENABLE_TOOL_CONTINUITY"))
+    if changed != expected_changes:
         raise ValueError("frontier ablation changed another policy control")
     return candidate
 
@@ -181,6 +193,11 @@ def register(args) -> None:
         "tests/test_frontier_restore_ablation.py",
     } <= sources.keys():
         raise ValueError("CPU qualification omits the ablation operator or runtime checks")
+    continuity = getattr(args, "tool_continuity", False)
+    if continuity and not {
+        "beliefkv/runtime/tool_continuity.py", "tests/test_tool_continuity.py",
+    } <= sources.keys():
+        raise ValueError("CPU qualification omits tool continuation execution")
     fresh._require_clean(ROOT)
     if qualified.command(["git", "-C", str(ROOT), "branch", "--show-current"]) != "main":
         raise ValueError("freeze the qualified candidate from main")
@@ -189,7 +206,9 @@ def register(args) -> None:
     checkout = comparison.EXPERIMENTS / ".worktrees" / f"beliefkv-{label}-frozen-{revision[:12]}-20261022"
     if checkout.exists():
         raise FileExistsError("preserve the frozen candidate")
-    environment = candidate_environment(reference, checkout, args.port)
+    environment = candidate_environment(
+        reference, checkout, args.port, tool_continuity=continuity,
+    )
     subprocess.run(
         ["git", "-C", str(ROOT), "worktree", "add", "--detach", str(checkout), revision],
         check=True, capture_output=True,
@@ -222,9 +241,14 @@ def register(args) -> None:
         "reference_run": reference["run_root"], "reference_code_commit": reference["code_commit"],
         "hold_file": reference["hold_file"], "gpu_not_before": reference["gpu_not_before"],
         "environment": environment, "order": ["full"], "port": args.port,
+        "candidate_label": "full_tool_continuity" if continuity else "full_no_frontier",
         "run_root": str(args.run_root.resolve()),
         "performance_accepted": False,
         "comparison_scope": (
+            "Latest qualified Full: ordinary frontier disabled; bounded short-tool "
+            "queue-age inheritance enabled. Reuse completed V122 controls as descriptive "
+            "references; code revisions and realized work differ, not a causal KV ablation."
+        ) if continuity else (
             "Development ablation: latest qualified Full without ordinary execution-frontier "
             "restore; reuse the completed V122 Full/JOIN-only/native controls. Application "
             "revisions and dynamic realized work differ; not a strict same-revision causal effect."
@@ -251,7 +275,8 @@ def compare(plan: dict) -> None:
     run, reference = Path(plan["run_root"]), Path(plan["reference_run"])
     arguments = [sys.executable, str(ROOT / "scripts/compare_native_policy_runs.py")]
     for name, arm, timeline in (
-        ("full_no_frontier", run / "full", run / "timelines/full.json.gz"),
+        (plan.get("candidate_label", "full_no_frontier"),
+         run / "full", run / "timelines/full.json.gz"),
         *((mode, reference / mode, reference / "timelines" / f"{mode}.json.gz")
           for mode in REFERENCE_ORDER),
     ):
@@ -315,7 +340,8 @@ def watch(registration: Path) -> None:
                     start_new_session=True,
                 )
             state.update(
-                status="running_full_no_frontier", driver=reservation.process(driver.pid),
+                status="running_" + plan.get("candidate_label", "full_no_frontier"),
+                driver=reservation.process(driver.pid),
                 started_at=reservation.now().isoformat(),
             )
             while driver.poll() is None:
@@ -363,6 +389,7 @@ def main() -> None:
     parser.add_argument("--registration", type=Path)
     parser.add_argument("--run-root", type=Path)
     parser.add_argument("--port", type=int, default=18528)
+    parser.add_argument("--tool-continuity", action="store_true")
     args = parser.parse_args()
     if args.watch:
         watch(args.watch)

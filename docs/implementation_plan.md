@@ -2,6 +2,17 @@
 
 Status date: 2026-10-22 (Asia/Shanghai).
 
+Latest task: implement bounded short-tool queue continuity compatible with the
+simple JOIN policy, then rerun Full only on newly qualified/frozen main.
+Ordinary execution-frontier restore stays off. Short interruptions may inherit
+their segment's actual initial arrival, with at most four request rounds and
+root-shared earned continuation credit. Preserve actual arrival for aging,
+existing JOIN/sole-child turns, native admission and work-conserving batch fill.
+No slot/KV reservation or per-token observation is introduced. Apply the same
+available scheduling control to future strong scheduling-only baselines.
+See [the continuity implementation](experiments/tool_continuity_v124_20261022_zh.md).
+GPU performance remains unaccepted pending the new complete-workflow results.
+
 The latest user request disables ordinary execution-frontier restore by default
 and makes complete workflow JCT, including normal tails, the primary criterion.
 Only exceptional tool outliers may receive explicitly evidenced paired reporting.

@@ -67,5 +67,8 @@ def test_protection_and_ordering_controls_change_only_the_selected_common_settin
         changed = {key for key in baseline if baseline[key] != environment[key]}
         expected = {field, "BELIEFKV_" + field}
         if field == "PREFILL_SCHEDULING_POLICY":
-            expected |= {"BELIEFKV_ENABLE_RESIDENT_FIRST", "BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY"}
+            expected |= {
+                "BELIEFKV_ENABLE_RESIDENT_FIRST", "BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY",
+                "TOOL_CONTINUITY", "BELIEFKV_ENABLE_TOOL_CONTINUITY",
+            }
         assert changed == expected

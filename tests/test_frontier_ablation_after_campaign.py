@@ -84,6 +84,7 @@ def test_candidate_changes_only_frontier_control_after_rebinding_paths():
             "common_environment": {
                 **reference["environment"],
                 "WORKLOAD_MANIFEST": "configs/workloads/locobench_agent_long_36root_20261020.json",
+                "TOOL_CONTINUITY": "0",
             },
         }, Path("/new/frozen"), Path("/engine"), 18528,
     ), "full")
@@ -98,6 +99,21 @@ def test_candidate_changes_only_frontier_control_after_rebinding_paths():
     assert candidate["BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY"] == "0"
     assert candidate["WORKLOAD_MANIFEST"].startswith("/new/frozen/")
     assert reference == before
+
+
+def test_continuity_candidate_is_explicit_and_preserves_eos_and_simple_join():
+    reference = reference_plan()
+    reference["environment"].pop("EXECUTION_FRONTIER_RESTORE")
+    candidate = launcher.candidate_environment(
+        reference, Path("/new/frozen"), 18530, tool_continuity=True,
+    )
+    assert candidate["TOOL_CONTINUITY"] == "1"
+    assert candidate["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == "1"
+    assert candidate["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == "0"
+    assert candidate["BELIEFKV_PREFILL_SCHEDULING_POLICY"] == "join_priority"
+    assert candidate["JOIN_PREFETCH_TRIGGER"] == "observed_eos"
+    assert candidate["PREFETCH_RESIDENCY_PROTECTION"] == "0"
+    assert candidate["SERVER_RANDOM_SEED"] == "21"
 
 
 @pytest.mark.parametrize("field,value", (
