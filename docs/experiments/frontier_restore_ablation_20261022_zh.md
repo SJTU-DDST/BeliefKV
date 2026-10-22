@@ -28,6 +28,8 @@ V2734 的 217 个采样 prefill 总依赖等待 P50/P90 为 0.100/0.296ms，
 | 工具预测预取 | 关闭 | 关闭 |
 | `EXECUTION_HANDOFF` | `0` | `0` |
 | `JOIN_LAST_CHILD_PRIORITY` | `0` | `0` |
+| `PARALLEL_WAIT_PREFETCH` | `1` | `1` |
+| `WAIT_PREFETCH_CONTEXTS` | `2` | `2` |
 
 `arm_environment` 接收 `EXECUTION_FRONTIER_RESTORE`，生成规范的 runtime
 环境；直接启动脚本也接收该开关并导出规范环境。规范环境变量优先。
