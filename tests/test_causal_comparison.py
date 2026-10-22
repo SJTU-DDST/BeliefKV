@@ -88,6 +88,44 @@ def receipt():
     }
 
 
+@pytest.mark.parametrize("change", (
+    None, "instance_as_workflow", "duplicate", "missing", "wrong_count",
+    "untyped_eligibility", "no_eligible_work",
+))
+def test_source_quality_uses_explicit_runtime_identity_and_retains_guard_reasons(change):
+    summary = {
+        "native_agent_jct_eligible_workflows": 1,
+        "workflows": [
+            {"workflow_id": "runtime:a", "instance_id": "task_a",
+             "native_agent_jct_eligible": True},
+            {"workflow_id": "runtime:b", "instance_id": "task_b",
+             "native_agent_jct_eligible": False,
+             "native_agent_jct_exclusion_reasons": ["guard_intervened_completion"]},
+        ],
+    }
+    if change == "instance_as_workflow":
+        summary["workflows"][1]["workflow_id"] = "task_b"
+    elif change == "duplicate":
+        summary["workflows"].append(dict(summary["workflows"][0]))
+    elif change == "missing":
+        summary["workflows"].pop()
+    elif change == "wrong_count":
+        summary["native_agent_jct_eligible_workflows"] = 2
+    elif change == "untyped_eligibility":
+        summary["workflows"][0]["native_agent_jct_eligible"] = 1
+    elif change == "no_eligible_work":
+        summary["workflows"][0]["native_agent_jct_eligible"] = False
+        summary["native_agent_jct_eligible_workflows"] = 0
+    if change is None:
+        assert comparison.source_quality(summary, ["runtime:a", "runtime:b"]) == [{
+            "workflow_id": "runtime:b", "instance_id": "task_b",
+            "reasons": ["guard_intervened_completion"],
+        }]
+    else:
+        with pytest.raises(ValueError, match="qualifications"):
+            comparison.source_quality(summary, ["runtime:a", "runtime:b"])
+
+
 def result_fixture(tmp_path):
     arm = tmp_path / "full"
     replay = arm / "replay"

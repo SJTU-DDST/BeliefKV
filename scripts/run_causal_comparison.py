@@ -111,6 +111,26 @@ def receipt_work(path):
     return result
 
 
+def source_quality(summary, workflow_ids):
+    rows = summary.get("workflows", [])
+    by_id = {row.get("workflow_id"): row for row in rows}
+    if (
+        len(by_id) != len(rows) or set(by_id) != set(workflow_ids)
+        or any(type(row.get("native_agent_jct_eligible")) is not bool for row in rows)
+        or sum(row["native_agent_jct_eligible"] for row in rows)
+        != summary.get("native_agent_jct_eligible_workflows")
+        or not any(row["native_agent_jct_eligible"] for row in rows)
+    ):
+        raise ValueError("source guard qualifications do not match the replay population")
+    return [
+        {
+            "workflow_id": row["workflow_id"], "instance_id": row["instance_id"],
+            "reasons": row.get("native_agent_jct_exclusion_reasons", []),
+        }
+        for row in rows if not row["native_agent_jct_eligible"]
+    ]
+
+
 def validate_result(plan, result, arm, *, live_control):
     if (
         result.get("causal_execution_completed") is not True
@@ -288,12 +308,7 @@ def register(args):
     ))
     quality = load(summaries[0])
     workflows = sorted({row.event.workflow_id for row in graph.nodes if row.event is not None})
-    exclusions = [
-        row["instance_id"] for row in quality["workflows"]
-        if row.get("native_agent_jct_eligible") is not True
-    ]
-    if not set(exclusions) <= set(workflows) or len(exclusions) >= len(workflows):
-        raise ValueError("source guard qualifications do not match the replay population")
+    exclusions = source_quality(quality, workflows)
     plan = {
         "schema_version": 1, "registered_at": reservation.now().isoformat(),
         "development_checkout": str(ROOT), "execution_checkout": str(checkout),
@@ -308,7 +323,9 @@ def register(args):
         "token_source_sha256": tokens["token_source_sha256"],
         "source_capacity": load(args.source_arm / "server/native_capacity_census.json")["capacity"],
         "source_server_parameters": smoke_server["source_server_parameters"],
-        "workflow_ids": workflows, "quality_exclusions": exclusions,
+        "workflow_ids": workflows,
+        "quality_exclusions": [row["workflow_id"] for row in exclusions],
+        "quality_exclusion_details": exclusions,
         "independent_task_correctness_verified": False,
         "hold_file": reference["hold_file"], "order": list(ORDER),
         "reference_environment": reference["arms"]["full"],
@@ -508,6 +525,7 @@ def watch(registration):
                 state["completed_arms"].append(label)
                 reservation.write_json(run / "causal_comparison.json", {
                     "results": results, "quality_exclusions": plan["quality_exclusions"],
+                    "quality_exclusion_details": plan.get("quality_exclusion_details", []),
                     "all_normal_tails_retained": True, "performance_accepted": False,
                     "scope": plan["scope"],
                 })
