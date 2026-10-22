@@ -59,6 +59,17 @@ JOIN计划、31个提前复用事件（约1.633GB），事件ACK到首服P50约0
 [复用见证与共享审计](experiments/prefetch_witness_and_prefix_sharing_20261022_zh.md)
 记录复现、原始证据限制及后续容量实验口径。
 
+V128的no_background_prepare已完整结束，36/36无guard合格、退出码0，
+完整平均JCT1903.85s；23:51:33接续no_tool_duration_model。
+预测长工具等待触发173次增量备份，ACK确认1.627GB FULL；工具等待
+期间实际回收243个节点、累计2.663GB FULL及3.091GB Mamba，但包含
+紧急容量路径，不能全部归因于预测。完整JOIN提前复用为38个事件、
+2.785GB，含完成后恢复的确认FULL为7.416GB；出现3.5--4.0GB大计划
+的容量及提交身份交接问题，不由早期小计划推断全组没有大恢复空间。
+本轮仅一次内部压缩调用12.31s，直接调用占所属workflow约0.366%，
+不能据此推断移除压缩的净JCT收益。[完整工具卸载与压缩核查](experiments/v128_tool_offload_compaction_findings_20261022_zh.md)
+记录V2860及原始事件口径。运行组、后续Full/native的冻结策略不变。
+
 main 新增独立的 `native_in_graph_reusable_nested` profile：稳定 handle
 保存私有 graph state，每轮 fresh invocation/JOIN，原生 session 普通续用、
 压缩时换代；物理 KV 丢弃不改变逻辑历史。休眠最新 checkpoint 按 HBM、
