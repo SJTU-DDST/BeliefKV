@@ -51,7 +51,7 @@ def arm_environment(common: dict[str, str], mode: str) -> dict[str, str]:
         and mode in ("full", "scheduler_only", "join_priority_only")
     ))
     continuity = common.get(
-        "BELIEFKV_ENABLE_TOOL_CONTINUITY", common.get("TOOL_CONTINUITY", "1"),
+        "BELIEFKV_ENABLE_TOOL_CONTINUITY", common.get("TOOL_CONTINUITY", "0"),
     )
     if continuity not in ("0", "1"):
         raise ValueError("tool continuity must be 0 or 1")

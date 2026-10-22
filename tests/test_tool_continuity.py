@@ -305,10 +305,33 @@ def test_continuity_keeps_its_aged_fairness_budget_independent_of_join(monkeypat
 @pytest.mark.parametrize("mode", ("full", "scheduler_only", "join_priority_only", "kv_only", "native_matched"))
 def test_continuity_control_is_explicit_and_native_kv_modes_remain_independent(mode):
     env = arm_environment({"PREFILL_SCHEDULING_POLICY": "join_priority"}, mode)
+    assert env["TOOL_CONTINUITY"] == env["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == "0"
+    env = arm_environment({
+        "PREFILL_SCHEDULING_POLICY": "join_priority", "TOOL_CONTINUITY": "1",
+    }, mode)
     expected = str(int(mode in ("full", "scheduler_only", "join_priority_only")))
     assert env["TOOL_CONTINUITY"] == env["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == expected
     env = arm_environment({"TOOL_CONTINUITY": "0"}, mode)
     assert env["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == "0"
+
+
+def test_default_runtime_does_not_track_or_promote_short_tool_successors(monkeypatch):
+    monkeypatch.setattr("time.monotonic", lambda: 12.)
+    monkeypatch.delenv("BELIEFKV_ENABLE_TOOL_CONTINUITY", raising=False)
+    runtime, requests = join_fixture(
+        monkeypatch, mode="full", scheduling="join_priority",
+    )
+    try:
+        assert runtime._tool_continuity is None
+        runtime._join_priority_pending.clear()
+        runtime.on_events((
+            tool(Kind.TOOL_START, ts=100.), tool(Kind.TOOL_END, ts=120.),
+        ))
+        plan = runtime.plan_native_prefill(requests, running_batch=None, adder=None)
+        assert [key.request_id for key in plan.prioritized] == [req.rid for req in requests]
+        assert runtime._tool_continuity_promoted is None
+    finally:
+        runtime.close()
 
 
 def test_runtime_telemetry_exposes_effective_continuity_and_bounds(monkeypatch):

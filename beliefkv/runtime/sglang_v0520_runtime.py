@@ -436,7 +436,7 @@ class NativeAdmissionRuntime:
             "join_priority" if self.internal_comparison_mode == "join_priority_only"
             else scheduling_setting
         )
-        continuity_setting = os.environ.get("BELIEFKV_ENABLE_TOOL_CONTINUITY", "1")
+        continuity_setting = os.environ.get("BELIEFKV_ENABLE_TOOL_CONTINUITY", "0")
         if continuity_setting not in ("0", "1"):
             raise ValueError("tool continuity setting must be 0 or 1")
         self._tool_continuity = (

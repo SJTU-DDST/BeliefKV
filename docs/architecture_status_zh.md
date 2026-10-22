@@ -2,6 +2,24 @@
 
 更新日期：2026-10-22（北京时间）。
 
+用户最新选择复用 V123 Full，不再仅为关闭短工具连续性重跑 Full。
+后续策略显式使用
+[`v123_reference_policy_20261022.json`](../configs/migration/v123_reference_policy_20261022.json)：
+36 roots、running/decode8、256K、seed21、简单 JOIN 优先、EOS 预取、
+cold 增量备份，关闭普通 frontier、短工具连续性和额外驻留保护。
+V123 对 V122 Full 的输入差约0.05%、输出差约2.5%、工具次数差约0.08%，
+完整平均JCT低约5.84%；对native少生成14.7%、少执行20.6%请求，不能将
+约19.6%的JCT差全当系统收益。V125保留已启动arm，后续旧策略矩阵停止，
+未登记或启动 V126/V127。下面的重跑/回退方案保留为手动工具，当前不执行。
+
+最新要求优先处理 V124b Full 的 JCT 回撤：短工具排队连续性在 runtime、
+内部环境和 launcher 中统一默认关闭，显式消融仍可开启。V125 当前
+KV-only 完整收集后优先接续最新 Full，若完整 JCT/吞吐开发门槛未通过，
+自动验证 V108 策略配置，保留 seed21 和已验证 CPU 优化。
+[回撤证据与修复方案](experiments/v124b_full_recovery_20261022_zh.md)
+区分实际工作量、配置变化和待验证的调度因果；普通长尾保留，
+复用 subagent 新 workload 不混入这轮验证。以下旧实验计划以该接续为准。
+
 main 新增独立的 `native_in_graph_reusable_nested` profile：稳定 handle
 保存私有 graph state，每轮 fresh invocation/JOIN，原生 session 普通续用、
 压缩时换代；物理 KV 丢弃不改变逻辑历史。休眠最新 checkpoint 按 HBM、
