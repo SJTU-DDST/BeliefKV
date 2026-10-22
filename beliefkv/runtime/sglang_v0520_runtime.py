@@ -7862,6 +7862,7 @@ class NativeAdmissionRuntime:
         self._tool_prefetch_next_ms = now_ms + SEMANTIC_FRAME_INTERVAL_MS
         self.counts["tool_prefetch_scans"] += 1
         budget = None
+        budget_headroom = None
         candidates = []
         outside_window = deferred = 0
         next_possible_window_ms = math.inf
@@ -7939,13 +7940,29 @@ class NativeAdmissionRuntime:
                 continue
             if budget is None:
                 budget = self._current_residency_budget(include_evictable=True)
+                budget_headroom = self._residency_headroom
             if not self._prefetch_slot_available(hint.key, budget=budget):
                 self.counts["tool_prefetch_admission_budget_busy"] += 1
                 continue
             if from_cache:
                 opportunity = cached[1]
             else:
-                opportunity = self._wait_prefetch_opportunity(hint.key)
+                opportunity = self._wait_prefetch_opportunity(
+                    hint.key, apply_capacity_budget=False,
+                )
+                if opportunity is not None and opportunity.step is not None:
+                    # Selection is read-only; reuse this call's budget only
+                    # while its native free-list observation still matches.
+                    opportunity = self._budget_wait_prefetch_opportunity(
+                        hint.key, opportunity, fit_current_capacity=False,
+                        batched=callable(getattr(
+                            self._native_cache, "prefetch_gpu_session_nodes", None,
+                        )),
+                        budget=budget if (
+                            budget.source == "native_next_prefill"
+                            and getattr(opportunity, "headroom", None) == budget_headroom
+                        ) else None,
+                    )
                 self._tool_opportunity_cache[hint.key] = (now_ms + 100., opportunity)
                 if len(self._tool_opportunity_cache) > 256:
                     self._tool_opportunity_cache = {
