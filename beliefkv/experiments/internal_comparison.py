@@ -203,7 +203,7 @@ def validate_runtime(
     if expected_overrides:
         if not set(expected_overrides) <= {
             "join_parent_priority", "final_stage_prefetch",
-            "background_prepare", "terminal_child_reclaim",
+            "background_prepare", "terminal_child_reclaim", "tool_prefetch",
         } or any(type(value) is not bool for value in expected_overrides.values()):
             raise ValueError("unsupported module ablation expectations")
         expected.update(expected_overrides)

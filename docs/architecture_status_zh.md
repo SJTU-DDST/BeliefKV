@@ -12,11 +12,13 @@ V123配置保留为历史参考。所有直接JCT收益比较先检查输入/输
 记录完整口径与5%工程筛选线，接近只是必要条件。
 
 V125 schedule-only和KV-only均已完成，后者平均JCT2202.19s、输出1703674
-token、请求7263、36/36无guard合格。旧“KV-only后退休矩阵”CPU watcher
-已取消，原冻结消融矩阵继续，当前进入no_tool_continuity。全部结果收齐
-后由CPU审计比较大部分arm更接近V123还是native，再决定重跑哪侧；
-不热改当前实验，也没有新增Full/native GPU登记。短工具连续性在main默认
-关闭，显式消融仍可开启；此前自动Full/V108回退工具当前不执行。
+token、请求7263、36/36无guard合格。按用户最新要求，第3项
+no_tool_continuity已行政中止，保留退出码143和全部trace；第8项
+no_join_priority、第9项complete_restore取消。旧watcher与driver已经退出。
+剩余四项改用补齐随机源的最新V108/EOS配置冻结接续，随后运行同版
+Full/native。已完成的旧配置结果保留为历史证据。
+[种子修复与接续计划](experiments/seeded_eos_modules_v126_20261022_zh.md)
+记录差异、启动入口和工作量审计；实际运行进度以新登记state为准。
 
 main 新增独立的 `native_in_graph_reusable_nested` profile：稳定 handle
 保存私有 graph state，每轮 fresh invocation/JOIN，原生 session 普通续用、
@@ -37,9 +39,9 @@ V124b已完成，36/36系统测量有效、35/36无guard合格；完整平均JCT
 main额外补齐200ms后台范围内对未分配执行槽的排队owner的只读FULL备份，
 不扩展回收权限；4064项CPU通过，GPU收益待后续验证，不进入V125矩阵。
 
-最新 Full 为 V124b：简单 JOIN 排序、短工具有界续接、普通 frontier
-restore 关闭。按用户新要求，V125 在其正常收集并释放资源后顺序执行
-同配置组件消融，见[消融矩阵](experiments/module_ablations_v125_20261022_zh.md)；
+最新完成的 Full 为 V124b：简单 JOIN 排序、短工具有界续接、普通 frontier
+restore 关闭。V125原始同配置组件消融及后续取消记录见
+[消融矩阵](experiments/module_ablations_v125_20261022_zh.md)；
 不因研究新 workload 改动本轮任务。新增默认保持行为的后台备份和
 终态 child 回收开关，用于将紧急备份与周期备份、终态回收与其他 KV
 机制分开验证。[跨轮复用 subagent 的选择性状态保留](research/reusable_subagent_retention_20261022_zh.md)

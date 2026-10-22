@@ -9,6 +9,7 @@ ROOT_COUNT="${ROOT_COUNT:-108}"
 MAX_RUNNING_REQUESTS="${MAX_RUNNING_REQUESTS:-48}"
 SAMPLING_SEED="${SAMPLING_SEED:-21}"
 SERVER_RANDOM_SEED="${SERVER_RANDOM_SEED:-21}"
+PYTHONHASHSEED="${PYTHONHASHSEED:-$SAMPLING_SEED}"
 MAX_COMPLETION_TOKENS="${MAX_COMPLETION_TOKENS:-16384}"
 MODEL_REQUEST_TIMEOUT_SECONDS="${MODEL_REQUEST_TIMEOUT_SECONDS:-${ACTIVATION_WALL_CLOCK_SECONDS:-14400}}"
 MODEL_CONTEXT_TOKENS="${MODEL_CONTEXT_TOKENS:-131072}"
@@ -61,6 +62,7 @@ PREFILL_SCHEDULING_POLICY="${BELIEFKV_PREFILL_SCHEDULING_POLICY:-${PREFILL_SCHED
 JOIN_LAST_CHILD_PRIORITY="${BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY:-${JOIN_LAST_CHILD_PRIORITY:-0}}"
 EXECUTION_FRONTIER_RESTORE="${BELIEFKV_ENABLE_FRONTIER_RESTORE:-${EXECUTION_FRONTIER_RESTORE:-0}}"
 TOOL_CONTINUITY="${BELIEFKV_ENABLE_TOOL_CONTINUITY:-${TOOL_CONTINUITY:-0}}"
+ENABLE_JOIN_PREFETCH="${BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH:-1}"
 JOIN_PREFETCH_MIN_ADVANCE_MS="${JOIN_PREFETCH_MIN_ADVANCE_MS:-0}"
 TOOL_PREFETCH_MIN_ADVANCE_MS="${TOOL_PREFETCH_MIN_ADVANCE_MS:-0}"
 PARALLEL_WAIT_PREFETCH="${PARALLEL_WAIT_PREFETCH:-0}"
@@ -109,9 +111,11 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || { (( ARRIVAL_BATCH_SIZE > 108 )); } \
   || { (( ARRIVAL_BATCH_SIZE > 0 )) && (( ARRIVAL_BATCH_INTERVAL_MS == 0 )); } \
   || { [[ "$ARRIVAL_BATCH_SIZE" == "0" ]] && [[ "$ARRIVAL_BATCH_INTERVAL_MS" != "0" ]]; } \
-  || [[ ! "$SAMPLING_SEED" =~ ^[0-9]+$ ]] \
+  || [[ ! "$SAMPLING_SEED" =~ ^(0|[1-9][0-9]{0,9})$ ]] \
+  || (( SAMPLING_SEED > 4294967295 )) \
   || [[ ! "$SERVER_RANDOM_SEED" =~ ^(0|[1-9][0-9]{0,9})$ ]] \
   || (( SERVER_RANDOM_SEED > 4294967295 )) \
+  || [[ "$PYTHONHASHSEED" != "$SAMPLING_SEED" ]] \
   || [[ ! "$MAX_RUNNING_REQUESTS" =~ ^[1-9][0-9]{0,3}$ ]] \
   || [[ ! "$AGENT_RECURSION_LIMIT" =~ ^[1-9][0-9]{0,5}$ ]] \
   || [[ "$JOIN_PREFETCH_TRIGGER" != "observed_eos" && "$JOIN_PREFETCH_TRIGGER" != "report_service_or_eos" && "$JOIN_PREFETCH_TRIGGER" != "selective_report_or_eos" ]] \
@@ -146,6 +150,7 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || [[ "$JOIN_LAST_CHILD_PRIORITY" != "0" && "$JOIN_LAST_CHILD_PRIORITY" != "1" ]] \
   || [[ "$EXECUTION_FRONTIER_RESTORE" != "0" && "$EXECUTION_FRONTIER_RESTORE" != "1" ]] \
   || [[ "$TOOL_CONTINUITY" != "0" && "$TOOL_CONTINUITY" != "1" ]] \
+  || [[ "$ENABLE_JOIN_PREFETCH" != "0" && "$ENABLE_JOIN_PREFETCH" != "1" ]] \
   || [[ "$PREFILL_SCHEDULING_POLICY" != "workflow" && "$PREFILL_SCHEDULING_POLICY" != "join_priority" && "$PREFILL_SCHEDULING_POLICY" != "workflow_completion" ]] \
   || [[ ! "$PREFETCH_LEAD_MS" =~ ^[0-9]+$ ]] \
   || [[ "$SEMANTIC_WORK_STATISTIC" != upper && "$SEMANTIC_WORK_STATISTIC" != center ]] \
@@ -161,6 +166,7 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   exit 2
 fi
 export BELIEFKV_CHAT_TOKEN_BLOCK_CACHE="$CHAT_TOKEN_BLOCK_CACHE"
+export PYTHONHASHSEED
 export BELIEFKV_PREFETCH_PREFIX_DIAGNOSTICS="$PREFETCH_PREFIX_DIAGNOSTICS"
 export BELIEFKV_PREFETCH_RESIDENCY_PROTECTION="$PREFETCH_RESIDENCY_PROTECTION"
 export BELIEFKV_PREFILL_SCHEDULING_POLICY="$PREFILL_SCHEDULING_POLICY"
@@ -262,7 +268,7 @@ if [[ "$AB_MODE" != "off" ]]; then
       BELIEFKV_ENABLE_EXECUTION_HANDOFF=0 BELIEFKV_H2D_OPPORTUNITY_SAMPLING=0)
   else
     export BELIEFKV_EMIT_SEMANTIC_TEXT=0
-    ab_env+=(BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH=1 \
+    ab_env+=(BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH="$ENABLE_JOIN_PREFETCH" \
       BELIEFKV_H2D_OPPORTUNITY_SAMPLING="$H2D_OPPORTUNITY_SAMPLING" \
       BELIEFKV_ENABLE_EXECUTION_HANDOFF="$EXECUTION_HANDOFF" \
       BELIEFKV_ENABLE_TOOL_PREFETCH="$ENABLE_TOOL_TIMING")
@@ -281,6 +287,7 @@ fi
 jq -n --argjson cache "$CHAT_TOKEN_BLOCK_CACHE" --argjson native "$NATIVE_POLICY_BASELINE" \
   --argjson prefixes "$PREFETCH_PREFIX_DIAGNOSTICS" \
   --argjson seed "$SERVER_RANDOM_SEED" \
+  --arg hash_seed "$PYTHONHASHSEED" \
   --arg comparison "${BELIEFKV_INTERNAL_COMPARISON_MODE:-full}" \
   --argjson protection "$PREFETCH_RESIDENCY_PROTECTION" \
   --arg scheduling "$PREFILL_SCHEDULING_POLICY" \
@@ -290,7 +297,7 @@ jq -n --argjson cache "$CHAT_TOKEN_BLOCK_CACHE" --argjson native "$NATIVE_POLICY
   --arg tool_restore "${BELIEFKV_TOOL_RESTORE_MODE:-speculative}" \
   --arg idle_prepare "${BELIEFKV_IDLE_PREPARE_POLICY:-cold}" \
   --arg restore_tiers "${BELIEFKV_RESTORE_TIERS:-complete}" \
-  '{schema_version: 1, chat_token_block_cache: ($cache == 1), native_policy_baseline: ($native == 1), prefetch_prefix_diagnostics: ($prefixes == 1), prefetch_residency_protection_requested: ($protection == 1), prefill_scheduling_policy_requested: $scheduling, join_last_child_priority_requested: ($last_child == 1), execution_frontier_restore_requested: ($frontier == 1), tool_continuity_requested: ($continuity == 1), tool_restore_mode_requested: $tool_restore, idle_prepare_policy_requested: $idle_prepare, restore_tiers_requested: $restore_tiers, server_random_seed: $seed, internal_comparison_mode: $comparison}' \
+  '{schema_version: 1, chat_token_block_cache: ($cache == 1), native_policy_baseline: ($native == 1), prefetch_prefix_diagnostics: ($prefixes == 1), prefetch_residency_protection_requested: ($protection == 1), prefill_scheduling_policy_requested: $scheduling, join_last_child_priority_requested: ($last_child == 1), execution_frontier_restore_requested: ($frontier == 1), tool_continuity_requested: ($continuity == 1), tool_restore_mode_requested: $tool_restore, idle_prepare_policy_requested: $idle_prepare, restore_tiers_requested: $restore_tiers, server_random_seed: $seed, python_hash_seed: $hash_seed, internal_comparison_mode: $comparison}' \
   > "$RUN_ROOT/server/launch_configuration.json"
 setsid env -u BELIEFKV_FULL_MAMBA_HOST_SPLIT "${unset_env[@]}" \
   "${ab_env[@]}" \

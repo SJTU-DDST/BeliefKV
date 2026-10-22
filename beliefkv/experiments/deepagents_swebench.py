@@ -109,6 +109,7 @@ from beliefkv.runtime.sglang_v0520_sessions import (
 )
 from beliefkv.runtime.subagent_state import PrivateStateIsolatingSubAgentMiddleware
 from beliefkv.runtime.tool_wait_shadow import ToolWaitShadowTimer
+from beliefkv.runtime.experiment_randomness import seed_experiment_process
 
 
 SERVER_ARTIFACT_FILENAMES = {
@@ -628,6 +629,7 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         output_timing_shadow: bool = False,
         unbuffered_output_shadow: bool = False,
         test_progress_shadow: bool = False,
+        random_seed: int | None = None,
     ) -> None:
         super().__init__(root_dir=workspace, virtual_mode=True)
         if cpus <= 0 or memory_gib <= 0 or default_timeout_s <= 0:
@@ -650,6 +652,11 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         if test_progress_shadow and support_dir is None:
             raise ValueError("test progress requires sandbox support directory")
         self.test_progress_shadow = test_progress_shadow
+        if random_seed is not None and (
+            type(random_seed) is not int or not 0 <= random_seed <= 4294967295
+        ):
+            raise ValueError("sandbox random seed must be an unsigned 32-bit integer")
+        self.random_seed = random_seed
         self.support_dir = support_dir.resolve() if support_dir is not None else None
         if not self.test_env_path.startswith("/"):
             raise ValueError("sandbox test environment path must be absolute")
@@ -724,6 +731,11 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
             environment += ("PYTHONUNBUFFERED=1",)
         if self.test_progress_shadow:
             environment += ("PYTEST_PLUGINS=beliefkv_pytest_progress",)
+        if self.random_seed is not None:
+            environment += (
+                f"PYTHONHASHSEED={self.random_seed}",
+                f"BELIEFKV_SANDBOX_RANDOM_SEED={self.random_seed}",
+            )
         return [item for value in environment for item in ("--env", value)]
 
     def _docker_exec_argv(self, command: str) -> list[str]:
@@ -1795,8 +1807,10 @@ class DeepAgentsExperimentConfig:
             or self.workflow_arrival_batch_size or self.workflow_arrival_batch_interval_ms
         ):
             raise ValueError("a frozen arrival schedule cannot be combined with other arrival modes")
-        if self.sampling_seed is not None and self.sampling_seed < 0:
-            raise ValueError("sampling_seed must be non-negative when configured")
+        if self.sampling_seed is not None and (
+            type(self.sampling_seed) is not int or not 0 <= self.sampling_seed <= 4294967295
+        ):
+            raise ValueError("sampling_seed must be an unsigned 32-bit integer")
         if self.runtime_event_ack_timeout_s <= 0 or self.runtime_event_ack_retries <= 0:
             raise ValueError("runtime-event ACK policy must be positive")
         if self.context_lifecycle.intermediate_output_tokens > self.max_completion_tokens:
@@ -3735,6 +3749,7 @@ def _run_planned_child(
         output_timing_shadow=backend.output_timing_shadow,
         unbuffered_output_shadow=backend.unbuffered_output_shadow,
         test_progress_shadow=backend.test_progress_shadow,
+        random_seed=backend.random_seed,
     )
     deadline_controller.register_backend(child_backend)
     try:
@@ -4730,6 +4745,7 @@ def _run_workflow(
         test_progress_shadow=(
             os.environ.get("BELIEFKV_SANDBOX_TEST_PROGRESS_SHADOW") == "1"
         ),
+        random_seed=config.sampling_seed,
     )
     workflow_token = hashlib.sha256(
         f"{config.output_dir.name}:{config.mode}:{workload.instance_id}".encode()
@@ -5100,6 +5116,7 @@ def _execute_scheduled_root_pool(
 
 
 def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
+    randomness = seed_experiment_process(config.sampling_seed)
     if config.context_lifecycle.tokenizer_path is not None:
         context_token_counter(config.context_lifecycle.tokenizer_path)
     output_dir = config.output_dir.expanduser().resolve()
@@ -5186,6 +5203,7 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
     run_id = uuid.uuid4().hex
     manifest = {
         "schema_version": 1,
+        "randomness": randomness,
         "run_id": run_id,
         "created_at_utc": utc_now(),
         "config": {

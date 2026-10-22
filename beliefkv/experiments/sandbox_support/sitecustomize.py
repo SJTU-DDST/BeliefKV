@@ -2,6 +2,7 @@
 
 import collections
 import collections.abc
+import os
 
 
 for _name in (
@@ -24,3 +25,9 @@ for _name in (
 ):
     if _name not in collections.__dict__:
         setattr(collections, _name, getattr(collections.abc, _name))
+
+_experiment_seed = os.environ.get("BELIEFKV_SANDBOX_RANDOM_SEED")
+if _experiment_seed is not None:
+    import random
+
+    random.seed(int(_experiment_seed))

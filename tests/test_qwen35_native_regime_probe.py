@@ -188,7 +188,7 @@ def test_native_policy_baseline_rejects_predictive_mix_before_launch(tmp_path: P
 ))
 def test_internal_comparison_effective_environment_before_gpu_launch(
     tmp_path, comparison, *, protection="1", scheduling="workflow", last_child="0",
-    tool_restore="speculative", frontier="1",
+    tool_restore="speculative", frontier="1", join_prefetch="1",
 ):
     import sys
     from beliefkv.experiments.internal_comparison import arm_environment
@@ -216,6 +216,8 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
         "TOOL_RESTORE_MODE": tool_restore,
         "EXECUTION_FRONTIER_RESTORE": frontier,
     }, comparison)
+    if join_prefetch == "0":
+        environment["BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH"] = "0"
     result = subprocess.run(
         ["/bin/bash", str(SCRIPT)],
         env={**os.environ, **environment, "PATH": str(binary) + os.pathsep + os.environ["PATH"]},
@@ -230,12 +232,13 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
         protection if custom_kv else "0"
     )
     assert actual["BELIEFKV_ENABLE_PREPARE_HOST"] == str(int(custom_kv))
-    assert actual["BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH"] == str(int(custom_kv))
+    assert actual["BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH"] == str(int(custom_kv and join_prefetch == "1"))
     assert actual["BELIEFKV_ENABLE_TOOL_PREFETCH"] == str(int(custom_kv))
     workflow = comparison in ("full", "scheduler_only") and scheduling == "workflow"
     assert actual["BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY"] == str(int(workflow))
     assert actual["BELIEFKV_ENABLE_RESIDENT_FIRST"] == str(int(workflow))
     assert actual["BELIEFKV_CHAT_TOKEN_BLOCK_CACHE"] == "1"
+    assert actual["PYTHONHASHSEED"] == "21"
     if not custom_kv:
         assert not actual.get("BELIEFKV_TOOL_TIMING_ARTIFACT")
         assert actual.get("BELIEFKV_BORROWABLE_PARENT_HEADROOM", "0") == "0"
@@ -267,6 +270,28 @@ def test_disabled_post_ack_protection_reaches_the_launcher_without_a_gpu(tmp_pat
     test_internal_comparison_effective_environment_before_gpu_launch(
         tmp_path, "full", protection="0",
     )
+
+
+def test_no_join_prefetch_keeps_tool_prefetch_in_the_actual_launcher_without_gpu(tmp_path):
+    test_internal_comparison_effective_environment_before_gpu_launch(
+        tmp_path, "full", join_prefetch="0",
+    )
+
+
+@pytest.mark.parametrize("environment", (
+    {"SAMPLING_SEED": "4294967296"},
+    {"SAMPLING_SEED": "021"},
+    {"SAMPLING_SEED": "21", "PYTHONHASHSEED": "22"},
+))
+def test_invalid_or_mismatched_process_seed_fails_before_launch(tmp_path, environment):
+    run = tmp_path / "seed-rejected"
+    result = subprocess.run(
+        ["/bin/bash", str(SCRIPT)],
+        env={**os.environ, "RUN_ROOT": str(run), **environment},
+        text=True, capture_output=True, timeout=5,
+    )
+    assert result.returncode == 2
+    assert not run.exists()
 
 
 def test_full_join_priority_profile_keeps_kv_and_reaches_the_launcher_without_a_gpu(tmp_path):
@@ -386,6 +411,7 @@ def test_effective_policy_environment_without_launching_gpu(
         "idle_prepare_policy_requested": "cold",
         "restore_tiers_requested": "complete",
         "server_random_seed": 21,
+        "python_hash_seed": "21",
         "internal_comparison_mode": "full",
     }
     if host_gb == "0":
