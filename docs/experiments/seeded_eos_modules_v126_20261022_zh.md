@@ -2,6 +2,11 @@
 
 日期：2026-10-22，北京时间。
 
+最新状态：V126首项因非法工具调用历史触发HTTP 400，只有35/36完成，
+监督器已停止；修复与V127接续见
+[故障与最新诊断](v126_history_failure_and_control_findings_20261022_zh.md)。
+以下保留V126原冻结计划及种子资格。
+
 用户取消重复的第3、8、9项消融。V125已完成schedule_only和kv_only；
 正在运行的no_tool_continuity于19:52停止，driver原始退出码143。
 旧监督器在缺少被取消项终态summary时保存stopped_for_investigation及

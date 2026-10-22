@@ -193,8 +193,9 @@ def register(args) -> None:
     if qualified.command(["git", "-C", str(ROOT), "branch", "--show-current"]) != "main":
         raise ValueError("freeze the qualified main branch")
     revision = qualified.command(["git", "-C", str(ROOT), "rev-parse", "HEAD"])
+    label = args.run_root.name.rsplit("_", 1)[-1]
     checkout = comparison.EXPERIMENTS / ".worktrees" / (
-        f"beliefkv-v126-eos-pair-frozen-{revision[:12]}-20261022"
+        f"beliefkv-{label}-eos-pair-frozen-{revision[:12]}-20261022"
     )
     subprocess.run(
         ["git", "-C", str(ROOT), "worktree", "add", "--detach", str(checkout), revision],

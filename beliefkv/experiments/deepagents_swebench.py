@@ -1487,7 +1487,7 @@ class NativeSubagentSemanticGateMiddleware(AgentMiddleware[Any, Any, Any]):
 
 
 class EmptyReasoningRecoveryMiddleware(AgentMiddleware[Any, Any, Any]):
-    """Normalize tool identities and retry an empty terminal once."""
+    """Keep model history serializable and retry an empty terminal once."""
 
     def __init__(self, *, audit: JsonlAudit, scope: str) -> None:
         super().__init__()
@@ -1530,6 +1530,48 @@ class EmptyReasoningRecoveryMiddleware(AgentMiddleware[Any, Any, Any]):
                     if isinstance(raw_calls[index], dict):
                         raw_calls[index]["id"] = replacement
 
+    def _serializable_history(self, request: ModelRequest) -> ModelRequest:
+        messages = None
+        invalid_count = 0
+        for index, message in enumerate(request.messages):
+            if not isinstance(message, AIMessage) or not message.invalid_tool_calls:
+                continue
+            if messages is None:
+                messages = list(request.messages)
+            invalid = [
+                {"id": call.get("id"), "name": call.get("name"), "arguments": call.get("args")}
+                for call in message.invalid_tool_calls
+            ]
+            invalid_count += len(invalid)
+            note = (
+                "[Tool-call parsing feedback: the following malformed calls were not "
+                "executed. Their arguments were not valid tool-call JSON. Valid calls "
+                "in the same response keep their actual results.]\n"
+                + json.dumps(invalid, ensure_ascii=True)
+            )
+            content = (
+                message.content + "\n\n" + note if isinstance(message.content, str)
+                else [*message.content, {"type": "text", "text": note}]
+            )
+            # LangChain serializes invalid calls too. Keep their raw graph/audit
+            # evidence, but send them as text rather than broken API arguments.
+            messages[index] = message.model_copy(update={
+                "content": content,
+                "invalid_tool_calls": [],
+                "additional_kwargs": {
+                    key: value for key, value in message.additional_kwargs.items()
+                    if key not in ("tool_calls", "function_call")
+                },
+            })
+        if messages is None:
+            return request
+        self.audit.emit(
+            "agent_invalid_tool_history_serialized_as_text",
+            scope=self.scope, invalid_tool_calls=invalid_count,
+            original_history_preserved=True, malformed_calls_executed=False,
+        )
+        return request.override(messages=messages)
+
     @staticmethod
     def _reasoning_only_terminal(response: ModelResponse) -> bool:
         if response.structured_response is not None or len(response.result) != 1:
@@ -1555,6 +1597,7 @@ class EmptyReasoningRecoveryMiddleware(AgentMiddleware[Any, Any, Any]):
         return request.override(model_settings=settings)
 
     def wrap_model_call(self, request: ModelRequest, handler: Any) -> ModelResponse:
+        request = self._serializable_history(request)
         response = handler(request)
         self._normalize_tool_call_ids(response)
         if not self._reasoning_only_terminal(response):

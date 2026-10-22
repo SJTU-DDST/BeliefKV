@@ -20,6 +20,13 @@ Full/native。已完成的旧配置结果保留为历史证据。
 [种子修复与接续计划](experiments/seeded_eos_modules_v126_20261022_zh.md)
 记录差异、启动入口和工作量审计；实际运行进度以新登记state为准。
 
+V126首项no_join_prefetch已结束，但只有35/36项有效完成，监督器因此停止，
+未继续其他消融。原因是模型输出中的一个invalid_tool_call被重新序列化为
+历史function.arguments，服务端拒绝非法JSON并返回400。main在请求历史的
+副本中将该未执行调用表示为文本，保留原始graph/audit及有效工具调用；
+修复适用于Full/native。V127重跑该项并接续原定其余五组，保留V126失败
+证据，不把35项的完成均值当作合格JCT。[故障与最新诊断](experiments/v126_history_failure_and_control_findings_20261022_zh.md)。
+
 main 新增独立的 `native_in_graph_reusable_nested` profile：稳定 handle
 保存私有 graph state，每轮 fresh invocation/JOIN，原生 session 普通续用、
 压缩时换代；物理 KV 丢弃不改变逻辑历史。休眠最新 checkpoint 按 HBM、
