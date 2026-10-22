@@ -3162,7 +3162,7 @@ index 6815679..a143793 100644
      def evict_device_end(self, component_type: ComponentType) -> None:
          """Finish the component's device-eviction walk."""
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..e42d0c3 100644
+index d417d7d..73e8e05 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -4,9 +4,11 @@ import atexit
@@ -3860,8 +3860,8 @@ index d417d7d..e42d0c3 100644
 +                            )
 +                        self._beliefkv_handoff_full_scan = scan
 +                    elif not need_full:
++                        # State-only pressure must preserve a bounded FULL scan's progress.
 +                        scan = None
-+                        self._beliefkv_handoff_full_scan = None
 +                    native_considered = True
 +                    if prepared is not None:
 +                        # The original scan already consumed this urgent extent;
