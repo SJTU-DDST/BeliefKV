@@ -294,10 +294,14 @@ def observe_arm(
             expected_overrides=runtime_overrides,
         )
     telemetry = arm / "server/native_telemetry_status.json"
-    if telemetry.exists() and any(load(telemetry).get(name) for name in (
-        "writer_error", "dropped_records", "failed_records",
-    )):
-        raise ValueError(f"{mode}: telemetry failed")
+    if telemetry.exists():
+        observed = load(telemetry)
+        if any(observed.get(name) for name in (
+            "writer_error", "dropped_records", "failed_records",
+        )):
+            raise ValueError(f"{mode}: telemetry failed")
+        if observed.get("replay_token_capture", False) is not False:
+            raise ValueError(f"{mode}: diagnostic token capture cannot qualify as a performance arm")
     if mode in SCHEDULING_ONLY:
         for path in (arm / "server").glob("physical_action_*.jsonl"):
             if path.stat().st_size:

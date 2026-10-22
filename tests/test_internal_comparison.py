@@ -626,6 +626,27 @@ def test_internal_monitor_rejects_scheduler_only_physical_actions(tmp_path):
         observe_arm("scheduler_only", tmp_path)
 
 
+@pytest.mark.parametrize("mode", ("full", "native_matched"))
+@pytest.mark.parametrize("setting", ("missing", False, True, None, "1"))
+def test_performance_monitor_rejects_diagnostic_token_capture(
+    tmp_path, monkeypatch, mode, setting,
+):
+    from scripts import run_internal_comparison as operator
+
+    server = tmp_path / "server"
+    server.mkdir()
+    status = {"writer_error": None, "dropped_records": 0, "failed_records": 0}
+    if setting != "missing":
+        status["replay_token_capture"] = setting
+    (server / "native_telemetry_status.json").write_text(json.dumps(status))
+    monkeypatch.setattr(operator.qualified, "last_runtime_state", lambda _: None)
+    if setting == "missing" or setting is False:
+        operator.observe_arm(mode, tmp_path)
+    else:
+        with pytest.raises(ValueError, match="diagnostic token capture"):
+            operator.observe_arm(mode, tmp_path)
+
+
 def test_freeze_rejects_committed_execution_different_from_cpu_qualification(tmp_path):
     from beliefkv.experiments.source_provenance import sha256_file
     from scripts.run_internal_comparison import verify_cpu_snapshot

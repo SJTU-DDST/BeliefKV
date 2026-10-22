@@ -11,12 +11,13 @@ from beliefkv.runtime.restore_wait_probe import RestoreWaitProbe
 from beliefkv.runtime.prefill_turnover_probe import PrefillTurnoverProbe
 from beliefkv.runtime.writer_timing import SampledWriterTiming
 from beliefkv.runtime.record_json import encode_record
+from beliefkv.runtime.replay_token_capture import capture_record
 
 import atexit
 from array import array
 from bisect import bisect_left, bisect_right, insort
 from collections import Counter, OrderedDict
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 import ctypes
 import hashlib
 from itertools import islice
@@ -55,6 +56,10 @@ class NativeReactiveTelemetry:
         if token_evidence not in ("0", "1"):
             raise ValueError("BELIEFKV_RECORD_OUTPUT_TOKEN_IDS must be 0 or 1")
         self._record_output_token_ids = token_evidence == "1"
+        replay_capture = os.environ.get("BELIEFKV_REPLAY_TOKEN_CAPTURE", "0")
+        if replay_capture not in ("0", "1"):
+            raise ValueError("BELIEFKV_REPLAY_TOKEN_CAPTURE must be 0 or 1")
+        self._replay_token_capture = replay_capture == "1"
         checkpoint_shadow = os.environ.get("BELIEFKV_CHECKPOINT_PATH_SHADOW", "0")
         if checkpoint_shadow not in ("0", "1"):
             raise ValueError("BELIEFKV_CHECKPOINT_PATH_SHADOW must be 0 or 1")
@@ -78,6 +83,8 @@ class NativeReactiveTelemetry:
             "host_pool": self.directory / "host_pool_telemetry.jsonl",
             "eviction_attribution": self.directory / "eviction_attribution.jsonl",
         }
+        if self._replay_token_capture:
+            self._paths["request_tokens"] = self.directory / "request_tokens.jsonl"
         if any(path.exists() for path in self._paths.values()):
             raise RuntimeError("native telemetry directory already contains evidence")
         self._queue: Queue[tuple[str, dict[str, Any]] | None] = Queue(maxsize=32768)
@@ -514,13 +521,16 @@ class NativeReactiveTelemetry:
         self, req: Any, identity: dict[str, Any], *, served: bool,
         checkpoint_path: dict[str, Any] | None = None,
     ) -> None:
-        if served and not getattr(req, "output_ids", ()):
+        if served and not getattr(req, "output_ids", ()) and not self._replay_token_capture:
             return
         self._emit("eviction_attribution", {
             "_internal_event": "served_context_prefix" if served else "context_prefix_probe",
             "ts_ms": time.time() * 1000.,
             **identity, "request_id": str(req.rid),
-            "input_ids": req.origin_input_ids,
+            "input_ids": (
+                self._request_token_array(req.origin_input_ids, snapshot=True)
+                if self._replay_token_capture else req.origin_input_ids
+            ),
             "extra_key": getattr(req, "extra_key", None),
             "cache_salt": getattr(req, "cache_salt", None),
             "session_id": getattr(req, "session_id", None),
@@ -534,6 +544,18 @@ class NativeReactiveTelemetry:
                     "_checkpoint_path_evidence": checkpoint_path,
                 }
                 if served and self._checkpoint_path_shadow else {}
+            ),
+            **(
+                {
+                    "_replay_output_ids": self._request_token_array(
+                        req.output_ids, snapshot=True,
+                    ) if served else None,
+                    "_replay_request_parameters": {
+                        "max_new_tokens": getattr(
+                            req.sampling_params, "max_new_tokens", None,
+                        ),
+                    },
+                } if self._replay_token_capture else {}
             ),
         })
 
@@ -584,7 +606,9 @@ class NativeReactiveTelemetry:
                 upper = middle - 1
         return common
 
-    def _write_context_prefix(self, record: dict[str, Any], output: Any) -> None:
+    def _write_context_prefix(
+        self, record: dict[str, Any], output: Any, *, token_output: Any = None,
+    ) -> None:
         token_ids = self._request_token_array(record["input_ids"], snapshot=True)
         namespace = self._namespace_digest(record.get("extra_key"), record.get("cache_salt"))
         # A fresh native session/compaction is not an eviction-caused loss.
@@ -593,6 +617,11 @@ class NativeReactiveTelemetry:
             record.get("session_id"), record.get("session_generation"),
         )
         if record["_internal_event"] == "served_context_prefix":
+            if token_output is not None:
+                token_output.write(encode_record(capture_record(
+                    record, record["_replay_output_ids"], event="request_output",
+                )) + "\n")
+                self._counts["request_tokens"] += 1
             self._context_prefix_history[scope] = {
                 "tokens": token_ids, "request_id": record["request_id"],
                 "context_epoch": record["context_epoch"],
@@ -615,13 +644,26 @@ class NativeReactiveTelemetry:
             return
         self._context_prefix_counts["request_probes"] += 1
         previous = self._context_prefix_history.get(scope)
+        common = None
+        if token_output is not None:
+            common = (
+                self._common_array_prefix(token_ids, previous["tokens"])
+                if previous is not None else 0
+            )
+            token_output.write(encode_record(capture_record(
+                record, token_ids, event="request_prompt",
+                base_request_id=previous["request_id"] if common else None,
+                common_prefix_tokens=common,
+            )) + "\n")
+            self._counts["request_tokens"] += 1
         if previous is None:
             self._context_prefix_counts["without_prior_served_prompt"] += 1
             return
         if record["context_epoch"] < previous["context_epoch"]:
             self._context_prefix_counts["epoch_regression"] += 1
             return
-        common = self._common_array_prefix(token_ids, previous["tokens"])
+        if common is None:
+            common = self._common_array_prefix(token_ids, previous["tokens"])
         if "generation_output_ids" in previous:
             output.write(encode_record({
                 "event": "generation_continuation_prefix_probe",
@@ -2137,6 +2179,10 @@ class NativeReactiveTelemetry:
                 self._paths["eviction_attribution"].open(
                     "x", encoding="utf-8"
                 ) as eviction_attribution,
+                (
+                    self._paths["request_tokens"].open("x", encoding="utf-8")
+                    if self._replay_token_capture else nullcontext()
+                ) as request_tokens,
             ):
                 (self.directory / "native_telemetry_ready.json").write_text(
                     json.dumps({
@@ -2144,6 +2190,7 @@ class NativeReactiveTelemetry:
                         "source": "native_sglang_v0520",
                         "collection_mode": self.collection_mode,
                         "record_output_token_ids": self._record_output_token_ids,
+                        "replay_token_capture": self._replay_token_capture,
                         "checkpoint_path_shadow": self._checkpoint_path_shadow,
                         "prefetch_prefix_diagnostics": self._prefetch_prefix_diagnostics,
                         "scheduler_pid": os.getpid(),
@@ -2164,6 +2211,8 @@ class NativeReactiveTelemetry:
                     "host_pool": host_pool,
                     "eviction_attribution": eviction_attribution,
                 }
+                if request_tokens is not None:
+                    handles["request_tokens"] = request_tokens
                 next_status = time.monotonic() + 1.0
                 while True:
                     if time.monotonic() >= next_status:
@@ -2208,10 +2257,17 @@ class NativeReactiveTelemetry:
                                 elif internal_event in (
                                     "context_prefix_probe", "served_context_prefix",
                                 ):
-                                    self._write_context_prefix(record, eviction_attribution)
+                                    self._write_context_prefix(
+                                        record, eviction_attribution,
+                                        token_output=request_tokens,
+                                    )
                                 else:
                                     eviction_attribution.write(encode_record(record) + "\n")
                             except Exception as exc:
+                                if request_tokens is not None and internal_event in (
+                                    "context_prefix_probe", "served_context_prefix",
+                                ):
+                                    raise
                                 self._block_attribution_counts[
                                     "processing_errors"
                                 ] += 1
@@ -2282,6 +2338,7 @@ class NativeReactiveTelemetry:
             "source": "native_sglang_v0520",
             "collection_mode": self.collection_mode,
             "record_output_token_ids": self._record_output_token_ids,
+            "replay_token_capture": self._replay_token_capture,
             "checkpoint_path_shadow": self._checkpoint_path_shadow,
             "host_tier_enabled": self._host_tier_enabled,
             "record_counts": dict(self._counts),
