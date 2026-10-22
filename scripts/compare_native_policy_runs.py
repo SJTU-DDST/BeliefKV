@@ -23,6 +23,7 @@ if str(ROOT) not in sys.path:
 
 from beliefkv.metrics.execution_timeline import _merge_intervals
 from beliefkv.metrics.native_execution_timeline import resolve_native_gpu_clock
+from beliefkv.metrics.workload_compatibility import compare_workload
 from scripts.audit_native_h2d_sources import (
     CONTROLLED_CATEGORIES, acknowledged_prefetch_sources, split_h2d_payload,
 )
@@ -1272,9 +1273,18 @@ def main() -> None:
         f"{left}_vs_{right}": {
             "left_arm": left, "right_arm": right,
             **paired_workflow_jct(summaries[left], summaries[right]),
+            "workload_compatibility": compare_workload(
+                report["runs"][left], report["runs"][right],
+            ),
         }
         for left, right in combinations(arms, 2)
     }
+    report["jct_comparison_requirements"] = (
+        "Qualify realized input/output tokens and request counts before interpreting JCT "
+        "as system improvement. Aggregate proximity is necessary, not sufficient: retain "
+        "paired work distributions, completion/guard quality, seed and configuration checks. "
+        "A failed workload check leaves raw JCT descriptive; do not hide mismatched arms."
+    )
     report["full_run_metrics_role"] = (
         "primary; complete workflow JCT including workload tails; "
         "exceptional tool outliers require explicit paired evidence and separate reporting"

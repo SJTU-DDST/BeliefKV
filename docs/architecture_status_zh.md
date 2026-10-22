@@ -2,23 +2,21 @@
 
 更新日期：2026-10-22（北京时间）。
 
-用户最新选择复用 V123 Full，不再仅为关闭短工具连续性重跑 Full。
-后续策略显式使用
-[`v123_reference_policy_20261022.json`](../configs/migration/v123_reference_policy_20261022.json)：
-36 roots、running/decode8、256K、seed21、简单 JOIN 优先、EOS 预取、
-cold 增量备份，关闭普通 frontier、短工具连续性和额外驻留保护。
-V123 对 V122 Full 的输入差约0.05%、输出差约2.5%、工具次数差约0.08%，
-完整平均JCT低约5.84%；对native少生成14.7%、少执行20.6%请求，不能将
-约19.6%的JCT差全当系统收益。V125保留已启动arm，后续旧策略矩阵停止，
-未登记或启动 V126/V127。下面的重跑/回退方案保留为手动工具，当前不执行。
+用户最新选择以 V108 策略为主，开启工具期预取、resident-first 和阶段
+优先，JOIN 只接受EOS；不恢复child剩余工作预测。新实验策略显式使用
+[`v108_eos_reference_policy_20261022.json`](../configs/migration/v108_eos_reference_policy_20261022.json)，
+保留36 roots、running/decode8、256K、seed21及当前CPU/正确性优化。
+V123配置保留为历史参考。所有直接JCT收益比较先检查输入/输出token与
+请求数接近，再核对配置、配对工作量和完成资格；普通长尾保留。
+[策略与最近结果](experiments/v108_eos_policy_and_recent_runs_20261022_zh.md)
+记录完整口径与5%工程筛选线，接近只是必要条件。
 
-最新要求优先处理 V124b Full 的 JCT 回撤：短工具排队连续性在 runtime、
-内部环境和 launcher 中统一默认关闭，显式消融仍可开启。V125 当前
-KV-only 完整收集后优先接续最新 Full，若完整 JCT/吞吐开发门槛未通过，
-自动验证 V108 策略配置，保留 seed21 和已验证 CPU 优化。
-[回撤证据与修复方案](experiments/v124b_full_recovery_20261022_zh.md)
-区分实际工作量、配置变化和待验证的调度因果；普通长尾保留，
-复用 subagent 新 workload 不混入这轮验证。以下旧实验计划以该接续为准。
+V125 schedule-only和KV-only均已完成，后者平均JCT2202.19s、输出1703674
+token、请求7263、36/36无guard合格。旧“KV-only后退休矩阵”CPU watcher
+已取消，原冻结消融矩阵继续，当前进入no_tool_continuity。全部结果收齐
+后由CPU审计比较大部分arm更接近V123还是native，再决定重跑哪侧；
+不热改当前实验，也没有新增Full/native GPU登记。短工具连续性在main默认
+关闭，显式消融仍可开启；此前自动Full/V108回退工具当前不执行。
 
 main 新增独立的 `native_in_graph_reusable_nested` profile：稳定 handle
 保存私有 graph state，每轮 fresh invocation/JOIN，原生 session 普通续用、

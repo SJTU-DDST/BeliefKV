@@ -74,11 +74,27 @@ def campaign_environment(
         "FANOUT_PROFILE": "native_in_graph_nested_2to4",
         "ARRIVAL_BATCH_SIZE": "0", "ARRIVAL_BATCH_INTERVAL_MS": "0",
         "JOIN_PREFETCH_TRIGGER": "observed_eos", "EXECUTION_HANDOFF": "0",
-        "PREFILL_SCHEDULING_POLICY": "join_priority",
-        "PREFETCH_RESIDENCY_PROTECTION": "0",
-        "TOOL_RESTORE_MODE": "execution", "IDLE_PREPARE_POLICY": "cold",
-        "RESTORE_TIERS": "dependency",
     }
+    profile = spec.get("policy_profile", "v123_join_priority")
+    profiles = {
+        "v123_join_priority": {
+            "PREFILL_SCHEDULING_POLICY": "join_priority",
+            "PREFETCH_RESIDENCY_PROTECTION": "0",
+            "TOOL_RESTORE_MODE": "execution", "IDLE_PREPARE_POLICY": "cold",
+            "RESTORE_TIERS": "dependency",
+        },
+        "v108_eos": {
+            "PREFILL_SCHEDULING_POLICY": "workflow",
+            "PREFETCH_RESIDENCY_PROTECTION": "1",
+            "TOOL_RESTORE_MODE": "speculative", "IDLE_PREPARE_POLICY": "all",
+            "RESTORE_TIERS": "complete",
+            "TOOL_CONTINUITY": "0", "EXECUTION_FRONTIER_RESTORE": "0",
+            "PARALLEL_WAIT_PREFETCH": "1", "WAIT_PREFETCH_CONTEXTS": "2",
+        },
+    }
+    if profile not in profiles:
+        raise ValueError("unsupported qualified comparison policy")
+    required.update(profiles[profile])
     if any(common.get(name) != value for name, value in required.items()):
         raise ValueError("fresh campaign differs from the qualified batch8 workload and policy")
     if spec["order"] != ["full", "join_priority_only", "native_matched"]:

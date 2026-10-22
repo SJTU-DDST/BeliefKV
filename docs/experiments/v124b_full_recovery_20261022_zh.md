@@ -2,10 +2,11 @@
 
 日期：2026-10-22，北京时间。目标仍未验收。
 
-最新用户指示改为直接复用 V123 Full；没有登记或启动修复版 Full/V108
-回退实验。下面的接续工具已实现并做 CPU 验证，当前不执行。后续以
-[`v123_reference_policy_20261022.json`](../../configs/migration/v123_reference_policy_20261022.json)
-为策略配置，当前 V125 已启动 arm 收集后停止旧矩阵。
+最新用户指示采用 V108 策略、JOIN只用EOS，见
+[`v108_eos_reference_policy_20261022.json`](../../configs/migration/v108_eos_reference_policy_20261022.json)。
+V125继续完成冻结消融，收齐后按工作量再决定重跑对象。下面的接续工具
+已实现并做CPU验证，当前不执行；其手动回退也已限制为EOS，不恢复child
+剩余工作预测。没有登记或启动新的Full/native。V123保留为历史参考。
 
 ## 已有证据
 
@@ -69,7 +70,7 @@ decode 对照 native。共同自然完成集合另列，不能用排除 guard �
 | 普通 frontier | 关闭 | 关闭 |
 | 短工具连续性 | 关闭 | 关闭 |
 | 工具恢复 | 原生需求恢复 | 工具期推测恢复 |
-| JOIN 提前依据 | EOS | 原 V108 selective_report_or_eos |
+| JOIN 提前依据 | EOS | EOS，按最新指示不恢复 child 工作量预测 |
 | 后台备份对象 | cold，含安全排队 owner | 所有安全缺失 FULL |
 | 恢复范围 | dependency 档位 | complete |
 | 额外驻留保护 | 关闭 | 开启，保留当前安全撤销实现 |

@@ -7,6 +7,7 @@ from pathlib import Path
 from statistics import mean
 
 from beliefkv.experiments.internal_comparison import arm_environment
+from beliefkv.metrics.workload_compatibility import compare_workload
 
 
 def environment(reference: dict, checkout: Path, port: int, *, fallback: bool) -> dict:
@@ -37,11 +38,7 @@ def environment(reference: dict, checkout: Path, port: int, *, fallback: bool) -
             ("PREFETCH_RESIDENCY_PROTECTION", "BELIEFKV_PREFETCH_RESIDENCY_PROTECTION", "1"),
         ):
             common[public] = common[internal] = value
-    result = arm_environment(common, "full")
-    if fallback:
-        # arm_environment intentionally defaults internal ablations to EOS-only.
-        result["JOIN_PREFETCH_TRIGGER"] = "selective_report_or_eos"
-    return result
+    return arm_environment(common, "full")
 
 
 def handover_ready(plan: dict, state: dict, *, driver_live: bool) -> bool:
@@ -102,6 +99,10 @@ def performance_gate(comparison: dict, busy: dict, summaries: dict, candidate: s
     ):
         raise ValueError("busy throughput window is incomplete or changed")
     conditions = {
+        "realized_work_close_to_controls": all(
+            compare_workload(runs[candidate], runs[name])["necessary_workload_condition_passed"]
+            for name in controls
+        ),
         "raw_mean_jct_no_worse_than_native_and_join": all(
             runs[candidate]["jct_mean_seconds"] <= runs[name]["jct_mean_seconds"]
             for name in controls

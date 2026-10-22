@@ -52,7 +52,7 @@ def test_v108_fallback_restores_effective_policy_without_undoing_engineering_or_
         "BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY": "1",
         "TOOL_RESTORE_MODE": "speculative", "IDLE_PREPARE_POLICY": "all",
         "RESTORE_TIERS": "complete", "PREFETCH_RESIDENCY_PROTECTION": "1",
-        "JOIN_PREFETCH_TRIGGER": "selective_report_or_eos",
+        "JOIN_PREFETCH_TRIGGER": "observed_eos",
         "SERVER_RANDOM_SEED": "21", "SAMPLING_SEED": "21",
         "ROOT_COUNT": "36", "MAX_RUNNING_REQUESTS": "8",
         "HICACHE_SIZE_GB": "200", "HOST_SPLIT": "80:20",
@@ -243,7 +243,7 @@ def test_gate_requires_jct_and_throughput_without_declaring_causal_acceptance():
 
 
 @pytest.mark.parametrize("regression", (
-    "raw_jct", "eligible_jct", "total_throughput", "decode", "guards",
+    "raw_jct", "eligible_jct", "total_throughput", "decode", "guards", "work_mismatch",
 ))
 def test_fallback_is_required_when_any_performance_condition_fails(regression):
     comparison, busy, summaries = gate_fixture()
@@ -255,9 +255,11 @@ def test_fallback_is_required_when_any_performance_condition_fails(regression):
         comparison["runs"]["repaired_full"]["output_tokens_per_second"] = 400.
     elif regression == "decode":
         busy["runs"]["repaired_full"]["windows"][0]["decode_output_tokens_per_second"] = 400.
-    else:
+    elif regression == "guards":
         summaries["repaired_full"]["native_agent_jct_eligible_workflows"] = 34
         summaries["repaired_full"]["workflows"][34]["native_agent_jct_eligible"] = False
+    else:
+        comparison["runs"]["repaired_full"]["output_tokens"] = 850000
     report = policy.performance_gate(comparison, busy, summaries, "repaired_full")
     assert report["fallback_required"]
     assert report["performance_accepted"] is False
