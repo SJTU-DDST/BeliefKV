@@ -188,6 +188,7 @@ def test_native_policy_baseline_rejects_predictive_mix_before_launch(tmp_path: P
 ))
 def test_internal_comparison_effective_environment_before_gpu_launch(
     tmp_path, comparison, *, protection="1", scheduling="workflow", last_child="0",
+    tool_restore="speculative", frontier="1",
 ):
     import sys
     from beliefkv.experiments.internal_comparison import arm_environment
@@ -212,6 +213,8 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
         "PREFETCH_RESIDENCY_PROTECTION": protection,
         "PREFILL_SCHEDULING_POLICY": scheduling,
         "JOIN_LAST_CHILD_PRIORITY": last_child,
+        "TOOL_RESTORE_MODE": tool_restore,
+        "EXECUTION_FRONTIER_RESTORE": frontier,
     }, comparison)
     result = subprocess.run(
         ["/bin/bash", str(SCRIPT)],
@@ -252,6 +255,12 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
     )
     assert actual["BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY"] == str(int(expected_child))
     assert launch["join_last_child_priority_requested"] is expected_child
+    expected_frontier = custom_kv and tool_restore == "execution" and frontier == "1"
+    assert actual["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == str(int(expected_frontier))
+    assert launch["execution_frontier_restore_requested"] is expected_frontier
+    assert actual["BELIEFKV_TOOL_RESTORE_MODE"] == (
+        tool_restore if custom_kv else "speculative"
+    )
 
 
 def test_disabled_post_ack_protection_reaches_the_launcher_without_a_gpu(tmp_path):
@@ -272,6 +281,19 @@ def test_full_join_priority_profile_keeps_kv_and_reaches_the_launcher_without_a_
 def test_last_join_child_control_reaches_the_real_launcher_without_gpu(tmp_path, comparison):
     test_internal_comparison_effective_environment_before_gpu_launch(
         tmp_path, comparison, protection="0", scheduling="join_priority", last_child="1",
+    )
+
+
+@pytest.mark.parametrize("comparison", (
+    "full", "join_priority_only", "scheduler_only", "kv_only", "native_matched",
+))
+@pytest.mark.parametrize("frontier", ("0", "1"))
+def test_frontier_restore_ablation_reaches_the_real_launcher_without_gpu(
+    tmp_path, comparison, frontier,
+):
+    test_internal_comparison_effective_environment_before_gpu_launch(
+        tmp_path, comparison, protection="0", scheduling="join_priority",
+        tool_restore="execution", frontier=frontier,
     )
 
 
@@ -358,6 +380,7 @@ def test_effective_policy_environment_without_launching_gpu(
         "prefetch_residency_protection_requested": True,
         "prefill_scheduling_policy_requested": "workflow",
         "join_last_child_priority_requested": False,
+        "execution_frontier_restore_requested": True,
         "tool_restore_mode_requested": "speculative",
         "idle_prepare_policy_requested": "cold",
         "restore_tiers_requested": "complete",

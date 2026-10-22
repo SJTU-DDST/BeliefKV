@@ -83,6 +83,12 @@ def campaign_environment(
         raise ValueError("fresh campaign differs from the qualified batch8 workload and policy")
     if spec["order"] != ["full", "join_priority_only", "native_matched"]:
         raise ValueError("fresh campaign must start with Full and matching JOIN/native controls")
+    frontier = common.get(
+        "BELIEFKV_ENABLE_FRONTIER_RESTORE",
+        common.get("EXECUTION_FRONTIER_RESTORE", "1"),
+    )
+    if frontier not in ("0", "1"):
+        raise ValueError("execution frontier restore must be 0 or 1")
     # Policy controls are reconstructed per arm, never inherited from an old run.
     env = {name: value for name, value in base.items() if not name.startswith("BELIEFKV_")}
     env.update(common)
@@ -93,6 +99,7 @@ def campaign_environment(
         ARRIVAL_RATE_PER_SECOND="0.0", WORKFLOW_ARRIVAL_SCHEDULE="",
         NATIVE_REFERENCE_RUN="", NATIVE_REFERENCE_TIMELINE="", NATIVE_REFERENCE_CACHE="",
         BELIEFKV_EXPERIMENT_PAUSE_FILE=str(PAUSE),
+        EXECUTION_FRONTIER_RESTORE=frontier,
     )
     return env
 

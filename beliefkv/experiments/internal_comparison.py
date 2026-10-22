@@ -28,6 +28,15 @@ def arm_environment(common: dict[str, str], mode: str) -> dict[str, str]:
     )
     if tool_restore not in ("speculative", "execution"):
         raise ValueError("unsupported tool restore mode")
+    frontier = common.get(
+        "BELIEFKV_ENABLE_FRONTIER_RESTORE",
+        common.get("EXECUTION_FRONTIER_RESTORE", "1"),
+    )
+    if frontier not in ("0", "1"):
+        raise ValueError("execution frontier restore must be 0 or 1")
+    frontier = str(int(
+        frontier == "1" and custom_kv and tool_restore == "execution"
+    ))
     workflow_ordering = scheduling == "workflow" and mode in ("full", "scheduler_only")
     if mode == "join_priority_only":
         scheduling = "join_priority"
@@ -60,6 +69,8 @@ def arm_environment(common: dict[str, str], mode: str) -> dict[str, str]:
         "BELIEFKV_ENABLE_TOOL_PREFETCH": str(int(custom_kv)),
         "BELIEFKV_TOOL_RESTORE_MODE": tool_restore if custom_kv else "speculative",
         "TOOL_RESTORE_MODE": tool_restore if custom_kv else "speculative",
+        "EXECUTION_FRONTIER_RESTORE": frontier,
+        "BELIEFKV_ENABLE_FRONTIER_RESTORE": frontier,
         "BELIEFKV_IDLE_PREPARE_POLICY": common.get(
             "BELIEFKV_IDLE_PREPARE_POLICY", common.get("IDLE_PREPARE_POLICY", "cold"),
         ),
@@ -108,6 +119,7 @@ def validate_runtime(
     idle_prepare_policy: str | None = None,
     restore_tiers: str | None = None,
     join_last_child_priority: bool | None = None,
+    execution_frontier_restore: bool | None = None,
 ) -> None:
     """Check observed effective controls, not just the requested environment."""
     if mode not in MODES:
@@ -134,9 +146,13 @@ def validate_runtime(
         "physical_disabled": False,
     }
     if tool_restore_mode == "execution":
-        expected["execution_frontier_restore"] = mode in ("full", "kv_only")
         expected["tool_restore_mode"] = (
             tool_restore_mode if mode in ("full", "kv_only") else "speculative"
+        )
+    if tool_restore_mode == "execution" or execution_frontier_restore is not None:
+        expected["execution_frontier_restore"] = (
+            tool_restore_mode == "execution" and mode in ("full", "kv_only")
+            and execution_frontier_restore is not False
         )
     if idle_prepare_policy is not None:
         expected["idle_prepare_policy"] = idle_prepare_policy

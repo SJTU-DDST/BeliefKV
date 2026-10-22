@@ -161,6 +161,20 @@ def test_all_fresh_arms_keep_identical_work_and_frontend_but_different_kv_contro
     assert base["MAX_RUNNING_REQUESTS"] == "12"
 
 
+@pytest.mark.parametrize("setting", (None, "0", "1"))
+def test_frontier_restore_is_explicit_in_the_spec_and_not_inherited_from_an_old_run(setting):
+    spec = json.loads(SPEC.read_bytes())
+    if setting is not None:
+        spec["common_environment"]["EXECUTION_FRONTIER_RESTORE"] = setting
+    env = launcher.campaign_environment(
+        {"EXECUTION_FRONTIER_RESTORE": "0"}, spec, Path("/frozen"), Path("/engine"), 18524,
+    )
+    expected = "1" if setting is None else setting
+    assert env["EXECUTION_FRONTIER_RESTORE"] == expected
+    assert arm_environment(env, "full")["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == expected
+    assert arm_environment(env, "join_priority_only")["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == "0"
+
+
 @pytest.mark.parametrize("field,value", (
     ("MAX_RUNNING_REQUESTS", "12"), ("ROOT_COUNT", "24"), ("SERVER_RANDOM_SEED", "123"),
     ("PREFETCH_RESIDENCY_PROTECTION", "1"), ("PREFILL_SCHEDULING_POLICY", "workflow"),

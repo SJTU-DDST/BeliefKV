@@ -709,15 +709,20 @@ class NativeAdmissionRuntime:
         tool_setting = os.environ.get("BELIEFKV_ENABLE_TOOL_PREFETCH", "0")
         if tool_setting not in ("0", "1"):
             raise ValueError("tool prefetch setting must be 0 or 1")
-        self.enable_tool_prefetch = enable_tool_prefetch or tool_setting == "1"
+        tool_prefetch_requested = enable_tool_prefetch or tool_setting == "1"
         self.tool_restore_mode = os.environ.get("BELIEFKV_TOOL_RESTORE_MODE", "speculative")
         if self.tool_restore_mode not in ("speculative", "execution"):
             raise ValueError("tool restore mode must be speculative or execution")
+        frontier_setting = os.environ.get("BELIEFKV_ENABLE_FRONTIER_RESTORE", "1")
+        if frontier_setting not in ("0", "1"):
+            raise ValueError("execution frontier restore setting must be 0 or 1")
         self.enable_frontier_restore = (
-            self._custom_kv_management and self.enable_tool_prefetch
-            and self.tool_restore_mode == "execution"
+            self._custom_kv_management and tool_prefetch_requested
+            and self.tool_restore_mode == "execution" and frontier_setting == "1"
         )
-        self.enable_tool_prefetch = self.enable_tool_prefetch and not self.enable_frontier_restore
+        self.enable_tool_prefetch = (
+            tool_prefetch_requested and self.tool_restore_mode == "speculative"
+        )
         self.restore_tiers = os.environ.get("BELIEFKV_RESTORE_TIERS", "complete")
         if self.restore_tiers not in ("complete", "dependency"):
             raise ValueError("restore tiers must be complete or dependency")
@@ -778,7 +783,7 @@ class NativeAdmissionRuntime:
         if not self._custom_kv_management and (
             enable_local_predictor or enable_admission_prefetch
             or enable_final_stage_prefetch or enable_confirmed_join_canary
-            or self.enable_prepare_host or self.enable_tool_prefetch
+            or self.enable_prepare_host or tool_prefetch_requested
             or self.enable_execution_handoff or self.enable_frontier_restore or self._borrowable_parent_headroom
             or self._tool_timing_only or self._online_tool_timing is not None
         ):

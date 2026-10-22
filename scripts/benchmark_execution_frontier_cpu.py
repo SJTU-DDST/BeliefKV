@@ -19,12 +19,12 @@ from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from scripts.benchmark_wait_prefetch_dispatch_cpu import dispatch_fixture
 
 
-def measure(depth, scenario, samples):
+def measure(depth, scenario, samples, *, enabled=True):
     runtime, key, cache, reads, actions, _, reset, _, _ = dispatch_fixture(
         NativeAdmissionRuntime, source="join_ticket", depth=depth,
         capture_issuance=True,
     )
-    runtime.enable_frontier_restore = True
+    runtime.enable_frontier_restore = enabled
     runtime.enable_execution_handoff = runtime.enable_tool_prefetch = False
     runtime.prefill_scheduling_policy = "join_priority"
     request = NS(
@@ -69,11 +69,13 @@ def measure(depth, scenario, samples):
                 len(actions), runtime.physical_ledger.pending_count,
                 runtime.physical_ledger.pending_action_bytes("PREFETCH_GPU"),
             )
-            if scenario == "positive":
+            if enabled and scenario == "positive":
                 if signature[0] != min(depth, runtime.physical_ledger.max_pending) or signature[1] != signature[0]:
                     raise AssertionError(("positive enqueue was lost", signature))
             elif any(signature):
                 raise AssertionError("negative probe issued a physical action")
+            if not enabled and (any(reads.values()) or runtime._frontier_probe_after_ms):
+                raise AssertionError("disabled frontier performed native inspection or probe maintenance")
             if runtime._execution_handoff is not None or runtime.physical_disabled:
                 raise AssertionError("frontier left a waiting ticket or invalid physical state")
             if index >= 20:
@@ -83,7 +85,7 @@ def measure(depth, scenario, samples):
         if len(set(signatures)) != 1:
             raise AssertionError("control iterations changed their native payloads")
         return {
-            "depth": depth, "scenario": scenario,
+            "depth": depth, "scenario": scenario, "frontier_restore": enabled,
             "control_payload_signature": signatures[0],
             "native_reads_last_iteration": dict(reads),
             "wall_p50_us": median(wall), "cpu_p50_us": median(cpu),
@@ -97,6 +99,7 @@ def measure(depth, scenario, samples):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--samples", type=int, default=101)
+    parser.add_argument("--include-disabled", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.samples < 1 or args.output.exists() or not gc.isenabled():
@@ -106,15 +109,22 @@ def main():
             "beliefkv/runtime/sglang_v0520_runtime.py",
             "beliefkv/runtime/sglang_v0520_physical.py",
             "scripts/benchmark_execution_frontier_cpu.py",
+            "scripts/benchmark_wait_prefetch_dispatch_cpu.py",
         )
     }
     result = {
         "scope": "CPU planning, capture, validation, enqueue, ledger and issuance tracking; scalar native stand-ins, no DMA/allocator/JCT claim",
         "normal_gc": True, "retains_all_samples": True, "source_sha256": sources,
+        "comparison_scope": (
+            "Enabled and disabled use independent fixture runs in fixed order, not paired "
+            "alternating samples; disabled must perform no native reads or physical actions."
+            if args.include_disabled else "Enabled frontier only."
+        ),
         "cases": [
-            measure(depth, scenario, args.samples)
+            measure(depth, scenario, args.samples, enabled=enabled)
             for depth in (4, 16, 64)
             for scenario in ("new_context", "resident", "no_capacity", "positive")
+            for enabled in ((True, False) if args.include_disabled else (True,))
         ],
     }
     if any(sha256_file(ROOT / name) != digest for name, digest in sources.items()):
