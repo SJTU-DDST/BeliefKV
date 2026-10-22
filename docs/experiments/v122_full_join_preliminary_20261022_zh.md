@@ -67,3 +67,34 @@ V2735/V2737 对应 3875 项 CPU 通过及源码绑定。新 Full/no-frontier
 当前证据说明 Full 尚未证明优于最简单强基线，继续优化的验收目标不变。
 等待本轮 native 正常采集后，优先运行独立删除前沿恢复的 Full，复用这轮
 合格对照，记录应用版本差异；不为重复 native 消耗额外 GPU 时间。
+
+## 最新短 Prefill 的分桶与阶段证据
+
+V2739 使用两组同一预定忙时窗口，按实际 native 准备的输入和前缀几何
+匹配 worker 区间。共同 prefill 分桶需两侧各至少 32 个 batch，并匹配
+batch 大小、512-token 输入工作分桶及 2048-token 平均前缀分桶。
+13 个共同分桶全部为 batch1、实际新增输入小于 512 token；Full 的均值
+为 JOIN-only 的 1.31--1.84 倍。这说明原始工作量差异不是足够的解释；
+但分桶仍不等于相同请求、完全相同输入或纯 CUDA kernel 计时。
+
+V2740 复用已测试的 prefill turnover 分析器，读取 V2739 封存的精确 audit
+前缀，按时钟域、forward_iter、顺序请求身份和 native 几何配对。
+Full/JOIN-only 分别有 134/163 个短单请求 prefill 采样；各有一个缺失服务
+配对的观测保留为未知。以下为采样阶段墙钟 P50：
+
+| 阶段 | Full | JOIN-only |
+|---|---:|---:|
+| selection | 10.151ms | 9.091ms |
+| run_batch | 39.842ms | 36.921ms |
+| post-launch physical | 1.623ms | 0.007ms |
+| result processing | 7.137ms | 7.307ms |
+| run 返回至 result 开始 | 7.297ms | 2.999ms |
+
+最后一项包含其他重叠阶段，不是可独立累加的额外 CPU 时间。run_batch
+包含 CPU 提交和遥测；GPU stream span 也包含提交间隙和依赖，不能当作
+纯 kernel。上述采样汇总尚未进一步匹配前缀分布，不能将所有差额直接
+归因为自定义控制。仅 3/3 个短样本能配对到恢复等待，不能据此概括
+所有短 prefill 的 H2D 等待，更不能将采样之和或差额从 JCT 中直接扣除。
+
+post-launch physical 的实测成本支持优先消融普通前沿恢复；其他阶段
+仍待按更细几何和下一相邻 batch 拆分，不跳过剩余瓶颈。
