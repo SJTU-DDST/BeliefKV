@@ -381,4 +381,4 @@ V2730 对上一轮全部 109 个测试模块重新运行，3846 项和 2 个 sub
 - AgentInfer 官方调度设计，2026-08-12 修订版说明：
   https://github.com/openJiuwen-ai/agent-infer/blob/main/design/module/scheduling/progress-ttl-scheduling.md
 - JITServe，NSDI 2026，正式论文：
-  https://www.usenix.org/system/files/nsdi26-zhong.pdf
+  https://www.usenix.org/system/files/nsdi26-zhang-wei.pdf
