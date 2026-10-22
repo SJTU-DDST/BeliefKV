@@ -12,6 +12,7 @@ import signal
 import statistics
 import subprocess
 import sys
+import tempfile
 import time
 
 import httpx
@@ -68,17 +69,17 @@ def environment(reference, mode, checkout, engine, arm, port, plugin):
     for name in SERVER_FIELDS:
         if name in settings:
             settings["BELIEFKV_" + name] = settings[name]
-    for target, source in (
-        ("TOOL_TIMING_ARTIFACT", "TOOL_TIMING_ARTIFACT"),
-        ("H2D_SEED", "H2D_SEED_ARTIFACT"),
-        ("TRANSFER_SERVICE_SEED", "TRANSFER_SERVICE_SEED"),
+    for target, digest, source in (
+        ("TOOL_TIMING_ARTIFACT", "TOOL_TIMING_SHA256", "TOOL_TIMING_ARTIFACT"),
+        ("H2D_SEED", "H2D_SEED_SHA256", "H2D_SEED_ARTIFACT"),
+        ("TRANSFER_SERVICE_SEED", "TRANSFER_SERVICE_SEED_SHA256", "TRANSFER_SERVICE_SEED"),
     ):
         settings["BELIEFKV_" + target] = ""
-        settings["BELIEFKV_" + target + "_SHA256"] = ""
+        settings["BELIEFKV_" + digest] = ""
         if policy == "full":
             path = Path(settings[source])
             settings["BELIEFKV_" + target] = str(path)
-            settings["BELIEFKV_" + target + "_SHA256"] = sha256_file(path)
+            settings["BELIEFKV_" + digest] = sha256_file(path)
     flags = ["--mamba-full-memory-ratio", "0.9", "--enable-custom-logit-processor"]
     socket_path = Path(f"/tmp/bkv-causal-{port}.sock")
     for name in ("BELIEFKV_NATIVE_TELEMETRY_DIR", "BELIEFKV_ADMISSION_TELEMETRY_DIR",
@@ -95,6 +96,31 @@ def environment(reference, mode, checkout, engine, arm, port, plugin):
     if mode == "no_background_prepare":
         settings["BELIEFKV_ENABLE_BACKGROUND_PREPARE"] = "0"
     return settings, flags, socket_path if policy != "native_matched" else None
+
+
+def preflight_runtime(settings, model_path):
+    if settings["BELIEFKV_INTERNAL_COMPARISON_MODE"] == "native_matched":
+        return {"native_runtime_not_enabled": True}
+    with tempfile.TemporaryDirectory(prefix="beliefkv-causal-runtime-") as directory:
+        env = qualified.driver_environment({"environment": settings}, os.environ)
+        env["CUDA_VISIBLE_DEVICES"] = "99999"
+        for name in (
+            "BELIEFKV_ADMISSION_OPPORTUNITY_DIR", "BELIEFKV_ADMISSION_TELEMETRY_DIR",
+            "BELIEFKV_NATIVE_TELEMETRY_DIR",
+        ):
+            env.pop(name, None)
+        source = (
+            "import sys; "
+            "from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime; "
+            "runtime=NativeAdmissionRuntime(event_socket_path=sys.argv[1],model_path=sys.argv[2]); "
+            "runtime.close()"
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", source, str(Path(directory) / "events.sock"), model_path],
+            env=env, check=True, capture_output=True, text=True, timeout=45,
+        )
+    return {"actual_runtime_constructor_accepted": True, "cuda_visible_devices": "99999",
+            "output_tail": result.stdout[-1000:]}
 
 
 def receipt_work(path):
@@ -132,6 +158,8 @@ def source_quality(summary, workflow_ids):
 
 
 def validate_result(plan, result, arm, *, live_control):
+    control = result.get("control_delivery", {})
+    delivered = control.get("workflows", {})
     if (
         result.get("causal_execution_completed") is not True
         or result.get("exact_tokens_verified") is not True
@@ -139,6 +167,16 @@ def validate_result(plan, result, arm, *, live_control):
         or result.get("native_session_http_lifecycle_completed") is not True
         or result.get("live_control_events_delivered") is not live_control
         or result.get("replay_process_python_hash_seed") != "21"
+        or control.get("mode") != (
+            "per_workflow_harness_queued" if live_control else "trace_only"
+        )
+        or (
+            live_control and (
+                set(delivered) != set(plan["workflow_ids"])
+                or sum(row.get("accepted_batch_count", 0) for row in delivered.values())
+                != plan["source_plan"]["nodes"] - plan["source_plan"]["requests"]
+            )
+        )
         or result.get("completed_requests") != plan["source_plan"]["requests"]
         or result.get("source_plan") != plan["source_plan"]
         or result.get("token_source", {}).get("token_source_sha256") != plan["token_source_sha256"]
@@ -228,6 +266,7 @@ def register(args):
     if not {
         "scripts/run_causal_comparison.py", "tests/test_causal_comparison.py",
         "scripts/benchmark_causal_sampling.py", "tests/test_causal_sampling_benchmark.py",
+        "beliefkv/experiments/causal_replay_delivery.py", "tests/test_causal_replay_delivery.py",
     } <= sources.keys():
         raise ValueError("comparison operator or sampling calibration lacks CPU qualification")
     smoke = load(args.gpu_smoke)
@@ -334,8 +373,15 @@ def register(args):
         "gpu_replay_qualified": False, "performance_accepted": False,
         "scope": "Auxiliary same-work causal controls; retain all tails and source guard qualifications.",
     }
-    environment({"arms": {"full": plan["reference_environment"]}}, "full", checkout,
-                args.engine, args.run_root / "full", args.port, args.run_root / "plugin")
+    plan["runtime_cpu_preflight"] = {}
+    for label in ORDER:
+        settings, _, _ = environment(
+            {"arms": {"full": plan["reference_environment"]}}, label, checkout,
+            frozen_engine, args.run_root / label, args.port, args.run_root / "plugin",
+        )
+        plan["runtime_cpu_preflight"][label] = preflight_runtime(
+            settings, plan["source_server_parameters"]["model_path"],
+        )
     comparison.verify_sources(plan)
     reservation.write_json(args.registration, plan)
     with args.registration.with_suffix(".log").open("x") as output:

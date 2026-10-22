@@ -61,9 +61,13 @@ def test_each_control_preserves_common_work_and_only_enables_its_policy(referenc
         assert event_socket == Path("/tmp/bkv-causal-18554.sock")
         assert env["BELIEFKV_ADMISSION_TELEMETRY_DIR"] == str(arm / "server")
         assert "BELIEFKV_NATIVE_TELEMETRY_DIR" not in env
-    for name in ("BELIEFKV_TOOL_TIMING_ARTIFACT", "BELIEFKV_H2D_SEED", "BELIEFKV_TRANSFER_SERVICE_SEED"):
+    for name, digest in (
+        ("BELIEFKV_TOOL_TIMING_ARTIFACT", "BELIEFKV_TOOL_TIMING_SHA256"),
+        ("BELIEFKV_H2D_SEED", "BELIEFKV_H2D_SEED_SHA256"),
+        ("BELIEFKV_TRANSFER_SERVICE_SEED", "BELIEFKV_TRANSFER_SERVICE_SEED_SHA256"),
+    ):
         assert bool(env[name]) is custom_kv
-        assert bool(env[name + "_SHA256"]) is custom_kv
+        assert bool(env[digest]) is custom_kv
     assert reference["arms"]["full"]["BELIEFKV_NATIVE_TELEMETRY_DIR"] == "old/native"
 
 
@@ -77,6 +81,38 @@ def test_comparison_does_not_silently_change_the_requested_profile(reference, tm
     reference["arms"]["full"][field] = value
     with pytest.raises(ValueError):
         comparison.environment(reference, "full", tmp_path, tmp_path, tmp_path, 18554, tmp_path)
+
+
+def test_generated_tool_model_settings_are_consumed_by_the_real_runtime_constructor(
+    reference, tmp_path, monkeypatch,
+):
+    import beliefkv.runtime.sglang_v0520_runtime as native
+
+    env, _, _ = comparison.environment(
+        reference, "full", tmp_path, tmp_path, tmp_path, 18554, tmp_path,
+    )
+    for name, value in env.items():
+        if name.startswith("BELIEFKV_"):
+            monkeypatch.setenv(name, value)
+    for name in (
+        "BELIEFKV_H2D_SEED", "BELIEFKV_H2D_SEED_SHA256",
+        "BELIEFKV_TRANSFER_SERVICE_SEED", "BELIEFKV_TRANSFER_SERVICE_SEED_SHA256",
+        "BELIEFKV_ADMISSION_OPPORTUNITY_DIR",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    checked = []
+    monkeypatch.setattr(native, "validate_tool_timing_artifact", lambda path, **kwargs: checked.append(
+        (path, kwargs["expected_sha256"], kwargs["model_path"]),
+    ))
+    runtime = native.NativeAdmissionRuntime(
+        event_socket_path=str(tmp_path / "cpu-events.sock"), model_path="cpu-contract-model",
+    )
+    try:
+        artifact = reference["arms"]["full"]["TOOL_TIMING_ARTIFACT"]
+        assert checked == [(artifact, sha256_file(Path(artifact)), "cpu-contract-model")]
+        assert runtime._tool_timing_only and runtime.enable_tool_prefetch
+    finally:
+        runtime.close()
 
 
 def receipt():
@@ -133,7 +169,7 @@ def result_fixture(tmp_path):
     path = replay / "native_requests.jsonl"
     path.write_text(json.dumps(receipt()) + "\n")
     plan = {
-        "source_plan": {"requests": 1, "prompt_tokens": 12, "output_tokens": 3},
+        "source_plan": {"nodes": 2, "requests": 1, "prompt_tokens": 12, "output_tokens": 3},
         "token_source_sha256": "tokens", "workflow_ids": ["w"],
     }
     result = {
@@ -142,6 +178,9 @@ def result_fixture(tmp_path):
         "native_session_http_lifecycle_completed": True,
         "live_control_events_delivered": True, "completed_requests": 1,
         "replay_process_python_hash_seed": "21",
+        "control_delivery": {"mode": "per_workflow_harness_queued", "workflows": {
+            "w": {"accepted_batch_count": 1},
+        }},
         "source_plan": dict(plan["source_plan"]),
         "token_source": {"token_source_sha256": "tokens"},
         "workflow_elapsed_ms": {"w": 5000.}, "native_requests_sha256": sha256_file(path),
@@ -151,7 +190,7 @@ def result_fixture(tmp_path):
 
 @pytest.mark.parametrize("change", (
     None, "incomplete", "stopping", "control", "population", "tokens",
-    "workflow", "receipt", "input_total", "output_total", "hash_seed",
+    "workflow", "receipt", "input_total", "output_total", "hash_seed", "control_dropped",
 ))
 def test_complete_comparison_requires_actual_work_and_causal_receipts(tmp_path, change):
     plan, result, arm = result_fixture(tmp_path)
@@ -169,6 +208,8 @@ def test_complete_comparison_requires_actual_work_and_causal_receipts(tmp_path, 
         result["workflow_elapsed_ms"] = {"other": 5000.}
     elif change == "hash_seed":
         result["replay_process_python_hash_seed"] = None
+    elif change == "control_dropped":
+        result["control_delivery"]["workflows"]["w"]["accepted_batch_count"] = 0
     elif change == "receipt":
         (arm / "replay/native_requests.jsonl").write_text("{}\n")
     elif change in ("input_total", "output_total"):
@@ -234,7 +275,7 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
         "source_arm": str(tmp_path / "source"),
         "source_capacity": {"device_full_tokens": 1797968},
         "source_server_parameters": {"random_seed": 21, "max_running_requests": 8},
-        "source_plan": {"requests": 1, "prompt_tokens": 12, "output_tokens": 3},
+        "source_plan": {"nodes": 2, "requests": 1, "prompt_tokens": 12, "output_tokens": 3},
         "token_source_sha256": "tokens", "workflow_ids": ["w"],
         "quality_exclusions": [], "scope": "test",
     }
@@ -281,6 +322,9 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
             "native_session_http_lifecycle_completed": True,
             "live_control_events_delivered": "--event-socket" in command,
             "replay_process_python_hash_seed": "21",
+            "control_delivery": {"mode": (
+                "per_workflow_harness_queued" if "--event-socket" in command else "trace_only"
+            ), "workflows": {"w": {"accepted_batch_count": 1}} if "--event-socket" in command else {}},
             "completed_requests": 1, "source_plan": plan["source_plan"],
             "token_source": {"token_source_sha256": "tokens"},
             "workflow_elapsed_ms": {"w": 5000.},

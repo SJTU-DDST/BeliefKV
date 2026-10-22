@@ -142,7 +142,7 @@ class CausalHTTPBackend:
         self._closed_workflows: set[str] = set()
         self._active: set[tuple[str, str]] = set()
         self._closing: dict[str, asyncio.Task] = {}
-        self._event_lock = asyncio.Lock()
+        self._event_locks: dict[str, asyncio.Lock] = {}
         self.verified_requests: set[str] = set()
         self.abort_errors: list[dict] = []
         self.session_closes: list[dict] = []
@@ -163,7 +163,8 @@ class CausalHTTPBackend:
             )
 
     async def emit(self, event: RuntimeEvent) -> None:
-        async with self._event_lock:
+        lock = self._event_locks.setdefault(event.workflow_id, asyncio.Lock())
+        async with lock:
             await asyncio.to_thread(self._emit_batch, (event,))
             owner = event.workflow_id, event.invocation_id
             context = event.workflow_id, event.context_id

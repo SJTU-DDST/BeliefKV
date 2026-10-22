@@ -22,6 +22,7 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.core.events import RuntimeEvent
 from beliefkv.experiments.causal_replay import compile_causal_replay, execute_causal_replay
 from beliefkv.experiments.causal_replay_backend import CausalHTTPBackend
+from beliefkv.experiments.causal_replay_delivery import ReplayEventDelivery
 from beliefkv.experiments.causal_replay_tokens import CapturedTokenCorpus
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.runtime.event_channel import (
@@ -77,17 +78,17 @@ async def run(args) -> dict:
         log = stack.enter_context(JsonlRuntimeEventSink(
             args.output_dir / "runtime_events.replay.jsonl",
         ))
-        live = stack.enter_context(
-            UnixDatagramRuntimeEventSink(args.event_socket),
-        ) if args.event_socket is not None else None
+        delivery = stack.enter_context(ReplayEventDelivery(
+            log.emit_batch,
+            (lambda _workflow: UnixDatagramRuntimeEventSink(args.event_socket))
+            if args.event_socket is not None else None,
+        ))
         requests = stack.enter_context(
             (args.output_dir / "native_requests.jsonl").open("x"),
         )
 
         def emit(events):
-            log.emit_batch(events)
-            if live is not None:
-                live.emit_batch(events)
+            delivery.emit_batch(events)
 
         def record(row):
             requests.write(json.dumps(row, allow_nan=False) + "\n")
@@ -107,6 +108,7 @@ async def run(args) -> dict:
             finally:
                 try:
                     await backend.drain()
+                    await asyncio.to_thread(delivery.flush)
                 except BaseException as cleanup_error:
                     with (args.output_dir / "cleanup_failure.json").open("x") as stream:
                         json.dump({
@@ -130,7 +132,8 @@ async def run(args) -> dict:
             session_generation_bindings=backend.session_generation_bindings,
             native_requests_sha256=sha256_file(args.output_dir / "native_requests.jsonl"),
             started_monotonic_ms=started, finished_monotonic_ms=time.monotonic() * 1000.,
-            live_control_events_delivered=live is not None,
+            live_control_events_delivered=args.event_socket is not None,
+            control_delivery=delivery.summary(),
             replay_process_python_hash_seed=os.environ.get("PYTHONHASHSEED"),
             server_source_and_gpu_qualified=False,
             gpu_replay_qualified=False, performance_accepted=False,
@@ -139,6 +142,7 @@ async def run(args) -> dict:
                     "scripts/run_causal_gpu_replay.py",
                     "beliefkv/experiments/causal_replay.py",
                     "beliefkv/experiments/causal_replay_backend.py",
+                    "beliefkv/experiments/causal_replay_delivery.py",
                     "beliefkv/experiments/causal_replay_native.py",
                     "beliefkv/experiments/causal_replay_sampling.py",
                     "beliefkv/experiments/causal_replay_tokens.py",

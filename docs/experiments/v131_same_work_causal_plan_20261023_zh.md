@@ -78,3 +78,25 @@ V130c 已在真实 GPU 上验证 24 次长上下文请求的精确 token、原�
 Full、native 和 JOIN-only 的 JCT、batch 利用、暴露恢复等待、
 重复恢复及忙时吞吐需要在收集后联合审查。
 队列收集完成只能标为待性能复核，不能自动宣布目标达成。
+
+## 首次启动与递送核查
+
+首个登记 `v131_same_work_causal_controls_20261023` 在 Full 初始化时
+因工具模型路径与 SHA 不成对而自行停止。实际原因是启动适配器把摘要
+写成了 `BELIEFKV_TOOL_TIMING_ARTIFACT_SHA256`，原生运行时要求
+`BELIEFKV_TOOL_TIMING_SHA256`。正式 live harness 原启动脚本使用正确名称；
+这是新增对照适配器的配置错误，不能解释为生产系统回撤。
+没有启动回放客户端、没有源请求或性能结果。原始错误、状态和清理记录保留。
+
+修复后增加真实 CPU 运行时构造器预检：用隐藏 GPU 的子进程加载 Full、
+JOIN-only 和关闭后台 prepare 的真实参数、模型与种子文件，
+在加载模型权重前发现配置问题。native 不实例化自定义运行时。
+
+还核实了一个回放交付差异：正式 harness 对工具开始和大多数 reentry
+事件使用每 workflow 独立的异步队列，旧回放却逐事件同步等待 ACK。
+现在复用同一 `QueuedRuntimeEventSink`，保留上下文压缩和 workflow
+结束等 ACK 边界，独立 workflow 不再共用发布锁。
+测试直接与实际 `DeepAgentsRuntimeAdapter._publish` 的阻塞边界比较，
+并验证待处理控制失败会使回放失败。
+受控组必须确认全部 workflow 的控制事件被接受；native 只写共同 trace。
+这项改动用于对齐评测方式，不能计作生产系统的吞吐优化收益。
