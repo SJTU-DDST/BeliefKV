@@ -8,6 +8,7 @@ import asyncio
 from contextlib import ExitStack
 from datetime import datetime
 import json
+import os
 from pathlib import Path
 import sys
 import time
@@ -130,6 +131,7 @@ async def run(args) -> dict:
             native_requests_sha256=sha256_file(args.output_dir / "native_requests.jsonl"),
             started_monotonic_ms=started, finished_monotonic_ms=time.monotonic() * 1000.,
             live_control_events_delivered=live is not None,
+            replay_process_python_hash_seed=os.environ.get("PYTHONHASHSEED"),
             server_source_and_gpu_qualified=False,
             gpu_replay_qualified=False, performance_accepted=False,
             analysis_source_sha256={

@@ -21,7 +21,7 @@ sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.causal_replay_tokens import CapturedTokenCorpus
 from beliefkv.experiments.internal_comparison import arm_environment
-from beliefkv.experiments.source_provenance import sha256_file
+from beliefkv.experiments.source_provenance import git_source_state, sha256_file
 from scripts.run_causal_gpu_replay import source_plan
 from scripts.run_causal_source_capture import (
     comparison, engine_evidence, fresh, load, qualified, reservation,
@@ -118,6 +118,7 @@ def validate_result(plan, result, arm, *, live_control):
         or result.get("original_native_stopping_verified") is not True
         or result.get("native_session_http_lifecycle_completed") is not True
         or result.get("live_control_events_delivered") is not live_control
+        or result.get("replay_process_python_hash_seed") != "21"
         or result.get("completed_requests") != plan["source_plan"]["requests"]
         or result.get("source_plan") != plan["source_plan"]
         or result.get("token_source", {}).get("token_source_sha256") != plan["token_source_sha256"]
@@ -254,6 +255,22 @@ def register(args):
         check=True, capture_output=True,
     )
     comparison.verify_cpu_snapshot(checkout, sources)
+    frozen_engine = comparison.EXPERIMENTS / ".worktrees" / (
+        f"sglang-causal-{engine['tree'][:12]}-{revision[:12]}"
+    )
+    base = qualified.command(["git", "-C", str(args.engine), "rev-parse", "HEAD"])
+    subprocess.run(
+        ["git", "-C", str(args.engine), "worktree", "add", "--detach", str(frozen_engine), base],
+        check=True, capture_output=True,
+    )
+    patch = checkout / "patches/sglang-v0.5.20-beliefkv-staging.patch"
+    subprocess.run(
+        ["git", "-C", str(frozen_engine), "apply", str(patch)],
+        check=True, capture_output=True,
+    )
+    frozen_tree = git_source_state(frozen_engine, canonical_patch=patch)["canonical_patch"]
+    if not frozen_tree["matches_worktree"] or frozen_tree["actual_tree"] != engine["tree"]:
+        raise ValueError("frozen native engine differs from the CPU-qualified source tree")
     inputs = [
         args.reference, args.cpu_report, args.cpu_sources, args.gpu_smoke,
         args.sampling_calibration, args.engine_report, args.engine_sources,
@@ -280,7 +297,7 @@ def register(args):
     plan = {
         "schema_version": 1, "registered_at": reservation.now().isoformat(),
         "development_checkout": str(ROOT), "execution_checkout": str(checkout),
-        "code_commit": revision, "engine_checkout": str(args.engine.resolve()),
+        "code_commit": revision, "engine_checkout": str(frozen_engine),
         "engine_tree": engine["tree"], "engine_evidence": engine,
         "source_sha256": sources, "passing_cpu_cases": count,
         "external_inputs": [
@@ -308,7 +325,9 @@ def register(args):
         watcher = subprocess.Popen(
             [sys.executable, str(checkout / "scripts/run_causal_comparison.py"),
              "--watch", str(args.registration.resolve())],
-            cwd=checkout, env={**os.environ, "CUDA_VISIBLE_DEVICES": "99999"},
+            cwd=checkout, env={
+                **os.environ, "CUDA_VISIBLE_DEVICES": "99999", "PYTHONHASHSEED": "21",
+            },
             stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.STDOUT,
             start_new_session=True,
         )
@@ -448,7 +467,10 @@ def watch(registration):
                     command += ["--event-socket", str(event_socket)]
                 with (arm / "replay.log").open("x") as output:
                     driver = subprocess.Popen(
-                        command, cwd=ROOT, env={**os.environ, "CUDA_VISIBLE_DEVICES": "99999"},
+                        command, cwd=ROOT, env={
+                            **os.environ, "CUDA_VISIBLE_DEVICES": "99999",
+                            "PYTHONHASHSEED": "21",
+                        },
                         stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.STDOUT,
                         start_new_session=True,
                     )

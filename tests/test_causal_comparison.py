@@ -103,6 +103,7 @@ def result_fixture(tmp_path):
         "original_native_stopping_verified": True,
         "native_session_http_lifecycle_completed": True,
         "live_control_events_delivered": True, "completed_requests": 1,
+        "replay_process_python_hash_seed": "21",
         "source_plan": dict(plan["source_plan"]),
         "token_source": {"token_source_sha256": "tokens"},
         "workflow_elapsed_ms": {"w": 5000.}, "native_requests_sha256": sha256_file(path),
@@ -112,7 +113,7 @@ def result_fixture(tmp_path):
 
 @pytest.mark.parametrize("change", (
     None, "incomplete", "stopping", "control", "population", "tokens",
-    "workflow", "receipt", "input_total", "output_total",
+    "workflow", "receipt", "input_total", "output_total", "hash_seed",
 ))
 def test_complete_comparison_requires_actual_work_and_causal_receipts(tmp_path, change):
     plan, result, arm = result_fixture(tmp_path)
@@ -128,6 +129,8 @@ def test_complete_comparison_requires_actual_work_and_causal_receipts(tmp_path, 
         result["token_source"]["token_source_sha256"] = "other"
     elif change == "workflow":
         result["workflow_elapsed_ms"] = {"other": 5000.}
+    elif change == "hash_seed":
+        result["replay_process_python_hash_seed"] = None
     elif change == "receipt":
         (arm / "replay/native_requests.jsonl").write_text("{}\n")
     elif change in ("input_total", "output_total"):
@@ -226,6 +229,7 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
             (arm / "server/native_capacity_census.json").write_text(json.dumps({"capacity": capacity}))
             return Process(100, None)
         label = current[0]
+        assert kwargs["env"]["PYTHONHASHSEED"] == "21"
         output = Path(command[command.index("--output-dir") + 1])
         output.mkdir()
         row = receipt()
@@ -238,6 +242,7 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
             "original_native_stopping_verified": True,
             "native_session_http_lifecycle_completed": True,
             "live_control_events_delivered": "--event-socket" in command,
+            "replay_process_python_hash_seed": "21",
             "completed_requests": 1, "source_plan": plan["source_plan"],
             "token_source": {"token_source_sha256": "tokens"},
             "workflow_elapsed_ms": {"w": 5000.},

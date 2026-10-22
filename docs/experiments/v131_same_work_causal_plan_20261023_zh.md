@@ -47,10 +47,28 @@ GPU context 进行核对。
 该组件测量不含模型 forward、delayed sampling、HTTP、receipt、KV DMA
 或 workflow JCT；不将测量差值从端到端结果中扣除。
 
+V2971 已在 H200 上完成 11 个采样、每个 64 步的组件测量，
+词表为模型真实的 248320，logits 为 float32：
+
+| 平均每步墙钟，ms | batch1 | batch8 |
+| --- | ---: | ---: |
+| greedy，包含共同 reset | 0.017448 | 0.017253 |
+| 直接 forcing + greedy | 0.050959 | 0.057382 |
+| 原生 forcing 入口 + greedy | 0.184215 | 0.261965 |
+| 原生 forcing 相对 greedy 的增量 | 0.166766 | 0.244712 |
+
+原生入口存在可测成本，但没有测量其与 forward 的实际重叠，
+因此不由上表推导 JCT 加速比或整体吞吐损失。
+本轮保持采样实现不变。微基准首个导入尝试缺少 CUDA_HOME，未进入
+测量；补齐与模型启动脚本相同的 CUDA 13 环境后成功，
+失败记录另行保留，不能计作一次有效采样。
+
 精确输出使用 `SGLANG_ENABLE_DELAY_SAMPLE=1`，与源采集默认不同，
 因此它和输出强制必须在所有回放组共同使用，不能归因于 KV 设计。
 V130c 已在真实 GPU 上验证 24 次长上下文请求的精确 token、原生 stop
 和 session，但尚未验证完整 live-policy 回放。
+回放驱动和监督进程也显式设置 hash seed21，
+每组摘要必须回报实际的驱动 hash seed 才能通过结果校验。
 
 ## 监督与结果解释
 
