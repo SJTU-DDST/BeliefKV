@@ -227,6 +227,38 @@ def test_prefill_cohorts_require_native_geometry_for_every_batch_row(tmp_path):
     assert set(prefill["cohorts"]) == {"2/1024/2048", "1/0/6144"}
 
 
+def test_fine_prefill_bins_separate_work_and_keep_unknown_graph_flags(tmp_path):
+    directory = tmp_path / "server"
+    directory.mkdir()
+    rows = [{
+        "event": "gpu_service_sample", "complete_ts_ms": 150. + index,
+        "phase": "prefill", "batch_size": 1, "service_elapsed_ms": 5. + index,
+        **({"cuda_graph_replayed": graph} if graph is not None else {}),
+        "request_samples": [{
+            "sequence_tokens_before": 8192, "token_delta": work,
+            "prefill_geometry_source": "native_batch",
+        }],
+    } for index, (work, graph) in enumerate(((8, True), (15, False), (16, None)))]
+    rows.extend([
+        {"event": "gpu_service_sample", "complete_ts_ms": 190.,
+         "phase": "decode", "batch_size": 1, "service_elapsed_ms": 5.,
+         "request_samples": [{"sequence_tokens_before": 8192}]},
+        {"event": "gpu_service_sample", "complete_ts_ms": 210.},
+    ])
+    (directory / "runtime_audit.jsonl").write_bytes(b"".join(encoded(row) for row in rows))
+    coarse = decode_geometry(tmp_path, 100., 200.)["prefill_geometry"]
+    fine = decode_geometry(tmp_path, 100., 200., prefill_work_bin=16)["prefill_geometry"]
+    assert set(coarse["cohorts"]) == {"1/0/8192"}
+    assert coarse["cohorts"]["1/0/8192"]["mean_extend_tokens"] == 13.
+    assert set(fine["cohorts"]) == {"1/0/8192", "1/16/8192"}
+    assert set(fine["graph_cohorts"]) == {
+        "1/0/8192/true", "1/0/8192/false", "1/16/8192/unknown",
+    }
+    for width in (0, -1, True):
+        with pytest.raises(ValueError, match="bin"):
+            decode_geometry(tmp_path, 100., 200., prefill_work_bin=width)
+
+
 @pytest.mark.parametrize("include_known_batch", [False, True])
 def test_partial_decode_geometry_retains_interval_without_matching_unknowns(
     tmp_path, include_known_batch,

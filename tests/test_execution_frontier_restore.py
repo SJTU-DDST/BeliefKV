@@ -1,5 +1,6 @@
 from types import SimpleNamespace as NS
 from unittest.mock import Mock, patch
+import os
 
 import pytest
 
@@ -10,6 +11,10 @@ from tests.test_execution_handoff import runtime_with_requests
 
 
 def fixture(monkeypatch):
+    monkeypatch.setenv(
+        "BELIEFKV_ENABLE_FRONTIER_RESTORE",
+        os.environ.get("BELIEFKV_ENABLE_FRONTIER_RESTORE", "1"),
+    )
     monkeypatch.setenv("BELIEFKV_ENABLE_TOOL_PREFETCH", "1")
     monkeypatch.setenv("BELIEFKV_TOOL_RESTORE_MODE", "execution")
     monkeypatch.setenv("BELIEFKV_ENABLE_EXECUTION_HANDOFF", "0")

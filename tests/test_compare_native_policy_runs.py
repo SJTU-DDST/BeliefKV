@@ -25,6 +25,50 @@ def test_tail_cutoff_waits_for_last_arrival_and_counts_simultaneous_terminals():
     assert workload_tail_cutoff(rows, minimum_active=2) == 200.
 
 
+@pytest.mark.parametrize("include_diagnostic", (False, True))
+def test_complete_workflow_jct_stays_primary_with_optional_tail_diagnostics(
+    tmp_path, monkeypatch, include_diagnostic,
+):
+    from scripts import compare_native_policy_runs as comparison
+
+    arguments = ["compare"]
+    for name in ("full", "native"):
+        arm = tmp_path / name
+        client = arm / "client_2"
+        client.mkdir(parents=True)
+        (client / "summary.json").write_text(json.dumps({"workflows": [
+            {"instance_id": "short", "outcome": "completed", "duration_seconds": 10.,
+             "native_agent_jct_eligible": True},
+            {"instance_id": "long", "outcome": "completed", "duration_seconds": 1000.,
+             "native_agent_jct_eligible": True},
+        ]}))
+        arguments.extend(("--arm", f"{name}={arm}", "--timeline", f"{name}=unused"))
+    output = tmp_path / "comparison.json"
+    arguments.extend(("--output", str(output)))
+    if include_diagnostic:
+        arguments.append("--exclude-workload-tail")
+    monkeypatch.setattr(comparison.sys, "argv", arguments)
+    monkeypatch.setattr(comparison, "compare_run", lambda *args: {
+        "instance_ids": ["short", "long"], "native_pool_capacity": {},
+        "collection_duration_seconds": 1000., "completed_per_hour": 7.2,
+        "output_tokens_per_second": 100., "gpu_utilization_mean": 90., "milestones": {},
+    })
+    monkeypatch.setattr(comparison, "tail_excluded_comparison", lambda *args, **kwargs: {
+        "primary": True, "scope": "fixture",
+    })
+    comparison.main()
+    report = json.loads(output.read_text())
+    assert report["full_run_metrics_role"].startswith("primary; complete workflow JCT")
+    paired = report["paired_completed_jct"]["full_vs_native"]
+    assert paired["paired_completed_workflows"] == 2
+    assert paired["duration_seconds"]["left"]["mean"] == 505.
+    assert [row["instance_id"] for row in paired["rows"]] == ["long", "short"]
+    if include_diagnostic:
+        assert report["tail_excluded_primary_comparison"]["primary"] is False
+    else:
+        assert "tail_excluded_primary_comparison" not in report
+
+
 def test_restricted_jct_keeps_slow_work_and_does_not_reward_failure():
     rows = [
         {"instance_id": "success", "start_seconds": 0., "end_seconds": 50.,

@@ -380,7 +380,7 @@ def test_effective_policy_environment_without_launching_gpu(
         "prefetch_residency_protection_requested": True,
         "prefill_scheduling_policy_requested": "workflow",
         "join_last_child_priority_requested": False,
-        "execution_frontier_restore_requested": True,
+        "execution_frontier_restore_requested": False,
         "tool_restore_mode_requested": "speculative",
         "idle_prepare_policy_requested": "cold",
         "restore_tiers_requested": "complete",

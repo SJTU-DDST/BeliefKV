@@ -169,10 +169,31 @@ def test_frontier_restore_is_explicit_in_the_spec_and_not_inherited_from_an_old_
     env = launcher.campaign_environment(
         {"EXECUTION_FRONTIER_RESTORE": "0"}, spec, Path("/frozen"), Path("/engine"), 18524,
     )
-    expected = "1" if setting is None else setting
+    expected = "0" if setting is None else setting
     assert env["EXECUTION_FRONTIER_RESTORE"] == expected
     assert arm_environment(env, "full")["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == expected
     assert arm_environment(env, "join_priority_only")["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == "0"
+
+
+def test_frozen_spec_is_independent_of_later_main_configuration_changes(tmp_path, monkeypatch):
+    development, checkout = tmp_path / "main", tmp_path / "frozen"
+    relative = Path("configs/campaign.json")
+    source, frozen = development / relative, checkout / relative
+    source.parent.mkdir(parents=True)
+    frozen.parent.mkdir(parents=True)
+    source.write_text('{"policy": "updated-main"}')
+    frozen.write_text('{"policy": "registered"}')
+    monkeypatch.setattr(launcher, "ROOT", development)
+    path, spec = launcher.frozen_campaign_spec(source, checkout)
+    assert path == frozen
+    assert spec == {"policy": "registered"}
+    source.write_text('{"policy": "another-update"}')
+    assert launcher.frozen_campaign_spec(source, checkout) == (path, spec)
+    with pytest.raises(ValueError):
+        launcher.frozen_campaign_spec(tmp_path / "outside.json", checkout)
+    frozen.unlink()
+    with pytest.raises(FileNotFoundError):
+        launcher.frozen_campaign_spec(source, checkout)
 
 
 @pytest.mark.parametrize("field,value", (
@@ -397,7 +418,7 @@ def test_full_then_join_then_native_collects_fresh_arms_and_retains_guard_exit(
     assert launcher.verify.call_args_list[-1].kwargs == {}
     comparison_command = launcher.subprocess.run.call_args.args[0]
     assert not any("full_reference" in value for value in comparison_command)
-    assert "--exclude-workload-tail" in comparison_command
+    assert "--exclude-workload-tail" not in comparison_command
 
 
 def test_failed_initial_launch_restores_a_stop_marker_without_replacing_a_new_hold(

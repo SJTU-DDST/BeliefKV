@@ -2,6 +2,11 @@
 
 更新日期：2026-10-22（北京时间）
 
+最新修订：[关闭普通前沿恢复、核查短 prefill 回撤并保留完整 JCT](experiments/v108_v123_frontier_prefill_regression_20261022_zh.md)。
+主线默认关闭普通 execution-frontier restore；后续完整 workflow JCT 包括
+普通工作长尾，不再默认使用 active-workflow 截尾。V123 已结束且有一个
+预算 guard，保留原退出与资格限制；CPU 汇总已恢复，性能目标仍未验收。
+
 用户最新要求重新论证现有设计的 OSDI/EuroSys 定位并优化设计。
 最新[设计复核与候选机制](research/design_review_osdi_eurosys_20261021_zh.md)
 区分已实现机制、已有工作覆盖和待验证假设：动态 spawn/JCT 本身不作独有

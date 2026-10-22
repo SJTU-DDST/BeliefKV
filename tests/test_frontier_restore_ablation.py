@@ -7,6 +7,21 @@ from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from tests.test_execution_frontier_restore import fixture
 
 
+def test_frontier_restore_is_off_by_default_without_enabling_tool_prediction(monkeypatch):
+    monkeypatch.delenv("BELIEFKV_ENABLE_FRONTIER_RESTORE", raising=False)
+    monkeypatch.setenv("BELIEFKV_TOOL_RESTORE_MODE", "execution")
+    monkeypatch.setenv("BELIEFKV_ENABLE_TOOL_PREFETCH", "1")
+    runtime = NativeAdmissionRuntime()
+    try:
+        assert not runtime.enable_frontier_restore
+        assert not runtime.enable_tool_prefetch
+    finally:
+        runtime.close()
+    assert arm_environment({"TOOL_RESTORE_MODE": "execution"}, "full")[
+        "BELIEFKV_ENABLE_FRONTIER_RESTORE"
+    ] == "0"
+
+
 def test_disabled_frontier_does_not_restore_speculative_tool_work_or_delay_admission(monkeypatch):
     monkeypatch.setenv("BELIEFKV_ENABLE_FRONTIER_RESTORE", "0")
     runtime, requests, cache = fixture(monkeypatch)

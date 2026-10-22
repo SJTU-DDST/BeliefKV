@@ -30,7 +30,7 @@ def arm_environment(common: dict[str, str], mode: str) -> dict[str, str]:
         raise ValueError("unsupported tool restore mode")
     frontier = common.get(
         "BELIEFKV_ENABLE_FRONTIER_RESTORE",
-        common.get("EXECUTION_FRONTIER_RESTORE", "1"),
+        common.get("EXECUTION_FRONTIER_RESTORE", "0"),
     )
     if frontier not in ("0", "1"):
         raise ValueError("execution frontier restore must be 0 or 1")
@@ -152,7 +152,7 @@ def validate_runtime(
     if tool_restore_mode == "execution" or execution_frontier_restore is not None:
         expected["execution_frontier_restore"] = (
             tool_restore_mode == "execution" and mode in ("full", "kv_only")
-            and execution_frontier_restore is not False
+            and execution_frontier_restore is True
         )
     if idle_prepare_policy is not None:
         expected["idle_prepare_policy"] = idle_prepare_policy

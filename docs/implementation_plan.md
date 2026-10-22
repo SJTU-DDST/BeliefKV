@@ -2,7 +2,15 @@
 
 Status date: 2026-10-22 (Asia/Shanghai).
 
-The latest user request authorizes implementing selective backup,dependency
+The latest user request disables ordinary execution-frontier restore by default
+and makes complete workflow JCT, including normal tails, the primary criterion.
+Only exceptional tool outliers may receive explicitly evidenced paired reporting.
+JOIN/EOS, incremental backup and native admission-time layer restoration remain.
+See [the V108--V123 regression audit](experiments/v108_v123_frontier_prefill_regression_20261022_zh.md).
+V123 has finished with one guard exclusion; its raw JCT is not an all-natural
+performance acceptance. Continue the active goal with this revised metric policy.
+
+Earlier work implemented selective backup,dependency
 restore tiers and execution-frontier tool recovery before the fresh comparison.
 Follow [the revision](research/completion_and_restore_revision_20261022_zh.md) and
 [the design review](research/design_review_osdi_eurosys_20261021_zh.md):
@@ -16,7 +24,7 @@ The GPU hold and engineering contracts retain precedence.
 
 Research implementation order:the user supersedes the controls-first restriction.
 Use bounded cold-owner filtering instead of a global capacity-gap optimizer.
-Ordinary tools restore at the execution frontier;keep timing for pressure offload.
+Ordinary tools use native admission-time recovery; keep timing for pressure offload.
 Use actual state-first/prefix/tail primitives and measure exposed waits.
 Keep workflow_completion as a separately controlled admission-quantum candidate.
 Keep simple JOIN as a strong common

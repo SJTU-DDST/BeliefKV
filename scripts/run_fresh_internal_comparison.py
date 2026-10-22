@@ -85,7 +85,7 @@ def campaign_environment(
         raise ValueError("fresh campaign must start with Full and matching JOIN/native controls")
     frontier = common.get(
         "BELIEFKV_ENABLE_FRONTIER_RESTORE",
-        common.get("EXECUTION_FRONTIER_RESTORE", "1"),
+        common.get("EXECUTION_FRONTIER_RESTORE", "0"),
     )
     if frontier not in ("0", "1"):
         raise ValueError("execution frontier restore must be 0 or 1")
@@ -102,6 +102,11 @@ def campaign_environment(
         EXECUTION_FRONTIER_RESTORE=frontier,
     )
     return env
+
+
+def frozen_campaign_spec(path: Path, checkout: Path) -> tuple[Path, dict]:
+    frozen = checkout / path.resolve().relative_to(ROOT.resolve())
+    return frozen, load(frozen)
 
 
 def verify_engine_qualification(path: Path, *, engine: Path, patch_sha256: str) -> dict:
@@ -269,10 +274,11 @@ def register(args) -> None:
     if link.resolve() != engine.resolve():
         raise ValueError("frozen checkout points to a different native engine")
     comparison.verify_cpu_snapshot(checkout, sources)
+    spec_path, spec = frozen_campaign_spec(args.spec, checkout)
     env = campaign_environment(base["environment"], spec, checkout, engine, args.port)
     workload_paths, workload = qualified.workload_inputs()
     inputs = workload_paths | {
-        args.spec.resolve(), args.base_registration.resolve(),
+        spec_path.resolve(), args.base_registration.resolve(),
         args.cpu_report.resolve(), args.cpu_sources.resolve(),
         Path(reservation.__file__),
         Path(qualified.machine_helper("start_v88_after_0600_20261020").__file__),
@@ -438,8 +444,7 @@ def watch(registration: Path) -> None:
                     f"{mode}={run / 'timelines' / (mode + '.json.gz')}",
                 ))
             subprocess.run(
-                [*arguments, "--exclude-workload-tail", "--tail-active-workflows", "4",
-                 "--warmup-seconds", "600", "--output", str(run / "internal_comparison.json")],
+                [*arguments, "--output", str(run / "internal_comparison.json")],
                 check=True, capture_output=True,
             )
             state.update(

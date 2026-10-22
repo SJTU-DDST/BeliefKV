@@ -1275,12 +1275,19 @@ def main() -> None:
         }
         for left, right in combinations(arms, 2)
     }
+    report["full_run_metrics_role"] = (
+        "primary; complete workflow JCT including workload tails; "
+        "exceptional tool outliers require explicit paired evidence and separate reporting"
+    )
     if args.exclude_workload_tail:
         report["tail_excluded_primary_comparison"] = tail_excluded_comparison(
             arms, timelines, minimum_active=args.tail_active_workflows,
             warmup_seconds=args.warmup_seconds,
         )
-        report["full_run_metrics_role"] = "background; workload tails excluded from primary comparison"
+        report["tail_excluded_primary_comparison"]["primary"] = False
+        report["tail_excluded_primary_comparison"]["scope"] += (
+            "; optional diagnostic only; complete workflow JCT remains primary"
+        )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n")
     print(f"Saved {args.output}")

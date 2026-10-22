@@ -352,7 +352,11 @@ def worker_interval_neighbors(markers: list[dict]) -> dict:
     }
 
 
-def decode_geometry(arm: Path, begin: float, end: float) -> dict:
+def decode_geometry(
+    arm: Path, begin: float, end: float, *, prefill_work_bin: int = 512,
+) -> dict:
+    if type(prefill_work_bin) is not int or prefill_work_bin < 1:
+        raise ValueError("positive prefill work bin required")
     path = arm / "server/runtime_audit.jsonl"
     contexts, sums, durations, batches = [], [], [], []
     groups = defaultdict(list)
@@ -360,6 +364,8 @@ def decode_geometry(arm: Path, begin: float, end: float) -> dict:
     prefill_durations, prefill_work = [], []
     prefill_sources = Counter()
     prefill_groups = defaultdict(list)
+    prefill_group_work = defaultdict(list)
+    prefill_graph_groups = defaultdict(list)
     decode_observed_durations, decode_unknown_durations = [], []
     decode_unknown_examples = []
     interval_markers = []
@@ -417,12 +423,16 @@ def decode_geometry(arm: Path, begin: float, end: float) -> dict:
                     work = sum(item["token_delta"] for item in native)
                     context = mean(item["sequence_tokens_before"] for item in native)
                     prefill_work.append(work)
+                    bucket = work // prefill_work_bin
+                    group = row["batch_size"], bucket, int(context) // 2048
                     interval_markers[-1]["geometry_cohort"] = (
-                        f"{work // 512 * 512}/{int(context) // 2048 * 2048}"
+                        f"{bucket * prefill_work_bin}/{int(context) // 2048 * 2048}"
                     )
-                    prefill_groups[
-                        row["batch_size"], work // 512, int(context) // 2048,
-                    ].append(duration)
+                    prefill_groups[group].append(duration)
+                    prefill_group_work[group].append(work)
+                    graph = row.get("cuda_graph_replayed")
+                    graph = str(graph).lower() if type(graph) is bool else "unknown"
+                    prefill_graph_groups[group + (graph,)].append(duration)
                 continue
             if row["phase"] != "decode":
                 continue
@@ -505,6 +515,7 @@ def decode_geometry(arm: Path, begin: float, end: float) -> dict:
             "Worker intervals include scheduler/result processing and are not kernel timings."
         ),
         "prefill_geometry": {
+            "extend_bin_tokens": prefill_work_bin,
             "batches": len(prefill_durations),
             "worker_interval_ms": sum(prefill_durations),
             "known_work_batches": len(prefill_work),
@@ -512,16 +523,28 @@ def decode_geometry(arm: Path, begin: float, end: float) -> dict:
             "known_extend_tokens": sum(prefill_work) if prefill_work else None,
             "request_geometry_sources": dict(sorted(prefill_sources.items())),
             "cohorts": {
-                f"{size}/{work * 512}/{context * 2048}": {
+                f"{size}/{work * prefill_work_bin}/{context * 2048}": {
                     "batches": len(values), "mean_ms": mean(values),
                     "median_ms": median(values),
+                    "mean_extend_tokens": mean(prefill_group_work[size, work, context]),
+                    "median_extend_tokens": median(prefill_group_work[size, work, context]),
                 }
                 for (size, work, context), values in sorted(prefill_groups.items())
+            },
+            "graph_cohorts": {
+                f"{size}/{work * prefill_work_bin}/{context * 2048}/{graph}": {
+                    "batches": len(values), "mean_ms": mean(values),
+                    "median_ms": median(values),
+                    "batch_size": size, "extend_bin_start": work * prefill_work_bin,
+                    "extend_bin_tokens": prefill_work_bin, "graph": graph,
+                }
+                for (size, work, context, graph), values in sorted(prefill_graph_groups.items())
             },
             "semantics": (
                 "Completed worker intervals, not CUDA kernel timings. Cohorts require "
                 "native prepared prefix/extend lengths for every batch row; they match "
-                "batch size, 512-token total-work bins and 2048-token mean-prefix bins. "
+                f"batch size, {prefill_work_bin}-token total-work bins and 2048-token mean-prefix bins. "
+                "Graph cohorts additionally match the explicit result flag; unknown remains unknown. "
                 "Legacy missing fields or zero defaults do not establish zero prefill "
                 "work. Partial attributed batches retain unknown total work."
             ),

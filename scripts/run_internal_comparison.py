@@ -429,8 +429,7 @@ def watch(registration: Path) -> None:
                 arguments.extend(("--arm", f"{mode}={run / mode}", "--timeline",
                                   f"{mode}={run / 'timelines' / (mode + '.json.gz')}"))
             subprocess.run(
-                [*arguments, "--exclude-workload-tail", "--tail-active-workflows", "4",
-                 "--warmup-seconds", "600", "--output", str(run / "internal_comparison.json")],
+                [*arguments, "--output", str(run / "internal_comparison.json")],
                 check=True, capture_output=True,
             )
             state.update(status="completed", finished_at=reservation.now().isoformat())

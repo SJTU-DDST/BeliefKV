@@ -713,7 +713,7 @@ class NativeAdmissionRuntime:
         self.tool_restore_mode = os.environ.get("BELIEFKV_TOOL_RESTORE_MODE", "speculative")
         if self.tool_restore_mode not in ("speculative", "execution"):
             raise ValueError("tool restore mode must be speculative or execution")
-        frontier_setting = os.environ.get("BELIEFKV_ENABLE_FRONTIER_RESTORE", "1")
+        frontier_setting = os.environ.get("BELIEFKV_ENABLE_FRONTIER_RESTORE", "0")
         if frontier_setting not in ("0", "1"):
             raise ValueError("execution frontier restore setting must be 0 or 1")
         self.enable_frontier_restore = (

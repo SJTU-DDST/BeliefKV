@@ -164,7 +164,7 @@ def test_new_memory_controls_are_explicit_and_runtime_checked(monkeypatch, tmp_p
             restore_tiers="dependency" if custom else "complete",
         )
         assert state["tool_prefetch"] is False
-        assert state["execution_frontier_restore"] is custom
+        assert state["execution_frontier_restore"] is False
         assert runtime._completion_order is not None if mode in ("full", "scheduler_only") else runtime._completion_order is None
         if custom:
             state["restore_tiers_supported"] = False

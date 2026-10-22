@@ -63,6 +63,7 @@ def test_invalid_reference_never_becomes_ready(fault):
 
 def reference_plan():
     spec = json.loads(SPEC.read_bytes())
+    spec["common_environment"]["EXECUTION_FRONTIER_RESTORE"] = "1"
     environment = launcher.fresh.campaign_environment(
         {"PARALLEL_WAIT_PREFETCH": "1", "WAIT_PREFETCH_CONTEXTS": "2"},
         spec, Path("/old/frozen"), Path("/engine"), 18524,
@@ -352,5 +353,5 @@ def test_comparison_reuses_all_reference_arms_without_launching_them(tmp_path, m
         "full_no_frontier", "full", "join_priority_only", "native_matched",
     ]
     assert all(str(tmp_path / "reference") in arm for arm in arms[1:])
-    assert "--exclude-workload-tail" in args
-    assert args[args.index("--tail-active-workflows") + 1] == "4"
+    assert "--exclude-workload-tail" not in args
+    assert "--tail-active-workflows" not in args

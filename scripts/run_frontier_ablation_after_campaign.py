@@ -257,8 +257,7 @@ def compare(plan: dict) -> None:
     ):
         arguments.extend(("--arm", f"{name}={arm}", "--timeline", f"{name}={timeline}"))
     subprocess.run([
-        *arguments, "--exclude-workload-tail", "--tail-active-workflows", "4",
-        "--warmup-seconds", "600", "--output", str(run / "internal_comparison.json"),
+        *arguments, "--output", str(run / "internal_comparison.json"),
     ], check=True, capture_output=True)
 
 

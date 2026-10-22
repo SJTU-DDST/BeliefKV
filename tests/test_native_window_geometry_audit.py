@@ -97,3 +97,48 @@ def test_invalid_clock_or_coverage_is_rejected_before_reading_raw_files(monkeypa
 def test_invalid_windows_are_rejected(start, end):
     with pytest.raises(ValueError):
         auditor.audit(basis(), start, end)
+
+
+def test_fine_bin_and_support_are_explicit_without_dropping_sparse_arms(monkeypatch):
+    calls = []
+
+    def decode(path, begin, end, **options):
+        calls.append(options)
+        return geometry(30, 8)
+
+    monkeypatch.setattr(auditor, "decode_geometry", decode)
+    result = auditor.audit(basis(), 10, 20, prefill_work_bin=16, minimum_batches=8)
+    assert calls == [{"prefill_work_bin": 16}, {"prefill_work_bin": 16}]
+    assert result["comparisons"][0]["matched"]["prefill_geometry"]
+    for options in (
+        {"prefill_work_bin": 0}, {"minimum_batches": 0}, {"minimum_batches": True},
+    ):
+        with pytest.raises(ValueError, match="positive"):
+            auditor.audit(basis(), 10, 20, **options)
+
+
+def test_balanced_short_prefill_excludes_large_work_unknown_graphs_and_unequal_weights():
+    def group(size, start, graph, mean, count):
+        return {
+            "batch_size": size, "extend_bin_start": start, "extend_bin_tokens": 16,
+            "graph": graph, "mean_ms": mean, "batches": count,
+        }
+
+    left = {
+        "short": group(1, 16, "false", 20, 10),
+        "long": group(1, 4096, "false", 100, 20),
+        "multi": group(2, 0, "false", 80, 20),
+        "unknown": group(1, 0, "unknown", 900, 30),
+        "boundary": group(1, 508, "false", 900, 30),
+    }
+    right = deepcopy(left)
+    right["short"].update(mean_ms=10, batches=2)
+    result = auditor.balanced_prefill(left, right, minimum_batches=1, short_only=True)
+    assert result["cohorts"] == 1
+    assert result["common_batch_weight"] == 2
+    assert result["left_worker_mean_ms"] == 20
+    assert result["right_worker_mean_ms"] == 10
+    assert result["left_to_right_ratio"] == 2
+    assert auditor.balanced_prefill(
+        left, right, minimum_batches=3, short_only=True,
+    )["left_worker_mean_ms"] is None

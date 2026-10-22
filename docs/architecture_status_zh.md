@@ -2,7 +2,14 @@
 
 更新日期：2026-10-22（北京时间）。
 
-用户最新要求实现低成本选择性备份、依赖恢复档位及执行前沿工具恢复。
+用户最新要求普通 execution-frontier restore 默认关闭，JCT 以完整 workflow
+且保留普通长尾为主；异常工具排除需具体证据及配对口径。JOIN/EOS、增量
+备份和原生准入的分层需求恢复保留。V123 已结束，35/36 无 guard 合格；
+主线默认值、短 prefill 证据和汇总恢复见
+[V108--V123 回撤核查](experiments/v108_v123_frontier_prefill_regression_20261022_zh.md)。
+目标仍 active，单轮生成工作量及 guard 限制不能忽略。
+
+此前实现低成本选择性备份、依赖恢复档位及执行前沿工具恢复。
 [本轮修订](research/completion_and_restore_revision_20261022_zh.md)记录复制/
 续传、状态 fence、增量筛选和 CPU 证据。workflow_completion
 提供 workflow 范围的有界连续准入，暂作独立消融；不当作性能保证。
