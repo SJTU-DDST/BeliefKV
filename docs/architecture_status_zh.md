@@ -27,6 +27,13 @@ V126首项no_join_prefetch已结束，但只有35/36项有效完成，监督器�
 修复适用于Full/native。V127重跑该项并接续原定其余五组，保留V126失败
 证据，不把35项的完成均值当作合格JCT。[故障与最新诊断](experiments/v126_history_failure_and_control_findings_20261022_zh.md)。
 
+最新V2836使用V127已完整覆盖的600--1800s进行离线短prefill配对；
+4个粗分桶中run_batch线程CPU为36.619/36.482ms，未稳定复现V126的
+约1.30倍差距。共同阶段样本仅21/15个，细分桶支持不足，post-launch
+控制仍约0.802/0.002ms；历史native与当前版本不同，不作JCT或因果收益
+结论。main的80c0891只新增离线分析，冻结V127仍为aa1ab19，待收齐
+四项剩余消融及同版Full/native。
+
 main 新增独立的 `native_in_graph_reusable_nested` profile：稳定 handle
 保存私有 graph state，每轮 fresh invocation/JOIN，原生 session 普通续用、
 压缩时换代；物理 KV 丢弃不改变逻辑历史。休眠最新 checkpoint 按 HBM、
