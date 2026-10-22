@@ -1964,6 +1964,86 @@ def test_deepagents_task_callbacks_form_replayable_parent_child_join() -> None:
     assert control_graph.invocations["root"].state == InvocationState.DONE
     assert control_graph.contexts["ctx-root"].epoch == 1
 
+
+@pytest.mark.parametrize("arguments,valid_companion", (
+    ({}, False),
+    ({"description": "Inspect the parser."}, False),
+    ({"subagent_type": "general-purpose"}, False),
+    ({"description": [], "subagent_type": "general-purpose"}, False),
+    ({}, True),
+))
+def test_rejected_task_schema_keeps_tool_failure_without_a_phantom_child(
+    arguments, valid_companion,
+) -> None:
+    trace, control = CollectingSink(), CollectingSink()
+    adapter = DeepAgentsRuntimeAdapter(
+        trace, BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        control_sink=control,
+    )
+    calls = [{"name": "task", "args": arguments, "id": "invalid-task"}]
+    if valid_companion:
+        calls.append({
+            "name": "task", "id": "valid-task",
+            "args": {
+                "description": "Inspect the parser.",
+                "subagent_type": "general-purpose",
+            },
+        })
+    model = QueueToolCallingModel(responses=[
+        AIMessage(
+            content="", tool_calls=calls,
+            response_metadata={"finish_reason": "length"},
+        ),
+        *([AIMessage(content="Parser investigation complete.")] if valid_companion else []),
+        AIMessage(content="Recovered after the invalid tool arguments."),
+    ])
+    agent = create_deep_agent(model=model, tools=[])
+    adapter.start()
+    result = agent.invoke(
+        {"messages": [HumanMessage(content="Inspect the parser.")]},
+        config={"callbacks": [adapter], "recursion_limit": 20},
+    )
+    adapter.finish(outcome="completed")
+
+    failure = next(
+        message for message in result["messages"]
+        if isinstance(message, ToolMessage) and message.tool_call_id == "invalid-task"
+    )
+    assert failure.status == "error"
+    assert "Error invoking tool 'task'" in failure.text
+    assert result["messages"][-1].text == "Recovered after the invalid tool arguments."
+    for sink in (trace, control):
+        kinds = [event.kind for event in sink.events]
+        for kind in (
+            RuntimeEventKind.SPAWN, RuntimeEventKind.JOIN_CREATE,
+            RuntimeEventKind.JOIN_WAIT, RuntimeEventKind.JOIN_SATISFIED,
+        ):
+            assert kinds.count(kind) == int(valid_companion)
+        assert RuntimeEventKind.INVOCATION_CANCEL not in kinds
+        assert RuntimeEventKind.JOIN_TIMEOUT not in kinds
+        tools = [
+            event for event in sink.events
+            if event.kind in {RuntimeEventKind.TOOL_START, RuntimeEventKind.TOOL_END}
+        ]
+        assert [event.kind for event in tools] == [
+            RuntimeEventKind.TOOL_START, RuntimeEventKind.TOOL_END,
+        ]
+        assert all(event.invocation_id == "root" for event in tools)
+        assert all(event.attributes["tool_call_id"] == "invalid-task" for event in tools)
+        assert tools[-1].attributes["status"] == "error"
+        assert tools[-1].attributes["exception_type"] == "ValidationError"
+        first_result = next(
+            event for event in sink.events if event.kind == RuntimeEventKind.LLM_RESULT
+        )
+        assert first_result.attributes["rejected_task_call_count"] == 1
+        assert first_result.attributes["structured_action_kinds"] == [
+            "function_call", *(["spawn"] if valid_companion else []),
+        ]
+        graph = RuntimeCausalContextGraph()
+        graph.apply_batch(sink.events)
+        assert all(item.state == InvocationState.DONE for item in graph.invocations.values())
+
+
 def test_parallel_task_declaration_uses_one_all_join() -> None:
     trace_sink = CollectingSink()
     root = BeliefKVRequestMetadata("wf", "root", "ctx", 0, "supervisor", "root")

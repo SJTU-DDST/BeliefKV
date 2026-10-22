@@ -23,7 +23,7 @@ from langchain_core.messages.tool import invalid_tool_call, tool_call_chunk
 from langchain_core.messages.utils import count_tokens_approximately
 from langchain_openai import ChatOpenAI
 from openai.resources.chat.completions import AsyncCompletions, Completions
-from pydantic import PrivateAttr
+from pydantic import PrivateAttr, ValidationError
 
 from beliefkv.core.events import (
     ContextMode,
@@ -1269,11 +1269,24 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         ]
         action_kinds: list[StructuredActionKind] = []
         action_names: list[str] = []
+        task_calls: list[dict[str, Any]] = []
+        executable_task_calls: list[dict[str, Any]] = []
         for call in tool_calls:
             name = str(call.get("name") or "unknown")
             action_names.append(name)
             if name == "task":
-                action_kinds.append(StructuredActionKind.SPAWN)
+                task_calls.append(call)
+                args = call.get("args")
+                valid = self._task_arguments_valid(args)
+                if valid and (
+                    self.allowed_subagent_types is None
+                    or args["subagent_type"] in self.allowed_subagent_types
+                ):
+                    executable_task_calls.append(call)
+                action_kinds.append(
+                    StructuredActionKind.SPAWN
+                    if valid else StructuredActionKind.FUNCTION_CALL
+                )
             elif name == "handoff" or name.startswith("transfer_to_"):
                 action_kinds.append(StructuredActionKind.HANDOFF)
             elif name in self.completion_tool_names:
@@ -1286,20 +1299,6 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             int((getattr(message, "usage_metadata", None) or {}).get("output_tokens", 0))
             for message in messages
         )
-        task_calls = [call for call in tool_calls if str(call.get("name")) == "task"]
-        executable_task_calls = [
-            call
-            for call in task_calls
-            if self.allowed_subagent_types is None
-            or str(
-                (
-                    call.get("args")
-                    if isinstance(call.get("args"), dict)
-                    else {}
-                ).get("subagent_type")
-            )
-            in self.allowed_subagent_types
-        ]
         result = self._event(
             RuntimeEventKind.LLM_RESULT,
             invocation_id=invocation_id,
@@ -1566,7 +1565,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             with self._lock:
                 self._ignored_tool_runs.add(key)
             return
-        if tool_name == "task":
+        if tool_name == "task" and self._task_arguments_valid(payload):
             requested_type = str(payload.get("subagent_type") or "general-purpose")
             if (
                 self.allowed_subagent_types is not None
@@ -1812,6 +1811,17 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             self._complete_task(task_call_id, cancelled=True, error=error)
             return
         self._finish_ordinary_tool(key, output=None, error=error)
+
+    @staticmethod
+    def _task_arguments_valid(payload: Any) -> bool:
+        from deepagents.middleware.subagents import TaskToolSchema
+
+        # Match the actual tool boundary before declaring physical dependencies.
+        try:
+            TaskToolSchema.model_validate(payload)
+        except ValidationError:
+            return False
+        return True
 
     def _declare_task_group(
         self,
