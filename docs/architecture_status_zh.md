@@ -7,7 +7,9 @@ restore 关闭。按用户新要求，V125 在其正常收集并释放资源后�
 同配置组件消融，见[消融矩阵](experiments/module_ablations_v125_20261022_zh.md)；
 不因研究新 workload 改动本轮任务。新增默认保持行为的后台备份和
 终态 child 回收开关，用于将紧急备份与周期备份、终态回收与其他 KV
-机制分开验证。跨轮复用 subagent 的选择性状态保留另作研究，尚无收益结论。
+机制分开验证。[跨轮复用 subagent 的选择性状态保留](research/reusable_subagent_retention_20261022_zh.md)
+另作研究，含 V2792/V2794 同前缀容量/历史缺失证据、会话与 activation 分离、
+分层保留、低频实例复用预测及 36 roots 先行的配置建议，尚无收益结论。
 
 用户最新要求普通 execution-frontier restore 默认关闭，JCT 以完整 workflow
 且保留普通长尾为主；异常工具排除需具体证据及配对口径。JOIN/EOS、增量
