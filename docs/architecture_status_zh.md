@@ -34,6 +34,12 @@ V126首项no_join_prefetch已结束，但只有35/36项有效完成，监督器�
 结论。main的80c0891只新增离线分析，冻结V127仍为aa1ab19，待收齐
 四项剩余消融及同版Full/native。
 
+离线工作量审计新增客户端/服务端request_id双端配对，并核对summary中
+外部请求与包含内部压缩的总事件数。V2839的40项聚焦检查通过；V2840/
+V2841对72个历史workflow核查，原有token、请求及JCT字段全部保留。
+这不改变冻结V127，也不构成GPU性能收益。[逐请求证据核对](experiments/paired_request_evidence_20261022_zh.md)
+记录原有完整性检查的缺口、内部压缩分类和工作量不匹配的限制。
+
 main 新增独立的 `native_in_graph_reusable_nested` profile：稳定 handle
 保存私有 graph state，每轮 fresh invocation/JOIN，原生 session 普通续用、
 压缩时换代；物理 KV 丢弃不改变逻辑历史。休眠最新 checkpoint 按 HBM、
