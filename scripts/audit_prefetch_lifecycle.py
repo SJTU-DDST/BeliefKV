@@ -35,10 +35,22 @@ def distribution(values) -> dict:
 
 def full_reuse_summary(full: list[dict]) -> dict:
     known_full = [row for row in full if row["pool_bytes"] is not None]
+    negative = [row for row in full if row["full_first_service_reused"] is False]
+    negative_reloads = sum(
+        any("kv" in load["prefetched_pool_overlap"]
+            for load in row["native_reloads_before_first_service"])
+        for row in negative
+    )
     return {
         "full_transfer_commands": len(full),
         "full_reused_commands": sum(row["full_first_service_reused"] is True for row in full),
         "full_not_reused_commands": sum(row["full_first_service_reused"] is False for row in full),
+        "full_identity_not_verified_commands": len(negative),
+        "full_identity_not_verified_bytes_known": sum(
+            row["pool_bytes"].get("kv", 0) for row in negative if row["pool_bytes"] is not None
+        ),
+        "negative_identity_with_native_full_reload_association": negative_reloads,
+        "negative_identity_without_native_full_reload_association": len(negative) - negative_reloads,
         "full_use_unknown_commands": sum(row["full_first_service_reused"] is None for row in full),
         "full_pool_bytes_unknown_commands": len(full) - len(known_full),
         "full_transferred_bytes_known": sum(row["pool_bytes"].get("kv", 0) for row in known_full),
@@ -1942,6 +1954,13 @@ def audit(arm: Path) -> dict:
             "full_reuse_proof_version": (
                 use.get("full_reuse_proof_version", 1) if use else None
             ),
+            "full_use_witness": {
+                name: use.get(name) for name in (
+                    "node_ids", "matched_node_ids", "reused_full_node_ids",
+                    "native_full_kv_hit_length", "device_prefix_indices_len",
+                    "full_reuse_proof", "first_service_before_ack",
+                )
+            } if use else None,
             "mamba_forward_verified": command in mamba,
             "lease_events": leases.get(command, []),
             "pressure_demotions_before_first_service": repeated_parks,
@@ -2120,7 +2139,14 @@ def audit(arm: Path) -> dict:
             "does not imply a reuse miss, nor does registration prove continuous "
             "protection until service; Mamba-only transfers are excluded. Pressure "
             "revocation is reported separately and is not eviction or freed-byte "
-            "evidence. A later tracking expiry is not another lock expiration."
+            "evidence. A later tracking expiry is not another lock expiration. "
+            "The legacy full_not_reused_commands field counts negative identity "
+            "witnesses, not proven physical nonuse or wasted transfer bytes. Native "
+            "radix splits can preserve KV slot indices while cloning index tensors; "
+            "v2 object identity can then fail after actual prefix reuse. Neither "
+            "a negative witness nor absence of same-node reload establishes its "
+            "cause. Historical traces lack split lineage, so do not reconstruct "
+            "a corrected reuse rate or infer JCT savings."
         ),
         "native_reload_attribution_semantics": (
             "Node/pool overlap before first service, not proof of repeated physical "

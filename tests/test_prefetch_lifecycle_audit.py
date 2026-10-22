@@ -3,7 +3,7 @@ import json
 import pytest
 
 from scripts.audit_prefetch_lifecycle import (
-    audit, full_expiration_evidence, http_transport_waits, observed_capacity_shortfall,
+    audit, full_expiration_evidence, full_reuse_summary, http_transport_waits, observed_capacity_shortfall,
     prepare_host_lifetime_summary, prepare_restore_attribution,
     prepare_selection_summary, source_summary, terminal_capacity_summary, wait_event_attribution,
     terminal_invocation_scopes, terminal_join_capacity_windows, wait_plan_gap_summary,
@@ -1398,7 +1398,11 @@ def test_native_reload_in_a_tagged_batch_keeps_its_pool_and_operation_bytes(tmp_
     write_rows(tmp_path / "server/physical_action_use.jsonl", [
         {"event": "beliefkv_prefetch_first_service", "command_id": "prefetch",
          "ack_ts_ms": 3., "first_service_ts_ms": 10., "full_node_reused": False,
-         "full_reuse_proof_version": 2},
+         "full_reuse_proof_version": 2, "node_ids": [10], "matched_node_ids": [10],
+         "reused_full_node_ids": [], "device_prefix_indices_len": 20,
+         "native_full_kv_hit_length": 20,
+         "full_reuse_proof": "acknowledged_allocation_in_materialized_service_prefix",
+         "first_service_before_ack": False},
     ])
     result = audit(tmp_path)
     [reload] = result["rows"][0]["native_reloads_before_first_service"]
@@ -1410,6 +1414,11 @@ def test_native_reload_in_a_tagged_batch_keeps_its_pool_and_operation_bytes(tmp_
     assert result["summary"]["native_reloaded_prefetched_full_before_first_service"] == 1
     assert result["summary"]["native_reloaded_prefetched_mamba_before_first_service"] == 0
     assert result["summary"]["full_reuse_proof_versions"] == {"2": 1}
+    witness = result["rows"][0]["full_use_witness"]
+    assert witness["node_ids"] == witness["matched_node_ids"] == [10]
+    assert witness["reused_full_node_ids"] == []
+    assert witness["device_prefix_indices_len"] == 20
+    assert witness["first_service_before_ack"] is False
     assert result["summary"]["native_reload_pool_associations_by_evidence"]["kv"] == {
         "reconciled_native_receipt": 1, "legacy_batch_pool_presence": 0,
     }
@@ -1495,6 +1504,29 @@ def test_full_residency_groups_keep_reuse_bytes_and_missing_lock_evidence_distin
         "native_reloaded_prefetched_full_before_first_service",
     ):
         assert sum(group[field] for group in groups.values()) == summary[field]
+
+
+def test_negative_identity_and_reload_associations_do_not_establish_transfer_waste():
+    def row(verified, size, *, reload=False):
+        return {
+            "pool_bytes": {"kv": size} if size is not None else None,
+            "full_first_service_reused": verified, "full_reuse_proof_version": 2,
+            "native_reloads_before_first_service": [
+                {"prefetched_pool_overlap": ["kv"]},
+            ] if reload else [],
+        }
+
+    result = full_reuse_summary([
+        row(True, 20), row(False, 30, reload=True), row(False, 40),
+        row(False, None), row(None, 50),
+    ])
+    assert result["full_reused_commands"] == 1
+    assert result["full_verified_reused_bytes_known"] == 20
+    assert result["full_not_reused_commands"] == result["full_identity_not_verified_commands"] == 3
+    assert result["full_identity_not_verified_bytes_known"] == 70
+    assert result["negative_identity_with_native_full_reload_association"] == 1
+    assert result["negative_identity_without_native_full_reload_association"] == 2
+    assert result["full_pool_bytes_unknown_commands"] == result["full_use_unknown_commands"] == 1
 
 
 def test_residency_summary_keeps_last_release_and_does_not_infer_initial_lock():

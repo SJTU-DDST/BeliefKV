@@ -48,6 +48,17 @@ V2850/V2851保留全部4221项旧检查并新增52项，4273项及2个subtest
 通过，在线源码与V127一致。[V127接续与覆盖诊断](experiments/v127_guarded_prefix_resume_20261022_zh.md)
 保留最新工具预取、容量和后台备份证据，GPU净收益仍待完整比较。
 
+V2852--V2858发现并复现v2复用证据的边界：原生radix分裂保留KV槽索引、
+克隆索引Tensor时，Python对象身份检查可漏记。离线分析新增“身份未
+确认”与原始见证分类，保留旧计数；116项CPU检查通过，295823个旧字段
+逐项不变。V127的0.327GB是已确认量，不能据此将其余传输全判为浪费。
+同轮36 roots仅9份不同仓库文本，27个root首请求直接命中超过100K的
+HBM前缀；不能用总上下文推算独立恢复量。最新V128前缀有34个正FULL
+JOIN计划、31个提前复用事件（约1.633GB），事件ACK到首服P50约0.484s，
+工具约11.369s。当前冻结策略及任务不变，不据前缀比较宣称消融收益。
+[复用见证与共享审计](experiments/prefetch_witness_and_prefix_sharing_20261022_zh.md)
+记录复现、原始证据限制及后续容量实验口径。
+
 main 新增独立的 `native_in_graph_reusable_nested` profile：稳定 handle
 保存私有 graph state，每轮 fresh invocation/JOIN，原生 session 普通续用、
 压缩时换代；物理 KV 丢弃不改变逻辑历史。休眠最新 checkpoint 按 HBM、
