@@ -21,6 +21,16 @@ V2871/V2872保留此前4273项CPU覆盖并新增73项，4346项及2个subtest
 [工具曲线CPU核查](reports/2026-10/tool_survival_index_cpu_20261023_zh.md)
 记录实现、完整预测对照及原CPU覆盖保留方式。
 
+main随后移除EOS模式无进度消费者时的逐decode token统计，修复关闭工具
+模型后反而恢复中间步更新的多余工作。完成计数、首次服务、驻留反馈与
+原生EOS照常处理，报告和旧worker仍能读取实时进度。32个完整callback
+CPU对照中，EOS无工具模型的batch8未完成回调P50约3.88降到1.25us；
+工具模式原本已有快速返回，不能外推Full/GPU或JCT收益。
+V2884/V2885保留此前全部4346项并补入22项：4368项及2个subtest
+全通过，绑定最新应用源码。冻结V128没有注入本次修改。
+[EOS完成回调CPU核查](reports/2026-10/eos_completion_control_cpu_20261023_zh.md)
+记录适用范围、负样本及旧资格集缺少callback模块后的覆盖补齐。
+
 V125 schedule-only和KV-only均已完成，后者平均JCT2202.19s、输出1703674
 token、请求7263、36/36无guard合格。按用户最新要求，第3项
 no_tool_continuity已行政中止，保留退出码143和全部trace；第8项

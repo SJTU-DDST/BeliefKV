@@ -11976,10 +11976,13 @@ class NativeAdmissionRuntime:
             pending_by_context or lease_contexts or self._parent_capacity_handoffs
             or self._residency_hint_admissions
         )
-        only_completed = self._tool_timing_only or not self._custom_kv_management
+        only_completed = self._tool_timing_only or not self._custom_kv_management or (
+            not self._report_prediction_enabled
+            and self._model_worker is None and self._semantic_worker is None
+        )
         for req in batch.reqs:
             finished = req.finished()
-            # Timing and ordering-only policies do not consume decode progress.
+            # EOS and tool-wait policies consume final counts, not decode progress.
             if only_completed and not finished and not observe_service:
                 continue
             rid = req.rid

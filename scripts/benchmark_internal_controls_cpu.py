@@ -26,7 +26,7 @@ from scripts.benchmark_native_prepare_path import baseline_runtime
 
 
 def fixture(runtime_class, *, mode, size, finished):
-    if mode == "full_control":
+    if mode in ("full_control", "eos_control"):
         environment = {
             "BELIEFKV_INTERNAL_COMPARISON_MODE": "full",
             "BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH": "0",
@@ -34,6 +34,7 @@ def fixture(runtime_class, *, mode, size, finished):
             "BELIEFKV_ONLINE_TOOL_TIMING": "0",
             "BELIEFKV_TOOL_TIMING_ARTIFACT": "",
             "BELIEFKV_TOOL_TIMING_SHA256": "",
+            "BELIEFKV_JOIN_PREFETCH_TRIGGER": "observed_eos",
         }
     else:
         environment = arm_environment({}, mode)
@@ -175,8 +176,8 @@ def main():
         "tool_events": tool_events(classes),
         "cases": [
             measure(classes, mode=mode, size=size, finished=finished, samples=args.samples)
-            for mode in ("join_priority_only", "scheduler_only", "full_control")
-            for size in (12, 48) for finished in (False, True)
+            for mode in ("join_priority_only", "scheduler_only", "full_control", "eos_control")
+            for size in (1, 8, 12, 48) for finished in (False, True)
         ],
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

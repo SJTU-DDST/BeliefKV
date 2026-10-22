@@ -72,3 +72,83 @@ def test_empty_completion_ids_still_record_first_service_before_ack(timing_only)
         assert not runtime.completed_physical_actions
     finally:
         runtime.close()
+
+
+@pytest.mark.parametrize("timing_only", (False, True))
+def test_eos_only_completion_does_not_rewrite_unfinished_token_counts(timing_only):
+    runtime, requests = synthetic_runtime(
+        NativeAdmissionRuntime, CausalFrontierScheduler, 1, 1,
+    )
+    runtime.join_prefetch_trigger = "observed_eos"
+    runtime._tool_timing_only = timing_only
+    request = requests[0]
+    request.origin_input_ids, request.output_ids = range(131072), [1]
+    key = runtime.visible[request.rid]
+    prior = (key.context_epoch - 1, 100, 10, True)
+    runtime._context_tokens[key.context_id] = prior
+    try:
+        for _ in range(5):
+            request.output_ids.append(1)
+            assert runtime.on_batch_completed(NS(reqs=requests)) == ()
+            assert runtime._context_tokens[key.context_id] is prior
+            assert runtime.visible[request.rid] == key
+        request.finished = lambda: True
+        assert runtime.on_batch_completed(NS(reqs=requests)) == (request.rid,)
+        assert runtime._context_tokens[key.context_id] == (
+            key.context_epoch, 131072, 6, True,
+        )
+        assert request.rid not in runtime.visible
+        assert runtime.context_sessions[key.context_id] == key
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("consumer", ("report", "selective_report", "model", "semantic"))
+def test_live_progress_consumers_still_receive_unfinished_token_counts(consumer):
+    runtime, requests = synthetic_runtime(
+        NativeAdmissionRuntime, CausalFrontierScheduler, 1, 1,
+    )
+    runtime._tool_timing_only = False
+    runtime.join_prefetch_trigger = (
+        "report_service_or_eos" if consumer == "report"
+        else "selective_report_or_eos" if consumer == "selective_report"
+        else "observed_eos"
+    )
+    if consumer in ("model", "semantic"):
+        setattr(runtime, f"_{consumer}_worker", NS(close=lambda: None))
+    request = requests[0]
+    request.origin_input_ids, request.output_ids = range(32768), [1]
+    key = runtime.visible[request.rid]
+    try:
+        for count in (1, 2, 3):
+            assert runtime.on_batch_completed(NS(reqs=requests)) == ()
+            assert runtime._context_tokens[key.context_id] == (
+                key.context_epoch, 32768, count, True,
+            )
+            request.output_ids.append(1)
+        assert request.rid in runtime.visible
+    finally:
+        runtime.close()
+
+
+def test_eos_only_completion_keeps_unfinished_residency_feedback():
+    runtime, requests = synthetic_runtime(
+        NativeAdmissionRuntime, CausalFrontierScheduler, 1, 1,
+    )
+    runtime.join_prefetch_trigger = "observed_eos"
+    runtime._tool_timing_only = False
+    request = requests[0]
+    key = runtime.visible[request.rid]
+    request.cached_tokens_device = 120000
+    request._cache_breakdown_computed = True
+    request.retracted_stain = False
+    runtime._residency_hint_admissions[request.rid] = (id(request), key, 120001)
+    try:
+        assert runtime.on_batch_completed(NS(reqs=requests)) == ()
+        assert runtime.counts["residency_ordering_hint_native_observed"] == 1
+        assert runtime.counts["residency_ordering_hint_shorter_native_prefix"] == 1
+        assert not runtime._residency_hint_admissions
+        assert key.context_id not in runtime._context_tokens
+        assert request.rid in runtime.visible
+    finally:
+        runtime.close()
