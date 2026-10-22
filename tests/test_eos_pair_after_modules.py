@@ -156,6 +156,19 @@ def test_removed_module_activity_is_checked_in_addition_to_runtime_flags(tmp_pat
 def test_selected_queue_collects_in_order_and_stops_on_bad_runtime_evidence(
     tmp_path, monkeypatch, fail_observation,
 ):
+    selected_queue_case(tmp_path, monkeypatch, fail_observation, reuse=False)
+
+
+@pytest.mark.parametrize("fail_observation", (False, True))
+def test_completed_prefix_resumes_before_remaining_runtime_observation(
+    tmp_path, monkeypatch, fail_observation,
+):
+    selected_queue_case(tmp_path, monkeypatch, fail_observation, reuse=True)
+
+
+def selected_queue_case(
+    tmp_path, monkeypatch, fail_observation, *, reuse,
+):
     run = tmp_path / "runs"
     previous = tmp_path / "previous.state.json"
     previous.write_text("{}")
@@ -169,6 +182,18 @@ def test_selected_queue_collects_in_order_and_stops_on_bad_runtime_evidence(
             spec, tmp_path / "frozen", 18538,
         ),
     }
+    if reuse:
+        old = tmp_path / "old/no_join_prefetch/client_36"
+        old.mkdir(parents=True)
+        (old / "summary.json").write_text("{}")
+        settings["reused_prefix"] = {
+            "label": "no_join_prefetch", "arm": str(old.parent),
+            "registration": str(previous), "original_exit_code": 1,
+            "outcome": {"status": "completed_with_eligibility_exclusions"},
+        }
+        settings["source_sha256"] = {}
+        monkeypatch.setattr(pair, "resume_evidence", Mock(return_value=settings["reused_prefix"]))
+        monkeypatch.setattr(pair, "verify_resume_configuration", Mock())
     registration = tmp_path / "next.registration.json"
     registration.write_text(json.dumps(settings))
     monkeypatch.setattr(pair.reservation, "process", Mock(return_value=WATCHER))
@@ -180,7 +205,11 @@ def test_selected_queue_collects_in_order_and_stops_on_bad_runtime_evidence(
     monkeypatch.setattr(pair.modules, "wait_resources", Mock())
     monkeypatch.setattr(pair.qualified, "resources", Mock(return_value={"ready": True}))
     monkeypatch.setattr(pair.qualified, "machine_helper", Mock())
-    observed = Mock(side_effect=ValueError("bad runtime") if fail_observation else None)
+    def check_observation(_plan, label, **kwargs):
+        if fail_observation and not (reuse and label == "no_join_prefetch"):
+            raise ValueError("bad runtime")
+
+    observed = Mock(side_effect=check_observation)
     monkeypatch.setattr(pair, "observe", observed)
     stopped = Mock()
     monkeypatch.setattr(pair.fresh, "stop_arm", stopped)
@@ -209,24 +238,139 @@ def test_selected_queue_collects_in_order_and_stops_on_bad_runtime_evidence(
     result = pair.load(registration.with_suffix(".state.json"))
     if fail_observation:
         assert result["status"] == "stopped_for_investigation"
-        assert result["original_exit_codes"] == {"no_join_prefetch": 0}
-        assert result["completed_arms"] == []
+        assert result["original_exit_codes"] == (
+            {"no_join_prefetch": 1, "no_background_prepare": 0} if reuse
+            else {"no_join_prefetch": 0}
+        )
+        assert result["completed_arms"] == (["no_join_prefetch"] if reuse else [])
         assert launched.call_count == 1
-        processed.assert_not_called()
+        assert processed.call_count == int(reuse)
         assert "bad runtime" in result["error"]
     else:
         assert result["status"] == "collected_performance_review_pending"
         assert result["completed_arms"] == list(pair.ORDER)
         assert list(result["original_exit_codes"]) == list(pair.ORDER)
-        assert launched.call_count == 6
+        assert launched.call_count == 6 - int(reuse)
+        if reuse:
+            assert result["original_exit_codes"]["no_join_prefetch"] == 1
+            assert (run / "no_join_prefetch").resolve() == old.parent.resolve()
         for label, call in zip(pair.ORDER, processed.call_args_list, strict=True):
             assert call.args[1] == label
             assert call.kwargs["runtime_mode"] == (
                 "native_matched" if label == "native_matched" else "full"
             )
-        for label, call in zip(pair.ORDER, launched.call_args_list, strict=True):
+        for label, call in zip(pair.ORDER[int(reuse):], launched.call_args_list, strict=True):
             environment = call.kwargs["env"]
             assert environment["RUN_ROOT"] == str(run / label)
             assert environment["PYTHONHASHSEED"] == "21"
         assert result["performance_accepted"] is False
     stopped.assert_not_called()
+
+
+def resume_fixture(tmp_path, monkeypatch):
+    arm = tmp_path / "old/no_join_prefetch/client_36"
+    arm.mkdir(parents=True)
+    (arm / "summary.json").write_text("{}")
+    registration = tmp_path / "old.registration.json"
+    previous = {
+        "order": list(pair.ORDER), "run_root": str(arm.parents[1]),
+        "source_sha256": {
+            "beliefkv/runtime/sglang_v0520_runtime.py": "same",
+            "scripts/run_eos_pair_after_modules.py": "old",
+        },
+    }
+    registration.write_text(json.dumps(previous))
+    record = {
+        "order": list(pair.ORDER), "status": "stopped_for_investigation",
+        "current_arm": "no_join_prefetch", "completed_arms": [],
+        "original_exit_codes": {"no_join_prefetch": 1},
+        "error": "ValueError('workload process failed with exit code 1')",
+        "watcher": WATCHER, "driver": DRIVER,
+    }
+    registration.with_suffix(".state.json").write_text(json.dumps(record))
+    sources = {**previous["source_sha256"], "scripts/run_eos_pair_after_modules.py": "new"}
+    monkeypatch.setattr(pair.fresh, "verify", Mock())
+    monkeypatch.setattr(pair.reservation, "alive", Mock(return_value=False))
+    monkeypatch.setattr(pair, "observe", Mock())
+    monkeypatch.setattr(pair.fresh, "completed_arm", Mock(return_value={
+        "status": "completed_with_eligibility_exclusions", "performance_accepted": False,
+    }))
+    return registration, sources, previous, record
+
+
+def test_resume_preserves_the_original_terminal_record_and_reports_exclusions(tmp_path, monkeypatch):
+    registration, sources, _, _ = resume_fixture(tmp_path, monkeypatch)
+    before = registration.with_suffix(".state.json").read_bytes()
+    result = pair.resume_evidence(registration, sources)
+    assert registration.with_suffix(".state.json").read_bytes() == before
+    assert result["label"] == "no_join_prefetch"
+    assert result["original_exit_code"] == 1
+    assert result["outcome"]["status"] == "completed_with_eligibility_exclusions"
+    assert result["source_differences"] == ["scripts/run_eos_pair_after_modules.py"]
+    assert not result["performance_accepted"]
+
+
+@pytest.mark.parametrize("fault", (
+    "live", "status", "wrong_arm", "completed", "exit_code", "other_error", "order",
+    "online_source", "deleted_online_source", "new_online_source", "quality_check",
+))
+def test_resume_rejects_active_failed_or_changed_execution(tmp_path, monkeypatch, fault):
+    registration, sources, previous, record = resume_fixture(tmp_path, monkeypatch)
+    if fault == "live":
+        pair.reservation.alive.return_value = True
+    elif fault == "status":
+        record["status"] = "running_no_join_prefetch"
+    elif fault == "wrong_arm":
+        record["current_arm"] = "full"
+    elif fault == "completed":
+        record["completed_arms"] = ["no_join_prefetch"]
+    elif fault == "exit_code":
+        record["original_exit_codes"]["no_join_prefetch"] = 143
+    elif fault == "other_error":
+        record["error"] = "ValueError('HTTP 400')"
+    elif fault == "order":
+        previous["order"] = list(reversed(pair.ORDER))
+    elif fault == "online_source":
+        sources["beliefkv/runtime/sglang_v0520_runtime.py"] = "changed"
+    elif fault == "deleted_online_source":
+        del sources["beliefkv/runtime/sglang_v0520_runtime.py"]
+    elif fault == "new_online_source":
+        sources["beliefkv/runtime/new_policy.py"] = "new"
+    else:
+        pair.fresh.completed_arm.side_effect = ValueError("invalid quality evidence")
+    registration.write_text(json.dumps(previous))
+    registration.with_suffix(".state.json").write_text(json.dumps(record))
+    with pytest.raises(ValueError):
+        pair.resume_evidence(registration, sources)
+
+
+@pytest.mark.parametrize("fault", (None, "seed", "capacity", "policy", "manifest", "matrix"))
+def test_reused_arm_requires_identical_runtime_controls_and_workload(tmp_path, fault):
+    old, new = tmp_path / "old.json", tmp_path / "new.json"
+    old.write_text('{"tasks":["same"]}')
+    new.write_text(old.read_text())
+    base = {
+        "SAMPLING_SEED": "21", "HICACHE_SIZE_GB": "200",
+        "JOIN_PREFETCH_TRIGGER": "observed_eos",
+    }
+    previous = {"arms": {"no_join_prefetch": {
+        **base, "PYTHONPATH": "/old", "PORT": "18542", "WORKLOAD_MANIFEST": str(old),
+    }}}
+    arms = {"no_join_prefetch": {
+        **base, "PYTHONPATH": "/new", "PORT": "18544", "WORKLOAD_MANIFEST": str(new),
+    }}
+    if fault == "seed":
+        arms["no_join_prefetch"]["SAMPLING_SEED"] = "22"
+    elif fault == "capacity":
+        arms["no_join_prefetch"]["HICACHE_SIZE_GB"] = "100"
+    elif fault == "policy":
+        arms["no_join_prefetch"]["JOIN_PREFETCH_TRIGGER"] = "report"
+    elif fault == "manifest":
+        new.write_text('{"tasks":["other"]}')
+    elif fault == "matrix":
+        arms["full"] = dict(arms["no_join_prefetch"])
+    if fault is None:
+        pair.verify_resume_configuration(previous, arms)
+    else:
+        with pytest.raises(ValueError):
+            pair.verify_resume_configuration(previous, arms)

@@ -40,6 +40,12 @@ V2841对72个历史workflow核查，原有token、请求及JCT字段全部保留
 这不改变冻结V127，也不构成GPU性能收益。[逐请求证据核对](experiments/paired_request_evidence_20261022_zh.md)
 记录原有完整性检查的缺口、内部压缩分类和工作量不匹配的限制。
 
+V127首项已完成36/36系统测量，35/36无guard合格，完整平均JCT2073.53s；
+最后一个任务因图预算收尾同时带有语义未完成和guard排除，旧监督器因此
+停止。收集器修复保留原退出码及质量排除，准备复用首项并接续剩余五组，
+不将其改成自然完成或重跑整组。[V127接续与覆盖诊断](experiments/v127_guarded_prefix_resume_20261022_zh.md)
+保留最新工具预取、容量和后台备份证据，GPU净收益仍待完整比较。
+
 main 新增独立的 `native_in_graph_reusable_nested` profile：稳定 handle
 保存私有 graph state，每轮 fresh invocation/JOIN，原生 session 普通续用、
 压缩时换代；物理 KV 丢弃不改变逻辑历史。休眠最新 checkpoint 按 HBM、

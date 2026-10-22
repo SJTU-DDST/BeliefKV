@@ -307,6 +307,32 @@ def test_completed_guarded_arm_preserves_nonzero_exit_and_exact_exclusions():
     assert not outcome["performance_accepted"]
 
 
+def test_guarded_incomplete_semantics_remains_an_exclusion_without_stopping_collection():
+    data = summary(guarded=True)
+    reasons = ["missing_semantic_completion", "guard_intervened_completion"]
+    data["workflows"][1]["native_agent_jct_exclusion_reasons"] = reasons
+    outcome = launcher.completed_arm(data, 1, 2)
+    assert outcome["status"] == "completed_with_eligibility_exclusions"
+    assert outcome["original_exit_code"] == 1
+    assert outcome["native_agent_jct_eligible_workflows"] == 1
+    assert outcome["native_agent_jct_exclusions"][0]["native_agent_jct_exclusion_reasons"] == reasons
+    assert not outcome["performance_accepted"]
+
+
+def test_missing_semantics_without_a_guard_does_not_explain_a_nonzero_exit():
+    data = summary(guarded=True)
+    data["workflows"][1]["native_agent_jct_exclusion_reasons"] = ["missing_semantic_completion"]
+    with pytest.raises(ValueError, match="process failed"):
+        launcher.completed_arm(data, 1, 2)
+
+
+def test_guard_never_masks_a_workflow_error_after_a_reported_completion():
+    data = summary(guarded=True)
+    data["workflows"][1]["error"] = "HTTP 400"
+    with pytest.raises(ValueError, match="full system-valid"):
+        launcher.completed_arm(data, 1, 2)
+
+
 @pytest.mark.parametrize("field,value", (
     ("workflow_count", 1), ("completed_workflows", 1), ("system_jct_eligible_workflows", 1),
     ("measurement_valid_workflows", 1), ("native_agent_jct_eligible_workflows", 1),

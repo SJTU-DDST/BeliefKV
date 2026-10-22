@@ -27,6 +27,12 @@ REMAINING_MODULES = (
     "no_join_prefetch", "no_background_prepare", "no_tool_duration_model", "no_child_reclaim",
 )
 ORDER = (*REMAINING_MODULES, *PAIR_ORDER)
+OFFLINE_CONTINUATION_SOURCES = frozenset({
+    "scripts/run_eos_pair_after_modules.py", "tests/test_eos_pair_after_modules.py",
+    "scripts/run_fresh_internal_comparison.py", "tests/test_fresh_internal_comparison.py",
+    "scripts/audit_paired_realized_work.py", "tests/test_paired_realized_work.py",
+    "scripts/analyze_matched_prefill_phases.py", "tests/test_matched_prefill_phases.py",
+})
 
 
 def overrides(label: str) -> dict:
@@ -159,6 +165,64 @@ def observe(plan: dict, label: str, *, final: bool = False) -> None:
             modules.modules.verify_activity(label, runtime)
 
 
+def resume_evidence(registration: Path, sources: dict) -> dict:
+    """Reuse only a completed first arm stopped by the known quality classifier."""
+    previous = load(registration)
+    state_path = registration.with_suffix(".state.json")
+    state = load(state_path)
+    fresh.verify(previous)
+    if (
+        previous.get("order") != list(ORDER) or state.get("order") != list(ORDER)
+        or state.get("status") != "stopped_for_investigation"
+        or state.get("completed_arms") != []
+        or state.get("current_arm") != ORDER[0]
+        or state.get("original_exit_codes") != {ORDER[0]: 1}
+        or state.get("error") != "ValueError('workload process failed with exit code 1')"
+        or any(
+            not identity or reservation.alive(identity)
+            for identity in (state.get("watcher"), state.get("driver"))
+        )
+    ):
+        raise ValueError("resume requires the terminal known first-arm quality-classification stop")
+    changed = {
+        name for name in previous["source_sha256"].keys() | sources.keys()
+        if previous["source_sha256"].get(name) != sources.get(name)
+    }
+    if not changed <= OFFLINE_CONTINUATION_SOURCES:
+        raise ValueError("resume changed online execution, workload or another unqualified source")
+    label = ORDER[0]
+    observe(previous, label, final=True)
+    arm = Path(previous["run_root"]) / label
+    summary = arm / "client_36/summary.json"
+    outcome = fresh.completed_arm(load(summary), 1, 36)
+    return {
+        "registration": str(registration.resolve()), "state": str(state_path.resolve()),
+        "arm": str(arm.resolve()), "label": label,
+        "registration_sha256": sha256_file(registration),
+        "state_sha256": sha256_file(state_path), "summary_sha256": sha256_file(summary),
+        "outcome": outcome, "original_exit_code": 1,
+        "source_differences": sorted(changed),
+        "original_status_preserved": True, "performance_accepted": False,
+    }
+
+
+def verify_resume_configuration(previous: dict, arms: dict) -> None:
+    if previous["arms"].keys() != arms.keys():
+        raise ValueError("resumed policy matrix differs")
+    path_controls = {"PYTHONPATH", "PORT", "WORKLOAD_MANIFEST"}
+    for label, current in arms.items():
+        old = previous["arms"][label]
+        if any(
+            old.get(name) != current.get(name)
+            for name in old.keys() | current.keys() if name not in path_controls
+        ):
+            raise ValueError("resumed runtime environment differs: " + label)
+        if sha256_file(Path(old["WORKLOAD_MANIFEST"])) != sha256_file(
+            Path(current["WORKLOAD_MANIFEST"]),
+        ):
+            raise ValueError("resumed workload manifest differs: " + label)
+
+
 def register(args) -> None:
     if not 1 <= args.port <= 65535:
         raise ValueError("invalid experiment port")
@@ -181,6 +245,10 @@ def register(args) -> None:
         raise ValueError("administrative cancellation belongs to another experiment")
     count = comparison.qualify_report(args.cpu_report, args.cpu_sources)
     sources = load(args.cpu_sources)
+    reused = (
+        resume_evidence(args.resume_registration, sources)
+        if args.resume_registration is not None else None
+    )
     required = {
         "scripts/run_eos_pair_after_modules.py", "tests/test_eos_pair_after_modules.py",
         "beliefkv/runtime/experiment_randomness.py", "tests/test_experiment_randomness.py",
@@ -215,6 +283,13 @@ def register(args) -> None:
         args.cancel_record.resolve(),
     ):
         inputs[str(path)] = sha256_file(path)
+    if reused is not None:
+        for name in ("registration", "state"):
+            inputs[reused[name]] = reused[name + "_sha256"]
+        inputs[str(Path(reused["arm"]) / "client_36/summary.json")] = reused["summary_sha256"]
+    arms = environments(reference, spec, checkout, args.port)
+    if reused is not None:
+        verify_resume_configuration(load(Path(reused["registration"])), arms)
     plan = {
         "schema_version": 1, "registered_at": reservation.now().isoformat(),
         "development_checkout": str(ROOT), "code_commit": revision,
@@ -229,7 +304,7 @@ def register(args) -> None:
         "reference_cancel_record": str(args.cancel_record.resolve()),
         "hold_file": reference["hold_file"], "gpu_not_before": reference["gpu_not_before"],
         "run_root": str(args.run_root.resolve()), "port": args.port, "order": list(ORDER),
-        "arms": environments(reference, spec, checkout, args.port),
+        "arms": arms,
         "performance_accepted": False, "rerun_on_workload_mismatch": False,
         "comparison_scope": (
             "Four remaining seeded V108/EOS ablations followed by one Full/native pair. "
@@ -239,6 +314,8 @@ def register(args) -> None:
     }
     if "engine_cpu_qualification" in reference:
         plan["engine_cpu_qualification"] = reference["engine_cpu_qualification"]
+    if reused is not None:
+        plan["reused_prefix"] = reused
     reference_ready(plan, state)
     fresh.verify(plan)
     reservation.write_json(args.registration, plan)
@@ -280,7 +357,27 @@ def watch(registration: Path) -> None:
                     state["main_head_at_launch_check"] = modules.full.verify_candidate(plan)
                     break
                 time.sleep(15)
-            for label in plan["order"]:
+            reused = plan.get("reused_prefix")
+            if reused is not None:
+                verified = resume_evidence(Path(reused["registration"]), plan["source_sha256"])
+                if verified != reused:
+                    raise ValueError("completed prefix evidence changed after registration")
+                verify_resume_configuration(load(Path(reused["registration"])), plan["arms"])
+                run.mkdir(parents=True, exist_ok=False)
+                reservation.write_json(run / "pair_plan.json", plan)
+                label = reused["label"]
+                (run / label).symlink_to(reused["arm"], target_is_directory=True)
+                state.update(
+                    status="postprocessing_" + label, current_arm=label, reused_prefix=reused,
+                )
+                state["original_exit_codes"][label] = reused["original_exit_code"]
+                state["arm_outcomes"][label] = reused["outcome"]
+                reservation.write_json(path, state)
+                observe(plan, label, final=True)
+                comparison.postprocess(plan, label, run, runtime_mode="full")
+                state["completed_arms"].append(label)
+                reservation.write_json(path, state)
+            for label in plan["order"][len(state["completed_arms"]):]:
                 mode = plan["arms"][label]["BELIEFKV_INTERNAL_COMPARISON_MODE"]
                 state["current_arm"] = label
                 modules.wait_resources(plan, state, path)
@@ -373,6 +470,7 @@ def main() -> None:
     parser.add_argument("--watch", type=Path)
     parser.add_argument("--reference-registration", type=Path)
     parser.add_argument("--cancel-record", type=Path)
+    parser.add_argument("--resume-registration", type=Path)
     parser.add_argument("--spec", type=Path)
     parser.add_argument("--cpu-report", type=Path)
     parser.add_argument("--cpu-sources", type=Path)
@@ -383,7 +481,8 @@ def main() -> None:
     if args.watch:
         watch(args.watch)
     else:
-        if any(value is None for name, value in vars(args).items() if name not in ("watch", "port")):
+        if any(value is None for name, value in vars(args).items()
+               if name not in ("watch", "port", "resume_registration")):
             parser.error("pair registration requires reference, policy, CPU qualification and new paths")
         register(args)
 

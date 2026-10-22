@@ -185,7 +185,8 @@ def completed_arm(summary: dict, exit_code: int, root_count: int) -> dict:
         or len({row.get("instance_id") for row in rows}) != root_count
         or any(
             row.get("outcome") != "completed" or row.get("measurement_valid") is not True
-            or row.get("system_jct_eligible") is not True for row in rows
+            or row.get("system_jct_eligible") is not True or row.get("error") is not None
+            for row in rows
         )
     ):
         raise ValueError("arm did not complete the full system-valid workload")
@@ -204,8 +205,10 @@ def completed_arm(summary: dict, exit_code: int, root_count: int) -> dict:
     if exit_code != 0 and not (
         exit_code == 1 and eligible < root_count and guarded > 0
         and all(
-            row["native_agent_jct_exclusion_reasons"]
-            and set(row["native_agent_jct_exclusion_reasons"]) <= {"guard_intervened_completion"}
+            "guard_intervened_completion" in row["native_agent_jct_exclusion_reasons"]
+            and set(row["native_agent_jct_exclusion_reasons"]) <= {
+                "guard_intervened_completion", "missing_semantic_completion",
+            }
             for row in exclusions
         )
     ):
