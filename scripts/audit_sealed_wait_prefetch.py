@@ -151,6 +151,14 @@ def main():
     report["audit_started_at_local"] = started
     report["audit_finished_at_local"] = datetime.now(ZoneInfo("Asia/Shanghai")).isoformat()
     report["helper_sha256"] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    report["analysis_source_sha256"] = {
+        relative: hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()
+        for relative in (
+            "scripts/audit_sealed_wait_prefetch.py",
+            "scripts/audit_prefetch_lifecycle.py",
+            "scripts/summarize_semantic_h2d_ab.py",
+        )
+    }
     report["prefix_semantics"] = (
         "Each JSONL is capped at its first-read stat size and last complete line. "
         "Repeated reads must match length and SHA256; this is not an atomic "
@@ -165,7 +173,7 @@ def main():
         key: report[key] for key in (
             "summary", "input_jsonl_prefixes", "collection_code_commit",
             "audit_started_at_local", "audit_finished_at_local", "helper_sha256",
-            "prefix_semantics",
+            "prefix_semantics", "analysis_source_sha256",
         )
     }
     summary["sealed_dispatch_funnel"] = {

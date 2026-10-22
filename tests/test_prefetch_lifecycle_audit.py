@@ -7,8 +7,52 @@ from scripts.audit_prefetch_lifecycle import (
     prepare_host_lifetime_summary, prepare_restore_attribution,
     prepare_selection_summary, source_summary, terminal_capacity_summary, wait_event_attribution,
     terminal_invocation_scopes, terminal_join_capacity_windows, wait_plan_gap_summary,
-    wait_plan_timing_attribution, reentry_full_reuse_phases,
+    wait_plan_timing_attribution, reentry_full_reuse_phases, client_event_paths,
 )
+
+
+def test_causal_replay_layout_preserves_live_join_boundaries_and_terminal_scopes(tmp_path):
+    path = tmp_path / "client_1/workflows/task/runtime_events.deepagents.jsonl"
+    rows = [
+        {"kind": "invocation_create", "workflow_id": "w", "invocation_id": "parent",
+         "relation_type": "root", "ts_ms": 10., "attributes": {}},
+        {"kind": "join_satisfied", "workflow_id": "w", "join_id": "j", "ts_ms": 20.},
+        {"kind": "llm_submit", "workflow_id": "w", "context_id": "c",
+         "invocation_id": "parent", "context_epoch": 2, "ts_ms": 30.,
+         "attributes": {"request_id": "next"}},
+    ]
+    write_rows(path, rows)
+    write_rows(tmp_path / "server/runtime_events.sglang.jsonl", [{
+        "kind": "llm_submit", "workflow_id": "w", "context_id": "c",
+        "invocation_id": "parent", "context_epoch": 2, "ts_ms": 120.,
+        "attributes": {"request_id": "next", "cached_tokens_host": 3},
+    }])
+    observation = {
+        "source": "join_ticket", "workflow_id": "w", "context_id": "c",
+        "context_epoch": 1, "join_id": "j", "invocation_id": "parent",
+        "event": "wait_prefetch_plan", "ts_ms": 90.,
+        "reason": "start_window", "planned_full_tokens": 8,
+    }
+    live = wait_event_attribution(tmp_path, [observation], {}, [], 80.)
+    scopes = terminal_invocation_scopes(tmp_path)
+    replay = tmp_path / "replay/runtime_events.replay.jsonl"
+    replay.parent.mkdir()
+    path.rename(replay)
+    assert client_event_paths(tmp_path) == (replay,)
+    assert terminal_invocation_scopes(tmp_path) == scopes == {("w", "parent"): "workflow_root"}
+    result = wait_event_attribution(tmp_path, [observation], {}, [], 80.)
+    assert result == live
+    assert result["rows"][0]["completion_ts_ms"] == 100.
+    assert result["rows"][0]["client_submit_ts_ms"] == 110.
+    unknown = wait_event_attribution(tmp_path, [observation], {}, [], None)
+    assert unknown["rows"][0]["completion_ts_ms"] is None
+
+
+def test_mixed_live_and_replay_inputs_are_rejected_instead_of_double_counted(tmp_path):
+    write_rows(tmp_path / "client_1/workflows/task/runtime_events.deepagents.jsonl", [])
+    write_rows(tmp_path / "replay/runtime_events.replay.jsonl", [])
+    with pytest.raises(ValueError, match="ambiguous"):
+        client_event_paths(tmp_path)
 
 
 def test_wait_plan_timing_separates_early_snapshots_from_later_demand():

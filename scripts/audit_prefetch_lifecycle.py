@@ -132,9 +132,17 @@ def source_summary(rows: list[dict]) -> dict:
     }
 
 
+def client_event_paths(arm: Path) -> tuple[Path, ...]:
+    live = tuple(sorted(arm.glob("client_*/workflows/*/runtime_events.deepagents.jsonl")))
+    replay = arm / "replay/runtime_events.replay.jsonl"
+    if live and replay.exists():
+        raise ValueError("ambiguous live and causal replay client traces")
+    return (replay,) if replay.exists() else live
+
+
 def terminal_invocation_scopes(arm: Path) -> dict:
     scopes = {}
-    for path in arm.glob("client_*/workflows/*/runtime_events.deepagents.jsonl"):
+    for path in client_event_paths(arm):
         for row in records(path):
             if row["kind"] != "invocation_create":
                 continue
@@ -1351,7 +1359,7 @@ def wait_event_attribution(
     ends, joins, submits = {}, {}, defaultdict(list)
     tool_starts = defaultdict(list)
     if clock_offset is not None:
-        for path in arm.glob("client_*/workflows/*/runtime_events.deepagents.jsonl"):
+        for path in client_event_paths(arm):
             for row in records(path):
                 attrs = row.get("attributes") or {}
                 workflow = row.get("workflow_id")
