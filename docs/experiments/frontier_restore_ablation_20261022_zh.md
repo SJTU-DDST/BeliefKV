@@ -118,3 +118,15 @@ V2741 对 111 个模块完整回归，3907 项和 2 个 subtest 通过，无 ski
 候选启动前要求 main 的已资格源码集合及内容一致；仅文档提交可推进
 HEAD 而不改变冻结执行源码。实际检查时的 main HEAD 与冻结 commit
 分别记录，不静默运行不同的 serving 源码。
+
+V123 已登记：
+`/home/longhao/experiment/ops/v123_frontier_ablation_20261022.registration.json`。
+冻结执行版本为 `a75d22db26df8e49383d7348012a1084dec99dc0`，
+目录为
+`/home/longhao/experiment/.worktrees/beliefkv-v123-frozen-a75d22db26df-20261022`，
+实验使用新端口 18528。候选 run 目录为
+`experiments/raw/qwen35_locobench_long_36root_running8_frontier_ablation_20261022_v123`。
+
+北京时间 14:03 核验 watcher 仍存活，状态为 `waiting_reference_campaign`，
+环境为 `CUDA_VISIBLE_DEVICES=99999`，尚未进行 GPU 资源检查或创建候选
+run 目录。该状态只说明等待启动正常，不是候选 GPU 效果或目标验收。
