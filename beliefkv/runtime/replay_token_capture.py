@@ -118,6 +118,10 @@ def capture_record(
         "max_new_tokens": (
             record.get("_replay_request_parameters") or {}
         ).get("max_new_tokens"),
+        "sampling_parameters": dict(record.get("_replay_request_parameters") or {}),
+        "native_finish_reason": (
+            record.get("_replay_finish_reason") if event == "request_output" else None
+        ),
         "availability": (
             "first_native_gpu_service" if event == "request_prompt"
             else "native_request_completion"
@@ -207,19 +211,26 @@ def verify_capture(records: Iterable[dict], expected: dict[str, dict]) -> dict:
             budget = record.get("max_new_tokens")
             if type(budget) is not int or budget < 0:
                 raise ValueError("original output budget is unavailable")
-            pending[request] = scope, identity[3], tokens, budget
+            parameters = record.get("sampling_parameters")
+            if parameters is not None and (
+                type(parameters) is not dict or parameters.get("max_new_tokens") != budget
+            ):
+                raise ValueError("captured stopping parameters disagree with output budget")
+            pending[request] = scope, identity[3], tokens, budget, parameters
             prompt_tokens += len(tokens)
             encoded_prompt_tokens += len(tokens) - record["common_prefix_tokens"]
             seen_prompt.add(request)
         else:
             if request in seen_output or request not in pending:
                 raise ValueError("captured output is duplicate or lacks its prompt")
-            prompt_scope, epoch, tokens, budget = pending.pop(request)
+            prompt_scope, epoch, tokens, budget, parameters = pending.pop(request)
             if (
                 scope != prompt_scope or record.get("base_request_id") is not None
                 or record.get("max_new_tokens") != budget
             ):
                 raise ValueError("captured output changes scope or references a prompt")
+            if record.get("sampling_parameters") != parameters:
+                raise ValueError("captured stopping parameters changed before completion")
             output = decode_tokens(record)
             if len(output) != native_count or len(output) > budget:
                 raise ValueError("captured output differs from native usage or budget")

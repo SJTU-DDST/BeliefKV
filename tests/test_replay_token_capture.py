@@ -243,8 +243,58 @@ def test_disabled_capture_does_not_copy_input_or_output_tokens(tmp_path, monkeyp
     telemetry._emit = lambda stream, record: emitted.append(record)
     req = request("off", [1, 2, 3])
     telemetry._request_token_array = lambda *args, **kwargs: pytest.fail("disabled copy")
+    telemetry._replay_stopping_parameters = lambda *args: pytest.fail("disabled stopping snapshot")
+    telemetry._replay_finish_reason = lambda *args: pytest.fail("disabled finish snapshot")
     telemetry._queue_context_prefix(req, telemetry._identity(req), served=False)
     telemetry._queue_context_prefix(req, telemetry._identity(req), served=True)
     assert all(row["input_ids"] is req.origin_input_ids for row in emitted)
     assert all("_replay_output_ids" not in row for row in emitted)
     assert not (tmp_path / "server/request_tokens.jsonl").exists()
+
+
+@pytest.mark.parametrize("finish", (
+    {"type": "stop", "matched": 8},
+    {"type": "stop", "matched": [7, 8]},
+    {"type": "stop", "matched": "</tool_call>"},
+    {"type": "length", "length": 2},
+    {"type": "abort", "message": "cancelled"},
+    None,
+))
+def test_capture_snapshots_original_stopping_rules_and_native_finish_reason(
+    tmp_path, monkeypatch, finish,
+):
+    from copy import deepcopy
+
+    monkeypatch.setenv("BELIEFKV_REPLAY_TOKEN_CAPTURE", "1")
+    telemetry = NativeReactiveTelemetry(tmp_path / "server")
+    req = request("native-stop", [1, 2, 3])
+    req.sampling_params = NS(
+        max_new_tokens=32, min_new_tokens=1, ignore_eos=False,
+        stop_strs=["done"], stop_regex_strs=["END[.]"], stop_token_ids={8},
+    )
+    original = deepcopy(finish)
+    req.finished_reason = NS(to_json=lambda: finish) if finish is not None else None
+    emitted = []
+    telemetry._emit = lambda stream, record: emitted.append(record)
+    try:
+        telemetry._queue_context_prefix(req, telemetry._identity(req), served=True)
+        req.sampling_params.stop_strs.append("changed")
+        req.sampling_params.stop_token_ids.add(999)
+        if finish is not None:
+            finish["type"] = "changed"
+        record = emitted[0]
+        captured = capture_record(record, record["_replay_output_ids"], event="request_output")
+        assert captured["native_finish_reason"] == original
+        assert captured["sampling_parameters"] == {
+            "max_new_tokens": 32, "min_new_tokens": 1, "ignore_eos": False,
+            "stop": ("done",), "stop_regex": ("END[.]",), "stop_token_ids": (8,),
+        }
+    finally:
+        telemetry.close()
+
+
+def test_capture_verifier_rejects_stopping_rule_changes_between_boundaries():
+    capture, events = synthetic_capture()
+    capture[1]["sampling_parameters"] = {"max_new_tokens": 32, "ignore_eos": True}
+    with pytest.raises(ValueError, match="stopping parameters"):
+        verify_capture(capture, native_request_expectations(events))

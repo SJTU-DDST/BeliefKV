@@ -18,6 +18,7 @@ from array import array
 from bisect import bisect_left, bisect_right, insort
 from collections import Counter, OrderedDict
 from contextlib import contextmanager, nullcontext
+from copy import deepcopy
 import ctypes
 import hashlib
 from itertools import islice
@@ -550,14 +551,36 @@ class NativeReactiveTelemetry:
                     "_replay_output_ids": self._request_token_array(
                         req.output_ids, snapshot=True,
                     ) if served else None,
-                    "_replay_request_parameters": {
-                        "max_new_tokens": getattr(
-                            req.sampling_params, "max_new_tokens", None,
-                        ),
-                    },
+                    "_replay_request_parameters": self._replay_stopping_parameters(req),
+                    "_replay_finish_reason": (
+                        self._replay_finish_reason(req) if served else None
+                    ),
                 } if self._replay_token_capture else {}
             ),
         })
+
+    @staticmethod
+    def _replay_stopping_parameters(req: Any) -> dict:
+        parameters = req.sampling_params
+        result = {
+            name: getattr(parameters, name, None)
+            for name in ("max_new_tokens", "min_new_tokens", "ignore_eos")
+        }
+        for source, target in (
+            ("stop_strs", "stop"), ("stop_regex_strs", "stop_regex"),
+            ("stop_token_ids", "stop_token_ids"),
+        ):
+            values = getattr(parameters, source, None)
+            result[target] = (
+                None if values is None else
+                tuple(sorted(values)) if source == "stop_token_ids" else tuple(values)
+            )
+        return result
+
+    @staticmethod
+    def _replay_finish_reason(req: Any) -> dict | None:
+        serialize = getattr(getattr(req, "finished_reason", None), "to_json", None)
+        return deepcopy(serialize()) if callable(serialize) else None
 
     @staticmethod
     def _request_token_array(input_ids: Any, *, snapshot: bool = False) -> array:
