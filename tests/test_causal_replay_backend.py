@@ -235,6 +235,81 @@ def test_http_execution_and_terminal_close_use_native_receipts_without_reading_l
     assert all(row["exact_tokens_verified"] for row in observations)
 
 
+@pytest.mark.parametrize("changed", (False, True))
+def test_backend_binds_fresh_native_generation_and_rejects_changes_inside_one_incarnation(
+    corpus, changed,
+):
+    calls = []
+
+    async def run():
+        async def handler(request):
+            body = __import__("json").loads(request.content)
+            calls.append((request.url.path, body))
+            if request.url.path == "/generate":
+                payload = response_payload(corpus.get(body["rid"]))
+                payload["meta_info"][RECEIPT_KEY][0]["session_generation"] = (
+                    78 if changed and body["rid"] == "r1" else 77
+                )
+                return httpx.Response(200, json=payload)
+            return httpx.Response(200, json={"accepted": True})
+
+        async with httpx.AsyncClient(
+            base_url="http://127.0.0.1", transport=httpx.MockTransport(handler),
+        ) as client:
+            backend = CausalHTTPBackend(corpus, client, lambda events: None)
+            await backend.emit(created())
+            await backend.execute("r0", submitted())
+            if changed:
+                with pytest.raises(ValueError, match="session"):
+                    await backend.execute("r1", submitted("r1", 1))
+            else:
+                await backend.execute("r1", submitted("r1", 1))
+            assert backend.session_generation_bindings == [{
+                "session_id": "s", "source_generation": 1, "native_generation": 77,
+            }]
+            await backend.drain()
+    asyncio.run(run())
+    assert [body for path, body in calls if path == "/abort_request"] == (
+        [{"rid": "r1"}] if changed else []
+    )
+
+
+@pytest.mark.parametrize("generation", (True, 0, -1, "1"))
+def test_a_session_generation_binding_cannot_be_a_boolean_or_untyped_handle(corpus, generation):
+    captured = corpus.get("r0")
+    started = time.monotonic() * 1000.
+    payload = response_payload(captured)
+    payload["meta_info"][RECEIPT_KEY][0]["session_generation"] = generation
+    with pytest.raises(ValueError, match="binding"):
+        verify_native_receipt(
+            captured, payload, submitted_ms=started, now_ms=time.monotonic() * 1000.,
+            clock_domain=local_monotonic_clock_domain(),
+            expected_session_generation=generation,
+        )
+
+
+@pytest.mark.parametrize("payload", ([], None, {"meta_info": []}))
+def test_backend_rejects_malformed_responses_without_binding_a_session(corpus, payload):
+    async def run():
+        async def handler(request):
+            return httpx.Response(
+                200, content=__import__("json").dumps(payload),
+                headers={"content-type": "application/json"},
+            )
+
+        async with httpx.AsyncClient(
+            base_url="http://127.0.0.1", transport=httpx.MockTransport(handler),
+        ) as client:
+            backend = CausalHTTPBackend(corpus, client, lambda events: None)
+            await backend.emit(created())
+            with pytest.raises(ValueError, match="terminal replay receipt"):
+                await backend.execute("r0", submitted())
+            assert backend.session_generation_bindings == []
+            assert backend.verified_requests == set()
+            await backend.drain()
+    asyncio.run(run())
+
+
 def test_compaction_closes_old_session_before_next_submission_and_preserves_new_scope(tmp_path):
     records, expected, prompts = source(count=2, width=4)
     for row in records[2:]:

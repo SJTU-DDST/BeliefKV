@@ -30,7 +30,7 @@ def _same_wire(left, right) -> bool:
 
 def verify_native_receipt(
     captured: CapturedReplayRequest, payload: dict, *, submitted_ms: float,
-    now_ms: float, clock_domain: str,
+    now_ms: float, clock_domain: str, expected_session_generation: int | None = None,
 ) -> NativeReplayCompletion:
     meta = payload.get("meta_info") if type(payload) is dict else None
     entries = meta.get(RECEIPT_KEY) if type(meta) is dict else None
@@ -67,10 +67,19 @@ def verify_native_receipt(
         or not _same_wire(meta.get("finish_reason"), captured.native_finish_reason)
     ):
         raise ValueError("native replay changed original stopping or finish reason")
+    generation = (
+        captured.session_generation if expected_session_generation is None
+        else expected_session_generation
+    )
+    if captured.session_id is not None and (
+        type(captured.session_generation) is not int or captured.session_generation <= 0
+        or type(generation) is not int or generation <= 0
+    ):
+        raise ValueError("native replay lacks a valid session generation binding")
     if any(
         not _same_wire(receipt.get(name), getattr(captured, name))
-        for name in ("session_id", "session_generation", "extra_key", "cache_salt")
-    ):
+        for name in ("session_id", "extra_key", "cache_salt")
+    ) or not _same_wire(receipt.get("session_generation"), generation):
         raise ValueError("native replay changed session or cache namespace")
     return NativeReplayCompletion(
         captured.request_id, complete, clock_domain,
@@ -128,6 +137,7 @@ class CausalHTTPBackend:
         self._processor = CapturedOutputLogitsProcessor.to_str()
         self._invocations: dict[tuple[str, str], RuntimeEvent] = {}
         self._sessions: dict[tuple[str, str], tuple[str | None, int | None]] = {}
+        self._session_generations: dict[tuple[str, int], int] = {}
         self._closed_contexts: set[tuple[str, str]] = set()
         self._closed_workflows: set[str] = set()
         self._active: set[tuple[str, str]] = set()
@@ -223,10 +233,24 @@ class CausalHTTPBackend:
             response.raise_for_status()
             now = time.monotonic() * 1000.
             native_payload = response.json()
+            meta = native_payload.get("meta_info") if type(native_payload) is dict else None
+            entries = meta.get(RECEIPT_KEY) if type(meta) is dict else None
+            observed_generation = (
+                entries[0].get("session_generation")
+                if type(entries) is list and len(entries) == 1 and type(entries[0]) is dict
+                else None
+            )
+            source_session = captured.session_id, captured.session_generation
+            generation = self._session_generations.get(
+                source_session, observed_generation,
+            )
             receipt = verify_native_receipt(
                 captured, native_payload, submitted_ms=started, now_ms=now,
                 clock_domain=local_monotonic_clock_domain(),
+                expected_session_generation=generation,
             )
+            if captured.session_id is not None:
+                self._session_generations[source_session] = generation
             self.verified_requests.add(request)
             if self._observe_request is not None:
                 self._observe_request({
@@ -244,6 +268,11 @@ class CausalHTTPBackend:
                             "id", "prompt_tokens", "completion_tokens", "finish_reason",
                         )
                     },
+                    "session_generation_binding": {
+                        "session_id": captured.session_id,
+                        "source_generation": captured.session_generation,
+                        "native_generation": generation,
+                    },
                     "exact_tokens_verified": True,
                     "scope": "one native request only; not full replay qualification",
                 })
@@ -260,6 +289,16 @@ class CausalHTTPBackend:
             raise
         finally:
             self._active.remove(context)
+
+    @property
+    def session_generation_bindings(self) -> list[dict]:
+        return [
+            {
+                "session_id": session, "source_generation": source,
+                "native_generation": native,
+            }
+            for (session, source), native in sorted(self._session_generations.items())
+        ]
 
     async def drain(self) -> None:
         if self._active:

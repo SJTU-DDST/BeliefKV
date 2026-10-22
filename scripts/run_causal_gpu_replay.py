@@ -126,6 +126,7 @@ async def run(args) -> dict:
             native_session_http_lifecycle_completed=True,
             physical_session_release_acknowledged=False,
             session_closes=backend.session_closes,
+            session_generation_bindings=backend.session_generation_bindings,
             native_requests_sha256=sha256_file(args.output_dir / "native_requests.jsonl"),
             started_monotonic_ms=started, finished_monotonic_ms=time.monotonic() * 1000.,
             live_control_events_delivered=live is not None,
