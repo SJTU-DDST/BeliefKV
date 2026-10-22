@@ -7,10 +7,17 @@ ORDER = ("join_priority_only", "scheduler_only", "kv_only", "native_matched")
 SCHEDULING_ONLY = frozenset(("join_priority_only", "scheduler_only"))
 
 
-def arm_environment(common: dict[str, str], mode: str) -> dict[str, str]:
+def arm_environment(
+    common: dict[str, str], mode: str, *, tool_prefetch: bool | None = None,
+) -> dict[str, str]:
     if mode not in MODES:
         raise ValueError(f"unknown internal comparison: {mode}")
     custom_kv = mode in ("full", "kv_only")
+    if tool_prefetch is not None and type(tool_prefetch) is not bool:
+        raise ValueError("tool prefetch override must be a boolean")
+    if tool_prefetch is True and not custom_kv:
+        raise ValueError("tool prefetch requires custom KV management")
+    tool_prefetch_enabled = custom_kv and tool_prefetch is not False
     protection = common.get(
         "BELIEFKV_PREFETCH_RESIDENCY_PROTECTION",
         common.get("PREFETCH_RESIDENCY_PROTECTION", "1"),
@@ -35,7 +42,7 @@ def arm_environment(common: dict[str, str], mode: str) -> dict[str, str]:
     if frontier not in ("0", "1"):
         raise ValueError("execution frontier restore must be 0 or 1")
     frontier = str(int(
-        frontier == "1" and custom_kv and tool_restore == "execution"
+        frontier == "1" and tool_prefetch_enabled and tool_restore == "execution"
     ))
     workflow_ordering = scheduling == "workflow" and mode in ("full", "scheduler_only")
     if mode == "join_priority_only":
@@ -75,7 +82,7 @@ def arm_environment(common: dict[str, str], mode: str) -> dict[str, str]:
         "BORROWABLE_PARENT_HEADROOM": str(int(custom_kv)),
         "EXECUTION_HANDOFF": "0",
         "BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH": str(int(custom_kv)),
-        "BELIEFKV_ENABLE_TOOL_PREFETCH": str(int(custom_kv)),
+        "BELIEFKV_ENABLE_TOOL_PREFETCH": str(int(tool_prefetch_enabled)),
         "BELIEFKV_TOOL_RESTORE_MODE": tool_restore if custom_kv else "speculative",
         "TOOL_RESTORE_MODE": tool_restore if custom_kv else "speculative",
         "EXECUTION_FRONTIER_RESTORE": frontier,

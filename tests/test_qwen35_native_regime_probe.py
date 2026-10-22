@@ -188,7 +188,7 @@ def test_native_policy_baseline_rejects_predictive_mix_before_launch(tmp_path: P
 ))
 def test_internal_comparison_effective_environment_before_gpu_launch(
     tmp_path, comparison, *, protection="1", scheduling="workflow", last_child="0",
-    tool_restore="speculative", frontier="1", join_prefetch="1",
+    tool_restore="speculative", frontier="1", join_prefetch="1", tool_prefetch=None,
 ):
     import sys
     from beliefkv.experiments.internal_comparison import arm_environment
@@ -215,7 +215,7 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
         "JOIN_LAST_CHILD_PRIORITY": last_child,
         "TOOL_RESTORE_MODE": tool_restore,
         "EXECUTION_FRONTIER_RESTORE": frontier,
-    }, comparison)
+    }, comparison, tool_prefetch=tool_prefetch)
     if join_prefetch == "0":
         environment["BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH"] = "0"
     result = subprocess.run(
@@ -233,7 +233,9 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
     )
     assert actual["BELIEFKV_ENABLE_PREPARE_HOST"] == str(int(custom_kv))
     assert actual["BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH"] == str(int(custom_kv and join_prefetch == "1"))
-    assert actual["BELIEFKV_ENABLE_TOOL_PREFETCH"] == str(int(custom_kv))
+    assert actual["BELIEFKV_ENABLE_TOOL_PREFETCH"] == str(int(
+        custom_kv and tool_prefetch is not False
+    ))
     workflow = comparison in ("full", "scheduler_only") and scheduling == "workflow"
     assert actual["BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY"] == str(int(workflow))
     assert actual["BELIEFKV_ENABLE_RESIDENT_FIRST"] == str(int(workflow))
@@ -246,6 +248,14 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
     launch = json.loads((run / "server/launch_configuration.json").read_text())
     assert launch["internal_comparison_mode"] == comparison
     assert launch["chat_token_block_cache"] is True
+    assert launch["tool_timing_requested"] is custom_kv
+    assert launch["tool_prefetch_requested"] is (
+        custom_kv and tool_prefetch is not False
+    )
+    if custom_kv:
+        assert actual["BELIEFKV_TOOL_TIMING_ARTIFACT"] == str(artifact)
+        assert actual["BELIEFKV_ONLINE_TOOL_TIMING"] == "1"
+        assert actual["BELIEFKV_ENABLE_BACKGROUND_PREPARE"] == "1"
     assert launch["prefetch_residency_protection_requested"] is (
         protection == "1" and custom_kv
     )
@@ -258,7 +268,10 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
     )
     assert actual["BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY"] == str(int(expected_child))
     assert launch["join_last_child_priority_requested"] is expected_child
-    expected_frontier = custom_kv and tool_restore == "execution" and frontier == "1"
+    expected_frontier = (
+        custom_kv and tool_prefetch is not False
+        and tool_restore == "execution" and frontier == "1"
+    )
     assert actual["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == str(int(expected_frontier))
     assert launch["execution_frontier_restore_requested"] is expected_frontier
     assert actual["BELIEFKV_TOOL_RESTORE_MODE"] == (
@@ -276,6 +289,34 @@ def test_no_join_prefetch_keeps_tool_prefetch_in_the_actual_launcher_without_gpu
     test_internal_comparison_effective_environment_before_gpu_launch(
         tmp_path, "full", join_prefetch="0",
     )
+
+
+@pytest.mark.parametrize("comparison", ("full", "kv_only"))
+def test_no_tool_prefetch_keeps_prediction_prepare_and_join_without_gpu(
+    tmp_path, comparison,
+):
+    test_internal_comparison_effective_environment_before_gpu_launch(
+        tmp_path, comparison, tool_prefetch=False,
+    )
+
+
+def test_no_tool_prefetch_disables_the_dependent_frontier_restore_without_gpu(tmp_path):
+    test_internal_comparison_effective_environment_before_gpu_launch(
+        tmp_path, "full", tool_restore="execution", frontier="1", tool_prefetch=False,
+    )
+
+
+@pytest.mark.parametrize("name", ("ENABLE_TOOL_PREFETCH", "BELIEFKV_ENABLE_TOOL_PREFETCH"))
+@pytest.mark.parametrize("value", ("2", "false"))
+def test_invalid_tool_prefetch_fails_before_launch(tmp_path, name, value):
+    run = tmp_path / "tool-prefetch-rejected"
+    result = subprocess.run(
+        ["/bin/bash", str(SCRIPT)],
+        env={**os.environ, "RUN_ROOT": str(run), name: value},
+        text=True, capture_output=True, timeout=5,
+    )
+    assert result.returncode == 2
+    assert not run.exists()
 
 
 @pytest.mark.parametrize("environment", (
@@ -330,6 +371,7 @@ def test_frontier_restore_ablation_reaches_the_real_launcher_without_gpu(
 @pytest.mark.parametrize("prefix_diagnostics", [None, "1"])
 def test_effective_policy_environment_without_launching_gpu(
     tmp_path, mode, native, host_gb, cache_override, prefix_diagnostics,
+    *, tool_timing="1", launcher_prefetch=None, runtime_prefetch=None,
 ):
     from sys import executable
 
@@ -358,6 +400,7 @@ def test_effective_policy_environment_without_launching_gpu(
         if key not in (
             "NATIVE_CHAT_TOKEN_BLOCK_CACHE", "PREDICTIVE_CHAT_TOKEN_BLOCK_CACHE",
             "REACTIVE_CHAT_TOKEN_BLOCK_CACHE", "PREFETCH_PREFIX_DIAGNOSTICS",
+            "ENABLE_TOOL_PREFETCH", "BELIEFKV_ENABLE_TOOL_PREFETCH",
         )
     }
     result = subprocess.run(
@@ -369,7 +412,7 @@ def test_effective_policy_environment_without_launching_gpu(
             "HICACHE_SIZE_GB": host_gb,
             "DEVICE_FULL_TOKENS": "1798992" if host_gb == "0" else "",
             "DEVICE_MAMBA_SLOTS": "513" if host_gb == "0" else "",
-            "PREPARE_HOST": "1", "ENABLE_TOOL_TIMING": "1", "PORT": "1",
+            "PREPARE_HOST": "1", "ENABLE_TOOL_TIMING": tool_timing, "PORT": "1",
             "SERVER_RANDOM_SEED": "21",
             "CONFIRMED_JOIN_CANARY": "0",
             "SEMANTIC_REPORT_ARTIFACT": str(artifact),
@@ -384,6 +427,10 @@ def test_effective_policy_environment_without_launching_gpu(
             **({cache_variable: cache_override} if cache_override is not None else {}),
             **({"PREFETCH_PREFIX_DIAGNOSTICS": prefix_diagnostics}
                if prefix_diagnostics is not None else {}),
+            **({"ENABLE_TOOL_PREFETCH": launcher_prefetch}
+               if launcher_prefetch is not None else {}),
+            **({"BELIEFKV_ENABLE_TOOL_PREFETCH": runtime_prefetch}
+               if runtime_prefetch is not None else {}),
         },
         text=True, capture_output=True, timeout=10,
     )
@@ -398,6 +445,10 @@ def test_effective_policy_environment_without_launching_gpu(
     assert environment["BELIEFKV_PREFETCH_PREFIX_DIAGNOSTICS"] == (
         prefix_diagnostics if prefix_diagnostics is not None else "0"
     )
+    requested_prefetch = (
+        runtime_prefetch if runtime_prefetch is not None else
+        launcher_prefetch if launcher_prefetch is not None else tool_timing
+    )
     assert json.loads((run_root / "server/launch_configuration.json").read_text()) == {
         "schema_version": 1, "chat_token_block_cache": cache_enabled,
         "native_policy_baseline": native,
@@ -407,6 +458,8 @@ def test_effective_policy_environment_without_launching_gpu(
         "join_last_child_priority_requested": False,
         "execution_frontier_restore_requested": False,
         "tool_continuity_requested": False,
+        "tool_timing_requested": tool_timing == "1",
+        "tool_prefetch_requested": requested_prefetch == "1",
         "tool_restore_mode_requested": "speculative",
         "idle_prepare_policy_requested": "cold",
         "restore_tiers_requested": "complete",
@@ -423,16 +476,37 @@ def test_effective_policy_environment_without_launching_gpu(
     predictive = mode == "predictive_h2d"
     assert environment["BELIEFKV_EMIT_SEMANTIC_TEXT"] == "0"
     assert environment["BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH"] == str(int(predictive))
-    assert environment["BELIEFKV_ENABLE_TOOL_PREFETCH"] == str(int(predictive))
+    assert environment["BELIEFKV_ENABLE_TOOL_PREFETCH"] == str(int(
+        predictive and requested_prefetch == "1"
+    ))
     assert environment["BELIEFKV_ENABLE_PREPARE_HOST"] == str(int(not native))
     assert environment["BELIEFKV_ENABLE_RESIDENT_FIRST"] == str(int(not native))
     assert "BELIEFKV_SEMANTIC_REPORT_ARTIFACT" not in environment
     assert environment.get("BELIEFKV_H2D_OPPORTUNITY_SAMPLING", "0") == "0"
-    if not native:
+    if not native and tool_timing == "1":
         assert environment["BELIEFKV_TOOL_TIMING_ARTIFACT"] == str(artifact)
+    else:
+        assert not environment.get("BELIEFKV_TOOL_TIMING_ARTIFACT")
     if mode == "reactive":
         assert environment["BELIEFKV_H2D_OPPORTUNITY_SAMPLING"] == "0"
         assert environment["BELIEFKV_ENABLE_EXECUTION_HANDOFF"] == "0"
+
+
+@pytest.mark.parametrize("mode,native,timing,launcher,runtime", (
+    ("predictive_h2d", False, "0", None, None),
+    ("predictive_h2d", False, "1", "0", None),
+    ("predictive_h2d", False, "0", "1", None),
+    ("predictive_h2d", False, "1", "1", "0"),
+    ("reactive", False, "1", "1", "1"),
+    ("off", True, "1", "1", "1"),
+))
+def test_independent_tool_prefetch_precedence_and_baseline_isolation_without_gpu(
+    tmp_path, mode, native, timing, launcher, runtime,
+):
+    test_effective_policy_environment_without_launching_gpu(
+        tmp_path, mode, native, "200", None, None,
+        tool_timing=timing, launcher_prefetch=launcher, runtime_prefetch=runtime,
+    )
 
 
 @pytest.mark.parametrize("mode", ["off", "reactive", "predictive_h2d"])

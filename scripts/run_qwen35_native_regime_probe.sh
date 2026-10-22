@@ -56,6 +56,7 @@ H2D_SEED_ARTIFACT="${H2D_SEED_ARTIFACT:-$ROOT/experiments/models/native_h2d_ack_
 TRANSFER_SERVICE_SEED="${TRANSFER_SERVICE_SEED:-$ROOT/experiments/models/native_transfer_service_seed_v4.json}"
 TOOL_TIMING_ARTIFACT="${TOOL_TIMING_ARTIFACT:-$ROOT/experiments/models/qwen35_native_event_horizons_20260928_calibrated.json}"
 ENABLE_TOOL_TIMING="${ENABLE_TOOL_TIMING:-1}"
+ENABLE_TOOL_PREFETCH="${BELIEFKV_ENABLE_TOOL_PREFETCH:-${ENABLE_TOOL_PREFETCH:-$ENABLE_TOOL_TIMING}}"
 PREFETCH_LEAD_MS="${PREFETCH_LEAD_MS:-1000}"
 PREFETCH_RESIDENCY_PROTECTION="${BELIEFKV_PREFETCH_RESIDENCY_PROTECTION:-${PREFETCH_RESIDENCY_PROTECTION:-1}}"
 PREFILL_SCHEDULING_POLICY="${BELIEFKV_PREFILL_SCHEDULING_POLICY:-${PREFILL_SCHEDULING_POLICY:-workflow}}"
@@ -144,6 +145,7 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || [[ "$EXECUTION_HANDOFF" != "0" && "$EXECUTION_HANDOFF" != "1" ]] \
   || [[ "$CHILD_FINAL_REPORT_SHADOW" != "0" && "$CHILD_FINAL_REPORT_SHADOW" != "1" ]] \
   || [[ "$ENABLE_TOOL_TIMING" != "0" && "$ENABLE_TOOL_TIMING" != "1" ]] \
+  || [[ "$ENABLE_TOOL_PREFETCH" != "0" && "$ENABLE_TOOL_PREFETCH" != "1" ]] \
   || [[ "$PROFILE_SHARED_PATH" != "0" && "$PROFILE_SHARED_PATH" != "1" ]] \
   || [[ "$PREFETCH_PREFIX_DIAGNOSTICS" != "0" && "$PREFETCH_PREFIX_DIAGNOSTICS" != "1" ]] \
   || [[ "$PREFETCH_RESIDENCY_PROTECTION" != "0" && "$PREFETCH_RESIDENCY_PROTECTION" != "1" ]] \
@@ -271,7 +273,7 @@ if [[ "$AB_MODE" != "off" ]]; then
     ab_env+=(BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH="$ENABLE_JOIN_PREFETCH" \
       BELIEFKV_H2D_OPPORTUNITY_SAMPLING="$H2D_OPPORTUNITY_SAMPLING" \
       BELIEFKV_ENABLE_EXECUTION_HANDOFF="$EXECUTION_HANDOFF" \
-      BELIEFKV_ENABLE_TOOL_PREFETCH="$ENABLE_TOOL_TIMING")
+      BELIEFKV_ENABLE_TOOL_PREFETCH="$ENABLE_TOOL_PREFETCH")
     if [[ -f "$H2D_SEED_ARTIFACT" ]]; then
       ab_env+=(BELIEFKV_H2D_SEED="$H2D_SEED_ARTIFACT" \
         BELIEFKV_H2D_SEED_SHA256="$(sha256sum "$H2D_SEED_ARTIFACT" | cut -d' ' -f1)")
@@ -294,10 +296,12 @@ jq -n --argjson cache "$CHAT_TOKEN_BLOCK_CACHE" --argjson native "$NATIVE_POLICY
   --argjson last_child "$JOIN_LAST_CHILD_PRIORITY" \
   --argjson frontier "$EXECUTION_FRONTIER_RESTORE" \
   --argjson continuity "$TOOL_CONTINUITY" \
+  --argjson tool_timing "$ENABLE_TOOL_TIMING" \
+  --argjson tool_prefetch "$ENABLE_TOOL_PREFETCH" \
   --arg tool_restore "${BELIEFKV_TOOL_RESTORE_MODE:-speculative}" \
   --arg idle_prepare "${BELIEFKV_IDLE_PREPARE_POLICY:-cold}" \
   --arg restore_tiers "${BELIEFKV_RESTORE_TIERS:-complete}" \
-  '{schema_version: 1, chat_token_block_cache: ($cache == 1), native_policy_baseline: ($native == 1), prefetch_prefix_diagnostics: ($prefixes == 1), prefetch_residency_protection_requested: ($protection == 1), prefill_scheduling_policy_requested: $scheduling, join_last_child_priority_requested: ($last_child == 1), execution_frontier_restore_requested: ($frontier == 1), tool_continuity_requested: ($continuity == 1), tool_restore_mode_requested: $tool_restore, idle_prepare_policy_requested: $idle_prepare, restore_tiers_requested: $restore_tiers, server_random_seed: $seed, python_hash_seed: $hash_seed, internal_comparison_mode: $comparison}' \
+  '{schema_version: 1, chat_token_block_cache: ($cache == 1), native_policy_baseline: ($native == 1), prefetch_prefix_diagnostics: ($prefixes == 1), prefetch_residency_protection_requested: ($protection == 1), prefill_scheduling_policy_requested: $scheduling, join_last_child_priority_requested: ($last_child == 1), execution_frontier_restore_requested: ($frontier == 1), tool_continuity_requested: ($continuity == 1), tool_timing_requested: ($tool_timing == 1), tool_prefetch_requested: ($tool_prefetch == 1), tool_restore_mode_requested: $tool_restore, idle_prepare_policy_requested: $idle_prepare, restore_tiers_requested: $restore_tiers, server_random_seed: $seed, python_hash_seed: $hash_seed, internal_comparison_mode: $comparison}' \
   > "$RUN_ROOT/server/launch_configuration.json"
 setsid env -u BELIEFKV_FULL_MAMBA_HOST_SPLIT "${unset_env[@]}" \
   "${ab_env[@]}" \

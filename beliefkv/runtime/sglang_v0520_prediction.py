@@ -150,9 +150,16 @@ class NativeToolWaitHint:
     def _release_curve(self):
         if not self.release_cdf:
             return None
-        from beliefkv.predictor.action_frontier import ActionTimingCurve
+        from beliefkv.predictor.action_frontier import (
+            ActionTimingCurve, EmpiricalActionTimingCurve,
+        )
 
-        return ActionTimingCurve(
+        curve_type = (
+            EmpiricalActionTimingCurve if self.residual_support_detail in (
+                "online_workflow_command", "online_run_command",
+            ) else ActionTimingCurve
+        )
+        return curve_type(
             tuple(point[0] for point in self.release_cdf),
             tuple(point[1] for point in self.release_cdf), "pooled", 0.,
         )

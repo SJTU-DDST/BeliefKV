@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from bisect import bisect_left
+from bisect import bisect_left, bisect_right
 from dataclasses import dataclass
 from functools import cached_property
 from itertools import accumulate
@@ -342,6 +342,21 @@ class ActionTimingCurve:
             support_level=str(raw.get("support_level") or "unavailable"),
             training_support=float(raw.get("training_support", 0.0)),
         )
+
+
+@dataclass(frozen=True)
+class EmpiricalActionTimingCurve(ActionTimingCurve):
+    """Observed event times form a step CDF, with no interpolated early events."""
+
+    def release_within(self, operational_tau_ms: float) -> float:
+        index = bisect_right(self.tau_ms, max(0., float(operational_tau_ms)))
+        return self.release_within_probability[index - 1] if index else 0.
+
+    def quantile(self, probability: float) -> float | None:
+        if not math.isfinite(probability) or not 0 < probability < 1:
+            raise ValueError("timing quantile must be strictly between zero and one")
+        index = bisect_left(self._quantile_probabilities, probability)
+        return self.tau_ms[index] if index < len(self.tau_ms) else None
 
 
 class PooledConditionalDemandModel:

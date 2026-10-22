@@ -1,6 +1,7 @@
 from collections import deque
 from types import SimpleNamespace as NS
 from unittest.mock import Mock, patch
+import math
 import time
 
 import pytest
@@ -65,6 +66,56 @@ def test_timeout_does_not_become_an_observed_completion():
         ))
     history.observe(tool_event(RuntimeEventKind.TOOL_START, call="active"))
     assert history.estimate("workflow", "agent", now_ms=1000.) is None
+
+
+@pytest.mark.parametrize("samples", (
+    ((10_000., True),) * 4,
+    ((1000., True), (2000., True), (3000., True), (4000., True)),
+    ((1000., True), (2000., False), (3000., True), (4000., True), (5000., True)),
+))
+@pytest.mark.parametrize("elapsed", (0., 500., 1000., 2500.))
+@pytest.mark.parametrize("scope", ("workflow", "run"))
+def test_online_hint_preserves_empirical_release_times_and_conditional_quantiles(
+    samples, elapsed, scope,
+):
+    from beliefkv.predictor.tool_survival import KaplanMeierCurve
+    from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
+    from beliefkv.runtime.sglang_v0520_prediction import NativeToolWaitHint
+
+    history = OnlineWorkloadToolTiming()
+    training = samples if scope == "workflow" else samples * 2
+    for index, (duration, completed) in enumerate(training):
+        history.observe(tool_event(RuntimeEventKind.TOOL_START, call=str(index)))
+        history.observe(tool_event(
+            RuntimeEventKind.TOOL_END, call=str(index), start=duration,
+            duration_ms=duration, censored=not completed,
+        ))
+    workflow = "workflow" if scope == "workflow" else "unseen-workflow"
+    active = tool_event(RuntimeEventKind.TOOL_START, call="active")
+    active.workflow_id = workflow
+    history.observe(active)
+    estimate = history.estimate(workflow, "agent", now_ms=elapsed)
+    assert estimate is not None and estimate.scope == scope
+    key = PrefillCandidateKey("request", workflow, "agent", "ctx", 0, 0)
+    issued = 50_000.
+    hint = NativeToolWaitHint(
+        key, estimate.p10_ms, estimate.p50_ms, estimate.p90_ms,
+        issued, issued + 20_000., "a" * 64, release_cdf=estimate.release_cdf,
+        residual_support_detail=f"online_{scope}_command",
+    )
+    curve = KaplanMeierCurve().fit(list(training))
+    for age in (0., 250., 1000., 3000., 10_000.):
+        for quantile in (.1, .5, .9):
+            expected = curve.remaining_quantile(elapsed + age, quantile)
+            actual = hint.remaining_quantile(quantile, now_ms=issued + age)
+            assert actual == (expected if math.isfinite(expected) else None)
+        for horizon in (0., 100., 1000., 5000.):
+            actual = hint.release_probability_within(horizon, now_ms=issued + age)
+            if curve.survival(elapsed + age) <= 0:
+                assert actual is None
+            else:
+                expected = 1. - curve.conditional_survival(elapsed + age, horizon)
+                assert actual == pytest.approx(expected)
 
 
 def test_active_tool_index_preserves_duplicate_and_terminal_event_semantics():

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace as NS
+import hashlib
 import json
 import time
 from unittest.mock import Mock
@@ -110,6 +111,119 @@ def test_independent_modes_align_frontend_and_leave_native_hicache(mode):
         assert env["PREPARE_HOST"] == env["ENABLE_TOOL_TIMING"] == "0"
         assert not env["BELIEFKV_TOOL_TIMING_ARTIFACT"]
     assert set(ORDER) == set(MODES) - {"full"}
+
+
+@pytest.mark.parametrize("mode", ("full", "kv_only"))
+def test_tool_prefetch_removal_changes_only_the_restore_switch(mode):
+    common = {
+        "MAX_RUNNING_REQUESTS": "8", "ROOT_COUNT": "36",
+        "SERVER_RANDOM_SEED": "21", "SAMPLING_SEED": "21",
+    }
+    original = arm_environment(common, mode)
+    removed = arm_environment(common, mode, tool_prefetch=False)
+    assert {
+        name for name in original.keys() | removed.keys()
+        if original.get(name) != removed.get(name)
+    } == {"BELIEFKV_ENABLE_TOOL_PREFETCH"}
+    assert removed["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "0"
+    assert removed["ENABLE_TOOL_TIMING"] == removed["ONLINE_TOOL_TIMING"] == "1"
+    assert removed["PREPARE_HOST"] == removed["BELIEFKV_ENABLE_BACKGROUND_PREPARE"] == "1"
+    assert removed["BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH"] == "1"
+
+
+@pytest.mark.parametrize("override", ("0", 0, 1))
+def test_tool_prefetch_override_rejects_non_boolean_values(override):
+    with pytest.raises(ValueError, match="must be a boolean"):
+        arm_environment({}, "full", tool_prefetch=override)
+
+
+@pytest.mark.parametrize("mode", ("join_priority_only", "scheduler_only", "native_matched"))
+def test_scheduling_and_native_cannot_enable_tool_prefetch(mode):
+    with pytest.raises(ValueError, match="requires custom KV"):
+        arm_environment({}, mode, tool_prefetch=True)
+
+
+def test_no_tool_prefetch_keeps_online_prediction_and_cold_tool_eligibility(
+    monkeypatch, tmp_path,
+):
+    environment = arm_environment({}, "full", tool_prefetch=False)
+    for name, value in environment.items():
+        monkeypatch.setenv(name, value)
+    for name in ("ONLINE_TOOL_TIMING", "BORROWABLE_PARENT_HEADROOM"):
+        monkeypatch.setenv("BELIEFKV_" + name, environment[name])
+    model = tmp_path / "model"
+    model.mkdir()
+    (model / "config.json").write_text("{}")
+    manifest = tmp_path / "dataset_manifest.json"
+    manifest.write_text(json.dumps({"source": {"runtime_environment_contract": {
+        "server_identity": {"sglang_version": "0.5.20"},
+        "model_revision_sha256": {"config.json": hashlib.sha256(b"{}").hexdigest()},
+    }}}))
+    artifact = tmp_path / "tool.json"
+    artifact.write_text(json.dumps({
+        "calibration_coverage": .9,
+        "components": {"operational_release": {"trained": True}},
+        "metadata": {
+            "calibration_status": "calibrated_native_heads_only",
+            "native_event_timing_report": {
+                "target": "time_until_all_active_tools_return_not_first_gpu_service",
+            },
+            "dataset_dirs": [str(tmp_path)],
+            "dataset_manifest_file_sha256s": [
+                hashlib.sha256(manifest.read_bytes()).hexdigest(),
+            ],
+        },
+    }))
+    runtime = NativeAdmissionRuntime(
+        event_socket_path=str(tmp_path / "runtime.sock"),
+        model_path=str(model), tool_timing_artifact_path=str(artifact),
+        tool_timing_sha256=hashlib.sha256(artifact.read_bytes()).hexdigest(),
+    )
+    try:
+        runtime.on_events((
+            observed(0, Kind.WORKFLOW_START),
+            observed(1, Kind.INVOCATION_CREATE,
+                     invocation_id="tool", context_id="ctx-tool"),
+        ))
+        runtime.register_visible_request(request("tool"))
+        monkeypatch.setattr("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", lambda: 1.)
+        for index in range(5):
+            runtime.on_events((observed(
+                2 + index * 2, Kind.TOOL_START, invocation_id="tool",
+                attributes={
+                    "tool_run_id": str(index), "tool_name": "execute",
+                    "backend_class": "sandbox", "observed_command_shape": "pytest",
+                },
+            ),))
+            if index < 4:
+                runtime.on_events((observed(
+                    3 + index * 2, Kind.TOOL_END, invocation_id="tool",
+                    attributes={"tool_run_id": str(index), "duration_ms": 10_000.},
+                ),))
+        key = runtime.context_sessions["ctx-tool"]
+        assert runtime.counts["online_tool_supported"] == 1
+        assert runtime._long_tool_wait(key)
+        assert runtime._live_parent_pressure_key(key)
+        monkeypatch.setattr(
+            runtime, "inspect_context_h2d_opportunity",
+            Mock(side_effect=AssertionError("disabled tool H2D must not inspect targets")),
+        )
+        runtime.dispatch_tool_prefetch()
+        assert runtime._tool_ticket is None
+        assert not runtime.counts["tool_prefetch_issued"]
+        runtime._opportunity_writer = Mock()
+        runtime._record_runtime_state()
+        state = runtime._opportunity_writer.record.call_args.args[0]
+        validate_runtime("full", state, expected_overrides={"tool_prefetch": False})
+        assert state["tool_timing_only"] is state["online_tool_timing"] is True
+        assert state["prepare_host"] is state["background_prepare"] is True
+        runtime.on_events((observed(
+            20, Kind.TOOL_END, invocation_id="tool", attributes={"tool_run_id": "4"},
+        ),))
+        assert not runtime._live_parent_pressure_key(key)
+    finally:
+        runtime._opportunity_writer = None
+        runtime.close()
 
 
 @pytest.mark.parametrize("before", (False, True))
