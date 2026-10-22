@@ -111,6 +111,11 @@ def arm_environment(common: dict[str, str], mode: str) -> dict[str, str]:
         "PREFETCH_PREFIX_DIAGNOSTICS": "0",
         "JOIN_PREFETCH_TRIGGER": "observed_eos",
     }
+    for name in ("BELIEFKV_ENABLE_BACKGROUND_PREPARE", "BELIEFKV_ENABLE_TERMINAL_CHILD_RECLAIM"):
+        value = common.get(name, "1")
+        if value not in ("0", "1"):
+            raise ValueError(f"{name} must be 0 or 1")
+        settings[name] = str(int(custom_kv and value == "1"))
     if not custom_kv:
         for name in (
             "BELIEFKV_TOOL_TIMING_ARTIFACT", "BELIEFKV_TOOL_TIMING_SHA256",
@@ -132,6 +137,7 @@ def validate_runtime(
     join_last_child_priority: bool | None = None,
     execution_frontier_restore: bool | None = None,
     tool_continuity: bool | None = None,
+    expected_overrides: dict[str, bool] | None = None,
 ) -> None:
     """Check observed effective controls, not just the requested environment."""
     if mode not in MODES:
@@ -194,6 +200,13 @@ def validate_runtime(
             and state.get("prefill_scheduling_policy") == "join_priority"
             and mode in ("full", "scheduler_only", "join_priority_only")
         )
+    if expected_overrides:
+        if not set(expected_overrides) <= {
+            "join_parent_priority", "final_stage_prefetch",
+            "background_prepare", "terminal_child_reclaim",
+        } or any(type(value) is not bool for value in expected_overrides.values()):
+            raise ValueError("unsupported module ablation expectations")
+        expected.update(expected_overrides)
     for field, value in expected.items():
         if state.get(field) != value:
             raise ValueError(f"{mode}: observed {field}={state.get(field)!r}, expected {value!r}")

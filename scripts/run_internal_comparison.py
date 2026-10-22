@@ -247,6 +247,7 @@ def register(args) -> None:
 def observe_arm(
     mode: str, arm: Path, *, max_running_requests: int = 12,
     legacy_execution_frontier_restore: bool | None = None,
+    runtime_overrides: dict[str, bool] | None = None,
 ) -> None:
     protection = None
     scheduling = None
@@ -290,6 +291,7 @@ def observe_arm(
             join_last_child_priority=last_child,
             execution_frontier_restore=frontier,
             tool_continuity=continuity,
+            expected_overrides=runtime_overrides,
         )
     telemetry = arm / "server/native_telemetry_status.json"
     if telemetry.exists() and any(load(telemetry).get(name) for name in (
@@ -302,7 +304,9 @@ def observe_arm(
                 raise ValueError(f"{mode}: custom physical-action telemetry is not empty")
 
 
-def postprocess(plan: dict, mode: str, run: Path) -> None:
+def postprocess(
+    plan: dict, mode: str, run: Path, *, runtime_mode: str | None = None,
+) -> None:
     arm = run / mode
     script_root = Path(plan["execution_checkout"]) / "scripts"
     for script, output in (
@@ -313,7 +317,7 @@ def postprocess(plan: dict, mode: str, run: Path) -> None:
             [sys.executable, str(script_root / script), "--arm", str(arm),
              "--output", str(arm / output)], check=True, capture_output=True,
         )
-    if mode in ("full", "kv_only"):
+    if (runtime_mode or mode) in ("full", "kv_only"):
         subprocess.run(
             [sys.executable, str(script_root / "audit_prepare_background.py"),
              "--arm", str(arm), "--lifecycle", str(arm / "prefetch_lifecycle.json"),

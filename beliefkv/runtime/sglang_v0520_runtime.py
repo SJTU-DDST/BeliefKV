@@ -600,6 +600,16 @@ class NativeAdmissionRuntime:
             else None if priority_setting is None else priority_setting == "1"
         )
         self.enable_prepare_host = os.environ.get("BELIEFKV_ENABLE_PREPARE_HOST", "1") == "1"
+        background_setting = os.environ.get("BELIEFKV_ENABLE_BACKGROUND_PREPARE", "1")
+        retirement_setting = os.environ.get("BELIEFKV_ENABLE_TERMINAL_CHILD_RECLAIM", "1")
+        if background_setting not in ("0", "1") or retirement_setting not in ("0", "1"):
+            raise ValueError("background prepare and child reclaim settings must be 0 or 1")
+        self.enable_background_prepare = (
+            self._custom_kv_management and self.enable_prepare_host and background_setting == "1"
+        )
+        self.enable_terminal_child_reclaim = (
+            self._custom_kv_management and retirement_setting == "1"
+        )
         self.idle_prepare_policy = os.environ.get("BELIEFKV_IDLE_PREPARE_POLICY", "cold")
         if self.idle_prepare_policy not in ("cold", "all"):
             raise ValueError("idle prepare policy must be cold or all")
@@ -2369,6 +2379,8 @@ class NativeAdmissionRuntime:
                     else self.enable_admission_prefetch or self.enable_final_stage_prefetch
                 ),
                 "prepare_host": self.enable_prepare_host,
+                "background_prepare": self.enable_background_prepare,
+                "terminal_child_reclaim": self.enable_terminal_child_reclaim,
                 "h2d_opportunity_sampling": self.enable_h2d_opportunity_sampling,
                 "prepare_pool_scope": "missing_full_session_path",
                 "spawn_full_prepare": {
@@ -5027,7 +5039,7 @@ class NativeAdmissionRuntime:
             self._apply_terminal_child_reclaim(reclaim, retry=False)
 
     def _retire_terminal_child(self, key: PrefillCandidateKey, event: RuntimeEvent) -> None:
-        if not self._custom_kv_management:
+        if not self._custom_kv_management or not self.enable_terminal_child_reclaim:
             return
         child = self.graph.invocations.get(key.invocation_id)
         context = self.graph.contexts.get(key.context_id)
@@ -7335,7 +7347,7 @@ class NativeAdmissionRuntime:
 
     def _queue_spawn_prepare(self, event: RuntimeEvent) -> None:
         if (
-            not self.enable_prepare_host or self.physical_disabled
+            not self.enable_prepare_host or not self.enable_background_prepare or self.physical_disabled
             or event.attributes.get("runtime_internal")
         ):
             return
@@ -7363,7 +7375,10 @@ class NativeAdmissionRuntime:
 
     def dispatch_spawn_prepare(self) -> None:
         """Back a known delegator's published FULL without waiting for pressure."""
-        if not self.enable_prepare_host or self.physical_disabled or not self._spawn_full_prepares:
+        if (
+            not self.enable_prepare_host or not self.enable_background_prepare
+            or self.physical_disabled or not self._spawn_full_prepares
+        ):
             return
         now_ms = time.monotonic() * 1000.
         if now_ms < self._spawn_prepare_next_ms:
@@ -7451,7 +7466,7 @@ class NativeAdmissionRuntime:
         cache = self._native_cache
         prepare = getattr(cache, "prepare_beliefkv_idle_full", None)
         if (
-            not self.enable_prepare_host or self.physical_disabled
+            not self.enable_prepare_host or not self.enable_background_prepare or self.physical_disabled
             or not callable(prepare)
         ):
             return

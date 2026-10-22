@@ -205,10 +205,13 @@ def completed_arm(summary: dict, exit_code: int, root_count: int) -> dict:
 def observe(
     mode: str, arm: Path, *, final: bool = False,
     legacy_execution_frontier_restore: bool | None = None,
+    runtime_overrides: dict[str, bool] | None = None,
 ) -> None:
     options = {"max_running_requests": 8}
     if legacy_execution_frontier_restore is not None:
         options["legacy_execution_frontier_restore"] = legacy_execution_frontier_restore
+    if runtime_overrides is not None:
+        options["runtime_overrides"] = runtime_overrides
     comparison.observe_arm(mode, arm, **options)
     if final:
         for relative in (

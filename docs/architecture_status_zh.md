@@ -2,6 +2,13 @@
 
 更新日期：2026-10-22（北京时间）。
 
+最新 Full 为 V124b：简单 JOIN 排序、短工具有界续接、普通 frontier
+restore 关闭。按用户新要求，V125 在其正常收集并释放资源后顺序执行
+同配置组件消融，见[消融矩阵](experiments/module_ablations_v125_20261022_zh.md)；
+不因研究新 workload 改动本轮任务。新增默认保持行为的后台备份和
+终态 child 回收开关，用于将紧急备份与周期备份、终态回收与其他 KV
+机制分开验证。跨轮复用 subagent 的选择性状态保留另作研究，尚无收益结论。
+
 用户最新要求普通 execution-frontier restore 默认关闭，JCT 以完整 workflow
 且保留普通长尾为主；异常工具排除需具体证据及配对口径。JOIN/EOS、增量
 备份和原生准入的分层需求恢复保留。V123 已结束，35/36 无 guard 合格；
