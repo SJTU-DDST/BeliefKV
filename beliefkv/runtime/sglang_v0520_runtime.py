@@ -8145,6 +8145,22 @@ class NativeAdmissionRuntime:
     def _tool_prefetch_remaining(
         self, hint: NativeToolWaitHint, quantile: float, *, now_ms: float,
     ) -> float | None:
+        if (
+            self._online_tool_timing is not None
+            and hint.residual_support_detail in (
+                "online_workflow_command", "online_run_command",
+            )
+            and not self._online_tool_timing.prefetch_supported(
+                hint.key.root_workflow_id, hint.key.invocation_id,
+                now_ms=now_ms,
+                scope=(
+                    "workflow" if hint.residual_support_detail == "online_workflow_command"
+                    else "run"
+                ),
+            )
+        ):
+            self.counts["tool_prefetch_conditional_tail_unsupported"] += 1
+            return None
         remaining = hint.remaining_quantile(quantile, now_ms=now_ms)
         evidence = self._tool_prefetch_survival_evidence.get(hint.key)
         if evidence is None:

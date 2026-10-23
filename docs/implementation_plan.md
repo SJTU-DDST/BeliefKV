@@ -11,15 +11,42 @@ V3219 binds the complete result and work/telemetry evidence. This small
 single-run difference is not accepted isolated KV benefit or repeatable
 dominance; source correctness remains independently ungraded.
 
-V139 now runs JOIN-only from frozen appb92a1c242f1e and engine treecc9772c6c5c4.
-Its actual server/driver identities and receipts are checked. V140 has a live
-waiting supervisor for scheduler-only, registered after V139; it cannot take
-the GPU until both V139 arms finish and their owned processes exit. V140
-freezes appb560d23c5042 and the same engine tree, capacity, batch24, seed21
-and V136 exact work. No extra full native replay is queued. Registrations:
+V139 JOIN-only also completed normally with the same3951 requests and exact
+token work. Its mean JCT is1145.470s and whole-run output throughput594.414
+tokens/s, respectively -1.605% and +2.061% against the captured native.
+Full's JCT is effectively tied with JOIN-only (-0.051%), while its throughput
+is0.505% lower. Both retain all24 workflows and normal tails. This comparison
+does not establish an independent KV-management benefit.
+
+V140 scheduler-only is now actually running after both V139 arms completed
+and their owned processes exited. Its live server and replay driver are
+verified. V140 freezes appb560d23c5042 and the same engine treecc9772c6c5c4,
+capacity, batch24, seed21 and V136 exact work. It retains Full's ordering
+without the custom KV paths. No extra full native replay is queued. Registrations:
 `/home/longhao/experiment/ops/v139_oneshot_batch24_controls_20261024.registration.json`
 and `v140_oneshot_batch24_scheduler_only_20261024.registration.json`.
 Keep24 roots; meaningful early recovery already exceeds10GB.
+
+The next Full candidate restricts speculative tool H2D when its conditional
+tail has fewer than4 workflow-scoped or8 run-scoped completed observations
+beyond the current elapsed wait. Overall history size alone previously let
+one or two long samples authorize early restoration. Tool offload estimates
+and EOS JOIN are unchanged. V3224 chronologically reconstructs all212 issued
+tool commands' forecasts:74 unsupported commands account for3.807GB FULL,
+of which3.662GB lacks verified first-service reuse; the supported subset
+retains94.733% of verified reused FULL bytes. Only2851/4994 total forecast
+queries reconstruct, so these figures apply to the212 verified issue queries.
+This audit does not simulate changed pressure, later retries or JCT benefit.
+
+V3223 passes244 focused checks; V3225/V3227 retains5435 prior cases and
+qualifies5454 cases plus2 subtests with CUDA hidden, no failures or skips.
+The optional Docker case remains outside the inherited qualification.
+V3226 compares the pinned old method on identical CPU fixtures: the legacy
+path adds0.039us and online conditional checks add0.666-3.900us per query,
+with at most64 historical entries and no physical action. These are controlled
+costs, not a measured aggregate online overhead. Queue one qualified candidate
+Full after V140 on the same source; do not rerun native or increase roots.
+The performance goal remains active and unmet.
 
 V3217's completed lifecycle audit finds43 JOINs with pre-completion positive
 FULL plans;33 submit and reuse24.409GB early. Tool waits contribute13 early

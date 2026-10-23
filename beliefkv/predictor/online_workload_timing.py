@@ -11,6 +11,9 @@ from beliefkv.core.events import RuntimeEventKind
 from beliefkv.predictor.tool_survival import KaplanMeierCurve
 
 
+_MINIMUM_HISTORY = {"workflow": 4, "run": 8}
+
+
 @dataclass(frozen=True)
 class OnlineToolEstimate:
     p10_ms: float
@@ -101,6 +104,22 @@ class OnlineWorkloadToolTiming:
             self._history_revisions.get(("*", *signature)),
         )
 
+    def prefetch_supported(
+        self, workflow: str, invocation: str, *, now_ms: float, scope: str,
+    ) -> bool:
+        """Require support among calls that survived the current wait."""
+        minimum = _MINIMUM_HISTORY.get(scope)
+        active = self._open_by_invocation.get((workflow, invocation), {})
+        if minimum is None or len(active) != 1:
+            return False
+        signature, started = next(iter(active.values()))
+        prefix = workflow if scope == "workflow" else "*"
+        history = self.samples.get((prefix, *signature), ())
+        elapsed = max(0., now_ms - started)
+        return sum(
+            completed and duration > elapsed for duration, completed in history
+        ) >= minimum
+
     def estimate(self, workflow: str, invocation: str, *, now_ms: float) -> OnlineToolEstimate | None:
         active = self._open_by_invocation.get((workflow, invocation), {})
         # A parallel group's completion is a maximum, not one tool's duration.
@@ -108,7 +127,8 @@ class OnlineWorkloadToolTiming:
             return None
         signature, started = next(iter(active.values()))
         elapsed = max(0., now_ms - started)
-        for prefix, minimum, scope in ((workflow, 4, "workflow"), ("*", 8, "run")):
+        for prefix, scope in ((workflow, "workflow"), ("*", "run")):
+            minimum = _MINIMUM_HISTORY[scope]
             key = (prefix, *signature)
             history = self.samples.get(key)
             if history is None:
