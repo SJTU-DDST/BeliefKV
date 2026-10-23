@@ -2,6 +2,40 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+V146 completed normally at06:17 Beijing. V3308 revalidates its exact3951
+request receipts/tokens, actual configuration and cleanup. Mean JCT is
+1132.377s and whole-run output throughput595.610 tokens/s: relative to
+natural native,-2.7298%/+2.2661%; relative to V143,-0.2059%/+0.0502%.
+Normal tails remain included, with no quality exclusions. The small
+V143 comparison does not establish stable incremental KV benefit.
+
+V3307 records43 positive pre-completion JOIN plans and25 early confirmed
+reuses/27.320GB FULL, plus10 tool early reuses/4.650GB. Larger early JOIN
+bytes than V143 do not imply a proportional JCT saving. V3309 observes
+5866039 actual prefill tokens, down0.0965% from V143, while prefill worker
+intervals total256.715s,up0.4445%; the residual prefill gap remains.
+V3310 records948.431GB completed H2D and392.978GB D2H. There are114 checks
+with unbacked-candidate rejection and sampled Host FULL space. Those
+checks include retries and do not prove a safe freeable donor. Migration
+opportunities are sufficient to retain24 roots.
+
+After actual V146 process cleanup and free-GPU/port checks, V147 was
+independently registered from main `598e214ef979` with the ordinary FULL
+allocation candidate below. Keep its frozen tree
+`9ac449ef28f0e88f5394b56c2c76f3484b5f783f` intact. It uses Full, the
+same V136 work/native capture, batch24 and seed21; tool prefetch and
+background backup remain. Native replay is not queued. Startup validation
+passes in V3312: real GPU execution, actual capacity/configuration and both
+effective prefixes are verified. Actual extends are4727/4153 tokens with
+subsequent decode. CMS again needs no positive Host Mamba-hit count.
+V147 complete-run performance remains pending.
+
+V3311 independently rechecks completed state-only D2H: V143 has1437
+batches/92.527GB, V1461132/72.888GB. These include necessary state-pressure
+copies, so their difference is not a proven count of unnecessary copies
+removed by the candidate. V147's native-allocation path remains the next
+causal check; do not infer its gain before completion.
+
 V145 completed normally at05:45 Beijing. V3285 independently revalidates
 its frozen sources, exact3951 request receipts and tokens, actual runtime
 configuration and process cleanup. With only tool H2D prefetch disabled,
@@ -28,7 +62,7 @@ the actual GPU scheduler, source/configuration and both startup targets:
 actual native prefill extends are4727 and4153 tokens with subsequent
 decode. CMS has zero Host Mamba hits but correct effective prefix reuse;
 Host checkpoint hit count is not a standalone success requirement.
-Complete-run JCT, throughput, pressure and prefetch coverage are pending.
+The completed V146 evidence is now reported above.
 
 The CPU follow-up now also covers ordinary native FULL allocation. V3290
 reproduces two failures: `evict` and `evict_for_alloc` still synchronously
@@ -61,12 +95,12 @@ V3297's two CUDA-required native unit skips are outside CPU qualification,
 not counted as passes; the optional Docker case remains outside the
 inherited selected population.
 
-Let V146 finish on its frozen preceding engine. Review the latest complete
-trace and cleanup, then independently register V147 Full for the ordinary
-allocation candidate, keeping work, capacity, batch24 and seed21 fixed.
-Do not use `--after-registration` across engine changes, and do not replay
-native. The CPU evidence establishes allocation/checkpoint behavior, not
-a GPU gain or a total amount of eliminated state traffic.
+V146 finished on its frozen preceding engine. Its latest complete trace
+and cleanup were reviewed before independently registering V147 Full.
+Work, capacity, batch24 and seed21 remain fixed. Do not use
+`--after-registration` across engine changes, and do not replay native.
+The CPU evidence establishes allocation/checkpoint behavior, not a GPU
+gain or a total amount of eliminated state traffic.
 
 V144 completed at05:15 Beijing with the same3951 requests and exact tokens.
 Without periodic idle/spawn FULL preparation, mean JCT is1135.956s and
