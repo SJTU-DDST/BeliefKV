@@ -329,7 +329,7 @@ def cleanup(arm, identities, reason):
         "reason": reason, "started_at": reservation.now().isoformat(),
         "identities": known, "signals": [],
     }
-    for sig, grace in ((signal.SIGTERM, 12.), (signal.SIGKILL, 3.)):
+    for sig, grace in ((signal.SIGTERM, 12.), (signal.SIGKILL, 60.)):
         for row in known:
             if reservation.alive(row):
                 try:
@@ -340,7 +340,14 @@ def cleanup(arm, identities, reason):
         deadline = time.monotonic() + grace
         while any(reservation.alive(row) for row in known) and time.monotonic() < deadline:
             time.sleep(.1)
-    record["remaining_processes"] = [row for row in known if reservation.alive(row)]
+    record["remaining_processes"] = []
+    for identity in known:
+        current = reservation.process(identity["pid"])
+        if (
+            current and current["start_ticks"] == identity["start_ticks"]
+            and current.get("state") != "Z"
+        ):
+            record["remaining_processes"].append(current)
     record["finished_at"] = reservation.now().isoformat()
     reservation.write_json(arm / "owned_process_cleanup.json", record)
     if record["remaining_processes"]:

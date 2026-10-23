@@ -450,6 +450,46 @@ def test_cleanup_never_signals_a_reused_pid_and_keeps_known_orphan_children(tmp_
     assert report["reason"] == "completed_test" and report["remaining_processes"] == []
 
 
+@pytest.mark.parametrize("release_after_kill_seconds", (20., None))
+def test_cleanup_waits_for_slow_device_teardown_but_reports_a_persistent_process(
+    tmp_path, monkeypatch, release_after_kill_seconds,
+):
+    identity = {"pid": 11010, "ppid": 1, "start_ticks": "owned", "state": "R"}
+    clock, killed_at, signals = [0.], [None], []
+
+    def current(pid):
+        assert pid == identity["pid"]
+        if (
+            killed_at[0] is not None and release_after_kill_seconds is not None
+            and clock[0] >= killed_at[0] + release_after_kill_seconds
+        ):
+            return None
+        return {**identity, "state": "D"}
+
+    def send(pid, sig):
+        assert pid == identity["pid"]
+        signals.append(sig)
+        if sig == comparison.signal.SIGKILL:
+            killed_at[0] = clock[0]
+
+    monkeypatch.setattr(comparison, "owned_processes", lambda _rows: [identity])
+    monkeypatch.setattr(comparison.reservation, "process", current)
+    monkeypatch.setattr(comparison.reservation, "alive", lambda row: current(row["pid"]) is not None)
+    monkeypatch.setattr(comparison.os, "kill", send)
+    monkeypatch.setattr(comparison.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(comparison.time, "sleep", lambda value: clock.__setitem__(0, clock[0] + value))
+    if release_after_kill_seconds is None:
+        with pytest.raises(RuntimeError, match="remain after cleanup"):
+            comparison.cleanup(tmp_path, [identity], "persistent_test")
+        remaining = json.loads((tmp_path / "owned_process_cleanup.json").read_bytes())["remaining_processes"]
+        assert len(remaining) == 1 and remaining[0]["state"] == "D"
+    else:
+        comparison.cleanup(tmp_path, [identity], "slow_teardown_test")
+        assert clock[0] >= killed_at[0] + release_after_kill_seconds
+        assert not json.loads((tmp_path / "owned_process_cleanup.json").read_bytes())["remaining_processes"]
+    assert signals == [comparison.signal.SIGTERM, comparison.signal.SIGKILL]
+
+
 @pytest.mark.parametrize("failure", (
     None, "driver", "changed_work", "capacity", "no_tool_prefetch",
     "queued_no_tool_prefetch", "failed_predecessor", "source_slowdown",
