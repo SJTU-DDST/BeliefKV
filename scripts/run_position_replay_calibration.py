@@ -22,6 +22,7 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.experiments.source_provenance import sha256_file
 from scripts import run_causal_comparison as controls
 from scripts import run_causal_source_capture as capture
+from scripts.benchmark_causal_sampling import calibration_batch_sizes
 
 comparison, fresh, qualified, reservation, load = (
     controls.comparison, controls.fresh, controls.qualified, controls.reservation, controls.load,
@@ -42,11 +43,22 @@ SAMPLING_MODULES = (
 )
 
 
+def source_root_count(source):
+    value = source.get("environment", {}).get("ROOT_COUNT", "36")
+    if (
+        type(value) is not str or not value.isascii() or not value.isdigit()
+        or not 1 <= int(value) <= 156
+    ):
+        raise ValueError("source has an invalid declared root population")
+    return int(value)
+
+
 def complete_source_metrics(registration):
     original = load(registration)
     state = load(registration.with_suffix(".state.json"))
     run = Path(original["run_root"])
-    summary_path = run / "native_capture/client_36/summary.json"
+    roots = source_root_count(original)
+    summary_path = run / f"native_capture/client_{roots}/summary.json"
     summary = load(summary_path)
     workflows = summary.get("workflows", [])
     joins = summary.get("delegation_round_count")
@@ -57,9 +69,9 @@ def complete_source_metrics(registration):
             "source_captured_gpu_replay_pending", "source_captured_selection_rejected",
         )
         or state.get("original_exit_code") != 0
-        or summary.get("workflow_count") != 36 or summary.get("completed_workflows") != 36
-        or len(workflows) != 36
-        or len({row.get("workflow_id") for row in workflows}) != 36
+        or summary.get("workflow_count") != roots or summary.get("completed_workflows") != roots
+        or len(workflows) != roots
+        or len({row.get("workflow_id") for row in workflows}) != roots
         or any(type(row.get("workflow_id")) is not str or not row["workflow_id"] for row in workflows)
         or any(row.get("native_agent_jct_eligible") is not True for row in workflows)
         or any(
@@ -73,8 +85,11 @@ def complete_source_metrics(registration):
         raise ValueError("complete source lacks successful unguarded work or exact causal evidence")
     return {
         "client_summary_sha256": sha256_file(summary_path),
-        "workflow_count": 36, "joins": joins,
-        "original_selection": capture.balanced_source(summary),
+        "workflow_count": roots, "joins": joins,
+        "original_selection": (
+            state.get("source_selection") if original.get("source_profile") == "nested_oneshot"
+            else capture.balanced_source(summary)
+        ),
         "all_normal_tails_retained": True,
     }
 
@@ -149,6 +164,33 @@ def smoke_result(plan, summary, arm, server_parameters, server_identity, schedul
     }
 
 
+def comparison_command(plan, run, arm, development):
+    command = [
+        sys.executable, str(development / "scripts/run_causal_comparison.py"),
+        "--reference", plan["reference_registration"], "--source-arm", str(arm),
+        "--gpu-smoke", str(run / "gpu_smoke.json"),
+        "--sampling-calibration", str(run / "sampling_calibration.json"),
+        "--cpu-report", plan["cpu_report"], "--cpu-sources", plan["cpu_sources"],
+        "--engine", plan["engine_cpu_checkout"],
+        "--engine-report", plan["engine_evidence"]["report"],
+        "--engine-sources", plan["engine_evidence"]["sources"],
+        "--registration", plan["comparison_registration"], "--run-root", plan["comparison_root"],
+        "--port", str(plan["port"]), "--sampling-mode", "position",
+        "--max-running-requests", str(plan.get("max_running_requests", 8)),
+    ]
+    if plan.get("experiment_config"):
+        command += ["--experiment-config", plan["experiment_config"]]
+        common = load(Path(plan["experiment_config"]))["common_environment"]
+        if common.get("TOOL_PREFETCH") == "1" and float(common.get("TOOL_PREFETCH_PRIORITY_MS", "0")) > 0:
+            command += ["--tool-prefetch-priority-ms", common["TOOL_PREFETCH_PRIORITY_MS"]]
+    else:
+        command += ["--maximum-replay-slowdown", "0.05"]
+    command += ["--arms", *plan.get("comparison_order", [
+        "native_matched", "no_tool_prefetch", "join_priority_only",
+    ])]
+    return command
+
+
 def register(args):
     for path in (
         args.registration, args.registration.with_suffix(".state.json"),
@@ -158,9 +200,13 @@ def register(args):
         if path.exists():
             raise FileExistsError("preserve the existing calibration or comparison")
     source = load(args.source_registration)
-    if source.get("source_profile") != "balanced_join":
-        raise ValueError("calibration requires the predeclared balanced source capture")
+    spec_path = getattr(args, "experiment_config", None)
+    spec = load(spec_path) if spec_path else None
+    if source.get("source_profile") != ("nested_oneshot" if spec else "balanced_join"):
+        raise ValueError("calibration source differs from the predeclared profile")
     policy = getattr(args, "source_selection", "balanced_join")
+    if spec is not None:
+        policy = "predeclared"
     reason = getattr(args, "source_selection_reason", None)
     if policy == "complete" and (type(reason) is not str or not reason.strip()):
         raise ValueError("complete source selection requires a disclosed review reason")
@@ -169,6 +215,26 @@ def register(args):
     fresh.check_hold(source, released=True)
     reference = load(args.reference)
     fresh.verify(reference)
+    roots = source_root_count(source)
+    running = 8
+    if spec is not None:
+        reference = controls.experiment_reference(reference, spec)
+        common = spec["common_environment"]
+        running = int(common["MAX_RUNNING_REQUESTS"])
+        if (
+            common["ROOT_COUNT"] != str(roots)
+            or source["environment"]["MAX_RUNNING_REQUESTS"] != str(running)
+            or sha256_file(ROOT / common["WORKLOAD_MANIFEST"]) != sha256_file(
+                Path(source["environment"]["WORKLOAD_MANIFEST"])
+            )
+            or not spec.get("order") or any(
+                label not in controls.CONTROLS or label == "native_matched"
+                for label in spec["order"]
+            )
+            or len(set(spec["order"])) != len(spec["order"])
+        ):
+            raise ValueError("predeclared source population, batch, tasks or control order differs")
+        controls.source_reference(reference, roots, running, source["capture_capacity"])
     count = comparison.qualify_report(args.cpu_report, args.cpu_sources)
     sources = load(args.cpu_sources)
     if not {
@@ -194,10 +260,12 @@ def register(args):
         args.source_registration, args.reference, args.cpu_report, args.cpu_sources,
         args.engine_report, args.engine_sources, Path(reservation.__file__),
     )
+    if spec_path is not None:
+        paths += (spec_path, ROOT / spec["common_environment"]["WORKLOAD_MANIFEST"])
     if metrics is not None:
         source_root = Path(source["run_root"])
         paths += tuple(source_root / name for name in (
-            "native_capture/client_36/summary.json", "token_evidence.json",
+            f"native_capture/client_{roots}/summary.json", "token_evidence.json",
             "causal_evidence.json", "source_selection.json",
         ))
     plan = {
@@ -221,6 +289,11 @@ def register(args):
         "source_selection_policy": policy,
         "source_selection_reason": reason,
         "reviewed_source_metrics": metrics,
+        "experiment_config": str(spec_path.resolve()) if spec_path else None,
+        "root_count": roots, "max_running_requests": running,
+        "comparison_order": spec["order"] if spec else [
+            "native_matched", "no_tool_prefetch", "join_priority_only",
+        ],
     }
     comparison.verify_sources(plan)
     reservation.write_json(args.registration, plan)
@@ -295,15 +368,21 @@ def watch(registration):
             source = load(Path(plan["source_registration"]))
             comparison.verify_sources(source)
             arm = Path(plan["source_arm"])
-            summary = load(arm / "client_36/summary.json")
+            roots = source_root_count(source)
+            summary = load(arm / f"client_{roots}/summary.json")
             reviewed = plan.get("source_selection_policy", "balanced_join") == "complete"
-            if not reviewed and not capture.balanced_source(summary)["accepted"]:
+            predeclared = plan.get("source_selection_policy") == "predeclared"
+            if not reviewed and not predeclared and not capture.balanced_source(summary)["accepted"]:
                 raise ValueError("source selection changed after capture")
             graph, expected, _evidence = controls.source_plan(arm)
             joins = graph.summary()["event_counts"]["join_create"]
+            if predeclared:
+                complete_source_metrics(Path(plan["source_registration"]))
+                if not capture.oneshot_source(summary, graph, expected_workflows=roots)["accepted"]:
+                    raise ValueError("predeclared one-shot source is incomplete or guarded")
             if (
                 reviewed and joins != plan["reviewed_source_metrics"]["joins"]
-                or not reviewed and joins < 80
+                or not reviewed and not predeclared and joins < 80
             ):
                 raise ValueError("actual causal source has too few JOINs")
             with controls.CapturedTokenCorpus(arm / "server/request_tokens.jsonl", expected):
@@ -330,9 +409,17 @@ def watch(registration):
                     check=True, stdout=output, stderr=subprocess.STDOUT, timeout=60,
                 )
             reference = load(Path(plan["reference_registration"]))
+            running = plan.get("max_running_requests", 8)
+            if plan.get("experiment_config"):
+                reference = controls.experiment_reference(
+                    reference, load(Path(plan["experiment_config"])),
+                )
+            source_capacity = load(arm / "server/native_capacity_census.json")["capacity"]
+            reference = controls.source_reference(reference, roots, running, source_capacity)
             settings, flags, _socket = controls.environment(
                 reference, "native_matched", ROOT, Path(plan["engine_checkout"]),
                 run, plan["port"], run / "plugin", sampling_mode="position",
+                max_running_requests=running,
             )
             server = process(
                 ["bash", str(ROOT / "scripts/launch_qwen35_native_v0520.sh"), *flags],
@@ -409,7 +496,8 @@ def watch(registration):
             benchmark = process(
                 [sys.executable, str(ROOT / "scripts/benchmark_causal_sampling.py"),
                  "--engine", plan["engine_checkout"], "--model", parameters["model_path"],
-                 "--output", str(run / "sampling_calibration.json"), "--position"],
+                 "--output", str(run / "sampling_calibration.json"), "--position",
+                 "--batch-sizes", *(str(value) for value in calibration_batch_sizes(running))],
                 env, run / "sampling_calibration.log",
             )
             complete(benchmark)
@@ -417,24 +505,10 @@ def watch(registration):
             comparison.verify_sources(plan)
             development = Path(plan["development_checkout"])
             fresh._require_clean(development)
-            if qualified.command(["git", "-C", str(development), "rev-parse", "HEAD"]) != plan["code_commit"]:
-                raise ValueError("main advanced; qualify the new source before registering the comparison")
+            comparison.verify_cpu_snapshot(development, plan["source_sha256"])
             state["status"] = "registering_calibrated_controls"
             pulse()
-            command = [
-                sys.executable, str(development / "scripts/run_causal_comparison.py"),
-                "--reference", plan["reference_registration"], "--source-arm", str(arm),
-                "--gpu-smoke", str(run / "gpu_smoke.json"),
-                "--sampling-calibration", str(run / "sampling_calibration.json"),
-                "--cpu-report", plan["cpu_report"], "--cpu-sources", plan["cpu_sources"],
-                "--engine", plan["engine_cpu_checkout"],
-                "--engine-report", plan["engine_evidence"]["report"],
-                "--engine-sources", plan["engine_evidence"]["sources"],
-                "--registration", plan["comparison_registration"], "--run-root", plan["comparison_root"],
-                "--port", str(plan["port"]), "--sampling-mode", "position",
-                "--maximum-replay-slowdown", "0.05",
-                "--arms", "native_matched", "no_tool_prefetch", "join_priority_only",
-            ]
+            command = comparison_command(plan, run, arm, development)
             with (run / "comparison_registration.log").open("x") as output:
                 subprocess.run(
                     command, cwd=development,
@@ -469,12 +543,13 @@ def main():
     parser.add_argument("--port", type=int, default=18560)
     parser.add_argument("--source-selection", choices=("balanced_join", "complete"), default="balanced_join")
     parser.add_argument("--source-selection-reason")
+    parser.add_argument("--experiment-config", type=Path)
     args = parser.parse_args()
     if args.watch:
         watch(args.watch.resolve())
     elif any(
         value is None for name, value in vars(args).items()
-        if name not in ("watch", "port", "source_selection", "source_selection_reason")
+        if name not in ("watch", "port", "source_selection", "source_selection_reason", "experiment_config")
     ):
         parser.error("registration requires the source capture, CPU evidence and fresh output paths")
     elif not 1 <= args.port <= 65535:

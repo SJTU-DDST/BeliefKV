@@ -2,6 +2,29 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+V136 natural native capture has completed at01:05:11 Beijing, exit0, with
+24/24 natural JCT-eligible workflows,3951 requests and958791 output tokens.
+It has74 spawns and43 satisfied JOINs:41 root JOIN rounds plus2 nested JOINs,
+with4 nested spawns. No source guard or request failure is reported. Exact
+token and causal graph evidence are complete; GPU replay qualification is next.
+The source showed103.608/160GB Host FULL high water and full Host Mamba;
+FULL H2D totals about1.287TB including repeated traffic. Keep24 roots for the
+next Full/JOIN-only controls rather than increasing pressure before measuring
+the original mechanisms. Normal tails and ungraded independent task correctness
+remain explicit.
+
+The follow-up operator is qualified for the predeclared24-root/batch24
+configuration. It must pin the actual source FULL/Mamba capacity in the GPU
+microcheck and every replay arm, use the saved cold-backup/tool-priority policy,
+calibrate sampling at1/8/24, and launch onlyFull/JOIN-only. This removes its
+legacy36-root/80-JOIN assumptions and full native-replay order. Source identity,
+natural eligibility, exact work, native stops and actual GPU ownership remain
+required; no arbitrary JOIN quota or normal-tail filter is added.
+V3191/V3192 retains5388 and passes5412 cases plus2 subtests without failures
+or skips. V3193 preserves the complete source reference: mean JCT1164.156s,
+whole-run output throughput582.413 tokens/s. These are native reference
+measurements, not predictive gains.
+
 Latest experiment policy: keep24 roots initially. If the resulting source has
 too little useful migration or insufficient Host/HBM pressure around real
 JOIN/tool waits, increase to32, then36 roots without another approval.
@@ -50,7 +73,7 @@ and workflow/resident-first/stage ordering remain the original Full candidates;
 execution-frontier restoration and short-tool continuity remain off.
 The active performance goal remains unmet.
 
-V136 is now recording the native natural source, registered at approximately
+V136 recorded the native natural source, registered at approximately
 2026-10-24 00:34:50 Beijing from app79bb1bf24cd5 and engine treecc9772c6c5c4.
 Actual server configuration/census confirms24 running requests and the fixed
 four pools. Initial sealed events have24 roots,48 spawns and24 JOIN creates;

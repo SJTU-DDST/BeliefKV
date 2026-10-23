@@ -147,6 +147,72 @@ def test_complete_source_review_does_not_relax_fidelity_or_completion(
         calibration.source_ready(plan)
 
 
+@pytest.mark.parametrize("roots", (16, 24, 32, 36))
+def test_predeclared_oneshot_metrics_use_the_actual_complete_population(
+    complete_source, monkeypatch, roots,
+):
+    registration, run, summary = complete_source
+    original = json.loads(registration.read_bytes())
+    original.update(
+        environment={"ROOT_COUNT": str(roots)}, source_profile="nested_oneshot",
+    )
+    registration.write_text(json.dumps(original))
+    summary["workflow_count"] = summary["completed_workflows"] = roots
+    summary["workflows"] = summary["workflows"][:roots]
+    summary["delegation_round_count"] = 30
+    folder = run / f"native_capture/client_{roots}"
+    folder.mkdir(exist_ok=True)
+    (folder / "summary.json").write_text(json.dumps(summary))
+    path = registration.with_suffix(".state.json")
+    state = json.loads(path.read_bytes())
+    state.update(
+        status="source_captured_gpu_replay_pending",
+        source_selection={"profile": "nested_oneshot", "accepted": True},
+    )
+    path.write_text(json.dumps(state))
+    monkeypatch.setattr(calibration.reservation, "alive", lambda _row: False)
+    metrics = calibration.complete_source_metrics(registration)
+    assert metrics["workflow_count"] == roots and metrics["joins"] == 30
+    assert metrics["original_selection"]["accepted"] is True
+    assert calibration.source_ready({
+        "source_registration": str(registration), "source_selection_policy": "predeclared",
+    }) is True
+
+
+def test_queued_oneshot_command_reaches_the_real_comparison_parser_without_native_replay(
+    tmp_path, monkeypatch,
+):
+    from scripts import run_causal_comparison
+
+    spec = calibration.ROOT / "configs/migration/qwen35_locobench_oneshot_24root_running24_20261024.json"
+    plan = {
+        "reference_registration": str(tmp_path / "reference.json"),
+        "cpu_report": str(tmp_path / "cpu.xml"), "cpu_sources": str(tmp_path / "sources.json"),
+        "engine_cpu_checkout": str(tmp_path / "engine"),
+        "engine_evidence": {"report": str(tmp_path / "engine.xml"),
+                            "sources": str(tmp_path / "engine-sources.json")},
+        "comparison_registration": str(tmp_path / "comparison.json"),
+        "comparison_root": str(tmp_path / "comparison"),
+        "port": 18566, "max_running_requests": 24,
+        "experiment_config": str(spec), "comparison_order": ["full", "join_priority_only"],
+    }
+    command = calibration.comparison_command(
+        plan, tmp_path / "calibration", tmp_path / "source", calibration.ROOT,
+    )
+    assert "native_matched" not in command
+    assert "--maximum-replay-slowdown" not in command
+    observed = []
+    monkeypatch.setattr(run_causal_comparison, "register", observed.append)
+    monkeypatch.setattr(run_causal_comparison.sys, "argv", command[1:])
+    run_causal_comparison.main()
+    [args] = observed
+    assert args.arms == ["full", "join_priority_only"]
+    assert args.max_running_requests == 24
+    assert args.tool_prefetch_priority_ms == 1500.
+    assert args.experiment_config == spec
+    assert args.sampling_mode == "position"
+
+
 @pytest.mark.parametrize("change", (
     None, "wrong_sampler", "missing_request", "different_stop_count", "changed_receipts",
     "unverified_tokens", "missing_server",

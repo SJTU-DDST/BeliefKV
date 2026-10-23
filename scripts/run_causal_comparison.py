@@ -30,7 +30,9 @@ from beliefkv.experiments.source_provenance import git_source_state, sha256_file
 from scripts.run_causal_gpu_replay import source_plan
 from scripts.run_causal_source_capture import (
     comparison, engine_evidence, fresh, load, qualified, reservation, reusable_source,
+    validated_capacity,
 )
+from scripts.benchmark_causal_sampling import calibration_batch_sizes
 from beliefkv.core.events import RuntimeEventKind as Kind
 
 ORDER = ("full", "native_matched", "join_priority_only", "no_background_prepare")
@@ -146,6 +148,46 @@ def tool_priority_reference(reference, window_ms):
         "TOOL_PREFETCH_PRIORITY_MS": str(window_ms),
         "BELIEFKV_TOOL_PREFETCH_PRIORITY_MS": str(window_ms),
     }
+    return {**reference, "arms": {**reference["arms"], "full": common}}
+
+
+def experiment_reference(reference, spec):
+    common = spec.get("common_environment")
+    if (
+        spec.get("source_profile") != "nested_oneshot"
+        or not isinstance(common, dict)
+        or any(type(key) is not str or type(value) is not str for key, value in common.items())
+        or common.get("FANOUT_PROFILE") != "native_in_graph_nested_2to4"
+        or common.get("BELIEFKV_SUBAGENT_RETENTION") != "off"
+        or any(
+            not common.get(name, "").isascii() or not common.get(name, "").isdigit()
+            or not 1 <= int(common[name]) <= limit
+            for name, limit in (("ROOT_COUNT", 156), ("MAX_RUNNING_REQUESTS", 9999))
+        )
+    ):
+        raise ValueError("invalid predeclared one-shot experiment configuration")
+    return {**reference, "arms": {**reference["arms"], "full": {
+        **reference["arms"]["full"], **common,
+    }}}
+
+
+def source_reference(reference, roots, running, capacity):
+    if (
+        type(roots) is not int or not 1 <= roots <= 156
+        or type(running) is not int or not 1 <= running <= 9999
+    ):
+        raise ValueError("source population and running limit must be positive integers")
+    capacity = validated_capacity(capacity)
+    common = dict(reference["arms"]["full"])
+    for target, field in (
+        ("DEVICE_FULL_TOKENS", "device_full_tokens"),
+        ("DEVICE_MAMBA_SLOTS", "device_mamba_slots"),
+    ):
+        value = str(capacity[field])
+        if common.get(target) not in (None, "", value):
+            raise ValueError("requested device capacity differs from the native source: " + target)
+        common[target] = value
+    common.update(ROOT_COUNT=str(roots), MAX_RUNNING_REQUESTS=str(running))
     return {**reference, "arms": {**reference["arms"], "full": common}}
 
 
@@ -506,6 +548,14 @@ def register(args):
     reference = load(args.reference)
     fresh.verify(reference)
     fresh.check_hold(reference, released=True)
+    experiment_spec = load(args.experiment_config) if args.experiment_config else None
+    if experiment_spec is not None:
+        reference = experiment_reference(reference, experiment_spec)
+        if (
+            experiment_spec.get("native_reference", {}).get("repeat_full_native_replay") is False
+            and "native_matched" in order
+        ):
+            raise ValueError("the predeclared experiment skips full native replay")
     if any(label in RETENTION_CONTROLS for label in order) and args.retention_config is None:
         raise ValueError("retention controls require an explicit reusable comparison configuration")
     retention_spec = load(args.retention_config) if args.retention_config is not None else None
@@ -544,6 +594,8 @@ def register(args):
     for name in smoke_client["unchanged_server_modules"]:
         if sources.get(name) != smoke_client["unchanged_server_modules"][name]:
             raise ValueError("GPU-checked sampling/receipt source changed: " + name)
+    running = args.max_running_requests if args.max_running_requests is not None else 8
+    expected_batches = calibration_batch_sizes(running)
     calibration = load(args.sampling_calibration)
     if (
         calibration.get("native_sampler_sha256") != sha256_file(
@@ -551,7 +603,7 @@ def register(args):
         )
         or calibration.get("benchmark_sha256") != sources["scripts/benchmark_causal_sampling.py"]
         or calibration.get("forcing_sha256") != sources["beliefkv/experiments/causal_replay_sampling.py"]
-        or [row["batch_size"] for row in calibration.get("cases", [])] != [1, 8]
+        or [row["batch_size"] for row in calibration.get("cases", [])] != expected_batches
         or args.sampling_mode == "position" and calibration.get("position_dispatch_included") is not True
     ):
         raise ValueError("native replay sampling costs were not measured for this source")
@@ -566,22 +618,23 @@ def register(args):
         client_summary_sha256=sha256_file(summaries[0]),
         launch_configuration_sha256=sha256_file(source_launch),
     )
-    running = args.max_running_requests if args.max_running_requests is not None else 8
-    if type(running) is not int or not 1 <= running <= 9999:
-        raise ValueError("max running requests must be a positive integer")
     if smoke_server["source_server_parameters"].get("max_running_requests") != running:
         raise ValueError("comparison running limit differs from the GPU-checked source")
+    if experiment_spec is not None:
+        common = experiment_spec["common_environment"]
+        if (
+            common["ROOT_COUNT"] != str(source_roots)
+            or common["MAX_RUNNING_REQUESTS"] != str(running)
+            or quality.get("subagent_fanout_profile") != common["FANOUT_PROFILE"]
+            or quality.get("workload_manifest_sha256") != sha256_file(ROOT / common["WORKLOAD_MANIFEST"])
+        ):
+            raise ValueError("captured source differs from the predeclared experiment")
     if retention_spec is not None:
         retention_source_matches(retention_spec, quality, source_roots)
     with CapturedTokenCorpus(args.source_arm / "server/request_tokens.jsonl", expected) as corpus:
         tokens = corpus.evidence
-    reference = {**reference, "arms": {
-        **reference["arms"],
-        "full": {
-            **reference["arms"]["full"], "ROOT_COUNT": str(source_roots),
-            "MAX_RUNNING_REQUESTS": str(running),
-        },
-    }}
+    source_capacity = load(args.source_arm / "server/native_capacity_census.json")["capacity"]
+    reference = source_reference(reference, source_roots, running, source_capacity)
     engine = engine_evidence(args.engine, args.engine_report, args.engine_sources)
     fresh._require_clean(ROOT)
     if qualified.command(["git", "-C", str(ROOT), "branch", "--show-current"]) != "main":
@@ -626,6 +679,8 @@ def register(args):
             "tests/test_reusable_subagents.py", "tests/test_subagent_retention.py",
         } <= sources.keys():
             raise ValueError("reusable retention sources lack CPU qualification")
+    if args.experiment_config is not None:
+        inputs.extend((args.experiment_config, ROOT / experiment_spec["common_environment"]["WORKLOAD_MANIFEST"]))
     inputs.extend(
         Path(name) if Path(name).is_absolute() else ROOT / name
         for name in evidence["input_jsonl_prefixes"]
@@ -656,7 +711,7 @@ def register(args):
         ],
         "source_arm": str(args.source_arm.resolve()), "source_plan": graph.summary(),
         "token_source_sha256": tokens["token_source_sha256"],
-        "source_capacity": load(args.source_arm / "server/native_capacity_census.json")["capacity"],
+        "source_capacity": source_capacity,
         "source_server_parameters": smoke_server["source_server_parameters"],
         "workflow_ids": workflows,
         "quality_exclusions": [row["workflow_id"] for row in exclusions],
@@ -668,6 +723,7 @@ def register(args):
         ),
         "reference_environment": reference["arms"]["full"],
         "retention_configuration": str(args.retention_config.resolve()) if args.retention_config else None,
+        "experiment_configuration": str(args.experiment_config.resolve()) if args.experiment_config else None,
         "reusable_source_opportunities": reuse_selection,
         "tool_prefetch_priority_ms": args.tool_prefetch_priority_ms,
         "max_running_requests": running,
@@ -952,6 +1008,7 @@ def main():
     parser.add_argument("--port", type=int, default=18554)
     parser.add_argument("--arms", nargs="+", choices=ALL_CONTROLS, default=list(DEFAULT_ORDER))
     parser.add_argument("--retention-config", type=Path)
+    parser.add_argument("--experiment-config", type=Path)
     parser.add_argument("--tool-prefetch-priority-ms", type=float)
     parser.add_argument("--max-running-requests", type=int)
     parser.add_argument("--after-registration", type=Path)
@@ -964,6 +1021,7 @@ def main():
         if any(value is None for name, value in vars(args).items() if name not in (
             "watch", "port", "arms", "after_registration", "sampling_mode", "maximum_replay_slowdown",
             "retention_config",
+            "experiment_config",
             "tool_prefetch_priority_ms",
             "max_running_requests",
         )):

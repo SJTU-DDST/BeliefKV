@@ -38,6 +38,8 @@ def main() -> int:
         "tests/test_locobench_input_audit.py",
         "tests/test_sglang_v0520_observer.py",
         "tests/test_v0520_native_telemetry.py",
+        "tests/test_position_replay_calibration.py",
+        "tests/test_causal_sampling_benchmark.py",
     }
     nodes = []
     for case in ET.parse(args.reference_xml).getroot().iter("testcase"):

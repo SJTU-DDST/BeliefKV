@@ -75,8 +75,25 @@ def validate_limits(samples, cycles):
         raise ValueError("benchmark requires 3-31 samples and 1-512 cycles")
 
 
+def calibration_batch_sizes(running):
+    if type(running) is not int or not 1 <= running <= 9999:
+        raise ValueError("sampling calibration requires a positive running limit")
+    return sorted({1, 8, running})
+
+
+def validate_batch_sizes(sizes):
+    if (
+        not isinstance(sizes, (list, tuple)) or not sizes
+        or any(type(size) is not int or not 1 <= size <= 9999 for size in sizes)
+        or list(sizes) != sorted(set(sizes))
+    ):
+        raise ValueError("sampling batch sizes must be sorted distinct positive integers")
+    return tuple(sizes)
+
+
 def run(args):
     validate_limits(args.samples, args.cycles)
+    sizes = validate_batch_sizes(getattr(args, "batch_sizes", (1, 8)))
     if args.output.exists():
         raise FileExistsError("preserve previous sampling calibration")
     native_path = args.engine / "python/sglang/srt/layers/sampler.py"
@@ -93,7 +110,7 @@ def run(args):
     vocabulary = config["text_config"]["vocab_size"]
     variants = (*VARIANTS, "position_forcing_dispatch") if args.position else VARIANTS
     cases = []
-    for size in (1, 8):
+    for size in sizes:
         targets = torch.arange(3, size + 3, device="cuda", dtype=torch.int64)
         template = torch.zeros((size, vocabulary), device="cuda", dtype=torch.float32)
         template.scatter_(1, targets[:, None], 1.)
@@ -156,7 +173,7 @@ def run(args):
         "seed": 21, "cases": cases, "performance_accepted": False,
         "scope": (
             "Actual native custom-logit dispatch plus greedy argmax on synthetic "
-            "batch1/batch8 logits. All variants include the same logits reset. "
+            f"batch sizes {list(sizes)} logits. All variants include the same logits reset. "
             "No model forward, delayed-sampling comparison, token transport, KV "
             "migration or workflow JCT is measured. The increment is a component "
             "cost, not a correction to subtract from end-to-end measurements."
@@ -172,6 +189,7 @@ def main():
     parser.add_argument("--samples", type=int, default=11)
     parser.add_argument("--cycles", type=int, default=64)
     parser.add_argument("--position", action="store_true")
+    parser.add_argument("--batch-sizes", nargs="+", type=int, default=[1, 8])
     args = parser.parse_args()
     report = run(args)
     args.output.parent.mkdir(parents=True, exist_ok=True)

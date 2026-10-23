@@ -136,3 +136,39 @@ native 的真实 supervisor 流程、源策略校验、原始 JCT 长尾及报�
 相对值。V3187 是来源策略加严前的中间报告，不用于最终源码资格。
 这些修改已用于下一轮操作流程；正在运行的 V136 仍使用自己的
 冻结源码与原登记文件，未中断或更换采集代码。
+
+## 自然 Native 采集完成
+
+北京时间 2026-10-24 01:05:11，V136 正常退出，24/24 workflow
+自然结束且 JCT eligible；3951 个请求均完成，精确输出 958791
+tokens，输入 264598879 tokens。全程耗时 1646.240 秒。
+guard 干预、修复协议完成及请求错误均为零；独立任务正确性仍未评分。
+精确 token 和因果图检查通过，源的 GPU 重放验证尚待执行。
+
+共 74 次 spawn，43 次 JOIN satisfied，其中 root 委派 41 轮、
+嵌套 JOIN 2 轮、嵌套 spawn 4 次；9 个 root 有多轮委派，
+最多 5 轮。全部 root 的初始委派已发生，不强制复用或固定后续 DAG。
+
+Host FULL 高水位为 103.608/160GB，Host Mamba 满池。
+FULL H2D ACK 共 62846824 tokens，即 1287.103GB，含重复传输；
+FULL D2H 为 112.884GB。同 session 已服务公共前缀丢失代理为
+136945/257548954 tokens，约 0.0532%，不覆盖全部混合状态重算。
+这些观测支持先保持 24 root 验证原有机制；它们不是预取净收益。
+
+接续操作检查发现旧 `run_position_replay_calibration.py` 硬编码
+36 root、balanced_join/80 JOIN、全量 native replay，并且 GPU
+校验和对照未统一显式绑定源的静态设备池。现接入本轮预声明配置，
+保留完整自然源与实际进程退出检查，移除本场景的旧 JOIN 数门槛。
+GPU 校验和正式对照均使用 FULL1797968 / Mamba513，并沿用实际
+Host census。采样组件校准覆盖 batch1、8、24；随后只启动 Full
+和 JOIN-only。Full 的冷增量准备、工具预取1500ms优先窗口均从
+同一配置读取，避免仅修改说明文档却仍执行旧环境。
+
+最终接续代码的 CPU 资格为 V3191/V3192：保留原 5388 项，
+共 5412 项及 2 项 subtests 全部通过，无失败或跳过。定向检查
+214 项通过，覆盖实际 CLI 参数解析、24/32/36 完整人口、每组固定
+池大小、配置策略以及 batch24 采样校准。
+自然 native 参考均值 JCT 为 1164.156 秒，全程输出吞吐
+582.413 tokens/s，原始统计保存在
+`experiments/reports/v3193_v136_native_completed_20261024.json`；
+不能将其当成 predictive 已取得的效果。

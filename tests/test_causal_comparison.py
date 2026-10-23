@@ -191,6 +191,66 @@ def test_observed_configuration_checks_the_registered_batch_limit(tmp_path, monk
     ]
 
 
+@pytest.mark.parametrize("label", ("full", "join_priority_only", "native_matched"))
+def test_saved_oneshot_experiment_pins_capacity_and_policy_for_every_arm(
+    reference, tmp_path, label,
+):
+    from tests.test_causal_source_capture import capacity
+
+    spec = json.loads((comparison.ROOT / (
+        "configs/migration/qwen35_locobench_oneshot_24root_running24_20261024.json"
+    )).read_bytes())
+    configured = comparison.experiment_reference(reference, spec)
+    pinned = comparison.source_reference(configured, 24, 24, capacity())
+    env, _, _ = comparison.environment(
+        pinned, label, tmp_path, tmp_path, tmp_path, 18566, tmp_path,
+        max_running_requests=24,
+    )
+    assert env["ROOT_COUNT"] == env["MAX_RUNNING_REQUESTS"] == "24"
+    assert env["DEVICE_FULL_TOKENS"] == "1797968"
+    assert env["DEVICE_MAMBA_SLOTS"] == "513"
+    assert env["BELIEFKV_SUBAGENT_RETENTION"] == "off"
+    assert reference["arms"]["full"]["MAX_RUNNING_REQUESTS"] == "8"
+    if label == "full":
+        assert env["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "1"
+        assert float(env["BELIEFKV_TOOL_PREFETCH_PRIORITY_MS"]) == 1500.
+        assert env["BELIEFKV_IDLE_PREPARE_POLICY"] == "cold"
+    else:
+        assert env["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "0"
+
+
+@pytest.mark.parametrize("field,value", (
+    ("DEVICE_FULL_TOKENS", "1797967"), ("DEVICE_MAMBA_SLOTS", "512"),
+))
+def test_explicit_pool_size_cannot_differ_from_the_natural_native_reference(
+    reference, field, value,
+):
+    from tests.test_causal_source_capture import capacity
+
+    reference["arms"]["full"][field] = value
+    with pytest.raises(ValueError, match="device capacity differs"):
+        comparison.source_reference(reference, 24, 24, capacity())
+
+
+@pytest.mark.parametrize("field,value", (
+    ("ROOT_COUNT", None), ("MAX_RUNNING_REQUESTS", "0"),
+    ("FANOUT_PROFILE", "native_in_graph_reusable_nested"),
+    ("BELIEFKV_SUBAGENT_RETENTION", "selective"),
+))
+def test_invalid_oneshot_configuration_does_not_silently_enable_another_workload(
+    reference, field, value,
+):
+    spec = json.loads((comparison.ROOT / (
+        "configs/migration/qwen35_locobench_oneshot_24root_running24_20261024.json"
+    )).read_bytes())
+    if value is None:
+        del spec["common_environment"][field]
+    else:
+        spec["common_environment"][field] = value
+    with pytest.raises(ValueError, match="one-shot experiment"):
+        comparison.experiment_reference(reference, spec)
+
+
 def test_generated_tool_model_settings_are_consumed_by_the_real_runtime_constructor(
     reference, tmp_path, monkeypatch,
 ):

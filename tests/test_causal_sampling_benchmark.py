@@ -5,7 +5,8 @@ import torch
 
 from beliefkv.experiments.causal_replay_sampling import PARAMETER_KEY
 from scripts.benchmark_causal_sampling import (
-    ReplaySamplingBatch, VARIANTS, distribution, step, validate_limits,
+    ReplaySamplingBatch, VARIANTS, calibration_batch_sizes, distribution, step,
+    validate_batch_sizes, validate_limits,
 )
 
 
@@ -62,3 +63,17 @@ def test_position_calibration_includes_cpu_progress_without_legacy_mask_dispatch
         "position_forcing_dispatch", torch.zeros(1, 16), batch, legacy,
     ).tolist() == [3]
     assert parameters[0]["__req__"].output_ids == []
+
+
+@pytest.mark.parametrize("running,expected", (
+    (8, [1, 8]), (24, [1, 8, 24]), (32, [1, 8, 32]), (4, [1, 4, 8]),
+))
+def test_sampling_calibration_includes_the_actual_running_limit(running, expected):
+    assert calibration_batch_sizes(running) == expected
+    assert validate_batch_sizes(expected) == tuple(expected)
+
+
+@pytest.mark.parametrize("sizes", ([], [8, 1], [1, 8, 8], [1, True], [0, 8], [1, 10000]))
+def test_invalid_or_duplicate_sampling_batches_are_rejected(sizes):
+    with pytest.raises(ValueError, match="batch sizes"):
+        validate_batch_sizes(sizes)
