@@ -129,6 +129,17 @@ def fixture(cls, *, contexts, receipts, phase, diagnostics, profiling):
     runtime._opportunity_writer = NS(record=records.append, close=lambda: None) if diagnostics else None
     initial_visible = dict(runtime.visible)
     selected = NS(reqs=consumers if phase == "first_service" else queue[:8])
+    if phase == "served_decode":
+        lease_contexts = {lease.key.context_id for lease in initial_leases.values()}
+        selected = NS(
+            reqs=[
+                req for req in queue
+                if runtime.visible[req.rid].context_id not in lease_contexts
+            ][:8],
+            forward_mode=NS(is_decode=lambda: True, is_extend=lambda: False),
+        )
+        if len(selected.reqs) != 8:
+            raise AssertionError("served-decode fixture needs eight unrelated running requests")
 
     def reset():
         runtime._prefetch_service_leases = dict(initial_leases)
@@ -144,9 +155,17 @@ def fixture(cls, *, contexts, receipts, phase, diagnostics, profiling):
             runtime._refresh_prefetch_service_leases()
             runtime.counts.clear()
             records.clear()
+        elif phase == "served_decode":
+            runtime.on_batch_completed(NS(
+                reqs=selected.reqs,
+                forward_mode=NS(is_decode=lambda: False, is_extend=lambda: True),
+            ))
+            runtime._refresh_prefetch_service_leases()
+            runtime.counts.clear()
+            records.clear()
 
     def run():
-        if phase == "first_service":
+        if phase in ("first_service", "served_decode"):
             runtime.on_batch_completed(selected)
         elif phase == "scheduler_cycle":
             runtime.scheduler_step(defer_observations=True)
@@ -190,7 +209,10 @@ def measure(baseline, *, samples, contexts, receipts, phase, diagnostics, profil
         if lease is None:
             # The fixture installs its immutable receipts in reset().
             fixtures[name][1]()
-            lease = next(iter(runtime._prefetch_service_leases.values()))
+            lease = next(iter(runtime._prefetch_service_leases.values()), None)
+        if lease is None:
+            storage[name] = {"receipts": 0}
+            continue
         instance_dict = getattr(lease, "__dict__", None)
         storage[name] = {
             "instance_bytes": sys.getsizeof(lease),
@@ -206,7 +228,7 @@ def measure(baseline, *, samples, contexts, receipts, phase, diagnostics, profil
             restored = convert(lease)
             if type(restored) is not type(lease) or asdict(restored) != asdict(lease):
                 raise AssertionError("restore receipt copy/serialization changed")
-    calls = 100 if phase == "deferred_scan" else 1
+    calls = 100 if phase in ("deferred_scan", "served_decode") else 1
     canonical = None
     try:
         for sample in range(samples + 20):
@@ -257,6 +279,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline", default="4d389de")
     parser.add_argument("--samples", type=int, default=151)
+    parser.add_argument("--served-decode-only", action="store_true")
     parser.add_argument("--observed-opportunities", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -277,13 +300,26 @@ def main():
         "first_service", "deferred_scan", "scheduler_cycle",
     )
     with patch("time.monotonic", lambda: 1000.), patch("time.time", lambda: 1000.1):
-        cases = [
-            measure(baseline, samples=args.samples, contexts=contexts, receipts=receipts,
-                    phase=phase, diagnostics=diagnostics, profiling=profiling)
-            for contexts in (1, 2) for receipts in (1, 8, 42) for phase in phases
-            for diagnostics in (False, True)
-            for profiling in ((False, True) if phase == "scheduler_cycle" else (False,))
-        ]
+        if args.served_decode_only:
+            cases = [
+                measure(
+                    baseline, samples=args.samples, contexts=contexts, receipts=receipts,
+                    phase="served_decode", diagnostics=diagnostics, profiling=False,
+                )
+                for contexts, receipts in (
+                    (1, 0), (1, 1), (1, 8), (1, 42),
+                    (2, 42), (4, 42), (4, 128),
+                )
+                for diagnostics in (False, True)
+            ]
+        else:
+            cases = [
+                measure(baseline, samples=args.samples, contexts=contexts, receipts=receipts,
+                        phase=phase, diagnostics=diagnostics, profiling=profiling)
+                for contexts in (1, 2) for receipts in (1, 8, 42) for phase in phases
+                for diagnostics in (False, True)
+                for profiling in ((False, True) if phase == "scheduler_cycle" else (False,))
+            ]
     for case in cases:
         case["p50_thread_cpu_reduction_fraction"] = 1. - (
             case["costs"]["candidate"]["thread_cpu_us"]["p50_us"]
@@ -301,13 +337,14 @@ def main():
         "observed_bursts": observed, "cases": cases,
         "limits": [
             "Real trace counts describe registrations, not frequency-weighted maintenance populations.",
-            "Two simultaneous 42-receipt contexts exceed the latest trace's observed total maximum.",
+            "Synthetic receipt populations are reported separately from observed registration counts; no time weighting is inferred.",
             "Native fields and single deepest-lock ownership use CPU doubles, not the real allocator.",
             "Reset, output comparisons, construction and trace reading are outside timing.",
             "Active scans are deliberately due; deferred calls and first service are separate scenes.",
             "A writer fixture appends records; file serialization and background I/O are absent.",
             "Fixed monotonic/wall clocks use plain functions, not counted mocks.",
             "The runtime cycle excludes the rest of native scheduler selection and GPU execution.",
+            "Served decode cases prime a completed prefill for eight unrelated requests and defer receipt maintenance before timing.",
             "No synthetic population or measured microseconds are extrapolated to throughput/JCT.",
         ],
     }

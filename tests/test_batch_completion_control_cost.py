@@ -152,3 +152,36 @@ def test_eos_only_completion_keeps_unfinished_residency_feedback():
         assert request.rid in runtime.visible
     finally:
         runtime.close()
+
+
+def test_restore_added_after_prefill_observes_its_first_decode_service_before_ack():
+    runtime, requests = synthetic_runtime(
+        NativeAdmissionRuntime, CausalFrontierScheduler, 2, 1,
+    )
+    runtime._tool_timing_only = True
+    request, other = requests
+    key, other_key = runtime.visible[request.rid], runtime.visible[other.rid]
+    runtime._prefetch_steps = {
+        f"unrelated-{index}": (
+            PrefetchLoadStep(other_key, 11 + index, 1., 11 + index, 1., False),
+            "tool_wait", 0.,
+        )
+        for index in range(16)
+    }
+    try:
+        runtime.on_batch_completed(NS(
+            reqs=(request,),
+            forward_mode=NS(is_decode=lambda: False, is_extend=lambda: True),
+        ))
+        assert not runtime._prefetch_first_services
+        step = PrefetchLoadStep(key, 50, 1., 50, 1., False)
+        runtime._prefetch_steps["late-restore"] = (step, "tool_wait", 0.)
+        assert runtime.on_batch_completed(NS(
+            reqs=(request,),
+            forward_mode=NS(is_decode=lambda: True, is_extend=lambda: False),
+        )) == ()
+        assert runtime._prefetch_first_services["late-restore"][1] == request.rid
+        assert runtime.visible[request.rid] is key
+        assert not runtime.completed_physical_actions
+    finally:
+        runtime.close()
