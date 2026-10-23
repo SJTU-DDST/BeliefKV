@@ -71,8 +71,33 @@ prompt 鼓励在集成、编辑、测试后，根据新证据继续委派；相�
 共同运行策略对齐当前 V108/EOS 分支：workflow 排序、resident-first、
 JOIN parent 与阶段优先、EOS JOIN 预取、完整恢复和增量 PREPARE；
 普通 execution-frontier restore 与短工具排队连续性关闭。
-本次保留对照沿用 V133b 关闭工具提前预取的设置，同时保留工具时长
-统计和压力卸载，避免混入另一个尚有争议的模块。
+默认保留对照沿用 V133b 关闭工具提前预取的设置，同时保留工具时长
+统计和压力卸载。按用户最新要求，也可对全部保留策略共同开启工具
+预取，并设置有限的首次服务优先期；不能只给 selective 开启。
+
+### 可选的工具预取与有限优先期
+
+比较入口增加 `--tool-prefetch-priority-ms 1500`：同时开启工具预取，
+并将工具恢复的保护截止时间限定在真实 ACK 后 1.5 秒。配置文件的
+`optional_tool_prefetch_environment` 保存相同候选设置。该数值尚未
+校准，不是最优结论或 1.5 秒内必定执行的保证。缺省值 0 保持历史
+租约行为；关闭工具 H2D 时不会获得这项新增保护。
+
+优先期复用已有的首次服务选择，不增加逐 token 预测、扫描或线程：
+
+- 仅实际提交且身份匹配的后继可以参与；工具尚未返回不能执行。
+- 同一因果类别内优先使用已恢复状态，保留 JOIN 和老请求的屏障，
+  每次优先准入后保留四次普通准入的配额。
+- READY、客户端提交及服务端可见不再把工具的截止时间延长到 10 秒；
+  过期不留下无期限的 advisory 优先提示，首次实际 GPU 服务即释放。
+- HBM 压力可提前撤销额外设备保护；保留对应 Host 副本直到租约结束。
+  若仍在同一工具等待 episode，过期可利用该副本安全回收 HBM，
+  无需再做 D2H。已提交的请求仍服从原生引用和回收规则。
+
+JOIN 保护与恢复依赖保持原有语义。native、JOIN-only 和
+`no_tool_prefetch` 组的新增工具保护参数强制为 0。对照入口核验实际
+运行时开关与期限，而非只记录期望环境。应以同轨迹开启/关闭的完整
+JCT、吞吐、复用、过期和热状态淘汰评估净收益。
 
 ## 预测与本次修复
 
@@ -109,6 +134,11 @@ guard、执行前取消和未完成 episode 删失。准确率与 JCT 收益尚�
 源审计统计实际 started resume、handle、JOIN、root 轮次和嵌套轮次，
 不沿用旧的 80 JOIN 或长尾截断门槛。零真实复用不算该设计的有效验证。
 
+V134 首次启动在北京时间 18:40 前退出，未启动模型、未采集有效源：
+底层 shell 的 profile 白名单遗漏 `native_in_graph_reusable_nested`。
+已补齐入口，并用真实 shell 加替代 server launcher 的 CPU 测试验证
+新 profile 能到达启动链路。旧失败产物保留，不记作 GPU 性能结果。
+
 修复了旧重放器的两个兼容性问题：
 
 - 关闭事件属于已经 RETURN 的 child，但由仍在执行的 parent 发出。
@@ -131,6 +161,21 @@ guard、执行前取消和未完成 episode 删失。准确率与 JCT 收益尚�
 重算、有效活跃状态淘汰、备份量、控制 CPU 和在线概率校准。
 
 ## 本次 CPU 验证
+
+- `v3130_reusable_queued_tool_priority_qualified_cpu_20261023.xml`：
+  最新源码 5162 项及 2 个 subtest 全部通过，无失败或 skip，
+  完整保留 V3120 的 5103 项，新增 59 项。覆盖有界工具保护、
+  实际 shell 入口、可选对照开关及可跨禁用期等待的 CPU 队列。
+- `v3132_reusable_queued_tool_priority_qualified_sources_20261023.json`：
+  由实际 `qualify_sources` 生成并通过 `qualify_report`。
+- `v3131_source_reservation_guard_cpu_20261023.xml`：
+  独立的本机 reservation guard 10 项通过，包括保留未启动的 CPU
+  队列和截止时清理尚未写入状态快照的本项目 GPU 后代进程。
+- `v3133_optional_tool_priority_runtime_constructors_cpu_20261023.json`：
+  可选工具预取配置下四个保留组的真实运行时构造与关闭验证，
+  CUDA 不可见；native 保持不启动自定义运行时。
+
+以下保留前一轮资格与 metadata benchmark，不能混同为新 GPU 结果：
 
 - `v3120_reusable_retained_qualified_cpu_20261023.xml`：5103 项及 2 个
   subtest 通过，无失败或 skip，完整保留 V3112 的 5056 项，增加 47 项。
@@ -162,6 +207,12 @@ GPU 等待，不能据此推算 JCT。512 状态时的毫秒级规划仍是实�
 它只停止已登记的本项目进程，结束后仅移除自己仍未变更的 marker，
 不会自动启动未经资格验证的实验。
 
-禁用期完成 CPU 回归和配置准备；期限后确认资源、源码冻结和新 hold
-状态，再采集第一条自然复用源轨迹。先判断真实复用与容量竞争是否
-充分，再运行同轨迹保留对照。当前目标保持 active，未宣布性能达标。
+采集器使用 `--wait-for-gpu` 排队：CPU 等待进程可跨越本次禁用时段，
+19:59 drain 起不启动模型，06:00 后仍等 guard 释放自己的 marker；
+期间不运行 GPU/Host 预检。有更新的暂停标记、延后期限或取消时，
+保留用户新指令并退出。已开始的 GPU 作业仍由 guard 在禁用前结束，
+不能因保留等待进程而留下 GPU 子进程。
+
+V134b 使用新冻结源码替代已失败 V134 排队，空闲条件满足即开始自然
+复用源采集；禁用期继续完成 CPU 工作。先判断真实复用与容量竞争
+是否充分，再运行同轨迹保留对照。当前目标保持 active，未宣布性能达标。

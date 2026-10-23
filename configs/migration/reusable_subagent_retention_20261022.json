@@ -10,6 +10,10 @@
   },
   "source_profile": "reusable_nested",
   "source_capture_policy": "native_matched_with_retention_off",
+  "optional_tool_prefetch_environment": {
+    "TOOL_PREFETCH": "1",
+    "TOOL_PREFETCH_PRIORITY_MS": "1500"
+  },
   "common_environment": {
     "ROOT_COUNT": "36",
     "MAX_RUNNING_REQUESTS": "8",

@@ -7,7 +7,10 @@ from unittest.mock import Mock, patch
 import pytest
 
 from beliefkv.runtime.sglang_v0520_physical import PrefetchLoadStep, PhysicalActionCompleted
-from tests.test_tool_predictive_transfers import locked_runtime, submit_restored_request
+from beliefkv.core.events import RuntimeEventKind
+from tests.test_tool_predictive_transfers import (
+    event, locked_runtime, req, select, submit_restored_request, tool_runtime,
+)
 from tests.test_prefetch_ack_prefix_control import ack_prefix_fixture, commit_prefix
 
 
@@ -34,6 +37,116 @@ def retained_tool(monkeypatch):
         yield runtime, cache, node, action, device_receipt, host_receipt, observation, clock
     finally:
         runtime.close()
+
+
+@pytest.fixture
+def bounded_tool(monkeypatch):
+    monkeypatch.setenv("BELIEFKV_TOOL_PREFETCH_PRIORITY_MS", "1500")
+    yield from retained_tool.__wrapped__(monkeypatch)
+
+
+@pytest.mark.parametrize("value", ("-1", "nan", "inf", "-inf", "invalid"))
+def test_invalid_tool_priority_window_is_rejected(monkeypatch, value):
+    monkeypatch.setenv("BELIEFKV_TOOL_PREFETCH_PRIORITY_MS", value)
+    with pytest.raises(ValueError):
+        tool_runtime()
+
+
+def test_tool_priority_deadline_starts_at_ack_and_never_extends_on_readiness_or_submit(
+    bounded_tool,
+):
+    runtime, cache, node, action, device_receipt, host_receipt, _, clock = bounded_tool
+    lease = runtime._prefetch_service_leases[action.command_id]
+    assert lease.acknowledged_at == 100.
+    assert lease.expires_at == 101.5
+    clock[0] = 100.3
+    runtime.on_events((event(
+        3, RuntimeEventKind.TOOL_END, invocation_id="tool",
+        attributes={"tool_run_id": "long"},
+    ),))
+    ready = runtime._prefetch_service_leases[action.command_id]
+    assert ready.reentry_ready_at == clock[0]
+    assert ready.expires_at == 101.5
+    clock[0] = 100.8
+    runtime.on_events((event(
+        4, RuntimeEventKind.LLM_SUBMIT, invocation_id="tool",
+        context_id="ctx-tool", context_epoch=1, attributes={"request_id": "resumed"},
+    ),))
+    submitted = runtime._prefetch_service_leases[action.command_id]
+    assert submitted.client_submitted_at == clock[0]
+    assert submitted.expires_at == 101.5
+    request = req("tool")
+    request.rid = "resumed"
+    request.beliefkv_metadata["context_epoch"] = 1
+    request.session_id, request.session_generation = "s", 1
+    clock[0] = 101.
+    runtime.register_visible_request(request)
+    demand = runtime._prefetch_service_leases[action.command_id]
+    assert demand.demand_ready and demand.expires_at == 101.5
+    clock[0] = 101.5
+    runtime._refresh_prefetch_service_leases()
+    assert not runtime._prefetch_service_leases
+    assert not runtime._prefetch_admission_hints
+    cache.tree_core.dec_lock_ref.assert_called_once_with(node.id, device_receipt)
+    cache.tree_core.dec_host_lock_ref.assert_called_once_with(node.id, host_receipt)
+    cache.reclaim_beliefkv_expired_tool_prefetch.assert_not_called()
+
+
+def test_tool_priority_expires_in_selection_even_before_maintenance_refresh(bounded_tool):
+    runtime, _, _, action, _, _, _, clock = bounded_tool
+    restored = submit_restored_request(runtime)
+    ordinary = req("ordinary")
+    runtime.register_visible_request(ordinary)
+    runtime.enable_resident_first = False
+    with patch.object(runtime, "_causal_rank", side_effect=lambda key, index, ranks: (0, 0, index)):
+        assert select(runtime, [ordinary, restored]).candidates[0] is restored
+        clock[0] = 101.5
+        assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
+    assert action.command_id in runtime._prefetch_service_leases
+    assert not runtime._prefetch_admission_hints
+
+
+def test_bounded_tool_priority_releases_on_first_gpu_service(bounded_tool):
+    runtime, cache, node, action, device_receipt, host_receipt, _, _ = bounded_tool
+    previous_releases = runtime.counts["prefetch_residency_released:first_gpu_service"]
+    restored = submit_restored_request(runtime)
+    runtime.on_batch_completed(NS(reqs=[restored]))
+    runtime.on_batch_completed(NS(reqs=[restored]))
+    assert not runtime._prefetch_service_leases
+    cache.tree_core.dec_lock_ref.assert_called_once_with(node.id, device_receipt)
+    cache.tree_core.dec_host_lock_ref.assert_called_once_with(node.id, host_receipt)
+    assert runtime.counts["prefetch_residency_released:first_gpu_service"] == previous_releases + 1
+
+
+def test_bounded_tool_expiry_reclaims_waiting_kv_with_host_copy_without_d2h(bounded_tool):
+    runtime, cache, node, action, device_receipt, host_receipt, _, clock = bounded_tool
+    clock[0] = 101.5
+    runtime._refresh_prefetch_service_leases()
+    assert not runtime._prefetch_service_leases and not runtime._prefetch_admission_hints
+    cache.reclaim_beliefkv_expired_tool_prefetch.assert_called_once_with(
+        node.id, node.creation_time, session_id="s", session_generation=1,
+        include_full=True, include_mamba=True,
+    )
+    cache.tree_core.dec_lock_ref.assert_called_once_with(node.id, device_receipt)
+    cache.tree_core.dec_host_lock_ref.assert_called_once_with(node.id, host_receipt)
+
+
+def test_tool_deadline_does_not_shorten_join_consumer_lease(bounded_tool):
+    runtime, _, node, action, _, _, observation, _ = bounded_tool
+    key = runtime._prefetch_service_leases[action.command_id].key
+    runtime._release_prefetch_service_lease(action.command_id, "first_gpu_service")
+    runtime._prefetch_steps[action.command_id] = (
+        PrefetchLoadStep(key, node.id, node.creation_time, node.id, node.creation_time),
+        "join_ticket", 2.,
+    )
+    with patch(
+        "beliefkv.runtime.sglang_v0520_observer.observe_unified_node_closure",
+        return_value=observation,
+    ):
+        runtime._register_prefetch_service_lease(action)
+    assert runtime._prefetch_service_leases[action.command_id].expires_at == 102.
+    submit_restored_request(runtime)
+    assert runtime._prefetch_service_leases[action.command_id].expires_at == 110.
 
 
 def test_host_copy_follows_the_same_lease_without_another_timer(retained_tool):

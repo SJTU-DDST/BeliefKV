@@ -83,6 +83,9 @@ def arm_environment(
         "EXECUTION_HANDOFF": "0",
         "BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH": str(int(custom_kv)),
         "BELIEFKV_ENABLE_TOOL_PREFETCH": str(int(tool_prefetch_enabled)),
+        "BELIEFKV_TOOL_PREFETCH_PRIORITY_MS": common.get(
+            "BELIEFKV_TOOL_PREFETCH_PRIORITY_MS", common.get("TOOL_PREFETCH_PRIORITY_MS", "0"),
+        ) if tool_prefetch_enabled else "0",
         "BELIEFKV_TOOL_RESTORE_MODE": tool_restore if custom_kv else "speculative",
         "TOOL_RESTORE_MODE": tool_restore if custom_kv else "speculative",
         "EXECUTION_FRONTIER_RESTORE": frontier,

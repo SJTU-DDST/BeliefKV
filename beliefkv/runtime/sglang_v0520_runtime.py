@@ -528,6 +528,11 @@ class NativeAdmissionRuntime:
         if not math.isfinite(lead_setting) or lead_setting < 0:
             raise ValueError("prefetch lead must be finite and nonnegative")
         self.prefetch_lead_ms = lead_setting
+        self.tool_prefetch_priority_ms = float(os.environ.get(
+            "BELIEFKV_TOOL_PREFETCH_PRIORITY_MS", "0",
+        ))
+        if not math.isfinite(self.tool_prefetch_priority_ms) or self.tool_prefetch_priority_ms < 0:
+            raise ValueError("tool prefetch priority window must be finite and nonnegative")
         self.join_prefetch_min_advance_ms = float(os.environ.get(
             "BELIEFKV_JOIN_PREFETCH_MIN_ADVANCE_MS", "0",
         ))
@@ -2491,6 +2496,7 @@ class NativeAdmissionRuntime:
                 "idle_prepare_policy": self.idle_prepare_policy,
                 "tool_prefetch_planning_slack_ms": TOOL_PREFETCH_PLANNING_SLACK_MS,
                 "prefetch_lead_ms": self.prefetch_lead_ms,
+                "tool_prefetch_priority_ms": self.tool_prefetch_priority_ms,
                 "join_prefetch_min_advance_ms": self.join_prefetch_min_advance_ms,
                 "tool_prefetch_min_advance_ms": self.tool_prefetch_min_advance_ms,
                 "parallel_wait_prefetch": self._parallel_wait_prefetch,
@@ -9070,6 +9076,7 @@ class NativeAdmissionRuntime:
             reason == "service_window_expired" and lease.demand_ready
             and lease.lock_params is not None and lease.protected_bytes > 0
             and lease.source in ("join_ticket", "tool_wait")
+            and not (lease.source == "tool_wait" and self.tool_prefetch_priority_ms > 0)
         ):
             current = self.context_sessions.get(lease.key.context_id)
             if (
@@ -9250,8 +9257,9 @@ class NativeAdmissionRuntime:
             ):
                 continue
             # Client submission precedes native visibility and is not admission.
+            deadline = self._prefetch_service_deadline(lease, lease.acknowledged_at + 10.)
             self._prefetch_service_leases[command] = replace(
-                lease, client_submitted_at=now, expires_at=lease.acknowledged_at + 10.,
+                lease, client_submitted_at=now, expires_at=deadline,
             )
             self.counts["prefetch_residency_client_submitted"] += 1
             if self._opportunity_writer is not None:
@@ -9263,9 +9271,14 @@ class NativeAdmissionRuntime:
                     "request_id": rid, "ack_to_client_submit_ms": (
                         now - lease.acknowledged_at
                     ) * 1000.,
-                    "remaining_lease_ms": (lease.acknowledged_at + 10. - now) * 1000.,
+                    "remaining_lease_ms": (deadline - now) * 1000.,
                     "scope": "existing locked restore retained; no native request or admission",
                 })
+
+    def _prefetch_service_deadline(self, lease: _PrefetchServiceLease, proposed: float) -> float:
+        if lease.source == "tool_wait" and self.tool_prefetch_priority_ms > 0:
+            return min(proposed, lease.acknowledged_at + self.tool_prefetch_priority_ms / 1000.)
+        return proposed
 
     def _refresh_prefetch_service_leases(self, *, context_id: str | None = None) -> None:
         if not self._prefetch_service_leases:
@@ -9301,7 +9314,9 @@ class NativeAdmissionRuntime:
                 # Real completion can precede HTTP submission; do not pin on ETA.
                 lease = replace(
                     lease, reentry_ready_at=now,
-                    expires_at=min(lease.acknowledged_at + 10., now + 3.),
+                    expires_at=self._prefetch_service_deadline(
+                        lease, min(lease.acknowledged_at + 10., now + 3.),
+                    ),
                 )
                 self._prefetch_service_leases[command] = lease
                 self.counts["prefetch_residency_reentry_ready"] += 1
@@ -9356,10 +9371,10 @@ class NativeAdmissionRuntime:
                 if submitted:
                     lease = replace(
                         lease, demand_ready=True,
-                        expires_at=(
+                        expires_at=self._prefetch_service_deadline(lease, (
                             lease.acknowledged_at + 10.
                             if lease.lock_params is not None else lease.expires_at
-                        ),
+                        )),
                     )
                     self._prefetch_service_leases[command] = lease
                     self.counts["prefetch_residency_demand_ready"] += 1
@@ -9417,6 +9432,8 @@ class NativeAdmissionRuntime:
             source, revision, now,
             now + (
                 3. if source == "execution_handoff"
+                else self.tool_prefetch_priority_ms / 1000.
+                if source == "tool_wait" and self.tool_prefetch_priority_ms > 0
                 else (self.prefetch_lead_ms + 1000.) / 1000.
             ), action.pool_bytes,
             demand_ready=source == "execution_handoff",
@@ -11520,9 +11537,10 @@ class NativeAdmissionRuntime:
             self._prefetch_service_leases and same_class is not None
             and self._prefetch_priority_normal_admissions >= 4
         ):
+            priority_now = time.monotonic()
             restores_by_context: dict[str, list[_PrefetchServiceLease]] = {}
             for lease in self._prefetch_service_leases.values():
-                if lease.demand_ready:
+                if lease.demand_ready and priority_now < lease.expires_at:
                     restores_by_context.setdefault(lease.key.context_id, []).append(lease)
             for candidate in ordered:
                 if ranks[candidate[0]][:2] != same_class:

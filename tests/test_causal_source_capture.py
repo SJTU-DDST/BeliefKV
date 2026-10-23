@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -265,3 +266,107 @@ def test_capture_does_not_use_a_temporary_idle_gap_between_previous_arms(tmp_pat
         {}, tmp_path / "capture.state.json", lambda: False,
     )
     assert polls == [1] and queried == [18558]
+
+
+@pytest.fixture
+def queued_reservation(tmp_path, monkeypatch):
+    pause, hold_path, spec_path = (tmp_path / name for name in ("pause", "hold.json", "spec.json"))
+    spec = {
+        "begin": "2026-10-23T20:00:00+08:00", "end": "2026-10-24T06:00:00+08:00",
+        "drain_begin": "2026-10-23T19:59:00+08:00",
+        "hold_file": str(hold_path), "pause_file": str(pause), "pause_marker": "this reservation\n",
+    }
+    hold = {
+        "automatic_resume_allowed": True, "gpu_not_before": "2026-10-23T18:00:00+08:00",
+        "reservation_guard_spec": str(spec_path),
+        "reservation_begin": spec["begin"], "reservation_end": spec["end"],
+    }
+    capture.reservation.write_json(spec_path, spec)
+    capture.reservation.write_json(hold_path, hold)
+    at = [datetime.fromisoformat("2026-10-23T18:45:00+08:00")]
+    monkeypatch.setattr(capture.reservation, "now", lambda: at[0])
+    monkeypatch.setattr(capture.fresh, "PAUSE", pause)
+    return {"port": 18560, "wait_for_gpu": True, "hold_file": str(hold_path)}, hold, spec, at
+
+
+@pytest.mark.parametrize("time,paused,allowed", (
+    ("2026-10-23T19:58:59+08:00", False, True),
+    ("2026-10-23T19:59:00+08:00", False, False),
+    ("2026-10-23T20:00:00+08:00", True, False),
+    ("2026-10-24T05:59:59+08:00", True, False),
+    ("2026-10-24T06:00:00+08:00", True, False),
+    ("2026-10-24T06:00:01+08:00", False, True),
+))
+def test_source_queue_waits_through_its_declared_reservation_and_marker_release(
+    queued_reservation, time, paused, allowed,
+):
+    plan, hold, spec, at = queued_reservation
+    at[0] = datetime.fromisoformat(time)
+    if paused:
+        Path(spec["pause_file"]).write_text(spec["pause_marker"])
+        hold["gpu_not_before"] = spec["end"]
+        capture.reservation.write_json(Path(plan["hold_file"]), hold)
+    assert capture.queue_launch_allowed(plan) is allowed
+
+
+@pytest.mark.parametrize("change", ("auto_disabled", "new_marker", "later_hold", "wrong_spec", "not_queued"))
+def test_source_queue_never_overrides_a_newer_pause_or_cancellation(queued_reservation, change):
+    plan, hold, spec, at = queued_reservation
+    at[0] = datetime.fromisoformat("2026-10-23T21:00:00+08:00")
+    Path(spec["pause_file"]).write_text(spec["pause_marker"])
+    hold["gpu_not_before"] = spec["end"]
+    if change == "auto_disabled":
+        hold["automatic_resume_allowed"] = False
+    elif change == "new_marker":
+        Path(spec["pause_file"]).write_text("new user pause\n")
+    elif change == "later_hold":
+        hold["gpu_not_before"] = "2026-10-25T06:00:00+08:00"
+    elif change == "wrong_spec":
+        hold["reservation_begin"] = "2026-10-23T22:00:00+08:00"
+    else:
+        plan["wait_for_gpu"] = False
+    capture.reservation.write_json(Path(plan["hold_file"]), hold)
+    with pytest.raises(capture.fresh.HoldChanged):
+        capture.queue_launch_allowed(plan)
+
+
+def test_reserved_queue_does_not_probe_gpu_or_run_preflight_until_release(
+    queued_reservation, tmp_path, monkeypatch,
+):
+    plan, hold, spec, at = queued_reservation
+    at[0] = datetime.fromisoformat("2026-10-23T21:00:00+08:00")
+    hold["gpu_not_before"] = spec["end"]
+    pause = Path(spec["pause_file"])
+    pause.write_text(spec["pause_marker"])
+    capture.reservation.write_json(Path(plan["hold_file"]), hold)
+    queries, waits = [], []
+
+    def release(seconds):
+        waits.append(seconds)
+        at[0] = datetime.fromisoformat("2026-10-24T06:00:01+08:00")
+        pause.unlink()
+
+    monkeypatch.setattr(capture.time, "sleep", release)
+    monkeypatch.setattr(capture.qualified, "resources",
+                        lambda _port: queries.append(at[0]) or {"ready": True})
+    state = {}
+    capture.wait_for_resources(plan, state, tmp_path / "state.json", lambda: False)
+    assert waits == [10.]
+    assert queries == [at[0]]
+    assert state["status"] == "waiting_user_gpu_reservation"
+
+
+@pytest.mark.parametrize("changed", ("resource", "reservation"))
+def test_preflight_returns_to_queue_when_conditions_change_before_launch(
+    tmp_path, monkeypatch, changed,
+):
+    waited, verified, preflights = [], [], []
+    gates = iter((False, True) if changed == "reservation" else (True, True))
+    resources = iter((False, True) if changed == "resource" else (True,))
+    monkeypatch.setattr(capture, "wait_for_resources", lambda *_a: waited.append(1))
+    monkeypatch.setattr(capture, "queue_launch_allowed", lambda _plan: next(gates))
+    monkeypatch.setattr(capture.comparison, "verify_sources", lambda _plan: verified.append(1))
+    monkeypatch.setattr(capture.subprocess, "run", lambda *_a, **_k: preflights.append(1))
+    monkeypatch.setattr(capture.qualified, "resources", lambda _port: {"ready": next(resources)})
+    capture.prepare_capture({"port": 18560, "wait_for_gpu": True}, {}, tmp_path / "state", lambda: False)
+    assert len(waited) == len(verified) == len(preflights) == 2

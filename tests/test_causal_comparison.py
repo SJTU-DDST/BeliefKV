@@ -165,6 +165,73 @@ def retention_spec():
     ).read_bytes())
 
 
+@pytest.mark.parametrize("window", (1, 1500., 2000))
+def test_tool_priority_option_changes_only_tool_prefetch_and_its_window(reference, window):
+    original = reference["arms"]["full"].copy()
+    prepared = comparison.tool_priority_reference(reference, window)
+    assert reference["arms"]["full"] == original
+    assert prepared["arms"]["full"] == {
+        **original, "TOOL_PREFETCH": "1",
+        "TOOL_PREFETCH_PRIORITY_MS": str(window),
+        "BELIEFKV_TOOL_PREFETCH_PRIORITY_MS": str(window),
+    }
+
+
+@pytest.mark.parametrize("window", (None, "1500", True, False, 0, -1, float("nan"), float("inf")))
+def test_invalid_tool_priority_option_is_rejected(reference, window):
+    with pytest.raises(ValueError, match="priority window"):
+        comparison.tool_priority_reference(reference, window)
+
+
+@pytest.mark.parametrize("label", comparison.CONTROLS)
+def test_optional_tool_priority_is_only_enabled_in_custom_tool_prefetch_arms(
+    reference, tmp_path, label,
+):
+    prepared = comparison.tool_priority_reference(reference, 1500.)
+    env, _, _ = comparison.environment(
+        prepared, label, tmp_path, tmp_path, tmp_path, 18554, tmp_path,
+    )
+    enabled = label in ("full", "no_background_prepare")
+    assert env["BELIEFKV_ENABLE_TOOL_PREFETCH"] == str(int(enabled))
+    assert float(env["BELIEFKV_TOOL_PREFETCH_PRIORITY_MS"]) == (1500. if enabled else 0.)
+
+
+@pytest.mark.parametrize("label", comparison.RETENTION_CONTROLS)
+def test_optional_tool_priority_is_identical_across_retention_controls(reference, tmp_path, label):
+    prepared = comparison.retention_reference(
+        reference, retention_spec(), list(comparison.RETENTION_CONTROLS),
+    )
+    prepared = comparison.tool_priority_reference(prepared, 1500.)
+    env, _, _ = comparison.environment(
+        prepared, label, tmp_path, tmp_path, tmp_path, 18554, tmp_path,
+    )
+    assert env["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "1"
+    assert env["BELIEFKV_TOOL_PREFETCH_PRIORITY_MS"] == "1500.0"
+    assert env["BELIEFKV_SUBAGENT_RETENTION"] == comparison.RETENTION_CONTROLS[label]
+
+
+@pytest.mark.parametrize("label,actual,accepted", (
+    ("full", 1500., True), ("no_background_prepare", 1500., True),
+    ("full", 0., False), ("no_tool_prefetch", 0., True),
+    ("no_tool_prefetch", 1500., False), ("join_priority_only", 0., True),
+    ("join_priority_only", 1500., False),
+))
+def test_tool_priority_observer_validates_the_effective_window(
+    tmp_path, monkeypatch, label, actual, accepted,
+):
+    monkeypatch.setattr(comparison.comparison, "observe_arm", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        comparison.qualified, "last_runtime_state",
+        lambda _path: {"tool_prefetch_priority_ms": actual},
+    )
+    plan = {"tool_prefetch_priority_ms": 1500.}
+    if accepted:
+        comparison.observed_configuration(plan, label, tmp_path, final=True)
+    else:
+        with pytest.raises(ValueError, match="priority window"):
+            comparison.observed_configuration(plan, label, tmp_path, final=True)
+
+
 def test_retention_matrix_keeps_exact_common_settings_and_an_independent_native_control(
     reference, tmp_path,
 ):

@@ -19,7 +19,14 @@ for the new scenario must not select for Full performance.
 The common policy uses workflow/resident-first/stage ordering and observed-EOS
 JOIN prefetch. Ordinary execution-frontier restore and short-tool continuity
 remain off. Retention controls keep tool timing/pressure offload but disable
-speculative tool H2D, matching the latest measured Full arm. Do not restore the
+speculative tool H2D by default, matching the latest measured Full arm.
+The latest user authorizes optional tool H2D with a short priority window:
+`run_causal_comparison.py --tool-prefetch-priority-ms 1500` applies it equally
+across custom retention controls. The 1.5s deadline starts at the actual ACK,
+does not renew on READY/client/native submission, and cannot leave untimed
+priority hints. It uses existing same-class ordering and fairness quotas;
+JOIN/aged barriers and pressure revocation remain. This is a candidate with
+CPU evidence, not a demonstrated GPU benefit. Do not restore the
 historical continuity candidate or simple-JOIN-only configuration by reading
 the older entries below as current instructions.
 
@@ -33,6 +40,14 @@ source qualification, frozen sources, idle resources
 and no newer hold. The active goal remains unmet: improve complete-workflow
 mean JCT and throughput against native and the strongest simple baseline,
 with independent KV-management benefit under equal work and capacity.
+
+Source capture is queued using `--wait-for-gpu`. A pending CPU-only queue
+survives the declared reservation, does not launch from19:59 drain, and resumes
+only after06:00, its own marker release and resource checks. Newer pauses,
+later deadlines and cancellation take precedence. A started driver must still
+release GPU before20:00. V134 failed before model launch because the shell
+profile allowlist omitted the reusable profile; keep the failed evidence and
+replace it with qualified/frozen V134b rather than treating it as captured work.
 
 Earlier entries below preserve historical implementation and validation context.
 

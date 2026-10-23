@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime
 import fcntl
 import json
 import math
@@ -213,11 +214,63 @@ def reusable_source(summary, graph):
     }
 
 
+def _declared_reservation_wait(plan):
+    if not plan.get("hold_file"):
+        return False
+    hold = load(Path(plan["hold_file"]))
+    spec_path = hold.get("reservation_guard_spec")
+    if not spec_path or hold.get("automatic_resume_allowed") is not True:
+        return False
+    spec = load(Path(spec_path))
+    begin, end = (datetime.fromisoformat(spec[name]) for name in ("begin", "end"))
+    drain = datetime.fromisoformat(spec.get("drain_begin", spec["begin"]))
+    if (
+        begin.tzinfo is None or end.tzinfo is None or drain.tzinfo is None
+        or not drain <= begin < end
+        or Path(spec["hold_file"]).resolve() != Path(plan["hold_file"]).resolve()
+        or Path(spec["pause_file"]).resolve() != fresh.PAUSE.resolve()
+        or hold.get("reservation_begin") != spec["begin"]
+        or hold.get("reservation_end") != spec["end"]
+        or fresh.deadline(hold) > end
+    ):
+        raise fresh.HoldChanged("declared GPU reservation metadata changed")
+    pause = Path(spec["pause_file"])
+    own_pause = pause.is_file() and pause.read_text() == spec["pause_marker"]
+    if pause.exists() and not own_pause:
+        return False
+    at = reservation.now()
+    # A declared window also blocks launch before its guard publishes PAUSE.
+    # After the deadline, wait for that guard to remove only its own marker.
+    return at >= drain and (at < end or own_pause)
+
+
+def queue_launch_allowed(plan):
+    try:
+        fresh.check_hold(plan, released=True)
+    except fresh.HoldChanged:
+        if plan.get("wait_for_gpu") and _declared_reservation_wait(plan):
+            return False
+        raise
+    if _declared_reservation_wait(plan):
+        if plan.get("wait_for_gpu"):
+            return False
+        raise fresh.HoldChanged("GPU launch is inside the declared user reservation")
+    return True
+
+
 def wait_for_resources(plan, state, path, interrupted):
     while True:
-        fresh.check_hold(plan, released=True)
         if interrupted():
             raise ValueError("capture cancelled while waiting for the GPU")
+        if not queue_launch_allowed(plan):
+            state.update(
+                status="waiting_user_gpu_reservation",
+                resources={"ready": False, "reason": "declared_user_gpu_reservation"},
+                checked_at=reservation.now().isoformat(),
+            )
+            reservation.write_json(path, state)
+            time.sleep(10.)
+            continue
         previous_alive = False
         if plan.get("after_comparison"):
             previous = load(Path(plan["after_comparison"]).with_suffix(".state.json"))
@@ -244,6 +297,25 @@ def wait_for_resources(plan, state, path, interrupted):
         time.sleep(10.)
 
 
+def prepare_capture(plan, state, path, interrupted):
+    while True:
+        wait_for_resources(plan, state, path, interrupted)
+        comparison.verify_sources(plan)
+        subprocess.run(
+            [sys.executable, str(ROOT / "scripts/preflight_qwen35_host_pool.py"),
+             "--memory-policy", "preferred", "--node", "1", "--size-gb", "200"],
+            check=True, capture_output=True, timeout=30,
+        )
+        if interrupted():
+            raise ValueError("capture cancelled during preflight")
+        if not queue_launch_allowed(plan):
+            continue
+        if qualified.resources(plan["port"])["ready"]:
+            return
+        if not plan.get("wait_for_gpu"):
+            raise ValueError("resources changed during capture preflight")
+
+
 def register(args):
     for path in (
         args.registration, args.registration.with_suffix(".state.json"),
@@ -256,7 +328,7 @@ def register(args):
     reference = load(args.reference)
     fresh.verify(reference)
     reference_complete(reference, load(args.reference.with_suffix(".state.json")))
-    fresh.check_hold(reference, released=True)
+    queue_launch_allowed({**reference, "wait_for_gpu": args.wait_for_gpu})
     count = comparison.qualify_report(args.cpu_report, args.cpu_sources)
     sources = load(args.cpu_sources)
     if not {
@@ -346,6 +418,7 @@ def watch(registration: Path):
         "status": "capture_preflight", "watcher": reservation.process(os.getpid()),
         "current_arm": "native_capture", "performance_accepted": False,
         "gpu_replay_qualified": False, "run_root": str(run),
+        "reservation_aware_queue": plan.get("wait_for_gpu") is True,
     }
     driver = None
     interrupted = False
@@ -362,16 +435,7 @@ def watch(registration: Path):
             state["checked_at"] = reservation.now().isoformat()
             reservation.write_json(path, state)
             comparison.verify_sources(plan)
-            fresh.check_hold(plan, released=True)
-            wait_for_resources(plan, state, path, lambda: interrupted)
-            subprocess.run(
-                [sys.executable, str(ROOT / "scripts/preflight_qwen35_host_pool.py"),
-                 "--memory-policy", "preferred", "--node", "1", "--size-gb", "200"],
-                check=True, capture_output=True, timeout=30,
-            )
-            fresh.check_hold(plan, released=True)
-            if interrupted or not qualified.resources(plan["port"])["ready"]:
-                raise ValueError("capture cancelled or resources changed during preflight")
+            prepare_capture(plan, state, path, lambda: interrupted)
             qualified.machine_helper("start_v88_after_0600_20261020").clear_stale_socket(plan["port"])
             run.mkdir(parents=True, exist_ok=False)
             reservation.write_json(run / "capture_plan.json", plan)

@@ -131,6 +131,17 @@ def retention_reference(reference, spec, order):
     return {**reference, "arms": {**reference["arms"], "full": common}}
 
 
+def tool_priority_reference(reference, window_ms):
+    if type(window_ms) not in (int, float) or not math.isfinite(window_ms) or window_ms <= 0:
+        raise ValueError("tool prefetch priority window must be finite and positive")
+    common = {
+        **reference["arms"]["full"], "TOOL_PREFETCH": "1",
+        "TOOL_PREFETCH_PRIORITY_MS": str(window_ms),
+        "BELIEFKV_TOOL_PREFETCH_PRIORITY_MS": str(window_ms),
+    }
+    return {**reference, "arms": {**reference["arms"], "full": common}}
+
+
 def preflight_runtime(settings, model_path):
     if settings["BELIEFKV_INTERNAL_COMPARISON_MODE"] == "native_matched":
         return {"native_runtime_not_enabled": True}
@@ -260,6 +271,13 @@ def observed_configuration(plan, label, arm, *, final=False):
                 or actual.get("device_budget_bytes") != int(common["BELIEFKV_DORMANT_HBM_BYTES"])
             ):
                 raise ValueError("effective dormant retention policy or budget differs")
+    requested_priority = plan.get("tool_prefetch_priority_ms")
+    if requested_priority is not None and mode != "native_matched":
+        state = qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
+        if state is not None:
+            expected = requested_priority if mode == "full" and label != "no_tool_prefetch" else 0.
+            if state.get("tool_prefetch_priority_ms") != expected:
+                raise ValueError("effective tool prefetch priority window differs")
     census = arm / "server/native_capacity_census.json"
     if census.exists() and load(census)["capacity"] != plan["source_capacity"]:
         raise ValueError("actual FULL/Mamba/Host pool capacity changed")
@@ -414,6 +432,8 @@ def register(args):
         raise ValueError("retention controls require an explicit reusable comparison configuration")
     if args.retention_config is not None:
         reference = retention_reference(reference, load(args.retention_config), order)
+    if args.tool_prefetch_priority_ms is not None:
+        reference = tool_priority_reference(reference, args.tool_prefetch_priority_ms)
     count = comparison.qualify_report(args.cpu_report, args.cpu_sources)
     sources = load(args.cpu_sources)
     if not {
@@ -546,6 +566,7 @@ def register(args):
         "reference_environment": reference["arms"]["full"],
         "retention_configuration": str(args.retention_config.resolve()) if args.retention_config else None,
         "reusable_source_opportunities": reuse_selection,
+        "tool_prefetch_priority_ms": args.tool_prefetch_priority_ms,
         "run_root": str(args.run_root.resolve()), "port": args.port,
         "sampling_calibration": str(args.sampling_calibration.resolve()),
         "sampling_mode": args.sampling_mode,
@@ -665,6 +686,7 @@ def watch(registration):
                     "prefill_scheduling_policy_requested": env["PREFILL_SCHEDULING_POLICY"],
                     "tool_restore_mode_requested": env["TOOL_RESTORE_MODE"],
                     "tool_prefetch_requested": env["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "1",
+                    "tool_prefetch_priority_ms_requested": float(env["BELIEFKV_TOOL_PREFETCH_PRIORITY_MS"]),
                     "idle_prepare_policy_requested": env["IDLE_PREPARE_POLICY"],
                     "restore_tiers_requested": env["RESTORE_TIERS"],
                     "join_last_child_priority_requested": False,
@@ -809,6 +831,7 @@ def main():
     parser.add_argument("--port", type=int, default=18554)
     parser.add_argument("--arms", nargs="+", choices=ALL_CONTROLS, default=list(ORDER))
     parser.add_argument("--retention-config", type=Path)
+    parser.add_argument("--tool-prefetch-priority-ms", type=float)
     parser.add_argument("--after-registration", type=Path)
     parser.add_argument("--sampling-mode", choices=("legacy", "position"), default="legacy")
     parser.add_argument("--maximum-replay-slowdown", type=float)
@@ -819,6 +842,7 @@ def main():
         if any(value is None for name, value in vars(args).items() if name not in (
             "watch", "port", "arms", "after_registration", "sampling_mode", "maximum_replay_slowdown",
             "retention_config",
+            "tool_prefetch_priority_ms",
         )):
             parser.error("registration requires source, qualifications, engine and fresh output paths")
         if not 1 <= args.port <= 65535:

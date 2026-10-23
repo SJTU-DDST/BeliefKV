@@ -31,6 +31,7 @@ def main() -> int:
         "tests/test_reusable_subagents.py", "tests/test_subagent_retention.py",
         "tests/test_causal_replay.py", "tests/test_causal_replay_backend.py",
         "tests/test_causal_source_capture.py", "tests/test_causal_comparison.py",
+        "tests/test_tool_prefetch_host_retention.py", "tests/test_qwen35_native_regime_probe.py",
     }
     nodes = []
     for case in ET.parse(args.reference_xml).getroot().iter("testcase"):

@@ -57,6 +57,7 @@ TRANSFER_SERVICE_SEED="${TRANSFER_SERVICE_SEED:-$ROOT/experiments/models/native_
 TOOL_TIMING_ARTIFACT="${TOOL_TIMING_ARTIFACT:-$ROOT/experiments/models/qwen35_native_event_horizons_20260928_calibrated.json}"
 ENABLE_TOOL_TIMING="${ENABLE_TOOL_TIMING:-1}"
 ENABLE_TOOL_PREFETCH="${BELIEFKV_ENABLE_TOOL_PREFETCH:-${ENABLE_TOOL_PREFETCH:-$ENABLE_TOOL_TIMING}}"
+TOOL_PREFETCH_PRIORITY_MS="${BELIEFKV_TOOL_PREFETCH_PRIORITY_MS:-${TOOL_PREFETCH_PRIORITY_MS:-0}}"
 PREFETCH_LEAD_MS="${PREFETCH_LEAD_MS:-1000}"
 PREFETCH_RESIDENCY_PROTECTION="${BELIEFKV_PREFETCH_RESIDENCY_PROTECTION:-${PREFETCH_RESIDENCY_PROTECTION:-1}}"
 PREFILL_SCHEDULING_POLICY="${BELIEFKV_PREFILL_SCHEDULING_POLICY:-${PREFILL_SCHEDULING_POLICY:-workflow}}"
@@ -136,7 +137,7 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || [[ "$HICACHE_WRITE_POLICY" != "write_through_selective" && "$HICACHE_WRITE_POLICY" != "write_back" ]] \
   || [[ "$SKIP_SERVER_WARMUP" != "0" && "$SKIP_SERVER_WARMUP" != "1" ]] \
   || [[ "$CONFIRMED_JOIN_CANARY" != "0" && "$CONFIRMED_JOIN_CANARY" != "1" ]] \
-  || [[ "$FANOUT_PROFILE" != "native_dynamic_1to4" && "$FANOUT_PROFILE" != "native_in_graph_1to4" && "$FANOUT_PROFILE" != "native_in_graph_2to4" && "$FANOUT_PROFILE" != "native_in_graph_nested_2to4" && "$FANOUT_PROFILE" != "native_in_graph_dynamic_nested" ]] \
+  || [[ "$FANOUT_PROFILE" != "native_dynamic_1to4" && "$FANOUT_PROFILE" != "native_in_graph_1to4" && "$FANOUT_PROFILE" != "native_in_graph_2to4" && "$FANOUT_PROFILE" != "native_in_graph_nested_2to4" && "$FANOUT_PROFILE" != "native_in_graph_dynamic_nested" && "$FANOUT_PROFILE" != "native_in_graph_reusable_nested" ]] \
   || [[ "$AB_MODE" != "off" && "$AB_MODE" != "reactive" && "$AB_MODE" != "predictive_h2d" ]] \
   || [[ "$NATIVE_POLICY_BASELINE" != "0" && "$NATIVE_POLICY_BASELINE" != "1" ]] \
   || [[ "$CHAT_TOKEN_BLOCK_CACHE" != "0" && "$CHAT_TOKEN_BLOCK_CACHE" != "1" ]] \
@@ -146,6 +147,7 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || [[ "$CHILD_FINAL_REPORT_SHADOW" != "0" && "$CHILD_FINAL_REPORT_SHADOW" != "1" ]] \
   || [[ "$ENABLE_TOOL_TIMING" != "0" && "$ENABLE_TOOL_TIMING" != "1" ]] \
   || [[ "$ENABLE_TOOL_PREFETCH" != "0" && "$ENABLE_TOOL_PREFETCH" != "1" ]] \
+  || [[ ! "$TOOL_PREFETCH_PRIORITY_MS" =~ ^[0-9]+([.][0-9]+)?([eE][+-]?[0-9]+)?$ ]] \
   || [[ "$PROFILE_SHARED_PATH" != "0" && "$PROFILE_SHARED_PATH" != "1" ]] \
   || [[ "$PREFETCH_PREFIX_DIAGNOSTICS" != "0" && "$PREFETCH_PREFIX_DIAGNOSTICS" != "1" ]] \
   || [[ "$PREFETCH_RESIDENCY_PROTECTION" != "0" && "$PREFETCH_RESIDENCY_PROTECTION" != "1" ]] \
@@ -164,9 +166,13 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
       || (( ${BASH_REMATCH[1]:-0} + ${BASH_REMATCH[2]:-0} != 100 )); }; } \
   || [[ ! "$PORT" =~ ^[1-9][0-9]*$ ]] \
   || [[ -e "$RUN_ROOT" || -e "$SOCKET" ]]; then
-  printf 'Usage: PORT=18454 ROOT_COUNT=108 ARRIVAL_BATCH_SIZE=0 ARRIVAL_BATCH_INTERVAL_MS=0 SAMPLING_SEED=21 HICACHE_SIZE_GB=200 HOST_SPLIT=80:20|auto HICACHE_WRITE_POLICY=write_back|write_through_selective SKIP_SERVER_WARMUP=1 CONFIRMED_JOIN_CANARY=0|1 FANOUT_PROFILE=native_in_graph_nested_2to4|native_in_graph_2to4|native_in_graph_1to4|native_dynamic_1to4 SGLANG_PATCH_FLAVOR=staging RUN_ROOT=<new path> bash %s\n' "$0" >&2
+  printf 'Usage: PORT=18454 ROOT_COUNT=108 ARRIVAL_BATCH_SIZE=0 ARRIVAL_BATCH_INTERVAL_MS=0 SAMPLING_SEED=21 HICACHE_SIZE_GB=200 HOST_SPLIT=80:20|auto HICACHE_WRITE_POLICY=write_back|write_through_selective SKIP_SERVER_WARMUP=1 CONFIRMED_JOIN_CANARY=0|1 FANOUT_PROFILE=native_in_graph_reusable_nested|native_in_graph_dynamic_nested|native_in_graph_nested_2to4|native_in_graph_2to4|native_in_graph_1to4|native_dynamic_1to4 TOOL_PREFETCH_PRIORITY_MS=0 SGLANG_PATCH_FLAVOR=staging RUN_ROOT=<new path> bash %s\n' "$0" >&2
   exit 2
 fi
+if [[ "$NATIVE_POLICY_BASELINE" == "1" || "$AB_MODE" == "reactive" || "$ENABLE_TOOL_PREFETCH" == "0" ]]; then
+  TOOL_PREFETCH_PRIORITY_MS=0
+fi
+export BELIEFKV_TOOL_PREFETCH_PRIORITY_MS="$TOOL_PREFETCH_PRIORITY_MS"
 export BELIEFKV_CHAT_TOKEN_BLOCK_CACHE="$CHAT_TOKEN_BLOCK_CACHE"
 export PYTHONHASHSEED
 export BELIEFKV_PREFETCH_PREFIX_DIAGNOSTICS="$PREFETCH_PREFIX_DIAGNOSTICS"
@@ -298,10 +304,11 @@ jq -n --argjson cache "$CHAT_TOKEN_BLOCK_CACHE" --argjson native "$NATIVE_POLICY
   --argjson continuity "$TOOL_CONTINUITY" \
   --argjson tool_timing "$ENABLE_TOOL_TIMING" \
   --argjson tool_prefetch "$ENABLE_TOOL_PREFETCH" \
+  --argjson tool_priority "$TOOL_PREFETCH_PRIORITY_MS" \
   --arg tool_restore "${BELIEFKV_TOOL_RESTORE_MODE:-speculative}" \
   --arg idle_prepare "${BELIEFKV_IDLE_PREPARE_POLICY:-cold}" \
   --arg restore_tiers "${BELIEFKV_RESTORE_TIERS:-complete}" \
-  '{schema_version: 1, chat_token_block_cache: ($cache == 1), native_policy_baseline: ($native == 1), prefetch_prefix_diagnostics: ($prefixes == 1), prefetch_residency_protection_requested: ($protection == 1), prefill_scheduling_policy_requested: $scheduling, join_last_child_priority_requested: ($last_child == 1), execution_frontier_restore_requested: ($frontier == 1), tool_continuity_requested: ($continuity == 1), tool_timing_requested: ($tool_timing == 1), tool_prefetch_requested: ($tool_prefetch == 1), tool_restore_mode_requested: $tool_restore, idle_prepare_policy_requested: $idle_prepare, restore_tiers_requested: $restore_tiers, server_random_seed: $seed, python_hash_seed: $hash_seed, internal_comparison_mode: $comparison}' \
+  '{schema_version: 1, chat_token_block_cache: ($cache == 1), native_policy_baseline: ($native == 1), prefetch_prefix_diagnostics: ($prefixes == 1), prefetch_residency_protection_requested: ($protection == 1), prefill_scheduling_policy_requested: $scheduling, join_last_child_priority_requested: ($last_child == 1), execution_frontier_restore_requested: ($frontier == 1), tool_continuity_requested: ($continuity == 1), tool_timing_requested: ($tool_timing == 1), tool_prefetch_requested: ($tool_prefetch == 1), tool_prefetch_priority_ms_requested: $tool_priority, tool_restore_mode_requested: $tool_restore, idle_prepare_policy_requested: $idle_prepare, restore_tiers_requested: $restore_tiers, server_random_seed: $seed, python_hash_seed: $hash_seed, internal_comparison_mode: $comparison}' \
   > "$RUN_ROOT/server/launch_configuration.json"
 setsid env -u BELIEFKV_FULL_MAMBA_HOST_SPLIT "${unset_env[@]}" \
   "${ab_env[@]}" \

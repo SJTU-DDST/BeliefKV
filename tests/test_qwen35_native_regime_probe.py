@@ -189,6 +189,7 @@ def test_native_policy_baseline_rejects_predictive_mix_before_launch(tmp_path: P
 def test_internal_comparison_effective_environment_before_gpu_launch(
     tmp_path, comparison, *, protection="1", scheduling="workflow", last_child="0",
     tool_restore="speculative", frontier="1", join_prefetch="1", tool_prefetch=None,
+    tool_priority="0", fanout="native_in_graph_nested_2to4",
 ):
     import sys
     from beliefkv.experiments.internal_comparison import arm_environment
@@ -215,6 +216,8 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
         "JOIN_LAST_CHILD_PRIORITY": last_child,
         "TOOL_RESTORE_MODE": tool_restore,
         "EXECUTION_FRONTIER_RESTORE": frontier,
+        "TOOL_PREFETCH_PRIORITY_MS": tool_priority,
+        "FANOUT_PROFILE": fanout,
     }, comparison, tool_prefetch=tool_prefetch)
     if join_prefetch == "0":
         environment["BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH"] = "0"
@@ -236,6 +239,9 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
     assert actual["BELIEFKV_ENABLE_TOOL_PREFETCH"] == str(int(
         custom_kv and tool_prefetch is not False
     ))
+    expected_priority = float(tool_priority) if custom_kv and tool_prefetch is not False else 0.
+    assert float(actual["BELIEFKV_TOOL_PREFETCH_PRIORITY_MS"]) == expected_priority
+    assert actual["FANOUT_PROFILE"] == fanout
     workflow = comparison in ("full", "scheduler_only") and scheduling == "workflow"
     assert actual["BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY"] == str(int(workflow))
     assert actual["BELIEFKV_ENABLE_RESIDENT_FIRST"] == str(int(workflow))
@@ -252,6 +258,7 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
     assert launch["tool_prefetch_requested"] is (
         custom_kv and tool_prefetch is not False
     )
+    assert launch["tool_prefetch_priority_ms_requested"] == expected_priority
     if custom_kv:
         assert actual["BELIEFKV_TOOL_TIMING_ARTIFACT"] == str(artifact)
         assert actual["BELIEFKV_ONLINE_TOOL_TIMING"] == "1"
@@ -298,6 +305,31 @@ def test_no_tool_prefetch_keeps_prediction_prepare_and_join_without_gpu(
     test_internal_comparison_effective_environment_before_gpu_launch(
         tmp_path, comparison, tool_prefetch=False,
     )
+
+
+@pytest.mark.parametrize("comparison", ("full", "native_matched"))
+def test_reusable_profile_reaches_real_launch_entry_without_a_gpu(tmp_path, comparison):
+    test_internal_comparison_effective_environment_before_gpu_launch(
+        tmp_path, comparison, fanout="native_in_graph_reusable_nested", tool_priority="1500",
+    )
+
+
+def test_tool_prefetch_priority_is_disabled_with_tool_h2d_without_a_gpu(tmp_path):
+    test_internal_comparison_effective_environment_before_gpu_launch(
+        tmp_path, "full", tool_prefetch=False, tool_priority="1500",
+    )
+
+
+@pytest.mark.parametrize("value", ("-1", "nan", "inf", "true", "invalid"))
+def test_invalid_tool_prefetch_priority_fails_before_any_launch(tmp_path, value):
+    run = tmp_path / "invalid"
+    result = subprocess.run(
+        ["/bin/bash", str(SCRIPT)],
+        env={**os.environ, "RUN_ROOT": str(run), "BELIEFKV_TOOL_PREFETCH_PRIORITY_MS": value},
+        text=True, capture_output=True, timeout=5,
+    )
+    assert result.returncode == 2
+    assert not run.exists()
 
 
 def test_no_tool_prefetch_disables_the_dependent_frontier_restore_without_gpu(tmp_path):
@@ -460,6 +492,7 @@ def test_effective_policy_environment_without_launching_gpu(
         "tool_continuity_requested": False,
         "tool_timing_requested": tool_timing == "1",
         "tool_prefetch_requested": requested_prefetch == "1",
+        "tool_prefetch_priority_ms_requested": 0,
         "tool_restore_mode_requested": "speculative",
         "idle_prepare_policy_requested": "cold",
         "restore_tiers_requested": "complete",
