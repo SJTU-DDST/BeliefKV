@@ -2,6 +2,27 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+V3327 now measures complete native-request outstanding time from existing
+captures. Each arm has3951 matched native request identities and identical
+input/output token counts. The denominator is the union from API receipt
+to native completion,including queueing,admission,recovery and processing.
+It excludes only periods with no outstanding native request; all ordinary
+workflow tails remain in JCT. This is not measured CUDA-kernel throughput.
+V147 records601.641 output tokens/s versus590.396 native (+1.9046%),
+599.627 JOIN-only (+0.3358%) and598.546 older scheduler-only (+0.5171%).
+V145 no-tool records603.987. Those controls use earlier engine versions;
+the V148 same-engine controls remain necessary before a policy decision.
+Zero-request gaps within each request span are only8.85--9.45s here.
+
+The new offline audit is
+`scripts/audit_outstanding_request_throughput.py`. It requires complete
+native request pairs,healthy settled capture counts,a completed summary,
+matching identities/token counts,and consistent completion clocks. It
+rejects incomplete populations instead of dropping unfinished requests.
+All30 focused audit/cost checks pass with CUDA hidden. This adds no
+runtime instrumentation and does not change the frozen V148 sources.
+Report:`experiments/reports/v3327_completed_controls_outstanding_request_throughput_20261024.json`.
+
 V147 completed normally at06:50 Beijing. V3319 independently revalidates
 all3951 exact request receipts and tokens, runtime configuration and
 actual process cleanup. Mean JCT is1130.074s and whole-run output

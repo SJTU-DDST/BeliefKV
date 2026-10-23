@@ -857,3 +857,40 @@ V147 实际清理后，V148 已启动 `no_tool_prefetch`，随后自动
 预测、PREPARE、后台备份与 EOS JOIN 仍开启。两侧继续使用
 相同 qualified engine、工作量、batch24、seed21，不重复
 native 重放；V148 两项完整性能结果均待收集。
+
+## 请求待处理期间的吞吐
+
+新增离线审计 `scripts/audit_outstanding_request_throughput.py`，
+用已完成 trace 统计“至少一个服务端模型请求尚未完成”的时间。
+分母是各请求从 API 收到到 native 完成的区间并集，包含排队、
+准入、恢复和处理时间，只排除没有任何未完成模型请求的空档。
+这不是 CUDA kernel 吞吐，也不改变保留普通 workflow 长尾的
+JCT。额外报告 scheduler 收到与原生队列注册两个起点。
+
+V3327 核对了下列每组 3951 个请求的身份、输入和输出 token
+数。各组完成边界的 wall/monotonic 偏移跨度均小于 0.007ms。
+内容 hash、因果交付与任务质量仍分别沿用既有审计口径，不能
+由仅匹配身份和 token 数来替代。
+
+| 已完成组 | 有服务端请求待处理时的输出 tokens/s |
+| --- | ---: |
+| V136 natural native | 590.396 |
+| V139 JOIN-only | 599.627 |
+| V140 scheduler-only | 598.546 |
+| V143 Full | 600.581 |
+| V145 无工具 H2D 预取 | 603.987 |
+| V146 Full | 600.862 |
+| V147 Full | 601.641 |
+
+V147 比 native 提高 1.9046%，比 JOIN-only 和旧 scheduler-only
+仅高 0.3358%/0.5171%。请求总跨度内的零请求空档约为
+8.85--9.45 秒，不到 0.6%。因此，当前观察到的吞吐差别主要
+不来自这些纯空闲段，但上述跨引擎版本的小差异仍不能证明
+稳定的独立 KV 收益。V148 的同引擎两项对照继续运行。
+
+新审计对重复或缺失请求、身份变化、时钟变化、未完成总结、
+丢失记录、尚有请求或不完整文件尾部均拒绝给出完成组指标。
+CUDA 隐藏的 30 项定向审计/系统成本检查通过。该工具仅离线
+读取 trace，没有增加运行时埋点，也没有修改 V148 的冻结代码。
+报告为
+`experiments/reports/v3327_completed_controls_outstanding_request_throughput_20261024.json`。
