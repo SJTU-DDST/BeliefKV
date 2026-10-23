@@ -105,8 +105,9 @@ def test_critical_full_reclaim_waits_for_incremental_state_ack(native_cache):
 
     cache._execute_and_commit_kv_backup = Mock(side_effect=enqueue)
     cache.writing_check = Mock(side_effect=AssertionError("capacity copies stay asynchronous"))
+    # State ACK is required when the restore needs capacity in both pools.
     assert cache.reclaim_beliefkv_handoff_capacity(
-        full_tokens=available + 4, mamba_slots=0,
+        full_tokens=available + 4, mamba_slots=state_available + 1,
     ) == {}
     assert allocator.available_size() == available
     assert state.value is not None and full.value is not None
@@ -116,7 +117,7 @@ def test_critical_full_reclaim_waits_for_incremental_state_ack(native_cache):
     cache.ongoing_write_through.clear()
     cache.dec_lock_ref(leaf.id, locks[leaf.id])
     assert cache.reclaim_beliefkv_handoff_capacity(
-        full_tokens=available + 4, mamba_slots=0,
+        full_tokens=available + 4, mamba_slots=state_available + 1,
     ) == {0: 4, 2: 1}
     assert allocator.available_size() == available + 4
     assert request_pool.mamba_allocator.available_size() == state_available + 1
@@ -126,15 +127,16 @@ def test_critical_full_reclaim_waits_for_incremental_state_ack(native_cache):
 
 @pytest.mark.parametrize("handoff", (False, True))
 def test_host_allocation_failure_keeps_native_capacity_fallback(native_cache, handoff):
-    cache, allocator, _, leaf = prepared_checkpoint(native_cache, incremental=True)
+    cache, allocator, request_pool, leaf = prepared_checkpoint(native_cache, incremental=True)
     available = allocator.available_size()
+    state_available = request_pool.mamba_allocator.available_size()
     cache.beliefkv_join_pressure_candidates = ()
     cache.beliefkv_join_pressure_validator = lambda *_: False
     cache._execute_and_commit_kv_backup = Mock(return_value=0)
     cache.writing_check = Mock()
     if handoff:
         assert cache.reclaim_beliefkv_handoff_capacity(
-            full_tokens=available + 4, mamba_slots=0,
+            full_tokens=available + 4, mamba_slots=state_available + 1,
         ) == {0: 4, 2: 1}
     else:
         tracker = {}
@@ -227,6 +229,7 @@ def test_inherited_prefix_checkpoint_is_saved_before_critical_full_reclaim(nativ
 
     cache, allocator, older, current = inherited_checkpoint(native_cache)
     available = allocator.available_size()
+    state_available = cache.req_to_token_pool.mamba_allocator.available_size()
     state = older.component_data[2]
     current_state = current.component_data[2].value
     cache.beliefkv_join_pressure_candidates_by_component = {
@@ -249,7 +252,7 @@ def test_inherited_prefix_checkpoint_is_saved_before_critical_full_reclaim(nativ
 
     cache._execute_and_commit_kv_backup = Mock(side_effect=enqueue)
     assert cache.reclaim_beliefkv_handoff_capacity(
-        full_tokens=available + 4, mamba_slots=0,
+        full_tokens=available + 4, mamba_slots=state_available + 1,
     ) == {}
     assert allocator.available_size() == available
     assert state.value is not None and state.host_value is not None
@@ -257,7 +260,7 @@ def test_inherited_prefix_checkpoint_is_saved_before_critical_full_reclaim(nativ
     cache.ongoing_write_through.clear()
     cache.dec_lock_ref(older.id, locks[older.id])
     assert cache.reclaim_beliefkv_handoff_capacity(
-        full_tokens=available + 4, mamba_slots=0,
+        full_tokens=available + 4, mamba_slots=state_available + 1,
     ) == {0: 4, 2: 1}
     assert current.component_data[2].value is current_state
     assert cache.match_prefix(MatchPrefixParams(

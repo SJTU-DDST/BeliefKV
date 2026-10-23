@@ -2,6 +2,53 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+V144 completed at05:15 Beijing with the same3951 requests and exact tokens.
+Without periodic idle/spawn FULL preparation, mean JCT is1135.956s and
+output throughput594.482 tokens/s. Relative to V143 Full this is
++0.1095%/-0.1394%; V3274 revalidates receipts, configuration, cleanup and
+all normal tails. The single pair does not prove substantial backup value.
+Early JOIN reuse changes from25/16.042GB to23/17.097GB, and tool reuse
+from12/9.441GB to4/0.770GB. More early bytes do not establish net benefit.
+V145 is now running only the tool-H2D-prefetch ablation; its frozen source
+and old qualified engine remain unchanged.
+
+The next CPU-qualified candidate frees backed FULL without waiting for
+an unowned/inherited checkpoint's separate D2H when only FULL is short.
+It retains the existing independent device state and its native LRU.
+Later actual state pressure can back that state without retransmitting
+FULL. Requests short of both pools retain the existing ACK dependency.
+Unowned retention is restricted to incremental FULL management and an
+uncapped Mamba path (`mamba_max_states_per_path < 0`, as in this experiment).
+A finite path cap keeps the existing backup-before-demotion behavior,
+since path pruning could otherwise discard the deferred checkpoint.
+Direct waiting-session output leaves keep their existing policy.
+No per-decode scan, timer, protection lease or scheduling priority is added.
+
+V3268 preserves the two expected pre-fix CPU failures. V3277 preserves
+the finite-path-cap failure found during expanded review. Final V3278
+passes127 focused cases; V3279/V3281 retain657 engine cases plus48
+subtests and bind tree `5429314359ef4fb8182b67b59825666a1908a14d`.
+V3280/V3282 retain all5471 preceding application cases and pass5472 plus2
+subtests, with CUDA hidden and no skips/failures. The optional Docker
+case stays outside inherited qualification. Qualified engine checkout:
+`/home/longhao/experiment/.worktrees/sglang-full-only-capacity-20261024`.
+Do not mutate its staged/unstaged state after this seal.
+
+V3283 finds112 FULL-only and2 joint-pool shortfalls in V143's114 critical
+headroom calls;101 FULL-only calls remain short after that call. These
+include retries and do not prove a suitable backed donor in every case.
+State-only D2H totals are92.527GB in V143 and2.318GB in V144; they include
+necessary copies and are not the candidate's saved-byte estimate.
+
+After V145 completes, review its latest full trace and actual cleanup,
+then independently register V146 against the same V136 work/native capture,
+with the final candidate qualification above. Do not use
+`--after-registration` across the changed engine tree. Keep24 roots,
+batch24, seed21 and capacity. First verify actual startup prefill work;
+a checkpoint may now remain on device, so a Host Mamba hit is not itself
+required. The known large-prefix recomputation must not return. GPU
+performance and repeatable independent KV benefit remain unproven.
+
 V143 completed at04:45 Beijing with all24 workflows,3951 requests,
 264598879 prompt and958791 output tokens. V3263 independently revalidates
 source, receipts and actual configuration; normal tails remain included,
@@ -44,15 +91,12 @@ newly cold dirty nodes wait behind repeatedly inspected hot nodes and
 remove avoidable scans while preserving ownership, locks and ACKs. Do not
 infer a freeable donor or removable JCT from a scan counter alone.
 
-V144 has started after V143's successful same-work validation and cleanup.
-Actual runtime confirms `background_prepare=false`, `prepare_host=true`,
-tool prefetch on and EOS JOIN; periodic idle and spawn preparation stay
-off, pressure-triggered preparation remains. V3267 seals its live processes,
-configuration and both initial long roots' positive Host checkpoint hits.
-V145 is queued behind V144
-with only tool H2D prefetch disabled; tool timing/offload, JOIN and backup
-remain. Both use the identical engine, source work, capacity, batch24 and
-seed21. Registrations are under `/home/longhao/experiment/ops/`:
+V144 used `background_prepare=false`, `prepare_host=true`, tool prefetch
+on and EOS JOIN; pressure-triggered preparation remained. V3267 preserves
+its live startup configuration and positive Host checkpoint hits before
+completion. V145 follows with only tool H2D prefetch disabled; tool
+timing/offload, JOIN and backup remain. These two ablations use the same
+old engine, source work, capacity, batch24 and seed21. Registrations:
 `v144_oneshot_batch24_no_background_prepare_20261024.registration.json`,
 `v145_oneshot_batch24_no_tool_prefetch_20261024.registration.json`.
 Keep the natural-native reference; no full native replay is queued.
