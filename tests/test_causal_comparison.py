@@ -34,6 +34,56 @@ def test_replay_population_binds_every_declared_workflow_and_rejects_subsets(roo
         comparison.complete_source_population(summary, graph(ids))
 
 
+@pytest.mark.parametrize("change", (
+    None, "incomplete", "zero_duration", "nan_duration", "missing_jct", "boolean_jct",
+    "negative_work", "not_native",
+))
+def test_captured_native_reference_keeps_all_workflow_tails_and_exact_work(change):
+    from beliefkv.core.events import RuntimeEventKind as Kind
+
+    summary = {
+        "workflow_count": 2, "completed_workflows": 2, "duration_seconds": 10001.,
+        "workflows": [
+            {"workflow_id": "short", "duration_seconds": 1.},
+            {"workflow_id": "tail", "duration_seconds": 10000.},
+        ],
+    }
+    work = {"workflows": 2, "requests": 4, "prompt_tokens": 120, "output_tokens": 20}
+    launch = {"native_policy_baseline": True}
+    graph = NS(
+        nodes=[NS(event=NS(kind=Kind.WORKFLOW_START, workflow_id=value))
+               for value in ("short", "tail")],
+        summary=lambda: work,
+    )
+    if change == "incomplete":
+        summary["completed_workflows"] = 1
+    elif change == "zero_duration":
+        summary["duration_seconds"] = 0.
+    elif change == "nan_duration":
+        summary["duration_seconds"] = float("nan")
+    elif change == "missing_jct":
+        del summary["workflows"][1]["duration_seconds"]
+    elif change == "boolean_jct":
+        summary["workflows"][0]["duration_seconds"] = True
+    elif change == "negative_work":
+        work["output_tokens"] = -1
+    elif change == "not_native":
+        launch["native_policy_baseline"] = False
+    if change is not None:
+        with pytest.raises(ValueError, match="captured native baseline|entire declared"):
+            comparison.captured_native_baseline(summary, graph, launch)
+        return
+    baseline = comparison.captured_native_baseline(summary, graph, launch)
+    assert baseline["kind"] == "natural_native_source_capture"
+    assert baseline["workflow_jct_ms"] == {"short": 1000., "tail": 10000000.}
+    assert baseline["mean_jct_ms"] == 5000500.
+    assert baseline["duration_ms"] == 10001000.
+    assert baseline["requests"] == 4 and baseline["output_tokens"] == 20
+    assert baseline["whole_run_output_tokens_per_second"] == pytest.approx(20 / 10001.)
+    assert baseline["all_normal_tails_retained"] is True
+    assert baseline["fresh_full_native_replay_required"] is False
+
+
 @pytest.fixture
 def reference(tmp_path):
     artifact = tmp_path / "timing.json"
@@ -748,13 +798,14 @@ def test_cleanup_waits_for_slow_device_teardown_but_reports_a_persistent_process
 
 @pytest.mark.parametrize("failure", (
     None, "driver", "changed_work", "capacity", "no_tool_prefetch",
-    "queued_no_tool_prefetch", "failed_predecessor", "source_slowdown",
+    "queued_no_tool_prefetch", "failed_predecessor", "source_slowdown", "capture_baseline",
 ))
 def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     reference, tmp_path, monkeypatch, failure,
 ):
     queued = failure == "queued_no_tool_prefetch"
     failed_predecessor = failure == "failed_predecessor"
+    captured_reference = failure == "capture_baseline"
     order = (
         ["no_tool_prefetch"] if failure in (
             "no_tool_prefetch", "queued_no_tool_prefetch", "failed_predecessor",
@@ -762,6 +813,10 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     )
     if failure == "source_slowdown":
         order = ["native_matched", "no_tool_prefetch"]
+    elif captured_reference:
+        order = list(comparison.DEFAULT_ORDER)
+        assert "native_matched" not in order
+        failure = None
     if failure in ("no_tool_prefetch", "queued_no_tool_prefetch"):
         failure = None
     registration = tmp_path / "registered.json"
@@ -782,6 +837,11 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
             maximum_replay_slowdown=.05,
             source_metrics={"mean_jct_ms": 4000., "replay_duration_ms": 4000.},
         )
+    elif captured_reference:
+        plan["native_baseline"] = {
+            "kind": "natural_native_source_capture", "mean_jct_ms": 10000.,
+            "whole_run_output_tokens_per_second": .3,
+        }
     registration.write_text(json.dumps(plan))
     root = {"pid": 100, "ppid": 1, "start_ticks": "root", "state": "S"}
     scheduler = {"pid": 101, "ppid": 100, "start_ticks": "scheduler", "state": "S"}
@@ -892,6 +952,13 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
         report = json.loads((run / "causal_comparison.json").read_bytes())
         assert report["all_normal_tails_retained"] and not report["performance_accepted"]
         assert all(row["mean_jct_ms"] == 5000. for row in report["results"].values())
+        if captured_reference:
+            assert report["native_baseline"] == plan["native_baseline"]
+            assert "native_matched" not in report["results"]
+            assert report["results"]["full"]["captured_native_mean_jct_change_percent"] == -50.
+            assert report["results"]["full"][
+                "captured_native_output_throughput_change_percent"
+            ] == pytest.approx(100. * ((3. / 5.1) / .3 - 1.))
         commands = [row for row in launched if row[0] == "driver"]
         assert [("--event-socket" in command) for _, _, command in commands] == [
             label != "native_matched" for label in order

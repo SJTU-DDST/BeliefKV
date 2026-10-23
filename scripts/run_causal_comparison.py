@@ -34,6 +34,7 @@ from scripts.run_causal_source_capture import (
 from beliefkv.core.events import RuntimeEventKind as Kind
 
 ORDER = ("full", "native_matched", "join_priority_only", "no_background_prepare")
+DEFAULT_ORDER = ("full", "join_priority_only")
 CONTROLS = (*ORDER, "no_tool_prefetch")
 RETENTION_CONTROLS = {f"subagent_{policy}": policy for policy in RETENTION_ORDER}
 ALL_CONTROLS = (*CONTROLS, *RETENTION_CONTROLS)
@@ -226,6 +227,44 @@ def complete_source_population(summary, graph):
     ):
         raise ValueError("causal source must retain its entire declared workflow population")
     return count
+
+
+def captured_native_baseline(summary, graph, launch):
+    if not isinstance(launch, dict) or launch.get("native_policy_baseline") is not True:
+        raise ValueError("captured native baseline requires a verified native source policy")
+    count = complete_source_population(summary, graph)
+    duration = summary.get("duration_seconds")
+    rows = summary["workflows"]
+    if (
+        type(duration) not in (int, float) or not math.isfinite(duration) or duration <= 0
+        or any(
+            type(row.get("duration_seconds")) not in (int, float)
+            or not math.isfinite(row["duration_seconds"]) or row["duration_seconds"] <= 0
+            for row in rows
+        )
+    ):
+        raise ValueError("captured native baseline requires complete positive timings")
+    work = graph.summary()
+    if (
+        any(type(work.get(name)) is not int or work[name] < 0 for name in (
+            "requests", "prompt_tokens", "output_tokens",
+        ))
+        or work["requests"] == 0
+    ):
+        raise ValueError("captured native baseline requires verified source work totals")
+    elapsed = {row["workflow_id"]: row["duration_seconds"] * 1000. for row in rows}
+    return {
+        "kind": "natural_native_source_capture",
+        "workflow_count": count, "workflow_jct_ms": elapsed,
+        "mean_jct_ms": statistics.mean(elapsed.values()),
+        "duration_ms": duration * 1000.,
+        "requests": work["requests"], "prompt_tokens": work["prompt_tokens"],
+        "output_tokens": work["output_tokens"],
+        "whole_run_output_tokens_per_second": work["output_tokens"] / duration,
+        "all_normal_tails_retained": True,
+        "fresh_full_native_replay_required": False,
+        "replay_error_basis": "historical_calibration_not_remeasured_on_this_source",
+    }
 
 
 def retention_source_matches(spec, summary, count):
@@ -520,6 +559,13 @@ def register(args):
     summaries = list(args.source_arm.glob("client_*/summary.json"))
     quality = load(summaries[0])
     source_roots = complete_source_population(quality, graph)
+    source_launch = args.source_arm / "server/launch_configuration.json"
+    native_baseline = captured_native_baseline(quality, graph, load(source_launch))
+    native_baseline.update(
+        source_arm=str(args.source_arm.resolve()),
+        client_summary_sha256=sha256_file(summaries[0]),
+        launch_configuration_sha256=sha256_file(source_launch),
+    )
     running = args.max_running_requests if args.max_running_requests is not None else 8
     if type(running) is not int or not 1 <= running <= 9999:
         raise ValueError("max running requests must be a positive integer")
@@ -567,6 +613,7 @@ def register(args):
         args.reference, args.cpu_report, args.cpu_sources, args.gpu_smoke,
         args.sampling_calibration, args.engine_report, args.engine_sources,
         Path(evidence["source_arm"]) / "server/request_tokens.jsonl",
+        source_launch,
         Path(reservation.__file__),
     ]
     if args.retention_config is not None:
@@ -632,6 +679,7 @@ def register(args):
             "mean_jct_ms": statistics.mean(row["duration_seconds"] for row in quality["workflows"]) * 1000.,
             "replay_duration_ms": quality["duration_seconds"] * 1000.,
         },
+        "native_baseline": native_baseline,
         "gpu_replay_qualified": False, "performance_accepted": False,
         "scope": "Auxiliary same-work causal controls; retain all tails and source guard qualifications.",
     }
@@ -848,6 +896,19 @@ def watch(registration):
                     "replay_duration_ms": result["finished_monotonic_ms"] - result["started_monotonic_ms"],
                     "same_request_work_verified": True,
                 }
+                baseline = plan.get("native_baseline")
+                if baseline is not None:
+                    seconds = results[label]["replay_duration_ms"] / 1000.
+                    throughput = results[label]["output_tokens"] / seconds
+                    results[label].update(
+                        whole_run_output_tokens_per_second=throughput,
+                        captured_native_mean_jct_change_percent=100. * (
+                            results[label]["mean_jct_ms"] / baseline["mean_jct_ms"] - 1.
+                        ),
+                        captured_native_output_throughput_change_percent=100. * (
+                            throughput / baseline["whole_run_output_tokens_per_second"] - 1.
+                        ) if baseline["whole_run_output_tokens_per_second"] > 0 else None,
+                    )
                 speed = None
                 if label == "native_matched" and plan.get("maximum_replay_slowdown") is not None:
                     speed = source_speed_check(
@@ -862,6 +923,7 @@ def watch(registration):
                     "all_normal_tails_retained": True, "performance_accepted": False,
                     "scope": plan["scope"],
                     "after_registration": plan.get("after_registration"),
+                    "native_baseline": plan.get("native_baseline"),
                 })
                 pulse()
                 if speed is not None and not speed["accepted"]:
@@ -888,7 +950,7 @@ def main():
     ):
         parser.add_argument("--" + name, type=Path)
     parser.add_argument("--port", type=int, default=18554)
-    parser.add_argument("--arms", nargs="+", choices=ALL_CONTROLS, default=list(ORDER))
+    parser.add_argument("--arms", nargs="+", choices=ALL_CONTROLS, default=list(DEFAULT_ORDER))
     parser.add_argument("--retention-config", type=Path)
     parser.add_argument("--tool-prefetch-priority-ms", type=float)
     parser.add_argument("--max-running-requests", type=int)

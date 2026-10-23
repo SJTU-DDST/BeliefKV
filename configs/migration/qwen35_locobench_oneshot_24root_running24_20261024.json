@@ -47,7 +47,30 @@
     "H2D_OPPORTUNITY_SAMPLING": "0",
     "TERMINAL_CACHE_DIAGNOSTICS": "0"
   },
-  "order": ["native_matched", "full", "join_priority_only"],
+  "order": ["full", "join_priority_only"],
+  "native_reference": {
+    "kind": "completed_natural_native_source_capture",
+    "repeat_full_native_replay": false,
+    "replay_error_basis": "historical_calibration_reported_separately",
+    "historical_calibration": {
+      "run": "v133b_native_matched",
+      "running_decode_limit": 8,
+      "mean_jct_replay_to_source_ratio": 0.9921719155521481,
+      "duration_replay_to_source_ratio": 0.9935080739802928,
+      "scope": "prior_configuration_evidence_not_a_fresh_error_bound_for_batch24"
+    },
+    "exact_token_dependency_and_stopping_checks_retained": true
+  },
+  "workload_escalation": {
+    "root_counts": [24, 32, 36],
+    "condition": "insufficient_useful_migration_or_host_device_pressure_during_join_and_tool_wait",
+    "keep_running_decode_limit": 24,
+    "prefer_additional_independent_qualified_projects": true,
+    "record_actual_project_diversity": true,
+    "fresh_native_source_required_after_workload_change": true,
+    "ordinary_lru_cache_fill_alone_is_not_pressure_evidence": true,
+    "monitor_useful_host_state_loss_and_recomputation": true
+  },
   "invariants": {
     "distinct_original_tasks": 24,
     "distinct_original_projects": 16,
@@ -58,7 +81,7 @@
     "native_uses_ordinary_cache_eviction": true,
     "same_capacity_seed_and_work_in_all_comparison_arms": true,
     "normal_workflow_tails_retained": true,
-    "capture_is_not_a_performance_arm": true
+    "capture_is_the_native_reference_and_not_a_replay_arm": true
   },
   "required_observations": [
     "nested_and_multiple_round_delegation",

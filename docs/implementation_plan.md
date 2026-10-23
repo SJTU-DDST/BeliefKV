@@ -2,6 +2,29 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+Latest experiment policy: keep24 roots initially. If the resulting source has
+too little useful migration or insufficient Host/HBM pressure around real
+JOIN/tool waits, increase to32, then36 roots without another approval.
+Keep running/decode24 and the same capacity, seed and lifecycle policy so the
+root-count change is interpretable. Prefer additional qualified independent
+projects; record actual project diversity instead of treating roots as projects.
+Assess capacity waits, Host-only useful prefixes, completed migration and
+useful-state loss; ordinary LRU cache fill or aggregate repeated bytes alone
+does not prove a useful prefetch opportunity.
+
+Do not repeat a full native replay by default. The completed natural native
+source supplies the corresponding whole-workflow JCT and whole-run output
+throughput reference; replay only Full and requested ablations on its exact
+tokens and dependencies. Preserve historical replay calibration separately
+and label the capture reference explicitly; do not claim a fresh native replay
+calibration on this new source. Exact tokens, stopping and full workflow
+population checks remain required. A changed workload/root count requires
+its own natural source/native reference, with no extra full native replay.
+The comparison defaults and report implement this policy. V3188/V3189 retains
+5379 and qualifies5388 CPU cases plus2 subtests without failures/skips;
+native source policy and summary hashes are bound, and the no-native-replay
+supervisor path is covered. V136's existing frozen capture continues unchanged.
+
 Latest user direction supersedes the reusable-subagent matrix: restore the old
 `native_in_graph_nested_2to4` one-shot workload and validate the original KV
 management mechanisms first. Use24 simultaneous roots and a running/decode
@@ -19,8 +42,9 @@ See `configs/migration/qwen35_locobench_oneshot_24root_running24_20261024.json`.
 The old16-root pilot's `token_usage` and `resident_pressure` subtract evictable
 cache: they do not measure total HBM occupancy. Preserve its numeric samples
 and explicit semantics correction inV3181. Normal JCT tails remain included.
-Capture a complete natural source, then compare the same work, seed, capacity
-and batch in native, Full and JOIN-only. Tool H2D uses actual-ACK priority
+Capture a complete natural native source, then replay the same work, seed,
+capacity and batch in Full and JOIN-only, using that native capture as reference.
+Tool H2D uses actual-ACK priority
 for1500ms. EOS JOIN, cold incremental preparation, tool timing/pressure offload
 and workflow/resident-first/stage ordering remain the original Full candidates;
 execution-frontier restoration and short-tool continuity remain off.
