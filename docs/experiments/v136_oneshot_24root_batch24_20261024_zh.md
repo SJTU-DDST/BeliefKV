@@ -386,7 +386,12 @@ V3223 的 244 项定向检查通过；V3225/V3227 完整保留前轮 5435 项，
 0.039us，在线条件检查每次新增约 0.666-3.900us，最多扫描 64 条
 已有历史，不发行物理动作。它不代表全程控制开销的实测总和。
 
-下一轮在 V140 完成后验证修复版 Full，继续使用 V136 同一精确工作量、
-24 root/batch24、seed21 和自然 native 参考。当前有用提前恢复已
-超过 10GB，不扩大 root 数，也不重复完整 native 重放。性能目标仍未
-达成。
+V141 修复版 Full 已登记，冻结 app 为 `048473a3378f`：
+`/home/longhao/experiment/ops/v141_oneshot_batch24_tool_tail_support_full_20261024.registration.json`。
+03:00 北京时间实际 watcher 存活，状态为
+`waiting_previous_causal_comparison`，等待 V140 完成并释放进程。
+本次队列只有 Full；CPU 配置预检查确认 workflow/cold、
+speculative/complete、1500ms 工具优先窗口和 observed-EOS JOIN。
+继续使用 V136 同一精确工作量、24 root/batch24、seed21 和自然
+native 参考。当前有用提前恢复已超过 10GB，不扩大 root 数，也不重复
+完整 native 重放。性能目标仍未达成。

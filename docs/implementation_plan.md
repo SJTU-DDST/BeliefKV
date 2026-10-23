@@ -44,9 +44,13 @@ The optional Docker case remains outside the inherited qualification.
 V3226 compares the pinned old method on identical CPU fixtures: the legacy
 path adds0.039us and online conditional checks add0.666-3.900us per query,
 with at most64 historical entries and no physical action. These are controlled
-costs, not a measured aggregate online overhead. Queue one qualified candidate
-Full after V140 on the same source; do not rerun native or increase roots.
-The performance goal remains active and unmet.
+costs, not a measured aggregate online overhead. V141 is registered with only
+Full after V140, frozen at048473a3378f on the same source. Its live supervisor
+is verified in `waiting_previous_causal_comparison` at03:00 Beijing:
+`/home/longhao/experiment/ops/v141_oneshot_batch24_tool_tail_support_full_20261024.registration.json`.
+CPU configuration preflight accepts workflow/cold/speculative/complete,
+1500ms tool priority and observed-EOS JOIN. Do not rerun native or increase
+roots. The performance goal remains active and unmet.
 
 V3217's completed lifecycle audit finds43 JOINs with pre-completion positive
 FULL plans;33 submit and reuse24.409GB early. Tool waits contribute13 early
