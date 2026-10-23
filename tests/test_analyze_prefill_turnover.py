@@ -1,10 +1,13 @@
 from copy import deepcopy
+import gzip
 import hashlib
 import json
 
 import pytest
 
-from scripts.analyze_prefill_turnover import analyze_samples, distribution, read_sealed
+from scripts.analyze_prefill_turnover import (
+    analyze_samples, distribution, read_lifecycle_prefix, read_sealed,
+)
 
 
 def phase(start, end, cpu):
@@ -175,3 +178,60 @@ def test_window_end_is_exclusive_and_absent_old_native_fields_are_unknown():
         "count": 0, "mean_ms": None, "p50_ms": None, "p90_ms": None,
         "max_ms": None, "sum_ms": None,
     }
+
+
+def lifecycle_fixture(tmp_path):
+    probe, service, wait = evidence()
+    audit = tmp_path / "arm/server/runtime_audit.jsonl"
+    audit.parent.mkdir(parents=True)
+    raw = b"".join((json.dumps(row) + "\n").encode() for row in (probe, service, wait))
+    audit.write_bytes(raw + b'{"event":"unsealed-live-suffix"}\n')
+    lifecycle = {
+        "arm": str(audit.parent.parent),
+        "collection_code_commit": "frozen-collection",
+        "input_jsonl_prefixes": {str(audit): {
+            "complete_prefix_bytes": len(raw),
+            "complete_prefix_sha256": hashlib.sha256(raw).hexdigest(),
+        }},
+    }
+    path = tmp_path / "lifecycle.json.gz"
+    path.write_bytes(gzip.compress(json.dumps(lifecycle).encode(), mtime=0))
+    return path, audit, lifecycle
+
+
+def test_lifecycle_analysis_reuses_the_original_complete_prefix_and_collection(tmp_path):
+    path, audit, _ = lifecycle_fixture(tmp_path)
+    result = read_lifecycle_prefix(path, begin=1000., end=1100.)
+    assert result["analysis"]["short_single_request"]["sample_count"] == 1
+    assert result["collection_code_commit"] == "frozen-collection"
+    assert result["lifecycle_report_sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
+    assert result["source_prefix"]["read_prefix_bytes"] < audit.stat().st_size
+    assert result["source_prefix"]["monitor_window"] == {
+        "begin_ts_ms": 1000., "end_ts_ms": 1100.,
+    }
+
+
+@pytest.mark.parametrize("mutation", ("missing_prefix", "wrong_hash", "wrong_size", "no_commit"))
+def test_lifecycle_analysis_rejects_unbound_or_changed_evidence(tmp_path, mutation):
+    path, audit, lifecycle = lifecycle_fixture(tmp_path)
+    prefix = lifecycle["input_jsonl_prefixes"][str(audit)]
+    if mutation == "missing_prefix":
+        lifecycle["input_jsonl_prefixes"].clear()
+    elif mutation == "wrong_hash":
+        prefix["complete_prefix_sha256"] = "0" * 64
+    elif mutation == "wrong_size":
+        prefix["complete_prefix_bytes"] = True
+    else:
+        del lifecycle["collection_code_commit"]
+    path.write_bytes(gzip.compress(json.dumps(lifecycle).encode(), mtime=0))
+    with pytest.raises(ValueError):
+        read_lifecycle_prefix(path, begin=1000., end=1100.)
+
+
+@pytest.mark.parametrize("begin,end", (
+    (None, 1100.), (1000., None), (1000., 1000.), (1100., 1000.),
+    (-1., 1100.), (float("nan"), 1100.), (1000., float("inf")), (True, 1100.),
+))
+def test_lifecycle_analysis_rejects_an_invalid_diagnostic_window(tmp_path, begin, end):
+    with pytest.raises(ValueError, match="finite, nonempty"):
+        read_lifecycle_prefix(tmp_path / "unread.json.gz", begin=begin, end=end)

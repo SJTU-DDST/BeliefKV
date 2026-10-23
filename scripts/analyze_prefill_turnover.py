@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from collections import Counter, defaultdict
 from datetime import datetime
+import gzip
 import hashlib
 import json
 import math
@@ -277,13 +278,93 @@ def read_sealed(metadata):
     )
 
 
+def read_lifecycle_prefix(path, *, begin, end):
+    """Reuse an existing seal without observing a later live-file suffix."""
+    if not (number(begin) and number(end) and 0 <= begin < end):
+        raise ValueError("lifecycle analysis requires a finite, nonempty epoch-ms window")
+    raw = path.read_bytes()
+    lifecycle = json.loads(gzip.decompress(raw))
+    arm = Path(lifecycle["arm"]).resolve()
+    audit = arm / "server/runtime_audit.jsonl"
+    matches = [
+        value for name, value in lifecycle["input_jsonl_prefixes"].items()
+        if Path(name).resolve() == audit
+    ]
+    if len(matches) != 1:
+        raise ValueError("lifecycle report requires one sealed native audit prefix")
+    prefix = matches[0]
+    if (
+        type(prefix.get("complete_prefix_bytes")) is not int
+        or prefix["complete_prefix_bytes"] < 0
+        or type(prefix.get("complete_prefix_sha256")) is not str
+        or len(prefix["complete_prefix_sha256"]) != 64
+        or not isinstance(lifecycle.get("collection_code_commit"), str)
+        or not lifecycle["collection_code_commit"]
+    ):
+        raise ValueError("lifecycle audit seal or collection identity is invalid")
+    metadata = {
+        "source": str(audit),
+        "read_prefix_bytes": prefix["complete_prefix_bytes"],
+        "read_prefix_sha256": prefix["complete_prefix_sha256"],
+        "monitor_window": {"begin_ts_ms": begin, "end_ts_ms": end},
+    }
+    return {
+        "lifecycle_report": str(path.resolve()),
+        "lifecycle_report_sha256": hashlib.sha256(raw).hexdigest(),
+        "collection_code_commit": lifecycle["collection_code_commit"],
+        "source_prefix": metadata,
+        "analysis": read_sealed(metadata),
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--busy-report", type=Path, required=True)
+    inputs = parser.add_mutually_exclusive_group(required=True)
+    inputs.add_argument("--busy-report", type=Path)
+    inputs.add_argument("--lifecycle-report", type=Path)
+    parser.add_argument("--begin-ts-ms", type=float)
+    parser.add_argument("--end-ts-ms", type=float)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.output.exists():
         raise ValueError("preserve existing turnover evidence")
+    if args.lifecycle_report is not None:
+        if not (
+            number(args.begin_ts_ms) and number(args.end_ts_ms)
+            and 0 <= args.begin_ts_ms < args.end_ts_ms
+        ):
+            parser.error("lifecycle analysis requires a finite, nonempty epoch-ms window")
+        evidence = read_lifecycle_prefix(
+            args.lifecycle_report, begin=args.begin_ts_ms, end=args.end_ts_ms,
+        )
+        result = {
+            "schema_version": 1,
+            "observed_at_local": datetime.now().astimezone().isoformat(),
+            **evidence,
+            "phase_nesting": {"launch_telemetry": "run_batch"},
+            "analyzer_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+            "scope": (
+                "One collecting arm's sealed native phase observations. "
+                "The window is diagnostic, not a workflow JCT truncation, "
+                "same-work comparison or performance acceptance. "
+                "CPU/GPU phases overlap; missing observations remain unknown. "
+                "One-in-16 samples are not extrapolated to cumulative cost. "
+                "The lifecycle input files were independently sealed, not atomic."
+            ),
+            "performance_accepted": False,
+        }
+        with args.output.open("x") as stream:
+            json.dump(result, stream, indent=2, allow_nan=False)
+            stream.write("\n")
+        print(json.dumps({
+            "output": str(args.output),
+            "collection_code_commit": result["collection_code_commit"],
+            "probes_in_sealed_prefix": evidence["analysis"]["probes_in_sealed_prefix"],
+            "short_single_request": evidence["analysis"]["short_single_request"],
+        }, indent=2))
+        return
+    if args.begin_ts_ms is not None or args.end_ts_ms is not None:
+        parser.error("epoch-ms window options require --lifecycle-report")
     raw = args.busy_report.read_bytes()
     report = json.loads(raw)
     result = {
