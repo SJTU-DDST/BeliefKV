@@ -2,21 +2,32 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
-V139 is running the Full replay from app commit
-`b92a1c242f1eba0694847dba1ef6e99655657b26` and engine tree
-`cc9772c6c5c4dcd3678a03b67fa9afc190aec4f8`.
-Registration is
-`/home/longhao/experiment/ops/v139_oneshot_batch24_controls_20261024.registration.json`;
-its `.registration.state.json` is checked against actual process identities,
-GPU ownership and advancing request receipts. At01:49 Beijing, the real
-runtime confirms cold preparation, workflow/resident-first/stage ordering,
-observed-EOS JOIN prefetch, speculative tool prefetch with1500ms priority,
-and no frontier restore, short-tool continuity or retention. Actual running
-limit24, context262144, seed21 and all four pools match V136. Initial completed
-requests pass exact-token checks; the complete replay and performance result
-remain pending. The registered order is Full then JOIN-only, with no full
-native replay. Keep24 roots until the useful-migration and capacity evidence
-warrants32 or36; do not change the configuration during this comparison.
+V139 Full completed normally:24/24 workflows,3951 identical requests,
+264598879 input and958791 output tokens, with verified native stopping,
+sessions and causal execution. Keep all normal tails. Mean JCT is1144.890s
+against1164.156s in the corresponding V136 natural native capture (-1.655%);
+whole-run output throughput is591.410 against582.413 tokens/s (+1.545%).
+V3219 binds the complete result and work/telemetry evidence. This small
+single-run difference is not accepted isolated KV benefit or repeatable
+dominance; source correctness remains independently ungraded.
+
+V139 now runs JOIN-only from frozen appb92a1c242f1e and engine treecc9772c6c5c4.
+Its actual server/driver identities and receipts are checked. V140 has a live
+waiting supervisor for scheduler-only, registered after V139; it cannot take
+the GPU until both V139 arms finish and their owned processes exit. V140
+freezes appb560d23c5042 and the same engine tree, capacity, batch24, seed21
+and V136 exact work. No extra full native replay is queued. Registrations:
+`/home/longhao/experiment/ops/v139_oneshot_batch24_controls_20261024.registration.json`
+and `v140_oneshot_batch24_scheduler_only_20261024.registration.json`.
+Keep24 roots; meaningful early recovery already exceeds10GB.
+
+V3217's completed lifecycle audit finds43 JOINs with pre-completion positive
+FULL plans;33 submit and reuse24.409GB early. Tool waits contribute13 early
+reuses/2.699GB FULL. Ten JOINs have no recorded pre-completion submission;
+nine have pre-completion capacity-budget evidence. V3218 shows actual zero
+FULL budget after native reservation in the sampled FULL refusals, rather
+than a positive budget blocked by the first extent's size. Capacity conversion
+and tool-residence tails remain unresolved trace targets.
 
 The01:53 sealed V139 prefix already has7 JOIN waits with pre-completion
 positive FULL plans; all7 submitted before completion and reused8.783GB FULL.
