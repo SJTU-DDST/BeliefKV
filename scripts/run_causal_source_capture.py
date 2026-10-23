@@ -20,6 +20,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.internal_comparison import arm_environment
+from beliefkv.experiments.delegation_policy import REUSABLE_NESTED_IN_GRAPH_PROFILE
+from beliefkv.core.events import RuntimeEventKind as Kind
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
 from scripts import run_eos_pair_after_modules as pair
 from scripts.audit_causal_replay import audit as audit_graph
@@ -38,7 +40,11 @@ def reference_complete(plan, state, *, alive=reservation.alive):
         raise ValueError("reference pair must finish and release its verified processes")
 
 
-def environment(reference, checkout: Path, engine: Path, run: Path, port: int):
+def environment(
+    reference, checkout: Path, engine: Path, run: Path, port: int, *, source_profile=None,
+):
+    if source_profile not in (None, "balanced_join", "reusable_nested"):
+        raise ValueError("unknown predeclared source profile")
     run = run.resolve()
     base = reference["arms"]["native_matched"]
     required = {
@@ -61,7 +67,10 @@ def environment(reference, checkout: Path, engine: Path, run: Path, port: int):
         PYTHONPATH=str(checkout), WORKLOAD_MANIFEST=str(target),
         SGLANG_SOURCE_CHECKOUT=str(engine), RUN_ROOT=str(run / "native_capture"),
         PORT=str(port), CUDA_VISIBLE_DEVICES="0", BELIEFKV_REPLAY_TOKEN_CAPTURE="1",
+        BELIEFKV_SUBAGENT_RETENTION="off",
     )
+    if source_profile == "reusable_nested":
+        result["FANOUT_PROFILE"] = REUSABLE_NESTED_IN_GRAPH_PROFILE
     return result
 
 
@@ -153,6 +162,57 @@ def balanced_source(summary):
     }
 
 
+def reusable_source(summary, graph):
+    """Describe real reuse opportunities without selecting for policy speedup."""
+    creates = [
+        node.event for node in graph.nodes
+        if node.event is not None and node.event.kind is Kind.INVOCATION_CREATE
+        and node.event.attributes.get("reusable_subagent") is True
+    ]
+    resumed = {
+        (event.workflow_id, event.invocation_id) for event in creates
+        if event.attributes.get("resumed") is True
+    }
+    started = {
+        (node.event.workflow_id, node.event.invocation_id) for node in graph.nodes
+        if node.event is not None and node.event.kind is Kind.LLM_SUBMIT
+        and (node.event.workflow_id, node.event.invocation_id) in resumed
+    }
+    reasons = []
+    workflows = summary.get("workflows", [])
+    graph_workflows = {
+        node.event.workflow_id for node in graph.nodes
+        if node.event is not None and node.event.kind is Kind.WORKFLOW_START
+    }
+    if (
+        len(workflows) != 36 or summary.get("completed_workflows") != 36
+        or len(graph_workflows) != 36
+        or {row.get("workflow_id") for row in workflows} != graph_workflows
+    ):
+        reasons.append("incomplete_workflow_population")
+    if any(row.get("native_agent_jct_eligible") is not True for row in workflows):
+        reasons.append("source_guard_or_ineligible_workflow")
+    if summary.get("subagent_fanout_profile") != REUSABLE_NESTED_IN_GRAPH_PROFILE:
+        reasons.append("not_the_predeclared_reusable_profile")
+    if not started:
+        reasons.append("no_real_same_handle_resume")
+    return {
+        "profile": "reusable_nested", "accepted": not reasons, "reasons": reasons,
+        "workflow_count": len(workflows),
+        "handles": len({(event.workflow_id, event.attributes["agent_handle"]) for event in creates}),
+        "activations": len(creates), "resumes_declared": len(resumed),
+        "resumes_started": len(started),
+        "joins": graph.summary()["event_counts"].get(Kind.JOIN_CREATE.value, 0),
+        "nested_joins": summary.get("nested_delegation_round_count"),
+        "root_rounds": summary.get("root_delegation_round_counts"),
+        "scope": (
+            "First predeclared natural reusable workload. No speedup, fixed JOIN "
+            "quota or tail trimming selects this source. Pressure and the amount "
+            "of useful reuse require separate capacity and performance evidence."
+        ),
+    }
+
+
 def wait_for_resources(plan, state, path, interrupted):
     while True:
         fresh.check_hold(plan, released=True)
@@ -232,7 +292,10 @@ def register(args):
     )["canonical_patch"]
     if not tree["matches_worktree"] or tree["actual_tree"] != evidence["tree"]:
         raise ValueError("frozen engine differs from the tested capture engine")
-    env = environment(reference, checkout, engine, args.run_root, args.port)
+    env = environment(
+        reference, checkout, engine, args.run_root, args.port,
+        source_profile=args.source_profile,
+    )
     extra = [
         args.reference, args.reference.with_suffix(".state.json"),
         args.cpu_report, args.cpu_sources, args.engine_report, args.engine_sources,
@@ -348,6 +411,15 @@ def watch(registration: Path):
                 state["source_selection"] = selection
                 if not selection["accepted"]:
                     state["status"] = "source_captured_selection_rejected"
+            elif plan.get("source_profile") == "reusable_nested":
+                from scripts.run_causal_gpu_replay import source_plan
+
+                graph, _, _ = source_plan(arm)
+                selection = reusable_source(load(arm / "client_36/summary.json"), graph)
+                reservation.write_json(run / "source_selection.json", selection)
+                state["source_selection"] = selection
+                if not selection["accepted"]:
+                    state["status"] = "source_captured_selection_rejected"
         except Exception as error:
             if driver is not None and driver.poll() is None:
                 identities = reservation.owned_runs().get(run, [])
@@ -381,7 +453,7 @@ def main():
     parser.add_argument("--registration", type=Path)
     parser.add_argument("--run-root", type=Path)
     parser.add_argument("--port", type=int, default=18546)
-    parser.add_argument("--source-profile", choices=("balanced_join",))
+    parser.add_argument("--source-profile", choices=("balanced_join", "reusable_nested"))
     parser.add_argument("--wait-for-gpu", action="store_true")
     parser.add_argument("--after-comparison", type=Path)
     args = parser.parse_args()

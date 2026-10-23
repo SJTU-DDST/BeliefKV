@@ -19,7 +19,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--reference-xml", type=Path,
-        default=ROOT / "experiments/reports/v2800_idle_queued_backup_retained_cpu_20261022.xml",
+        default=ROOT / "experiments/reports/v3112_private_prepare_final_qualified_cpu_20261023.xml",
     )
     parser.add_argument("--junitxml", type=Path, required=True)
     args = parser.parse_args()
@@ -27,6 +27,11 @@ def main() -> int:
         raise RuntimeError("CPU qualification requires CUDA_VISIBLE_DEVICES=99999")
     os.chdir(ROOT)
     sys.path.insert(0, str(ROOT))
+    modules = {
+        "tests/test_reusable_subagents.py", "tests/test_subagent_retention.py",
+        "tests/test_causal_replay.py", "tests/test_causal_replay_backend.py",
+        "tests/test_causal_source_capture.py", "tests/test_causal_comparison.py",
+    }
     nodes = []
     for case in ET.parse(args.reference_xml).getroot().iter("testcase"):
         parts = case.attrib["classname"].split(".")
@@ -37,13 +42,11 @@ def main() -> int:
             path = ROOT.joinpath(*parts).with_suffix(".py")
         if not path.is_file():
             raise RuntimeError(f"reference test module missing: {path}")
-        nodes.append("::".join([
-            str(path.relative_to(ROOT)), *classes, case.attrib["name"],
-        ]))
+        relative = str(path.relative_to(ROOT))
+        if relative not in modules:
+            nodes.append("::".join([relative, *classes, case.attrib["name"]]))
     nodes = list(dict.fromkeys(nodes))
-    nodes.extend([
-        "tests/test_reusable_subagents.py", "tests/test_subagent_retention.py",
-    ])
+    nodes.extend(sorted(modules))
     return pytest.main(["-q", *nodes, f"--junitxml={args.junitxml}"])
 
 

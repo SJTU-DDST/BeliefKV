@@ -119,6 +119,7 @@ async def run(args):
             "performance_accepted": False,
             "session_closes": backend.session_closes,
             "session_generation_bindings": backend.session_generation_bindings,
+            "session_generation_rebindings": backend.session_generation_rebindings,
             "native_requests_sha256": sha256_file(args.output_dir / "native_requests.jsonl"),
             "scope": (
                 "Predeclared root-prefix request microcheck only. This omits "

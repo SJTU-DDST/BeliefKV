@@ -51,6 +51,23 @@ def test_capture_normalizes_output_before_changing_to_its_frozen_checkout(tmp_pa
     assert env["RUN_ROOT"] == str(tmp_path / "relative/run/native_capture")
 
 
+def test_reusable_capture_is_explicit_and_preserves_tasks_capacity_and_native_policy(tmp_path):
+    plan, checkout = reference(tmp_path)
+    args = (plan, checkout, tmp_path / "engine", tmp_path / "run", 18546)
+    original = capture.environment(*args)
+    reusable = capture.environment(*args, source_profile="reusable_nested")
+    assert {
+        name for name in original if original[name] != reusable[name]
+    } == {"FANOUT_PROFILE"}
+    assert reusable["FANOUT_PROFILE"] == "native_in_graph_reusable_nested"
+    assert reusable["BELIEFKV_SUBAGENT_RETENTION"] == "off"
+    assert reusable["NATIVE_POLICY_BASELINE"] == "1"
+    assert reusable["ROOT_COUNT"] == "36"
+    assert plan["arms"]["native_matched"]["FANOUT_PROFILE"] == "native_in_graph_nested_2to4"
+    with pytest.raises(ValueError, match="profile"):
+        capture.environment(*args, source_profile="force_resume")
+
+
 @pytest.mark.parametrize("field,value", (
     ("ROOT_COUNT", "12"), ("MAX_RUNNING_REQUESTS", "12"),
     ("SAMPLING_SEED", "22"), ("PYTHONHASHSEED", "22"),
@@ -162,6 +179,52 @@ def test_balanced_source_selection_does_not_use_policy_speedups(change):
     assert selection["accepted"] is (change is None)
     assert bool(selection["reasons"]) is (change is not None)
     assert selection["criteria"]["minimum_joins"] == 80
+
+
+@pytest.mark.parametrize("change", (None, "no_resume", "guard", "wrong_profile", "incomplete"))
+def test_reusable_source_uses_actual_resume_and_does_not_require_an_arbitrary_join_quota(change):
+    from dataclasses import replace
+    from beliefkv.core.events import RuntimeEventKind as Kind
+    from beliefkv.experiments.causal_replay import compile_causal_replay
+    from tests.test_causal_replay import reusable_trace
+
+    events, native = [], []
+    for index in range(36):
+        trace = reusable_trace(f"w{index}")
+        for event in trace.ordered():
+            attributes = dict(event.attributes)
+            if "request_id" in attributes:
+                attributes["request_id"] = f"w{index}:" + attributes["request_id"]
+            events.append(replace(event, attributes=attributes))
+        for row in trace.native:
+            native.append({**row, "attributes": {
+                **row["attributes"], "request_id": f"w{index}:" + row["attributes"]["request_id"],
+            }})
+    graph = compile_causal_replay(events, native)
+    summary = {
+        "completed_workflows": 36,
+        "subagent_fanout_profile": "native_in_graph_reusable_nested",
+        "workflows": [
+            {"workflow_id": f"w{index}", "native_agent_jct_eligible": True} for index in range(36)
+        ],
+        "nested_delegation_round_count": 0, "root_delegation_round_counts": [2] * 36,
+    }
+    if change == "no_resume":
+        graph = replace(graph, nodes=tuple(
+            node for node in graph.nodes if node.event is None
+            or node.event.kind is not Kind.LLM_SUBMIT
+            or node.event.invocation_id != "child-1"
+        ))
+    elif change == "guard":
+        summary["workflows"][0]["native_agent_jct_eligible"] = False
+    elif change == "wrong_profile":
+        summary["subagent_fanout_profile"] = "native_in_graph_nested_2to4"
+    elif change == "incomplete":
+        summary["completed_workflows"] = 35
+    result = capture.reusable_source(summary, graph)
+    assert result["accepted"] is (change is None)
+    assert result["joins"] == 72
+    assert "criteria" not in result
 
 
 def test_predeclared_capture_waits_without_allocating_or_touching_another_job(tmp_path, monkeypatch):

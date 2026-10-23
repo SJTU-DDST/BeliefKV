@@ -435,8 +435,12 @@ def test_comparison_arms_share_every_workload_and_scheduler_setting():
     environments = [environment(spec["common_environment"], arm) for arm in ORDER]
     for result, arm in zip(environments, ORDER):
         assert result["BELIEFKV_SUBAGENT_RETENTION"] == arm
-        assert result["BELIEFKV_TOOL_RESTORE_MODE"] == "execution"
-        assert result["BELIEFKV_RESTORE_TIERS"] == "dependency"
+        assert result["BELIEFKV_TOOL_RESTORE_MODE"] == "speculative"
+        assert result["BELIEFKV_RESTORE_TIERS"] == "complete"
+        assert result["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "0"
+        assert result["BELIEFKV_ENABLE_RESIDENT_FIRST"] == "1"
+        assert result["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == "0"
+        assert result["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == "0"
     common = [{key: value for key, value in result.items()
                if key != "BELIEFKV_SUBAGENT_RETENTION"} for result in environments]
     assert all(result == common[0] for result in common)
@@ -449,3 +453,42 @@ def test_boundary_semantics_are_bounded_and_do_not_emit_source_text():
     assert features["unresolved"] and features["implementation"]
     assert len(features["scope_ids"]) <= 128
     assert "src/cache.py" not in repr(features)
+
+
+@pytest.mark.parametrize("as_model", (False, True))
+@pytest.mark.parametrize("status,unresolved,expected", (
+    ("complete", [], False),
+    ("complete", ["verify concurrent close"], True),
+    ("blocked", [], True),
+))
+def test_structured_completion_fields_override_report_keywords(as_model, status, unresolved, expected):
+    from beliefkv.experiments.agent_protocol import ChildCompletion
+
+    completion = ChildCompletion(
+        status=status, summary="No unresolved issues; no follow-up required.",
+        unresolved=unresolved, confidence="high",
+    )
+    registry = ReusableSubagentRegistry("wf")
+    activation = reserve(registry)
+    _, state = registry.claim(
+        activation.call_id, role=activation.role,
+        description="assignment c1", agent_id=None,
+    )
+    state["messages"] = [AIMessage(content="private evidence")]
+    state["structured_response"] = completion if as_model else completion.model_dump()
+    registry.complete(activation.call_id, state, completion.model_dump_json())
+    assert registry.return_attributes(activation.call_id)["reuse_features"]["unresolved"] is expected
+
+
+@pytest.mark.parametrize("report,expected", (
+    ("No unresolved issues; no follow-up required.", False),
+    ("Remaining: none. Tests passing.", False),
+    ("No remaining failing tests.", False),
+    ("Follow-up not needed.", False),
+    ("Unresolved: []", False),
+    ("Tests pass. Remaining concurrency cases need verification.", True),
+    ("No failing tests; blocked on unavailable credentials.", True),
+    ("The review remains blocked.", True),
+))
+def test_unstructured_followup_signal_ignores_explicit_negations(report, expected):
+    assert reuse_features("review", report)["unresolved"] is expected

@@ -158,6 +158,84 @@ def test_position_control_disables_delayed_sampling_for_every_requested_policy(r
         assert env["SGLANG_ENABLE_DELAY_SAMPLE"] == "0"
 
 
+def retention_spec():
+    return json.loads((
+        Path(__file__).resolve().parents[1]
+        / "configs/migration/reusable_subagent_retention_20261022.json"
+    ).read_bytes())
+
+
+def test_retention_matrix_keeps_exact_common_settings_and_an_independent_native_control(
+    reference, tmp_path,
+):
+    reference["arms"]["full"].update({
+        "BELIEFKV_IDLE_PREPARE_POLICY": "all",
+        "BELIEFKV_ENABLE_TOOL_CONTINUITY": "1",
+        "BELIEFKV_RESTORE_TIERS": "dependency",
+    })
+    labels = ["native_matched", *comparison.RETENTION_CONTROLS]
+    prepared = comparison.retention_reference(reference, retention_spec(), labels)
+    controls = []
+    for label in labels:
+        env, flags, socket = comparison.environment(
+            prepared, label, tmp_path, tmp_path, tmp_path, 18554, tmp_path,
+            sampling_mode="position",
+        )
+        assert env["FANOUT_PROFILE"] == "native_in_graph_reusable_nested"
+        assert env["ROOT_COUNT"] == "36" and env["MAX_RUNNING_REQUESTS"] == "8"
+        assert env["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == "0"
+        assert env["BELIEFKV_RESTORE_TIERS"] == "complete"
+        assert env["BELIEFKV_IDLE_PREPARE_POLICY"] == "cold"
+        assert env["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "0"
+        if label == "native_matched":
+            assert env["BELIEFKV_SUBAGENT_RETENTION"] == "off"
+            assert socket is None and "--enable-beliefkv-admission" not in flags
+        else:
+            assert env["BELIEFKV_SUBAGENT_RETENTION"] == comparison.RETENTION_CONTROLS[label]
+            assert env["BELIEFKV_ENABLE_RESIDENT_FIRST"] == "1"
+            controls.append({name: value for name, value in env.items()
+                             if name != "BELIEFKV_SUBAGENT_RETENTION"})
+    assert all(control == controls[0] for control in controls)
+    assert reference["arms"]["full"]["BELIEFKV_RESTORE_TIERS"] == "dependency"
+
+
+@pytest.mark.parametrize("order", (
+    [], ["full", "subagent_selective"], ["join_priority_only", "subagent_lru"],
+))
+def test_retention_policy_controls_cannot_be_mixed_into_the_legacy_matrix(reference, order):
+    with pytest.raises(ValueError, match="matrix"):
+        comparison.retention_reference(reference, retention_spec(), order)
+
+
+@pytest.mark.parametrize("change", (None, "policy", "host_budget", "hbm_budget", "missing"))
+def test_retention_observer_checks_the_effective_policy_and_budgets(tmp_path, monkeypatch, change):
+    spec = retention_spec()
+    common = spec["common_environment"]
+    state = {"subagent_retention": {
+        "policy": "selective", "host_budget_bytes": int(common["BELIEFKV_DORMANT_HOST_BYTES"]),
+        "device_budget_bytes": int(common["BELIEFKV_DORMANT_HBM_BYTES"]),
+    }}
+    if change == "policy":
+        state["subagent_retention"]["policy"] = "all"
+    elif change == "host_budget":
+        state["subagent_retention"]["host_budget_bytes"] += 1
+    elif change == "hbm_budget":
+        state["subagent_retention"]["device_budget_bytes"] += 1
+    elif change == "missing":
+        state["subagent_retention"] = None
+    calls = []
+    monkeypatch.setattr(comparison.comparison, "observe_arm",
+                        lambda *args, **kwargs: calls.append(kwargs))
+    monkeypatch.setattr(comparison.qualified, "last_runtime_state", lambda _path: state)
+    plan = {"reference_environment": common}
+    if change is None:
+        comparison.observed_configuration(plan, "subagent_selective", tmp_path, final=True)
+        assert calls[0]["runtime_overrides"] == {"tool_prefetch": False}
+    else:
+        with pytest.raises(ValueError, match="retention"):
+            comparison.observed_configuration(plan, "subagent_selective", tmp_path, final=True)
+
+
 @pytest.mark.parametrize("jct,duration,accepted", (
     (100., 200., True), (104., 208., True), (106., 200., False),
     (100., 211., False), (80., 180., True),

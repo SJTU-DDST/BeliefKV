@@ -95,6 +95,11 @@ def main():
         "cases": cases,
         "empty_dispatch": measure(lambda: empty.dispatch(None), args.samples, iterations=1000),
         "boundary_features": measure(lambda: reuse_features(description, report), args.samples),
+        "structured_boundary_features": measure(
+            lambda: reuse_features(
+                description, report, completion={"status": "complete", "unresolved": []},
+            ), args.samples,
+        ),
         "source_sha256": {
             str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest()
             for path in (
@@ -111,6 +116,7 @@ def main():
                   | {"median_us": case["costs"]["wall_median_us"]} for case in cases],
         "empty_dispatch_median_us": result["empty_dispatch"]["wall_median_us"],
         "boundary_features_median_us": result["boundary_features"]["wall_median_us"],
+        "structured_boundary_features_median_us": result["structured_boundary_features"]["wall_median_us"],
     }, indent=2))
 
 

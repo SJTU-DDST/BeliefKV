@@ -138,6 +138,9 @@ class CausalHTTPBackend:
         self._invocations: dict[tuple[str, str], RuntimeEvent] = {}
         self._sessions: dict[tuple[str, str], tuple[str | None, int | None]] = {}
         self._session_generations: dict[tuple[str, int], int] = {}
+        self._dormant: dict[tuple[str, str], RuntimeEvent] = {}
+        self._resume_rebind: set[tuple[str, str]] = set()
+        self.session_generation_rebindings: list[dict] = []
         self._closed_contexts: set[tuple[str, str]] = set()
         self._closed_workflows: set[str] = set()
         self._active: set[tuple[str, str]] = set()
@@ -165,13 +168,36 @@ class CausalHTTPBackend:
     async def emit(self, event: RuntimeEvent) -> None:
         lock = self._event_locks.setdefault(event.workflow_id, asyncio.Lock())
         async with lock:
-            await asyncio.to_thread(self._emit_batch, (event,))
             owner = event.workflow_id, event.invocation_id
             context = event.workflow_id, event.context_id
+            resumed = (
+                event.kind is Kind.INVOCATION_CREATE
+                and event.attributes.get("reusable_subagent") is True
+                and event.attributes.get("resumed") is True
+            )
+            closing = event.attributes.get("subagent_context_close") is True
+            previous = self._dormant.get(context)
+            if resumed or closing:
+                if (
+                    previous is None or context in self._active
+                    or context in self._closed_contexts or event.workflow_id in self._closed_workflows
+                    or previous.attributes.get("agent_handle") != event.attributes.get("agent_handle")
+                    or event.context_epoch < previous.context_epoch
+                    or closing and (
+                        event.invocation_id != previous.invocation_id
+                        or event.context_epoch != previous.context_epoch
+                    )
+                    or resumed and event.invocation_id == previous.invocation_id
+                ):
+                    raise ValueError("resume or close lacks its dormant native context")
+            await asyncio.to_thread(self._emit_batch, (event,))
             if event.kind is Kind.INVOCATION_CREATE:
                 if owner in self._invocations:
                     raise ValueError("duplicate visible invocation")
                 self._invocations[owner] = event
+                if resumed:
+                    del self._dormant[context]
+                    self._resume_rebind.add(context)
             elif event.kind is Kind.CONTEXT_COMPACT:
                 if context in self._active:
                     raise ValueError("context compacted during an active native request")
@@ -185,6 +211,16 @@ class CausalHTTPBackend:
                         raise ValueError("context retired during an active native request")
                     self._closed_contexts.add(context)
                     self._retire(context)
+                elif (
+                    event.kind is Kind.RETURN
+                    and event.attributes.get("reusable_subagent") is True
+                ):
+                    self._dormant[context] = event
+            elif closing:
+                self._closed_contexts.add(context)
+                del self._dormant[context]
+                self._resume_rebind.discard(context)
+                self._retire(context)
             elif event.kind is Kind.WORKFLOW_END:
                 self._closed_workflows.add(event.workflow_id)
                 if any(key[0] == event.workflow_id for key in self._active):
@@ -192,6 +228,12 @@ class CausalHTTPBackend:
                 for key in tuple(self._sessions):
                     if key[0] == event.workflow_id:
                         self._retire(key)
+                for key in tuple(self._dormant):
+                    if key[0] == event.workflow_id:
+                        del self._dormant[key]
+                self._resume_rebind.difference_update(
+                    key for key in tuple(self._resume_rebind) if key[0] == event.workflow_id
+                )
 
     def _metadata(self, submit: RuntimeEvent) -> BeliefKVRequestMetadata:
         created = self._invocations.get((submit.workflow_id, submit.invocation_id))
@@ -242,9 +284,17 @@ class CausalHTTPBackend:
                 else None
             )
             source_session = captured.session_id, captured.session_generation
-            generation = self._session_generations.get(
-                source_session, observed_generation,
+            previous_generation = self._session_generations.get(source_session)
+            rebind = context in self._resume_rebind
+            generation = (
+                observed_generation if rebind else
+                self._session_generations.get(source_session, observed_generation)
             )
+            if (
+                rebind and previous_generation is not None
+                and type(generation) is int and generation < previous_generation
+            ):
+                raise ValueError("native session generation regressed on resume")
             receipt = verify_native_receipt(
                 captured, native_payload, submitted_ms=started, now_ms=now,
                 clock_domain=local_monotonic_clock_domain(),
@@ -252,6 +302,17 @@ class CausalHTTPBackend:
             )
             if captured.session_id is not None:
                 self._session_generations[source_session] = generation
+                if rebind:
+                    self.session_generation_rebindings.append({
+                        "workflow_id": submit.workflow_id, "context_id": submit.context_id,
+                        "invocation_id": submit.invocation_id, "request_id": request,
+                        "session_id": captured.session_id,
+                        "source_generation": captured.session_generation,
+                        "previous_native_generation": previous_generation,
+                        "native_generation": generation,
+                        "reason": "first_request_of_observed_reusable_activation",
+                    })
+            self._resume_rebind.discard(context)
             self.verified_requests.add(request)
             if self._observe_request is not None:
                 self._observe_request({

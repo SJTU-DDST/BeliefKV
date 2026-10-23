@@ -13,7 +13,35 @@ class SubagentSessionError(ValueError):
     pass
 
 
-def reuse_features(description: str, result: str = "", *, reuse_count: int = 0) -> dict:
+def _has_unresolved_work(report: str, completion: object) -> bool:
+    if hasattr(completion, "model_dump"):
+        completion = completion.model_dump(include={"status", "unresolved"})
+    if isinstance(completion, Mapping):
+        unresolved = completion.get("unresolved")
+        if completion.get("status") in {"complete", "blocked"} and isinstance(
+            unresolved, (list, tuple),
+        ):
+            return completion["status"] == "blocked" or bool(unresolved)
+    # Unstructured reports are only a fallback signal. Ignore common explicit
+    # negations rather than treating a field name or "no blockers" as evidence.
+    for phrase in re.split(r"[\n.!?;]+", report):
+        for match in re.finditer(
+            r"\b(?:unresolved|follow[- ]up|remaining|failing|blocked)\b", phrase,
+        ):
+            before = phrase[max(0, match.start() - 64):match.start()]
+            after = phrase[match.end():match.end() + 64]
+            if re.search(r"\b(?:no|not|without|zero|0)\s+(?:\w+\s+){0,2}$", before):
+                continue
+            if re.match(r"\s*(?:[:=]\s*)?(?:none\b|0\b|\[\]|not\s+(?:needed|required)\b)", after):
+                continue
+            return True
+    return False
+
+
+def reuse_features(
+    description: str, result: str = "", *, reuse_count: int = 0,
+    completion: object = None,
+) -> dict:
     """Bounded boundary-only features; no future delegation or model inference."""
     scope = description[:8192].casefold()
     report = result[-8192:].casefold()
@@ -25,9 +53,7 @@ def reuse_features(description: str, result: str = "", *, reuse_count: int = 0) 
     })
     return {
         "scope_ids": scope_ids,
-        "unresolved": any(word in report for word in (
-            "unresolved", "follow-up", "follow up", "remaining", "failing", "blocked",
-        )),
+        "unresolved": _has_unresolved_work(report, completion),
         "implementation": any(word in scope for word in ("implement", "fix", "refactor")),
         "verification": any(word in scope for word in ("test", "review", "verify")),
         "reuse_count": reuse_count,
@@ -173,7 +199,9 @@ class ReusableSubagentRegistry:
             session.state["messages"] = list(messages)
             session.features = {
                 **session.features,
-                "unresolved": reuse_features("", report)["unresolved"],
+                "unresolved": reuse_features(
+                    "", report, completion=result.get("structured_response"),
+                )["unresolved"],
                 "censored": bool(
                     result.get("guard_ever_intervened")
                     or result.get("guard_forcing_completion")
@@ -210,8 +238,8 @@ class ReusableSubagentRegistry:
     def close(self, handle: str, *, owner_context_id: str) -> SubagentSession:
         with self._lock:
             session = self._sessions.get(handle)
-            if session is None or session.owner_context_id != owner_context_id:
-                raise SubagentSessionError("unknown agent_id for this parent")
+            if session is None or session.closed or session.owner_context_id != owner_context_id:
+                raise SubagentSessionError("unknown or closed agent_id for this parent")
             if session.active_call is not None:
                 raise SubagentSessionError("cannot close an active subagent")
             session.closed = True

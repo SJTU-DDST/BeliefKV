@@ -179,6 +179,52 @@ def test_wrong_root_or_old_invocation_cannot_label_a_resume():
     assert not manager.estimator.counts["labels"]
 
 
+def close_event(state, **overrides):
+    return replace(event(
+        8, Kind.STRUCTURED_ACTION,
+        invocation_id=state.key.invocation_id, context_id=state.key.context_id,
+        context_epoch=state.key.context_epoch,
+        attributes={"subagent_context_close": True, "agent_handle": state.handle},
+    ), **overrides)
+
+
+def test_explicit_close_records_one_negative_even_if_workflow_later_ends():
+    manager = DormantSubagentRetention()
+    state = remember(manager)
+    manager.close_context(close_event(state))
+    manager.close_context(close_event(state))
+    manager.end(state.key.root_workflow_id, labels_complete=True)
+    assert manager.estimator.counts["labels"] == manager.estimator.counts["negative"] == 1
+    assert manager.counts["explicit_closes"] == 1
+    assert state.closed
+
+
+@pytest.mark.parametrize("mismatch", ("root", "context", "epoch", "invocation", "handle", "flag"))
+def test_stale_or_foreign_close_cannot_label_or_retire_dormant_state(mismatch):
+    manager = DormantSubagentRetention()
+    state = remember(manager)
+    changes = {
+        "root": {"workflow_id": "other"},
+        "context": {"context_id": "other"},
+        "epoch": {"context_epoch": state.key.context_epoch + 1},
+        "invocation": {"invocation_id": "old"},
+        "handle": {"attributes": {"subagent_context_close": True, "agent_handle": "other"}},
+        "flag": {"attributes": {"agent_handle": state.handle}},
+    }
+    manager.close_context(close_event(state, **changes[mismatch]))
+    assert not state.closed and not manager.estimator.counts["labels"]
+
+
+def test_guarded_return_close_is_censored_and_physical_drop_is_not_a_label():
+    manager = DormantSubagentRetention()
+    state = remember(manager, features={"censored": True})
+    state.discarded = True
+    manager.close_context(close_event(state))
+    manager.end(state.key.root_workflow_id, labels_complete=True)
+    assert manager.estimator.counts["labels"] == 0
+    assert manager.estimator.counts["censored"] == 1
+
+
 @pytest.fixture
 def dormant_native(native_cache):
     from test_beliefkv_terminal_capacity import insert_session
@@ -356,6 +402,25 @@ def test_retain_all_is_native_soft_cache_without_forced_eager_backup(dormant_nat
     assert node.component_data[0].value is not None
     assert not manager.work and len(manager.states) == 1
     cache._execute_and_commit_kv_backup.assert_not_called()
+
+
+def test_retain_all_does_not_pin_dormant_pages_against_native_pressure(dormant_native):
+    from sglang.srt.mem_cache.base_prefix_cache import EvictParams
+
+    runtime, manager, cache, allocator, _, node = dormant_native
+    manager.policy = "all"
+    state = manager.states["ctx-child"]
+    manager.dispatch(runtime)
+    cache.is_write_back = False
+    cache.cache_controller.write_policy = "write_through"
+    before = allocator.available_size()
+    result = cache.evict(EvictParams(num_tokens=16))
+    assert result.num_tokens_evicted == 16
+    assert allocator.available_size() == before + 16
+    with pytest.raises(KeyError):
+        cache.tree_core.node_by_id(node.id)
+    assert not state.closed and not state.discarded
+    assert manager.estimator.counts["labels"] == 0
 
 
 def test_actual_drop_frees_kv_but_does_not_close_logical_handle(dormant_native):

@@ -1,21 +1,38 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-22 (Asia/Shanghai).
+Status date: 2026-10-23 (Asia/Shanghai).
 
-Latest task: implement bounded short-tool queue continuity compatible with the
-simple JOIN policy, then rerun Full only on newly qualified/frozen main.
-Ordinary execution-frontier restore stays off. Short interruptions may inherit
-their segment's actual initial arrival, with at most four request rounds and
-root-shared earned continuation credit. Preserve actual arrival for aging,
-existing JOIN/sole-child turns, native admission and work-conserving batch fill.
-No slot/KV reservation or per-token observation is introduced. Apply the same
-available scheduling control to future strong scheduling-only baselines.
-See [the continuity implementation](experiments/tool_continuity_v124_20261022_zh.md).
-GPU performance remains unaccepted pending the new complete-workflow results.
-V2780/V2781 passes3984 CPU cases plus2 subtests,retaining the preceding complete
-3982/3928 identities. V124 failed historical-default verification before any GPU
-launch;preserve its state. V124b retries with explicit historical controls and
-an independent four-ordinary-admission bound for tool jumps over aged queues.
+Latest task: prepare the natural reusable-subagent workload and selective
+dormant KV retention on main. Models choose rounds, nesting and whether to resume
+a prior stable handle. Each activation gets a new invocation/JOIN and preserves
+the same private transcript even after physical eviction. Compare the exact same
+captured work against native, retain-all soft cache, drop-all and equal-budget LRU.
+See [the current transition and evidence](experiments/reusable_workload_transition_20261023_zh.md).
+
+V133b completed 36 workflows and 6907 identical requests in all three arms.
+Full without speculative tool prefetch reduces whole-workflow mean JCT by2.16%
+against native and2.18% against JOIN-only; whole-run output throughput changes
+by+0.42% and-0.18%, respectively. These single observations are not accepted
+repeatable dominance. Preserve this result and all normal tails; source capture
+for the new scenario must not select for Full performance.
+
+The common policy uses workflow/resident-first/stage ordering and observed-EOS
+JOIN prefetch. Ordinary execution-frontier restore and short-tool continuity
+remain off. Retention controls keep tool timing/pressure offload but disable
+speculative tool H2D, matching the latest measured Full arm. Do not restore the
+historical continuity candidate or simple-JOIN-only configuration by reading
+the older entries below as current instructions.
+
+No GPU experiment during2026-10-23 18:00 through2026-10-24 06:00 Asia/Shanghai.
+This is a one-time hold, not the removed daily midnight rule. The canonical hold
+is ../ops/gpu_hold_until_20261022_0600.json, updated to the new deadline, with a
+separate reservation guard and pause marker. Only CPU work is allowed meanwhile.
+Afterwards, require current source qualification, frozen sources, idle resources
+and no newer hold. The active goal remains unmet: improve complete-workflow
+mean JCT and throughput against native and the strongest simple baseline,
+with independent KV-management benefit under equal work and capacity.
+
+Earlier entries below preserve historical implementation and validation context.
 
 The latest user request disables ordinary execution-frontier restore by default
 and makes complete workflow JCT, including normal tails, the primary criterion.

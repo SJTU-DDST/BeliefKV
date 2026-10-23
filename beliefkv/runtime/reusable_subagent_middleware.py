@@ -25,10 +25,22 @@ specialist's returned agent_id to task, with the same subagent_type and the new
 assignment; that specialist retains its own private conversation. Create a new
 agent for a new responsibility or an independent review. A handle accepts only
 one active task at a time. Use close_agent when a specialist is no longer useful.
+Finishing one delegated assignment does not close that specialist. After edits,
+integration or tests expose another question in its scope, consider returning
+the new evidence to that handle instead of restarting the investigation. Keep
+independent judgment in a separate specialist. Reassess these choices after
+each report rather than treating the first diagnostic round as the whole task.
 Choose rounds and nesting from actual progress; no fixed DAG or round count is
 required. Only the root receives the full initial project snapshot. Delegate
 focused evidence and let specialists inspect relevant files in /workspace.
 """
+
+REUSABLE_RETURN_GUIDANCE = (
+    "\n\nThis specialist is now idle and retains its private conversation. "
+    "For related follow-up after integration or new test evidence, task may "
+    "reuse this agent_id with the same subagent_type. Choose a new specialist "
+    "for independent work; close this handle when no longer needed."
+)
 
 
 class ReusableTaskSchema(BaseModel):
@@ -108,7 +120,8 @@ class ReusableSubAgentMiddleware(SubAgentMiddleware):
             report = self._report(result)
             registry.complete(activation.call_id, result, report)
             return Command(update={"messages": [ToolMessage(
-                f"agent_id: {activation.handle}\n\n{report}",
+                f"agent_id: {activation.handle}\nsubagent_type: {activation.role}\n\n"
+                f"{report}{REUSABLE_RETURN_GUIDANCE}",
                 tool_call_id=runtime.tool_call_id,
             )]})
 

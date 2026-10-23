@@ -5,6 +5,12 @@
 校准仍待新 workload 验证。V124b Full 及后续 V125 消融继续使用原
 workload；不在矩阵中间更换 prompt、会话语义或 root 数量。
 
+2026-10-23 更新：原实验矩阵已结束。下一场景采用模型自主跨轮复用，
+配置已对齐当前 V108/EOS 策略，关闭短工具连续性与普通前沿恢复；
+显式关闭标签、结构化未解决项和相同会话重放的修复见
+[最新准备记录](../experiments/reusable_workload_transition_20261023_zh.md)。
+该记录的现行配置和 10 月 23 日晚 GPU 禁用时段优先于下文历史计划。
+
 ## 已落地的范围
 
 实现及验证说明见
@@ -211,8 +217,8 @@ parent 新一轮委派或明确关闭时更新相关会话。预测器位于异�
 不逐 decode token 解析文本、不每轮重算全图，不增加 GPU 推理模型。
 新 handle 冷启动用受预算约束的 MRU/LRU；模型不可靠时回退。
 
-正标签是相同 handle 的真实再次调用。workflow 正常结束前未再调用才
-能记负例；运行中片段和未完成 workflow 是删失样本。当前 workload
+正标签是相同 handle 的真实再次调用。显式关闭可结束对应 episode 并记
+负例；其他未复用状态在 workflow 正常结束后才记负例。运行中片段和未完成 workflow 是删失样本。当前 workload
 没有这种标签，不能拿旧 tool/JOIN 预测器直接声称准确率。
 按项目留出、按时间先预测后更新，检查概率校准、字节/重算代价加权
 precision/recall 和 policy regret；“97% never reuse”不能成为好预测器。

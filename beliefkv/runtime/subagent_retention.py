@@ -360,11 +360,23 @@ class DormantSubagentRetention:
 
     def close_context(self, event: object) -> None:
         state = self.states.get(event.context_id)
-        if state is not None and state.key.root_workflow_id == event.workflow_id:
-            state.closed = True
-            self.work[event.context_id] = None
-            self.next_ms = 0.
-            self.dirty = True
+        if (
+            state is None or state.closed
+            or event.attributes.get("subagent_context_close") is not True
+            or event.workflow_id != state.key.root_workflow_id
+            or event.invocation_id != state.key.invocation_id
+            or event.context_epoch != state.key.context_epoch
+            or event.attributes.get("agent_handle") != state.handle
+        ):
+            return
+        # Explicit logical closure ends this dormant episode without needing
+        # the rest of its workflow to finish. Physical eviction is not a label.
+        self.estimator.observe(state.features, False, predicted=state.probability)
+        self.counts["explicit_closes"] += 1
+        state.closed = True
+        self.work[event.context_id] = None
+        self.next_ms = 0.
+        self.dirty = True
 
     def _rank(self, state: DormantState) -> tuple:
         if self.policy == "selective" and self.estimator.ready:

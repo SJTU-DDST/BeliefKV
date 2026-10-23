@@ -211,6 +211,84 @@ def test_gpu_time_is_not_baked_into_later_request_release():
     assert expected["workflow_elapsed_ms"] == {"w": 38.}
 
 
+def reusable_trace(workflow="w"):
+    trace = Trace(workflow)
+    trace.add("start", Kind.WORKFLOW_START, 0)
+    trace.create("root", 1)
+    trace.model("root-first", "root", 2, 5, 6)
+    for index, base in enumerate((7., 27.)):
+        invocation = f"child-{index}"
+        trace.add(
+            "create-" + invocation, Kind.INVOCATION_CREATE, base,
+            invocation_id=invocation, context_id="private", context_epoch=index,
+            parent_invocation_id="root", parent_context_id="ctx-root",
+            attributes={
+                "reusable_subagent": True, "agent_handle": "handle",
+                "resumed": bool(index),
+            },
+        )
+        trace.launch(invocation, "root", base + .1)
+        trace.join(f"round-{index}", "root", (invocation,), base + .2, base + 10.)
+        trace.model(
+            f"child-request-{index}", invocation, base + 1., base + 7., base + 8.,
+            context="private", epoch=index,
+        )
+        trace.add(
+            "return-" + invocation, Kind.RETURN, base + 9.,
+            invocation_id=invocation, context_id="private", context_epoch=index,
+            attributes={
+                "reusable_subagent": True, "agent_handle": "handle",
+                "context_retired": False,
+            },
+        )
+        trace.model(f"root-after-{index}", "root", base + 11., base + 16., base + 17.)
+    trace.add(
+        "close", Kind.STRUCTURED_ACTION, 45.,
+        invocation_id="child-1", context_id="private", context_epoch=1,
+        attributes={
+            "subagent_context_close": True, "agent_handle": "handle",
+            "caller_invocation_id": "root", "caller_context_id": "ctx-root",
+        },
+    )
+    trace.returned("root", 46.)
+    trace.add("end", Kind.WORKFLOW_END, 47.)
+    return trace
+
+
+def test_reused_private_context_and_explicit_close_follow_the_actual_calling_parent():
+    trace = reusable_trace()
+    plan = compile_causal_replay(trace.ordered(), trace.native)
+    resume = event_node_id(trace.named["create-child-1"].event_id)
+    assert event_node_id(trace.named["return-child-0"].event_id) in ancestors(plan, resume)
+    close = event_node_id(trace.named["close"].event_id)
+    assert event_node_id(trace.named["return-child-1"].event_id) in ancestors(plan, close)
+    assert event_node_id(trace.named["result-root-after-1"].event_id) in ancestors(plan, close)
+    assert close in ancestors(plan, event_node_id(trace.named["end"].event_id))
+    service = dict.fromkeys(plan.request_usage, 1.)
+    baseline = evaluate_causal_plan(plan, service)
+    service["root-after-1"] += 100.
+    delayed = evaluate_causal_plan(plan, service)
+    assert delayed["node_completed_ms"][close] == baseline["node_completed_ms"][close] + 100.
+    assert plan.summary()["event_counts"]["join_create"] == 2
+
+
+@pytest.mark.parametrize("boundary,change", (
+    ("create-child-1", {"agent_handle": "foreign"}),
+    ("create-child-1", {"resumed": False}),
+    ("close", {"agent_handle": "foreign"}),
+    ("close", {"caller_invocation_id": "missing"}),
+    ("close", {"caller_context_id": "foreign"}),
+))
+def test_reusable_lifecycle_rejects_foreign_handles_and_unobserved_callers(boundary, change):
+    trace = reusable_trace()
+    target = trace.named[boundary]
+    trace.events[trace.events.index(target)] = replace(
+        target, attributes={**target.attributes, **change},
+    )
+    with pytest.raises(CausalReplayError, match="reus|resume|close"):
+        compile_causal_replay(trace.ordered(), trace.native)
+
+
 @pytest.mark.parametrize("slow_request", ("a-last", "b-last", "grandchild-last"))
 def test_parent_unlocks_after_actual_replay_members_not_recorded_join_time(slow_request):
     trace = mixed_trace()

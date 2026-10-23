@@ -23,14 +23,19 @@ sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.causal_replay_tokens import CapturedTokenCorpus
 from beliefkv.experiments.internal_comparison import arm_environment
+from beliefkv.experiments.subagent_retention import (
+    ORDER as RETENTION_ORDER, environment as retention_environment,
+)
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
 from scripts.run_causal_gpu_replay import source_plan
 from scripts.run_causal_source_capture import (
-    comparison, engine_evidence, fresh, load, qualified, reservation,
+    comparison, engine_evidence, fresh, load, qualified, reservation, reusable_source,
 )
 
 ORDER = ("full", "native_matched", "join_priority_only", "no_background_prepare")
 CONTROLS = (*ORDER, "no_tool_prefetch")
+RETENTION_CONTROLS = {f"subagent_{policy}": policy for policy in RETENTION_ORDER}
+ALL_CONTROLS = (*CONTROLS, *RETENTION_CONTROLS)
 SERVER_FIELDS = (
     "PREFETCH_LEAD_MS", "JOIN_PREFETCH_MIN_ADVANCE_MS", "TOOL_PREFETCH_MIN_ADVANCE_MS",
     "PARALLEL_WAIT_PREFETCH", "WAIT_PREFETCH_CONTEXTS",
@@ -44,11 +49,12 @@ SERVER_FIELDS = (
 
 
 def environment(reference, mode, checkout, engine, arm, port, plugin, *, sampling_mode="legacy"):
-    if mode not in CONTROLS:
+    if mode not in ALL_CONTROLS:
         raise ValueError("unknown causal comparison control: " + mode)
     if sampling_mode not in ("legacy", "position"):
         raise ValueError("unknown causal replay sampling mode")
-    policy = "full" if mode in ("no_background_prepare", "no_tool_prefetch") else mode
+    retention = RETENTION_CONTROLS.get(mode)
+    policy = "full" if retention or mode in ("no_background_prepare", "no_tool_prefetch") else mode
     required = {
         "MAX_RUNNING_REQUESTS": "8", "SERVER_RANDOM_SEED": "21",
         "SAMPLING_SEED": "21", "PYTHONHASHSEED": "21", "HICACHE_SIZE_GB": "200",
@@ -60,10 +66,15 @@ def environment(reference, mode, checkout, engine, arm, port, plugin, *, samplin
     for name, value in required.items():
         if reference["arms"]["full"].get(name) != value:
             raise ValueError("causal comparison changed the qualified V108/EOS profile: " + name)
-    settings = arm_environment(
-        reference["arms"]["full"], policy,
-        tool_prefetch=False if mode == "no_tool_prefetch" else None,
+    settings = (
+        retention_environment(reference["arms"]["full"], retention) if retention else
+        arm_environment(
+            reference["arms"]["full"], policy,
+            tool_prefetch=False if mode == "no_tool_prefetch" else None,
+        )
     )
+    if not retention:
+        settings["BELIEFKV_SUBAGENT_RETENTION"] = "off"
     settings.update(
         PYTHONPATH=f"{checkout}:{plugin}", CUDA_VISIBLE_DEVICES="0",
         SGLANG_SOURCE_CHECKOUT=str(engine), RUN_ROOT=str(arm), PORT=str(port),
@@ -106,6 +117,18 @@ def environment(reference, mode, checkout, engine, arm, port, plugin, *, samplin
     if mode == "no_background_prepare":
         settings["BELIEFKV_ENABLE_BACKGROUND_PREPARE"] = "0"
     return settings, flags, socket_path if policy != "native_matched" else None
+
+
+def retention_reference(reference, spec, order):
+    if (
+        not order or any(label != "native_matched" and label not in RETENTION_CONTROLS for label in order)
+        or spec.get("source_profile") != "reusable_nested"
+    ):
+        raise ValueError("retention comparison requires its own reusable-workload matrix")
+    # Validate every common invariant even for an initial native-only calibration.
+    prepared = retention_environment(spec["common_environment"], "selective")
+    common = {**reference["arms"]["full"], **prepared, "BELIEFKV_SUBAGENT_RETENTION": "off"}
+    return {**reference, "arms": {**reference["arms"], "full": common}}
 
 
 def preflight_runtime(settings, model_path):
@@ -209,11 +232,16 @@ def validate_result(plan, result, arm, *, live_control):
 
 
 def observed_configuration(plan, label, arm, *, final=False):
-    mode = "full" if label in ("no_background_prepare", "no_tool_prefetch") else label
+    retention = RETENTION_CONTROLS.get(label)
+    mode = "full" if retention or label in ("no_background_prepare", "no_tool_prefetch") else label
     overrides = (
         {"background_prepare": False} if label == "no_background_prepare" else
         {"tool_prefetch": False} if label == "no_tool_prefetch" else None
     )
+    if retention:
+        overrides = {
+            "tool_prefetch": plan["reference_environment"].get("TOOL_PREFETCH") != "0",
+        }
     comparison.observe_arm(
         mode, arm, max_running_requests=8, runtime_overrides=overrides,
     )
@@ -221,6 +249,17 @@ def observed_configuration(plan, label, arm, *, final=False):
         arm / "opportunities/admission_opportunities.jsonl",
     ) is None:
         raise ValueError("controlled arm has no observed runtime configuration")
+    if retention:
+        state = qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
+        if state is not None:
+            actual = state.get("subagent_retention") or {}
+            common = plan["reference_environment"]
+            if (
+                actual.get("policy") != retention
+                or actual.get("host_budget_bytes") != int(common["BELIEFKV_DORMANT_HOST_BYTES"])
+                or actual.get("device_budget_bytes") != int(common["BELIEFKV_DORMANT_HBM_BYTES"])
+            ):
+                raise ValueError("effective dormant retention policy or budget differs")
     census = arm / "server/native_capacity_census.json"
     if census.exists() and load(census)["capacity"] != plan["source_capacity"]:
         raise ValueError("actual FULL/Mamba/Host pool capacity changed")
@@ -356,7 +395,7 @@ def cleanup(arm, identities, reason):
 
 def register(args):
     order = list(args.arms)
-    if not order or len(order) != len(set(order)) or any(label not in CONTROLS for label in order):
+    if not order or len(order) != len(set(order)) or any(label not in ALL_CONTROLS for label in order):
         raise ValueError("select distinct supported causal controls")
     if args.after_registration is not None and args.after_registration.resolve() == args.registration.resolve():
         raise ValueError("a causal comparison cannot depend on itself")
@@ -371,6 +410,10 @@ def register(args):
     reference = load(args.reference)
     fresh.verify(reference)
     fresh.check_hold(reference, released=True)
+    if any(label in RETENTION_CONTROLS for label in order) and args.retention_config is None:
+        raise ValueError("retention controls require an explicit reusable comparison configuration")
+    if args.retention_config is not None:
+        reference = retention_reference(reference, load(args.retention_config), order)
     count = comparison.qualify_report(args.cpu_report, args.cpu_sources)
     sources = load(args.cpu_sources)
     if not {
@@ -451,6 +494,16 @@ def register(args):
         Path(evidence["source_arm"]) / "server/request_tokens.jsonl",
         Path(reservation.__file__),
     ]
+    if args.retention_config is not None:
+        inputs.append(args.retention_config)
+        if not {
+            "beliefkv/runtime/reusable_subagents.py",
+            "beliefkv/runtime/reusable_subagent_middleware.py",
+            "beliefkv/runtime/subagent_retention.py",
+            "beliefkv/experiments/subagent_retention.py",
+            "tests/test_reusable_subagents.py", "tests/test_subagent_retention.py",
+        } <= sources.keys():
+            raise ValueError("reusable retention sources lack CPU qualification")
     inputs.extend(
         Path(name) if Path(name).is_absolute() else ROOT / name
         for name in evidence["input_jsonl_prefixes"]
@@ -463,6 +516,9 @@ def register(args):
         "TOOL_TIMING_ARTIFACT", "H2D_SEED_ARTIFACT", "TRANSFER_SERVICE_SEED",
     ))
     quality = load(summaries[0])
+    reuse_selection = reusable_source(quality, graph) if args.retention_config is not None else None
+    if reuse_selection is not None and not reuse_selection["accepted"]:
+        raise ValueError("retention source lacks complete natural same-handle reuse evidence")
     workflows = sorted({row.event.workflow_id for row in graph.nodes if row.event is not None})
     exclusions = source_quality(quality, workflows)
     plan = {
@@ -488,6 +544,8 @@ def register(args):
             str(args.after_registration.resolve()) if args.after_registration is not None else None
         ),
         "reference_environment": reference["arms"]["full"],
+        "retention_configuration": str(args.retention_config.resolve()) if args.retention_config else None,
+        "reusable_source_opportunities": reuse_selection,
         "run_root": str(args.run_root.resolve()), "port": args.port,
         "sampling_calibration": str(args.sampling_calibration.resolve()),
         "sampling_mode": args.sampling_mode,
@@ -614,6 +672,7 @@ def watch(registration):
                     "auxiliary_causal_replay": True,
                     "replay_sampling_mode": plan.get("sampling_mode", "legacy"),
                     "delayed_sampling_common_to_all_arms": env["SGLANG_ENABLE_DELAY_SAMPLE"] == "1",
+                    "subagent_retention_requested": env["BELIEFKV_SUBAGENT_RETENTION"],
                 }
                 reservation.write_json(arm / "server/launch_configuration.json", launch)
                 with (arm / "server.log").open("x") as output:
@@ -748,7 +807,8 @@ def main():
     ):
         parser.add_argument("--" + name, type=Path)
     parser.add_argument("--port", type=int, default=18554)
-    parser.add_argument("--arms", nargs="+", choices=CONTROLS, default=list(ORDER))
+    parser.add_argument("--arms", nargs="+", choices=ALL_CONTROLS, default=list(ORDER))
+    parser.add_argument("--retention-config", type=Path)
     parser.add_argument("--after-registration", type=Path)
     parser.add_argument("--sampling-mode", choices=("legacy", "position"), default="legacy")
     parser.add_argument("--maximum-replay-slowdown", type=float)
@@ -758,6 +818,7 @@ def main():
     else:
         if any(value is None for name, value in vars(args).items() if name not in (
             "watch", "port", "arms", "after_registration", "sampling_mode", "maximum_replay_slowdown",
+            "retention_config",
         )):
             parser.error("registration requires source, qualifications, engine and fresh output paths")
         if not 1 <= args.port <= 65535:

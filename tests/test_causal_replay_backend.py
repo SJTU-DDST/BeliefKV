@@ -274,6 +274,113 @@ def test_backend_binds_fresh_native_generation_and_rejects_changes_inside_one_in
     )
 
 
+@pytest.mark.parametrize("changed_inside_activation", (False, True))
+def test_reusable_activation_can_rebind_after_physical_loss_but_not_during_execution(
+    tmp_path, changed_inside_activation,
+):
+    records, expected, _ = source(count=3, width=16)
+    for row in records[2:]:
+        row["invocation_id"] = "resumed"
+    for request in ("r1", "r2"):
+        expected[request] = {
+            kind: ((identity[0], "resumed", *identity[2:]), tokens)
+            for kind, (identity, tokens) in expected[request].items()
+        }
+    path = tmp_path / "reusable.jsonl"
+    write_source(path, records)
+    calls = []
+
+    async def run(corpus):
+        async def handler(request):
+            body = __import__("json").loads(request.content)
+            calls.append((request.url.path, body))
+            if request.url.path == "/generate":
+                payload = response_payload(corpus.get(body["rid"]))
+                payload["meta_info"][RECEIPT_KEY][0]["session_generation"] = (
+                    77 if body["rid"] == "r0" else
+                    79 if changed_inside_activation and body["rid"] == "r2" else 78
+                )
+                return httpx.Response(200, json=payload)
+            return httpx.Response(200, json={"accepted": True})
+
+        async with httpx.AsyncClient(
+            base_url="http://127.0.0.1", transport=httpx.MockTransport(handler),
+        ) as client:
+            backend = CausalHTTPBackend(corpus, client, lambda events: None)
+            await backend.emit(created())
+            await backend.execute("r0", submitted())
+            await backend.emit(RuntimeEvent(
+                "dormant", time.monotonic() * 1000., Kind.RETURN, "w",
+                invocation_id="i", context_id="c", context_epoch=0,
+                attributes={
+                    "reusable_subagent": True, "agent_handle": "handle",
+                    "context_retired": False,
+                },
+            ))
+            assert not backend.session_closes
+            await backend.emit(replace(
+                created(), event_id="resume", invocation_id="resumed",
+                attributes={"reusable_subagent": True, "resumed": True, "agent_handle": "handle"},
+            ))
+            await backend.execute("r1", replace(submitted("r1", 1), invocation_id="resumed"))
+            assert backend.session_generation_rebindings == [{
+                "workflow_id": "w", "context_id": "c", "invocation_id": "resumed",
+                "request_id": "r1", "session_id": "s", "source_generation": 1,
+                "previous_native_generation": 77, "native_generation": 78,
+                "reason": "first_request_of_observed_reusable_activation",
+            }]
+            final_submit = replace(submitted("r2", 2), invocation_id="resumed")
+            if changed_inside_activation:
+                with pytest.raises(ValueError, match="session"):
+                    await backend.execute("r2", final_submit)
+            else:
+                await backend.execute("r2", final_submit)
+            await backend.drain()
+
+    with CapturedTokenCorpus(path, expected) as corpus:
+        asyncio.run(run(corpus))
+    assert sum(url == "/close_session" for url, _ in calls) == 1
+
+
+def test_explicit_subagent_close_retires_dormant_session_without_closing_the_workflow(corpus):
+    calls = []
+
+    async def run():
+        async def handler(request):
+            body = __import__("json").loads(request.content)
+            calls.append((request.url.path, body))
+            return httpx.Response(200, json=(
+                response_payload(corpus.get(body["rid"]))
+                if request.url.path == "/generate" else {"accepted": True}
+            ))
+
+        async with httpx.AsyncClient(
+            base_url="http://127.0.0.1", transport=httpx.MockTransport(handler),
+        ) as client:
+            backend = CausalHTTPBackend(corpus, client, lambda events: None)
+            await backend.emit(created())
+            await backend.execute("r0", submitted())
+            await backend.emit(RuntimeEvent(
+                "return", time.monotonic() * 1000., Kind.RETURN, "w",
+                invocation_id="i", context_id="c", context_epoch=0,
+                attributes={
+                    "reusable_subagent": True, "agent_handle": "handle", "context_retired": False,
+                },
+            ))
+            await backend.emit(RuntimeEvent(
+                "close", time.monotonic() * 1000., Kind.STRUCTURED_ACTION, "w",
+                invocation_id="i", context_id="c", context_epoch=0,
+                attributes={"subagent_context_close": True, "agent_handle": "handle"},
+            ))
+            with pytest.raises(ValueError, match="terminal"):
+                await backend.execute("r1", submitted("r1", 1))
+            assert not backend._closed_workflows
+            await backend.drain()
+
+    asyncio.run(run())
+    assert [url for url, _ in calls] == ["/generate", "/close_session"]
+
+
 @pytest.mark.parametrize("generation", (True, 0, -1, "1"))
 def test_a_session_generation_binding_cannot_be_a_boolean_or_untyped_handle(corpus, generation):
     captured = corpus.get("r0")

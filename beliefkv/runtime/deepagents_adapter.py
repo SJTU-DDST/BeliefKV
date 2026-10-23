@@ -546,6 +546,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             attributes={
                 "source": "reusable_subagent", "subagent_context_close": True,
                 "agent_handle": handle,
+                "caller_invocation_id": identity.metadata.invocation_id,
+                "caller_context_id": identity.metadata.context_id,
             },
         ),), control=True)
         if self.native_radix_sessions is not None:

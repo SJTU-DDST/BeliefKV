@@ -241,6 +241,8 @@ def compile_causal_replay(
     active_requests, active_tools, active_joins = {}, defaultdict(set), {}
     closed = set()
     context_tail = {}
+    dormant_contexts, reusable_owners = {}, {}
+    closed_contexts, workflow_closes = set(), defaultdict(set)
     origin = min(event.ts_ms for event in starts.values())
 
     def emit(event, dependencies, *, delay=None):
@@ -287,6 +289,24 @@ def compile_causal_replay(
                 launch = launches.get(owner)
                 if launch is None or launch.invocation_id != event.parent_invocation_id:
                     raise CausalReplayError("child creation lacks a matching parent launch")
+            if event.attributes.get("reusable_subagent") is True:
+                context = event.workflow_id, _identity(event.context_id, "reusable context")
+                handle = _identity(event.attributes.get("agent_handle"), "agent handle")
+                if context in closed_contexts:
+                    raise CausalReplayError("closed reusable context was activated")
+                if event.attributes.get("resumed") is True:
+                    previous = dormant_contexts.pop(context, None)
+                    if (
+                        previous is None or previous.attributes.get("agent_handle") != handle
+                        or event.context_epoch < previous.context_epoch
+                        or creates[(event.workflow_id, previous.invocation_id)].parent_context_id
+                        != event.parent_context_id
+                    ):
+                        raise CausalReplayError("resume lacks a matching dormant context")
+                    dependencies.add(event_node_id(previous.event_id))
+                elif context in reusable_owners:
+                    raise CausalReplayError("reusable context was recreated without resume")
+                reusable_owners[context] = owner
             frontier[owner] = {emit(event, dependencies)}
             response_frontier[owner] = set(frontier[owner])
         elif kind is Kind.LLM_SUBMIT:
@@ -382,9 +402,41 @@ def compile_causal_replay(
                 raise CausalReplayError("terminal invocation still has unresolved work")
             emit(event, current(owner))
             closed.add(owner)
+            if (
+                kind is Kind.RETURN and event.attributes.get("reusable_subagent") is True
+                and event.attributes.get("context_retired") is False
+            ):
+                context = event.workflow_id, event.context_id
+                if (
+                    reusable_owners.get(context) != owner
+                    or creates[owner].attributes.get("agent_handle")
+                    != event.attributes.get("agent_handle")
+                ):
+                    raise CausalReplayError("dormant return lacks its reusable activation")
+                dormant_contexts[context] = event
         elif kind in (Kind.CONTEXT_ADVANCE, Kind.CONTEXT_COMPACT):
             frontier[owner] = {emit(event, current(owner))}
         elif kind is Kind.STRUCTURED_ACTION:
+            if event.attributes.get("subagent_context_close") is True:
+                context = event.workflow_id, event.context_id
+                previous = dormant_contexts.get(context)
+                caller = event.workflow_id, event.attributes.get("caller_invocation_id")
+                if (
+                    previous is None or previous.invocation_id != event.invocation_id
+                    or previous.context_epoch != event.context_epoch
+                    or previous.attributes.get("agent_handle") != event.attributes.get("agent_handle")
+                    or caller not in creates
+                    or creates[caller].context_id != event.attributes.get("caller_context_id")
+                    or creates[owner].parent_context_id != creates[caller].context_id
+                    or event.attributes.get("request_id") is not None
+                ):
+                    raise CausalReplayError("close lacks its dormant context or calling parent")
+                key = emit(event, current(caller) | {event_node_id(previous.event_id)})
+                frontier[caller].add(key)
+                workflow_closes[event.workflow_id].add(key)
+                closed_contexts.add(context)
+                del dormant_contexts[context]
+                continue
             dependencies = {
                 key for key in current(owner)
                 if reference_times[key] <= event.ts_ms + 1.
@@ -406,7 +458,7 @@ def compile_causal_replay(
                 event_node_id(terminal.event_id) for key, terminal in terminals.items()
                 if key[0] == event.workflow_id
             }
-            emit(event, dependencies or {workflow})
+            emit(event, dependencies | workflow_closes[event.workflow_id] or {workflow})
     if active_requests or any(active_tools.values()) or active_joins:
         raise CausalReplayError("trace ends with active requests, tools or JOINs")
     try:
