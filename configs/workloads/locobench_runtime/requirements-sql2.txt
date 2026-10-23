@@ -1,0 +1,6 @@
+# The generated web project uses SQLAlchemy 2 and Pydantic 1 simultaneously.
+sqlalchemy==2.0.30
+sqlmodel==0.0.14
+pydantic[email]==1.10.15
+alembic==1.13.1
+psycopg2-binary==2.9.9

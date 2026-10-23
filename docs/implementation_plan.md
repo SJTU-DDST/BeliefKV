@@ -111,8 +111,8 @@ do not prove24 distinct projects are currently available. V3155 re-profiles all
 distinct projects and40.831GB aggregate source FULL state. This is a CPU
 candidate pool, not full-prompt, dependency, task-correctness or GPU acceptance.
 Evaluate16 project-distinct roots/running8/decode8 before raising active limits;
-retain12 roots if requiring every source itself to exceed100K. Keep the live
-V134d source capture unchanged by this analysis.
+retain12 roots if requiring every source itself to exceed100K. That analysis
+left the live V134d source capture unchanged.
 See [the shared-prefix analysis](experiments/root_count_batch_capacity_20261023_zh.md).
 
 The16-project manifest and separate retention configuration are now materialized.
@@ -128,9 +128,28 @@ and the actual CPU runtime constructor. Matrix registration binds the source
 population and manifest SHA256. V3164 retains5312 and passes5328 plus2 subtests
 without failures/skips; V3165 binds sources. The old test rejecting16 roots
 is intentionally replaced by invariant settings plus invalid-count rejection;
-the failed V3162 report is retained. Keep V134d unchanged until candidate
-environment limits are resolved; no GPU or performance acceptance is inferred.
+the failed V3162 report is retained. At that checkpoint V134d remained queued;
+no GPU or performance acceptance was inferred.
 See [the candidate evidence and limits](experiments/project_disjoint_workload_ready_20261023_zh.md).
+
+Latest CPU follow-up resolves the observed scientific/Qt dependencies while
+retaining the source's actual Pydantic1 API; one project uses a separate
+SQLAlchemy2 image. V3177 passes common preflight in all16, preserving original
+test/code/configuration failures and ungraded task correctness. The derived
+16-project environment manifest binds immutable image IDs and its report;
+source registration verifies35 external inputs. V3178 proves every initial
+prompt token hash identical to V3156. The common candidate configuration now
+points to this pinned manifest.
+
+The closure hot loop inlines unchanged scalar length checks. V3168 alternates
+101 samples over12 complete PREPARE fixtures: all decisions, records, native
+reads and pending state agree; CPU P50 falls1.15--4.00%, not a GPU/JCT gain.
+V3179 retains5328 and passes5355 plus2 subtests without failures/skips;
+V3180 binds and verifies the current sources.
+After source qualification/freeze, register V135 for16 project-distinct roots,
+running8 and the reference census; replace V134d only after verifying the new
+reservation-aware CPU watcher live. Respect the2026-10-24 06:00 Beijing hold.
+See [the complete CPU and environment evidence](reports/2026-10/closure_and_project_environment_cpu_20261023_zh.md).
 
 V3152 independently audits actual native output IDs and identical work/stopping
 in all three V133b arms.6161 same-session quick tool successors have output

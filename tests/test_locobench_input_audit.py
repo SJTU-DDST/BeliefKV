@@ -1,6 +1,7 @@
 import gzip
 import hashlib
 import json
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
@@ -83,3 +84,89 @@ def test_environment_probe_preserves_original_failures_and_accepts_new_projects(
     assert evidence["original_test_result"]["stdout"] == "original failure"
     expected = environment.PROJECT_COMMANDS.get(project, environment.DEFAULT_TEST_COMMAND)
     assert calls[-1][-1] == expected
+
+
+def test_project_image_override_is_explicit_without_rewriting_original_inputs(tmp_path, monkeypatch):
+    manifest, output = tmp_path / "manifest.json", tmp_path / "out.json"
+    source = str(tmp_path / "project")
+    original = json.dumps({
+        "workloads": [{
+            "source_repo": source, "docker_image": "original",
+            "base_commit": "commit", "preflight_command": "preflight",
+        }],
+    })
+    manifest.write_text(original)
+    calls = []
+    monkeypatch.setattr(environment, "capture", lambda args: (
+        calls.append(args) or {"returncode": 0, "stdout": "", "stderr": ""}
+    ))
+    monkeypatch.setattr(environment.subprocess, "check_output", lambda *a, **k: "sha256:actual")
+    monkeypatch.setattr("sys.argv", [
+        "qualify", "--manifest", str(manifest), "--output", str(output),
+        "--image", "shared", "--image-override", "project=special",
+    ])
+    environment.main()
+    result = json.loads(output.read_bytes())
+    assert result["default_image_override"] == "shared"
+    assert result["project_image_overrides"] == {"project": "special"}
+    assert result["projects"][source]["docker_image"] == "special"
+    assert result["projects"][source]["docker_image_id"] == "sha256:actual"
+    assert all(args[-4] == "sha256:actual" for args in calls)
+    assert manifest.read_text() == original
+
+
+@pytest.mark.parametrize("overrides", (
+    ["unknown=image"], ["project="], ["project"], ["project=a", "project=b"],
+))
+def test_unknown_empty_or_duplicate_image_overrides_never_launch_a_container(
+    tmp_path, monkeypatch, overrides,
+):
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({
+        "workloads": [{"source_repo": str(tmp_path / "project")}],
+    }))
+    args = ["qualify", "--manifest", str(manifest), "--output", str(tmp_path / "out.json")]
+    for entry in overrides:
+        args.extend(("--image-override", entry))
+    monkeypatch.setattr("sys.argv", args)
+    monkeypatch.setattr(environment, "capture", lambda *_: pytest.fail("launched unknown image"))
+    with pytest.raises(SystemExit):
+        environment.main()
+
+
+@pytest.mark.parametrize("change", (None, "failed_preflight", "missing_project", "commit", "tag"))
+def test_environment_pin_changes_only_images_and_binds_the_actual_report(tmp_path, change):
+    original = {"workloads": [{
+        "source_repo": "/source/project", "base_commit": "original",
+        "docker_image": "old", "problem_statement": "Original task.",
+        "frozen_repository_context": {"sha256": "unchanged"},
+    }]}
+    manifest = deepcopy(original)
+    report = {
+        "dependency_preflight_passed": True, "manifest": "/manifest.json",
+        "manifest_sha256": "b" * 64,
+        "projects": {"/source/project": {
+            "source_commit": "original", "docker_image_id": "sha256:" + "a" * 64,
+        }},
+    }
+    if change == "failed_preflight":
+        report["dependency_preflight_passed"] = False
+    elif change == "missing_project":
+        report["projects"].clear()
+    elif change == "commit":
+        report["projects"]["/source/project"]["source_commit"] = "another"
+    elif change == "tag":
+        report["projects"]["/source/project"]["docker_image_id"] = "mutable:tag"
+    path = tmp_path / "qualification.json"
+    path.write_text(json.dumps(report))
+    if change is not None:
+        with pytest.raises(ValueError):
+            environment.pin_environment(manifest, report, path)
+    else:
+        pinned = environment.pin_environment(manifest, report, path)
+        assert pinned["workloads"][0]["docker_image"] == "sha256:" + "a" * 64
+        assert pinned["environment_qualification"]["sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
+        pinned["workloads"][0]["docker_image"] = "old"
+        del pinned["environment_qualification"]
+        assert pinned == original
+    assert manifest == original

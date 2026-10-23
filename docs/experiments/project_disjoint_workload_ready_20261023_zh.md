@@ -1,6 +1,9 @@
 # 16 独立项目 workload 的 CPU 准备
 
 日期：2026-10-23，北京时间。尚未运行新 GPU 实验，性能目标仍 active。
+后续的固定环境清单、依赖修复和 V135 候选替换计划见
+[最新 CPU 记录](../reports/2026-10/closure_and_project_environment_cpu_20261023_zh.md)；
+本文保留初次准备时的 V3156--V3165 证据和原始失败。
 
 ## 已落地的输入
 

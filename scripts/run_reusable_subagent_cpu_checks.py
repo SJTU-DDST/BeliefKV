@@ -36,6 +36,7 @@ def main() -> int:
         "tests/test_causal_jct_paths.py",
         "tests/test_tool_continuation_work.py",
         "tests/test_locobench_input_audit.py",
+        "tests/test_sglang_v0520_observer.py",
     }
     nodes = []
     for case in ET.parse(args.reference_xml).getroot().iter("testcase"):

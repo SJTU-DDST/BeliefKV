@@ -825,6 +825,30 @@ def test_static_action_closure_reads_live_geometry_without_tensor_byte_census() 
     assert "allocator and physical pool disagree" in result.reason
 
 
+@pytest.mark.parametrize("field", ("value", "host_value"))
+@pytest.mark.parametrize("length", (0, 3, True, -1, 1.5, 1000))
+def test_closure_uses_shape_metadata_and_keeps_strict_full_length_bounds(field, length) -> None:
+    class MetadataOnlyIndices:
+        shape = (length,)
+
+        def __len__(self):
+            raise AssertionError("shape-backed indices must not read storage")
+
+    cache = _static_cache()
+    root = _node(0)
+    leaf = _node(5, root)
+    setattr(leaf.component_data[0], field, MetadataOnlyIndices())
+    cache.tree_core = UnifiedTreeCore(node_by_id={0: root, 5: leaf}.__getitem__)
+    observed = observe_unified_node_closure(cache, 5)
+    expected = type(length) is int and length in (0, 3)
+    assert observed.observable is expected
+    if expected:
+        name = "full_device_tokens" if field == "value" else "full_host_tokens"
+        assert getattr(observed.nodes[0], name) == length
+    else:
+        assert "FULL" in observed.reason and "length" in observed.reason
+
+
 @pytest.mark.parametrize("allocator_name", ("TokenToKVPoolAllocator", "PagedTokenToKVPoolAllocator"))
 def test_static_closure_keeps_live_validation_on_both_allocator_layouts(allocator_name) -> None:
     cache = _static_cache()

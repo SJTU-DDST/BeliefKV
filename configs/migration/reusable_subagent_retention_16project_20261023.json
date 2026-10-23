@@ -10,7 +10,7 @@
   },
   "source_profile": "reusable_nested",
   "source_capture_policy": "native_matched_with_retention_off",
-  "source_workload_sha256": "bd11ed764e0781f42cb6ad129585de7eb2d44b6aa6d1c65fe7749ebe3bd84e2d",
+  "source_workload_sha256": "44d685f8e91740ed38aa88c550f0cc36f078e2be9f2c7050e5c26d30862ba06c",
   "optional_tool_prefetch_environment": {
     "TOOL_PREFETCH": "1",
     "TOOL_PREFETCH_PRIORITY_MS": "1500"
@@ -30,7 +30,7 @@
     "HICACHE_SIZE_GB": "200",
     "HICACHE_WRITE_POLICY": "write_back",
     "FANOUT_PROFILE": "native_in_graph_reusable_nested",
-    "WORKLOAD_MANIFEST": "configs/workloads/locobench_agent_long_16project_20261023.json",
+    "WORKLOAD_MANIFEST": "configs/workloads/locobench_agent_long_16project_env_20261023.json",
     "AB_MODE": "predictive_h2d",
     "PREPARE_HOST": "1",
     "PREFILL_SCHEDULING_POLICY": "workflow",

@@ -93,7 +93,31 @@ def project_disjoint_workload(path):
 def declared_workload_inputs(path):
     manifest = project_disjoint_workload(path)
     inputs = [path]
+    environment = manifest.get("environment_qualification")
+    if environment is not None:
+        report_path, base_path = Path(environment["path"]), Path(environment["base_manifest"])
+        if (
+            sha256_file(report_path) != environment["sha256"]
+            or sha256_file(base_path) != environment["base_manifest_sha256"]
+        ):
+            raise ValueError("declared source environment evidence changed")
+        report = load(report_path)
+        if (
+            report.get("dependency_preflight_passed") is not True
+            or report.get("manifest_sha256") != environment["base_manifest_sha256"]
+        ):
+            raise ValueError("declared source environment was not qualified")
+        inputs.extend((report_path, base_path))
     for row in manifest["workloads"]:
+        if environment is not None:
+            image = row["docker_image"]
+            evidence = report["projects"][row["source_repo"]]
+            if (
+                evidence["docker_image_id"] != image
+                or evidence["source_commit"] != row["base_commit"]
+                or qualified.command(["docker", "image", "inspect", image, "--format", "{{.Id}}"]) != image
+            ):
+                raise ValueError("declared source environment image changed or is unavailable")
         context = row["frozen_repository_context"]
         provenance = row["dataset_provenance"]
         for name, expected in (

@@ -1,0 +1,35 @@
+FROM sha256:3c5ba4d6b17bb7c5eed115435d274c0aa30c7b03bbf544c2aa2a554270274395 AS extended
+
+ENV QT_QPA_PLATFORM=offscreen \
+    OMP_NUM_THREADS=2 \
+    OPENBLAS_NUM_THREADS=2 \
+    MKL_NUM_THREADS=2
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libegl1 libopengl0 libxkbcommon0 libdbus-1-3 libportaudio2 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements-extended.txt /tmp/beliefkv-extended-requirements.txt
+RUN /opt/miniconda3/envs/testbed/bin/python -m pip install --no-cache-dir --prefer-binary \
+    -r /tmp/beliefkv-extended-requirements.txt \
+    && /opt/miniconda3/envs/testbed/bin/python -m pip check \
+    && rm /tmp/beliefkv-extended-requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libfontconfig1 libfreetype6 \
+    && rm -rf /var/lib/apt/lists/*
+ENV QT_OPENGL=software
+RUN /opt/miniconda3/envs/testbed/bin/python -c \
+    'import pandas, sklearn, prefect, mlflow; from pydantic import BaseSettings; from PySide6.QtWidgets import QApplication; app = QApplication([])'
+RUN /opt/miniconda3/envs/testbed/bin/python -m pip install --no-cache-dir plotly==5.18.0 \
+    && /opt/miniconda3/envs/testbed/bin/python -m pip check \
+    && /opt/miniconda3/envs/testbed/bin/python -c 'import plotly.express'
+
+FROM extended AS sql2
+
+COPY requirements-sql2.txt /tmp/beliefkv-sql2-requirements.txt
+RUN /opt/miniconda3/envs/testbed/bin/python -m pip install --no-cache-dir --prefer-binary \
+    -r /tmp/beliefkv-sql2-requirements.txt \
+    && /opt/miniconda3/envs/testbed/bin/python -m pip check \
+    && rm /tmp/beliefkv-sql2-requirements.txt
+RUN /opt/miniconda3/envs/testbed/bin/python -c \
+    'from pydantic import BaseSettings; from sqlalchemy.ext.asyncio import async_sessionmaker; from sqlalchemy.orm import DeclarativeBase; import sqlmodel'

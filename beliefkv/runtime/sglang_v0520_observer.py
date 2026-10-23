@@ -663,13 +663,21 @@ def observe_unified_node_closure(
             if type(mamba) is not component_type:
                 _named(mamba, "ComponentData")
             full_value = full.value
-            full_device_tokens = 0 if full_value is None else _bounded_index_length(
-                full_value, device_full_tokens, "FULL device length",
-            )
+            if full_value is None:
+                full_device_tokens = 0
+            else:
+                shape = getattr(full_value, "shape", None)
+                full_device_tokens = shape[0] if shape else len(full_value)
+                if type(full_device_tokens) is not int or not 0 <= full_device_tokens <= device_full_tokens:
+                    raise ValueError("invalid FULL device length")
             full_host_value = full.host_value
-            full_host_tokens = 0 if full_host_value is None else _bounded_index_length(
-                full_host_value, host_full_tokens, "FULL host length",
-            )
+            if full_host_value is None:
+                full_host_tokens = 0
+            else:
+                shape = getattr(full_host_value, "shape", None)
+                full_host_tokens = shape[0] if shape else len(full_host_value)
+                if type(full_host_tokens) is not int or not 0 <= full_host_tokens <= host_full_tokens:
+                    raise ValueError("invalid FULL host length")
             full_device_locks = full.lock_ref
             full_host_locks = full.host_lock_ref
             mamba_device_locks = mamba.lock_ref
@@ -706,9 +714,11 @@ def observe_unified_node_closure(
             mamba_device_present = mamba.value is not None
             mamba_host_present = mamba.host_value is not None
             key = getattr(node, "key", None)
-            key_tokens = (
-                None if key is None else _bounded(len(key), 2**31 - 1, "node key length")
-            )
+            key_tokens = None if key is None else len(key)
+            if key_tokens is not None and (
+                type(key_tokens) is not int or not 0 <= key_tokens <= 2**31 - 1
+            ):
+                raise ValueError("invalid node key length")
             # Field order matches UnifiedNodeSummary, avoiding a per-node kwargs dict.
             summaries.append(
                 UnifiedNodeSummary(

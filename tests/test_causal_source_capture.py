@@ -303,6 +303,55 @@ def test_explicit_workload_binds_context_provenance_and_clone_commit(tmp_path, m
             capture.declared_workload_inputs(path)
 
 
+@pytest.mark.parametrize("change", (None, "report", "base", "image", "preflight"))
+def test_capture_binds_the_pinned_environment_evidence_before_allocating_resources(
+    tmp_path, monkeypatch, change,
+):
+    raw = disjoint_manifest(1)
+    context, provenance = (tmp_path / name for name in ("context.gz", "source.json"))
+    context.write_bytes(b"source")
+    provenance.write_text("provenance")
+    row = raw["workloads"][0]
+    row.update(
+        source_repo=str(tmp_path / "source"), base_commit="a" * 40,
+        docker_image="sha256:" + "b" * 64,
+        frozen_repository_context={"path": str(context), "sha256": capture.sha256_file(context)},
+        dataset_provenance={
+            "source_provenance_path": str(provenance),
+            "source_provenance_sha256": capture.sha256_file(provenance),
+        },
+    )
+    base, report = tmp_path / "base.json", tmp_path / "environment.json"
+    base.write_text(json.dumps(raw))
+    report.write_text(json.dumps({
+        "dependency_preflight_passed": change != "preflight",
+        "manifest_sha256": capture.sha256_file(base),
+        "projects": {row["source_repo"]: {
+            "docker_image_id": row["docker_image"], "source_commit": row["base_commit"],
+        }},
+    }))
+    raw["environment_qualification"] = {
+        "path": str(report), "sha256": capture.sha256_file(report),
+        "base_manifest": str(base), "base_manifest_sha256": capture.sha256_file(base),
+    }
+    path = tmp_path / "pinned.json"
+    path.write_text(json.dumps(raw))
+    if change in ("base", "report"):
+        (base if change == "base" else report).write_text("changed")
+
+    def command(args):
+        if args[0] == "docker":
+            return "missing" if change == "image" else row["docker_image"]
+        return row["base_commit"]
+
+    monkeypatch.setattr(capture.qualified, "command", command)
+    if change is None:
+        assert capture.declared_workload_inputs(path) == [path, report, base, context, provenance]
+    else:
+        with pytest.raises(ValueError, match="declared source environment"):
+            capture.declared_workload_inputs(path)
+
+
 @pytest.mark.parametrize("roots", (16, 36))
 def test_capture_monitor_reads_and_validates_the_declared_client_population(
     tmp_path, monkeypatch, roots,
