@@ -6,9 +6,11 @@ from __future__ import annotations
 import argparse
 import fcntl
 import json
+import math
 import os
 from pathlib import Path
 import signal
+import statistics
 import subprocess
 import sys
 import time
@@ -108,6 +110,79 @@ def observe(arm: Path, *, final=False):
             raise ValueError("capture policy or seed differs from the native source")
 
 
+def balanced_source(summary):
+    workflows = summary.get("workflows", [])
+    durations = sorted(
+        row["duration_seconds"] for row in workflows
+        if type(row.get("duration_seconds")) in (int, float)
+        and math.isfinite(row["duration_seconds"]) and row["duration_seconds"] > 0
+    )
+    duration = summary.get("duration_seconds", 0)
+    valid_duration = (
+        type(duration) in (int, float) and math.isfinite(duration) and duration > 0
+    )
+    reasons = []
+    if (
+        len(workflows) != 36 or len(durations) != 36
+        or summary.get("completed_workflows") != 36
+        or not valid_duration
+    ):
+        reasons.append("incomplete_workflow_population")
+    joins = summary.get("delegation_round_count", 0)
+    if type(joins) is not int or joins < 80:
+        reasons.append("fewer_than_80_joins")
+    if any(row.get("native_agent_jct_eligible") is not True for row in workflows):
+        reasons.append("source_guard_or_ineligible_workflow")
+    gap = durations[-1] - durations[-2] if len(durations) >= 2 else None
+    ratio = durations[-1] / statistics.median(durations) if durations else None
+    if gap is None or not valid_duration or gap / duration > .05:
+        reasons.append("final_completion_gap_exceeds_five_percent")
+    if ratio is None or ratio > 1.8:
+        reasons.append("maximum_jct_exceeds_1_8_times_median")
+    return {
+        "profile": "balanced_join", "accepted": not reasons, "reasons": reasons,
+        "workflow_count": len(workflows), "joins": joins,
+        "final_completion_gap_seconds": gap, "duration_seconds": duration,
+        "maximum_to_median_jct": ratio,
+        "criteria": {
+            "workflow_count": 36, "minimum_joins": 80, "require_all_source_unguarded": True,
+            "maximum_final_gap_fraction": .05, "maximum_to_median_jct": 1.8,
+        },
+        "scope": "Predeclared source selection only; no Full/native speedup is used.",
+    }
+
+
+def wait_for_resources(plan, state, path, interrupted):
+    while True:
+        fresh.check_hold(plan, released=True)
+        if interrupted():
+            raise ValueError("capture cancelled while waiting for the GPU")
+        previous_alive = False
+        if plan.get("after_comparison"):
+            previous = load(Path(plan["after_comparison"]).with_suffix(".state.json"))
+            identities = [
+                *previous.get("owned", []),
+                *(previous[name] for name in ("watcher", "server", "driver") if previous.get(name)),
+            ]
+            if not previous.get("watcher"):
+                raise ValueError("previous comparison lacks its supervisor identity")
+            previous_alive = any(reservation.alive(row) for row in identities)
+        available = (
+            {"ready": False, "reason": "previous_comparison_has_live_processes"}
+            if previous_alive else qualified.resources(plan["port"])
+        )
+        if available["ready"]:
+            return
+        if not plan.get("wait_for_gpu"):
+            raise ValueError("resources changed before capture")
+        state.update(
+            status="waiting_gpu_capture", resources=available,
+            checked_at=reservation.now().isoformat(),
+        )
+        reservation.write_json(path, state)
+        time.sleep(10.)
+
+
 def register(args):
     for path in (
         args.registration, args.registration.with_suffix(".state.json"),
@@ -139,7 +214,7 @@ def register(args):
     engine = comparison.EXPERIMENTS / ".worktrees" / f"sglang-{label}-capture-{evidence['tree'][:12]}"
     if checkout.exists() or engine.exists():
         raise FileExistsError("preserve existing frozen capture sources")
-    if not qualified.resources(args.port)["ready"]:
+    if not args.wait_for_gpu and not qualified.resources(args.port)["ready"]:
         raise ValueError("GPU, port or disk is occupied")
     subprocess.run(["git", "-C", str(ROOT), "worktree", "add", "--detach", str(checkout), revision],
                    check=True, capture_output=True)
@@ -161,6 +236,8 @@ def register(args):
         args.reference, args.reference.with_suffix(".state.json"),
         args.cpu_report, args.cpu_sources, args.engine_report, args.engine_sources,
     ]
+    if args.after_comparison:
+        extra.append(args.after_comparison)
     plan = {
         "schema_version": 1, "purpose": "predeclared_native_exact_trajectory_capture",
         "registered_at": reservation.now().isoformat(),
@@ -176,6 +253,9 @@ def register(args):
             *({"path": str(path.resolve()), "sha256": sha256_file(path)} for path in extra),
         ],
         "performance_accepted": False, "gpu_replay_qualified": False,
+        "source_profile": args.source_profile,
+        "wait_for_gpu": args.wait_for_gpu,
+        "after_comparison": str(args.after_comparison.resolve()) if args.after_comparison else None,
     }
     reservation.write_json(args.registration, plan)
     with args.registration.with_suffix(".log").open("x") as output:
@@ -219,8 +299,7 @@ def watch(registration: Path):
             reservation.write_json(path, state)
             comparison.verify_sources(plan)
             fresh.check_hold(plan, released=True)
-            if not qualified.resources(plan["port"])["ready"]:
-                raise ValueError("resources changed before capture")
+            wait_for_resources(plan, state, path, lambda: interrupted)
             subprocess.run(
                 [sys.executable, str(ROOT / "scripts/preflight_qwen35_host_pool.py"),
                  "--memory-policy", "preferred", "--node", "1", "--size-gb", "200"],
@@ -262,6 +341,12 @@ def watch(registration: Path):
                 status="source_captured_gpu_replay_pending",
                 source_requests=token_report["native_requests"],
             )
+            if plan.get("source_profile") == "balanced_join":
+                selection = balanced_source(load(arm / "client_36/summary.json"))
+                reservation.write_json(run / "source_selection.json", selection)
+                state["source_selection"] = selection
+                if not selection["accepted"]:
+                    state["status"] = "source_captured_selection_rejected"
         except Exception as error:
             if driver is not None and driver.poll() is None:
                 identities = reservation.owned_runs().get(run, [])
@@ -295,6 +380,9 @@ def main():
     parser.add_argument("--registration", type=Path)
     parser.add_argument("--run-root", type=Path)
     parser.add_argument("--port", type=int, default=18546)
+    parser.add_argument("--source-profile", choices=("balanced_join",))
+    parser.add_argument("--wait-for-gpu", action="store_true")
+    parser.add_argument("--after-comparison", type=Path)
     args = parser.parse_args()
     if args.watch:
         watch(args.watch.resolve())

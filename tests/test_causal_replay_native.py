@@ -130,6 +130,30 @@ def test_enabled_plugin_requires_native_delayed_sampling_to_avoid_stale_req_prog
         assert not HookRegistry._hooks
 
 
+@pytest.mark.parametrize("delayed", (False, True))
+def test_position_replay_registers_cpu_progress_and_mask_free_dispatch(monkeypatch, delayed):
+    native_root(monkeypatch)
+    from sglang.srt.plugins.hook_registry import HookRegistry, HookType
+
+    monkeypatch.setattr(HookRegistry, "_hooks", defaultdict(list))
+    monkeypatch.setenv(bridge.BRIDGE_ENV, "1")
+    monkeypatch.setenv(bridge.SAMPLING_ENV, "position")
+    monkeypatch.setenv("SGLANG_ENABLE_DELAY_SAMPLE", "1" if delayed else "0")
+    if delayed:
+        with pytest.raises(ValueError, match="SGLANG_ENABLE_DELAY_SAMPLE=0"):
+            bridge.register()
+        assert not HookRegistry._hooks
+    else:
+        bridge.register()
+        assert HookRegistry._hooks[
+            "sglang.srt.model_executor.model_runner.ModelRunner.sample"
+        ][0][:2] == (HookType.AROUND, bridge.sample_with_positions)
+        assert HookRegistry._hooks[
+            "sglang.srt.layers.sampler.apply_custom_logit_processor"
+        ][0][:2] == (HookType.AROUND, bridge.apply_position_logits)
+        assert len(HookRegistry._hooks) == 3
+
+
 def test_actual_native_output_payload_carries_receipts_once_without_a_log_flush(req, monkeypatch):
     root = native_root(monkeypatch)
     path = root / "test/registered/unit/managers/test_output_streamer_customized_info.py"

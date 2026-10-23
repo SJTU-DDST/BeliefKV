@@ -46,3 +46,19 @@ def test_component_summary_preserves_negative_differences_without_claiming_perfo
     }
     with pytest.raises(ValueError, match="variant"):
         step("invented", torch.zeros(1, 16), None, None)
+
+
+def test_position_calibration_includes_cpu_progress_without_legacy_mask_dispatch():
+    parameters = [{
+        "__req__": SimpleNamespace(rid="a", output_ids=[], origin_input_ids=[1] * 64),
+        PARAMETER_KEY: {"request_id": "a", "output_token_ids": [3]},
+    }]
+    batch = ReplaySamplingBatch(torch.ones(1, dtype=torch.bool), parameters)
+
+    def legacy(*_args):
+        raise AssertionError("position calibration queried the old device mask")
+
+    assert step(
+        "position_forcing_dispatch", torch.zeros(1, 16), batch, legacy,
+    ).tolist() == [3]
+    assert parameters[0]["__req__"].output_ids == []

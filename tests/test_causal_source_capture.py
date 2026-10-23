@@ -125,3 +125,72 @@ def test_final_capture_requires_launch_configuration(tmp_path):
     }))
     with pytest.raises(ValueError, match="launch configuration"):
         capture.observe(tmp_path, final=True)
+
+
+@pytest.mark.parametrize("change", (
+    None, "low_joins", "guard", "incomplete", "isolated_tail", "wide_jct",
+))
+def test_balanced_source_selection_does_not_use_policy_speedups(change):
+    summary = {
+        "duration_seconds": 3000., "delegation_round_count": 84, "completed_workflows": 36,
+        "workflows": [
+            {"duration_seconds": 2000. + index * 20, "native_agent_jct_eligible": True}
+            for index in range(36)
+        ],
+    }
+    if change == "low_joins":
+        summary["delegation_round_count"] = 79
+    elif change == "guard":
+        summary["workflows"][0]["native_agent_jct_eligible"] = False
+    elif change == "incomplete":
+        summary["completed_workflows"] = 35
+    elif change == "isolated_tail":
+        summary["workflows"][-1]["duration_seconds"] = 2990.
+    elif change == "wide_jct":
+        for index in range(2):
+            summary["workflows"][-1-index]["duration_seconds"] = 4900. - index
+        summary["duration_seconds"] = 5000.
+    selection = capture.balanced_source(summary)
+    assert selection["accepted"] is (change is None)
+    assert bool(selection["reasons"]) is (change is not None)
+    assert selection["criteria"]["minimum_joins"] == 80
+
+
+def test_predeclared_capture_waits_without_allocating_or_touching_another_job(tmp_path, monkeypatch):
+    checks = iter((False, False, True))
+    held, waits = [], []
+    monkeypatch.setattr(capture.fresh, "check_hold", lambda *_a, **_k: held.append(1))
+    monkeypatch.setattr(capture.qualified, "resources", lambda _port: {"ready": next(checks)})
+    monkeypatch.setattr(capture.time, "sleep", waits.append)
+    state, path = {}, tmp_path / "state.json"
+    capture.wait_for_resources({"port": 18558, "wait_for_gpu": True}, state, path, lambda: False)
+    assert len(held) == 3 and waits == [10., 10.]
+    assert json.loads(path.read_bytes())["status"] == "waiting_gpu_capture"
+
+
+@pytest.mark.parametrize("cancelled", (False, True))
+def test_capture_wait_respects_a_cancellation_and_the_original_fail_fast_mode(
+    tmp_path, monkeypatch, cancelled,
+):
+    monkeypatch.setattr(capture.fresh, "check_hold", lambda *_a, **_k: None)
+    monkeypatch.setattr(capture.qualified, "resources", lambda _port: {"ready": False})
+    with pytest.raises(ValueError):
+        capture.wait_for_resources({"port": 18558}, {}, tmp_path / "state.json", lambda: cancelled)
+
+
+def test_capture_does_not_use_a_temporary_idle_gap_between_previous_arms(tmp_path, monkeypatch):
+    registration = tmp_path / "previous.json"
+    state_path = registration.with_suffix(".state.json")
+    state_path.write_text(json.dumps({"watcher": {"pid": 10}}))
+    polls, queried = [], []
+    monkeypatch.setattr(capture.fresh, "check_hold", lambda *_a, **_k: None)
+    monkeypatch.setattr(capture.reservation, "alive", lambda _row: not polls)
+    monkeypatch.setattr(capture.time, "sleep", lambda _seconds: polls.append(1))
+    monkeypatch.setattr(
+        capture.qualified, "resources", lambda port: queried.append(port) or {"ready": True},
+    )
+    capture.wait_for_resources(
+        {"port": 18558, "wait_for_gpu": True, "after_comparison": str(registration)},
+        {}, tmp_path / "capture.state.json", lambda: False,
+    )
+    assert polls == [1] and queried == [18558]

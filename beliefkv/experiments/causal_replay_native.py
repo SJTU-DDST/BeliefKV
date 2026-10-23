@@ -8,7 +8,9 @@ import hashlib
 import os
 import time
 
-from beliefkv.experiments.causal_replay_sampling import PARAMETER_KEY
+from beliefkv.experiments.causal_replay_sampling import (
+    PARAMETER_KEY, SAMPLING_ENV, apply_position_logits, sample_with_positions,
+)
 from beliefkv.runtime.clock_evidence import local_monotonic_clock_domain
 from beliefkv.runtime.replay_token_capture import _wire
 
@@ -106,10 +108,25 @@ def register() -> None:
     from sglang.srt.environ import envs
     from sglang.srt.plugins.hook_registry import HookRegistry, HookType
 
-    if not envs.SGLANG_ENABLE_DELAY_SAMPLE.get():
+    mode = os.environ.get(SAMPLING_ENV, "legacy")
+    if mode not in ("legacy", "position"):
+        raise ValueError(f"{SAMPLING_ENV} must be legacy or position")
+    delayed = envs.SGLANG_ENABLE_DELAY_SAMPLE.get()
+    if mode == "legacy" and not delayed:
         raise ValueError(
             "causal replay requires SGLANG_ENABLE_DELAY_SAMPLE=1 so sampling "
             "observes the previous committed output while forward remains overlapped"
+        )
+    if mode == "position" and delayed:
+        raise ValueError("position replay requires SGLANG_ENABLE_DELAY_SAMPLE=0")
+    if mode == "position":
+        HookRegistry.register(
+            "sglang.srt.model_executor.model_runner.ModelRunner.sample",
+            sample_with_positions, HookType.AROUND,
+        )
+        HookRegistry.register(
+            "sglang.srt.layers.sampler.apply_custom_logit_processor",
+            apply_position_logits, HookType.AROUND,
         )
     HookRegistry.register(
         "sglang.srt.managers.scheduler.Scheduler.get_output_streamer_class",

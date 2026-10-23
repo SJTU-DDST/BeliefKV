@@ -747,8 +747,10 @@ def test_zero_wait_plan_records_requested_payload_and_actual_capacity_reason(
      (40, 23, 4096, 23), (40, 64, 810, 20)],
 )
 def test_fragmented_wait_restores_beyond_sixteen_nodes_within_live_budgets(
-    source, node_count, pending_limit, byte_limit, expected_count,
+    source, node_count, pending_limit, byte_limit, expected_count, monkeypatch,
 ):
+    # This case checks capacity limits, independently of the tool deadline.
+    monkeypatch.setattr("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", lambda: 10.)
     runtime, key, opportunity, cache, _ = batch_fixture(source, node_count=node_count)
     runtime.physical_ledger.max_pending = pending_limit
     budget = PrefetchResidencyBudget(1, byte_limit, reserve_full_tokens=4)

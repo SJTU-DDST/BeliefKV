@@ -16,7 +16,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.causal_replay_sampling import (
-    CapturedOutputLogitsProcessor, PARAMETER_KEY,
+    CapturedOutputLogitsProcessor, PARAMETER_KEY, apply_position_logits,
+    sample_with_positions,
 )
 from beliefkv.experiments.source_provenance import sha256_file
 
@@ -29,6 +30,14 @@ class ReplaySamplingBatch:
         self.custom_logit_processor = {
             "captured": (CapturedOutputLogitsProcessor(), mask),
         }
+        import torch
+
+        self.forward = SimpleNamespace(
+            sampling_info=self,
+            seq_lens_cpu=torch.tensor([
+                len(row["__req__"].origin_input_ids) for row in parameters
+            ]) if all(hasattr(row["__req__"], "origin_input_ids") for row in parameters) else None,
+        )
 
     def __len__(self):
         return len(self.custom_params)
@@ -41,6 +50,10 @@ def step(variant, logits, batch, native_dispatch):
         CapturedOutputLogitsProcessor()(logits, batch.custom_params)
     elif variant == "native_forcing_dispatch":
         native_dispatch(logits, batch)
+    elif variant == "position_forcing_dispatch":
+        def sample(_runner, values, forward):
+            apply_position_logits(native_dispatch, values, forward.sampling_info)
+        sample_with_positions(sample, None, logits, batch.forward)
     elif variant != "native_greedy":
         raise ValueError("unknown sampling benchmark variant")
     return torch.argmax(logits, -1)
@@ -78,6 +91,7 @@ def run(args):
     torch.manual_seed(21)
     config = json.loads((args.model / "config.json").read_bytes())
     vocabulary = config["text_config"]["vocab_size"]
+    variants = (*VARIANTS, "position_forcing_dispatch") if args.position else VARIANTS
     cases = []
     for size in (1, 8):
         targets = torch.arange(3, size + 3, device="cuda", dtype=torch.int64)
@@ -88,7 +102,9 @@ def run(args):
             torch.ones(size, device="cuda", dtype=torch.bool),
             [
                 {
-                    "__req__": SimpleNamespace(rid=str(row), output_ids=[]),
+                    "__req__": SimpleNamespace(
+                        rid=str(row), output_ids=[], origin_input_ids=[1] * 64,
+                    ),
                     PARAMETER_KEY: {
                         "request_id": str(row), "output_token_ids": [row + 3],
                     },
@@ -96,9 +112,9 @@ def run(args):
                 for row in range(size)
             ],
         )
-        costs = {variant: {"wall_ms": [], "device_stream_ms": []} for variant in VARIANTS}
+        costs = {variant: {"wall_ms": [], "device_stream_ms": []} for variant in variants}
         for sample in range(args.samples + 2):
-            order = VARIANTS[sample % len(VARIANTS):] + VARIANTS[:sample % len(VARIANTS)]
+            order = variants[sample % len(variants):] + variants[:sample % len(variants)]
             for variant in order:
                 torch.cuda.synchronize()
                 begin, end = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
@@ -130,6 +146,7 @@ def run(args):
         })
     return {
         "schema_version": 1, "samples": args.samples, "cycles": args.cycles,
+        "position_dispatch_included": args.position,
         "gpu_name": torch.cuda.get_device_name(), "torch_version": torch.__version__,
         "model_config_sha256": sha256_file(args.model / "config.json"),
         "native_sampler": str(native_path.resolve()),
@@ -154,6 +171,7 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--samples", type=int, default=11)
     parser.add_argument("--cycles", type=int, default=64)
+    parser.add_argument("--position", action="store_true")
     args = parser.parse_args()
     report = run(args)
     args.output.parent.mkdir(parents=True, exist_ok=True)
