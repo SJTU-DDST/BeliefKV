@@ -23,11 +23,13 @@ speculative tool H2D, matching the latest measured Full arm. Do not restore the
 historical continuity candidate or simple-JOIN-only configuration by reading
 the older entries below as current instructions.
 
-No GPU experiment during2026-10-23 18:00 through2026-10-24 06:00 Asia/Shanghai.
+No GPU experiment during2026-10-23 20:00 through2026-10-24 06:00 Asia/Shanghai.
 This is a one-time hold, not the removed daily midnight rule. The canonical hold
-is ../ops/gpu_hold_until_20261022_0600.json, updated to the new deadline, with a
-separate reservation guard and pause marker. Only CPU work is allowed meanwhile.
-Afterwards, require current source qualification, frozen sources, idle resources
+is ../ops/gpu_hold_until_20261022_0600.json, with a separate reservation guard
+and pause marker. The user corrected the start from18:00 to20:00; before that
+interval, GPU work is allowed subject to qualification and resource checks.
+Only CPU work is allowed during the interval. Afterwards, require current
+source qualification, frozen sources, idle resources
 and no newer hold. The active goal remains unmet: improve complete-workflow
 mean JCT and throughput against native and the strongest simple baseline,
 with independent KV-management benefit under equal work and capacity.
