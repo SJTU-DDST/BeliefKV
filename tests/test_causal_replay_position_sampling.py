@@ -7,8 +7,9 @@ import torch
 
 from beliefkv.experiments.causal_replay_sampling import (
     CapturedOutputLogitsProcessor, PARAMETER_KEY, POSITION_KEY,
-    apply_position_logits, sample_with_positions,
+    apply_position_logits, filter_position_batch, sample_with_positions,
 )
+from tests.test_causal_replay_native import native_root
 from tests.test_causal_replay_sampling import parameters
 
 
@@ -194,3 +195,114 @@ def test_position_and_committed_progress_agree_at_every_original_output_boundary
         before = legacy(logits.clone(), deepcopy(rows))
         after = current(logits.clone(), deepcopy(rows), positions=positions)
         assert torch.equal(before, after)
+
+
+class NoScalarReadTensor(torch.Tensor):
+    def __bool__(self):
+        raise AssertionError("filtering queried a device scalar")
+
+
+def filtering_batch(*, no_scalar=False):
+    rows = [parameters(name, tokens) for name, tokens in (
+        ("a", [3, 4, 9]), ("b", [7, 9]), ("c", [11, 9]),
+    )]
+    for row in rows:
+        row["__req__"].custom_logit_processor = "qualified-replay"
+    mask = torch.ones(3, dtype=torch.bool)
+    if no_scalar:
+        mask = mask.as_subclass(NoScalarReadTensor)
+    return NS(
+        custom_params=rows, has_custom_logit_processor=True,
+        custom_logit_processor={
+            hash("qualified-replay"): (CapturedOutputLogitsProcessor(), mask),
+        },
+    )
+
+
+@pytest.mark.parametrize("keep", ([0, 1, 2], [2, 0], [1], [], [0, 0]))
+def test_position_filter_matches_actual_native_request_order_and_mask(monkeypatch, keep):
+    native_root(monkeypatch)
+    from sglang.srt.sampling.sampling_batch_info import SamplingBatchInfo
+
+    original = SamplingBatchInfo._filter_batch_custom_logit_processor
+    before, after = filtering_batch(), filtering_batch()
+    indices = torch.tensor(keep, dtype=torch.int64)
+    original(before, keep, indices)
+    filter_position_batch(original, after, keep, indices)
+    assert after.has_custom_logit_processor is before.has_custom_logit_processor
+    if not keep:
+        assert after.custom_params is after.custom_logit_processor is None
+    else:
+        assert [row["__req__"].rid for row in after.custom_params] == [
+            row["__req__"].rid for row in before.custom_params
+        ]
+        key = hash("qualified-replay")
+        assert torch.equal(after.custom_logit_processor[key][1], before.custom_logit_processor[key][1])
+
+
+@pytest.mark.parametrize("keep", ([2, 0], []))
+def test_actual_native_scalar_read_is_removed_only_for_qualified_position_filter(monkeypatch, keep):
+    native_root(monkeypatch)
+    from sglang.srt.sampling.sampling_batch_info import SamplingBatchInfo
+
+    original = SamplingBatchInfo._filter_batch_custom_logit_processor
+    indices = torch.tensor(keep, dtype=torch.int64)
+    with pytest.raises(AssertionError, match="queried a device scalar"):
+        original(filtering_batch(no_scalar=True), keep, indices)
+    info = filtering_batch(no_scalar=True)
+    filter_position_batch(
+        Mock(side_effect=AssertionError("unexpected native fallback")),
+        info, keep, indices,
+    )
+    assert info.has_custom_logit_processor is bool(keep)
+    if keep:
+        assert next(iter(info.custom_logit_processor.values()))[1].tolist() == [True] * len(keep)
+
+
+@pytest.mark.parametrize("change", (
+    "ordinary", "extra_processor", "mixed_health", "foreign_request", "foreign_flag",
+    "unknown_parameters", "wrong_shape",
+))
+def test_unproven_filter_ownership_keeps_the_native_path(change):
+    info = filtering_batch()
+    key = hash("qualified-replay")
+    if change == "ordinary":
+        info.custom_logit_processor[key] = (object(), torch.ones(3, dtype=torch.bool))
+    elif change == "extra_processor":
+        info.custom_logit_processor[1] = (object(), torch.zeros(3, dtype=torch.bool))
+    elif change == "mixed_health":
+        info.custom_params[0] = None
+    elif change == "foreign_request":
+        info.custom_params[0]["__req__"].rid = "foreign"
+    elif change == "foreign_flag":
+        info.custom_params[0]["__req__"].custom_logit_processor = "different-processor"
+    elif change == "unknown_parameters":
+        info.custom_params = None
+    else:
+        info.custom_logit_processor[key] = (CapturedOutputLogitsProcessor(), torch.ones(2, dtype=torch.bool))
+    original, indices = Mock(return_value="native"), torch.tensor([1, 2])
+    assert filter_position_batch(original, info, [1, 2], indices) == "native"
+    original.assert_called_once_with(info, [1, 2], indices)
+
+
+def test_position_filter_then_native_merge_keeps_output_tokens_and_terminal_state(monkeypatch):
+    native_root(monkeypatch)
+    from sglang.srt.sampling.sampling_batch_info import SamplingBatchInfo
+
+    info = filtering_batch()
+    original_outputs = [list(row["__req__"].output_ids) for row in info.custom_params]
+    filter_position_batch(
+        SamplingBatchInfo._filter_batch_custom_logit_processor,
+        info, [2, 0], torch.tensor([2, 0]),
+    )
+    other = filtering_batch()
+    key = hash("qualified-replay")
+    merged = SamplingBatchInfo.merge_custom_logit_processor(
+        info.custom_logit_processor, other.custom_logit_processor,
+        2, 3, "cpu",
+    )
+    assert merged[key][1].tolist() == [True] * 5
+    forward = batch(info.custom_params, [16, 16])
+    assert sample_with_positions(native_sample, None, torch.zeros(2, 16), forward).tolist() == [11, 3]
+    assert original_outputs == [[], [], []]
+    assert [row["__req__"].output_ids for row in info.custom_params] == [[], []]

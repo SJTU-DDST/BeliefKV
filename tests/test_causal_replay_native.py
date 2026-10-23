@@ -151,7 +151,11 @@ def test_position_replay_registers_cpu_progress_and_mask_free_dispatch(monkeypat
         assert HookRegistry._hooks[
             "sglang.srt.layers.sampler.apply_custom_logit_processor"
         ][0][:2] == (HookType.AROUND, bridge.apply_position_logits)
-        assert len(HookRegistry._hooks) == 3
+        assert HookRegistry._hooks[
+            "sglang.srt.sampling.sampling_batch_info.SamplingBatchInfo."
+            "_filter_batch_custom_logit_processor"
+        ][0][:2] == (HookType.AROUND, bridge.filter_position_batch)
+        assert len(HookRegistry._hooks) == 4
 
 
 def test_actual_native_output_payload_carries_receipts_once_without_a_log_flush(req, monkeypatch):

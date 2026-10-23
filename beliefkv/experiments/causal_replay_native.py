@@ -9,7 +9,8 @@ import os
 import time
 
 from beliefkv.experiments.causal_replay_sampling import (
-    PARAMETER_KEY, SAMPLING_ENV, apply_position_logits, sample_with_positions,
+    PARAMETER_KEY, SAMPLING_ENV, apply_position_logits, filter_position_batch,
+    sample_with_positions,
 )
 from beliefkv.runtime.clock_evidence import local_monotonic_clock_domain
 from beliefkv.runtime.replay_token_capture import _wire
@@ -130,6 +131,11 @@ def register() -> None:
         HookRegistry.register(
             "sglang.srt.layers.sampler.apply_custom_logit_processor",
             apply_position_logits, HookType.AROUND,
+        )
+        HookRegistry.register(
+            "sglang.srt.sampling.sampling_batch_info.SamplingBatchInfo."
+            "_filter_batch_custom_logit_processor",
+            filter_position_batch, HookType.AROUND,
         )
     HookRegistry.register(
         "sglang.srt.managers.scheduler.Scheduler.get_output_streamer_class",

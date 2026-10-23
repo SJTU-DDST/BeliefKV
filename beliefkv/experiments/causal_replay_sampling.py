@@ -132,6 +132,44 @@ def sample_with_positions(original, runner, logits_output, forward_batch):
         delattr(info, POSITION_KEY)
 
 
+def filter_position_batch(original, info, keep_indices, keep_indices_device):
+    """Filter a proven all-replay batch without reading a device mask scalar."""
+    processors, parameters = info.custom_logit_processor, info.custom_params
+    if (
+        type(processors) is not dict or len(processors) != 1
+        or type(parameters) is not list
+    ):
+        return original(info, keep_indices, keep_indices_device)
+    processor_key, (processor, mask) = next(iter(processors.items()))
+    if (
+        type(processor) is not CapturedOutputLogitsProcessor
+        or mask.ndim != 1 or len(parameters) != mask.shape[0]
+    ):
+        return original(info, keep_indices, keep_indices_device)
+    for row in parameters:
+        replay = row.get(PARAMETER_KEY) if type(row) is dict else None
+        req = row.get("__req__") if type(row) is dict else None
+        flag = getattr(req, "custom_logit_processor", None)
+        if (
+            type(replay) is not dict or type(replay.get("request_id")) is not str
+            or not replay["request_id"] or getattr(req, "rid", None) != replay["request_id"]
+            or type(flag) is not str or hash(flag) != processor_key
+        ):
+            return original(info, keep_indices, keep_indices_device)
+    # Native construction and merge derive this mask from these same Req flags.
+    # All rows belong to the one qualified processor, including after reordering.
+    filtered = [parameters[index] for index in keep_indices]
+    if filtered:
+        info.custom_logit_processor = {
+            processor_key: (processor, mask[keep_indices_device]),
+        }
+        info.custom_params = filtered
+    else:
+        info.custom_logit_processor = None
+        info.custom_params = None
+        info.has_custom_logit_processor = False
+
+
 def apply_position_logits(original, logits, sampling_info, num_tokens_in_batch=1):
     """Use CPU row ownership instead of querying a device mask for replay."""
     positions = getattr(sampling_info, POSITION_KEY, None)

@@ -243,3 +243,47 @@ subtest 通过，原 Docker progress 范围外 deselect 保留。
 GPU 检查过的采样/回执模块哈希未变。先冷启动完整 native 重放，
 执行原有 5% 额外减速检查，再按资格接续关闭工具等待期 H2D 的
 Full 和 JOIN-only。全部 36 个 workflow 及正常长尾继续保留。
+
+## V133b 阶段性几何复核与 batch 过滤同步
+
+V133b 继续使用冻结 `76a4e934de13`，先执行 native 完整校准。
+V3077 在 6223/6907 个原生回执完成时封存完整行前缀，配对相同请求、
+前缀长度、输出进度、实际 extend 和 CUDA graph 标志，重复几何排除：
+
+| 配对范围 | 对数 | 源 worker 均值 | 重放 worker 均值 | 重放/源 |
+| --- | ---: | ---: | ---: | ---: |
+| 短单请求 prefill | 2904 | 10.438ms | 11.932ms | 1.1432 |
+| 短单请求，邻居阶段/batch/graph 也相同 | 2577 | 10.372ms | 11.812ms | 1.1388 |
+| 长单请求 prefill | 2923 | 72.027ms | 73.094ms | 1.0148 |
+| 长单请求，邻居阶段/batch/graph 也相同 | 2665 | 74.002ms | 75.069ms | 1.0144 |
+
+这些是 native 重放与源 native 的阶段性诊断，不是 Full 的退化幅度。
+完成请求子集受当前进度影响，邻居也未匹配所有物理执行历史。
+不将其推断为完整 JCT、吞吐或纯 kernel 比值。源与重放的短 prefill
+post-launch 采样线程 CPU 均值约 0.00188/0.00212ms，不能把未配对的
+采样均值外推为整个控制成本。V3076 的 10 项 CPU 检查覆盖前缀封存、
+几何身份、重复排除、邻居匹配与 512 token 分类边界。
+
+沿原生代码检查发现，`SamplingBatchInfo._filter_batch_custom_logit_processor`
+仍使用 `if torch.any(mask[keep_indices_device])` 决定是否保留处理器。
+该 GPU 标量的 Python 条件判断需要同步。原有 position 改动仅覆盖
+采样入口的 mask 查询，没有覆盖请求过滤；这一处还重复索引了 mask。
+这证明存在额外同步路径，但尚未证明它解释上述全部区间差异。
+
+主线仅为显式 position 重放注册额外 AROUND hook。只在整个 batch
+均由同一个 CapturedOutputLogitsProcessor 负责、每行请求身份及
+Req 处理器标记均与原生处理器 key 相符时，使用 CPU 已知归属决定
+处理器保留，继续异步索引相同设备 mask。清空、子集和重排保留原生
+语义；普通、混合健康检查、外来处理器和无法证明的归属回到原生实现。
+没有改变普通服务、预测调度、KV 管理、模型 forward 或停止判定。
+
+CPU 检查实际调用原生过滤/合批方法，并用禁止标量布尔读取的 tensor
+重现旧过滤路径的标量读取，验证新路径无需该读取。另核对过滤后的
+token、请求顺序、设备 mask 与终态输出。V3078 定向 195 项通过。
+V3079 保留原有 151 个模块、V3074 全部 4988 项身份，5003 项及原有
+2 个 subtest 通过，原 Docker progress 范围外 deselect 保留。
+
+新代码尚未 GPU 验证，也不将本次 CPU 修复记为 predictive 性能收益。
+采样/回执模块哈希已改变，旧 24 请求 GPU 证明不能用于新快照。
+当前冻结 V133b 完整校准和原有 5% 减速门槛继续执行；后续使用新
+快照必须重新通过真实 GPU token/stop/session 和完整性能检查。
