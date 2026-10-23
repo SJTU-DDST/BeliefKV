@@ -9,6 +9,7 @@ from datetime import datetime
 import gzip
 import hashlib
 import json
+import math
 from pathlib import Path
 import sys
 from unittest.mock import patch
@@ -105,6 +106,85 @@ def dispatch_funnel(groups: dict, plans: dict) -> dict:
     return sources
 
 
+def join_dispatch_gaps(groups: dict, plans: dict, actions: list[dict]) -> dict:
+    """Check apparent plan-log gaps against actual native submission evidence."""
+    commands = defaultdict(list)
+    for action in actions:
+        identity = lifecycle.wait_event_identity(action)
+        if identity is not None and identity[0] == "join_ticket":
+            commands[identity].append(action)
+    rows, statuses = [], Counter()
+    for identity, wait in groups.items():
+        completion = wait.get("completion_ts_ms")
+        if identity[0] != "join_ticket" or completion is None:
+            continue
+        observations = plans.get(identity, ())
+        before = [row for row in observations if row["ts_ms"] < completion]
+        starts = [row["ts_ms"] for row in before if row["reason"] == "start_window"]
+        if not starts or any(
+            row["reason"] in ("submitted", "submitted_partial") for row in before
+        ):
+            continue
+        native_times = [
+            row["submit_ts_ms"] for row in commands[identity]
+            if type(row.get("submit_ts_ms")) in (int, float)
+            and math.isfinite(row["submit_ts_ms"])
+        ]
+        first_submit = min(native_times, default=None)
+        status = (
+            "native_submission_unobserved" if first_submit is None
+            else "native_submitted_before_completion" if first_submit < completion
+            else "native_submitted_at_or_after_completion"
+        )
+        statuses[status] += 1
+        submitted_records = [
+            row["ts_ms"] for row in observations
+            if row["reason"] in ("submitted", "submitted_partial")
+        ]
+        rows.append({
+            **{name: wait.get(name) for name in (
+                "workflow_id", "context_id", "context_epoch", "join_id",
+                "completion_ts_ms", "next_request_id",
+                "early_started_and_reused_full_bytes",
+                "remaining_native_full_host_hit_bytes",
+            )},
+            "submission_status": status,
+            "first_start_relative_to_completion_ms": min(starts) - completion,
+            "first_submitted_record_relative_to_completion_ms": (
+                min(submitted_records) - completion if submitted_records else None
+            ),
+            "first_native_submit_relative_to_completion_ms": (
+                first_submit - completion if first_submit is not None else None
+            ),
+            "associated_command_ids": [row["command_id"] for row in commands[identity]],
+            "commands_without_native_submit_time": len(commands[identity]) - len(native_times),
+            "pre_completion_capacity_budget_observed": any(
+                row.get("no_step_reason") == "prefetch_capacity_budget"
+                or row["reason"] in ("capacity_budget", "no_cold_capacity")
+                for row in before
+            ),
+            "pre_completion_no_step_reasons": dict(Counter(
+                row["no_step_reason"] for row in before if row.get("no_step_reason")
+            )),
+        })
+    return {
+        "event_counts": dict(statuses),
+        "events_with_pre_completion_capacity_budget": sum(
+            row["pre_completion_capacity_budget_observed"] for row in rows
+        ),
+        "rows": rows,
+        "semantics": (
+            "JOIN episodes with a pre-completion start_window but no pre-completion "
+            "submitted/submitted_partial plan record. Native submission timestamps "
+            "are separate evidence; an unobserved timestamp is unknown, not proof "
+            "of no transfer. Capacity observations can overlap submission statuses "
+            "and do not establish the exclusive cause or recoverable byte budget. "
+            "Submission is not DMA completion, complete restoration or reuse. "
+            "Remaining native FULL Host-hit spans are not physical DMA bytes."
+        ),
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--arm", type=Path, required=True)
@@ -145,6 +225,7 @@ def main():
             "cumulative checks do not prove available capacity."
         ),
     }
+    report["join_dispatch_gaps"] = join_dispatch_gaps(groups, plans, report["rows"])
     report["runtime_state_at_recorded_prefix_end"] = state
     report["input_jsonl_prefixes"] = sealed.prefixes
     report["collection_code_commit"] = args.collection_commit
@@ -178,6 +259,11 @@ def main():
     }
     summary["sealed_dispatch_funnel"] = {
         "sources": sources, "reclaim_record_count": len(reclaimed),
+    }
+    summary["join_dispatch_gaps"] = {
+        key: report["join_dispatch_gaps"][key] for key in (
+            "event_counts", "events_with_pre_completion_capacity_budget", "semantics",
+        )
     }
     summary["detail_file"] = args.output.name
     summary["detail_uncompressed_sha256"] = hashlib.sha256(payload).hexdigest()
