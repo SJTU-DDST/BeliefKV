@@ -9,16 +9,20 @@ import hashlib
 import json
 import math
 from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts.audit_prefetch_lifecycle import wait_event_identity
 
 
 def wait_identity(row: dict) -> tuple:
-    return (
-        *(row.get(field) for field in (
-            "source", "workflow_id", "invocation_id", "context_id",
-            "context_epoch", "join_id",
-        )),
-        tuple(sorted(row.get("active_tool_ids") or ())),
-    )
+    result = wait_event_identity(row)
+    if result is None:
+        raise ValueError("missing wait event identity")
+    return result
 
 
 def shared_waiting_volume(row, diagnosis, *, full_bytes_per_token):

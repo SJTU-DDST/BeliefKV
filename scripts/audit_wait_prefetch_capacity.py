@@ -17,13 +17,14 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.audit_sealed_wait_prefetch import SealedRecords
+from scripts.audit_prefetch_lifecycle import wait_event_identity
 
 
 def identity(row):
-    return (
-        row["source"], row["context_id"], row["context_epoch"],
-        row.get("join_id"), tuple(row.get("active_tool_ids") or ()),
-    )
+    result = wait_event_identity(row)
+    if result is None:
+        raise ValueError("missing wait event identity")
+    return result
 
 
 def audit(path):
