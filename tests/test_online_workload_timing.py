@@ -252,6 +252,8 @@ def test_report_work_adapts_without_using_current_future_length():
 def report_fixture(monkeypatch):
     monkeypatch.setenv("BELIEFKV_JOIN_PREFETCH_TRIGGER", "report_service_or_eos")
     monkeypatch.setenv("BELIEFKV_BORROWABLE_PARENT_HEADROOM", "1")
+    now = time.monotonic()
+    monkeypatch.setattr("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", lambda: now)
     runtime = final_stage_runtime()
     runtime.on_events((event(
         7, RuntimeEventKind.LLM_SUBMIT, invocation_id="child",

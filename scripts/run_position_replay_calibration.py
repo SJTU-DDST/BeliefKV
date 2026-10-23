@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import fcntl
 import json
+import math
 import os
 from pathlib import Path
 import signal
@@ -41,16 +42,61 @@ SAMPLING_MODULES = (
 )
 
 
+def complete_source_metrics(registration):
+    original = load(registration)
+    state = load(registration.with_suffix(".state.json"))
+    run = Path(original["run_root"])
+    summary_path = run / "native_capture/client_36/summary.json"
+    summary = load(summary_path)
+    workflows = summary.get("workflows", [])
+    joins = summary.get("delegation_round_count")
+    durations = [summary.get("duration_seconds"), *(row.get("duration_seconds") for row in workflows)]
+    if (
+        state.get("run_root") != original["run_root"]
+        or state.get("status") not in (
+            "source_captured_gpu_replay_pending", "source_captured_selection_rejected",
+        )
+        or state.get("original_exit_code") != 0
+        or summary.get("workflow_count") != 36 or summary.get("completed_workflows") != 36
+        or len(workflows) != 36
+        or len({row.get("workflow_id") for row in workflows}) != 36
+        or any(type(row.get("workflow_id")) is not str or not row["workflow_id"] for row in workflows)
+        or any(row.get("native_agent_jct_eligible") is not True for row in workflows)
+        or any(
+            type(value) not in (int, float) or not math.isfinite(value) or value <= 0
+            for value in durations
+        )
+        or type(joins) is not int or joins <= 0
+        or load(run / "token_evidence.json").get("token_evidence_complete") is not True
+        or load(run / "causal_evidence.json").get("causal_graph_compiled") is not True
+    ):
+        raise ValueError("complete source lacks successful unguarded work or exact causal evidence")
+    return {
+        "client_summary_sha256": sha256_file(summary_path),
+        "workflow_count": 36, "joins": joins,
+        "original_selection": capture.balanced_source(summary),
+        "all_normal_tails_retained": True,
+    }
+
+
 def source_ready(plan):
     path = Path(plan["source_registration"])
     original = load(path)
     state = load(path.with_suffix(".state.json"))
     if state.get("run_root") != original["run_root"]:
         raise ValueError("source state belongs to another registration")
-    if state["status"] == "source_captured_gpu_replay_pending":
+    if state["status"] in (
+        "source_captured_gpu_replay_pending", "source_captured_selection_rejected",
+    ):
         if state.get("original_exit_code") != 0:
             raise ValueError("selected source has a nonzero original exit code")
-        if not state.get("source_selection", {}).get("accepted"):
+        if plan.get("source_selection_policy", "balanced_join") == "complete":
+            if complete_source_metrics(path) != plan["reviewed_source_metrics"]:
+                raise ValueError("reviewed complete source changed after registration")
+        elif (
+            state["status"] != "source_captured_gpu_replay_pending"
+            or not state.get("source_selection", {}).get("accepted")
+        ):
             raise ValueError("selected source did not pass the predeclared profile")
         return not any(
             reservation.alive(state[name]) for name in ("watcher", "driver") if state.get(name)
@@ -85,6 +131,8 @@ def smoke_result(plan, summary, arm, server_parameters, server_identity, schedul
         "unchanged_server_modules": {name: plan["source_sha256"][name] for name in SAMPLING_MODULES},
         "sampling_mode": "position", "source_arm": plan["source_arm"],
         "source_registration": plan["source_registration"],
+        "source_selection_policy": plan.get("source_selection_policy", "balanced_join"),
+        "reviewed_source_metrics": plan.get("reviewed_source_metrics"),
     })
     return {
         "gpu_process_verified": True, "native_data_plane_sample_verified": True,
@@ -112,6 +160,11 @@ def register(args):
     source = load(args.source_registration)
     if source.get("source_profile") != "balanced_join":
         raise ValueError("calibration requires the predeclared balanced source capture")
+    policy = getattr(args, "source_selection", "balanced_join")
+    reason = getattr(args, "source_selection_reason", None)
+    if policy == "complete" and (type(reason) is not str or not reason.strip()):
+        raise ValueError("complete source selection requires a disclosed review reason")
+    metrics = complete_source_metrics(args.source_registration) if policy == "complete" else None
     comparison.verify_sources(source)
     fresh.check_hold(source, released=True)
     reference = load(args.reference)
@@ -141,6 +194,12 @@ def register(args):
         args.source_registration, args.reference, args.cpu_report, args.cpu_sources,
         args.engine_report, args.engine_sources, Path(reservation.__file__),
     )
+    if metrics is not None:
+        source_root = Path(source["run_root"])
+        paths += tuple(source_root / name for name in (
+            "native_capture/client_36/summary.json", "token_evidence.json",
+            "causal_evidence.json", "source_selection.json",
+        ))
     plan = {
         "schema_version": 1, "registered_at": reservation.now().isoformat(),
         "code_commit": revision, "development_checkout": str(ROOT),
@@ -159,6 +218,9 @@ def register(args):
         "comparison_registration": str(args.comparison_registration.resolve()),
         "comparison_root": str(args.comparison_root.resolve()),
         "sampling_mode": "position", "performance_accepted": False,
+        "source_selection_policy": policy,
+        "source_selection_reason": reason,
+        "reviewed_source_metrics": metrics,
     }
     comparison.verify_sources(plan)
     reservation.write_json(args.registration, plan)
@@ -234,10 +296,15 @@ def watch(registration):
             comparison.verify_sources(source)
             arm = Path(plan["source_arm"])
             summary = load(arm / "client_36/summary.json")
-            if not capture.balanced_source(summary)["accepted"]:
+            reviewed = plan.get("source_selection_policy", "balanced_join") == "complete"
+            if not reviewed and not capture.balanced_source(summary)["accepted"]:
                 raise ValueError("source selection changed after capture")
             graph, expected, _evidence = controls.source_plan(arm)
-            if graph.summary()["event_counts"]["join_create"] < 80:
+            joins = graph.summary()["event_counts"]["join_create"]
+            if (
+                reviewed and joins != plan["reviewed_source_metrics"]["joins"]
+                or not reviewed and joins < 80
+            ):
                 raise ValueError("actual causal source has too few JOINs")
             with controls.CapturedTokenCorpus(arm / "server/request_tokens.jsonl", expected):
                 pass
@@ -400,10 +467,15 @@ def main():
     ):
         parser.add_argument("--" + name, type=Path)
     parser.add_argument("--port", type=int, default=18560)
+    parser.add_argument("--source-selection", choices=("balanced_join", "complete"), default="balanced_join")
+    parser.add_argument("--source-selection-reason")
     args = parser.parse_args()
     if args.watch:
         watch(args.watch.resolve())
-    elif any(value is None for name, value in vars(args).items() if name not in ("watch", "port")):
+    elif any(
+        value is None for name, value in vars(args).items()
+        if name not in ("watch", "port", "source_selection", "source_selection_reason")
+    ):
         parser.error("registration requires the source capture, CPU evidence and fresh output paths")
     elif not 1 <= args.port <= 65535:
         parser.error("invalid GPU calibration port")

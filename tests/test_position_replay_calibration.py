@@ -65,6 +65,88 @@ def test_failed_or_unqualified_source_cannot_start_gpu_replay(source, monkeypatc
         calibration.source_ready(plan)
 
 
+@pytest.fixture
+def complete_source(tmp_path):
+    run = tmp_path / "capture"
+    (run / "native_capture/client_36").mkdir(parents=True)
+    registration = tmp_path / "complete.json"
+    registration.write_text(json.dumps({"run_root": str(run)}))
+    registration.with_suffix(".state.json").write_text(json.dumps({
+        "run_root": str(run), "status": "source_captured_selection_rejected",
+        "original_exit_code": 0, "watcher": {"pid": 10}, "driver": {"pid": 11},
+    }))
+    summary = {
+        "workflow_count": 36, "completed_workflows": 36, "delegation_round_count": 75,
+        "duration_seconds": 4030.,
+        "workflows": [
+            {"workflow_id": str(index), "native_agent_jct_eligible": True,
+             "duration_seconds": 1000. + index * 85}
+            for index in range(36)
+        ],
+    }
+    (run / "native_capture/client_36/summary.json").write_text(json.dumps(summary))
+    (run / "token_evidence.json").write_text(json.dumps({"token_evidence_complete": True}))
+    (run / "causal_evidence.json").write_text(json.dumps({"causal_graph_compiled": True}))
+    return registration, run, summary
+
+
+@pytest.mark.parametrize("live_pid,expected", ((10, False), (11, False), (None, True)))
+def test_reviewed_complete_source_still_requires_actual_process_release(
+    complete_source, monkeypatch, live_pid, expected,
+):
+    registration, _run, _summary = complete_source
+    metrics = calibration.complete_source_metrics(registration)
+    assert metrics["joins"] == 75 and not metrics["original_selection"]["accepted"]
+    plan = {
+        "source_registration": str(registration), "source_selection_policy": "complete",
+        "reviewed_source_metrics": metrics,
+    }
+    monkeypatch.setattr(calibration.reservation, "alive", lambda row: row["pid"] == live_pid)
+    assert calibration.source_ready(plan) is expected
+
+
+@pytest.mark.parametrize("change", (
+    "guard", "incomplete", "duplicate", "zero_joins", "token_error", "graph_error",
+    "nonzero", "running", "changed_summary", "missing_identity", "invalid_duration",
+))
+def test_complete_source_review_does_not_relax_fidelity_or_completion(
+    complete_source, monkeypatch, change,
+):
+    registration, run, summary = complete_source
+    metrics = calibration.complete_source_metrics(registration)
+    plan = {
+        "source_registration": str(registration), "source_selection_policy": "complete",
+        "reviewed_source_metrics": metrics,
+    }
+    if change == "guard":
+        summary["workflows"][0]["native_agent_jct_eligible"] = False
+    elif change == "incomplete":
+        summary["completed_workflows"] = 35
+    elif change == "duplicate":
+        summary["workflows"][0]["workflow_id"] = "1"
+    elif change == "zero_joins":
+        summary["delegation_round_count"] = 0
+    elif change == "missing_identity":
+        summary["workflows"][0]["workflow_id"] = None
+    elif change == "invalid_duration":
+        summary["workflows"][0]["duration_seconds"] = -1.
+    elif change == "token_error":
+        (run / "token_evidence.json").write_text(json.dumps({"token_evidence_complete": False}))
+    elif change == "graph_error":
+        (run / "causal_evidence.json").write_text(json.dumps({"causal_graph_compiled": False}))
+    elif change in ("nonzero", "running"):
+        path = registration.with_suffix(".state.json")
+        state = json.loads(path.read_bytes())
+        state.update(original_exit_code=1) if change == "nonzero" else state.update(status="recording_native")
+        path.write_text(json.dumps(state))
+    else:
+        summary["workflows"][0]["duration_seconds"] += 1
+    (run / "native_capture/client_36/summary.json").write_text(json.dumps(summary))
+    monkeypatch.setattr(calibration.reservation, "alive", lambda _row: False)
+    with pytest.raises(ValueError):
+        calibration.source_ready(plan)
+
+
 @pytest.mark.parametrize("change", (
     None, "wrong_sampler", "missing_request", "different_stop_count", "changed_receipts",
     "unverified_tokens", "missing_server",
