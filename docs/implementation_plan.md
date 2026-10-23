@@ -62,6 +62,23 @@ CPU results, not JCT gains. Latest retained qualification V3140 passes5228
 cases plus2 subtests with no skips; the first identity-list cache regression
 was removed and its negative measurements remain available.
 
+Latest evidence: V134c reached real GPU execution with matching capacity, then
+stopped at19:59 for the user reservation; no complete trajectory or performance
+result exists. Its partial prefix has10 spawns, one repeated-JOIN parent and
+zero true resumes. Preserve censored episodes. Reusable task rebuilding had
+discarded the caller's detailed delegation description; now retain the formatted
+custom text and append reusable-session guidance without forced rounds/reuse.
+V134d queues this qualified change for06:00 after the guard releases its marker.
+
+V3143 reconstructs every V133b JCT along observed last-completing dependency
+paths. About71% is HTTP-submit to first run_batch, not GPU-idle/CPU overhead.
+JOIN-only reproduces nearly all post-JOIN queue improvement; Full's additional
+observed improvement is chiefly ordinary tool successors, even with tool H2D off.
+Use equal-work ablations to separate KV residency/reclaim from ordering.
+Do not turn short-tool continuity back on from this descriptive result.
+Latest V3146 retains5228 cases and passes5248 plus2 subtests without skips.
+See [the audit and source follow-up](experiments/v133b_causal_jct_and_v134c_cutoff_20261023_zh.md).
+
 Earlier entries below preserve historical implementation and validation context.
 
 The latest user request disables ordinary execution-frontier restore by default

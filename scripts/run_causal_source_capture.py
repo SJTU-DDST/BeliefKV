@@ -529,6 +529,8 @@ def watch(registration: Path):
                 if not selection["accepted"]:
                     state["status"] = "source_captured_selection_rejected"
         except Exception as error:
+            administrative = interrupted or isinstance(error, fresh.HoldChanged)
+            state["administratively_interrupted"] = administrative
             if driver is not None and driver.poll() is None:
                 identities = reservation.owned_runs().get(run, [])
                 if not any(item["pid"] == state["driver"]["pid"] for item in identities):
@@ -539,11 +541,14 @@ def watch(registration: Path):
                     "stop_started_at": reservation.now().isoformat(), "run": str(arm),
                     "observation_cutoff_monotonic_ms": time.monotonic() * 1000.,
                     "identities": identities, "collection_at_cutoff": {},
-                    "administratively_interrupted": False, "errors": [],
+                    "administratively_interrupted": administrative, "errors": [],
                 })
                 reservation.stop_run(arm, identities, state)
                 state["stopped_driver_exit_code"] = driver.wait(timeout=60)
-            state.update(status="capture_failed", error=repr(error))
+            state.update(
+                status="capture_interrupted" if administrative else "capture_failed",
+                error=repr(error),
+            )
         finally:
             state["finished_at"] = reservation.now().isoformat()
             reservation.write_json(path, state)

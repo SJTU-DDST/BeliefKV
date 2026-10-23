@@ -209,6 +209,36 @@ def graph_fixture(*, close_after=False):
     return agent, adapter, trace, child_model, closed
 
 
+@pytest.mark.parametrize("configured", (False, True))
+def test_reusable_task_preserves_configured_delegation_description_and_role_roster(configured):
+    _, adapter, _, _, _ = graph_fixture()
+    prompt = (
+        "Delegate substantial independent repository work after new test evidence.\n"
+        "Available child types:\n{available_agents}"
+    )
+    middleware = ReusableSubAgentMiddleware(
+        backend=object(), adapter=adapter,
+        task_description=prompt if configured else None,
+        subagents=[{
+            "name": "specialist", "description": "Inspect assigned modules.",
+            "runnable": create_agent(ReuseModel(), system_prompt="specialist"),
+        }],
+    )
+    tool = next(tool for tool in middleware.tools if tool.name == "task")
+    description = tool.description
+    assert "specialist: Inspect assigned modules." in description
+    assert description.count("specialist: Inspect assigned modules.") == 1
+    assert "{available_agents}" not in description
+    assert "agent_id" in description and "related follow-up" in description
+    assert "Each agent invocation is stateless" not in description
+    if configured:
+        assert "Delegate substantial independent repository work after new test evidence." in description
+    middleware.private_state_keys = frozenset({"private"})
+    rebuilt = next(tool for tool in middleware.tools if tool.name == "task")
+    assert rebuilt.description == description
+    assert "agent_id" in rebuilt.args
+
+
 @pytest.mark.parametrize("asynchronous", (False, True))
 def test_real_graph_fresh_then_resume_has_new_join_and_identical_history(asynchronous):
     import asyncio

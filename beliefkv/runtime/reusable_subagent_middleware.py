@@ -77,6 +77,9 @@ class ReusableSubAgentMiddleware(SubAgentMiddleware):
                 "runnable": self._graphs[spec["name"]],
             } for spec in specs],
         )
+        self._configured_delegation_description = (
+            self.tools[0].description if self._task_description is not None else None
+        )
         self._build_reusable_tools()
 
     @property
@@ -175,9 +178,19 @@ class ReusableSubAgentMiddleware(SubAgentMiddleware):
                 task, coroutine=atask, name="task", infer_schema=False,
                 args_schema=ReusableTaskSchema,
                 description=(
+                    (
+                        self._configured_delegation_description + "\n\n"
+                        if self._configured_delegation_description else
+                        "Available specialist types:\n"
+                        + "\n".join(f"- {s['name']}: {s['description']}" for s in self._subagents)
+                        + "\n\n"
+                    )
+                    + "Reusable specialist sessions:\n"
                     "Delegate to a new specialist or resume its returned agent_id. "
-                    "Each activation joins independently. Available types:\n"
-                    + "\n".join(f"- {s['name']}: {s['description']}" for s in self._subagents)
+                    "Each activation joins independently. Omit agent_id for a new "
+                    "specialist; pass the returned agent_id with the same "
+                    "subagent_type for a related follow-up. Choose whether to "
+                    "delegate or resume from the task and current evidence."
                 ),
             ),
             StructuredTool.from_function(

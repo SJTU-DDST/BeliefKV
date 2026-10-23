@@ -135,6 +135,45 @@ def test_capture_checks_actual_capacity_not_only_requested_sizes(tmp_path, chang
         with pytest.raises(ValueError, match="capacity"):
             capture.observe(tmp_path, expected_capacity=expected, final=change == "missing")
 
+
+@pytest.mark.parametrize("reserved", (False, True))
+def test_source_monitor_distinguishes_reservation_cutoff_from_runtime_failure(
+    tmp_path, monkeypatch, reserved,
+):
+    from types import SimpleNamespace as NS
+
+    registration = tmp_path / "capture.json"
+    run = tmp_path / "run"
+    capture.reservation.write_json(registration, {
+        "run_root": str(run), "port": 18560, "environment": {}, "wait_for_gpu": True,
+    })
+    monkeypatch.setattr(capture.signal, "signal", lambda *_args: None)
+    monkeypatch.setattr(capture.reservation, "process", lambda pid: {"pid": pid})
+    monkeypatch.setattr(capture.comparison, "verify_sources", lambda _plan: None)
+    monkeypatch.setattr(capture, "prepare_capture", lambda *_args: None)
+    monkeypatch.setattr(capture.qualified, "machine_helper",
+                        lambda _name: NS(clear_stale_socket=lambda _port: None))
+    monkeypatch.setattr(capture.subprocess, "Popen",
+                        lambda *_args, **_kwargs: NS(pid=123, poll=lambda: None, wait=lambda **_kw: 143))
+    monkeypatch.setattr(capture.reservation, "owned_runs", lambda: {})
+    cutoffs = []
+    monkeypatch.setattr(
+        capture.reservation, "stop_run",
+        lambda _arm, _identities, state: cutoffs.append(state["administratively_interrupted"]),
+    )
+
+    def fail(*_args, **_kwargs):
+        if reserved:
+            raise capture.fresh.HoldChanged("declared user reservation")
+        raise ValueError("runtime failed")
+
+    monkeypatch.setattr(capture.fresh, "check_hold", fail)
+    capture.watch(registration)
+    state = capture.load(registration.with_suffix(".state.json"))
+    assert state["administratively_interrupted"] is reserved
+    assert state["status"] == ("capture_interrupted" if reserved else "capture_failed")
+    assert cutoffs == [reserved] and state["stopped_driver_exit_code"] == 143
+    assert state["performance_accepted"] is False
 @pytest.mark.parametrize("field,value", (
     ("ROOT_COUNT", "12"), ("MAX_RUNNING_REQUESTS", "12"),
     ("SAMPLING_SEED", "22"), ("PYTHONHASHSEED", "22"),
