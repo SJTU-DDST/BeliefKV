@@ -2,6 +2,33 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+V142's initial GPU check failed the actual target: both shared-project roots
+still had zero Host Mamba hits. It was intentionally stopped after startup
+investigation, not scored as a partial JCT/throughput result. V3245 preserves
+the sealed startup and actual326 checkpoint copies, including278 unowned
+state copies; those copies did not fix the target. The cleanup receipt has
+no remaining processes and actual owned PIDs are gone.
+
+The refined candidate also preserves an unowned Mamba checkpoint on an
+inherited FULL prefix, even while the parent session still references that
+prefix indirectly. A direct waiting-session output leaf retains its existing
+no-extra-copy rule. If FULL is already Host-only and Mamba is subsequently
+evicted under state pressure, the existing bounded four-candidate pass can
+finish the missing state backup without reclaiming somebody else's Host KV.
+The tree backup specification now reuses its cached empty device-index tensor
+for this state-only copy; it never reloads or retransmits FULL just to back
+the state. Native ACK/lock/ownership and allocation-failure guards remain.
+
+V3246 preserves both failing real-CPU-tree cases before the refinement.
+V3247 passes130 focused cases; V3248/V3250 retains657 engine cases plus48
+subtests and binds engine tree1a13e539ce5a49b27edcd5e0bdd36d831d911187.
+V3249/V3251 retains5467 application cases and qualifies5469 plus2 subtests,
+with CUDA hidden and no failures/skips. The optional Docker case remains
+outside inherited qualification. GPU is currently free. Register V143 as
+a standalone qualified Full run, keeping24 roots/batch24/seed21 and the
+V136 exact work/native capture. Check the two startup Host checkpoints first;
+an unchanged miss is a failed target, not evidence of system benefit.
+
 V140 scheduler-only completed all24 workflows and the exact V136 work.
 Mean JCT is1142.970s and whole-run output throughput593.360 tokens/s.
 V139 Full is0.168% slower in JCT and0.329% lower in throughput than this
