@@ -519,3 +519,30 @@ V3252 封存的实际 GPU 启动段已经覆盖两个目标：
 实验仍维持 24 root、running/decode24、seed21，不增加 native
 重放。已有 24 root 的有用迁移量足够；仅在后续有用迁移或真实
 Host/HBM 压力不足时按既定配置升级到 32/36 root。
+
+## V143 相同请求检查与 V144 排队
+
+V3256 用同一封存前缀对齐 2067 个已完成 prefill 的请求。V143 的
+实际 extend 为 4303042 token，JOIN-only 为 4299405，仅增加
+3637（约 0.085%）；V139 Full 为 4524721，本轮减少 221679。
+其中初始 epoch 对 JOIN-only 多 1073 token，后继请求多 2564。
+V3255 将 context 和请求 epoch 一起分桶，错误地把每个请求标为
+首次；V3256 修正该分类，保留原封存前缀和全部匹配总量，不能将
+V3255 的分桶用于判断首次请求成本。
+
+V3253 的较早窗口已记录 11 个完成前有正 FULL 计划的 JOIN，
+10 个提前传输并确认复用，约 11.852 GB FULL。V3254/V3257 保留
+本轮短 prefill 阶段采样；细粒度工作桶没有足够共同样本，粗桶
+结果不能直接推导完整 JCT，也不能将约 0.52ms 的 post-launch
+CPU 均值外推到所有 decode 步。
+
+V144 已独立冻结同一引擎和相同工作配置，排在 V143 后，仅执行
+`no_background_prepare`。它关闭每 200ms 的 idle FULL 备份和
+spawn 触发 FULL 备份，保留容量压力下的按需备份、调度和预取。
+这组消融衡量上述提前备份的净收益，并非关闭所有 PREPARE。
+
+V144 登记：
+`/home/longhao/experiment/ops/v144_oneshot_batch24_no_background_prepare_20261024.registration.json`。
+端口 18577；实际 watcher 已确认存活并处于等待状态。只有 V143
+全部完成、工作量检查通过且实际进程退出后才可启动。当前仍无
+V143/V144 完整性能结果，不追加 native 重放。

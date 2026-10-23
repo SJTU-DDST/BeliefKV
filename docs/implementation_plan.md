@@ -2,6 +2,33 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+V143 remains live with owned supervisor/server/scheduler/driver processes.
+V3256 aligns2067 completed-prefill requests against the same historical
+work: actual extend tokens total4303042, versus4299405 in JOIN-only
+(+3637/+0.085%) and4524721 in V139 Full (-221679). This is a sealed live
+cohort, not a completed workflow comparison. Its first-epoch requests
+account for only1073 extra tokens versus JOIN-only; continuation requests
+account for2564. V3256 corrects V3255's epoch bucket key without changing
+the sealed cohort or any matched token total.
+
+V3253 seals the early restoration evidence:11 positive pre-completion
+JOIN plans,10 early confirmed reuses and11.852GB FULL. Short-tool waits
+in this prefix provide no early FULL reuse. V3254/V3257 retain sampled
+prefill phases; fine work bins have insufficient matched coverage.
+The coarse short-prefill comparison still exposes about0.52ms mean
+post-launch physical CPU work, but cannot establish its cumulative or
+critical-path cost, or a JCT saving from removing it.
+
+V144 is registered behind V143 with the identical engine, workload,
+capacity, batch24 and seed21. It runs only `no_background_prepare`,
+disabling periodic idle FULL and spawn-triggered FULL preparation while
+retaining pressure-triggered preparation, scheduling and prefetch.
+Its watcher is live and waiting; it may start only after V143 completes,
+passes same-work validation and exits. Keep the existing natural-native
+reference; no full native replay is queued. Registration:
+`/home/longhao/experiment/ops/v144_oneshot_batch24_no_background_prepare_20261024.registration.json`.
+Full superiority and independent KV benefit remain unproven.
+
 V143 is running the refined checkpoint fix from main `df3378b5f108` and
 engine tree `1a13e539ce5a49b27edcd5e0bdd36d831d911187`. The actual GPU startup
 target now passes: the mobile-game and CMS roots restore104576/118795 Host
