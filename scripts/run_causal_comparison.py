@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Freeze and supervise same-work causal Full/native/JOIN/prepare controls."""
+"""Freeze and supervise selected same-work causal policy controls."""
 
 from __future__ import annotations
 
@@ -29,6 +29,7 @@ from scripts.run_causal_source_capture import (
 )
 
 ORDER = ("full", "native_matched", "join_priority_only", "no_background_prepare")
+CONTROLS = (*ORDER, "no_tool_prefetch")
 SERVER_FIELDS = (
     "PREFETCH_LEAD_MS", "JOIN_PREFETCH_MIN_ADVANCE_MS", "TOOL_PREFETCH_MIN_ADVANCE_MS",
     "PARALLEL_WAIT_PREFETCH", "WAIT_PREFETCH_CONTEXTS",
@@ -42,7 +43,9 @@ SERVER_FIELDS = (
 
 
 def environment(reference, mode, checkout, engine, arm, port, plugin):
-    policy = "full" if mode == "no_background_prepare" else mode
+    if mode not in CONTROLS:
+        raise ValueError("unknown causal comparison control: " + mode)
+    policy = "full" if mode in ("no_background_prepare", "no_tool_prefetch") else mode
     required = {
         "MAX_RUNNING_REQUESTS": "8", "SERVER_RANDOM_SEED": "21",
         "SAMPLING_SEED": "21", "PYTHONHASHSEED": "21", "HICACHE_SIZE_GB": "200",
@@ -54,7 +57,10 @@ def environment(reference, mode, checkout, engine, arm, port, plugin):
     for name, value in required.items():
         if reference["arms"]["full"].get(name) != value:
             raise ValueError("causal comparison changed the qualified V108/EOS profile: " + name)
-    settings = arm_environment(reference["arms"]["full"], policy)
+    settings = arm_environment(
+        reference["arms"]["full"], policy,
+        tool_prefetch=False if mode == "no_tool_prefetch" else None,
+    )
     settings.update(
         PYTHONPATH=f"{checkout}:{plugin}", CUDA_VISIBLE_DEVICES="0",
         SGLANG_SOURCE_CHECKOUT=str(engine), RUN_ROOT=str(arm), PORT=str(port),
@@ -195,10 +201,13 @@ def validate_result(plan, result, arm, *, live_control):
 
 
 def observed_configuration(plan, label, arm, *, final=False):
-    mode = "full" if label == "no_background_prepare" else label
+    mode = "full" if label in ("no_background_prepare", "no_tool_prefetch") else label
+    overrides = (
+        {"background_prepare": False} if label == "no_background_prepare" else
+        {"tool_prefetch": False} if label == "no_tool_prefetch" else None
+    )
     comparison.observe_arm(
-        mode, arm, max_running_requests=8,
-        runtime_overrides={"background_prepare": False} if label == "no_background_prepare" else None,
+        mode, arm, max_running_requests=8, runtime_overrides=overrides,
     )
     if final and mode != "native_matched" and qualified.last_runtime_state(
         arm / "opportunities/admission_opportunities.jsonl",
@@ -207,6 +216,63 @@ def observed_configuration(plan, label, arm, *, final=False):
     census = arm / "server/native_capacity_census.json"
     if census.exists() and load(census)["capacity"] != plan["source_capacity"]:
         raise ValueError("actual FULL/Mamba/Host pool capacity changed")
+
+
+def predecessor_ready(plan):
+    dependency = plan.get("after_registration")
+    if dependency is None:
+        return True
+    previous = load(Path(dependency))
+    for name in (
+        "source_arm", "source_plan", "token_source_sha256", "source_capacity",
+        "source_server_parameters", "workflow_ids", "quality_exclusions",
+        "quality_exclusion_details", "reference_environment", "engine_tree",
+    ):
+        if previous.get(name) != plan.get(name):
+            raise ValueError("predecessor causal comparison differs: " + name)
+    state = load(Path(dependency).with_suffix(".state.json"))
+    if state.get("run_root") != previous["run_root"]:
+        raise ValueError("predecessor state belongs to another run")
+    status = state.get("status", "")
+    if status == "collected_performance_review_pending":
+        if (
+            state.get("completed_arms") != previous["order"]
+            or state.get("original_exit_codes") != {label: 0 for label in previous["order"]}
+        ):
+            raise ValueError("predecessor causal comparison did not complete every arm")
+        identities = [
+            *state.get("owned", []),
+            *(state[name] for name in ("watcher", "driver", "server") if state.get(name)),
+        ]
+        if not state.get("watcher"):
+            raise ValueError("predecessor supervisor identity is missing")
+        return not any(reservation.alive(row) for row in identities)
+    if status != "preflight" and not status.startswith(("running_", "starting_", "waiting_")):
+        raise ValueError("predecessor causal comparison failed: " + status)
+    if not state.get("watcher") or not reservation.alive(state["watcher"]):
+        raise ValueError("predecessor supervisor exited before completing the comparison")
+    return False
+
+
+def predecessor_work(plan):
+    if plan.get("after_registration") is None:
+        return None
+    if not predecessor_ready(plan):
+        raise ValueError("predecessor causal comparison is still running")
+    previous = load(Path(plan["after_registration"]))
+    comparison.verify_sources(previous)
+    expected = None
+    for label in previous["order"]:
+        arm = Path(previous["run_root"]) / label
+        result = load(arm / "replay/summary.json")
+        work = validate_result(previous, result, arm, live_control=label != "native_matched")
+        observed_configuration(previous, label, arm, final=True)
+        if expected is not None and work != expected:
+            raise ValueError("predecessor request work changed between comparison arms")
+        expected = work
+    if expected is None:
+        raise ValueError("predecessor causal comparison contains no completed work")
+    return expected
 
 
 def owned_processes(identities):
@@ -252,6 +318,11 @@ def cleanup(arm, identities, reason):
 
 
 def register(args):
+    order = list(args.arms)
+    if not order or len(order) != len(set(order)) or any(label not in CONTROLS for label in order):
+        raise ValueError("select distinct supported causal controls")
+    if args.after_registration is not None and args.after_registration.resolve() == args.registration.resolve():
+        raise ValueError("a causal comparison cannot depend on itself")
     for path in (
         args.registration, args.registration.with_suffix(".state.json"),
         args.registration.with_suffix(".log"), args.run_root,
@@ -342,6 +413,8 @@ def register(args):
     )
     summaries = list(args.source_arm.glob("client_*/summary.json"))
     inputs.extend(summaries)
+    if args.after_registration is not None:
+        inputs.append(args.after_registration)
     inputs.extend(Path(reference["arms"]["full"][name]) for name in (
         "TOOL_TIMING_ARTIFACT", "H2D_SEED_ARTIFACT", "TRANSFER_SERVICE_SEED",
     ))
@@ -366,15 +439,19 @@ def register(args):
         "quality_exclusions": [row["workflow_id"] for row in exclusions],
         "quality_exclusion_details": exclusions,
         "independent_task_correctness_verified": False,
-        "hold_file": reference["hold_file"], "order": list(ORDER),
+        "hold_file": reference["hold_file"], "order": order,
+        "after_registration": (
+            str(args.after_registration.resolve()) if args.after_registration is not None else None
+        ),
         "reference_environment": reference["arms"]["full"],
         "run_root": str(args.run_root.resolve()), "port": args.port,
         "sampling_calibration": str(args.sampling_calibration.resolve()),
         "gpu_replay_qualified": False, "performance_accepted": False,
         "scope": "Auxiliary same-work causal controls; retain all tails and source guard qualifications.",
     }
+    predecessor_ready(plan)
     plan["runtime_cpu_preflight"] = {}
-    for label in ORDER:
+    for label in order:
         settings, _, _ = environment(
             {"arms": {"full": plan["reference_environment"]}}, label, checkout,
             frozen_engine, args.run_root / label, args.port, args.run_root / "plugin",
@@ -432,6 +509,12 @@ def watch(registration):
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         try:
             comparison.verify_sources(plan)
+            while not predecessor_ready(plan):
+                state["status"] = "waiting_previous_causal_comparison"
+                pulse()
+                time.sleep(10.)
+            expected_work = predecessor_work(plan)
+            comparison.verify_sources(plan)
             if not qualified.resources(plan["port"])["ready"]:
                 raise ValueError("GPU, port or disk is occupied before comparison")
             fresh.check_hold(plan, released=True)
@@ -443,7 +526,7 @@ def watch(registration):
                      str(ROOT / "configs/causal_replay_plugin")],
                     check=True, stdout=output, stderr=subprocess.STDOUT, timeout=60,
                 )
-            expected_work, results = None, {}
+            results = {}
             for label in plan["order"]:
                 state.update(status="waiting_resources_" + label, current_arm=label)
                 deadline = time.monotonic() + 60.
@@ -469,6 +552,7 @@ def watch(registration):
                     "prefetch_residency_protection_requested": env["PREFETCH_RESIDENCY_PROTECTION"] == "1",
                     "prefill_scheduling_policy_requested": env["PREFILL_SCHEDULING_POLICY"],
                     "tool_restore_mode_requested": env["TOOL_RESTORE_MODE"],
+                    "tool_prefetch_requested": env["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "1",
                     "idle_prepare_policy_requested": env["IDLE_PREPARE_POLICY"],
                     "restore_tiers_requested": env["RESTORE_TIERS"],
                     "join_last_child_priority_requested": False,
@@ -574,6 +658,7 @@ def watch(registration):
                     "quality_exclusion_details": plan.get("quality_exclusion_details", []),
                     "all_normal_tails_retained": True, "performance_accepted": False,
                     "scope": plan["scope"],
+                    "after_registration": plan.get("after_registration"),
                 })
                 pulse()
             state.update(status="collected_performance_review_pending", finished_at=reservation.now().isoformat())
@@ -598,11 +683,15 @@ def main():
     ):
         parser.add_argument("--" + name, type=Path)
     parser.add_argument("--port", type=int, default=18554)
+    parser.add_argument("--arms", nargs="+", choices=CONTROLS, default=list(ORDER))
+    parser.add_argument("--after-registration", type=Path)
     args = parser.parse_args()
     if args.watch:
         watch(args.watch)
     else:
-        if any(value is None for name, value in vars(args).items() if name not in ("watch", "port")):
+        if any(value is None for name, value in vars(args).items() if name not in (
+            "watch", "port", "arms", "after_registration",
+        )):
             parser.error("registration requires source, qualifications, engine and fresh output paths")
         if not 1 <= args.port <= 65535:
             parser.error("invalid server port")

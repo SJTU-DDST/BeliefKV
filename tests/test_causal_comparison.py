@@ -115,6 +115,148 @@ def test_generated_tool_model_settings_are_consumed_by_the_real_runtime_construc
         runtime.close()
 
 
+def test_no_tool_prefetch_changes_only_tool_h2d_and_preserves_offload_settings(reference, tmp_path):
+    original, original_flags, original_socket = comparison.environment(
+        reference, "full", tmp_path, tmp_path, tmp_path, 18554, tmp_path,
+    )
+    disabled, flags, event_socket = comparison.environment(
+        reference, "no_tool_prefetch", tmp_path, tmp_path, tmp_path, 18554, tmp_path,
+    )
+    assert {
+        name for name in original.keys() | disabled.keys()
+        if original.get(name) != disabled.get(name)
+    } == {"BELIEFKV_ENABLE_TOOL_PREFETCH"}
+    assert disabled["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "0"
+    assert disabled["BELIEFKV_INTERNAL_COMPARISON_MODE"] == "full"
+    assert disabled["PREPARE_HOST"] == disabled["BELIEFKV_ENABLE_BACKGROUND_PREPARE"] == "1"
+    assert disabled["ENABLE_TOOL_TIMING"] == disabled["BELIEFKV_ONLINE_TOOL_TIMING"] == "1"
+    assert disabled["BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH"] == "1"
+    assert disabled["BELIEFKV_ENABLE_RESIDENT_FIRST"] == "1"
+    assert disabled["BELIEFKV_BORROWABLE_PARENT_HEADROOM"] == "1"
+    assert flags == original_flags and event_socket == original_socket
+
+
+def test_no_tool_prefetch_validates_the_observed_runtime_switch(reference, tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        comparison.comparison, "observe_arm",
+        lambda *args, **kwargs: calls.append((args, kwargs)),
+    )
+    comparison.observed_configuration({}, "no_tool_prefetch", tmp_path)
+    assert calls == [(("full", tmp_path), {
+        "max_running_requests": 8, "runtime_overrides": {"tool_prefetch": False},
+    })]
+
+
+@pytest.fixture
+def predecessor(tmp_path):
+    registration = tmp_path / "previous.json"
+    previous = {
+        "run_root": str(tmp_path / "previous"), "order": ["full", "native_matched"],
+        "source_arm": "same-source", "source_plan": {"requests": 1},
+        "token_source_sha256": "tokens", "source_capacity": {"full": 10},
+        "source_server_parameters": {"random_seed": 21}, "workflow_ids": ["w"],
+        "quality_exclusions": [], "quality_exclusion_details": [],
+        "reference_environment": {"MAX_RUNNING_REQUESTS": "8"}, "engine_tree": "engine",
+    }
+    registration.write_text(json.dumps(previous))
+    state = {
+        "run_root": previous["run_root"], "status": "running_native_matched",
+        "completed_arms": ["full"], "original_exit_codes": {"full": 0},
+        "watcher": {"pid": 10, "start_ticks": "10"},
+    }
+    state_path = registration.with_suffix(".state.json")
+    state_path.write_text(json.dumps(state))
+    return {**previous, "after_registration": str(registration)}, previous, state, state_path
+
+
+@pytest.mark.parametrize("status,live_pid,expected", (
+    ("running_native_matched", 10, False),
+    ("starting_native_matched", 10, False),
+    ("waiting_resources_native_matched", 10, False),
+    ("collected_performance_review_pending", 10, False),
+    ("collected_performance_review_pending", 12, False),
+    ("collected_performance_review_pending", None, True),
+))
+def test_followup_waits_for_complete_matrix_and_owned_process_release(
+    predecessor, monkeypatch, status, live_pid, expected,
+):
+    plan, previous, state, path = predecessor
+    state.update(
+        status=status, completed_arms=previous["order"],
+        original_exit_codes={label: 0 for label in previous["order"]},
+        owned=[{"pid": 12, "start_ticks": "12"}],
+    )
+    path.write_text(json.dumps(state))
+    monkeypatch.setattr(comparison.reservation, "alive", lambda row: row["pid"] == live_pid)
+    assert comparison.predecessor_ready(plan) is expected
+
+
+@pytest.mark.parametrize("change", (
+    "source_plan", "token_source_sha256", "source_capacity", "reference_environment",
+    "engine_tree", "run_root", "failed", "dead_supervisor", "missing_arm", "failed_arm",
+))
+def test_followup_rejects_changed_work_failed_predecessor_and_orphaned_runs(
+    predecessor, monkeypatch, change,
+):
+    plan, previous, state, path = predecessor
+    state.update(
+        status="collected_performance_review_pending",
+        completed_arms=previous["order"],
+        original_exit_codes={label: 0 for label in previous["order"]},
+    )
+    if change in ("source_plan", "token_source_sha256", "source_capacity", "reference_environment", "engine_tree"):
+        plan[change] = "changed"
+    elif change == "run_root":
+        state["run_root"] = "another-run"
+    elif change == "failed":
+        state["status"] = "stopped_for_investigation"
+    elif change == "dead_supervisor":
+        state["status"] = "running_native_matched"
+    elif change == "missing_arm":
+        state["completed_arms"] = ["full"]
+    elif change == "failed_arm":
+        state["original_exit_codes"]["native_matched"] = 1
+    path.write_text(json.dumps(state))
+    monkeypatch.setattr(comparison.reservation, "alive", lambda _row: False)
+    with pytest.raises(ValueError):
+        comparison.predecessor_ready(plan)
+
+
+def test_followup_compares_actual_per_request_work_with_every_predecessor_arm(
+    predecessor, monkeypatch,
+):
+    plan, previous, state, path = predecessor
+    state.update(
+        status="collected_performance_review_pending",
+        completed_arms=previous["order"],
+        original_exit_codes={label: 0 for label in previous["order"]},
+    )
+    path.write_text(json.dumps(state))
+    monkeypatch.setattr(comparison.reservation, "alive", lambda _row: False)
+    verified, observed, validated = [], [], []
+    monkeypatch.setattr(comparison.comparison, "verify_sources", verified.append)
+    monkeypatch.setattr(comparison, "observed_configuration", lambda _plan, label, *_args, **_kwargs: observed.append(label))
+    for label in previous["order"]:
+        directory = Path(previous["run_root"]) / label / "replay"
+        directory.mkdir(parents=True)
+        (directory / "summary.json").write_text("{}")
+    changed = False
+
+    def validate(_plan, _result, arm, *, live_control):
+        validated.append((arm.name, live_control))
+        return {"r": ("different" if changed and arm.name == "native_matched" else "same")}
+
+    monkeypatch.setattr(comparison, "validate_result", validate)
+    assert comparison.predecessor_work(plan) == {"r": "same"}
+    assert verified == [previous]
+    assert observed == previous["order"]
+    assert validated == [("full", True), ("native_matched", False)]
+    changed = True
+    with pytest.raises(ValueError, match="request work changed"):
+        comparison.predecessor_work(plan)
+
+
 def receipt():
     return {
         "request_id": "r", "prompt_tokens": 12, "output_tokens": 3,
@@ -262,14 +404,26 @@ def test_cleanup_never_signals_a_reused_pid_and_keeps_known_orphan_children(tmp_
     assert report["reason"] == "completed_test" and report["remaining_processes"] == []
 
 
-@pytest.mark.parametrize("failure", (None, "driver", "changed_work", "capacity"))
+@pytest.mark.parametrize("failure", (
+    None, "driver", "changed_work", "capacity", "no_tool_prefetch",
+    "queued_no_tool_prefetch", "failed_predecessor",
+))
 def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     reference, tmp_path, monkeypatch, failure,
 ):
+    queued = failure == "queued_no_tool_prefetch"
+    failed_predecessor = failure == "failed_predecessor"
+    order = (
+        ["no_tool_prefetch"] if failure in (
+            "no_tool_prefetch", "queued_no_tool_prefetch", "failed_predecessor",
+        ) else list(comparison.ORDER)
+    )
+    if failure in ("no_tool_prefetch", "queued_no_tool_prefetch"):
+        failure = None
     registration = tmp_path / "registered.json"
     run = tmp_path / "run"
     plan = {
-        "run_root": str(run), "order": list(comparison.ORDER), "port": 18554,
+        "run_root": str(run), "order": order, "port": 18554,
         "reference_environment": reference["arms"]["full"],
         "engine_checkout": str(tmp_path / "engine"),
         "source_arm": str(tmp_path / "source"),
@@ -286,6 +440,18 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     identities = {row["pid"]: row for row in (root, scheduler, driver_identity)}
     current = []
     launched, cleaned, configurations = [], [], []
+    predecessor_checks = []
+
+    def previous_ready(_plan):
+        predecessor_checks.append(1)
+        if failed_predecessor:
+            raise ValueError("predecessor failed")
+        return len(predecessor_checks) >= 3
+
+    def resources(_port):
+        if queued:
+            assert len(predecessor_checks) >= 3
+        return {"ready": True}
 
     class Process:
         def __init__(self, pid, code):
@@ -349,7 +515,7 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     monkeypatch.setattr(comparison.httpx, "get", get)
     monkeypatch.setattr(comparison.comparison, "verify_sources", lambda _plan: None)
     monkeypatch.setattr(comparison.fresh, "check_hold", lambda *_args, **_kwargs: True)
-    monkeypatch.setattr(comparison.qualified, "resources", lambda _port: {"ready": True})
+    monkeypatch.setattr(comparison.qualified, "resources", resources)
     monkeypatch.setattr(comparison.qualified, "command", lambda _command: "101")
     monkeypatch.setattr(comparison.qualified, "last_runtime_state", lambda _path: {})
     monkeypatch.setattr(comparison.comparison, "observe_arm", lambda mode, *_args, **_kwargs: configurations.append(mode))
@@ -363,18 +529,30 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     ))
     monkeypatch.setattr(comparison.time, "sleep", lambda _seconds: None)
     monkeypatch.setattr(comparison.signal, "signal", lambda *_args: None)
+    if queued or failed_predecessor:
+        monkeypatch.setattr(comparison, "predecessor_ready", previous_ready)
+        monkeypatch.setattr(comparison, "predecessor_work", lambda _plan: {
+            "r": (12, 3, "prompt", "output", {"type": "stop", "matched": 9}),
+        })
     comparison.watch(registration)
     state = json.loads(registration.with_suffix(".state.json").read_bytes())
     if failure is None:
-        assert state["completed_arms"] == list(comparison.ORDER)
+        assert state["completed_arms"] == order
         assert state["status"] == "collected_performance_review_pending"
-        assert len(cleaned) == 4
+        assert len(cleaned) == len(order)
         report = json.loads((run / "causal_comparison.json").read_bytes())
         assert report["all_normal_tails_retained"] and not report["performance_accepted"]
         assert all(row["mean_jct_ms"] == 5000. for row in report["results"].values())
         commands = [row for row in launched if row[0] == "driver"]
-        assert [("--event-socket" in command) for _, _, command in commands] == [True, False, True, True]
-        assert "join_priority_only" in configurations
+        assert [("--event-socket" in command) for _, _, command in commands] == [
+            label != "native_matched" for label in order
+        ]
+        if "join_priority_only" in order:
+            assert "join_priority_only" in configurations
+        if order == ["no_tool_prefetch"]:
+            environment = next(row[2] for row in launched if row[0] == "server")
+            assert environment["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "0"
+            assert environment["BELIEFKV_ENABLE_BACKGROUND_PREPARE"] == "1"
     else:
         assert state["status"] == "stopped_for_investigation"
         assert not state.get("performance_accepted")
@@ -385,3 +563,6 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
             assert "work changed" in state["error"]
         elif failure == "capacity":
             assert not any(row[0] == "driver" for row in launched)
+        elif failure == "failed_predecessor":
+            assert not launched
+            assert "predecessor failed" in state["error"]
