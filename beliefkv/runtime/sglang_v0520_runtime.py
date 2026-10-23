@@ -5397,14 +5397,24 @@ class NativeAdmissionRuntime:
         if (
             _skip_complete_backup and not for_prefetch and include_non_actionable
             and cache is self._native_cache and self.enable_prepare_host
+            # A dirty leaf will need ordinary planning. The index only skips
+            # this optional probe; native capture still validates the copies.
+            and not (
+                (dirty := getattr(cache, "_beliefkv_unbacked_full", None))
+                and any(
+                    node_id in dirty
+                    for node_id, _ in dict(anchors.component_leaves).get(0, ())
+                )
+            )
         ):
             backed = []
             tails = self._reclaimable_session_full_leaves(anchors)
             needed = missing_prepare_full_prefix_tokens(
                 cache, anchors, complete_backed_nodes=backed,
                 reclaim_tail_leaves=tails,
+                reclaim_device_leaves=tails if dirty else None,
             )
-            if needed == 0:
+            if needed is not None:
                 if backed:
                     self._pressure_candidate_groups()
                 for node_id, created in backed:
@@ -5418,7 +5428,10 @@ class NativeAdmissionRuntime:
                             if prefix > anchors.reusable_input_tokens:
                                 self.counts["prepare_backed_full_tail_registered"] += 1
                         self._remember_parent_pressure_node(node_id, anchors.key, created)
-                self.counts["prepare_fully_backed_capture_skipped"] += 1
+                self.counts[
+                    "prepare_fully_backed_capture_skipped" if needed == 0
+                    else "prepare_empty_private_full_capture_skipped"
+                ] += 1
                 return None
         if (
             not for_prefetch and type(host_full_free_tokens) is int
@@ -6277,7 +6290,7 @@ class NativeAdmissionRuntime:
         dirty = getattr(self._native_cache, "_beliefkv_unbacked_full", None)
         complete_check = (
             {"_skip_complete_backup": True}
-            if isinstance(dirty, dict) and not dirty
+            if isinstance(dirty, dict)
             and self._resident_parent_prepare_supported(self._native_cache)
             else {}
         )

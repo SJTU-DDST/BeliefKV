@@ -616,17 +616,21 @@ def missing_prepare_full_prefix_tokens(
     backed_nodes: list[tuple[int, int | float]] | None = None,
     complete_backed_nodes: list[tuple[int, int | float]] | None = None,
     reclaim_tail_leaves: frozenset[int] = frozenset(),
+    reclaim_device_leaves: frozenset[int] | None = None,
 ) -> int | None:
     """Report missing tokens, or prove a fully backed path without a full closure.
 
     Complete-path callers receive all backed pressure candidates and fall back
     when any extent needs a copy, including output beyond the safe checkpoint.
+    Resident write-back may restrict that fallback to private device leaves;
+    the returned count then includes missing FULL across the captured closure.
     """
     if (
         (max_nodes is not None and (type(max_nodes) is not int or max_nodes <= 0))
         or type(anchors.reusable_input_tokens) is not int
         or anchors.reusable_input_tokens < 0
         or backed_nodes is not None and complete_backed_nodes is not None
+        or reclaim_device_leaves is not None and complete_backed_nodes is None
     ):
         return None
     try:
@@ -681,6 +685,10 @@ def missing_prepare_full_prefix_tokens(
                 if complete_backed_nodes is not None and (
                     summary.full_device_tokens > 0
                     and summary.full_device_tokens != summary.full_host_tokens
+                    and (
+                        reclaim_device_leaves is None
+                        or node_id in reclaim_device_leaves
+                    )
                     or current.write_through_pending_id is not None
                     or current.load_back_pending_id is not None
                 ):
@@ -726,7 +734,10 @@ def missing_prepare_full_prefix_tokens(
                     node_id, normalize_native_creation_time(native.creation_time),
                 ))
             complete_backed_nodes.extend(identities)
-            return 0
+            return sum(
+                max(node.full_device_tokens - node.full_host_tokens, 0)
+                for node in nodes.values()
+            ) if reclaim_device_leaves is not None else 0
         selected = _checkpoint_paths(anchors, nodes, leaves, depth)
         if selected is None:
             return None

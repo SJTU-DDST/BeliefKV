@@ -24,7 +24,7 @@ from tests.test_prepare_publication_batch import publication_fixture
 from tests.test_sglang_v0520_observer import UnifiedTreeCore
 
 
-def fixture(runtime_class, *, contexts, depth, dirty):
+def fixture(runtime_class, *, contexts, depth, dirty, missing_at=None):
     runtime, queue, cache, nodes, reads, actions, now = publication_fixture(
         runtime_class, contexts=contexts, depth=depth,
     )
@@ -57,6 +57,12 @@ def fixture(runtime_class, *, contexts, depth, dirty):
             or candidate.missing_full_host_tokens != 0
         ):
             raise ValueError("fixture does not exercise a complete backed closure")
+    if missing_at is not None:
+        offset = {"first": 1, "middle": depth // 2, "leaf": depth - 1}[missing_at]
+        for index in range(contexts):
+            node = nodes[index * depth + offset]
+            node.component_data[0].host_value = None
+            cache._beliefkv_unbacked_full[node.id] = node
     return runtime, queue, cache, reads, actions, now
 
 
@@ -72,16 +78,19 @@ def state(runtime, cache, actions):
         "cursor": runtime._join_prepare_cursor,
         "counts": {
             key: value for key, value in runtime.counts.items()
-            if key != "prepare_fully_backed_capture_skipped"
+            if key not in (
+                "prepare_fully_backed_capture_skipped",
+                "prepare_empty_private_full_capture_skipped",
+            )
         },
         "pending": runtime.physical_ledger.pending_count,
         "physical_disabled": runtime.physical_disabled,
     }
 
 
-def measure(baseline, *, contexts, depth, dirty, iterations):
+def measure(baseline, *, contexts, depth, dirty, iterations, missing_at=None):
     variants = {
-        name: fixture(cls, contexts=contexts, depth=depth, dirty=dirty)
+        name: fixture(cls, contexts=contexts, depth=depth, dirty=dirty, missing_at=missing_at)
         for name, cls in (("baseline", baseline), ("candidate", NativeAdmissionRuntime))
     }
     clock = [max(value[-1] for value in variants.values()) + 1.]
@@ -111,6 +120,7 @@ def measure(baseline, *, contexts, depth, dirty, iterations):
         costs = {name: distribution(values) for name, values in timings.items()}
         return {
             "contexts": contexts, "depth": depth, "dirty_elsewhere": dirty,
+            "missing_copy_at": missing_at,
             "iterations": iterations, "clock_step_ms": 60.,
             "actions_candidates_publication_cursors_deadlines_and_old_counters_equal": True,
             "thread_cpu_ms": costs,
@@ -120,6 +130,9 @@ def measure(baseline, *, contexts, depth, dirty, iterations):
             "native_reads": {name: dict(values) for name, values in read_totals.items()},
             "skipped_complete_closures_including_warmup": variants["candidate"][0].counts[
                 "prepare_fully_backed_capture_skipped"
+            ],
+            "skipped_empty_private_closures_including_warmup": variants["candidate"][0].counts[
+                "prepare_empty_private_full_capture_skipped"
             ],
         }
     finally:
@@ -150,13 +163,21 @@ def main():
         "cases": [
             measure(baseline, contexts=36, depth=depth, dirty=dirty, iterations=args.iterations)
             for depth in (16, 64) for dirty in (False, True)
+        ] + [
+            measure(
+                baseline, contexts=36, depth=depth, dirty=True,
+                iterations=args.iterations, missing_at=missing_at,
+            )
+            for depth in (16, 64) for missing_at in ("first", "middle", "leaf")
         ],
         "scope": [
             "Alternating full dispatch cycles use pinned baseline runtime/observer/physical modules.",
             "Every root must expose a real validated backed closure before measurement.",
             "Native pool, tree and transfer APIs are CPU stand-ins; there is no DMA or GPU execution.",
             "All prior action, pressure publication, deadline, cursor and counter outputs must agree.",
-            "The dirty-elsewhere case preserves the complete closure fallback.",
+            "Dirty nodes elsewhere must not change this parent's actions or pressure candidates.",
+            "Missing copies at the oldest, middle and leaf extent must preserve actions and candidates.",
+            "A missing eligible private leaf retains ordinary capture and backup planning.",
             "Synthetic frequencies and CPU reductions do not establish online throughput or JCT gains.",
         ],
     }
@@ -165,7 +186,7 @@ def main():
         stream.write("\n")
     print(json.dumps([{
         key: row[key] for key in (
-            "contexts", "depth", "dirty_elsewhere", "thread_cpu_ms",
+            "contexts", "depth", "dirty_elsewhere", "missing_copy_at", "thread_cpu_ms",
             "mean_thread_cpu_reduction", "skipped_complete_closures_including_warmup",
         )
     } for row in result["cases"]], indent=2))
