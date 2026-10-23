@@ -2,6 +2,38 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+V147 is running on the qualified ordinary-allocation candidate. Its
+actual watcher, server, GPU scheduler and replay driver remain live.
+V3312 verifies its actual startup work and effective prefix reuse.
+
+V148 is registered behind V147 with the same engine and source work.
+Its order is `no_tool_prefetch`, then `scheduler_only`. The actual
+supervisor is waiting on the previous comparison, owns no GPU process,
+and validates predecessor work/configuration/cleanup before starting.
+This tests tool H2D prefetch and the incremental custom-KV contribution
+against the Full request-ordering control without repeating native.
+Keep24 roots, batch24, seed21 and the existing capacities. Registration:
+`/home/longhao/experiment/ops/v148_oneshot_batch24_tool_and_kv_controls_20261024.registration.json`.
+
+V3317 pairs834 completed V146/JOIN-only short-prefill batches by exact
+logical request, native prefix and extend lengths, and actual graph flag.
+Full's mean worker interval is17.029ms versus16.269ms (+4.67%), while
+launch-to-processed-completion is54.307ms versus55.818ms (-2.71%).
+The clipped overlap is37.278ms versus39.549ms. Thus the earlier aggregate
+worker gap partly reflects overlap accounting; it is not proof of the
+same-sized end-to-end prefill regression or a particular CPU function.
+Concurrent/neighbouring batches are not fixed and the remaining gap
+stays open. V3313/V3315 retain complete V146 and early sealed V147 phase
+samples, without extrapolating sampled phase costs to whole-run JCT.
+
+V3316 executes the actual native idle-scan/filter methods and runtime
+hot-owner validator on CPU stand-ins. With32/512 dirty nodes and0/48/512
+unrelated queued requests,32-node empty rounds cost about0.067--0.210ms
+of own-thread CPU. No DMA, real allocation or whole-run saving is measured.
+This does not justify a large new idle-scan control framework. Prioritize
+net module value and effective capacity/reuse; avoid adding work merely
+to reduce an empty-round counter.
+
 V146 completed normally at06:17 Beijing. V3308 revalidates its exact3951
 request receipts/tokens, actual configuration and cleanup. Mean JCT is
 1132.377s and whole-run output throughput595.610 tokens/s: relative to
