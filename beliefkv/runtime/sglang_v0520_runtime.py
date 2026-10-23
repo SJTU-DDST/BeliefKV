@@ -5387,12 +5387,39 @@ class NativeAdmissionRuntime:
         for_prefetch: bool = False,
         include_non_actionable: bool = False,
         host_full_free_tokens: int | None = None,
+        _skip_complete_backup: bool = False,
     ) -> ActionLocalShadowCandidate | ActionLocalPrefetchCandidate | None:
         anchors = self.snapshot_session_anchors(
             cache, context_id=context_id, context_epoch=context_epoch
         )
         if anchors is None:
             return None
+        if (
+            _skip_complete_backup and not for_prefetch and include_non_actionable
+            and cache is self._native_cache and self.enable_prepare_host
+        ):
+            backed = []
+            tails = self._reclaimable_session_full_leaves(anchors)
+            needed = missing_prepare_full_prefix_tokens(
+                cache, anchors, complete_backed_nodes=backed,
+                reclaim_tail_leaves=tails,
+            )
+            if needed == 0:
+                if backed:
+                    self._pressure_candidate_groups()
+                for node_id, created in backed:
+                    previous = self._parent_pressure_candidates.get(node_id)
+                    if previous is None or previous[0] is not anchors.key or previous[1] != created:
+                        if node_id in tails and previous != (anchors.key, created):
+                            node, prefix = cache.tree_core.node_by_id(node_id), 0
+                            while node is not None:
+                                prefix += len(node.key)
+                                node = node.parent
+                            if prefix > anchors.reusable_input_tokens:
+                                self.counts["prepare_backed_full_tail_registered"] += 1
+                        self._remember_parent_pressure_node(node_id, anchors.key, created)
+                self.counts["prepare_fully_backed_capture_skipped"] += 1
+                return None
         if (
             not for_prefetch and type(host_full_free_tokens) is int
             and host_full_free_tokens >= 0
@@ -6247,6 +6274,13 @@ class NativeAdmissionRuntime:
     ) -> ActionLocalShadowCandidate | None:
         if not self.enable_prepare_host:
             return None
+        dirty = getattr(self._native_cache, "_beliefkv_unbacked_full", None)
+        complete_check = (
+            {"_skip_complete_backup": True}
+            if isinstance(dirty, dict) and not dirty
+            and self._resident_parent_prepare_supported(self._native_cache)
+            else {}
+        )
         if source == "join_prepare":
             key = self.context_sessions.get(context_id)
             parent = self.graph.invocations.get(key.invocation_id) if key else None
@@ -6266,6 +6300,7 @@ class NativeAdmissionRuntime:
                 context_epoch=key.context_epoch,
                 include_non_actionable=True,
                 host_full_free_tokens=host_full_free_tokens,
+                **complete_check,
             )
         cache = self._native_cache
         key = self.context_sessions.get(context_id)
@@ -6274,6 +6309,7 @@ class NativeAdmissionRuntime:
                 cache, context_id=key.context_id, context_epoch=key.context_epoch,
                 include_non_actionable=True,
                 host_full_free_tokens=host_full_free_tokens,
+                **complete_check,
             )
         hint = (self.tool_wait_hints.get(context_id) if context_id is not None
                 else self.tool_wait_hint)
@@ -6297,6 +6333,7 @@ class NativeAdmissionRuntime:
             cache, context_id=key.context_id, context_epoch=key.context_epoch,
             include_non_actionable=True,
             host_full_free_tokens=host_full_free_tokens,
+            **complete_check,
         )
         self.shadow_candidate = candidate
         return candidate
@@ -7037,14 +7074,19 @@ class NativeAdmissionRuntime:
         self, candidate: ActionLocalShadowCandidate | ActionLocalPrefetchCandidate,
     ) -> frozenset[int]:
         """Prove current private device leaves; H2D keeps its input checkpoint."""
-        key, cache = candidate.anchors.key, self._native_cache
+        return self._reclaimable_session_full_leaves(candidate.anchors)
+
+    def _reclaimable_session_full_leaves(
+        self, anchors: ContextSessionAnchors,
+    ) -> frozenset[int]:
+        key, cache = anchors.key, self._native_cache
         if not self._live_parent_pressure_key(key):
             return frozenset()
         tree = getattr(cache, "tree_core", None)
         device_leaves = getattr(tree, "evictable_device_leaves", ())
         resident_parents = self._resident_parent_prepare_supported(cache)
         eligible = set()
-        for node_id, created in dict(candidate.anchors.component_leaves).get(0, ()):
+        for node_id, created in dict(anchors.component_leaves).get(0, ()):
             try:
                 node = tree.node_by_id(node_id)
                 if node.id != node_id or node.creation_time != created:

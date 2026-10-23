@@ -614,12 +614,19 @@ def has_host_backed_missing_copy(
 def missing_prepare_full_prefix_tokens(
     cache: object, anchors: ContextSessionAnchors, *, max_nodes: int | None = None,
     backed_nodes: list[tuple[int, int | float]] | None = None,
+    complete_backed_nodes: list[tuple[int, int | float]] | None = None,
+    reclaim_tail_leaves: frozenset[int] = frozenset(),
 ) -> int | None:
-    """Report missing tokens and backed candidates when new backup is still needed."""
+    """Report missing tokens, or prove a fully backed path without a full closure.
+
+    Complete-path callers receive all backed pressure candidates and fall back
+    when any extent needs a copy, including output beyond the safe checkpoint.
+    """
     if (
         (max_nodes is not None and (type(max_nodes) is not int or max_nodes <= 0))
         or type(anchors.reusable_input_tokens) is not int
         or anchors.reusable_input_tokens < 0
+        or backed_nodes is not None and complete_backed_nodes is not None
     ):
         return None
     try:
@@ -645,6 +652,7 @@ def missing_prepare_full_prefix_tokens(
         native_backed = {}
         device_leaves = getattr(cache.tree_core, "evictable_device_leaves", ())
         depth: dict[int, int] = {}
+        prefixes: dict[int, int] = {}
         for leaf in leaves:
             current = cache.tree_core.node_by_id(leaf)
             chain: list[int] = []
@@ -670,6 +678,13 @@ def missing_prepare_full_prefix_tokens(
                     0 if full.host_value is None else len(full.host_value),
                     state.value is not None, state.host_value is not None,
                 )
+                if complete_backed_nodes is not None and (
+                    summary.full_device_tokens > 0
+                    and summary.full_device_tokens != summary.full_host_tokens
+                    or current.write_through_pending_id is not None
+                    or current.load_back_pending_id is not None
+                ):
+                    return None
                 if node_id in nodes and nodes[node_id] != summary:
                     return None
                 nodes[node_id] = summary
@@ -680,11 +695,38 @@ def missing_prepare_full_prefix_tokens(
                     or summary.mamba_device_present and summary.mamba_host_present
                 ):
                     native_backed[node_id] = current
+                if complete_backed_nodes is not None and (
+                    summary.full_device_tokens and summary.full_host_tokens
+                    or summary.mamba_device_present and summary.mamba_host_present
+                ):
+                    native_backed[node_id] = current
                 if max_nodes is not None and len(nodes) > max_nodes:
                     return None
                 current = parent
+            prefix = 0
             for distance, node_id in enumerate(reversed(chain)):
                 depth[node_id] = distance
+                if complete_backed_nodes is not None:
+                    prefix += nodes[node_id].key_tokens
+                    prefixes[node_id] = prefix
+        if complete_backed_nodes is not None:
+            if any(node_id not in nodes for node_id, _ in components[2]):
+                return None
+            identities = []
+            for node_id in sorted(native_backed):
+                if (
+                    prefixes[node_id] > anchors.reusable_input_tokens
+                    and node_id not in reclaim_tail_leaves
+                ):
+                    continue
+                native = native_backed[node_id]
+                if cache.tree_core.node_by_id(node_id) is not native:
+                    return None
+                identities.append((
+                    node_id, normalize_native_creation_time(native.creation_time),
+                ))
+            complete_backed_nodes.extend(identities)
+            return 0
         selected = _checkpoint_paths(anchors, nodes, leaves, depth)
         if selected is None:
             return None
