@@ -2,45 +2,72 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
-V143 remains live with owned supervisor/server/scheduler/driver processes.
-V3256 aligns2067 completed-prefill requests against the same historical
-work: actual extend tokens total4303042, versus4299405 in JOIN-only
-(+3637/+0.085%) and4524721 in V139 Full (-221679). This is a sealed live
-cohort, not a completed workflow comparison. Its first-epoch requests
-account for only1073 extra tokens versus JOIN-only; continuation requests
-account for2564. V3256 corrects V3255's epoch bucket key without changing
-the sealed cohort or any matched token total.
+V143 completed at04:45 Beijing with all24 workflows,3951 requests,
+264598879 prompt and958791 output tokens. V3263 independently revalidates
+source, receipts and actual configuration; normal tails remain included,
+quality exclusions are empty and cleanup leaves no owned processes.
 
-V3253 seals the early restoration evidence:11 positive pre-completion
-JOIN plans,10 early confirmed reuses and11.852GB FULL. Short-tool waits
-in this prefix provide no early FULL reuse. V3254/V3257 retain sampled
-prefill phases; fine work bins have insufficient matched coverage.
-The coarse short-prefill comparison still exposes about0.52ms mean
-post-launch physical CPU work, but cannot establish its cumulative or
-critical-path cost, or a JCT saving from removing it.
+| Completed Arm | Mean JCT (s) | Whole-Run Output Tokens/s |
+| --- | ---: | ---: |
+| V136 natural native | 1164.156 | 582.413 |
+| V139 Full | 1144.890 | 591.410 |
+| V139 JOIN-only | 1145.470 | 594.414 |
+| V140 scheduler-only | 1142.970 | 593.360 |
+| V143 repaired Full | 1134.713 | 595.312 |
 
-V144 is registered behind V143 with the identical engine, workload,
-capacity, batch24 and seed21. It runs only `no_background_prepare`,
-disabling periodic idle FULL and spawn-triggered FULL preparation while
-retaining pressure-triggered preparation, scheduling and prefetch.
-Its watcher is live and waiting; it may start only after V143 completes,
-passes same-work validation and exits. Keep the existing natural-native
-reference; no full native replay is queued. Registration:
-`/home/longhao/experiment/ops/v144_oneshot_batch24_no_background_prepare_20261024.registration.json`.
-Full superiority and independent KV benefit remain unproven.
+V143 is nominally2.529% lower in JCT and2.215% higher in throughput than
+native. Against JOIN-only the changes are-0.939%/+0.151%; against the
+same-order scheduler-only control they are-0.722%/+0.329%. These remain
+small single-run differences. Independent task correctness is ungraded;
+repeatable superiority and isolated KV benefit are not accepted.
 
-V143 is running the refined checkpoint fix from main `df3378b5f108` and
+V3261 reconstructs every JCT along its actual last-completing dependency
+path. Relative to V139 Full, mean submit-to-first-launch falls0.357s and
+first-launch-to-completion falls9.933s. The latter includes interleaving
+and CPU/restore work; it is not pure GPU time or a causal module effect.
+V3262 records5871704 actual prefill tokens, down218124 from V139 Full.
+Remaining prefill work is0.214% above JOIN-only, yet cumulative prefill
+worker intervals are255.579s versus247.408s. Matched short-prefill worker
+intervals remain1.121 times JOIN-only; do not ignore this residual gap.
+V3265/V3266 retain sampled phases, with no sufficiently populated fine
+paired cohorts for unique CPU attribution.
+
+V3260 records43 positive pre-completion JOIN plans and25 early confirmed
+reuses/16.042GB FULL. Tools have12 early confirmed reuses/9.441GB FULL.
+Twenty-five JOIN episodes encounter capacity limits somewhere in their
+observed planning; overlapping reason groups are not a miss partition.
+V3264 records7344 idle native calls,5790 empty calls and224027 scanned
+nodes, including216884 hot/unknown-owner observations. A hundred of158
+FULL-shortfall checks encounter unbacked cold candidates with substantial
+preceding sampled Host FULL space. Next CPU work should establish whether
+newly cold dirty nodes wait behind repeatedly inspected hot nodes and
+remove avoidable scans while preserving ownership, locks and ACKs. Do not
+infer a freeable donor or removable JCT from a scan counter alone.
+
+V144 has started after V143's successful same-work validation and cleanup.
+Actual runtime confirms `background_prepare=false`, `prepare_host=true`,
+tool prefetch on and EOS JOIN; periodic idle and spawn preparation stay
+off, pressure-triggered preparation remains. V3267 seals its live processes,
+configuration and both initial long roots' positive Host checkpoint hits.
+V145 is queued behind V144
+with only tool H2D prefetch disabled; tool timing/offload, JOIN and backup
+remain. Both use the identical engine, source work, capacity, batch24 and
+seed21. Registrations are under `/home/longhao/experiment/ops/`:
+`v144_oneshot_batch24_no_background_prepare_20261024.registration.json`,
+`v145_oneshot_batch24_no_tool_prefetch_20261024.registration.json`.
+Keep the natural-native reference; no full native replay is queued.
+
+V143 ran the refined checkpoint fix from main `df3378b5f108` and
 engine tree `1a13e539ce5a49b27edcd5e0bdd36d831d911187`. The actual GPU startup
 target now passes: the mobile-game and CMS roots restore104576/118795 Host
 FULL tokens, each with one Host Mamba hit. Their completed native prefill
 extends are4727/4153 tokens, down from109303/118841 in V139 Full and equal
 to JOIN-only. V3252 seals the request matches, native service geometry,
 capacity and live process evidence. This removes219264 targeted extra
-prefill tokens; it is not yet a complete JCT/throughput result.
+prefill tokens; the complete-run evidence is reported above.
 
-Keep the independent Full run supervised through completion against the
-same V136 natural native capture and exact work. No native replay is
-registered. The24-root population already exposes substantial useful
+Keep subsequent equal-work ablations supervised against the same V136
+natural native capture. The24-root population already exposes useful
 migration; increase to32/36 only if useful opportunities or real Host/HBM
 pressure are insufficient, retaining the user's predeclared escalation.
 
