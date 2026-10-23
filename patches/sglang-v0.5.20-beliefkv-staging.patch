@@ -3169,7 +3169,7 @@ index 6815679..a143793 100644
      def evict_device_end(self, component_type: ComponentType) -> None:
          """Finish the component's device-eviction walk."""
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..4028f89 100644
+index d417d7d..af4ce7c 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -4,9 +4,11 @@ import atexit
@@ -4702,7 +4702,22 @@ index d417d7d..4028f89 100644
      def _evict_components(
          self,
          request_by_type: dict[ComponentType, int],
-@@ -851,6 +2317,11 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -814,6 +2280,14 @@ class UnifiedRadixCache(BasePrefixCache):
+         # after its recompute.
+         last_mamba_donor_check = 0
+         mamba_donor_prepared = False
++        retain_independent_state = (
++            getattr(self, "_beliefkv_incremental_full_enabled", False)
++            and request_by_type.get(ComponentType.MAMBA, 0) == 0
++            and not any(
++                target[0] == ComponentType.MAMBA
++                for target in (available_size_targets or {}).values()
++            )
++        )
+ 
+         def target_reached(component_type: ComponentType) -> bool:
+             nonlocal last_mamba_donor_check, mamba_donor_prepared
+@@ -851,6 +2325,11 @@ class UnifiedRadixCache(BasePrefixCache):
              # on a shared pool, released enough bytes to satisfy its allocation.
              if tracker[ct] >= request_cnt or target_reached(ct):
                  continue
@@ -4714,9 +4729,22 @@ index d417d7d..4028f89 100644
              self.tree_core.evict_device_start(ct, request_cnt)
              try:
                  while True:
-@@ -861,6 +2332,21 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -859,8 +2338,33 @@ class UnifiedRadixCache(BasePrefixCache):
+                         if not made_progress:
+                             break
                      else:
-                         backup_kv = self._evict_device_leaf(node_id, tracker)
+-                        backup_kv = self._evict_device_leaf(node_id, tracker)
++                        # A FULL allocation does not need independent state freed.
++                        if (
++                            ct == BASE_COMPONENT_TYPE and retain_independent_state
++                            and self._reclaim_beliefkv_full_preserving_mamba(
++                                self.tree_core.node_by_id(node_id), tracker,
++                                full_session_ref=0,
++                            )
++                        ):
++                            backup_kv = None
++                        else:
++                            backup_kv = self._evict_device_leaf(node_id, tracker)
                      if node_id is not None and backup_kv is not None:
 +                        if (
 +                            ct == BASE_COMPONENT_TYPE
@@ -4736,7 +4764,7 @@ index d417d7d..4028f89 100644
                          # Deferred demote: run the D->H backup, demote only on success.
                          written = self._execute_and_commit_kv_backup(
                              backup_kv, write_back=True
-@@ -892,7 +2378,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -892,7 +2396,9 @@ class UnifiedRadixCache(BasePrefixCache):
              isinstance(self.tree_core, UnifiedTreeCore)
              and self.host_memory_mode == "cache"
              and self.cache_controller is not None
@@ -4747,7 +4775,7 @@ index d417d7d..4028f89 100644
          )
  
      def _record_dropped_tokens(self, dropped_tokens: int, reason: str) -> None:
-@@ -955,6 +2443,18 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -955,6 +2461,18 @@ class UnifiedRadixCache(BasePrefixCache):
              return DecLockRefResult()
          return self.tree_core.dec_host_lock_ref(node_id, params)
  
@@ -4766,7 +4794,7 @@ index d417d7d..4028f89 100644
      @rank_consensus(same_params=["req.rid", "is_insert", "kv_len_to_handle"])
      def cache_finished_req(
          self, req: Req, is_insert: bool = True, *, kv_len_to_handle: int, **kwargs
-@@ -1078,7 +2578,7 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1078,7 +2596,7 @@ class UnifiedRadixCache(BasePrefixCache):
              self._dec_req_lock(req, skip_swa=req.swa_prefix_lock_released)
  
          if is_insert and result is not None and result.last_device_node is not None:
@@ -4775,7 +4803,7 @@ index d417d7d..4028f89 100644
  
          # cleanup
          for comp in self._components_tuple:
-@@ -1309,6 +2809,13 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1309,6 +2827,13 @@ class UnifiedRadixCache(BasePrefixCache):
              return 0
          result = self.tree_core.drive_host_eviction(component_type, num_tokens)
          self._free_values(result.device_frees, result.host_frees)
@@ -4789,7 +4817,7 @@ index d417d7d..4028f89 100644
          return result.tracker.get(component_type, 0)
  
      # ---- Decode retraction ----
-@@ -1518,8 +3025,238 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1518,8 +3043,238 @@ class UnifiedRadixCache(BasePrefixCache):
  
      # ---- HiCache: Backup / LoadBack ----
  
@@ -5029,7 +5057,7 @@ index d417d7d..4028f89 100644
      ) -> int:
          """Run a backup action top-down, stopping at the first failed backup."""
          if self.buffer_pipeline is not None:
-@@ -1532,14 +3269,23 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1532,14 +3287,23 @@ class UnifiedRadixCache(BasePrefixCache):
              return 0
          written = 0
          for node_id in action.node_ids:
@@ -5055,7 +5083,7 @@ index d417d7d..4028f89 100644
              )
              if host_indices is None:
                  return 0
-@@ -1554,6 +3300,425 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1554,6 +3318,425 @@ class UnifiedRadixCache(BasePrefixCache):
              written = len(host_indices)
          return written
  
@@ -5481,7 +5509,7 @@ index d417d7d..4028f89 100644
      @staticmethod
      def _backup_publish_node_ids(
          node_id: NodeId, comp_xfers: dict[ComponentType, list[PoolTransfer]]
-@@ -1574,18 +3739,77 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1574,18 +3757,77 @@ class UnifiedRadixCache(BasePrefixCache):
              CacheTransferPhase.BACKUP_HOST, kv_xfer, comp_xfers
          )
  
@@ -5561,7 +5589,7 @@ index d417d7d..4028f89 100644
          )
  
      def _track_write_through_node(
-@@ -1627,10 +3851,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1627,10 +3869,10 @@ class UnifiedRadixCache(BasePrefixCache):
              updated_node_ids,
          )
  
@@ -5574,7 +5602,7 @@ index d417d7d..4028f89 100644
  
          lock_node_id, lock_params, publish_node_ids = self.ongoing_write_through.pop(
              ack_id
-@@ -1643,15 +3867,26 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1643,15 +3885,26 @@ class UnifiedRadixCache(BasePrefixCache):
              # suffix; the prefix fragment must be persisted as well.
              for node_id in publish_node_ids:
                  self.write_backup_storage(node_id)
@@ -5602,7 +5630,7 @@ index d417d7d..4028f89 100644
              return False
  
          host_anchor_params = self.inc_host_lock_ref(node_id).to_dec_params()
-@@ -1675,6 +3910,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1675,6 +3928,10 @@ class UnifiedRadixCache(BasePrefixCache):
                  result=result,
                  ancestor_lock_params=ancestor_lock_params,
                  host_anchor_params=host_anchor_params,
@@ -5613,7 +5641,7 @@ index d417d7d..4028f89 100644
              )
              return success
          finally:
-@@ -1690,9 +3929,34 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1690,9 +3947,34 @@ class UnifiedRadixCache(BasePrefixCache):
          result: IncLockRefResult,
          ancestor_lock_params: DecLockRefParams,
          host_anchor_params: DecLockRefParams,
@@ -5649,7 +5677,7 @@ index d417d7d..4028f89 100644
          kv_tokens = len(kv_xfer.host_indices)
          sidecar_xfers = self._build_sidecar_transfers(
              CacheTransferPhase.LOAD_BACK, kv_xfer, comp_xfers
-@@ -1703,7 +3967,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1703,7 +3985,8 @@ class UnifiedRadixCache(BasePrefixCache):
          # when the Full-KV load is skipped by thresholding. max(1, ...): an
          # entirely empty spec (e.g. foreign-pin rejection) must never report
          # success, even at load_back_threshold <= 0.
@@ -5659,7 +5687,7 @@ index d417d7d..4028f89 100644
              mem_quota is not None and kv_tokens + result.delta > mem_quota
          ):
              self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -1714,6 +3979,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1714,6 +3997,10 @@ class UnifiedRadixCache(BasePrefixCache):
              self.token_to_kv_pool_allocator, "c128_attn_allocator", None
          )
          if c128_allocator is not None:
@@ -5670,7 +5698,7 @@ index d417d7d..4028f89 100644
              c128_num_pages = _c128_transfer_num_pages(
                  comp_xfers.get(ComponentType.C128, ()),
                  c128_allocator.page_size,
-@@ -1727,6 +3996,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1727,6 +4014,10 @@ class UnifiedRadixCache(BasePrefixCache):
  
          avail = self._component_available_size(ComponentType.FULL)
          if avail < kv_tokens:
@@ -5681,7 +5709,7 @@ index d417d7d..4028f89 100644
              needed = kv_tokens - avail
              self.evict_for_alloc(EvictParams(num_tokens=needed))
              if self._component_available_size(ComponentType.FULL) < kv_tokens:
-@@ -1741,6 +4014,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1741,6 +4032,9 @@ class UnifiedRadixCache(BasePrefixCache):
              host_indices=kv_xfer.host_indices,
              node_id=node_id,
              extra_pools=aux_xfers or None,
@@ -5691,7 +5719,7 @@ index d417d7d..4028f89 100644
          )
  
          self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -3130,10 +5406,24 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3130,10 +5424,24 @@ class UnifiedRadixCache(BasePrefixCache):
              while self.ongoing_write_through:
                  for ack in cc.ack_write_queue:
                      ack.finish_event.synchronize()
@@ -5717,7 +5745,7 @@ index d417d7d..4028f89 100644
                  cc.ack_write_queue.clear()
                  assert len(self.ongoing_write_through) == 0
              return
-@@ -3154,11 +5444,130 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3154,11 +5462,130 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_write_queue.pop(0)
              ack.finish_event.synchronize()
@@ -5849,7 +5877,7 @@ index d417d7d..4028f89 100644
      def _log_write_ack_metrics(self, ack: HiCacheAck) -> None:
          """Record D->H backup volume and duration for a completed write ack."""
          if self.metrics_collector is None:
-@@ -3171,7 +5580,7 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3171,7 +5598,7 @@ class UnifiedRadixCache(BasePrefixCache):
          if ack.num_bytes > 0:
              self.metrics_collector.increment_backup_num_bytes(ack.num_bytes)
          if ack.timing_enabled:
@@ -5858,7 +5886,7 @@ index d417d7d..4028f89 100644
              self.metrics_collector.observe_backup_duration(duration_ms / 1000.0)
  
      def loading_check(self, finish_count: Optional[int] = None) -> None:
-@@ -3179,6 +5588,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3179,6 +5606,9 @@ class UnifiedRadixCache(BasePrefixCache):
          cc = self.cache_controller
          if cc is None:
              return
@@ -5868,7 +5896,7 @@ index d417d7d..4028f89 100644
          if finish_count is None:
              # Every rank must enter the all_reduce below; ongoing_load_back can
              # diverge across ranks.
-@@ -3200,6 +5612,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3200,6 +5630,8 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_load_queue.pop(0)
              ack.finish_event.synchronize()
@@ -5877,7 +5905,7 @@ index d417d7d..4028f89 100644
              for ack_id in ack.node_ids:
                  if (
                      self.buffer_pipeline is not None
-@@ -3211,6 +5625,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3211,6 +5643,8 @@ class UnifiedRadixCache(BasePrefixCache):
                  self.dec_host_lock_ref(node, host_lock_params)
                  # Unpin the loaded nodes; host copies stay as reclaimable duplicates.
                  self.tree_core.finish_load_back(node)
@@ -5886,7 +5914,7 @@ index d417d7d..4028f89 100644
  
              if self.metrics_collector is not None:
                  for pool, num_tokens in (ack.num_tokens_by_pool or {}).items():
-@@ -3221,10 +5637,17 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3221,10 +5655,17 @@ class UnifiedRadixCache(BasePrefixCache):
                  if ack.num_bytes > 0:
                      self.metrics_collector.increment_load_back_num_bytes(ack.num_bytes)
                  if ack.timing_enabled:
@@ -5905,7 +5933,7 @@ index d417d7d..4028f89 100644
              finish_count -= 1
  
      # ---- HiCache: Scheduler Entry Points ----
-@@ -3236,7 +5659,7 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3236,7 +5677,7 @@ class UnifiedRadixCache(BasePrefixCache):
      ) -> Optional[tuple[torch.Tensor, NodeId]]:
          """Prepare KV cache loading from host to device.
          Returns (device_indices, last_node), or None when buffer-mode
@@ -5914,7 +5942,7 @@ index d417d7d..4028f89 100644
          if self.buffer_pipeline is not None:
              return self.buffer_pipeline.init_load_back(params)
          best_match_node_id = params.best_match_node
-@@ -3255,6 +5678,11 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3255,6 +5696,11 @@ class UnifiedRadixCache(BasePrefixCache):
                  and (req.swa_host_hit_length > 0 or req.mamba_host_hit_length > 0)
              )
          ):
@@ -5926,7 +5954,7 @@ index d417d7d..4028f89 100644
              if self.load_back(best_match_node_id, mem_quota, req=req):
                  new_indices = self.tree_core.collect_full_device_indices(
                      best_match_node_id, last_best_match_device_node_id
-@@ -3341,9 +5769,31 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3341,9 +5787,31 @@ class UnifiedRadixCache(BasePrefixCache):
          if self.linker is not None:
              return self.linker.start_layer_wise_loading()
          if self.cache_controller is not None:

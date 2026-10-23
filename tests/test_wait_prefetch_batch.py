@@ -114,8 +114,12 @@ def provisional_join_batch_fixture(*, node_count=4):
     (0, 48, 100, 0), (47, 47, 100, 0),
 ])
 def test_full_decode_batch_can_restore_one_waiting_context_without_a_request_row(
-    source, running_count, row_capacity, free_full, expected_nodes,
+    monkeypatch, source, running_count, row_capacity, free_full, expected_nodes,
 ):
+    # Capacity assertions must not age the fixture's 300ms tool prediction.
+    monkeypatch.setattr(
+        "beliefkv.runtime.sglang_v0520_runtime.time.monotonic", lambda: 1000.,
+    )
     fixture = (
         provisional_join_batch_fixture()
         if source == "join_ticket" else batch_fixture(source)

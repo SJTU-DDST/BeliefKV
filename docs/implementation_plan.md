@@ -2,6 +2,72 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+V145 completed normally at05:45 Beijing. V3285 independently revalidates
+its frozen sources, exact3951 request receipts and tokens, actual runtime
+configuration and process cleanup. With only tool H2D prefetch disabled,
+mean JCT is1132.019s and whole-run output throughput598.690 tokens/s.
+Relative to V143 Full this is-0.2375%/+0.5674%, and relative to the V136
+natural native capture it is-2.7605%/+2.7948%. Normal tails remain included
+and there are no quality exclusions. These single-run differences do not
+prove stable tool-prefetch harm or independent KV benefit.
+
+V3284 records42 positive pre-completion JOIN plans and23 early confirmed
+reuses/24.309GB FULL in V145. V143 had25/16.042GB JOIN and12/9.441GB
+tool early reuses. The changed JOIN coverage is consistent with shared
+capacity/transfer competition, but different interleaving prevents a
+unique causal attribution. Keep24 roots and running/decode24: migration
+opportunities are already sufficient. Expand to32/36 only if useful
+migration or actual Host/HBM pressure is insufficient, as requested.
+
+V146 was independently registered from main `e94b6e26b8e9` with the
+FULL-only capacity candidate below, after V145 cleanup and actual GPU/
+port availability checks. Its supervisor is running the Full arm on the
+same exact V136 work, with tool prefetch and background backup retained
+to isolate the engine change. No native replay is queued. V3288 verifies
+the actual GPU scheduler, source/configuration and both startup targets:
+actual native prefill extends are4727 and4153 tokens with subsequent
+decode. CMS has zero Host Mamba hits but correct effective prefix reuse;
+Host checkpoint hit count is not a standalone success requirement.
+Complete-run JCT, throughput, pressure and prefetch coverage are pending.
+
+The CPU follow-up now also covers ordinary native FULL allocation. V3290
+reproduces two failures: `evict` and `evict_for_alloc` still synchronously
+copy an unowned checkpoint before releasing already backed FULL pages.
+The next candidate reuses the existing independent-state demotion during
+the native FULL walk. It is enabled only with incremental FULL management,
+no requested Mamba eviction and no allocation target funded for Mamba.
+The existing component, lock, ownership and finite-path-cap guards apply.
+Joint-pool/shared-donor targets and incremental-off behavior retain the
+old cascade. Later actual state pressure backs only the missing state.
+No scan, timer, new protection lease or scheduling priority is added.
+
+V3293 passes83 focused cases. V3296/V3303 retain657 engine cases plus48
+subtests and bind engine tree `9ac449ef28f0e88f5394b56c2c76f3484b5f783f`.
+V3302/V3304 retain all5472 preceding application identities and qualify
+5479 plus2 subtests, without failures or skips and with CUDA hidden.
+V3306 independently verifies both qualification sets and exact sources.
+The candidate engine is
+`/home/longhao/experiment/.worktrees/sglang-native-full-capacity-20261024`.
+Its source state is sealed; do not mutate its staged/unstaged state.
+
+Negative evidence remains available. V3294/V3295 used the installed
+SGLang package before PYTHONPATH was explicitly set; the interrupted
+unscoped application sweep also reached an archived training manifest
+outside inherited qualification. V3298 exposes a capacity-only fixture
+aging its300ms tool median. A350ms preparation pause reproduces that
+failure; the fixture now freezes its clock before creation, without
+changing production timing. V3305 verifies the delayed fixed-clock case.
+V3297's two CUDA-required native unit skips are outside CPU qualification,
+not counted as passes; the optional Docker case remains outside the
+inherited selected population.
+
+Let V146 finish on its frozen preceding engine. Review the latest complete
+trace and cleanup, then independently register V147 Full for the ordinary
+allocation candidate, keeping work, capacity, batch24 and seed21 fixed.
+Do not use `--after-registration` across engine changes, and do not replay
+native. The CPU evidence establishes allocation/checkpoint behavior, not
+a GPU gain or a total amount of eliminated state traffic.
+
 V144 completed at05:15 Beijing with the same3951 requests and exact tokens.
 Without periodic idle/spawn FULL preparation, mean JCT is1135.956s and
 output throughput594.482 tokens/s. Relative to V143 Full this is
@@ -9,8 +75,8 @@ output throughput594.482 tokens/s. Relative to V143 Full this is
 all normal tails. The single pair does not prove substantial backup value.
 Early JOIN reuse changes from25/16.042GB to23/17.097GB, and tool reuse
 from12/9.441GB to4/0.770GB. More early bytes do not establish net benefit.
-V145 is now running only the tool-H2D-prefetch ablation; its frozen source
-and old qualified engine remain unchanged.
+V145 used only the tool-H2D-prefetch ablation; its frozen source and old
+qualified engine remained unchanged.
 
 The next CPU-qualified candidate frees backed FULL without waiting for
 an unowned/inherited checkpoint's separate D2H when only FULL is short.
@@ -40,14 +106,13 @@ include retries and do not prove a suitable backed donor in every case.
 State-only D2H totals are92.527GB in V143 and2.318GB in V144; they include
 necessary copies and are not the candidate's saved-byte estimate.
 
-After V145 completes, review its latest full trace and actual cleanup,
-then independently register V146 against the same V136 work/native capture,
-with the final candidate qualification above. Do not use
-`--after-registration` across the changed engine tree. Keep24 roots,
-batch24, seed21 and capacity. First verify actual startup prefill work;
-a checkpoint may now remain on device, so a Host Mamba hit is not itself
-required. The known large-prefix recomputation must not return. GPU
-performance and repeatable independent KV benefit remain unproven.
+V145's complete trace and actual cleanup were reviewed before the V146
+registration. The engine changed, so V146 does not use
+`--after-registration`. Keep24 roots, batch24, seed21 and capacity. The
+startup prefill check above passes; continue reviewing the latest trace
+for actual capacity recovery, migration, recomputation and complete-run
+performance. GPU performance and repeatable independent KV benefit remain
+unproven.
 
 V143 completed at04:45 Beijing with all24 workflows,3951 requests,
 264598879 prompt and958791 output tokens. V3263 independently revalidates
