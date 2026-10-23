@@ -191,7 +191,9 @@ def test_observed_configuration_checks_the_registered_batch_limit(tmp_path, monk
     ]
 
 
-@pytest.mark.parametrize("label", ("full", "join_priority_only", "native_matched"))
+@pytest.mark.parametrize("label", (
+    "full", "join_priority_only", "native_matched", "scheduler_only", "kv_only",
+))
 def test_saved_oneshot_experiment_pins_capacity_and_policy_for_every_arm(
     reference, tmp_path, label,
 ):
@@ -211,7 +213,7 @@ def test_saved_oneshot_experiment_pins_capacity_and_policy_for_every_arm(
     assert env["DEVICE_MAMBA_SLOTS"] == "513"
     assert env["BELIEFKV_SUBAGENT_RETENTION"] == "off"
     assert reference["arms"]["full"]["MAX_RUNNING_REQUESTS"] == "8"
-    if label == "full":
+    if label in ("full", "kv_only"):
         assert env["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "1"
         assert float(env["BELIEFKV_TOOL_PREFETCH_PRIORITY_MS"]) == 1500.
         assert env["BELIEFKV_IDLE_PREPARE_POLICY"] == "cold"
@@ -440,6 +442,82 @@ def test_generated_tool_model_settings_are_consumed_by_the_real_runtime_construc
         runtime.close()
 
 
+@pytest.mark.parametrize("label", ("scheduler_only", "kv_only"))
+def test_orthogonal_replay_controls_reach_the_real_runtime_without_changing_work(
+    reference, tmp_path, monkeypatch, label,
+):
+    import beliefkv.runtime.sglang_v0520_runtime as native
+
+    spec = json.loads((comparison.ROOT / (
+        "configs/migration/qwen35_locobench_oneshot_24root_running24_20261024.json"
+    )).read_bytes())
+    configured = comparison.experiment_reference(reference, spec)
+    env, flags, event_socket = comparison.environment(
+        configured, label, tmp_path, tmp_path, tmp_path, 18570, tmp_path,
+        max_running_requests=24, sampling_mode="position",
+    )
+    assert label in comparison.ALL_CONTROLS
+    assert comparison.DEFAULT_ORDER == ("full", "join_priority_only")
+    assert env["ROOT_COUNT"] == env["MAX_RUNNING_REQUESTS"] == "24"
+    assert env["SAMPLING_SEED"] == env["SERVER_RANDOM_SEED"] == "21"
+    assert env["BELIEFKV_CAUSAL_REPLAY_SAMPLING"] == "position"
+    assert env["SGLANG_ENABLE_DELAY_SAMPLE"] == "0"
+    assert env["BELIEFKV_SUBAGENT_RETENTION"] == "off"
+    assert "--enable-beliefkv-admission" in flags and event_socket is not None
+    custom = label == "kv_only"
+    for name in ("TOOL_TIMING_ARTIFACT", "H2D_SEED", "TRANSFER_SERVICE_SEED"):
+        assert bool(env["BELIEFKV_" + name]) is custom
+    for name, value in env.items():
+        if name.startswith("BELIEFKV_"):
+            monkeypatch.setenv(name, value)
+    for name in (
+        "BELIEFKV_H2D_SEED", "BELIEFKV_H2D_SEED_SHA256",
+        "BELIEFKV_TRANSFER_SERVICE_SEED", "BELIEFKV_TRANSFER_SERVICE_SEED_SHA256",
+        "BELIEFKV_ADMISSION_OPPORTUNITY_DIR",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setattr(native, "validate_tool_timing_artifact", lambda *_a, **_k: None)
+    runtime = native.NativeAdmissionRuntime(
+        event_socket_path=str(tmp_path / "orthogonal.sock"), model_path="cpu-only",
+    )
+    try:
+        assert runtime.internal_comparison_mode == label
+        assert runtime._custom_kv_management is custom
+        assert runtime.enable_prepare_host is custom
+        assert runtime.enable_background_prepare is custom
+        assert runtime.enable_terminal_child_reclaim is custom
+        assert runtime.enable_final_stage_prefetch is custom
+        assert runtime.enable_tool_prefetch is custom
+        assert runtime._tool_timing_only is custom
+        assert runtime.tool_prefetch_priority_ms == (1500. if custom else 0.)
+        assert runtime.prefill_scheduling_policy == ("native" if custom else "workflow")
+        assert runtime.enable_resident_first is not custom
+        assert runtime.enable_final_stage_priority is not custom
+        assert runtime.enable_join_parent_priority is not custom
+        assert not runtime._native_cache
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+def test_kv_only_cpu_preflight_checks_the_effective_native_order(
+    reference, tmp_path, monkeypatch,
+):
+    env, _, _ = comparison.environment(
+        reference, "kv_only", tmp_path, tmp_path, tmp_path, 18570, tmp_path,
+    )
+    checked = []
+    monkeypatch.setattr(
+        comparison.subprocess, "run",
+        lambda command, **_kwargs: (
+            checked.append(json.loads(command[-1])) or NS(stdout="")
+        ),
+    )
+    result = comparison.preflight_runtime(env, "cpu-only")
+    assert checked[0]["prefill_scheduling_policy"] == "native"
+    assert result["verified_configuration"] == checked[0]
+
+
 def test_no_tool_prefetch_changes_only_tool_h2d_and_preserves_offload_settings(reference, tmp_path):
     original, original_flags, original_socket = comparison.environment(
         reference, "full", tmp_path, tmp_path, tmp_path, 18554, tmp_path,
@@ -516,7 +594,7 @@ def test_optional_tool_priority_is_only_enabled_in_custom_tool_prefetch_arms(
     env, _, _ = comparison.environment(
         prepared, label, tmp_path, tmp_path, tmp_path, 18554, tmp_path,
     )
-    enabled = label in ("full", "no_background_prepare")
+    enabled = label in ("full", "kv_only", "no_background_prepare")
     assert env["BELIEFKV_ENABLE_TOOL_PREFETCH"] == str(int(enabled))
     assert float(env["BELIEFKV_TOOL_PREFETCH_PRIORITY_MS"]) == (1500. if enabled else 0.)
 
@@ -540,6 +618,8 @@ def test_optional_tool_priority_is_identical_across_retention_controls(reference
     ("full", 0., False), ("no_tool_prefetch", 0., True),
     ("no_tool_prefetch", 1500., False), ("join_priority_only", 0., True),
     ("join_priority_only", 1500., False),
+    ("scheduler_only", 0., True), ("scheduler_only", 1500., False),
+    ("kv_only", 1500., True), ("kv_only", 0., False),
 ))
 def test_tool_priority_observer_validates_the_effective_window(
     tmp_path, monkeypatch, label, actual, accepted,
@@ -1016,6 +1096,7 @@ def test_cleanup_waits_for_slow_device_teardown_but_reports_a_persistent_process
 @pytest.mark.parametrize("failure", (
     None, "driver", "changed_work", "capacity", "no_tool_prefetch",
     "queued_no_tool_prefetch", "failed_predecessor", "source_slowdown", "capture_baseline",
+    "orthogonal_controls",
 ))
 def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     reference, tmp_path, monkeypatch, failure,
@@ -1030,6 +1111,9 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     )
     if failure == "source_slowdown":
         order = ["native_matched", "no_tool_prefetch"]
+    elif failure == "orthogonal_controls":
+        order = ["scheduler_only", "kv_only"]
+        failure = None
     elif captured_reference:
         order = list(comparison.DEFAULT_ORDER)
         assert "native_matched" not in order

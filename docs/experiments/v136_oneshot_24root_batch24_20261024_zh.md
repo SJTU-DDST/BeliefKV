@@ -223,3 +223,81 @@ NativeAdmissionRuntime 并核对策略字段，再允许加载 GPU 模型。
 tool-prefetch1500ms`，JOIN-only=`cold/join_priority/工具预取关闭`。
 V3202/V3203 保留5419项，5423项及2项subtests全部通过；
 V3201定向168项通过。下一轮V139继续使用V136/V137证据。
+
+## V139 正式对照已启动
+
+北京时间 2026-10-24 01:45:21 注册 V139，冻结 app commit
+`b92a1c242f1eba0694847dba1ef6e99655657b26` 和 engine tree
+`cc9772c6c5c4dcd3678a03b67fa9afc190aec4f8`，复用 V137 的有效
+GPU 微校验及采样校准。登记文件：
+`/home/longhao/experiment/ops/v139_oneshot_batch24_controls_20261024.registration.json`。
+实际状态文件为同目录的
+`v139_oneshot_batch24_controls_20261024.registration.state.json`。
+顺序仅为 `full`、`join_priority_only`；native 使用 V136 自然采集参考，
+没有再安排完整 native 重放。
+
+01:49 核查时，watcher、server、scheduler 和 replay driver 的实际
+PID/启动身份与登记一致；scheduler PID 900376 拥有实际 GPU context，
+请求回执与服务事件持续推进。运行时实际确认
+`idle_prepare_policy=cold`、`prefill_scheduling_policy=workflow`、
+`join_prefetch_trigger=observed_eos`、
+`tool_restore_mode=speculative` 和 `tool_prefetch_priority_ms=1500`。
+普通 execution-frontier restore、短工具续接和 subagent retention 关闭。
+running24、context262144、seed21 及四个池容量均与 V136 完全一致。
+首批 7 个已完成请求的精确 token 检查通过；这是运行前缀证据，
+不能视作完整工作量校验或性能收益。
+
+维持用户最新规则：先完成 24 root/batch24 的这组对照。若主要
+JOIN/工具等待阶段有用 Host-only 目标、迁移或 Host/HBM 压力不足，
+则后续增加至 32，必要时 36；扩大 root 后采集对应自然源参考，
+继续省略额外完整 native 重放。V136 已观测到明显恢复需求，
+因此本轮不为追求迁移总字节而中途扩大并发。完整 JCT 保留正常长尾，
+待 Full 与同重放 JOIN-only 均完成后再判断系统收益。
+
+## V139 封存前缀与后续消融
+
+V3204 在 01:53:17--01:53:18 封存独立、带 hash 的完整 JSONL 前缀。
+其中 7 个 JOIN 在完成前出现正 FULL 计划，全部提前提交并由首次服务
+确认复用，共 8.783GB FULL；另有 1.389GB 在完成后、客户端提交前
+恢复，单列为完成后的恢复，不能并入提前量。该前缀没有这些 JOIN
+后继的残余原生 FULL Host 命中；这不代表全程无遗漏。
+
+V3205 使用同一前缀核对备份：489 个普通后台批次平均 21.8MB，
+P50 为 6.55MB；25 个 spawn 批次平均 1.687GB，P50 为 2.104GB。
+所有批次均有对应 ACK，没有触及字节或节点数上限。仍有 6 次容量
+检查看到未备份冷页，当时最近 Host 样本仍有约 90--100GB FULL
+余量；这些检查可以重复访问同一节点，不能相加为遗漏 KV 总量。
+后续 ACK 累计已超过原先 10GB 迁移目标，当前无需扩大 root 数。
+这仍然不是完整运行的提前复用量或系统收益结论。
+
+V3206/V3208 对齐短 prefill 的分阶段采样。Full 前缀有 36 个短单请求
+样本，完整自然 native 有 112 个；512-token 工作分桶仅匹配 14/21
+样本，64-token 分桶仅匹配 3/4，16-token 分桶尚无共同样本。
+宽分桶下 run-batch wall 比值为 0.958、thread CPU 比值为 1.024；
+post-launch physical 的 Full 均值约 0.74ms，native 约 0.003ms。
+尚未重现过去明显的 prefill 回撤，但相邻 batch 与服务混合不同，
+严格匹配覆盖不足，不能据此宣布 prefill 或 JCT 优化成立。
+
+为分离调度收益和 KV 管理增量，当前重放入口补齐已有的
+`scheduler_only` 和 `kv_only`。前者保留 Full 的 workflow、
+resident-first、阶段及 JOIN parent 排序，关闭 prepare、预取、
+工具预测和生命周期回收；后者保留 KV 路径并使用原生请求顺序。
+后续先接 scheduler-only，仍使用 V136 精确 token 和依赖，不另跑
+完整 native。V139 继续使用自己的冻结代码，默认顺序不变。
+
+V3209 定向 308 项检查通过。V3212/V3213 保留此前 5423 项，
+合计 5435 项及 2 项 subtests 通过；V3210 初跑遗漏显式引擎和
+tokenizer 路径的 78 项，已在 V3211 使用冻结引擎及实际 tokenizer
+重新执行并通过，全程隐藏 CUDA。初跑另含一个不在原资格集合内的
+可选 Docker progress 测试，其跳过记录保留，没有计入新资格。
+V3214 又用 V139 真实配置构造 CPU runtime，确认 scheduler-only
+为 `workflow/cold/tool-off`，kv-only 为 `native/cold/tool1500ms`。
+这些是执行路径和配置资格，GPU 性能仍待后续实测。
+
+V3215 在 02:09 左右再次封存运行前缀，已有 40 个完成边界明确的
+JOIN，全部在完成前有正 FULL 计划；31 个提前提交并确认复用
+24.281GB FULL，另 9 个尚无完成前提交记录，存在容量预算限制。
+工具等待中有 34 个完成前正 FULL 计划、15 个提前提交，13 个
+确认提前复用，共 2.699GB FULL。后续重点检查容量机会转化和工具
+恢复后的驻留长尾，继续保持 24 root。该组 workflow 尚未全部完成，
+仍不能用这些 episode 或迁移字节宣布 JCT/吞吐收益。

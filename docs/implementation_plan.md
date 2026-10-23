@@ -2,11 +2,67 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+V139 is running the Full replay from app commit
+`b92a1c242f1eba0694847dba1ef6e99655657b26` and engine tree
+`cc9772c6c5c4dcd3678a03b67fa9afc190aec4f8`.
+Registration is
+`/home/longhao/experiment/ops/v139_oneshot_batch24_controls_20261024.registration.json`;
+its `.registration.state.json` is checked against actual process identities,
+GPU ownership and advancing request receipts. At01:49 Beijing, the real
+runtime confirms cold preparation, workflow/resident-first/stage ordering,
+observed-EOS JOIN prefetch, speculative tool prefetch with1500ms priority,
+and no frontier restore, short-tool continuity or retention. Actual running
+limit24, context262144, seed21 and all four pools match V136. Initial completed
+requests pass exact-token checks; the complete replay and performance result
+remain pending. The registered order is Full then JOIN-only, with no full
+native replay. Keep24 roots until the useful-migration and capacity evidence
+warrants32 or36; do not change the configuration during this comparison.
+
+The01:53 sealed V139 prefix already has7 JOIN waits with pre-completion
+positive FULL plans; all7 submitted before completion and reused8.783GB FULL.
+Another1.389GB was restored between completion and client submission, so it
+is reported separately. V3204/V3205 bind these observations and the backup
+prefix:489 idle batches average21.8MB and25 spawn batches average1.687GB;
+neither reached its byte/extent cap. Later ACK counters exceed the original
+10GB migration target, but ACK traffic is not early reuse or JCT benefit.
+Keep24 roots and finish the comparison.
+
+The02:09 V3215 sealed prefix advances to40 completed JOIN observations:
+all40 had positive FULL plans before completion,31 submitted and reused
+24.281GB early. Nine still lack a recorded pre-completion submission and
+capacity-budget rejection is present. Tool waits have34 pre-completion positive
+plans,15 submitted,13 with verified early FULL reuse totaling2.699GB.
+These are completed wait episodes inside a collecting run, not complete
+workflow results. Capacity conversion and tool residence tails remain the
+next trace targets; increasing roots is not the current remedy.
+
+V3208 compares36 sampled short prefills from that collecting Full prefix
+with112 natural-native samples. Only14/21 samples share the broad512-token
+work bins,3/4 share64-token bins and none share16-token bins. Broad matched
+run-batch wall ratio is0.958 and thread-CPU ratio1.024; post-launch physical
+work still adds about0.74ms in those cohorts. Do not extrapolate these sparse,
+different-neighbor samples to a complete prefill or JCT improvement.
+
+The same-work operator now accepts the existing `scheduler_only` and
+`kv_only` runtime modes. Scheduler-only retains Full's workflow, resident-first,
+stage and JOIN-parent ordering while disabling custom KV operations. KV-only
+loads the same transfer/tool artifacts and uses native request ordering.
+CPU startup and the running observer check these effective policies and the
+tool-priority window. Default order remains Full/JOIN-only; prioritize a
+scheduler-only follow-up after V139 to isolate the KV-management increment.
+V3209 passes308 focused checks. V3212/V3213 retains5423 prior cases and
+qualifies5435 cases plus2 subtests:78 inherited engine/tokenizer cases were
+actually rechecked with those dependencies and CUDA hidden after initial
+V3210 skips; the optional Docker progress test is outside this inherited
+qualification and remains unqualified. V3214 checks actual CPU runtime
+construction on V139's real reference. No new GPU gain is established.
+
 V136 natural native capture has completed at01:05:11 Beijing, exit0, with
 24/24 natural JCT-eligible workflows,3951 requests and958791 output tokens.
 It has74 spawns and43 satisfied JOINs:41 root JOIN rounds plus2 nested JOINs,
 with4 nested spawns. No source guard or request failure is reported. Exact
-token and causal graph evidence are complete; GPU replay qualification is next.
+token and causal graph evidence are complete. V137 qualified the24-request GPU
+path and sampler; full replay qualification remains pending.
 The source showed103.608/160GB Host FULL high water and full Host Mamba;
 FULL H2D totals about1.287TB including repeated traffic. Keep24 roots for the
 next Full/JOIN-only controls rather than increasing pressure before measuring

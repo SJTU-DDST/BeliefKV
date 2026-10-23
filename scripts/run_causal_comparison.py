@@ -37,7 +37,7 @@ from beliefkv.core.events import RuntimeEventKind as Kind
 
 ORDER = ("full", "native_matched", "join_priority_only", "no_background_prepare")
 DEFAULT_ORDER = ("full", "join_priority_only")
-CONTROLS = (*ORDER, "no_tool_prefetch")
+CONTROLS = (*ORDER, "scheduler_only", "kv_only", "no_tool_prefetch")
 RETENTION_CONTROLS = {f"subagent_{policy}": policy for policy in RETENTION_ORDER}
 ALL_CONTROLS = (*CONTROLS, *RETENTION_CONTROLS)
 SERVER_FIELDS = (
@@ -106,7 +106,7 @@ def environment(
     ):
         settings["BELIEFKV_" + target] = ""
         settings["BELIEFKV_" + digest] = ""
-        if policy == "full":
+        if policy in ("full", "kv_only"):
             path = Path(settings[source])
             settings["BELIEFKV_" + target] = str(path)
             settings["BELIEFKV_" + digest] = sha256_file(path)
@@ -248,7 +248,10 @@ def preflight_runtime(settings, model_path):
     if settings["BELIEFKV_INTERNAL_COMPARISON_MODE"] == "native_matched":
         return {"native_runtime_not_enabled": True}
     expected = {
-        "prefill_scheduling_policy": settings["PREFILL_SCHEDULING_POLICY"],
+        "prefill_scheduling_policy": (
+            "native" if settings["BELIEFKV_NATIVE_PREFILL_ORDER"] == "1"
+            else settings["PREFILL_SCHEDULING_POLICY"]
+        ),
         "idle_prepare_policy": settings.get(
             "IDLE_PREPARE_POLICY", settings["BELIEFKV_IDLE_PREPARE_POLICY"],
         ),
@@ -465,7 +468,10 @@ def observed_configuration(plan, label, arm, *, final=False):
     if requested_priority is not None and mode != "native_matched":
         state = qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
         if state is not None:
-            expected = requested_priority if mode == "full" and label != "no_tool_prefetch" else 0.
+            expected = (
+                requested_priority
+                if mode in ("full", "kv_only") and label != "no_tool_prefetch" else 0.
+            )
             if state.get("tool_prefetch_priority_ms") != expected:
                 raise ValueError("effective tool prefetch priority window differs")
     census = arm / "server/native_capacity_census.json"
