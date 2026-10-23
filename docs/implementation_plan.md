@@ -2,18 +2,49 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
-V147 is running on the qualified ordinary-allocation candidate. Its
-actual watcher, server, GPU scheduler and replay driver remain live.
-V3312 verifies its actual startup work and effective prefix reuse.
+V147 completed normally at06:50 Beijing. V3319 independently revalidates
+all3951 exact request receipts and tokens, runtime configuration and
+actual process cleanup. Mean JCT is1130.074s and whole-run output
+throughput596.230 tokens/s,relative to natural native-2.9276%/+2.3724%.
+Against V146 the changes are-0.2033%/+0.1040%,still small single-run
+differences. All normal tails remain included and quality exclusions
+are empty; repeatable independent KV benefit remains unproven.
 
-V148 is registered behind V147 with the same engine and source work.
-Its order is `no_tool_prefetch`, then `scheduler_only`. The actual
-supervisor is waiting on the previous comparison, owns no GPU process,
-and validates predecessor work/configuration/cleanup before starting.
+V3318 records43 positive pre-completion JOIN plans,29 pre-completion
+submissions and28 early confirmed reuses/29.444GB FULL. Tool early
+reuse is10/1.644GB. V3322 records603 state-only D2H batches/38.827GB,
+versus1132/72.888GB in V146. These include necessary state-pressure
+copies; differences are not an identified count of unnecessary copies
+or removable JCT. V3321 records880.874GB H2D and357.412GB D2H.
+Keep24 roots: useful migration opportunities are already sufficient.
+
+V3320 records5878167 actual prefill tokens (+0.2067% versus V146)
+and256.023s cumulative prefill worker intervals (-0.2694%). V3323
+reconstructs each JCT along its actual final dependency chain: mean
+submit-to-first-launch is1.372s lower and first-launch-to-completion
+0.891s lower. The latter includes interleaving and waits,not pure GPU
+compute time. Do not subtract phase/transfer sums from workflow JCT.
+
+V148 followed after verified V147 cleanup using the same qualified
+engine and source work. `no_tool_prefetch` is now running, followed by
+`scheduler_only`. V3324 verifies the actual GPU scheduler,capacities,
+runtime configuration and4727/4153-token startup extends with subsequent
+decode. Tool H2D prefetch/priority are off; online tool timing,prepare,
+background backup and EOS JOIN stay on. No native replay is queued.
 This tests tool H2D prefetch and the incremental custom-KV contribution
-against the Full request-ordering control without repeating native.
-Keep24 roots, batch24, seed21 and the existing capacities. Registration:
+against the Full request-ordering control. Keep24 roots,batch24,seed21
+and the existing capacities. Neither V148 arm has a complete result yet.
+Registration:
 `/home/longhao/experiment/ops/v148_oneshot_batch24_tool_and_kv_controls_20261024.registration.json`.
+
+The latest completed-work check V3325 pairs914 V147/JOIN-only short
+prefills by exact request,native prefix/extend lengths and graph flag.
+Full's worker mean is18.599ms versus17.299ms (+7.51%),but launch-to-
+processed-completion is55.751ms versus56.863ms (-1.96%). The clipped
+overlap is37.152ms versus39.563ms. Neighbouring/concurrent batches are
+not fixed; the worker difference does not prove an equal end-to-end
+prefill slowdown or identify a CPU function. This corroborates the
+earlier V146 diagnostic below without claiming the residual gap solved.
 
 V3317 pairs834 completed V146/JOIN-only short-prefill batches by exact
 logical request, native prefix and extend lengths, and actual graph flag.
