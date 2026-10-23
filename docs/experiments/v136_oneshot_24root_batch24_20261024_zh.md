@@ -67,3 +67,38 @@ GPU 重放校验后，再用相同工作量、容量和 batch 对比 native、Fu
 及 JOIN-only。不按 Full 收益、固定 JOIN 数或正常长尾筛选源轨迹。
 CPU 资格及注册/运行状态另存报告和 ops 登记；未完成的采集不能
 报告为完整 JCT 或收益。
+
+## 实际启动与初期观测
+
+北京时间 2026-10-24 00:34:50 前后，V136 已通过资源检查并启动，
+冻结 app commit `79bb1bf24cd574ef52c78b7d9d4d57d22da62f4a`，
+引擎 tree `cc9772c6c5c4dcd3678a03b67fa9afc190aec4f8`。
+登记文件为
+`/home/longhao/experiment/ops/v136_oneshot_24root_running24_source_20261024.registration.json`。
+实际 server_info 确认 running=24、context=262144、seed=21，
+decode CUDA graph 包含 batch24；实际四个池与参考 census 完全一致。
+CPU 最终资格 V3184/V3185 保留原 5355 项，合计 5379 项及 2 项
+subtests 全部通过；此前失败的 V3182/V3183 保留，原因是容量测试
+fixture 未补全新观测使用的字段。没有把失败资格用于启动。
+
+约 00:39 的封闭事件前缀已有 24 个 workflow_start、48 次 spawn、
+24 个 JOIN create、412 个 LLM submit；尚非全程完成统计，
+不能将 JOIN create 当成 satisfied 或提前恢复复用。GPU 的一次
+利用率采样为 98%，不能视作全程平均。
+
+00:40:05.998 的实际安全点采样：
+
+| 池 | 使用情况 |
+| --- | --- |
+| FULL HBM | 1795200/1797968 tokens 已分配，99.85%；其中 1390978 可驱逐 |
+| Mamba HBM | 511/513 slots 已分配，99.61%；其中 419 可驱逐 |
+| Host FULL | 25.273/160.000 GB，15.80% |
+| Host Mamba | 22.923/40.050 GB，57.23% |
+
+相邻状态快照记录 FULL H2D ACK 173938 tokens，约 3.562GB，
+Host 尚无淘汰。已服务公共前缀丢失代理为 14703/5047636 tokens，
+约 0.291%；它不包含所有混合状态重算，不能替代实际重算率。
+遥测 failed/dropped 均为零，writer_error 为 null。
+这些都是启动阶段证据，不能外推为稳态、全程平均或 32 root 的结果；
+它们已经证明当前 24/24 能制造真实 HBM 占用和迁移，不需要为制造
+压力立即再增加 root。

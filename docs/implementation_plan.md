@@ -26,7 +26,20 @@ and workflow/resident-first/stage ordering remain the original Full candidates;
 execution-frontier restoration and short-tool continuity remain off.
 The active performance goal remains unmet.
 
-Latest GPU pilot V135 was stopped at2026-10-23 23:58:30 Beijing after15/16
+V136 is now recording the native natural source, registered at approximately
+2026-10-24 00:34:50 Beijing from app79bb1bf24cd5 and engine treecc9772c6c5c4.
+Actual server configuration/census confirms24 running requests and the fixed
+four pools. Initial sealed events have24 roots,48 spawns and24 JOIN creates;
+these are not satisfied JOIN or prefetch-use counts. At00:40:05.998 the device
+FULL/Mamba allocation samples are99.85%/99.61%, including evictable cache;
+Host FULL/Mamba use25.273/22.923GB. The early prefix-loss proxy is0.291%,
+not all hybrid-state recomputation. Do not extrapolate this short startup
+prefix to steady-state or32-root performance. V3184/V3185 retains5355 and
+qualifies5379 cases plus2 subtests with no failures/skips. The earlier failed
+V3182/V3183 fixtures remain preserved. No Full comparison result exists yet.
+See [the configuration and live-prefix evidence](experiments/v136_oneshot_24root_batch24_20261024_zh.md).
+
+Previous GPU pilot V135 was stopped at2026-10-23 23:58:30 Beijing after15/16
 natural eligible completions. It produced20 spawns and16 satisfied JOINs,
 five multi-round roots (maximum4), but zero nesting or actual handle reuse.
 FULL H2D ACK bytes total238.576GB; seven JOIN successors register20.778GB of
