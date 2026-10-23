@@ -1357,6 +1357,7 @@ class NativeAdmissionRuntime:
             self._boundary_history.clear()
             self._tool_metadata.clear()
             self._tool_metadata_by_run.clear()
+            self._online_tool_queries.clear()
             self._next_wait_refresh_ms = 0.0
             self._scan_offsets = {"tool_wait": 0, "join_wait": 0}
             self._active_tool_census_version = None
@@ -1542,6 +1543,7 @@ class NativeAdmissionRuntime:
                             self._spawn_full_prepares.pop(context_id, None)
                             self._parent_capacity_handoffs.pop(context_id, None)
                         self._tool_last_queries.pop(key, None)
+                        self._online_tool_queries.pop(key, None)
                         self._tool_opportunity_cache.pop(key, None)
                         self._tool_prefetch_survival_evidence.pop(key, None)
                         del self.context_sessions[context_id]
@@ -10638,6 +10640,7 @@ class NativeAdmissionRuntime:
         previous = self.context_sessions.get(key.context_id)
         if previous is not None and previous != key:
             self._tool_last_queries.pop(previous, None)
+            self._online_tool_queries.pop(previous, None)
             self._tool_opportunity_cache.pop(previous, None)
         old_hint = self.tool_wait_hints.get(key.context_id)
         if old_hint is not None and old_hint.key != key:
@@ -10729,6 +10732,9 @@ class NativeAdmissionRuntime:
             key = _request_key(req)
             if key is None or key.request_id not in self.visible:
                 raise ValueError("requeued request has no live tagged identity")
+            previous = self.context_sessions.get(key.context_id)
+            if previous is not None and previous != key:
+                self._online_tool_queries.pop(previous, None)
             if is_retracted and self._tool_continuity is not None:
                 self._tool_continuity.retracted(key)
             old_hint = self.tool_wait_hints.get(key.context_id)
@@ -10756,6 +10762,7 @@ class NativeAdmissionRuntime:
         for context_id, key in tuple(self.context_sessions.items()):
             if key.request_id == request_id:
                 self._tool_last_queries.pop(key, None)
+                self._online_tool_queries.pop(key, None)
                 self._tool_opportunity_cache.pop(key, None)
                 del self.context_sessions[context_id]
                 self._context_session_changed(context_id)
