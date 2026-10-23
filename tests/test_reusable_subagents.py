@@ -474,8 +474,12 @@ def test_comparison_arms_share_every_workload_and_scheduler_setting():
     common = [{key: value for key, value in result.items()
                if key != "BELIEFKV_SUBAGENT_RETENTION"} for result in environments]
     assert all(result == common[0] for result in common)
+    fewer_roots = environment({**spec["common_environment"], "ROOT_COUNT": "16"}, "selective")
+    assert {key for key, value in fewer_roots.items() if value != environments[-1][key]} == {
+        "ROOT_COUNT",
+    }
     with pytest.raises(ValueError, match="differs"):
-        environment({**spec["common_environment"], "ROOT_COUNT": "16"}, "selective")
+        environment({**spec["common_environment"], "ROOT_COUNT": "0"}, "selective")
 
 
 def test_boundary_semantics_are_bounded_and_do_not_emit_source_text():

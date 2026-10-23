@@ -115,6 +115,23 @@ retain12 roots if requiring every source itself to exceed100K. Keep the live
 V134d source capture unchanged by this analysis.
 See [the shared-prefix analysis](experiments/root_count_batch_capacity_20261023_zh.md).
 
+The16-project manifest and separate retention configuration are now materialized.
+V3156 captures real initial root construction with a CPU fake model: all16 full
+inputs exceed100K (103260--201727), with an exact initial prefix union of41.884GB.
+Runtime cached counts match direct encoding. V3157 passes common dependency
+preflight in all16 containers, but13 original test probes fail or collect no
+tests; preserve missing-dependency/source/configuration errors. This is not
+task-correctness or full environment acceptance. Source capture and replay now
+validate declared complete populations instead of hardcoding36, retaining old
+defaults and asset bindings. The real saved16-root matrix reaches every policy
+and the actual CPU runtime constructor. Matrix registration binds the source
+population and manifest SHA256. V3164 retains5312 and passes5328 plus2 subtests
+without failures/skips; V3165 binds sources. The old test rejecting16 roots
+is intentionally replaced by invariant settings plus invalid-count rejection;
+the failed V3162 report is retained. Keep V134d unchanged until candidate
+environment limits are resolved; no GPU or performance acceptance is inferred.
+See [the candidate evidence and limits](experiments/project_disjoint_workload_ready_20261023_zh.md).
+
 V3152 independently audits actual native output IDs and identical work/stopping
 in all three V133b arms.6161 same-session quick tool successors have output
 P50/P90 of90/458 tokens, but123 reach2048 and the maximum is16384. Even a

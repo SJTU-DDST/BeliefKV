@@ -1,0 +1,2748 @@
+{
+  "dataset": "SalesforceAIResearch/LoCoBench-Agent",
+  "upstream_revision": "2ab9218e6d46e50ebdbb139442503e5573bc4a5d",
+  "archive": "/home/longhao/experiment/BeliefKV/workloads/raw/locobench_agent_20251119/data.zip",
+  "archive_sha256": "53299531d0e6fe51166b5d2e12d9d9aad462ce4eb46ae00a3808bfa0b95e63a1",
+  "archive_download": "https://drive.usercontent.google.com/download?id=1HwPztd0bipUUi8zs7Pxo3StZCOnJBwVR&export=download&confirm=t",
+  "tokenizer": "/srv/ai/models/Qwen/Qwen3.5-35B-A3B",
+  "tokenizer_sha256": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42",
+  "tokenizer_config_sha256": "316230d6a809701f4db5ea8f8fc862bc3a6f3229c937c174e674ff3ca0a64ac8",
+  "selection_seed": 21,
+  "selection_policy": "seeded project order; round-robin distinct original tasks; no runtime/outcome selection",
+  "max_tasks_per_project": 1,
+  "context_token_range": [
+    95000,
+    196608
+  ],
+  "gold_fields_exposed": false,
+  "dataset_nature": "generated long software projects; adapted multi-agent systems workload",
+  "context_delivery": "complete frozen source in root only; children receive model-selected task descriptions and read relevant files from the shared workspace",
+  "code_transformation": "one whole-file Markdown fence removed; no semantic fixes or padding",
+  "python_ast_check": "syntax only; imports, tests and task correctness are not established",
+  "sandbox_python_feature_version": [
+    3,
+    10
+  ],
+  "candidates": [
+    {
+      "project_id": "python_mobile_social_medium_022",
+      "source_files": 21,
+      "context_tokens": 56767,
+      "syntax_errors": [],
+      "unwrapped_files": 15,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_mobile_social_medium_022_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_mobile_social_medium_022_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_mobile_social_medium_022_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_mobile_social_medium_022_integration_testing_easy_01.json",
+        "data/output/scenarios/python_mobile_social_medium_022_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_mobile_social_easy_094",
+      "source_files": 13,
+      "context_tokens": 30115,
+      "syntax_errors": [],
+      "unwrapped_files": 9,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_mobile_social_easy_094_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_mobile_social_easy_094_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_mobile_social_easy_094_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_mobile_social_easy_094_integration_testing_expert_01.json",
+        "data/output/scenarios/python_mobile_social_easy_094_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_ml_computer_vision_medium_054",
+      "source_files": 39,
+      "context_tokens": 107102,
+      "syntax_errors": [
+        {
+          "path": "visuguard_utility_suite/src/visuguard/pipelines/data_preprocessing_step.py",
+          "line": 196,
+          "message": "cannot assign to conditional expression"
+        },
+        {
+          "path": "visuguard_utility_suite/src/visuguard/persistence/feature_store_client.py",
+          "line": 387,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 31,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_ml_computer_vision_medium_054_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_ml_computer_vision_medium_054_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_ml_computer_vision_medium_054_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_ml_computer_vision_medium_054_integration_testing_expert_01.json",
+        "data/output/scenarios/python_ml_computer_vision_medium_054_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_system_networking_expert_099",
+      "source_files": 93,
+      "context_tokens": 221754,
+      "syntax_errors": [
+        {
+          "path": "netplay_orchestra/services/stage_gateway/src/netplay/stage_gateway/__init__.py",
+          "line": 1,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "netplay_orchestra/services/media_cache/src/netplay/media_cache/__init__.py",
+          "line": 110,
+          "message": "expected ':'"
+        },
+        {
+          "path": "netplay_orchestra/services/media_cache/tests/test_cache.py",
+          "line": 282,
+          "message": "bytes can only contain ASCII literal characters"
+        }
+      ],
+      "unwrapped_files": 69,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_system_networking_expert_099_bug_investigation_medium_01.json",
+        "data/output/scenarios/python_system_networking_expert_099_cross_file_refactoring_medium_01.json",
+        "data/output/scenarios/python_system_networking_expert_099_feature_implementation_medium_01.json",
+        "data/output/scenarios/python_system_networking_expert_099_integration_testing_medium_01.json",
+        "data/output/scenarios/python_system_networking_expert_099_multi_session_development_medium_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_api_rest_expert_042",
+      "source_files": 92,
+      "context_tokens": 229048,
+      "syntax_errors": [
+        {
+          "path": "NeuroVitalsCloudNexus/services/common_layer/python/common/utils/caching.py",
+          "line": 1,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 76,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_api_rest_expert_042_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_api_rest_expert_042_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_api_rest_expert_042_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_api_rest_expert_042_integration_testing_hard_01.json",
+        "data/output/scenarios/python_api_rest_expert_042_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_api_rest_easy_006",
+      "source_files": 13,
+      "context_tokens": 29591,
+      "syntax_errors": [],
+      "unwrapped_files": 12,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_api_rest_easy_006_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_api_rest_easy_006_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_api_rest_easy_006_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_api_rest_easy_006_integration_testing_hard_01.json",
+        "data/output/scenarios/python_api_rest_easy_006_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_api_gateway_hard_009",
+      "source_files": 52,
+      "context_tokens": 124247,
+      "syntax_errors": [],
+      "unwrapped_files": 39,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_api_gateway_hard_009_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_api_gateway_hard_009_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_api_gateway_hard_009_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_api_gateway_hard_009_integration_testing_expert_01.json",
+        "data/output/scenarios/python_api_gateway_hard_009_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": []
+    },
+    {
+      "project_id": "python_blockchain_nft_medium_071",
+      "source_files": 19,
+      "context_tokens": 60066,
+      "syntax_errors": [
+        {
+          "path": "canvaschain_studio/services/wallet_gateway/proxy.py",
+          "line": 139,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "canvaschain_studio/services/crypto_core/main.py",
+          "line": 456,
+          "message": "bytes can only contain ASCII literal characters"
+        }
+      ],
+      "unwrapped_files": 19,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_blockchain_nft_medium_071_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_blockchain_nft_medium_071_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_blockchain_nft_medium_071_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_blockchain_nft_medium_071_integration_testing_easy_01.json",
+        "data/output/scenarios/python_blockchain_nft_medium_071_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_web_cms_hard_074",
+      "source_files": 43,
+      "context_tokens": 122289,
+      "syntax_errors": [],
+      "unwrapped_files": 36,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_web_cms_hard_074_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_web_cms_hard_074_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_web_cms_hard_074_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_web_cms_hard_074_integration_testing_expert_01.json",
+        "data/output/scenarios/python_web_cms_hard_074_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": []
+    },
+    {
+      "project_id": "python_ml_inference_expert_016",
+      "source_files": 84,
+      "context_tokens": 218751,
+      "syntax_errors": [
+        {
+          "path": "LedgerLens-AI-Ops/ledgerlens/domain/events/domain_events.py",
+          "line": 1,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 70,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_ml_inference_expert_016_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_ml_inference_expert_016_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_ml_inference_expert_016_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_ml_inference_expert_016_integration_testing_easy_01.json",
+        "data/output/scenarios/python_ml_inference_expert_016_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_api_microservice_expert_080",
+      "source_files": 80,
+      "context_tokens": 215846,
+      "syntax_errors": [
+        {
+          "path": "CommerceFusionNexusAPI/src/nexus_api/catalog/repositories/__init__.py",
+          "line": 92,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "CommerceFusionNexusAPI/src/nexus_api/trade/models.py",
+          "line": 411,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 68,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_api_microservice_expert_080_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_api_microservice_expert_080_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_api_microservice_expert_080_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_api_microservice_expert_080_integration_testing_hard_01.json",
+        "data/output/scenarios/python_api_microservice_expert_080_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_web_social_easy_073",
+      "source_files": 12,
+      "context_tokens": 29089,
+      "syntax_errors": [],
+      "unwrapped_files": 9,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_web_social_easy_073_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_web_social_easy_073_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_web_social_easy_073_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_web_social_easy_073_integration_testing_expert_01.json",
+        "data/output/scenarios/python_web_social_easy_073_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_data_etl_expert_011",
+      "source_files": 95,
+      "context_tokens": 219963,
+      "syntax_errors": [
+        {
+          "path": "showpulse_etl_galaxy/shared_lib/showpulse_shared/__init__.py",
+          "line": 1,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "showpulse_etl_galaxy/shared_lib/showpulse_shared/logging/__init__.py",
+          "line": 1,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "showpulse_etl_galaxy/services/ingestor-ott/src/config.py",
+          "line": 249,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "showpulse_etl_galaxy/services/validator-service/src/main.py",
+          "line": 41,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 66,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_data_etl_expert_011_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_data_etl_expert_011_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_data_etl_expert_011_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_data_etl_expert_011_integration_testing_hard_01.json",
+        "data/output/scenarios/python_data_etl_expert_011_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_data_lake_expert_086",
+      "source_files": 92,
+      "context_tokens": 284003,
+      "syntax_errors": [
+        {
+          "path": "src/module_6.py",
+          "line": 1,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "src/module_42.py",
+          "line": 500,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "src/module_81.py",
+          "line": 76,
+          "message": "expected ':'"
+        }
+      ],
+      "unwrapped_files": 84,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_data_lake_expert_086_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_data_lake_expert_086_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_data_lake_expert_086_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_data_lake_expert_086_integration_testing_easy_01.json",
+        "data/output/scenarios/python_data_lake_expert_086_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_api_gateway_hard_081",
+      "source_files": 78,
+      "context_tokens": 192253,
+      "syntax_errors": [
+        {
+          "path": "edumesh_gateway/src/edumesh_gateway/api/v1/graphql/stitcher.py",
+          "line": 266,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 66,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_api_gateway_hard_081_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_api_gateway_hard_081_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_api_gateway_hard_081_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_api_gateway_hard_081_integration_testing_easy_01.json",
+        "data/output/scenarios/python_api_gateway_hard_081_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_blockchain_defi_easy_070",
+      "source_files": 12,
+      "context_tokens": 36181,
+      "syntax_errors": [
+        {
+          "path": "univault_utility_chain/univault/contracts/strategies.py",
+          "line": 247,
+          "message": "named arguments must follow bare *"
+        }
+      ],
+      "unwrapped_files": 11,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_blockchain_defi_easy_070_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_blockchain_defi_easy_070_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_blockchain_defi_easy_070_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_blockchain_defi_easy_070_integration_testing_easy_01.json",
+        "data/output/scenarios/python_blockchain_defi_easy_070_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_data_lake_hard_014",
+      "source_files": 64,
+      "context_tokens": 149238,
+      "syntax_errors": [
+        {
+          "path": "UtilityLake_Sentinel/services/stream_processor/transforms/__init__.py",
+          "line": 64,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "UtilityLake_Sentinel/services/batch_transformer/main.py",
+          "line": 50,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 46,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_data_lake_hard_014_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_data_lake_hard_014_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_data_lake_hard_014_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_data_lake_hard_014_integration_testing_expert_01.json",
+        "data/output/scenarios/python_data_lake_hard_014_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_api_graphql_expert_079",
+      "source_files": 83,
+      "context_tokens": 203580,
+      "syntax_errors": [
+        {
+          "path": "paletteverse-nexus/api_gateway/app/__init__.py",
+          "line": 1,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "paletteverse-nexus/services/brushes_service/app/api/v1/gql_schema.py",
+          "line": 127,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "paletteverse-nexus/services/assets_service/app/schemas/asset_schema.py",
+          "line": 1,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 67,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_api_graphql_expert_079_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_api_graphql_expert_079_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_api_graphql_expert_079_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_api_graphql_expert_079_integration_testing_easy_01.json",
+        "data/output/scenarios/python_api_graphql_expert_079_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_data_analytics_easy_010",
+      "source_files": 10,
+      "context_tokens": 28410,
+      "syntax_errors": [],
+      "unwrapped_files": 9,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_data_analytics_easy_010_bug_investigation_medium_01.json",
+        "data/output/scenarios/python_data_analytics_easy_010_cross_file_refactoring_medium_01.json",
+        "data/output/scenarios/python_data_analytics_easy_010_feature_implementation_medium_01.json",
+        "data/output/scenarios/python_data_analytics_easy_010_integration_testing_medium_01.json",
+        "data/output/scenarios/python_data_analytics_easy_010_multi_session_development_medium_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_mobile_game_medium_096",
+      "source_files": 40,
+      "context_tokens": 106283,
+      "syntax_errors": [],
+      "unwrapped_files": 30,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_mobile_game_medium_096_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_mobile_game_medium_096_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_mobile_game_medium_096_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_mobile_game_medium_096_integration_testing_expert_01.json",
+        "data/output/scenarios/python_mobile_game_medium_096_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": []
+    },
+    {
+      "project_id": "python_api_microservice_medium_008",
+      "source_files": 28,
+      "context_tokens": 71428,
+      "syntax_errors": [],
+      "unwrapped_files": 27,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_api_microservice_medium_008_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_api_microservice_medium_008_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_api_microservice_medium_008_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_api_microservice_medium_008_integration_testing_hard_01.json",
+        "data/output/scenarios/python_api_microservice_medium_008_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_web_social_hard_001",
+      "source_files": 56,
+      "context_tokens": 128707,
+      "syntax_errors": [],
+      "unwrapped_files": 39,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_web_social_hard_001_bug_investigation_medium_01.json",
+        "data/output/scenarios/python_web_social_hard_001_cross_file_refactoring_medium_01.json",
+        "data/output/scenarios/python_web_social_hard_001_feature_implementation_medium_01.json",
+        "data/output/scenarios/python_web_social_hard_001_integration_testing_medium_01.json",
+        "data/output/scenarios/python_web_social_hard_001_multi_session_development_medium_01.json"
+      ],
+      "rejection_reasons": []
+    },
+    {
+      "project_id": "python_blockchain_nft_medium_035",
+      "source_files": 19,
+      "context_tokens": 52371,
+      "syntax_errors": [],
+      "unwrapped_files": 16,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_blockchain_nft_medium_035_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_blockchain_nft_medium_035_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_blockchain_nft_medium_035_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_blockchain_nft_medium_035_integration_testing_expert_01.json",
+        "data/output/scenarios/python_blockchain_nft_medium_035_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_web_blog_easy_040",
+      "source_files": 15,
+      "context_tokens": 38086,
+      "syntax_errors": [],
+      "unwrapped_files": 12,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_web_blog_easy_040_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_web_blog_easy_040_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_web_blog_easy_040_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_web_blog_easy_040_integration_testing_easy_01.json",
+        "data/output/scenarios/python_web_blog_easy_040_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_data_analytics_easy_082",
+      "source_files": 14,
+      "context_tokens": 38563,
+      "syntax_errors": [],
+      "unwrapped_files": 12,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_data_analytics_easy_082_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_data_analytics_easy_082_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_data_analytics_easy_082_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_data_analytics_easy_082_integration_testing_expert_01.json",
+        "data/output/scenarios/python_data_analytics_easy_082_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_web_ecommerce_medium_072",
+      "source_files": 37,
+      "context_tokens": 97710,
+      "syntax_errors": [
+        {
+          "path": "SupplyStreamCommerceHub/src/shared/__init__.py",
+          "line": 1,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 33,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_web_ecommerce_medium_072_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_web_ecommerce_medium_072_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_web_ecommerce_medium_072_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_web_ecommerce_medium_072_integration_testing_easy_01.json",
+        "data/output/scenarios/python_web_ecommerce_medium_072_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_system_security_medium_064",
+      "source_files": 30,
+      "context_tokens": 81177,
+      "syntax_errors": [],
+      "unwrapped_files": 23,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_system_security_medium_064_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_system_security_medium_064_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_system_security_medium_064_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_system_security_medium_064_integration_testing_hard_01.json",
+        "data/output/scenarios/python_system_security_medium_064_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_web_portfolio_medium_005",
+      "source_files": 36,
+      "context_tokens": 87340,
+      "syntax_errors": [
+        {
+          "path": "social_showcase_hub/src/social_showcase_hub/infrastructure/services/redis_cache.py",
+          "line": 127,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 30,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_web_portfolio_medium_005_bug_investigation_medium_01.json",
+        "data/output/scenarios/python_web_portfolio_medium_005_cross_file_refactoring_medium_01.json",
+        "data/output/scenarios/python_web_portfolio_medium_005_feature_implementation_medium_01.json",
+        "data/output/scenarios/python_web_portfolio_medium_005_integration_testing_medium_01.json",
+        "data/output/scenarios/python_web_portfolio_medium_005_multi_session_development_medium_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_data_warehouse_easy_084",
+      "source_files": 10,
+      "context_tokens": 25345,
+      "syntax_errors": [
+        {
+          "path": "TimeStackWarehouse/timestack/storage.py",
+          "line": 294,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 9,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_data_warehouse_easy_084_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_data_warehouse_easy_084_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_data_warehouse_easy_084_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_data_warehouse_easy_084_integration_testing_expert_01.json",
+        "data/output/scenarios/python_data_warehouse_easy_084_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_fintech_trading_medium_066",
+      "source_files": 33,
+      "context_tokens": 89765,
+      "syntax_errors": [],
+      "unwrapped_files": 26,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_fintech_trading_medium_066_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_fintech_trading_medium_066_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_fintech_trading_medium_066_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_fintech_trading_medium_066_integration_testing_hard_01.json",
+        "data/output/scenarios/python_fintech_trading_medium_066_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_game_simulation_medium_033",
+      "source_files": 39,
+      "context_tokens": 110395,
+      "syntax_errors": [],
+      "unwrapped_files": 33,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_game_simulation_medium_033_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_game_simulation_medium_033_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_game_simulation_medium_033_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_game_simulation_medium_033_integration_testing_expert_01.json",
+        "data/output/scenarios/python_game_simulation_medium_033_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": []
+    },
+    {
+      "project_id": "python_data_analytics_easy_046",
+      "source_files": 12,
+      "context_tokens": 26919,
+      "syntax_errors": [],
+      "unwrapped_files": 12,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_data_analytics_easy_046_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_data_analytics_easy_046_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_data_analytics_easy_046_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_data_analytics_easy_046_integration_testing_expert_01.json",
+        "data/output/scenarios/python_data_analytics_easy_046_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_data_warehouse_medium_012",
+      "source_files": 31,
+      "context_tokens": 76726,
+      "syntax_errors": [],
+      "unwrapped_files": 26,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_data_warehouse_medium_012_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_data_warehouse_medium_012_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_data_warehouse_medium_012_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_data_warehouse_medium_012_integration_testing_hard_01.json",
+        "data/output/scenarios/python_data_warehouse_medium_012_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_data_streaming_hard_013",
+      "source_files": 64,
+      "context_tokens": 215493,
+      "syntax_errors": [
+        {
+          "path": "src/utils.py",
+          "line": 1,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "src/module_4.py",
+          "line": 483,
+          "message": "bytes can only contain ASCII literal characters"
+        },
+        {
+          "path": "src/module_42.py",
+          "line": 358,
+          "message": "unterminated string literal (detected at line 358)"
+        }
+      ],
+      "unwrapped_files": 59,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_data_streaming_hard_013_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_data_streaming_hard_013_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_data_streaming_hard_013_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_data_streaming_hard_013_integration_testing_expert_01.json",
+        "data/output/scenarios/python_data_streaming_hard_013_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_data_lake_medium_050",
+      "source_files": 35,
+      "context_tokens": 98801,
+      "syntax_errors": [],
+      "unwrapped_files": 27,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_data_lake_medium_050_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_data_lake_medium_050_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_data_lake_medium_050_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_data_lake_medium_050_integration_testing_hard_01.json",
+        "data/output/scenarios/python_data_lake_medium_050_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": []
+    },
+    {
+      "project_id": "python_desktop_media_medium_020",
+      "source_files": 38,
+      "context_tokens": 105950,
+      "syntax_errors": [],
+      "unwrapped_files": 33,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_desktop_media_medium_020_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_desktop_media_medium_020_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_desktop_media_medium_020_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_desktop_media_medium_020_integration_testing_hard_01.json",
+        "data/output/scenarios/python_desktop_media_medium_020_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": []
+    },
+    {
+      "project_id": "python_game_engine_expert_032",
+      "source_files": 98,
+      "context_tokens": 269271,
+      "syntax_errors": [
+        {
+          "path": "LedgerQuestEngine/ledgerquest/engine/ecs/system.py",
+          "line": 303,
+          "message": "unindent does not match any outer indentation level"
+        },
+        {
+          "path": "LedgerQuestEngine/ledgerquest/engine/ai/blackboard.py",
+          "line": 428,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "LedgerQuestEngine/ledgerquest/services/game_loop/physics_updater.py",
+          "line": 1,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "LedgerQuestEngine/ledgerquest/shared/__init__.py",
+          "line": 1,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 74,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_game_engine_expert_032_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_game_engine_expert_032_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_game_engine_expert_032_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_game_engine_expert_032_integration_testing_expert_01.json",
+        "data/output/scenarios/python_game_engine_expert_032_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_web_ecommerce_hard_036",
+      "source_files": 60,
+      "context_tokens": 151415,
+      "syntax_errors": [
+        {
+          "path": "sprintcart-pro/sprintcart_pro/adapters/api/v1/endpoints/auth.py",
+          "line": 71,
+          "message": "invalid character '\u2026' (U+2026)"
+        },
+        {
+          "path": "sprintcart-pro/sprintcart_pro/adapters/db/alembic/env.py",
+          "line": 53,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 54,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_web_ecommerce_hard_036_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_web_ecommerce_hard_036_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_web_ecommerce_hard_036_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_web_ecommerce_hard_036_integration_testing_easy_01.json",
+        "data/output/scenarios/python_web_ecommerce_hard_036_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_ml_computer_vision_hard_018",
+      "source_files": 41,
+      "context_tokens": 127587,
+      "syntax_errors": [
+        {
+          "path": "retinasight_360_suite/retinasight_360/ml/models/__init__.py",
+          "line": 1,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "retinasight_360_suite/retinasight_360/ml/evaluation/evaluator.py",
+          "line": 40,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 38,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_ml_computer_vision_hard_018_bug_investigation_medium_01.json",
+        "data/output/scenarios/python_ml_computer_vision_hard_018_cross_file_refactoring_medium_01.json",
+        "data/output/scenarios/python_ml_computer_vision_hard_018_feature_implementation_medium_01.json",
+        "data/output/scenarios/python_ml_computer_vision_hard_018_integration_testing_medium_01.json",
+        "data/output/scenarios/python_ml_computer_vision_hard_018_multi_session_development_medium_01.json"
+      ],
+      "rejection_reasons": [
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_fintech_trading_hard_030",
+      "source_files": 58,
+      "context_tokens": 169408,
+      "syntax_errors": [
+        {
+          "path": "tradeutility_nexus/trade_nexus/core/bus.py",
+          "line": 1,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "tradeutility_nexus/trade_nexus/core/saga.py",
+          "line": 532,
+          "message": "invalid syntax. Maybe you meant '==' or ':=' instead of '='?"
+        },
+        {
+          "path": "tradeutility_nexus/trade_nexus/services/kyc/verifier.py",
+          "line": 345,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 49,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_fintech_trading_hard_030_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_fintech_trading_hard_030_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_fintech_trading_hard_030_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_fintech_trading_hard_030_integration_testing_expert_01.json",
+        "data/output/scenarios/python_fintech_trading_hard_030_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_web_dashboard_medium_039",
+      "source_files": 24,
+      "context_tokens": 66032,
+      "syntax_errors": [],
+      "unwrapped_files": 19,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_web_dashboard_medium_039_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_web_dashboard_medium_039_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_web_dashboard_medium_039_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_web_dashboard_medium_039_integration_testing_easy_01.json",
+        "data/output/scenarios/python_web_dashboard_medium_039_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_ml_inference_hard_088",
+      "source_files": 40,
+      "context_tokens": 105597,
+      "syntax_errors": [],
+      "unwrapped_files": 34,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_ml_inference_hard_088_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_ml_inference_hard_088_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_ml_inference_hard_088_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_ml_inference_hard_088_integration_testing_hard_01.json",
+        "data/output/scenarios/python_ml_inference_hard_088_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": []
+    },
+    {
+      "project_id": "python_system_networking_hard_027",
+      "source_files": 66,
+      "context_tokens": 149832,
+      "syntax_errors": [],
+      "unwrapped_files": 51,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_system_networking_hard_027_bug_investigation_medium_01.json",
+        "data/output/scenarios/python_system_networking_hard_027_cross_file_refactoring_medium_01.json",
+        "data/output/scenarios/python_system_networking_hard_027_feature_implementation_medium_01.json",
+        "data/output/scenarios/python_system_networking_hard_027_integration_testing_medium_01.json",
+        "data/output/scenarios/python_system_networking_hard_027_multi_session_development_medium_01.json"
+      ],
+      "rejection_reasons": []
+    },
+    {
+      "project_id": "python_ml_inference_easy_052",
+      "source_files": 15,
+      "context_tokens": 33569,
+      "syntax_errors": [
+        {
+          "path": "smartslot/tests/test_model_factory.py",
+          "line": 208,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 12,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_ml_inference_easy_052_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_ml_inference_easy_052_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_ml_inference_easy_052_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_ml_inference_easy_052_integration_testing_easy_01.json",
+        "data/output/scenarios/python_ml_inference_easy_052_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_data_streaming_expert_085",
+      "source_files": 83,
+      "context_tokens": 271316,
+      "syntax_errors": [],
+      "unwrapped_files": 76,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_data_streaming_expert_085_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_data_streaming_expert_085_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_data_streaming_expert_085_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_data_streaming_expert_085_integration_testing_expert_01.json",
+        "data/output/scenarios/python_data_streaming_expert_085_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_fintech_payment_expert_029",
+      "source_files": 92,
+      "context_tokens": 232033,
+      "syntax_errors": [
+        {
+          "path": "crowdpay_connect/libs/shared_events/__init__.py",
+          "line": 132,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 72,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_fintech_payment_expert_029_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_fintech_payment_expert_029_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_fintech_payment_expert_029_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_fintech_payment_expert_029_integration_testing_expert_01.json",
+        "data/output/scenarios/python_fintech_payment_expert_029_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_system_automation_hard_062",
+      "source_files": 43,
+      "context_tokens": 128680,
+      "syntax_errors": [],
+      "unwrapped_files": 39,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_system_automation_hard_062_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_system_automation_hard_062_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_system_automation_hard_062_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_system_automation_hard_062_integration_testing_expert_01.json",
+        "data/output/scenarios/python_system_automation_hard_062_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": []
+    },
+    {
+      "project_id": "python_data_warehouse_hard_048",
+      "source_files": 73,
+      "context_tokens": 174998,
+      "syntax_errors": [],
+      "unwrapped_files": 52,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_data_warehouse_hard_048_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_data_warehouse_hard_048_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_data_warehouse_hard_048_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_data_warehouse_hard_048_integration_testing_hard_01.json",
+        "data/output/scenarios/python_data_warehouse_hard_048_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": []
+    },
+    {
+      "project_id": "python_web_cms_expert_002",
+      "source_files": 86,
+      "context_tokens": 220402,
+      "syntax_errors": [],
+      "unwrapped_files": 76,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_web_cms_expert_002_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_web_cms_expert_002_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_web_cms_expert_002_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_web_cms_expert_002_integration_testing_easy_01.json",
+        "data/output/scenarios/python_web_cms_expert_002_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_web_blog_easy_004",
+      "source_files": 12,
+      "context_tokens": 29928,
+      "syntax_errors": [],
+      "unwrapped_files": 11,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_web_blog_easy_004_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_web_blog_easy_004_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_web_blog_easy_004_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_web_blog_easy_004_integration_testing_expert_01.json",
+        "data/output/scenarios/python_web_blog_easy_004_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_data_streaming_easy_049",
+      "source_files": 12,
+      "context_tokens": 28411,
+      "syntax_errors": [],
+      "unwrapped_files": 11,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_data_streaming_easy_049_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_data_streaming_easy_049_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_data_streaming_easy_049_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_data_streaming_easy_049_integration_testing_hard_01.json",
+        "data/output/scenarios/python_data_streaming_easy_049_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_game_simulation_easy_069",
+      "source_files": 14,
+      "context_tokens": 41662,
+      "syntax_errors": [],
+      "unwrapped_files": 12,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_game_simulation_easy_069_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_game_simulation_easy_069_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_game_simulation_easy_069_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_game_simulation_easy_069_integration_testing_hard_01.json",
+        "data/output/scenarios/python_game_simulation_easy_069_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_fintech_payment_expert_065",
+      "source_files": 89,
+      "context_tokens": 242342,
+      "syntax_errors": [
+        {
+          "path": "scholarledger_edupay_suite/services/fraud_detection_service/src/scholarledger/fraud/domain/__init__.py",
+          "line": 77,
+          "message": "unterminated string literal (detected at line 77)"
+        }
+      ],
+      "unwrapped_files": 76,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_fintech_payment_expert_065_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_fintech_payment_expert_065_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_fintech_payment_expert_065_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_fintech_payment_expert_065_integration_testing_easy_01.json",
+        "data/output/scenarios/python_fintech_payment_expert_065_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_system_monitoring_hard_097",
+      "source_files": 44,
+      "context_tokens": 120605,
+      "syntax_errors": [
+        {
+          "path": "edupulse_insight_mesh/src/agent/__init__.py",
+          "line": 352,
+          "message": "unterminated triple-quoted string literal (detected at line 398)"
+        }
+      ],
+      "unwrapped_files": 40,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_system_monitoring_hard_097_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_system_monitoring_hard_097_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_system_monitoring_hard_097_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_system_monitoring_hard_097_integration_testing_expert_01.json",
+        "data/output/scenarios/python_system_monitoring_hard_097_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_mobile_utility_expert_095",
+      "source_files": 91,
+      "context_tokens": 284229,
+      "syntax_errors": [
+        {
+          "path": "src/module_4.py",
+          "line": 175,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "src/module_44.py",
+          "line": 322,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "src/module_62.py",
+          "line": 1,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 80,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_mobile_utility_expert_095_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_mobile_utility_expert_095_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_mobile_utility_expert_095_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_mobile_utility_expert_095_integration_testing_easy_01.json",
+        "data/output/scenarios/python_mobile_utility_expert_095_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_mobile_utility_medium_023",
+      "source_files": 38,
+      "context_tokens": 99255,
+      "syntax_errors": [],
+      "unwrapped_files": 29,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_mobile_utility_medium_023_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_mobile_utility_medium_023_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_mobile_utility_medium_023_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_mobile_utility_medium_023_integration_testing_easy_01.json",
+        "data/output/scenarios/python_mobile_utility_medium_023_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": []
+    },
+    {
+      "project_id": "python_ml_nlp_easy_053",
+      "source_files": 14,
+      "context_tokens": 33017,
+      "syntax_errors": [],
+      "unwrapped_files": 11,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_ml_nlp_easy_053_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_ml_nlp_easy_053_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_ml_nlp_easy_053_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_ml_nlp_easy_053_integration_testing_easy_01.json",
+        "data/output/scenarios/python_ml_nlp_easy_053_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_desktop_media_medium_092",
+      "source_files": 26,
+      "context_tokens": 83464,
+      "syntax_errors": [],
+      "unwrapped_files": 24,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_desktop_media_medium_092_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_desktop_media_medium_092_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_desktop_media_medium_092_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_desktop_media_medium_092_integration_testing_expert_01.json",
+        "data/output/scenarios/python_desktop_media_medium_092_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_web_dashboard_expert_003",
+      "source_files": 88,
+      "context_tokens": 219252,
+      "syntax_errors": [
+        {
+          "path": "spotlightpulse/services/api_gateway/app/api/v1/endpoints/events.py",
+          "line": 79,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 74,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_web_dashboard_expert_003_bug_investigation_medium_01.json",
+        "data/output/scenarios/python_web_dashboard_expert_003_cross_file_refactoring_medium_01.json",
+        "data/output/scenarios/python_web_dashboard_expert_003_feature_implementation_medium_01.json",
+        "data/output/scenarios/python_web_dashboard_expert_003_integration_testing_medium_01.json",
+        "data/output/scenarios/python_web_dashboard_expert_003_multi_session_development_medium_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_desktop_productivity_easy_091",
+      "source_files": 14,
+      "context_tokens": 38035,
+      "syntax_errors": [
+        {
+          "path": "QuestBoard_Maestro/src/ui/quest_viewmodel.py",
+          "line": 1,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 12,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_desktop_productivity_easy_091_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_desktop_productivity_easy_091_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_desktop_productivity_easy_091_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_desktop_productivity_easy_091_integration_testing_expert_01.json",
+        "data/output/scenarios/python_desktop_productivity_easy_091_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_mobile_utility_hard_059",
+      "source_files": 73,
+      "context_tokens": 207775,
+      "syntax_errors": [
+        {
+          "path": "beatlens_carnival/beatlens_carnival/core/beat_detector.py",
+          "line": 393,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "beatlens_carnival/beatlens_carnival/services/biometric_service.py",
+          "line": 194,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 60,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_mobile_utility_hard_059_bug_investigation_medium_01.json",
+        "data/output/scenarios/python_mobile_utility_hard_059_cross_file_refactoring_medium_01.json",
+        "data/output/scenarios/python_mobile_utility_hard_059_feature_implementation_medium_01.json",
+        "data/output/scenarios/python_mobile_utility_hard_059_integration_testing_medium_01.json",
+        "data/output/scenarios/python_mobile_utility_hard_059_multi_session_development_medium_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_web_blog_hard_076",
+      "source_files": 42,
+      "context_tokens": 99370,
+      "syntax_errors": [],
+      "unwrapped_files": 34,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_web_blog_hard_076_bug_investigation_medium_01.json",
+        "data/output/scenarios/python_web_blog_hard_076_cross_file_refactoring_medium_01.json",
+        "data/output/scenarios/python_web_blog_hard_076_feature_implementation_medium_01.json",
+        "data/output/scenarios/python_web_blog_hard_076_integration_testing_medium_01.json",
+        "data/output/scenarios/python_web_blog_hard_076_multi_session_development_medium_01.json"
+      ],
+      "rejection_reasons": []
+    },
+    {
+      "project_id": "python_ml_training_hard_015",
+      "source_files": 72,
+      "context_tokens": 226770,
+      "syntax_errors": [
+        {
+          "path": "src/module_1.py",
+          "line": 147,
+          "message": "expected ':'"
+        },
+        {
+          "path": "src/module_62.py",
+          "line": 234,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 67,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_ml_training_hard_015_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_ml_training_hard_015_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_ml_training_hard_015_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_ml_training_hard_015_integration_testing_expert_01.json",
+        "data/output/scenarios/python_ml_training_hard_015_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_data_etl_easy_047",
+      "source_files": 11,
+      "context_tokens": 28523,
+      "syntax_errors": [
+        {
+          "path": "paletteflow_etl_studio/config/settings.py",
+          "line": 116,
+          "message": "illegal target for annotation"
+        }
+      ],
+      "unwrapped_files": 10,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_data_etl_easy_047_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_data_etl_easy_047_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_data_etl_easy_047_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_data_etl_easy_047_integration_testing_hard_01.json",
+        "data/output/scenarios/python_data_etl_easy_047_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_ml_training_expert_051",
+      "source_files": 84,
+      "context_tokens": 204009,
+      "syntax_errors": [],
+      "unwrapped_files": 64,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_ml_training_expert_051_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_ml_training_expert_051_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_ml_training_expert_051_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_ml_training_expert_051_integration_testing_easy_01.json",
+        "data/output/scenarios/python_ml_training_expert_051_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_api_rest_easy_078",
+      "source_files": 12,
+      "context_tokens": 20467,
+      "syntax_errors": [],
+      "unwrapped_files": 9,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_api_rest_easy_078_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_api_rest_easy_078_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_api_rest_easy_078_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_api_rest_easy_078_integration_testing_expert_01.json",
+        "data/output/scenarios/python_api_rest_easy_078_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_mobile_game_hard_060",
+      "source_files": 49,
+      "context_tokens": 149241,
+      "syntax_errors": [],
+      "unwrapped_files": 46,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_mobile_game_hard_060_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_mobile_game_hard_060_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_mobile_game_hard_060_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_mobile_game_hard_060_integration_testing_expert_01.json",
+        "data/output/scenarios/python_mobile_game_hard_060_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": []
+    },
+    {
+      "project_id": "python_mobile_game_hard_024",
+      "source_files": 63,
+      "context_tokens": 194277,
+      "syntax_errors": [],
+      "unwrapped_files": 56,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_mobile_game_hard_024_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_mobile_game_hard_024_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_mobile_game_hard_024_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_mobile_game_hard_024_integration_testing_easy_01.json",
+        "data/output/scenarios/python_mobile_game_hard_024_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": []
+    },
+    {
+      "project_id": "python_system_monitoring_medium_061",
+      "source_files": 38,
+      "context_tokens": 95792,
+      "syntax_errors": [],
+      "unwrapped_files": 30,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_system_monitoring_medium_061_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_system_monitoring_medium_061_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_system_monitoring_medium_061_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_system_monitoring_medium_061_integration_testing_expert_01.json",
+        "data/output/scenarios/python_system_monitoring_medium_061_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": []
+    },
+    {
+      "project_id": "python_desktop_productivity_medium_019",
+      "source_files": 15,
+      "context_tokens": 44465,
+      "syntax_errors": [
+        {
+          "path": "showrunner_studio/showrunner/core/models.py",
+          "line": 1,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 11,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_desktop_productivity_medium_019_bug_investigation_medium_01.json",
+        "data/output/scenarios/python_desktop_productivity_medium_019_cross_file_refactoring_medium_01.json",
+        "data/output/scenarios/python_desktop_productivity_medium_019_feature_implementation_medium_01.json",
+        "data/output/scenarios/python_desktop_productivity_medium_019_integration_testing_medium_01.json",
+        "data/output/scenarios/python_desktop_productivity_medium_019_multi_session_development_medium_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_ml_nlp_easy_089",
+      "source_files": 14,
+      "context_tokens": 43640,
+      "syntax_errors": [],
+      "unwrapped_files": 14,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_ml_nlp_easy_089_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_ml_nlp_easy_089_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_ml_nlp_easy_089_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_ml_nlp_easy_089_integration_testing_expert_01.json",
+        "data/output/scenarios/python_ml_nlp_easy_089_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_fintech_banking_expert_031",
+      "source_files": 88,
+      "context_tokens": 204671,
+      "syntax_errors": [
+        {
+          "path": "neobanksy_palette/api_gateway/src/app/security.py",
+          "line": 1,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "neobanksy_palette/libs/palette_shared/src/palette_shared/__init__.py",
+          "line": 411,
+          "message": "expected ':'"
+        },
+        {
+          "path": "neobanksy_palette/services/fraud_service/src/app/tests/test_consumer.py",
+          "line": 189,
+          "message": "bytes can only contain ASCII literal characters"
+        }
+      ],
+      "unwrapped_files": 63,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_fintech_banking_expert_031_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_fintech_banking_expert_031_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_fintech_banking_expert_031_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_fintech_banking_expert_031_integration_testing_hard_01.json",
+        "data/output/scenarios/python_fintech_banking_expert_031_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_blockchain_defi_expert_034",
+      "source_files": 94,
+      "context_tokens": 289224,
+      "syntax_errors": [
+        {
+          "path": "mediledger-defi-nexus/src/mediledger/services/transaction_processor/__init__.py",
+          "line": 88,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "mediledger-defi-nexus/src/mediledger/services/defi_protocols/__init__.py",
+          "line": 1,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 78,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_blockchain_defi_expert_034_bug_investigation_medium_01.json",
+        "data/output/scenarios/python_blockchain_defi_expert_034_cross_file_refactoring_medium_01.json",
+        "data/output/scenarios/python_blockchain_defi_expert_034_feature_implementation_medium_01.json",
+        "data/output/scenarios/python_blockchain_defi_expert_034_integration_testing_medium_01.json",
+        "data/output/scenarios/python_blockchain_defi_expert_034_multi_session_development_medium_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_data_etl_expert_083",
+      "source_files": 85,
+      "context_tokens": 202535,
+      "syntax_errors": [
+        {
+          "path": "spotlight-sync/services/datalake-sink-service/app/partitioner.py",
+          "line": 1,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "spotlight-sync/services/olap-sink-service/app/main.py",
+          "line": 193,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "spotlight-sync/services/olap-sink-service/app/clickhouse_writer.py",
+          "line": 130,
+          "message": "expected ':'"
+        }
+      ],
+      "unwrapped_files": 53,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_data_etl_expert_083_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_data_etl_expert_083_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_data_etl_expert_083_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_data_etl_expert_083_integration_testing_easy_01.json",
+        "data/output/scenarios/python_data_etl_expert_083_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_mobile_social_easy_058",
+      "source_files": 13,
+      "context_tokens": 35990,
+      "syntax_errors": [],
+      "unwrapped_files": 11,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_mobile_social_easy_058_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_mobile_social_easy_058_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_mobile_social_easy_058_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_mobile_social_easy_058_integration_testing_expert_01.json",
+        "data/output/scenarios/python_mobile_social_easy_058_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_desktop_media_hard_056",
+      "source_files": 50,
+      "context_tokens": 125542,
+      "syntax_errors": [
+        {
+          "path": "mediaops-studio/plugins/compliance_watermark/mediaops_compliance_plugin/plugin.py",
+          "line": 158,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "mediaops-studio/src/mediaops_studio/core/application/command_bus.py",
+          "line": 244,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 40,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_desktop_media_hard_056_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_desktop_media_hard_056_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_desktop_media_hard_056_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_desktop_media_hard_056_integration_testing_easy_01.json",
+        "data/output/scenarios/python_desktop_media_hard_056_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_system_security_medium_028",
+      "source_files": 15,
+      "context_tokens": 38526,
+      "syntax_errors": [],
+      "unwrapped_files": 12,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_system_security_medium_028_bug_investigation_medium_01.json",
+        "data/output/scenarios/python_system_security_medium_028_cross_file_refactoring_medium_01.json",
+        "data/output/scenarios/python_system_security_medium_028_feature_implementation_medium_01.json",
+        "data/output/scenarios/python_system_security_medium_028_integration_testing_medium_01.json",
+        "data/output/scenarios/python_system_security_medium_028_multi_session_development_medium_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_api_graphql_expert_007",
+      "source_files": 98,
+      "context_tokens": 224578,
+      "syntax_errors": [],
+      "unwrapped_files": 77,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_api_graphql_expert_007_bug_investigation_medium_01.json",
+        "data/output/scenarios/python_api_graphql_expert_007_cross_file_refactoring_medium_01.json",
+        "data/output/scenarios/python_api_graphql_expert_007_feature_implementation_medium_01.json",
+        "data/output/scenarios/python_api_graphql_expert_007_integration_testing_medium_01.json",
+        "data/output/scenarios/python_api_graphql_expert_007_multi_session_development_medium_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_web_ecommerce_expert_000",
+      "source_files": 96,
+      "context_tokens": 237049,
+      "syntax_errors": [],
+      "unwrapped_files": 78,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_web_ecommerce_expert_000_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_web_ecommerce_expert_000_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_web_ecommerce_expert_000_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_web_ecommerce_expert_000_integration_testing_easy_01.json",
+        "data/output/scenarios/python_web_ecommerce_expert_000_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_desktop_development_expert_057",
+      "source_files": 85,
+      "context_tokens": 240138,
+      "syntax_errors": [
+        {
+          "path": "scholarcanvas_studio/scholarcanvas/model/adaptive_logic.py",
+          "line": 1,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 66,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_desktop_development_expert_057_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_desktop_development_expert_057_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_desktop_development_expert_057_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_desktop_development_expert_057_integration_testing_hard_01.json",
+        "data/output/scenarios/python_desktop_development_expert_057_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_web_social_hard_037",
+      "source_files": 78,
+      "context_tokens": 188856,
+      "syntax_errors": [
+        {
+          "path": "synergysphere/apps/spheres/tests/test_services.py",
+          "line": 177,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 63,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_web_social_hard_037_bug_investigation_medium_01.json",
+        "data/output/scenarios/python_web_social_hard_037_cross_file_refactoring_medium_01.json",
+        "data/output/scenarios/python_web_social_hard_037_feature_implementation_medium_01.json",
+        "data/output/scenarios/python_web_social_hard_037_integration_testing_medium_01.json",
+        "data/output/scenarios/python_web_social_hard_037_multi_session_development_medium_01.json"
+      ],
+      "rejection_reasons": [
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_system_networking_medium_063",
+      "source_files": 38,
+      "context_tokens": 84215,
+      "syntax_errors": [],
+      "unwrapped_files": 30,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_system_networking_medium_063_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_system_networking_medium_063_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_system_networking_medium_063_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_system_networking_medium_063_integration_testing_hard_01.json",
+        "data/output/scenarios/python_system_networking_medium_063_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_api_graphql_easy_043",
+      "source_files": 14,
+      "context_tokens": 33285,
+      "syntax_errors": [],
+      "unwrapped_files": 12,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_api_graphql_easy_043_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_api_graphql_easy_043_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_api_graphql_easy_043_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_api_graphql_easy_043_integration_testing_expert_01.json",
+        "data/output/scenarios/python_api_graphql_easy_043_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_api_microservice_medium_044",
+      "source_files": 28,
+      "context_tokens": 55231,
+      "syntax_errors": [],
+      "unwrapped_files": 20,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_api_microservice_medium_044_bug_investigation_medium_01.json",
+        "data/output/scenarios/python_api_microservice_medium_044_cross_file_refactoring_medium_01.json",
+        "data/output/scenarios/python_api_microservice_medium_044_feature_implementation_medium_01.json",
+        "data/output/scenarios/python_api_microservice_medium_044_integration_testing_medium_01.json",
+        "data/output/scenarios/python_api_microservice_medium_044_multi_session_development_medium_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_system_automation_medium_098",
+      "source_files": 31,
+      "context_tokens": 87321,
+      "syntax_errors": [],
+      "unwrapped_files": 28,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_system_automation_medium_098_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_system_automation_medium_098_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_system_automation_medium_098_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_system_automation_medium_098_integration_testing_expert_01.json",
+        "data/output/scenarios/python_system_automation_medium_098_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_web_cms_easy_038",
+      "source_files": 11,
+      "context_tokens": 26961,
+      "syntax_errors": [],
+      "unwrapped_files": 10,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_web_cms_easy_038_bug_investigation_medium_01.json",
+        "data/output/scenarios/python_web_cms_easy_038_cross_file_refactoring_medium_01.json",
+        "data/output/scenarios/python_web_cms_easy_038_feature_implementation_medium_01.json",
+        "data/output/scenarios/python_web_cms_easy_038_integration_testing_medium_01.json",
+        "data/output/scenarios/python_web_cms_easy_038_multi_session_development_medium_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_desktop_development_expert_021",
+      "source_files": 92,
+      "context_tokens": 250792,
+      "syntax_errors": [],
+      "unwrapped_files": 77,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_desktop_development_expert_021_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_desktop_development_expert_021_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_desktop_development_expert_021_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_desktop_development_expert_021_integration_testing_expert_01.json",
+        "data/output/scenarios/python_desktop_development_expert_021_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_desktop_development_hard_093",
+      "source_files": 67,
+      "context_tokens": 226386,
+      "syntax_errors": [
+        {
+          "path": "src/module_32.py",
+          "line": 1,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "src/module_41.py",
+          "line": 86,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 61,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_desktop_development_hard_093_bug_investigation_medium_01.json",
+        "data/output/scenarios/python_desktop_development_hard_093_cross_file_refactoring_medium_01.json",
+        "data/output/scenarios/python_desktop_development_hard_093_feature_implementation_medium_01.json",
+        "data/output/scenarios/python_desktop_development_hard_093_integration_testing_medium_01.json",
+        "data/output/scenarios/python_desktop_development_hard_093_multi_session_development_medium_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_ml_training_medium_087",
+      "source_files": 30,
+      "context_tokens": 89154,
+      "syntax_errors": [],
+      "unwrapped_files": 30,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_ml_training_medium_087_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_ml_training_medium_087_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_ml_training_medium_087_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_ml_training_medium_087_integration_testing_hard_01.json",
+        "data/output/scenarios/python_ml_training_medium_087_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_ml_nlp_easy_017",
+      "source_files": 10,
+      "context_tokens": 24540,
+      "syntax_errors": [],
+      "unwrapped_files": 8,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_ml_nlp_easy_017_bug_investigation_expert_01.json",
+        "data/output/scenarios/python_ml_nlp_easy_017_cross_file_refactoring_expert_01.json",
+        "data/output/scenarios/python_ml_nlp_easy_017_feature_implementation_expert_01.json",
+        "data/output/scenarios/python_ml_nlp_easy_017_integration_testing_expert_01.json",
+        "data/output/scenarios/python_ml_nlp_easy_017_multi_session_development_expert_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_system_monitoring_medium_025",
+      "source_files": 30,
+      "context_tokens": 82508,
+      "syntax_errors": [],
+      "unwrapped_files": 26,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_system_monitoring_medium_025_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_system_monitoring_medium_025_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_system_monitoring_medium_025_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_system_monitoring_medium_025_integration_testing_easy_01.json",
+        "data/output/scenarios/python_system_monitoring_medium_025_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_system_automation_hard_026",
+      "source_files": 54,
+      "context_tokens": 148966,
+      "syntax_errors": [
+        {
+          "path": "aegis_pulse/aegis_pulse/core/services/command.py",
+          "line": 1,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 51,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_system_automation_hard_026_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_system_automation_hard_026_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_system_automation_hard_026_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_system_automation_hard_026_integration_testing_easy_01.json",
+        "data/output/scenarios/python_system_automation_hard_026_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_desktop_productivity_hard_055",
+      "source_files": 52,
+      "context_tokens": 149401,
+      "syntax_errors": [
+        {
+          "path": "CanvasCommandery/canvas_commandery/presentation/view_models/__init__.py",
+          "line": 1,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 45,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_desktop_productivity_hard_055_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_desktop_productivity_hard_055_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_desktop_productivity_hard_055_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_desktop_productivity_hard_055_integration_testing_hard_01.json",
+        "data/output/scenarios/python_desktop_productivity_hard_055_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": [
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_web_portfolio_medium_041",
+      "source_files": 18,
+      "context_tokens": 51308,
+      "syntax_errors": [],
+      "unwrapped_files": 17,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_web_portfolio_medium_041_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_web_portfolio_medium_041_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_web_portfolio_medium_041_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_web_portfolio_medium_041_integration_testing_hard_01.json",
+        "data/output/scenarios/python_web_portfolio_medium_041_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range"
+      ]
+    },
+    {
+      "project_id": "python_web_dashboard_expert_075",
+      "source_files": 90,
+      "context_tokens": 222188,
+      "syntax_errors": [
+        {
+          "path": "showpulse_dashboard/src/showpulse/application/repositories/__init__.py",
+          "line": 189,
+          "message": "named arguments must follow bare *"
+        }
+      ],
+      "unwrapped_files": 71,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_web_dashboard_expert_075_bug_investigation_easy_01.json",
+        "data/output/scenarios/python_web_dashboard_expert_075_cross_file_refactoring_easy_01.json",
+        "data/output/scenarios/python_web_dashboard_expert_075_feature_implementation_easy_01.json",
+        "data/output/scenarios/python_web_dashboard_expert_075_integration_testing_easy_01.json",
+        "data/output/scenarios/python_web_dashboard_expert_075_multi_session_development_easy_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_game_engine_easy_068",
+      "source_files": 13,
+      "context_tokens": 35899,
+      "syntax_errors": [
+        {
+          "path": "sprintforge_engine/example_app/main.py",
+          "line": 116,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 12,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_game_engine_easy_068_bug_investigation_medium_01.json",
+        "data/output/scenarios/python_game_engine_easy_068_cross_file_refactoring_medium_01.json",
+        "data/output/scenarios/python_game_engine_easy_068_feature_implementation_medium_01.json",
+        "data/output/scenarios/python_game_engine_easy_068_integration_testing_medium_01.json",
+        "data/output/scenarios/python_game_engine_easy_068_multi_session_development_medium_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_fintech_banking_easy_067",
+      "source_files": 10,
+      "context_tokens": 29930,
+      "syntax_errors": [
+        {
+          "path": "banking_beats_arcade/run.py",
+          "line": 236,
+          "message": "bytes can only contain ASCII literal characters"
+        }
+      ],
+      "unwrapped_files": 10,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_fintech_banking_easy_067_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_fintech_banking_easy_067_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_fintech_banking_easy_067_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_fintech_banking_easy_067_integration_testing_hard_01.json",
+        "data/output/scenarios/python_fintech_banking_easy_067_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_web_portfolio_expert_077",
+      "source_files": 82,
+      "context_tokens": 193806,
+      "syntax_errors": [
+        {
+          "path": "connectfolio_nexus/connectfolio_nexus/api/v1/endpoints/showcase_threads.py",
+          "line": 259,
+          "message": "non-default argument follows default argument"
+        }
+      ],
+      "unwrapped_files": 67,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_web_portfolio_expert_077_bug_investigation_medium_01.json",
+        "data/output/scenarios/python_web_portfolio_expert_077_cross_file_refactoring_medium_01.json",
+        "data/output/scenarios/python_web_portfolio_expert_077_feature_implementation_medium_01.json",
+        "data/output/scenarios/python_web_portfolio_expert_077_integration_testing_medium_01.json",
+        "data/output/scenarios/python_web_portfolio_expert_077_multi_session_development_medium_01.json"
+      ],
+      "rejection_reasons": [
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_api_gateway_expert_045",
+      "source_files": 88,
+      "context_tokens": 199755,
+      "syntax_errors": [
+        {
+          "path": "socialynx_gateway/core/use_cases/interfaces/user_repository.py",
+          "line": 57,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "socialynx_gateway/core/use_cases/commands/__init__.py",
+          "line": 1,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "socialynx_gateway/interfaces/api/main.py",
+          "line": 363,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "socialynx_gateway/interfaces/api/v1/graphql/types.py",
+          "line": 1,
+          "message": "invalid syntax"
+        },
+        {
+          "path": "tests/test_main.py",
+          "line": 150,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 71,
+      "duplicate_metadata_paths_removed": 1,
+      "scenario_paths": [
+        "data/output/scenarios/python_api_gateway_expert_045_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_api_gateway_expert_045_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_api_gateway_expert_045_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_api_gateway_expert_045_integration_testing_hard_01.json",
+        "data/output/scenarios/python_api_gateway_expert_045_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    },
+    {
+      "project_id": "python_ml_computer_vision_hard_090",
+      "source_files": 75,
+      "context_tokens": 235984,
+      "syntax_errors": [
+        {
+          "path": "retinaguard/data_ingestion/dicom_parser.py",
+          "line": 329,
+          "message": "invalid syntax"
+        }
+      ],
+      "unwrapped_files": 75,
+      "duplicate_metadata_paths_removed": 0,
+      "scenario_paths": [
+        "data/output/scenarios/python_ml_computer_vision_hard_090_bug_investigation_hard_01.json",
+        "data/output/scenarios/python_ml_computer_vision_hard_090_cross_file_refactoring_hard_01.json",
+        "data/output/scenarios/python_ml_computer_vision_hard_090_feature_implementation_hard_01.json",
+        "data/output/scenarios/python_ml_computer_vision_hard_090_integration_testing_hard_01.json",
+        "data/output/scenarios/python_ml_computer_vision_hard_090_multi_session_development_hard_01.json"
+      ],
+      "rejection_reasons": [
+        "outside_context_range",
+        "python_syntax_error"
+      ]
+    }
+  ],
+  "qualified_projects": 16,
+  "requested_workflows": 16,
+  "selected_projects": [
+    "python_api_gateway_hard_009",
+    "python_data_lake_medium_050",
+    "python_data_warehouse_hard_048",
+    "python_desktop_media_medium_020",
+    "python_game_simulation_medium_033",
+    "python_ml_inference_hard_088",
+    "python_mobile_game_hard_024",
+    "python_mobile_game_hard_060",
+    "python_mobile_game_medium_096",
+    "python_mobile_utility_medium_023",
+    "python_system_automation_hard_062",
+    "python_system_monitoring_medium_061",
+    "python_system_networking_hard_027",
+    "python_web_blog_hard_076",
+    "python_web_cms_hard_074",
+    "python_web_social_hard_001"
+  ],
+  "selected_scenarios": [
+    "data/output/scenarios/python_api_gateway_hard_009_bug_investigation_expert_01.json",
+    "data/output/scenarios/python_web_cms_hard_074_feature_implementation_expert_01.json",
+    "data/output/scenarios/python_mobile_game_medium_096_cross_file_refactoring_expert_01.json",
+    "data/output/scenarios/python_web_social_hard_001_integration_testing_medium_01.json",
+    "data/output/scenarios/python_game_simulation_medium_033_multi_session_development_expert_01.json",
+    "data/output/scenarios/python_data_lake_medium_050_bug_investigation_hard_01.json",
+    "data/output/scenarios/python_desktop_media_medium_020_feature_implementation_hard_01.json",
+    "data/output/scenarios/python_ml_inference_hard_088_cross_file_refactoring_hard_01.json",
+    "data/output/scenarios/python_system_networking_hard_027_integration_testing_medium_01.json",
+    "data/output/scenarios/python_system_automation_hard_062_multi_session_development_expert_01.json",
+    "data/output/scenarios/python_data_warehouse_hard_048_bug_investigation_hard_01.json",
+    "data/output/scenarios/python_mobile_utility_medium_023_feature_implementation_easy_01.json",
+    "data/output/scenarios/python_web_blog_hard_076_cross_file_refactoring_medium_01.json",
+    "data/output/scenarios/python_mobile_game_hard_060_integration_testing_expert_01.json",
+    "data/output/scenarios/python_mobile_game_hard_024_multi_session_development_easy_01.json",
+    "data/output/scenarios/python_system_monitoring_medium_061_bug_investigation_expert_01.json"
+  ],
+  "schema_version": 1,
+  "dataset_revision": "53299531d0e6fe51166b5d2e12d9d9aad462ce4eb46ae00a3808bfa0b95e63a1",
+  "workloads": [
+    {
+      "instance_id": "locobench__python_api_gateway_hard_009_bug_investigation_expert_01",
+      "repo": "locobench/python_api_gateway_hard_009",
+      "base_commit": "846a3ac2e58d58e8ab6adbf5d14a0695f47f7c67",
+      "task_kind": "locobench_agent",
+      "difficulty": "expert",
+      "problem_statement": "Intermittent Data Duplication in Paginated Course Endpoint Due to Flawed Cache Invalidation\n\nThe EduBridge Gateway is experiencing a subtle but critical data integrity bug. Support has received reports from school administrators that when they view the list of available courses, they sometimes see duplicate entries across pages. The issue is intermittent and hard to reproduce consistently. It seems to occur most often on the `/api/v1/courses` endpoint shortly after a new course has been created through an administrative backend process. The duplicate course is typically the last item of a previous page appearing as the first item on the current page. The problem resolves itself automatically after about 5 minutes, which strongly suggests a caching issue.\n\nYou are a senior software engineer tasked with investigating this data duplication bug. Your goal is to perform a root cause analysis and pinpoint the exact source of the problem.\n\nYour investigation must result in a report that includes:\n1.  The primary files and functions involved in the buggy interaction.\n2.  A step-by-step explanation of how the data duplication occurs, tracing the flow from the API request to the data retrieval and caching layers.\n3.  The specific line(s) of code that contain the logical flaw.\n4.  A clear explanation of why the current implementation is faulty.",
+      "source_repo": "/home/longhao/experiment/BeliefKV/workloads/sources/locobench_agent_long_16project_py310_20261023/python_api_gateway_hard_009",
+      "docker_image": "sha256:3c5ba4d6b17bb7c5eed115435d274c0aa30c7b03bbf544c2aa2a554270274395",
+      "preflight_command": "python -c 'import ast, json, pytest, hypothesis, yaml, numpy, pydantic, fastapi, sqlalchemy'",
+      "frozen_repository_context": {
+        "path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_api_gateway_hard_009.txt.gz",
+        "sha256": "2e11642529af0746885be73045c64583e9bd9892dbdd3752e8c9794799eb9110",
+        "tokens": 124247,
+        "source_file_count": 52
+      },
+      "dataset_provenance": {
+        "original_scenario": "data/output/scenarios/python_api_gateway_hard_009_bug_investigation_expert_01.json",
+        "scenario_sha256": "015adba16b63b308f8bbecb01a36d6609fd957243e85303229b4dbc3ad8c961e",
+        "reference_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_api_gateway_hard_009_bug_investigation_expert_01.reference.json",
+        "source_provenance_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_api_gateway_hard_009.source_provenance.json",
+        "source_provenance_sha256": "d6f556cd032a76a0c372e0261068b4fe436117785e901b8b4ec938d489a897e7",
+        "task_category": "bug_investigation",
+        "reference_fields_exposed": false
+      }
+    },
+    {
+      "instance_id": "locobench__python_web_cms_hard_074_feature_implementation_expert_01",
+      "repo": "locobench/python_web_cms_hard_074",
+      "base_commit": "2eef7cf6f918a5bcb3328e05eed85049041b182d",
+      "task_kind": "locobench_agent",
+      "difficulty": "expert",
+      "problem_statement": "Implement Content Approval Workflow for Medical Articles\n\nThe MediVerse CMS is a platform for managing and distributing sensitive medical content. A critical compliance and safety requirement is to ensure that all content is reviewed by a qualified editor before publication. Currently, any changes to an article are published instantly, which poses a significant risk. This task involves implementing a robust content versioning and approval workflow. The new system must ensure that new articles and any subsequent modifications are reviewed and explicitly approved by a user with an 'Editor' role before they become publicly visible.\n\nYou are tasked with implementing a multi-step content approval workflow. This involves database schema changes, new API endpoints for the workflow, role-based permissions, and integration with the notification service.\n\n### Detailed Requirements:\n\n1.  **Database Schema Modification (`mediverse_cms/apps/cms/models.py`):\n    *   Create a new model `ArticleVersion` to track the history of changes. It should contain a foreign key to the `Article` model, fields for `title`, `content`, `author`, `created_at`, and an integer `version_number`.\n    *   Modify the existing `Article` model:\n        *   Add a `status` field with the following choices: `Draft`, `Pending Review`, `Approved`, `Rejected`. The default status for a new article should be `Draft`.\n        *   Add a `latest_version` foreign key to the `ArticleVersion` model, which will point to the most recent version of the content, regardless of its status.\n        *   Add a `published_version` foreign key to the `ArticleVersion` model, which will point to the version that is currently live and 'Approved'. This can be nullable.\n\n2.  **API and Service Logic Updates:\n    *   **Creation (`cms/api.py`, `cms/services.py`):** When a new `Article` is created, it should have a `status` of `Draft`, and an initial `ArticleVersion` should be created and linked.\n    *   **Update (`cms/api.py`, `cms/services.py`):** Modifying an `Article` should no longer update the live record directly. Instead, if the article's status is `Approved` or `Rejected`, editing it should create a *new* `ArticleVersion` and set the parent `Article`'s status to `Draft`.\n    *   **New Workflow Endpoints (`cms/api.py`):** Create the following new API endpoints, likely as custom actions on the `ArticleViewSet`:\n        *   `POST /api/cms/articles/{id}/submit/`: Allows the author to change the article's status from `Draft` to `Pending Review`.\n        *   `POST /api/cms/articles/{id}/approve/`: Allows an Editor to approve the `latest_version`. This action should set the `Article` status to `Approved` and update the `published_version` to point to the `latest_version`.\n        *   `POST /api/cms/articles/{id}/reject/`: Allows an Editor to reject the `latest_version`. This should set the `Article` status to `Rejected`.\n\n3.  **Implement Role-Based Permissions (`core/permissions.py`):\n    *   Create a new permission class, `IsEditorUser`, that verifies if `request.user.role == 'Editor'` (you may need to inspect `users/models.py` to confirm the user role attribute).\n    *   Secure the `approve` and `reject` endpoints so they are only accessible to users with the 'Editor' role.\n\n4.  **Integrate Notifications (`cms/services.py`):\n    *   Use the existing `NotificationService` from `integrations/notification_service.py`.\n    *   When an article is submitted (`Pending Review`), send a notification to all users with the 'Editor' role.\n    *   When an article is approved or rejected, send a notification back to the article's original author.\n\n5.  **Update Public-Facing API (`portal/api.py`):\n    *   Locate the API endpoint in the patient portal that serves articles.\n    *   Modify its queryset to ensure that it **only** returns articles with a `status` of `Approved`. The content served should be from the `published_version` of the article.",
+      "source_repo": "/home/longhao/experiment/BeliefKV/workloads/sources/locobench_agent_long_16project_py310_20261023/python_web_cms_hard_074",
+      "docker_image": "sha256:3c5ba4d6b17bb7c5eed115435d274c0aa30c7b03bbf544c2aa2a554270274395",
+      "preflight_command": "python -c 'import ast, json, pytest, hypothesis, yaml, numpy, pydantic, fastapi, sqlalchemy'",
+      "frozen_repository_context": {
+        "path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_web_cms_hard_074.txt.gz",
+        "sha256": "8fe54d67f6787dd3c6acc8c26b53c5ee6986106f85601ed5be707617e15c700a",
+        "tokens": 122289,
+        "source_file_count": 43
+      },
+      "dataset_provenance": {
+        "original_scenario": "data/output/scenarios/python_web_cms_hard_074_feature_implementation_expert_01.json",
+        "scenario_sha256": "0e833193c186b3610ff840e08fa0f513cd73dfdbb735c7022ebf74a621b83a53",
+        "reference_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_web_cms_hard_074_feature_implementation_expert_01.reference.json",
+        "source_provenance_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_web_cms_hard_074.source_provenance.json",
+        "source_provenance_sha256": "c8def019e331cfd70802be80b3f7cbdda88f01f20eb31cda5ab53d907fe8d200",
+        "task_category": "feature_implementation",
+        "reference_fields_exposed": false
+      }
+    },
+    {
+      "instance_id": "locobench__python_mobile_game_medium_096_cross_file_refactoring_expert_01",
+      "repo": "locobench/python_mobile_game_medium_096",
+      "base_commit": "2d968643f9e991a7e759c31d792141e04b378f5e",
+      "task_kind": "locobench_agent",
+      "difficulty": "expert",
+      "problem_statement": "Refactor Franchise Model to Decouple KPI Calculations\n\nThe 'Tycoon Tactics' game has evolved, and the primary domain model, `Franchise` (defined in `tycoon_tactics/domain/franchise.py`), has become a 'God Object'. It currently manages core franchise state (e.g., name, locations, staff) as well as complex business logic for calculating Key Performance Indicators (KPIs) like customer satisfaction, profit margins, and market penetration. This tight coupling violates the Single Responsibility Principle (SRP), making the `Franchise` class difficult to understand, maintain, and test. The goal of this task is to improve the design by extracting the KPI calculation logic into a dedicated, separate component.\n\nRefactor the codebase to decouple Key Performance Indicator (KPI) calculation logic from the `Franchise` domain model.\n\n1.  **Identify and Isolate:** Locate all methods and attributes related to KPI calculations within the `tycoon_tactics/domain/franchise.py` file. Examples might include methods like `calculate_customer_satisfaction()`, `get_profitability_index()`, or properties that compute values on the fly.\n\n2.  **Create a Dedicated Calculator:** In `tycoon_tactics/domain/kpis.py`, create a new service class named `KPICalculator`. This class should be stateless and contain methods that perform the KPI calculations. These methods should accept a `Franchise` object as an argument (e.g., `def calculate_profitability_index(self, franchise: Franchise) -> float:`).\n\n3.  **Migrate Logic:** Move the KPI calculation logic from the `Franchise` class into the new `KPICalculator` class. After migration, remove the now-redundant methods and attributes from `franchise.py`.\n\n4.  **Update Consumers:** Modify all components that previously used the `Franchise` object to get KPIs. This will primarily affect:\n    *   **Application Layer:** Update use cases in `tycoon_tactics/application/use_cases.py`. Instead of calling `franchise.calculate_kpi()`, they should now use an instance of `KPICalculator`.\n    *   **Dependency Injection:** Register the `KPICalculator` in the project's dependency injection container located in `tycoon_tactics/config/containers.py` so it can be injected into the use cases.\n    *   **UI Layer:** Check UI files like `tycoon_tactics/adapters/ui/screens.py` and `widgets.py` to ensure they are updated to handle the new data flow for displaying KPIs.\n\n5.  **Update Tests:**\n    *   Create a new test file, `tests/unit/test_domain_kpis.py`, with comprehensive unit tests for the new `KPICalculator` class.\n    *   Update existing tests, especially `tests/unit/test_application_use_cases.py`, to mock the `KPICalculator` dependency and reflect the changes in the use cases' signatures and behavior.",
+      "source_repo": "/home/longhao/experiment/BeliefKV/workloads/sources/locobench_agent_long_16project_py310_20261023/python_mobile_game_medium_096",
+      "docker_image": "sha256:3c5ba4d6b17bb7c5eed115435d274c0aa30c7b03bbf544c2aa2a554270274395",
+      "preflight_command": "python -c 'import ast, json, pytest, hypothesis, yaml, numpy, pydantic, fastapi, sqlalchemy'",
+      "frozen_repository_context": {
+        "path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_mobile_game_medium_096.txt.gz",
+        "sha256": "e27966099bf150424cd5f3f653f87ac77ac4885e4a65c5ec2aac518286249e8d",
+        "tokens": 106283,
+        "source_file_count": 40
+      },
+      "dataset_provenance": {
+        "original_scenario": "data/output/scenarios/python_mobile_game_medium_096_cross_file_refactoring_expert_01.json",
+        "scenario_sha256": "211c588b1122148db0802f646de4d79bef651b7e74d5dce6703f67c4e4235b08",
+        "reference_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_mobile_game_medium_096_cross_file_refactoring_expert_01.reference.json",
+        "source_provenance_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_mobile_game_medium_096.source_provenance.json",
+        "source_provenance_sha256": "402caf4c5a2fb5175d019293ccc6018af210a2cfe2ab1bb38fc7fc2c4d98ef4c",
+        "task_category": "cross_file_refactoring",
+        "reference_fields_exposed": false
+      }
+    },
+    {
+      "instance_id": "locobench__python_web_social_hard_001_integration_testing_medium_01",
+      "repo": "locobench/python_web_social_hard_001",
+      "base_commit": "c5bcc272c94a6ee4288afae7f4a246a3f3eaabc4",
+      "task_kind": "locobench_agent",
+      "difficulty": "medium",
+      "problem_statement": "Integration Test for Course Bundle Enrollment and Notification Flow\n\nThe CampusConnect 360 platform has introduced a new 'Course Bundle' feature in the Payment Service. This allows a student to purchase multiple courses in a single transaction. However, this feature was developed in isolation, and the downstream services are not yet compatible. When a bundle is purchased, the Course Service only enrolls the student in the first course from the bundle, and the Notification Service sends a confirmation email for only that single course. The task is to fix this broken integration and create a new integration test to validate the end-to-end flow.\n\nYour task is to ensure that when a user purchases a course bundle, they are correctly enrolled in ALL courses in that bundle and receive a SINGLE, consolidated email notification listing all purchased courses.\n\n**1. Identify and Fix the Bugs:**\n   - Modify the `Course Service` to correctly process the incoming message from the payment system, which now may contain a list of `course_ids` instead of a single `id`.\n   - Modify the `Notification Service` to generate a single email that lists all courses from the purchased bundle.\n\n**2. Create a New Integration Test:**\n   - Create a new test file at `CampusConnect360/services/course_service/tests/test_enrollment_integration.py`.\n   - The test must simulate the entire flow, starting from a successful payment message for a course bundle.\n   - **Do not test the Payment Service itself.** Assume it correctly publishes a message to a queue upon successful payment. Your test should focus on the integration from the `Course Service` onwards.\n\n**3. Verification Requirements for the Test:**\n   - **Database State:** Assert that the user is enrolled in every course specified in the bundle by checking the state of the database (you may need to mock the repository layer of the `Course Service`).\n   - **Notification Content:** Assert that the `Notification Service`'s email-sending function is called exactly once with the correct parameters, including a message body that lists all courses in the bundle.\n   - **Asynchronous Handling:** Your test must correctly handle the asynchronous nature of the communication between services (e.g., by directly invoking the message consumer function or mocking the message queue client).",
+      "source_repo": "/home/longhao/experiment/BeliefKV/workloads/sources/locobench_agent_long_16project_py310_20261023/python_web_social_hard_001",
+      "docker_image": "sha256:3c5ba4d6b17bb7c5eed115435d274c0aa30c7b03bbf544c2aa2a554270274395",
+      "preflight_command": "python -c 'import ast, json, pytest, hypothesis, yaml, numpy, pydantic, fastapi, sqlalchemy'",
+      "frozen_repository_context": {
+        "path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_web_social_hard_001.txt.gz",
+        "sha256": "00a9c8ed2bf4e553431ad5363c3906398123315fcf70ea637180c7083edf629d",
+        "tokens": 128707,
+        "source_file_count": 56
+      },
+      "dataset_provenance": {
+        "original_scenario": "data/output/scenarios/python_web_social_hard_001_integration_testing_medium_01.json",
+        "scenario_sha256": "afe2a54df050dea3a89919b737eee966aae29dc9738f3091895fd12cbb2c5e97",
+        "reference_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_web_social_hard_001_integration_testing_medium_01.reference.json",
+        "source_provenance_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_web_social_hard_001.source_provenance.json",
+        "source_provenance_sha256": "b4852f675e5ea2405e8c8ae9379cb18971e426289c6db600db8a9700a2d1eb17",
+        "task_category": "integration_testing",
+        "reference_fields_exposed": false
+      }
+    },
+    {
+      "instance_id": "locobench__python_game_simulation_medium_033_multi_session_development_expert_01",
+      "repo": "locobench/python_game_simulation_medium_033",
+      "base_commit": "a0ebf5a456b5af94adce827ff2abf03788fcf3c9",
+      "task_kind": "locobench_agent",
+      "difficulty": "expert",
+      "problem_statement": "Implement Collaborative Experiment Replay System with AI Tutor Annotations\n\nPhySage Academy is a networked physics sandbox designed for STEM education. A key requested feature is the ability for users to record their experiments, share them with others in a collaborative session, and have an AI Tutor provide contextual feedback during playback. This multi-session task requires building this feature incrementally, starting with a local replay system, extending it for network sharing, and finally integrating AI-driven annotations.\n\nYou will implement a full-featured experiment replay system over three development sessions. Each session builds upon the work of the previous one.\n\n**Session 1: Local Replay Functionality**\n\nYour first task is to implement a local replay system. The system must be able to record the state of all dynamic objects in a scene and save the recording to a file. You must also implement the functionality to load this file and play it back, accurately recreating the simulation.\n\n*   **Recording:** Capture the position, rotation, and velocity of all physics objects every frame.\n*   **Control:** Add new editor commands to `start_record`, `stop_record`, and `play_replay <filename>`.\n*   **Playback:** During playback, the physics engine should be in a passive state, with object transforms being driven by the replay data, not by active simulation.\n\n**Session 2: Networked Replay Sharing**\n\nWith the local system in place, you will now enable sharing replays over the network. A user should be able to send a recorded replay to other users in the same session.\n\n*   **Serialization & Transmission:** Extend the system to serialize the replay data into a network-friendly format. Integrate with `physage_academy/networking/manager.py` to transmit the data to connected clients.\n*   **Receiving & Loading:** Clients receiving the replay data must be able to reconstruct the replay file and load it into their own replay system for playback.\n*   **Protocol:** Define new message types in `physage_academy/networking/protocol.py` for replay data transfer.\n\n**Session 3: AI Tutor Annotation Integration**\n\nTo enhance the educational value, the AI Tutor must provide insights during playback. You will integrate the `ai/tutor.py` module with the replay system.\n\n*   **Annotation during Recording:** The `AI Tutor` should monitor physics events (e.g., collisions) during the recording process. When it detects a significant event (e.g., a perfect elastic collision demonstrating conservation of momentum), it should generate an explanatory text and associate it with the current timestamp in the replay data.\n*   **Annotation during Playback:** During playback, when the timeline reaches an annotated timestamp, the replay should pause, and an event should be fired to display the tutor's message. The user should then be able to resume playback.",
+      "source_repo": "/home/longhao/experiment/BeliefKV/workloads/sources/locobench_agent_long_16project_py310_20261023/python_game_simulation_medium_033",
+      "docker_image": "sha256:3c5ba4d6b17bb7c5eed115435d274c0aa30c7b03bbf544c2aa2a554270274395",
+      "preflight_command": "python -c 'import ast, json, pytest, hypothesis, yaml, numpy, pydantic, fastapi, sqlalchemy'",
+      "frozen_repository_context": {
+        "path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_game_simulation_medium_033.txt.gz",
+        "sha256": "d69a3fc5073ff64e51a1ee296395855d494427e18b543676a7d5a8ce3677d042",
+        "tokens": 110395,
+        "source_file_count": 39
+      },
+      "dataset_provenance": {
+        "original_scenario": "data/output/scenarios/python_game_simulation_medium_033_multi_session_development_expert_01.json",
+        "scenario_sha256": "7ee86cc604ebc2e90d4dc46493c7b4e71a1a0e9814880de8ba2b6ca808bec1ce",
+        "reference_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_game_simulation_medium_033_multi_session_development_expert_01.reference.json",
+        "source_provenance_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_game_simulation_medium_033.source_provenance.json",
+        "source_provenance_sha256": "bc034ce57cbb72cff78a5cf293c8733c98c39fc3ea85900b899c2b4a3c499348",
+        "task_category": "multi_session_development",
+        "reference_fields_exposed": false
+      }
+    },
+    {
+      "instance_id": "locobench__python_data_lake_medium_050_bug_investigation_hard_01",
+      "repo": "locobench/python_data_lake_medium_050",
+      "base_commit": "01a0cd985e28353d1efb994bf832265a45bee22a",
+      "task_kind": "locobench_agent",
+      "difficulty": "hard",
+      "problem_statement": "Silent Data Loss in PulseLake Nexus Error Recovery\n\nThe PulseLake Nexus platform has been operating in a production environment. Recently, a downstream analytics team reported a data integrity issue. On days where known upstream data source outages occurred, the total record count in the data lake is slightly lower than expected. The system logs show that the automatic error recovery jobs for the failed ingestion pipelines completed successfully, with no errors reported. For example, during a recent incident, an ingestion job processing 100,000 telemetry records failed midway. The recovery service kicked in and reported success, but a detailed audit by the analytics team revealed that approximately 5-10 records are missing from the final dataset for every recovery event. The issue appears to be related to how the system manages state between the initial failed attempt and the subsequent recovery process.\n\nYour task is to investigate the root cause of the silent data loss occurring during the error recovery process in PulseLake Nexus.\n\n1.  **Identify the Root Cause:** Pinpoint the specific module(s) and line(s) of code responsible for the data loss. You must analyze the interaction between the ingestion pipeline, the processing engine, and the recovery service.\n2.  **Explain the Bug Mechanism:** Provide a clear, step-by-step explanation of how the faulty logic leads to records being skipped during the recovery workflow. Describe the state management flaw that causes this behavior.\n3.  **Propose a Solution:** Recommend specific code changes to fix the bug. You do not need to write the full implementation, but your proposed change must be precise.\n4.  **Suggest a Verification Strategy:** Describe how you would create a test case to reproduce the bug and verify that your proposed solution resolves it.",
+      "source_repo": "/home/longhao/experiment/BeliefKV/workloads/sources/locobench_agent_long_16project_py310_20261023/python_data_lake_medium_050",
+      "docker_image": "sha256:3c5ba4d6b17bb7c5eed115435d274c0aa30c7b03bbf544c2aa2a554270274395",
+      "preflight_command": "python -c 'import ast, json, pytest, hypothesis, yaml, numpy, pydantic, fastapi, sqlalchemy'",
+      "frozen_repository_context": {
+        "path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_data_lake_medium_050.txt.gz",
+        "sha256": "3bde4dd43348d6b28aed2867e5d59b8b19f871a7d055b9dcb8bdc3d049d5a716",
+        "tokens": 98801,
+        "source_file_count": 35
+      },
+      "dataset_provenance": {
+        "original_scenario": "data/output/scenarios/python_data_lake_medium_050_bug_investigation_hard_01.json",
+        "scenario_sha256": "a1f29948fdab514b2bd8da0f922704254d9b8cb34444acce816a7a355a225590",
+        "reference_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_data_lake_medium_050_bug_investigation_hard_01.reference.json",
+        "source_provenance_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_data_lake_medium_050.source_provenance.json",
+        "source_provenance_sha256": "b1d628a815592ce0d39512a60449c250e3be9ba8b393e19b088aa8b17246b79e",
+        "task_category": "bug_investigation",
+        "reference_fields_exposed": false
+      }
+    },
+    {
+      "instance_id": "locobench__python_desktop_media_medium_020_feature_implementation_hard_01",
+      "repo": "locobench/python_desktop_media_medium_020",
+      "base_commit": "83cd4e84cbdb56048c0060c9049dc9cb10abb9ab",
+      "task_kind": "locobench_agent",
+      "difficulty": "hard",
+      "problem_statement": "Implement Plugin-Contributed Global Keyboard Shortcuts\n\nThe TimeClip Desk application currently features a robust plugin system and a separate global keyboard shortcut manager. This task aims to bridge these two systems, empowering plugins to contribute their own actions to the global shortcut registry. This will significantly enhance the application's extensibility and user productivity, allowing users to trigger plugin-specific functionality from anywhere within the application using a configurable hotkey.\n\nYour task is to modify the TimeClip Desk application to allow plugins to define and register their own global keyboard shortcuts.\n\n### Requirements:\n\n1.  **Plugin API Extension:**\n    -   Plugins must be able to declare shortcuts in their manifest. You will need to define a standard for this. A good approach would be to update the `plugin_api.md` to specify a new section in the plugin's metadata (e.g., a `shortcuts` list). \n    -   Each shortcut definition must include:\n        -   `id`: A unique identifier for the shortcut within the plugin's scope.\n        -   `name`: A human-readable name for display in the UI (e.g., \"Export as GIF\").\n        -   `default`: The default key combination (e.g., \"Ctrl+Alt+E\").\n        -   `action`: The name of the function within the plugin's entry point to execute.\n\n2.  **Core Logic Implementation:**\n    -   Modify the `PluginManager` (`timeclip_desk/core/plugin_manager.py`) to parse these shortcut definitions when a plugin is loaded.\n    -   The `PluginManager` must then register these discovered shortcuts with the `ShortcutManager` (`timeclip_desk/core/shortcut_manager.py`).\n    -   Update the `ShortcutManager` to handle these dynamically registered, plugin-sourced shortcuts. It must be able to store them, resolve their actions (callbacks), and trigger them.\n\n3.  **UI Integration:**\n    -   Update the settings dialog (`timeclip_desk/views/settings_dialog.py`) to display these new plugin-provided shortcuts.\n    -   The shortcuts list in the settings should be organized to distinguish between built-in shortcuts and those from each plugin (e.g., grouped under a \"Plugin: My Awesome Plugin\" header).\n    -   Users must be able to re-bind the default key combination for any plugin-provided shortcut.\n\n4.  **Persistence and Overrides:**\n    -   User-defined overrides for plugin shortcuts must be saved to the user's preferences (`timeclip_desk/models/preferences.py`) and loaded correctly on application startup.\n    -   The system should be robust. If a plugin is uninstalled, its shortcut overrides should not cause errors.\n\n5.  **Conflict Resolution:**\n    -   Implement a basic conflict resolution strategy. If two plugins attempt to register the same default shortcut, the application should not crash. The last-loaded plugin's shortcut should take precedence, and a warning should be logged to the console.",
+      "source_repo": "/home/longhao/experiment/BeliefKV/workloads/sources/locobench_agent_long_16project_py310_20261023/python_desktop_media_medium_020",
+      "docker_image": "sha256:3c5ba4d6b17bb7c5eed115435d274c0aa30c7b03bbf544c2aa2a554270274395",
+      "preflight_command": "python -c 'import ast, json, pytest, hypothesis, yaml, numpy, pydantic, fastapi, sqlalchemy'",
+      "frozen_repository_context": {
+        "path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_desktop_media_medium_020.txt.gz",
+        "sha256": "390d94aa5320a2300baba390bfb7f3e801c39a8f205a70b4df5831f17c7ae40a",
+        "tokens": 105950,
+        "source_file_count": 38
+      },
+      "dataset_provenance": {
+        "original_scenario": "data/output/scenarios/python_desktop_media_medium_020_feature_implementation_hard_01.json",
+        "scenario_sha256": "5374f3be480f1402730b9aaa1988f7f21ff7a89d64a70442e92b822fff045e00",
+        "reference_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_desktop_media_medium_020_feature_implementation_hard_01.reference.json",
+        "source_provenance_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_desktop_media_medium_020.source_provenance.json",
+        "source_provenance_sha256": "5194c173dedb799b1debe5ceeeb20afffe7cc81f29cb0de5e231604a6aaa3fcb",
+        "task_category": "feature_implementation",
+        "reference_fields_exposed": false
+      }
+    },
+    {
+      "instance_id": "locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01",
+      "repo": "locobench/python_ml_inference_hard_088",
+      "base_commit": "d63bcb0b2033cd06d2861aed09a110c090e9438b",
+      "task_kind": "locobench_agent",
+      "difficulty": "hard",
+      "problem_statement": "Refactor Model Loading into a Centralized, Cached Service\n\nThe InsightLedger AI suite's real-time forecasting API is experiencing performance degradation under load. Analysis reveals that the current architecture loads machine learning models from the model registry on-demand for each inference request, causing significant I/O and deserialization overhead. This logic is scattered within the API's inference runners. The goal is to refactor this mechanism by introducing a centralized, in-memory caching service for loaded models. This will improve API latency, reduce redundant operations, and create a more maintainable, decoupled architecture.\n\nYour task is to refactor the model loading mechanism within the InsightLedger AI application. You will create a new, centralized `ModelLoader` service that caches frequently used models in memory and then integrate this service into the API server.\n\n**Detailed Steps:**\n\n1.  **Create a new Service:** In a new file, `insightledger_ai/insight_ledger/model/loader.py`, create a class named `ModelLoader`.\n2.  **Implement Caching Logic:**\n    *   The `ModelLoader` class should be initialized with an instance of `ModelRegistryClient` (`insight_ledger.model.registry.client.ModelRegistryClient`).\n    *   It must contain a public method, `get_model(model_name: str, version: str) -> Any`, which returns a loaded model object.\n    *   This method should use an in-memory, size-limited LRU (Least Recently Used) cache to store loaded model objects. When `get_model` is called, it should first check the cache. On a cache miss, it should use the `ModelRegistryClient` to fetch the model's metadata, download its artifacts, deserialize it, place it in the cache, and then return it.\n    *   You can use Python's built-in `functools.lru_cache` for this purpose. The cache size should be configurable, but you can use a default of 32.\n3.  **Refactor the API Server:**\n    *   Modify the API server's inference runners in `insightledger_ai/services/api_server/inference/runners.py`. These runners currently contain logic to directly interact with the `ModelRegistryClient` and load models. Replace this logic with calls to the new `ModelLoader` service.\n    *   You will need to use dependency injection. Modify the constructors of the relevant runner classes (e.g., `LiveInferenceRunner`) to accept an instance of `ModelLoader`.\n4.  **Integrate via Dependency Injection:**\n    *   In the main application entry point, `insightledger_ai/services/api_server/main.py`, create a single, shared instance of your new `ModelLoader` service when the FastAPI application starts up.\n    *   Inject this shared instance into the components that need it (like the inference strategies or runners) to ensure a single, unified cache is used across the entire API server.\n5.  **Update Unit Tests:**\n    *   The existing unit tests, particularly `insightledger_ai/tests/unit/test_inference_strategy.py`, will fail after this refactoring. You must update them.\n    *   Instead of mocking the `ModelRegistryClient` within the tests for the runners/strategies, you should now mock the newly created `ModelLoader` service. This simplifies the tests by abstracting away the details of model fetching and caching.",
+      "source_repo": "/home/longhao/experiment/BeliefKV/workloads/sources/locobench_agent_long_16project_py310_20261023/python_ml_inference_hard_088",
+      "docker_image": "sha256:3c5ba4d6b17bb7c5eed115435d274c0aa30c7b03bbf544c2aa2a554270274395",
+      "preflight_command": "python -c 'import ast, json, pytest, hypothesis, yaml, numpy, pydantic, fastapi, sqlalchemy'",
+      "frozen_repository_context": {
+        "path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_ml_inference_hard_088.txt.gz",
+        "sha256": "5ced4b7afa068dec725c84b98de751e372eb595b6ec7fae33eb217b698bd42db",
+        "tokens": 105597,
+        "source_file_count": 40
+      },
+      "dataset_provenance": {
+        "original_scenario": "data/output/scenarios/python_ml_inference_hard_088_cross_file_refactoring_hard_01.json",
+        "scenario_sha256": "9bf4d72b7f383340733574f09dbd692b3a73d8e5d9adcd873bef2d062c62c9c2",
+        "reference_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_ml_inference_hard_088_cross_file_refactoring_hard_01.reference.json",
+        "source_provenance_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_ml_inference_hard_088.source_provenance.json",
+        "source_provenance_sha256": "eb30abbdf1ea5b560d5a3887f371695ff88ec434c789cb87dd7158db9d8f9615",
+        "task_category": "cross_file_refactoring",
+        "reference_fields_exposed": false
+      }
+    },
+    {
+      "instance_id": "locobench__python_system_networking_hard_027_integration_testing_medium_01",
+      "repo": "locobench/python_system_networking_hard_027",
+      "base_commit": "f371160f7d706e7740c9de831141f4eda93b118f",
+      "task_kind": "locobench_agent",
+      "difficulty": "medium",
+      "problem_statement": "Integration Test for Graceful gRPC Error Handling in API Gateway\n\nThe StreamCarnival platform consists of multiple microservices that communicate over gRPC. The `api-gateway` service acts as the public-facing entry point, translating incoming HTTP/WebSocket requests into gRPC calls to backend services like the `orchestrator-service`. A recent, uncoordinated change in the `orchestrator-service` introduced stricter input validation, causing it to return a `grpc.StatusCode.INVALID_ARGUMENT` error for certain requests. The `api-gateway` currently lacks specific error handling for this gRPC status code. When it receives this error from the orchestrator, it fails to translate it into a corresponding HTTP `400 Bad Request`. Instead, an unhandled `grpc.RpcError` exception is raised, which results in a generic and unhelpful HTTP `500 Internal Server Error` being returned to the end-user.\n\nYour task is to write a new integration test that demonstrates this faulty error handling. You must add a test to `stream_carnival/services/api-gateway/app/tests/test_routing.py`.\n\nThe test must:\n1.  Simulate an HTTP client making a request to an endpoint handled by the API Gateway that calls the orchestrator service (e.g., a POST to a route that creates a new 'carnival').\n2.  Use mocking to simulate the `orchestrator-service`'s gRPC client within the `api-gateway`.\n3.  Configure the mock to raise a `grpc.RpcError` with the status code `grpc.StatusCode.INVALID_ARGUMENT` and a descriptive error message when its method is called.\n4.  Assert that the API Gateway's HTTP response to the client has a status code of 400 (`Bad Request`).\n5.  Assert that the JSON response body contains a structured error message, such as `{\"detail\": \"Invalid argument provided to orchestrator\"}`.",
+      "source_repo": "/home/longhao/experiment/BeliefKV/workloads/sources/locobench_agent_long_16project_py310_20261023/python_system_networking_hard_027",
+      "docker_image": "sha256:3c5ba4d6b17bb7c5eed115435d274c0aa30c7b03bbf544c2aa2a554270274395",
+      "preflight_command": "python -c 'import ast, json, pytest, hypothesis, yaml, numpy, pydantic, fastapi, sqlalchemy'",
+      "frozen_repository_context": {
+        "path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_system_networking_hard_027.txt.gz",
+        "sha256": "dd82355905380192d0291eed61343df7de96b7d09f002681eb44f52022722b7b",
+        "tokens": 149832,
+        "source_file_count": 66
+      },
+      "dataset_provenance": {
+        "original_scenario": "data/output/scenarios/python_system_networking_hard_027_integration_testing_medium_01.json",
+        "scenario_sha256": "4da6240a45e9c658a7976041fed005b3456ab3e4b4fca40308a6537dd011d11c",
+        "reference_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_system_networking_hard_027_integration_testing_medium_01.reference.json",
+        "source_provenance_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_system_networking_hard_027.source_provenance.json",
+        "source_provenance_sha256": "adff10613474ec86fbbe92efef9361a59b411bb1529d55c08cbe0c81e724d0f0",
+        "task_category": "integration_testing",
+        "reference_fields_exposed": false
+      }
+    },
+    {
+      "instance_id": "locobench__python_system_automation_hard_062_multi_session_development_expert_01",
+      "repo": "locobench/python_system_automation_hard_062",
+      "base_commit": "e2803a00d513802b2362b3c5846af9443ea111e8",
+      "task_kind": "locobench_agent",
+      "difficulty": "expert",
+      "problem_statement": "Implement a Dynamic Correlation Engine for Intelligent Alerting\n\nNimbusCustodian currently generates alerts from its various subsystems (performance, security, etc.) independently. This leads to alert fatigue, as operators receive multiple, disconnected notifications for what might be a single underlying issue. This task involves creating a new 'Correlation Engine' to intelligently link events from different modules. Specifically, the engine will correlate performance metric anomalies with security scan findings to produce a single, high-priority 'meta-alert'. This task is divided into multiple sessions to simulate a realistic development workflow, including a mid-project change in requirements.\n\nYou are tasked with enhancing the alerting capabilities of the NimbusCustodian. This will be done over multiple development sessions.\n\n**SESSION 1: Investigation and Planning**\n\nYour first task is to investigate the codebase. Identify the modules responsible for (1) collecting performance metrics (e.g., CPU, memory), (2) processing security scan results (e.g., new open ports), and (3) dispatching alerts. \n\nBased on your findings, produce a detailed implementation plan. Your plan should:\n- Propose a new file, `src/correlation_engine.py`.\n- Outline the main class and method signatures for this new module.\n- List the existing files that will need to be modified to integrate this engine and describe the necessary changes.\n\n**SESSION 2: Initial Implementation**\n\nBased on your approved plan, begin the implementation. \n- Create the new file `src/correlation_engine.py`.\n- Implement the basic data structures to hold events from different sources.\n- Implement a core correlation function. For now, use a hard-coded rule: if a 'high_cpu_usage' event and a 'new_unauthorized_port' event are detected for the same host within a 5-minute window, it constitutes a 'CRITICAL' correlated incident.\n- You do not need to integrate the engine with the rest of the application yet. Your session ends here.\n\n**SESSION 3: Refactoring for Dynamic Configuration**\n\nWelcome back. A new requirement has been added: correlation rules must be configurable by the user, not hard-coded. \n- The system's configuration is managed in `src/config.py`, which parses a settings file. You must add logic to read a new `[CorrelationRules]` section from the configuration.\n- An example rule might look like: `RULE_1 = high_cpu_usage, new_unauthorized_port, 300, CRITICAL` (event1, event2, time_window_seconds, severity).\n- Refactor the `CorrelationEngine` you built in Session 2 to parse and apply these dynamic rules.\n- Crucially, your engine must be resilient. If the `[CorrelationRules]` section is missing from the configuration, it must gracefully fall back to the default hard-coded rule you implemented in the previous session.\n\n**SESSION 4: Integration and Testing**\n\nThe core logic is complete. Your final task is to integrate the `CorrelationEngine` and validate it.\n- Modify the application's main control flow to route performance and security events to your new engine.\n- Modify the existing alerting module. It should now query the `CorrelationEngine` for correlated incidents before processing individual alerts. If a correlated incident is found, it should dispatch a single, high-priority meta-alert. If not, it should proceed with its original behavior.\n- Create a new test file, `tests/test_correlation_engine.py`. Add unit tests that verify:\n    1. Correct parsing of configuration rules.\n    2. The fallback mechanism to default rules.\n    3. Successful correlation of events based on a rule.\n    4. Events that do not meet any rule criteria.\n- Review and update `tests/test_main.py` to ensure your integration has not introduced any regressions.",
+      "source_repo": "/home/longhao/experiment/BeliefKV/workloads/sources/locobench_agent_long_16project_py310_20261023/python_system_automation_hard_062",
+      "docker_image": "sha256:3c5ba4d6b17bb7c5eed115435d274c0aa30c7b03bbf544c2aa2a554270274395",
+      "preflight_command": "python -c 'import ast, json, pytest, hypothesis, yaml, numpy, pydantic, fastapi, sqlalchemy'",
+      "frozen_repository_context": {
+        "path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_system_automation_hard_062.txt.gz",
+        "sha256": "8341f2f07d8a8a89f0341ee28e8d206cc482548363101f44f7e2efa693a8f8d0",
+        "tokens": 128680,
+        "source_file_count": 43
+      },
+      "dataset_provenance": {
+        "original_scenario": "data/output/scenarios/python_system_automation_hard_062_multi_session_development_expert_01.json",
+        "scenario_sha256": "8c67365c807f5588ec85f7ee7358bc89dbbb03f2526ff5b4df505a6d55cb4d34",
+        "reference_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_system_automation_hard_062_multi_session_development_expert_01.reference.json",
+        "source_provenance_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_system_automation_hard_062.source_provenance.json",
+        "source_provenance_sha256": "d438fdf24fab964ca1944fb79646c0bb726a359f512902b7178668de8af8d435",
+        "task_category": "multi_session_development",
+        "reference_fields_exposed": false
+      }
+    },
+    {
+      "instance_id": "locobench__python_data_warehouse_hard_048_bug_investigation_hard_01",
+      "repo": "locobench/python_data_warehouse_hard_048",
+      "base_commit": "96b786ac0178a2f4c6f7b6f20d5a658a540c060f",
+      "task_kind": "locobench_agent",
+      "difficulty": "hard",
+      "problem_statement": "Intermittent Data Loss in SAP-HANA Transactions Due to Race Condition in Data Quality Rule\n\nThe TradeLedger Nexus DW platform ingests, processes, and visualizes financial data from various sources. A financial analyst has reported a critical data integrity issue. The 'Total Transaction Value' metric on the main finance dashboard is intermittently lower than expected, but only for transactions originating from the 'SAP-HANA' ERP system. Manual checks against the source system confirm that some valid, high-value transactions are periodically missing from the final aggregated data in the warehouse. The issue is sporadic and does not generate any system crashes or overt error logs, suggesting a silent failure within the data processing pipeline.\n\nA critical data integrity issue has been reported. The total value of transactions from the 'SAP-HANA' data source, as displayed on the main finance dashboard, is intermittently incorrect and lower than the source system. Other data sources are unaffected. Your task is to perform a root cause analysis of this silent data loss. \n\n1.  Investigate the codebase to trace the data flow from ingestion to visualization.\n2.  Identify the exact module(s) and line(s) of code responsible for incorrectly dropping or quarantining the SAP-HANA transaction data.\n3.  Provide a detailed explanation of the failure mechanism, clarifying why the issue is intermittent and specific to one data source.\n4.  Propose a concrete code modification to fix the bug.",
+      "source_repo": "/home/longhao/experiment/BeliefKV/workloads/sources/locobench_agent_long_16project_py310_20261023/python_data_warehouse_hard_048",
+      "docker_image": "sha256:3c5ba4d6b17bb7c5eed115435d274c0aa30c7b03bbf544c2aa2a554270274395",
+      "preflight_command": "python -c 'import ast, json, pytest, hypothesis, yaml, numpy, pydantic, fastapi, sqlalchemy'",
+      "frozen_repository_context": {
+        "path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_data_warehouse_hard_048.txt.gz",
+        "sha256": "3be699fde7361bea4a949ec4dc4e63a96020b41ea56312998270d11d63a01dd7",
+        "tokens": 174998,
+        "source_file_count": 73
+      },
+      "dataset_provenance": {
+        "original_scenario": "data/output/scenarios/python_data_warehouse_hard_048_bug_investigation_hard_01.json",
+        "scenario_sha256": "1332af75b747ef3004cca03bd7fc09ca3f50d3246c758f4c0b3b0c672debb6fb",
+        "reference_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_data_warehouse_hard_048_bug_investigation_hard_01.reference.json",
+        "source_provenance_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_data_warehouse_hard_048.source_provenance.json",
+        "source_provenance_sha256": "358a6726b35bb2a8c9cc608a2d50e66c02ed0e8796ef0aa27be6d94d02005069",
+        "task_category": "bug_investigation",
+        "reference_fields_exposed": false
+      }
+    },
+    {
+      "instance_id": "locobench__python_mobile_utility_medium_023_feature_implementation_easy_01",
+      "repo": "locobench/python_mobile_utility_medium_023",
+      "base_commit": "bc1f45d3f384d0e60a1bdeefcd39f313adfa4ae9",
+      "task_kind": "locobench_agent",
+      "difficulty": "easy",
+      "problem_statement": "Implement 'Favorite Palettes' Functionality\n\nPalettePulse allows users to create and save color palettes in a local gallery. To improve user experience and organization, this task requires implementing a 'favorite' feature. Users should be able to mark any palette in their gallery as a favorite. This status must be visually indicated in the UI and persist between application sessions. This task will require modifying the data model, the data persistence layer, and the user interface.\n\nYou are tasked with adding a 'favorite' feature to the PalettePulse application.\n\n1.  **Update the Data Model:** Modify the `Palette` model in `palettepulse/src/app/models/palette.py`. Add a new boolean attribute named `is_favorite`. This attribute should default to `False` for all new palettes.\n\n2.  **Update the Data Repository:** In `palettepulse/src/data/repositories/palette_repository.py`, ensure the new `is_favorite` flag is correctly saved and loaded with each palette. Implement a new public method `toggle_favorite_status(self, palette_id: str) -> bool:` that finds a palette by its ID, inverts its `is_favorite` status, saves the change to local storage, and returns the new favorite status.\n\n3.  **Update the Gallery UI:** In `palettepulse/src/app/views/gallery_screen.kv`, add an icon button (e.g., a star) to the template for each palette item. \n    - The icon's appearance must reflect the `is_favorite` status (e.g., 'star' for favorite, 'star-outline' for not).\n    - Tapping this icon should trigger the logic to toggle the palette's favorite status.\n\n4.  **Connect UI to Logic:** Ensure that the `on_release` event of the new icon button in the gallery calls the `toggle_favorite_status` method in the `PaletteRepository`. The UI must update immediately to reflect the change without requiring a full screen reload.",
+      "source_repo": "/home/longhao/experiment/BeliefKV/workloads/sources/locobench_agent_long_16project_py310_20261023/python_mobile_utility_medium_023",
+      "docker_image": "sha256:3c5ba4d6b17bb7c5eed115435d274c0aa30c7b03bbf544c2aa2a554270274395",
+      "preflight_command": "python -c 'import ast, json, pytest, hypothesis, yaml, numpy, pydantic, fastapi, sqlalchemy'",
+      "frozen_repository_context": {
+        "path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_mobile_utility_medium_023.txt.gz",
+        "sha256": "2d0f28ce4bd294993bd769b583514c4ef4bea33e6f7a1f7f41f3d4f57365a526",
+        "tokens": 99255,
+        "source_file_count": 38
+      },
+      "dataset_provenance": {
+        "original_scenario": "data/output/scenarios/python_mobile_utility_medium_023_feature_implementation_easy_01.json",
+        "scenario_sha256": "3d960beb1f7dcf0ce142dbed13ba3d3a4630e1a98f021dd248790722b7f91f95",
+        "reference_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_mobile_utility_medium_023_feature_implementation_easy_01.reference.json",
+        "source_provenance_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_mobile_utility_medium_023.source_provenance.json",
+        "source_provenance_sha256": "1a513f2ae488077480c7e49f2bf8e0ca8b9b16a7e0030bfe181396196d6cf421",
+        "task_category": "feature_implementation",
+        "reference_fields_exposed": false
+      }
+    },
+    {
+      "instance_id": "locobench__python_web_blog_hard_076_cross_file_refactoring_medium_01",
+      "repo": "locobench/python_web_blog_hard_076",
+      "base_commit": "4e2d78da869435b18056985a59166227aaa14487",
+      "task_kind": "locobench_agent",
+      "difficulty": "medium",
+      "problem_statement": "Refactor Post Status Management from Strings to a Centralized Enum\n\nIn the ProBlogFlow application, the status of a blog post (e.g., 'draft', 'published', 'archived') is managed using raw strings throughout the entire stack. This implementation is brittle, prone to typos, and makes it difficult to enforce valid status transitions or add new statuses in the future. This task involves refactoring the system to use a more robust, type-safe approach by introducing a Python Enum on the backend and centralizing status constants on the frontend.\n\nYour task is to refactor the post status management system in ProBlogFlow. You must replace the current string-based implementation with a more robust, centralized one.\n\n**Backend (Python):**\n1.  In `problogflow/src/problogflow/adapters/outbound/database/orm.py`, define a Python `Enum` named `PostStatus`. It should include the members: `DRAFT`, `PUBLISHED`, `SCHEDULED`, and `ARCHIVED`.\n2.  Update the `Post` SQLAlchemy model in the same file (`orm.py`) to use this `PostStatus` enum for its `status` field instead of a plain string column.\n3.  Modify the `problogflow/src/problogflow/adapters/outbound/database/post_repository.py` to use the `PostStatus` enum for all database operations (queries, inserts, updates) instead of raw strings.\n4.  Update the API endpoints in `problogflow/src/problogflow/adapters/inbound/web/routers/posts_router.py`. The API should maintain its public contract by continuing to accept and return strings for the 'status' field (e.g., \"DRAFT\", \"PUBLISHED\"). However, you must ensure that incoming strings are validated and converted to `PostStatus` enum members before being passed to the repository layer, and enum members from the repository are converted back to strings before being sent in API responses.\n\n**Frontend (JavaScript/React):**\n1.  To improve maintainability and avoid 'magic strings', create a centralized mapping or constant object for post statuses. A good place for this would be in `problogflow/frontend/src/services/apiClient.js` or a new dedicated constants file.\n2.  Refactor the `problogflow/frontend/src/views/EditorView.jsx` and `problogflow/frontend/src/views/Dashboard.jsx` components. Replace all hardcoded post status strings (e.g., `if (post.status === 'published')`) with references to the newly created centralized constants.",
+      "source_repo": "/home/longhao/experiment/BeliefKV/workloads/sources/locobench_agent_long_16project_py310_20261023/python_web_blog_hard_076",
+      "docker_image": "sha256:3c5ba4d6b17bb7c5eed115435d274c0aa30c7b03bbf544c2aa2a554270274395",
+      "preflight_command": "python -c 'import ast, json, pytest, hypothesis, yaml, numpy, pydantic, fastapi, sqlalchemy'",
+      "frozen_repository_context": {
+        "path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_web_blog_hard_076.txt.gz",
+        "sha256": "39072bd9661251a0026a17cabc18760b42e20357533fe832c418b51fe5c29b46",
+        "tokens": 99370,
+        "source_file_count": 42
+      },
+      "dataset_provenance": {
+        "original_scenario": "data/output/scenarios/python_web_blog_hard_076_cross_file_refactoring_medium_01.json",
+        "scenario_sha256": "04ffb7db907408398fbed0fe38877fd86032998ed83e866d0325dae81b0b3630",
+        "reference_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_web_blog_hard_076_cross_file_refactoring_medium_01.reference.json",
+        "source_provenance_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_web_blog_hard_076.source_provenance.json",
+        "source_provenance_sha256": "62cf60f352415ae0ceafdb9f27d7e0ddbff182ac5f2b75eec0a4e6fd64de20d6",
+        "task_category": "cross_file_refactoring",
+        "reference_fields_exposed": false
+      }
+    },
+    {
+      "instance_id": "locobench__python_mobile_game_hard_060_integration_testing_expert_01",
+      "repo": "locobench/python_mobile_game_hard_060",
+      "base_commit": "02317d06ff69486b8ad808a902d478f94da16407",
+      "task_kind": "locobench_agent",
+      "difficulty": "expert",
+      "problem_statement": "Integration Test for Location-Based Party Quest Synchronization\n\nThe 'QuestSmith: Productivity RPG Forge' mobile game has a feature called 'Party Quests' where multiple users team up to complete tasks. A specific type of Party Quest requires all members to physically visit the same location. Users have reported a bug: when one party member checks in at the designated location, other members receive a push notification of their arrival almost instantly. However, when they open the app, the quest status screen sometimes doesn't show that the user has checked in. This inconsistency suggests a race condition between the push notification dispatch and the database transaction commit that updates the quest state.\n\nYour task is to diagnose this issue by writing a new integration test that reliably reproduces the reported race condition. You do not need to fix the bug, only to create a failing test that proves its existence.\n\n**Instructions:**\n1.  Create a new test file: `tests/test_integration_party_quest.py`.\n2.  Investigate the codebase to identify the modules responsible for: \n    a. Handling location check-ins from the user.\n    b. Updating the state of a 'Party Quest' in the database/persistent storage.\n    c. Triggering push notifications to other party members.\n3.  Write a test case that sets up a scenario with at least two users in a location-based Party Quest.\n4.  The test should simulate one user successfully checking in at the quest location.\n5.  Using mocking, your test must verify the order of operations. It should assert that the database transaction for the quest state update is fully committed *before* the push notification is dispatched to other users.\n6.  The test must be designed to **fail** on the current codebase, demonstrating the race condition, and should pass once the underlying bug is fixed.\n7.  You can and should use mocking frameworks (like `unittest.mock`) to isolate external services (GPS, Push Notification Gateway) and control the execution flow of internal components (like the database session). The existing `tests/test_utils.py` may contain useful fixtures or mock helpers.",
+      "source_repo": "/home/longhao/experiment/BeliefKV/workloads/sources/locobench_agent_long_16project_py310_20261023/python_mobile_game_hard_060",
+      "docker_image": "sha256:3c5ba4d6b17bb7c5eed115435d274c0aa30c7b03bbf544c2aa2a554270274395",
+      "preflight_command": "python -c 'import ast, json, pytest, hypothesis, yaml, numpy, pydantic, fastapi, sqlalchemy'",
+      "frozen_repository_context": {
+        "path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_mobile_game_hard_060.txt.gz",
+        "sha256": "e8670f549ac056bc0c394745a4eb17dcf25ea239fe34bdcb19872b89ddaf9c1c",
+        "tokens": 149241,
+        "source_file_count": 49
+      },
+      "dataset_provenance": {
+        "original_scenario": "data/output/scenarios/python_mobile_game_hard_060_integration_testing_expert_01.json",
+        "scenario_sha256": "54037a76aa72f0d950ad23c7fb2561bcb53b7153acf7eb924b4260e479ab76bc",
+        "reference_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_mobile_game_hard_060_integration_testing_expert_01.reference.json",
+        "source_provenance_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_mobile_game_hard_060.source_provenance.json",
+        "source_provenance_sha256": "8a1e7efeb3374a6e6a95c47ef1f77e59e7cdd2bae6803b4ae32d56de857e7f84",
+        "task_category": "integration_testing",
+        "reference_fields_exposed": false
+      }
+    },
+    {
+      "instance_id": "locobench__python_mobile_game_hard_024_multi_session_development_easy_01",
+      "repo": "locobench/python_mobile_game_hard_024",
+      "base_commit": "1cb1983a8abb5d4828127eaaed14d7b68f03de39",
+      "task_kind": "locobench_agent",
+      "difficulty": "easy",
+      "problem_statement": "Update Daily Bonus Cooldown and Corresponding Unit Tests\n\nThis scenario simulates a common, incremental development task in a mobile game project. The game design team has requested a change to the daily bonus cooldown period to improve player retention. This requires a developer to first locate and update a configuration value, and then, in a subsequent session, fix the unit tests that break as a result of the change. The task tests the agent's ability to retain context, understand code dependencies between configuration and tests, and complete a full change-and-verify cycle.\n\n{'session_1': \"Hello. We need to make a quick gameplay tweak. The daily bonus cooldown is currently too long at 24 hours. Please find the configuration setting for the daily bonus cooldown in the source code and change it to 12 hours. The value is likely stored in seconds. Let me know when you've updated the configuration file.\", 'session_2': 'Thanks for making that change. As expected, I just ran the automated tests and some are failing because they were hardcoded with the old 24-hour value. Please find the relevant unit test in `tests/test_main.py` that checks the daily bonus cooldown and update it to align with the new 12-hour value. Ensure all tests pass after your change.'}",
+      "source_repo": "/home/longhao/experiment/BeliefKV/workloads/sources/locobench_agent_long_16project_py310_20261023/python_mobile_game_hard_024",
+      "docker_image": "sha256:3c5ba4d6b17bb7c5eed115435d274c0aa30c7b03bbf544c2aa2a554270274395",
+      "preflight_command": "python -c 'import ast, json, pytest, hypothesis, yaml, numpy, pydantic, fastapi, sqlalchemy'",
+      "frozen_repository_context": {
+        "path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_mobile_game_hard_024.txt.gz",
+        "sha256": "398f56ceddfef4467e5d7c518804de4559467543152b96f516fb3d37334096a1",
+        "tokens": 194277,
+        "source_file_count": 63
+      },
+      "dataset_provenance": {
+        "original_scenario": "data/output/scenarios/python_mobile_game_hard_024_multi_session_development_easy_01.json",
+        "scenario_sha256": "fb64d3470b97b4aab25ebbb91611733c5f3fcd27f948447d6962115785cea390",
+        "reference_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_mobile_game_hard_024_multi_session_development_easy_01.reference.json",
+        "source_provenance_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_mobile_game_hard_024.source_provenance.json",
+        "source_provenance_sha256": "9e05ca3d055684507a90ff2eb445db64be484d21a51b36097580c709b2ac5dc9",
+        "task_category": "multi_session_development",
+        "reference_fields_exposed": false
+      }
+    },
+    {
+      "instance_id": "locobench__python_system_monitoring_medium_061_bug_investigation_expert_01",
+      "repo": "locobench/python_system_monitoring_medium_061",
+      "base_commit": "3bc0b776b942f8c3b0d701bae6eb6b72fcaddb6d",
+      "task_kind": "locobench_agent",
+      "difficulty": "expert",
+      "problem_statement": "Intermittent Security Scan Failures Due to Silent Log Dropping in Harvester\n\nThe PulseLink SocialOps Monitor has started generating a high volume of 'Scan Inconclusive: Log Data Missing' alerts. Operations teams have observed that these alerts are exclusively for servers in the 'web-prod-EU' cluster. The `log_harvester` service, which is responsible for collecting logs from these servers, reports no errors on its dashboard and appears to be functioning normally. Other clusters are being monitored and scanned without issue. The problem began shortly after a recent deployment aimed at improving log parsing efficiency for new server formats.\n\nYou are a senior software engineer assigned to investigate the root cause of the 'Scan Inconclusive' alerts. Your primary objective is to perform a thorough root cause analysis, not to implement a fix. \n\nYour final output should be a detailed report that:\n1.  Identifies the file and specific lines of code in the `secu_scan` service where the alert originates.\n2.  Explains the data flow between the `log_harvester` and `secu_scan` services.\n3.  Pinpoints the exact location of the root cause of the missing logs.\n4.  Provides a clear, step-by-step explanation of the chain of events, from the initial code defect to the final alert being triggered.",
+      "source_repo": "/home/longhao/experiment/BeliefKV/workloads/sources/locobench_agent_long_16project_py310_20261023/python_system_monitoring_medium_061",
+      "docker_image": "sha256:3c5ba4d6b17bb7c5eed115435d274c0aa30c7b03bbf544c2aa2a554270274395",
+      "preflight_command": "python -c 'import ast, json, pytest, hypothesis, yaml, numpy, pydantic, fastapi, sqlalchemy'",
+      "frozen_repository_context": {
+        "path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_system_monitoring_medium_061.txt.gz",
+        "sha256": "094ba4b2255871e0a87d4d1d7126ca602502747cf5f0e35d6e0f6eb724b4523f",
+        "tokens": 95792,
+        "source_file_count": 38
+      },
+      "dataset_provenance": {
+        "original_scenario": "data/output/scenarios/python_system_monitoring_medium_061_bug_investigation_expert_01.json",
+        "scenario_sha256": "a4e2d1e0dba60c33d5a00f7eb4d44ca3ab1f6b261168d9921204b4e912d69a97",
+        "reference_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_system_monitoring_medium_061_bug_investigation_expert_01.reference.json",
+        "source_provenance_path": "/home/longhao/experiment/BeliefKV/workloads/locobench_agent_long_16project_root_scoped_20261023/python_system_monitoring_medium_061.source_provenance.json",
+        "source_provenance_sha256": "d91c6e8665e2e7457770a8c2a753acf58137b08b0d51b4d195d0c106eb560a2c",
+        "task_category": "bug_investigation",
+        "reference_fields_exposed": false
+      }
+    }
+  ]
+}

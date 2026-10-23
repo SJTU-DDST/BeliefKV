@@ -9,6 +9,31 @@ from beliefkv.experiments.source_provenance import sha256_file
 from scripts import run_causal_comparison as comparison
 
 
+@pytest.mark.parametrize("root_count", (16, 36))
+def test_replay_population_binds_every_declared_workflow_and_rejects_subsets(root_count):
+    from beliefkv.core.events import RuntimeEventKind as Kind
+
+    def graph(ids):
+        return NS(
+            nodes=[NS(event=NS(kind=Kind.WORKFLOW_START, workflow_id=value)) for value in ids],
+            summary=lambda: {"workflows": len(ids)},
+        )
+
+    ids = [f"w{index}" for index in range(root_count)]
+    summary = {
+        "workflow_count": root_count, "completed_workflows": root_count,
+        "workflows": [{"workflow_id": value} for value in ids],
+    }
+    assert comparison.complete_source_population(summary, graph(ids)) == root_count
+    with pytest.raises(ValueError, match="entire declared"):
+        comparison.complete_source_population(summary, graph(ids[:-1]))
+    with pytest.raises(ValueError, match="entire declared"):
+        comparison.complete_source_population(summary, graph([*ids[:-1], "unrelated"]))
+    summary["workflows"][-1]["workflow_id"] = ids[0]
+    with pytest.raises(ValueError, match="entire declared"):
+        comparison.complete_source_population(summary, graph(ids))
+
+
 @pytest.fixture
 def reference(tmp_path):
     artifact = tmp_path / "timing.json"
@@ -264,6 +289,59 @@ def test_retention_matrix_keeps_exact_common_settings_and_an_independent_native_
                              if name != "BELIEFKV_SUBAGENT_RETENTION"})
     assert all(control == controls[0] for control in controls)
     assert reference["arms"]["full"]["BELIEFKV_RESTORE_TIERS"] == "dependency"
+
+
+def test_saved_project_disjoint_configuration_reaches_every_retention_control(reference, tmp_path):
+    spec = json.loads((Path(__file__).resolve().parents[1] /
+                       "configs/migration/reusable_subagent_retention_16project_20261023.json").read_text())
+    labels = ["native_matched", *comparison.RETENTION_CONTROLS]
+    prepared = comparison.retention_reference(reference, spec, labels)
+    for label in labels:
+        env, _, _ = comparison.environment(
+            prepared, label, tmp_path, tmp_path, tmp_path, 18562, tmp_path,
+        )
+        assert env["ROOT_COUNT"] == "16" and env["MAX_RUNNING_REQUESTS"] == "8"
+        assert env["WORKLOAD_MANIFEST"] == spec["common_environment"]["WORKLOAD_MANIFEST"]
+        assert env["SERVER_RANDOM_SEED"] == env["SAMPLING_SEED"] == env["PYTHONHASHSEED"] == "21"
+        if label != "native_matched":
+            assert env["BELIEFKV_DORMANT_HOST_BYTES"] == "34359738368"
+            assert env["BELIEFKV_DORMANT_HBM_BYTES"] == "2147483648"
+
+
+@pytest.mark.parametrize("roots", (None, True, 16, "0", "-1", "016", "157", "16.0", "\uff11\uff16"))
+def test_retention_root_count_requires_an_explicit_canonical_positive_count(reference, roots):
+    spec = retention_spec()
+    spec["common_environment"]["ROOT_COUNT"] = roots
+    with pytest.raises(ValueError, match="prepared comparison"):
+        comparison.retention_reference(reference, spec, ["native_matched", "subagent_selective"])
+
+
+@pytest.mark.parametrize("change", (None, "count", "hash", "missing", "invalid_hash"))
+def test_new_matrix_cannot_reuse_a_different_source_even_with_the_same_root_count(change):
+    spec = {
+        "common_environment": {"ROOT_COUNT": "16"}, "source_workload_sha256": "a" * 64,
+    }
+    summary = {"workload_manifest_sha256": "a" * 64}
+    count = 16
+    if change == "count":
+        count = 36
+    elif change == "hash":
+        summary["workload_manifest_sha256"] = "b" * 64
+    elif change == "missing":
+        summary.clear()
+    elif change == "invalid_hash":
+        spec["source_workload_sha256"] = None
+    if change is None:
+        comparison.retention_source_matches(spec, summary, count)
+    else:
+        with pytest.raises(ValueError, match="retention source differs"):
+            comparison.retention_source_matches(spec, summary, count)
+
+
+def test_old_retention_matrix_without_a_manifest_override_retains_its_population_check():
+    comparison.retention_source_matches(retention_spec(), {}, 36)
+    with pytest.raises(ValueError, match="declared root"):
+        comparison.retention_source_matches(retention_spec(), {}, 16)
 
 
 @pytest.mark.parametrize("order", (

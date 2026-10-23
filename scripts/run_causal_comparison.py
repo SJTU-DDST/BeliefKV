@@ -31,6 +31,7 @@ from scripts.run_causal_gpu_replay import source_plan
 from scripts.run_causal_source_capture import (
     comparison, engine_evidence, fresh, load, qualified, reservation, reusable_source,
 )
+from beliefkv.core.events import RuntimeEventKind as Kind
 
 ORDER = ("full", "native_matched", "join_priority_only", "no_background_prepare")
 CONTROLS = (*ORDER, "no_tool_prefetch")
@@ -201,6 +202,38 @@ def source_quality(summary, workflow_ids):
         }
         for row in rows if not row["native_agent_jct_eligible"]
     ]
+
+
+def complete_source_population(summary, graph):
+    count = summary.get("workflow_count")
+    rows = summary.get("workflows", [])
+    declared = [row.get("workflow_id") for row in rows]
+    started = {
+        node.event.workflow_id for node in graph.nodes
+        if node.event is not None and node.event.kind is Kind.WORKFLOW_START
+    }
+    if (
+        type(count) is not int or count <= 0
+        or type(summary.get("completed_workflows")) is not int
+        or summary["completed_workflows"] != count
+        or len(declared) != count or len(set(declared)) != count
+        or set(declared) != started or graph.summary()["workflows"] != count
+    ):
+        raise ValueError("causal source must retain its entire declared workflow population")
+    return count
+
+
+def retention_source_matches(spec, summary, count):
+    if spec["common_environment"].get("ROOT_COUNT") != str(count):
+        raise ValueError("retention source differs from the declared root population")
+    if "source_workload_sha256" in spec:
+        expected = spec["source_workload_sha256"]
+        if (
+            type(expected) is not str or len(expected) != 64
+            or any(char not in "0123456789abcdef" for char in expected)
+            or summary.get("workload_manifest_sha256") != expected
+        ):
+            raise ValueError("retention source differs from the declared workload manifest")
 
 
 def validate_result(plan, result, arm, *, live_control):
@@ -430,8 +463,9 @@ def register(args):
     fresh.check_hold(reference, released=True)
     if any(label in RETENTION_CONTROLS for label in order) and args.retention_config is None:
         raise ValueError("retention controls require an explicit reusable comparison configuration")
-    if args.retention_config is not None:
-        reference = retention_reference(reference, load(args.retention_config), order)
+    retention_spec = load(args.retention_config) if args.retention_config is not None else None
+    if retention_spec is not None:
+        reference = retention_reference(reference, retention_spec, order)
     if args.tool_prefetch_priority_ms is not None:
         reference = tool_priority_reference(reference, args.tool_prefetch_priority_ms)
     count = comparison.qualify_report(args.cpu_report, args.cpu_sources)
@@ -477,10 +511,17 @@ def register(args):
     ):
         raise ValueError("native replay sampling costs were not measured for this source")
     graph, expected, evidence = source_plan(args.source_arm)
+    summaries = list(args.source_arm.glob("client_*/summary.json"))
+    quality = load(summaries[0])
+    source_roots = complete_source_population(quality, graph)
+    if retention_spec is not None:
+        retention_source_matches(retention_spec, quality, source_roots)
     with CapturedTokenCorpus(args.source_arm / "server/request_tokens.jsonl", expected) as corpus:
         tokens = corpus.evidence
-    if graph.summary()["workflows"] != 36:
-        raise ValueError("causal source must retain all 36 original workflows")
+    reference = {**reference, "arms": {
+        **reference["arms"],
+        "full": {**reference["arms"]["full"], "ROOT_COUNT": str(source_roots)},
+    }}
     engine = engine_evidence(args.engine, args.engine_report, args.engine_sources)
     fresh._require_clean(ROOT)
     if qualified.command(["git", "-C", str(ROOT), "branch", "--show-current"]) != "main":
@@ -528,15 +569,16 @@ def register(args):
         Path(name) if Path(name).is_absolute() else ROOT / name
         for name in evidence["input_jsonl_prefixes"]
     )
-    summaries = list(args.source_arm.glob("client_*/summary.json"))
     inputs.extend(summaries)
     if args.after_registration is not None:
         inputs.append(args.after_registration)
     inputs.extend(Path(reference["arms"]["full"][name]) for name in (
         "TOOL_TIMING_ARTIFACT", "H2D_SEED_ARTIFACT", "TRANSFER_SERVICE_SEED",
     ))
-    quality = load(summaries[0])
-    reuse_selection = reusable_source(quality, graph) if args.retention_config is not None else None
+    reuse_selection = (
+        reusable_source(quality, graph, expected_workflows=source_roots)
+        if args.retention_config is not None else None
+    )
     if reuse_selection is not None and not reuse_selection["accepted"]:
         raise ValueError("retention source lacks complete natural same-handle reuse evidence")
     workflows = sorted({row.event.workflow_id for row in graph.nodes if row.event is not None})

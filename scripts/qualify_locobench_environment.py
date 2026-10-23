@@ -33,6 +33,8 @@ PROJECT_COMMANDS = {
     ),
 }
 
+DEFAULT_TEST_COMMAND = "python -m pytest --collect-only -q"
+
 
 def capture(args, **kwargs):
     try:
@@ -50,6 +52,8 @@ def main():
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    if args.output.exists():
+        parser.error("preserve existing environment evidence")
     manifest = json.loads(args.manifest.read_text())
     projects = {row["source_repo"]: row for row in manifest["workloads"]}
 
@@ -66,7 +70,7 @@ def main():
             image,
         ]
         preflight = capture(prefix + ["bash", "-c", row["preflight_command"]])
-        command = PROJECT_COMMANDS[Path(source).name]
+        command = PROJECT_COMMANDS.get(Path(source).name, DEFAULT_TEST_COMMAND)
         baseline = capture(prefix + ["bash", "-c", command])
         return source, {
             "source_commit": row["base_commit"], "docker_image": image,
@@ -76,6 +80,10 @@ def main():
             ).strip(),
             "dependency_preflight": preflight,
             "original_test_command": command, "original_test_result": baseline,
+            "test_command_selection": (
+                "declared_project_probe" if Path(source).name in PROJECT_COMMANDS
+                else "unmodified_project_pytest_collection"
+            ),
             "original_source_modified": False,
             "interpretation": (
                 "Original source/test failures are retained. Stub-based tests "

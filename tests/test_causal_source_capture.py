@@ -195,6 +195,155 @@ def test_capture_rejects_changed_tasks(tmp_path):
         capture.environment(plan, checkout, tmp_path / "engine", tmp_path / "run", 18546)
 
 
+def disjoint_manifest(count=16):
+    return {
+        "requested_workflows": count, "max_tasks_per_project": 1,
+        "workloads": [
+            {"repo": f"locobench/project-{index}", "instance_id": f"task-{index}",
+             "task_kind": "locobench_agent"}
+            for index in range(count)
+        ],
+    }
+
+
+def test_explicit_disjoint_capture_changes_only_manifest_root_count_and_profile(tmp_path, monkeypatch):
+    plan, checkout = reference(tmp_path)
+    source = tmp_path / "configs/disjoint.json"
+    source.parent.mkdir()
+    contents = json.dumps(disjoint_manifest())
+    source.write_text(contents)
+    (checkout / "configs/disjoint.json").write_text(contents)
+    monkeypatch.setattr(capture, "ROOT", tmp_path)
+    args = (plan, checkout, tmp_path / "engine", tmp_path / "run", 18546)
+    original = capture.environment(*args, source_profile="reusable_nested")
+    candidate = capture.environment(
+        *args, source_profile="reusable_nested", source_workload=source,
+    )
+    assert {key for key in original if original[key] != candidate[key]} == {
+        "ROOT_COUNT", "WORKLOAD_MANIFEST",
+    }
+    assert candidate["ROOT_COUNT"] == "16" and candidate["MAX_RUNNING_REQUESTS"] == "8"
+    assert candidate["NATIVE_POLICY_BASELINE"] == "1"
+    assert plan["arms"]["native_matched"]["ROOT_COUNT"] == "36"
+    with pytest.raises(ValueError, match="natural reusable"):
+        capture.environment(*args, source_workload=source)
+
+
+@pytest.mark.parametrize("mutation", (
+    "count", "boolean_count", "empty", "duplicate_project", "duplicate_task", "multiple_tasks",
+    "not_a_list", "unknown_kind", "missing_identity",
+))
+def test_disjoint_source_rejects_incomplete_duplicate_or_implicit_populations(tmp_path, mutation):
+    raw = disjoint_manifest()
+    if mutation == "count":
+        raw["requested_workflows"] += 1
+    elif mutation == "boolean_count":
+        raw["requested_workflows"] = True
+    elif mutation == "empty":
+        raw["requested_workflows"], raw["workloads"] = 0, []
+    elif mutation == "duplicate_project":
+        raw["workloads"][1]["repo"] = raw["workloads"][0]["repo"]
+    elif mutation == "duplicate_task":
+        raw["workloads"][1]["instance_id"] = raw["workloads"][0]["instance_id"]
+    elif mutation == "multiple_tasks":
+        raw["max_tasks_per_project"] = 2
+    elif mutation == "not_a_list":
+        raw["workloads"] = {}
+    elif mutation == "unknown_kind":
+        raw["workloads"][0]["task_kind"] = "unknown"
+    else:
+        del raw["workloads"][0]["instance_id"]
+    path = tmp_path / "tasks.json"
+    path.write_text(json.dumps(raw))
+    with pytest.raises(ValueError, match="source workload"):
+        capture.project_disjoint_workload(path)
+
+
+def test_changed_new_source_manifest_is_rejected_before_capture(tmp_path, monkeypatch):
+    plan, checkout = reference(tmp_path)
+    monkeypatch.setattr(capture, "ROOT", tmp_path)
+    source = tmp_path / "configs/disjoint.json"
+    source.parent.mkdir()
+    source.write_text(json.dumps(disjoint_manifest()))
+    (checkout / "configs/disjoint.json").write_text(json.dumps(disjoint_manifest(12)))
+    with pytest.raises(ValueError, match="manifest changed"):
+        capture.environment(
+            plan, checkout, tmp_path / "engine", tmp_path / "run", 18546,
+            source_profile="reusable_nested", source_workload=source,
+        )
+
+
+@pytest.mark.parametrize("change", (None, "context", "provenance", "commit"))
+def test_explicit_workload_binds_context_provenance_and_clone_commit(tmp_path, monkeypatch, change):
+    context, provenance = (tmp_path / name for name in ("context.gz", "source.json"))
+    context.write_bytes(b"original source pack")
+    provenance.write_text("original source provenance")
+    raw = disjoint_manifest(1)
+    raw["workloads"][0].update(
+        source_repo=str(tmp_path / "source"), base_commit="a" * 40,
+        frozen_repository_context={
+            "path": str(context), "sha256": capture.sha256_file(context),
+        },
+        dataset_provenance={
+            "source_provenance_path": str(provenance),
+            "source_provenance_sha256": capture.sha256_file(provenance),
+        },
+    )
+    path = tmp_path / "tasks.json"
+    path.write_text(json.dumps(raw))
+    monkeypatch.setattr(
+        capture.qualified, "command", lambda _: ("b" if change == "commit" else "a") * 40,
+    )
+    if change in ("context", "provenance"):
+        (context if change == "context" else provenance).write_bytes(b"changed")
+    if change is None:
+        assert capture.declared_workload_inputs(path) == [path, context, provenance]
+    else:
+        with pytest.raises(ValueError, match="declared source workload"):
+            capture.declared_workload_inputs(path)
+
+
+@pytest.mark.parametrize("roots", (16, 36))
+def test_capture_monitor_reads_and_validates_the_declared_client_population(
+    tmp_path, monkeypatch, roots,
+):
+    from types import SimpleNamespace as NS
+
+    registration, run = tmp_path / "capture.json", tmp_path / "run"
+    capture.reservation.write_json(registration, {
+        "run_root": str(run), "port": 18560, "environment": {"ROOT_COUNT": str(roots)},
+    })
+    monkeypatch.setattr(capture.signal, "signal", lambda *_args: None)
+    monkeypatch.setattr(capture.reservation, "process", lambda pid: {"pid": pid})
+    monkeypatch.setattr(capture.comparison, "verify_sources", lambda _plan: None)
+    monkeypatch.setattr(capture, "prepare_capture", lambda *_args: None)
+    monkeypatch.setattr(capture.qualified, "machine_helper",
+                        lambda _name: NS(clear_stale_socket=lambda _port: None))
+    monkeypatch.setattr(capture.qualified, "driver_environment", lambda *_args: {})
+    monkeypatch.setattr(capture, "observe", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(capture, "audit_tokens",
+                        lambda _arm: {"token_evidence_complete": True, "native_requests": roots})
+    monkeypatch.setattr(capture, "audit_graph", lambda _arm: {"causal_graph_compiled": True})
+
+    def launch(*_args, **_kwargs):
+        summary = run / f"native_capture/client_{roots}/summary.json"
+        summary.parent.mkdir(parents=True)
+        summary.write_text(json.dumps({"workflow_count": roots}))
+        return NS(pid=123, poll=lambda: 0, wait=lambda: 0)
+
+    counts = []
+    monkeypatch.setattr(capture.subprocess, "Popen", launch)
+    monkeypatch.setattr(
+        capture.fresh, "completed_arm",
+        lambda summary, code, count: counts.append((summary["workflow_count"], code, count)),
+    )
+    capture.watch(registration)
+    result = capture.load(registration.with_suffix(".state.json"))
+    assert counts == [(roots, 0, roots)]
+    assert result["status"] == "source_captured_gpu_replay_pending"
+    assert result["performance_accepted"] is False
+
+
 @pytest.mark.parametrize("change", (None, "watcher_alive", "driver_alive", "unfinished", "wrong_order"))
 def test_reference_must_finish_and_its_processes_must_exit(change):
     plan = {"order": ["full", "native_matched"]}
@@ -288,14 +437,16 @@ def test_balanced_source_selection_does_not_use_policy_speedups(change):
 
 
 @pytest.mark.parametrize("change", (None, "no_resume", "guard", "wrong_profile", "incomplete"))
-def test_reusable_source_uses_actual_resume_and_does_not_require_an_arbitrary_join_quota(change):
+def test_reusable_source_uses_actual_resume_and_does_not_require_an_arbitrary_join_quota(
+    change, root_count=36,
+):
     from dataclasses import replace
     from beliefkv.core.events import RuntimeEventKind as Kind
     from beliefkv.experiments.causal_replay import compile_causal_replay
     from tests.test_causal_replay import reusable_trace
 
     events, native = [], []
-    for index in range(36):
+    for index in range(root_count):
         trace = reusable_trace(f"w{index}")
         for event in trace.ordered():
             attributes = dict(event.attributes)
@@ -308,12 +459,13 @@ def test_reusable_source_uses_actual_resume_and_does_not_require_an_arbitrary_jo
             }})
     graph = compile_causal_replay(events, native)
     summary = {
-        "completed_workflows": 36,
+        "completed_workflows": root_count,
         "subagent_fanout_profile": "native_in_graph_reusable_nested",
         "workflows": [
-            {"workflow_id": f"w{index}", "native_agent_jct_eligible": True} for index in range(36)
+            {"workflow_id": f"w{index}", "native_agent_jct_eligible": True}
+            for index in range(root_count)
         ],
-        "nested_delegation_round_count": 0, "root_delegation_round_counts": [2] * 36,
+        "nested_delegation_round_count": 0, "root_delegation_round_counts": [2] * root_count,
     }
     if change == "no_resume":
         graph = replace(graph, nodes=tuple(
@@ -326,11 +478,18 @@ def test_reusable_source_uses_actual_resume_and_does_not_require_an_arbitrary_jo
     elif change == "wrong_profile":
         summary["subagent_fanout_profile"] = "native_in_graph_nested_2to4"
     elif change == "incomplete":
-        summary["completed_workflows"] = 35
-    result = capture.reusable_source(summary, graph)
+        summary["completed_workflows"] = root_count - 1
+    result = capture.reusable_source(summary, graph, expected_workflows=root_count)
     assert result["accepted"] is (change is None)
-    assert result["joins"] == 72
+    assert result["joins"] == 2 * root_count
     assert "criteria" not in result
+
+
+@pytest.mark.parametrize("change", (None, "no_resume", "guard", "wrong_profile", "incomplete"))
+def test_reusable_source_validates_the_entire_sixteen_root_population(change):
+    test_reusable_source_uses_actual_resume_and_does_not_require_an_arbitrary_join_quota(
+        change, root_count=16,
+    )
 
 
 def test_predeclared_capture_waits_without_allocating_or_touching_another_job(tmp_path, monkeypatch):

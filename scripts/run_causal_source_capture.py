@@ -67,9 +67,53 @@ def reference_capacity(reference):
     return path, validated_capacity(load(path).get("capacity"))
 
 
+def project_disjoint_workload(path):
+    manifest = load(path)
+    rows = manifest.get("workloads")
+    count = manifest.get("requested_workflows")
+    if (
+        type(count) is not int or not 1 <= count <= 156
+        or not isinstance(rows, list) or len(rows) != count
+        or type(manifest.get("max_tasks_per_project")) is not int
+        or manifest["max_tasks_per_project"] != 1
+        or any(not isinstance(row, dict) for row in rows)
+    ):
+        raise ValueError("source workload must declare its complete project-disjoint population")
+    projects = [row.get("repo") for row in rows]
+    instances = [row.get("instance_id") for row in rows]
+    if (
+        any(type(value) is not str or not value for value in (*projects, *instances))
+        or len(set(projects)) != count or len(set(instances)) != count
+        or any(row.get("task_kind") != "locobench_agent" for row in rows)
+    ):
+        raise ValueError("source workload needs distinct original tasks and projects")
+    return manifest
+
+
+def declared_workload_inputs(path):
+    manifest = project_disjoint_workload(path)
+    inputs = [path]
+    for row in manifest["workloads"]:
+        context = row["frozen_repository_context"]
+        provenance = row["dataset_provenance"]
+        for name, expected in (
+            (context["path"], context["sha256"]),
+            (provenance["source_provenance_path"], provenance["source_provenance_sha256"]),
+        ):
+            source = Path(name)
+            if sha256_file(source) != expected:
+                raise ValueError("declared source workload artifact changed")
+            inputs.append(source)
+        if qualified.command([
+            "git", "-C", row["source_repo"], "rev-parse", row["base_commit"] + "^{commit}",
+        ]) != row["base_commit"]:
+            raise ValueError("declared source workload commit changed")
+    return inputs
+
+
 def environment(
     reference, checkout: Path, engine: Path, run: Path, port: int, *, source_profile=None,
-    capacity=None,
+    capacity=None, source_workload=None,
 ):
     if source_profile not in (None, "balanced_join", "reusable_nested"):
         raise ValueError("unknown predeclared source profile")
@@ -86,13 +130,24 @@ def environment(
     }
     if any(base.get(name) != value for name, value in required.items()):
         raise ValueError("capture must preserve the existing seeded 36-root workload")
-    relative = Path(base["WORKLOAD_MANIFEST"]).relative_to(Path(reference["execution_checkout"]))
+    declared = (
+        Path(base["WORKLOAD_MANIFEST"]) if source_workload is None
+        else source_workload.resolve()
+    )
+    origin = Path(reference["execution_checkout"]) if source_workload is None else ROOT
+    relative = declared.relative_to(origin.resolve())
     target = checkout / relative
-    if sha256_file(target) != sha256_file(Path(base["WORKLOAD_MANIFEST"])):
+    if sha256_file(target) != sha256_file(declared):
         raise ValueError("capture workload manifest changed")
+    roots = base["ROOT_COUNT"]
+    if source_workload is not None:
+        if source_profile != "reusable_nested":
+            raise ValueError("a new source workload requires the natural reusable profile")
+        roots = str(project_disjoint_workload(target)["requested_workflows"])
     result = arm_environment(dict(base), "native_matched")
     result.update(
         PYTHONPATH=str(checkout), WORKLOAD_MANIFEST=str(target),
+        ROOT_COUNT=roots,
         SGLANG_SOURCE_CHECKOUT=str(engine), RUN_ROOT=str(run / "native_capture"),
         PORT=str(port), CUDA_VISIBLE_DEVICES="0", BELIEFKV_REPLAY_TOKEN_CAPTURE="1",
         BELIEFKV_SUBAGENT_RETENTION="off",
@@ -202,7 +257,7 @@ def balanced_source(summary):
     }
 
 
-def reusable_source(summary, graph):
+def reusable_source(summary, graph, *, expected_workflows=36):
     """Describe real reuse opportunities without selecting for policy speedup."""
     creates = [
         node.event for node in graph.nodes
@@ -225,8 +280,10 @@ def reusable_source(summary, graph):
         if node.event is not None and node.event.kind is Kind.WORKFLOW_START
     }
     if (
-        len(workflows) != 36 or summary.get("completed_workflows") != 36
-        or len(graph_workflows) != 36
+        type(expected_workflows) is not int or expected_workflows <= 0
+        or len(workflows) != expected_workflows
+        or summary.get("completed_workflows") != expected_workflows
+        or len(graph_workflows) != expected_workflows
         or {row.get("workflow_id") for row in workflows} != graph_workflows
     ):
         reasons.append("incomplete_workflow_population")
@@ -391,6 +448,9 @@ def register(args):
         raise FileExistsError("preserve existing frozen capture sources")
     if not args.wait_for_gpu and not qualified.resources(args.port)["ready"]:
         raise ValueError("GPU, port or disk is occupied")
+    workload_inputs = (
+        declared_workload_inputs(args.source_workload.resolve()) if args.source_workload else []
+    )
     subprocess.run(["git", "-C", str(ROOT), "worktree", "add", "--detach", str(checkout), revision],
                    check=True, capture_output=True)
     comparison.verify_cpu_snapshot(checkout, sources)
@@ -408,12 +468,12 @@ def register(args):
         raise ValueError("frozen engine differs from the tested capture engine")
     env = environment(
         reference, checkout, engine, args.run_root, args.port,
-        source_profile=args.source_profile, capacity=capacity,
+        source_profile=args.source_profile, capacity=capacity, source_workload=args.source_workload,
     )
     extra = [
         args.reference, args.reference.with_suffix(".state.json"),
         args.cpu_report, args.cpu_sources, args.engine_report, args.engine_sources,
-        capacity_path,
+        capacity_path, *workload_inputs,
     ]
     if args.after_comparison:
         extra.append(args.after_comparison)
@@ -434,6 +494,9 @@ def register(args):
         ],
         "performance_accepted": False, "gpu_replay_qualified": False,
         "source_profile": args.source_profile,
+        "source_workload": (
+            str(args.source_workload.resolve()) if args.source_workload else None
+        ),
         "wait_for_gpu": args.wait_for_gpu,
         "after_comparison": str(args.after_comparison.resolve()) if args.after_comparison else None,
     }
@@ -458,6 +521,10 @@ def watch(registration: Path):
         raise FileExistsError("preserve the previous capture monitor outcome")
     run = Path(plan["run_root"])
     arm = run / "native_capture"
+    roots = int(plan["environment"].get("ROOT_COUNT", "36"))
+    if not 1 <= roots <= 156:
+        raise ValueError("capture workflow population is invalid")
+    summary_path = arm / f"client_{roots}/summary.json"
     state = {
         "status": "capture_preflight", "watcher": reservation.process(os.getpid()),
         "current_arm": "native_capture", "performance_accepted": False,
@@ -502,7 +569,7 @@ def watch(registration: Path):
             state["original_exit_code"] = driver.wait()
             observe(arm, final=True, expected_capacity=plan.get("capture_capacity"))
             state["outcome"] = fresh.completed_arm(
-                load(arm / "client_36/summary.json"), state["original_exit_code"], 36,
+                load(summary_path), state["original_exit_code"], roots,
             )
             token_report, graph_report = audit_tokens(arm), audit_graph(arm)
             reservation.write_json(run / "token_evidence.json", token_report)
@@ -514,7 +581,7 @@ def watch(registration: Path):
                 source_requests=token_report["native_requests"],
             )
             if plan.get("source_profile") == "balanced_join":
-                selection = balanced_source(load(arm / "client_36/summary.json"))
+                selection = balanced_source(load(summary_path))
                 reservation.write_json(run / "source_selection.json", selection)
                 state["source_selection"] = selection
                 if not selection["accepted"]:
@@ -523,7 +590,9 @@ def watch(registration: Path):
                 from scripts.run_causal_gpu_replay import source_plan
 
                 graph, _, _ = source_plan(arm)
-                selection = reusable_source(load(arm / "client_36/summary.json"), graph)
+                selection = reusable_source(
+                    load(summary_path), graph, expected_workflows=roots,
+                )
                 reservation.write_json(run / "source_selection.json", selection)
                 state["source_selection"] = selection
                 if not selection["accepted"]:
@@ -567,6 +636,7 @@ def main():
     parser.add_argument("--run-root", type=Path)
     parser.add_argument("--port", type=int, default=18546)
     parser.add_argument("--source-profile", choices=("balanced_join", "reusable_nested"))
+    parser.add_argument("--source-workload", type=Path)
     parser.add_argument("--wait-for-gpu", action="store_true")
     parser.add_argument("--after-comparison", type=Path)
     args = parser.parse_args()

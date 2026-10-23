@@ -13,7 +13,7 @@ def environment(common: dict[str, str], policy: str) -> dict[str, str]:
     if policy not in ORDER:
         raise ValueError("unknown subagent retention comparison arm")
     required = {
-        "ROOT_COUNT": "36", "MAX_RUNNING_REQUESTS": "8",
+        "MAX_RUNNING_REQUESTS": "8",
         "SERVER_RANDOM_SEED": "21", "SAMPLING_SEED": "21",
         "PYTHONHASHSEED": "21",
         "MODEL_CONTEXT_TOKENS": "262144",
@@ -26,7 +26,12 @@ def environment(common: dict[str, str], policy: str) -> dict[str, str]:
         "TOOL_RESTORE_MODE": "speculative", "RESTORE_TIERS": "complete",
         "JOIN_PREFETCH_TRIGGER": "observed_eos", "TOOL_CONTINUITY": "0",
     }
-    if any(common.get(name) != value for name, value in required.items()):
+    roots = common.get("ROOT_COUNT")
+    if (
+        type(roots) is not str or not roots.isascii() or not roots.isdecimal()
+        or not 1 <= int(roots) <= 156 or str(int(roots)) != roots
+        or any(common.get(name) != value for name, value in required.items())
+    ):
         raise ValueError("reusable workload differs from the prepared comparison")
     result = arm_environment(common, "full", tool_prefetch=common.get("TOOL_PREFETCH") != "0")
     result.update(
