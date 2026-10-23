@@ -2,6 +2,52 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+V140 scheduler-only completed all24 workflows and the exact V136 work.
+Mean JCT is1142.970s and whole-run output throughput593.360 tokens/s.
+V139 Full is0.168% slower in JCT and0.329% lower in throughput than this
+same-order/no-custom-KV control. No quality exclusions or normal-tail
+truncation are introduced. Independent KV benefit remains unproven.
+
+V3230/V3231 locate additional actual prefill work: Full executes6089828
+native extend tokens against5859178 in JOIN-only (+230650/+3.937%).
+Of that net difference,226880 tokens occur in first-epoch requests. Two
+project-sharing roots account for219264 extra tokens; their FULL matches
+still reach114592/130601 tokens, but Full reuses only6016/12747 device
+tokens and no Host Mamba checkpoint. JOIN-only and V140 both reuse Host
+state plus104518/118795 Host FULL tokens. V3242 seals these ingress facts.
+V141's already-observed startup reproduces the same lost Host-state reuse.
+The same-session prefix-loss proxy excludes these first requests and
+therefore did not expose this extra computation.
+
+A concrete CPU reproduction identifies a durability regression that can
+cause this loss: early FULL-only backup makes a node appear backed, so a
+later FULL demotion can discard its unowned Mamba state without the state
+backup that native joint write-back would have performed. The candidate
+completes only the missing state backup at actual eviction of unowned
+FULL cache pages while incremental FULL preparation is active. Waiting
+agent output tails retain their existing no-extra-copy behavior. Critical
+reclaim stays asynchronous and waits for ACK before freeing that node;
+failed Host allocation retains native capacity fallback. No per-decode
+scan, new reservation or new periodic observation is added. The existing
+Host telemetry reports `reentry_pressure_backups.unreferenced_attempted`.
+
+V3233 preserves the expected failing real-CPU-tree reproduction; V3234
+demonstrates restored Host prefix reuse. The first expanded focused run
+V3235 caught an unnecessary output-tail copy; the scope was narrowed.
+V3237 passes128 focused cases. V3238/V3240 retains all657 engine cases
+plus48 subtests and binds treeea0d2b24a40f7dd578b0647f4e185d55d301a160.
+V3239/V3241 retains5454 application cases and qualifies5467 plus2 subtests
+with CUDA hidden, no failures or skips. The optional Docker case remains
+outside inherited qualification. These are correctness and source checks;
+whether this path explains the observed GPU loss and improves JCT remains
+unproven until the next Full run.
+
+V141 is actually running frozen at048473a3378f with the conditional-tool-tail
+fix and old engine. At03:41 Beijing it has admitted3789/3951 requests without
+physical disablement. Let this nearly completed arm finish so the tool-tail
+change retains a full comparison, then run the qualified checkpoint candidate
+on the same24-root/batch24/seed21 source. Do not repeat full native replay.
+
 V139 Full completed normally:24/24 workflows,3951 identical requests,
 264598879 input and958791 output tokens, with verified native stopping,
 sessions and causal execution. Keep all normal tails. Mean JCT is1144.890s
@@ -18,9 +64,8 @@ Full's JCT is effectively tied with JOIN-only (-0.051%), while its throughput
 is0.505% lower. Both retain all24 workflows and normal tails. This comparison
 does not establish an independent KV-management benefit.
 
-V140 scheduler-only is now actually running after both V139 arms completed
-and their owned processes exited. Its live server and replay driver are
-verified. V140 freezes appb560d23c5042 and the same engine treecc9772c6c5c4,
+V140 scheduler-only completed after both V139 arms and their owned processes
+exited. V140 freezes appb560d23c5042 and the same engine treecc9772c6c5c4,
 capacity, batch24, seed21 and V136 exact work. It retains Full's ordering
 without the custom KV paths. No extra full native replay is queued. Registrations:
 `/home/longhao/experiment/ops/v139_oneshot_batch24_controls_20261024.registration.json`

@@ -395,3 +395,61 @@ speculative/complete、1500ms 工具优先窗口和 observed-EOS JOIN。
 继续使用 V136 同一精确工作量、24 root/batch24、seed21 和自然
 native 参考。当前有用提前恢复已超过 10GB，不扩大 root 数，也不重复
 完整 native 重放。性能目标仍未达成。
+
+## V140 完成与首次请求的额外计算
+
+V140 scheduler-only 完整完成 24 个 workflow，请求数 3951、输入
+264598879、输出 958791 tokens 与 V136/V139 一致，保留正常长尾，
+没有质量排除。平均 JCT 为 1142.970s，全程输出吞吐为
+593.360 tokens/s。V139 Full 相比它 JCT 高约 0.168%，吞吐低约
+0.329%；当前仍没有证明自定义 KV 管理的独立收益。
+
+V3230 按完整 native service 记录统计，Full 的实际 prefill 输入为
+6089828 tokens，JOIN-only 为 5859178，额外计算 230650 tokens，
+约多 3.937%。decode 时间加权 batch 大小分别约 15.796 和 15.836。
+这些 worker 区间包含调度和结果处理，不能当成 CUDA kernel 时间。
+
+V3231 将全部 3951 个请求按 workflow/invocation/context/epoch 对齐：
+continuation 的净差只有 3770 tokens，首次请求的净差却为 226880。
+其中两个共用项目原始前缀的 root 最显著：
+
+| Root 任务 | Full 实际 prefill | JOIN-only 实际 prefill | 差值 |
+| --- | ---: | ---: | ---: |
+| web-cms feature implementation | 118841 | 4153 | 114688 |
+| mobile-game cross-file refactoring | 109303 | 4727 | 104576 |
+
+两个请求的原生 FULL 匹配仍达到 114592/130601 tokens，但 Full
+只复用了 6016/12747 device tokens，Host Mamba 命中为零；
+JOIN-only 和 V140 则均命中了 Host 状态，另复用了
+104518/118795 Host FULL tokens。V3242 封存这些真实 ingress 边界，
+V141 已观测到的相同首次请求也存在该回退。此前的同 session 前缀
+丢失代理指标不包含首次请求，因此没有解释这部分额外工作。
+
+## FULL-only 备份后的状态保留修复
+
+CPU 真树复现出一条能产生该回退的路径：后台只备份 FULL 后，节点被
+视为已有 Host 备份；实际淘汰 FULL 时，未直接挂 session 引用的
+Mamba checkpoint 仍可能被级联丢弃，跳过原生联合 write-back 本来
+会执行的状态备份。V3233 保留了修复前的预期失败；修复后同一完整
+输入可以继续命中 Host 前缀，V3234 两个用例通过。
+
+修复限定在已启用增量 FULL 备份、实际要淘汰且没有 FULL session
+owner 的原生缓存页，只补缺失的状态，不重传已有 FULL。等待 agent
+的输出尾部维持已有不额外备份的行为。关键容量回收仍异步等待写 ACK，
+Host 分配失败保留原生回收退路。没有增加逐 decode 扫描或定期观测；
+现有 Host telemetry 会记录
+`reentry_pressure_backups.unreferenced_attempted`。
+
+V3235 的扩展定向回归发现了输出尾部不应增加 D2H 的边界，已收窄
+修复；V3237 的 128 项定向回归通过。V3238/V3240 完整保留原先
+657 项引擎检查及 48 项 subtests，新 engine tree 为
+`ea0d2b24a40f7dd578b0647f4e185d55d301a160`。
+V3239/V3241 保留此前 5454 项应用检查，合计 5467 项及 2 项
+subtests 通过，无失败或跳过；可选 Docker 测试仍不在继承资格集合内。
+这是 CPU 正确性和源码资格，尚未证明它解释了全部 GPU 回退或带来
+JCT 改善。
+
+03:41 北京时间 V141 仍正常执行，已准入 3789/3951 请求。它已接近
+完成，保留完整工具长尾修复对照，之后接续验证 checkpoint 修复版。
+两轮都沿用 24 root/batch24、seed21、相同容量和 V136 精确工作量，
+不另跑完整 native。
