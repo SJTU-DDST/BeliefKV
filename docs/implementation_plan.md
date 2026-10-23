@@ -2,6 +2,50 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+V148 `no_tool_prefetch` completed at07:20 Beijing and its actual processes
+were cleaned up. V3331 independently revalidates frozen sources,identical
+engine/capacity,all3951 exact request receipts/native stopping,and actual
+cleanup. V147 Full is1130.074s/596.230 output tokens/s; the same-engine
+no-tool arm is1136.247s/593.753. Full's differences are-0.5433%/+0.4172%.
+V3332 demand-outstanding throughput is601.641/599.004 tokens/s.
+Keep tool H2D prefetch for now. This small single-run result reverses the
+older V145 direction and does not establish a repeatable module benefit.
+
+V3330 records43 pre-completion positive JOIN plans,27 early submissions,
+26 early confirmed reuses/19.745GB FULL in the no-tool arm. V147 had
+28/29.444GB. V3333 records1000.439GB completed H2D and359.093GB D2H,
+versus880.874/357.412GB in V147. Changed interleaving and cache populations
+prevent calling the entire byte difference a direct tool-prefetch saving.
+V3334 reconstructs the6.173s mean-JCT difference along each realized final
+dependency path:2.188s submit-to-first-launch and3.955s first-launch-to-
+completion. The latter contains interleaving/waits,not pure GPU computation.
+All24 workflows and normal tails remain included; quality exclusions
+remain empty and independent task correctness remains ungraded.
+
+V148 `scheduler_only` is now running. V3336 verifies the actual live
+watcher/server/driver and GPU scheduler1036804,common capacity,and both
+4727/4153-token startup extends followed by decode. Resident-first,stage
+and JOIN-parent ordering remain; custom KV management,prepare,background
+backup,terminal-child reclaim,tool timing/prefetch,frontier restore,handoff
+and short-tool continuity are off. Its complete result is still pending.
+No further GPU experiment or native replay has been queued.
+
+The capacity audit now uses the lifecycle auditor's stable wait identity.
+A confirmed JOIN's epoch advance or a parallel tool result does not create
+a new wait. V3335 corrects V3328's raw epoch-based37 JOIN refusal identities
+to24 actual JOINs across the same42 refusal records;14 had pre-completion
+refusal evidence in V3318. Old V3328 remains preserved. All68 focused
+capacity/safe-prefix checks pass with CUDA hidden. These are offline
+diagnostic changes,not changed experiment policies or runtime controls.
+
+V3329 additionally observes11 capacity-blocked JOINs with later Host hits.
+Only9.18% of their queue-to-first-launch waiter time overlaps24 launched,
+unfinished requests. This is not actual allocator occupancy,but it argues
+against diagnosing their1.037s median queue delay solely as request-slot
+exhaustion. Existing cold-capacity evidence still does not prove a safe
+freeable donor at each blocked instant. Keep24 roots until the same-engine
+KV comparison completes; migration volume is already sufficient.
+
 V3327 now measures complete native-request outstanding time from existing
 captures. Each arm has3951 matched native request identities and identical
 input/output token counts. The denominator is the union from API receipt
