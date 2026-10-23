@@ -111,6 +111,7 @@ class NativeReactiveTelemetry:
         self._writer_timing = SampledWriterTiming()
         self._state_lock = Lock()
         self._host_pool_geometry: dict[str, dict[str, int]] = {}
+        self._device_pool_capacity: dict[str, int] = {}
         self._host_tier_enabled: bool | None = None
         self._host_pool_high_water: dict[str, dict[str, int]] = {}
         self._host_evictions: Counter[str] = Counter()
@@ -189,6 +190,10 @@ class NativeReactiveTelemetry:
                 observe_static_full_mamba(cache, allow_without_host=True)
                 if without_host else observe_static_full_mamba(cache)
             )
+            self._device_pool_capacity = {
+                "full": int(observation["device_full_tokens"]),
+                "mamba": int(observation["device_mamba_slots"]),
+            }
         except (AttributeError, KeyError, TypeError, ValueError) as exc:
             raise RuntimeError(f"native FULL/MAMBA capacity census failed: {exc}") from exc
         if without_host:
@@ -257,6 +262,34 @@ class NativeReactiveTelemetry:
         cache.on_hicache_host_eviction = self.on_native_host_eviction
         self._host_block_identity_available = True
 
+    def _device_pool_usage(self, cache: object) -> dict[str, dict[str, Any]]:
+        result = {}
+        for pool, capacity in self._device_pool_capacity.items():
+            try:
+                allocator = (
+                    cache.token_to_kv_pool_allocator if pool == "full"
+                    else cache.req_to_token_pool.mamba_allocator
+                )
+                free = allocator.available_size()
+                evictable = (
+                    cache.full_evictable_size() if pool == "full"
+                    else cache.mamba_evictable_size()
+                )
+                if (
+                    type(free) is not int or type(evictable) is not int
+                    or not 0 <= free <= capacity or not 0 <= evictable <= capacity - free
+                ):
+                    raise ValueError("inconsistent native free/evictable counters")
+                result[pool] = {
+                    "observable": True, "capacity_units": capacity, "free_units": free,
+                    "resident_units": capacity - free, "evictable_units": evictable,
+                    "non_evictable_units": capacity - free - evictable,
+                    "resident_fraction": (capacity - free) / capacity,
+                }
+            except (AttributeError, TypeError, ValueError, RuntimeError) as exc:
+                result[pool] = {"observable": False, "reason": str(exc)}
+        return result
+
     def record_host_pool_usage(self, cache: object) -> None:
         """Persist at most one scheduler-safe-point Host-pool sample per second."""
         if self._host_tier_enabled is False:
@@ -295,6 +328,7 @@ class NativeReactiveTelemetry:
             }
         else:
             close_stats = None
+        device_usage = self._device_pool_usage(cache)
         with self._state_lock:
             self._native_session_close_reclaim_stats = close_stats
             self._write_back_batch = {
@@ -322,6 +356,11 @@ class NativeReactiveTelemetry:
                     for pool, (units, byte_count) in used.items()
                 },
                 "sample_semantics": "scheduler_safe_point_sampled_high_water",
+                "device_pools": device_usage,
+                "device_sample_semantics": (
+                    "native_allocator_allocations_include_evictable_cache_and_pending_state;"
+                    "not_unique_useful_agent_kv"
+                ),
                 "write_back_batch": self._write_back_batch,
                 "reentry_pressure_backups": dict(
                     getattr(cache, "beliefkv_reentry_backup_counts", {}) or {}

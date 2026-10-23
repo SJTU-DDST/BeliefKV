@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 from datetime import datetime
 import fcntl
 import json
@@ -21,7 +22,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.internal_comparison import arm_environment
-from beliefkv.experiments.delegation_policy import REUSABLE_NESTED_IN_GRAPH_PROFILE
+from beliefkv.experiments.delegation_policy import (
+    NESTED_IN_GRAPH_PROFILE, REUSABLE_NESTED_IN_GRAPH_PROFILE,
+)
 from beliefkv.core.events import RuntimeEventKind as Kind
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
 from scripts import run_eos_pair_after_modules as pair
@@ -67,7 +70,7 @@ def reference_capacity(reference):
     return path, validated_capacity(load(path).get("capacity"))
 
 
-def project_disjoint_workload(path):
+def validated_workload(path, *, require_disjoint=True):
     manifest = load(path)
     rows = manifest.get("workloads")
     count = manifest.get("requested_workflows")
@@ -75,23 +78,30 @@ def project_disjoint_workload(path):
         type(count) is not int or not 1 <= count <= 156
         or not isinstance(rows, list) or len(rows) != count
         or type(manifest.get("max_tasks_per_project")) is not int
-        or manifest["max_tasks_per_project"] != 1
+        or not 1 <= manifest["max_tasks_per_project"] <= 5
+        or (require_disjoint and manifest["max_tasks_per_project"] != 1)
         or any(not isinstance(row, dict) for row in rows)
     ):
-        raise ValueError("source workload must declare its complete project-disjoint population")
+        raise ValueError("source workload must declare its complete bounded project population")
     projects = [row.get("repo") for row in rows]
     instances = [row.get("instance_id") for row in rows]
     if (
         any(type(value) is not str or not value for value in (*projects, *instances))
-        or len(set(projects)) != count or len(set(instances)) != count
+        or (require_disjoint and len(set(projects)) != count)
+        or max(Counter(projects).values()) > manifest["max_tasks_per_project"]
+        or len(set(instances)) != count
         or any(row.get("task_kind") != "locobench_agent" for row in rows)
     ):
-        raise ValueError("source workload needs distinct original tasks and projects")
+        raise ValueError("source workload needs distinct original tasks and bounded projects")
     return manifest
 
 
-def declared_workload_inputs(path):
-    manifest = project_disjoint_workload(path)
+def project_disjoint_workload(path):
+    return validated_workload(path)
+
+
+def declared_workload_inputs(path, *, require_disjoint=True):
+    manifest = validated_workload(path, require_disjoint=require_disjoint)
     inputs = [path]
     environment = manifest.get("environment_qualification")
     if environment is not None:
@@ -137,10 +147,14 @@ def declared_workload_inputs(path):
 
 def environment(
     reference, checkout: Path, engine: Path, run: Path, port: int, *, source_profile=None,
-    capacity=None, source_workload=None,
+    capacity=None, source_workload=None, max_running_requests=None,
 ):
-    if source_profile not in (None, "balanced_join", "reusable_nested"):
+    if source_profile not in (None, "balanced_join", "reusable_nested", "nested_oneshot"):
         raise ValueError("unknown predeclared source profile")
+    if max_running_requests is not None and (
+        type(max_running_requests) is not int or not 1 <= max_running_requests <= 9999
+    ):
+        raise ValueError("max running requests must be a positive integer")
     run = run.resolve()
     base = reference["arms"]["native_matched"]
     required = {
@@ -165,9 +179,11 @@ def environment(
         raise ValueError("capture workload manifest changed")
     roots = base["ROOT_COUNT"]
     if source_workload is not None:
-        if source_profile != "reusable_nested":
-            raise ValueError("a new source workload requires the natural reusable profile")
-        roots = str(project_disjoint_workload(target)["requested_workflows"])
+        if source_profile not in ("reusable_nested", "nested_oneshot"):
+            raise ValueError("a new source workload requires an explicit natural source profile")
+        roots = str(validated_workload(
+            target, require_disjoint=source_profile == "reusable_nested",
+        )["requested_workflows"])
     result = arm_environment(dict(base), "native_matched")
     result.update(
         PYTHONPATH=str(checkout), WORKLOAD_MANIFEST=str(target),
@@ -178,6 +194,10 @@ def environment(
     )
     if source_profile == "reusable_nested":
         result["FANOUT_PROFILE"] = REUSABLE_NESTED_IN_GRAPH_PROFILE
+    elif source_profile == "nested_oneshot":
+        result["FANOUT_PROFILE"] = NESTED_IN_GRAPH_PROFILE
+    if max_running_requests is not None:
+        result["MAX_RUNNING_REQUESTS"] = str(max_running_requests)
     if capacity is not None:
         capacity = validated_capacity(capacity)
         result.update(
@@ -334,6 +354,39 @@ def reusable_source(summary, graph, *, expected_workflows=36):
     }
 
 
+def oneshot_source(summary, graph, *, expected_workflows):
+    """Keep normal tails and report the model's actual delegation decisions."""
+    workflows = summary.get("workflows", [])
+    started = {
+        node.event.workflow_id for node in graph.nodes
+        if node.event is not None and node.event.kind is Kind.WORKFLOW_START
+    }
+    reasons = []
+    if (
+        len(workflows) != expected_workflows
+        or summary.get("completed_workflows") != expected_workflows
+        or len(started) != expected_workflows
+        or {row.get("workflow_id") for row in workflows} != started
+    ):
+        reasons.append("incomplete_workflow_population")
+    if any(row.get("native_agent_jct_eligible") is not True for row in workflows):
+        reasons.append("source_guard_or_ineligible_workflow")
+    if summary.get("subagent_fanout_profile") != NESTED_IN_GRAPH_PROFILE:
+        reasons.append("not_the_predeclared_oneshot_profile")
+    return {
+        "profile": "nested_oneshot", "accepted": not reasons, "reasons": reasons,
+        "workflow_count": len(workflows),
+        "joins": graph.summary()["event_counts"].get(Kind.JOIN_CREATE.value, 0),
+        "nested_joins": summary.get("nested_delegation_round_count"),
+        "root_rounds": summary.get("root_delegation_round_counts"),
+        "scope": (
+            "Old nested one-shot prompt with native model-directed delegation. "
+            "No reuse quota, JOIN count, normal-tail filter or measured policy "
+            "speedup selects this source."
+        ),
+    }
+
+
 def _declared_reservation_wait(plan):
     if not plan.get("hold_file"):
         return False
@@ -473,7 +526,10 @@ def register(args):
     if not args.wait_for_gpu and not qualified.resources(args.port)["ready"]:
         raise ValueError("GPU, port or disk is occupied")
     workload_inputs = (
-        declared_workload_inputs(args.source_workload.resolve()) if args.source_workload else []
+        declared_workload_inputs(
+            args.source_workload.resolve(),
+            require_disjoint=args.source_profile != "nested_oneshot",
+        ) if args.source_workload else []
     )
     subprocess.run(["git", "-C", str(ROOT), "worktree", "add", "--detach", str(checkout), revision],
                    check=True, capture_output=True)
@@ -493,6 +549,7 @@ def register(args):
     env = environment(
         reference, checkout, engine, args.run_root, args.port,
         source_profile=args.source_profile, capacity=capacity, source_workload=args.source_workload,
+        max_running_requests=args.max_running_requests,
     )
     extra = [
         args.reference, args.reference.with_suffix(".state.json"),
@@ -621,6 +678,17 @@ def watch(registration: Path):
                 state["source_selection"] = selection
                 if not selection["accepted"]:
                     state["status"] = "source_captured_selection_rejected"
+            elif plan.get("source_profile") == "nested_oneshot":
+                from scripts.run_causal_gpu_replay import source_plan
+
+                graph, _, _ = source_plan(arm)
+                selection = oneshot_source(
+                    load(summary_path), graph, expected_workflows=roots,
+                )
+                reservation.write_json(run / "source_selection.json", selection)
+                state["source_selection"] = selection
+                if not selection["accepted"]:
+                    state["status"] = "source_captured_selection_rejected"
         except Exception as error:
             administrative = interrupted or isinstance(error, fresh.HoldChanged)
             state["administratively_interrupted"] = administrative
@@ -659,8 +727,11 @@ def main():
     parser.add_argument("--registration", type=Path)
     parser.add_argument("--run-root", type=Path)
     parser.add_argument("--port", type=int, default=18546)
-    parser.add_argument("--source-profile", choices=("balanced_join", "reusable_nested"))
+    parser.add_argument(
+        "--source-profile", choices=("balanced_join", "reusable_nested", "nested_oneshot"),
+    )
     parser.add_argument("--source-workload", type=Path)
+    parser.add_argument("--max-running-requests", type=int)
     parser.add_argument("--wait-for-gpu", action="store_true")
     parser.add_argument("--after-comparison", type=Path)
     args = parser.parse_args()

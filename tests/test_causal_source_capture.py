@@ -225,8 +225,55 @@ def test_explicit_disjoint_capture_changes_only_manifest_root_count_and_profile(
     assert candidate["ROOT_COUNT"] == "16" and candidate["MAX_RUNNING_REQUESTS"] == "8"
     assert candidate["NATIVE_POLICY_BASELINE"] == "1"
     assert plan["arms"]["native_matched"]["ROOT_COUNT"] == "36"
-    with pytest.raises(ValueError, match="natural reusable"):
+    with pytest.raises(ValueError, match="explicit natural"):
         capture.environment(*args, source_workload=source)
+
+
+def test_oneshot_capture_accepts_24_tasks_from_16_projects_and_explicit_batch(
+    tmp_path, monkeypatch,
+):
+    plan, checkout = reference(tmp_path)
+    source = tmp_path / "configs/oneshot.json"
+    source.parent.mkdir()
+    manifest = disjoint_manifest(24)
+    manifest["max_tasks_per_project"] = 2
+    for index in range(16, 24):
+        manifest["workloads"][index]["repo"] = f"locobench/project-{index - 16}"
+    contents = json.dumps(manifest)
+    source.write_text(contents)
+    (checkout / "configs/oneshot.json").write_text(contents)
+    monkeypatch.setattr(capture, "ROOT", tmp_path)
+    args = (plan, checkout, tmp_path / "engine", tmp_path / "run", 18564)
+    env = capture.environment(
+        *args, source_profile="nested_oneshot", source_workload=source,
+        max_running_requests=24, capacity=capacity(),
+    )
+    assert env["ROOT_COUNT"] == env["MAX_RUNNING_REQUESTS"] == "24"
+    assert env["FANOUT_PROFILE"] == "native_in_graph_nested_2to4"
+    assert env["BELIEFKV_SUBAGENT_RETENTION"] == "off"
+    assert env["BELIEFKV_ENABLE_TERMINAL_CHILD_RECLAIM"] == "0"
+    assert env["NATIVE_POLICY_BASELINE"] == "1"
+    assert env["DEVICE_FULL_TOKENS"] == "1797968"
+    assert env["DEVICE_MAMBA_SLOTS"] == "513"
+    assert plan["arms"]["native_matched"]["MAX_RUNNING_REQUESTS"] == "8"
+    with pytest.raises(ValueError, match="source workload"):
+        capture.environment(
+            *args, source_profile="reusable_nested", source_workload=source,
+        )
+    manifest["workloads"][23]["repo"] = manifest["workloads"][0]["repo"]
+    source.write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match="bounded projects"):
+        capture.validated_workload(source, require_disjoint=False)
+
+
+@pytest.mark.parametrize("value", (0, -1, True, "24", 1.5, 10000))
+def test_capture_rejects_an_invalid_explicit_running_limit(tmp_path, value):
+    plan, checkout = reference(tmp_path)
+    with pytest.raises(ValueError, match="positive integer"):
+        capture.environment(
+            plan, checkout, tmp_path, tmp_path / "run", 18564,
+            source_profile="nested_oneshot", max_running_requests=value,
+        )
 
 
 @pytest.mark.parametrize("mutation", (
@@ -352,7 +399,7 @@ def test_capture_binds_the_pinned_environment_evidence_before_allocating_resourc
             capture.declared_workload_inputs(path)
 
 
-@pytest.mark.parametrize("roots", (16, 36))
+@pytest.mark.parametrize("roots", (16, 24, 36))
 def test_capture_monitor_reads_and_validates_the_declared_client_population(
     tmp_path, monkeypatch, roots,
 ):
@@ -539,6 +586,40 @@ def test_reusable_source_validates_the_entire_sixteen_root_population(change):
     test_reusable_source_uses_actual_resume_and_does_not_require_an_arbitrary_join_quota(
         change, root_count=16,
     )
+
+
+@pytest.mark.parametrize("change", (None, "guard", "incomplete", "wrong_profile", "wrong_workflows"))
+def test_oneshot_source_keeps_normal_tails_and_does_not_require_reuse(change):
+    from types import SimpleNamespace as NS
+
+    ids = [f"w{index}" for index in range(24)]
+    graph = NS(
+        nodes=[NS(event=NS(kind=capture.Kind.WORKFLOW_START, workflow_id=value)) for value in ids],
+        summary=lambda: {"event_counts": {capture.Kind.JOIN_CREATE.value: 93}},
+    )
+    summary = {
+        "completed_workflows": 24,
+        "subagent_fanout_profile": "native_in_graph_nested_2to4",
+        "duration_seconds": 10000,
+        "workflows": [
+            {"workflow_id": value, "native_agent_jct_eligible": True,
+             "duration_seconds": 100 if index < 23 else 10000}
+            for index, value in enumerate(ids)
+        ],
+        "nested_delegation_round_count": 12, "root_delegation_round_counts": [4] * 24,
+    }
+    if change == "guard":
+        summary["workflows"][0]["native_agent_jct_eligible"] = False
+    elif change == "incomplete":
+        summary["completed_workflows"] = 23
+    elif change == "wrong_profile":
+        summary["subagent_fanout_profile"] = "native_in_graph_reusable_nested"
+    elif change == "wrong_workflows":
+        summary["workflows"][0]["workflow_id"] = "unrelated"
+    result = capture.oneshot_source(summary, graph, expected_workflows=24)
+    assert result["accepted"] is (change is None)
+    assert result["joins"] == 93 and result["nested_joins"] == 12
+    assert "criteria" not in result
 
 
 def test_predeclared_capture_waits_without_allocating_or_touching_another_job(tmp_path, monkeypatch):

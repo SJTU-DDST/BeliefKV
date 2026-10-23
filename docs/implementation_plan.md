@@ -2,6 +2,30 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+Latest user direction supersedes the reusable-subagent matrix: restore the old
+`native_in_graph_nested_2to4` one-shot workload and validate the original KV
+management mechanisms first. Use24 simultaneous roots and a running/decode
+limit of24. The pinned long-project pool has16 distinct projects, so the new
+manifest contains24 distinct original tasks with at most two per project.
+Do not describe this as24 independent project prefixes. Reusable APIs and
+selective retention remain disabled. Predictive may safely reclaim dead child
+private KV; native retains its ordinary session-reference/cache eviction rules.
+32 distinct long projects are not currently qualified. A32-project extension
+would require shorter sources and additional environment qualification, or
+relaxed source checks, and is not justified
+as a way to avoid recomputation. First measure the new workload's actual free,
+evictable and non-evictable device pages and useful Host state loss.
+See `configs/migration/qwen35_locobench_oneshot_24root_running24_20261024.json`.
+The old16-root pilot's `token_usage` and `resident_pressure` subtract evictable
+cache: they do not measure total HBM occupancy. Preserve its numeric samples
+and explicit semantics correction inV3181. Normal JCT tails remain included.
+Capture a complete natural source, then compare the same work, seed, capacity
+and batch in native, Full and JOIN-only. Tool H2D uses actual-ACK priority
+for1500ms. EOS JOIN, cold incremental preparation, tool timing/pressure offload
+and workflow/resident-first/stage ordering remain the original Full candidates;
+execution-frontier restoration and short-tool continuity remain off.
+The active performance goal remains unmet.
+
 Latest GPU pilot V135 was stopped at2026-10-23 23:58:30 Beijing after15/16
 natural eligible completions. It produced20 spawns and16 satisfied JOINs,
 five multi-round roots (maximum4), but zero nesting or actual handle reuse.
@@ -16,7 +40,7 @@ Before another reusable-source capture, address the invalid-edit loop and
 verify natural handle reuse and meaningful retention pressure without forcing
 the model's DAG or reuse choices.
 
-Latest task: prepare the natural reusable-subagent workload and selective
+Previous task, now deferred: prepare the natural reusable-subagent workload and selective
 dormant KV retention on main. Models choose rounds, nesting and whether to resume
 a prior stable handle. Each activation gets a new invocation/JOIN and preserves
 the same private transcript even after physical eviction. Compare the exact same

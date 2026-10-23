@@ -1547,6 +1547,8 @@ def test_capacity_census_is_scheduler_local_and_fail_closed(
         lambda cache: {
             "pool_layout": "static_separate_full_mamba",
             "device_total_bytes": 800,
+            "device_full_tokens": 20,
+            "device_mamba_slots": 5,
             "host_full_tokens": 10,
             "host_mamba_slots": 4,
         },
@@ -1590,6 +1592,8 @@ def test_capacity_census_is_scheduler_local_and_fail_closed(
         lambda _cache: {
             "pool_layout": "static_separate_full_mamba",
             "device_total_bytes": 800,
+            "device_full_tokens": 20,
+            "device_mamba_slots": 5,
             "host_full_tokens": 10,
             "host_mamba_slots": 4,
         },
@@ -2045,6 +2049,13 @@ def test_host_pool_usage_and_evictions_are_persisted_by_pool(
         pool: {"used_units": 0, "used_bytes": 0}
         for pool in ("full", "mamba")
     }
+    audit._device_pool_capacity = {"full": 100, "mamba": 10}
+    cache.token_to_kv_pool_allocator = SimpleNamespace(available_size=lambda: 10)
+    cache.req_to_token_pool = SimpleNamespace(
+        mamba_allocator=SimpleNamespace(available_size=lambda: 2),
+    )
+    cache.full_evictable_size = lambda: 50
+    cache.mamba_evictable_size = lambda: 3
     audit.record_host_pool_usage(cache)
     scan_counts["calls"] = 6
     if with_scan_counts:
@@ -2067,6 +2078,13 @@ def test_host_pool_usage_and_evictions_are_persisted_by_pool(
     usage = next(row for row in rows if row["event"] == "host_pool_usage")
     assert usage["pools"]["full"]["used_bytes"] == 640
     assert usage["pools"]["mamba"]["used_fraction"] == 0.2
+    assert usage["device_pools"]["full"] == {
+        "observable": True, "capacity_units": 100, "free_units": 10,
+        "resident_units": 90, "evictable_units": 50, "non_evictable_units": 40,
+        "resident_fraction": 0.9,
+    }
+    assert usage["device_pools"]["mamba"]["resident_units"] == 8
+    assert usage["device_pools"]["mamba"]["non_evictable_units"] == 5
     assert usage["full_host_eviction_scans"] == ({
         **scan_counts, "calls": 5,
     } if with_scan_counts else {})
@@ -2093,6 +2111,28 @@ def test_host_pool_usage_and_evictions_are_persisted_by_pool(
     else:
         assert "native_session_close_reclaim" not in usage
         assert "native_session_close_reclaim" not in status
+
+
+@pytest.mark.parametrize("free,evictable", (
+    (None, 0), (-1, 0), (101, 0), (10, 91), (True, 0),
+))
+def test_device_pressure_does_not_report_missing_or_inconsistent_counters_as_free(
+    tmp_path, free, evictable,
+):
+    audit = NativeReactiveTelemetry(tmp_path / "server")
+    try:
+        audit._device_pool_capacity = {"full": 100, "mamba": 10}
+        cache = SimpleNamespace(
+            token_to_kv_pool_allocator=SimpleNamespace(available_size=lambda: free),
+            full_evictable_size=lambda: evictable,
+        )
+        sample = audit._device_pool_usage(cache)
+        assert sample["full"]["observable"] is False
+        assert sample["mamba"]["observable"] is False
+        assert "free_units" not in sample["full"]
+        assert "resident_fraction" not in sample["mamba"]
+    finally:
+        audit.close()
 
 
 def test_post_eviction_cache_hits_and_recompute_are_split_by_pool(

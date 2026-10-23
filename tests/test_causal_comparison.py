@@ -9,7 +9,7 @@ from beliefkv.experiments.source_provenance import sha256_file
 from scripts import run_causal_comparison as comparison
 
 
-@pytest.mark.parametrize("root_count", (16, 36))
+@pytest.mark.parametrize("root_count", (16, 24, 36))
 def test_replay_population_binds_every_declared_workflow_and_rejects_subsets(root_count):
     from beliefkv.core.events import RuntimeEventKind as Kind
 
@@ -106,6 +106,39 @@ def test_comparison_does_not_silently_change_the_requested_profile(reference, tm
     reference["arms"]["full"][field] = value
     with pytest.raises(ValueError):
         comparison.environment(reference, "full", tmp_path, tmp_path, tmp_path, 18554, tmp_path)
+
+
+@pytest.mark.parametrize("label", comparison.ORDER)
+def test_explicit_24_running_limit_is_the_same_in_every_control(reference, tmp_path, label):
+    reference["arms"]["full"]["ROOT_COUNT"] = "24"
+    reference["arms"]["full"]["MAX_RUNNING_REQUESTS"] = "24"
+    env, _, _ = comparison.environment(
+        reference, label, tmp_path, tmp_path, tmp_path, 18564, tmp_path,
+        max_running_requests=24,
+    )
+    assert env["ROOT_COUNT"] == env["MAX_RUNNING_REQUESTS"] == "24"
+    assert env["BELIEFKV_SUBAGENT_RETENTION"] == "off"
+    assert env["BELIEFKV_ENABLE_TERMINAL_CHILD_RECLAIM"] == (
+        "1" if label in ("full", "no_background_prepare") else "0"
+    )
+    with pytest.raises(ValueError, match="MAX_RUNNING_REQUESTS"):
+        comparison.environment(
+            reference, label, tmp_path, tmp_path, tmp_path, 18564, tmp_path,
+        )
+
+
+def test_observed_configuration_checks_the_registered_batch_limit(tmp_path, monkeypatch):
+    checks = []
+    monkeypatch.setattr(
+        comparison.comparison, "observe_arm",
+        lambda *args, **kwargs: checks.append((args, kwargs)),
+    )
+    comparison.observed_configuration(
+        {"max_running_requests": 24}, "native_matched", tmp_path,
+    )
+    assert checks == [
+        (("native_matched", tmp_path), {"max_running_requests": 24, "runtime_overrides": None}),
+    ]
 
 
 def test_generated_tool_model_settings_are_consumed_by_the_real_runtime_constructor(

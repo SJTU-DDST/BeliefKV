@@ -49,15 +49,20 @@ SERVER_FIELDS = (
 )
 
 
-def environment(reference, mode, checkout, engine, arm, port, plugin, *, sampling_mode="legacy"):
+def environment(
+    reference, mode, checkout, engine, arm, port, plugin, *, sampling_mode="legacy",
+    max_running_requests=8,
+):
     if mode not in ALL_CONTROLS:
         raise ValueError("unknown causal comparison control: " + mode)
     if sampling_mode not in ("legacy", "position"):
         raise ValueError("unknown causal replay sampling mode")
+    if type(max_running_requests) is not int or not 1 <= max_running_requests <= 9999:
+        raise ValueError("max running requests must be a positive integer")
     retention = RETENTION_CONTROLS.get(mode)
     policy = "full" if retention or mode in ("no_background_prepare", "no_tool_prefetch") else mode
     required = {
-        "MAX_RUNNING_REQUESTS": "8", "SERVER_RANDOM_SEED": "21",
+        "MAX_RUNNING_REQUESTS": str(max_running_requests), "SERVER_RANDOM_SEED": "21",
         "SAMPLING_SEED": "21", "PYTHONHASHSEED": "21", "HICACHE_SIZE_GB": "200",
         "HOST_SPLIT": "80:20", "MODEL_CONTEXT_TOKENS": "262144",
         "JOIN_PREFETCH_TRIGGER": "observed_eos", "PREFILL_SCHEDULING_POLICY": "workflow",
@@ -287,7 +292,8 @@ def observed_configuration(plan, label, arm, *, final=False):
             "tool_prefetch": plan["reference_environment"].get("TOOL_PREFETCH") != "0",
         }
     comparison.observe_arm(
-        mode, arm, max_running_requests=8, runtime_overrides=overrides,
+        mode, arm, max_running_requests=plan.get("max_running_requests", 8),
+        runtime_overrides=overrides,
     )
     if final and mode != "native_matched" and qualified.last_runtime_state(
         arm / "opportunities/admission_opportunities.jsonl",
@@ -514,13 +520,21 @@ def register(args):
     summaries = list(args.source_arm.glob("client_*/summary.json"))
     quality = load(summaries[0])
     source_roots = complete_source_population(quality, graph)
+    running = args.max_running_requests if args.max_running_requests is not None else 8
+    if type(running) is not int or not 1 <= running <= 9999:
+        raise ValueError("max running requests must be a positive integer")
+    if smoke_server["source_server_parameters"].get("max_running_requests") != running:
+        raise ValueError("comparison running limit differs from the GPU-checked source")
     if retention_spec is not None:
         retention_source_matches(retention_spec, quality, source_roots)
     with CapturedTokenCorpus(args.source_arm / "server/request_tokens.jsonl", expected) as corpus:
         tokens = corpus.evidence
     reference = {**reference, "arms": {
         **reference["arms"],
-        "full": {**reference["arms"]["full"], "ROOT_COUNT": str(source_roots)},
+        "full": {
+            **reference["arms"]["full"], "ROOT_COUNT": str(source_roots),
+            "MAX_RUNNING_REQUESTS": str(running),
+        },
     }}
     engine = engine_evidence(args.engine, args.engine_report, args.engine_sources)
     fresh._require_clean(ROOT)
@@ -609,6 +623,7 @@ def register(args):
         "retention_configuration": str(args.retention_config.resolve()) if args.retention_config else None,
         "reusable_source_opportunities": reuse_selection,
         "tool_prefetch_priority_ms": args.tool_prefetch_priority_ms,
+        "max_running_requests": running,
         "run_root": str(args.run_root.resolve()), "port": args.port,
         "sampling_calibration": str(args.sampling_calibration.resolve()),
         "sampling_mode": args.sampling_mode,
@@ -629,6 +644,7 @@ def register(args):
             {"arms": {"full": plan["reference_environment"]}}, label, checkout,
             frozen_engine, args.run_root / label, args.port, args.run_root / "plugin",
             sampling_mode=plan["sampling_mode"],
+            max_running_requests=plan["max_running_requests"],
         )
         plan["runtime_cpu_preflight"][label] = preflight_runtime(
             settings, plan["source_server_parameters"]["model_path"],
@@ -718,6 +734,7 @@ def watch(registration):
                     {"arms": {"full": plan["reference_environment"]}}, label, ROOT,
                     Path(plan["engine_checkout"]), arm, plan["port"], run / "plugin",
                     sampling_mode=plan.get("sampling_mode", "legacy"),
+                    max_running_requests=plan.get("max_running_requests", 8),
                 )
                 if event_socket is not None and event_socket.exists():
                     raise ValueError("preserve the existing runtime event socket")
@@ -874,6 +891,7 @@ def main():
     parser.add_argument("--arms", nargs="+", choices=ALL_CONTROLS, default=list(ORDER))
     parser.add_argument("--retention-config", type=Path)
     parser.add_argument("--tool-prefetch-priority-ms", type=float)
+    parser.add_argument("--max-running-requests", type=int)
     parser.add_argument("--after-registration", type=Path)
     parser.add_argument("--sampling-mode", choices=("legacy", "position"), default="legacy")
     parser.add_argument("--maximum-replay-slowdown", type=float)
@@ -885,6 +903,7 @@ def main():
             "watch", "port", "arms", "after_registration", "sampling_mode", "maximum_replay_slowdown",
             "retention_config",
             "tool_prefetch_priority_ms",
+            "max_running_requests",
         )):
             parser.error("registration requires source, qualifications, engine and fresh output paths")
         if not 1 <= args.port <= 65535:
