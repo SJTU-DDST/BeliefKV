@@ -69,6 +69,72 @@ def test_reusable_capture_is_explicit_and_preserves_tasks_capacity_and_native_po
         capture.environment(*args, source_profile="force_resume")
 
 
+def capacity():
+    return {
+        "device_full_bytes": 36822405120, "device_full_tokens": 1797968,
+        "device_mamba_bytes": 33096007680, "device_mamba_slots": 513,
+        "device_total_bytes": 69918412800, "host_full_bytes": 160000020480,
+        "host_full_tokens": 7812501, "host_mamba_bytes": 40050032640,
+        "host_mamba_slots": 622, "host_total_bytes": 200050053120,
+        "pool_layout": "static_separate_full_mamba",
+    }
+
+
+def test_source_explicitly_binds_successful_reference_native_capacity(tmp_path):
+    plan, checkout = reference(tmp_path)
+    args = (plan, checkout, tmp_path / "engine", tmp_path / "run", 18546)
+    original = capture.environment(*args, source_profile="reusable_nested")
+    fixed = capture.environment(*args, source_profile="reusable_nested", capacity=capacity())
+    assert {key for key in fixed if fixed.get(key) != original.get(key)} == {
+        "DEVICE_FULL_TOKENS", "DEVICE_MAMBA_SLOTS",
+    }
+    assert fixed["DEVICE_FULL_TOKENS"] == "1797968"
+    assert fixed["DEVICE_MAMBA_SLOTS"] == "513"
+    assert "DEVICE_FULL_TOKENS" not in plan["arms"]["native_matched"]
+    assert fixed["ROOT_COUNT"] == "36" and fixed["MAX_RUNNING_REQUESTS"] == "8"
+    assert fixed["NATIVE_POLICY_BASELINE"] == "1" and fixed["BELIEFKV_SUBAGENT_RETENTION"] == "off"
+
+
+def test_reference_capacity_comes_from_the_completed_native_census(tmp_path):
+    plan = {"run_root": str(tmp_path)}
+    path = tmp_path / "native_matched/server/native_capacity_census.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps({"capacity": capacity()}))
+    observed_path, observed = capture.reference_capacity(plan)
+    assert observed_path == path and observed == capacity()
+
+
+@pytest.mark.parametrize("field,value", (
+    ("device_full_tokens", 0), ("device_mamba_slots", -1),
+    ("device_full_tokens", True), ("device_mamba_slots", "513"),
+    ("device_total_bytes", 1), ("host_total_bytes", 1),
+    ("host_full_tokens", None), ("pool_layout", "different"),
+))
+def test_invalid_capacity_is_rejected_before_startup(field, value):
+    census = {**capacity(), field: value}
+    with pytest.raises(ValueError, match="capacity census"):
+        capture.validated_capacity(census)
+
+
+@pytest.mark.parametrize("change", (None, "full", "mamba", "host", "missing"))
+def test_capture_checks_actual_capacity_not_only_requested_sizes(tmp_path, change):
+    expected, actual = capacity(), capacity()
+    if change in ("full", "mamba", "host"):
+        field = {
+            "full": "device_full_tokens", "mamba": "device_mamba_slots",
+            "host": "host_full_tokens",
+        }[change]
+        actual[field] += 1
+    path = tmp_path / "server/native_capacity_census.json"
+    path.parent.mkdir()
+    if change != "missing":
+        path.write_text(json.dumps({"capacity": actual}))
+    if change is None:
+        capture.observe(tmp_path, expected_capacity=expected)
+    else:
+        with pytest.raises(ValueError, match="capacity"):
+            capture.observe(tmp_path, expected_capacity=expected, final=change == "missing")
+
 @pytest.mark.parametrize("field,value", (
     ("ROOT_COUNT", "12"), ("MAX_RUNNING_REQUESTS", "12"),
     ("SAMPLING_SEED", "22"), ("PYTHONHASHSEED", "22"),

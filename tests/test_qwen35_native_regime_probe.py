@@ -190,6 +190,7 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
     tmp_path, comparison, *, protection="1", scheduling="workflow", last_child="0",
     tool_restore="speculative", frontier="1", join_prefetch="1", tool_prefetch=None,
     tool_priority="0", fanout="native_in_graph_nested_2to4",
+    device_full=None, device_mamba=None,
 ):
     import sys
     from beliefkv.experiments.internal_comparison import arm_environment
@@ -221,6 +222,10 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
     }, comparison, tool_prefetch=tool_prefetch)
     if join_prefetch == "0":
         environment["BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH"] = "0"
+    if device_full is not None:
+        environment["DEVICE_FULL_TOKENS"] = str(device_full)
+    if device_mamba is not None:
+        environment["DEVICE_MAMBA_SLOTS"] = str(device_mamba)
     result = subprocess.run(
         ["/bin/bash", str(SCRIPT)],
         env={**os.environ, **environment, "PATH": str(binary) + os.pathsep + os.environ["PATH"]},
@@ -242,6 +247,12 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
     expected_priority = float(tool_priority) if custom_kv and tool_prefetch is not False else 0.
     assert float(actual["BELIEFKV_TOOL_PREFETCH_PRIORITY_MS"]) == expected_priority
     assert actual["FANOUT_PROFILE"] == fanout
+    for flag, expected in (
+        ("--max-total-tokens", device_full), ("--max-mamba-cache-size", device_mamba),
+    ):
+        if expected is not None:
+            position = payload["arguments"].index(flag)
+            assert payload["arguments"][position + 1] == str(expected)
     workflow = comparison in ("full", "scheduler_only") and scheduling == "workflow"
     assert actual["BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY"] == str(int(workflow))
     assert actual["BELIEFKV_ENABLE_RESIDENT_FIRST"] == str(int(workflow))
@@ -311,6 +322,13 @@ def test_no_tool_prefetch_keeps_prediction_prepare_and_join_without_gpu(
 def test_reusable_profile_reaches_real_launch_entry_without_a_gpu(tmp_path, comparison):
     test_internal_comparison_effective_environment_before_gpu_launch(
         tmp_path, comparison, fanout="native_in_graph_reusable_nested", tool_priority="1500",
+    )
+
+
+def test_source_reference_capacity_reaches_native_launcher_without_a_gpu(tmp_path):
+    test_internal_comparison_effective_environment_before_gpu_launch(
+        tmp_path, "native_matched", fanout="native_in_graph_reusable_nested",
+        device_full=1797968, device_mamba=513,
     )
 
 

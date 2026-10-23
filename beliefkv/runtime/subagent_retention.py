@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter, OrderedDict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import os
 import time
 
@@ -28,6 +28,14 @@ class KVExtent:
         return self.component, self.node_id, self.created
 
 
+@dataclass(frozen=True)
+class _ExtentGeometry:
+    snapshot: tuple[KVExtent, ...]
+    private_bytes: int
+    full_tokens: int
+    missing_backup_bytes: int
+
+
 @dataclass
 class DormantState:
     key: object
@@ -43,9 +51,34 @@ class DormantState:
     scored: bool = False
     probability: float = .5
     score: float = 0.
+    _extent_geometry: _ExtentGeometry | None = field(
+        default=None, init=False, repr=False, compare=False,
+    )
+
+    @property
+    def geometry(self) -> _ExtentGeometry:
+        cached = self._extent_geometry
+        if cached is not None and cached.snapshot is self.extents:
+            return cached
+        private = full = missing = 0
+        # KVExtent and its tuple are immutable; a new native snapshot replaces
+        # the tuple. Live locks and ownership still require native validation.
+        for item in self.extents:
+            if item.exclusive:
+                private += item.size_bytes
+            if item.component == 0:
+                full += item.units
+            if item.device and not item.host:
+                missing += item.size_bytes
+        cached = _ExtentGeometry(self.extents, private, full, missing)
+        self._extent_geometry = cached
+        return cached
 
     @property
     def private_bytes(self) -> int:
+        cached = self._extent_geometry
+        if cached is not None and cached.snapshot is self.extents:
+            return cached.private_bytes
         return sum(item.size_bytes for item in self.extents if item.exclusive)
 
 
@@ -381,14 +414,13 @@ class DormantSubagentRetention:
     def _rank(self, state: DormantState) -> tuple:
         if self.policy == "selective" and self.estimator.ready:
             state.probability = self.estimator.predict(state.features)
-            size = max(1, state.private_bytes)
-            tokens = sum(x.units for x in state.extents if x.component == 0)
-            missing = sum(x.size_bytes for x in state.extents if x.device and not x.host)
+            geometry = state.geometry
+            size = max(1, geometry.private_bytes)
             # Charge a conservative whole-copy restore upper bound until
             # exposed-wait samples exist. This proxy is not a JCT prediction.
             state.score = (
-                state.probability * tokens / self.recompute_tokens_per_s
-                - missing / self.transfer_bytes_per_s
+                state.probability * geometry.full_tokens / self.recompute_tokens_per_s
+                - geometry.missing_backup_bytes / self.transfer_bytes_per_s
                 - state.probability * size / self.transfer_bytes_per_s
             )
             return state.score / size, state.returned_at
@@ -462,6 +494,7 @@ class DormantSubagentRetention:
         if not state.retry_anchors:
             state.discarded = True
             state.extents = ()
+            state._extent_geometry = None
             # Keep the episode for a future positive label and exact-history
             # resume. A physical cache decision does not close a logical handle.
             if state.closed:

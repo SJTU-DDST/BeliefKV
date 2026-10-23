@@ -41,8 +41,35 @@ def reference_complete(plan, state, *, alive=reservation.alive):
         raise ValueError("reference pair must finish and release its verified processes")
 
 
+def validated_capacity(capacity):
+    fields = (
+        "device_full_bytes", "device_full_tokens", "device_mamba_bytes", "device_mamba_slots",
+        "device_total_bytes", "host_full_bytes", "host_full_tokens", "host_mamba_bytes",
+        "host_mamba_slots", "host_total_bytes",
+    )
+    if (
+        not isinstance(capacity, dict)
+        or capacity.get("pool_layout") != "static_separate_full_mamba"
+        or any(type(capacity.get(name)) is not int or capacity[name] <= 0 for name in fields)
+        or capacity["device_total_bytes"] != (
+            capacity["device_full_bytes"] + capacity["device_mamba_bytes"]
+        )
+        or capacity["host_total_bytes"] != (
+            capacity["host_full_bytes"] + capacity["host_mamba_bytes"]
+        )
+    ):
+        raise ValueError("capture needs a complete positive reference capacity census")
+    return dict(capacity)
+
+
+def reference_capacity(reference):
+    path = Path(reference["run_root"]) / "native_matched/server/native_capacity_census.json"
+    return path, validated_capacity(load(path).get("capacity"))
+
+
 def environment(
     reference, checkout: Path, engine: Path, run: Path, port: int, *, source_profile=None,
+    capacity=None,
 ):
     if source_profile not in (None, "balanced_join", "reusable_nested"):
         raise ValueError("unknown predeclared source profile")
@@ -72,6 +99,12 @@ def environment(
     )
     if source_profile == "reusable_nested":
         result["FANOUT_PROFILE"] = REUSABLE_NESTED_IN_GRAPH_PROFILE
+    if capacity is not None:
+        capacity = validated_capacity(capacity)
+        result.update(
+            DEVICE_FULL_TOKENS=str(capacity["device_full_tokens"]),
+            DEVICE_MAMBA_SLOTS=str(capacity["device_mamba_slots"]),
+        )
     return result
 
 
@@ -97,7 +130,13 @@ def engine_evidence(engine: Path, report: Path, sources: Path) -> dict:
     }
 
 
-def observe(arm: Path, *, final=False):
+def observe(arm: Path, *, final=False, expected_capacity=None):
+    census = arm / "server/native_capacity_census.json"
+    if expected_capacity is not None:
+        if final and not census.is_file():
+            raise ValueError("capture lacks final native capacity census")
+        if census.is_file() and load(census).get("capacity") != expected_capacity:
+            raise ValueError("capture capacity differs from the reference native")
     path = arm / "server/native_telemetry_status.json"
     if not path.exists():
         if final:
@@ -286,6 +325,8 @@ def wait_for_resources(plan, state, path, interrupted):
             if previous_alive else qualified.resources(plan["port"])
         )
         if available["ready"]:
+            state.update(resources=available, checked_at=reservation.now().isoformat())
+            reservation.write_json(path, state)
             return
         if not plan.get("wait_for_gpu"):
             raise ValueError("resources changed before capture")
@@ -328,6 +369,7 @@ def register(args):
     reference = load(args.reference)
     fresh.verify(reference)
     reference_complete(reference, load(args.reference.with_suffix(".state.json")))
+    capacity_path, capacity = reference_capacity(reference)
     queue_launch_allowed({**reference, "wait_for_gpu": args.wait_for_gpu})
     count = comparison.qualify_report(args.cpu_report, args.cpu_sources)
     sources = load(args.cpu_sources)
@@ -366,11 +408,12 @@ def register(args):
         raise ValueError("frozen engine differs from the tested capture engine")
     env = environment(
         reference, checkout, engine, args.run_root, args.port,
-        source_profile=args.source_profile,
+        source_profile=args.source_profile, capacity=capacity,
     )
     extra = [
         args.reference, args.reference.with_suffix(".state.json"),
         args.cpu_report, args.cpu_sources, args.engine_report, args.engine_sources,
+        capacity_path,
     ]
     if args.after_comparison:
         extra.append(args.after_comparison)
@@ -383,6 +426,7 @@ def register(args):
         "engine_tree": tree["actual_tree"], "source_sha256": sources,
         "passing_cpu_cases": count, "engine_evidence": evidence,
         "environment": env, "run_root": str(args.run_root.resolve()), "port": args.port,
+        "capture_capacity": capacity,
         "hold_file": reference["hold_file"],
         "external_inputs": [
             *reference["external_inputs"],
@@ -453,10 +497,10 @@ def watch(registration: Path):
                 fresh.check_hold(plan, released=True)
                 if interrupted:
                     raise ValueError("capture monitor was stopped")
-                observe(arm)
+                observe(arm, expected_capacity=plan.get("capture_capacity"))
                 time.sleep(15)
             state["original_exit_code"] = driver.wait()
-            observe(arm, final=True)
+            observe(arm, final=True, expected_capacity=plan.get("capture_capacity"))
             state["outcome"] = fresh.completed_arm(
                 load(arm / "client_36/summary.json"), state["original_exit_code"], 36,
             )

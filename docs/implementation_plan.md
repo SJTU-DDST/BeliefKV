@@ -47,7 +47,20 @@ only after06:00, its own marker release and resource checks. Newer pauses,
 later deadlines and cancellation take precedence. A started driver must still
 release GPU before20:00. V134 failed before model launch because the shell
 profile allowlist omitted the reusable profile; keep the failed evidence and
-replace it with qualified/frozen V134b rather than treating it as captured work.
+do not treat it as captured work. V134b then failed before workload execution:
+auto-sized FULL/Mamba pools consumed graph headroom. V134c explicitly binds the
+completed reference native census (1,797,968 FULL tokens /513 Mamba slots) and
+verifies actual capacity; keep the same graph, workload, batch and seed.
+See [the CPU and capacity evidence](reports/2026-10/dormant_geometry_cpu_20261023_zh.md).
+
+Dormant selective ranking now reuses only three aggregates of immutable
+checkpoint snapshots. Native identity/lock/ownership checks remain live;
+each replacement snapshot recomputes aggregates. Pinned-source metadata
+comparisons preserve all decisions and reduce trained repeated-plan P50 by
+19--33%; first-plan/cold differences stay within about1.5%. These are local
+CPU results, not JCT gains. Latest retained qualification V3140 passes5228
+cases plus2 subtests with no skips; the first identity-list cache regression
+was removed and its negative measurements remain available.
 
 Earlier entries below preserve historical implementation and validation context.
 
