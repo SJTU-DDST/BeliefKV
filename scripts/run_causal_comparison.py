@@ -191,6 +191,47 @@ def source_reference(reference, roots, running, capacity):
     return {**reference, "arms": {**reference["arms"], "full": common}}
 
 
+def experiment_source_evidence(spec, quality, smoke_server, arm, roots, running):
+    common = spec["common_environment"]
+    source_path = Path(smoke_server["source_registration"])
+    bindings = [
+        row["sha256"] for row in smoke_server.get("external_inputs", ())
+        if Path(row["path"]).resolve() == source_path.resolve()
+    ]
+    if bindings != [sha256_file(source_path)]:
+        raise ValueError("GPU-checked source registration is missing or changed")
+    source = load(source_path)
+    source_env = source["environment"]
+    frozen = Path(source_env["WORKLOAD_MANIFEST"])
+    try:
+        relative = frozen.relative_to(Path(source["execution_checkout"]))
+    except ValueError as error:
+        raise ValueError("source manifest is outside its qualified checkout") from error
+    expected = sha256_file(ROOT / common["WORKLOAD_MANIFEST"])
+    if (
+        common["ROOT_COUNT"] != str(roots)
+        or common["MAX_RUNNING_REQUESTS"] != str(running)
+        or source_env.get("ROOT_COUNT") != str(roots)
+        or source_env.get("MAX_RUNNING_REQUESTS") != str(running)
+        or source_env.get("FANOUT_PROFILE") != common["FANOUT_PROFILE"]
+        or quality.get("subagent_fanout_profile") != common["FANOUT_PROFILE"]
+        or source.get("source_profile") != spec["source_profile"]
+        or (Path(source["run_root"]) / "native_capture").resolve() != arm.resolve()
+        or source.get("source_sha256", {}).get(str(relative)) != expected
+        or sha256_file(frozen) != expected
+        or (
+            quality.get("workload_manifest_sha256") is not None
+            and quality["workload_manifest_sha256"] != expected
+        )
+    ):
+        raise ValueError("captured source differs from the predeclared experiment")
+    return {
+        "source_registration": str(source_path.resolve()),
+        "frozen_manifest": str(frozen.resolve()), "manifest_sha256": expected,
+        "basis": "gpu_bound_source_registration_and_cpu_qualified_frozen_manifest",
+    }
+
+
 def preflight_runtime(settings, model_path):
     if settings["BELIEFKV_INTERNAL_COMPARISON_MODE"] == "native_matched":
         return {"native_runtime_not_enabled": True}
@@ -620,15 +661,11 @@ def register(args):
     )
     if smoke_server["source_server_parameters"].get("max_running_requests") != running:
         raise ValueError("comparison running limit differs from the GPU-checked source")
+    experiment_evidence = None
     if experiment_spec is not None:
-        common = experiment_spec["common_environment"]
-        if (
-            common["ROOT_COUNT"] != str(source_roots)
-            or common["MAX_RUNNING_REQUESTS"] != str(running)
-            or quality.get("subagent_fanout_profile") != common["FANOUT_PROFILE"]
-            or quality.get("workload_manifest_sha256") != sha256_file(ROOT / common["WORKLOAD_MANIFEST"])
-        ):
-            raise ValueError("captured source differs from the predeclared experiment")
+        experiment_evidence = experiment_source_evidence(
+            experiment_spec, quality, smoke_server, args.source_arm, source_roots, running,
+        )
     if retention_spec is not None:
         retention_source_matches(retention_spec, quality, source_roots)
     with CapturedTokenCorpus(args.source_arm / "server/request_tokens.jsonl", expected) as corpus:
@@ -681,6 +718,9 @@ def register(args):
             raise ValueError("reusable retention sources lack CPU qualification")
     if args.experiment_config is not None:
         inputs.extend((args.experiment_config, ROOT / experiment_spec["common_environment"]["WORKLOAD_MANIFEST"]))
+        inputs.extend(Path(experiment_evidence[name]) for name in (
+            "source_registration", "frozen_manifest",
+        ))
     inputs.extend(
         Path(name) if Path(name).is_absolute() else ROOT / name
         for name in evidence["input_jsonl_prefixes"]
@@ -724,6 +764,7 @@ def register(args):
         "reference_environment": reference["arms"]["full"],
         "retention_configuration": str(args.retention_config.resolve()) if args.retention_config else None,
         "experiment_configuration": str(args.experiment_config.resolve()) if args.experiment_config else None,
+        "experiment_source_evidence": experiment_evidence,
         "reusable_source_opportunities": reuse_selection,
         "tool_prefetch_priority_ms": args.tool_prefetch_priority_ms,
         "max_running_requests": running,

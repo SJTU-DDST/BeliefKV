@@ -251,6 +251,61 @@ def test_invalid_oneshot_configuration_does_not_silently_enable_another_workload
         comparison.experiment_reference(reference, spec)
 
 
+@pytest.mark.parametrize("change", (
+    None, "summary_hash", "frozen_manifest", "qualified_hash", "source_arm",
+    "source_batch", "source_binding",
+))
+def test_oneshot_source_uses_the_gpu_bound_frozen_manifest_without_an_optional_summary_hash(
+    tmp_path, monkeypatch, change,
+):
+    monkeypatch.setattr(comparison, "ROOT", tmp_path)
+    manifest = tmp_path / "configs/tasks.json"
+    frozen = tmp_path / "frozen/configs/tasks.json"
+    for path in (manifest, frozen):
+        path.parent.mkdir(parents=True)
+        path.write_text('{"original_tasks": [1, 2]}')
+    digest = sha256_file(manifest)
+    common = {
+        "ROOT_COUNT": "24", "MAX_RUNNING_REQUESTS": "24",
+        "FANOUT_PROFILE": "native_in_graph_nested_2to4",
+        "WORKLOAD_MANIFEST": "configs/tasks.json",
+    }
+    spec = {"source_profile": "nested_oneshot", "common_environment": common}
+    arm = tmp_path / "capture/native_capture"
+    source_path = tmp_path / "capture.json"
+    source = {
+        "run_root": str(arm.parent), "execution_checkout": str(tmp_path / "frozen"),
+        "environment": {**common, "WORKLOAD_MANIFEST": str(frozen)},
+        "source_profile": "nested_oneshot", "source_sha256": {"configs/tasks.json": digest},
+    }
+    summary = {"subagent_fanout_profile": common["FANOUT_PROFILE"]}
+    if change == "summary_hash":
+        summary["workload_manifest_sha256"] = "incorrect"
+    elif change == "frozen_manifest":
+        frozen.write_text('{"different_tasks": [3]}')
+    elif change == "qualified_hash":
+        source["source_sha256"]["configs/tasks.json"] = "incorrect"
+    elif change == "source_arm":
+        source["run_root"] = str(tmp_path / "other_capture")
+    elif change == "source_batch":
+        source["environment"]["MAX_RUNNING_REQUESTS"] = "8"
+    source_path.write_text(json.dumps(source))
+    smoke = {
+        "source_registration": str(source_path),
+        "external_inputs": [{"path": str(source_path), "sha256": sha256_file(source_path)}],
+    }
+    if change == "source_binding":
+        source_path.write_text(json.dumps({**source, "changed_after_gpu_check": True}))
+    if change is not None:
+        with pytest.raises(ValueError, match="source"):
+            comparison.experiment_source_evidence(spec, summary, smoke, arm, 24, 24)
+    else:
+        evidence = comparison.experiment_source_evidence(spec, summary, smoke, arm, 24, 24)
+        assert evidence["manifest_sha256"] == digest
+        assert evidence["frozen_manifest"] == str(frozen)
+        assert evidence["source_registration"] == str(source_path)
+
+
 def test_generated_tool_model_settings_are_consumed_by_the_real_runtime_constructor(
     reference, tmp_path, monkeypatch,
 ):

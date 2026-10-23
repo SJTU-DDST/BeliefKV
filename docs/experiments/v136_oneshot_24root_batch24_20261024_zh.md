@@ -172,3 +172,39 @@ Host census。采样组件校准覆盖 batch1、8、24；随后只启动 Full
 582.413 tokens/s，原始统计保存在
 `experiments/reports/v3193_v136_native_completed_20261024.json`；
 不能将其当成 predictive 已取得的效果。
+
+## GPU 校验及注册修复
+
+V137 的 24 请求 GPU 校验通过，24 个请求的精确 token、会话续接及
+原生 stop 均得到验证。实际 sampler 的 GPU 校准完成，覆盖1/8/24。
+登记文件：
+`/home/longhao/experiment/ops/v137_oneshot_batch24_position_check_20261024.registration.json`。
+微校验不是全量 native 重放或完整 JCT 结果。
+
+正式注册在使用尚未输出到自然 summary 的
+`workload_manifest_sha256` 字段时失败，未启动 Full；
+保留 V137 的 `stopped_for_investigation` 和原始日志。
+本轮 summary 没有该字段，但 GPU 证据绑定的 V136 源登记文件、
+其实际冻结清单以及 CPU 资格中的清单 hash 均为
+`1204acfa790bb85f17e9de026282be5bdbf07ad374296e59750db6fa419dcd6a`。
+修复后沿这条来源链严格核对任务、root 数、batch、profile、
+源目录及资格 hash，同时若 summary 确实有 hash 则要求一致。
+这避免用缺失的可选字段拒绝有效源，也继续拒绝换源或任务被修改。
+
+V3198/V3199 保留原5412项，合计5419项及2项subtests全部通过；
+V3197定向164项通过，并在V136实际数据上验证清单绑定。
+V138重新注册时复用有效V137 GPU校验及采样校准，未重跑全量native。
+
+## Native 恢复机会
+
+V3194 全程审计将 43 个 JOIN 后继全部关联到首次 GPU 服务，
+其中 42 个注册时有逻辑 Host FULL 命中，总计 96.591GB；
+这是注册命中量，不能与实际迁移 ACK 字节或预取收益混用。
+从 native 队列注册到首次服务 P50 为529.8ms，
+API 收到到首次服务 P50 为922.0ms，包含排队、准入及前端成本。
+
+V3196 的1377批H2D共1.501TB，CUDA stream累计46.448秒，
+submit-to-ACK累计94.188秒。这些是组件计时，不是完整可隐藏等待。
+87个依赖等待采样中，逐层等待P50为0.117ms、P90为3.810ms，
+最大34.383ms；采样不能覆盖全部容量、准入及混合状态前置成本。
+因此Full必须与同重放JOIN-only比较，不能仅靠迁移字节声称增量收益。

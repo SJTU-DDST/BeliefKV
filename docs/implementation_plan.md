@@ -25,6 +25,24 @@ or skips. V3193 preserves the complete source reference: mean JCT1164.156s,
 whole-run output throughput582.413 tokens/s. These are native reference
 measurements, not predictive gains.
 
+V137's24-request GPU microcheck and1/8/24 sampling calibration completed.
+Its final control registration stopped because the natural summary does not
+emit `workload_manifest_sha256`; the previously added check required that
+optional field. Keep the failure. The actual frozen source manifest, its
+CPU-qualified hash and the GPU-bound source registration agree. The corrected
+gate binds those artifacts and rejects changed tasks/source/batch/qualification;
+it does not invent a summary field or relax task identity. V3198/V3199 retains
+5412 and passes5419 cases plus2 subtests. Reuse the valid V137 GPU/sampling
+evidence when registering V138; do not repeat the GPU microcheck or native.
+
+V3194 matches all43 native JOIN reentries to first GPU service:42 register
+logical Host FULL hits totaling96.591GB. Queue-to-first-service P50 is529.8ms,
+and API-receipt-to-service P50 is922.0ms. These spans include queue/admission
+and cannot all be assigned to H2D. V3196 observes46.448s of H2D stream time
+across1377 batches/1.501TB including required state; this is a component
+budget, not exposed stall or an oracle JCT bound. Preserve these limits when
+comparing Full with both natural native and the same-replay JOIN-only arm.
+
 Latest experiment policy: keep24 roots initially. If the resulting source has
 too little useful migration or insufficient Host/HBM pressure around real
 JOIN/tool waits, increase to32, then36 roots without another approval.
