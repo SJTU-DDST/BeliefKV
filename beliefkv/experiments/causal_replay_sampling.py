@@ -115,9 +115,14 @@ def sample_with_positions(original, runner, logits_output, forward_batch):
             req = row.get("__req__")
             if req is None:
                 raise ValueError("replay forward row lacks its native request")
-            # Intermediate prefill chunks have no committed output. Native
-            # ignores their sample; the final chunk reaches position zero.
-            positions.append(max(0, length - len(req.origin_input_ids)))
+            position = length - len(req.origin_input_ids)
+            if position < len(req.output_ids):
+                # A retracted request can rebuild chunks before its retained
+                # output. Native discards those intermediate prefill samples.
+                if not forward_batch.forward_mode.is_extend():
+                    raise ValueError("decode forward precedes its committed output")
+                position = len(req.output_ids)
+            positions.append(position)
         else:
             positions.append(None)
     setattr(info, POSITION_KEY, tuple(positions))
@@ -142,6 +147,10 @@ def apply_position_logits(original, logits, sampling_info, num_tokens_in_batch=1
         raise ValueError("position replay requires the qualified non-speculative processor")
     selected = [index for index, position in enumerate(positions) if position is not None]
     processor = processors[0][0]
+    for index in selected:
+        req = parameters[index]["__req__"]
+        if not getattr(req, "_beliefkv_causal_position_sampled", False):
+            req._beliefkv_causal_position_sampled = True
     if len(selected) == logits.shape[0]:
         processor(logits, parameters, positions=positions)
     else:

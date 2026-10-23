@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 
@@ -41,6 +42,13 @@ def test_recording_preserves_workload_and_disables_all_custom_kv_controls(tmp_pa
         "BELIEFKV_ENABLE_JOIN_PARENT_PRIORITY", "BELIEFKV_ENABLE_EXECUTION_HANDOFF",
     ):
         assert env[name] == "0"
+
+
+def test_capture_normalizes_output_before_changing_to_its_frozen_checkout(tmp_path, monkeypatch):
+    plan, checkout = reference(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    env = capture.environment(plan, checkout, tmp_path / "engine", Path("relative/run"), 18558)
+    assert env["RUN_ROOT"] == str(tmp_path / "relative/run/native_capture")
 
 
 @pytest.mark.parametrize("field,value", (

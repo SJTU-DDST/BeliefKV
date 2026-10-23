@@ -103,3 +103,53 @@ V3053 保留原有完整资格，4934 项及原有 2 个 subtest 通过，
 切换期间的 GPU 空档。等待期间不分配模型或 Host pool。
 旧 JOIN-only 完整结果保留，随后停止旧采样矩阵的剩余组，
 接续本轮源采集。尚不能根据 CPU 结果宣称重放成本已经消除。
+
+## 接续实现与最终资格
+
+新增 `run_position_replay_calibration.py`，等待完整且合格的源结束，
+并验证源监督器和驱动已退出，再分配 GPU。依次执行：
+
+1. 相同容量、模型参数的 8 context、每个 3 请求精确 GPU 检查；
+   验证原生 stop/session 及每个回执的实际 `sampling_path=position`，
+   并核对服务进程归属和 GPU context。
+2. GPU 采样组件校准，保留 greedy、旧 forcing、原生旧分发及新
+   position 分发，包含 pinned CPU 目标索引异步 H2D。
+3. 独立冷启动 native 完整重放。相对源运行的完整平均 JCT 和全程
+   时长额外减速均不得超过 5%，超出则保留结果并停止后续长对照。
+4. 门槛通过后接续关闭工具等待期 H2D 的 Full、JOIN-only，
+   所有组使用相同 position 路径、容量、输入输出和完整正常尾部。
+
+V3057 的 CPU 复现发现，带已生成历史的请求在回退后分块重算，
+中间 prefill 长度可能尚未覆盖已保留输出。现仅在这种 extend
+样本上使用保留位置，最终样本仍按 forward 长度定位；decode
+向后错位继续拒绝。原生丢弃中间样本的行为保持不变。
+该路径是可选重放插件，原生源采集未启用插件。
+
+V3060 最终资格保留 V3053 的全部 4934 项，4972 项及原有
+2 个 subtest 通过，原 Docker progress 范围外 deselect 保留。
+CPU 检查不替代真实 GPU 校准或完整性能验收。
+
+## V132 采集与 V131b 保留结果
+
+V132 采集冻结为 `fadd80f3c9540d6f5fe8c1f4b4cdb5131922b5e9`，
+登记 `ops/v132_balanced_native_source_20261023.registration.json`。
+V131b JOIN-only 完整结束后，行政接续操作请求原监督器停止，
+未完成的 `no_background_prepare` 不参与完整性能比较。
+
+| V131b 相同原始工作量 | 平均 JCT | 全程时长 |
+| --- | ---: | ---: |
+| Full | 2928.221s | 5965.544s |
+| native | 2802.152s | 5785.155s |
+| JOIN-only | 2813.611s | 5828.258s |
+
+三组均为 8165 请求、2352172 输出 token，原始退出码均为 0。
+JOIN-only 比 native 平均 JCT 高约 0.41%，Full 仍慢约 4.50%。
+这些是旧采样路径的负结果，不因新源选择而删除或改写。
+
+首次 V132 登记的相对 `RUN_ROOT` 使实际输出落在冻结工作区：
+`/home/longhao/experiment/.worktrees/beliefkv-v132-capture-fadd80f3c954/experiments/raw/`。
+没有重启或迁移正在写入的数据；主 raw 下的 `native_capture` 入口
+链接到相同目录 inode，使原监督器可以正常验证实际记录。
+操作记录为登记旁的 `.artifact_alias.json`。后续环境构造已统一
+将输出路径转为绝对路径，并增加回归。该冻结工作区在数据归档前
+不得作为无用工作区删除。

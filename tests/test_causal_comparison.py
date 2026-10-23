@@ -148,6 +148,38 @@ def test_no_tool_prefetch_validates_the_observed_runtime_switch(reference, tmp_p
     })]
 
 
+def test_position_control_disables_delayed_sampling_for_every_requested_policy(reference, tmp_path):
+    for label in comparison.CONTROLS:
+        env, _, _ = comparison.environment(
+            reference, label, tmp_path, tmp_path, tmp_path, 18558, tmp_path,
+            sampling_mode="position",
+        )
+        assert env["BELIEFKV_CAUSAL_REPLAY_SAMPLING"] == "position"
+        assert env["SGLANG_ENABLE_DELAY_SAMPLE"] == "0"
+
+
+@pytest.mark.parametrize("jct,duration,accepted", (
+    (100., 200., True), (104., 208., True), (106., 200., False),
+    (100., 211., False), (80., 180., True),
+))
+def test_native_source_calibration_checks_jct_and_duration_without_trimming_tails(jct, duration, accepted):
+    result = comparison.source_speed_check(
+        {"mean_jct_ms": 100., "replay_duration_ms": 200.},
+        {"mean_jct_ms": jct, "replay_duration_ms": duration}, .05,
+    )
+    assert result["accepted"] is accepted
+    assert result["replay_to_source_ratios"]["mean_jct_ms"] == jct / 100.
+
+
+@pytest.mark.parametrize("value", (None, 0, -1, float("nan"), float("inf"), True))
+def test_source_calibration_rejects_unmeasured_or_invalid_durations(value):
+    with pytest.raises(ValueError):
+        comparison.source_speed_check(
+            {"mean_jct_ms": 100., "replay_duration_ms": 200.},
+            {"mean_jct_ms": 100., "replay_duration_ms": value}, .05,
+        )
+
+
 @pytest.fixture
 def predecessor(tmp_path):
     registration = tmp_path / "previous.json"
@@ -378,6 +410,20 @@ def test_receipt_population_rejects_duplicates_and_unverified_tokens(tmp_path, d
         comparison.receipt_work(path)
 
 
+@pytest.mark.parametrize("mode", (None, "legacy", "position"))
+def test_position_population_requires_per_request_evidence_of_the_actual_sampler(tmp_path, mode):
+    row = receipt()
+    if mode is not None:
+        row["native_receipt"] = {"sampling_path": mode}
+    path = tmp_path / "receipts.jsonl"
+    path.write_text(json.dumps(row) + "\n")
+    if mode == "position":
+        assert comparison.receipt_work(path, sampling_mode="position")
+    else:
+        with pytest.raises(ValueError, match="registered position sampler"):
+            comparison.receipt_work(path, sampling_mode="position")
+
+
 def test_cleanup_never_signals_a_reused_pid_and_keeps_known_orphan_children(tmp_path, monkeypatch):
     parent_pid, child_pid = os.getpid(), os.getppid()
     parent = {"pid": parent_pid, "ppid": 1, "start_ticks": "old"}
@@ -406,7 +452,7 @@ def test_cleanup_never_signals_a_reused_pid_and_keeps_known_orphan_children(tmp_
 
 @pytest.mark.parametrize("failure", (
     None, "driver", "changed_work", "capacity", "no_tool_prefetch",
-    "queued_no_tool_prefetch", "failed_predecessor",
+    "queued_no_tool_prefetch", "failed_predecessor", "source_slowdown",
 ))
 def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     reference, tmp_path, monkeypatch, failure,
@@ -418,6 +464,8 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
             "no_tool_prefetch", "queued_no_tool_prefetch", "failed_predecessor",
         ) else list(comparison.ORDER)
     )
+    if failure == "source_slowdown":
+        order = ["native_matched", "no_tool_prefetch"]
     if failure in ("no_tool_prefetch", "queued_no_tool_prefetch"):
         failure = None
     registration = tmp_path / "registered.json"
@@ -433,6 +481,11 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
         "token_source_sha256": "tokens", "workflow_ids": ["w"],
         "quality_exclusions": [], "scope": "test",
     }
+    if failure == "source_slowdown":
+        plan.update(
+            maximum_replay_slowdown=.05,
+            source_metrics={"mean_jct_ms": 4000., "replay_duration_ms": 4000.},
+        )
     registration.write_text(json.dumps(plan))
     root = {"pid": 100, "ppid": 1, "start_ticks": "root", "state": "S"}
     scheduler = {"pid": 101, "ppid": 100, "start_ticks": "scheduler", "state": "S"}
@@ -566,3 +619,9 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
         elif failure == "failed_predecessor":
             assert not launched
             assert "predecessor failed" in state["error"]
+        elif failure == "source_slowdown":
+            assert state["completed_arms"] == ["native_matched"]
+            assert not any(row[1] == "no_tool_prefetch" for row in launched)
+            check = json.loads((run / "native_matched/source_replay_calibration.json").read_bytes())
+            assert check["accepted"] is False
+            assert "slowdown tolerance" in state["error"]

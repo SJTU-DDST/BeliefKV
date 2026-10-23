@@ -25,7 +25,10 @@ def batch(rows, lengths):
         custom_params=rows,
         custom_logit_processor={"captured": (CapturedOutputLogitsProcessor(), UnreadableMask())},
     )
-    return NS(sampling_info=info, seq_lens_cpu=torch.tensor(lengths))
+    return NS(
+        sampling_info=info, seq_lens_cpu=torch.tensor(lengths),
+        forward_mode=NS(is_extend=lambda: True),
+    )
 
 
 def native_sample(_runner, logits, forward):
@@ -69,6 +72,23 @@ def test_chunked_prefill_and_retraction_use_native_input_progress():
     row["__req__"].output_ids = []
     forward.seq_lens_cpu = torch.tensor([16])
     assert sample_with_positions(native_sample, None, torch.zeros(1, 16), forward).item() == 3
+
+
+def test_retracted_history_can_be_recomputed_in_chunks_before_retained_output():
+    row = parameters("a", [3, 4, 9, 11, 13], [3, 4, 9])
+    forward = batch([row], [8])
+    for length in (8, 18, 19):
+        forward.seq_lens_cpu = torch.tensor([length])
+        assert sample_with_positions(native_sample, None, torch.zeros(1, 16), forward).item() == 11
+        assert row["__req__"].output_ids == [3, 4, 9]
+
+
+def test_decode_cannot_hide_a_forward_behind_committed_output_as_a_prefill_chunk():
+    row = parameters("a", [3, 4, 9], [3])
+    forward = batch([row], [16])
+    forward.forward_mode = NS(is_extend=lambda: False)
+    with pytest.raises(ValueError, match="decode forward precedes"):
+        sample_with_positions(native_sample, None, torch.zeros(1, 16), forward)
 
 
 def test_mixed_health_live_and_pending_terminal_rows_keep_their_native_identity():

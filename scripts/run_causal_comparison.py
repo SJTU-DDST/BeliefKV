@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import fcntl
 import json
+import math
 import os
 from pathlib import Path
 import signal
@@ -42,9 +43,11 @@ SERVER_FIELDS = (
 )
 
 
-def environment(reference, mode, checkout, engine, arm, port, plugin):
+def environment(reference, mode, checkout, engine, arm, port, plugin, *, sampling_mode="legacy"):
     if mode not in CONTROLS:
         raise ValueError("unknown causal comparison control: " + mode)
+    if sampling_mode not in ("legacy", "position"):
+        raise ValueError("unknown causal replay sampling mode")
     policy = "full" if mode in ("no_background_prepare", "no_tool_prefetch") else mode
     required = {
         "MAX_RUNNING_REQUESTS": "8", "SERVER_RANDOM_SEED": "21",
@@ -69,7 +72,8 @@ def environment(reference, mode, checkout, engine, arm, port, plugin):
         HOST_NUMA_NODE="1", HOST_NUMA_MEMORY_POLICY="preferred",
         HICACHE_WRITE_POLICY="write_back", BELIEFKV_FULL_MAMBA_HOST_SPLIT="80:20",
         BELIEFKV_CAUSAL_REPLAY_BRIDGE="1", SGLANG_PLUGINS="beliefkv_causal_replay",
-        SGLANG_ENABLE_DELAY_SAMPLE="1", BELIEFKV_REPLAY_TOKEN_CAPTURE="0",
+        SGLANG_ENABLE_DELAY_SAMPLE="0" if sampling_mode == "position" else "1",
+        BELIEFKV_CAUSAL_REPLAY_SAMPLING=sampling_mode, BELIEFKV_REPLAY_TOKEN_CAPTURE="0",
         BELIEFKV_RECORD_OUTPUT_TOKEN_IDS="1",
     )
     for name in SERVER_FIELDS:
@@ -129,13 +133,15 @@ def preflight_runtime(settings, model_path):
             "output_tail": result.stdout[-1000:]}
 
 
-def receipt_work(path):
+def receipt_work(path, *, sampling_mode=None):
     result = {}
     for raw in path.open():
         row = json.loads(raw)
         request = row["request_id"]
         if row.get("exact_tokens_verified") is not True or request in result:
             raise ValueError("missing exact token verification or duplicate replay request")
+        if sampling_mode == "position" and row.get("native_receipt", {}).get("sampling_path") != "position":
+            raise ValueError("native request did not execute the registered position sampler")
         result[request] = (
             row["prompt_tokens"], row["output_tokens"], row["prompt_sha256"],
             row["output_sha256"], row["native_finish_reason"],
@@ -190,7 +196,9 @@ def validate_result(plan, result, arm, *, live_control):
         or sha256_file(arm / "replay/native_requests.jsonl") != result.get("native_requests_sha256")
     ):
         raise ValueError("complete same-work replay evidence is missing or changed")
-    work = receipt_work(arm / "replay/native_requests.jsonl")
+    work = receipt_work(
+        arm / "replay/native_requests.jsonl", sampling_mode=plan.get("sampling_mode"),
+    )
     if (
         len(work) != result["completed_requests"]
         or sum(row[0] for row in work.values()) != plan["source_plan"]["prompt_tokens"]
@@ -275,6 +283,28 @@ def predecessor_work(plan):
     return expected
 
 
+def source_speed_check(source, result, tolerance):
+    if (
+        type(tolerance) not in (int, float) or not math.isfinite(tolerance)
+        or not 0 < tolerance <= .5
+    ):
+        raise ValueError("source replay slowdown tolerance must be positive and at most 0.5")
+    ratios = {}
+    for field in ("mean_jct_ms", "replay_duration_ms"):
+        baseline, observed = source[field], result[field]
+        if any(
+            type(value) not in (int, float) or not math.isfinite(value) or value <= 0
+            for value in (baseline, observed)
+        ):
+            raise ValueError("source speed check requires complete positive measurements")
+        ratios[field] = observed / baseline
+    return {
+        "accepted": all(ratio <= 1. + tolerance for ratio in ratios.values()),
+        "maximum_slowdown": tolerance, "replay_to_source_ratios": ratios,
+        "scope": "Replay overhead calibration only; not a predictive speedup or task score.",
+    }
+
+
 def owned_processes(identities):
     known = {row["pid"]: row for row in identities if reservation.alive(row)}
     candidates = {}
@@ -323,6 +353,8 @@ def register(args):
         raise ValueError("select distinct supported causal controls")
     if args.after_registration is not None and args.after_registration.resolve() == args.registration.resolve():
         raise ValueError("a causal comparison cannot depend on itself")
+    if args.maximum_replay_slowdown is not None and order[0] != "native_matched":
+        raise ValueError("source speed calibration must precede the controlled arms")
     for path in (
         args.registration, args.registration.with_suffix(".state.json"),
         args.registration.with_suffix(".log"), args.run_root,
@@ -344,7 +376,11 @@ def register(args):
     if (
         smoke.get("gpu_process_verified") is not True
         or smoke.get("native_data_plane_sample_verified") is not True
-        or smoke.get("requests") != 24 or smoke.get("native_stop_requests") != 24
+        or smoke.get("requests") != 24
+        or type(smoke.get("native_stop_requests")) is not int
+        or not 1 <= smoke["native_stop_requests"] <= 24
+        or smoke.get("sampling_mode", "legacy") != args.sampling_mode
+        or args.sampling_mode == "position" and smoke.get("native_position_sampling_verified") is not True
     ):
         raise ValueError("the predeclared real GPU data-plane check is incomplete")
     smoke_client = load(Path(smoke["client_registration"]))
@@ -367,6 +403,7 @@ def register(args):
         or calibration.get("benchmark_sha256") != sources["scripts/benchmark_causal_sampling.py"]
         or calibration.get("forcing_sha256") != sources["beliefkv/experiments/causal_replay_sampling.py"]
         or [row["batch_size"] for row in calibration.get("cases", [])] != [1, 8]
+        or args.sampling_mode == "position" and calibration.get("position_dispatch_included") is not True
     ):
         raise ValueError("native replay sampling costs were not measured for this source")
     graph, expected, evidence = source_plan(args.source_arm)
@@ -446,15 +483,24 @@ def register(args):
         "reference_environment": reference["arms"]["full"],
         "run_root": str(args.run_root.resolve()), "port": args.port,
         "sampling_calibration": str(args.sampling_calibration.resolve()),
+        "sampling_mode": args.sampling_mode,
+        "maximum_replay_slowdown": args.maximum_replay_slowdown,
+        "source_metrics": {
+            "mean_jct_ms": statistics.mean(row["duration_seconds"] for row in quality["workflows"]) * 1000.,
+            "replay_duration_ms": quality["duration_seconds"] * 1000.,
+        },
         "gpu_replay_qualified": False, "performance_accepted": False,
         "scope": "Auxiliary same-work causal controls; retain all tails and source guard qualifications.",
     }
+    if args.maximum_replay_slowdown is not None:
+        source_speed_check(plan["source_metrics"], plan["source_metrics"], args.maximum_replay_slowdown)
     predecessor_ready(plan)
     plan["runtime_cpu_preflight"] = {}
     for label in order:
         settings, _, _ = environment(
             {"arms": {"full": plan["reference_environment"]}}, label, checkout,
             frozen_engine, args.run_root / label, args.port, args.run_root / "plugin",
+            sampling_mode=plan["sampling_mode"],
         )
         plan["runtime_cpu_preflight"][label] = preflight_runtime(
             settings, plan["source_server_parameters"]["model_path"],
@@ -543,6 +589,7 @@ def watch(registration):
                 env, flags, event_socket = environment(
                     {"arms": {"full": plan["reference_environment"]}}, label, ROOT,
                     Path(plan["engine_checkout"]), arm, plan["port"], run / "plugin",
+                    sampling_mode=plan.get("sampling_mode", "legacy"),
                 )
                 if event_socket is not None and event_socket.exists():
                     raise ValueError("preserve the existing runtime event socket")
@@ -557,7 +604,9 @@ def watch(registration):
                     "restore_tiers_requested": env["RESTORE_TIERS"],
                     "join_last_child_priority_requested": False,
                     "execution_frontier_restore_requested": False, "tool_continuity_requested": False,
-                    "auxiliary_causal_replay": True, "delayed_sampling_common_to_all_arms": True,
+                    "auxiliary_causal_replay": True,
+                    "replay_sampling_mode": plan.get("sampling_mode", "legacy"),
+                    "delayed_sampling_common_to_all_arms": env["SGLANG_ENABLE_DELAY_SAMPLE"] == "1",
                 }
                 reservation.write_json(arm / "server/launch_configuration.json", launch)
                 with (arm / "server.log").open("x") as output:
@@ -652,6 +701,13 @@ def watch(registration):
                     "replay_duration_ms": result["finished_monotonic_ms"] - result["started_monotonic_ms"],
                     "same_request_work_verified": True,
                 }
+                speed = None
+                if label == "native_matched" and plan.get("maximum_replay_slowdown") is not None:
+                    speed = source_speed_check(
+                        plan["source_metrics"], results[label], plan["maximum_replay_slowdown"],
+                    )
+                    results[label]["source_speed_calibration"] = speed
+                    reservation.write_json(arm / "source_replay_calibration.json", speed)
                 state["completed_arms"].append(label)
                 reservation.write_json(run / "causal_comparison.json", {
                     "results": results, "quality_exclusions": plan["quality_exclusions"],
@@ -661,6 +717,8 @@ def watch(registration):
                     "after_registration": plan.get("after_registration"),
                 })
                 pulse()
+                if speed is not None and not speed["accepted"]:
+                    raise ValueError("native replay exceeded the registered source slowdown tolerance")
             state.update(status="collected_performance_review_pending", finished_at=reservation.now().isoformat())
         except BaseException as error:
             state.update(status="stopped_for_investigation", error=repr(error),
@@ -685,12 +743,14 @@ def main():
     parser.add_argument("--port", type=int, default=18554)
     parser.add_argument("--arms", nargs="+", choices=CONTROLS, default=list(ORDER))
     parser.add_argument("--after-registration", type=Path)
+    parser.add_argument("--sampling-mode", choices=("legacy", "position"), default="legacy")
+    parser.add_argument("--maximum-replay-slowdown", type=float)
     args = parser.parse_args()
     if args.watch:
         watch(args.watch)
     else:
         if any(value is None for name, value in vars(args).items() if name not in (
-            "watch", "port", "arms", "after_registration",
+            "watch", "port", "arms", "after_registration", "sampling_mode", "maximum_replay_slowdown",
         )):
             parser.error("registration requires source, qualifications, engine and fresh output paths")
         if not 1 <= args.port <= 65535:

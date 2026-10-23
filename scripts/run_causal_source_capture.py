@@ -39,6 +39,7 @@ def reference_complete(plan, state, *, alive=reservation.alive):
 
 
 def environment(reference, checkout: Path, engine: Path, run: Path, port: int):
+    run = run.resolve()
     base = reference["arms"]["native_matched"]
     required = {
         "ROOT_COUNT": "36", "MAX_RUNNING_REQUESTS": "8",

@@ -64,6 +64,9 @@ def terminal_receipt(req) -> dict:
         "extra_key": getattr(req, "extra_key", None),
         "cache_salt": getattr(req, "cache_salt", None),
         "completion_boundary": "native_terminal_output_emit",
+        "sampling_path": (
+            "position" if getattr(req, "_beliefkv_causal_position_sampled", False) else "legacy"
+        ),
         "scope": "native CPU terminal output boundary; not a CUDA kernel timestamp",
     }
 
