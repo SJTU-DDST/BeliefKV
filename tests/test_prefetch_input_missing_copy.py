@@ -139,3 +139,165 @@ def test_output_tail_parent_leaves_the_first_selection_to_an_actionable_eos():
         assert runtime.physical_ledger.pending_count == 4
     finally:
         runtime.close()
+
+
+def test_read_only_scan_shares_empty_ancestry_across_distinct_session_leaves():
+    cache, anchors, nodes = prepare_prefix_fixture(backed=True)
+    scope = (cache.tree_core, {})
+    first = replace(anchors, component_leaves=((0, ((4, 5.),)), (2, ((4, 5.),))))
+    assert has_host_backed_missing_copy(
+        cache, first, input_checkpoint_only=True, _empty_restore_cache=scope,
+    ) is False
+    with patch.object(cache.tree_core, "node_by_id", wraps=cache.tree_core.node_by_id) as lookup:
+        assert has_host_backed_missing_copy(
+            cache, anchors, input_checkpoint_only=True, _empty_restore_cache=scope,
+        ) is False
+    assert not any(call.args == (0,) for call in lookup.call_args_list)
+    assert nodes[1].component_data[0].value is not None
+
+
+@pytest.mark.parametrize("input_tokens", (0, 4, 8, None))
+@pytest.mark.parametrize("missing_node,pool", ((2, 0), (3, 0), (2, 2), (3, 2)))
+def test_new_host_only_branch_keeps_full_input_checkpoint_selection(
+    input_tokens, missing_node, pool,
+):
+    cache, anchors, nodes = prepare_prefix_fixture(backed=True, second_leaf=True)
+    data = nodes[missing_node].component_data[pool]
+    data.host_value, data.value = data.value, None
+    first = replace(anchors, component_leaves=((0, ((4, 5.),)), (2, ((4, 5.),))))
+    scope = (cache.tree_core, {})
+    assert has_host_backed_missing_copy(
+        cache, first, input_checkpoint_only=True, _empty_restore_cache=scope,
+    ) is False
+    other = replace(
+        anchors, reusable_input_tokens=input_tokens,
+        component_leaves=((0, ((4, 5.), (3, 4.))), (2, ((4, 5.), (3, 4.)))),
+    )
+    assert has_host_backed_missing_copy(
+        cache, other, input_checkpoint_only=True, _empty_restore_cache=scope,
+    ) is has_host_backed_missing_copy(cache, other, input_checkpoint_only=True)
+
+
+def test_empty_ancestry_proof_does_not_cross_native_tree_identity():
+    first_cache, first, _ = prepare_prefix_fixture(backed=True)
+    scope = (first_cache.tree_core, {})
+    assert has_host_backed_missing_copy(
+        first_cache, first, input_checkpoint_only=True, _empty_restore_cache=scope,
+    ) is False
+    cache, anchors, nodes = prepare_prefix_fixture(backed=True)
+    nodes[1].component_data[0].value = None
+    assert has_host_backed_missing_copy(
+        cache, anchors, input_checkpoint_only=True, _empty_restore_cache=scope,
+    ) is True
+
+
+def test_cached_empty_ancestry_still_rejects_a_replaced_leaf_identity():
+    cache, anchors, _ = prepare_prefix_fixture(backed=True)
+    scope = (cache.tree_core, {})
+    assert has_host_backed_missing_copy(
+        cache, anchors, input_checkpoint_only=True, _empty_restore_cache=scope,
+    ) is False
+    invalid = replace(
+        anchors, component_leaves=((0, ((3, 999.),)), (2, ((3, 999.),))),
+    )
+    assert has_host_backed_missing_copy(
+        cache, invalid, input_checkpoint_only=True, _empty_restore_cache=scope,
+    ) is None
+
+
+@pytest.mark.parametrize("change", ("host_only", "cycle", "replaced_ancestor"))
+def test_positive_or_unknown_branch_cannot_publish_partial_empty_proofs(change):
+    cache, anchors, nodes = prepare_prefix_fixture(backed=True)
+    first = replace(anchors, component_leaves=((0, ((4, 5.),)), (2, ((4, 5.),))))
+    scope = (cache.tree_core, {})
+    assert has_host_backed_missing_copy(
+        cache, first, input_checkpoint_only=True, _empty_restore_cache=scope,
+    ) is False
+    prior = dict(scope[1])
+    if change == "host_only":
+        nodes[2].component_data[0].value = None
+    elif change == "cycle":
+        nodes[2].parent = nodes[3]
+    else:
+        from types import SimpleNamespace as NS
+
+        lookup = cache.tree_core.node_by_id
+        cache.tree_core.node_by_id = lambda node_id: (
+            NS(**vars(nodes[2])) if node_id == 2 else lookup(node_id)
+        )
+    assert has_host_backed_missing_copy(
+        cache, anchors, input_checkpoint_only=True, _empty_restore_cache=scope,
+    ) is has_host_backed_missing_copy(cache, anchors, input_checkpoint_only=True)
+    assert scope[1] == prior
+
+
+def test_tool_empty_ancestry_is_rechecked_in_the_next_scan():
+    from scripts.benchmark_empty_tool_restore_cpu import empty_tool_fixture
+    from beliefkv.runtime.native_transfer_policy import TransferStartWindow
+    from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
+
+    runtime, key, cache, _, actions, _, _, _, now = empty_tool_fixture(
+        NativeAdmissionRuntime, contexts=3, depth=4, sharing=3,
+    )
+    try:
+        with patch("time.monotonic", lambda: now):
+            assert runtime._roll_tool_prefetch() is None
+        cache.tree_core.node_by_id(1).component_data[0].value = None
+        with patch("time.monotonic", lambda: now + .11), patch.object(
+            runtime, "_h2d_start_window", return_value=TransferStartWindow(100., 0., 1000.),
+        ):
+            opportunity = runtime._roll_tool_prefetch()
+        assert opportunity is not None and opportunity.step is not None
+        assert runtime._tool_ticket.key == key
+        assert not actions and not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+def test_tool_capacity_reclaim_discards_all_same_scan_empty_ancestry():
+    from types import SimpleNamespace as NS
+    from scripts.benchmark_empty_tool_restore_cpu import empty_tool_fixture
+    from beliefkv.runtime.native_transfer_policy import TransferStartWindow
+    from beliefkv.runtime.sglang_v0520_physical import PrefetchLoadStep
+    from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
+
+    runtime, _, cache, _, actions, _, _, _, now = empty_tool_fixture(
+        NativeAdmissionRuntime, contexts=3, depth=4, sharing=3,
+    )
+    second = runtime.context_sessions["ctx-wf-1-root"]
+    third = runtime.context_sessions["ctx-wf-2-root"]
+    blocked = NS(
+        step=PrefetchLoadStep(second, 50, 1., 50, 1., False),
+        fits_current_free_lists=False,
+    )
+    original = runtime._wait_prefetch_opportunity
+    scopes = []
+
+    def inspect(key, **kwargs):
+        scope = kwargs["_empty_restore_cache"]
+        if key == second:
+            scopes.append(scope)
+            assert scope[1]
+            return blocked
+        return original(key, **kwargs)
+
+    def reclaim(key, opportunity, *, source):
+        assert key == second and source == "tool_wait" and opportunity is blocked
+        assert not scopes[-1][1]
+        cache.tree_core.node_by_id(1).component_data[0].value = None
+        return blocked
+
+    try:
+        with patch("time.monotonic", lambda: now), patch.object(
+            runtime, "_wait_prefetch_opportunity", side_effect=inspect,
+        ), patch.object(
+            runtime, "_budget_wait_prefetch_opportunity", side_effect=lambda key, op, **kw: op,
+        ), patch.object(
+            runtime, "_h2d_start_window", return_value=TransferStartWindow(100., 0., 1000.),
+        ), patch.object(runtime, "_reclaim_wait_prefetch_capacity", side_effect=reclaim):
+            opportunity = runtime._roll_tool_prefetch()
+        assert opportunity is not None and opportunity.step is not None
+        assert runtime._tool_ticket.key == third
+        assert not actions and not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()

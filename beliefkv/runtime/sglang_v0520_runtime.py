@@ -5426,6 +5426,7 @@ class NativeAdmissionRuntime:
         fit_current_capacity: bool = False,
         skip_empty_restore: bool = False,
         include_checkpoint_plan: bool = False,
+        _empty_restore_cache: tuple[object, dict[int, object]] | None = None,
     ) -> SessionH2DOpportunity | None:
         """Read action-local session/allocator evidence; never dispatch H2D."""
         cache = self._native_cache
@@ -5463,6 +5464,7 @@ class NativeAdmissionRuntime:
                 fit_current_capacity=fit_current_capacity,
                 skip_empty_restore=skip_empty_restore,
                 include_checkpoint_plan=include_checkpoint_plan,
+                _empty_restore_cache=_empty_restore_cache,
             )
             if anchors is not None else None
         )
@@ -5471,6 +5473,7 @@ class NativeAdmissionRuntime:
         self, key: PrefillCandidateKey,
         *, max_steps: int | None = None, fit_current_capacity: bool = False,
         include_checkpoint_plan: bool = False, apply_capacity_budget: bool = True,
+        _empty_restore_cache: tuple[object, dict[int, object]] | None = None,
     ) -> SessionH2DOpportunity | None:
         batched = callable(getattr(self._native_cache, "prefetch_gpu_session_nodes", None))
         slots = self.physical_ledger.max_pending - self.physical_ledger.pending_count
@@ -5486,6 +5489,10 @@ class NativeAdmissionRuntime:
             fit_current_capacity=False,
             skip_empty_restore=True,
             include_checkpoint_plan=include_checkpoint_plan,
+            **(
+                {"_empty_restore_cache": _empty_restore_cache}
+                if _empty_restore_cache is not None else {}
+            ),
         )
         if getattr(opportunity, "no_step_reason", None) == "no_host_backed_missing_copy":
             self.counts["wait_prefetch_empty_restore_shortcut"] += 1
@@ -7927,6 +7934,11 @@ class NativeAdmissionRuntime:
         self._refresh_prefetch_service_leases()
         if self.physical_disabled:
             return
+        # Share proofs only during read-only selection; reclaim below clears them.
+        empty_restore_cache = (
+            (getattr(self._native_cache, "tree_core", None), {})
+            if len(candidates) > 1 else None
+        )
         for hint, remaining in sorted(candidates, key=lambda item: item[1]):
             if self._live_tool_hint(hint.key) is None:
                 continue
@@ -7951,6 +7963,7 @@ class NativeAdmissionRuntime:
             else:
                 opportunity = self._wait_prefetch_opportunity(
                     hint.key, apply_capacity_budget=False,
+                    _empty_restore_cache=empty_restore_cache,
                 )
                 if opportunity is not None and opportunity.step is not None:
                     # Selection is read-only; reuse this call's budget only
@@ -7995,6 +8008,8 @@ class NativeAdmissionRuntime:
                 continue
             service_shape = _WaitPrefetchServiceShape.from_opportunity(opportunity)
             if opportunity.fits_current_free_lists is not True:
+                if empty_restore_cache is not None:
+                    empty_restore_cache[1].clear()
                 budget = None
                 opportunity = self._reclaim_wait_prefetch_capacity(
                     hint.key, opportunity, source="tool_wait",

@@ -163,12 +163,14 @@ def inspect_session_h2d_opportunity(
     cache: object, anchors: ContextSessionAnchors,
     *, max_steps: int = 1, fit_current_capacity: bool = False,
     skip_empty_restore: bool = False, include_checkpoint_plan: bool = False,
+    _empty_restore_cache: tuple[object, dict[int, object]] | None = None,
 ) -> SessionH2DOpportunity:
     if type(max_steps) is not int or max_steps < 1:
         raise ValueError("invalid prefetch burst bound")
     headroom = observe_static_full_mamba_headroom(cache)
     if skip_empty_restore and has_host_backed_missing_copy(
         cache, anchors, input_checkpoint_only=True,
+        _empty_restore_cache=_empty_restore_cache,
     ) is False:
         return SessionH2DOpportunity(
             anchors, headroom, None, 0, 0, None,
@@ -469,10 +471,14 @@ def inspect_session_residency_hint(cache: object, request: object) -> dict | Non
 def has_host_backed_missing_copy(
     cache: object, anchors: ContextSessionAnchors, *,
     input_checkpoint_only: bool = False,
+    _empty_restore_cache: tuple[object, dict[int, object]] | None = None,
 ) -> bool | None:
-    """Reject empty restores; optionally ignore unselected historical states."""
+    """Reject empty restores; optional ancestry proofs last one read-only scan."""
     if type(input_checkpoint_only) is not bool:
         return None
+    empty_ancestors = None
+    prior_empty_count = 0
+    proved_empty = False
     try:
         input_limit = anchors.reusable_input_tokens if input_checkpoint_only else None
         if input_limit is not None and (type(input_limit) is not int or input_limit < 0):
@@ -486,6 +492,13 @@ def has_host_backed_missing_copy(
         ):
             return None
         tree = cache.tree_core
+        empty_ancestors = (
+            _empty_restore_cache[1]
+            if _empty_restore_cache is not None and _empty_restore_cache[0] is tree
+            else None
+        )
+        if empty_ancestors is not None:
+            prior_empty_count = len(empty_ancestors)
         leaves = {}
         for component_leaves in components.values():
             for node_id, created in component_leaves:
@@ -499,7 +512,7 @@ def has_host_backed_missing_copy(
                 ):
                     return None
                 leaves[node_id] = node
-        checked = {}
+        checked = empty_ancestors if empty_ancestors is not None else {}
         missing_copy = False
         single_leaf = components[0][0][0] if len(components[0]) == 1 else None
         single_path_nodes = None
@@ -522,10 +535,18 @@ def has_host_backed_missing_copy(
                 if (full.value is None or len(full.value) == 0) and (
                     full.host_value is not None and len(full.host_value) > 0
                 ):
+                    if empty_ancestors is not None:
+                        return has_host_backed_missing_copy(
+                            cache, anchors, input_checkpoint_only=input_checkpoint_only,
+                        )
                     if input_limit is None:
                         return True
                     missing_copy = True
                 if state.value is None and state.host_value is not None:
+                    if empty_ancestors is not None:
+                        return has_host_backed_missing_copy(
+                            cache, anchors, input_checkpoint_only=input_checkpoint_only,
+                        )
                     if input_limit is None:
                         return True
                     missing_copy = True
@@ -534,6 +555,7 @@ def has_host_backed_missing_copy(
             if leaf_id == single_leaf:
                 single_path_nodes = len(checked)
         if not missing_copy:
+            proved_empty = True
             return False
         # Only the deepest input-compatible state and its FULL ancestors are
         # reusable. A Host-only output tail cannot create a recovery target.
@@ -581,6 +603,12 @@ def has_host_backed_missing_copy(
         return False
     except (AttributeError, IndexError, KeyError, TypeError, ValueError, RuntimeError):
         return None
+    finally:
+        # A positive or uncertain branch has not proved its new ancestors empty.
+        # This synchronous scan only appends nodes, so discard its ordered tail.
+        if empty_ancestors is not None and not proved_empty:
+            while len(empty_ancestors) > prior_empty_count:
+                empty_ancestors.popitem()
 
 
 def missing_prepare_full_prefix_tokens(
