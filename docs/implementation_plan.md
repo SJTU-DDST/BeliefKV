@@ -43,6 +43,17 @@ across1377 batches/1.501TB including required state; this is a component
 budget, not exposed stall or an oracle JCT bound. Preserve these limits when
 comparing Full with both natural native and the same-replay JOIN-only arm.
 
+V138 stopped at GPU startup configuration validation, before replay, because
+the inherited reference had `BELIEFKV_IDLE_PREPARE_POLICY=all` shadowing the
+new plain `IDLE_PREPARE_POLICY=cold`. Preserve this failed startup. The config
+overlay now removes inherited aliases when the new plain setting is declared
+and rejects contradictory settings within one spec. CPU preflight checks the
+effective real runtime attributes before GPU allocation; the actual V138
+reference now produces cold preparation for both Full/JOIN-only and1500ms/
+0ms tool-prefetch priority respectively. V3202/V3203 retains5419 and passes
+5423 cases plus2 subtests without failures/skips. Register V139 with the same
+V136 source and valid V137 GPU/sampling evidence, keeping the V138 failure.
+
 Latest experiment policy: keep24 roots initially. If the resulting source has
 too little useful migration or insufficient Host/HBM pressure around real
 JOIN/tool waits, increase to32, then36 roots without another approval.

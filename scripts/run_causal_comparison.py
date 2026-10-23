@@ -166,9 +166,21 @@ def experiment_reference(reference, spec):
         )
     ):
         raise ValueError("invalid predeclared one-shot experiment configuration")
-    return {**reference, "arms": {**reference["arms"], "full": {
-        **reference["arms"]["full"], **common,
-    }}}
+    configured = dict(reference["arms"]["full"])
+    aliases = {
+        "EXECUTION_FRONTIER_RESTORE": "BELIEFKV_ENABLE_FRONTIER_RESTORE",
+        "JOIN_LAST_CHILD_PRIORITY": "BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY",
+        "TOOL_CONTINUITY": "BELIEFKV_ENABLE_TOOL_CONTINUITY",
+    }
+    for name, value in common.items():
+        if name.startswith("BELIEFKV_"):
+            continue
+        alias = aliases.get(name, "BELIEFKV_" + name)
+        if alias in common and common[alias] != value:
+            raise ValueError("conflicting predeclared experiment settings: " + name)
+        configured.pop(alias, None)
+    configured.update(common)
+    return {**reference, "arms": {**reference["arms"], "full": configured}}
 
 
 def source_reference(reference, roots, running, capacity):
@@ -235,6 +247,17 @@ def experiment_source_evidence(spec, quality, smoke_server, arm, roots, running)
 def preflight_runtime(settings, model_path):
     if settings["BELIEFKV_INTERNAL_COMPARISON_MODE"] == "native_matched":
         return {"native_runtime_not_enabled": True}
+    expected = {
+        "prefill_scheduling_policy": settings["PREFILL_SCHEDULING_POLICY"],
+        "idle_prepare_policy": settings.get(
+            "IDLE_PREPARE_POLICY", settings["BELIEFKV_IDLE_PREPARE_POLICY"],
+        ),
+        "tool_restore_mode": settings["TOOL_RESTORE_MODE"],
+        "restore_tiers": settings.get("RESTORE_TIERS", settings["BELIEFKV_RESTORE_TIERS"]),
+        "enable_tool_prefetch": settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "1",
+        "tool_prefetch_priority_ms": float(settings["BELIEFKV_TOOL_PREFETCH_PRIORITY_MS"]),
+        "join_prefetch_trigger": settings["JOIN_PREFETCH_TRIGGER"],
+    }
     with tempfile.TemporaryDirectory(prefix="beliefkv-causal-runtime-") as directory:
         env = qualified.driver_environment({"environment": settings}, os.environ)
         env["CUDA_VISIBLE_DEVICES"] = "99999"
@@ -244,16 +267,22 @@ def preflight_runtime(settings, model_path):
         ):
             env.pop(name, None)
         source = (
-            "import sys; "
+            "import json,sys; "
             "from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime; "
             "runtime=NativeAdmissionRuntime(event_socket_path=sys.argv[1],model_path=sys.argv[2]); "
-            "runtime.close()"
+            "expected=json.loads(sys.argv[3]); "
+            "actual={name:getattr(runtime,name) for name in expected}; "
+            "runtime.close()\n"
+            "if actual != expected:\n"
+            "    raise ValueError(f'CPU runtime configuration differs: {actual!r} != {expected!r}')\n"
         )
         result = subprocess.run(
-            [sys.executable, "-c", source, str(Path(directory) / "events.sock"), model_path],
+            [sys.executable, "-c", source, str(Path(directory) / "events.sock"), model_path,
+             json.dumps(expected)],
             env=env, check=True, capture_output=True, text=True, timeout=45,
         )
-    return {"actual_runtime_constructor_accepted": True, "cuda_visible_devices": "99999",
+    return {"actual_runtime_constructor_accepted": True, "runtime_configuration_verified": True,
+            "verified_configuration": expected, "cuda_visible_devices": "99999",
             "output_tail": result.stdout[-1000:]}
 
 

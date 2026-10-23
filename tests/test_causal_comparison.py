@@ -232,6 +232,108 @@ def test_explicit_pool_size_cannot_differ_from_the_natural_native_reference(
         comparison.source_reference(reference, 24, 24, capacity())
 
 
+def test_oneshot_settings_override_stale_prefixed_reference_values_in_the_real_runtime(
+    reference, tmp_path, monkeypatch,
+):
+    import beliefkv.runtime.sglang_v0520_runtime as native
+
+    spec = json.loads((comparison.ROOT / (
+        "configs/migration/qwen35_locobench_oneshot_24root_running24_20261024.json"
+    )).read_bytes())
+    reference["arms"]["full"].update(
+        BELIEFKV_IDLE_PREPARE_POLICY="all",
+        BELIEFKV_TOOL_RESTORE_MODE="execution",
+        BELIEFKV_ENABLE_FRONTIER_RESTORE="1",
+        BELIEFKV_RESTORE_TIERS="pipeline",
+        BELIEFKV_TOOL_PREFETCH_PRIORITY_MS="0",
+    )
+    configured = comparison.experiment_reference(reference, spec)
+    env, _, _ = comparison.environment(
+        configured, "full", tmp_path, tmp_path, tmp_path, 18568, tmp_path,
+        max_running_requests=24,
+    )
+    assert env["BELIEFKV_IDLE_PREPARE_POLICY"] == "cold"
+    assert env["BELIEFKV_TOOL_RESTORE_MODE"] == "speculative"
+    assert env["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == "0"
+    assert env["BELIEFKV_RESTORE_TIERS"] == "complete"
+    assert float(env["BELIEFKV_TOOL_PREFETCH_PRIORITY_MS"]) == 1500.
+    assert reference["arms"]["full"]["BELIEFKV_IDLE_PREPARE_POLICY"] == "all"
+    for name, value in env.items():
+        if name.startswith("BELIEFKV_"):
+            monkeypatch.setenv(name, value)
+    for name in (
+        "BELIEFKV_H2D_SEED", "BELIEFKV_H2D_SEED_SHA256",
+        "BELIEFKV_TRANSFER_SERVICE_SEED", "BELIEFKV_TRANSFER_SERVICE_SEED_SHA256",
+        "BELIEFKV_ADMISSION_OPPORTUNITY_DIR",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setattr(native, "validate_tool_timing_artifact", lambda *_args, **_kwargs: None)
+    runtime = native.NativeAdmissionRuntime(
+        event_socket_path=str(tmp_path / "config-cpu-events.sock"), model_path="cpu-config-check",
+    )
+    try:
+        assert runtime.idle_prepare_policy == "cold"
+        assert runtime.tool_restore_mode == "speculative"
+        assert runtime.restore_tiers == "complete"
+        assert runtime.tool_prefetch_priority_ms == 1500.
+    finally:
+        runtime.close()
+
+
+def test_oneshot_spec_rejects_conflicting_plain_and_prefixed_settings(reference):
+    spec = json.loads((comparison.ROOT / (
+        "configs/migration/qwen35_locobench_oneshot_24root_running24_20261024.json"
+    )).read_bytes())
+    spec["common_environment"]["BELIEFKV_IDLE_PREPARE_POLICY"] = "all"
+    with pytest.raises(ValueError, match="conflicting"):
+        comparison.experiment_reference(reference, spec)
+
+
+@pytest.mark.parametrize("stale_alias", (False, True))
+def test_cpu_preflight_verifies_effective_runtime_settings_before_gpu_start(
+    reference, tmp_path, monkeypatch, stale_alias,
+):
+    import beliefkv.runtime.sglang_v0520_runtime as native
+
+    spec = json.loads((comparison.ROOT / (
+        "configs/migration/qwen35_locobench_oneshot_24root_running24_20261024.json"
+    )).read_bytes())
+    env, _, _ = comparison.environment(
+        comparison.experiment_reference(reference, spec),
+        "full", tmp_path, tmp_path, tmp_path, 18568, tmp_path, max_running_requests=24,
+    )
+    if stale_alias:
+        env["BELIEFKV_IDLE_PREPARE_POLICY"] = "all"
+    for name in (
+        "BELIEFKV_H2D_SEED", "BELIEFKV_H2D_SEED_SHA256",
+        "BELIEFKV_TRANSFER_SERVICE_SEED", "BELIEFKV_TRANSFER_SERVICE_SEED_SHA256",
+    ):
+        env[name] = ""
+    monkeypatch.setattr(native, "validate_tool_timing_artifact", lambda *_a, **_k: None)
+    checks = []
+
+    def execute(command, *, env, **_kwargs):
+        assert env["CUDA_VISIBLE_DEVICES"] == "99999"
+        checks.append(json.loads(command[-1]))
+        with monkeypatch.context() as child:
+            for name, value in env.items():
+                if name.startswith("BELIEFKV_"):
+                    child.setenv(name, value)
+            child.setattr(comparison.sys, "argv", ["-c", *command[3:]])
+            exec(command[2], {})
+        return NS(stdout="")
+
+    monkeypatch.setattr(comparison.subprocess, "run", execute)
+    if stale_alias:
+        with pytest.raises(ValueError, match="CPU runtime configuration differs"):
+            comparison.preflight_runtime(env, "cpu-config-check")
+    else:
+        result = comparison.preflight_runtime(env, "cpu-config-check")
+        assert result["runtime_configuration_verified"] is True
+        assert result["verified_configuration"]["idle_prepare_policy"] == "cold"
+    assert checks[0]["idle_prepare_policy"] == "cold"
+
+
 @pytest.mark.parametrize("field,value", (
     ("ROOT_COUNT", None), ("MAX_RUNNING_REQUESTS", "0"),
     ("FANOUT_PROFILE", "native_in_graph_reusable_nested"),
