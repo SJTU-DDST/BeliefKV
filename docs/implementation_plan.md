@@ -42,11 +42,19 @@ outside inherited qualification. These are correctness and source checks;
 whether this path explains the observed GPU loss and improves JCT remains
 unproven until the next Full run.
 
-V141 is actually running frozen at048473a3378f with the conditional-tool-tail
-fix and old engine. At03:41 Beijing it has admitted3789/3951 requests without
-physical disablement. Let this nearly completed arm finish so the tool-tail
-change retains a full comparison, then run the qualified checkpoint candidate
-on the same24-root/batch24/seed21 source. Do not repeat full native replay.
+V141 completed normally at03:46 Beijing:24 workflows,3951 requests and the
+same exact tokens. Mean JCT is1143.402s; whole-run output throughput is591.121
+tokens/s. Normal tails remain included and no physical disablement occurred.
+The tool-tail change alone did not establish superiority over scheduler-only
+or JOIN-only. Its startup still loses the two Host checkpoints above.
+
+The first V142 registration attempt correctly refused chaining a changed
+engine behind V141: `predecessor causal comparison differs: engine_tree`.
+It started no GPU process and wrote no success registration. Keep that
+same-engine comparison guard. V141 has now exited and its cleanup receipt
+has no owned processes, so register the qualified checkpoint candidate as
+a standalone Full run against the same V136 natural-native reference and
+exact work. Do not repeat full native replay or increase roots.
 
 V139 Full completed normally:24/24 workflows,3951 identical requests,
 264598879 input and958791 output tokens, with verified native stopping,
