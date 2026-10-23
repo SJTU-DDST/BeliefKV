@@ -1,6 +1,20 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-23 (Asia/Shanghai).
+Status date: 2026-10-24 (Asia/Shanghai).
+
+Latest GPU pilot V135 was stopped at2026-10-23 23:58:30 Beijing after15/16
+natural eligible completions. It produced20 spawns and16 satisfied JOINs,
+five multi-round roots (maximum4), but zero nesting or actual handle reuse.
+FULL H2D ACK bytes total238.576GB; seven JOIN successors register20.778GB of
+Host FULL hits. These are opportunity/traffic observations, not prefetch gains.
+The remaining flat workflow accumulated79 consecutive edit validation errors
+over21.08 minutes; an exact late prompt shows identical normalized search and
+replacement text. Circuit breaking and semantic error stopping were disabled.
+Preserve the censored workflow and all raw prefixes; do not report a full JCT
+population, qualify this as a replay source, or launch the retention matrix.
+Before another reusable-source capture, address the invalid-edit loop and
+verify natural handle reuse and meaningful retention pressure without forcing
+the model's DAG or reuse choices.
 
 Latest task: prepare the natural reusable-subagent workload and selective
 dormant KV retention on main. Models choose rounds, nesting and whether to resume
@@ -30,22 +44,25 @@ CPU evidence, not a demonstrated GPU benefit. Do not restore the
 historical continuity candidate or simple-JOIN-only configuration by reading
 the older entries below as current instructions.
 
-No GPU experiment during2026-10-23 20:00 through2026-10-24 06:00 Asia/Shanghai.
-This is a one-time hold, not the removed daily midnight rule. The canonical hold
-is ../ops/gpu_hold_until_20261022_0600.json, with a separate reservation guard
-and pause marker. The user corrected the start from18:00 to20:00; before that
-interval, GPU work is allowed subject to qualification and resource checks.
-Only CPU work is allowed during the interval. Afterwards, require current
-source qualification, frozen sources, idle resources
-and no newer hold. The active goal remains unmet: improve complete-workflow
+The latest user explicitly authorizes GPU execution now. At2026-10-23 23:20:30
+Asia/Shanghai, retire the preceding one-time20:00--06:00 reservation and its
+identity-verified guard; remove only that guard's matching pause marker.
+Preserve the release receipt in ../ops/v135_user_gpu_release_20261023.json.
+V135 passed current source/resource checks and started at23:20:37, using16
+project-distinct roots, simultaneous arrival, running/decode8, seed21 and the
+reference FULL/Mamba/Host census. Native capture with retention off recorded the
+model's natural spawn/reuse decisions; it was later interrupted as documented
+above and is not a complete comparison source.
+Any newer user hold takes precedence. The active goal remains unmet: improve complete-workflow
 mean JCT and throughput against native and the strongest simple baseline,
 with independent KV-management benefit under equal work and capacity.
 
-Source capture is queued using `--wait-for-gpu`. A pending CPU-only queue
-survives the declared reservation, does not launch from19:59 drain, and resumes
-only after06:00, its own marker release and resource checks. Newer pauses,
-later deadlines and cancellation take precedence. A started driver must still
-release GPU before20:00. V134 failed before model launch because the shell
+V135's reservation-aware queue has exited and its GPU processes are gone.
+The superseded V134d waiting
+watcher was stopped only after the replacement queue was verified live.
+The frozen app is16c953bd5584 and the engine tree iscc9772c6c5c4.
+See [the pilot and native/cold-start policy audit](experiments/v135_project_disjoint_gpu_pilot_20261023_zh.md).
+V134 failed before model launch because the shell
 profile allowlist omitted the reusable profile; keep the failed evidence and
 do not treat it as captured work. V134b then failed before workload execution:
 auto-sized FULL/Mamba pools consumed graph headroom. V134c explicitly binds the
@@ -146,9 +163,12 @@ The closure hot loop inlines unchanged scalar length checks. V3168 alternates
 reads and pending state agree; CPU P50 falls1.15--4.00%, not a GPU/JCT gain.
 V3179 retains5328 and passes5355 plus2 subtests without failures/skips;
 V3180 binds and verifies the current sources.
-After source qualification/freeze, register V135 for16 project-distinct roots,
-running8 and the reference census; replace V134d only after verifying the new
-reservation-aware CPU watcher live. Respect the2026-10-24 06:00 Beijing hold.
+V135 was registered, frozen and run after the latest explicit user release.
+Its app qualification retains5355 cases plus2 subtests; engine evidence retains
+657 cases. V134d's superseded waiting watcher has exited. The actual pilot
+supports large parent restoration opportunities but has no real handle reuse;
+retain its rejection and interrupted final workflow, and do not proceed to the
+full retention matrix from this source.
 See [the complete CPU and environment evidence](reports/2026-10/closure_and_project_environment_cpu_20261023_zh.md).
 
 V3152 independently audits actual native output IDs and identical work/stopping
