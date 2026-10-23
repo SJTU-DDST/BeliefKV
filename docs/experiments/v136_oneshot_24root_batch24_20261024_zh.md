@@ -495,3 +495,27 @@ V3249/V3251 保留 5467 项应用检查，合计 5469 项及 2 项 subtests
 接下来独立登记 V143，先检查同一两个 root 的真实 Host checkpoint
 命中，再评价完整 JCT 和吞吐。继续使用 24 root/batch24、seed21、
 相同容量和 V136 精确工作量，不重放 native。
+
+## V143 已启动并通过目标验证
+
+北京时间 2026-10-24 04:15 独立登记 V143，仅运行 Full，冻结 main
+`df3378b5f108` 和上述 refined engine tree，端口为 18576。实际
+watcher、server、GPU scheduler 和 replay driver 均已核对。容量仍为
+1,797,968 FULL device token、513 Mamba device 槽，以及相同的
+160.00 GB FULL / 40.05 GB Mamba Host 池。
+
+V3252 封存的实际 GPU 启动段已经覆盖两个目标：
+
+| 目标 root | Host FULL 命中 token | Host Mamba 命中 | V139 Full 实际 prefill token | V143 实际 prefill token |
+| --- | ---: | ---: | ---: | ---: |
+| mobile_game_medium_096 cross_file_refactoring | 104576 | 1 | 109303 | 4727 |
+| web_cms_hard_074 feature_implementation | 118795 | 1 | 118841 | 4153 |
+
+两者均已完成 prefill 并进入 decode，实际新增计算与 JOIN-only
+一致；合计消除 219264 token 的额外重算。这是目标路径修复的 GPU
+证据，不能直接换算成整体 JCT 或吞吐收益。V143 继续运行，完整结果
+尚未产生，`performance_accepted` 保持 false。
+
+实验仍维持 24 root、running/decode24、seed21，不增加 native
+重放。已有 24 root 的有用迁移量足够；仅在后续有用迁移或真实
+Host/HBM 压力不足时按既定配置升级到 32/36 root。

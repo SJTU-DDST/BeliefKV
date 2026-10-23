@@ -2,6 +2,21 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+V143 is running the refined checkpoint fix from main `df3378b5f108` and
+engine tree `1a13e539ce5a49b27edcd5e0bdd36d831d911187`. The actual GPU startup
+target now passes: the mobile-game and CMS roots restore104576/118795 Host
+FULL tokens, each with one Host Mamba hit. Their completed native prefill
+extends are4727/4153 tokens, down from109303/118841 in V139 Full and equal
+to JOIN-only. V3252 seals the request matches, native service geometry,
+capacity and live process evidence. This removes219264 targeted extra
+prefill tokens; it is not yet a complete JCT/throughput result.
+
+Keep the independent Full run supervised through completion against the
+same V136 natural native capture and exact work. No native replay is
+registered. The24-root population already exposes substantial useful
+migration; increase to32/36 only if useful opportunities or real Host/HBM
+pressure are insufficient, retaining the user's predeclared escalation.
+
 V142's initial GPU check failed the actual target: both shared-project roots
 still had zero Host Mamba hits. It was intentionally stopped after startup
 investigation, not scored as a partial JCT/throughput result. V3245 preserves
@@ -24,10 +39,10 @@ V3247 passes130 focused cases; V3248/V3250 retains657 engine cases plus48
 subtests and binds engine tree1a13e539ce5a49b27edcd5e0bdd36d831d911187.
 V3249/V3251 retains5467 application cases and qualifies5469 plus2 subtests,
 with CUDA hidden and no failures/skips. The optional Docker case remains
-outside inherited qualification. GPU is currently free. Register V143 as
-a standalone qualified Full run, keeping24 roots/batch24/seed21 and the
-V136 exact work/native capture. Check the two startup Host checkpoints first;
-an unchanged miss is a failed target, not evidence of system benefit.
+outside inherited qualification. V143 was independently registered at04:15
+Beijing, keeping24 roots/batch24/seed21 and the V136 exact work/native
+capture. Its startup checkpoint validation is recorded above; overall
+performance acceptance remains pending.
 
 V140 scheduler-only completed all24 workflows and the exact V136 work.
 Mean JCT is1142.970s and whole-run output throughput593.360 tokens/s.
