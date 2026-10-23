@@ -2,6 +2,26 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+V3337 completes the same-engine native-work check for no-tool. Its actual
+prefill is5875016 tokens,only-0.0536% versus V147; prefill worker intervals
+are255.746s (-0.1081%). Decode work remains954840 observed tokens,while
+decode worker intervals are1344.726s (+0.5453%). Weighted decode batch
+is15.7725 versus15.7826. This rules out a large extra-prefill-work
+explanation for this particular difference; worker intervals do not
+isolate CPU,CUDA kernels or transfer stalls.
+
+The latest main source snapshot is qualified in V3339/V3340 with explicit
+coverage proof V3341. Only two offline capacity-audit helpers differ
+from the1523 inherited source hashes; all production and engine sources
+remain unchanged. V3338 freshly passes98 diagnostic cases. None of those
+identities were in the inherited5479-case suite,so the combined result
+retains all5479 and adds98:5577 cases plus the same2 subtests,1526 source
+paths. This is composed qualification,not5577 freshly rerun cases.
+V3339a preserves the failed initial overlap assumption; source-file
+presence in a snapshot is not proof of executed testcase coverage.
+The ordinary comparison qualifier and current-source verifier pass.
+V148 scheduler-only remains live; no new policy or GPU run is scheduled.
+
 V148 `no_tool_prefetch` completed at07:20 Beijing and its actual processes
 were cleaned up. V3331 independently revalidates frozen sources,identical
 engine/capacity,all3951 exact request receipts/native stopping,and actual
