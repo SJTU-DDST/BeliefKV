@@ -79,6 +79,27 @@ Do not turn short-tool continuity back on from this descriptive result.
 Latest V3146 retains5228 cases and passes5248 plus2 subtests without skips.
 See [the audit and source follow-up](experiments/v133b_causal_jct_and_v134c_cutoff_20261023_zh.md).
 
+Latest CPU follow-up unifies four Host eviction/reaccess encodings with the
+existing strict record encoder. V3148 alternates101 pinned/current samples
+and preserves exact output and evidence state: reaccess CPU P50 drops3.8--33.1%;
+128K single-block eviction changes only0.1%. This common telemetry change
+must apply equally to native/custom comparisons and is not a GPU/JCT gain.
+V3149 retains all5248 cases and passes5248 plus2 subtests; V3150 binds sources.
+Keep V134d's already-qualified native source-capture freeze and live CPU queue.
+See [the complete CPU evidence](reports/2026-10/host_record_encoding_cpu_20261023_zh.md).
+
+The user's batch48/short-tool-continuity questions require separate evidence.
+Higher batch limits can improve amortized throughput without reducing forward
+latency or exposed H2D waits. The current36.82GB FULL pool cannot hold48
+independent100K prefixes (98.30GB); count actual batches, admission/retraction,
+sharing and exposed restore waits before changing both arms together.
+Short-tool continuity remains a candidate, not rejected by the confounded V124b
+history: a short tool gap does not bound its next generation. A compatible
+candidate must bound actual model service, retain causal/aging barriers and
+prefer cheap resident continuations without reserving idle GPU slots. Keep the
+current default off until equal-work incremental validation; do not simply
+revive old queue-age inheritance, which only runs in the join_priority profile.
+
 Earlier entries below preserve historical implementation and validation context.
 
 The latest user request disables ordinary execution-frontier restore by default

@@ -374,6 +374,7 @@ def measure(writers: dict, *, tokens: int, scenario: str, iterations: int) -> di
             name: {clock: distribution(values) for clock, values in clocks.items()}
             for name, clocks in samples.items()
         },
+        "raw_samples_ms": samples,
     }
 
 
@@ -653,6 +654,7 @@ def main() -> None:
     parser.add_argument("--first-service-match-paths", action="store_true")
     parser.add_argument("--first-service-prefixes", action="store_true")
     parser.add_argument("--bounded-routes", action="store_true")
+    parser.add_argument("--host-records-only", action="store_true")
     args = parser.parse_args()
     if args.iterations <= 0:
         parser.error("iterations must be positive")
@@ -696,7 +698,23 @@ def main() -> None:
     }
     if args.observed_prefix_evidence is not None:
         report["observed_prefix_work"] = observed_prefix_work(args.observed_prefix_evidence)
-    if args.bounded_routes:
+    if args.host_records_only:
+        report["scope"] = (
+            "Complete CPU Host eviction/reaccess record processing on identical "
+            "array paths and request inputs. Alternating pinned baseline/current "
+            "order with normal GC; exact JSON text, hashes, counters and pending "
+            "state compared after every pair. Fixture setup and checks excluded; "
+            "no disk, concurrent writer/scheduler, GIL contention, DMA or JCT measurement."
+        )
+        report["cases"] = [
+            measure(writers, tokens=tokens, scenario=scenario, iterations=args.iterations)
+            for tokens, scenario in (
+                (1024, "block_eviction"), (1024, "block_many_matches"),
+                (32768, "block_array"), (32768, "block_many_branches"),
+                (131072, "block_eviction"), (131072, "block_array"),
+            )
+        ]
+    elif args.bounded_routes:
         for cap in (1024, 16384, 65536):
             writers[f"cap_{cap}"] = type(
                 f"BoundedRoute{cap}", (writers["optimized"],), {
@@ -777,7 +795,7 @@ def main() -> None:
     if (
         args.pressure_cases and not args.status_publication_only
         and not args.first_service_match_paths and not args.first_service_prefixes
-        and not args.bounded_routes
+        and not args.bounded_routes and not args.host_records_only
     ):
         report["cases"].extend(
             measure(writers, tokens=tokens, scenario=scenario, iterations=args.iterations)

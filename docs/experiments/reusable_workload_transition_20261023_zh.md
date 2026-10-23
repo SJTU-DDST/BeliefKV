@@ -175,6 +175,14 @@ V134c 随后成功启动且实测容量完全匹配，19:59 因预约中断。
 
 ## 本次 CPU 验证
 
+- `v3149_host_record_encoding_qualified_cpu_20261023.xml`：保留 V3146
+  全部 5248 项，5248 项及 2 个 subtest 通过，没有失败或 skip。
+  四处 Host 驱逐/重访记录统一使用已有严格编码器。V3148 在 101 次
+  交替测量中验证完整输出和证据状态一致；重访局部 CPU P50 下降
+  3.8%--33.1%，128K 单块驱逐基本不变。公共修改须同时用于正式
+  native/custom 对照，不改 V134d 已冻结的源采集。详见
+  [完整证据和局限](../reports/2026-10/host_record_encoding_cpu_20261023_zh.md)。
+
 - `v3146_causal_paths_reusable_guidance_qualified_cpu_20261023.xml`：
   最新源码 5248 项及 2 个 subtest 全部通过，完整保留 V3140 的
   5228 项。覆盖实际阻塞链审计、自定义 task 描述的保留和重建、

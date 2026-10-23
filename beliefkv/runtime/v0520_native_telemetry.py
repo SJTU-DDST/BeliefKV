@@ -777,14 +777,14 @@ class NativeReactiveTelemetry:
         token_ids = self._key_path_tokens(record["key_path"])
         if token_ids is None:
             self._block_attribution_counts["identity_unavailable"] += 1
-            output.write(json.dumps({
+            output.write(encode_record({
                 "event": "host_block_identity_unavailable",
                 "ts_ms": record["ts_ms"],
                 "pool": record["pool"],
                 "node_id": record["node_id"],
                 "evicted_units": record["units"],
                 "reason": "empty_or_unreadable_key_path",
-            }, separators=(",", ":")) + "\n")
+            }) + "\n")
             return
         prefix_tokens = len(token_ids)
         namespace_digest = self._namespace_digest(
@@ -866,7 +866,7 @@ class NativeReactiveTelemetry:
         self._host_block_eviction_count += 1
         self._block_attribution_counts[f"{record['pool']}_evictions"] += 1
         self._block_attribution_evicted_units[record["pool"]] += units
-        output.write(json.dumps({
+        output.write(encode_record({
             "event": "host_block_evicted",
             "eviction_id": eviction_id,
             "ts_ms": record["ts_ms"],
@@ -880,7 +880,7 @@ class NativeReactiveTelemetry:
             "identity_confidence": (
                 "exact_namespaced_token_prefix_hmac_blake2b128"
             ),
-        }, separators=(",", ":")) + "\n")
+        }) + "\n")
         while len(self._pending_block_evictions) > self._block_eviction_index_limit:
             expired_identity, expired = self._pending_block_evictions.popitem(
                 last=False
@@ -1053,7 +1053,7 @@ class NativeReactiveTelemetry:
                     outcome = "mamba_prefix_revisited_hit_location_unknown"
                 self._block_attribution_counts[outcome] += 1
                 matches += 1
-                output.write(json.dumps({
+                output.write(encode_record({
                     "event": "host_block_reaccess_attributed",
                     "ts_ms": record["ts_ms"],
                     "pool": pool,
@@ -1103,7 +1103,7 @@ class NativeReactiveTelemetry:
                         else "exact_prefix_revisit; mamba hit location is not "
                              "exposed by native request telemetry"
                     ),
-                }, separators=(",", ":")) + "\n")
+                }) + "\n")
         if clear_indexes:
             # The writer processes one record at a time; all exact identities
             # were consumed above, so their indexes can be released together.
@@ -1116,7 +1116,7 @@ class NativeReactiveTelemetry:
             self._block_eviction_sorted_lengths.clear()
             self._block_eviction_length_refs.clear()
         if overflow or matches:
-            output.write(json.dumps({
+            output.write(encode_record({
                 "event": "eviction_probe_summary",
                 "ts_ms": record["ts_ms"],
                 "workflow_id": record.get("workflow_id"),
@@ -1124,7 +1124,7 @@ class NativeReactiveTelemetry:
                 "candidate_prefix_lengths": candidate_prefix_lengths,
                 "omitted_prefix_lengths": overflow,
                 "matched_evicted_blocks": matches,
-            }, separators=(",", ":")) + "\n")
+            }) + "\n")
     @staticmethod
     def _identity(req: Any) -> dict[str, Any] | None:
         raw = getattr(req, "beliefkv_metadata", None)
