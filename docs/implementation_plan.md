@@ -100,6 +100,30 @@ prefer cheap resident continuations without reserving idle GPU slots. Keep the
 current default off until equal-work incremental validation; do not simply
 revive old queue-age inheritance, which only runs in the join_priority profile.
 
+Latest workload review verifies that9 projects contribute4 scenarios each.
+Complete project source precedes each task in the root system prompt; same-project
+example roots share132,556 tokens, while a cross-project example shares6,072.
+Thus24/36 roots are not24/36 independent long-prefix working sets. Revisit
+project diversity alongside root/batch tuning; the9 projects in the old manifest
+do not prove24 distinct projects are currently available. V3155 re-profiles all
+100 projects against Python3.10, matching the actual pinned sandbox image:
+12 have clean syntax and100K--196608 source tokens; allowing95K yields16
+distinct projects and40.831GB aggregate source FULL state. This is a CPU
+candidate pool, not full-prompt, dependency, task-correctness or GPU acceptance.
+Evaluate16 project-distinct roots/running8/decode8 before raising active limits;
+retain12 roots if requiring every source itself to exceed100K. Keep the live
+V134d source capture unchanged by this analysis.
+See [the shared-prefix analysis](experiments/root_count_batch_capacity_20261023_zh.md).
+
+V3152 independently audits actual native output IDs and identical work/stopping
+in all three V133b arms.6161 same-session quick tool successors have output
+P50/P90 of90/458 tokens, but123 reach2048 and the maximum is16384. Even a
+short prior output leaves long successors. These are evaluation work labels,
+not GPU service, ready-time residency, a simulated schedule or JCT savings.
+Keep continuity off pending a compatible bounded candidate and equal-work
+validation. V3153 retains all5248 cases and passes5284 plus2 subtests;
+V3154 binds sources. See [the work audit](experiments/tool_continuation_work_audit_20261023_zh.md).
+
 Earlier entries below preserve historical implementation and validation context.
 
 The latest user request disables ordinary execution-frontier restore by default
