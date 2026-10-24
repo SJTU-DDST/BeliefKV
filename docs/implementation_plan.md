@@ -40,14 +40,29 @@ realized final dependency paths show Full's submit-to-first-launch mean
 5.003s lower,but first-launch-to-completion1.242s higher. The latter
 contains prefill/decode/interleaving and waits,not pure GPU or CPU time.
 
-V149 is now running the reverse-order repeat:`scheduler_only`,then
-`full`. It uses current main `a80134595c25`,the same qualified engine,
-V136 work,native capture,24 roots,batch24,seed21 and capacities. V3348
-verifies actual live watcher/server/driver and GPU scheduler1048023,
-runtime policy,capacity and both4727/4153-token startup extends with
-decode. No native replay is included. Registration:
+V149's reverse-order `scheduler_only` arm completed normally with exit0,
+and its actual processes are gone. V3358 independently revalidates frozen
+sources,the same engine,configuration,all3951 exact receipts and cleanup.
+Its mean JCT is1137.014s,whole-run output rate595.207 tokens/s,and V3359's
+demand-outstanding rate600.442. Relative to V148's identical scheduler
+policy,the changes are+0.2786%/-0.1127%;this observed repeat difference
+is not a confidence interval,but is comparable to Full's earlier marginal
+independent-KV advantage. V3361 records H2D1180.241GB/D2H440.415GB.
+Keep the paired Full repeat pending rather than accepting the older
+point estimate as a stable module gain.
+
+V149 `full` is now running with frozen `a80134595c25`,the same qualified
+engine,V136 work,native capture,24 roots,batch24,seed21 and capacities.
+V3362 independently verifies actual watcher/server/driver,GPU scheduler
+1058519,runtime policy,capacity and both4727/4153-token startup extends
+followed by decode. No native replay is included. Registration:
 `/home/longhao/experiment/ops/v149_oneshot_batch24_scheduler_full_repeat_20261024.registration.json`.
-Full and scheduler-only complete repeat results remain pending.
+The complete Full repeat result remains pending. V3360 reconstructs the
+completed scheduler repeats' realized final dependency paths:the latest
+has submit-to-first-launch3.291s lower but first-launch-to-completion
+6.481s higher. These are descriptive interleaving/wait components,not
+isolated GPU or CPU costs. All normal tails and workflow identities stay
+included; no new quality exclusions or task-correctness claims.
 
 Latest sampled phase evidence is V3347 Full/V3349 scheduler-only:
 124/133 short single-request prefills,with post-launch physical own-thread
@@ -58,9 +73,8 @@ one unknown/missing service sample kept explicit. V3349 independently
 seals the settled native audit because the action-oriented V3346 did
 not read it when scheduler-only had no custom physical commands; this
 does not mean the baseline had no JOINs. V3349a preserves the rejected
-missing-seal input. Next CPU work should inspect `dispatch_after_forward`
-and its actual due/idle paths before adding any state or changing policy.
-The runtime is unchanged by these offline diagnostics.
+missing-seal input. The subsequent CPU inspection and PREPARE reduction
+are recorded above. These phase audits themselves add no runtime control.
 
 V3337 completes the same-engine native-work check for no-tool. Its actual
 prefill is5875016 tokens,only-0.0536% versus V147; prefill worker intervals
