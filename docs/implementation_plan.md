@@ -203,8 +203,15 @@ passes26 CPU cases for predecessor/resource sequencing,model geometry and
 CUDA-activity accounting. It must wait for all V166 arms and owned processes,
 equal-work verification and a freshly idle GPU. Eager component timing,
 repeated weights and finite-state smoke checks are not whole-model speedups,
-full-model kernel shares or independent numerical qualification. Registration
-and actual GPU measurements remain pending.
+full-model kernel shares or independent numerical qualification.
+The initial V167 was registered at
+`/home/longhao/experiment/ops/v167_qwen35_execution_diagnostic_20261024.registration.json`.
+V3469 preserves that registration. Its waiting CPU supervisor was explicitly
+stopped before GPU use to cover the comparison's resource-wait and startup
+transitions as well as its running states. V3470 freshly passes32 CPU cases;
+V3471 preserves the controlled stop. V167b will use these qualified states.
+The current workload comparison and the overall native/strong-baseline/KV
+increment acceptance remain pending.
 Keep the same36 different projects,
 simultaneous arrival,running/decode24,seed21,256K context,95% compression
 and matched pools. The changed generation policy requires a fresh trajectory;

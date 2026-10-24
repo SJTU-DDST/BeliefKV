@@ -125,3 +125,12 @@ V3468 freshly passes26 CPU checks. The profiler accounts only device CUDA
 events rather than summing CPU parent and child GPU attribution. A missing
 CUDA activity trace fails the diagnostic instead of being accepted as a
 zero-time operator. GPU measurements are still pending.
+
+The initial V167 supervisor was registered after V166 in
+`waiting_comparison`. Its registration is preserved in
+`experiments/reports/v3469_v167_execution_diagnostic_registration_20261024.json`.
+It was explicitly stopped before GPU use to add the predecessor's
+resource-wait and server-startup states. V3470 freshly passes32 CPU checks,
+and V3471 preserves the controlled stop. The V167b replacement will use
+the qualified transition handling. No profile is inserted into either
+timed arm.

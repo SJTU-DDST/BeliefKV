@@ -32,7 +32,12 @@ def predecessor_ready(plan, state, alive):
         if state.get("completed_arms") != plan["order"]:
             raise ValueError("comparison did not complete every registered arm")
         return not any(alive(identity) for identity in identities)
-    if state.get("status") in ("running_full", "running_scheduler_only"):
+    live_states = {"preflight", "waiting_previous_causal_comparison"} | {
+        prefix + arm
+        for arm in plan["order"]
+        for prefix in ("waiting_resources_", "starting_", "running_")
+    }
+    if state.get("status") in live_states:
         if not state.get("watcher") or not alive(state["watcher"]):
             raise ValueError("comparison supervisor disappeared without completion")
         return False

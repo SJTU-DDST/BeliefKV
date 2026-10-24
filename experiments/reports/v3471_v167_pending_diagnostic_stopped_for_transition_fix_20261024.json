@@ -1,0 +1,21 @@
+{
+  "status": "stopped_for_investigation",
+  "watcher": {
+    "pid": 1555265,
+    "state": "R",
+    "ppid": 1,
+    "start_ticks": "699362268",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/BeliefKV/scripts/benchmark_qwen35_execution.py",
+      "--watch",
+      "/home/longhao/experiment/ops/v167_qwen35_execution_diagnostic_20261024.registration.json"
+    ]
+  },
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_execution_diagnostic_20261024_v167",
+  "performance_accepted": false,
+  "checked_at": "2026-10-24T14:32:40.116468+08:00",
+  "predecessor_status": "running_full",
+  "error": "KeyboardInterrupt()",
+  "finished_at": "2026-10-24T14:32:42.652088+08:00"
+}

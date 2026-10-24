@@ -19,7 +19,11 @@ SHAPE = {
 }
 
 
-@pytest.mark.parametrize("phase", ("running_full", "running_scheduler_only"))
+@pytest.mark.parametrize("phase", (
+    "preflight", "waiting_previous_causal_comparison",
+    "waiting_resources_full", "starting_full", "running_full",
+    "waiting_resources_scheduler_only", "starting_scheduler_only", "running_scheduler_only",
+))
 def test_live_predecessor_always_waits(phase):
     state = {"run_root": PLAN["run_root"], "status": phase,
              "watcher": {"pid": 11}, "owned": [{"pid": 12}]}

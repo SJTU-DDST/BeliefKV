@@ -1,0 +1,17 @@
+{
+  "after_registration": "/home/longhao/experiment/ops/v166_36project_coding_controls_20261024.registration.json",
+  "after_registration_sha256": "2599faaee6920281341a4c8c374b784eb81dc5f92c14436754158677e49226f4",
+  "script_sha256": "b0bad312ababbd79d6c7b2cdabac64f0508014cd983dbcbf553d52584eb0acd3",
+  "engine_checkout": "/home/longhao/experiment/.worktrees/sglang-causal-7d77eeccefb3-bd24492cd5b7",
+  "engine_tree": "7d77eeccefb31b2465050ddebb1b58ca9d9213a6",
+  "model_config": "/srv/ai/models/Qwen/Qwen3.5-35B-A3B/config.json",
+  "model_config_sha256": "5e4d7f74fec2f360eb9cfbfcd6ec0c4c76e684d3a11caaed259d9fd9bfbc7944",
+  "hold_file": "/home/longhao/experiment/ops/gpu_hold_until_20261022_0600.json",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_execution_diagnostic_20261024_v167",
+  "resource_port": 18760,
+  "cpu_report": "/home/longhao/experiment/BeliefKV/experiments/reports/v3468_qwen35_execution_diagnostic_qualified_cpu_20261024.xml",
+  "cpu_report_sha256": "002a28fa02026ef00224b21feabb22014d8fc5a5ca707e659c1b652e165f1e68",
+  "passing_cpu_cases": 26,
+  "cuda_home": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13",
+  "performance_accepted": false
+}
