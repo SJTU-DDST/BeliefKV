@@ -83,8 +83,15 @@ sequence is V164 natural native capture,V165 bounded exact-token/stop/session
 and sampling checks,then V166 Full followed by scheduler-only on that source.
 V3442 freshly passes783 CPU cases with no failures or skips; V3443/V3444
 retain5687 case identities and bind current app sources. V3445 records the
-complete toolchain,GPU checks and failed prior sequence. No replacement
-workflow has completed at this cutoff.
+complete toolchain,GPU checks and failed prior sequence.
+V164 and V165 are registered from main `814bac1b80c4`. V164 completed model
+startup and is serving real native requests; V165 waits for the qualified
+source before registering V166 Full and scheduler-only. The first observed
+native prompt has98554tokens with effective temperature0.6,top_p0.95,top_k20,
+sampling_seed21 and the unchanged16384-token output budget. V3446 verifies
+frozen sources,live owned GPU process,actual capacities and these parameters.
+No replacement workflow has completed at this cutoff; repeated-call
+elimination and performance remain unverified.
 Keep the same36 different projects,
 simultaneous arrival,running/decode24,seed21,256K context,95% compression
 and matched pools. The changed generation policy requires a fresh trajectory;
