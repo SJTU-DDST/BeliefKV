@@ -209,7 +209,10 @@ The initial V167 was registered at
 V3469 preserves that registration. Its waiting CPU supervisor was explicitly
 stopped before GPU use to cover the comparison's resource-wait and startup
 transitions as well as its running states. V3470 freshly passes32 CPU cases;
-V3471 preserves the controlled stop. V167b will use these qualified states.
+V3471 preserves the controlled stop. V167b is registered with these qualified
+states;V3472 preserves the replacement registration. Its supervisor PID1557033,
+start_ticks699395512,is verified live in waiting_comparison. It has not
+initialized a diagnostic GPU context.
 The current workload comparison and the overall native/strong-baseline/KV
 increment acceptance remain pending.
 Keep the same36 different projects,

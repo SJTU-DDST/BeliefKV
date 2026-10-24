@@ -131,6 +131,7 @@ The initial V167 supervisor was registered after V166 in
 `experiments/reports/v3469_v167_execution_diagnostic_registration_20261024.json`.
 It was explicitly stopped before GPU use to add the predecessor's
 resource-wait and server-startup states. V3470 freshly passes32 CPU checks,
-and V3471 preserves the controlled stop. The V167b replacement will use
-the qualified transition handling. No profile is inserted into either
-timed arm.
+and V3471 preserves the controlled stop. V167b is registered with the
+qualified transition handling and its supervisor is verified live in
+`waiting_comparison`;V3472 preserves that registration. No profile is
+inserted into either timed arm.
