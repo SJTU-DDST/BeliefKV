@@ -2,6 +2,27 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+The latest CPU candidate changes only private PREPARE prefix summaries in
+`sglang_v0520_physical.py`: use immutable named tuples instead of frozen
+dataclass construction,and avoid building an unused depth table during
+complete-backup checks. V3353 alternates complete dispatch calls for24
+waiting contexts with16/64 ancestry nodes. Mean thread CPU decreases
+5.27--6.52%/11.79--12.07%,with identical per-iteration actions,candidate
+order,publication,deadlines,cursors,counters and native-read counts.
+These are synthetic CPU fixtures,not an online frequency or a GPU/JCT gain.
+No dispatcher deadlines,EOS/ACK responses or scheduling policy changed.
+
+V3351/V3352/V3354 freshly cover751 unique passing cases. The initial
+native-cache skip/import error is retained and resolved by the CPU recheck
+with `CUDA_VISIBLE_DEVICES=999`. V3355/V3356/V3357 replace those exact
+inherited testcase identities,retaining5577 cases plus2 existing subtests
+and binding1526 source paths. Only the physical helper's production hash
+changed; this is not5577 freshly rerun cases. V149 continues using its
+unchanged frozen sources; it does not evaluate this latest CPU candidate.
+Keep24 roots,batch24,and reuse the original matching native capture.
+Increase to32/36 only if useful migration or Host/HBM pressure is inadequate;
+the completed same-engine controls already show substantial migration.
+
 V148 is fully collected with both drivers returning0 and all actual
 processes cleaned up. V3344 independently revalidates frozen sources,
 the identical engine/capacity,exact3951 request receipts,stopping,and

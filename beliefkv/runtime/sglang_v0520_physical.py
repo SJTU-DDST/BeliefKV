@@ -12,7 +12,7 @@ from collections import deque
 from dataclasses import dataclass, field, replace
 from math import isfinite
 from time import monotonic
-from typing import Callable, KeysView, Mapping
+from typing import Callable, KeysView, Mapping, NamedTuple
 
 from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
 from beliefkv.runtime.sglang_v0520_observer import (
@@ -38,8 +38,7 @@ class ContextSessionAnchors:
     reusable_input_tokens: int | None = None
 
 
-@dataclass(frozen=True, slots=True)
-class _PreparePrefixNode:
+class _PreparePrefixNode(NamedTuple):
     node_id: int
     parent_id: int | None
     key_tokens: int
@@ -711,12 +710,14 @@ def missing_prepare_full_prefix_tokens(
                 if max_nodes is not None and len(nodes) > max_nodes:
                     return None
                 current = parent
-            prefix = 0
-            for distance, node_id in enumerate(reversed(chain)):
-                depth[node_id] = distance
-                if complete_backed_nodes is not None:
+            if complete_backed_nodes is not None:
+                prefix = 0
+                for node_id in reversed(chain):
                     prefix += nodes[node_id].key_tokens
                     prefixes[node_id] = prefix
+            else:
+                for distance, node_id in enumerate(reversed(chain)):
+                    depth[node_id] = distance
         if complete_backed_nodes is not None:
             if any(node_id not in nodes for node_id, _ in components[2]):
                 return None
