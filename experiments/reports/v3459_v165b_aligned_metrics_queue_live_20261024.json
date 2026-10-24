@@ -1,0 +1,58 @@
+{
+  "observed_at": "2026-10-24T13:44:56.889284+08:00",
+  "status": "replacement_calibration_registered_with_equal_event_metrics",
+  "source_commit": "814bac1b80c4d71fd7b9660064b6926a0b91fd80",
+  "replacement_queue_commit": "42104be6cebecc395631e83c42797ab4ae2886e4",
+  "source_registration": "/home/longhao/experiment/ops/v164_36project_coding_complete_source_20261024.registration.json",
+  "replacement_queue_registration": "/home/longhao/experiment/ops/v165b_36project_coding_position_check_20261024.registration.json",
+  "registration_sha256": {
+    "/home/longhao/experiment/ops/v164_36project_coding_complete_source_20261024.registration.json": "de8ef03e4ae3269f30a2438a50e4797cd1e24e0cc319d08ce09f238cba2af4e8",
+    "/home/longhao/experiment/ops/v165b_36project_coding_position_check_20261024.registration.json": "c9ad04ead16b21fea76fb2d678b9065c5172c3ce55e011b0929ec8df477e4db6"
+  },
+  "live_process_evidence": {
+    "source": {
+      "status": "source_captured_gpu_replay_pending",
+      "checked_at": "2026-10-24T13:44:24.010889+08:00",
+      "watcher_alive": false,
+      "actual_watcher": null,
+      "error": null
+    },
+    "replacement_queue": {
+      "status": "waiting_selected_source",
+      "checked_at": "2026-10-24T13:44:56.023131+08:00",
+      "watcher_alive": true,
+      "actual_watcher": {
+        "pid": 1535980,
+        "state": "S",
+        "ppid": 1,
+        "start_ticks": "699076220",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/.worktrees/beliefkv-v165b-position-42104be6cebe/scripts/run_position_replay_calibration.py",
+          "--watch",
+          "/home/longhao/experiment/ops/v165b_36project_coding_position_check_20261024.registration.json"
+        ]
+      },
+      "error": null
+    }
+  },
+  "unchanged_serving_generation_and_replay_modules": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": true,
+    "beliefkv/runtime/v0520_native_telemetry.py": true,
+    "beliefkv/experiments/causal_replay_native.py": true,
+    "beliefkv/experiments/causal_replay_sampling.py": true,
+    "beliefkv/experiments/causal_replay_tokens.py": true,
+    "beliefkv/experiments/causal_replay_backend.py": true,
+    "beliefkv/experiments/deepagents_swebench.py": true
+  },
+  "source_engine_matches_replacement": true,
+  "planned_order": [
+    "full",
+    "scheduler_only"
+  ],
+  "planned_comparison_registration": "/home/longhao/experiment/ops/v166_36project_coding_controls_20261024.registration.json",
+  "production_cpu_case_identities": 5702,
+  "actual_gpu_processes": [],
+  "performance_accepted": false,
+  "scope": "Current supervisor and frozen-source bindings only. V164 is preserved; the replacement changes comparison accounting, not serving, sampling, workload or capacity. No completed Full run or KV-management gain is established."
+}

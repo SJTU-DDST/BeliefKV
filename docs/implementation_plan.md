@@ -142,8 +142,24 @@ with the re-accounting disclosed in V3458 rather than overwritten.
 V3455 freshly passes398 CPU cases; V3456/V3457 retain5702 identities.
 Only the comparison operator and its tests changed,no serving or sampler
 path. V164 continues unchanged. The waiting V165 was explicitly stopped
-before using GPU and will be replaced by V165b from qualified main;
-V166 remains Full then scheduler-only on the same captured work.
+before using GPU. V165b is registered from main `42104be6cebe`,with the same
+source,engine,serving/sampling modules and Full/scheduler-only order.
+V3459 verifies the replacement's live supervisor and all5702 qualified
+source bindings. V166 remains Full then scheduler-only on the same work.
+V3458 re-accounts historical V151 versus its V136 source: mean JCT change
+is-2.1727% and event-makespan throughput change is+1.4612%,rather than the
+old-2.3041%/+1.9568% with differing boundaries. The remaining gain is not
+proof of an independent KV benefit over scheduler-only,and this historical
+shared-project population is not a current workload qualification.
+V164 has now completed36/36 workflows with exit0 and all36 native-agent-JCT
+eligible. Its qualified source contains5604 requests,111 model-directed
+SPAWNs and62 JOINs,including one nested JOIN and root histories of up to
+five rounds. V3460 seals all6753 completed physical tool calls: the maximum
+serial identical read-input run is2 and the maximum raw-result-proven run
+is2; feedback count13 includes intervening calls. No long serial grep loop
+or guard-finalized workflow is observed in this complete source. This is
+workload/trace qualification,not independent task grading or a speedup.
+V165b has advanced to the bounded GPU data-plane check after source release.
 Keep the same36 different projects,
 simultaneous arrival,running/decode24,seed21,256K context,95% compression
 and matched pools. The changed generation policy requires a fresh trajectory;
