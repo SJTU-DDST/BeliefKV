@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import shlex
 import threading
 import time
 from dataclasses import dataclass
@@ -70,6 +71,36 @@ class ActivationDeadline:
 class ToolOutcome:
     status: Literal["success", "error"]
     error_class: str | None = None
+
+
+def literal_shell_print(command: str) -> bool:
+    """Recognize literal prints without classifying arbitrary shell effects."""
+    if not command.lstrip().startswith(("echo", "printf", "cd")):
+        return False
+    if any(char in command for char in "$`\n\r*?["):
+        return False
+    try:
+        lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
+        lexer.whitespace_split = True
+        lexer.commenters = ""
+        tokens = list(lexer)
+    except ValueError:
+        return False
+    if len(tokens) >= 4 and tokens[0] == "cd" and tokens[2] == "&&":
+        tokens = tokens[3:]
+    commands: list[list[str]] = [[]]
+    for token in tokens:
+        if token == "&&":
+            commands.append([])
+        elif token and all(char in "();<>|&" for char in token):
+            return False
+        else:
+            commands[-1].append(token)
+    return all(
+        parts and parts[0] in ("echo", "printf")
+        and not (parts[0] == "printf" and "-v" in parts[1:])
+        for parts in commands
+    )
 
 
 def _content_fragments(value: Any) -> tuple[str, ...]:

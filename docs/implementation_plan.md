@@ -168,6 +168,40 @@ EOS JOIN,cold prepare and1500ms tool-prefetch priority. V171's serving tree
 and the canonical native engine remain unchanged. The end-to-end goal remains
 unproven until matching complete-workflow and throughput evidence exists.
 
+V171's sealed live audit subsequently confirms root completion-marker loops in
+networking027,analytics082 and CMS074 despite the initial prompt fix. V3555
+preserves their exact generated-token evidence and actual decode geometry.
+Stop the verified waiting V172 watcher and the V171 capture;V3557 retains the
+capture stop request. Both supervisors exited,V173 never registered,and the
+source remains diagnostic rather than qualified performance evidence.
+
+Add common,persisted completion-bookkeeping feedback after all-completed todo
+updates and literal print results,without removing tools or deciding task success.
+Expand the narrow shared literal-print recognizer to print-only chains. Keep
+child-local summarize-and-return recovery and its intervention flag. Root and
+child prompts explicitly separate final reports from ordinary tool calls.
+CPU-qualify and freeze main for V174 replacement native,then bounded calibration
+and Full only through the existing complete-source gates. Preserve24 different
+projects,running/decode24 and seed21.
+
+The observed decode cap is24,but V3555's actual mean is6.834,P50=7,P90=9,max14.
+Logical sequence lengths summed within a decode batch have P50=738881 tokens
+against805198 logical FULL capacity;shared-prefix accounting prevents treating
+this as exact physical allocation. The long-context capacity constraint must be
+considered before increasing the cap or roots. V3553 attributes453334 lost
+previously served common-input tokens to five completed requests,about13.0% of
+the observed completed cohort's logical prefill work. This is not a GPU-time
+or JCT fraction. Do not call recomputation harmless using the smaller
+repeated-reference denominator. See
+`docs/experiments/v174_native_completion_feedback_20261024.md`.
+
+V3559 passes5838 CPU cases across176 modules,retaining every previous5818
+identity and adding20 bookkeeping/print/return cases. Native API,local tokenizer
+and cached CPU Docker fixtures are explicitly selected. V3560 binds the source
+hashes and V3561 records the retained identities. The earlier V3556 run with118
+optional-fixture skips is not qualification evidence. Freeze this code for V174;
+scripted CPU models do not establish served-model compliance or GPU improvement.
+
 V3523/V3524 explain why short-tool continuation matters. Of3643 served tool
 successors,2606 have logical Host hits;2734 follow tool rounds shorter than50ms.
 At least1208 short-tool successors have matching large-prefix D2H evidence

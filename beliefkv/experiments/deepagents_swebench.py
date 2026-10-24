@@ -2120,6 +2120,9 @@ Completion bookkeeping is not new evidence. Changing a completed todo's wording 
 printing a success message with echo/printf does not validate the task. Once the
 assigned deliverable is supported, give the required final report instead of another
 bookkeeping tool call. If work remains, take a concrete action that advances it.
+Do not combine your final report with a tool call. After the last necessary tool
+result, return the report directly in an assistant response without ordinary tools.
+Do not append a todo update, echo command, or completion notice to that response.
 For shell wrappers, report the subprocess's stdout, stderr, and return status
 separately; a printed number or the wrapper's successful exit is not proof that
 the diagnostic or the assigned task succeeded. For recursive linters or walkers,

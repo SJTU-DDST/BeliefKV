@@ -3,7 +3,6 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-import shlex
 import time
 from dataclasses import asdict, dataclass
 from typing import Annotated, Any, Callable, Literal, Protocol, Sequence
@@ -26,6 +25,7 @@ from beliefkv.runtime.agent_safety import (
     ActivationDeadline,
     ActivationDeadlineExceeded,
     classify_tool_outcome,
+    literal_shell_print as _literal_shell_print,
 )
 
 
@@ -271,27 +271,6 @@ _MIN_EXECUTION_EVIDENCE_CHARS = 48
 
 def _tool_metadata(message: ToolMessage) -> dict[str, Any]:
     return dict(message.additional_kwargs or {})
-
-
-def _literal_shell_print(command: str) -> bool:
-    if any(char in command for char in "$`\n\r*?["):
-        return False
-    try:
-        lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
-        lexer.whitespace_split = True
-        lexer.commenters = ""
-        tokens = list(lexer)
-    except ValueError:
-        return False
-    if len(tokens) >= 4 and tokens[0] == "cd" and tokens[2] == "&&":
-        tokens = tokens[3:]
-    return bool(
-        tokens and tokens[0] in ("echo", "printf")
-        and not any(
-            token and all(char in "();<>|&" for char in token)
-            for token in tokens[1:]
-        )
-    )
 
 
 def _credible_progress_key(

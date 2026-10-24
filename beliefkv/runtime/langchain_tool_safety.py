@@ -7,7 +7,7 @@ import threading
 import time
 from collections import OrderedDict
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Mapping
 
 from langchain.agents.middleware import AgentMiddleware
@@ -15,7 +15,7 @@ from langchain.agents.middleware.types import ToolCallRequest
 from langchain_core.messages import AIMessage, ToolMessage
 from langgraph.types import Command
 
-from beliefkv.runtime.agent_safety import classify_tool_outcome
+from beliefkv.runtime.agent_safety import classify_tool_outcome, literal_shell_print
 
 
 @dataclass
@@ -199,6 +199,14 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
     _RESULT_HISTORY_TOOLS = frozenset({"execute", "read_file", "grep", "glob", "ls"})
     _COMMAND_SUCCESS_ONLY = re.compile(
         r"^\s*\[Command succeeded with exit code 0\]\s*$"
+    )
+    _COMPLETION_FEEDBACK = (
+        "If the assigned deliverable is complete or concretely blocked, give the "
+        "final report in the required format next, without another todo update or "
+        "shell success print. Put the final report in a response with no ordinary "
+        "tool calls. A child returns its findings and unfinished work to the parent, "
+        "which continues the workflow. If substantive work remains, perform that "
+        "work and report the observed outcome."
     )
 
     def __init__(
@@ -485,6 +493,29 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
             with self._lock:
                 if self._records.get(key) is reservation:
                     self._records.pop(key, None)
+            if (
+                request.tool_call.get("name") == "write_todos"
+                and isinstance(result, Command)
+                and isinstance(result.update, Mapping)
+            ):
+                args = request.tool_call.get("args") or {}
+                todos = args.get("todos")
+                if (
+                    isinstance(todos, list) and todos
+                    and all(isinstance(todo, Mapping) and todo.get("status") == "completed"
+                            for todo in todos)
+                ):
+                    messages = result.update.get("messages", ())
+                    if isinstance(messages, (list, tuple)):
+                        updated = [
+                            self._bookkeeping_feedback(request, message, kind="completed_todos")
+                            if isinstance(message, ToolMessage)
+                            and message.tool_call_id == request.tool_call.get("id")
+                            and message.status != "error"
+                            else message
+                            for message in messages
+                        ]
+                        return replace(result, update={**result.update, "messages": updated})
             return result
         tool_name = result.name or str(request.tool_call.get("name", ""))
         if tool_name in self._excluded_tools:
@@ -615,6 +646,27 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
         repeated_feedback = feedback is not None
         if literal_feedback is not None:
             feedback = (feedback or "") + literal_feedback
+        completion_feedback = (
+            tool_name == "execute" and outcome.status == "success"
+            and source_text is not None and not workspace_changed
+            and literal_shell_print(
+                str((request.tool_call.get("args") or {}).get("command", ""))
+            )
+        )
+        if completion_feedback:
+            feedback = (feedback or "") + (
+                "\n\n[Completion bookkeeping: this command only printed supplied "
+                "text; it did not inspect files or validate the task. "
+                + self._COMPLETION_FEEDBACK + "]"
+            )
+            self._emit(
+                "agent_completion_bookkeeping_feedback",
+                tool_name=tool_name,
+                tool_call_id=str(request.tool_call.get("id", "")),
+                kind="literal_shell_print",
+                physical_execution=True,
+                suppression_enabled=False,
+            )
         return result.model_copy(
             update={
                 "content": source_text + feedback if feedback is not None else result.content,
@@ -636,12 +688,43 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
                         "beliefkv_identical_result_elapsed_ms": identical_result_elapsed_ms,
                         "beliefkv_repeated_result_feedback": repeated_feedback,
                         "beliefkv_grep_literal_feedback": literal_feedback is not None,
+                        "beliefkv_completion_bookkeeping_feedback": completion_feedback,
                         **({"beliefkv_execution_feedback_text": feedback}
                            if feedback is not None else {}),
                     } if source_digest is not None else {}),
                 }
             }
         )
+
+    def _bookkeeping_feedback(
+        self, request: ToolCallRequest, result: ToolMessage, *, kind: str,
+    ) -> ToolMessage:
+        if not isinstance(result.content, str):
+            return result
+        feedback = (
+            "\n\n[Completion bookkeeping: the todo list records all entries as "
+            "completed; this alone does not establish task success. "
+            + self._COMPLETION_FEEDBACK + "]"
+        )
+        self._emit(
+            "agent_completion_bookkeeping_feedback",
+            tool_name=request.tool_call.get("name"),
+            tool_call_id=request.tool_call.get("id"),
+            kind=kind,
+            physical_execution=True,
+            suppression_enabled=False,
+        )
+        return result.model_copy(update={
+            "content": result.content + feedback,
+            "additional_kwargs": {
+                **result.additional_kwargs,
+                "beliefkv_completion_bookkeeping_feedback": True,
+                "beliefkv_execution_feedback_text": (
+                    result.additional_kwargs.get("beliefkv_execution_feedback_text", "")
+                    + feedback
+                ),
+            },
+        })
 
     def _after_exception(
         self,
