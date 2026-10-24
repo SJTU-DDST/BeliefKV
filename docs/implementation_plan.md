@@ -2,6 +2,45 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+V148 is fully collected with both drivers returning0 and all actual
+processes cleaned up. V3344 independently revalidates frozen sources,
+the identical engine/capacity,exact3951 request receipts,stopping,and
+effective policy settings. Full remains1130.074s/596.230 tokens/s;
+the matching scheduler-only arm is1133.856s/595.878. Full's independent
+custom-KV point advantage is only-0.3335% mean JCT/+0.0590% whole-run
+throughput. V3342 demand-outstanding rates are601.641/601.092 (+0.0913%).
+This does not establish a repeatable independent KV benefit. All normal
+tails remain included; no quality exclusions or new task-quality claims.
+
+V3345 records scheduler-only H2D1045.794GB/D2H440.637GB,versus
+880.874/357.412GB in Full (-15.7698%/-18.8874%). Reduced migration
+does not imply equivalent exposed-wait or performance savings. V3343's
+realized final dependency paths show Full's submit-to-first-launch mean
+5.003s lower,but first-launch-to-completion1.242s higher. The latter
+contains prefill/decode/interleaving and waits,not pure GPU or CPU time.
+
+V149 is now running the reverse-order repeat:`scheduler_only`,then
+`full`. It uses current main `a80134595c25`,the same qualified engine,
+V136 work,native capture,24 roots,batch24,seed21 and capacities. V3348
+verifies actual live watcher/server/driver and GPU scheduler1048023,
+runtime policy,capacity and both4727/4153-token startup extends with
+decode. No native replay is included. Registration:
+`/home/longhao/experiment/ops/v149_oneshot_batch24_scheduler_full_repeat_20261024.registration.json`.
+Full and scheduler-only complete repeat results remain pending.
+
+Latest sampled phase evidence is V3347 Full/V3349 scheduler-only:
+124/133 short single-request prefills,with post-launch physical own-thread
+CPU means0.334/0.0156ms. These are unmatched sample populations with
+different execution neighbours and cannot be extrapolated to all decode
+steps,whole-run overhead,unique attribution or removable JCT. Both have
+one unknown/missing service sample kept explicit. V3349 independently
+seals the settled native audit because the action-oriented V3346 did
+not read it when scheduler-only had no custom physical commands; this
+does not mean the baseline had no JOINs. V3349a preserves the rejected
+missing-seal input. Next CPU work should inspect `dispatch_after_forward`
+and its actual due/idle paths before adding any state or changing policy.
+The runtime is unchanged by these offline diagnostics.
+
 V3337 completes the same-engine native-work check for no-tool. Its actual
 prefill is5875016 tokens,only-0.0536% versus V147; prefill worker intervals
 are255.746s (-0.1081%). Decode work remains954840 observed tokens,while
