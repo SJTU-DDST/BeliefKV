@@ -48,6 +48,73 @@ passes251 focused cases, including the real telemetry capacity-to-usage sequence
 with a Full-only fixture. Restart the capture and Full-only queue from newly
 frozen main; preserve the failed registration and source artifacts.
 
+V168b is now collecting the replacement natural native trajectory from frozen
+main `5da64f84a769` and engine tree `413cc14e6c53`. Its measured capacity is
+805198 FULL device tokens (79.154GB),2034506 FULL Host tokens (200.000GB),and
+zero Mamba capacity. V169b waits for that complete source,then performs bounded
+position/token/session/stopping qualification and registers V170b Full only.
+No additional complete native replay or ablation is queued.
+
+Before Full began,V3513 reproduced a second model-adaptation defect entirely
+on CPU. The EOS body check recognized thinking outputs and explicitly closed
+thinking prompts,but rejected Qwen3-Coder's ordinary assistant output because
+its template has no thinking wrapper. Its vocabulary still contains both
+thinking tokens,so vocabulary membership alone does not identify output mode.
+V3514 stopped the verified waiting V169b supervisor before any GPU check;
+V168b's natural native source continues unchanged. Replacement V169c/V170c
+must be registered explicitly after the corrected CPU qualification.
+The fix inspects the existing chat template once at startup. Known plain
+templates can certify a nonempty normal final suffix,while missing/ambiguous
+templates,unclosed reasoning,tool output,empty reports,length and abort stops
+retain their existing guards. No per-token prediction or text processing is
+added. V3515 passes312 focused CPU cases,including the actual new tokenizer's
+EOS-to-JOIN-stage path without a semantic worker.
+V3517 passes all5744 required CPU cases:all5721 previous identities,the five
+real FULL-only lifecycle cases,and18 EOS cases. The engine is explicitly first
+in PYTHONPATH,and the cached sandbox image is explicitly selected. V3518
+repeats the real-tokenizer reproduction and now accepts the normal report.
+V3516's expanded repository run is retained as an invalid test-environment
+attempt:collection imported the installed unpatched SGLang before fixtures
+could select the qualified engine. It is not qualification evidence or a claim
+that all repository tests pass.
+
+V3507 passes23 focused CPU cases,including five new real FULL-only native
+tree/allocator lifecycle cases. These cover incremental spawn backup,ACK-gated
+reclaim,ancestor-ordered restore in all three tiers,input/generation validation,
+enqueue refusal,and duplicate-load/lock cleanup. Copy queues are CPU stand-ins;
+these tests do not establish GPU overlap or performance. Main `e68c2261` adds
+only those tests. All serving source hashes registered by V168b/V169b still
+match,and their frozen trees remain unchanged.
+
+V3510 seals a live prefix with75 sampled load-consuming prefills,all paired
+with actual native worker intervals. Dependency-wait P50 is255.418ms and P90
+498.824ms;the measured19.765seconds of wait occupy70.274% of the observed
+GPU layer spans.29 short single-request samples have wait P50 239.477ms.
+This establishes exposed native restoration wait on the new model,not removable
+workflow JCT or a Full speedup. V3511 validates the one-in16 sampling sequence;
+its approximately314second all-eligible wait estimate is explicitly an estimate,
+not an all-batch measurement. Keep whole-workflow normal tails in acceptance.
+
+V3512 localizes this opportunity:73 of those75 wait samples are tool
+successors. In its later reentry prefix,1805 of2414 served tool successors
+follow tools shorter than50ms,while65 follow tools of at least1second.
+Tool-successor queue-to-first-service P50 is11.749seconds. The28 served JOIN
+successors have queue P50 9.687seconds,and the last child's observed model
+completion to parent client submission P50 is71.576ms. Host-hit token totals
+describe later demand,not Host-only pages available earlier at an EOS or
+prediction safe point. Do not treat all native restore wait as a tool-forecast
+or JOIN-prefetch oracle. First check whether Full reduces repeated tool
+recovery,residence loss and queue delay; keep any future short-tool continuity
+change bounded and compatible with JOIN priority and actual capacity.
+
+The external thermal observer covers the remainder of V168b and the queued
+Full chain at one-second intervals. Observed SM clock variation is accompanied
+by power capping;thermal slowdown counter deltas remain zero in V3511's
+window. No clock or power setting was changed during the measured source.
+Any later frequency-controlled pair must apply the same policy from its
+start,only during exclusive GPU ownership,and restore/verify the prior policy
+before releasing the GPU. Do not change clocks halfway through this pair.
+
 V152 is rejected as a comparison source at the user's request. It completed
 36 workflows but one child repeated the same unsuccessful grep370 times and
 required graph-budget finalization at step2017/2048. Only35 workflows are

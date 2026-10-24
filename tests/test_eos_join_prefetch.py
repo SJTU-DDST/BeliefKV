@@ -1,3 +1,5 @@
+import json
+import os
 from types import SimpleNamespace as NS
 import time
 from unittest.mock import patch
@@ -120,5 +122,102 @@ def test_visible_eos_body_respects_prompt_and_output_reasoning_state(
     try:
         runtime._record_native_final_body(request, key)
         assert runtime._semantic_eos_proofs["child"] is expected
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("template,prompt,outputs,reason,expected", (
+    ("plain assistant", [1, 2], [10], "stop", True),
+    (None, [1, 2], [10], "stop", False),
+    ("", [1, 2], [10], "stop", False),
+    ({"default": "plain assistant"}, [1, 2], [10], "stop", False),
+    ("assistant <think>", [1, 2], [10], "stop", False),
+    ("assistant </think>", [1, 2], [10], "stop", False),
+    ("plain assistant", [98, 1], [10], "stop", False),
+    ("plain assistant", [98, 1, 99, 1], [10], "stop", True),
+    ("plain assistant", [1, 2], [98, 10], "stop", False),
+    ("plain assistant", [1, 2], [98, 1, 99, 10], "stop", True),
+    ("plain assistant", [1, 2], [98, 99], "stop", False),
+    ("plain assistant", [1, 2], [], "stop", False),
+    ("plain assistant", [1, 2], [10], "length", False),
+    ("plain assistant", [1, 2], [10], "abort", False),
+))
+def test_plain_template_eos_preserves_reasoning_and_finish_guards(
+    tmp_path, template, prompt, outputs, reason, expected,
+):
+    from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
+
+    (tmp_path / "tokenizer_config.json").write_text(json.dumps({
+        "chat_template": template,
+        "added_tokens_decoder": {
+            "98": {"content": "<think>"},
+            "99": {"content": "</think>"},
+        },
+    }))
+    runtime = NativeAdmissionRuntime(model_path=str(tmp_path))
+    key = PrefillCandidateKey("child", "wf", "child", "ctx-child", 0, 0)
+    request = NS(
+        origin_input_ids=prompt, output_ids=outputs,
+        finished_reason=NS(to_json=lambda: {"type": reason}),
+        beliefkv_metadata={},
+        tokenizer=NS(decode=lambda ids, **_: "Report." if 10 in ids else ""),
+    )
+    try:
+        runtime._record_native_final_body(request, key)
+        assert runtime._semantic_eos_proofs["child"] is expected
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("kind,expected", (
+    ("report", True), ("tool", False), ("empty", False), ("length", False),
+))
+def test_real_plain_model_eos_reaches_join_stage_without_semantic_worker(kind, expected):
+    model = os.environ.get("BELIEFKV_CONTEXT_TOKENIZER_TEST")
+    if not model:
+        pytest.skip("requires explicit local serving tokenizer")
+    from transformers import AutoTokenizer
+
+    tokenizer = AutoTokenizer.from_pretrained(model, local_files_only=True)
+    runtime = final_stage_runtime(model_path=model)
+    runtime._clear_final_stage("join")
+    runtime._child_report_notices.clear()
+    child = req("child")
+    child.session_id, child.session_generation = "cs", 1
+    child.beliefkv_metadata["context_epoch"] = 1
+    child.beliefkv_metadata["parent_invocation_id"] = "parent"
+    child.origin_input_ids = tokenizer.apply_chat_template([
+        {"role": "system", "content": "You are a repository specialist."},
+        {"role": "user", "content": "Return the completed findings to your parent."},
+    ], tokenize=True, add_generation_prompt=True, enable_thinking=False)
+    text = {
+        "report": "The requested checks are complete.",
+        "tool": (
+            "<tool_call>\n<function=read_file>\n"
+            "<parameter=file_path>README.md</parameter>\n</function>\n</tool_call>"
+        ),
+        "empty": "", "length": "The requested checks are",
+    }[kind]
+    child.output_ids = tokenizer.encode(text, add_special_tokens=False)
+    child.output_ids.append(tokenizer.eos_token_id)
+    child.tokenizer = tokenizer
+    child.finished_reason = NS(to_json=lambda: {
+        "type": "length" if kind == "length" else "stop",
+        "matched": tokenizer.eos_token_id,
+    })
+    child.finished = lambda: True
+    runtime.on_events((event(
+        7, RuntimeEventKind.LLM_SUBMIT, invocation_id="child",
+        context_id="ctx-child", context_epoch=1, attributes={"request_id": "child"},
+    ),))
+    runtime.register_visible_request(child)
+    try:
+        assert runtime._semantic_worker is None
+        runtime.on_batch_completed(NS(reqs=(child,)))
+        assert runtime._semantic_eos_proofs["child"] is expected
+        assert bool(runtime._eos_prefetch_keys) is expected
+        assert bool(runtime._final_stages) is expected
+        assert not runtime._semantic_frames
+        assert not runtime._semantic_forecasts
     finally:
         runtime.close()

@@ -127,6 +127,91 @@ validation, and the hybrid launch/environment code. The native unified cache
 already has Full-only components, but our added hooks still need adaptation.
 Changing `MODEL_PATH` alone is insufficient.
 
+## Live Native Evidence
+
+V168b now serves the new model from application `5da64f84a769` and engine
+`413cc14e6c53`. The first V168 attempt is preserved as a startup failure:
+periodic usage telemetry indexed the absent Mamba high-water entry. The fix
+publishes only actual pools. Native capacity is 805198 device FULL tokens
+(79.154GB), 2034506 Host FULL tokens (200.000GB), and zero Mamba slots.
+V169b waits for the completed source before bounded replay qualification;
+V170b will replay Full only on the same work.
+
+Before Full started,V3513 reproduced an EOS adaptation defect with the real
+Qwen3-Coder tokenizer/template: a nonempty normal report had no accepted EOS
+proof because the validator required a reasoning wrapper. The new tokenizer
+has thinking-token IDs, but its chat template does not emit thinking markers.
+V3514 administratively stopped the waiting V169b before GPU use, preserving
+V168b. Replacement V169c/V170c must use the qualified fix. Startup now records
+whether a known string chat template has no thinking wrappers; completed
+plain reports can then supply body evidence. Unknown templates, unclosed
+thinking, tool output, empty reports, and non-normal stops remain guarded.
+The change adds no per-token work. V3515 passes 312 focused cases, including
+the actual model's EOS-to-JOIN-stage path with the semantic worker disabled.
+V3517 then passes all 5744 required cases, retaining the prior 5721 identities
+and adding five FULL-only lifecycle cases plus 18 EOS cases. The engine is
+explicitly first in PYTHONPATH and the cached sandbox image is selected.
+V3518 repeats the actual tokenizer reproduction with accepted EOS evidence.
+V3516's broader run is retained as an invalid environment attempt: collection
+loaded installed unpatched SGLang before fixture path setup. It does not
+qualify the source or establish that all repository tests pass.
+
+Supplemental main commit `e68c2261` adds real FULL-only CPU tree/allocator
+lifecycle tests. V3507 passes 23 focused cases, including five new cases for
+incremental backup, ACK-gated capacity release, ordered recovery, stale/input
+validation, rejected enqueue, and outstanding-load cleanup. Copy queues remain
+stand-ins: neither partial-layer DMA correctness nor GPU speedup is inferred.
+The registered serving source hashes and active frozen trees are unchanged.
+
+The V3510 sealed live window has 1193 completed H2D batches, 13.888TB payload,
+and 441.570 seconds of cumulative H2D stream time. All 75 sampled restoring
+prefills pair with actual worker intervals. GPU dependency wait P50/P90 is
+255.418/498.824ms; sampled wait sums to 19.765 seconds and 70.274% of observed
+GPU layer spans. Of the sampled wait, 98.870% occurs after the first layer.
+Among 29 short single-request samples, wait P50 is 239.477ms. These observations
+show that native layerwise overlap leaves material exposed wait in this
+workload. They do not establish complete-workflow savings.
+
+V3511 checks the one-in-16 sampling sequence, successful pairings, and absence
+of missing-layer/bounded-queue skips. Its mean-times-eligible-count estimate of
+314.401 seconds is a scale estimate, not an all-batch measurement. Separately,
+36 unique sampled batches lie on the observed last-completing dependency paths
+of 11 completed workflows, totaling 11.048 seconds. Shared batches contribute
+to several workflows; summed per-workflow sampled latency is 14.682 seconds.
+In-progress workflows and unsampled waits prevent a complete JCT attribution.
+
+The opportunity is mainly short-tool reentry. V3512 assigns 73 of the older
+75 samples to tool successors. In its newer live prefix, 1805 of 2414 served
+tool successors follow tools shorter than 50ms and only 65 follow tools lasting
+at least one second. Tool-successor queue-to-service P50 is 11.749 seconds.
+The 28 served JOIN successors have queue P50 9.687 seconds; the observed last
+child model completion to parent client submission P50 is 71.576ms. Do not
+present total native H2D or exposed wait as attainable JOIN/tool anticipation.
+Full must demonstrate actual residence preservation, less repeated recovery,
+and better complete-workflow metrics. A future continuity policy needs bounded
+service and revocable capacity, rather than unlimited tool-return priority.
+
+One-second external thermal observation started after V168b was already
+running and follows the source/qualification/Full chain. V3511's approximately
+27-minute window records SM clocks from 1335 to 1785MHz, constant 3201MHz HBM,
+and zero thermal-slowdown counter increments. Power capping is present. Earlier
+startup thermal history remains unknown. Preserve the current pair's unchanged
+clock/power policy; a future controlled-frequency pair needs exclusive ownership
+and automatic restoration before GPU release.
+
+Evidence:
+
+- `experiments/reports/v3507_full_only_lifecycle_migration_cpu_20261024.xml`
+- `experiments/reports/v3509_full_only_native_lifecycle_qualification_20261024.json`
+- `experiments/reports/v3510_v168b_restore_critical_window_20261024.json`
+- `experiments/reports/v3511_v168b_restore_wait_estimate_and_clock_scope_20261024.json`
+- `experiments/reports/v3512_v168b_join_tool_restore_opportunities_20261024.json`
+- `experiments/reports/v3513_qwen3_coder_plain_eos_reproduction_cpu_20261024.json`
+- `experiments/reports/v3514_v169b_plain_eos_qualification_stop_20261024.json`
+- `experiments/reports/v3515_plain_template_eos_focused_cpu_20261024.xml`
+- `experiments/reports/v3517_plain_template_eos_qualified_cpu_20261024.xml`
+- `experiments/reports/v3518_qwen3_coder_plain_eos_fixed_cpu_20261024.json`
+
 ## Acceptance
 
 Collect a new natural native trajectory with the new model and reuse it as the

@@ -687,10 +687,17 @@ class NativeAdmissionRuntime:
         self._tool_open_token_ids: frozenset[int] = frozenset()
         self._reasoning_open_token_ids: frozenset[int] = frozenset()
         self._reasoning_close_token_ids: frozenset[int] = frozenset()
+        self._native_plain_output_template = False
         if model_path:
             config = Path(model_path) / "tokenizer_config.json"
             if config.is_file():
-                tokens = json.loads(config.read_text()).get("added_tokens_decoder", {})
+                tokenizer_config = json.loads(config.read_text())
+                tokens = tokenizer_config.get("added_tokens_decoder", {})
+                template = tokenizer_config.get("chat_template")
+                self._native_plain_output_template = bool(
+                    isinstance(template, str) and template
+                    and "<think>" not in template and "</think>" not in template
+                )
                 self._tool_open_token_ids = frozenset(
                     int(token_id) for token_id, token in tokens.items()
                     if isinstance(token, dict) and token.get("content") in (
@@ -2013,6 +2020,9 @@ class NativeAdmissionRuntime:
                     and prompt_markers[-2] in self._reasoning_open_token_ids
                     and prompt_markers[-1] in self._reasoning_close_token_ids
                 ):
+                    body_start = 0
+                elif self._native_plain_output_template and not prompt_markers:
+                    # Plain templates can share a vocabulary with thinking models.
                     body_start = 0
             if body_start is not None:
                 # Inspect only the completed visible suffix, never the reasoning

@@ -3311,10 +3311,13 @@ def test_workflow_attained_work_retires_accounts_without_late_resurrection(monke
         runtime.close()
 
 
-def final_stage_runtime(*, stage_only=False, event_socket_path=None, stage_records=None):
+def final_stage_runtime(
+    *, stage_only=False, event_socket_path=None, stage_records=None, model_path=None,
+):
     runtime = NativeAdmissionRuntime(
         event_socket_path=event_socket_path,
         enable_final_stage_prefetch=stage_only,
+        model_path=model_path,
     )
     if stage_records is not None:
         runtime._opportunity_writer = NS(record=stage_records.append)
