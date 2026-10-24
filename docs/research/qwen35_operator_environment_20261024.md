@@ -135,3 +135,20 @@ and V3471 preserves the controlled stop. V167b is registered with the
 qualified transition handling and its supervisor is verified live in
 `waiting_comparison`;V3472 preserves that registration. No profile is
 inserted into either timed arm.
+
+## Completed Full Checkpoint
+
+V166 Full has completed all5604 native requests with matching prompt/output
+tokens and no workflow exclusions. V3476 preserves mean JCT1643.427seconds
+versus native1675.445seconds(-1.911%) and event-makespan throughput568.661
+versus561.055tokens/s(+1.356%). V3474's complete native-event audit measures
+demand-outstanding throughput at576.032 versus568.062tokens/s. These small
+differences do not establish an independent KV-management gain.
+
+V3473 reconstructs every measured Full workflow JCT along its realized
+last-completing dependency path. Mean request-submit-to-first-launch time is
+597.304seconds and first-launch-to-native-completion time is977.883seconds.
+The categories combine queueing/restoration/admission and execution/dispatch/
+interleaving respectively. They do not isolate CUDA kernels or justify
+assigning the observed time to linear attention. Scheduler-only is now
+running;V167b remains queued behind its completion and GPU release.

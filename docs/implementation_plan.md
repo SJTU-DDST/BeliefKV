@@ -215,6 +215,31 @@ start_ticks699395512,is verified live in waiting_comparison. It has not
 initialized a diagnostic GPU context.
 The current workload comparison and the overall native/strong-baseline/KV
 increment acceptance remain pending.
+V166 Full is now complete and the same-work scheduler-only arm is running.
+V3476 preserves the Full checkpoint:all5604 requests,344769060 prompt tokens
+and1505096 output tokens match V164. All36 workflows and ordinary tails
+remain included,with no quality exclusions. Mean JCT is1643.427seconds
+versus native1675.445seconds(-1.911%);event-makespan output throughput is
+568.661 versus561.055tokens/s(+1.356%). V3474 verifies native identities and
+work and measures demand-outstanding throughput at576.032 versus568.062
+tokens/s(about+1.40%). This small native-only difference does not establish
+an independent KV benefit or meet the full goal.
+V3473 reconstructs every Full workflow JCT along its realized dependency
+path. Mean submit-to-first-launch is597.304seconds and first-launch-to-native-
+complete is977.883seconds;the former includes ingress/queue/restore/admission
+and the latter includes prefill/decode/interleaving/CPU dispatch,not exclusive
+GPU time. Do not attribute these whole categories to one mechanism.
+V3475's completed Full funnel has62 JOINs,60 positive pre-completion FULL
+plans,41 recorded pre-completion dispatches and40 confirmed early reuses
+covering36.298GB FULL. The19 start-without-submit-log cases include one
+earlier physical submission,13 later submissions and five unknown submissions;
+15 have pre-completion capacity evidence. Tool transfers total12.301GB FULL,
+with3.512GB confirmed first-service reuse across seven early wait episodes.
+Other tool bytes lack that proof and must not all be labeled wasted.
+V3477 records completed transfer telemetry and background backup coverage;
+it does not turn stream sums into exposed recovery time. Preserve this
+modest result,complete scheduler-only,and let the queued component diagnostic
+test the remaining common execution-path candidates.
 Keep the same36 different projects,
 simultaneous arrival,running/decode24,seed21,256K context,95% compression
 and matched pools. The changed generation policy requires a fresh trajectory;
