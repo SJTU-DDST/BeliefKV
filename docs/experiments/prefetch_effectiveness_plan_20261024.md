@@ -68,6 +68,29 @@ JOIN, a higher causal class or an aged head. EOS, identity change and expiry
 revoke the selection. Actual inclusion in a native batch consumes it; retain
 the existing ordinary-admission quota before selecting another consumer. This
 is scheduling continuity, not a new native correctness lock or proof of use.
+When the current free-byte budget is zero, skip ordinary queue scanning and
+prefix planning even if request rows remain available.
+
+## Critical Queue Capacity
+
+V185's live capacity records repeatedly showed 16-17 free request rows but zero
+queued donor candidates. The old donor collector skipped that many queue entries,
+so a shorter waiting queue was protected in its entirety. Request-row headroom
+is an admission ceiling; it does not establish that every waiting request will
+enter the next batch under current KV pressure.
+
+During an existing critical parent recovery, retain the actual queue head,
+ready JOIN parents and sole children blocking another JOIN. Permit the remaining
+unstarted queue tails to reach the existing native FULL donor checks. Revalidate
+queue membership, liveness, session/epoch, output, row and KV allocation on each
+owner check. Native reclaim continues to require a settled Host copy and to
+reject locks and pending DMA; session anchors and transcripts remain available.
+
+CPU regressions reproduce the surplus-row failure and cover original native
+reclaim, Host-hit preservation and lock/DMA rejection. This repair does not
+prove useful donors existed in every V185 window or establish GPU performance.
+V185 remains frozen on its prior code and must finish before the repaired
+configuration is compared on the identical V181 source.
 
 ## Measurement and Acceptance
 

@@ -6726,9 +6726,11 @@ class NativeAdmissionRuntime:
             budget.source != "native_next_prefill"
             or type(budget.request_slots) is not int or budget.request_slots <= 0
             or not self._unallocated_waiting_full_request(key, request)
+            or self._ready_join_parent(request, key)
+            or self._last_join_child_has_waiting_parent(key)
             or not _queue_tail_member and not any(
                 waiting is request for waiting in islice(
-                    self._capacity_waiting_queue, budget.request_slots, 512,
+                    self._capacity_waiting_queue, 1, 512,
                 )
             )
         ):
@@ -6737,7 +6739,7 @@ class NativeAdmissionRuntime:
 
     @contextmanager
     def _queued_full_donor_scope(self, key: PrefillCandidateKey):
-        """Authorize native FULL checks only for unstarted requests behind the frontier."""
+        """Authorize unstarted queue tails during critical parent recovery."""
         cache = self._native_cache
         original = getattr(cache, "beliefkv_cold_full_owner_validator", None)
         demand = (
@@ -6752,7 +6754,9 @@ class NativeAdmissionRuntime:
             and budget.source == "native_next_prefill"
             and type(budget.request_slots) is int and budget.request_slots > 0
         ):
-            for request in islice(self._capacity_waiting_queue, budget.request_slots, 512):
+            # Free request rows are an admission ceiling, not a selected batch.
+            # Retain the immediate queue head; owner checks protect JOIN dependencies.
+            for request in islice(self._capacity_waiting_queue, 1, 512):
                 candidate = self.visible.get(getattr(request, "rid", None))
                 if (
                     candidate is not None and candidate.invocation_id != key.invocation_id
@@ -10022,8 +10026,9 @@ class NativeAdmissionRuntime:
             return
         self._execution_handoff_next_ms = now_ms + 50.
         self._observe_native_admission_capacity(running_batch=running_batch, adder=None)
-        slots = self._current_residency_budget().request_slots
-        if slots < 1:
+        budget = self._current_residency_budget()
+        slots = budget.request_slots
+        if slots < 1 or budget.byte_limit <= 0:
             return
         if self._frontier_probe_after_ms and self._frontier_probes_backed_off(
             waiting_queue, now_ms=now_ms,

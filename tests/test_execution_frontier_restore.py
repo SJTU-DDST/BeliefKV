@@ -297,6 +297,28 @@ def test_a_full_running_batch_rejects_before_reading_a_backed_off_queue(monkeypa
         runtime.close()
 
 
+def test_no_free_byte_budget_skips_queue_planning_with_available_request_rows(monkeypatch):
+    runtime, _, cache = fixture(monkeypatch)
+    runtime._current_residency_budget.return_value = PrefetchResidencyBudget(
+        24, 0, source="native_next_prefill",
+    )
+
+    class UnreadQueue:
+        def __len__(self):
+            return 1
+
+        def __iter__(self):
+            raise AssertionError("no queue scan without free restore bytes")
+
+    try:
+        runtime.dispatch_frontier_restore(UnreadQueue(), running_batch=None)
+        runtime.plan_native_prefill.assert_not_called()
+        cache.inspect_beliefkv_reentry.assert_not_called()
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
 def test_periodic_resident_checks_use_live_metadata_without_repeating_input_validation(monkeypatch):
     from tests.test_sglang_v0520_physical import prepare_prefix_fixture
 

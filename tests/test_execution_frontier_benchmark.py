@@ -22,3 +22,9 @@ def test_disabled_benchmark_does_not_install_or_inspect_a_selected_consumer():
     assert not any(result["control_payload_signature"])
     assert not any(result["native_reads_last_iteration"].values())
     assert result["selected_pending_checks_last_iteration"] == 0
+
+
+def test_zero_byte_budget_benchmark_performs_no_native_prefix_inspection():
+    result = measure(64, "no_byte_budget", 2)
+    assert not any(result["control_payload_signature"])
+    assert not any(result["native_reads_last_iteration"].values())

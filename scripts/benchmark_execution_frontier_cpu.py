@@ -2,7 +2,7 @@
 """Complete execution-frontier control cost with scalar native enqueue stand-ins."""
 
 import argparse
-from dataclasses import asdict
+from dataclasses import asdict, replace
 import gc
 import json
 from pathlib import Path
@@ -55,6 +55,10 @@ def measure(depth, scenario, samples, *, enabled=True):
         }
     elif scenario == "no_capacity":
         cache.token_to_kv_pool_allocator.available_size = lambda: 0
+    elif scenario == "no_byte_budget":
+        runtime._residency_budget = replace(
+            runtime._residency_budget, request_slots=1, byte_limit=0,
+        )
     wall, cpu, signatures = [], [], []
     try:
         for index in range(samples + 20):
@@ -149,7 +153,8 @@ def main():
             measure(depth, scenario, args.samples, enabled=enabled)
             for depth in (4, 16, 64)
             for scenario in (
-                "new_context", "resident", "no_capacity", "positive", "selected_pending",
+                "new_context", "resident", "no_capacity", "no_byte_budget",
+                "positive", "selected_pending",
             )
             for enabled in ((True, False) if args.include_disabled else (True,))
         ],

@@ -32,6 +32,10 @@
 - Ordinary selected-request prefetch is an explicit follow-up candidate. Allow
   it alongside tool prefetch; keep one selected consumer for at most 1500 ms,
   retain JOIN precedence and native admission, and require existing free capacity.
+- During critical parent recovery, free request rows are not a selected prefill
+  batch. Protect the actual queue head and ready JOIN dependencies; validate
+  unstarted ordinary queue tails as possible native FULL donors. Preserve all
+  native lock, allocation, identity, Host-copy and DMA checks.
 - Count initial cold prefill separately from missing previously served
   same-session prefixes. Cache occupancy and prefix-loss proxies alone do not
   prove expensive recomputation.
