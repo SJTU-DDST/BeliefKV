@@ -68,6 +68,9 @@ def delegation_contract(profile: str) -> dict:
             nested_initial_tool_choice="auto",
             fixed_role_sequence=False,
             natural_final_response_rejected=False,
+            root_minimum_delegations_prompt=1,
+            recommended_root_rounds=[2, 3],
+            nested_delegation_required_for_independent_subproblems=True,
         )
     if profile == REUSABLE_NESTED_IN_GRAPH_PROFILE:
         contract.update(

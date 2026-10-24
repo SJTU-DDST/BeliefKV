@@ -200,10 +200,18 @@ def test_only_root_receives_frozen_source_while_children_share_workspace(
     assert all("SOURCE_SENTINEL" not in spec["system_prompt"] for spec in child_specs)
     assert all("shared /workspace checkout" in spec["system_prompt"] for spec in child_specs)
     if profile == "native_in_graph_dynamic_nested":
+        from beliefkv.experiments.child_work_budget import ChildWorkBudgetMiddleware
+
+        assert "Every root workflow MUST delegate at least one substantive task" in roots[0]["system_prompt"]
         assert roots[0]["system_prompt"].index("SOURCE_SENTINEL") < roots[0]["system_prompt"].index(
             "DYNAMIC MULTI-ROUND DELEGATION",
         )
         assert all(runner.NATIVE_CHILD_RETURN_INSTRUCTION in spec["system_prompt"]
                    for spec in child_specs)
+        assert all(
+            any(isinstance(item, ChildWorkBudgetMiddleware) for item in spec["middleware"])
+            for spec in child_specs
+        )
+        assert all("within about 32 model turns" in spec["system_prompt"] for spec in child_specs)
     assert "LoCoBench-Agent scenario" in runner._task_prompt(workload)
     assert "SOURCE_SENTINEL" not in runner._task_prompt(workload)

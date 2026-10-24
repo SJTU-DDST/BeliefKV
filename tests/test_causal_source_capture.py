@@ -638,6 +638,39 @@ def test_oneshot_source_keeps_normal_tails_and_does_not_require_reuse(change):
     assert "criteria" not in result
 
 
+@pytest.mark.parametrize("child_count", [0, 1, 3])
+def test_new_dynamic_source_requires_actual_root_spawn_evidence(child_count):
+    from types import SimpleNamespace as NS
+
+    events = [
+        NS(kind=capture.Kind.WORKFLOW_START, workflow_id="w"),
+        NS(kind=capture.Kind.INVOCATION_CREATE, workflow_id="w", invocation_id="root",
+           parent_invocation_id=None, attributes={}),
+        *[
+            NS(kind=capture.Kind.SPAWN, workflow_id="w", invocation_id="root",
+               attributes={}) for _index in range(child_count)
+        ],
+    ]
+    graph = NS(
+        nodes=[NS(event=event) for event in events],
+        summary=lambda: {"event_counts": {capture.Kind.JOIN_CREATE.value: child_count}},
+    )
+    summary = {
+        "completed_workflows": 1,
+        "subagent_fanout_profile": "native_in_graph_dynamic_nested",
+        "delegation_contract": {"root_minimum_delegations_prompt": 1},
+        "workflows": [{"workflow_id": "w", "native_agent_jct_eligible": True}],
+    }
+    result = capture.oneshot_source(
+        summary, graph, expected_workflows=1,
+        expected_profile="native_in_graph_dynamic_nested",
+    )
+    assert result["accepted"] == (child_count >= 1)
+    assert result["observed_root_delegations"] == {"w": child_count}
+    if child_count == 0:
+        assert "root_did_not_delegate" in result["reasons"]
+
+
 def test_predeclared_capture_waits_without_allocating_or_touching_another_job(tmp_path, monkeypatch):
     checks = iter((False, False, True))
     held, waits = [], []

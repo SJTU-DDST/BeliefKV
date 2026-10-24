@@ -53,6 +53,9 @@ from beliefkv.experiments.delegation_policy import (
     TWO_TO_FOUR_IN_GRAPH_PROFILES,
     delegation_contract,
 )
+from beliefkv.experiments.child_work_budget import (
+    CHILD_WORK_BUDGET_PRIVATE_KEYS, ChildWorkBudgetMiddleware, budget_instruction,
+)
 from beliefkv.runtime.reusable_subagents import ReusableSubagentRegistry
 from beliefkv.runtime.reusable_subagent_middleware import (
     REUSABLE_DELEGATION_PROMPT, ReusableSubAgentMiddleware,
@@ -1733,6 +1736,8 @@ class DeepAgentsExperimentConfig:
     early_tool_wait_shadow: bool = False
     tool_window_shadow_artifact: Path | None = None
     subagent_fanout_profile: str = "natural"
+    child_work_budget_warning_calls: int = 24
+    child_work_budget_target_calls: int = 32
     stop_after_first_native_join: bool = False
     recursion_limit: int = 2048
     request_timeout_s: float = 600.0
@@ -1797,6 +1802,12 @@ class DeepAgentsExperimentConfig:
             raise ValueError("EOS top-hit shadow requires child EOS shadow")
         if self.subagent_fanout_profile not in SUBAGENT_FANOUT_PROFILES:
             raise ValueError("unsupported subagent fan-out profile")
+        if (
+            type(self.child_work_budget_warning_calls) is not int
+            or type(self.child_work_budget_target_calls) is not int
+            or not 0 < self.child_work_budget_warning_calls < self.child_work_budget_target_calls
+        ):
+            raise ValueError("child work budget requires 0 < warning < target")
         if self.subagent_fanout_profile == REUSABLE_NESTED_IN_GRAPH_PROFILE and (
             self.mode != "autonomous" or not self.native_radix_sessions
         ):
@@ -2345,6 +2356,11 @@ DYNAMIC MULTI-ROUND DELEGATION
 Complete this assignment through collaboration with task children. Use the full
 project snapshot to identify substantial independent workstreams and delegate
 them while you coordinate dependencies, integration, and the overall result.
+Every root workflow MUST delegate at least one substantive task and integrate
+its report before the final answer. If you already have a candidate solution,
+delegate an independent focused review or validation of that candidate.
+Plan for two to three useful rounds when implementation, review, and validation
+expose further work; one early investigation should not absorb the whole repair.
 Delegate useful investigation, implementation, review, and validation work as
 those needs arise. One early diagnostic report is not a substitute for independent
 review of later changes or validation of new behavior. After each JOIN, material
@@ -2358,6 +2374,9 @@ Every direct-child role can create leaf grandchildren. Assign a decomposable
 subsystem workstream to a child when its investigation or validation can proceed
 in parallel across independent components. Ask that child to coordinate those
 questions and reconcile the results; delegation-coordinator is optional.
+Actively use this nested route for independent subsystem questions instead of
+keeping every investigation in the root. Children should deliver a bounded
+result promptly; use their remaining-work reports to choose the next round.
 Children do not receive your full source snapshot or conversation. Give each
 branch the relevant file paths, symbols, short evidence excerpts, expected result,
 and disjoint write scopes. Children can inspect the shared /workspace checkout.
@@ -2365,7 +2384,8 @@ Do not paste the entire source snapshot into task descriptions or assign a
 child's nested questions to its siblings as well.
 
 Let the task determine whether investigation, implementation, review, or validation
-is needed next. There is no fixed phase order, mandatory role, or round quota.
+is needed next. Apart from the mandatory first delegation, there is no fixed phase
+order, mandatory role, or enforced round quota.
 For analysis-only work, validate the diagnosis without unrequested code changes.
 Do not duplicate finished work, add artificial tool delays, or pad the conversation
 to create delegation. The root owns integration and final verification. Return
@@ -2418,7 +2438,7 @@ follow-up rounds from the evidence. There is no fixed phase sequence or role req
 DYNAMIC_DIRECT_CHILD_PROMPT = """
 BOUNDED NESTED DELEGATION
 You are a direct child and have access to task for leaf grandchildren. If your
-assigned workstream contains independent substantial questions, delegate those
+assigned workstream contains independent substantial questions, you MUST delegate those
 questions together and reconcile the evidence. Prefer two to
 four parallel children for separable work; choose the actual count and any later
 rounds from your assignment and new evidence. This applies to every direct-child
@@ -3427,6 +3447,12 @@ def _autonomous_subagents(
                         "\n\n" + DYNAMIC_DIRECT_CHILD_PROMPT
                         if nested and dynamic else ""
                     )
+                    + (
+                        budget_instruction(
+                            config.child_work_budget_warning_calls,
+                            config.child_work_budget_target_calls,
+                        ) if dynamic else ""
+                    )
                 ),
                 "model": model,
                 "tools": (
@@ -3434,6 +3460,13 @@ def _autonomous_subagents(
                     [_workspace_patch_tool(backend), _native_completion_stage_tool()]
                 ),
                 "middleware": [
+                    *(
+                        [ChildWorkBudgetMiddleware(
+                            warning_calls=config.child_work_budget_warning_calls,
+                            target_calls=config.child_work_budget_target_calls,
+                            audit=backend.audit, scope=scope,
+                        )] if dynamic else []
+                    ),
                     *(
                         [ChildFinalReportShadowMiddleware(
                             audit=backend.audit, scope=scope,
@@ -3517,6 +3550,9 @@ def _autonomous_subagents(
 
 
 def _task_middleware(config, adapter, **kwargs):
+    kwargs["private_state_keys"] = (
+        kwargs.get("private_state_keys", frozenset()) | CHILD_WORK_BUDGET_PRIVATE_KEYS
+    )
     if config.subagent_fanout_profile == REUSABLE_NESTED_IN_GRAPH_PROFILE:
         kwargs.pop("system_prompt", None)
         return ReusableSubAgentMiddleware(adapter=adapter, **kwargs)

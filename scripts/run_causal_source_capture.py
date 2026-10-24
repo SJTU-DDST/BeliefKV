@@ -443,16 +443,45 @@ def oneshot_source(summary, graph, *, expected_workflows, expected_profile=NESTE
         reasons.append("source_guard_or_ineligible_workflow")
     if summary.get("subagent_fanout_profile") != expected_profile:
         reasons.append("not_the_predeclared_oneshot_profile")
+    minimum = (summary.get("delegation_contract") or {}).get(
+        "root_minimum_delegations_prompt", 0,
+    )
+    if type(minimum) is not int or minimum < 0:
+        raise ValueError("invalid declared minimum root delegation count")
+    root_delegations = None
+    if minimum:
+        roots = {
+            (node.event.workflow_id, node.event.invocation_id)
+            for node in graph.nodes
+            if node.event is not None and node.event.kind is Kind.INVOCATION_CREATE
+            and node.event.parent_invocation_id is None
+            and not node.event.attributes.get("runtime_internal")
+        }
+        root_delegations = {workflow: 0 for workflow in started}
+        for node in graph.nodes:
+            event = node.event
+            if (
+                event is not None and event.kind is Kind.SPAWN
+                and (event.workflow_id, event.invocation_id) in roots
+                and not event.attributes.get("runtime_internal")
+            ):
+                root_delegations[event.workflow_id] += 1
+        if {workflow for workflow, _invocation in roots} != started:
+            reasons.append("root_delegation_evidence_unavailable")
+        if any(count < minimum for count in root_delegations.values()):
+            reasons.append("root_did_not_delegate")
     return {
         "profile": "nested_oneshot", "accepted": not reasons, "reasons": reasons,
         "workflow_count": len(workflows),
         "joins": graph.summary()["event_counts"].get(Kind.JOIN_CREATE.value, 0),
         "nested_joins": summary.get("nested_delegation_round_count"),
         "root_rounds": summary.get("root_delegation_round_counts"),
+        "minimum_root_delegations": minimum,
+        "observed_root_delegations": root_delegations,
         "scope": (
-            "Old nested one-shot prompt with native model-directed delegation. "
-            "No reuse quota, JOIN count, normal-tail filter or measured policy "
-            "speedup selects this source."
+            "Natural model-directed one-shot delegation with its declared prompt "
+            "minimum, if present. No reuse quota, additional JOIN-count target, "
+            "normal-tail filter or measured policy speedup selects this source."
         ),
     }
 

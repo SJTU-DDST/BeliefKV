@@ -316,6 +316,9 @@ def test_dynamic_contract_has_no_prescribed_rounds_roles_or_generation_bounds():
     assert not contract["fixed_role_sequence"]
     assert not contract["natural_final_response_rejected"]
     assert contract["maximum_spawn_depth"] == 2
+    assert contract["root_minimum_delegations_prompt"] == 1
+    assert contract["recommended_root_rounds"] == [2, 3]
+    assert contract["nested_delegation_required_for_independent_subproblems"]
 
 
 def test_dynamic_delegation_allows_final_response_without_any_spawn(tmp_path):

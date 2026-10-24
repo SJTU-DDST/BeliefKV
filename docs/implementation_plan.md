@@ -2,6 +2,84 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+Latest user steering retains the original pretokenized `/generate` replay.
+Remove the pending chat-ingress alignment and its raw-request capture path;
+it is not a prerequisite for the next workload experiment. Preserve exact
+native tokens,causal dependencies,stopping,session and capacity checks.
+Keep the observed historical ingress difference as a measurement limitation,
+not an extra alignment gate or an assumed JCT correction.
+
+The child-budget CPU audit now binds ordinary call indices to actual V174
+server prompt/output lengths. Of35 children,20 reach call32;their same-cohort
+logical FULL KV P50 is1.545GiB at16,2.074GiB at24 and2.544GiB at32,versus
+3.168GiB at natural return. Call32 spans1.817--4.010GiB. These are logical
+sizes,not exclusive physical occupancy or a forecast of narrower assignments.
+Clipping only later child sizes on the unchanged old timeline barely changes
+the18-root live-context peak:221.009GB to220.450GB. Do not increase root
+concurrency proportionally to the individual child reduction.
+
+Use18 different-project roots as the initial calibration candidate,with
+running/decode24 unchanged. Measure actual cold parent release,Host-backed
+recovery and old-input reprocessing before accepting a final population;
+step to20 if recovery pressure is insufficient,or16 if useful-state loss
+and unrecoverable capacity persist. No new GPU experiment has started.
+The model-directed workload now supplies24-call reminders and a32-call soft
+return target to children,including nested invocations. Preserve tools,
+pending JOINs,full reports and PARTIAL/BLOCKED declarations;do not enforce
+a hard32-call stop. Every root prompt requires one substantive delegation,
+with useful follow-up rounds and independent nesting encouraged. Source
+qualification rejects actual nondelegating roots under this new contract
+without filtering normal JCT tails. After removing the unrequested chat
+capture and restoring the original replay modules byte-for-byte,340 retained
+CPU checks pass,including the actual native receipt plugin contract.
+The18-root configuration is
+`configs/migration/qwen3_coder_18project_bounded_children_20261024.json`.
+See
+`docs/experiments/bounded_child_context_capacity_20261024.md`.
+
+V177 completed the same V174 work at22:37:23:24 workflows,2369 requests,
+151307687 input tokens and531903 output tokens,with all normal tails retained.
+Mean JCT is2046.113s(-2.701% versus native) and output throughput189.748
+token/s(+3.200%). It does not improve V176's aggregate result. Actual input
+prefill increases2.533% and repeated old common-input work12.029% versus
+native. Host-use median remains99.819%;23 post-enqueue tail-capacity checks
+release no FULL pages. Do not start a broad ablation or external-baseline
+campaign from this modest gain.
+
+The follow-up CPU audit qualifies that interpretation: natural native uses
+chat conversion while Full replay sends pretokenized input IDs to `/generate`.
+API-received to tokenized-request P50 is47.949ms versus2.201ms;the cumulative
+interval difference is110.491s across2369 requests,not a correction that may
+be subtracted from JCT. Current exact-work checks pass,but end-to-end request
+entry is not aligned and net replay bias is not bounded for this model/source.
+Do not treat the few-percent point estimates as established custom-KV gains,
+or transfer historical native-replay calibration into such a bound.
+The user subsequently selected the original replay path;do not require
+ingress alignment or another complete native replay. Retain this observed
+difference in the interpretation of end-to-end results.
+Exact HMAC/eviction-ID association links all779918 V177 old-input reprocessing
+tokens to Host evictions during observed parent JOIN waits. Two parents add
+213705 tokens versus V176,offset by73722 saved elsewhere. Duplicate-first
+Host eviction and unreferenced-session priority are shared with native;
+terminal-child cleanup reduces cumulative eviction without guaranteeing
+valuable live-parent retention under99.819% median Host occupancy. The
+specific allocations triggering each loss remain unattributed. See
+`docs/experiments/v177_host_losses_and_replay_comparability_20261024.md`.
+
+Latest user steering is to investigate a smaller population with more
+model-selected JOINs and recoverable cold KV outside the active working set,
+then reconsider ordinary next-request prefetch with bounded priority and very
+low control cost. CPU sizing favors18 roots as the first feasibility candidate:
+initial logical root KV160.712GB and reference-subset live-context peak221.009GB,
+against79.154GB HBM and200GB Host. These are logical reference estimates,not
+physical unique bytes or a new-run performance result. Actual24-root native
+busy decode logical KV is already73.888/77.899GB P50/P90,so a smaller root
+population alone does not guarantee capacity for prefetch. Keep running/decode
+limits separate. Preserve the correctness repair,distinct-project selection,
+dynamic delegation and all normal tails. No new GPU run or ordinary-frontier
+restore is enabled by the completed review. See
+`docs/experiments/v177_completed_pair_and_cold_capacity_20261024.md`.
+
 V176 has now completed the exact V17424-root source:2369 requests,151307687
 input tokens and531903 output tokens,with no workflow exclusions. Mean JCT
 improves3.106% and whole-run output throughput3.869%;the overall goal remains
