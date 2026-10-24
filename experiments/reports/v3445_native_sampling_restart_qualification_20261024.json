@@ -1,0 +1,127 @@
+{
+  "status": "cpu_qualified_original_sampler_preserving_restart",
+  "observed_at": "2026-10-24T12:54:38.491410+08:00",
+  "candidate_parent_commit": "4f01e2cd2a23f5c9962095d71afe29a801dc6a27",
+  "combined_case_identities": 5687,
+  "fresh_focused_case_identities": 783,
+  "inherited_case_identities_retained": 5664,
+  "new_case_identities": 23,
+  "combined_report": {
+    "path": "experiments/reports/v3443_native_sampler_combined_app_cpu_20261024.xml",
+    "sha256": "2871030253b610d3f459118be58ed0edca86e1f15d9b091841957bbe86454c48"
+  },
+  "fresh_report": {
+    "path": "experiments/reports/v3442_native_sampler_complete_capture_cpu_20261024.xml",
+    "sha256": "45e8f269b4be2e41d6d399a3a5b1b58ac1132f4027c1c1a575661f5723bc66de"
+  },
+  "source_snapshot": {
+    "path": "experiments/reports/v3444_native_sampler_app_sources_20261024.json",
+    "sha256": "d2802459e42cfe453adf74dab72bcd6e3135eecaf541c228d685410012402a89"
+  },
+  "changed_existing_sources": [
+    "beliefkv/experiments/causal_replay_backend.py",
+    "beliefkv/experiments/causal_replay_native.py",
+    "beliefkv/experiments/causal_replay_sampling.py",
+    "beliefkv/experiments/causal_replay_tokens.py",
+    "beliefkv/runtime/replay_token_capture.py",
+    "beliefkv/runtime/v0520_native_telemetry.py",
+    "scripts/benchmark_causal_sampling.py",
+    "scripts/preflight_cuda_sampling.py",
+    "scripts/run_causal_comparison.py",
+    "scripts/run_causal_source_capture.py",
+    "scripts/run_position_replay_calibration.py",
+    "tests/test_coding_sampling_profile.py"
+  ],
+  "new_sources": [
+    "tests/test_causal_replay_sampler_fairness.py"
+  ],
+  "toolchain": {
+    "home": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13",
+    "compiler_version": "release 13.0",
+    "runtime_version": 13000,
+    "inputs": [
+      {
+        "path": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13/bin/nvcc",
+        "sha256": "b8e2347d9d7fcadf8812a27324d515de99d033d3e48611811ece7e66d7895f8a"
+      },
+      {
+        "path": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13/bin/ptxas",
+        "sha256": "daba837a68265cae38c832d13399b61dab811891de9b8914defddef143b849f2"
+      },
+      {
+        "path": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13/nvvm/bin/cicc",
+        "sha256": "475a9486f1ccc9408323cc75ea2fa11599f08e9dee137bb7ac7150ce5208c425"
+      },
+      {
+        "path": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13/nvvm/libdevice/libdevice.10.bc",
+        "sha256": "91334d6e12748f6cb5bbf0a1cd965a56bcd93dc4f496d2e5c5f8c6e523094356"
+      },
+      {
+        "path": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13/include/cuda_runtime_api.h",
+        "sha256": "3f91d3f84f1aafb17cccc475803f9c489b6474f2a3bf0fbc75a5380821c966e0"
+      },
+      {
+        "path": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13/include/curand.h",
+        "sha256": "2644c6c6500e1e11ee63cdfff3ce84284e8cae5a0785d6c587b6dda90e10369b"
+      },
+      {
+        "path": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13/include/curand_kernel.h",
+        "sha256": "4a37c07a1d77c9b5c8c627a4720733cee6b4da4200a844e8a49291858bc26adf"
+      },
+      {
+        "path": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13/include/nv/target",
+        "sha256": "580a0c91fa76f0adda65566945861c36f6b48fa67095173a693e79e71043aeba"
+      },
+      {
+        "path": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13/include/cccl/cub/version.cuh",
+        "sha256": "316819d3be158deebcf40e96dde6d8d08e7910e9740a69b111677d0c5a21c124"
+      },
+      {
+        "path": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13/lib/libcudart.so.13",
+        "sha256": "96c42e418cec19054186b9429c321603cc190bf26a18104e19408117a2a817b0"
+      },
+      {
+        "path": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13/lib64/libcudart.so",
+        "sha256": "96c42e418cec19054186b9429c321603cc190bf26a18104e19408117a2a817b0"
+      }
+    ]
+  },
+  "gpu_native_kernel_preflight": {
+    "path": "experiments/reports/v3438_cuda130_complete_kernel_gpu_preflight_20261024.json",
+    "sha256": "15b08ea17dc2bd9ba4d63e4ad23861789340fa4083abd9c267ef9b166038b65c"
+  },
+  "gpu_original_sampler_replay_check": {
+    "path": "experiments/reports/v3441_native_sampler_preserving_replay_gpu_20261024.json",
+    "sha256": "22f387885f8ff92fc7d31afae496ac83fb438ef996be10d64f62a0e5c1309b10"
+  },
+  "stopped_old_sequence": {
+    "v161_36project_coding_cuda130_source_20261024": {
+      "status": "capture_failed",
+      "error": "ValueError('capture lacks final native capacity census')",
+      "original_exit_code": 1,
+      "finished_at": "2026-10-24T12:31:20.173845+08:00"
+    },
+    "v162_36project_coding_cuda130_position_check_20261024": {
+      "status": "stopped_for_investigation",
+      "error": "ValueError('source capture did not qualify: capture_failed')",
+      "original_exit_code": null,
+      "finished_at": "2026-10-24T12:31:25.362665+08:00"
+    }
+  },
+  "v161_failure_cause": "Sampler preflight passed but model BF16 activation JIT could not find CCCL nv/target; no workload or capacity qualification completed.",
+  "sampling_fairness_correction": "Capture and verify effective original native generation parameters; run unchanged native sampling on real logits, then override only returned token IDs. Do not replace stochastic source sampling with greedy or one-hot stochastic sampling.",
+  "sampling_evidence_scope": "Synthetic actual-native sampler and BF16 activation execution, not a model completion or end-to-end performance result.",
+  "gpu_sampling_verified": true,
+  "native_activation_verified": true,
+  "model_loop_elimination_verified": false,
+  "performance_accepted": false,
+  "next_sequence": [
+    "V164 natural native capture",
+    "V165 bounded replay and native-sampling qualification",
+    "V166 Full then scheduler-only on the captured work"
+  ],
+  "configuration": "configs/migration/qwen35_locobench_oneshot_36project_running24_coding_20261024.json",
+  "normal_tails_retained": true,
+  "guarded_sources_rejected": true,
+  "second_complete_native_replay_scheduled": false
+}

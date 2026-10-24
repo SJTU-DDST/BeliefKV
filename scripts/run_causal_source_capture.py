@@ -157,6 +157,7 @@ def cuda_toolchain_evidence(home):
     names = (
         "bin/nvcc", "bin/ptxas", "nvvm/bin/cicc", "nvvm/libdevice/libdevice.10.bc",
         "include/cuda_runtime_api.h", "include/curand.h", "include/curand_kernel.h",
+        "include/nv/target", "include/cccl/cub/version.cuh",
         "lib/libcudart.so.13", "lib64/libcudart.so",
     )
     paths = [home / name for name in names]
@@ -535,15 +536,18 @@ def prepare_capture(plan, state, path, interrupted):
                 try:
                     subprocess.run(
                         [sys.executable, str(ROOT / "scripts/preflight_cuda_sampling.py"),
-                         "--output", str(output)],
+                         "--output", str(output), "--engine", plan["engine_checkout"]],
                         env={
                             **os.environ, "CUDA_VISIBLE_DEVICES": "0",
                             "CUDA_HOME": plan["cuda_toolchain"]["home"],
                             "FLASHINFER_WORKSPACE_BASE": os.environ.get(
                                 "SGLANG_CACHE_DIR", str(Path.home() / ".cache/sglang"),
                             ),
+                            "PYTHONPATH": os.pathsep.join((
+                                str(Path(plan["engine_checkout"]) / "python"), str(ROOT),
+                            )),
                         },
-                        check=True, capture_output=True, text=True, timeout=60,
+                        check=True, capture_output=True, text=True, timeout=180,
                     )
                 except subprocess.CalledProcessError as error:
                     failure = output.with_suffix(".error.json")
@@ -555,6 +559,7 @@ def prepare_capture(plan, state, path, interrupted):
                 result = load(output)
                 if (
                     result.get("gpu_sampling_verified") is not True
+                    or result.get("native_kernel_verified") is not True
                     or result.get("cuda_home") != plan["cuda_toolchain"]["home"]
                 ):
                     raise ValueError("native sampler preflight did not qualify")
@@ -751,6 +756,11 @@ def watch(registration: Path):
             reservation.write_json(run / "causal_evidence.json", graph_report)
             if not token_report["token_evidence_complete"] or not graph_report["causal_graph_compiled"]:
                 raise ValueError("captured token or dependency evidence is incomplete")
+            if (
+                plan["environment"].get("SAMPLING_PROFILE") == "qwen35_coding"
+                and token_report.get("original_generation_parameters_complete") is not True
+            ):
+                raise ValueError("coding source lacks original native sampler parameters")
             state.update(
                 status="source_captured_gpu_replay_pending",
                 source_requests=token_report["native_requests"],

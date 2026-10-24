@@ -6,8 +6,12 @@ a child entered a repeated-grep loop and required guard intervention. Fresh
 V155 also reproduced prolonged repeated searches and was interrupted together
 with its V156 queue. V158 exposed an incompatible CUDA compiler/runtime on
 the stochastic sampling path; V159 stopped and V160 never started.
-V161/V162/V163 will use the explicit coding sampling profile and a matched
-isolated toolchain after CPU qualification and a small GPU kernel preflight.
+V161's sampler check passed,but model startup exposed a missing CCCL header;
+V162 stopped and V163 never started. The isolated toolchain now includes CCCL,
+and the expanded sampler plus native BF16 activation preflight passes on H200.
+The next V164/V165/V166 sequence uses the explicit coding profile with the
+complete toolchain and preserves original native sampling work in replay.
+The source has not yet established that the repeated-call problem is resolved.
 These generation-policy and environment corrections do not
 qualify a KV-management gain or change the conditional model-migration test.
 This document changes no serving behavior.

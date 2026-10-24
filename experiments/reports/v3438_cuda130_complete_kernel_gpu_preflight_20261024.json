@@ -1,0 +1,29 @@
+{
+  "gpu_sampling_verified": true,
+  "native_kernel_verified": true,
+  "performance_accepted": false,
+  "scope": "Synthetic seeded sampling and native BF16 activation checks before model startup, not a workload result.",
+  "cuda_home": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13",
+  "engine": "/home/longhao/experiment/.worktrees/sglang-prefetch-validation-20261024",
+  "device_name": "NVIDIA H200 NVL",
+  "torch_cuda_version": "13.0",
+  "pid": 1392685,
+  "elapsed_seconds": 85.50581879541278,
+  "cases": [
+    {
+      "batch_size": 1,
+      "seed_repeated": true,
+      "top_k_support_verified": true
+    },
+    {
+      "batch_size": 8,
+      "seed_repeated": true,
+      "top_k_support_verified": true
+    },
+    {
+      "batch_size": 24,
+      "seed_repeated": true,
+      "top_k_support_verified": true
+    }
+  ]
+}

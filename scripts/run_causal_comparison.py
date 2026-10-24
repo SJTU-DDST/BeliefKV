@@ -688,6 +688,12 @@ def register(args):
         or args.sampling_mode == "position" and calibration.get("position_dispatch_included") is not True
     ):
         raise ValueError("native replay sampling costs were not measured for this source")
+    if reference["arms"].get("full", {}).get("SAMPLING_PROFILE") == "qwen35_coding" and (
+        calibration.get("sampling_profile") != "qwen35_coding"
+        or calibration.get("native_sampler_preserved") is not True
+        or calibration.get("forcing_boundary") != "after_native_sampling"
+    ):
+        raise ValueError("coding replay did not measure its original native sampling path")
     graph, expected, evidence = source_plan(args.source_arm)
     summaries = list(args.source_arm.glob("client_*/summary.json"))
     quality = load(summaries[0])
@@ -716,6 +722,10 @@ def register(args):
         retention_source_matches(retention_spec, quality, source_roots)
     with CapturedTokenCorpus(args.source_arm / "server/request_tokens.jsonl", expected) as corpus:
         tokens = corpus.evidence
+    if reference["arms"].get("full", {}).get("SAMPLING_PROFILE") == "qwen35_coding" and (
+        tokens.get("original_generation_parameters_complete") is not True
+    ):
+        raise ValueError("coding comparison lacks complete original generation parameters")
     source_capacity = load(args.source_arm / "server/native_capacity_census.json")["capacity"]
     reference = source_reference(reference, source_roots, running, source_capacity)
     engine = engine_evidence(args.engine, args.engine_report, args.engine_sources)

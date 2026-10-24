@@ -11,7 +11,7 @@ from beliefkv.runtime.restore_wait_probe import RestoreWaitProbe
 from beliefkv.runtime.prefill_turnover_probe import PrefillTurnoverProbe
 from beliefkv.runtime.writer_timing import SampledWriterTiming
 from beliefkv.runtime.record_json import encode_record
-from beliefkv.runtime.replay_token_capture import capture_record
+from beliefkv.runtime.replay_token_capture import capture_record, generation_parameters
 
 import atexit
 from array import array
@@ -591,6 +591,7 @@ class NativeReactiveTelemetry:
                         req.output_ids, snapshot=True,
                     ) if served else None,
                     "_replay_request_parameters": self._replay_stopping_parameters(req),
+                    "_replay_generation_parameters": generation_parameters(req.sampling_params),
                     "_replay_finish_reason": (
                         self._replay_finish_reason(req) if served else None
                     ),

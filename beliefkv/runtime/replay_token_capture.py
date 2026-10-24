@@ -6,11 +6,49 @@ from array import array
 import base64
 import hashlib
 import json
+import math
 import sys
 from typing import Iterable, Sequence
 
 
 TOKEN_ENCODING = "uint32_le_base64"
+GENERATION_FIELDS = (
+    "temperature", "top_p", "top_k", "min_p", "frequency_penalty",
+    "presence_penalty", "repetition_penalty", "sampling_seed",
+)
+
+
+def generation_parameters(parameters) -> dict | None:
+    """Snapshot effective native sampler settings at a request boundary."""
+    if not all(hasattr(parameters, name) for name in GENERATION_FIELDS):
+        return None
+    return {name: getattr(parameters, name) for name in GENERATION_FIELDS}
+
+
+def validate_generation_parameters(parameters) -> None:
+    if parameters is None:
+        return
+    if type(parameters) is not dict or set(parameters) != set(GENERATION_FIELDS):
+        raise ValueError("incomplete original generation parameters")
+    for name in GENERATION_FIELDS:
+        value = parameters[name]
+        if name == "sampling_seed":
+            valid = value is None or type(value) is int and 0 <= value < 2 ** 32
+        elif name == "top_k":
+            valid = type(value) is int and value > 0
+        else:
+            valid = type(value) in (int, float) and math.isfinite(value)
+            if valid:
+                valid = {
+                    "temperature": value > 0,
+                    "top_p": 0 < value <= 1,
+                    "min_p": 0 <= value <= 1,
+                    "frequency_penalty": -2 <= value <= 2,
+                    "presence_penalty": -2 <= value <= 2,
+                    "repetition_penalty": 0 < value <= 2,
+                }[name]
+        if not valid:
+            raise ValueError("invalid original generation parameter: " + name)
 
 
 def _wire(tokens: Sequence[int]) -> bytes:
@@ -119,6 +157,10 @@ def capture_record(
             record.get("_replay_request_parameters") or {}
         ).get("max_new_tokens"),
         "sampling_parameters": dict(record.get("_replay_request_parameters") or {}),
+        "generation_parameters": (
+            dict(record["_replay_generation_parameters"])
+            if record.get("_replay_generation_parameters") is not None else None
+        ),
         "native_finish_reason": (
             record.get("_replay_finish_reason") if event == "request_output" else None
         ),
@@ -178,7 +220,7 @@ def verify_capture(records: Iterable[dict], expected: dict[str, dict]) -> dict:
     """Verify exact inputs and outputs without retaining every long request."""
     pending, served, bases = {}, {}, {}
     seen_prompt, seen_output = set(), set()
-    prompt_tokens = output_tokens = encoded_prompt_tokens = 0
+    prompt_tokens = output_tokens = encoded_prompt_tokens = generation_requests = 0
     for record in records:
         request, event = record.get("request_id"), record.get("event")
         if (
@@ -212,18 +254,20 @@ def verify_capture(records: Iterable[dict], expected: dict[str, dict]) -> dict:
             if type(budget) is not int or budget < 0:
                 raise ValueError("original output budget is unavailable")
             parameters = record.get("sampling_parameters")
+            generation = record.get("generation_parameters")
+            validate_generation_parameters(generation)
             if parameters is not None and (
                 type(parameters) is not dict or parameters.get("max_new_tokens") != budget
             ):
                 raise ValueError("captured stopping parameters disagree with output budget")
-            pending[request] = scope, identity[3], tokens, budget, parameters
+            pending[request] = scope, identity[3], tokens, budget, parameters, generation
             prompt_tokens += len(tokens)
             encoded_prompt_tokens += len(tokens) - record["common_prefix_tokens"]
             seen_prompt.add(request)
         else:
             if request in seen_output or request not in pending:
                 raise ValueError("captured output is duplicate or lacks its prompt")
-            prompt_scope, epoch, tokens, budget, parameters = pending.pop(request)
+            prompt_scope, epoch, tokens, budget, parameters, generation = pending.pop(request)
             if (
                 scope != prompt_scope or record.get("base_request_id") is not None
                 or record.get("max_new_tokens") != budget
@@ -231,6 +275,11 @@ def verify_capture(records: Iterable[dict], expected: dict[str, dict]) -> dict:
                 raise ValueError("captured output changes scope or references a prompt")
             if record.get("sampling_parameters") != parameters:
                 raise ValueError("captured stopping parameters changed before completion")
+            if json.dumps(record.get("generation_parameters"), sort_keys=True) != json.dumps(
+                generation, sort_keys=True,
+            ):
+                raise ValueError("captured generation parameters changed before completion")
+            generation_requests += generation is not None
             output = decode_tokens(record)
             if len(output) != native_count or len(output) > budget:
                 raise ValueError("captured output differs from native usage or budget")
@@ -248,6 +297,8 @@ def verify_capture(records: Iterable[dict], expected: dict[str, dict]) -> dict:
         "prompt_tokens": prompt_tokens, "output_tokens": output_tokens,
         "encoded_prompt_suffix_tokens": encoded_prompt_tokens,
         "omitted_exact_prompt_prefix_tokens": prompt_tokens - encoded_prompt_tokens,
+        "original_generation_parameters_complete": generation_requests == len(expected),
+        "generation_parameter_requests": generation_requests,
         "dependency_replay_qualified": False, "gpu_replay_qualified": False,
         "performance_accepted": False,
         "scope": (

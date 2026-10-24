@@ -492,7 +492,9 @@ def watch(registration):
             while not qualified.resources(plan["port"])["ready"]:
                 pulse()
                 time.sleep(2.)
-            cuda = Path(sys.prefix) / "lib/python3.11/site-packages/nvidia/cu13"
+            cuda = Path(settings.get("CUDA_HOME") or (
+                Path(sys.prefix) / "lib/python3.11/site-packages/nvidia/cu13"
+            ))
             env = {
                 **os.environ, "CUDA_VISIBLE_DEVICES": "0", "PYTHONHASHSEED": "21",
                 "CUDA_HOME": str(cuda), "LIBRARY_PATH": str(cuda / "lib"),
@@ -503,6 +505,7 @@ def watch(registration):
                 [sys.executable, str(ROOT / "scripts/benchmark_causal_sampling.py"),
                  "--engine", plan["engine_checkout"], "--model", parameters["model_path"],
                  "--output", str(run / "sampling_calibration.json"), "--position",
+                 "--sampling-profile", source["environment"].get("SAMPLING_PROFILE", "legacy_greedy"),
                  "--batch-sizes", *(str(value) for value in calibration_batch_sizes(running))],
                 env, run / "sampling_calibration.log",
             )

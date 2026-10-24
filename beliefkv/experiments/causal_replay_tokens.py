@@ -65,6 +65,7 @@ class CapturedReplayRequest:
     session_generation: int | None
     extra_key: object
     cache_salt: object
+    generation_parameters: dict | None = None
 
 
 @dataclass(frozen=True)
@@ -198,6 +199,7 @@ class CapturedTokenCorpus:
                 session_id=prompt.get("session_id"),
                 session_generation=prompt.get("session_generation"),
                 extra_key=prompt.get("extra_key"), cache_salt=prompt.get("cache_salt"),
+                generation_parameters=prompt.get("generation_parameters"),
             )
 
     @property

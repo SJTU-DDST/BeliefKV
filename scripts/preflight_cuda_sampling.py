@@ -13,11 +13,17 @@ import time
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--engine", required=True, type=Path)
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError("preserve the previous sampling preflight")
     import torch
     from flashinfer.sampling import top_k_top_p_sampling_from_probs
+    import sglang
+    from sglang.kernels.ops.activation.activation import silu_and_mul
+
+    if not Path(sglang.__file__).resolve().is_relative_to(args.engine.resolve() / "python"):
+        raise ValueError("native preflight imported a different SGLang engine")
 
     started = time.monotonic()
     vocabulary = 248320
@@ -36,11 +42,21 @@ def main():
         assert samples[0].numel() == size
         assert bool(torch.all((samples[0] >= vocabulary - 20) & (samples[0] < vocabulary)))
         rows.append({"batch_size": size, "seed_repeated": True, "top_k_support_verified": True})
+    activation_input = torch.linspace(-4., 4., 4 * 512, device="cuda").to(torch.bfloat16).view(4, 512)
+    activation_output = silu_and_mul(activation_input)
+    reference = (
+        torch.nn.functional.silu(activation_input[:, :256].float())
+        * activation_input[:, 256:].float()
+    ).to(torch.bfloat16)
+    torch.testing.assert_close(activation_output, reference, rtol=.02, atol=.02)
+    torch.cuda.synchronize()
     result = {
         "gpu_sampling_verified": True,
+        "native_kernel_verified": True,
         "performance_accepted": False,
-        "scope": "Synthetic seeded top-k/top-p kernel execution before model startup, not a workload result.",
+        "scope": "Synthetic seeded sampling and native BF16 activation checks before model startup, not a workload result.",
         "cuda_home": os.environ["CUDA_HOME"],
+        "engine": str(args.engine.resolve()),
         "device_name": torch.cuda.get_device_name(),
         "torch_cuda_version": torch.version.cuda,
         "pid": os.getpid(),

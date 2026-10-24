@@ -13,7 +13,7 @@ from beliefkv.experiments.causal_replay_sampling import (
     sample_with_positions,
 )
 from beliefkv.runtime.clock_evidence import local_monotonic_clock_domain
-from beliefkv.runtime.replay_token_capture import _wire
+from beliefkv.runtime.replay_token_capture import _wire, generation_parameters
 
 
 RECEIPT_KEY = "beliefkv_causal_replay_receipt"
@@ -59,6 +59,8 @@ def terminal_receipt(req) -> dict:
         "prompt_sha256": hashlib.sha256(_wire(req.origin_input_ids)).hexdigest(),
         "output_token_ids": output,
         "sampling_parameters": stopping,
+        "generation_parameters": generation_parameters(parameters),
+        "native_sampler_preserved": getattr(req, "_beliefkv_native_sampler_preserved", False),
         "native_finish_reason": deepcopy(req.finished_reason.to_json()),
         "session_id": getattr(req, "session_id", None),
         "session_generation": getattr(req, "session_generation", None),

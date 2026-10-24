@@ -67,6 +67,11 @@ def verify_native_receipt(
         or not _same_wire(meta.get("finish_reason"), captured.native_finish_reason)
     ):
         raise ValueError("native replay changed original stopping or finish reason")
+    if captured.generation_parameters is not None and (
+        not _same_wire(receipt.get("generation_parameters"), captured.generation_parameters)
+        or receipt.get("native_sampler_preserved") is not True
+    ):
+        raise ValueError("native replay changed original sampler or generation parameters")
     generation = (
         captured.session_generation if expected_session_generation is None
         else expected_session_generation
@@ -108,12 +113,19 @@ def request_payload(
     if type(seed) is not int or not 0 <= seed < 2 ** 32:
         raise ValueError("ready request lacks its original sampling seed")
     parameters = deepcopy(captured.sampling_parameters)
+    generation = captured.generation_parameters
+    if generation is not None:
+        if generation["sampling_seed"] != seed:
+            raise ValueError("ready request changes its captured sampling seed")
+        parameters.update(generation)
+    else:
+        parameters.update(temperature=0., sampling_seed=seed)
     parameters.update(
-        temperature=0., sampling_seed=seed,
         custom_params={
             PARAMETER_KEY: {
                 "request_id": captured.request_id,
                 "output_token_ids": list(captured.output_tokens),
+                "force_after_sample": generation is not None,
             },
         },
     )

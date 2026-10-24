@@ -177,6 +177,7 @@ def test_capture_toolchain_checks_actual_compiler_and_headers_before_gpu(
     names = (
         "bin/nvcc", "bin/ptxas", "nvvm/bin/cicc", "nvvm/libdevice/libdevice.10.bc",
         "include/cuda_runtime_api.h", "include/curand.h", "include/curand_kernel.h",
+        "include/nv/target", "include/cccl/cub/version.cuh",
         "lib/libcudart.so.13", "lib64/libcudart.so",
     )
     for name in names:
@@ -205,6 +206,7 @@ def test_sampler_preflight_is_once_only_and_rechecks_gpu_after_the_probe(tmp_pat
     output = tmp_path / "sampling.json"
     plan = {
         "port": 18570, "wait_for_gpu": True, "cuda_toolchain": {"home": "/matched/cuda"},
+        "engine_checkout": "/matched/sglang",
         "sampling_preflight_path": str(output),
     }
     calls = []
@@ -219,8 +221,10 @@ def test_sampler_preflight_is_once_only_and_rechecks_gpu_after_the_probe(tmp_pat
             calls.append("sampling")
             assert kwargs["env"]["CUDA_VISIBLE_DEVICES"] == "0"
             assert kwargs["env"]["CUDA_HOME"] == "/matched/cuda"
+            assert kwargs["env"]["PYTHONPATH"].startswith("/matched/sglang/python")
             output.write_text(json.dumps({
                 "gpu_sampling_verified": True, "cuda_home": "/matched/cuda",
+                "native_kernel_verified": True,
             }))
         else:
             calls.append("host")
@@ -238,6 +242,7 @@ def test_failed_sampler_preflight_preserves_compiler_diagnostics_before_model_st
     output = tmp_path / "sampling.json"
     plan = {
         "port": 18570, "wait_for_gpu": True, "cuda_toolchain": {"home": "/matched/cuda"},
+        "engine_checkout": "/matched/sglang",
         "sampling_preflight_path": str(output),
     }
     monkeypatch.setattr(capture, "wait_for_resources", lambda *a: None)
@@ -258,3 +263,25 @@ def test_failed_sampler_preflight_preserves_compiler_diagnostics_before_model_st
     assert json.loads(output.with_suffix(".error.json").read_text())["stderr"] == (
         "header/compiler mismatch"
     )
+
+
+def test_sampling_success_alone_does_not_qualify_native_kernel_startup(tmp_path, monkeypatch):
+    output = tmp_path / "sampling.json"
+    plan = {
+        "port": 18570, "wait_for_gpu": True, "cuda_toolchain": {"home": "/matched/cuda"},
+        "engine_checkout": "/matched/sglang", "sampling_preflight_path": str(output),
+    }
+    monkeypatch.setattr(capture, "wait_for_resources", lambda *a: None)
+    monkeypatch.setattr(capture, "queue_launch_allowed", lambda plan: True)
+    monkeypatch.setattr(capture.comparison, "verify_sources", lambda plan: None)
+    monkeypatch.setattr(capture.qualified, "resources", lambda port: {"ready": True})
+
+    def run(command, **kwargs):
+        if str(command[1]).endswith("preflight_cuda_sampling.py"):
+            output.write_text(json.dumps({
+                "gpu_sampling_verified": True, "cuda_home": "/matched/cuda",
+            }))
+
+    monkeypatch.setattr(capture.subprocess, "run", run)
+    with pytest.raises(ValueError, match="preflight did not qualify"):
+        capture.prepare_capture(plan, {}, tmp_path / "state.json", lambda: False)

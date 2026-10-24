@@ -27,9 +27,8 @@ class CapturedOutputLogitsProcessor:
 
         return json.dumps({"callable": dill.dumps(cls).hex()})
 
-    def __call__(self, logits, custom_param_list=None, *, positions=None):
-        import torch
-
+    @staticmethod
+    def targets(logits, custom_param_list, positions=None):
         if (
             logits.ndim != 2 or not logits.is_floating_point()
             or type(custom_param_list) is not list
@@ -75,6 +74,12 @@ class CapturedOutputLogitsProcessor:
                 raise ValueError("recorded next token is outside the native vocabulary")
             targets.append(target)
             active_rows.append(row)
+        return targets, active_rows
+
+    def __call__(self, logits, custom_param_list=None, *, positions=None):
+        import torch
+
+        targets, active_rows = self.targets(logits, custom_param_list, positions)
         if targets:
             indices = (
                 torch.tensor(targets, dtype=torch.int64, device=logits.device)
@@ -127,7 +132,40 @@ def sample_with_positions(original, runner, logits_output, forward_batch):
             positions.append(None)
     setattr(info, POSITION_KEY, tuple(positions))
     try:
-        return original(runner, logits_output, forward_batch)
+        result = original(runner, logits_output, forward_batch)
+        selected = [
+            index for index, row in enumerate(parameters)
+            if type(row) is dict and type(row.get(PARAMETER_KEY)) is dict
+            and row[PARAMETER_KEY].get("force_after_sample") is True
+        ]
+        if selected:
+            import torch
+
+            logits = logits_output.next_token_logits
+            if (
+                result.ndim != 1 or result.shape[0] != len(parameters)
+                or result.dtype not in (torch.int32, torch.int64)
+                or result.device != logits.device
+                or getattr(forward_batch, "return_logprob", False)
+            ):
+                raise ValueError("post-sample replay requires native token-only sampling")
+            # Keep native softmax/filter/sampling work on real model logits.
+            # Replace only returned IDs, before the asynchronous CPU result copy.
+            rows = [parameters[index] for index in selected]
+            targets, active = CapturedOutputLogitsProcessor.targets(
+                logits[:len(rows)],
+                rows, tuple(positions[index] for index in selected),
+            )
+            if targets:
+                values = _device_indices(targets, result.device).to(dtype=result.dtype)
+                if len(targets) == len(parameters):
+                    result.copy_(values)
+                else:
+                    indices = _device_indices([selected[index] for index in active], result.device)
+                    result.index_copy_(0, indices, values)
+            for row in rows:
+                row["__req__"]._beliefkv_native_sampler_preserved = True
+        return result
     finally:
         delattr(info, POSITION_KEY)
 
@@ -189,6 +227,12 @@ def apply_position_logits(original, logits, sampling_info, num_tokens_in_batch=1
         req = parameters[index]["__req__"]
         if not getattr(req, "_beliefkv_causal_position_sampled", False):
             req._beliefkv_causal_position_sampled = True
+    selected = [
+        index for index in selected
+        if parameters[index][PARAMETER_KEY].get("force_after_sample") is not True
+    ]
+    if not selected:
+        return
     if len(selected) == logits.shape[0]:
         processor(logits, parameters, positions=positions)
     else:

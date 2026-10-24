@@ -40,7 +40,8 @@ model-loop and performance evidence.
 
 The isolated toolchain at
 `/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13`
-uses nvcc/CRT/NVVM13.0.88,runtime13.0.96 and cuRAND10.4.0.35.
+uses nvcc/CRT/NVVM13.0.88,runtime13.0.96,cuRAND10.4.0.35 and
+CCCL13.0.85.
 V3432 successfully compiles the actual sampling module for SM90a on CPU,
 without CUDA initialization or disabling compatibility checks. The initial
 missing-cuRAND and lib64-layout problems are recorded with their resolutions.
@@ -52,12 +53,38 @@ It is an execution preflight,not a workload or performance result.
 V3433 freshly passes353 focused cases; inherited qualification plus these
 checks retains5664 case identities. No per-token scheduler work is added.
 
-V161 is registered from main `065a0a9af2a3`; V162 waits for its qualified
-source before creating V163 Full followed by scheduler-only. V3437 verifies
-the live supervisors and source bindings. After GPU release,the real sampler
-passed seeded repeatability and top-k support checks at batch1/8/24 on H200,
-then V161 entered model startup. This is kernel qualification,not evidence
-that model loops are eliminated or a completed JCT result.
+V161 failed during model startup: the sampler passed its small check,but the
+native BF16 activation JIT could not find CCCL's `nv/target`. V162 stopped
+on the source failure; V163 never started. V3437 is a historical live snapshot,
+not a completed-source result. The isolated prefix now includes CCCL and
+registration binds its target/version headers. The expanded preflight checks
+both real sampling and the engine's actual BF16 `silu_and_mul`; V3438 passes
+on H200. Its cold compilation took85.5seconds,so startup allows180seconds.
+This is kernel qualification,not evidence that model loops are eliminated.
+
+The new generation policy also exposed a comparison bug before any new
+Full control was run: replay forced temperature0,whereas the coding source
+uses temperature0.6. New token records now snapshot effective native
+temperature,top-p/top-k/min-p,penalties and sampling seed at both request
+boundaries. Coding sources require complete matching metadata. Replay runs
+the original sampler on real logits and only then replaces returned token IDs,
+retaining exact token work and native stopping without a cheaper greedy path
+or a one-hot shortcut through stochastic filtering. Native terminal receipts
+verify actual settings and execution evidence. Historical captures lacking
+generation metadata retain their original replay path and are not relabeled
+as complete sampling evidence.
+
+V3440 passes599 focused CPU cases. V3441 executes the actual native
+softmax/top-k/top-p path plus post-sample replay at batch1/8/24 on H200.
+Its three-sample synthetic batch24 increment is about0.040ms per step;
+batch1 is negative within this small noisy measurement. These are component
+measurements,not an end-to-end correction or a speedup claim. The next
+sequence is V164 natural native capture,V165 bounded exact-token/stop/session
+and sampling checks,then V166 Full followed by scheduler-only on that source.
+V3442 freshly passes783 CPU cases with no failures or skips; V3443/V3444
+retain5687 case identities and bind current app sources. V3445 records the
+complete toolchain,GPU checks and failed prior sequence. No replacement
+workflow has completed at this cutoff.
 Keep the same36 different projects,
 simultaneous arrival,running/decode24,seed21,256K context,95% compression
 and matched pools. The changed generation policy requires a fresh trajectory;
@@ -77,8 +104,9 @@ about295.640GB for36 projects and92.656GB for the first12 seeded projects.
 Start the new model's capacity validation with12 distinct projects,subject to
 real pool sizing and complete-input checks. No serving code or GPU model has
 changed. V155/V156 stopped for repeated-call investigation; V158/V159
-stopped after the sampling-toolchain startup failure. V161/V162/V163 are the
-replacement sequence with matched compiler/runtime and sampling preflight.
+stopped after the sampling-toolchain startup failure. V161/V162 also stopped
+after the missing-CCCL startup failure. V164/V165/V166 are the next sequence
+with complete toolchain checks and original native sampling preserved.
 The specific blockers and
 qualification order are recorded in
 `docs/research/full_attention_model_fallback_20261024.md`.
