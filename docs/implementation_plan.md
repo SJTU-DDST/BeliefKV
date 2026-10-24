@@ -51,16 +51,38 @@ differs from the prior qualified engine. The live V149 frozen sources
 are unchanged. This fixes a CPU-reproduced retry gap; its actual online
 frequency and end-to-end benefit remain unmeasured.
 
-V150 Full is now running from main `dfdd94bafab7` with the new qualified
-engine and the existing24-root/batch24/seed21 V136 trajectory and capacity.
-V3375 verifies actual watcher/server/driver,GPU scheduler1071011,frozen
-sources,policy and both4727/4153-token startup extends followed by decode.
-Host/device and Mamba hit composition is recorded separately; effective
-prefix reuse is correct. Startup does not prove the new retry branch has
-fired. Registration:
+V150 Full completed from main `dfdd94bafab7` with exit0 and all actual
+processes gone. V3385 revalidates frozen sources,effective configuration,
+capacities and all3951 exact request receipts/native stopping. Mean JCT is
+1139.053s,whole-run output throughput593.477 tokens/s,and V3386's
+demand-outstanding rate598.682. Against the reused natural native capture,
+the differences are-2.1563%/+1.8998%; against V149 Full,+0.8724%/-0.4857%;
+against the existing V149 scheduler-only control,+0.1793%/-0.2905%.
+The new changes have not established an independent KV performance gain.
+All24 normal workflow tails remain included,without quality exclusions.
+
+V3387 records43 pre-completion positive JOIN plans,30 early confirmed
+reuses/23.202GB FULL,and12 tool early reuses/1.709GB. Increased observed
+reuse does not establish a net performance gain. V3388's realized final
+paths show submit-to-first-launch2.645s higher and first-launch-to-native-
+completion7.165s higher than V149 Full; neither is isolated CPU/GPU cost.
+V3389 finds actual prefill tokens only+0.0054%,prefill worker intervals
+5.638s lower,and decode worker intervals13.477s higher. No large extra-
+prefill-work explanation is supported; the decode change is not uniquely
+attributed by these aggregate intervals. V3375's4727/4153-token startup
+checks remain valid. V3390 records H2D980.628GB/D2H349.748GB,versus
+940.546GB/346.279GB in V149 Full. Native NO_TOKEN attempts are20599/17768;
+these are repeated attempts,not independent blocked requests. Host FULL
+high-water is118.074/160.000GB and Host Mamba40.050/40.050GB. Migration
+is substantial,so increasing roots is not the next response. Registration:
 `/home/longhao/experiment/ops/v150_oneshot_batch24_prefetch_capacity_retry_20261024.registration.json`.
-Only Full is scheduled; existing natural native and scheduler controls
-are reused. Complete V150 performance remains pending.
+
+The next check will run only Full on the latest CPU-qualified traversal
+candidate above,with the same24 roots,batch24,seed21,trajectory and pools.
+Reuse the existing natural native and scheduler controls. Preserve V150's
+negative point and do not claim the small traversal reduction fixes the
+observed decode regression. Its repeat result and latest trace determine
+the next policy change; no new native replay or pressure increase is needed.
 
 The previous CPU candidate changes only private PREPARE prefix summaries in
 `sglang_v0520_physical.py`: use immutable named tuples instead of frozen
