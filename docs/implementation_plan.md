@@ -190,6 +190,21 @@ these candidates with separate bounded operator profiling and real-shape
 benchmarks after timed arms. Any common-engine acceleration must also
 benefit the native baseline. Full findings and measurement limits are in
 `docs/research/qwen35_operator_environment_20261024.md`.
+V3465 seals a later Full prefix:51 JOIN waits,50 positive FULL plans before
+completion,39 pre-completion submissions and37 confirmed early reuses
+covering35.136GB FULL. The11 apparent start-without-submit gaps include
+eight later native submissions and three unobserved submissions;nine have
+pre-completion capacity-budget evidence. Keep the unknowns and overlapping
+reason groups rather than treating every gap as missing Host KV.
+`scripts/benchmark_qwen35_execution.py` now implements a bounded independent
+diagnostic for real-dimension separate/merged input projections and the
+unchanged FlashInfer GDN prefill wrapper,including state checkpoints. V3468
+passes26 CPU cases for predecessor/resource sequencing,model geometry and
+CUDA-activity accounting. It must wait for all V166 arms and owned processes,
+equal-work verification and a freshly idle GPU. Eager component timing,
+repeated weights and finite-state smoke checks are not whole-model speedups,
+full-model kernel shares or independent numerical qualification. Registration
+and actual GPU measurements remain pending.
 Keep the same36 different projects,
 simultaneous arrival,running/decode24,seed21,256K context,95% compression
 and matched pools. The changed generation policy requires a fresh trajectory;

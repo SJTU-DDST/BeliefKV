@@ -106,3 +106,22 @@ The reproducible CPU-only audit is
 It seals complete JSONL prefixes, excludes service records without workflow
 identity and reuses the existing paired prefill analyzer. No CUDA module is
 imported. Exclusive GPU kernel proportions remain unmeasured.
+
+## Executable Diagnostic
+
+`scripts/benchmark_qwen35_execution.py` implements the next bounded check.
+It compares separate and merged input projections for 1,24,64,256,512,1024
+and4096 input rows,using the actual model dimensions and BF16 dispatch.
+It also records the unchanged FlashInfer GDN wrapper at1,64,256,512 and4096
+tokens,including256-token intermediate-state checkpoints where applicable.
+Both unprofiled CPU/stream spans and a separate three-call CPU/CUDA trace
+are retained. The weight tensors are repeatedly reused; these measurements
+do not reproduce a whole model's weight-cache behavior.
+
+The supervisor waits for successful completion of every V166 arm and the
+exit of every recorded process,revalidates equal work,the frozen engine,
+the user's hold and actual GPU ownership,and only then initializes CUDA.
+V3468 freshly passes26 CPU checks. The profiler accounts only device CUDA
+events rather than summing CPU parent and child GPU attribution. A missing
+CUDA activity trace fails the diagnostic instead of being accepted as a
+zero-time operator. GPU measurements are still pending.
