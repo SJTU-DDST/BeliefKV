@@ -15,7 +15,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import sha256_file
-from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
+from beliefkv.runtime.sglang_v0520_runtime import (
+    NativeAdmissionRuntime, _ExecutionHandoffTicket,
+)
 from scripts.benchmark_wait_prefetch_dispatch_cpu import dispatch_fixture
 
 
@@ -56,11 +58,17 @@ def measure(depth, scenario, samples, *, enabled=True):
     wall, cpu, signatures = [], [], []
     try:
         for index in range(samples + 20):
+            runtime.on_batch_selected(NS(reqs=[request]))
             reset()
             runtime._join_ticket = None
             runtime._execution_handoff_next_ms = 0.
+            runtime._prefetch_priority_normal_admissions = 4
             runtime._frontier_probe_after_ms.clear()
             runtime._reentry_observations.clear()
+            if enabled and scenario == "selected_pending":
+                runtime._frontier_restore_consumer = _ExecutionHandoffTicket(
+                    key, request, time.monotonic() + 60.,
+                )
             started, thread = time.perf_counter_ns(), time.thread_time_ns()
             runtime.dispatch_frontier_restore([request], running_batch=NS(reqs=[]))
             elapsed_cpu = (time.thread_time_ns() - thread) / 1000.
@@ -72,8 +80,16 @@ def measure(depth, scenario, samples, *, enabled=True):
             if enabled and scenario == "positive":
                 if signature[0] != min(depth, runtime.physical_ledger.max_pending) or signature[1] != signature[0]:
                     raise AssertionError(("positive enqueue was lost", signature))
+                consumer = runtime._frontier_restore_consumer
+                if consumer is None or consumer.key != key:
+                    raise AssertionError("positive enqueue lost its selected consumer")
             elif any(signature):
                 raise AssertionError("negative probe issued a physical action")
+            if enabled and scenario == "selected_pending" and (
+                any(reads.values())
+                or runtime.counts["frontier_restore_selection_pending"] != 1
+            ):
+                raise AssertionError("selected consumer caused another native inspection")
             if not enabled and (any(reads.values()) or runtime._frontier_probe_after_ms):
                 raise AssertionError("disabled frontier performed native inspection or probe maintenance")
             if runtime._execution_handoff is not None or runtime.physical_disabled:
@@ -88,6 +104,9 @@ def measure(depth, scenario, samples, *, enabled=True):
             "depth": depth, "scenario": scenario, "frontier_restore": enabled,
             "control_payload_signature": signatures[0],
             "native_reads_last_iteration": dict(reads),
+            "selected_pending_checks_last_iteration": (
+                runtime.counts["frontier_restore_selection_pending"]
+            ),
             "wall_p50_us": median(wall), "cpu_p50_us": median(cpu),
             "wall_samples_us": wall, "cpu_samples_us": cpu,
             "residency_budget": asdict(runtime._residency_budget),
@@ -120,10 +139,18 @@ def main():
             "alternating samples; disabled must perform no native reads or physical actions."
             if args.include_disabled else "Enabled frontier only."
         ),
+        "iteration_scope": (
+            "Each iteration consumes the previous selection, resets fixture transfer state "
+            "and restores the four-ordinary-admission quota outside timing. selected_pending "
+            "supplies one live previously selected consumer without a pending DMA; its "
+            "control check must perform no new native inspection or transfer."
+        ),
         "cases": [
             measure(depth, scenario, args.samples, enabled=enabled)
             for depth in (4, 16, 64)
-            for scenario in ("new_context", "resident", "no_capacity", "positive")
+            for scenario in (
+                "new_context", "resident", "no_capacity", "positive", "selected_pending",
+            )
             for enabled in ((True, False) if args.include_disabled else (True,))
         ],
     }
