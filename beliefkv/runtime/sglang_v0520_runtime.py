@@ -760,6 +760,13 @@ class NativeAdmissionRuntime:
         self.enable_frontier_restore = (
             self._custom_kv_management and frontier_setting == "1"
         )
+        frontier_reclaim = os.environ.get("BELIEFKV_FRONTIER_COLD_RECLAIM", "0")
+        if frontier_reclaim not in ("0", "1"):
+            raise ValueError("frontier cold reclaim setting must be 0 or 1")
+        self.enable_frontier_cold_reclaim = (
+            self.enable_frontier_restore and frontier_reclaim == "1"
+        )
+        self._frontier_reclaim_after_ms = 0.
         self.enable_tool_prefetch = (
             tool_prefetch_requested and self.tool_restore_mode == "speculative"
         )
@@ -2501,6 +2508,7 @@ class NativeAdmissionRuntime:
                 "tool_prefetch": self.enable_tool_prefetch,
                 "tool_restore_mode": self.tool_restore_mode,
                 "execution_frontier_restore": self.enable_frontier_restore,
+                "frontier_cold_reclaim": self.enable_frontier_cold_reclaim,
                 "restore_tiers": self.restore_tiers,
                 "restore_tiers_supported": self._restore_tiers_supported,
                 "restore_tiers_native": (
@@ -5533,6 +5541,7 @@ class NativeAdmissionRuntime:
         self, key: PrefillCandidateKey,
         *, max_steps: int | None = None, fit_current_capacity: bool = False,
         include_checkpoint_plan: bool = False, apply_capacity_budget: bool = True,
+        admission_candidate: bool = False,
         _empty_restore_cache: tuple[object, dict[int, object]] | None = None,
     ) -> SessionH2DOpportunity | None:
         batched = callable(getattr(self._native_cache, "prefetch_gpu_session_nodes", None))
@@ -5549,6 +5558,7 @@ class NativeAdmissionRuntime:
             fit_current_capacity=False,
             skip_empty_restore=True,
             include_checkpoint_plan=include_checkpoint_plan,
+            **({"admission_candidate": True} if admission_candidate else {}),
             **(
                 {"_empty_restore_cache": _empty_restore_cache}
                 if _empty_restore_cache is not None else {}
@@ -5974,7 +5984,8 @@ class NativeAdmissionRuntime:
 
     def _reclaim_wait_prefetch_capacity(
         self, key: PrefillCandidateKey, opportunity: SessionH2DOpportunity, *,
-        source: str,
+        source: str, admission_candidate: bool = False,
+        allow_reclaim: bool = True, max_reclaim_nodes: int | None = None,
     ) -> SessionH2DOpportunity | None:
         if opportunity.fits_current_free_lists is True:
             return opportunity
@@ -6028,7 +6039,7 @@ class NativeAdmissionRuntime:
             self._opportunity_writer is not None
             and (self.enable_h2d_opportunity_sampling or self._borrowable_parent_headroom)
         )
-        if callable(reclaim):
+        if callable(reclaim) and allow_reclaim:
             if opportunity.capacity_reclaim_probe:
                 self._wait_capacity_probe_next_ms = (
                     time.monotonic() * 1000. + SEMANTIC_FRAME_INTERVAL_MS
@@ -6041,6 +6052,7 @@ class NativeAdmissionRuntime:
                     mamba_slots=opportunity.required_mamba_slots + budget.reserve_mamba_slots,
                     exclude_node_ids=excluded,
                     **({"collect_diagnostics": True} if collect_diagnostics else {}),
+                    **({"max_nodes": max_reclaim_nodes} if max_reclaim_nodes is not None else {}),
                 )
             observed = getattr(
                 self._native_cache, "beliefkv_handoff_last_capacity", None,
@@ -6071,6 +6083,9 @@ class NativeAdmissionRuntime:
                     "capacity_reclaim_probe": opportunity.capacity_reclaim_probe,
                     "capacity_reclaim": diagnosis,
                 })
+        if admission_candidate and allow_reclaim and not freed:
+            self.counts["frontier_restore_no_cold_victim"] += 1
+            return None
         if (
             freed and opportunity.partial_full_step is None
             and not opportunity.capacity_reclaim_probe
@@ -6121,7 +6136,10 @@ class NativeAdmissionRuntime:
                 )
         # Bounded reclaim need not fit the whole checkpoint. Restore the
         # continuous prefix that fits now and leave the tail for a later load.
-        refreshed = self._wait_prefetch_opportunity(key, fit_current_capacity=True)
+        refresh_arguments = {"admission_candidate": True} if admission_candidate else {}
+        refreshed = self._wait_prefetch_opportunity(
+            key, fit_current_capacity=True, **refresh_arguments,
+        )
         if refreshed is None:
             return None
         partial = refreshed.partial_full_step
@@ -6160,7 +6178,7 @@ class NativeAdmissionRuntime:
                         "scope": "native tree split only; no DMA or execution readiness",
                     })
                 refreshed = self._wait_prefetch_opportunity(
-                    key, fit_current_capacity=True,
+                    key, fit_current_capacity=True, **refresh_arguments,
                 )
             else:
                 self.counts["wait_prefetch_full_extent_split_declined"] += 1
@@ -10002,6 +10020,49 @@ class NativeAdmissionRuntime:
             inspected += 1
         return True
 
+    def _frontier_cold_reclaim_available(self, now_ms: float) -> bool:
+        if (
+            not self.enable_frontier_cold_reclaim
+            or now_ms < self._frontier_reclaim_after_ms
+        ):
+            return False
+        backed = getattr(
+            getattr(self._native_cache, "tree_core", None), "full_host_duplicates", None,
+        )
+        return bool(
+            type(backed) is dict and backed
+            and callable(getattr(
+                self._native_cache, "reclaim_beliefkv_handoff_capacity", None,
+            ))
+        )
+
+    def _fit_selected_frontier_restore(
+        self, key: PrefillCandidateKey, opportunity: SessionH2DOpportunity, *,
+        budget: PrefetchResidencyBudget, now_ms: float,
+    ) -> SessionH2DOpportunity | None:
+        free = self._budget_wait_prefetch_opportunity(
+            key, opportunity, fit_current_capacity=True, batched=True, budget=budget,
+        )
+        if free.steps:
+            # A first oversized extent can still supply a native prefix fragment.
+            return self._reclaim_wait_prefetch_capacity(
+                key, free, source="execution_handoff",
+                admission_candidate=True, allow_reclaim=False,
+            )
+        if not self._frontier_cold_reclaim_available(now_ms):
+            return None
+        self._frontier_reclaim_after_ms = now_ms + 200.
+        planned = self._budget_wait_prefetch_opportunity(
+            key, opportunity, fit_current_capacity=False, batched=True,
+        )
+        if not planned.steps:
+            return None
+        self.counts["frontier_restore_cold_capacity_checks"] += 1
+        return self._reclaim_wait_prefetch_capacity(
+            key, planned, source="execution_handoff",
+            admission_candidate=True, max_reclaim_nodes=16,
+        )
+
     @timed_runtime("frontier_restore")
     def dispatch_frontier_restore(
         self, waiting_queue: Sequence[object], *, running_batch: object,
@@ -10031,7 +10092,7 @@ class NativeAdmissionRuntime:
         if slots < 1:
             self.counts["frontier_restore_no_request_slot"] += 1
             return
-        if budget.byte_limit <= 0:
+        if budget.byte_limit <= 0 and not self._frontier_cold_reclaim_available(now_ms):
             self.counts["frontier_restore_no_free_byte_budget"] += 1
             return
         if self._frontier_probe_after_ms and self._frontier_probes_backed_off(
@@ -10053,6 +10114,7 @@ class NativeAdmissionRuntime:
                 and self.visible.get(key.request_id) == key
             }
         frontier = plan.prioritized[:slots]
+        selected_head_id = frontier[0].request_id if frontier else None
         if len(plan.prioritized) != len(waiting_queue):
             selection = select_native_prefill_candidates(
                 waiting_queue, plan=plan, current_semantic_revision=self.semantic_revision,
@@ -10063,6 +10125,14 @@ class NativeAdmissionRuntime:
             }
             frontier = tuple(
                 key for key in plan.prioritized if key.request_id in frontier_ids
+            )
+            selected_head_id = (
+                getattr(selection.candidates[0], "rid", None)
+                if selection.candidates else None
+            )
+        if self.enable_frontier_cold_reclaim:
+            frontier = tuple(
+                key for key in frontier[:1] if key.request_id == selected_head_id
             )
         probes = 0
         for key in frontier:
@@ -10108,8 +10178,15 @@ class NativeAdmissionRuntime:
             opportunity = inspect_session_h2d_opportunity(
                 self._native_cache, anchors,
                 max_steps=min(64, available_commands),
-                fit_current_capacity=True,
+                fit_current_capacity=not self.enable_frontier_cold_reclaim,
             )
+            if (
+                self.enable_frontier_cold_reclaim
+                and opportunity is not None and opportunity.steps
+            ):
+                opportunity = self._fit_selected_frontier_restore(
+                    key, opportunity, budget=budget, now_ms=now_ms,
+                )
             if (
                 opportunity is None or not opportunity.steps
                 or opportunity.fits_current_free_lists is not True

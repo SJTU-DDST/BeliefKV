@@ -32,6 +32,11 @@
 - Ordinary selected-request prefetch is an explicit follow-up candidate. Allow
   it alongside tool prefetch; keep one selected consumer for at most 1500 ms,
   retain JOIN precedence and native admission, and require existing free capacity.
+- A separately declared frontier cold-reclaim candidate may use a settled
+  Host-backed duplicate for the actual selected queue head. Probe at most once
+  per 200 ms with at most 16 native candidate checks; never create a D2H backup,
+  preempt an active request, or grant ordinary requests critical-parent queue-tail
+  donor rights. Prefer an already fitting prefix before reclaiming more space.
 - During critical parent recovery, free request rows are not a selected prefill
   batch. Protect the actual queue head and ready JOIN dependencies; validate
   unstarted ordinary queue tails as possible native FULL donors. Preserve all

@@ -188,7 +188,8 @@ def test_native_policy_baseline_rejects_predictive_mix_before_launch(tmp_path: P
 ))
 def test_internal_comparison_effective_environment_before_gpu_launch(
     tmp_path, comparison, *, protection="1", scheduling="workflow", last_child="0",
-    tool_restore="speculative", frontier="1", join_prefetch="1", tool_prefetch=None,
+    tool_restore="speculative", frontier="1", frontier_reclaim="0",
+    join_prefetch="1", tool_prefetch=None,
     tool_priority="0", fanout="native_in_graph_nested_2to4",
     device_full=None, device_mamba=None,
 ):
@@ -217,6 +218,7 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
         "JOIN_LAST_CHILD_PRIORITY": last_child,
         "TOOL_RESTORE_MODE": tool_restore,
         "EXECUTION_FRONTIER_RESTORE": frontier,
+        "FRONTIER_COLD_RECLAIM": frontier_reclaim,
         "TOOL_PREFETCH_PRIORITY_MS": tool_priority,
         "FANOUT_PROFILE": fanout,
     }, comparison, tool_prefetch=tool_prefetch)
@@ -289,6 +291,12 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
     expected_frontier = custom_kv and frontier == "1"
     assert actual["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == str(int(expected_frontier))
     assert launch["execution_frontier_restore_requested"] is expected_frontier
+    assert actual["BELIEFKV_FRONTIER_COLD_RECLAIM"] == str(
+        int(expected_frontier and frontier_reclaim == "1")
+    )
+    assert launch["frontier_cold_reclaim_requested"] is (
+        expected_frontier and frontier_reclaim == "1"
+    )
     assert actual["BELIEFKV_TOOL_RESTORE_MODE"] == (
         tool_restore if custom_kv else "speculative"
     )
@@ -411,6 +419,15 @@ def test_frontier_restore_ablation_reaches_the_real_launcher_without_gpu(
     )
 
 
+@pytest.mark.parametrize("comparison", (
+    "full", "join_priority_only", "scheduler_only", "kv_only", "native_matched",
+))
+def test_bounded_cold_frontier_reaches_only_custom_kv_launchers_without_gpu(tmp_path, comparison):
+    test_internal_comparison_effective_environment_before_gpu_launch(
+        tmp_path, comparison, frontier_reclaim="1",
+    )
+
+
 @pytest.mark.parametrize("mode,native,host_gb", (
     ("reactive", False, "200"), ("predictive_h2d", False, "200"),
     ("off", True, "200"), ("off", True, "0"),
@@ -505,6 +522,7 @@ def test_effective_policy_environment_without_launching_gpu(
         "prefill_scheduling_policy_requested": "workflow",
         "join_last_child_priority_requested": False,
         "execution_frontier_restore_requested": False,
+        "frontier_cold_reclaim_requested": False,
         "tool_continuity_requested": False,
         "tool_timing_requested": tool_timing == "1",
         "tool_prefetch_requested": requested_prefetch == "1",

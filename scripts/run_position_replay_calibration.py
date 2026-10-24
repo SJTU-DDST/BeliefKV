@@ -439,6 +439,10 @@ def watch(registration):
                     plan.get("experiment_config")
                     and reference["arms"]["full"].get("EXECUTION_FRONTIER_RESTORE") == "1"
                 ),
+                frontier_cold_reclaim=bool(
+                    plan.get("experiment_config")
+                    and reference["arms"]["full"].get("FRONTIER_COLD_RECLAIM", "0") == "1"
+                ),
             )
             server = process(
                 ["bash", str(ROOT / "scripts/launch_qwen35_native_v0520.sh"), *flags],

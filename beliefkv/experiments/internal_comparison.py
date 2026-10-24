@@ -44,6 +44,12 @@ def arm_environment(
     frontier = str(int(
         frontier == "1" and custom_kv
     ))
+    frontier_reclaim = common.get(
+        "BELIEFKV_FRONTIER_COLD_RECLAIM", common.get("FRONTIER_COLD_RECLAIM", "0"),
+    )
+    if frontier_reclaim not in ("0", "1"):
+        raise ValueError("frontier cold reclaim must be 0 or 1")
+    frontier_reclaim = str(int(frontier == "1" and frontier_reclaim == "1"))
     workflow_ordering = scheduling == "workflow" and mode in ("full", "scheduler_only")
     if mode == "join_priority_only":
         scheduling = "join_priority"
@@ -90,6 +96,8 @@ def arm_environment(
         "TOOL_RESTORE_MODE": tool_restore if custom_kv else "speculative",
         "EXECUTION_FRONTIER_RESTORE": frontier,
         "BELIEFKV_ENABLE_FRONTIER_RESTORE": frontier,
+        "FRONTIER_COLD_RECLAIM": frontier_reclaim,
+        "BELIEFKV_FRONTIER_COLD_RECLAIM": frontier_reclaim,
         "BELIEFKV_IDLE_PREPARE_POLICY": common.get(
             "BELIEFKV_IDLE_PREPARE_POLICY", common.get("IDLE_PREPARE_POLICY", "cold"),
         ),
@@ -146,6 +154,7 @@ def validate_runtime(
     restore_tiers: str | None = None,
     join_last_child_priority: bool | None = None,
     execution_frontier_restore: bool | None = None,
+    frontier_cold_reclaim: bool | None = None,
     tool_continuity: bool | None = None,
     expected_overrides: dict[str, bool] | None = None,
 ) -> None:
@@ -184,6 +193,11 @@ def validate_runtime(
         )
     if idle_prepare_policy is not None:
         expected["idle_prepare_policy"] = idle_prepare_policy
+    if frontier_cold_reclaim is not None:
+        expected["frontier_cold_reclaim"] = (
+            mode in ("full", "kv_only")
+            and execution_frontier_restore is True and frontier_cold_reclaim
+        )
     if restore_tiers is not None:
         expected["restore_tiers"] = restore_tiers
         if restore_tiers == "dependency" and mode in ("full", "kv_only"):

@@ -364,12 +364,14 @@ def test_gpu_evidence_requires_actual_position_receipts_and_all_native_stops(tmp
             calibration.smoke_result(plan, summary, arm, {}, server, {"pid": 11})
 
 
-@pytest.mark.parametrize("frontier", (False, True))
+@pytest.mark.parametrize("frontier", (False, True, "cold"))
 def test_predeclared_calibration_accepts_the_selected_policy_but_runs_native(
     tmp_path, monkeypatch, reference, frontier,
 ):
     from contextlib import nullcontext
 
+    cold_reclaim = frontier == "cold"
+    frontier = bool(frontier)
     roots = [f"workflow-{index}" for index in range(18)]
     arm = tmp_path / "source"
     (arm / "client_18").mkdir(parents=True)
@@ -402,7 +404,8 @@ def test_predeclared_calibration_accepts_the_selected_policy_but_runs_native(
     reference_path.write_text(json.dumps(reference))
     spec = calibration.ROOT / (
         "configs/migration/qwen3_coder_18project_root_phase"
-        + ("_frontier" if frontier else "") + "_20261024.json"
+        + ("_cold_frontier" if cold_reclaim else "_frontier" if frontier else "")
+        + "_20261024.json"
     )
     run = tmp_path / "calibration"
     registration = tmp_path / "calibration.json"
@@ -448,8 +451,10 @@ def test_predeclared_calibration_accepts_the_selected_policy_but_runs_native(
     assert "CPU stopped after the actual calibration environment" in state["error"]
     [(settings, flags, socket, kwargs)] = observed
     assert kwargs.get("execution_frontier_restore", False) is frontier
+    assert kwargs.get("frontier_cold_reclaim", False) is cold_reclaim
     assert settings["BELIEFKV_INTERNAL_COMPARISON_MODE"] == "native_matched"
     assert settings["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == "0"
+    assert settings["BELIEFKV_FRONTIER_COLD_RECLAIM"] == "0"
     assert settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "0"
     assert settings["ROOT_WORK_BUDGET_WARNING_CALLS"] == "16"
     assert settings["ROOT_WORK_BUDGET_TARGET_CALLS"] == "24"

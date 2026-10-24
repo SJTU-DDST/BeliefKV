@@ -192,6 +192,25 @@ def test_explicit_frontier_candidate_preserves_tool_prefetch_and_native_disables
         assert environment["TOOL_RESTORE_MODE"] == "speculative"
 
 
+@pytest.mark.parametrize("mode", ("full", "kv_only", "native_matched", "join_priority_only"))
+def test_cold_frontier_requires_explicit_declaration_and_disables_with_custom_kv(
+    reference, tmp_path, mode,
+):
+    reference["arms"]["full"].update(EXECUTION_FRONTIER_RESTORE="1", FRONTIER_COLD_RECLAIM="1")
+    with pytest.raises(ValueError, match="declared frontier cold reclaim"):
+        comparison.environment(
+            reference, mode, tmp_path, tmp_path, tmp_path, 18554, tmp_path,
+            execution_frontier_restore=True,
+        )
+    environment, _, _ = comparison.environment(
+        reference, mode, tmp_path, tmp_path, tmp_path, 18554, tmp_path,
+        execution_frontier_restore=True, frontier_cold_reclaim=True,
+    )
+    assert environment["BELIEFKV_FRONTIER_COLD_RECLAIM"] == str(
+        int(mode in ("full", "kv_only"))
+    )
+
+
 @pytest.mark.parametrize("label", comparison.ORDER)
 def test_explicit_24_running_limit_is_the_same_in_every_control(reference, tmp_path, label):
     reference["arms"]["full"]["ROOT_COUNT"] = "24"

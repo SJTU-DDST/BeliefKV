@@ -254,6 +254,7 @@ def observe_arm(
     tool_restore, idle_prepare, restore_tiers = "speculative", None, None
     last_child = None
     frontier = None
+    frontier_reclaim = None
     continuity = None
     info = arm / "server/server_info.json"
     if info.exists():
@@ -280,6 +281,7 @@ def observe_arm(
         frontier = observed.get(
             "execution_frontier_restore_requested", legacy_execution_frontier_restore,
         )
+        frontier_reclaim = observed.get("frontier_cold_reclaim_requested")
         continuity = observed.get("tool_continuity_requested")
     runtime = qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
     if runtime is not None or mode == "native_matched":
@@ -290,6 +292,7 @@ def observe_arm(
             restore_tiers=restore_tiers,
             join_last_child_priority=last_child,
             execution_frontier_restore=frontier,
+            frontier_cold_reclaim=frontier_reclaim,
             tool_continuity=continuity,
             expected_overrides=runtime_overrides,
         )
