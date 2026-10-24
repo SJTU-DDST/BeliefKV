@@ -1,6 +1,23 @@
 # SGLang Runtime Patches
 
-Updated: 2026-10-16.
+Updated: 2026-10-24.
+
+The2026-10-24 canonical CPU follow-up repairs discovery of a surviving session
+prefix when Host eviction deletes the latest request's leaf. It follows only
+that leaf's ancestor path,uses the native component resolver,and revalidates
+the live object and current session markers before publishing a snapshot.
+Warm reads reuse the validated anchor;no periodic scan is added.
+`sglang-v0.5.20-latest-anchor-recovery.incremental.patch` applies over qualified
+tree413cc14e. The combined canonical staging patch has SHA256
+`85c4b8b429bf7eed86ae8cfebac3dfdcf28bb252a9c3291e32ad10077108c458`
+and reconstructs tree58424f5fcc43f9f2d8ec09a38758017e41b92bc7 over94602c9.
+V3580 retains all666 earlier engine cases and passes681;V3581 retains all5838
+application cases and passes5839. V3588 binds sources and the original failing
+reproduction. This change was made after V176 completed;its frozen source and
+the V174 source remain unchanged. GPU benefit is still pending. Details are in
+`docs/experiments/v177_latest_anchor_recovery_20261024.md`.
+
+The following entries retain earlier frozen patch records.
 
 The frozen V75/V76 canonical staging patch is
 `sglang-v0.5.20-beliefkv-staging.patch`, SHA256

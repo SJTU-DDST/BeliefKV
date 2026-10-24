@@ -2635,7 +2635,7 @@ index 3c18cee..74fb7ca 100644
          cd = leaf.component_data[self.component_type]
          cd.session_ref += 1
 diff --git a/python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py b/python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py
-index 406069a..7fad7d9 100644
+index 406069a..0e10b68 100644
 --- a/python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py
 +++ b/python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py
 @@ -10,6 +10,8 @@ from collections import OrderedDict
@@ -2685,7 +2685,7 @@ index 406069a..7fad7d9 100644
          self._session_incarnation_counter += 1
          self._session_generations[session_id] = self._session_incarnation_counter
          return self._session_incarnation_counter
-@@ -96,6 +112,93 @@ class UnifiedSessionRefTracker:
+@@ -96,6 +112,112 @@ class UnifiedSessionRefTracker:
              generation = self.open_radix_session(session_id)
          return generation
  
@@ -2746,13 +2746,30 @@ index 406069a..7fad7d9 100644
 +                session_id, generation, max_leaves=max_leaves,
 +            )
 +        result = []
++        rebound = None
 +        for component in self.components:
 +            leaf = latest.get(int(component.component_type))
 +            if leaf is None:
 +                return None
 +            try:
 +                live = self.tree_core.node_by_id(leaf.id)
-+            except (KeyError, RuntimeError, ValueError):
++            except KeyError:
++                # Eviction recedes native session coverage along this exact path.
++                # Do not substitute a different historical branch.
++                resolve = getattr(component, "_find_reusable_session_leaf", None)
++                if not callable(resolve):
++                    return None
++                leaf = resolve(getattr(leaf, "parent", None))
++                if leaf is None:
++                    return None
++                try:
++                    live = self.tree_core.node_by_id(leaf.id)
++                except (KeyError, RuntimeError, ValueError):
++                    return None
++                if rebound is None:
++                    rebound = {}
++                rebound[int(component.component_type)] = leaf
++            except (RuntimeError, ValueError):
 +                return None
 +            if (
 +                live is not leaf
@@ -2763,6 +2780,8 @@ index 406069a..7fad7d9 100644
 +            ):
 +                return None
 +            result.append((int(component.component_type), ((leaf.id, leaf.creation_time),)))
++        if rebound is not None:
++            latest.update(rebound)
 +        return tuple(result)
 +
 +    def session_anchor_snapshot_reason(self, session_id: str, generation: int) -> str:
@@ -2779,7 +2798,7 @@ index 406069a..7fad7d9 100644
      def release_radix_session(self, session_id: str) -> int:
          if not self.enable_session_radix_cache or session_id is None:
              return 0
-@@ -103,8 +206,16 @@ class UnifiedSessionRefTracker:
+@@ -103,8 +225,16 @@ class UnifiedSessionRefTracker:
          if session_id in self._closed_session_ids:
              return 0
  
@@ -2796,7 +2815,7 @@ index 406069a..7fad7d9 100644
  
          indexed = 0
          for component in self.components:
-@@ -116,3 +227,15 @@ class UnifiedSessionRefTracker:
+@@ -116,3 +246,15 @@ class UnifiedSessionRefTracker:
              indexed,
          )
          return 0
@@ -9390,6 +9409,94 @@ index 0000000..16ee0df
 +    ) == {int(CT.FULL): 2}
 +    assert allocator.available_size() == target
 +    assert prefix.component_data[CT.MAMBA].host_value is None
+diff --git a/test/srt/test_beliefkv_latest_anchor_recede.py b/test/srt/test_beliefkv_latest_anchor_recede.py
+new file mode 100644
+index 0000000..b1db22c
+--- /dev/null
++++ b/test/srt/test_beliefkv_latest_anchor_recede.py
+@@ -0,0 +1,82 @@
++"""Deleted latest anchors can follow surviving native session coverage."""
++
++from types import SimpleNamespace as NS
++from unittest.mock import Mock
++
++import pytest
++
++from sglang.srt.mem_cache.unified_cache.component_type import ComponentType
++from sglang.srt.mem_cache.unified_cache.session_ref_tracker import UnifiedSessionRefTracker
++from test_beliefkv_session_anchors import FakeComponent
++
++
++def fixture(*, hybrid=False):
++    types = (ComponentType.FULL, ComponentType.MAMBA) if hybrid else (ComponentType.FULL,)
++    components = [FakeComponent(kind) for kind in types]
++    parent = NS(
++        id=1, creation_time=10, parent=None,
++        component_data={kind: NS(session_ids={"session"}) for kind in types},
++    )
++    # Session indexes contain tree nodes, which have identity hashing.
++    class Leaf:
++        pass
++
++    live = Leaf()
++    live.__dict__.update(parent.__dict__)
++    deleted = Leaf()
++    deleted.id, deleted.creation_time, deleted.parent = 2, 20, live
++    deleted.component_data = {kind: NS(session_ids=None) for kind in types}
++    arena = {1: live}
++    tracker = UnifiedSessionRefTracker(
++        components=components, tree_core=NS(node_by_id=arena.__getitem__),
++        enable_session_radix_cache=True,
++    )
++    generation = tracker.open_radix_session("session")
++    for component in components:
++        component._session_leaves["session"] = {live}
++        component._find_reusable_session_leaf = Mock(return_value=live)
++    tracker._latest_session_leaves["session"] = {int(kind): deleted for kind in types}
++    return tracker, components, arena, live, deleted, generation
++
++
++@pytest.mark.parametrize("hybrid", (False, True))
++def test_deleted_anchor_recedes_and_warm_snapshots_do_not_walk_again(hybrid):
++    tracker, components, _, live, deleted, generation = fixture(hybrid=hybrid)
++    expected = tuple((int(c.component_type), ((live.id, live.creation_time),)) for c in components)
++    assert tracker.snapshot_latest_session_leaf_anchors("session", generation) == expected
++    assert tracker.snapshot_latest_session_leaf_anchors("session", generation) == expected
++    for component in components:
++        component._find_reusable_session_leaf.assert_called_once_with(deleted.parent)
++        assert tracker._latest_session_leaves["session"][int(component.component_type)] is live
++
++
++@pytest.mark.parametrize("invalid", ("generation", "closed", "replacement", "missing_marker", "missing_index", "no_prefix"))
++def test_recovery_preserves_identity_and_session_guards(invalid):
++    tracker, components, arena, live, deleted, generation = fixture()
++    component = components[0]
++    if invalid == "generation":
++        generation += 1
++    elif invalid == "closed":
++        tracker.release_radix_session("session")
++    elif invalid == "replacement":
++        arena[deleted.id] = object()
++    elif invalid == "missing_marker":
++        live.component_data[ComponentType.FULL].session_ids.clear()
++    elif invalid == "missing_index":
++        component._session_leaves["session"].clear()
++    elif invalid == "no_prefix":
++        component._find_reusable_session_leaf.return_value = None
++    assert tracker.snapshot_latest_session_leaf_anchors("session", generation) is None
++    if invalid in ("generation", "closed", "replacement"):
++        component._find_reusable_session_leaf.assert_not_called()
++
++
++def test_partial_hybrid_validation_cannot_publish_an_unvalidated_snapshot():
++    tracker, _, arena, live, deleted, generation = fixture(hybrid=True)
++    wrong = object()
++    other = NS(id=3)
++    tracker._latest_session_leaves["session"][int(ComponentType.MAMBA)] = other
++    arena[3] = wrong
++    assert tracker.snapshot_latest_session_leaf_anchors("session", generation) is None
++    assert tracker._latest_session_leaves["session"][int(ComponentType.FULL)] is deleted
++    assert live is not deleted
 diff --git a/test/srt/test_beliefkv_latest_mamba_state.py b/test/srt/test_beliefkv_latest_mamba_state.py
 new file mode 100644
 index 0000000..44d2402

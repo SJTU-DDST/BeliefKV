@@ -2,6 +2,28 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+V176 has now completed the exact V17424-root source:2369 requests,151307687
+input tokens and531903 output tokens,with no workflow exclusions. Mean JCT
+improves3.106% and whole-run output throughput3.869%;the overall goal remains
+unproven. Complete old-input reprocessing falls only8.078%,from696174 to
+639935 tokens. Controlled JOIN restoration has78.741GB verified FULL reuse,
+but all313 commands have confirmed JOIN scope;the observed pre-JOIN positive
+FULL-plan count is zero. Tool prefetch issues no H2D command.
+
+A real CPU reproduction finds missed surviving-prefix discovery after Host
+eviction:component session coverage recedes correctly,but the latest-request
+anchor still points at the deleted leaf. Repair the native snapshot along that
+same ancestor path and retain generation/object/session validation. V3580
+passes681 cases with all666 prior engine identities;V3581 passes5839 with
+all5838 prior application identities,no failures/errors/skips. V3588 binds
+the repaired58424f5f native tree and qualified sources. V174/V176 remain frozen
+and their original source verification still passes. Run the isolated repaired
+Full on the same24-root trajectory,using the existing registration checks to
+verify unchanged GPU-checked sampling/receipt modules;do not replay native or
+start ablations. Reconsider20 roots after separating this actual discovery
+failure from capacity pressure. See
+`docs/experiments/v177_latest_anchor_recovery_20261024.md`.
+
 Latest user steering supersedes the historical sequence below: migrate the
 next comparison to local Qwen3-Coder-30B-A3B-Instruct, with 24 simultaneous
 roots from 24 different original LoCoBench-Agent projects. Do not run further
