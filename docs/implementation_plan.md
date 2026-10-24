@@ -159,7 +159,25 @@ serial identical read-input run is2 and the maximum raw-result-proven run
 is2; feedback count13 includes intervening calls. No long serial grep loop
 or guard-finalized workflow is observed in this complete source. This is
 workload/trace qualification,not independent task grading or a speedup.
-V165b has advanced to the bounded GPU data-plane check after source release.
+V165b completed all24 bounded GPU token/session/stop checks with the
+original native sampler preserved,and registered V166 from main
+`bd24492cd5b7`. V3461 verifies V166's frozen sources,live owned Full server,
+actual equal capacities and partial exact-work receipts. Full is running;
+scheduler-only follows automatically on the same5604-request trajectory.
+The corrected V164 baseline uses complete workflow event spans: mean JCT
+1675.445seconds,event makespan2682.620seconds and561.055 output tokens/s.
+These are baseline values,not Full results. No complete Full comparison
+or independent KV-management benefit is accepted yet. Do not schedule
+another complete native replay.
+V3462 seals the first live Full observation:14 JOIN waits have positive
+pre-completion FULL plans and all14 submit before completion;13 already
+confirm early reuse of17.855GB FULL,with remaining use evidence still pending.
+These are wait events,not the306 per-node transfer commands. V3463 reconciles
+93.686GB FULL backup over951 batches,including38 spawn batches averaging
+1.824GB and905 idle incremental batches averaging26.916MB. All observed
+backup batches have matching ACKs. Candidate cold-unbacked rejections still
+occur,so these totals do not establish complete cold-page coverage or a
+performance gain. Retain the live prefixes and wait for complete arms.
 Keep the same36 different projects,
 simultaneous arrival,running/decode24,seed21,256K context,95% compression
 and matched pools. The changed generation policy requires a fresh trajectory;
@@ -180,8 +198,9 @@ Start the new model's capacity validation with12 distinct projects,subject to
 real pool sizing and complete-input checks. No serving code or GPU model has
 changed. V155/V156 stopped for repeated-call investigation; V158/V159
 stopped after the sampling-toolchain startup failure. V161/V162 also stopped
-after the missing-CCCL startup failure. V164/V165/V166 are the next sequence
-with complete toolchain checks and original native sampling preserved.
+after the missing-CCCL startup failure. V164 is the completed natural source,
+V165b is the completed bounded qualification,and V166 is the active Full
+then scheduler-only comparison with native sampling preserved.
 The specific blockers and
 qualification order are recorded in
 `docs/research/full_attention_model_fallback_20261024.md`.

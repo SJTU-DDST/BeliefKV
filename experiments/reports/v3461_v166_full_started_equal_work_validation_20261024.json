@@ -1,0 +1,181 @@
+{
+  "observed_at": "2026-10-24T13:55:37.193198+08:00",
+  "status": "running_full",
+  "comparison_registration": "/home/longhao/experiment/ops/v166_36project_coding_controls_20261024.registration.json",
+  "comparison_registration_sha256": "2599faaee6920281341a4c8c374b784eb81dc5f92c14436754158677e49226f4",
+  "comparison_commit": "bd24492cd5b71820d774f6981f55756360f014ee",
+  "source_commit": "814bac1b80c4d71fd7b9660064b6926a0b91fd80",
+  "actual_supervisor": {
+    "pid": 1541117,
+    "state": "S",
+    "ppid": 1,
+    "start_ticks": "699123379",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-causal-bd24492cd5b7/scripts/run_causal_comparison.py",
+      "--watch",
+      "/home/longhao/experiment/ops/v166_36project_coding_controls_20261024.registration.json"
+    ]
+  },
+  "actual_driver": {
+    "pid": 1543292,
+    "state": "S",
+    "ppid": 1541117,
+    "start_ticks": "699140415",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-causal-bd24492cd5b7/scripts/run_causal_gpu_replay.py",
+      "--source-arm",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture",
+      "--output-dir",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_coding_controls_20261024_v166/full/replay",
+      "--base-url",
+      "http://127.0.0.1:18572",
+      "--event-socket",
+      "/tmp/bkv-causal-18572.sock"
+    ]
+  },
+  "actual_gpu_scheduler": {
+    "pid": 1541822,
+    "state": "R",
+    "ppid": 1541455,
+    "start_ticks": "699125386",
+    "argv": [
+      "sglang::scheduler"
+    ]
+  },
+  "actual_gpu_processes": [
+    "1541455, /home/longhao/miniconda3/envs/beliefkv-next/bin/python, 612 MiB",
+    "1541822, sglang::scheduler, 136706 MiB"
+  ],
+  "all_frozen_comparison_sources_verified": true,
+  "source_selection": {
+    "profile": "nested_oneshot",
+    "accepted": true,
+    "reasons": [],
+    "workflow_count": 36,
+    "joins": 62,
+    "nested_joins": 1,
+    "root_rounds": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      2,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      2,
+      1,
+      3,
+      1,
+      2,
+      1,
+      4,
+      5,
+      3,
+      1,
+      1,
+      1,
+      1,
+      3,
+      4,
+      1,
+      1,
+      1,
+      1,
+      1,
+      5,
+      1,
+      3
+    ],
+    "scope": "Old nested one-shot prompt with native model-directed delegation. No reuse quota, JOIN count, normal-tail filter or measured policy speedup selects this source."
+  },
+  "source_work": {
+    "workflows": 36,
+    "requests": 5604,
+    "prompt_tokens": 344769060,
+    "output_tokens": 1505096
+  },
+  "quality_exclusions": [],
+  "native_baseline": {
+    "metric_boundary": "workflow_start_to_workflow_end",
+    "mean_jct_ms": 1675445.12841879,
+    "duration_ms": 2682619.733693123,
+    "workflow_event_makespan_ms": 2682619.733693123,
+    "whole_run_output_tokens_per_second": 561.054547201126,
+    "source_harness_mean_jct_ms": 1677160.613076632,
+    "source_harness_duration_ms": 2694995.3439403325
+  },
+  "actual_capacity": {
+    "device_full_bytes": 36822405120,
+    "device_full_tokens": 1797968,
+    "device_mamba_bytes": 33096007680,
+    "device_mamba_slots": 513,
+    "device_total_bytes": 69918412800,
+    "host_full_bytes": 160000020480,
+    "host_full_tokens": 7812501,
+    "host_mamba_bytes": 40050032640,
+    "host_mamba_slots": 622,
+    "host_total_bytes": 200050053120,
+    "pool_layout": "static_separate_full_mamba"
+  },
+  "actual_policy": {
+    "internal_comparison_mode": "full",
+    "custom_kv_management": true,
+    "prepare_host": true,
+    "background_prepare": true,
+    "tool_prefetch": true,
+    "tool_prefetch_priority_ms": 1500.0,
+    "prefill_scheduling_policy": "workflow",
+    "resident_first": true,
+    "join_parent_priority": true,
+    "final_stage_priority": true,
+    "join_last_child_priority": false,
+    "execution_handoff": false,
+    "execution_frontier_restore": false,
+    "tool_continuity": false,
+    "join_prefetch_trigger": "observed_eos",
+    "prefetch_residency_protection": true,
+    "physical_disabled": false
+  },
+  "bounded_gpu_smoke": {
+    "requests": 24,
+    "native_stop_requests": 24,
+    "sampling_mode": "position",
+    "gpu_process_verified": true,
+    "native_position_sampling_verified": true
+  },
+  "native_sampling_calibration": {
+    "profile": "qwen35_coding",
+    "native_sampler_preserved": true,
+    "forcing_boundary": "after_native_sampling",
+    "increment_mean_wall_ms_by_batch": {
+      "1": -0.0002242642045454657,
+      "8": 0.007182977272727209,
+      "24": 0.005981789772727231
+    }
+  },
+  "observed_completed_replay_requests": 311,
+  "observed_completed_replay_outputs": 34507,
+  "all_observed_receipts_verify_exact_work_and_original_sampler": true,
+  "receipt_prefix": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_coding_controls_20261024_v166/full/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 880119,
+      "complete_prefix_sha256": "8ace80c5fdd94337a3ca13223be3d5553d013c5240a261ffd3f8db869e6ac598",
+      "first_read_limit_bytes": 880119
+    }
+  },
+  "remaining_order": [
+    "full",
+    "scheduler_only"
+  ],
+  "second_complete_native_replay_scheduled": false,
+  "performance_accepted": false,
+  "scope": "Verified completed natural source, bounded sampling/stop checks and live controlled Full startup with partial receipt evidence. The complete Full result and scheduler-only control are still pending; no speedup or independent KV-management gain is claimed."
+}
