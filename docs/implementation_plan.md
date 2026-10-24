@@ -2,7 +2,7 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
-The next CPU-qualified candidate reduces per-command attribute lookup in native
+The latest CPU-qualified candidate,now under V151 validation,reduces attribute lookup in native
 `prefetch_gpu_session_node`; it does not cache path validity across a burst.
 Each node still checks current session generation,ownership,live ancestry,
 pending DMA,cycles and parent residence after every preceding enqueue.
@@ -77,12 +77,27 @@ high-water is118.074/160.000GB and Host Mamba40.050/40.050GB. Migration
 is substantial,so increasing roots is not the next response. Registration:
 `/home/longhao/experiment/ops/v150_oneshot_batch24_prefetch_capacity_retry_20261024.registration.json`.
 
-The next check will run only Full on the latest CPU-qualified traversal
-candidate above,with the same24 roots,batch24,seed21,trajectory and pools.
-Reuse the existing natural native and scheduler controls. Preserve V150's
-negative point and do not claim the small traversal reduction fixes the
-observed decode regression. Its repeat result and latest trace determine
-the next policy change; no new native replay or pressure increase is needed.
+V151 is now running only Full on main `e422434fa13c` and the latest
+CPU-qualified traversal engine above,with the same24 roots,batch24,seed21,
+trajectory and pools. V3394 verifies actual watcher/server/replay driver,
+GPU scheduler1085467,frozen sources,effective policy and capacity. Both
+known targets execute4727/4153 actual prefill tokens followed by decode,
+preserving effective checkpoint reuse. Registration:
+`/home/longhao/experiment/ops/v151_oneshot_batch24_prefetch_local_validation_20261024.registration.json`.
+The complete result remains pending. Existing natural native and scheduler
+controls are reused. Preserve V150's negative point and do not claim the
+small traversal reduction fixes the observed decode regression. Its repeat
+result and latest trace determine the next policy change; no new native
+replay or pressure increase is needed.
+
+V3391/V3392 retain113/131 sampled short single-request prefills,including
+one missing-service observation per arm. V3393's broad geometry match
+retains only27/32 samples; tighter64-token bins retain3/5,and16-token bins
+have no supported cohort. Post-launch physical own-thread CPU means reverse
+the raw-population difference under the broad match. These sparse,unmatched-
+neighbour samples do not establish an online control regression or prove
+that the synthetic PREPARE reduction improves the whole run. Thread CPU
+also includes native work/busy waiting. Keep them as diagnostic evidence.
 
 The previous CPU candidate changes only private PREPARE prefix summaries in
 `sglang_v0520_physical.py`: use immutable named tuples instead of frozen
