@@ -154,3 +154,42 @@ audits. V3568 passes10 focused auditor cases covering different cache outcomes
 on identical work,generated-history separation,missing evidence,session
 bindings and population/identity failures. It neither schedules GPU work nor
 automatically changes concurrency.
+
+## New-model EOS window
+
+V3571 observes all35 native JOIN parent continuations. V3572 pairs their child
+terminal completions with parent submits and actual prefill forwards using the
+native monotonic clock. All35 completion-to-submit windows have P50=63.382ms
+and P90=90.784ms. One child ends its final request with length rather than a
+normal no-tool stop;exclude that request from the EOS cohort,without removing
+its workflow or work from the experiment. The34 normal EOS cases have
+completion-to-submit P50=62.705ms,P90=92.244ms,and minimum33.098ms.
+EOS-to-JOIN-satisfied P50 is17.126ms. Do not reuse the older170ms estimate
+without identifying the model,run and endpoint.
+
+Two one-request JOIN prefills are covered by the one-in16 restore-wait sample:
+
+| Native parent | EOS to submit | Prefill input | First-layer wait | Later-layer wait |
+| --- | ---: | ---: | ---: | ---: |
+| Mobile utility023,epoch24 | 68.254ms | 516 tokens | 4.060ms | 156.373ms |
+| Mobile utility023,epoch32 | 64.489ms | 600 tokens | 0.016ms | 162.386ms |
+
+These are actual compute-stream waits paired with their native forward
+identities,not inferred DMA volume. They establish residual waits after the
+first FULL layer in native,not the residual after EOS prefetch or an unbiased
+estimate for all35 JOINs. Do not extrapolate the two sampled cases.
+
+The34 normal cases have EOS-to-first-prefill-launch P50=12937.639ms. This
+includes frontend processing and native queueing. Full's JOIN priority changes
+that queue,so the native slack is not a guaranteed Full prefetch budget. Complete
+hiding requires every layer's KV to be ready by its consumption time;first-layer
+readiness alone is insufficient. Actual dispatch/capacity delay consumes the
+available lead. V176 is now running on its frozen qualified source. Measure
+its dispatch lead,verified reuse and sampled residual dependency waits before
+claiming complete JOIN H2D hiding or changing the EOS policy.
+
+The qualified native `beliefkv_prefetch_can_admit` path permits pending
+FULL-only transfers to use native layer fences. It does not require every FULL
+layer's transfer ACK before admitting the parent. Keep admission/capacity delay
+separate from compute-stream dependency waits;moving a wait before forward
+would not establish that the end-to-end restore cost disappeared.
