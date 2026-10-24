@@ -1,0 +1,110 @@
+{
+  "observed_at": "2026-10-24T13:19:13.099155+08:00",
+  "status": "corrected_offline_workload_health_with_live_source",
+  "prior_report": {
+    "path": "experiments/reports/v3447_v164_collecting_workload_bottlenecks_20261024.json",
+    "sha256": "e7b4f44ba8f435fabfcd5097987cd04fe0a2387e1ae5cf4dd864e7f31c1ee934"
+  },
+  "superseded_prior_metrics": [
+    "workflow_health.longest_serial_equal_readonly_call_and_result_run",
+    "workflow_health.longest_run_sample",
+    "workflow_health.repeated_equal_readonly_runs_of_at_least_10",
+    "workflow_health.nested_joins",
+    "workflow_health.roots_with_join",
+    "workflow_health.roots_with_multiple_rounds",
+    "historical_rejected_v152_health_same_auditor"
+  ],
+  "correction": "Callback output hashes include changing feedback and ToolMessage identity, so their inequality cannot clear repeated physical-result loops. JOIN waiter ownership also requires observed join_wait, not a default owner for a missing join_create invocation. Preserve the prior report as a failed diagnostic assumption; its separate prefix-loss, transfer and sampled phase measurements remain tied to their own hashed prefixes.",
+  "corrected_health": {
+    "path": "experiments/reports/v3450_v164_raw_result_health_20261024.json",
+    "sha256": "4d5aadff32f80c2ae8802dbd0753c162127dcb70d3e5070c1027fe8479224d85"
+  },
+  "historical_positive_control": {
+    "path": "experiments/reports/v3451_v152_raw_result_positive_control_20261024.json",
+    "sha256": "d5618251a677bb24ec8ed706919c7f8ff9d3efdfc203e1c3c30ca7f0b06546b3"
+  },
+  "fresh_cpu_tests": {
+    "path": "experiments/reports/v3449_raw_result_loop_auditor_cpu_20261024.xml",
+    "sha256": "234f2065d02e830b196ef2f1d91ae26015b6ce7921501e0cc30debab41f8530d"
+  },
+  "fresh_cpu_cases": 17,
+  "v164_at_corrected_health_cutoff": {
+    "event_counts": {
+      "workflow_start": 36,
+      "invocation_create": 126,
+      "llm_submit": 3230,
+      "llm_result": 3197,
+      "spawn": 90,
+      "join_create": 46,
+      "join_wait": 46,
+      "structured_action": 3721,
+      "tool_start": 4222,
+      "tool_end": 4220,
+      "return": 79,
+      "join_satisfied": 35,
+      "workflow_end": 5
+    },
+    "max_serial_identical_read_input_calls": 2,
+    "max_serial_identical_raw_read_results_proven": 2,
+    "max_reported_identical_result_count": 13,
+    "raw_result_matched_completed_calls": 141,
+    "raw_result_unknown_counts": {}
+  },
+  "v152_positive_control": {
+    "max_serial_identical_read_input_calls": 339,
+    "max_serial_identical_raw_read_results_proven": 300,
+    "max_reported_identical_result_count": 370
+  },
+  "production_qualification_sources_unchanged": true,
+  "production_qualified_case_identities": 5687,
+  "running_or_pending_registration_replaced": false,
+  "registration_preservation_reason": "Only offline analysis and report files changed; the complete production source snapshot still matches the frozen application. V164 and V165 remain on their original qualified serving/sampling code.",
+  "actual_live_processes": {
+    "v164_36project_coding_complete_source_20261024": {
+      "status": "recording_native",
+      "actual_watcher": {
+        "pid": 1403126,
+        "state": "S",
+        "ppid": 1,
+        "start_ticks": "698802250",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/.worktrees/beliefkv-v164-capture-814bac1b80c4/scripts/run_causal_source_capture.py",
+          "--watch",
+          "/home/longhao/experiment/ops/v164_36project_coding_complete_source_20261024.registration.json"
+        ]
+      },
+      "checked_at": "2026-10-24T13:19:08.820666+08:00",
+      "error": null
+    },
+    "v165_36project_coding_position_check_20261024": {
+      "status": "waiting_selected_source",
+      "actual_watcher": {
+        "pid": 1404501,
+        "state": "S",
+        "ppid": 1,
+        "start_ticks": "698804942",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/.worktrees/beliefkv-v165-position-814bac1b80c4/scripts/run_position_replay_calibration.py",
+          "--watch",
+          "/home/longhao/experiment/ops/v165_36project_coding_position_check_20261024.registration.json"
+        ]
+      },
+      "checked_at": "2026-10-24T13:19:05.816613+08:00",
+      "error": null
+    }
+  },
+  "capacity_decision": {
+    "workflow_roots": 36,
+    "max_running_requests": 24,
+    "missing_common_prefix_fraction_at_bottleneck_seal": 0.0011091807169152457,
+    "requests_missing_at_least_4096_tokens": 0,
+    "h2d_bytes_at_bottleneck_seal": 864628469760,
+    "decision": "Keep 36 distinct projects; sustained expensive recomputation has not been established. Preserve the remaining source and queued Full/scheduler-only comparison."
+  },
+  "next_focus": "Measure complete same-work Full versus native and scheduler-only, especially capacity/admission waiting and prefill CPU phases. Do not equate H2D bytes or sampled sub-millisecond layer waits with end-to-end benefit. Apply the documented Full-attention fallback only if the completed controlled experiment remains insufficient.",
+  "normal_tails_retained": true,
+  "model_loop_elimination_for_complete_source_verified": false,
+  "performance_accepted": false
+}

@@ -90,8 +90,37 @@ source before registering V166 Full and scheduler-only. The first observed
 native prompt has98554tokens with effective temperature0.6,top_p0.95,top_k20,
 sampling_seed21 and the unchanged16384-token output budget. V3446 verifies
 frozen sources,live owned GPU process,actual capacities and these parameters.
-No replacement workflow has completed at this cutoff; repeated-call
-elimination and performance remain unverified.
+At V3450's later live cutoff,V164 has5/36 WORKFLOW_ENDs,90 dynamic children
+and46 JOINs,with multi-round roots but no observed nested child yet.
+The longest consecutive equal-input read run is2,and the longest proven
+equal-raw-result run is2. The highest feedback count is13 across repeated
+observations,which does not mean13 consecutive calls. Complete-source
+loop elimination,completion qualification and performance remain unverified.
+
+V3447 seals a live native bottleneck observation with864.628GB total H2D
+(757.099GB Full),49 sampled restoring prefills,and no same-session input
+prefix-missing proxy of4096tokens or larger across2270probes. The missing
+fraction of previously served common input is0.1109%; this is not measured
+kernel recomputation. Keep36 project-disjoint roots rather than reducing
+population from occupancy alone. Sampled dependency-wait P50 is0.116ms,
+but capacity and request-queue waits are outside that measurement.
+Its73 short-prefill samples show selection mean thread CPU8.744ms and
+run-batch mean thread CPU58.734ms; these phases overlap GPU work and are
+not exclusive kernels or removable JCT. Full and scheduler-only remain
+necessary to establish whether KV management adds a benefit.
+
+V3447's callback-hash repetition and inferred JOIN-owner metrics are
+superseded by V3450/V3451/V3452. Volatile ToolMessage identity and execution
+feedback change callback hashes even when raw results repeat. The offline
+V3448 auditor links physical unsuppressed feedback to completed call IDs
+and uses raw-result hashes; missing raw coverage stays unknown. V3449
+passes17 CPU cases,and the historical V152 control recovers feedback
+count370,339 consecutive equal-input calls and300 consecutive raw-result-
+proven calls. These counts differ because feedback can span intervening
+calls and the first result normally has no feedback record. No tool call
+is suppressed and no trajectory is rewritten. All5687 production
+qualification identities and source bindings still match; V164/V165
+retain their existing frozen serving code.
 Keep the same36 different projects,
 simultaneous arrival,running/decode24,seed21,256K context,95% compression
 and matched pools. The changed generation policy requires a fresh trajectory;

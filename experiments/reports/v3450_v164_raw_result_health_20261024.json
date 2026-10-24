@@ -1,0 +1,449 @@
+{
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture",
+  "observed_at": "2026-10-24T05:16:36.131474+00:00",
+  "workflow_files": 36,
+  "event_counts": {
+    "workflow_start": 36,
+    "invocation_create": 126,
+    "llm_submit": 3230,
+    "llm_result": 3197,
+    "spawn": 90,
+    "join_create": 46,
+    "join_wait": 46,
+    "structured_action": 3721,
+    "tool_start": 4222,
+    "tool_end": 4220,
+    "return": 79,
+    "join_satisfied": 35,
+    "workflow_end": 5
+  },
+  "dependency_topology": {
+    "counts": {
+      "dynamic_subagents": 90,
+      "observed_spawn_edges": 90,
+      "spawn_edges_without_target_creation": 0,
+      "join_groups": 46,
+      "satisfied_join_groups": 35,
+      "join_groups_with_one_declared_waiter": 46,
+      "nonempty_producer_sets": 46,
+      "producer_sets_with_multiple_declared_consumers": 0
+    },
+    "dynamic_child_depths": {
+      "1": 90
+    },
+    "join_groups_per_workflow": {
+      "1": 27,
+      "2": 8,
+      "3": 1
+    },
+    "semantics": "Declared invocation/SPAWN/JOIN identities, scoped by workflow. Internal summaries are separate from dynamic subagents. Missing creation, parent or waiter evidence stays unknown. Multiple consumers of a producer set describe dependency topology only: they do not prove identical rendered tokens, equal KV/Mamba values, compatible batch geometry, or an opportunity beyond native exact-prefix sharing. A single JOIN waiter does not exclude repeated tool-result text or shared prefixes elsewhere in the application."
+  },
+  "completed_tool_pairs": 4220,
+  "unfinished_tool_starts": 2,
+  "max_serial_identical_read_input_calls": 2,
+  "max_serial_identical_raw_read_results_proven": 2,
+  "max_reported_identical_result_count": 13,
+  "raw_result_matched_completed_calls": 141,
+  "raw_result_unknown_counts": {},
+  "longest_raw_result_run": [
+    {
+      "workflow": "deepagents:autonomous:locobench__python_web_social_hard_001_bug_investigation_medium_01:97f2b6ed8b74",
+      "invocation": "deepagents-invocation:0aa45cc196af72be",
+      "call_id": "call_daaa2920e5ef4d7484dca16e",
+      "tool": "ls",
+      "input_sha256": "a8f1cb1e70edc95947312404357f858222dc524bb1a27132692bf2540731765c",
+      "status": "success",
+      "start_ms": 6989025421.115229,
+      "end_ms": 6989025422.983191,
+      "raw_result_sha256": "c273aa206ee4e04235d327cce158f13bebacb5cc56e9a5eb76fd5a4c41b547a5",
+      "feedback_signature": "deac58df4e173a3beac617c0c52d1ef79b7f29f77ac4f9267cd6adb287417f55",
+      "reported_identical_result_count": 2
+    },
+    {
+      "workflow": "deepagents:autonomous:locobench__python_web_social_hard_001_bug_investigation_medium_01:97f2b6ed8b74",
+      "invocation": "deepagents-invocation:0aa45cc196af72be",
+      "call_id": "call_c7738153b0564ba9bbbc9e9f",
+      "tool": "ls",
+      "input_sha256": "a8f1cb1e70edc95947312404357f858222dc524bb1a27132692bf2540731765c",
+      "status": "success",
+      "start_ms": 6989032824.13059,
+      "end_ms": 6989032827.863963,
+      "raw_result_sha256": "c273aa206ee4e04235d327cce158f13bebacb5cc56e9a5eb76fd5a4c41b547a5",
+      "feedback_signature": "deac58df4e173a3beac617c0c52d1ef79b7f29f77ac4f9267cd6adb287417f55",
+      "reported_identical_result_count": 3
+    }
+  ],
+  "input_jsonl_prefixes": {
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 545115,
+      "complete_prefix_sha256": "ea36ec825e956df30d67ffb13a2424985a23b527e73ec4fd79053731461fcba4",
+      "first_read_limit_bytes": 545115
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 6015,
+      "complete_prefix_sha256": "05b08842032a54366a05c20aa05907b91e489866beb25a03d66577601b5b2884",
+      "first_read_limit_bytes": 6015
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_api_microservice_medium_008_multi_session_development_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 776609,
+      "complete_prefix_sha256": "4a811786ce7e20f63f305ef9b6a12b163d552346706d4c7ccf71a194d9826f05",
+      "first_read_limit_bytes": 776609
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_api_microservice_medium_008_multi_session_development_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 15223,
+      "complete_prefix_sha256": "797a3135ea89bf90c9a9b511d4aa85ba0fbf4bb075b2189c0c8e199e35f7a55a",
+      "first_read_limit_bytes": 15223
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_api_microservice_medium_044_feature_implementation_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 667349,
+      "complete_prefix_sha256": "92c02bdf7096c67680a39a651e92d4ec7529f15d79f865d36d068ad31940e7c3",
+      "first_read_limit_bytes": 667349
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_api_microservice_medium_044_feature_implementation_medium_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 13629,
+      "complete_prefix_sha256": "5513b3ecab6766f173fccc96c28790e1948b1fadd788bb4bfbbba251223b5b59",
+      "first_read_limit_bytes": 13629
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 822958,
+      "complete_prefix_sha256": "e9096f35cd6f8a01e2aaef1600d5263e339a05e139b50e6200e06002d9a7202a",
+      "first_read_limit_bytes": 822958
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 30269,
+      "complete_prefix_sha256": "7e721a7e83bf0ea1edf522376e888c8fdf424899468f5cd13c6df073c3182593",
+      "first_read_limit_bytes": 30269
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_data_analytics_easy_082_integration_testing_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 371306,
+      "complete_prefix_sha256": "303b93b910b32916253eb8376530b5e709543bcaf47fec64058d9b40e3cbff8a",
+      "first_read_limit_bytes": 371306
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_data_analytics_easy_082_integration_testing_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 14489,
+      "complete_prefix_sha256": "bbf2cb22fad24917cf262adb55f82ecef1443084c3b3b19bab86daf9fca6cc5b",
+      "first_read_limit_bytes": 14489
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_data_lake_medium_050_integration_testing_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 546247,
+      "complete_prefix_sha256": "2cb24f4375160ea88f8b750ba03aa100852c6a879056b5547423765ca1ac0cbe",
+      "first_read_limit_bytes": 546247
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_data_lake_medium_050_integration_testing_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 11141,
+      "complete_prefix_sha256": "4c801bda1d6da96dfbcd777b6c8bf57640b35b663639c25fe843c5535ac3ec42",
+      "first_read_limit_bytes": 11141
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_data_warehouse_hard_048_multi_session_development_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 443578,
+      "complete_prefix_sha256": "5fa5bb57ef23491812e925e1c71c6c3e8e24d6f6c1929047b85098a5eef399d4",
+      "first_read_limit_bytes": 443578
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_data_warehouse_hard_048_multi_session_development_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 9956,
+      "complete_prefix_sha256": "82d5378d04299c436fd5d81b19c2ad1a9aece971598dfa1bda0b2384c427a924",
+      "first_read_limit_bytes": 9956
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_data_warehouse_medium_012_cross_file_refactoring_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 577970,
+      "complete_prefix_sha256": "929e3aeade2e56e481704f1aba8a7d03152e68dff00ae96b120b4aab06c5478f",
+      "first_read_limit_bytes": 577970
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_data_warehouse_medium_012_cross_file_refactoring_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 20779,
+      "complete_prefix_sha256": "45d3776dd20d7d96817ccb78a2439d1fd7a25661a6c71169779acc9ee394c0b2",
+      "first_read_limit_bytes": 20779
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_desktop_media_medium_020_multi_session_development_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 452961,
+      "complete_prefix_sha256": "3aeeccf603acc2ec10d8380b37476cc7967af4283df8d29238721a338ecc8864",
+      "first_read_limit_bytes": 452961
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_desktop_media_medium_020_multi_session_development_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 9263,
+      "complete_prefix_sha256": "76ba106216da6b57f6871aa4c93e9750bbfcd4cfe0306fa99e727d8c1b7df1d8",
+      "first_read_limit_bytes": 9263
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_desktop_media_medium_092_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 1002381,
+      "complete_prefix_sha256": "68f17ba92183cc5cec20558fac90861770c4c5aa754040341538d8d89b4f9b3b",
+      "first_read_limit_bytes": 1002381
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_desktop_media_medium_092_cross_file_refactoring_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 28358,
+      "complete_prefix_sha256": "4d036e33e4244c221013ec7d24ec5b73768c6f2715a885621479e5b5df49c973",
+      "first_read_limit_bytes": 28358
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_fintech_trading_medium_066_bug_investigation_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 672329,
+      "complete_prefix_sha256": "e25cc1028b0c652ecca1114890337ebe7e97f9fbd652b87608760c39e74596a9",
+      "first_read_limit_bytes": 672329
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_fintech_trading_medium_066_bug_investigation_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 13934,
+      "complete_prefix_sha256": "4ccf63195557a0e7c5c2d67ddea43058a78d5aa6635c0058a6f29e1d9e412b9b",
+      "first_read_limit_bytes": 13934
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_game_simulation_easy_069_bug_investigation_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 807049,
+      "complete_prefix_sha256": "64d692c3e56069fd2cce97ae9d39559abfefbd55d4278a0cea5deaf433905d16",
+      "first_read_limit_bytes": 807049
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_game_simulation_easy_069_bug_investigation_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 29836,
+      "complete_prefix_sha256": "e33da739fae1c44392acc23d84a7cc32909b438816296dd3426e6c483eed52f2",
+      "first_read_limit_bytes": 29836
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_game_simulation_medium_033_feature_implementation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 1240889,
+      "complete_prefix_sha256": "67fe9754242036419de4ef57a108588de204d904b812f7d20bbdc05680be807f",
+      "first_read_limit_bytes": 1240889
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_game_simulation_medium_033_feature_implementation_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 23858,
+      "complete_prefix_sha256": "6102e57d5ea1f8f4f9237ca6036dfb2a1d65aea1f1b228530cd3102d25f9cace",
+      "first_read_limit_bytes": 23858
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_ml_inference_hard_088_feature_implementation_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 588006,
+      "complete_prefix_sha256": "75a7a59110e051a904a630a36c06ec078b96d731122c9f45dd69991d410a6b25",
+      "first_read_limit_bytes": 588006
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_ml_inference_hard_088_feature_implementation_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 8091,
+      "complete_prefix_sha256": "1fbf229f14214cfe443f649918fde1ea609517c63db6ecfe99b1a08f534ba7f7",
+      "first_read_limit_bytes": 8091
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_ml_nlp_easy_089_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 516573,
+      "complete_prefix_sha256": "c8a1cd7a8cfdab7269435aea487702e811d374253323cff35b7382f784af24c2",
+      "first_read_limit_bytes": 516573
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_ml_nlp_easy_089_cross_file_refactoring_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 7520,
+      "complete_prefix_sha256": "9770485c4f64440b49daaaac88555ef93af86c4d7ba1c2d7a4f3e0776b43ec60",
+      "first_read_limit_bytes": 7520
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_ml_training_medium_087_integration_testing_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 905481,
+      "complete_prefix_sha256": "349a721ec3fdf3742495c23a0ac62522494d3ea8b4529eed61e298fee2f7cf10",
+      "first_read_limit_bytes": 905481
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_ml_training_medium_087_integration_testing_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 29963,
+      "complete_prefix_sha256": "4de7cafedd6d79aa2c4241836eb47f80dd40f4c6318e7b29d0a261a931aa801f",
+      "first_read_limit_bytes": 29963
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_mobile_game_hard_024_bug_investigation_easy_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 964642,
+      "complete_prefix_sha256": "afcb85cc3095453e0c4269ab6b4daa966c4f1d77369d0fa97f3de751296c6b29",
+      "first_read_limit_bytes": 964642
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_mobile_game_hard_024_bug_investigation_easy_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 111590,
+      "complete_prefix_sha256": "c42dab8775412f746cb29b81fac54f72f0e878edb8440d19f0d15005d6b20efd",
+      "first_read_limit_bytes": 111590
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_mobile_game_hard_060_multi_session_development_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 427100,
+      "complete_prefix_sha256": "cc8d2397cb0a5aac0237bf3713e15185a7afbb159813b3a23ee0b3f4d4d798d9",
+      "first_read_limit_bytes": 427100
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_mobile_game_hard_060_multi_session_development_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 8889,
+      "complete_prefix_sha256": "7aab08206ff53d6e2c27f31aa2f2ff4b19aae136361df6854a418bb7530ff803",
+      "first_read_limit_bytes": 8889
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_mobile_game_medium_096_integration_testing_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 468228,
+      "complete_prefix_sha256": "c677e47a299afdfd01614a5ee59c2b79de8ccaf9a0607aa297c39fdd8c0fbfd0",
+      "first_read_limit_bytes": 468228
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_mobile_game_medium_096_integration_testing_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 10468,
+      "complete_prefix_sha256": "fe877189af21145de7f12724a650fcfbefe4283323ee879794973b53bbae648d",
+      "first_read_limit_bytes": 10468
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_mobile_social_easy_058_integration_testing_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 582110,
+      "complete_prefix_sha256": "d7c894857260cb8f69d40fed5ab16596372cffc0fd52b83235f88073c57e6b7b",
+      "first_read_limit_bytes": 582110
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_mobile_social_easy_058_integration_testing_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 14730,
+      "complete_prefix_sha256": "1a3ad0d9cccdf27c94b4e2e7ff908cd18e18679ad6564f9adbef54adc2e1c498",
+      "first_read_limit_bytes": 14730
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_mobile_social_medium_022_bug_investigation_easy_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 821669,
+      "complete_prefix_sha256": "ee9e267b5f3e60463a27ca12da0d811ea70dbdca0f38fef6868c09495204a1f1",
+      "first_read_limit_bytes": 821669
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_mobile_social_medium_022_bug_investigation_easy_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 56983,
+      "complete_prefix_sha256": "dd11cfaf42b96a6555ea158f1c8509de639adfd879834b4b614fdb0a7629f9ef",
+      "first_read_limit_bytes": 56983
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_mobile_utility_medium_023_feature_implementation_easy_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 874732,
+      "complete_prefix_sha256": "d89d8c24407ce8de4b0a13e0edfd048e49ced35b309824d7d9af873d68df6152",
+      "first_read_limit_bytes": 874732
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_mobile_utility_medium_023_feature_implementation_easy_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 16276,
+      "complete_prefix_sha256": "f479cadf5197b329b7c8a4be3731e8967043662871f7d653411c542d11da1f87",
+      "first_read_limit_bytes": 16276
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_system_automation_hard_062_integration_testing_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 603736,
+      "complete_prefix_sha256": "3d66cc63dd7e2bf986942cf1dc601d39240b4ee3063e95a98c05a734a0aaa9ea",
+      "first_read_limit_bytes": 603736
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_system_automation_hard_062_integration_testing_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 10599,
+      "complete_prefix_sha256": "924487b8ee855c46afb5832d1ef5d5eb1d160cb477bb1493a8d4b0d8eb287c33",
+      "first_read_limit_bytes": 10599
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_system_automation_medium_098_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 356371,
+      "complete_prefix_sha256": "d124957dcc4bd2d25b5a6b2414de7ae9ba97cf8c85fbaf8bf83122330395f31c",
+      "first_read_limit_bytes": 356371
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_system_automation_medium_098_cross_file_refactoring_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 12093,
+      "complete_prefix_sha256": "499a1fd7a9a9db6c5306303d8b046b94890b32704bd943d13b281a6d5801f42a",
+      "first_read_limit_bytes": 12093
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_system_monitoring_medium_025_multi_session_development_easy_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 371659,
+      "complete_prefix_sha256": "518aa01fa867b82d45b871fc3446e97823e167b31c580a3d9009e9ddb10c4764",
+      "first_read_limit_bytes": 371659
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_system_monitoring_medium_025_multi_session_development_easy_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 15397,
+      "complete_prefix_sha256": "a5be861d785381c5220d65406b69ece86b9f4b7dd12921f7e18f573bed01878a",
+      "first_read_limit_bytes": 15397
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_system_monitoring_medium_061_feature_implementation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 502415,
+      "complete_prefix_sha256": "38195312134bc2ee584d04fc729371b0f32abeb61230ea02625d6e9fcd7300a4",
+      "first_read_limit_bytes": 502415
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_system_monitoring_medium_061_feature_implementation_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 12399,
+      "complete_prefix_sha256": "845b42ec2ef906f66b6cfe6a0f565d796f87a01ef648588019e54107ff887166",
+      "first_read_limit_bytes": 12399
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_system_networking_hard_027_cross_file_refactoring_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 522392,
+      "complete_prefix_sha256": "486eb5643c67a46d82c53f77971e7a167aaa0befb2f2a82abea8d0828565ccf1",
+      "first_read_limit_bytes": 522392
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_system_networking_hard_027_cross_file_refactoring_medium_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 12495,
+      "complete_prefix_sha256": "a7217548d2e860d049690134acd785653e437e961117058d8c23cbd02b8c16ec",
+      "first_read_limit_bytes": 12495
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_system_networking_medium_063_bug_investigation_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 701453,
+      "complete_prefix_sha256": "c8d6d6170223790fa2f034eea695d22d6c84cfb70a6ec0910fb6a8678d610fbc",
+      "first_read_limit_bytes": 701453
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_system_networking_medium_063_bug_investigation_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 39449,
+      "complete_prefix_sha256": "d5d5fb21b1650bb2ee90130f2fdb789674e53598e359c7ae8672ac39c0d541cf",
+      "first_read_limit_bytes": 39449
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_system_security_medium_028_multi_session_development_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 706835,
+      "complete_prefix_sha256": "3f85639826003ffd814c09282139524cec7ba9a39a20a814eda554a4991f22c2",
+      "first_read_limit_bytes": 706835
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_system_security_medium_028_multi_session_development_medium_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 25126,
+      "complete_prefix_sha256": "0c91f3e08c275e9fe9d564090f34b98c3bd6d9a26dc0342ff6ace91096d11e09",
+      "first_read_limit_bytes": 25126
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_system_security_medium_064_multi_session_development_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 972052,
+      "complete_prefix_sha256": "e342ff0c5c240e2ca4d57c23567f10ddc0ed639c60b60018e0a29f3dbb8383cb",
+      "first_read_limit_bytes": 972052
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_system_security_medium_064_multi_session_development_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 15783,
+      "complete_prefix_sha256": "02d643d9d601cb10fe59a27521d610d4537fe5f809cd5f52a1f8f7c37e37bf89",
+      "first_read_limit_bytes": 15783
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 592914,
+      "complete_prefix_sha256": "32a61db757d77e6b11594c3266be8b86c1fc540ab34ea0c2ae09b1c36b7c7492",
+      "first_read_limit_bytes": 592914
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 22028,
+      "complete_prefix_sha256": "7c743258c6d2d50c493c0b82c12366b7742606b4d3e6bd47f0fb924c98f7f50f",
+      "first_read_limit_bytes": 22028
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_web_blog_hard_076_integration_testing_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 942975,
+      "complete_prefix_sha256": "40bed94c0c502d12bb9a41c924298487f40f117163d5c3d05e89929835db9d63",
+      "first_read_limit_bytes": 942975
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_web_blog_hard_076_integration_testing_medium_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 40138,
+      "complete_prefix_sha256": "f1dfe17579d1e285db3ce1838b5ef6f6d2a2f4b6038841a5eebbd115353d2593",
+      "first_read_limit_bytes": 40138
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 675444,
+      "complete_prefix_sha256": "2289bbb45bc1372406058d60b02ac24703155855e98e0d916d520b5c16857243",
+      "first_read_limit_bytes": 675444
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 14346,
+      "complete_prefix_sha256": "5b587912ed0cf1a675bf6d605ba07797ea509e7a48bc2d491900cbf4fd5cf1ee",
+      "first_read_limit_bytes": 14346
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_web_dashboard_medium_039_bug_investigation_easy_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 899216,
+      "complete_prefix_sha256": "b9c66e0760667bb4eac16a6dbf364583de31c0cc94d3520dcf1c9cfc40aa971c",
+      "first_read_limit_bytes": 899216
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_web_dashboard_medium_039_bug_investigation_easy_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 47302,
+      "complete_prefix_sha256": "92332f9eb5dc4eca33c39c3f571f310cab01ec7961331873e3c83267305225d1",
+      "first_read_limit_bytes": 47302
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_web_portfolio_medium_041_bug_investigation_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 1485938,
+      "complete_prefix_sha256": "86d62c47535f6d50c4f2e628aa7eeafe3baaf59001b1a90c37990bad1edec793",
+      "first_read_limit_bytes": 1485938
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_web_portfolio_medium_041_bug_investigation_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 52763,
+      "complete_prefix_sha256": "f87dfbc1f932389d45e929fed1e3a9b41b8da9f19ef18768fffc1460d3679ff1",
+      "first_read_limit_bytes": 52763
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_web_social_hard_001_bug_investigation_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 570315,
+      "complete_prefix_sha256": "d10a7f5647de0e5f247ffb0e9326013c762218dcb8b6fb43a5b475544972b54c",
+      "first_read_limit_bytes": 570315
+    },
+    "experiments/raw/qwen35_locobench_oneshot_36project_coding_complete_source_20261024_v164/native_capture/client_36/workflows/locobench__python_web_social_hard_001_bug_investigation_medium_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 12363,
+      "complete_prefix_sha256": "38c1bd00e2850a6d81dbf01f8517a42affe4108b26c9717e0a7de02af30d110d",
+      "first_read_limit_bytes": 12363
+    }
+  },
+  "auditor_sha256": "0674474558cb2c9e1f2015f27bf3664a2de6e375ddd3a456a54257dbf62cc3a0",
+  "performance_accepted": false,
+  "scope": [
+    "Offline analysis only; no tool suppression, agent completion, launch rejection or trace change.",
+    "Callback output hashes include ToolMessage IDs and changing feedback and are not raw-result hashes.",
+    "Raw result hashes are linked from physical, unsuppressed feedback records by unambiguous completed tool-call identity within the workflow.",
+    "The first occurrence normally lacks a raw-result feedback record; missing raw coverage stays unknown and is not proof of different results.",
+    "Consecutive runs require the same invocation and input, unchanged raw hash/status when supplied, and completion before the next call starts.",
+    "Feedback counts can include intervening calls and are reported separately from consecutive runs. Neither proves complete external-state equivalence.",
+    "Each live JSONL prefix is independently sealed. No complete-source, task-quality or performance qualification is inferred."
+  ]
+}
