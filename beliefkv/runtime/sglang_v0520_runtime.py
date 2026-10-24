@@ -11888,7 +11888,8 @@ class NativeAdmissionRuntime:
 
     def on_prefill_candidate_result(
         self, req: object, *, admitted: bool, result: str
-    ) -> None:
+    ) -> bool:
+        """Report whether rejected admission released optional device locks."""
         if getattr(req, "beliefkv_metadata", None) is not None:
             self.counts["native_admitted" if admitted else f"native_{result}"] += 1
             if admitted and self._tool_continuity is not None:
@@ -12076,6 +12077,12 @@ class NativeAdmissionRuntime:
                         self._release_prefetch_service_lease(
                             lease.command_id, "allocation_pressure", keep_tracking=True,
                         )
+                    remaining = self._prefetch_service_leases.get(victim.command_id)
+                    return bool(
+                        not self.physical_disabled and remaining is not None
+                        and remaining.lock_params is None
+                    )
+        return False
 
     def on_batch_selected(self, batch: object) -> None:
         pass

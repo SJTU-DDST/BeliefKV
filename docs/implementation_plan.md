@@ -2,7 +2,32 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
-The latest CPU candidate changes only private PREPARE prefix summaries in
+The new CPU correctness candidate repairs a prefill wakeup gap after
+optional restore protection is revoked. On a NO_TOKEN rejection,the
+runtime already released its own device lock,but native selection could
+then latch `batch_is_full=True` and skip the next admission pass. V3364
+reproduces two failures with the actual native admission-loop prefix.
+The runtime now returns True only after successful optional unlock,and
+the native hook allows one next-step admission pass with a fresh adder.
+No further unlock means no further retry. Native request-slot limits,
+allocation checks,Host receipts and independent native locks remain.
+
+V3365 passes339 app cases; V3366 passes33 native scheduler cases plus19
+subtests. The five new integration cases cover successful retry,failed
+unlock,no optional lock,exhausted request rows and bounded unsuccessful
+retry; they stop before GPU batch construction. V3367/V3368 retain5582
+app identities plus2 inherited subtests across1527 source paths.
+V3369/V3370 retain662 engine/integration identities plus48 inherited
+subtests. Five integration cases occur in both qualifications and are not
+independent extra executions; the old suites were not fully rerun.
+V3371 records source and coverage evidence. Candidate engine:
+`/home/longhao/experiment/.worktrees/sglang-prefetch-capacity-retry-20261024`,
+tree `744a291c464f2d1042d02833884ec6fe80c4cd63`. Only its scheduler hook
+differs from the prior qualified engine. The live V149 frozen sources
+are unchanged. This fixes a CPU-reproduced retry gap; its actual online
+frequency and end-to-end benefit remain unmeasured.
+
+The previous CPU candidate changes only private PREPARE prefix summaries in
 `sglang_v0520_physical.py`: use immutable named tuples instead of frozen
 dataclass construction,and avoid building an unused depth table during
 complete-backup checks. V3353 alternates complete dispatch calls for24

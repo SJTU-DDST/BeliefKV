@@ -1291,7 +1291,7 @@ index 7811e44..5cf4df9 100755
          self.mamba_track_mask_next_cpu = None
          self.mamba_decode_batch_idx_cpu = None
 diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
-index 743c8af..3be5eea 100644
+index 743c8af..f13e5b1 100644
 --- a/python/sglang/srt/managers/scheduler.py
 +++ b/python/sglang/srt/managers/scheduler.py
 @@ -725,9 +725,152 @@ class Scheduler(
@@ -1891,18 +1891,19 @@ index 743c8af..3be5eea 100644
              if self.enable_hicache_storage:
                  prefetch_done = self.tree_cache.check_prefetch_progress(
                      req.cache_request_handle
-@@ -3932,6 +4351,10 @@ class Scheduler(
+@@ -3932,6 +4351,11 @@ class Scheduler(
                  has_chunked_req=(self.chunked_req is not None),
                  truncation_align_size=self.truncation_align_size,
              )
++            capacity_changed = False
 +            if self.beliefkv_runtime is not None:
-+                self.beliefkv_runtime.on_prefill_candidate_result(
++                capacity_changed = self.beliefkv_runtime.on_prefill_candidate_result(
 +                    req, admitted=req in adder.can_run_list, result=res.name
-+                )
++                ) is True
  
              if self.enable_lora:
                  running_loras.add(req.lora_id)
-@@ -3963,6 +4386,18 @@ class Scheduler(
+@@ -3963,6 +4387,22 @@ class Scheduler(
                              req.kv.mamba_pool_idx.unsqueeze(-1)
                          )
                          req.kv.mamba_pool_idx = None
@@ -1918,10 +1919,14 @@ index 743c8af..3be5eea 100644
 +                    capacity_bypassed += 1
 +                    running_batch.batch_is_full = False
 +                    continue
++                if res == AddReqResult.NO_TOKEN and not added and capacity_changed:
++                    # Optional locks became evictable. Use a fresh native adder
++                    # at the next scheduling step to recheck available capacity.
++                    running_batch.batch_is_full = False
                  break
  
          if mamba_allocator is not None:
-@@ -4254,6 +4689,9 @@ class Scheduler(
+@@ -4254,6 +4694,9 @@ class Scheduler(
          batch.launch_ts = time.monotonic()
          batch.after_idle_gap = self._sched_idled
          self._sched_idled = False
@@ -1931,7 +1936,7 @@ index 743c8af..3be5eea 100644
  
          # Accumulate the prefill-token counter used by the HRRN scheduling policy. Decode / prebuilt batches contribute 0.
          if batch.extend_num_tokens:
-@@ -4622,6 +5060,10 @@ class Scheduler(
+@@ -4622,6 +5065,10 @@ class Scheduler(
          elif batch.forward_mode.is_idle():
              self.batch_result_processor.process_batch_result_idle(batch, result)
  
@@ -1942,7 +1947,7 @@ index 743c8af..3be5eea 100644
          self._record_step_counters(batch, result)
  
          self.metrics_reporter.log_batch_result_stats(batch, result)
-@@ -4634,6 +5076,24 @@ class Scheduler(
+@@ -4634,6 +5081,24 @@ class Scheduler(
          self.maybe_send_health_check_signal()
          self.metrics_reporter.update_device_timer()
  
@@ -1967,7 +1972,7 @@ index 743c8af..3be5eea 100644
      def _record_step_counters(
          self, batch: ScheduleBatch, result: GenerationBatchResult
      ) -> None:
-@@ -5215,6 +5675,9 @@ class Scheduler(
+@@ -5215,6 +5680,9 @@ class Scheduler(
          }
  
      def abort_request(self, recv_req: AbortReq):
@@ -1977,7 +1982,7 @@ index 743c8af..3be5eea 100644
          if (chunked_req := self.chunked_req) is not None:
              if recv_req.abort_all or chunked_req.rid.startswith(recv_req.rid):
                  self._pending_chunked_abort_req = chunked_req
-@@ -5369,6 +5832,25 @@ class Scheduler(
+@@ -5369,6 +5837,25 @@ class Scheduler(
                  else:
                      req.to_finish = FINISH_ABORT()
  
@@ -2003,7 +2008,7 @@ index 743c8af..3be5eea 100644
      def _pause_engine(self) -> Tuple[List[Req], int]:
          raise NotImplementedError()
  
-@@ -5642,6 +6124,8 @@ class Scheduler(
+@@ -5642,6 +6129,8 @@ class Scheduler(
  
      def maybe_sleep_on_idle(self):
          if self.idle_sleeper is not None:
@@ -2012,7 +2017,7 @@ index 743c8af..3be5eea 100644
              self.idle_sleeper.maybe_sleep()
  
      def handle_freeze_gc(self, recv_req: FreezeGCReq):
-@@ -5652,6 +6136,17 @@ class Scheduler(
+@@ -5652,6 +6141,17 @@ class Scheduler(
  
      def handle_shutdown(self, recv_req: ShutdownReq):
          # Break the event loop; the finally in run_scheduler_process releases resources.
