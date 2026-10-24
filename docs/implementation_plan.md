@@ -178,6 +178,18 @@ These are wait events,not the306 per-node transfer commands. V3463 reconciles
 backup batches have matching ACKs. Candidate cold-unbacked rejections still
 occur,so these totals do not establish complete cold-page coverage or a
 performance gain. Retain the live prefixes and wait for complete arms.
+V3464 audits the actual Qwen3.5 operator environment without GPU work.
+Both source and Full activate FlashInfer GDN prefill,fused Triton decode
+unpack/Conv1D and packed recurrence,with full decode and breakable prefill
+graphs. Short-prefill CPU submission remains material. The merged input
+projection initializer has no Qwen3.5 loader caller,and exact H200_NVL MoE
+tuning filenames are absent even though H200 files exist. At decode M=24
+the available H200 up-config equals the default heuristic,so the warning
+alone does not explain poor decode throughput. Keep V166 frozen; validate
+these candidates with separate bounded operator profiling and real-shape
+benchmarks after timed arms. Any common-engine acceleration must also
+benefit the native baseline. Full findings and measurement limits are in
+`docs/research/qwen35_operator_environment_20261024.md`.
 Keep the same36 different projects,
 simultaneous arrival,running/decode24,seed21,256K context,95% compression
 and matched pools. The changed generation policy requires a fresh trajectory;
