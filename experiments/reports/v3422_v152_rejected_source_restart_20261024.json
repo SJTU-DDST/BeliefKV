@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "status": "source_rejected_and_fresh_capture_started",
+  "performance_accepted": false,
+  "reason": "User requested a fresh experiment because a child repeatedly executed the same grep and eventually required guard intervention.",
+  "rejected_source": {
+    "registration": "/home/longhao/experiment/ops/v152_36project_running24_source_20261024.registration.json",
+    "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v152",
+    "status": "source_captured_selection_rejected",
+    "original_exit_code": 1,
+    "completed_workflows": 36,
+    "native_agent_jct_eligible_workflows": 35,
+    "llm_request_count": 7681,
+    "output_tokens": 1507720,
+    "tool_call_count": 9182,
+    "dynamic_subagent_count": 160,
+    "joins": 92,
+    "nested_joins": 24,
+    "nested_spawns": 42,
+    "maximum_spawn_depth": 2,
+    "all_artifacts_preserved": true,
+    "ordinary_tails_removed": false,
+    "used_as_comparison_source": false
+  },
+  "invalid_workflow": {
+    "instance_id": "locobench__python_mobile_game_hard_024_bug_investigation_easy_01",
+    "invocation_id": "deepagents-invocation:03e44028dd769def",
+    "native_agent_jct_exclusion_reasons": [
+      "guard_intervened_completion"
+    ],
+    "guard_reason": "graph_step_hard_limit_low",
+    "graph_step": 2017,
+    "graph_step_hard_limit": 2048,
+    "graph_step_reserve": 32,
+    "model_calls_at_guard": 403,
+    "completed_tool_calls_at_guard": 403,
+    "consecutive_no_progress_at_guard": 207,
+    "activation_elapsed_seconds_at_guard": 1789.8504488030449,
+    "duplicate_tool_calls_suppressed": 0,
+    "repeated_result_feedback_events_across_workflow": 398,
+    "dominant_repeated_call": {
+      "tool_name": "grep",
+      "path": "/workspace/src",
+      "output_mode": "content",
+      "pattern": "on_receive|on_message|on_open|on_notification|notification.*handler|handler.*notification",
+      "visible_result": "No matches found",
+      "signature": "b4ece67e5cf9dc302b875f1beb5d5a51739455af71b9391d0a9e2df946747c46",
+      "source_result_sha256": "4b4d7ac22cee34f92cd16fbe4193b0eb106e185100ea38f72b0190e1affaf933",
+      "feedback_events_for_signature": 369,
+      "maximum_identical_result_count": 370
+    }
+  },
+  "native_prompt_inspection": {
+    "method": "Reconstruct exact native inputs and outputs with CapturedTokenCorpus and native_request_expectations, then decode with the local Qwen3.5 tokenizer.",
+    "samples": [
+      {
+        "zero_based_invocation_request_index": 0,
+        "request_id": "beliefkv:01a16bc3-fa37-7c21-bdd9-9274be12a955",
+        "prompt_tokens": 5682,
+        "execution_history_feedback_count": 0
+      },
+      {
+        "zero_based_invocation_request_index": 33,
+        "request_id": "beliefkv:01a16bc8-7069-7a30-96c6-f913b865e074",
+        "prompt_tokens": 29422,
+        "execution_history_feedback_count": 1
+      },
+      {
+        "zero_based_invocation_request_index": 100,
+        "request_id": "beliefkv:01a16bd1-0293-7d41-8e5f-af9a836e81b6",
+        "prompt_tokens": 41918,
+        "execution_history_feedback_count": 67
+      },
+      {
+        "zero_based_invocation_request_index": 201,
+        "request_id": "beliefkv:01a16bd7-269a-7452-857f-fc5ba180a923",
+        "prompt_tokens": 60352,
+        "execution_history_feedback_count": 167
+      },
+      {
+        "zero_based_invocation_request_index": 400,
+        "request_id": "beliefkv:01a16bdd-298d-75d1-ac73-e9d75eb5df4b",
+        "prompt_tokens": 94779,
+        "execution_history_feedback_count": 366
+      }
+    ],
+    "finding": "The sampled real model inputs contain the repeated-result feedback. The model still emits the identical grep, including after acknowledging repetition in its output.",
+    "limits": "This establishes an observed model/tool loop, not its unique cause. No tool-feedback-loss or compression defect was demonstrated; no serving or harness fix is claimed."
+  },
+  "preserved_old_queue": {
+    "registration": "/home/longhao/experiment/ops/v153b_36project_disjoint_position_check_20261024.registration.json",
+    "status": "stopped_for_investigation",
+    "error": "ValueError('selected source has a nonzero original exit code')",
+    "old_source_and_queue_processes_alive_at_restart": false
+  },
+  "fresh_experiment": {
+    "capture_registration": "/home/longhao/experiment/ops/v155_36project_running24_source_20261024.registration.json",
+    "calibration_registration": "/home/longhao/experiment/ops/v156_36project_disjoint_position_check_20261024.registration.json",
+    "planned_comparison_registration": "/home/longhao/experiment/ops/v157_36project_batch24_controls_20261024.registration.json",
+    "capture_code_commit": "f585c15158573d3ac0e60fb4aa13adefe1275d06",
+    "engine_tree": "7d77eeccefb31b2465050ddebb1b58ca9d9213a6",
+    "qualified_app_case_identities": 5628,
+    "qualified_engine_case_identities": 663,
+    "workflow_count": 36,
+    "different_original_projects": 36,
+    "arrival": "simultaneous",
+    "max_running_requests": 24,
+    "decode_batch_limit": 24,
+    "context_window_tokens": 262144,
+    "context_compression_trigger_ratio": 0.95,
+    "maximum_completion_tokens": 16384,
+    "prefill_chunk_tokens": 4096,
+    "server_sampling_python_seed": 21,
+    "host_size_gb": 200,
+    "host_split": "80:20",
+    "delegation_profile": "native_in_graph_nested_2to4",
+    "model_directed_delegation_preserved": true,
+    "reuse_and_retention": "off",
+    "comparison_order_after_qualified_source": [
+      "full",
+      "scheduler_only"
+    ],
+    "extra_complete_native_replay": false,
+    "no_guard_intervened_workflow_required": true,
+    "serving_or_harness_behavior_changed_for_restart": false,
+    "evidence_limit": "Registration and GPU startup establish a rerun, not successful completion, reproducibility, task correctness or a performance gain."
+  },
+  "evidence_sha256": {
+    "experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v152/native_capture/client_36/summary.json": "ece9409a12d3067e59b61b74941b9a408d0fa1bcba3cb0eb6d7fe75a8507e7b1",
+    "experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v152/source_selection.json": "3333e3a7faaff538be6249bb9230afdfccbd7a18544dfef87a627ddd3e25f663",
+    "experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v152/native_capture/client_36/workflows/locobench__python_mobile_game_hard_024_bug_investigation_easy_01/sandbox_audit.jsonl": "e5c2e1faccd03dce14073389e4a3d52d7013a479fd3507b594c472b392e00cff",
+    "experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v152/native_capture/server/request_tokens.jsonl": "713fbdd91f5391ef9344f093dfcb616e51cdfc6479d4c3837453536016521f7e"
+  }
+}

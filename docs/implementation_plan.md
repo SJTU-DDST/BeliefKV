@@ -2,6 +2,23 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+V152 is rejected as a comparison source at the user's request. It completed
+36 workflows but one child repeated the same unsuccessful grep370 times and
+required graph-budget finalization at step2017/2048. Only35 workflows are
+native-agent-JCT eligible. Exact native prompt samples contain the repeated-
+result feedback,so no feedback-loss or compression bug is established.
+Preserve all92 JOINs,24 nested JOINs,ordinary tails and the failed qualification.
+V153b stopped automatically on the source's nonzero exit; its processes and
+the old source processes have exited. V3422 records the evidence and restart.
+
+Fresh natural native capture V155 runs from qualified main `f585c1515857`,
+using the same36 different projects,simultaneous arrival,running/decode24,
+seed21,256K context,95% compression and matched pools. No harness or serving
+behavior changed to conceal the loop. V156 waits for this source,then performs
+bounded position/token qualification and schedules V157 Full followed by
+scheduler-only. Reject guarded/incomplete sources and retain normal tails.
+Use the new natural native capture as baseline,without a complete native replay.
+
 The next conditional direction is a real Full-only adaptation for the locally
 available `Qwen/Qwen3-Coder-30B-A3B-Instruct`,if the current project-disjoint
 comparison still lacks useful native/independent-KV gains. V3420/V3421 size
@@ -11,7 +28,7 @@ component. The current Mamba allocation would be released,so this is not a
 about295.640GB for36 projects and92.656GB for the first12 seeded projects.
 Start the new model's capacity validation with12 distinct projects,subject to
 real pool sizing and complete-input checks. No serving code or GPU model has
-changed; V152 and the V153b/V154 queue continue. The specific blockers and
+changed; V155 and the V156/V157 queue are active. The specific blockers and
 qualification order are recorded in
 `docs/research/full_attention_model_fallback_20261024.md`.
 
@@ -19,7 +36,7 @@ All future workflow populations must use different original projects:
 one workflow per project,including subsets selected after a concurrency
 reduction. Source capture,position calibration and comparison registration
 must reject shared-project populations before GPU execution. Existing
-shared-project traces remain historical evidence. The running V152 already
+shared-project traces remain historical evidence. The running V155 already
 contains36 different projects and continues with its frozen sources.
 If36 roots substantially increase repeated computation,reduce simultaneous
 workflows to32,and further if needed,while retaining project diversity.
@@ -32,7 +49,8 @@ V3414 passes339 focused launch-guard cases. It replaces the old test that
 allowed24 tasks from16 projects with project-disjoint one-shot acceptance
 and rejection of both one-shot/reusable shared-project sources. The change
 adds no per-request control work. The old waiting V153 registration is
-preserved and replaced by V153b after CPU qualification; V152 is untouched.
+preserved and replaced by V153b after CPU qualification. V152 and V153b are
+now terminal; their rejection evidence remains unchanged.
 V3413's collecting snapshot has1955 same-session probes,56177176 common
 previous-input tokens and72125 missing tokens (0.1284%); P99 is63 tokens
 and no request is missing4096 or more. This is a prefix-loss proxy,not

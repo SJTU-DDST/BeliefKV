@@ -1,8 +1,10 @@
 # Conditional Full-Attention Model Migration
 
 Status: researched and CPU-sized; Full-only serving adaptation and GPU
-qualification have not started. Preserve the running V152 source and the
-V153b/V154 queue. This document changes no serving behavior.
+qualification have not started. V152 is preserved as a rejected source after
+a child entered a repeated-grep loop and required guard intervention. Fresh
+native capture V155 and the V156/V157 qualification/control queue replace it.
+This document changes no serving behavior.
 
 ## Decision
 
