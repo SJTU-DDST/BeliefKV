@@ -154,6 +154,20 @@ engine,then wait for source/token/dependency/stopping qualification before
 Full replay. Do not select away guarded workflows or rerun a full native replay.
 See `docs/experiments/v171_native_recapture_loop_prevention_20261024.md`.
 
+While V171 continues on its frozen main,candidate preparation found a source
+profile propagation bug:position calibration used the old nested-profile
+default instead of the registered dynamic-nested profile. V3548 reproduces
+the false rejection on CPU. Pass the immutable source's FANOUT_PROFILE
+explicitly;guard,incomplete and mismatched-profile sources still fail.
+V3549 passes48 calibration cases;V3550 passes5818 required CPU cases,
+retaining all5810 previous identities and adding8;V3551 seals the sources.
+Freeze the corrected queue as V172 against V171,then automatically register
+V173 Full only after whole-source qualification and bounded exact-work GPU
+calibration. Actual Full CPU construction retains workflow/short-continuity,
+EOS JOIN,cold prepare and1500ms tool-prefetch priority. V171's serving tree
+and the canonical native engine remain unchanged. The end-to-end goal remains
+unproven until matching complete-workflow and throughput evidence exists.
+
 V3523/V3524 explain why short-tool continuation matters. Of3643 served tool
 successors,2606 have logical Host hits;2734 follow tool rounds shorter than50ms.
 At least1208 short-tool successors have matching large-prefix D2H evidence

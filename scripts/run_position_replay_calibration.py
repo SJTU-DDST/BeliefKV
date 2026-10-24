@@ -390,7 +390,10 @@ def watch(registration):
             joins = graph.summary()["event_counts"]["join_create"]
             if predeclared:
                 complete_source_metrics(Path(plan["source_registration"]))
-                if not capture.oneshot_source(summary, graph, expected_workflows=roots)["accepted"]:
+                if not capture.oneshot_source(
+                    summary, graph, expected_workflows=roots,
+                    expected_profile=source["environment"]["FANOUT_PROFILE"],
+                )["accepted"]:
                     raise ValueError("predeclared one-shot source is incomplete or guarded")
             if (
                 reviewed and joins != plan["reviewed_source_metrics"]["joins"]

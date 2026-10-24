@@ -215,6 +215,74 @@ def test_predeclared_oneshot_metrics_use_the_actual_complete_population(
     }) is True
 
 
+@pytest.mark.parametrize("profile", (
+    calibration.capture.NESTED_IN_GRAPH_PROFILE,
+    calibration.capture.DYNAMIC_NESTED_IN_GRAPH_PROFILE,
+))
+@pytest.mark.parametrize("change", (None, "wrong_profile", "guard", "incomplete"))
+def test_predeclared_watch_uses_registered_profile_before_token_or_gpu_work(
+    tmp_path, monkeypatch, profile, change,
+):
+    roots = [f"workflow-{index}" for index in range(24)]
+    arm = tmp_path / "source"
+    (arm / "client_24").mkdir(parents=True)
+    summary = {
+        "completed_workflows": 24, "subagent_fanout_profile": profile,
+        "workflows": [
+            {"workflow_id": value, "native_agent_jct_eligible": True} for value in roots
+        ],
+    }
+    if change == "wrong_profile":
+        summary["subagent_fanout_profile"] = "unregistered-profile"
+    elif change == "guard":
+        summary["workflows"][0]["native_agent_jct_eligible"] = False
+    elif change == "incomplete":
+        summary["completed_workflows"] = 23
+    (arm / "client_24/summary.json").write_text(json.dumps(summary))
+    source = tmp_path / "source.json"
+    source.write_text(json.dumps({
+        "environment": {"ROOT_COUNT": "24", "FANOUT_PROFILE": profile},
+    }))
+    registration = tmp_path / "calibration.json"
+    registration.write_text(json.dumps({
+        "source_registration": str(source), "source_arm": str(arm),
+        "source_selection_policy": "predeclared", "run_root": str(tmp_path / "calibration"),
+    }))
+    graph = SimpleNamespace(
+        nodes=[
+            SimpleNamespace(event=SimpleNamespace(
+                kind=calibration.capture.Kind.WORKFLOW_START, workflow_id=value,
+            )) for value in roots
+        ],
+        summary=lambda: {"event_counts": {"join_create": 33}},
+    )
+    monkeypatch.setattr(calibration.signal, "signal", lambda *_args: None)
+    monkeypatch.setattr(calibration.comparison, "verify_sources", lambda _plan: None)
+    monkeypatch.setattr(calibration, "source_ready", lambda _plan: True)
+    monkeypatch.setattr(calibration, "complete_source_metrics", lambda _path: {})
+    monkeypatch.setattr(calibration.controls, "source_plan", lambda _arm: (graph, {}, {}))
+    reached_tokens = []
+
+    def token_boundary(*_args):
+        reached_tokens.append(True)
+        raise RuntimeError("CPU stopped before token verification and GPU work")
+
+    monkeypatch.setattr(calibration.controls, "CapturedTokenCorpus", token_boundary)
+    monkeypatch.setattr(
+        calibration.qualified, "resources",
+        lambda _port: pytest.fail("source profile test must never reach GPU checks"),
+    )
+    calibration.watch(registration)
+    state = json.loads(registration.with_suffix(".state.json").read_bytes())
+    assert state["status"] == "stopped_for_investigation"
+    assert reached_tokens == ([True] if change is None else [])
+    expected = (
+        "CPU stopped before token verification and GPU work"
+        if change is None else "predeclared one-shot source is incomplete or guarded"
+    )
+    assert expected in state["error"]
+
+
 def test_queued_oneshot_command_reaches_the_real_comparison_parser_without_native_replay(
     tmp_path, monkeypatch,
 ):

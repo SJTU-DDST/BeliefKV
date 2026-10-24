@@ -92,3 +92,32 @@ The registration freezes main and the engine and waits for verified resource
 availability. A new capture is not a claim of a qualified trajectory or a
 performance improvement. No additional complete native replay or ablation
 is authorized by this recapture.
+
+## Conditional replay queue
+
+V171's driver and capture supervisor were verified live by their recorded PID
+and start time. Its native server is serving real requests with the token
+writer enabled and no writer errors. These are live-prefix observations,
+not completed source qualification or evidence that loops are eliminated.
+
+Preparing the follow-up found a separate calibration gate defect: capture
+validates the registered `native_in_graph_dynamic_nested` profile, but the
+position calibration watcher called the selection helper with its older
+`native_in_graph_nested_2to4` default. A valid dynamic source was consequently
+rejected before token checks. The watcher now passes the profile from the
+immutable source registration. It still rejects mismatched profiles,
+guard-assisted workflows and incomplete populations.
+
+V3548 retains the CPU reproduction: one valid dynamic case fails, while the
+other seven cases pass. V3549 passes all 48 calibration cases. V3550 passes
+all 5818 required CPU cases, retaining the previous 5810 and adding eight;
+V3551 seals the sources. The actual Full constructor CPU preflight confirms
+workflow ordering, short continuity, EOS JOIN, cold prepare and 1500 ms
+tool-prefetch priority remain enabled as declared.
+
+Prepare V172 position/token/session/stopping calibration against V171, followed
+only by V173 Full. This queue waits for an entirely qualified completed source
+and verified release of the native processes, then checks GPU availability.
+It does not start in temporary idle gaps during capture. Rejected V171 source
+or failed calibration stops the queue for investigation; it does not remove
+workflows, relax the gate, run another complete native replay or start ablations.
