@@ -52,5 +52,9 @@
   by the user. Do not require chat-ingress alignment or raw chat-body capture.
 - Preserve the frozen source trees of running experiments. Qualify and replace
   pending registrations explicitly when launcher code changes.
+- Successful causal comparisons must observe two freshly published idle native
+  telemetry snapshots before server cleanup. Keep this bounded collection drain
+  outside measured workflow JCT. A stale queue-depth snapshot is not proof of a
+  complete shutdown trace; retain the original status and failed audit.
 - Do not run ablations until predictive establishes clear gains over native.
   Keep completed native/Full results and administratively interrupted controls.

@@ -716,6 +716,53 @@ def cleanup(arm, identities, reason):
         raise RuntimeError("owned replay processes remain after cleanup")
 
 
+def wait_for_telemetry_drain(arm, *, server, pulse, timeout=30.):
+    """Keep completed work alive until the native writer reports a drained queue."""
+    started = time.monotonic()
+    deadline = started + timeout
+    previous_zero = None
+    path = arm / "server/native_telemetry_status.json"
+    while True:
+        pulse()
+        if server.poll() is not None:
+            raise ValueError("native server exited before telemetry drained")
+        if path.is_file():
+            status = load(path)
+            if (
+                status.get("writer_error") is not None
+                or status.get("failed_records") != 0 or status.get("dropped_records") != 0
+            ):
+                raise ValueError("native telemetry writer failed before shutdown")
+            snapshot = status.get("snapshot_ts_ms")
+            drained = (
+                type(snapshot) in (int, float) and math.isfinite(snapshot)
+                and status.get("writer_queue_depth") == 0
+                and status.get("pending_batch_count") == 0
+                and status.get("pending_request_count") == 0
+            )
+            if drained:
+                if previous_zero is not None and snapshot > previous_zero:
+                    reservation.write_json(arm / "telemetry_drain.json", {
+                        "observed_at": reservation.now().isoformat(),
+                        "elapsed_seconds": time.monotonic() - started,
+                        "status_path": str(path),
+                        "drained_status": status,
+                        "previous_zero_snapshot_ts_ms": previous_zero,
+                        "scope": (
+                            "Two fresh idle writer snapshots after all replay "
+                            "requests completed, before process cleanup. This "
+                            "collection wait is outside measured workflow JCT."
+                        ),
+                    })
+                    return
+                previous_zero = snapshot
+            else:
+                previous_zero = None
+        if time.monotonic() >= deadline:
+            raise ValueError("native telemetry did not drain before shutdown")
+        time.sleep(.25)
+
+
 def register(args):
     order = list(args.arms)
     if not order or len(order) != len(set(order)) or any(label not in ALL_CONTROLS for label in order):
@@ -1157,6 +1204,8 @@ def watch(registration):
                 if expected_work is not None and work != expected_work:
                     raise ValueError("native request work changed between comparison arms")
                 expected_work = work
+                state["status"] = "waiting_telemetry_" + label
+                wait_for_telemetry_drain(arm, server=server, pulse=pulse)
                 observed_configuration(plan, label, arm, final=True)
                 cleanup(arm, identities, "complete_same_work_arm")
                 identities = []

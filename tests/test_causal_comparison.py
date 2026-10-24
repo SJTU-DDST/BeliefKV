@@ -1251,7 +1251,7 @@ def test_cleanup_waits_for_slow_device_teardown_but_reports_a_persistent_process
 @pytest.mark.parametrize("failure", (
     None, "driver", "changed_work", "capacity", "no_tool_prefetch",
     "queued_no_tool_prefetch", "failed_predecessor", "source_slowdown", "capture_baseline",
-    "orthogonal_controls",
+    "orthogonal_controls", "telemetry_drain",
 ))
 def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     reference, tmp_path, monkeypatch, failure,
@@ -1305,7 +1305,7 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     driver_identity = {"pid": 102, "ppid": 1, "start_ticks": "driver", "state": "S"}
     identities = {row["pid"]: row for row in (root, scheduler, driver_identity)}
     current = []
-    launched, cleaned, configurations = [], [], []
+    launched, cleaned, configurations, drained = [], [], [], []
     predecessor_checks = []
 
     def previous_ready(_plan):
@@ -1395,9 +1395,23 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
         [root, scheduler, *(row for row in rows if row["pid"] == 102)]
         if rows else []
     ))
-    monkeypatch.setattr(comparison, "cleanup", lambda arm, rows, reason: cleaned.append(
-        (arm.name, [row["pid"] for row in rows], reason),
-    ))
+
+    def drain(arm, *, server, pulse):
+        assert server.poll() is None
+        assert launched[-1][:2] == ("driver", arm.name)
+        assert (arm / "replay/summary.json").is_file()
+        if failure == "telemetry_drain":
+            raise ValueError("native telemetry did not drain before shutdown")
+        drained.append(arm.name)
+        pulse()
+
+    def cleanup(arm, rows, reason):
+        if reason == "complete_same_work_arm":
+            assert arm.name in drained
+        cleaned.append((arm.name, [row["pid"] for row in rows], reason))
+
+    monkeypatch.setattr(comparison, "wait_for_telemetry_drain", drain)
+    monkeypatch.setattr(comparison, "cleanup", cleanup)
     monkeypatch.setattr(comparison.time, "sleep", lambda _seconds: None)
     monkeypatch.setattr(comparison.signal, "signal", lambda *_args: None)
     if queued or failed_predecessor:
@@ -1411,6 +1425,7 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
         assert state["completed_arms"] == order
         assert state["status"] == "collected_performance_review_pending"
         assert len(cleaned) == len(order)
+        assert drained == order
         report = json.loads((run / "causal_comparison.json").read_bytes())
         assert report["all_normal_tails_retained"] and not report["performance_accepted"]
         assert all(row["mean_jct_ms"] == 5000. for row in report["results"].values())
@@ -1447,6 +1462,10 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
         elif failure == "failed_predecessor":
             assert not launched
             assert "predecessor failed" in state["error"]
+        elif failure == "telemetry_drain":
+            assert not state["completed_arms"]
+            assert not drained
+            assert "did not drain" in state["error"]
         elif failure == "source_slowdown":
             assert state["completed_arms"] == ["native_matched"]
             assert not any(row[1] == "no_tool_prefetch" for row in launched)
