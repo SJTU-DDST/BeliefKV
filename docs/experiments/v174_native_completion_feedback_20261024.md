@@ -64,6 +64,23 @@ not qualification evidence. V3558 passes the intermediate 5835 cases before the
 three nontext/failure/workspace-change cases were added. The final V3559 report
 qualifies the fixed nontext-result path as well; preserve the earlier reports.
 
+## Initial native observations
+
+V3564 seals seven actual V174 feedback episodes. All seven have their matching
+feedback in the next native prompt's last tool response, reconstructed from
+hash-verified captured tokens. All seven subsequently have an observed normal
+RETURN without graph or semantic finalization in those workflow prefixes.
+Three roots give a plain final report in the next response. Two children use
+the expected completion-notice/report sequence, and another child reports
+directly. The remaining child continues concrete import/test validation and
+later returns. This confirms that the feedback reaches the served model and
+allows substantive work to continue. It is not a counterfactual prompt comparison
+or evidence that every future activation avoids loops.
+
+The bounded observation does not independently grade the patches or qualify the
+whole source. Keep V174 collecting and the V175/V176 complete-source checks.
+Do not replace normal execution with forced completion based on this evidence.
+
 ## Decode batch and capacity
 
 The actual server information confirms `max_running_requests=24` and 805198
@@ -81,6 +98,12 @@ These observations support a substantial capacity constraint; the configured
 efficiency, but their size alone does not measure GPU efficiency or the benefit
 of increasing a cap. Blocked tool/JOIN work, capacity admission, prefill and
 restoration need separate accounting.
+
+The later V3563 observation of the new V174 trajectory has 20620 decode forwards,
+mean batch 10.742, P50 10, P90 16 and maximum 23, with the same configured
+24-request upper bound. These are different live windows and generated demands;
+their difference is not a scheduling speedup. It illustrates why a configured
+limit and an actual batch distribution must be reported separately.
 
 V3553 refines the earlier sealed prefix-loss window using completed requests.
 Five requests miss 453334 previously served common-input tokens, about 13.0%

@@ -31,6 +31,29 @@ tokens are about 13.0% of V3553's observed completed cohort prefill input work;
 that ratio is also not a time fraction. V171 remains an interrupted diagnostic
 source and is not promoted to a qualified comparison.
 
+## V174 corroboration
+
+The new V174 trajectory reproduces this issue before any observed graph or
+semantic finalization. V3563 seals the live inputs and service records; V3565
+retains 1343 completed requests with fully observed prefill input work. Five
+requests miss 450034 previously served common-input tokens, 12.4447% of that
+cohort's 3616280 logical prefill input tokens.
+
+V3566 independently identifies all five as JOIN parents and covers all 450034
+lost tokens with exact Host-eviction interval unions. Each interval's last
+eviction again falls between the preceding native completion and the next
+native queue entry. This is approximately 44.24 GB of FULL state, not physical
+DMA or removable JCT. The affected parents are data-warehouse012, data-lake050,
+system-automation062, fintech-trading066 and blockchain-NFT035.
+
+V3563 also pairs all 51 observed restore-wait samples with their actual prefill
+forward identities. Dependency-wait P50 is121.762ms and P90 is387.756ms;
+98.4745% of the summed sampled wait occurs after layer0. Twenty short
+single-request prefills have wait P50 187.043ms. Native layer-wise transfer
+therefore leaves measured exposed dependency waits in this workload.
+Do not multiply these sampled waits by16, confuse worker intervals with
+kernel times, or extrapolate an incomplete source into a Full JCT improvement.
+
 ## Implications for Full
 
 An H2D-only audit misses these JOIN costs: four parents have no substantial
@@ -67,3 +90,7 @@ The auditor is
 `/home/longhao/experiment/ops/audit_v171_join_host_loss_20261024.py`.
 V3562 retains its source hash, the earlier report hashes, independently sealed
 input prefixes, exact eviction IDs and per-request interval evidence.
+The exact V3562 auditor is preserved as
+`/home/longhao/experiment/ops/audit_v171_join_host_loss_e5397e521a2d_20261024.py`.
+The current driver accepts an explicit refinement path for V3566; each report
+retains the source hash actually used.

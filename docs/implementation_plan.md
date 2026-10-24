@@ -220,6 +220,24 @@ pins,change frozen pool capacity,or claim prefetch coverage from only surviving
 Host-backed data. This diagnostic is not a comparison result. See
 `docs/experiments/v174_join_parent_host_loss_20261024.md`.
 
+V3563/V3565/V3566 corroborate that loss in the new V174 trajectory:five
+completed JOIN-parent requests lose450034 old common-input tokens,12.4447%
+of the completed cohort's3616280 logical prefill input tokens. All lost
+intervals have exact matching Host evictions during the parent continuation
+gap. The51 paired restore samples have wait P50=121.762ms,P90=387.756ms,
+with98.4745% of summed sampled wait after layer0;the20 short single-request
+samples have P50=187.043ms. Keep these as incomplete native diagnostic
+evidence,without sample extrapolation or counterfactual JCT claims.
+
+V3564 verifies seven real bookkeeping-feedback episodes by reconstructing
+the actual native prompts and outputs. All seven contain the expected
+feedback in the last tool response and later have an observed normal RETURN,
+without graph or semantic finalization in those prefixes. Three roots report
+directly;children may announce/report or continue substantive validation first.
+This verifies delivery and observed behavior,not universal loop prevention or
+independently graded task correctness. V174 continues and V175/V176 retain
+their complete-source gates;no serving code or workload configuration changes.
+
 V3523/V3524 explain why short-tool continuation matters. Of3643 served tool
 successors,2606 have logical Host hits;2734 follow tool rounds shorter than50ms.
 At least1208 short-tool successors have matching large-prefix D2H evidence
