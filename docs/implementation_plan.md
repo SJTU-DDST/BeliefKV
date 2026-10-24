@@ -2,7 +2,7 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
-The new CPU correctness candidate repairs a prefill wakeup gap after
+The V150 candidate repairs a prefill wakeup gap after
 optional restore protection is revoked. On a NO_TOKEN rejection,the
 runtime already released its own device lock,but native selection could
 then latch `batch_is_full=True` and skip the next admission pass. V3364
@@ -26,6 +26,17 @@ tree `744a291c464f2d1042d02833884ec6fe80c4cd63`. Only its scheduler hook
 differs from the prior qualified engine. The live V149 frozen sources
 are unchanged. This fixes a CPU-reproduced retry gap; its actual online
 frequency and end-to-end benefit remain unmeasured.
+
+V150 Full is now running from main `dfdd94bafab7` with the new qualified
+engine and the existing24-root/batch24/seed21 V136 trajectory and capacity.
+V3375 verifies actual watcher/server/driver,GPU scheduler1071011,frozen
+sources,policy and both4727/4153-token startup extends followed by decode.
+Host/device and Mamba hit composition is recorded separately; effective
+prefix reuse is correct. Startup does not prove the new retry branch has
+fired. Registration:
+`/home/longhao/experiment/ops/v150_oneshot_batch24_prefetch_capacity_retry_20261024.registration.json`.
+Only Full is scheduled; existing natural native and scheduler controls
+are reused. Complete V150 performance remains pending.
 
 The previous CPU candidate changes only private PREPARE prefix summaries in
 `sglang_v0520_physical.py`: use immutable named tuples instead of frozen
@@ -76,14 +87,24 @@ independent-KV advantage. V3361 records H2D1180.241GB/D2H440.415GB.
 Keep the paired Full repeat pending rather than accepting the older
 point estimate as a stable module gain.
 
-V149 `full` is now running with frozen `a80134595c25`,the same qualified
-engine,V136 work,native capture,24 roots,batch24,seed21 and capacities.
-V3362 independently verifies actual watcher/server/driver,GPU scheduler
-1058519,runtime policy,capacity and both4727/4153-token startup extends
-followed by decode. No native replay is included. Registration:
+V149 Full also completed normally with exit0 and actual process cleanup.
+V3372 revalidates both Full/scheduler repeats against identical receipts,
+production source hashes,engine,configuration and capacity. V149 Full is
+1129.202s/596.374 output tokens/s,relative to its scheduler control
+-0.6871%/+0.1961%. V3373 demand-outstanding rates are601.628/600.442.
+Across two completed runs per policy,Full is1129.638s/596.302 versus
+1135.435s/595.543 for scheduler-only (-0.5106%/+0.1275%). Both point
+differences favor Full,but the small gain and two runs do not establish
+a confidence interval or satisfy the independent-module goal.
+V3374 records43 pre-completion positive JOIN plans,30 early submissions
+and30 early confirmed reuses/20.244GB FULL; tool early reuse is6/0.262GB.
+These bytes are not exposed waits or removable JCT. All ordinary tails
+remain included. V149 used frozen `a80134595c25` and the prior engine;
+it did not contain the later PREPARE metadata or admission-retry changes.
+Registration:
 `/home/longhao/experiment/ops/v149_oneshot_batch24_scheduler_full_repeat_20261024.registration.json`.
-The complete Full repeat result remains pending. V3360 reconstructs the
-completed scheduler repeats' realized final dependency paths:the latest
+V3360 reconstructs the completed scheduler repeats' realized final
+dependency paths:the latest
 has submit-to-first-launch3.291s lower but first-launch-to-completion
 6.481s higher. These are descriptive interleaving/wait components,not
 isolated GPU or CPU costs. All normal tails and workflow identities stay
