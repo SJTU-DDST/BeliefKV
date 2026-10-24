@@ -238,6 +238,20 @@ This verifies delivery and observed behavior,not universal loop prevention or
 independently graded task correctness. V174 continues and V175/V176 retain
 their complete-source gates;no serving code or workload configuration changes.
 
+The latest instruction keeps24 roots until Full completes. V3567 passes57
+focused replay-semantic cases:source GPU service time,cache hits and eviction
+decisions are not replay inputs. Exact tokens/dependencies do not force native
+recomputation on Full. V3570 now covers completed V174:2369 requests,24
+workflows,35 JOINs,and696174 old common-input tokens reprocessed across9
+requests,about16.36% of4255360 actual logical prefill input tokens. Initial
+context requests remain separate;this is not a CUDA-time/JCT fraction.
+V3568 passes10 CPU-only paired-auditor cases. Queue its offline recomputation,
+prefetch-lifecycle and PREPARE-survival review after qualified V176 completion.
+Keep the frozen serving trees and running/decode24. Reduce workflow count only
+after Full evidence distinguishes recoverable scheduling/lifecycle failures
+from useful-state thrashing;retain distinct projects and recapture native for
+any changed population. The performance goal remains unproven.
+
 V3523/V3524 explain why short-tool continuation matters. Of3643 served tool
 successors,2606 have logical Host hits;2734 follow tool rounds shorter than50ms.
 At least1208 short-tool successors have matching large-prefix D2H evidence

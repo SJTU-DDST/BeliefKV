@@ -94,3 +94,63 @@ The exact V3562 auditor is preserved as
 `/home/longhao/experiment/ops/audit_v171_join_host_loss_e5397e521a2d_20261024.py`.
 The current driver accepts an explicit refinement path for V3566; each report
 retains the source hash actually used.
+
+## Replay semantics and concurrency decision
+
+Keep24 workflows until the qualified Full replay completes. Native prefix loss
+establishes pressure and an opportunity; it does not establish that Full has
+insufficient capacity or that fewer roots would improve the comparison.
+Running/decode24 remains a separate setting.
+
+The causal replay fixes input/output tokens, stopping conditions, workflow
+dependencies and observed external/tool delays. Its request node has zero
+recorded service delay and awaits the current backend's native completion.
+Subsequent client delivery is measured from that completion. The generate
+payload supplies input tokens and session/cache namespaces, not captured
+cache hits, eviction decisions, uncached-token counts or H2D commands.
+Thus a prefix recomputed during source capture can be a cache hit in Full.
+Preserved non-model delays and the frozen trajectory remain experimental
+limitations; replay does not model schedule-dependent changes in agent choices.
+
+V3567 passes57 focused existing CPU cases. In particular, changing the source
+model service time from100ms to10000ms does not change the evaluated causal
+plan when replay service times are held fixed. This checks release semantics,
+not GPU speedup or absence of all source-dependent effects.
+
+V3570 audits the now completed V174 native capture:2369 requests across24
+workflows and35 JOINs. Actual prefill geometry covers4255360 input tokens.
+Nine requests reprocess696174 previously served same-session common-input
+tokens,about16.36% of observed input prefill. The geometrical count agrees
+with first-service common-input loss. All request identities and observed
+prefill coverage agree;there is no additional input prefill above first-service
+uncached input in this capture. First requests per context account for2423676
+prefill input tokens and are reported separately. The old-input count excludes
+previous generated-output prefixes and is not a complete recomputation bound,
+CUDA-time fraction or removable JCT.
+
+The remaining comparison must retain every source request and normal workflow
+tail and check:
+
+- Actual old-common-input prefill,first-service prefix loss,total input prefill
+  and generated-history reprocessing for native and Full.
+- Timely verified prefetch reuse,backup survival to restore/consumption,and
+  repeated restoration or displacement before first service.
+- Complete-workflow JCT and same-work output throughput at unchanged capacity.
+
+If Full preserves these useful prefixes and reduces repeated work while
+improving end-to-end performance,retain the24-root workload. If Full also loses
+substantial useful state and its backups/prefetches repeatedly displace one
+another before use,consider fewer concurrent workflows. Check policy and
+lifecycle failures before attributing all losses to workload size. A changed
+project-disjoint population needs its own natural native capture;do not compare
+it to the old24-root baseline or silently change the running/decode limit.
+
+The CPU-only follow-up auditor
+`/home/longhao/experiment/ops/audit_v176_recomputation_20261024.py`
+waits for a completed,validated Full registration. It compares actual service
+ranges against source token metadata,validates matching request work and
+capacities,and then runs the existing prefetch-lifecycle and background-PREPARE
+audits. V3568 passes10 focused auditor cases covering different cache outcomes
+on identical work,generated-history separation,missing evidence,session
+bindings and population/identity failures. It neither schedules GPU work nor
+automatically changes concurrency.
