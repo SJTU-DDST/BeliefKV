@@ -1,0 +1,101 @@
+{
+  "status": "cpu_qualified_matched_cuda_sampling_capture",
+  "observed_at": "2026-10-24T12:26:42.143260+08:00",
+  "candidate_parent_commit": "7fc83cfa13b5fa981b64c1d8bbaf32cc4e85f79c",
+  "combined_case_identities": 5664,
+  "fresh_focused_case_identities": 353,
+  "inherited_case_identities_retained": 5658,
+  "new_case_identities": 6,
+  "source_snapshot": {
+    "path": "experiments/reports/v3435_toolchain_bound_app_sources_20261024.json",
+    "sha256": "b63f980c568bac803b26a98f59a7814af8e377185b267727565385c5bb1eab28"
+  },
+  "combined_report": {
+    "path": "experiments/reports/v3434_toolchain_bound_combined_app_cpu_20261024.xml",
+    "sha256": "ef389c2fad27337f316580941d6e81e18094aac01432c2f8a56bfaf4bf064d5d"
+  },
+  "fresh_report": {
+    "path": "experiments/reports/v3433_toolchain_bound_capture_cpu_20261024.xml",
+    "sha256": "cedb993392bd2fb056cfbff81a70185caf35e923e6726fce3390671ca0e0fd6f"
+  },
+  "changed_existing_sources": [
+    "configs/migration/qwen35_locobench_oneshot_36project_running24_coding_20261024.json",
+    "scripts/run_causal_source_capture.py",
+    "scripts/run_position_replay_calibration.py",
+    "tests/test_coding_sampling_profile.py"
+  ],
+  "new_sources": [
+    "scripts/preflight_cuda_sampling.py"
+  ],
+  "toolchain": {
+    "home": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13",
+    "compiler_version": "release 13.0",
+    "runtime_version": 13000,
+    "inputs": [
+      {
+        "path": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13/bin/nvcc",
+        "sha256": "b8e2347d9d7fcadf8812a27324d515de99d033d3e48611811ece7e66d7895f8a"
+      },
+      {
+        "path": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13/bin/ptxas",
+        "sha256": "daba837a68265cae38c832d13399b61dab811891de9b8914defddef143b849f2"
+      },
+      {
+        "path": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13/nvvm/bin/cicc",
+        "sha256": "475a9486f1ccc9408323cc75ea2fa11599f08e9dee137bb7ac7150ce5208c425"
+      },
+      {
+        "path": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13/nvvm/libdevice/libdevice.10.bc",
+        "sha256": "91334d6e12748f6cb5bbf0a1cd965a56bcd93dc4f496d2e5c5f8c6e523094356"
+      },
+      {
+        "path": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13/include/cuda_runtime_api.h",
+        "sha256": "3f91d3f84f1aafb17cccc475803f9c489b6474f2a3bf0fbc75a5380821c966e0"
+      },
+      {
+        "path": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13/include/curand.h",
+        "sha256": "2644c6c6500e1e11ee63cdfff3ce84284e8cae5a0785d6c587b6dda90e10369b"
+      },
+      {
+        "path": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13/include/curand_kernel.h",
+        "sha256": "4a37c07a1d77c9b5c8c627a4720733cee6b4da4200a844e8a49291858bc26adf"
+      },
+      {
+        "path": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13/lib/libcudart.so.13",
+        "sha256": "96c42e418cec19054186b9429c321603cc190bf26a18104e19408117a2a817b0"
+      },
+      {
+        "path": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13/lib64/libcudart.so",
+        "sha256": "96c42e418cec19054186b9429c321603cc190bf26a18104e19408117a2a817b0"
+      }
+    ]
+  },
+  "sampling_cpu_compilation": {
+    "path": "experiments/reports/v3432_cuda130_sampling_compile_cpu_20261024.json",
+    "sha256": "95c665d50cadf736e9342eedfd983c9ad6a3efba347ee7e06c0d722dadba75ef"
+  },
+  "stopped_old_sequence": {
+    "v158_36project_coding_source_20261024": {
+      "status": "capture_failed",
+      "error": "FileNotFoundError(2, 'No such file or directory')",
+      "original_exit_code": 143
+    },
+    "v159_36project_coding_position_check_20261024": {
+      "status": "stopped_for_investigation",
+      "error": "ValueError('source capture did not qualify: capture_failed')",
+      "original_exit_code": null
+    }
+  },
+  "v158_failure_cause": "Stochastic sampling first JIT-compiled FlashInfer sampling with nvcc 13.4 but CUDA runtime headers 13.0; CCCL rejected this incompatible compiler/header pair. The failed scheduler caused server teardown.",
+  "pre_model_gpu_sampler_preflight_required": true,
+  "gpu_sampling_verified": false,
+  "model_loop_elimination_verified": false,
+  "performance_accepted": false,
+  "next_sequence": [
+    "V161 natural native capture",
+    "V162 bounded causal replay qualification",
+    "V163 Full then scheduler-only on exactly the new captured work"
+  ],
+  "configuration": "configs/migration/qwen35_locobench_oneshot_36project_running24_coding_20261024.json",
+  "scope": "One-time toolchain validation, matched environment binding and pre-model sampling execution checks. No scheduler/KV policy, model weights, capacity, seed, task population or stopping budget changes. CPU compilation is not GPU execution or a workflow performance result."
+}

@@ -10,6 +10,7 @@
     "SERVER_RANDOM_SEED": "21",
     "SAMPLING_SEED": "21",
     "SAMPLING_PROFILE": "qwen35_coding",
+    "CUDA_HOME": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13",
     "PYTHONHASHSEED": "21",
     "MODEL_CONTEXT_TOKENS": "262144",
     "CONTEXT_WINDOW_TOKENS": "262144",

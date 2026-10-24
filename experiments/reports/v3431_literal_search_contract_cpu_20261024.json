@@ -1,0 +1,41 @@
+{
+  "observed_at": "2026-10-24T11:59:45.543536+08:00",
+  "scope": "Real installed FilesystemBackend and FilesystemMiddleware tool handler plus candidate feedback middleware, with explicit runtime/tool-call-ID injection and one temporary source fixture. No Docker or GPU. Shows a literal/regex contract mismatch, not elimination of unrelated model repetition.",
+  "initial_probe_errors": [
+    "Standalone StructuredTool invocation lacked LangGraph runtime injection.",
+    "The first manually injected runtime lacked tool_call_id."
+  ],
+  "probe_resolution": "Invoke the same real tool handler with its complete runtime fields and consume its native ToolMessage. No production code or assertions changed.",
+  "performance_accepted": false,
+  "physical_tool_calls": 4,
+  "cases": [
+    {
+      "pattern": "class.*Audit",
+      "visible_result": "No matches found\n\n[Search semantics: grep searched the pattern as literal text, not as a regular expression. Pipes, .* and character classes are not alternatives or wildcards here. If regex was intended, use execute with rg or grep -E, or issue separate literal searches.]",
+      "literal_feedback": true,
+      "physical_execution": true,
+      "suppressed": false
+    },
+    {
+      "pattern": "class Audit",
+      "visible_result": "/source.py:\n  1: class Audit:",
+      "literal_feedback": false,
+      "physical_execution": true,
+      "suppressed": false
+    },
+    {
+      "pattern": "on_receive|on_message",
+      "visible_result": "No matches found\n\n[Search semantics: grep searched the pattern as literal text, not as a regular expression. Pipes, .* and character classes are not alternatives or wildcards here. If regex was intended, use execute with rg or grep -E, or issue separate literal searches.]",
+      "literal_feedback": true,
+      "physical_execution": true,
+      "suppressed": false
+    },
+    {
+      "pattern": "on_message",
+      "visible_result": "/source.py:\n  3: def on_message():",
+      "literal_feedback": false,
+      "physical_execution": true,
+      "suppressed": false
+    }
+  ]
+}

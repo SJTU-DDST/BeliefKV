@@ -101,11 +101,16 @@ def test_source_sampling_change_is_explicit_and_preserves_native_capacity_and_wo
         capture.environment(*arguments, sampling_profile="unknown")
 
 
-@pytest.mark.parametrize("source_profile,control_profile", (
-    ("qwen35_coding", "legacy_greedy"), ("legacy_greedy", "qwen35_coding"),
+@pytest.mark.parametrize("source_profile,control_profile,cuda_mismatch", (
+    ("qwen35_coding", "legacy_greedy", False),
+    ("legacy_greedy", "qwen35_coding", False),
+    ("qwen35_coding", "qwen35_coding", True),
+), ids=(
+    "qwen35_coding-legacy_greedy", "legacy_greedy-qwen35_coding",
+    "matched-sampling-different-toolchain",
 ))
 def test_control_registration_rejects_sampling_profile_mismatch_before_gpu(
-    tmp_path, monkeypatch, source_profile, control_profile,
+    tmp_path, monkeypatch, source_profile, control_profile, cuda_mismatch,
 ):
     manifest = tmp_path / "tasks.json"
     manifest.write_text("{}")
@@ -115,6 +120,7 @@ def test_control_registration_rejects_sampling_profile_mismatch_before_gpu(
         "environment": {
             "ROOT_COUNT": "36", "MAX_RUNNING_REQUESTS": "24",
             "SAMPLING_PROFILE": source_profile, "WORKLOAD_MANIFEST": str(manifest),
+            **({"CUDA_HOME": "/source/cuda"} if cuda_mismatch else {}),
         },
     }))
     spec = tmp_path / "spec.json"
@@ -125,6 +131,7 @@ def test_control_registration_rejects_sampling_profile_mismatch_before_gpu(
             "SAMPLING_PROFILE": control_profile,
             "FANOUT_PROFILE": "native_in_graph_nested_2to4",
             "BELIEFKV_SUBAGENT_RETENTION": "off", "WORKLOAD_MANIFEST": str(manifest),
+            **({"CUDA_HOME": "/other/cuda"} if cuda_mismatch else {}),
         },
     }))
     reference_path = tmp_path / "reference.json"
@@ -154,5 +161,100 @@ def test_declared_coding_experiment_keeps_project_disjoint_work_and_system_polic
     )).read_text())
     common = dict(new["common_environment"])
     assert common.pop("SAMPLING_PROFILE") == "qwen35_coding"
+    assert common.pop("CUDA_HOME") == (
+        "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13"
+    )
     assert common == old["common_environment"]
     assert new["order"] == old["order"] == ["full", "scheduler_only"]
+
+
+@pytest.mark.parametrize("compiler,runtime,accepted", (
+    ("13.0", 13000, True), ("13.4", 13000, False), ("13.0", 13040, False),
+))
+def test_capture_toolchain_checks_actual_compiler_and_headers_before_gpu(
+    tmp_path, monkeypatch, compiler, runtime, accepted,
+):
+    names = (
+        "bin/nvcc", "bin/ptxas", "nvvm/bin/cicc", "nvvm/libdevice/libdevice.10.bc",
+        "include/cuda_runtime_api.h", "include/curand.h", "include/curand_kernel.h",
+        "lib/libcudart.so.13", "lib64/libcudart.so",
+    )
+    for name in names:
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"#define CUDART_VERSION {runtime}\n" if name.endswith(
+            "cuda_runtime_api.h",
+        ) else "fixture")
+    monkeypatch.setattr(
+        capture.qualified, "command", lambda args: f"Cuda compilation tools, release {compiler}",
+    )
+    if accepted:
+        evidence = capture.cuda_toolchain_evidence(tmp_path)
+        assert evidence["runtime_version"] == runtime
+        assert len(evidence["inputs"]) == len(names)
+        assert evidence["home"] == str(tmp_path.resolve())
+        (tmp_path / "include/curand.h").unlink()
+        with pytest.raises(ValueError, match="incomplete"):
+            capture.cuda_toolchain_evidence(tmp_path)
+    else:
+        with pytest.raises(ValueError, match="versions must match"):
+            capture.cuda_toolchain_evidence(tmp_path)
+
+
+def test_sampler_preflight_is_once_only_and_rechecks_gpu_after_the_probe(tmp_path, monkeypatch):
+    output = tmp_path / "sampling.json"
+    plan = {
+        "port": 18570, "wait_for_gpu": True, "cuda_toolchain": {"home": "/matched/cuda"},
+        "sampling_preflight_path": str(output),
+    }
+    calls = []
+    available = iter((True, False, True))
+    monkeypatch.setattr(capture, "wait_for_resources", lambda *a: None)
+    monkeypatch.setattr(capture, "queue_launch_allowed", lambda plan: True)
+    monkeypatch.setattr(capture.comparison, "verify_sources", lambda plan: None)
+    monkeypatch.setattr(capture.qualified, "resources", lambda port: {"ready": next(available)})
+
+    def run(command, **kwargs):
+        if str(command[1]).endswith("preflight_cuda_sampling.py"):
+            calls.append("sampling")
+            assert kwargs["env"]["CUDA_VISIBLE_DEVICES"] == "0"
+            assert kwargs["env"]["CUDA_HOME"] == "/matched/cuda"
+            output.write_text(json.dumps({
+                "gpu_sampling_verified": True, "cuda_home": "/matched/cuda",
+            }))
+        else:
+            calls.append("host")
+
+    monkeypatch.setattr(capture.subprocess, "run", run)
+    state = {}
+    capture.prepare_capture(plan, state, tmp_path / "state.json", lambda: False)
+    assert calls == ["host", "sampling", "host"]
+    assert state["sampling_kernel_preflight"]["gpu_sampling_verified"] is True
+
+
+def test_failed_sampler_preflight_preserves_compiler_diagnostics_before_model_start(
+    tmp_path, monkeypatch,
+):
+    output = tmp_path / "sampling.json"
+    plan = {
+        "port": 18570, "wait_for_gpu": True, "cuda_toolchain": {"home": "/matched/cuda"},
+        "sampling_preflight_path": str(output),
+    }
+    monkeypatch.setattr(capture, "wait_for_resources", lambda *a: None)
+    monkeypatch.setattr(capture, "queue_launch_allowed", lambda plan: True)
+    monkeypatch.setattr(capture.comparison, "verify_sources", lambda plan: None)
+    monkeypatch.setattr(capture.qualified, "resources", lambda port: {"ready": True})
+
+    def run(command, **kwargs):
+        if str(command[1]).endswith("preflight_cuda_sampling.py"):
+            raise capture.subprocess.CalledProcessError(
+                1, command, output="compiler output", stderr="header/compiler mismatch",
+            )
+
+    monkeypatch.setattr(capture.subprocess, "run", run)
+    with pytest.raises(ValueError, match="sampler preflight failed"):
+        capture.prepare_capture(plan, {}, tmp_path / "state.json", lambda: False)
+    assert not output.exists()
+    assert json.loads(output.with_suffix(".error.json").read_text())["stderr"] == (
+        "header/compiler mismatch"
+    )

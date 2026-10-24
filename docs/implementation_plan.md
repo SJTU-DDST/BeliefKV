@@ -32,8 +32,28 @@ semantics and points repeated searches toward file inspection or a changed
 query. Calls and raw observations remain real; no repeat is suppressed.
 Neither change is proof that model loops are eliminated.
 
-Prepare a fresh natural native capture V158 and a V159 qualification queue
-for V160 Full followed by scheduler-only. Keep the same36 different projects,
+V158 failed before completing its first request: the installed CUDA13.4
+compiler and CUDA13.0 runtime headers were incompatible when non-greedy
+sampling first compiled FlashInfer's sampler. V159 stopped on that source
+failure; V160 never started. Preserve this startup failure separately from
+model-loop and performance evidence.
+
+The isolated toolchain at
+`/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13`
+uses nvcc/CRT/NVVM13.0.88,runtime13.0.96 and cuRAND10.4.0.35.
+V3432 successfully compiles the actual sampling module for SM90a on CPU,
+without CUDA initialization or disabling compatibility checks. The initial
+missing-cuRAND and lib64-layout problems are recorded with their resolutions.
+Registration now checks compiler/header compatibility and binds the actual
+toolchain input hashes. Source and controls must declare the same CUDA_HOME.
+A one-time synthetic seeded-sampler GPU check runs after GPU release and
+before allocating the model or Host pools; failures preserve compiler output.
+It is an execution preflight,not a workload or performance result.
+V3433 freshly passes353 focused cases; inherited qualification plus these
+checks retains5664 case identities. No per-token scheduler work is added.
+
+Prepare a fresh natural native capture V161 and a V162 qualification queue
+for V163 Full followed by scheduler-only. Keep the same36 different projects,
 simultaneous arrival,running/decode24,seed21,256K context,95% compression
 and matched pools. The changed generation policy requires a fresh trajectory;
 do not reuse V152/V155 work or compare different generated work as speedup.
@@ -51,8 +71,10 @@ component. The current Mamba allocation would be released,so this is not a
 about295.640GB for36 projects and92.656GB for the first12 seeded projects.
 Start the new model's capacity validation with12 distinct projects,subject to
 real pool sizing and complete-input checks. No serving code or GPU model has
-changed. V155/V156 stopped for repeated-call investigation; V158/V159/V160
-are the replacement sequence after coding-profile CPU qualification. The specific blockers and
+changed. V155/V156 stopped for repeated-call investigation; V158/V159
+stopped after the sampling-toolchain startup failure. V161/V162/V163 are the
+replacement sequence with matched compiler/runtime and sampling preflight.
+The specific blockers and
 qualification order are recorded in
 `docs/research/full_attention_model_fallback_20261024.md`.
 

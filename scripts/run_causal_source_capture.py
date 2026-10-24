@@ -11,6 +11,7 @@ import json
 import math
 import os
 from pathlib import Path
+import re
 import signal
 import statistics
 import subprocess
@@ -151,10 +152,41 @@ def declared_workload_inputs(path, *, require_disjoint=True):
     return inputs
 
 
+def cuda_toolchain_evidence(home):
+    home = home.resolve()
+    names = (
+        "bin/nvcc", "bin/ptxas", "nvvm/bin/cicc", "nvvm/libdevice/libdevice.10.bc",
+        "include/cuda_runtime_api.h", "include/curand.h", "include/curand_kernel.h",
+        "lib/libcudart.so.13", "lib64/libcudart.so",
+    )
+    paths = [home / name for name in names]
+    if any(not path.is_file() for path in paths):
+        raise ValueError("capture CUDA toolchain is incomplete")
+    compiler = qualified.command([str(home / "bin/nvcc"), "--version"])
+    compiler_version = re.search(r"release\s+(\d+)\.(\d+)", compiler)
+    runtime_version = re.search(
+        r"^\s*#define\s+CUDART_VERSION\s+(\d+)",
+        (home / "include/cuda_runtime_api.h").read_text(), re.MULTILINE,
+    )
+    if compiler_version is None or runtime_version is None:
+        raise ValueError("capture CUDA compiler/runtime version is unavailable")
+    compiler_pair = tuple(map(int, compiler_version.groups()))
+    runtime_number = int(runtime_version.group(1))
+    runtime_pair = runtime_number // 1000, runtime_number % 1000 // 10
+    if compiler_pair != runtime_pair or compiler_pair[0] != 13:
+        raise ValueError("capture CUDA compiler/runtime versions must match")
+    return {
+        "home": str(home), "compiler_version": compiler_version.group(0),
+        "runtime_version": runtime_number,
+        "inputs": [{"path": str(path), "sha256": sha256_file(path)} for path in paths],
+    }
+
+
 def environment(
     reference, checkout: Path, engine: Path, run: Path, port: int, *, source_profile=None,
     capacity=None, source_workload=None, max_running_requests=None,
     sampling_profile=None,
+    cuda_home=None,
 ):
     if source_profile not in (None, "balanced_join", "reusable_nested", "nested_oneshot"):
         raise ValueError("unknown predeclared source profile")
@@ -201,6 +233,8 @@ def environment(
     )
     if sampling_profile is not None:
         result["SAMPLING_PROFILE"] = sampling_profile
+    if cuda_home is not None:
+        result["CUDA_HOME"] = str(cuda_home.resolve())
     if source_profile == "reusable_nested":
         result["FANOUT_PROFILE"] = REUSABLE_NESTED_IN_GRAPH_PROFILE
     elif source_profile == "nested_oneshot":
@@ -482,6 +516,7 @@ def wait_for_resources(plan, state, path, interrupted):
 
 
 def prepare_capture(plan, state, path, interrupted):
+    sampling_checked = False
     while True:
         wait_for_resources(plan, state, path, interrupted)
         comparison.verify_sources(plan)
@@ -495,6 +530,43 @@ def prepare_capture(plan, state, path, interrupted):
         if not queue_launch_allowed(plan):
             continue
         if qualified.resources(plan["port"])["ready"]:
+            if plan.get("cuda_toolchain") is not None and not sampling_checked:
+                output = Path(plan["sampling_preflight_path"])
+                try:
+                    subprocess.run(
+                        [sys.executable, str(ROOT / "scripts/preflight_cuda_sampling.py"),
+                         "--output", str(output)],
+                        env={
+                            **os.environ, "CUDA_VISIBLE_DEVICES": "0",
+                            "CUDA_HOME": plan["cuda_toolchain"]["home"],
+                            "FLASHINFER_WORKSPACE_BASE": os.environ.get(
+                                "SGLANG_CACHE_DIR", str(Path.home() / ".cache/sglang"),
+                            ),
+                        },
+                        check=True, capture_output=True, text=True, timeout=60,
+                    )
+                except subprocess.CalledProcessError as error:
+                    failure = output.with_suffix(".error.json")
+                    reservation.write_json(failure, {
+                        "returncode": error.returncode,
+                        "stdout": error.stdout, "stderr": error.stderr,
+                    })
+                    raise ValueError(f"sampler preflight failed; see {failure}") from error
+                result = load(output)
+                if (
+                    result.get("gpu_sampling_verified") is not True
+                    or result.get("cuda_home") != plan["cuda_toolchain"]["home"]
+                ):
+                    raise ValueError("native sampler preflight did not qualify")
+                state["sampling_kernel_preflight"] = {
+                    "path": str(output), "sha256": sha256_file(output), **result,
+                }
+                reservation.write_json(path, state)
+                sampling_checked = True
+                if interrupted():
+                    raise ValueError("capture cancelled during sampler preflight")
+                if not queue_launch_allowed(plan) or not qualified.resources(plan["port"])["ready"]:
+                    continue
             return
         if not plan.get("wait_for_gpu"):
             raise ValueError("resources changed during capture preflight")
@@ -513,6 +585,10 @@ def register(args):
     fresh.verify(reference)
     reference_complete(reference, load(args.reference.with_suffix(".state.json")))
     capacity_path, capacity = reference_capacity(reference)
+    cuda_home = getattr(args, "cuda_home", None)
+    toolchain = cuda_toolchain_evidence(cuda_home) if cuda_home is not None else None
+    if getattr(args, "sampling_profile", None) == "qwen35_coding" and toolchain is None:
+        raise ValueError("coding sampling needs an explicit matched CUDA toolchain")
     queue_launch_allowed({**reference, "wait_for_gpu": args.wait_for_gpu})
     count = comparison.qualify_report(args.cpu_report, args.cpu_sources)
     sources = load(args.cpu_sources)
@@ -522,6 +598,8 @@ def register(args):
         "beliefkv/experiments/causal_replay.py",
     } <= sources.keys():
         raise ValueError("capture execution was not CPU-qualified")
+    if toolchain is not None and "scripts/preflight_cuda_sampling.py" not in sources:
+        raise ValueError("sampling preflight source was not CPU-qualified")
     fresh._require_clean(ROOT)
     if qualified.command(["git", "-C", str(ROOT), "branch", "--show-current"]) != "main":
         raise ValueError("capture must freeze main")
@@ -559,6 +637,7 @@ def register(args):
         source_profile=args.source_profile, capacity=capacity, source_workload=args.source_workload,
         max_running_requests=args.max_running_requests,
         sampling_profile=getattr(args, "sampling_profile", None),
+        cuda_home=cuda_home,
     )
     extra = [
         args.reference, args.reference.with_suffix(".state.json"),
@@ -577,10 +656,16 @@ def register(args):
         "passing_cpu_cases": count, "engine_evidence": evidence,
         "environment": env, "run_root": str(args.run_root.resolve()), "port": args.port,
         "capture_capacity": capacity,
+        "cuda_toolchain": toolchain,
+        "sampling_preflight_path": (
+            str(args.registration.with_suffix(".sampling.json").resolve())
+            if toolchain is not None else None
+        ),
         "hold_file": reference["hold_file"],
         "external_inputs": [
             *reference["external_inputs"],
             *({"path": str(path.resolve()), "sha256": sha256_file(path)} for path in extra),
+            *(toolchain["inputs"] if toolchain is not None else []),
         ],
         "performance_accepted": False, "gpu_replay_qualified": False,
         "source_profile": args.source_profile,
@@ -742,6 +827,7 @@ def main():
     parser.add_argument("--source-workload", type=Path)
     parser.add_argument("--max-running-requests", type=int)
     parser.add_argument("--sampling-profile", choices=("legacy_greedy", "qwen35_coding"))
+    parser.add_argument("--cuda-home", type=Path)
     parser.add_argument("--wait-for-gpu", action="store_true")
     parser.add_argument("--after-comparison", type=Path)
     args = parser.parse_args()

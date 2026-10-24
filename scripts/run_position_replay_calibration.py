@@ -229,6 +229,7 @@ def register(args):
             or source["environment"]["MAX_RUNNING_REQUESTS"] != str(running)
             or source["environment"].get("SAMPLING_PROFILE", "legacy_greedy")
             != common.get("SAMPLING_PROFILE", "legacy_greedy")
+            or source["environment"].get("CUDA_HOME") != common.get("CUDA_HOME")
             or sha256_file(ROOT / common["WORKLOAD_MANIFEST"]) != sha256_file(
                 Path(source["environment"]["WORKLOAD_MANIFEST"])
             )
