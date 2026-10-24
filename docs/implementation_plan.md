@@ -38,6 +38,16 @@ not by themselves prove an exposed PCIe bottleneck or a speedup; assess actual
 JOIN frequency, useful cold-state recovery, capacity/compute waits, recomputation,
 complete-workflow JCT and same-work output throughput. The goal remains active.
 
+V168's first new-model launch verified 805198 device FULL tokens (79.154GB),
+200.000GB Host FULL and zero Mamba capacity, but failed on the first real
+request: periodic Host usage sampling still indexed a nonexistent Mamba
+high-water entry. V3497 retains the complete startup failure; V169 stopped
+automatically and V170 never started. This is not a native performance result.
+The sampler now publishes only pools present in the capacity census. V3496
+passes251 focused cases, including the real telemetry capacity-to-usage sequence
+with a Full-only fixture. Restart the capture and Full-only queue from newly
+frozen main; preserve the failed registration and source artifacts.
+
 V152 is rejected as a comparison source at the user's request. It completed
 36 workflows but one child repeated the same unsuccessful grep370 times and
 required graph-budget finalization at step2017/2048. Only35 workflows are

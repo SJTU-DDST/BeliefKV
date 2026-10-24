@@ -316,10 +316,10 @@ class NativeReactiveTelemetry:
                 int(observation.host_full_used_tokens or 0),
                 int(observation.host_full_used_bytes or 0),
             ),
-            "mamba": (
+            **({"mamba": (
                 int(observation.host_mamba_used_slots or 0),
                 int(observation.host_mamba_used_bytes or 0),
-            ),
+            )} if "mamba" in self._host_pool_geometry else {}),
         }
         close_stats = getattr(cache, "native_session_close_reclaim_stats", None)
         close_stats = close_stats() if callable(close_stats) else None

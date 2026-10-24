@@ -15,6 +15,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
     inspect_session_h2d_opportunity, missing_prepare_full_prefix_tokens, shadow_backup_steps,
 )
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
+from beliefkv.runtime.v0520_native_telemetry import NativeReactiveTelemetry
 from scripts import run_causal_comparison as controls
 from scripts import run_causal_source_capture as capture
 from tests.test_sglang_v0520_observer import ComponentType
@@ -52,6 +53,26 @@ def test_full_only_capacity_and_free_lists_do_not_require_a_state_allocator():
     usage = observe_static_full_mamba_host_usage(cache)
     assert usage.observable and usage.host_full_used_bytes == 100
     assert usage.host_mamba_used_slots == usage.host_mamba_used_bytes == 0
+
+
+def test_full_only_telemetry_census_and_usage_share_the_real_pool_set(tmp_path):
+    cache, _, _ = full_only_fixture()
+    cache.tree_core.set_beliefkv_host_eviction_observer = lambda observer: None
+    cache.full_evictable_size = lambda: 0
+    audit = NativeReactiveTelemetry(tmp_path / "telemetry")
+    try:
+        audit.record_capacity(cache)
+        audit.record_host_pool_usage(cache)
+        assert set(audit._host_pool_geometry) == set(audit._host_pool_high_water) == {"full"}
+        assert audit._host_pool_high_water["full"] == {"used_units": 5, "used_bytes": 100}
+    finally:
+        audit.close()
+    records = [
+        json.loads(raw) for raw in (tmp_path / "telemetry/host_pool_telemetry.jsonl").read_text().splitlines()
+    ]
+    assert set(records[0]["pools"]) == set(records[0]["device_pools"]) == {"full"}
+    assert records[0]["device_pools"]["full"]["observable"] is True
+    assert records[0]["pools"]["full"]["used_fraction"] == 0.2
 
 
 @pytest.mark.parametrize("field,value", (
