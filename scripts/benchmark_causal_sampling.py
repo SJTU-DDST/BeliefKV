@@ -115,9 +115,12 @@ def run(args):
         raise ValueError("calibration requires exactly one explicitly visible GPU")
     torch.manual_seed(21)
     config = json.loads((args.model / "config.json").read_bytes())
-    vocabulary = config["text_config"]["vocab_size"]
+    vocabulary = config.get("text_config", config)["vocab_size"]
     profile = getattr(args, "sampling_profile", "legacy_greedy")
-    coding = profile == "qwen35_coding"
+    coding = profile in ("qwen35_coding", "qwen3_coder")
+    from beliefkv.experiments.sampling_profiles import sampling_parameters
+
+    parameters = sampling_parameters(profile)
     native_sample = None
     if coding:
         if not args.position:
@@ -179,8 +182,8 @@ def run(args):
             batch.need_top_p_sampling = batch.need_top_k_sampling = True
             batch.need_min_p_sampling = False
             batch.sampling_mask_batch_indices = batch.grammars = batch.sampling_seed = None
-            batch.temperatures = torch.full((size, 1), .6, device="cuda")
-            batch.top_ps = torch.full((size,), .95, device="cuda")
+            batch.temperatures = torch.full((size, 1), parameters["temperature"], device="cuda")
+            batch.top_ps = torch.full((size,), parameters["top_p"], device="cuda")
             batch.top_ks = torch.full((size,), 20, device="cuda", dtype=torch.int32)
             batch.min_ps = torch.zeros(size, device="cuda")
             batch.positions = torch.full((size,), 64, device="cuda", dtype=torch.int64)
@@ -257,7 +260,7 @@ def main():
     parser.add_argument("--cycles", type=int, default=64)
     parser.add_argument("--position", action="store_true")
     parser.add_argument(
-        "--sampling-profile", choices=("legacy_greedy", "qwen35_coding"), default="legacy_greedy",
+        "--sampling-profile", choices=("legacy_greedy", "qwen35_coding", "qwen3_coder"), default="legacy_greedy",
     )
     parser.add_argument("--batch-sizes", nargs="+", type=int, default=[1, 8])
     args = parser.parse_args()

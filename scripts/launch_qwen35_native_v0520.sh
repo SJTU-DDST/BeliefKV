@@ -5,6 +5,8 @@ set -euo pipefail
 # Source checkout + explicit CLI flag can enable admission-only.
 MODEL_PATH="${MODEL_PATH:-/srv/ai/models/Qwen/Qwen3.5-35B-A3B}"
 SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-Qwen3.5-35B-A3B}"
+MODEL_CACHE_LAYOUT="${MODEL_CACHE_LAYOUT:-hybrid}"
+REASONING_PARSER="${REASONING_PARSER-qwen3}"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 SGLANG_SOURCE_CHECKOUT="${SGLANG_SOURCE_CHECKOUT:-}"
 SGLANG_PATCH_FLAVOR="${SGLANG_PATCH_FLAVOR:-staging}"
@@ -17,6 +19,18 @@ CONTEXT_LENGTH="${CONTEXT_LENGTH:-131072}"
 CHUNKED_PREFILL_SIZE="${CHUNKED_PREFILL_SIZE:-4096}"
 HICACHE_SIZE_GB="${HICACHE_SIZE_GB:-200}"
 BELIEFKV_FULL_MAMBA_HOST_SPLIT="${BELIEFKV_FULL_MAMBA_HOST_SPLIT:-80:20}"
+if [[ "$MODEL_CACHE_LAYOUT" == full_only ]]; then
+  if ! jq --exit-status \
+    '.model_type == "qwen3_moe" and .use_sliding_window == false and .sliding_window == null' \
+    "$MODEL_PATH/config.json" >/dev/null; then
+    printf 'FULL-only launch requires the declared Qwen3 MoE model config\n' >&2
+    exit 2
+  fi
+  BELIEFKV_FULL_MAMBA_HOST_SPLIT=auto
+elif [[ "$MODEL_CACHE_LAYOUT" != hybrid ]]; then
+  printf 'Unknown MODEL_CACHE_LAYOUT: %s\n' "$MODEL_CACHE_LAYOUT" >&2
+  exit 2
+fi
 if [[ "${BELIEFKV_FULL_MAMBA_HOST_SPLIT}" == auto ]]; then
   unset BELIEFKV_FULL_MAMBA_HOST_SPLIT
 fi
@@ -238,10 +252,12 @@ server_args=(
   --chunked-prefill-size "${CHUNKED_PREFILL_SIZE}"
   --max-running-requests "${MAX_RUNNING_REQUESTS}"
   --random-seed "${SERVER_RANDOM_SEED}"
-  --reasoning-parser qwen3
   --tool-call-parser qwen3_coder
   --enable-metrics
 )
+if [[ -n "$REASONING_PARSER" ]]; then
+  server_args+=(--reasoning-parser "$REASONING_PARSER")
+fi
 if [[ "${HICACHE_SIZE_GB}" -gt 0 ]]; then
   server_args+=(
     --enable-hierarchical-cache

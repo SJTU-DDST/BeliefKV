@@ -1,0 +1,54 @@
+{
+  "id": "python_desktop_media_medium_020_integration_testing_hard_01",
+  "task_category": "integration_testing",
+  "difficulty": "hard",
+  "title": "Integration Test for Plugin-Registered Keyboard Shortcuts and User Customization",
+  "description": "The TimeClip Desk application features a powerful plugin system and customizable keyboard shortcuts. A key requirement is that plugins should be able to register their own actions with default shortcuts, and users must be able to override these shortcuts via the settings dialog. The custom shortcuts must persist across application restarts. This task requires writing integration tests to validate this entire workflow, ensuring seamless interaction between the Plugin Manager, Shortcut Manager, and User Preferences systems.",
+  "context_files": [
+    "timeclip_desk//docs//plugin_api.md",
+    "timeclip_desk//timeclip_desk//core//update_service.py",
+    "timeclip_desk//timeclip_desk//core//plugin_manager.py",
+    "timeclip_desk//timeclip_desk//models//preferences.py",
+    "timeclip_desk//docs//architecture.md",
+    "timeclip_desk//timeclip_desk//views//audio_editor_view.py",
+    "timeclip_desk//timeclip_desk//app.py",
+    "timeclip_desk//timeclip_desk//views//__init__.py",
+    "timeclip_desk//timeclip_desk//core//__init__.py",
+    "timeclip_desk//timeclip_desk//views//image_editor_view.py",
+    "timeclip_desk//setup_guide.md",
+    "timeclip_desk//timeclip_desk//__main__.py",
+    "timeclip_desk//timeclip_desk//models//__init__.py",
+    "timeclip_desk//timeclip_desk//core//shortcut_manager.py",
+    "timeclip_desk//timeclip_desk//views//main_window.py",
+    "timeclip_desk//timeclip_desk//views//__description__",
+    "timeclip_desk//timeclip_desk//models//media_asset.py",
+    "timeclip_desk//timeclip_desk//models//library.py",
+    "timeclip_desk//timeclip_desk//core//event_bus.py",
+    "timeclip_desk//timeclip_desk//views//settings_dialog.py",
+    "timeclip_desk//timeclip_desk//views//widgets//media_tray_item.py",
+    "timeclip_desk//config//__description__",
+    "timeclip_desk//timeclip_desk//views//widgets//__description__"
+  ],
+  "context_length": 336250,
+  "task_prompt": "Your task is to write a suite of integration tests to verify the complete lifecycle of a plugin-defined keyboard shortcut. You must create a new test file at `tests/integration/test_plugin_shortcuts_integration.py`.\n\nThe tests must cover the following scenarios:\n\n1.  **Default Registration:** Verify that when a mock plugin is loaded by the `PluginManager`, its action and default shortcut (e.g., 'Ctrl+Alt+N' for a hypothetical 'Normalize Audio' action) are correctly registered with the `ShortcutManager`.\n\n2.  **User Customization & Persistence:** Simulate a user changing the shortcut for the plugin's action in the settings. Verify that the `ShortcutManager` is updated in-memory and that this new custom shortcut (e.g., 'Ctrl+Shift+A') is correctly saved to the user preferences file.\n\n3.  **Persistence on Reload:** Simulate an application restart. The test should load the previously saved user preferences and verify that the `ShortcutManager` is initialized with the user's custom shortcut ('Ctrl+Shift+A'), not the plugin's default ('Ctrl+Alt+N').\n\n4.  **Conflict Resolution:** Write a test to ensure the system handles shortcut conflicts gracefully. Attempt to assign a shortcut to the plugin action that is already in use by a core application function. The system should prevent this change and provide a predictable response (e.g., raise a specific `ShortcutConflictError` or return `False`).\n\nYou will need to create a mock plugin object for these tests that conforms to the specifications in `docs/plugin_api.md`. You should focus on testing the backend logic and state management, mocking any UI components as necessary.",
+  "expected_approach": "An expert developer would approach this by:\n\n1.  **Analysis:** First, they would identify the key components involved by reviewing the file list: `core/plugin_manager.py`, `core/shortcut_manager.py`, `models/preferences.py`, and `core/event_bus.py`. They would also consult `docs/plugin_api.md` to understand how a plugin should be structured.\n\n2.  **Test Scaffolding:** They would create the new test file `tests/integration/test_plugin_shortcuts_integration.py` and use a testing framework like `pytest`. They would leverage `pytest` fixtures to manage the setup and teardown of the application's core services (PluginManager, ShortcutManager, Preferences) in a clean state for each test function. A `tmp_path` fixture would be used to mock the file system for saving/loading preferences.\n\n3.  **Mocking Strategy:** They would create a simple mock plugin class within the test file. This class would have methods like `get_actions()` that return a dictionary of actions and their default shortcuts, mimicking a real plugin.\n\n4.  **Test Implementation (Lifecycle):**\n    *   **Registration:** The test would instantiate the managers, load the mock plugin using the `PluginManager`, and then assert that the `ShortcutManager`'s internal data structures contain the default shortcut.\n    *   **Customization:** The test would directly call the relevant method on the `ShortcutManager` or `Preferences` model (whichever is responsible for handling the update from the settings UI) to change the shortcut. It would then assert the in-memory state change and trigger a save to the mock preference file.\n    *   **Reload:** A new set of manager instances would be created, configured to load from the previously saved mock preference file. The test would then assert that the `ShortcutManager` contains the user-defined shortcut, not the plugin's default.\n\n5.  **Test Implementation (Conflict):** The test would first register a known core shortcut with the `ShortcutManager`. Then, it would attempt to assign that same shortcut to the plugin's action and use `pytest.raises` or a similar mechanism to assert that the expected conflict error is raised or the correct boolean is returned.",
+  "ground_truth": "The solution should be a Python test file using `pytest`. Key insights the agent must demonstrate are:\n\n1.  **Understanding of Component Roles:** The agent must recognize that `PluginManager` is responsible for discovery, `ShortcutManager` is the source of truth for *active* shortcuts, and `Preferences` is the source of truth for *user overrides*, which must be prioritized on load.\n\n2.  **Mocking the Plugin:** A successful solution will include a small, self-contained mock class.\n    ```python\n    # Example of a mock plugin within the test file\n    class MockAudioNormalizerPlugin:\n        def get_name(self):\n            return \"Audio Normalizer\"\n\n        def get_actions(self):\n            return {\n                'normalize_audio': {\n                    'label': 'Normalize Audio',\n                    'default_shortcut': 'Ctrl+Alt+N',\n                    'callback': self.normalize_audio_action\n                }\n            }\n\n        def normalize_audio_action(self):\n            pass # Mock action\n    ```\n\n3.  **Testing the Full Cycle:** The tests should clearly show the state transition from default to custom and verify persistence.\n    ```python\n    # Example test snippet for persistence\n    def test_plugin_shortcut_persists_on_reload(tmp_path):\n        prefs_path = tmp_path / \"prefs.json\"\n        # --- STAGE 1: Setup and Customize ---\n        prefs1 = Preferences(filepath=prefs_path)\n        shortcut_manager1 = ShortcutManager(prefs)\n        plugin_manager1 = PluginManager(shortcut_manager=shortcut_manager1)\n\n        plugin = MockAudioNormalizerPlugin()\n        plugin_manager1.load_plugin(plugin)\n\n        # Simulate user changing the shortcut\n        shortcut_manager1.set_shortcut('normalize_audio', 'Ctrl+Shift+A')\n        prefs1.save()\n\n        # --- STAGE 2: Reload ---\n        prefs2 = Preferences(filepath=prefs_path)\n        prefs2.load()\n        shortcut_manager2 = ShortcutManager(prefs2)\n        plugin_manager2 = PluginManager(shortcut_manager=shortcut_manager2)\n\n        # The same plugin is 'discovered' on startup\n        plugin_manager2.load_plugin(plugin)\n\n        # --- VERIFY ---\n        # Check that the custom shortcut was loaded, not the default\n        assert shortcut_manager2.get_shortcut('normalize_audio') == 'Ctrl+Shift+A'\n    ```",
+  "evaluation_criteria": [
+    "**Test Correctness:** Do the tests accurately verify the specified behaviors and pass/fail correctly?",
+    "**Integration Scope:** Does the test suite successfully instantiate and test the interactions between `PluginManager`, `ShortcutManager`, and the `Preferences` model?",
+    "**Mocking and Isolation:** Does the agent correctly mock the plugin and file system (`tmp_path`) to create focused tests without requiring the full GUI or real file I/O?",
+    "**Lifecycle Coverage:** Are all stages of the shortcut lifecycle (default registration, user customization, persistence, and reload) explicitly tested and asserted?",
+    "**Edge Case Handling:** Is the shortcut conflict scenario tested effectively, asserting that the system handles it predictably (e.g., by checking for a specific exception or return value)?",
+    "**Code Quality:** Is the test code well-structured, readable, and does it use standard testing patterns like `pytest` fixtures for setup and teardown?"
+  ],
+  "metadata": {
+    "context_length": 336250,
+    "files_count": 23,
+    "information_coverage": 0.7051661151166644,
+    "coverage_range": [
+      0.6,
+      0.8
+    ],
+    "generation_timestamp": "2025-08-05T17:50:57.308974"
+  }
+}

@@ -112,7 +112,7 @@ def native_residency_budget(
     full_reserve = max(0, input_token_reserve) + max(1, page_size) * (
         active + slots
     )
-    mamba_reserve = slots
+    mamba_reserve = slots if mamba_bytes_per_slot else 0
     byte_limit = max(0, protected_bytes) + (
         max(0, full_free_tokens + evictable_full_tokens - full_reserve) * full_bytes_per_token
         + max(0, mamba_free_slots + evictable_mamba_slots - mamba_reserve) * mamba_bytes_per_slot

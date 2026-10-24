@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from copy import deepcopy
 import hashlib
+import gzip
 import json
 from pathlib import Path
 import sys
@@ -20,8 +21,12 @@ from scripts.prepare_locobench_agent_manifest import (  # noqa: E402
 )
 
 
-def extend_manifest(base, archive, *, root_count, max_tasks_per_project, references):
-    selected = select_scenarios(base["candidates"], root_count, max_tasks_per_project)
+def extend_manifest(
+    base, archive, *, root_count, max_tasks_per_project, references, categories=None,
+):
+    selected = select_scenarios(
+        base["candidates"], root_count, max_tasks_per_project, categories=categories,
+    )
     if len(selected) != root_count:
         raise ValueError("not enough distinct qualified original tasks")
     by_project = {
@@ -38,6 +43,12 @@ def extend_manifest(base, archive, *, root_count, max_tasks_per_project, referen
         selected_projects=sorted({row["project_id"] for row, _ in selected}),
         source_snapshots_reused=True, workloads=[],
     )
+    if categories is not None:
+        report["selection_policy"] = (
+            "existing seeded project order; round-robin original implementation, "
+            "refactoring and integration-testing tasks; no runtime/outcome selection"
+        )
+        report["task_categories"] = list(categories)
     for row, scenario_path in selected:
         scenario_bytes = archive.read(scenario_path)
         scenario = json.loads(scenario_bytes)
@@ -71,6 +82,8 @@ def main():
     parser.add_argument("--references", type=Path, required=True)
     parser.add_argument("--root-count", type=int, default=24)
     parser.add_argument("--max-tasks-per-project", type=int, default=4)
+    parser.add_argument("--task-category", action="append", dest="categories")
+    parser.add_argument("--tokenizer", type=Path)
     args = parser.parse_args()
     if args.output.exists():
         parser.error("output must be fresh")
@@ -83,11 +96,30 @@ def main():
         report = extend_manifest(
             base, archive, root_count=args.root_count,
             max_tasks_per_project=args.max_tasks_per_project, references=args.references,
+            categories=args.categories,
         )
     report["expanded_from_manifest"] = {
         "path": str(args.base_manifest.resolve()),
         "sha256": sha256_file(args.base_manifest),
     }
+    if args.tokenizer is not None:
+        from transformers import AutoTokenizer
+
+        tokenizer = AutoTokenizer.from_pretrained(args.tokenizer, local_files_only=True)
+        for row in report["workloads"]:
+            context = row["frozen_repository_context"]
+            packed = Path(context["path"])
+            text = gzip.decompress(packed.read_bytes()).decode()
+            context["tokens"] = len(tokenizer.encode(text, add_special_tokens=False))
+        report.update(
+            tokenizer=str(args.tokenizer.resolve()),
+            tokenizer_sha256=sha256_file(args.tokenizer / "tokenizer.json"),
+            tokenizer_config_sha256=sha256_file(args.tokenizer / "tokenizer_config.json"),
+            context_token_range=[
+                min(row["frozen_repository_context"]["tokens"] for row in report["workloads"]),
+                max(row["frozen_repository_context"]["tokens"] for row in report["workloads"]),
+            ],
+        )
     write_json(args.output, report)
     print(json.dumps({
         "manifest": str(args.output), "distinct_workflows": len(report["workloads"]),

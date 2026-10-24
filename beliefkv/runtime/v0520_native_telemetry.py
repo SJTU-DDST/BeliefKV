@@ -192,7 +192,8 @@ class NativeReactiveTelemetry:
             )
             self._device_pool_capacity = {
                 "full": int(observation["device_full_tokens"]),
-                "mamba": int(observation["device_mamba_slots"]),
+                **({"mamba": int(observation["device_mamba_slots"])}
+                   if observation["device_mamba_slots"] else {}),
             }
         except (AttributeError, KeyError, TypeError, ValueError) as exc:
             raise RuntimeError(f"native FULL/MAMBA capacity census failed: {exc}") from exc
@@ -219,10 +220,10 @@ class NativeReactiveTelemetry:
                 "capacity_units": int(observation["host_full_tokens"]),
                 "bytes_per_unit": int(entries["kv"].host_pool.size_per_token),
             },
-            "mamba": {
+            **({"mamba": {
                 "capacity_units": int(observation["host_mamba_slots"]),
                 "bytes_per_unit": int(entries["mamba"].host_pool.size_per_token),
-            },
+            }} if observation["host_mamba_slots"] else {}),
         }
         tree_core = getattr(cache, "tree_core", None)
         observer_setter = getattr(

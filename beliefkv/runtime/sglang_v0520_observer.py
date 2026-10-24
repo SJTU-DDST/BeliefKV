@@ -225,6 +225,10 @@ def _static_full_mamba_pool_geometry(
 ) -> dict[str, int | str]:
     """Validate pool ownership and ceilings without traversing tensor storage."""
     _named(cache, "UnifiedRadixCache")
+    if tuple((component.name, component.value) for component in cache.tree_components) == (
+        ("FULL", 0),
+    ):
+        return _static_full_only_pool_geometry(cache, allow_without_host=allow_without_host)
     if cache.disable is not False or tuple(
         (component.name, component.value) for component in cache.tree_components
     ) != (("FULL", 0), ("MAMBA", 2)):
@@ -295,6 +299,45 @@ def _static_full_mamba_pool_geometry(
     }
 
 
+def _static_full_only_pool_geometry(
+    cache: object, *, allow_without_host: bool = False,
+) -> dict[str, int | str]:
+    if cache.disable is not False:
+        raise ValueError("expected active FULL radix cache")
+    allocator = cache.token_to_kv_pool_allocator
+    if type(allocator).__name__ not in (
+        "TokenToKVPoolAllocator", "PagedTokenToKVPoolAllocator",
+    ):
+        raise ValueError("unexpected static FULL allocator")
+    full = _named(allocator._kvcache, "MHATokenToKVPool")
+    tokens = _positive(allocator.size, "static FULL tokens")
+    if full.size != tokens:
+        raise ValueError("static FULL allocator and physical pool disagree")
+    result = {
+        "pool_layout": "static_full_only",
+        "device_full_tokens": tokens, "device_mamba_slots": 0,
+        "host_full_tokens": 0, "host_mamba_slots": 0,
+        "host_full_bytes": 0, "host_mamba_bytes": 0, "host_total_bytes": 0,
+    }
+    if allow_without_host and cache.cache_controller is None:
+        if cache.host_pool_group is not None:
+            raise ValueError("Host pools exist without a cache controller")
+        return result
+    group = _named(cache.host_pool_group, "HostPoolGroup")
+    if cache.cache_controller.mem_pool_host is not group or set(group.entry_map) != {"kv"}:
+        raise ValueError("missing static FULL-only Host pool")
+    entry = group.entry_map["kv"]
+    host = _named(entry.host_pool, "MHATokenToKVPoolHost")
+    if entry.device_pool is not full or host.device_pool is not full or group.anchor_entry is not entry:
+        raise ValueError("static FULL Host/Device pool ownership differs")
+    host_tokens = _positive(host.size, "Host FULL tokens")
+    host_bytes = _positive(host_tokens * host.size_per_token, "Host FULL bytes")
+    result.update(
+        host_full_tokens=host_tokens, host_full_bytes=host_bytes, host_total_bytes=host_bytes,
+    )
+    return result
+
+
 def observe_static_full_mamba(
     cache: object, *, allow_without_host: bool = False,
 ) -> dict[str, int | str]:
@@ -306,22 +349,25 @@ def observe_static_full_mamba(
     capacity = _static_full_mamba_pool_geometry(
         cache, allow_without_host=allow_without_host,
     )
-    full = cache.token_to_kv_pool_allocator._kvcache.full_kv_pool
+    pool = cache.token_to_kv_pool_allocator._kvcache
+    full_only = capacity["pool_layout"] == "static_full_only"
+    full = pool if full_only else pool.full_kv_pool
     full_k_bytes, full_v_bytes = full.get_kv_size_bytes()
     device_full_bytes = (
         _positive(full_k_bytes, "device FULL K bytes")
         + _positive(full_v_bytes, "device FULL V bytes")
     )
-    state = cache.req_to_token_pool.mamba_pool.mamba_cache
-
     def tensor_bytes(tensor: object) -> int:
         return int(tensor.numel()) * int(tensor.element_size())
 
-    device_mamba_bytes = _positive(
-        sum(tensor_bytes(item) for item in state.conv)
-        + tensor_bytes(state.temporal),
-        "device MAMBA bytes",
-    )
+    device_mamba_bytes = 0
+    if not full_only:
+        state = cache.req_to_token_pool.mamba_pool.mamba_cache
+        device_mamba_bytes = _positive(
+            sum(tensor_bytes(item) for item in state.conv)
+            + tensor_bytes(state.temporal),
+            "device MAMBA bytes",
+        )
     capacity["device_full_bytes"] = device_full_bytes
     capacity["device_mamba_bytes"] = device_mamba_bytes
     capacity["device_total_bytes"] = device_full_bytes + device_mamba_bytes
@@ -336,14 +382,15 @@ def observe_static_full_mamba_host_usage(
         capacity = _static_full_mamba_pool_geometry(cache)
         group = cache.host_pool_group
         host_full = group.entry_map["kv"].host_pool
-        host_mamba = group.entry_map["mamba"].host_pool
+        mamba_entry = group.entry_map.get("mamba")
+        host_mamba = mamba_entry.host_pool if mamba_entry is not None else None
         full_used = _bounded(
             capacity["host_full_tokens"] - host_full.available_size(),
             capacity["host_full_tokens"],
             "static Host FULL used tokens",
         )
         mamba_used = _bounded(
-            capacity["host_mamba_slots"] - host_mamba.available_size(),
+            capacity["host_mamba_slots"] - host_mamba.available_size() if host_mamba is not None else 0,
             capacity["host_mamba_slots"],
             "static Host MAMBA used slots",
         )
@@ -352,7 +399,7 @@ def observe_static_full_mamba_host_usage(
             host_full_used_tokens=full_used,
             host_full_used_bytes=full_used * host_full.size_per_token,
             host_mamba_used_slots=mamba_used,
-            host_mamba_used_bytes=mamba_used * host_mamba.size_per_token,
+            host_mamba_used_bytes=mamba_used * host_mamba.size_per_token if host_mamba is not None else 0,
         )
     except (AttributeError, KeyError, TypeError, ValueError, RuntimeError) as exc:
         return StaticHostUsageObservation(observable=False, reason=str(exc))
@@ -370,12 +417,26 @@ def observe_static_full_mamba_headroom(
     """
     try:
         capacity = _static_full_mamba_pool_geometry(cache)
-        full = _named(cache.token_to_kv_pool_allocator, "TokenToKVPoolAllocator")
+        full = cache.token_to_kv_pool_allocator
+        entries = cache.host_pool_group.entry_map
+        full_host = _named(entries["kv"].host_pool, "MHATokenToKVPoolHost")
+        if capacity["pool_layout"] == "static_full_only":
+            return StaticPoolHeadroomObservation(
+                observable=True,
+                device_full_free_tokens=_bounded(
+                    full.available_size(), capacity["device_full_tokens"], "static FULL free tokens",
+                ),
+                device_mamba_free_slots=0,
+                host_full_free_tokens=_bounded(
+                    full_host.available_size(), capacity["host_full_tokens"], "static Host FULL free tokens",
+                ),
+                host_mamba_free_slots=0,
+                full_frees_deferred=full.free_group is not None,
+            )
+        _named(full, "TokenToKVPoolAllocator")
         mamba = _named(cache.req_to_token_pool.mamba_allocator, "MambaSlotAllocator")
         if mamba.size != capacity["device_mamba_slots"]:
             raise ValueError("static MAMBA allocator and physical pool disagree")
-        entries = cache.host_pool_group.entry_map
-        full_host = _named(entries["kv"].host_pool, "MHATokenToKVPoolHost")
         mamba_host = _named(entries["mamba"].host_pool, "MambaPoolHost")
         return StaticPoolHeadroomObservation(
             observable=True,

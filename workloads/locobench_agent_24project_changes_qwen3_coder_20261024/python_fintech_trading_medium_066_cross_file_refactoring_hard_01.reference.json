@@ -1,0 +1,53 @@
+{
+  "id": "python_fintech_trading_medium_066_cross_file_refactoring_hard_01",
+  "task_category": "cross_file_refactoring",
+  "difficulty": "hard",
+  "title": "Refactor Auditing from Imperative Calls to an Event-Driven System",
+  "description": "The MediTrade Nexus platform currently performs audit logging through direct, imperative calls to an `AuditStore` from within application services. This approach tightly couples the core business logic with the cross-cutting concern of auditing, making the system brittle and harder to maintain. For instance, developers must remember to manually add an audit call for every new sensitive operation. This task involves refactoring the auditing mechanism to be event-driven. Instead of direct calls, application services will raise domain events, and a dedicated event handler will listen for these events to create audit trails. This will decouple the services, centralize audit logic, and improve the overall architecture.",
+  "context_files": [
+    "meditrade_nexus/meditrade_nexus/adapters/api/ws/fix_handler.py",
+    "meditrade_nexus/meditrade_nexus/application/services.py",
+    "meditrade_nexus/meditrade_nexus/core/ports/message_bus.py",
+    "meditrade_nexus/meditrade_nexus/core/ports/__init__.py",
+    "meditrade_nexus/meditrade_nexus/application/__init__.py",
+    "meditrade_nexus/meditrade_nexus/application/sagas.py",
+    "meditrade_nexus/meditrade_nexus/adapters/messaging/fhir_bridge.py",
+    "meditrade_nexus/meditrade_nexus/core/domain/__init__.py",
+    "meditrade_nexus/meditrade_nexus/core/domain/settlement.py",
+    "meditrade_nexus/meditrade_nexus/core/ports/repositories.py",
+    "meditrade_nexus/meditrade_nexus/core/domain/receivable_asset.py",
+    "meditrade_nexus/meditrade_nexus/adapters/api/rest/endpoints.py",
+    "meditrade_nexus/meditrade_nexus/adapters/persistence/postgres_repo.py",
+    "meditrade_nexus/meditrade_nexus/main.py",
+    "meditrade_nexus/meditrade_nexus/application/bootstrap.py",
+    "meditrade_nexus/meditrade_nexus/adapters/persistence/audit_store.py",
+    "meditrade_nexus/config/roles.py",
+    "meditrade_nexus/meditrade_nexus/core/domain/events.py",
+    "meditrade_nexus/meditrade_nexus/core/domain/trade.py",
+    "meditrade_nexus/meditrade_nexus/adapters/payment/stripe_gateway.py",
+    "meditrade_nexus/meditrade_nexus/core/domain/clinical_risk_profile.py"
+  ],
+  "context_length": 286994,
+  "task_prompt": "Your task is to refactor the auditing system in MediTrade Nexus from its current imperative implementation to a decoupled, event-driven one. \n\n1.  **Analyze `meditrade_nexus/application/services.py`**: Identify all direct calls to the `audit_store` or a similar logging mechanism within the service functions (e.g., in `create_trade`, `initiate_settlement`).\n2.  **Create a new Event Handler**: Create a new file `meditrade_nexus/application/handlers.py`. Inside this file, define a class (e.g., `AuditEventHandler`) that will be responsible for handling all audit-related events.\n3.  **Implement Handler Logic**: The `AuditEventHandler` should have methods that subscribe to relevant domain events from `meditrade_nexus/core/domain/events.py` (e.g., `TradeCreated`, `SettlementInitiated`). These methods will extract necessary information from the events (like user ID, trade ID, timestamp) and use the `AuditStore` to persist a structured audit record.\n4.  **Refactor Application Services**: Remove the direct calls to the `audit_store` from `meditrade_nexus/application/services.py` that you identified in step 1. The services should now only be responsible for their primary task and for raising domain events.\n5.  **Register the Handler**: In `meditrade_nexus/application/bootstrap.py`, import the new `AuditEventHandler` and register it with the message bus. You will need to update the `EVENT_HANDLERS` mapping to link specific domain events to the new handler methods.\n6.  **Ensure Data Integrity**: You may need to modify the domain event classes in `meditrade_nexus/core/domain/events.py` to ensure they carry all the data required for a comprehensive audit log (e.g., `user_id` or `initiator_id`).",
+  "expected_approach": "An expert developer would approach this task systematically:\n\n1.  **Discovery Phase**: First, they would perform a global search for usages of the `audit_store` (or a similar audit component) to understand where and how it's currently being called. The primary focus would be `application/services.py` and `application/sagas.py`.\n2.  **Event Correlation**: For each audit call, they would look at the surrounding code to identify the corresponding domain event being raised (e.g., an audit call for trade creation would be near where a `TradeCreated` event is raised). They would then analyze the event definitions in `core/domain/events.py` to verify if all necessary data for the audit (e.g., who performed the action, on what entity, when) is present. If not, they would augment the event classes first.\n3.  **Handler Implementation**: They would create a new file `meditrade_nexus/application/handlers.py` to maintain a clean separation of concerns. A new `AuditEventHandler` class would be created. This class would likely depend on an `AuditRepository` abstraction (defined in `core/ports/repositories.py`) rather than the concrete `AuditStore` to follow dependency inversion principles.\n4.  **Wiring**: The developer would then navigate to `meditrade_nexus/application/bootstrap.py`. They would import the new handler and add entries to the `EVENT_HANDLERS` dictionary, mapping events like `events.TradeCreated` to `audit_handlers.handle_trade_created`.\n5.  **Refactoring (Deletion)**: With the new event-driven mechanism in place and wired up, they would confidently return to `application/services.py` and delete the now-redundant imperative audit calls.\n6.  **Abstraction Refinement**: They would inspect `adapters/persistence/audit_store.py` and ensure it correctly implements the `AuditRepository` port, potentially refactoring its methods to accept a structured `AuditRecord` object created by the new handler, rather than multiple primitive arguments.",
+  "ground_truth": "The solution is successful if the following changes are correctly implemented:\n\n-   **DELETIONS**: Lines making direct calls to the audit store within `meditrade_nexus/application/services.py` are removed.\n-   **ADDITIONS**: \n    -   A new file `meditrade_nexus/application/handlers.py` exists and contains an `AuditEventHandler` class.\n    -   This class has methods like `handle_trade_created(self, event: events.TradeCreated)` which contain the logic to call the audit repository.\n    -   `meditrade_nexus/application/bootstrap.py` now imports the new handler and its `EVENT_HANDLERS` map is updated to include subscriptions for events like `TradeCreated`, `SettlementInitiated`, etc., pointing to the new handler methods.\n-   **MODIFICATIONS**: \n    -   Domain event classes in `meditrade_nexus/core/domain/events.py` may be updated with additional fields (e.g., `initiator_id: str`) to support detailed auditing.\n    -   The `__init__` method of the `MessageBus` in `bootstrap.py` is updated to properly inject the `AuditRepository` dependency into the `AuditEventHandler` instance.",
+  "evaluation_criteria": [
+    "**Correctness of Refactoring**: The agent correctly identifies and removes all imperative audit calls from the application services.",
+    "**Architectural Integrity**: A new, dedicated event handler for auditing is created and placed in a logically separate file (`application/handlers.py`).",
+    "**Decoupling**: The application services (`application/services.py`) are successfully decoupled from the concrete `AuditStore`, and now only interact with it indirectly via domain events.",
+    "**Configuration Management**: The new event handler is correctly registered and subscribed to the appropriate events within the application's bootstrap file (`bootstrap.py`).",
+    "**Data Flow Comprehension**: The agent correctly identifies if domain events need to be augmented with more data and performs the necessary modifications in `core/domain/events.py`.",
+    "**Dependency Inversion**: The new handler correctly depends on an abstraction (`AuditRepository` port) rather than the concrete implementation (`AuditStore` adapter).",
+    "**Non-Regression**: The core functionality of the application remains intact, and audit records are still generated with the same or higher level of detail as before the refactoring."
+  ],
+  "metadata": {
+    "context_length": 286994,
+    "files_count": 21,
+    "information_coverage": 0.7247378136703055,
+    "coverage_range": [
+      0.6,
+      0.8
+    ],
+    "generation_timestamp": "2025-08-05T16:36:07.735228"
+  }
+}

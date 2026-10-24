@@ -1,0 +1,44 @@
+{
+  "id": "python_mobile_utility_medium_023_feature_implementation_easy_01",
+  "task_category": "feature_implementation",
+  "difficulty": "easy",
+  "title": "Implement 'Favorite Palettes' Functionality",
+  "description": "PalettePulse allows users to create and save color palettes in a local gallery. To improve user experience and organization, this task requires implementing a 'favorite' feature. Users should be able to mark any palette in their gallery as a favorite. This status must be visually indicated in the UI and persist between application sessions. This task will require modifying the data model, the data persistence layer, and the user interface.",
+  "context_files": [
+    "palettepulse/src/app/services/color_harmony_service.py",
+    "palettepulse/src/app/services/contrast_service.py",
+    "palettepulse/src/app/services/sync_service.py",
+    "palettepulse/src/data/repositories/palette_repository.py",
+    "palettepulse/src/data/repositories/settings_repository.py",
+    "palettepulse/docs/api/conf.py",
+    "palettepulse/buildozer.spec",
+    "palettepulse/docs/api/index.rst",
+    "palettepulse/src/app/models/palette.py",
+    "palettepulse/src/app/viewmodels/capture_vm.py",
+    "palettepulse/src/app/views/gallery_screen.kv"
+  ],
+  "context_length": 133977,
+  "task_prompt": "You are tasked with adding a 'favorite' feature to the PalettePulse application.\n\n1.  **Update the Data Model:** Modify the `Palette` model in `palettepulse/src/app/models/palette.py`. Add a new boolean attribute named `is_favorite`. This attribute should default to `False` for all new palettes.\n\n2.  **Update the Data Repository:** In `palettepulse/src/data/repositories/palette_repository.py`, ensure the new `is_favorite` flag is correctly saved and loaded with each palette. Implement a new public method `toggle_favorite_status(self, palette_id: str) -> bool:` that finds a palette by its ID, inverts its `is_favorite` status, saves the change to local storage, and returns the new favorite status.\n\n3.  **Update the Gallery UI:** In `palettepulse/src/app/views/gallery_screen.kv`, add an icon button (e.g., a star) to the template for each palette item. \n    - The icon's appearance must reflect the `is_favorite` status (e.g., 'star' for favorite, 'star-outline' for not).\n    - Tapping this icon should trigger the logic to toggle the palette's favorite status.\n\n4.  **Connect UI to Logic:** Ensure that the `on_release` event of the new icon button in the gallery calls the `toggle_favorite_status` method in the `PaletteRepository`. The UI must update immediately to reflect the change without requiring a full screen reload.",
+  "expected_approach": "An expert developer would approach this task by following the data flow from the model to the UI.\n\n1.  **Model Modification:** The developer would first locate `palettepulse/src/app/models/palette.py` and add `is_favorite: bool = False` to the `Palette` class, which is likely a dataclass or Pydantic model. This establishes the data structure.\n\n2.  **Repository Analysis:** Next, they would inspect `palettepulse/src/data/repositories/palette_repository.py` to understand how palettes are persisted (e.g., as individual JSON files, or in a single database file). They would identify the core `save` and `load` methods.\n\n3.  **Repository Update:** They would modify the `save` and `load` methods to include the `is_favorite` field, ensuring it's written to and read from storage. They would then implement the `toggle_favorite_status` method. An efficient implementation would load the specific palette's data, modify the boolean flag, and write it back, avoiding rewriting the entire dataset.\n\n4.  **UI Inspection:** The developer would then examine `palettepulse/src/app/views/gallery_screen.kv`. They would identify the widget that serves as a template for each palette in the gallery list (likely within a `RecycleView` or `MDList`).\n\n5.  **UI Modification:** They would add an `MDIconButton` to this template. They would use Kivy's property binding to link the button's `icon` property to the palette's `is_favorite` attribute, like `icon: 'star' if palette_data.is_favorite else 'star-outline'`.\n\n6.  **Connecting Logic:** They would bind the `on_release` event of the new button to a method in the corresponding Python screen class (e.g., `app.root.get_screen('gallery').toggle_favorite(palette_data.id)`). This Python method would then call the `palette_repository.toggle_favorite_status()` method. Upon receiving the result, it would update the `is_favorite` property on the specific palette data object in the view model to ensure the UI updates instantly.",
+  "ground_truth": "The solution should contain the following key changes:\n\n-   **In `palettepulse/src/app/models/palette.py`:**\n    -   The `Palette` class definition is updated to include `is_favorite: bool = False`.\n\n-   **In `palettepulse/src/data/repositories/palette_repository.py`:**\n    -   Methods responsible for serializing/deserializing palettes (e.g., `_to_dict`, `_from_dict`) are updated to handle the `is_favorite` key, with a default of `False` when loading older data that lacks the key.\n    -   A new method is present:\n        ```python\n        def toggle_favorite_status(self, palette_id: str) -> bool:\n            # Logic to load palette data by id\n            # Invert the 'is_favorite' flag\n            # Save the updated palette data\n            # Return the new status\n        ```\n\n-   **In `palettepulse/src/app/views/gallery_screen.kv`:**\n    -   Within the palette item template (e.g., inside a `BoxLayout` or `MDCard` for each palette), a new `MDIconButton` is added.\n    -   Its `icon` property is dynamically set based on the palette's `is_favorite` state. Example:\n        ```kv\n        MDIconButton:\n            icon: 'star' if root.palette.is_favorite else 'star-outline'\n            on_release: app.root.get_screen('gallery').toggle_favorite(root.palette.id)\n        ```\n-   **In the corresponding Python file for `gallery_screen.kv` (e.g., `gallery_screen.py` or `main.py`):**\n    -   A method `toggle_favorite(self, palette_id)` is implemented. This method calls `self.palette_repository.toggle_favorite_status(palette_id)` and then updates the UI by finding the relevant palette in its local list and changing its `is_favorite` property.",
+  "evaluation_criteria": [
+    "**Model Correctness:** The `Palette` model in `palette.py` must include the `is_favorite` boolean field with a correct default value.",
+    "**Repository Persistence:** The `palette_repository.py` must correctly save and load the `is_favorite` status for palettes.",
+    "**Repository Method Implementation:** The `toggle_favorite_status` method must be implemented correctly, be efficient, and properly alter the persisted state.",
+    "**UI Element Presence:** The `gallery_screen.kv` must contain a new, tappable icon for favoriting within each palette item.",
+    "**UI State Reactivity:** The favorite icon's visual state (e.g., solid vs. outline) must accurately and immediately reflect the palette's `is_favorite` status.",
+    "**Functionality:** The end-to-end feature must work: tapping the icon toggles the favorite state, and this state persists after restarting the application.",
+    "**Code Integration:** The new code must cleanly integrate with the existing architecture, following established patterns for connecting UI events to data logic.",
+    "**Non-Regression:** The implementation must not interfere with other core functionalities like creating, viewing, or deleting palettes."
+  ],
+  "metadata": {
+    "context_length": 133977,
+    "files_count": 11,
+    "information_coverage": 0.3000846652809633,
+    "coverage_range": [
+      0.2,
+      0.4
+    ],
+    "generation_timestamp": "2025-08-05T20:24:54.046111"
+  }
+}

@@ -9,6 +9,8 @@ ROOT_COUNT="${ROOT_COUNT:-108}"
 MAX_RUNNING_REQUESTS="${MAX_RUNNING_REQUESTS:-48}"
 SAMPLING_SEED="${SAMPLING_SEED:-21}"
 SAMPLING_PROFILE="${SAMPLING_PROFILE:-legacy_greedy}"
+MODEL_CACHE_LAYOUT="${MODEL_CACHE_LAYOUT:-hybrid}"
+SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-Qwen3.5-35B-A3B}"
 SERVER_RANDOM_SEED="${SERVER_RANDOM_SEED:-21}"
 PYTHONHASHSEED="${PYTHONHASHSEED:-$SAMPLING_SEED}"
 MAX_COMPLETION_TOKENS="${MAX_COMPLETION_TOKENS:-16384}"
@@ -194,9 +196,13 @@ if [[ -e "$EXPERIMENT_PAUSE_FILE" ]] \
 fi
 mkdir -p "$RUN_ROOT/server" "$RUN_ROOT/opportunities"
 
-server_flags=(
-  --mamba-full-memory-ratio 0.9
-)
+server_flags=()
+if [[ "$MODEL_CACHE_LAYOUT" == hybrid ]]; then
+  server_flags+=(--mamba-full-memory-ratio 0.9)
+elif [[ "$MODEL_CACHE_LAYOUT" != full_only || -n "$DEVICE_MAMBA_SLOTS" || "$HOST_SPLIT" != auto ]]; then
+  printf 'FULL-only capture cannot reserve Mamba pools or a hybrid Host split\n' >&2
+  exit 2
+fi
 if [[ -n "$DEVICE_FULL_TOKENS" ]]; then
   server_flags+=(--max-total-tokens "$DEVICE_FULL_TOKENS")
 fi
@@ -373,7 +379,7 @@ if [[ "$CHILD_FINAL_REPORT_SHADOW" == "1" ]]; then
 fi
 setsid "$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
   "${client_flags[@]}" \
-  --mode autonomous --base-url "$BASE_URL/v1" --model Qwen3.5-35B-A3B \
+  --mode autonomous --base-url "$BASE_URL/v1" --model "$SERVED_MODEL_NAME" \
   --workload-manifest "$MANIFEST" --max-workflows "$ROOT_COUNT" \
   --concurrency "$ROOT_COUNT" --subagent-fanout-profile "$FANOUT_PROFILE" \
   --workflow-arrival-batch-size "$ARRIVAL_BATCH_SIZE" \
@@ -381,7 +387,8 @@ setsid "$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
   --native-radix-sessions "${control_flags[@]}" \
   --server-audit "$RUN_ROOT/server/runtime_audit.jsonl" \
   --server-events "$RUN_ROOT/server/runtime_events.sglang.jsonl" \
-  --server-log "$RUN_ROOT/server.log" --pool-tokens 1798995 \
+  --server-log "$RUN_ROOT/server.log" \
+  --pool-tokens "$(jq --exit-status '.capacity.device_full_tokens' "$RUN_ROOT/server/native_capacity_census.json")" \
   --model-context-tokens "$MODEL_CONTEXT_TOKENS" \
   --context-window-tokens "$CONTEXT_WINDOW_TOKENS" --context-keep-tokens "$CONTEXT_KEEP_TOKENS" \
   --max-completion-tokens "$MAX_COMPLETION_TOKENS" \

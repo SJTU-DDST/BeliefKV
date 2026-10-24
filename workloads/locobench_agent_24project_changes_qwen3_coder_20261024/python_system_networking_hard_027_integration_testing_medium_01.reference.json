@@ -1,0 +1,59 @@
+{
+  "id": "python_system_networking_hard_027_integration_testing_medium_01",
+  "task_category": "integration_testing",
+  "difficulty": "medium",
+  "title": "Integration Test for Graceful gRPC Error Handling in API Gateway",
+  "description": "The StreamCarnival platform consists of multiple microservices that communicate over gRPC. The `api-gateway` service acts as the public-facing entry point, translating incoming HTTP/WebSocket requests into gRPC calls to backend services like the `orchestrator-service`. A recent, uncoordinated change in the `orchestrator-service` introduced stricter input validation, causing it to return a `grpc.StatusCode.INVALID_ARGUMENT` error for certain requests. The `api-gateway` currently lacks specific error handling for this gRPC status code. When it receives this error from the orchestrator, it fails to translate it into a corresponding HTTP `400 Bad Request`. Instead, an unhandled `grpc.RpcError` exception is raised, which results in a generic and unhelpful HTTP `500 Internal Server Error` being returned to the end-user.",
+  "context_files": [
+    "stream_carnival//docs//api//openapi.json",
+    "stream_carnival//services//api-gateway//app//grpc_clients.py",
+    "stream_carnival//services//api-gateway//app//tests//test_routing.py",
+    "stream_carnival//services//api-gateway//app//tests//test_ws_connection.py",
+    "stream_carnival//services//orchestrator-service//app//tests//test_carnival_logic.py",
+    "stream_carnival//services//api-gateway//app//ws_manager.py",
+    "stream_carnival//services//api-gateway//app//main.py",
+    "stream_carnival//services//orchestrator-service//app//tests//test_grpc_handlers.py",
+    "stream_carnival//docs//api//generated_docs.html",
+    "stream_carnival//infra//service-mesh//virtual-services//api-gateway-vs.yaml",
+    "stream_carnival//services//api-gateway//app//config.py",
+    "stream_carnival//services//api-gateway//README.md",
+    "stream_carnival//docs//adr//003-api-protocol-choices.md",
+    "stream_carnival//services//api-gateway//Dockerfile",
+    "stream_carnival//services//api-gateway//requirements.txt",
+    "stream_carnival//services//orchestrator-service//app//core//command.py",
+    "stream_carnival//services//orchestrator-service//app//main.py",
+    "stream_carnival//services//orchestrator-service//app//core//strategy.py",
+    "stream_carnival//infra//kubernetes//charts//prometheus/",
+    "stream_carnival//infra//kubernetes//overlays//staging//replicas.yaml",
+    "stream_carnival//infra//service-mesh//policies//authorization.yaml",
+    "stream_carnival//infra//service-mesh//policies//authentication.yaml",
+    "stream_carnival//services//orchestrator-service//app//core//carnival.py",
+    "stream_carnival//services//orchestrator-service//app//event_consumer.py",
+    "stream_carnival//ci-cd//security//trivy.yaml",
+    "stream_carnival//services//orchestrator-service//app//config.py",
+    "stream_carnival//infra//kubernetes//overlays//production//kustomization.yaml",
+    "stream_carnival//services//orchestrator-service//app//grpc_server.py"
+  ],
+  "context_length": 326833,
+  "task_prompt": "Your task is to write a new integration test that demonstrates this faulty error handling. You must add a test to `stream_carnival/services/api-gateway/app/tests/test_routing.py`.\n\nThe test must:\n1.  Simulate an HTTP client making a request to an endpoint handled by the API Gateway that calls the orchestrator service (e.g., a POST to a route that creates a new 'carnival').\n2.  Use mocking to simulate the `orchestrator-service`'s gRPC client within the `api-gateway`.\n3.  Configure the mock to raise a `grpc.RpcError` with the status code `grpc.StatusCode.INVALID_ARGUMENT` and a descriptive error message when its method is called.\n4.  Assert that the API Gateway's HTTP response to the client has a status code of 400 (`Bad Request`).\n5.  Assert that the JSON response body contains a structured error message, such as `{\"detail\": \"Invalid argument provided to orchestrator\"}`.",
+  "expected_approach": "An expert developer would approach this by first understanding the interaction path: `Client -> API Gateway (HTTP) -> gRPC Client -> Orchestrator Service`. The bug lies in the `API Gateway`'s translation layer.\n\n1.  **Analyze Files:** The developer would inspect `stream_carnival/services/api-gateway/app/main.py` to identify the route handler responsible for the interaction. They would then look at `stream_carnival/services/api-gateway/app/grpc_clients.py` to find the exact gRPC client method that needs to be mocked.\n\n2.  **Choose Testing Strategy:** The most efficient way to test this is to write an integration test for the `api-gateway` service in isolation, mocking its dependency on the `orchestrator-service`. This avoids the complexity of running a real orchestrator instance.\n\n3.  **Implement the Test:**\n    -   Open `stream_carnival/services/api-gateway/app/tests/test_routing.py`.\n    -   Add a new test function, for example, `test_create_carnival_grpc_invalid_argument_returns_400()`.\n    -   Use a mocking library like `pytest-mock`'s `mocker` fixture or Python's built-in `unittest.mock.patch`.\n    -   The target for the patch would be the specific method in `grpc_clients.py`, e.g., `stream_carnival.services.api-gateway.app.grpc_clients.OrchestratorClient.create_carnival`.\n    -   Configure the mock's `side_effect` to raise the required `grpc.RpcError`. This involves creating a mock error object that accurately simulates the real gRPC error, which is a key part of the task.\n    -   Use the existing `TestClient` fixture to send a `POST` request to the relevant API endpoint.\n    -   Write two assertions: one to check `response.status_code == 400` and another to check the content of `response.json()`.\n\nThis approach correctly isolates the component under test (`api-gateway`) and precisely simulates the failure condition from its dependency (`orchestrator-service`), allowing for a robust and targeted verification of the required error handling logic.",
+  "ground_truth": "The agent should add a new test case to `stream_carnival/services/api-gateway/app/tests/test_routing.py`. The solution should look similar to the following code, which uses the `pytest-mock` library.\n\n```python\n# stream_carnival/services/api-gateway/app/tests/test_routing.py\n\n# ... (existing imports)\nimport grpc\nfrom starlette.testclient import TestClient\nfrom app.main import app # Assuming TestClient is not already set up in a fixture\n\n# A helper function to create a mock RpcError might be needed if one isn't available\n# This demonstrates a deeper understanding of the grpc library.\ndef create_mock_rpc_error(code, details):\n    \"\"\"Helper to create a mock grpc.RpcError.\"\"\"\n    error = grpc.RpcError()\n    error.code = lambda: code\n    error.details = lambda: details\n    return error\n\n# ... (inside a test class or as a standalone test function)\n\ndef test_create_carnival_with_orchestrator_invalid_arg_returns_400(mocker):\n    \"\"\" \n    Tests that a gRPC INVALID_ARGUMENT error from the orchestrator\n    is translated into an HTTP 400 Bad Request.\n    \"\"\"\n    # Arrange: Mock the gRPC client method to raise the specific error\n    mock_error_details = \"Invalid carnival name provided\"\n    mock_rpc_error = create_mock_rpc_error(\n        grpc.StatusCode.INVALID_ARGUMENT,\n        mock_error_details\n    )\n    mocker.patch(\n        \"app.grpc_clients.OrchestratorClient.create_carnival\",\n        side_effect=mock_rpc_error\n    )\n\n    client = TestClient(app)\n    payload = {\"name\": \"invalid-carnival-$$$\", \"duration_seconds\": 3600}\n\n    # Act: Make a request to the endpoint that triggers the mocked call\n    response = client.post(\"/api/v1/carnivals\", json=payload)\n\n    # Assert: Verify the HTTP status code and response body\n    assert response.status_code == 400\n    response_data = response.json()\n    assert \"detail\" in response_data\n    assert response_data[\"detail\"] == f\"Invalid argument provided to orchestrator: {mock_error_details}\"\n\n```\n*Note: The exact path for mocking (`\"app.grpc_clients.OrchestratorClient.create_carnival\"`) and the expected error detail message might vary based on the precise implementation in the gateway, which the agent must deduce from the source code.*",
+  "evaluation_criteria": [
+    "**Test Correctness:** Does the added test accurately replicate the scenario? It should fail given the current buggy code and pass once a proper `try...except` block is added to the API gateway.",
+    "**Mocking Accuracy:** Did the agent correctly identify the gRPC client method in `grpc_clients.py` as the target for mocking? Was the mock correctly configured using `side_effect`?",
+    "**Error Simulation:** Did the agent successfully create and raise a `grpc.RpcError` with the specific `grpc.StatusCode.INVALID_ARGUMENT`? Bonus points for creating a realistic error object.",
+    "**Assertion Quality:** Are the assertions precise? Does the test correctly check for the HTTP `400` status code and a structured, informative JSON error body?",
+    "**Code Quality and Placement:** Is the new test placed in the correct file (`test_routing.py`)? Is the code clean, readable, and consistent with the style of existing tests?",
+    "**Multi-File Comprehension:** Does the solution demonstrate an understanding of how `main.py` (routes), `grpc_clients.py` (service communication), and `test_routing.py` (testing) interact?"
+  ],
+  "metadata": {
+    "context_length": 326833,
+    "files_count": 28,
+    "information_coverage": 0.5134612877025242,
+    "coverage_range": [
+      0.4,
+      0.6
+    ],
+    "generation_timestamp": "2025-08-05T18:42:29.225417"
+  }
+}

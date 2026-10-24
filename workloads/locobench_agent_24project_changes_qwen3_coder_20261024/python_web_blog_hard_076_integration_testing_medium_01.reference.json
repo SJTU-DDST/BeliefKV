@@ -1,0 +1,49 @@
+{
+  "id": "python_web_blog_hard_076_integration_testing_medium_01",
+  "task_category": "integration_testing",
+  "difficulty": "medium",
+  "title": "Integration Test for Admin Post Moderation Workflow",
+  "description": "ProBlogFlow has a multi-user system with two primary roles: 'user' and 'admin'. A key feature of the admin panel is content moderation, which includes the ability for an admin to delete any post on the platform, regardless of who created it. There is a bug report indicating that admins are receiving 'Forbidden' errors when trying to delete posts they did not author, suggesting a flaw in the authorization logic at the API level. This task requires creating an integration test to formally verify this workflow and expose the bug.",
+  "context_files": [
+    "problogflow//docs//api//openapi.yaml",
+    "problogflow//frontend//src//services//apiClient.js",
+    "problogflow//frontend//src//services//authService.js",
+    "problogflow//src//problogflow//adapters//outbound//__init__.py",
+    "problogflow//src//problogflow//adapters//__init__.py",
+    "problogflow//frontend//src//views//Dashboard.jsx",
+    "problogflow//frontend//src//views//EditorView.jsx",
+    "problogflow//frontend//src//App.jsx",
+    "problogflow//config//production.py",
+    "problogflow//src//problogflow//adapters//outbound//database//post_repository.py",
+    "problogflow//frontend//src//components//core//Modal.jsx",
+    "problogflow//src//problogflow//__init__.py",
+    "problogflow//config//settings.py",
+    "problogflow//src//problogflow//adapters//inbound//web//__init__.py",
+    "problogflow//src//problogflow//adapters//inbound//web//routers//posts_router.py",
+    "problogflow//src//problogflow//adapters//outbound//database//orm.py",
+    "problogflow//src//problogflow//adapters//inbound//web//routers//users_router.py"
+  ],
+  "context_length": 222810,
+  "task_prompt": "Your task is to write a new integration test file to validate the admin post-deletion functionality. \n\nThe test must cover the following scenario:\n1.  Create two distinct users in the test database: one with a 'user' role and another with an 'admin' role.\n2.  The 'user' creates a new blog post.\n3.  The 'admin' user authenticates to get a session token.\n4.  Using the admin's session token, attempt to send a DELETE request to the API endpoint for the post created by the 'user'.\n5.  Assert that the API responds with a successful status code (e.g., 204 No Content), indicating the deletion was permitted.\n6.  Assert that the post is actually removed from the database.\n\nCreate the new test file at `problogflow/tests/integration/test_admin_actions.py`. You will need to use a test client (like FastAPI's `TestClient`) to make requests to the application and set up the initial state in the database.",
+  "expected_approach": "An expert developer would first analyze the existing code to understand the components involved:\n1.  **`problogflow//src//problogflow//adapters//inbound//web//routers//posts_router.py`**: Inspect the `DELETE /posts/{post_id}` endpoint to understand its current authorization logic. They would look for the dependency that provides the `current_user` and see how it's used to authorize the deletion.\n2.  **`problogflow//src//problogflow//adapters//outbound//database//orm.py`**: Examine the `User` and `Post` models to understand their relationship and fields, especially how user roles are defined (e.g., an `is_admin` boolean or a `role` string).\n3.  **`problogflow//src//problogflow//adapters//inbound//web//routers//users_router.py`**: Review the login endpoint to understand how to programmatically authenticate a user and receive a token.\n4.  **Test Implementation Plan**: \n    - Use `pytest` as the test runner.\n    - Create `pytest` fixtures to manage dependencies like the database session and the `TestClient`.\n    - Write a fixture to create a standard user and another to create an admin user, making the tests cleaner and reusable.\n    - The test function would orchestrate the scenario: use the user fixture to create a post, use the admin fixture to get an auth token, make the `DELETE` call with the `TestClient`, and then perform assertions on both the HTTP response and the database state.",
+  "ground_truth": "The solution involves creating a new test file with `pytest`. The key insight is that the test must correctly manage application state (users and posts) and simulate an authenticated API call.\n\nFile: `problogflow/tests/integration/test_admin_actions.py`\n```python\nimport pytest\nfrom fastapi.testclient import TestClient\nfrom sqlalchemy.orm import Session\n\nfrom problogflow.adapters.outbound.database.orm import Post, User\nfrom problogflow.main import app # Assuming main app instance is here\n\n# This assumes a pytest fixture for the test client is available in conftest.py\n# and that a 'db_session' fixture provides a clean database session.\n\n@pytest.fixture\ndef regular_user(db_session: Session) -> User:\n    user = User(username='testuser', email='test@example.com', is_admin=False)\n    user.set_password('password123')\n    db_session.add(user)\n    db_session.commit()\n    return user\n\n@pytest.fixture\ndef admin_user(db_session: Session) -> User:\n    user = User(username='adminuser', email='admin@example.com', is_admin=True)\n    user.set_password('password123')\n    db_session.add(user)\n    db_session.commit()\n    return user\n\n@pytest.fixture\ndef user_post(db_session: Session, regular_user: User) -> Post:\n    post = Post(title='A User Post', content='Content by user.', author_id=regular_user.id)\n    db_session.add(post)\n    db_session.commit()\n    return post\n\ndef test_admin_can_delete_other_users_post(\n    client: TestClient,\n    db_session: Session,\n    admin_user: User,\n    user_post: Post\n):\n    \"\"\"\n    GIVEN a regular user's post exists and an admin is authenticated\n    WHEN the admin sends a DELETE request to the post's endpoint\n    THEN the request should be successful and the post should be deleted\n    \"\"\"\n    # 1. Admin authenticates to get a token\n    login_response = client.post(\n        '/api/v1/users/login/token',\n        data={'username': admin_user.username, 'password': 'password123'}\n    )\n    assert login_response.status_code == 200\n    token = login_response.json()['access_token']\n    auth_headers = {'Authorization': f'Bearer {token}'}\n\n    # 2. Admin attempts to delete the user's post\n    post_id = user_post.id\n    response = client.delete(f'/api/v1/posts/{post_id}', headers=auth_headers)\n\n    # 3. Assert the deletion was successful\n    # This assertion will likely fail until the bug is fixed.\n    # The buggy endpoint would return 403 Forbidden.\n    assert response.status_code == 204\n\n    # 4. Assert the post is gone from the database\n    deleted_post = db_session.query(Post).filter_by(id=post_id).first()\n    assert deleted_post is None\n\n\n# Key Insight for the bug:\n# The bug this test is designed to find is likely in the delete endpoint in\n# `problogflow/src/problogflow/adapters/inbound/web/routers/posts_router.py`.\n# The current logic probably looks like this:\n#   if post.author_id != current_user.id:\n#       raise HTTPException(status_code=403, detail=\"Not authorized\")\n# The corrected logic should be:\n#   if post.author_id != current_user.id and not current_user.is_admin:\n#       raise HTTPException(status_code=403, detail=\"Not authorized\")\n\n```",
+  "evaluation_criteria": [
+    "**Test Correctness:** Does the generated test accurately reflect the logic described in the prompt?",
+    "**State Management:** Does the agent correctly set up the required state (admin user, regular user, post) before executing the test action? Use of fixtures is a plus.",
+    "**Authentication Simulation:** Does the test correctly simulate the admin login flow and use the obtained authentication token in the subsequent API request headers?",
+    "**API Endpoint Interaction:** Does the test target the correct API endpoint (`DELETE /api/v1/posts/{post_id}`) with the correct HTTP method?",
+    "**Meaningful Assertions:** Does the test include specific and appropriate assertions for both the HTTP response status code (204) and the final database state (post is null)?",
+    "**File Creation:** Was the test code placed in the correct file path as specified (`problogflow/tests/integration/test_admin_actions.py`)?",
+    "**Code Quality:** Is the test code clean, readable, and does it follow standard practices for `pytest`?"
+  ],
+  "metadata": {
+    "context_length": 222810,
+    "files_count": 17,
+    "information_coverage": 0.5175525601209736,
+    "coverage_range": [
+      0.4,
+      0.6
+    ],
+    "generation_timestamp": "2025-08-05T18:23:49.917239"
+  }
+}

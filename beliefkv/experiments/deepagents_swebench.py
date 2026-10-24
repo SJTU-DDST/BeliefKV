@@ -1855,7 +1855,7 @@ class DeepAgentsExperimentConfig:
             type(self.sampling_seed) is not int or not 0 <= self.sampling_seed <= 4294967295
         ):
             raise ValueError("sampling_seed must be an unsigned 32-bit integer")
-        if self.sampling_profile not in ("legacy_greedy", "qwen35_coding"):
+        if self.sampling_profile not in ("legacy_greedy", "qwen35_coding", "qwen3_coder"):
             raise ValueError("unknown sampling_profile")
         if self.runtime_event_ack_timeout_s <= 0 or self.runtime_event_ack_retries <= 0:
             raise ValueError("runtime-event ACK policy must be positive")
@@ -2906,16 +2906,9 @@ def _model(
         config.output_dir, adapter.record_http_stream_diagnostic,
         observe_stream=natural_eos_shadow or config.stream_http_timing_shadow,
     )
-    sampling = {"temperature": 0.0}
-    if config.sampling_profile == "qwen35_coding":
-        sampling = {
-            "temperature": 0.6,
-            "top_p": 0.95,
-            "presence_penalty": 0.0,
-            "extra_body": {
-                "top_k": 20, "min_p": 0.0, "repetition_penalty": 1.0,
-            },
-        }
+    from beliefkv.experiments.sampling_profiles import sampling_parameters
+
+    sampling = sampling_parameters(config.sampling_profile)
     model = BeliefKVChatOpenAI(
         beliefkv_adapter=adapter,
         activation_deadline=(

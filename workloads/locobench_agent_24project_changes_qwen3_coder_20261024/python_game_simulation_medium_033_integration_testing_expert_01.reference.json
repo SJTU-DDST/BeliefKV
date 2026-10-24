@@ -1,0 +1,66 @@
+{
+  "id": "python_game_simulation_medium_033_integration_testing_expert_01",
+  "task_category": "integration_testing",
+  "difficulty": "expert",
+  "title": "Integration Test for Networked Physics and Scripting Synchronization",
+  "description": "In PhySage Academy, users can join a networked session to collaborate on physics simulations. A critical feature is the 'Challenge Mode', where users script objects to complete objectives. A high-priority bug (PHYS-734) has been reported where fast-moving, scripted interactions cause state desynchronization between the server and clients. Specifically, when one client's script applies a high-impulse force to a projectile and another client's script simultaneously moves a target, the client-side physics engine often detects a collision, but the server's authoritative game state sometimes fails to register the same collision. This leads to inconsistent simulation outcomes, where one player sees a successful hit and the other does not.",
+  "context_files": [
+    "physage_academy/src/physage_academy/editor/service.py",
+    "physage_academy/tests/test_integration.py",
+    "physage_academy/tests/test_editor.py",
+    "physage_academy/tests/test_core_systems.py",
+    "physage_academy/config/scenarios.yaml",
+    "physage_academy/docs/api_reference.md",
+    "physage_academy/src/physage_academy/ai/__init__.py",
+    "physage_academy/src/physage_academy/editor/__init__.py",
+    "physage_academy/src/physage_academy/editor/commands.py",
+    "physage_academy/src/physage_academy/physics/engine.py",
+    "physage_academy/src/physage_academy/resources/__init__.py",
+    "physage_academy/src/physage_academy/scripting/__init__.py",
+    "physage_academy/src/physage_academy/engine/scene.py",
+    "physage_academy/src/physage_academy/engine/game_loop.py",
+    "physage_academy/src/physage_academy/main.py",
+    "physage_academy/LICENSE",
+    "physage_academy/src/physage_academy/core/config.py",
+    "physage_academy/src/physage_academy/engine/__init__.py",
+    "physage_academy/src/physage_academy/resources/manager.py",
+    "physage_academy/src/physage_academy/common/events.py",
+    "physage_academy/run.py",
+    "physage_academy/src/physage_academy/networking/manager.py",
+    "physage_academy/src/physage_academy/networking/__init__.py",
+    "physage_academy/src/physage_academy/scripting/engine.py",
+    "physage_academy/src/physage_academy/networking/protocol.py",
+    "physage_academy/src/physage_academy/ai/tutor.py",
+    "physage_academy/src/physage_academy/core/__init__.py",
+    "physage_academy/src/physage_academy/resources/object_pool.py",
+    "physage_academy/src/physage_academy/physics/__init__.py",
+    "physage_academy/src/physage_academy/common/__init__.py",
+    "physage_academy/src/physage_academy/core/event_bus.py",
+    "physage_academy/src/physage_academy/__init__.py"
+  ],
+  "context_length": 457524,
+  "task_prompt": "A bug report (ID: PHYS-734) describes a state desynchronization issue in multiplayer challenge scenarios. The issue occurs when one client's script applies a high-impulse force to an object ('projectile') at the same simulation tick that another client's script moves a second object ('target'). The client-side physics engine correctly registers a collision, but the server-side validation logic sometimes misses it, leading to a desynchronized game state.\n\nYour task is to write a new integration test in `physage_academy/tests/test_integration.py` that reliably reproduces this failure.\n\nThe test must:\n1.  Set up a test environment with one server and two connected clients.\n2.  Programmatically create a scenario with two objects: 'projectile' and 'target'.\n3.  Assign a script to the 'projectile' (controlled by client 1) that applies a large, instantaneous force directed at the target's initial position.\n4.  Assign a script to the 'target' (controlled by client 2) that moves it to a new position.\n5.  Crucially, you must orchestrate the test so that both the force application and the position change are executed within the *same* simulation tick to trigger the potential race condition.\n6.  The test must capture all events from the event bus.\n7.  The final assertion should verify system integrity: if a `ClientCollisionEvent` is detected between the 'projectile' and 'target' on any client, a corresponding `ServerCollisionValidatedEvent` for the same objects *must* also be present in the event log. The test should fail if the server event is missing when a client event is present.",
+  "expected_approach": "An expert developer would first analyze the existing `physage_academy/tests/test_integration.py` to understand the framework for setting up multi-client tests. They would identify helper functions for creating server/client instances and managing the game loop.\n\nNext, they would investigate the key modules involved:\n- `networking/manager.py`: To understand how client actions are queued and processed by the server.\n- `physics/engine.py`: To see how collisions are detected and what events they generate.\n- `scripting/engine.py`: To learn the API for applying forces and changing object transforms from a script.\n- `common/events.py`: To identify the exact event types for client-side collisions (`ClientCollisionEvent`) and server-validated collisions (`ServerCollisionValidatedEvent`).\n\nTo implement the test, the developer would:\n1.  Define a new test function, e.g., `test_networked_scripting_race_condition`.\n2.  Instantiate a server and two client game engines, ensuring they are networked together.\n3.  Create two simple Python script strings directly within the test function. One script for the projectile (`physics.apply_impulse(...)`) and one for the target (`transform.set_position(...)`).\n4.  Add two objects to the server's scene, assigning ownership to each client respectively and attaching the corresponding scripts.\n5.  Ensure the clients are fully synchronized with the initial server state.\n6.  The critical step is to advance the simulation by a single, controlled tick on the server and then on the clients. This ensures the conditions for the race condition are met.\n7.  Before the tick, they would attach a listener to the event bus to capture all emitted events.\n8.  After the tick, they would analyze the list of captured events. The logic would be: find all `ClientCollisionEvent` instances involving the two objects. If any are found, iterate through the event list again to ensure at least one `ServerCollisionValidatedEvent` exists for the same pair of objects. The test asserts this condition is met.",
+  "ground_truth": {
+    "explanation": "The root cause of this bug lies in the server's `networking/manager.py`, where it processes a queue of incoming actions from all clients. The server processes the actions sequentially for a given tick. If it processes Client 2's 'move target' action *before* it processes Client 1's 'apply impulse' action, the physics state is updated with the target's new position. Then, when the projectile's physics is calculated, it's based on a target that has already moved, causing the server's physics engine to miss the collision that the client engines (which may process in a different order or with less network latency) were able to detect. The fix would involve a more robust handling of simultaneous actions, perhaps by processing all movements and then all actions for a given tick, or by using a more sophisticated state reconciliation algorithm. The following test reliably exposes this flaw.",
+    "code_snippet": "# In physage_academy/tests/test_integration.py\n\nfrom physage_academy.common.events import ClientCollisionEvent, ServerCollisionValidatedEvent\n\n# ... inside the TestIntegrationSuite class ...\n\ndef test_networked_scripting_race_condition(self):\n    \"\"\"Tests for desync when two clients script objects in the same tick.\"\"\"\n    server, client1, client2 = self.setup_server_and_two_clients()\n    event_log = self.capture_events(server.event_bus)\n\n    # Script for projectile, applies a strong impulse towards the target's initial position\n    projectile_script = \"\"\"\nfrom physage_academy.physics import Vector2\ndef on_start(self):\n    self.get_component('PhysicsBody').apply_impulse(Vector2(2000.0, 0.0))\n\"\"\"\n\n    # Script for target, moves it slightly out of the way\n    target_script = \"\"\"\nfrom physage_academy.physics import Vector2\ndef on_start(self):\n    self.transform.set_position(Vector2(10.1, 0.0))\n\"\"\"\n\n    # Add objects with client ownership and scripts\n    projectile_id = server.scene.add_object(\n        name='projectile',\n        position=(0, 0),\n        components={'PhysicsBody': {'body_type': 'dynamic'}},\n        owner_client_id=client1.network_manager.client_id\n    )\n    server.scripting_engine.attach_script(projectile_id, projectile_script)\n\n    target_id = server.scene.add_object(\n        name='target',\n        position=(10, 0),\n        components={'PhysicsBody': {'body_type': 'kinematic'}},\n        owner_client_id=client2.network_manager.client_id\n    )\n    server.scripting_engine.attach_script(target_id, target_script)\n\n    # Run a single tick to trigger the on_start methods and physics\n    self.run_simulation_ticks(server, client1, client2, num_ticks=1)\n\n    # Check for state divergence\n    client_collisions = [\n        e for e in event_log\n        if isinstance(e, ClientCollisionEvent) and \\\n        {e.object_id_a, e.object_id_b} == {projectile_id, target_id}\n    ]\n\n    if client_collisions:\n        server_validated_collisions = [\n            e for e in event_log\n            if isinstance(e, ServerCollisionValidatedEvent) and \\\n            {e.object_id_a, e.object_id_b} == {projectile_id, target_id}\n        ]\n        self.assertGreater(\n            len(server_validated_collisions), 0,\n            \"BUG: Client detected a collision but the server did not validate it.\"\n        )\n"
+  },
+  "evaluation_criteria": [
+    "**Test Correctness:** Does the submitted test code in `test_integration.py` run without syntax or runtime errors?",
+    "**Bug Reproduction:** Does the test logic correctly set up the race condition? The test must fail when the bug is present (i.e., the assertion must be triggered correctly).",
+    "**Component Integration:** Does the test correctly instantiate and interact with the `NetworkingManager`, `ScriptingEngine`, `Scene`, and `EventBus` components as required?",
+    "**Assertion Logic:** Is the final assertion logic correct? It must specifically check for the absence of `ServerCollisionValidatedEvent` *only if* a `ClientCollisionEvent` was detected.",
+    "**Code Quality:** Is the test well-structured, readable, and consistent with the existing test patterns in `test_integration.py`?",
+    "**Non-Intrusiveness:** Does the agent correctly add a new test without modifying existing, unrelated tests or source code unnecessarily?"
+  ],
+  "metadata": {
+    "context_length": 457524,
+    "files_count": 32,
+    "information_coverage": 0.9167127503546441,
+    "coverage_range": [
+      0.8,
+      1.0
+    ],
+    "generation_timestamp": "2025-08-05T16:10:08.915611"
+  }
+}

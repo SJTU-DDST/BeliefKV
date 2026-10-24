@@ -1,0 +1,35 @@
+{
+  "id": "python_web_blog_easy_040_cross_file_refactoring_easy_01",
+  "task_category": "cross_file_refactoring",
+  "difficulty": "easy",
+  "title": "Centralize Application Configuration into a Single Source of Truth",
+  "description": "The BizSphere Blog Suite is a Python-based web application. Currently, critical configuration parameters like pagination settings, session management details, and default values are hardcoded directly within the application logic in multiple files. This practice violates the Don't Repeat Yourself (DRY) principle and makes configuration management brittle and error-prone. This task involves refactoring the codebase to consolidate these scattered configuration values into the central `bizsphere/config.py` file, making the application more maintainable.",
+  "context_files": [
+    "BizSphere-Blog-Suite//bizsphere//blog//services.py",
+    "BizSphere-Blog-Suite//bizsphere//auth//middleware.py",
+    "BizSphere-Blog-Suite//bizsphere//blog//views.py",
+    "BizSphere-Blog-Suite//bizsphere//config.py"
+  ],
+  "context_length": 56832,
+  "task_prompt": "Your task is to refactor the BizSphere Blog Suite to centralize its configuration.\n\n1.  **Identify Hardcoded Values:** Inspect the following files to find hardcoded configuration values:\n    *   `bizsphere/blog/views.py`: Look for the number of posts displayed per page in the main blog view.\n    *   `bizsphere/blog/services.py`: Find the default author ID used when creating a new post.\n    *   `bizsphere/auth/middleware.py`: Locate the session cookie name and the session's maximum age in seconds.\n\n2.  **Centralize in `config.py`:** Move these values into the `Config` class within `bizsphere/config.py`. Use descriptive variable names (e.g., `POSTS_PER_PAGE`, `DEFAULT_AUTHOR_ID`, `SESSION_COOKIE_NAME`, `SESSION_MAX_AGE`).\n\n3.  **Update References:** Modify `views.py`, `services.py`, and `middleware.py` to import the configuration object from `config.py` and use these new centralized variables instead of the hardcoded values.\n\nEnsure that the application's external behavior remains identical after your changes. The goal is purely an internal code quality improvement.",
+  "expected_approach": "An expert developer would approach this refactoring task systematically:\n\n1.  **Analysis:**\n    *   First, they would quickly grep or search the specified files for common patterns of hardcoded values. For `views.py`, they'd look for integer literals used in pagination logic. For `services.py`, they'd look for default values in function arguments or `.get()` calls. For `middleware.py`, they'd search for string literals that look like cookie names and integer literals for time calculations.\n\n2.  **Consolidation:**\n    *   Next, they would open `bizsphere/config.py` and add the identified values as class attributes to the `Config` class, giving them clear, uppercase names to denote them as constants (e.g., `POSTS_PER_PAGE = 10`).\n\n3.  **Refactoring (File by File):**\n    *   They would then go through each of the original files (`views.py`, `services.py`, `middleware.py`).\n    *   In each file, they would add the necessary import statement, likely `from bizsphere.config import settings` (assuming `settings` is the instantiated config object).\n    *   They would then perform a find-and-replace for each hardcoded value, substituting it with the corresponding attribute from the imported `settings` object (e.g., replace `10` with `settings.POSTS_PER_PAGE`).\n\n4.  **Verification:**\n    *   Finally, they would perform a quick review of the changes (e.g., `git diff`) to ensure only the intended lines were modified and that no syntax errors were introduced. They would confirm that the imports are correct and the variable names match between `config.py` and the files using them.",
+  "ground_truth": "The solution involves changes in all four specified files. The key changes are:\n\n**1. `bizsphere/config.py`**\nNew attributes should be added to the `Config` class:\n```python\n# bizsphere/config.py\n\nclass Config:\n    # ... other settings\n    POSTS_PER_PAGE = 10\n    DEFAULT_AUTHOR_ID = 1\n    SESSION_COOKIE_NAME = 'bizsphere_session'\n    SESSION_MAX_AGE = 86400 # 24 hours in seconds\n```\n\n**2. `bizsphere/blog/views.py`**\nAn import is added and the hardcoded pagination value is replaced.\n```python\n# bizsphere/blog/views.py\n\nfrom bizsphere.config import settings\n# ... imports ...\n\ndef post_list(request):\n    # ... logic ...\n    paginator = Paginator(posts, settings.POSTS_PER_PAGE)\n    # ... logic ...\n```\n\n**3. `bizsphere/blog/services.py`**\nAn import is added and the hardcoded default author ID is replaced.\n```python\n# bizsphere/blog/services.py\n\nfrom bizsphere.config import settings\n# ... imports ...\n\ndef create_post(post_data):\n    # ... logic ...\n    author_id = post_data.get('author_id', settings.DEFAULT_AUTHOR_ID)\n    # ... logic ...\n```\n\n**4. `bizsphere/auth/middleware.py`**\nAn import is added and the hardcoded session values are replaced.\n```python\n# bizsphere/auth/middleware.py\n\nfrom bizsphere.config import settings\n# ... imports ...\n\nclass SessionMiddleware:\n    def process_request(self, request):\n        session_key = request.COOKIES.get(settings.SESSION_COOKIE_NAME)\n        # ... logic ...\n\n    def process_response(self, request, response):\n        # ... logic ...\n        if request.session.modified:\n            response.set_cookie(\n                settings.SESSION_COOKIE_NAME,\n                request.session.session_key,\n                max_age=settings.SESSION_MAX_AGE\n            )\n        return response\n```",
+  "evaluation_criteria": [
+    "**Correctness:** The new configuration variables (`POSTS_PER_PAGE`, `DEFAULT_AUTHOR_ID`, `SESSION_COOKIE_NAME`, `SESSION_MAX_AGE`) must be correctly defined in `bizsphere/config.py`.",
+    "**Completeness:** All specified hardcoded values in `views.py`, `services.py`, and `middleware.py` must be removed and replaced.",
+    "**Dependency Management:** The required import statements (`from bizsphere.config import settings` or similar) must be added correctly to the modified files.",
+    "**Code Integrity:** The agent must not alter any unrelated code, logic, or comments in the files.",
+    "**Syntactic Validity:** All modified files must remain syntactically correct Python code.",
+    "**File Management:** The agent must only modify the existing files and must not create or delete any files."
+  ],
+  "metadata": {
+    "context_length": 56832,
+    "files_count": 4,
+    "information_coverage": 0.3324792024992102,
+    "coverage_range": [
+      0.2,
+      0.4
+    ],
+    "generation_timestamp": "2025-08-05T20:07:51.129847"
+  }
+}

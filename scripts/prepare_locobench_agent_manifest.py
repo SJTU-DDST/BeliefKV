@@ -78,7 +78,10 @@ def scenario_prompt(scenario):
     )
 
 
-def select_scenarios(candidates, root_count, max_tasks_per_project):
+def select_scenarios(candidates, root_count, max_tasks_per_project, *, categories=None):
+    categories = DEFAULT_CATEGORIES if categories is None else tuple(categories)
+    if not categories or any(category not in DEFAULT_CATEGORIES for category in categories):
+        raise ValueError("task categories must be nonempty original dataset categories")
     qualified = [row for row in candidates if not row["rejection_reasons"]]
     selected, used = [], set()
     for _ in range(max_tasks_per_project):
@@ -86,7 +89,7 @@ def select_scenarios(candidates, root_count, max_tasks_per_project):
             if len(selected) >= root_count:
                 break
             available = [path for path in row["scenario_paths"] if path not in used]
-            category = DEFAULT_CATEGORIES[len(selected) % len(DEFAULT_CATEGORIES)]
+            category = categories[len(selected) % len(categories)]
             preferred = [path for path in available if f"_{category}_" in path]
             if not available:
                 continue

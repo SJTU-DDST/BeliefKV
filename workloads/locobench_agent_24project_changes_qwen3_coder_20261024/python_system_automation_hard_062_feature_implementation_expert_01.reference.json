@@ -1,0 +1,91 @@
+{
+  "id": "python_system_automation_hard_062_feature_implementation_expert_01",
+  "task_category": "feature_implementation",
+  "difficulty": "expert",
+  "title": "Implement Proactive Remediation Engine for S3 Security Findings",
+  "description": "NimbusCustodian currently excels at identifying and alerting on system issues, including security vulnerabilities. However, responding to these alerts is a manual process. This task involves extending NimbusCustodian with a proactive remediation engine. The first capability of this engine will be to automatically correct a common, critical security misconfiguration: S3 buckets with public read access. The new feature must integrate seamlessly with the existing security scanning and alerting framework, be configurable, and include robust logging and testing.",
+  "context_files": [
+    "docs/api.md",
+    "src/module_12.py",
+    "src/module_22.py",
+    "src/module_11.py",
+    "src/module_21.py",
+    "src/module_16.py",
+    "src/module_5.py",
+    "src/module_17.py",
+    "tests/test_main.py",
+    "src/module_28.py",
+    "src/module_23.py",
+    "src/module_1.py",
+    "src/module_10.py",
+    "src/module_2.py",
+    "src/module_18.py",
+    "src/module_14.py",
+    "src/module_27.py",
+    "nimbus_custodian/children",
+    "src/module_15.py",
+    "src/module_6.py",
+    "src/module_9.py",
+    "src/module_3.py",
+    "src/module_8.py",
+    "src/module_20.py",
+    "src/module_19.py",
+    "src/module_29.py",
+    "src/module_25.py",
+    "src/module_4.py",
+    "src/module_26.py",
+    "src/module_24.py",
+    "nimbus_custodian/name",
+    "src/utils.py",
+    "src/module_13.py",
+    "src/module_7.py",
+    "tests/test_utils.py"
+  ],
+  "context_length": 530549,
+  "task_prompt": "Your task is to implement a new proactive remediation feature within the NimbusCustodian fabric.\n\n**Feature Requirements:**\n\n1.  **New Module:** Create a new module, `src/remediation_engine.py`, to house the core remediation logic. This promotes modularity.\n\n2.  **Triggering Logic:** The existing security scanning module, `src/module_20.py`, generates findings. When a finding with `type: 'S3_PUBLIC_READ_ACL'` and `severity: 'CRITICAL'` is processed by the central event handler in `src/module_7.py`, it should trigger the new remediation logic.\n\n3.  **Remediation Action:** The remediation action for the `S3_PUBLIC_READ_ACL` finding is to apply the `'private'` canned ACL to the affected S3 bucket. You should use the existing cloud interaction utilities in `src/utils.py`. Assume a function `utils.get_aws_client('s3')` exists and provides a boto3-like client.\n\n4.  **Configuration:** The entire remediation feature must be controlled by a configuration setting. The remediation logic in `src/module_7.py` should only execute if a configuration key `remediation.enabled` is `True`. You can assume a global `config` object is loaded and available.\n\n5.  **Logging and Status Update:**\n    - Upon successful remediation, log a message: `Successfully remediated S3 bucket [bucket_name] by setting ACL to private.`\n    - After remediation, update the status of the original finding. The finding object has an `update_status` method (e.g., `finding.update_status('REMEDIATED')`). You will need to locate where the `finding` object is managed, likely within `src/module_20.py` or `src/module_7.py`.\n\n6.  **Testing:**\n    - Create a new test file: `tests/test_remediation_engine.py`.\n    - Write unit tests for the new `remediation_engine` module.\n    - In `tests/test_main.py` or a relevant existing test file, add an integration test to verify that a `CRITICAL` `S3_PUBLIC_READ_ACL` finding correctly triggers the remediation engine when the feature is enabled, and does not trigger it when disabled. \n    - All new tests must use mocking for AWS calls and configuration access.",
+  "expected_approach": "An expert developer would approach this task systematically:\n\n1.  **Code Discovery & Analysis:** The first step is to understand the existing system. The developer would start by reading `docs/api.md` to grasp the high-level architecture and event flow. They would then analyze the source code:\n    -   `src/module_7.py`: As the largest file, this is a prime candidate for the central event bus or dispatcher. The developer would search for terms like 'event', 'handle', 'dispatch', and 'alert' to confirm its role.\n    -   `src/module_20.py`: The developer would inspect this module to understand how security findings are created and structured. They would look for the class or dictionary definition of a 'finding' to understand its attributes (`type`, `severity`, `resource_id`, `update_status`).\n    -   `src/utils.py`: This file would be examined for existing AWS client wrappers, logging functions, and configuration loaders.\n\n2.  **Design & Scaffolding:**\n    -   Create the new file `src/remediation_engine.py`.\n    -   Define a primary function within it, such as `remediate_s3_public_access(finding_details: dict) -> bool`.\n\n3.  **Implementation - Remediation Logic:**\n    -   Inside `remediation_engine.py`, implement the `remediate_s3_public_access` function. It should extract the bucket name from the `finding_details`.\n    -   It will call `utils.get_aws_client('s3')` to get a client.\n    -   It will then call the client's method to set the ACL, e.g., `s3_client.put_bucket_acl(Bucket=bucket_name, ACL='private')`.\n    -   The function should include error handling (e.g., using a try/except block) and return `True` on success and `False` on failure.\n\n4.  **Implementation - Integration:**\n    -   Modify the event handler in `src/module_7.py`.\n    -   Inside the loop or function that processes findings, add a conditional block:\n        ```python\n        if config.get('remediation.enabled') and finding.type == 'S3_PUBLIC_READ_ACL' and finding.severity == 'CRITICAL':\n            from src.remediation_engine import remediate_s3_public_access\n            success = remediate_s3_public_access({'bucket_name': finding.resource_id})\n            if success:\n                log.info(f\"...\")\n                finding.update_status('REMEDIATED')\n        ```\n\n5.  **Testing:**\n    -   Create `tests/test_remediation_engine.py`.\n    -   Using `unittest.mock`, write a test that calls `remediate_s3_public_access` and asserts that `put_bucket_acl` was called with the correct arguments.\n    -   Modify `tests/test_main.py` or `tests/test_module_7.py`.\n    -   Add two tests for the event handler: one with `remediation.enabled=True` (asserting the remediation function is called) and one with `remediation.enabled=False` (asserting it is NOT called). Mock the config, finding object, and the remediation function itself to isolate the test to the integration logic.",
+  "ground_truth": {
+    "new_files": [
+      "src/remediation_engine.py",
+      "tests/test_remediation_engine.py"
+    ],
+    "modified_files": [
+      "src/module_7.py",
+      "tests/test_main.py"
+    ],
+    "key_insights": [
+      {
+        "file": "src/remediation_engine.py",
+        "insight": "Should contain the isolated logic for performing the S3 ACL change, using utilities from `src/utils.py`.\n```python\n# src/remediation_engine.py\nfrom . import utils\n\nlog = utils.get_logger(__name__)\n\ndef remediate_s3_public_access(bucket_name: str) -> bool:\n    \"\"\"Applies the 'private' canned ACL to the specified S3 bucket.\"\"\"\n    try:\n        log.info(f'Attempting to remediate S3 bucket: {bucket_name}')\n        s3_client = utils.get_aws_client('s3')\n        s3_client.put_bucket_acl(Bucket=bucket_name, ACL='private')\n        log.info(f'Successfully applied private ACL to bucket {bucket_name}')\n        return True\n    except Exception as e:\n        log.error(f'Failed to remediate bucket {bucket_name}: {e}')\n        return False\n```"
+      },
+      {
+        "file": "src/module_7.py",
+        "insight": "Should be modified to import and invoke the remediation engine based on configuration and finding properties.\n```python\n# src/module_7.py (inside an event processing function)\n\n# ... existing code to process findings ...\n\n# New remediation logic\nif config.get('remediation.enabled') and finding.type == 'S3_PUBLIC_READ_ACL' and finding.severity == 'CRITICAL':\n    from . import remediation_engine\n    success = remediation_engine.remediate_s3_public_access(finding.resource_id)\n    if success:\n        # Assume 'log' is an existing logger instance\n        log.info(f'Successfully remediated S3 bucket {finding.resource_id} by setting ACL to private.')\n        finding.update_status('REMEDIATED')\n\n# ... rest of the function ...\n```"
+      },
+      {
+        "file": "tests/test_remediation_engine.py",
+        "insight": "Must contain unit tests mocking the AWS client.\n```python\n# tests/test_remediation_engine.py\nimport unittest\nfrom unittest.mock import patch, MagicMock\nfrom src import remediation_engine\n\nclass TestRemediationEngine(unittest.TestCase):\n\n    @patch('src.utils.get_aws_client')\n    def test_remediate_s3_success(self, mock_get_client):\n        mock_s3_client = MagicMock()\n        mock_get_client.return_value = mock_s3_client\n        bucket_name = 'my-test-bucket'\n\n        result = remediation_engine.remediate_s3_public_access(bucket_name)\n\n        self.assertTrue(result)\n        mock_get_client.assert_called_once_with('s3')\n        mock_s3_client.put_bucket_acl.assert_called_once_with(Bucket=bucket_name, ACL='private')\n```"
+      }
+    ]
+  },
+  "evaluation_criteria": [
+    "**Correctness:** Does the implementation successfully trigger the remediation for the correct finding type and apply the 'private' ACL?",
+    "**Modularity:** Was the core logic correctly isolated into the new `src/remediation_engine.py` file?",
+    "**Integration:** Is the `remediation_engine` called correctly from the event handler in `src/module_7.py` without breaking existing functionality?",
+    "**Configuration Management:** Is the entire feature correctly gated behind the `remediation.enabled` configuration flag?",
+    "**State Management:** Does the implementation correctly call the `finding.update_status('REMEDIATED')` method upon successful remediation?",
+    "**Test Coverage:** Were new, effective unit and integration tests created? Do the tests properly mock external dependencies (AWS, config)?",
+    "**Code Quality:** Does the new code adhere to the existing project's style and conventions? Is it clear, concise, and properly logged?",
+    "**Robustness:** Does the remediation function include basic error handling (e.g., a try/except block) to prevent crashes?"
+  ],
+  "metadata": {
+    "context_length": 530549,
+    "files_count": 35,
+    "information_coverage": 0.9033435095527628,
+    "coverage_range": [
+      0.8,
+      1.0
+    ],
+    "generation_timestamp": "2025-08-05T15:34:29.405152"
+  }
+}

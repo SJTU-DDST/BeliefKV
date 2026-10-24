@@ -230,6 +230,11 @@ def register(args):
             or source["environment"].get("SAMPLING_PROFILE", "legacy_greedy")
             != common.get("SAMPLING_PROFILE", "legacy_greedy")
             or source["environment"].get("CUDA_HOME") != common.get("CUDA_HOME")
+            or any(
+                source["environment"].get(name) != common.get(name)
+                for name in ("MODEL_PATH", "SERVED_MODEL_NAME", "MODEL_CACHE_LAYOUT", "CONTEXT_TOKENIZER_PATH")
+                if name in common
+            )
             or sha256_file(ROOT / common["WORKLOAD_MANIFEST"]) != sha256_file(
                 Path(source["environment"]["WORKLOAD_MANIFEST"])
             )
@@ -240,7 +245,8 @@ def register(args):
             or len(set(spec["order"])) != len(spec["order"])
         ):
             raise ValueError("predeclared source population, batch, tasks or control order differs")
-        controls.source_reference(reference, roots, running, source["capture_capacity"])
+        if source.get("capture_capacity") is not None:
+            controls.source_reference(reference, roots, running, source["capture_capacity"])
     count = comparison.qualify_report(args.cpu_report, args.cpu_sources)
     sources = load(args.cpu_sources)
     if not {

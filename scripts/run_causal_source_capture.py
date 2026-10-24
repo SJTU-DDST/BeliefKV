@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.internal_comparison import arm_environment
 from beliefkv.experiments.delegation_policy import (
-    NESTED_IN_GRAPH_PROFILE, REUSABLE_NESTED_IN_GRAPH_PROFILE,
+    DYNAMIC_NESTED_IN_GRAPH_PROFILE, NESTED_IN_GRAPH_PROFILE, REUSABLE_NESTED_IN_GRAPH_PROFILE,
 )
 from beliefkv.core.events import RuntimeEventKind as Kind
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
@@ -51,10 +51,16 @@ def validated_capacity(capacity):
         "device_total_bytes", "host_full_bytes", "host_full_tokens", "host_mamba_bytes",
         "host_mamba_slots", "host_total_bytes",
     )
+    full_only = isinstance(capacity, dict) and capacity.get("pool_layout") == "static_full_only"
+    state_fields = {"device_mamba_bytes", "device_mamba_slots", "host_mamba_bytes", "host_mamba_slots"}
     if (
         not isinstance(capacity, dict)
-        or capacity.get("pool_layout") != "static_separate_full_mamba"
-        or any(type(capacity.get(name)) is not int or capacity[name] <= 0 for name in fields)
+        or capacity.get("pool_layout") not in ("static_separate_full_mamba", "static_full_only")
+        or any(
+            type(capacity.get(name)) is not int
+            or (capacity[name] != 0 if full_only and name in state_fields else capacity[name] <= 0)
+            for name in fields
+        )
         or capacity["device_total_bytes"] != (
             capacity["device_full_bytes"] + capacity["device_mamba_bytes"]
         )
@@ -187,7 +193,7 @@ def environment(
     reference, checkout: Path, engine: Path, run: Path, port: int, *, source_profile=None,
     capacity=None, source_workload=None, max_running_requests=None,
     sampling_profile=None,
-    cuda_home=None,
+    cuda_home=None, experiment=None,
 ):
     if source_profile not in (None, "balanced_join", "reusable_nested", "nested_oneshot"):
         raise ValueError("unknown predeclared source profile")
@@ -195,7 +201,7 @@ def environment(
         type(max_running_requests) is not int or not 1 <= max_running_requests <= 9999
     ):
         raise ValueError("max running requests must be a positive integer")
-    if sampling_profile not in (None, "legacy_greedy", "qwen35_coding"):
+    if sampling_profile not in (None, "legacy_greedy", "qwen35_coding", "qwen3_coder"):
         raise ValueError("unknown source sampling profile")
     run = run.resolve()
     base = reference["arms"]["native_matched"]
@@ -210,6 +216,15 @@ def environment(
     }
     if any(base.get(name) != value for name, value in required.items()):
         raise ValueError("capture must preserve the existing seeded 36-root workload")
+    if experiment is not None:
+        from scripts.run_causal_comparison import experiment_reference
+
+        configured = experiment_reference({"arms": {"full": base}}, experiment)["arms"]["full"]
+        if source_profile != experiment["source_profile"] or source_workload is None:
+            raise ValueError("source needs the predeclared experiment workload and profile")
+        if (ROOT / experiment["common_environment"]["WORKLOAD_MANIFEST"]).resolve() != source_workload.resolve():
+            raise ValueError("source workload differs from the predeclared experiment")
+        base = configured
     declared = (
         Path(base["WORKLOAD_MANIFEST"]) if source_workload is None
         else source_workload.resolve()
@@ -238,7 +253,7 @@ def environment(
         result["CUDA_HOME"] = str(cuda_home.resolve())
     if source_profile == "reusable_nested":
         result["FANOUT_PROFILE"] = REUSABLE_NESTED_IN_GRAPH_PROFILE
-    elif source_profile == "nested_oneshot":
+    elif source_profile == "nested_oneshot" and experiment is None:
         result["FANOUT_PROFILE"] = NESTED_IN_GRAPH_PROFILE
     if max_running_requests is not None:
         result["MAX_RUNNING_REQUESTS"] = str(max_running_requests)
@@ -246,8 +261,15 @@ def environment(
         capacity = validated_capacity(capacity)
         result.update(
             DEVICE_FULL_TOKENS=str(capacity["device_full_tokens"]),
-            DEVICE_MAMBA_SLOTS=str(capacity["device_mamba_slots"]),
+            DEVICE_MAMBA_SLOTS=str(capacity["device_mamba_slots"]) if capacity["device_mamba_slots"] else "",
         )
+    if result.get("MODEL_CACHE_LAYOUT") == "full_only":
+        result.update(
+            DEVICE_MAMBA_SLOTS="", HOST_SPLIT="auto",
+            BELIEFKV_FULL_MAMBA_HOST_SPLIT="auto", REASONING_PARSER="",
+        )
+        if capacity is None:
+            result["DEVICE_FULL_TOKENS"] = ""
     return result
 
 
@@ -275,6 +297,8 @@ def engine_evidence(engine: Path, report: Path, sources: Path) -> dict:
 
 def observe(arm: Path, *, final=False, expected_capacity=None):
     census = arm / "server/native_capacity_census.json"
+    if census.is_file():
+        validated_capacity(load(census).get("capacity"))
     if expected_capacity is not None:
         if final and not census.is_file():
             raise ValueError("capture lacks final native capacity census")
@@ -301,6 +325,8 @@ def observe(arm: Path, *, final=False, expected_capacity=None):
             or config.get("server_random_seed") != 21 or config.get("python_hash_seed") != "21"
         ):
             raise ValueError("capture policy or seed differs from the native source")
+    if final and not census.is_file():
+        raise ValueError("capture lacks final native capacity census")
 
 
 def balanced_source(summary):
@@ -398,7 +424,7 @@ def reusable_source(summary, graph, *, expected_workflows=36):
     }
 
 
-def oneshot_source(summary, graph, *, expected_workflows):
+def oneshot_source(summary, graph, *, expected_workflows, expected_profile=NESTED_IN_GRAPH_PROFILE):
     """Keep normal tails and report the model's actual delegation decisions."""
     workflows = summary.get("workflows", [])
     started = {
@@ -415,7 +441,7 @@ def oneshot_source(summary, graph, *, expected_workflows):
         reasons.append("incomplete_workflow_population")
     if any(row.get("native_agent_jct_eligible") is not True for row in workflows):
         reasons.append("source_guard_or_ineligible_workflow")
-    if summary.get("subagent_fanout_profile") != NESTED_IN_GRAPH_PROFILE:
+    if summary.get("subagent_fanout_profile") != expected_profile:
         reasons.append("not_the_predeclared_oneshot_profile")
     return {
         "profile": "nested_oneshot", "accepted": not reasons, "reasons": reasons,
@@ -589,10 +615,13 @@ def register(args):
     reference = load(args.reference)
     fresh.verify(reference)
     reference_complete(reference, load(args.reference.with_suffix(".state.json")))
-    capacity_path, capacity = reference_capacity(reference)
+    experiment_path = getattr(args, "experiment_config", None)
+    experiment = load(experiment_path) if experiment_path else None
+    full_only = experiment is not None and experiment["common_environment"].get("MODEL_CACHE_LAYOUT") == "full_only"
+    capacity_path, capacity = (None, None) if full_only else reference_capacity(reference)
     cuda_home = getattr(args, "cuda_home", None)
     toolchain = cuda_toolchain_evidence(cuda_home) if cuda_home is not None else None
-    if getattr(args, "sampling_profile", None) == "qwen35_coding" and toolchain is None:
+    if getattr(args, "sampling_profile", None) in ("qwen35_coding", "qwen3_coder") and toolchain is None:
         raise ValueError("coding sampling needs an explicit matched CUDA toolchain")
     queue_launch_allowed({**reference, "wait_for_gpu": args.wait_for_gpu})
     count = comparison.qualify_report(args.cpu_report, args.cpu_sources)
@@ -643,12 +672,21 @@ def register(args):
         max_running_requests=args.max_running_requests,
         sampling_profile=getattr(args, "sampling_profile", None),
         cuda_home=cuda_home,
+        experiment=experiment,
     )
     extra = [
         args.reference, args.reference.with_suffix(".state.json"),
         args.cpu_report, args.cpu_sources, args.engine_report, args.engine_sources,
-        capacity_path, *workload_inputs,
+        *([capacity_path] if capacity_path else []), *workload_inputs,
     ]
+    if experiment_path:
+        extra.append(experiment_path)
+    if full_only:
+        model = Path(env["MODEL_PATH"])
+        extra.extend(model / name for name in (
+            "config.json", "generation_config.json", "tokenizer.json", "tokenizer_config.json",
+            "model.safetensors.index.json",
+        ))
     if args.after_comparison:
         extra.append(args.after_comparison)
     plan = {
@@ -757,7 +795,7 @@ def watch(registration: Path):
             if not token_report["token_evidence_complete"] or not graph_report["causal_graph_compiled"]:
                 raise ValueError("captured token or dependency evidence is incomplete")
             if (
-                plan["environment"].get("SAMPLING_PROFILE") == "qwen35_coding"
+                plan["environment"].get("SAMPLING_PROFILE") in ("qwen35_coding", "qwen3_coder")
                 and token_report.get("original_generation_parameters_complete") is not True
             ):
                 raise ValueError("coding source lacks original native sampler parameters")
@@ -788,6 +826,7 @@ def watch(registration: Path):
                 graph, _, _ = source_plan(arm)
                 selection = oneshot_source(
                     load(summary_path), graph, expected_workflows=roots,
+                    expected_profile=plan["environment"]["FANOUT_PROFILE"],
                 )
                 reservation.write_json(run / "source_selection.json", selection)
                 state["source_selection"] = selection
@@ -836,7 +875,8 @@ def main():
     )
     parser.add_argument("--source-workload", type=Path)
     parser.add_argument("--max-running-requests", type=int)
-    parser.add_argument("--sampling-profile", choices=("legacy_greedy", "qwen35_coding"))
+    parser.add_argument("--sampling-profile", choices=("legacy_greedy", "qwen35_coding", "qwen3_coder"))
+    parser.add_argument("--experiment-config", type=Path)
     parser.add_argument("--cuda-home", type=Path)
     parser.add_argument("--wait-for-gpu", action="store_true")
     parser.add_argument("--after-comparison", type=Path)

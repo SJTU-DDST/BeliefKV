@@ -2,6 +2,42 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+Latest user steering supersedes the historical sequence below: migrate the
+next comparison to local Qwen3-Coder-30B-A3B-Instruct, with 24 simultaneous
+roots from 24 different original LoCoBench-Agent projects. Do not run further
+ablations until Full shows clear gains over native. V166 scheduler-only and
+the waiting V167b component diagnostic were explicitly stopped; V3478 preserves
+their verified supervisor identities and stop requests. Completed V164 native
+and V166 Full evidence remains unchanged: Full mean JCT improves 1.911% and
+event-makespan output throughput 1.356%, which is still below the intended gain.
+
+The new manifest uses the existing seed-21 project order, one original task
+per project, cycling original implementation, cross-file refactoring and
+integration-testing categories. It does not select by old completion times,
+JOIN counts or policy outcomes. Root source snapshots remain complete; children
+receive model-selected assignments and inspect the shared checkout. The existing
+dynamic-nested profile enables every direct-child role to spawn leaf grandchildren
+and encourages useful follow-up work without enforcing rounds, role sequences,
+tool choice, fabricated joins or terminal rejection. All ordinary tails remain.
+
+The Full-only adapter must replace hybrid pool assumptions in capacity census,
+session input inspection, prefix planning, increment backup and restoration
+budgets. Absent Mamba pools have zero capacity and no reserve. New-model native
+capacity is measured, then frozen for exact-work Full replay. No old-model
+tokens or transfer samples qualify this comparison; tool timing and transfer
+service estimates start from causal online evidence. Generation uses the local
+Qwen3-Coder profile (temperature 0.7, top-p 0.8, top-k 20, repetition penalty
+1.05) with seed 21, 262144-token context, compression at 95% and the unchanged
+16384-token output cap. Running/decode remains 24.
+
+Execution target: CPU-qualify the actual Full-only native tree and application,
+freeze main and engine, collect the new natural native trajectory, perform
+bounded exact-token/session/stop checks, then run Full only on that trajectory.
+Do not schedule another complete native replay. More layers and larger KV do
+not by themselves prove an exposed PCIe bottleneck or a speedup; assess actual
+JOIN frequency, useful cold-state recovery, capacity/compute waits, recomputation,
+complete-workflow JCT and same-work output throughput. The goal remains active.
+
 V152 is rejected as a comparison source at the user's request. It completed
 36 workflows but one child repeated the same unsuccessful grep370 times and
 required graph-budget finalization at step2017/2048. Only35 workflows are

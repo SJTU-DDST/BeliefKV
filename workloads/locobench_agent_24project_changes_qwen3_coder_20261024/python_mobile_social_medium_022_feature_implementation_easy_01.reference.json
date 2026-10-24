@@ -1,0 +1,59 @@
+{
+  "id": "python_mobile_social_medium_022_feature_implementation_easy_01",
+  "task_category": "feature_implementation",
+  "difficulty": "easy",
+  "title": "Implement View Counter for Incidents",
+  "description": "The GatherProof product team wants to track user engagement by measuring how many times each incident report is viewed. This data will help identify high-interest events. This task requires adding a 'view_count' field to the incident data model and incrementing it each time an incident's details are fetched via the API.",
+  "context_files": [
+    "gatherproof_backend//docs//API.md",
+    "gatherproof_backend//src//data//repository.py",
+    "gatherproof_backend//tests//unit//test_incidents_handler.py",
+    "gatherproof_backend//tests//unit//test_repository.py",
+    "gatherproof_backend//tests//integration//test_api_gateway.py",
+    "gatherproof_backend//src//core//services.py",
+    "gatherproof_backend//src//adapters//social_sharing.py"
+  ],
+  "context_length": 89017,
+  "task_prompt": "Your task is to implement a view counter for incidents in the GatherProof backend.\n\n1.  **Data Layer:** Modify the `repository.py` to include a `view_count` attribute for each incident. This should be an integer that defaults to 0 upon creation. Implement a new, efficient method in the `IncidentRepository` class to atomically increment the `view_count` for a given `incident_id`.\n\n2.  **Service Layer:** In `services.py`, create a new method `increment_incident_view_count(incident_id)` that utilizes the new repository method. Modify the existing `get_incident_by_id` service to call this new increment method *before* it retrieves and returns the incident's full details. This ensures the count is updated on every view.\n\n3.  **API Documentation:** Update the API documentation in `gatherproof_backend//docs//API.md`. Specifically, add the `view_count` field to the response body of the `GET /incidents/{id}` endpoint description.\n\n4.  **Testing:** Add a new unit test in `gatherproof_backend//tests//unit//test_repository.py` to verify that the view count is correctly incremented. The test should create an incident, fetch it to get the initial state, call the increment method, and then fetch it again to assert the `view_count` has increased by one.",
+  "expected_approach": "An expert developer would approach this task by following the flow of data from the database to the API, ensuring each layer is handled correctly.\n\n1.  **Analyze the Request:** First, understand the core requirement: atomically increment a counter on each read. This points to a database update operation followed by a read operation.\n\n2.  **Start at the Data Layer (`repository.py`):** This is the source of truth. The developer would locate the data model (likely within the `create_incident` method or an internal data class) and add `view_count: 0`.\n    - They would then implement a new method, e.g., `increment_view_count(self, incident_id)`. Crucially, they would use the underlying database's atomic update feature (e.g., DynamoDB's `UpdateExpression='SET view_count = view_count + :inc'` with `ExpressionAttributeValues={':inc': 1}`) to prevent race conditions. This is more efficient than a read-modify-write pattern.\n\n3.  **Implement the Service Layer (`services.py`):** The developer would then move to the business logic layer. \n    - They would add a new `increment_incident_view_count` function that directly calls the repository's `increment_view_count` method.\n    - They would then locate the `get_incident_by_id` service function and insert a call to `self.increment_incident_view_count(incident_id)` at the beginning of the function, before the call to the repository's get method.\n\n4.  **Update Documentation (`API.md`):** With the logic in place, they would update the `API.md` file. They'd find the `GET /incidents/{id}` section and modify the example JSON response to include `\"view_count\": 123` (or similar).\n\n5.  **Write Tests (`test_repository.py`):** Finally, they would write a test to ensure the new functionality is correct and prevent future regressions. A unit test in `test_repository.py` is most appropriate for testing the atomic increment directly.\n    - The test would involve creating a mock incident, calling the `increment_view_count` method, and then using a mock of the `get` method to verify the `view_count` field has been updated as expected. This isolates the repository logic for a robust test.",
+  "ground_truth": {
+    "insights": "The key to a high-quality solution is the atomic update in `repository.py` to avoid race conditions. A naive implementation might read the incident, increment the count in Python, and then write it back, which could lead to incorrect counts under concurrent loads. The solution should also demonstrate a clear separation of concerns, with the repository handling database interactions and the service layer orchestrating the business logic (increment, then get).",
+    "file_diffs": [
+      {
+        "file_path": "gatherproof_backend//src//data//repository.py",
+        "diff": "--- a/gatherproof_backend//src//data//repository.py\n+++ b/gatherproof_backend//src//data//repository.py\n@@ -123,6 +123,7 @@\n             'media_url': incident_data.get('media_url'),\n             'status': 'pending_review',\n             'created_at': timestamp,\n+            'view_count': 0,\n             'updated_at': timestamp\n         }\n         try:\n@@ -165,6 +166,24 @@\n             logger.error(f\"Error fetching incident {incident_id}: {e}\")\n             raise\n \n+    def increment_view_count(self, incident_id: str) -> None:\n+        \"\"\"Atomically increments the view count for a given incident.\"\"\"\n+        logger.info(f\"Incrementing view count for incident {incident_id}\")\n+        try:\n+            self.table.update_item(\n+                Key={'incident_id': incident_id},\n+                UpdateExpression='SET view_count = view_count + :val',\n+                ExpressionAttributeValues={\":val\": 1},\n+                ConditionExpression='attribute_exists(incident_id)'\n+            )\n+        except ClientError as e:\n+            if e.response['Error']['Code'] == 'ConditionalCheckFailedException':\n+                logger.warning(f\"Attempted to increment view count on non-existent incident {incident_id}\")\n+                # Optionally raise a custom NotFound error\n+                return\n+            logger.error(f\"Error incrementing view count for {incident_id}: {e}\")\n+            raise\n+\n"
+      },
+      {
+        "file_path": "gatherproof_backend//src//core//services.py",
+        "diff": "--- a/gatherproof_backend//src//core//services.py\n+++ b/gatherproof_backend//src//core//services.py\n@@ -55,8 +55,13 @@\n     def get_incident_by_id(self, incident_id: str) -> dict:\n         \"\"\"\n         Retrieves a single incident by its ID.\n+        Also increments the incident's view counter.\n         \"\"\"\n         logger.info(f\"Service: Getting incident with ID {incident_id}\")\n+        try:\n+            self.repository.increment_view_count(incident_id)\n+        except Exception as e:\n+            logger.error(f\"Failed to increment view count for {incident_id}, but proceeding to fetch. Error: {e}\")\n         incident = self.repository.get_incident(incident_id)\n         if not incident:\n             raise ValueError(f\"Incident with ID {incident_id} not found.\")"
+      },
+      {
+        "file_path": "gatherproof_backend//docs//API.md",
+        "diff": "--- a/gatherproof_backend//docs//API.md\n+++ b/gatherproof_backend//docs//API.md\n@@ -150,6 +150,7 @@\n     \"latitude\": 34.052235,\n     \"longitude\": -118.243683,\n     \"status\": \"verified\",\n+    \"view_count\": 42,\n     \"created_at\": \"2023-10-27T10:00:00Z\",\n     \"updated_at\": \"2023-10-27T12:30:00Z\"\n   }"
+      },
+      {
+        "file_path": "gatherproof_backend//tests//unit//test_repository.py",
+        "diff": "--- a/gatherproof_backend//tests//unit//test_repository.py\n+++ b/gatherproof_backend//tests//unit//test_repository.py\n@@ -198,3 +198,22 @@\n         # Assert\n         self.mock_table.delete_item.assert_called_once_with(Key={'incident_id': 'test-id'})\n \n+    def test_increment_view_count(self):\n+        # Arrange\n+        incident_id = 'incident-123'\n+\n+        # Act\n+        self.repository.increment_view_count(incident_id)\n+\n+        # Assert\n+        self.mock_table.update_item.assert_called_once_with(\n+            Key={'incident_id': incident_id},\n+            UpdateExpression='SET view_count = view_count + :val',\n+            ExpressionAttributeValues={\":val\": 1},\n+            ConditionExpression='attribute_exists(incident_id)'\n+        )\n+\n+    def test_increment_view_count_handles_not_found(self):\n+        # Arrange\n+        incident_id = 'not-found-id'\n+        error_response = {'Error': {'Code': 'ConditionalCheckFailedException'}}\n+        self.mock_table.update_item.side_effect = ClientError(error_response, 'UpdateItem')\n+\n+        # Act & Assert\n+        # We expect it to log a warning and not raise an exception.\n+        with self.assertLogs('src.data.repository', level='WARNING') as cm:\n+            self.repository.increment_view_count(incident_id)\n+            self.assertIn(f\"Attempted to increment view count on non-existent incident {incident_id}\", cm.output[0])"
+      }
+    ]
+  },
+  "evaluation_criteria": [
+    "Correctly modifies `repository.py` to include a `view_count` field defaulting to 0.",
+    "Implements an atomic `increment_view_count` method in `repository.py` using a database-level update expression.",
+    "Correctly modifies the `get_incident_by_id` method in `services.py` to call the increment logic before fetching the data.",
+    "The feature is implemented without breaking any existing tests.",
+    "The `API.md` documentation is accurately updated to include the `view_count` field in the `GET /incidents/{id}` response example.",
+    "A new, passing unit test is added to `test_repository.py` that verifies the `increment_view_count` method functions as expected.",
+    "The solution is robust and handles the case where an attempt is made to increment a view count for a non-existent incident."
+  ],
+  "metadata": {
+    "context_length": 89017,
+    "files_count": 7,
+    "information_coverage": 0.35932202021506765,
+    "coverage_range": [
+      0.2,
+      0.4
+    ],
+    "generation_timestamp": "2025-08-05T20:16:09.384167"
+  }
+}

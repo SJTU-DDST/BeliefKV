@@ -16,7 +16,7 @@ from tests.test_causal_source_capture import reference
 
 
 @pytest.mark.parametrize("profile,temperature", (
-    ("legacy_greedy", 0.0), ("qwen35_coding", 0.6),
+    ("legacy_greedy", 0.0), ("qwen35_coding", 0.6), ("qwen3_coder", 0.7),
 ))
 def test_profile_reaches_real_chat_payload_without_changing_seed_or_stopping(
     tmp_path, profile, temperature,
@@ -62,6 +62,11 @@ def test_profile_reaches_real_chat_payload_without_changing_seed_or_stopping(
             assert recorded == {
                 "seed": 21, "temperature": 0.6, "top_p": 0.95, "top_k": 20,
                 "min_p": 0.0, "presence_penalty": 0.0, "repetition_penalty": 1.0,
+            }
+        elif profile == "qwen3_coder":
+            assert recorded == {
+                "seed": 21, "temperature": 0.7, "top_p": 0.8, "top_k": 20,
+                "min_p": 0.0, "presence_penalty": 0.0, "repetition_penalty": 1.05,
             }
     finally:
         model.http_client.close()

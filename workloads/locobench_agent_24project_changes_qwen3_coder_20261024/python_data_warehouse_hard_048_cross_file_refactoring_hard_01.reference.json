@@ -1,0 +1,105 @@
+{
+  "id": "python_data_warehouse_hard_048_cross_file_refactoring_hard_01",
+  "task_category": "cross_file_refactoring",
+  "difficulty": "hard",
+  "title": "Refactor Dispersed Data Validation Logic into a Centralized Quality Engine",
+  "description": "The TradeLedger Nexus DW project processes financial data from various sources (ERPs, POS systems) via its `nexus-processing-service`. Currently, critical data validation logic is duplicated and hardcoded directly within the data transformation strategies (`erp_transformer.py` and `pos_transformer.py`). This approach is brittle, error-prone, and violates the DRY (Don't Repeat Yourself) principle. The project already contains a shared library, `nexus-core-lib`, with a dedicated framework for data quality rules (`nexus_core/quality/rules.py`), but it is underutilized. This task requires refactoring the scattered validation logic into this centralized engine, improving maintainability, testability, and consistency.",
+  "context_files": [
+    "tradeledger-nexus-dw/services/nexus-core-lib/nexus_core/mvvm/view_model_base.py",
+    "tradeledger-nexus-dw/services/nexus-api-service/api_service/services/dashboard_service.py",
+    "tradeledger-nexus-dw/services/nexus-core-lib/nexus_core/events/event_bus.py",
+    "tradeledger-nexus-dw/docs/adr/001-microservices-over-monolith.md",
+    "tradeledger-nexus-dw/services/nexus-core-lib/nexus_core/domain/trade_data.py",
+    "tradeledger-nexus-dw/services/nexus-ingestion-service/tests/test_connectors.py",
+    "tradeledger-nexus-dw/services/nexus-visualization-service/viz_service/main.py",
+    "tradeledger-nexus-dw/services/nexus-processing-service/tests/test_pipelines.py",
+    "tradeledger-nexus-dw/services/nexus-processing-service/processing_service/flows/master_flow.py",
+    "tradeledger-nexus-dw/services/nexus-core-lib/tests/test_events.py",
+    "tradeledger-nexus-dw/clients/nexus-desktop-ui/desktop_ui/services/api_client.py",
+    "tradeledger-nexus-dw/services/nexus-ingestion-service/ingestion_service/connectors.py",
+    "tradeledger-nexus-dw/services/nexus-processing-service/tests/test_strategies.py",
+    "tradeledger-nexus-dw/services/nexus-core-lib/tests/test_quality_rules.py",
+    "tradeledger-nexus-dw/services/nexus-core-lib/nexus_core/quality/rules.py",
+    "tradeledger-nexus-dw/services/nexus-processing-service/processing_service/__init__.py",
+    "tradeledger-nexus-dw/services/nexus-visualization-service/viz_service/__init__.py",
+    "tradeledger-nexus-dw/services/nexus-processing-service/processing_service/pipelines/pipeline.py",
+    "tradeledger-nexus-dw/services/nexus-processing-service/processing_service/strategies/erp_transformer.py",
+    "tradeledger-nexus-dw/services/nexus-core-lib/nexus_core/config.py",
+    "tradeledger-nexus-dw/services/nexus-processing-service/processing_service/tasks/data_tasks.py",
+    "tradeledger-nexus-dw/services/nexus-ingestion-service/ingestion_service/main.py",
+    "tradeledger-nexus-dw/services/nexus-ingestion-service/ingestion_service/router.py",
+    "tradeledger-nexus-dw/services/nexus-api-service/api_service/routers/dashboards.py",
+    "tradeledger-nexus-dw/services/nexus-processing-service/processing_service/config.py",
+    "tradeledger-nexus-dw/services/nexus-visualization-service/tests/test_charts.py",
+    "tradeledger-nexus-dw/services/nexus-core-lib/nexus_core/__init__.py",
+    "tradeledger-nexus-dw/services/nexus-api-service/api_service/__init__.py",
+    "tradeledger-nexus-dw/services/nexus-ingestion-service/ingestion_service/__init__.py",
+    "tradeledger-nexus-dw/services/nexus-processing-service/processing_service/strategies/pos_transformer.py",
+    "tradeledger-nexus-dw/services/nexus-visualization-service/viz_service/charts.py",
+    "tradeledger-nexus-dw/services/nexus-api-service/api_service/main.py",
+    "tradeledger-nexus-dw/services/nexus-visualization-service/viz_service/router.py",
+    "tradeledger-nexus-dw/services/nexus-processing-service/tests/test_flows.py",
+    "tradeledger-nexus-dw/services/nexus-api-service/tests/test_dashboards_endpoint.py",
+    "tradeledger-nexus-dw/services/nexus-core-lib/tests/__init__.py",
+    "tradeledger-nexus-dw/services/nexus-api-service/README.md",
+    "tradeledger-nexus-dw/services/nexus-api-service/docs/api_guide.md",
+    "tradeledger-nexus-dw/services/nexus-ingestion-service/README.md",
+    "tradeledger-nexus-dw/services/nexus-processing-service/README.md",
+    "tradeledger-nexus-dw/services/nexus-visualization-service/README.md",
+    "tradeledger-nexus-dw/services/nexus-processing-service/Dockerfile",
+    "tradeledger-nexus-dw/services/nexus-core-lib/README.md",
+    "tradeledger-nexus-dw/services/nexus-visualization-service/Dockerfile",
+    "tradeledger-nexus-dw/services/nexus-visualization-service/requirements.txt",
+    "tradeledger-nexus-dw/services/nexus-ingestion-service/Dockerfile"
+  ],
+  "context_length": 539249,
+  "task_prompt": "Your task is to identify and refactor hardcoded data validation logic from the data transformation strategies into the centralized `nexus-core-lib` quality engine.\n\n1.  **Identify and Analyze:** In `tradeledger-nexus-dw/services/nexus-processing-service/processing_service/strategies/erp_transformer.py` and `pos_transformer.py`, locate the duplicated validation logic that performs the following checks on incoming trade records:\n    *   Ensures the `trade_value` field is a positive number (greater than zero).\n    *   Ensures the `counterparty_id` field is not null or an empty string.\n\n2.  **Abstract and Implement:** In `tradeledger-nexus-dw/services/nexus-core-lib/nexus_core/quality/rules.py`, create two new rule classes:\n    *   `PositiveTradeValueRule`\n    *   `NonEmptyCounterpartyRule`\n    These classes must inherit from the `BaseQualityRule` class (which you can assume exists in the file and has an `apply(record: dict) -> bool` method to override).\n\n3.  **Refactor and Integrate:**\n    *   Modify `erp_transformer.py` and `pos_transformer.py` to remove the hardcoded validation checks you identified.\n    *   Update the `DataPipeline` class in `tradeledger-nexus-dw/services/nexus-processing-service/processing_service/pipelines/pipeline.py`. Modify its execution flow to apply a list of quality rules to each data record after the main transformation step. The pipeline should be configured to use your two new rules.\n\n4.  **Update Tests:**\n    *   Add new unit tests to `tradeledger-nexus-dw/services/nexus-core-lib/tests/test_quality_rules.py` to cover the new `PositiveTradeValueRule` and `NonEmptyCounterpartyRule`. Test both valid and invalid cases for each.\n    *   Modify the tests in `tradeledger-nexus-dw/services/nexus-processing-service/tests/test_strategies.py` and/or `tests/test_pipelines.py`. The tests must now reflect that the validation logic is part of the pipeline's responsibility, not the individual transformer's. Ensure the end-to-end processing still correctly filters out invalid records.",
+  "expected_approach": "An expert developer would approach this task systematically:\n\n1.  **Exploration & Discovery:**\n    *   First, they would open `erp_transformer.py` and `pos_transformer.py` to find the specified validation logic (e.g., `if record['trade_value'] <= 0:`). They would confirm that the logic is indeed duplicated.\n    *   Next, they would study `nexus_core/quality/rules.py` to understand the existing `BaseQualityRule` interface and how to implement a new rule correctly.\n    *   They would then inspect `processing_service/pipelines/pipeline.py` to understand how data flows and where a new validation stage could be inserted.\n\n2.  **Bottom-Up Implementation (Core Library):**\n    *   They would start by implementing the new rules in the core library, as it has no dependencies on the processing service.\n    *   In `nexus_core/quality/rules.py`, they would add the `PositiveTradeValueRule` and `NonEmptyCounterpartyRule` classes, each with an `apply` method implementing the specific logic.\n    *   In `nexus_core/tests/test_quality_rules.py`, they would write focused unit tests for these two new classes, testing edge cases (zero, negative values, `None`, empty strings).\n\n3.  **Top-Down Refactoring (Processing Service):**\n    *   In `processing_service/pipelines/pipeline.py`, they would modify the `DataPipeline` class. This would likely involve changing its `__init__` method to accept `quality_rules: List[BaseQualityRule]` and adding a new private method like `_apply_quality_checks(data: List[dict]) -> List[dict]` which is called from the main `run` method.\n    *   They would then update the place where `DataPipeline` is instantiated (e.g., in `master_flow.py` or a service factory) to pass instances of the new rules.\n    *   With the pipeline updated, they would go to `erp_transformer.py` and `pos_transformer.py` and confidently delete the now-redundant validation code blocks.\n\n4.  **Test Correction and Verification:**\n    *   Running the test suite for `nexus-processing-service` would likely show failures in `test_strategies.py` or `test_pipelines.py`.\n    *   The developer would update these tests. Instead of checking if the transformer function itself raises an error or filters data, the tests would now need to instantiate a full `DataPipeline` (with the new rules) and assert that the *pipeline's output* is correctly filtered.\n    *   Finally, they would run the entire test suite for both `nexus-core-lib` and `nexus-processing-service` to ensure full correctness and no regressions.",
+  "ground_truth": {
+    "key_changes": [
+      {
+        "file": "tradeledger-nexus-dw/services/nexus-core-lib/nexus_core/quality/rules.py",
+        "insight": "File is modified to include two new classes, `PositiveTradeValueRule` and `NonEmptyCounterpartyRule`, which inherit from `BaseQualityRule` and implement the required validation logic in their `apply` methods."
+      },
+      {
+        "file": "tradeledger-nexus-dw/services/nexus-core-lib/tests/test_quality_rules.py",
+        "insight": "File is modified to include new test cases that specifically target `PositiveTradeValueRule` and `NonEmptyCounterpartyRule`, verifying their correctness against valid, invalid, and edge-case inputs."
+      },
+      {
+        "file": "tradeledger-nexus-dw/services/nexus-processing-service/processing_service/strategies/erp_transformer.py",
+        "insight": "The hardcoded `if` statements for `trade_value` and `counterparty_id` validation are removed from the transformation function."
+      },
+      {
+        "file": "tradeledger-nexus-dw/services/nexus-processing-service/processing_service/strategies/pos_transformer.py",
+        "insight": "The hardcoded `if` statements for `trade_value` and `counterparty_id` validation are removed from the transformation function, mirroring the changes in the ERP transformer."
+      },
+      {
+        "file": "tradeledger-nexus-dw/services/nexus-processing-service/processing_service/pipelines/pipeline.py",
+        "insight": "The `DataPipeline` class is modified to accept and execute a list of quality rules. Its `run` method now includes a step to filter records that fail any of the provided quality checks. Imports for the new rules from `nexus_core.quality.rules` are added."
+      },
+      {
+        "file": "tradeledger-nexus-dw/services/nexus-processing-service/tests/test_pipelines.py",
+        "insight": "Tests are updated to construct `DataPipeline` with mock or real rules and verify that the end-to-end pipeline correctly filters records based on the new, centralized validation logic."
+      }
+    ]
+  },
+  "evaluation_criteria": [
+    "**Correctness of Abstraction:** The new rule classes in `rules.py` must correctly implement the specified validation logic and adhere to the `BaseQualityRule` interface.",
+    "**Code Removal:** The agent must successfully identify and completely remove the redundant validation logic from both `erp_transformer.py` and `pos_transformer.py`.",
+    "**Pipeline Integration:** The agent must correctly modify the `DataPipeline` to integrate the quality rule checks into its execution flow without breaking existing transformation steps.",
+    "**Cross-Service Dependency Management:** The agent must correctly import the rules from the `nexus-core-lib` into the `nexus-processing-service` and instantiate them where the pipeline is configured.",
+    "**Test-Driven Correctness:** The agent must write effective, new unit tests for the rules in `test_quality_rules.py` and successfully refactor the integration tests in the processing service to reflect the new architecture.",
+    "**Functionality Preservation:** The overall functionality of the data processing flow must be preserved. Valid data must still be processed correctly, and invalid data must be filtered out as before.",
+    "**Code Cohesion and Decoupling:** The final state of the code should demonstrate improved cohesion (rules are together) and decoupling (strategies don't know about specific validation rules)."
+  ],
+  "metadata": {
+    "context_length": 539249,
+    "files_count": 46,
+    "information_coverage": 0.7030928318949837,
+    "coverage_range": [
+      0.6,
+      0.8
+    ],
+    "generation_timestamp": "2025-08-05T17:10:42.329307"
+  }
+}

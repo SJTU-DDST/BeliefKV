@@ -1,0 +1,52 @@
+{
+  "id": "python_desktop_media_medium_092_cross_file_refactoring_expert_01",
+  "task_category": "cross_file_refactoring",
+  "difficulty": "expert",
+  "title": "Refactor Monolithic Preferences Manager into Domain-Specific Configuration Modules",
+  "description": "The ClipFlux Workspace application currently uses a monolithic `PreferencesManager` to handle all user-configurable settings. This includes UI state (window size), theme details (colors, fonts), and sensitive cloud sync credentials. This 'god object' approach violates the Single Responsibility Principle, making the codebase difficult to maintain, test, and extend. As new features are added, this central manager becomes an increasing bottleneck and a source of bugs. The goal of this task is to decentralize configuration management by moving domain-specific settings into their respective managers.",
+  "context_files": [
+    "clipflux_workspace//clipflux//gui//theme_manager.py",
+    "clipflux_workspace//clipflux//services//plugin_manager.py",
+    "clipflux_workspace//clipflux//services//cloud_sync_manager.py",
+    "clipflux_workspace//clipflux//services//preferences_manager.py",
+    "clipflux_workspace//clipflux//services//__init__.py",
+    "clipflux_workspace//clipflux//services//system_services.py",
+    "clipflux_workspace//clipflux//app.py",
+    "clipflux_workspace//main.py",
+    "clipflux_workspace//clipflux//plugins//export_to_cloud_drive.py",
+    "clipflux_workspace//clipflux//core//media_clip.py",
+    "clipflux_workspace//clipflux//gui//clip_list_view.py",
+    "clipflux_workspace//clipflux//core//command.py",
+    "clipflux_workspace//clipflux//gui//main_window.py",
+    "clipflux_workspace//clipflux//gui//media_player.py",
+    "clipflux_workspace//clipflux//plugins//__init__.py",
+    "clipflux_workspace//clipflux//__init__.py",
+    "clipflux_workspace//clipflux//core//__init__.py",
+    "clipflux_workspace//clipflux//gui//command_palette.py",
+    "clipflux_workspace//clipflux//gui//__init__.py",
+    "clipflux_workspace//clipflux//core//state_machine.py",
+    "clipflux_workspace//clipflux//core//observer.py"
+  ],
+  "context_length": 344201,
+  "task_prompt": "Your task is to refactor the configuration management system in the ClipFlux Workspace. You must move all theme-related and cloud-sync-related settings out of the global `PreferencesManager` and into the `ThemeManager` and `CloudSyncManager` respectively. \n\n**Detailed Steps:**\n1.  **Identify Domain-Specific Settings:** Analyze `clipflux_workspace//clipflux//services//preferences_manager.py` and identify all configuration keys and logic related to themes (e.g., `theme.primary_color`, `theme.font_size`) and cloud synchronization (e.g., `cloud.provider`, `cloud.api_key`, `cloud.sync_on_startup`).\n2.  **Create Configuration Models:**\n    - In `clipflux_workspace//clipflux//gui//theme_manager.py`, create a new data class or Pydantic model named `ThemeConfig` to encapsulate all theme-related settings.\n    - In `clipflux_workspace//clipflux//services//cloud_sync_manager.py`, create a new data class or Pydantic model named `CloudSyncConfig` to encapsulate all cloud-sync settings.\n3.  **Migrate Logic:**\n    - Move the responsibility for loading, saving, and validating theme settings from `PreferencesManager` to `ThemeManager`. The `ThemeManager` should now manage its own `ThemeConfig` object.\n    - Move the responsibility for loading, saving, and validating cloud sync settings from `PreferencesManager` to `CloudSyncManager`. The `CloudSyncManager` should now manage its own `CloudSyncConfig` object.\n4.  **Update Call Sites:**\n    - Search the entire codebase for any modules that retrieve theme or cloud settings from the `PreferencesManager`.\n    - Modify these call sites to retrieve the settings from the appropriate manager (`ThemeManager` or `CloudSyncManager`) using a new, cleaner API.\n5.  **Cleanup `PreferencesManager`:**\n    - Remove all theme and cloud-sync-specific keys, default values, validation logic, and any other related code from `preferences_manager.py`.\n    - The `PreferencesManager` should only be responsible for general application preferences (e.g., window geometry, last-used directory) after the refactoring.",
+  "expected_approach": "An expert developer would approach this task systematically to minimize risk and ensure correctness:\n\n1.  **Static Analysis:** First, perform a thorough analysis of `preferences_manager.py` to list all configuration keys. Categorize them into 'general', 'theme', and 'cloud'.\n2.  **Dependency Mapping:** Use a global search (like `grep` or an IDE's 'Find Usages' feature) for the identified theme and cloud keys (e.g., `'theme.primary_color'`) to find all files that read or write these settings. This will primarily point to `theme_manager.py`, `cloud_sync_manager.py`, various GUI components, and plugins.\n3.  **Model-First Implementation:**\n    - Define the `ThemeConfig` and `CloudSyncConfig` data classes (preferably using `dataclasses` or `pydantic` for type safety and validation) in their respective modules.\n4.  **Incremental Refactoring (One Domain at a Time):**\n    - **Focus on Themes:** In `ThemeManager`, add an instance of `ThemeConfig`. Implement private `_load_config()` and `_save_config()` methods that handle the persistence of the `ThemeConfig` object (e.g., to a specific section of a settings file or a separate file).\n    - Update the public API of `ThemeManager`. For example, a method `get_setting('primary_color')` would be replaced by a more explicit `get_primary_color()` which returns `self.config.primary_color`.\n    - Replace all usages of `preferences_manager.get('theme...')` across the application with calls to the new `ThemeManager` API. Compile and test.\n    - **Focus on Cloud Sync:** Repeat the same process for `CloudSyncManager` and `CloudSyncConfig`.\n5.  **Final Cleanup:** Once all dependencies on the old keys are removed, delete the now-dead code (constants, logic, keys) from `PreferencesManager`. The class should be noticeably smaller and simpler.\n6.  **Verification:** Run the application and manually verify that theme switching still works, and that cloud-related functionality (like the 'Export to Cloud Drive' plugin) is still configurable and operational.",
+  "ground_truth": "The expected final state of the codebase includes the following key changes:\n\n-   **`clipflux_workspace//clipflux//services//preferences_manager.py`:** The `PreferencesManager` class is significantly simplified. It no longer contains any hardcoded string keys, default values, or validation logic pertaining to `theme.*` or `cloud.*` settings.\n\n-   **`clipflux_workspace//clipflux//gui//theme_manager.py`:**\n    -   Contains a new class definition, e.g., `@dataclass class ThemeConfig: ...`.\n    -   The `ThemeManager` class now holds an instance of `ThemeConfig`, e.g., `self.config: ThemeConfig`.\n    -   `ThemeManager` contains its own logic for loading/saving its configuration, abstracting the persistence details away from the rest of the app.\n\n-   **`clipflux_workspace//clipflux//services//cloud_sync_manager.py`:**\n    -   Contains a new class definition, e.g., `@dataclass class CloudSyncConfig: ...`.\n    -   The `CloudSyncManager` class now holds an instance of `CloudSyncConfig`.\n    -   It has its own methods for loading and saving its configuration, potentially handling sensitive data like API keys appropriately.\n\n-   **Consumer Files (e.g., `main_window.py`, `export_to_cloud_drive.py`):**\n    -   Code that previously looked like `prefs_manager.get_setting('theme.primary_color')` is now replaced with `theme_manager.get_primary_color()` or `theme_manager.config.primary_color`.\n    -   Code that previously looked like `prefs_manager.get_setting('cloud.api_key')` is now replaced with `cloud_sync_manager.get_api_key()` or a similar secure access method.",
+  "evaluation_criteria": [
+    "**Correctness & Functionality:** The application must remain fully functional. Theme settings must be loaded and applied correctly on startup and on change. Cloud sync features must use the new configuration source without breaking.",
+    "**Decoupling & SRP:** The `PreferencesManager` must be successfully decoupled from theme and cloud-sync concerns. It should not reference any theme or cloud-specific configuration keys.",
+    "**Code Structure & Abstraction:** New, well-defined data classes (`ThemeConfig`, `CloudSyncConfig`) must be introduced in the correct modules (`theme_manager.py`, `cloud_sync_manager.py`).",
+    "**Responsibility Migration:** The logic for loading, saving, and providing default values for theme and cloud settings must be completely moved into `ThemeManager` and `CloudSyncManager` respectively.",
+    "**API Refactoring:** All call sites across the project that previously used `PreferencesManager` for theme/cloud settings must be updated to use the new, more explicit APIs provided by `ThemeManager` and `CloudSyncManager`.",
+    "**Code Hygiene:** All dead code (unused constants, methods, and logic) related to the migrated settings must be removed from `PreferencesManager`."
+  ],
+  "metadata": {
+    "context_length": 344201,
+    "files_count": 21,
+    "information_coverage": 0.9081940394992019,
+    "coverage_range": [
+      0.8,
+      1.0
+    ],
+    "generation_timestamp": "2025-08-05T15:28:22.090730"
+  }
+}

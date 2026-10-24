@@ -1,0 +1,41 @@
+{
+  "id": "python_game_simulation_easy_069_integration_testing_hard_01",
+  "task_category": "integration_testing",
+  "difficulty": "hard",
+  "title": "Integration Test for Scripted Events and Resource Management",
+  "description": "The SocialVillage Simulator uses a scripting system to trigger dynamic in-game events. A new 'Blessing' event was recently implemented. This event, triggered via a script, is intended to grant a specific villager a temporary 'Blessed' status and 50 units of a new 'Faith' resource. There are concerns that this feature, which touches the scripting engine, command system, and component state, has introduced subtle bugs related to resource conservation and state management. The current test suite only has unit tests for commands in isolation and does not verify the end-to-end workflow.",
+  "context_files": [
+    "social_village_simulator//docs//api.md",
+    "social_village_simulator//tests//test_commands.py",
+    "social_village_simulator//src//main.py",
+    "social_village_simulator//src//commands.py",
+    "social_village_simulator//src//components.py",
+    "social_village_simulator//src//scripting.py",
+    "social_village_simulator//src//game_loop.py",
+    "social_village_simulator//src//object_pool.py",
+    "social_village_simulator//src//input_handler.py"
+  ],
+  "context_length": 140194,
+  "task_prompt": "Your task is to write a new integration test suite to validate the entire workflow of the 'Blessing' scripted event. The test must verify the interaction between the scripting engine (`scripting.py`), the command executor (`commands.py`), entity components (`components.py`), and the main game loop (`game_loop.py`).\n\nSpecifically, you need to create tests that ensure:\n1.  When a villager is 'Blessed' via a script, the total amount of 'Faith' resource in the world remains constant (i.e., it is transferred, not created from nothing).\n2.  The 'Blessed' status effect, which is documented in `api.md` to have a limited duration, is correctly removed from the villager after the appropriate number of game ticks.\n\nCreate a new test file `tests/test_scripting_integration.py` containing pytest tests that expose any bugs in this workflow. The tests should be written to fail if the suspected bugs are present. Do not modify any files other than creating this new test file.",
+  "expected_approach": "An expert developer would first perform a thorough analysis to understand the multi-component workflow. \n1.  **Discovery:** Read `docs/api.md` to understand the intended functionality of the scripting system, the `bless` command, and the 'Blessed' status component, including its duration.\n2.  **Code Tracing:** Trace the execution path. This starts in `scripting.py` where a script is parsed and executed, which calls a command handler in `main.py` or `game_loop.py`. This handler then invokes the `bless` command logic in `commands.py`. The command then modifies components (e.g., `InventoryComponent`, `StatusEffectComponent`) defined in `components.py`. Finally, the `game_loop.py` is responsible for updating the state over time, which should include handling status effect expiration.\n3.  **Hypothesis Formulation:** Based on the code trace, the developer would hypothesize potential failure points:\n    - The `bless` command in `commands.py` might add 'Faith' to the villager's inventory but fail to subtract it from a global or divine source, violating resource conservation.\n    - The `game_loop.py` might lack the logic to iterate through entities with status effects and remove them when their duration expires.\n4.  **Test Implementation:** Create a new file `tests/test_scripting_integration.py`.\n    - Write a test function `test_blessing_resource_conservation` that:\n        - Sets up a minimal game world state with a 'World' entity holding global resources (including 'Faith') and a 'Villager' entity.\n        - Executes the 'Blessing' script targeting the villager.\n        - Asserts that the villager's 'Faith' has increased by 50.\n        - Asserts that the 'World' entity's 'Faith' has decreased by 50. This assertion is expected to fail.\n    - Write a second test function `test_blessed_status_effect_expiration` that:\n        - Sets up a villager and runs the 'Blessing' script.\n        - Simulates the game loop advancing for more ticks than the status effect's duration.\n        - Asserts that the 'Blessed' component has been removed from the villager. This assertion is also expected to fail.",
+  "ground_truth": "The agent must identify two distinct bugs through failing tests:\n\n1.  **Resource Duplication Bug:** The `bless` command in `commands.py` correctly adds 'Faith' to the villager's `InventoryComponent` but does not debit it from any source, creating resources out of thin air. A proper test must check both the villager's inventory and the world's resource pool.\n2.  **State Management Bug:** The `game_loop.py` does not have logic to process temporary status effects. It never checks the `duration` of components like the `Blessed` status effect, so they are never removed.\n\nAn effective `tests/test_scripting_integration.py` would contain code similar to this:\n\n```python\n# tests/test_scripting_integration.py\nimport pytest\nfrom src.main import Game\nfrom src.components import InventoryComponent, BlessedComponent, WorldStateComponent\nfrom src.scripting import ScriptEngine\n\ndef test_blessing_resource_conservation():\n    \"\"\"Tests that the 'bless' event transfers Faith, not creates it.\"\"\"\n    game = Game()\n    game.setup_new_world()\n    world_entity = game.world.get_entity_by_name(\"World\")\n    world_entity.get_component(WorldStateComponent).resources['Faith'] = 1000\n    villager = game.world.create_entity(\"villager\", name=\"Bob\")\n    villager.add_component(InventoryComponent())\n\n    script_engine = ScriptEngine(game)\n    script_engine.execute_script(\"event:bless|target:Bob|amount:50\")\n\n    bob_inventory = villager.get_component(InventoryComponent)\n    world_resources = world_entity.get_component(WorldStateComponent).resources\n\n    assert bob_inventory.get_resource('Faith') == 50\n    # This assertion is expected to fail, as the world's faith remains 1000.\n    assert world_resources.get('Faith') == 950\n\ndef test_blessed_status_effect_expiration():\n    \"\"\"Tests that the 'Blessed' status effect wears off after its duration.\"\"\"\n    game = Game()\n    game.setup_new_world()\n    villager = game.world.create_entity(\"villager\", name=\"Alice\")\n\n    script_engine = ScriptEngine(game)\n    script_engine.execute_script(\"event:bless|target:Alice|amount:50|duration:10\")\n\n    assert villager.has_component(BlessedComponent)\n    blessing = villager.get_component(BlessedComponent)\n    assert blessing.duration == 10\n\n    # Simulate 15 game ticks\n    for _ in range(15):\n        game.game_loop.update(1.0) # Assume update takes a delta_time\n\n    # This assertion is expected to fail because the game loop doesn't remove expired effects.\n    assert not villager.has_component(BlessedComponent)\n\n```",
+  "evaluation_criteria": [
+    "Correctly creates a new test file `tests/test_scripting_integration.py` without modifying other files.",
+    "Writes a test that correctly identifies the resource duplication bug by asserting changes in both the source and destination resource pools.",
+    "Writes a test that correctly identifies the status effect expiration bug by simulating the passage of time and asserting the component's removal.",
+    "The created tests must fail when run against the current codebase, correctly proving the existence of the bugs.",
+    "Correctly sets up the necessary game state (entities, components, resources) for each test case.",
+    "Demonstrates understanding of the interaction between `scripting.py`, `commands.py`, `components.py`, and `game_loop.py` in the test logic.",
+    "The test code is clean, readable, and follows standard `pytest` conventions."
+  ],
+  "metadata": {
+    "context_length": 140194,
+    "files_count": 9,
+    "information_coverage": 0.7668081475485156,
+    "coverage_range": [
+      0.6,
+      0.8
+    ],
+    "generation_timestamp": "2025-08-05T17:35:54.449819"
+  }
+}

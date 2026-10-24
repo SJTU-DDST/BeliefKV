@@ -1,7 +1,13 @@
-# Conditional Full-Attention Model Migration
+# Full-Attention Model Migration
 
-Status: researched and CPU-sized; Full-only serving adaptation and GPU
-qualification have not started. V152 is preserved as a rejected source after
+Status: activated by the user's 2026-10-24 instruction. The next workload is
+24 simultaneous distinct-project workflows, running/decode 24, with Full-only
+capacity/observer/planner support and model-directed nested delegation. Native
+capacity must be discovered with the new model and matched in Full replay.
+Only Full follows natural native capture; ablations are deferred until clear
+native gains. No new-model performance result is accepted yet.
+
+V152 is preserved as a rejected source after
 a child entered a repeated-grep loop and required guard intervention. Fresh
 V155 also reproduced prolonged repeated searches and was interrupted together
 with its V156 queue. V158 exposed an incompatible CUDA compiler/runtime on
@@ -11,16 +17,18 @@ V162 stopped and V163 never started. The isolated toolchain now includes CCCL,
 and the expanded sampler plus native BF16 activation preflight passes on H200.
 The next V164/V165/V166 sequence uses the explicit coding profile with the
 complete toolchain and preserves original native sampling work in replay.
-The source has not yet established that the repeated-call problem is resolved.
+V164 subsequently completed all 36 original workflows without a sustained
+repeated-grep loop or guard-finalized completion; V166 Full improved mean
+JCT 1.911% and output throughput 1.356% on exactly that work.
 These generation-policy and environment corrections do not
 qualify a KV-management gain or change the conditional model-migration test.
-This document changes no serving behavior.
+The implementation and next configuration are now tracked in
+`configs/migration/qwen3_coder_24project_running24_20261024.json`.
 
 ## Decision
 
-If the current project-disjoint comparison still does not establish useful
-workflow JCT and throughput gains over native, and an independent KV-management
-gain over scheduler-only, proceed with a Full-only adapter and a new model.
+Proceed with the Full-only adapter and new model under the user's explicit
+instruction, preserving the latest 24-project workload requirement.
 Keep the hybrid-model results as evidence of the design's operating boundary.
 
 The preferred model is `Qwen/Qwen3-Coder-30B-A3B-Instruct`:
@@ -83,7 +91,7 @@ history. Complete first inputs still need template-level validation.
 Each row uses the first N projects in the existing seeded manifest, without
 outcome selection. These are logical working-set estimates, not simultaneous
 physical residence or proof that Host caching will retain all useful state.
-Start capacity validation with 12 different projects. Size running/decode
+The user's current population is 24 different projects. Size running/decode
 separately using the measured Full pool and request headroom. Increase or
 decrease workflow concurrency based on useful-state loss and extra prefill.
 Keep one original project per workflow in every population.
@@ -123,14 +131,14 @@ Changing `MODEL_PATH` alone is insufficient.
 
 Collect a new natural native trajectory with the new model and reuse it as the
 native reference. Do not replay an old model's token trace or compare different
-work across models as a scheduler speedup. Replay Full and scheduler-only on
+work across models as a scheduler speedup. Replay Full on
 the same new tokens, dependencies, tool delays and original stopping behavior.
 Retain normal tails, guards and workload-quality limitations.
 
 The evidence must show useful migration and exposed native restoration wait
 without excessive useful-state loss or extra computation. Accept the migration
-direction only when Full improves complete-workflow JCT and throughput and
-establishes a KV-management benefit over the scheduling control.
+direction only when Full improves complete-workflow JCT and throughput before
+proceeding to independent module or scheduling controls.
 
 CPU evidence:
 

@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.causal_replay_tokens import CapturedTokenCorpus
+from beliefkv.experiments.delegation_policy import DYNAMIC_NESTED_IN_GRAPH_PROFILE, NESTED_IN_GRAPH_PROFILE
 from beliefkv.experiments.internal_comparison import arm_environment
 from beliefkv.experiments.subagent_retention import (
     ORDER as RETENTION_ORDER, environment as retention_environment,
@@ -73,6 +74,9 @@ def environment(
         "TOOL_RESTORE_MODE": "speculative", "RESTORE_TIERS": "complete",
         "TOOL_CONTINUITY": "0", "EXECUTION_FRONTIER_RESTORE": "0",
     }
+    full_only = reference["arms"]["full"].get("MODEL_CACHE_LAYOUT") == "full_only"
+    if full_only:
+        required["HOST_SPLIT"] = "auto"
     for name, value in required.items():
         if reference["arms"]["full"].get(name) != value:
             raise ValueError("causal comparison changed the qualified V108/EOS profile: " + name)
@@ -97,6 +101,11 @@ def environment(
         BELIEFKV_CAUSAL_REPLAY_SAMPLING=sampling_mode, BELIEFKV_REPLAY_TOKEN_CAPTURE="0",
         BELIEFKV_RECORD_OUTPUT_TOKEN_IDS="1",
     )
+    if full_only:
+        settings.update(
+            BELIEFKV_FULL_MAMBA_HOST_SPLIT="auto", REASONING_PARSER="",
+            DEVICE_MAMBA_SLOTS="",
+        )
     for name in SERVER_FIELDS:
         if name in settings:
             settings["BELIEFKV_" + name] = settings[name]
@@ -107,11 +116,17 @@ def environment(
     ):
         settings["BELIEFKV_" + target] = ""
         settings["BELIEFKV_" + digest] = ""
-        if policy in ("full", "kv_only"):
+        if policy in ("full", "kv_only") and settings.get(source):
             path = Path(settings[source])
             settings["BELIEFKV_" + target] = str(path)
             settings["BELIEFKV_" + digest] = sha256_file(path)
-    flags = ["--mamba-full-memory-ratio", "0.9", "--enable-custom-logit-processor"]
+    flags = ["--enable-custom-logit-processor"]
+    if not full_only:
+        flags = ["--mamba-full-memory-ratio", "0.9", *flags]
+    if settings.get("DEVICE_FULL_TOKENS"):
+        flags += ["--max-total-tokens", settings["DEVICE_FULL_TOKENS"]]
+    if settings.get("DEVICE_MAMBA_SLOTS"):
+        flags += ["--max-mamba-cache-size", settings["DEVICE_MAMBA_SLOTS"]]
     socket_path = Path(f"/tmp/bkv-causal-{port}.sock")
     for name in ("BELIEFKV_NATIVE_TELEMETRY_DIR", "BELIEFKV_ADMISSION_TELEMETRY_DIR",
                  "BELIEFKV_ADMISSION_OPPORTUNITY_DIR"):
@@ -158,7 +173,9 @@ def experiment_reference(reference, spec):
         spec.get("source_profile") != "nested_oneshot"
         or not isinstance(common, dict)
         or any(type(key) is not str or type(value) is not str for key, value in common.items())
-        or common.get("FANOUT_PROFILE") != "native_in_graph_nested_2to4"
+        or common.get("FANOUT_PROFILE") not in (
+            NESTED_IN_GRAPH_PROFILE, DYNAMIC_NESTED_IN_GRAPH_PROFILE,
+        )
         or common.get("BELIEFKV_SUBAGENT_RETENTION") != "off"
         or any(
             not common.get(name, "").isascii() or not common.get(name, "").isdigit()
@@ -196,7 +213,7 @@ def source_reference(reference, roots, running, capacity):
         ("DEVICE_FULL_TOKENS", "device_full_tokens"),
         ("DEVICE_MAMBA_SLOTS", "device_mamba_slots"),
     ):
-        value = str(capacity[field])
+        value = str(capacity[field]) if capacity[field] else ""
         if common.get(target) not in (None, "", value):
             raise ValueError("requested device capacity differs from the native source: " + target)
         common[target] = value
@@ -754,8 +771,9 @@ def register(args):
         or args.sampling_mode == "position" and calibration.get("position_dispatch_included") is not True
     ):
         raise ValueError("native replay sampling costs were not measured for this source")
-    if reference["arms"].get("full", {}).get("SAMPLING_PROFILE") == "qwen35_coding" and (
-        calibration.get("sampling_profile") != "qwen35_coding"
+    sampling_profile = reference["arms"].get("full", {}).get("SAMPLING_PROFILE")
+    if sampling_profile in ("qwen35_coding", "qwen3_coder") and (
+        calibration.get("sampling_profile") != sampling_profile
         or calibration.get("native_sampler_preserved") is not True
         or calibration.get("forcing_boundary") != "after_native_sampling"
     ):
@@ -788,7 +806,7 @@ def register(args):
         retention_source_matches(retention_spec, quality, source_roots)
     with CapturedTokenCorpus(args.source_arm / "server/request_tokens.jsonl", expected) as corpus:
         tokens = corpus.evidence
-    if reference["arms"].get("full", {}).get("SAMPLING_PROFILE") == "qwen35_coding" and (
+    if sampling_profile in ("qwen35_coding", "qwen3_coder") and (
         tokens.get("original_generation_parameters_complete") is not True
     ):
         raise ValueError("coding comparison lacks complete original generation parameters")
@@ -852,7 +870,7 @@ def register(args):
         inputs.append(args.after_registration)
     inputs.extend(Path(reference["arms"]["full"][name]) for name in (
         "TOOL_TIMING_ARTIFACT", "H2D_SEED_ARTIFACT", "TRANSFER_SERVICE_SEED",
-    ))
+    ) if reference["arms"]["full"].get(name))
     reuse_selection = (
         reusable_source(quality, graph, expected_workflows=source_roots)
         if args.retention_config is not None else None

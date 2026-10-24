@@ -121,7 +121,7 @@ def _prefetch_block_detail(candidate: ActionLocalPrefetchCandidate) -> str:
     try:
         components = dict(candidate.anchors.component_leaves)
         full_leaves = dict(components[0])
-        mamba_leaves = dict(components[2])
+        mamba_leaves = dict(components.get(2, ()))
     except (KeyError, TypeError, ValueError):
         return "invalid_component_leaves"
     full_paths: set[int] = set()
@@ -311,6 +311,7 @@ def _checkpoint_paths(
 ) -> tuple[set[int], set[int]] | None:
     """Only the deepest reusable state on each current input path is needed."""
     input_limit = anchors.reusable_input_tokens
+    full_only = set(dict(anchors.component_leaves)) == {0}
     if input_limit is None:
         return set(nodes), set(dict(dict(anchors.component_leaves).get(2, ())))
     if type(input_limit) is not int or input_limit < 0:
@@ -326,14 +327,17 @@ def _checkpoint_paths(
             prefix += node.key_tokens
             if (
                 node.parent_id is not None and prefix <= input_limit
-                and (node.mamba_device_present or node.mamba_host_present)
+                and (
+                    full_only and (node.full_device_tokens or node.full_host_tokens)
+                    or node.mamba_device_present or node.mamba_host_present
+                )
             ):
                 checkpoint_position = position
         if checkpoint_position is None:
             return set(), set()
         return (
             set(ordered_nodes[:checkpoint_position + 1]),
-            {ordered_nodes[checkpoint_position]},
+            set() if full_only else {ordered_nodes[checkpoint_position]},
         )
     prefix_lengths: dict[int, int] = {}
     if ordered_nodes is None:
@@ -352,9 +356,13 @@ def _checkpoint_paths(
             if (
                 node.parent_id is not None
                 and prefix_lengths[current] <= input_limit
-                and (node.mamba_device_present or node.mamba_host_present)
+                and (
+                    full_only and (node.full_device_tokens or node.full_host_tokens)
+                    or node.mamba_device_present or node.mamba_host_present
+                )
             ):
-                checkpoints.add(current)
+                if not full_only:
+                    checkpoints.add(current)
                 while current is not None:
                     paths.add(current)
                     current = nodes[current].parent_id
@@ -384,6 +392,7 @@ def inspect_session_residency_hint(cache: object, request: object) -> dict | Non
         states = {} if len(leaves) > 1 else None
         best_prefix = device_prefix = best_device = best_missing = 0
         best_mamba = None
+        full_only = set(components) == {0}
         for leaf_id, created in leaves:
             leaf = lookup(leaf_id)
             if (
@@ -442,15 +451,15 @@ def inspect_session_residency_hint(cache: object, request: object) -> dict | Non
                     node.write_through_pending_id is not None or load_pending
                 )
                 pending_load = pending_load or load_pending
-                if state_value is not None or state.host_value is not None:
-                    ready = full_device and state_value is not None and not pending_load
+                if full_only or state_value is not None or state.host_value is not None:
+                    ready = full_device and (full_only or state_value is not None) and not pending_load
                     if ready:
                         device_prefix = prefix
                     if full_available and (ready or not pending) and prefix > best_prefix:
                         best_prefix = prefix
                         best_device = device_prefix
                         best_missing = missing
-                        best_mamba = int(state_value is None)
+                        best_mamba = 0 if full_only else int(state_value is None)
                 if states is not None:
                     states[node.id] = (
                         prefix, missing, device_prefix, full_device,
@@ -485,8 +494,8 @@ def has_host_backed_missing_copy(
         components = dict(anchors.component_leaves)
         if (
             len(components) != len(anchors.component_leaves)
-            or set(components) != {0, 2}
-            or not components[0] or not components[2]
+            or set(components) not in ({0}, {0, 2})
+            or not components[0] or 2 in components and not components[2]
             or sum(map(len, components.values())) > 8
         ):
             return None
@@ -571,9 +580,9 @@ def has_host_backed_missing_copy(
                 )
                 state = node.component_data[2]
                 if node.parent is not None and (
-                    state.value is not None or state.host_value is not None
+                    2 not in components or state.value is not None or state.host_value is not None
                 ):
-                    selected_missing = missing_full or state.value is None
+                    selected_missing = missing_full or 2 in components and state.value is None
             return selected_missing
         checkpoints = {}
         for leaf_id, _ in components[0]:
@@ -593,9 +602,9 @@ def has_host_backed_missing_copy(
                 )
                 state = node.component_data[2]
                 if node.parent is not None and prefix <= input_limit and (
-                    state.value is not None or state.host_value is not None
+                    2 not in components or state.value is not None or state.host_value is not None
                 ):
-                    selected_missing = missing_full or state.value is None
+                    selected_missing = missing_full or 2 in components and state.value is None
                 checkpoints[node.id] = prefix, missing_full, selected_missing
             if selected_missing:
                 return True
@@ -636,8 +645,8 @@ def missing_prepare_full_prefix_tokens(
         components = dict(anchors.component_leaves)
         if (
             len(components) != len(anchors.component_leaves)
-            or set(components) != {0, 2}
-            or not components[0] or not components[2]
+            or set(components) not in ({0}, {0, 2})
+            or not components[0] or 2 in components and not components[2]
             or sum(map(len, components.values())) > 8
         ):
             return None
@@ -719,7 +728,7 @@ def missing_prepare_full_prefix_tokens(
                 for distance, node_id in enumerate(reversed(chain)):
                     depth[node_id] = distance
         if complete_backed_nodes is not None:
-            if any(node_id not in nodes for node_id, _ in components[2]):
+            if any(node_id not in nodes for node_id, _ in components.get(2, ())):
                 return None
             identities = []
             for node_id in sorted(native_backed):
@@ -797,10 +806,10 @@ def plan_prefetch_gpu_steps(
         by_component = dict(anchors.component_leaves)
         nodes = {node.node_id: node for node in candidate.nodes}
         full_leaves = dict(by_component[0])
-        mamba_leaves = dict(by_component[2])
+        mamba_leaves = dict(by_component.get(2, ()))
     except (AttributeError, KeyError, TypeError, ValueError):
         return ()
-    if len(by_component) != len(anchors.component_leaves) or set(by_component) != {0, 2}:
+    if len(by_component) != len(anchors.component_leaves) or set(by_component) not in ({0}, {0, 2}):
         return ()
     if len(nodes) != len(candidate.nodes):
         return ()
@@ -827,9 +836,9 @@ def plan_prefetch_gpu_steps(
             return ()
     if (
         not full_leaves
-        or not mamba_leaves
+        or 2 in by_component and not mamba_leaves
         or len(full_leaves) != len(by_component[0])
-        or len(mamba_leaves) != len(by_component[2])
+        or len(mamba_leaves) != len(by_component.get(2, ()))
         or sum(map(len, by_component.values())) > 8
         or any(
             type(leaf) is not int
@@ -1211,9 +1220,9 @@ def capture_action_local_shadow(
     by_component = dict(anchors.component_leaves)
     if (
         len(by_component) != len(anchors.component_leaves)
-        or set(by_component) != {0, 2}
+        or set(by_component) not in ({0}, {0, 2})
         or not by_component[0]
-        or not by_component[2]
+        or 2 in by_component and not by_component[2]
         or sum(map(len, by_component.values())) > 8
     ):
         return _capture_rejected("invalid_component_leaves", on_failure)

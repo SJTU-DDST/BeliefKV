@@ -6,9 +6,11 @@
 - Keep historical shared-project experiments as historical evidence. Source
   capture, replay qualification and comparison startup must reject new
   shared-project populations.
-- The current workload has 36 roots from 36 projects. If sustained useful-state
-  loss and extra prefill work show substantially increased recomputation, reduce
-  simultaneous workflows to 32 and further if needed. Running/decode limits are
+- The current workload uses Qwen3-Coder-30B-A3B-Instruct and 24 simultaneous
+  roots from 24 projects, with model-directed multi-round/nested delegation.
+  Running/decode limits remain 24 and are separate from workflow count. If
+  sustained useful-state loss and extra prefill work show substantially increased
+  recomputation, revisit simultaneous workflow count. Running/decode limits are
   separate settings; do not silently substitute a batch-size change.
 - Count initial cold prefill separately from missing previously served
   same-session prefixes. Cache occupancy and prefix-loss proxies alone do not
@@ -19,3 +21,5 @@
   dependencies, stopping conditions, capacities and seeds.
 - Preserve the frozen source trees of running experiments. Qualify and replace
   pending registrations explicitly when launcher code changes.
+- Do not run ablations until predictive establishes clear gains over native.
+  Keep completed native/Full results and administratively interrupted controls.

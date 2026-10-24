@@ -173,7 +173,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--sampling-profile",
-        choices=("legacy_greedy", "qwen35_coding"),
+        choices=("legacy_greedy", "qwen35_coding", "qwen3_coder"),
         default="legacy_greedy",
     )
     parser.add_argument("--context-window-tokens", type=int, default=32_768)

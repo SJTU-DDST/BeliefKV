@@ -495,6 +495,7 @@ def test_capture_monitor_checks_effective_recording_not_just_environment(tmp_pat
         launch["native_policy_baseline"] = False
     (server / "native_telemetry_status.json").write_text(json.dumps(status))
     (server / "launch_configuration.json").write_text(json.dumps(launch))
+    (server / "native_capacity_census.json").write_text(json.dumps({"capacity": capacity()}))
     if change is None:
         capture.observe(tmp_path, final=True)
     else:

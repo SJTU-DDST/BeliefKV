@@ -1022,10 +1022,10 @@ class NativeAdmissionRuntime:
         try:
             entries = cache.host_pool_group.entry_map
             full_unit = entries["kv"].host_pool.size_per_token
-            mamba_unit = entries["mamba"].host_pool.size_per_token
+            mamba_unit = entries["mamba"].host_pool.size_per_token if "mamba" in entries else 0
             if (
                 type(full_unit) is int and full_unit > 0
-                and type(mamba_unit) is int and mamba_unit > 0
+                and type(mamba_unit) is int and mamba_unit >= 0
             ):
                 self._residency_pool_bytes = full_unit, mamba_unit
         except (AttributeError, KeyError, TypeError):
@@ -3559,12 +3559,12 @@ class NativeAdmissionRuntime:
         try:
             entries = self._native_cache.cache_controller.mem_pool_host.entry_map
             full_unit = entries["kv"].host_pool.size_per_token
-            mamba_unit = entries["mamba"].host_pool.size_per_token
+            mamba_unit = entries["mamba"].host_pool.size_per_token if "mamba" in entries else 0
         except (AttributeError, KeyError, TypeError):
             return None
         if (
             type(full_unit) is not int or full_unit <= 0
-            or type(mamba_unit) is not int or mamba_unit <= 0
+            or type(mamba_unit) is not int or mamba_unit < 0
         ):
             return None
         # Capture permits at most eight leaves. Each selected FULL path fits
@@ -5573,7 +5573,7 @@ class NativeAdmissionRuntime:
         )
         entries = self._native_cache.cache_controller.mem_pool_host.entry_map
         full_unit = entries["kv"].host_pool.size_per_token
-        mamba_unit = entries["mamba"].host_pool.size_per_token
+        mamba_unit = entries["mamba"].host_pool.size_per_token if "mamba" in entries else 0
         byte_limit = self._prefetch_byte_allowance(budget)
         nodes = {node.node_id: node for node in candidate.nodes}
         selected, full, mamba, deferred_mamba = [], 0, 0, 0
@@ -6069,7 +6069,8 @@ class NativeAdmissionRuntime:
             entries = self._native_cache.cache_controller.mem_pool_host.entry_map
             planned_bytes = (
                 opportunity.required_full_tokens * entries["kv"].host_pool.size_per_token
-                + opportunity.required_mamba_slots * entries["mamba"].host_pool.size_per_token
+                + (opportunity.required_mamba_slots * entries["mamba"].host_pool.size_per_token
+                   if opportunity.required_mamba_slots else 0)
             )
             if (
                 opportunity.required_full_tokens + budget.reserve_full_tokens
@@ -7179,7 +7180,7 @@ class NativeAdmissionRuntime:
                 return None
             entries = cache.host_pool_group.entry_map
             full_unit = entries["kv"].host_pool.size_per_token
-            mamba_unit = entries["mamba"].host_pool.size_per_token
+            mamba_unit = entries["mamba"].host_pool.size_per_token if "mamba" in entries else 0
             transfer_bytes = full_units * full_unit + mamba_units * mamba_unit
             if transfer_bytes <= 0:
                 return None
@@ -7278,7 +7279,9 @@ class NativeAdmissionRuntime:
         # Reserve a next-prefill window and one decode page per active request.
         # An occupied cache alone is not competing demand, nor free capacity.
         full_reserve = self._native_page_size * running + 8192 * slots
-        mamba_reserve = 4 * slots
+        mamba_reserve = (
+            4 * slots if self._residency_pool_bytes is None or self._residency_pool_bytes[1] else 0
+        )
         if demand is not None:
             full_reserve = max(full_reserve, demand[1])
             mamba_reserve = max(mamba_reserve, demand[2])
@@ -8266,7 +8269,8 @@ class NativeAdmissionRuntime:
             entries = self._native_cache.cache_controller.mem_pool_host.entry_map
             size = (
                 opportunity.required_full_tokens * entries["kv"].host_pool.size_per_token
-                + opportunity.required_mamba_slots * entries["mamba"].host_pool.size_per_token
+                + (opportunity.required_mamba_slots * entries["mamba"].host_pool.size_per_token
+                   if opportunity.required_mamba_slots else 0)
             )
         except (AttributeError, KeyError, TypeError):
             return None
@@ -8282,7 +8286,8 @@ class NativeAdmissionRuntime:
             # without scaling polling overhead or caching a physical plan.
             ceiling_bytes = (
                 service_shape.full_tokens * entries["kv"].host_pool.size_per_token
-                + service_shape.mamba_slots * entries["mamba"].host_pool.size_per_token
+                + (service_shape.mamba_slots * entries["mamba"].host_pool.size_per_token
+                   if service_shape.mamba_slots else 0)
             )
             ceiling_shape = pool_shape(service_shape.full_tokens, service_shape.mamba_slots)
             estimate = self._estimate_h2d_service(ceiling_bytes, shape=ceiling_shape)
@@ -9533,7 +9538,8 @@ class NativeAdmissionRuntime:
                     for node in observation.nodes
                 ) + sum(
                     int(node.mamba_device_present) * entries["mamba"].host_pool.size_per_token
-                    for node in observation.nodes if node.node_id == step.node_id
+                    for node in observation.nodes
+                    if node.node_id == step.node_id and node.mamba_device_present
                 )
                 ancestors = {
                     (node.node_id, node.creation_time) for node in observation.nodes
@@ -9732,11 +9738,11 @@ class NativeAdmissionRuntime:
             rows = cache.req_to_token_pool.available_size()
             entries = cache.host_pool_group.entry_map
             full_unit = entries["kv"].host_pool.size_per_token
-            mamba_unit = entries["mamba"].host_pool.size_per_token
+            mamba_unit = entries["mamba"].host_pool.size_per_token if "mamba" in entries else 0
             if (
                 not headroom.observable or type(rows) is not int or rows < 0
                 or type(full_unit) is not int or full_unit <= 0
-                or type(mamba_unit) is not int or mamba_unit <= 0
+                or type(mamba_unit) is not int or mamba_unit < 0
             ):
                 self._residency_budget = PrefetchResidencyBudget(4, 1024 ** 3)
                 return self._residency_budget
@@ -9755,11 +9761,14 @@ class NativeAdmissionRuntime:
                 # it does not allocate these bytes a second time.
                 try:
                     full_count = cache.full_evictable_size()
-                    mamba_count = cache.mamba_evictable_size()
+                    mamba_count = cache.mamba_evictable_size() if mamba_unit else 0
                     if (
                         type(full_count) is int and type(mamba_count) is int
                         and 0 <= full_count <= cache.token_to_kv_pool_allocator.size
-                        and 0 <= mamba_count <= cache.req_to_token_pool.mamba_pool.size
+                        and (
+                            mamba_unit == 0 and mamba_count == 0
+                            or 0 <= mamba_count <= cache.req_to_token_pool.mamba_pool.size
+                        )
                     ):
                         full_evictable, mamba_evictable = full_count, mamba_count
                 except (AttributeError, KeyError, TypeError, ValueError, RuntimeError):

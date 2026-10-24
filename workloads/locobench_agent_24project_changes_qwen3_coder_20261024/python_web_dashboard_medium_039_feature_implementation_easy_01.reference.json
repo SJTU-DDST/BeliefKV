@@ -1,0 +1,39 @@
+{
+  "id": "python_web_dashboard_medium_039_feature_implementation_easy_01",
+  "task_category": "feature_implementation",
+  "difficulty": "easy",
+  "title": "Implement 'Last Login' Timestamp for User Profiles",
+  "description": "The PalettePulse Dashboard is a multi-user application. To enhance user management and analytics, the product team wants to start tracking when users last access the platform. This task involves implementing a backend feature to record a timestamp upon successful user login. The feature should be configurable and integrated cleanly into the existing application structure without requiring any UI changes.",
+  "context_files": [
+    "docs/api.md",
+    "tests/test_utils.py",
+    "src/utils.py",
+    "src/config.py",
+    "palettepulse_dashboard",
+    "src/module_8.py",
+    "src/module_7.py"
+  ],
+  "context_length": 91485,
+  "task_prompt": "Your task is to implement a feature that records the timestamp of a user's last login.\n\n### Requirements:\n\n1.  **Configuration Toggle:**\n    - In `src/config.py`, add a new boolean configuration setting named `ENABLE_LAST_LOGIN_TRACKING` and set it to `True`.\n    - The entire feature's logic should only execute if this setting is `True`.\n\n2.  **Utility Function:**\n    - In `src/utils.py`, create a new function `update_user_last_login(user_id: str) -> bool`.\n    - This function should take a `user_id` and update the corresponding user's data to include a `last_login` field.\n    - The value of `last_login` must be the current UTC time, formatted as an ISO 8601 string (e.g., `'2023-10-27T10:00:00.123456+00:00'`).\n    - The function should handle the data persistence logic (you will need to infer how user data is stored and updated by examining `src/utils.py` and other files).\n    - It should return `True` on success and `False` if the user is not found.\n\n3.  **Integration:**\n    - Identify the user authentication logic within the `palettepulse_dashboard` main application file.\n    - After a user has been successfully authenticated, call your new `update_user_last_login` function with the authenticated user's ID.\n    - Ensure this call is wrapped in a condition that checks the `ENABLE_LAST_LOGIN_TRACKING` flag from the configuration.\n\n**Note:** You do not need to implement any frontend or API changes to display this timestamp. This task is purely for backend data recording.",
+  "expected_approach": "An expert developer would first perform a code reconnaissance to understand the project's structure. \n\n1.  **Explore:** They would examine `palettepulse_dashboard` to find the login/authentication endpoint. They'd look at `src/utils.py` to understand how user data is currently fetched and managed, and review `src/config.py` to see how configuration is loaded and used.\n\n2.  **Configure:** The first code change would be to add `ENABLE_LAST_LOGIN_TRACKING = True` to `src/config.py`, following the existing format.\n\n3.  **Implement Utility:** Next, they would open `src/utils.py` and add the `update_user_last_login` function. This would involve:\n    - Importing the `datetime` module.\n    - Writing the function signature `update_user_last_login(user_id: str) -> bool`.\n    - Inside the function, locating the primary user data structure (e.g., a dictionary or a function call like `_load_users()`).\n    - Checking if the `user_id` exists.\n    - If it exists, generating the current UTC timestamp using `datetime.datetime.now(datetime.timezone.utc).isoformat()`.\n    - Updating the user's record with a new key, `last_login`.\n    - Calling the appropriate function to save the updated user data (e.g., `_save_users()`).\n    - Returning `True` on success or `False` on failure (user not found).\n\n4.  **Integrate:** Finally, they would modify the `palettepulse_dashboard` file. They would import `config` and the new `update_user_last_login` function from `utils`. Inside the login route, immediately after the block of code that confirms successful authentication, they would add a conditional statement:\n    ```python\n    if config.ENABLE_LAST_LOGIN_TRACKING:\n        utils.update_user_last_login(authenticated_user_id)\n    ```\n\n5.  **Verify:** They would mentally trace the execution flow to ensure the new logic is only triggered on successful login and only when the config flag is enabled. An exceptional developer might also add a new test case to `tests/test_utils.py` to validate the new utility function.",
+  "ground_truth": "The solution requires coordinated changes across three files. The key insight is correctly identifying the points of integration without disrupting existing functionality.\n\n**File: `src/config.py`**\n```python\n# ... existing config variables ...\n\n# Enable tracking of the last login timestamp for users.\n# If True, the system will record the time of each successful login.\nENABLE_LAST_LOGIN_TRACKING = True\n```\n\n**File: `src/utils.py`**\n```python\n# ... other imports ...\nimport datetime\n\n# Assume there are existing functions to manage user data, like:\n# def get_user(user_id):\n#     ...\n# def save_user_data(user_data):\n#     ...\n\ndef update_user_last_login(user_id: str) -> bool:\n    \"\"\"Records the current UTC time as the user's last login time.\n\n    Args:\n        user_id: The ID of the user to update.\n\n    Returns:\n        True if the user was found and updated, False otherwise.\n    \"\"\"\n    # The agent must infer how to get and set user data from the context of this file.\n    # This is a hypothetical implementation.\n    user = get_user(user_id)\n    if user:\n        user['last_login'] = datetime.datetime.now(datetime.timezone.utc).isoformat()\n        save_user_data(user) # Or whatever the persistence mechanism is\n        return True\n    return False\n\n# ... rest of the file ...\n```\n\n**File: `palettepulse_dashboard`**\n```python\n# ... other imports ...\nfrom src import utils, config\n\n# ... inside a login route, for example @app.route('/login', methods=['POST']) ...\n\ndef handle_login():\n    # ... existing logic for authentication ...\n    if user_authenticated_successfully:\n        user_id = session.get('user_id') # Example of getting the user ID\n        \n        # --- BEGIN ADDED CODE ---\n        if config.ENABLE_LAST_LOGIN_TRACKING and user_id:\n            utils.update_user_last_login(user_id)\n        # --- END ADDED CODE ---\n        \n        return create_success_response()\n    else:\n        return create_unauthorized_response()\n```",
+  "evaluation_criteria": [
+    "**Correctness:** The `last_login` field is successfully added/updated in the user's data upon successful login.",
+    "**Configuration Adherence:** The feature is correctly controlled by the `ENABLE_LAST_LOGIN_TRACKING` flag from `src/config.py`.",
+    "**Modularity:** A new, well-defined function `update_user_last_login` was created in `src/utils.py` as specified.",
+    "**Multi-File Integration:** The agent correctly identified and modified all three required files (`src/config.py`, `src/utils.py`, `palettepulse_dashboard`).",
+    "**Code Quality:** The new code is readable, uses correct types (`str`, `bool`), and follows the style of the surrounding code.",
+    "**Robustness:** The `update_user_last_login` function correctly handles the case where a `user_id` does not exist by returning `False`.",
+    "**Minimalism:** The agent did not make any unnecessary or unrelated changes to the codebase."
+  ],
+  "metadata": {
+    "context_length": 91485,
+    "files_count": 7,
+    "information_coverage": 0.3162168047533623,
+    "coverage_range": [
+      0.2,
+      0.4
+    ],
+    "generation_timestamp": "2025-08-05T19:42:51.148952"
+  }
+}
