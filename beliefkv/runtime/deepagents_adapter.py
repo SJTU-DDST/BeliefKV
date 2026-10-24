@@ -380,6 +380,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._join_cancelled: dict[str, set[str]] = {}
         self._join_parent: dict[str, str] = {}
         self._first_satisfied_join_by_parent: dict[str, tuple[str, float]] = {}
+        self._model_served_join_parents: set[str] = set()
         self._post_join_model_runs: dict[str, str] = {}
         self._semantic_gate_result: dict[str, Any] | None = None
         self._ordinary_tools: dict[str, _OrdinaryToolRun] = {}
@@ -2156,6 +2157,15 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 self._first_satisfied_join_by_parent.setdefault(
                     parent_id, (pending.join_id, ts_ms)
                 )
+                if any(
+                    self._model_epochs.get(child_id, -1) > (
+                        self._identities[child_id].metadata.context_epoch
+                        if self._identities[child_id].metadata.context_mode == ContextMode.RESUME.value
+                        else -1
+                    )
+                    for child_id in self._join_members[pending.join_id]
+                ):
+                    self._model_served_join_parents.add(parent_id)
         kind = (
             RuntimeEventKind.INVOCATION_CANCEL
             if cancelled
@@ -2223,6 +2233,13 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 )
             )
         return tuple(events)
+
+    def has_completed_join(self, invocation_id: str | None = None) -> bool:
+        """Check actual successful child returns without scanning conversation history."""
+        with self._lock:
+            return (
+                invocation_id or self.root_metadata.invocation_id
+            ) in self._model_served_join_parents
 
     def semantic_gate_result(self) -> dict[str, Any] | None:
         """Return the first completed parent LLM call after a native JOIN."""

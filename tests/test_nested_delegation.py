@@ -34,6 +34,7 @@ class NestedFixtureModel(BaseChatModel):
     _sessions: object = PrivateAttr(default=None)
     _closed: list = PrivateAttr(default_factory=list)
     _dynamic: bool = PrivateAttr(default=False)
+    _premature_final: bool = PrivateAttr(default=False)
 
     @property
     def _llm_type(self):
@@ -85,6 +86,10 @@ class NestedFixtureModel(BaseChatModel):
             rounds = sum(any(call["name"] == "task" for call in message.tool_calls)
                          for message in prior)
             if self._dynamic and not prior:
+                if self._premature_final:
+                    return ChatResult(generations=[ChatGeneration(message=AIMessage(
+                        content="A premature root final answer without delegation.",
+                    ))])
                 calls = [call("write_todos", {"todos": [
                     {"content": "Investigate the actual assignment.", "status": "in_progress"},
                 ]})]
@@ -283,6 +288,59 @@ def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
     assert shape["all_joins_satisfied"] and shape["all_subagents_returned"]
 
 
+def test_real_dynamic_root_cannot_return_before_model_selected_nested_work(tmp_path, monkeypatch):
+    audit = harness.JsonlAudit(tmp_path / "audit.jsonl")
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    backend = harness.DockerWorkspaceBackend(
+        workspace, image="fixture:unused", audit=audit, support_dir=None,
+    )
+    trace, closed = CollectingSink(), []
+    adapter = DeepAgentsRuntimeAdapter(
+        trace, BeliefKVRequestMetadata("workflow", "root", "ctx-root", 0),
+        native_radix_sessions=NativeRadixSessionLeases(closed.append),
+    )
+    model = NestedFixtureModel()
+    model._dynamic = model._premature_final = True
+    model._adapter, model._sessions, model._closed = (
+        adapter, adapter.native_radix_sessions, closed,
+    )
+    monkeypatch.setattr(harness, "_model", lambda *_args: model)
+    monkeypatch.setattr(harness, "make_summary_model", lambda model, **_kwargs: model)
+    deadline = SimpleNamespace(deadline=ActivationDeadline(), register_model=lambda model: model)
+    workload = harness.SweBenchWorkload(
+        instance_id="fixture-early-final", repo="fixture/repo", base_commit="abc",
+        problem_statement="Review independent repository invariants.", difficulty="unknown",
+    )
+    adapter.start()
+    try:
+        agent = harness._build_autonomous_agent(
+            configuration(tmp_path, DYNAMIC_NESTED_IN_GRAPH_PROFILE),
+            workload, backend, adapter, deadline,
+        )
+        result = agent.invoke(
+            {"messages": [HumanMessage(content="Complete the collaborating assignment.")]},
+            config={"callbacks": [adapter], "recursion_limit": 64},
+        )
+        adapter.finish(outcome="completed")
+    finally:
+        audit.close()
+    assert adapter.has_completed_join()
+    assert "Controlled root fixture report" in result["messages"][-1].content
+    roots = [row for row in model._requests if row["role"] == "root"]
+    assert [row["tool_choice"] for row in roots] == [None, "task", None, None, None, None]
+    assert all(row["tool_choice"] is None for row in model._requests if row["role"] != "root")
+    control = harness.summarize_agent_control(tmp_path / "audit.jsonl")
+    assert control["workload_contract_intervened"]
+    assert control["root_delegation_return_deferrals"] == 1
+    assert control["root_delegation_required_task_attempts"] == 1
+    assert control["root_delegation_requirement_failures"] == 0
+    assert control["guard_intervened_completions"] == 0
+    graph = RuntimeCausalContextGraph()
+    graph.apply_batch(trace.events)
+    assert all(join.member_invocation_ids <= join.completed_member_ids for join in graph.joins.values())
+
+
 def test_shape_contract_and_future_candidate_are_explicit():
     contract = delegation_contract(NESTED_IN_GRAPH_PROFILE)
     assert contract["root_round_target"] == 4
@@ -314,7 +372,10 @@ def test_dynamic_contract_has_no_prescribed_rounds_roles_or_generation_bounds():
     assert contract["direct_child_task_tool_enabled"]
     assert contract["root_initial_tool_choice"] == contract["nested_initial_tool_choice"] == "auto"
     assert not contract["fixed_role_sequence"]
-    assert not contract["natural_final_response_rejected"]
+    assert contract["natural_final_response_rejected"]
+    assert contract["root_terminal_check"] == "require_completed_model_selected_join"
+    assert contract["root_retry_tool_choice"] == "task"
+    assert contract["maximum_root_delegation_attempts"] == 2
     assert contract["maximum_spawn_depth"] == 2
     assert contract["root_minimum_delegations_prompt"] == 1
     assert contract["recommended_root_rounds"] == [2, 3]

@@ -1,6 +1,30 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-24 (Asia/Shanghai).
+Status date: 2026-10-25 (Asia/Shanghai).
+
+V178's18-project source was administratively interrupted because four completed
+roots returned without any actual SPAWN;V179's waiting qualification queue also
+stopped and the planned V180 Full must not start. Shutdown is verified by terminal
+states,driver exit143,absent original processes and no remaining GPU process.
+Preserve these interrupted records rather than accepting partial performance.
+The stopped prefix contains1085 completed requests with exact prompt/prefill
+geometry and zero repeated old common-input prefill tokens. Host-use P50 is
+99.843%;the last HBM sample has2411 free and30594 allocator-evictable tokens.
+This proves migration pressure,not sufficient safe cold capacity for a parent.
+Retain18 roots,running/decode24 for the corrected capture;do not lower concurrency
+solely from full-pool occupancy or increase it because children became shorter.
+
+The root prompt already required one substantive delegation,but previously final
+return did not check it. A root-only return check now requires an actual satisfied
+JOIN with an actual child model call,cached at successful JOIN completion. An undelegated final answer
+persists a reminder and retries task generation at most twice,with assignments
+and fanout chosen by the model. Initial tool choice stays automatic;later rounds
+and nesting remain dynamic. Preserve the candidate response and all work,record
+workload-contract deferrals separately,and reject failed contracts early in capture.
+Safety finalization remains available and its contract violation is explicit.
+Children do not inherit this root-only requirement. Qualify and freeze a fresh
+source and bounded token/stop/session check before its Full replay;do not schedule
+a complete native replay or ablations.
 
 Latest user steering retains the original pretokenized `/generate` replay.
 Remove the pending chat-ingress alignment and its raw-request capture path;
@@ -22,7 +46,8 @@ Use18 different-project roots as the initial calibration candidate,with
 running/decode24 unchanged. Measure actual cold parent release,Host-backed
 recovery and old-input reprocessing before accepting a final population;
 step to20 if recovery pressure is insufficient,or16 if useful-state loss
-and unrecoverable capacity persist. No new GPU experiment has started.
+and unrecoverable capacity persist. The initial V178 capture is now interrupted
+as documented above;no Full result exists for this new workload.
 The model-directed workload now supplies24-call reminders and a32-call soft
 return target to children,including nested invocations. Preserve tools,
 pending JOINs,full reports and PARTIAL/BLOCKED declarations;do not enforce

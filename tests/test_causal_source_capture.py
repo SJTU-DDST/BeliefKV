@@ -104,6 +104,52 @@ def test_reference_capacity_comes_from_the_completed_native_census(tmp_path):
     assert observed_path == path and observed == capacity()
 
 
+@pytest.mark.parametrize("change", ["valid", "undelegated", "failed", "intervention_failed"])
+def test_capture_checks_each_completed_dynamic_root_early(tmp_path, change):
+    path = tmp_path / "client_18/workflows/root/result.json"
+    path.parent.mkdir(parents=True)
+    result = {
+        "outcome": "completed",
+        "trace": {"root_delegation_round_count": 1},
+        "agent_control": {"root_delegation_return_deferrals": 1},
+    }
+    if change == "undelegated":
+        result["trace"]["root_delegation_round_count"] = 0
+    elif change == "failed":
+        result["outcome"] = "error"
+    elif change == "intervention_failed":
+        result["agent_control"]["root_delegation_requirement_failures"] = 1
+    path.write_text(json.dumps(result))
+    checked = set()
+    if change == "valid":
+        capture.observe_completed_root_delegations(
+            tmp_path, profile="native_in_graph_dynamic_nested", checked=checked,
+        )
+        assert checked == {path}
+        path.write_text("already checked; do not reread")
+        capture.observe_completed_root_delegations(
+            tmp_path, profile="native_in_graph_dynamic_nested", checked=checked,
+        )
+    else:
+        with pytest.raises(ValueError, match="delegation contract"):
+            capture.observe_completed_root_delegations(
+                tmp_path, profile="native_in_graph_dynamic_nested", checked=checked,
+            )
+        assert not checked
+
+
+def test_capture_retries_partial_root_result_and_preserves_historical_profiles(tmp_path):
+    path = tmp_path / "client_18/workflows/root/result.json"
+    path.parent.mkdir(parents=True)
+    path.write_text('{"outcome":')
+    checked = set()
+    for profile in ("native_in_graph_dynamic_nested", "native_in_graph_nested_2to4"):
+        capture.observe_completed_root_delegations(
+            tmp_path, profile=profile, checked=checked,
+        )
+    assert not checked
+
+
 @pytest.mark.parametrize("field,value", (
     ("device_full_tokens", 0), ("device_mamba_slots", -1),
     ("device_full_tokens", True), ("device_mamba_slots", "513"),

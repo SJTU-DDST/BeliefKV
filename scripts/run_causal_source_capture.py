@@ -329,6 +329,26 @@ def observe(arm: Path, *, final=False, expected_capacity=None):
         raise ValueError("capture lacks final native capacity census")
 
 
+def observe_completed_root_delegations(arm: Path, *, profile, checked):
+    if profile not in (DYNAMIC_NESTED_IN_GRAPH_PROFILE, REUSABLE_NESTED_IN_GRAPH_PROFILE):
+        return
+    for path in arm.glob("client_*/workflows/*/result.json"):
+        if path in checked:
+            continue
+        try:
+            result = load(path)
+        except json.JSONDecodeError:
+            continue
+        rounds = (result.get("trace") or {}).get("root_delegation_round_count")
+        if (
+            result.get("outcome") != "completed"
+            or type(rounds) is not int or rounds < 1
+            or (result.get("agent_control") or {}).get("root_delegation_requirement_failures", 0)
+        ):
+            raise ValueError(f"source root failed its delegation contract: {path.parent.name}")
+        checked.add(path)
+
+
 def balanced_source(summary):
     workflows = summary.get("workflows", [])
     durations = sorted(
@@ -478,9 +498,13 @@ def oneshot_source(summary, graph, *, expected_workflows, expected_profile=NESTE
         "root_rounds": summary.get("root_delegation_round_counts"),
         "minimum_root_delegations": minimum,
         "observed_root_delegations": root_delegations,
+        "root_delegation_return_deferrals": sum(
+            (row.get("agent_control") or {}).get("root_delegation_return_deferrals", 0)
+            for row in workflows
+        ),
         "scope": (
-            "Natural model-directed one-shot delegation with its declared prompt "
-            "minimum, if present. No reuse quota, additional JOIN-count target, "
+            "Model-directed one-shot delegation with its declared minimum, if present; "
+            "return deferrals are reported separately. No reuse quota, additional JOIN-count target, "
             "normal-tail filter or measured policy speedup selects this source."
         ),
     }
@@ -780,6 +804,7 @@ def watch(registration: Path):
     }
     driver = None
     interrupted = False
+    checked_root_results = set()
 
     def stop_requested(*_):
         nonlocal interrupted
@@ -812,6 +837,10 @@ def watch(registration: Path):
                 if interrupted:
                     raise ValueError("capture monitor was stopped")
                 observe(arm, expected_capacity=plan.get("capture_capacity"))
+                observe_completed_root_delegations(
+                    arm, profile=plan["environment"].get("FANOUT_PROFILE"),
+                    checked=checked_root_results,
+                )
                 time.sleep(15)
             state["original_exit_code"] = driver.wait()
             observe(arm, final=True, expected_capacity=plan.get("capture_capacity"))

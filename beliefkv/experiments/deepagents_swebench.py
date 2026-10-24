@@ -56,6 +56,9 @@ from beliefkv.experiments.delegation_policy import (
 from beliefkv.experiments.child_work_budget import (
     CHILD_WORK_BUDGET_PRIVATE_KEYS, ChildWorkBudgetMiddleware, budget_instruction,
 )
+from beliefkv.experiments.root_delegation_requirement import (
+    ROOT_DELEGATION_PRIVATE_KEYS, RootDelegationRequirementMiddleware,
+)
 from beliefkv.runtime.reusable_subagents import ReusableSubagentRegistry
 from beliefkv.runtime.reusable_subagent_middleware import (
     REUSABLE_DELEGATION_PROMPT, ReusableSubAgentMiddleware,
@@ -3551,7 +3554,8 @@ def _autonomous_subagents(
 
 def _task_middleware(config, adapter, **kwargs):
     kwargs["private_state_keys"] = (
-        kwargs.get("private_state_keys", frozenset()) | CHILD_WORK_BUDGET_PRIVATE_KEYS
+        kwargs.get("private_state_keys", frozenset())
+        | CHILD_WORK_BUDGET_PRIVATE_KEYS | ROOT_DELEGATION_PRIVATE_KEYS
     )
     if config.subagent_fanout_profile == REUSABLE_NESTED_IN_GRAPH_PROFILE:
         kwargs.pop("system_prompt", None)
@@ -3673,6 +3677,11 @@ def _build_autonomous_agent(
         ),
         ]
     )
+    if delegation_enabled and dynamic:
+        # after_model hooks run in reverse order, before natural-return acceptance.
+        middleware.append(RootDelegationRequirementMiddleware(
+            adapter=adapter, audit=backend.audit,
+        ))
     return create_agent(
         model=model,
         tools=[_workspace_patch_tool(backend)],
@@ -4706,6 +4715,8 @@ def classify_workflow_measurement(
         system_reasons.append("runtime_control_delivery_degraded")
     if int(agent_control.get("protocol_repair_failures", 0)):
         system_reasons.append("protocol_repair_failed")
+    if int(agent_control.get("root_delegation_requirement_failures", 0)):
+        system_reasons.append("root_delegation_requirement_unmet")
     if any(
         "no_natural_final_text" in (
             (item.get("semantic_completion") or {}).get("unresolved") or []
@@ -4778,7 +4789,15 @@ def summarize_agent_control(path: Path) -> dict[str, Any]:
     intervened_returns = sum(
         bool(item.get("guard_intervened", False)) for item in natural_returns
     )
+    delegation_counts = Counter(
+        str(item["event"]) for item in records
+        if str(item.get("event", "")).startswith("root_delegation_")
+    )
     return {
+        "root_delegation_return_deferrals": delegation_counts["root_delegation_return_deferred"],
+        "root_delegation_required_task_attempts": delegation_counts["root_delegation_required_task_attempt"],
+        "root_delegation_requirement_failures": delegation_counts["root_delegation_requirement_failed"],
+        "workload_contract_intervened": bool(delegation_counts["root_delegation_return_deferred"]),
         "event_counts": dict(sorted(event_counts.items())),
         "stuck_reasons": dict(sorted(stuck_reasons.items())),
         "semantic_completions": len(semantic),

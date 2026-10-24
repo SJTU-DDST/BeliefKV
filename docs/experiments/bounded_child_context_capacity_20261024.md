@@ -1,6 +1,46 @@
 # Child Context Size and Population Sizing
 
-Status: CPU evidence only, 2026-10-24. No new GPU experiment was launched.
+Status: historical sizing and interrupted V178 GPU calibration, updated
+2026-10-25 (Asia/Shanghai). No accepted Full result exists for this population.
+
+## Interrupted Calibration
+
+V178 used 18 distinct projects and running/decode limits of 24. It was stopped
+after four naturally completed roots had never delegated. V179's waiting
+qualification queue was stopped too; the planned V180 Full did not launch.
+Terminal states and the original process identities confirm GPU release.
+
+The stopped prefix contains 1,085 completed native requests. Exact token prompts
+and prefill geometry cover every one; previously served comparable common-input
+reprocessing totals zero. Actual input prefill is 2,264,619 tokens, which includes
+initial cold input and new history. Host use P50 is 99.843%; its last sampled use
+is 199.678/200.000 GB. The last HBM sample has 2,411 free and 30,594
+allocator-evictable tokens, approximately 0.237 and 3.008 GB respectively.
+Allocator evictability does not prove those bytes are suitable cold donors.
+Recorded H2D is 6.365 TB and D2H is 734.843 GB; their stream times are not exposed
+critical-path wait or an upper bound on JCT benefit.
+
+Retain 18 roots for the corrected calibration. There is clear migration pressure
+but no observed old common-input reprocessing in this prefix. Full's ability to
+release cold capacity and restore a long parent remains untested; reduce to 16
+if persistent restoration-capacity failures or useful-state losses establish
+that 18 is excessive.
+
+The prompt already contained an explicit MUST-delegate requirement. The failure
+was the absence of a runtime pre-return check, not missing prompt text. The
+root-only check now defers an undelegated final answer, records its reminder,
+and allows at most two model-generated required task attempts. A real satisfied
+JOIN is required; declaration alone, rejected tasks and cancellations do not
+qualify. The model still selects assignments, roles, fanout, later rounds and
+nesting. All contract deferrals remain visible, safety failures are rejected,
+and the source monitor checks each newly completed root promptly.
+
+Evidence:
+
+- `/home/longhao/experiment/ops/v178_bounded_child_stopped_prefix_20261024.json`
+- `/home/longhao/experiment/ops/v178_stopped_nondelegating_roots_20261024.json`
+- `/home/longhao/experiment/ops/v178_qwen3_coder_18project_bounded_children_source_20261024.registration.state.json`
+- `/home/longhao/experiment/ops/v179_qwen3_coder_18project_bounded_children_check_20261024.registration.state.json`
 
 ## Measured Contexts
 

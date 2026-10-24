@@ -13,6 +13,12 @@
   sustained useful-state loss and extra prefill work show substantially increased
   recomputation, revisit simultaneous workflow count. Running/decode limits are
   separate settings; do not silently substitute a batch-size change.
+- Dynamic roots must complete at least one real model-selected delegation before
+  final return. Keep initial tool choice automatic; defer an undelegated final
+  answer with a recorded reminder and at most two required task attempts. The
+  model chooses assignments, fanout, timing, later rounds and nesting. Failed
+  attempts and safety-finalized violations do not qualify a source. Children
+  retain their independent soft budgets and may naturally return without nesting.
 - Count initial cold prefill separately from missing previously served
   same-session prefixes. Cache occupancy and prefix-loss proxies alone do not
   prove expensive recomputation.

@@ -67,8 +67,11 @@ def delegation_contract(profile: str) -> dict:
             root_initial_tool_choice="auto",
             nested_initial_tool_choice="auto",
             fixed_role_sequence=False,
-            natural_final_response_rejected=False,
+            natural_final_response_rejected=True,
             root_minimum_delegations_prompt=1,
+            root_terminal_check="require_completed_model_selected_join",
+            root_retry_tool_choice="task",
+            maximum_root_delegation_attempts=2,
             recommended_root_rounds=[2, 3],
             nested_delegation_required_for_independent_subproblems=True,
         )

@@ -17,8 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import AIMessage, HumanMessage, convert_to_openai_messages
-from langchain_core.outputs import ChatGeneration, ChatResult
+from langchain_core.messages import HumanMessage, convert_to_openai_messages
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from pydantic import PrivateAttr
 
@@ -31,6 +30,10 @@ from beliefkv.runtime.context_lifecycle import ContextLifecyclePolicy
 from beliefkv.runtime.context_token_counter import ChatTemplateTokenCounter
 from beliefkv.runtime.replay_token_capture import _wire
 from beliefkv.runtime.reusable_subagents import ReusableSubagentRegistry
+
+
+class InitialInputCaptured(Exception):
+    pass
 
 
 class InputProbeModel(BaseChatModel):
@@ -47,9 +50,7 @@ class InputProbeModel(BaseChatModel):
 
     def _generate(self, messages, stop=None, run_manager=None, **kwargs):
         self._requests.append((list(messages), list(self._tools)))
-        return ChatResult(generations=[ChatGeneration(
-            message=AIMessage(content="CPU input probe completed."),
-        )])
+        raise InitialInputCaptured
 
 
 def root_request(config, workload, directory):
@@ -71,7 +72,10 @@ def root_request(config, workload, directory):
             )
             prompt = runner._task_prompt(workload, workspace=workload.source_repo)
             prompt += "\n\n" + runner.DYNAMIC_COLLABORATIVE_TASK_INSTRUCTION.strip()
-            agent.invoke({"messages": [HumanMessage(content=prompt)]})
+            try:
+                agent.invoke({"messages": [HumanMessage(content=prompt)]})
+            except InitialInputCaptured:
+                pass
     finally:
         audit.close()
         trace.close()
