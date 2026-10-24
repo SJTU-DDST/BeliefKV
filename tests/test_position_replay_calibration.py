@@ -6,6 +6,7 @@ import pytest
 
 from beliefkv.experiments.source_provenance import sha256_file
 from scripts import run_position_replay_calibration as calibration
+from tests.test_causal_comparison import reference
 
 
 @pytest.mark.parametrize("max_tasks_per_project", (1, 2))
@@ -361,3 +362,97 @@ def test_gpu_evidence_requires_actual_position_receipts_and_all_native_stops(tmp
     else:
         with pytest.raises(ValueError):
             calibration.smoke_result(plan, summary, arm, {}, server, {"pid": 11})
+
+
+@pytest.mark.parametrize("frontier", (False, True))
+def test_predeclared_calibration_accepts_the_selected_policy_but_runs_native(
+    tmp_path, monkeypatch, reference, frontier,
+):
+    from contextlib import nullcontext
+
+    roots = [f"workflow-{index}" for index in range(18)]
+    arm = tmp_path / "source"
+    (arm / "client_18").mkdir(parents=True)
+    (arm / "server").mkdir()
+    (arm / "client_18/summary.json").write_text(json.dumps({
+        "completed_workflows": 18,
+        "subagent_fanout_profile": calibration.capture.DYNAMIC_NESTED_IN_GRAPH_PROFILE,
+        "workflows": [
+            {"workflow_id": value, "native_agent_jct_eligible": True} for value in roots
+        ],
+    }))
+    (arm / "server/native_capacity_census.json").write_text(json.dumps({
+        "capacity": {
+            "pool_layout": "static_full_only",
+            "device_full_bytes": 1200, "device_full_tokens": 12,
+            "device_mamba_bytes": 0, "device_mamba_slots": 0,
+            "device_total_bytes": 1200,
+            "host_full_bytes": 2400, "host_full_tokens": 24,
+            "host_mamba_bytes": 0, "host_mamba_slots": 0, "host_total_bytes": 2400,
+        },
+    }))
+    source = tmp_path / "source.json"
+    source.write_text(json.dumps({
+        "environment": {
+            "ROOT_COUNT": "18",
+            "FANOUT_PROFILE": calibration.capture.DYNAMIC_NESTED_IN_GRAPH_PROFILE,
+        },
+    }))
+    reference_path = tmp_path / "reference.json"
+    reference_path.write_text(json.dumps(reference))
+    spec = calibration.ROOT / (
+        "configs/migration/qwen3_coder_18project_root_phase"
+        + ("_frontier" if frontier else "") + "_20261024.json"
+    )
+    run = tmp_path / "calibration"
+    registration = tmp_path / "calibration.json"
+    registration.write_text(json.dumps({
+        "source_registration": str(source), "source_arm": str(arm),
+        "source_selection_policy": "predeclared", "run_root": str(run),
+        "reference_registration": str(reference_path), "experiment_config": str(spec),
+        "engine_checkout": str(tmp_path / "engine"),
+        "max_running_requests": 24, "port": 18601,
+    }))
+    graph = SimpleNamespace(
+        nodes=[
+            SimpleNamespace(event=SimpleNamespace(
+                kind=calibration.capture.Kind.WORKFLOW_START, workflow_id=value,
+            )) for value in roots
+        ],
+        summary=lambda: {"event_counts": {"join_create": 30}},
+    )
+    monkeypatch.setattr(calibration.signal, "signal", lambda *_args: None)
+    monkeypatch.setattr(calibration.comparison, "verify_sources", lambda _plan: None)
+    monkeypatch.setattr(calibration.fresh, "check_hold", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(calibration, "source_ready", lambda _plan: True)
+    monkeypatch.setattr(calibration, "complete_source_metrics", lambda _path: {})
+    monkeypatch.setattr(calibration.controls, "source_plan", lambda _arm: (graph, {}, {}))
+    monkeypatch.setattr(calibration.controls, "CapturedTokenCorpus", lambda *_args: nullcontext())
+    monkeypatch.setattr(calibration.qualified, "resources", lambda _port: {"ready": True})
+    monkeypatch.setattr(calibration.subprocess, "run", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        calibration.subprocess, "Popen",
+        lambda *_args, **_kwargs: pytest.fail("CPU regression must not launch a GPU server"),
+    )
+    original = calibration.controls.environment
+    observed = []
+
+    def native_boundary(*args, **kwargs):
+        settings, flags, socket = original(*args, **kwargs)
+        observed.append((settings, flags, socket, kwargs))
+        raise RuntimeError("CPU stopped after the actual calibration environment")
+
+    monkeypatch.setattr(calibration.controls, "environment", native_boundary)
+    calibration.watch(registration)
+    state = json.loads(registration.with_suffix(".state.json").read_bytes())
+    assert "CPU stopped after the actual calibration environment" in state["error"]
+    [(settings, flags, socket, kwargs)] = observed
+    assert kwargs.get("execution_frontier_restore", False) is frontier
+    assert settings["BELIEFKV_INTERNAL_COMPARISON_MODE"] == "native_matched"
+    assert settings["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == "0"
+    assert settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "0"
+    assert settings["ROOT_WORK_BUDGET_WARNING_CALLS"] == "16"
+    assert settings["ROOT_WORK_BUDGET_TARGET_CALLS"] == "24"
+    assert settings["SERVER_RANDOM_SEED"] == settings["SAMPLING_SEED"] == "21"
+    assert "--enable-beliefkv-admission" not in flags
+    assert socket is None

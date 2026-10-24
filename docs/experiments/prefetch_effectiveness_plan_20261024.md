@@ -44,9 +44,29 @@ testing earlier model-selected delegation without a fixed DAG or fanout.
 The changed workload requires its own native capture. No additional complete
 native replay is required.
 
+V187 completed the root-budget source: all 18 workflows qualify, with 1,963
+requests, 394,899 output tokens, 30 JOINs and two nested spawns. Root calls total
+863 and child calls total 1,100. All observed root JOIN fanouts remain one.
+The budget did not increase JOIN density relative to V181; preserve this
+workload result rather than claiming the prompt change achieved that goal.
+Its native event-boundary mean JCT is 1625.304 seconds and whole-run output
+throughput is 197.717 tokens/s. Previously served same-session common-input
+prefill is zero; Host FULL occupancy P50 is 99.904%. Different source tokens
+and trajectories preclude interpreting V181 versus V187 as a policy speedup.
+
+V188 stopped before starting a GPU server because the calibration caller did
+not pass the explicitly selected frontier setting to the shared environment
+validator. The comparison environment itself already accepts that explicit
+candidate and disables both tool and ordinary prefetch in native mode.
+Pass the registered candidate setting through the calibration caller. CPU
+regressions exercise the actual calibration watch path through native environment
+construction for both frontier settings, and stop before server launch. Preserve
+the rejected V188 and its stopped V189 audit; qualify updated main and register
+their replacements against the completed V187 source.
+
 ## Root Soft Budget
 
-`qwen3_coder_18project_root_phase_20261024.json` is an optional future workload.
+`qwen3_coder_18project_root_phase_20261024.json` defines V187's optional root budget.
 Remind at 16 direct root model calls and use 24 as a soft phase target. A real
 successful JOIN with an actually served child starts a new phase; nested-child
 work and summary requests do not consume the root counter. Each threshold adds
