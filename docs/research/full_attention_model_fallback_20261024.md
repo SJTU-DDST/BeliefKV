@@ -214,6 +214,32 @@ Evidence:
 
 ## Acceptance
 
+The native capture later ended with 24 workflow records but four graph-budget
+guard interventions. Only 20 satisfy native-agent JCT eligibility, and source
+selection rejects V168b. Its migration observations remain diagnostic evidence;
+they do not qualify a formal Full comparison. Preserve all workflows and the
+original stopping evidence. V169c was stopped before GPU use for the requested
+short-tool policy update; no V170c Full replay began.
+
+The Full configuration now explicitly enables short-tool continuity under
+workflow plus resident-first. It consumes existing live/cached residency
+observations only, stays within the current causal class, and yields to JOIN
+and other protected priority heads. Native admission still owns current
+capacity and dependency checks. Four requests and 1024 completed generated
+tokens bound future continuation grants; no request is truncated or preempted.
+Charging happens once at completion, with no new per-token processing,
+physical KV protection, restoration or residency probe.
+
+V3527 passes 374 focused CPU cases. V3529's alternating warm-residency fixture
+measures approximately 20.8us added P50 planning/selection for a ready
+continuation in a 24-request queue, with identical residency-hint call counts.
+It uses CPU stand-ins and does not measure actual DMA or GPU benefit. V3531
+constructs the real local-model runtime on CPU and verifies effective
+continuity=true alongside the agreed EOS, preparation and tool-prefetch policy.
+V3530 passes all 5776 required CPU cases, retaining all 5744 previous identities
+and adding 32. This qualifies the source for later execution, not its GPU gains.
+The next accepted source must precede any formal Full performance claim.
+
 Collect a new natural native trajectory with the new model and reuse it as the
 native reference. Do not replay an old model's token trace or compare different
 work across models as a scheduler speedup. Replay Full on

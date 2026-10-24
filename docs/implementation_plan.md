@@ -78,6 +78,48 @@ attempt:collection imported the installed unpatched SGLang before fixtures
 could select the qualified engine. It is not qualification evidence or a claim
 that all repository tests pass.
 
+At the user's request, enable optimized short-tool continuation in the current
+Full configuration. V3525 stops the verified waiting V169c before any GPU work.
+The earlier implementation silently disabled this policy under workflow
+ordering; both runtime construction and environment normalization now support
+workflow plus resident-first. Full reuses the existing residency observations,
+promotes only an executable resident successor within the same causal class,
+and preserves JOIN, restore/final-stage priority and aging budgets. Unknown or
+Host-only state receives no continuity promotion. There is no new KV lookup,
+transfer, physical protection or per-decode progress processing.
+
+One service segment permits at most four requests. Its completed generated
+output is charged once per request; after1024 tokens it earns no further
+continuation. This is a future-admission limit,not an output truncation or an
+in-flight execution cap. Native and KV-only controls keep continuity disabled.
+V3527 passes374 focused cases. V3529's warm-residency CPU fixture adds about
+20.8microseconds to P50 planning/selection for24 queued requests with a ready
+successor;resident-hint call counts are identical with the feature off/on.
+V3531 constructs the actual Full runtime on CPU and verifies effective
+continuity=true together with workflow ordering,EOS JOIN and1500ms tool
+prefetch priority. These are not GPU performance results.
+V3530 passes all5776 CPU qualification cases,retaining every one of the
+previous5744 identities and adding32 cases. The qualified native engine is
+first in PYTHONPATH;the actual local tokenizer and cached CPU sandbox are used.
+
+V168b subsequently completed24 workflow records,but four received graph-budget
+guard intervention;only20 meet native-agent JCT eligibility. The source
+selection rejects it as source_guard_or_ineligible_workflow. Preserve the
+complete capture and normal tails;do not remove the four workflows,relax the
+qualification gate,or register formal Full replay on this rejected source.
+V169c is stopped and V170c never started. The enabled policy remains ready for
+a newly qualified source;the overall performance goal is still unproven.
+
+V3523/V3524 explain why short-tool continuation matters. Of3643 served tool
+successors,2606 have logical Host hits;2734 follow tool rounds shorter than50ms.
+At least1208 short-tool successors have matching large-prefix D2H evidence
+while already queued. In a concrete case,a0.573ms tool is followed by7.993s
+queueing,with matching384MiB node backups starting1.037s after queue entry.
+Cache-hit fields are observed at first service,not at their event's earlier
+queue timestamp. Node splitting and shared/old Host copies prevent complete
+per-request eviction attribution. Keep opportunity evidence distinct from
+accepted end-to-end comparison evidence.
+
 V3507 passes23 focused CPU cases,including five new real FULL-only native
 tree/allocator lifecycle cases. These cover incremental spawn backup,ACK-gated
 reclaim,ancestor-ordered restore in all three tiers,input/generation validation,

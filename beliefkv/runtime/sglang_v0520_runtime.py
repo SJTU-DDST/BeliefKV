@@ -442,7 +442,7 @@ class NativeAdmissionRuntime:
         self._tool_continuity = (
             ToolContinuationPolicy()
             if continuity_setting == "1"
-            and self.prefill_scheduling_policy == "join_priority"
+            and self.prefill_scheduling_policy in ("workflow", "join_priority")
             and self.internal_comparison_mode != "kv_only"
             else None
         )
@@ -2403,6 +2403,8 @@ class NativeAdmissionRuntime:
                     {
                         "short_gap_seconds": self._tool_continuity.short_gap_seconds,
                         "max_segment_requests": self._tool_continuity.max_rounds,
+                        "max_completed_segment_output_tokens": self._tool_continuity.max_output_tokens,
+                        "resident_only": self.prefill_scheduling_policy == "workflow",
                         "aged_bypass_ordinary_quota": 4,
                         "ordinary_admissions_since_priority":
                             self._tool_continuity_normal_admissions,
@@ -11379,9 +11381,10 @@ class NativeAdmissionRuntime:
                     critical=lambda key: self.frontier.admission_rank(key.invocation_id)[0] == 0,
                 )
             if self.prefill_scheduling_policy in ("join_priority", "workflow_completion") or candidate is not None:
-                self._order_tool_continuation(
-                    ordered, keys, now=now, protected_head=critical_head,
-                )
+                if self.prefill_scheduling_policy != "workflow":
+                    self._order_tool_continuation(
+                        ordered, keys, now=now, protected_head=critical_head,
+                    )
                 return compile_native_prefill_plan(
                     [keys[index] for index, _ in ordered],
                     semantic_revision=self.semantic_revision,
@@ -11526,6 +11529,8 @@ class NativeAdmissionRuntime:
                     if cached is None or cached[0] <= now_ms:
                         cached = self._reentry_observations.get(key)
                     observation = cached[1] if cached is not None and cached[0] > now_ms else None
+                if observation is not None:
+                    residency_observations[pair[0]] = observation
                 resident = (
                     0 if observation is not None
                     and not observation["missing_full_tokens"]
@@ -11795,6 +11800,16 @@ class NativeAdmissionRuntime:
                 self.counts["resident_aged_priority_ordered"] += 1
                 if details["ordinary_admission_quota"] < 4:
                     self.counts["resident_aged_native_quota_ordered"] += 1
+        if self._tool_continuity is not None:
+            self._order_tool_continuation(
+                ordered, keys, now=now_ms / 1000.,
+                protected_head=any((
+                    self._prefetch_priority_promoted, self._parent_handoff_priority_promoted,
+                    self._join_priority_promoted, self._final_priority_promoted,
+                    self._resident_priority_promoted,
+                )),
+                causal_ranks=ranks, residency_observations=residency_observations,
+            )
         plan = compile_native_prefill_plan(
             [
                 key for index, _ in ordered
@@ -11856,20 +11871,39 @@ class NativeAdmissionRuntime:
         self, ordered: list[tuple[int, object]],
         keys: dict[int, PrefillCandidateKey | None], *,
         now: float, protected_head: bool,
+        causal_ranks: dict[int, tuple[int, int, int]] | None = None,
+        residency_observations: dict[int, dict | None] | None = None,
     ) -> None:
         policy = self._tool_continuity
         if policy is None or not policy.ready or len(ordered) < 2:
+            return
+        if causal_ranks is not None and (protected_head or not self.enable_resident_first):
             return
         floor = int(protected_head)
         selected = None
         for position in range(floor + 1, len(ordered)):
             index, req = ordered[position]
             key = keys[index]
+            if key is None or (key.root_workflow_id, key.invocation_id) not in policy.ready:
+                continue
             arrival = self._visible_since.get(req.rid, now)
-            if key is None or now - arrival >= 10.:
+            if now - arrival >= 10.:
                 continue
             inherited = policy.inherited_arrival(key, arrival=arrival)
             if inherited is not None and self._executable_waiting_key(req, key=key) == key:
+                if causal_ranks is not None:
+                    if causal_ranks[index][:2] != causal_ranks[ordered[0][0]][:2]:
+                        continue
+                    # Reuse resident-first observations; never plan another restore.
+                    observation = (residency_observations or {}).get(index)
+                    if (
+                        observation is None
+                        or not observation.get("device_checkpoint_tokens", 0)
+                        or observation.get("missing_full_tokens") != 0
+                        or observation.get("missing_mamba_slots") != 0
+                    ):
+                        self.counts["tool_continuity_not_resident"] += 1
+                        continue
                 choice = inherited, position
                 if selected is None or choice < selected:
                     selected = choice
@@ -12267,7 +12301,10 @@ class NativeAdmissionRuntime:
                 context_id = visible_key.context_id
                 key = visible_key
                 if self._tool_continuity is not None:
-                    self._tool_continuity.completed(key, now=time.monotonic())
+                    self._tool_continuity.completed(
+                        key, now=time.monotonic(),
+                        output_tokens=len(getattr(req, "output_ids", ()) or ()),
+                    )
                 if self._workflow_attained_work_enabled:
                     workflow = self.graph.workflows.get(key.root_workflow_id)
                     if workflow is not None and workflow.end_ts_ms is None:

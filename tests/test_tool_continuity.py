@@ -181,19 +181,44 @@ def test_chunks_and_retractions_never_mint_new_request_credit():
     assert policy.inherited_arrival(key(1), arrival=10.1) is None
 
 
+def test_completed_token_budget_survives_rounds_and_duplicate_completion():
+    policy = ToolContinuationPolicy(max_output_tokens=64)
+    policy.admitted(key(), arrival=1., promoted=False)
+    policy.completed(key(), now=10., output_tokens=32)
+    policy.completed(key(), now=10., output_tokens=32)
+    assert policy.segments[("wf", "normal")].output_tokens == 32
+    short_round(policy)
+    policy.admitted(key(1), arrival=10.1, promoted=True)
+    policy.completed(key(1), now=11., output_tokens=32)
+    short_round(policy, ts=200.)
+    assert policy.inherited_arrival(key(2), arrival=11.1) is None
+    assert policy.counts["completed_output_tokens"] == 64
+    assert policy.counts["segment_token_budget_yields"] == 1
+
+
+def test_a_long_ordinary_request_does_not_receive_short_tool_priority():
+    policy = ToolContinuationPolicy(max_output_tokens=64)
+    policy.admitted(key(), arrival=1., promoted=False)
+    policy.completed(key(), now=10., output_tokens=1000)
+    short_round(policy)
+    assert not policy.segments and not policy.ready
+    assert policy.inherited_arrival(key(1), arrival=10.1) is None
+
+
 @pytest.mark.parametrize("configuration", (
     {"short_gap_seconds": 0}, {"short_gap_seconds": float("nan")},
     {"short_gap_seconds": True}, {"max_rounds": 1}, {"max_rounds": 2.5},
+    {"max_output_tokens": 0}, {"max_output_tokens": True}, {"max_output_tokens": 2.5},
 ))
 def test_invalid_bounds_are_rejected(configuration):
     with pytest.raises(ValueError):
         ToolContinuationPolicy(**configuration)
 
 
-def runtime_round(monkeypatch, *, mode="full", continuity=True):
+def runtime_round(monkeypatch, *, mode="full", continuity=True, scheduling="join_priority"):
     monkeypatch.setenv("BELIEFKV_ENABLE_TOOL_CONTINUITY", str(int(continuity)))
     runtime, requests = join_fixture(
-        monkeypatch, mode=mode, scheduling="join_priority", tool_continuity=continuity,
+        monkeypatch, mode=mode, scheduling=scheduling, tool_continuity=continuity,
     )
     runtime._join_priority_pending.clear()
     first, normal = requests
@@ -215,9 +240,118 @@ def runtime_round(monkeypatch, *, mode="full", continuity=True):
     successor.rid = "successor"
     successor.beliefkv_metadata["context_epoch"] = 1
     runtime.register_visible_request(successor)
-    for name in ("_read_request_reentry", "_read_request_residency_hint", "_prefill_causal_ranks"):
+    names = ["_read_request_reentry", "_read_request_residency_hint"]
+    if scheduling == "join_priority":
+        names.append("_prefill_causal_ranks")
+    for name in names:
         monkeypatch.setattr(runtime, name, Mock(side_effect=AssertionError("no extra KV planning")))
     return runtime, normal, successor
+
+
+def workflow_round(monkeypatch, *, continuity=True):
+    runtime, normal, successor = runtime_round(
+        monkeypatch, continuity=continuity, scheduling="workflow",
+    )
+    monkeypatch.setattr(runtime, "_prefill_causal_ranks", lambda tagged, _keys: {
+        index: (2, 0, index) for index, _req in tagged
+    })
+    hot = {
+        "device_checkpoint_tokens": 100, "missing_full_tokens": 0,
+        "missing_mamba_slots": 0,
+    }
+    reader = Mock(return_value=hot)
+    monkeypatch.setattr(runtime, "_read_request_residency_hint", reader)
+    return runtime, normal, successor, reader
+
+
+@pytest.mark.parametrize("continuity", (False, True))
+def test_workflow_continuation_reuses_residency_and_never_plans_or_restores(monkeypatch, continuity):
+    monkeypatch.setattr("time.monotonic", lambda: 12.)
+    runtime, normal, successor, reader = workflow_round(monkeypatch, continuity=continuity)
+    try:
+        plan = runtime.plan_native_prefill([normal, successor], running_batch=None, adder=None)
+        assert plan.prioritized[0].request_id == (successor.rid if continuity else normal.rid)
+        assert reader.call_count == 2
+        runtime._read_request_reentry.assert_not_called()
+        assert not runtime.physical_ledger.pending_count
+        if continuity:
+            runtime.on_prefill_candidate_result(successor, admitted=True, result="CONTINUE")
+            assert runtime._tool_continuity.counts["priority_admissions"] == 1
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("observation", (
+    None,
+    {"device_checkpoint_tokens": 0, "missing_full_tokens": 0, "missing_mamba_slots": 0},
+    {"device_checkpoint_tokens": 100, "missing_full_tokens": 100, "missing_mamba_slots": 0},
+    {"device_checkpoint_tokens": 100, "missing_full_tokens": 0, "missing_mamba_slots": 1},
+))
+def test_workflow_continuation_never_promotes_unknown_or_host_only_state(monkeypatch, observation):
+    monkeypatch.setattr("time.monotonic", lambda: 12.)
+    runtime, normal, successor, reader = workflow_round(monkeypatch)
+    hot = reader.return_value
+    reader.side_effect = lambda req, **_: hot if req is normal else observation
+    try:
+        plan = runtime.plan_native_prefill([normal, successor], running_batch=None, adder=None)
+        assert plan.prioritized[0].request_id == normal.rid
+        assert runtime._tool_continuity_promoted is None
+        assert reader.call_count == 2
+        runtime._read_request_reentry.assert_not_called()
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("constraint", ("join", "causal_class", "older", "budget", "priority_head"))
+def test_workflow_continuation_preserves_critical_order_and_fairness(monkeypatch, constraint):
+    monkeypatch.setattr("time.monotonic", lambda: 12.)
+    runtime, normal, successor, reader = workflow_round(monkeypatch)
+    try:
+        if constraint == "join":
+            runtime._join_priority_pending["parent"] = "join"
+        elif constraint == "causal_class":
+            monkeypatch.setattr(runtime, "_prefill_causal_ranks", lambda tagged, _keys: {
+                index: (1 if req is normal else 2, 0, index) for index, req in tagged
+            })
+        elif constraint == "older":
+            runtime._visible_since[normal.rid] = 9.
+        elif constraint == "budget":
+            runtime._tool_continuity.credits["wf"] = 0
+        if constraint == "priority_head":
+            ordered = [(0, normal), (1, successor)]
+            runtime._order_tool_continuation(
+                ordered, {i: runtime.visible[req.rid] for i, req in ordered},
+                now=12., protected_head=True,
+                causal_ranks={i: (2, 0, i) for i, _ in ordered},
+                residency_observations={i: reader.return_value for i, _ in ordered},
+            )
+            assert ordered[0][1] is normal
+        else:
+            plan = runtime.plan_native_prefill([normal, successor], running_batch=None, adder=None)
+            assert plan.prioritized[0].request_id == normal.rid
+        assert runtime._tool_continuity_promoted is None
+        runtime._read_request_reentry.assert_not_called()
+    finally:
+        runtime.close()
+
+
+def test_runtime_charges_completed_output_once_without_decode_tracking(monkeypatch):
+    monkeypatch.setattr("time.monotonic", lambda: 12.)
+    runtime, normal, successor, reader = workflow_round(monkeypatch)
+    try:
+        runtime.plan_native_prefill([normal, successor], running_batch=None, adder=None)
+        runtime.on_prefill_candidate_result(successor, admitted=True, result="CONTINUE")
+        successor.output_ids = [1] * 1023
+        successor.finished = lambda: False
+        runtime.on_batch_completed(NS(reqs=[successor]))
+        assert runtime._tool_continuity.counts["completed_output_tokens"] == 1
+        successor.finished = lambda: True
+        runtime.on_batch_completed(NS(reqs=[successor]))
+        runtime.on_batch_completed(NS(reqs=[successor]))
+        assert runtime._tool_continuity.counts["completed_output_tokens"] == 1024
+        assert runtime._tool_continuity.counts["segment_token_budget_yields"] == 1
+    finally:
+        runtime.close()
 
 
 @pytest.mark.parametrize("mode", ("full", "scheduler_only", "join_priority_only"))
@@ -313,6 +447,15 @@ def test_continuity_control_is_explicit_and_native_kv_modes_remain_independent(m
     assert env["TOOL_CONTINUITY"] == env["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == expected
     env = arm_environment({"TOOL_CONTINUITY": "0"}, mode)
     assert env["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == "0"
+
+
+@pytest.mark.parametrize("mode", ("full", "scheduler_only", "join_priority_only", "kv_only", "native_matched"))
+def test_workflow_continuity_control_keeps_native_and_kv_modes_independent(mode):
+    env = arm_environment({
+        "PREFILL_SCHEDULING_POLICY": "workflow", "TOOL_CONTINUITY": "1",
+    }, mode)
+    expected = str(int(mode in ("full", "scheduler_only", "join_priority_only")))
+    assert env["TOOL_CONTINUITY"] == env["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == expected
 
 
 def test_default_runtime_does_not_track_or_promote_short_tool_successors(monkeypatch):

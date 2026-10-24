@@ -72,7 +72,7 @@ def environment(
         "HOST_SPLIT": "80:20", "MODEL_CONTEXT_TOKENS": "262144",
         "JOIN_PREFETCH_TRIGGER": "observed_eos", "PREFILL_SCHEDULING_POLICY": "workflow",
         "TOOL_RESTORE_MODE": "speculative", "RESTORE_TIERS": "complete",
-        "TOOL_CONTINUITY": "0", "EXECUTION_FRONTIER_RESTORE": "0",
+        "EXECUTION_FRONTIER_RESTORE": "0",
     }
     full_only = reference["arms"]["full"].get("MODEL_CACHE_LAYOUT") == "full_only"
     if full_only:
@@ -277,6 +277,7 @@ def preflight_runtime(settings, model_path):
         "tool_restore_mode": settings["TOOL_RESTORE_MODE"],
         "restore_tiers": settings.get("RESTORE_TIERS", settings["BELIEFKV_RESTORE_TIERS"]),
         "enable_tool_prefetch": settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "1",
+        "tool_continuity": settings["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == "1",
         "tool_prefetch_priority_ms": float(settings["BELIEFKV_TOOL_PREFETCH_PRIORITY_MS"]),
         "join_prefetch_trigger": settings["JOIN_PREFETCH_TRIGGER"],
         "enable_prefetch_residency_protection": (
@@ -297,7 +298,8 @@ def preflight_runtime(settings, model_path):
             "from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime; "
             "runtime=NativeAdmissionRuntime(event_socket_path=sys.argv[1],model_path=sys.argv[2]); "
             "expected=json.loads(sys.argv[3]); "
-            "actual={name:getattr(runtime,name) for name in expected}; "
+            "actual={name:(runtime._tool_continuity is not None "
+            "if name=='tool_continuity' else getattr(runtime,name)) for name in expected}; "
             "runtime.close()\n"
             "if actual != expected:\n"
             "    raise ValueError(f'CPU runtime configuration differs: {actual!r} != {expected!r}')\n"
@@ -562,6 +564,13 @@ def observed_configuration(plan, label, arm, *, final=False):
             )
             if state.get("tool_prefetch_priority_ms") != expected:
                 raise ValueError("effective tool prefetch priority window differs")
+    common = plan.get("reference_environment", {})
+    if "TOOL_CONTINUITY" in common and mode != "native_matched":
+        state = qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
+        if state is not None:
+            expected = arm_environment(common, mode)["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == "1"
+            if state.get("tool_continuity") is not expected:
+                raise ValueError("effective short-tool continuity differs")
     census = arm / "server/native_capacity_census.json"
     if census.exists() and load(census)["capacity"] != plan["source_capacity"]:
         raise ValueError("actual FULL/Mamba/Host pool capacity changed")
@@ -1039,7 +1048,8 @@ def watch(registration):
                     "idle_prepare_policy_requested": env["IDLE_PREPARE_POLICY"],
                     "restore_tiers_requested": env["RESTORE_TIERS"],
                     "join_last_child_priority_requested": False,
-                    "execution_frontier_restore_requested": False, "tool_continuity_requested": False,
+                    "execution_frontier_restore_requested": False,
+                    "tool_continuity_requested": env["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == "1",
                     "auxiliary_causal_replay": True,
                     "replay_sampling_mode": plan.get("sampling_mode", "legacy"),
                     "delayed_sampling_common_to_all_arms": env["SGLANG_ENABLE_DELAY_SAMPLE"] == "1",

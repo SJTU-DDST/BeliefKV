@@ -7,6 +7,7 @@ import argparse
 from dataclasses import replace
 import hashlib
 import json
+import math
 from pathlib import Path
 import sys
 import time
@@ -22,11 +23,12 @@ from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from scripts.benchmark_native_shared_path import distribution, synthetic_runtime
 
 
-def fixture(size, *, enabled, ready):
+def fixture(size, *, enabled, ready, scheduling="join_priority"):
     with patch.dict("os.environ", {
-        "BELIEFKV_PREFILL_SCHEDULING_POLICY": "join_priority",
+        "BELIEFKV_PREFILL_SCHEDULING_POLICY": scheduling,
         "BELIEFKV_ENABLE_TOOL_CONTINUITY": str(int(enabled)),
         "BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY": "0",
+        "BELIEFKV_ENABLE_RESIDENT_FIRST": "1",
     }):
         runtime, queue = synthetic_runtime(
             NativeAdmissionRuntime, CausalFrontierScheduler, size, 1,
@@ -52,6 +54,18 @@ def fixture(size, *, enabled, ready):
                 invocation_id=key.invocation_id, context_id=key.context_id,
                 context_epoch=key.context_epoch, attributes={"tool_run_id": "short"},
             ))
+    if scheduling == "workflow":
+        observation = {
+            "device_checkpoint_tokens": 100, "missing_full_tokens": 0,
+            "missing_mamba_slots": 0,
+        }
+        def residency_hint(_request, *, key):
+            runtime.counts["benchmark_residency_hint_calls"] += 1
+            return observation
+        runtime._read_request_residency_hint = residency_hint
+        for req in queue:
+            key = runtime.visible[req.rid]
+            runtime._residency_ordering_hints[key] = (math.inf, observation)
     return runtime, queue
 
 
@@ -68,13 +82,13 @@ def exercise(runtime, queue):
     return tuple(req.rid for req in selected.candidates)
 
 
-def benchmark(*, samples=201):
+def benchmark(*, samples=201, scheduling="workflow"):
     if samples < 3:
         raise ValueError("at least three samples required")
     rows = []
-    for size in (8, 36, 128):
+    for size in (8, 24, 36, 128):
         for ready in (False, True):
-            fixtures = {enabled: fixture(size, enabled=enabled, ready=ready)
+            fixtures = {enabled: fixture(size, enabled=enabled, ready=ready, scheduling=scheduling)
                         for enabled in (False, True)}
             times = {enabled: [] for enabled in fixtures}
             try:
@@ -95,12 +109,21 @@ def benchmark(*, samples=201):
                     "baseline": distribution(times[False]),
                     "continuity": distribution(times[True]),
                     "raw_ms": {str(enabled): values for enabled, values in times.items()},
+                    "residency_hint_calls": {
+                        str(enabled): pair[0].counts["benchmark_residency_hint_calls"]
+                        for enabled, pair in fixtures.items()
+                    },
                 })
+                assert len(set(rows[-1]["residency_hint_calls"].values())) == 1
             finally:
                 for runtime, _ in fixtures.values():
                     runtime.close()
     return {
-        "scope": "CPU advisory inspection, planning and live selection; no allocator or DMA",
+        "scope": (
+            "CPU advisory inspection, planning and live selection; identical warm "
+            "residency stand-ins; no allocator or DMA"
+        ),
+        "scheduling": scheduling,
         "sampling": "alternating; normal GC; ten warmups; all measured samples retained",
         "cases": rows,
         "source_sha256": {
@@ -118,8 +141,9 @@ def benchmark(*, samples=201):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--scheduling", choices=("workflow", "join_priority"), default="workflow")
     args = parser.parse_args()
-    args.output.write_text(json.dumps(benchmark(), indent=2) + "\n")
+    args.output.write_text(json.dumps(benchmark(scheduling=args.scheduling), indent=2) + "\n")
 
 
 if __name__ == "__main__":

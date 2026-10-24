@@ -21,24 +21,30 @@ class _Segment:
     first_tool_ms: float | None = None
     last_tool_ms: float | None = None
     candidate: PrefillCandidateKey | None = None
+    output_tokens: int = 0
 
 
 class ToolContinuationPolicy:
     """Spend earned workflow credit on at most four consecutive request rounds.
 
     The age is advisory ordering metadata, never a GPU-slot or KV reservation.
-    Request wall time and output length are not treated as model service.
+    Completed output bounds future grants; it is not a GPU-time estimate.
     """
 
-    def __init__(self, *, short_gap_seconds: float = 1., max_rounds: int = 4):
+    def __init__(
+        self, *, short_gap_seconds: float = 1., max_rounds: int = 4,
+        max_output_tokens: int = 1024,
+    ):
         if (
             type(short_gap_seconds) not in (int, float)
             or not math.isfinite(short_gap_seconds) or short_gap_seconds <= 0
             or type(max_rounds) is not int or max_rounds < 2
+            or type(max_output_tokens) is not int or max_output_tokens < 1
         ):
             raise ValueError("invalid tool continuation bounds")
         self.short_gap_seconds = short_gap_seconds
         self.max_rounds = max_rounds
+        self.max_output_tokens = max_output_tokens
         self.segments: dict[tuple[str, str], _Segment] = {}
         self.ready: dict[tuple[str, str], _Segment] = {}
         self.credits: dict[str, int] = {}
@@ -85,6 +91,7 @@ class ToolContinuationPolicy:
         self.segments[identity] = _Segment(
             key, inherited if continued else arrival,
             prior.rounds + 1 if continued else 1,
+            output_tokens=prior.output_tokens if continued else 0,
         )
         credit = self.credits.get(key.root_workflow_id, 0)
         self.credits[key.root_workflow_id] = (
@@ -94,14 +101,22 @@ class ToolContinuationPolicy:
         self.counts["priority_admissions"] += int(promoted)
         return True
 
-    def completed(self, key: PrefillCandidateKey, *, now: float) -> None:
+    def completed(
+        self, key: PrefillCandidateKey, *, now: float, output_tokens: int = 0,
+    ) -> None:
+        if type(output_tokens) is not int or output_tokens < 0:
+            raise ValueError("invalid completed output token count")
         segment = self.segments.get(self.identity(key))
         if segment is not None and segment.key == key and segment.finished_at is None:
             segment.finished_at = now
+            segment.output_tokens += output_tokens
             self.counts["native_completions"] += 1
-            if segment.rounds == self.max_rounds:
+            self.counts["completed_output_tokens"] += output_tokens
+            token_budget_spent = segment.output_tokens >= self.max_output_tokens
+            if segment.rounds == self.max_rounds or token_budget_spent:
                 self.discard(*self.identity(key))
                 self.counts["segment_budget_yields"] += 1
+                self.counts["segment_token_budget_yields"] += int(token_budget_spent)
 
     def observe(self, event: RuntimeEvent) -> None:
         if event.kind is Kind.WORKFLOW_END:

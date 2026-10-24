@@ -152,6 +152,19 @@ def test_each_control_preserves_common_work_and_only_enables_its_policy(referenc
     assert reference["arms"]["full"]["BELIEFKV_NATIVE_TELEMETRY_DIR"] == "old/native"
 
 
+@pytest.mark.parametrize("label", comparison.CONTROLS)
+def test_explicit_short_tool_continuity_reaches_the_actual_workflow_arm(reference, tmp_path, label):
+    reference["arms"]["full"]["TOOL_CONTINUITY"] = "1"
+    env, _, _ = comparison.environment(
+        reference, label, tmp_path, tmp_path, tmp_path, 18554, tmp_path,
+    )
+    expected = str(int(label not in ("native_matched", "kv_only")))
+    assert env["TOOL_CONTINUITY"] == env["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == expected
+    assert env["PREFILL_SCHEDULING_POLICY"] == (
+        "join_priority" if label == "join_priority_only" else "workflow"
+    )
+
+
 @pytest.mark.parametrize("field,value", (
     ("MAX_RUNNING_REQUESTS", "12"), ("SERVER_RANDOM_SEED", "22"),
     ("PYTHONHASHSEED", "22"), ("HICACHE_SIZE_GB", "160"),
@@ -728,6 +741,23 @@ def test_tool_priority_observer_validates_the_effective_window(
             comparison.observed_configuration(plan, label, tmp_path, final=True)
 
 
+@pytest.mark.parametrize("actual", (None, False, True))
+def test_continuity_observer_rejects_an_ignored_enable_switch(tmp_path, monkeypatch, actual):
+    monkeypatch.setattr(comparison.comparison, "observe_arm", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        comparison.qualified, "last_runtime_state",
+        lambda _path: {"tool_continuity": actual},
+    )
+    plan = {"reference_environment": {
+        "PREFILL_SCHEDULING_POLICY": "workflow", "TOOL_CONTINUITY": "1",
+    }}
+    if actual is True:
+        comparison.observed_configuration(plan, "full", tmp_path, final=True)
+    else:
+        with pytest.raises(ValueError, match="short-tool continuity"):
+            comparison.observed_configuration(plan, "full", tmp_path, final=True)
+
+
 def test_retention_matrix_keeps_exact_common_settings_and_an_independent_native_control(
     reference, tmp_path,
 ):
@@ -827,7 +857,7 @@ def test_retention_policy_controls_cannot_be_mixed_into_the_legacy_matrix(refere
 def test_retention_observer_checks_the_effective_policy_and_budgets(tmp_path, monkeypatch, change):
     spec = retention_spec()
     common = spec["common_environment"]
-    state = {"subagent_retention": {
+    state = {"tool_continuity": False, "subagent_retention": {
         "policy": "selective", "host_budget_bytes": int(common["BELIEFKV_DORMANT_HOST_BYTES"]),
         "device_budget_bytes": int(common["BELIEFKV_DORMANT_HBM_BYTES"]),
     }}
@@ -1323,7 +1353,8 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     monkeypatch.setattr(comparison.fresh, "check_hold", lambda *_args, **_kwargs: True)
     monkeypatch.setattr(comparison.qualified, "resources", resources)
     monkeypatch.setattr(comparison.qualified, "command", lambda _command: "101")
-    monkeypatch.setattr(comparison.qualified, "last_runtime_state", lambda _path: {})
+    monkeypatch.setattr(comparison.qualified, "last_runtime_state",
+                        lambda _path: {"tool_continuity": False})
     monkeypatch.setattr(comparison.comparison, "observe_arm", lambda mode, *_args, **_kwargs: configurations.append(mode))
     monkeypatch.setattr(comparison.reservation, "process", identities.get)
     monkeypatch.setattr(comparison, "owned_processes", lambda rows: (

@@ -63,7 +63,7 @@ def arm_environment(
     if continuity not in ("0", "1"):
         raise ValueError("tool continuity must be 0 or 1")
     continuity = str(int(
-        continuity == "1" and scheduling == "join_priority"
+        continuity == "1" and scheduling in ("workflow", "join_priority")
         and mode in ("full", "scheduler_only", "join_priority_only")
     ))
     native = mode == "native_matched"
@@ -207,7 +207,7 @@ def validate_runtime(
     if tool_continuity is not None:
         expected["tool_continuity"] = (
             tool_continuity
-            and state.get("prefill_scheduling_policy") == "join_priority"
+            and state.get("prefill_scheduling_policy") in ("workflow", "join_priority")
             and mode in ("full", "scheduler_only", "join_priority_only")
         )
     if expected_overrides:

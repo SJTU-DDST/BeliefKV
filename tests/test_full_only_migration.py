@@ -173,6 +173,7 @@ def test_new_model_experiment_has_no_ablations_or_hybrid_artifacts(tmp_path):
     assert settings["BELIEFKV_FULL_MAMBA_HOST_SPLIT"] == "auto"
     assert settings["MODEL_PATH"] == common["MODEL_PATH"]
     assert settings["BELIEFKV_ONLINE_TOOL_TIMING"] == "1"
+    assert settings["TOOL_CONTINUITY"] == settings["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == "1"
 
 
 def test_new_model_capture_discards_the_old_capacity_and_uses_the_same_declared_work(tmp_path, monkeypatch):
