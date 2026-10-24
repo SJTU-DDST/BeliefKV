@@ -1,0 +1,207 @@
+{
+  "status": "cpu_qualified_equal_workflow_event_boundaries",
+  "observed_at": "2026-10-24T13:39:24.543246+08:00",
+  "candidate_parent_commit": "bad012f1e62d59593dd343a7c159213f115bf931",
+  "fresh_cpu_cases": 398,
+  "inherited_case_identities_retained": 5687,
+  "combined_case_identities": 5702,
+  "new_case_identities": 15,
+  "fresh_report": {
+    "path": "experiments/reports/v3455_workflow_metric_boundaries_cpu_20261024.xml",
+    "sha256": "735655aa4c373ec4b73556633f520f498d075bff77a71f0deb16dd4030be43c8"
+  },
+  "combined_report": {
+    "path": "experiments/reports/v3456_workflow_metric_combined_app_cpu_20261024.xml",
+    "sha256": "00c46df774b0c487aa179dc82f3d61dc21e1a93111e259e131c9ffb7e586dfde"
+  },
+  "source_snapshot": {
+    "path": "experiments/reports/v3457_workflow_metric_app_sources_20261024.json",
+    "sha256": "694f9be7d95eb8e6740c4ab6653ac720b489d54050dcdbf55694dacf94c2d023"
+  },
+  "metric_boundary": "workflow_start_to_workflow_end",
+  "correction": "Use actual WORKFLOW_START/WORKFLOW_END spans in both source and replay for mean workflow JCT and completed-work event makespan throughput. Keep original native harness durations and replay driver wall durations separately. Keep every declared workflow and ordinary tail.",
+  "historical_same_work_check": {
+    "native_source_arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_24root_running24_source_20261024_v136/native_capture",
+    "full_arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_24root_batch24_prefetch_local_validation_20261024_v151/full",
+    "work": {
+      "causal_graph_compiled": true,
+      "nodes": 22159,
+      "dependency_edges": 30493,
+      "event_counts": {
+        "invocation_create": 98,
+        "join_create": 43,
+        "join_satisfied": 43,
+        "join_wait": 43,
+        "llm_result": 3951,
+        "llm_submit": 3951,
+        "native_request": 3951,
+        "return": 98,
+        "spawn": 74,
+        "structured_action": 77,
+        "tool_end": 4891,
+        "tool_start": 4891,
+        "workflow_end": 24,
+        "workflow_start": 24
+      },
+      "workflows": 24,
+      "requests": 3951,
+      "prompt_tokens": 264598879,
+      "output_tokens": 958791,
+      "native_completion_boundaries_verified": true,
+      "omitted_diagnostic_events": 3957,
+      "gpu_replay_qualified": false,
+      "performance_accepted": false,
+      "scope": "Causal event/request graph and native usage only. Native service is an unresolved request operation, not its original elapsed time. Exact token execution, native EOS, session equivalence and GPU performance require separate qualification."
+    },
+    "native_aligned": {
+      "kind": "natural_native_source_capture",
+      "metric_boundary": "workflow_start_to_workflow_end",
+      "workflow_jct_ms": {
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_bug_investigation_expert_01:e439e2a70de6": 1366711.7174959183,
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_feature_implementation_expert_01:b9a896266984": 1455702.8400478363,
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_bug_investigation_hard_01:dbb8661b4d38": 1493594.1692266464,
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_feature_implementation_hard_01:741a5e1eaab5": 1535149.4377365112,
+        "deepagents:autonomous:locobench__python_data_warehouse_hard_048_bug_investigation_hard_01:d7247083231e": 1067434.880604744,
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_cross_file_refactoring_hard_01:648e7f6acff8": 623814.9118108749,
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_feature_implementation_hard_01:ac7e3af9b430": 1207910.4518709183,
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:a10dc6d3d84c": 1285314.401374817,
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_multi_session_development_expert_01:73b79be19142": 1412870.7291898727,
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:9014e39b0f42": 1272899.6178016663,
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_integration_testing_hard_01:fbb8abcdeecd": 756126.2676916122,
+        "deepagents:autonomous:locobench__python_mobile_game_hard_024_multi_session_development_easy_01:0001f60ac1ca": 1100327.5506048203,
+        "deepagents:autonomous:locobench__python_mobile_game_hard_060_integration_testing_expert_01:8e07fbec81f0": 555053.55423069,
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_cross_file_refactoring_expert_01:b3e4f76965c1": 1490408.4446220398,
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_integration_testing_expert_01:7bd541da98ba": 1451148.4227161407,
+        "deepagents:autonomous:locobench__python_mobile_utility_medium_023_feature_implementation_easy_01:0b5afd1a59c0": 1151645.595755577,
+        "deepagents:autonomous:locobench__python_system_automation_hard_062_multi_session_development_expert_01:af2c0b13ed8f": 1161243.569472313,
+        "deepagents:autonomous:locobench__python_system_monitoring_medium_061_bug_investigation_expert_01:c36549abe4fe": 1576892.6836977005,
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:f5e3ec41a8b6": 1237990.400792122,
+        "deepagents:autonomous:locobench__python_web_blog_hard_076_cross_file_refactoring_medium_01:cbe377b326f8": 858970.4536094666,
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01:4a49b2d20bce": 411565.3051071167,
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:59819c3547f5": 937808.6851196289,
+        "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:0c21fd8e822f": 1637851.9427566528,
+        "deepagents:autonomous:locobench__python_web_social_hard_001_multi_session_development_medium_01:a38ad7ba1727": 853775.5072011948
+      },
+      "mean_jct_ms": 1162592.14752237,
+      "workflow_event_makespan_ms": 1638075.2899341583,
+      "workflow_count": 24,
+      "duration_ms": 1638075.2899341583,
+      "source_harness_workflow_jct_ms": {
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_bug_investigation_expert_01:e439e2a70de6": 1368340.6239133328,
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_feature_implementation_expert_01:b9a896266984": 1457291.4565140381,
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_bug_investigation_hard_01:dbb8661b4d38": 1495176.4013459906,
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_feature_implementation_hard_01:741a5e1eaab5": 1536683.5499927402,
+        "deepagents:autonomous:locobench__python_data_warehouse_hard_048_bug_investigation_hard_01:d7247083231e": 1068887.7110527828,
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_cross_file_refactoring_hard_01:648e7f6acff8": 625426.9753266126,
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_feature_implementation_hard_01:ac7e3af9b430": 1209508.9253112674,
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:a10dc6d3d84c": 1286927.8215924278,
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_multi_session_development_expert_01:73b79be19142": 1414617.8529560566,
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:9014e39b0f42": 1274334.6796426922,
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_integration_testing_hard_01:fbb8abcdeecd": 757736.4569809288,
+        "deepagents:autonomous:locobench__python_mobile_game_hard_024_multi_session_development_easy_01:0001f60ac1ca": 1101850.3250842914,
+        "deepagents:autonomous:locobench__python_mobile_game_hard_060_integration_testing_expert_01:8e07fbec81f0": 556405.7094575837,
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_cross_file_refactoring_expert_01:b3e4f76965c1": 1491985.6645045802,
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_integration_testing_expert_01:7bd541da98ba": 1452451.848886907,
+        "deepagents:autonomous:locobench__python_mobile_utility_medium_023_feature_implementation_easy_01:0b5afd1a59c0": 1153305.8497393504,
+        "deepagents:autonomous:locobench__python_system_automation_hard_062_multi_session_development_expert_01:af2c0b13ed8f": 1162936.711737886,
+        "deepagents:autonomous:locobench__python_system_monitoring_medium_061_bug_investigation_expert_01:c36549abe4fe": 1578226.0744944215,
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:f5e3ec41a8b6": 1239616.0504240543,
+        "deepagents:autonomous:locobench__python_web_blog_hard_076_cross_file_refactoring_medium_01:cbe377b326f8": 860541.0392172635,
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01:4a49b2d20bce": 413203.6547018215,
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:59819c3547f5": 939450.8691821247,
+        "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:0c21fd8e822f": 1639378.2666092739,
+        "deepagents:autonomous:locobench__python_web_social_hard_001_multi_session_development_medium_01:a38ad7ba1727": 855449.1477785632
+      },
+      "source_harness_mean_jct_ms": 1164155.5694352912,
+      "source_harness_duration_ms": 1646240.143245086,
+      "source_harness_output_tokens_per_second": 582.4125987536794,
+      "requests": 3951,
+      "prompt_tokens": 264598879,
+      "output_tokens": 958791,
+      "whole_run_output_tokens_per_second": 585.3155870744733,
+      "all_normal_tails_retained": true,
+      "fresh_full_native_replay_required": false,
+      "replay_error_basis": "historical_calibration_not_remeasured_on_this_source"
+    },
+    "full_aligned": {
+      "metric_boundary": "workflow_start_to_workflow_end",
+      "workflow_jct_ms": {
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_bug_investigation_expert_01:e439e2a70de6": 1357543.4371023178,
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_feature_implementation_expert_01:b9a896266984": 1424006.6744823456,
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_bug_investigation_hard_01:dbb8661b4d38": 1485696.4677505493,
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_feature_implementation_hard_01:741a5e1eaab5": 1511472.2071752548,
+        "deepagents:autonomous:locobench__python_data_warehouse_hard_048_bug_investigation_hard_01:d7247083231e": 1071431.3033094406,
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_cross_file_refactoring_hard_01:648e7f6acff8": 637854.3335886002,
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_feature_implementation_hard_01:ac7e3af9b430": 1151053.9116210938,
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:a10dc6d3d84c": 1277114.0131540298,
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_multi_session_development_expert_01:73b79be19142": 1398528.6607084274,
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:9014e39b0f42": 1240724.582400322,
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_integration_testing_hard_01:fbb8abcdeecd": 706162.9913759232,
+        "deepagents:autonomous:locobench__python_mobile_game_hard_024_multi_session_development_easy_01:0001f60ac1ca": 950799.8697605133,
+        "deepagents:autonomous:locobench__python_mobile_game_hard_060_integration_testing_expert_01:8e07fbec81f0": 546923.8225460052,
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_cross_file_refactoring_expert_01:b3e4f76965c1": 1455719.2642030716,
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_integration_testing_expert_01:7bd541da98ba": 1415741.4329366684,
+        "deepagents:autonomous:locobench__python_mobile_utility_medium_023_feature_implementation_easy_01:0b5afd1a59c0": 1090692.7125034332,
+        "deepagents:autonomous:locobench__python_system_automation_hard_062_multi_session_development_expert_01:af2c0b13ed8f": 1129781.823020935,
+        "deepagents:autonomous:locobench__python_system_monitoring_medium_061_bug_investigation_expert_01:c36549abe4fe": 1560009.4056901932,
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:f5e3ec41a8b6": 1205884.1216373444,
+        "deepagents:autonomous:locobench__python_web_blog_hard_076_cross_file_refactoring_medium_01:cbe377b326f8": 865968.3869543076,
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01:4a49b2d20bce": 346662.1227636337,
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:59819c3547f5": 1013639.5749311447,
+        "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:0c21fd8e822f": 1614260.8673229218,
+        "deepagents:autonomous:locobench__python_web_social_hard_001_multi_session_development_medium_01:a38ad7ba1727": 838296.9981412888
+      },
+      "mean_jct_ms": 1137332.0410449903,
+      "workflow_event_makespan_ms": 1614484.387096405,
+      "workflow_event_log_sha256": "8ae0f6e5e86c1899e7d581fca10231f76e5d1950a2a9f6e4d25c83dd86f14b95"
+    },
+    "full_output_tokens_per_second": 593.8682390879932,
+    "full_vs_native_aligned_mean_jct_percent": -2.1727401592391837,
+    "full_vs_native_aligned_throughput_percent": 1.461203528897581,
+    "previous_published_ratios": {
+      "mean_jct_percent": -2.304118890511553,
+      "whole_run_throughput_percent": 1.956772047002886
+    },
+    "source_client_summary": {
+      "path": "experiments/raw/qwen35_locobench_oneshot_24root_running24_source_20261024_v136/native_capture/client_24/summary.json",
+      "sha256": "5bd2c1cbc920457e8c60dc5f32b6b1d56492615e01dcfae3aa425321b643bd0f"
+    },
+    "scope": "Re-account existing complete historical evidence only, not another run or a current project-disjoint performance qualification. Original negative and positive records are preserved."
+  },
+  "v164_continues": {
+    "status": "recording_native",
+    "actual_watcher": {
+      "pid": 1403126,
+      "state": "S",
+      "ppid": 1,
+      "start_ticks": "698802250",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-v164-capture-814bac1b80c4/scripts/run_causal_source_capture.py",
+        "--watch",
+        "/home/longhao/experiment/ops/v164_36project_coding_complete_source_20261024.registration.json"
+      ]
+    }
+  },
+  "v165_stopped_pending_only": {
+    "status": "stopped_for_investigation",
+    "error": "ValueError('position calibration was stopped')",
+    "owned": []
+  },
+  "next_sequence": [
+    "V164 source unchanged",
+    "V165b same GPU/sampler/stop checks from newly qualified main",
+    "V166 Full then scheduler-only with aligned event metrics"
+  ],
+  "serving_or_sampling_code_changed": false,
+  "new_complete_native_replay_required": false,
+  "live_join_reentry_report": {
+    "path": "experiments/reports/v3453_v164_join_reentry_service_20261024.json.gz",
+    "sha256": "67f39bdc3a52f690f466a27554a8e3eb1d6af574f935ffd3d16941f5016c9d90"
+  },
+  "live_tool_reentry_report": {
+    "path": "experiments/reports/v3454_v164_tool_reentry_service_20261024.json.gz",
+    "sha256": "5e1e3818ba5aa4ca86a2e04360eaec8aee0bd0ad7a1cab92d824e84c31072ebb"
+  },
+  "performance_accepted": false
+}

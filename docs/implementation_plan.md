@@ -121,6 +121,29 @@ calls and the first result normally has no feedback record. No tool call
 is suppressed and no trajectory is rewritten. All5687 production
 qualification identities and source bindings still match; V164/V165
 retain their existing frozen serving code.
+
+V3453/V3454 seal JOIN/tool reentry observations from the live source.
+Among45 served JOIN successors,native queue-to-first-service P50 is4.855s;
+among4119 served tool successors it is5.515s,while tool-round duration P50
+is7.968ms. These conditional queue distributions are not summed into JCT
+or attributed entirely to KV restoration. Preserve unknown/unserved cases
+and evaluate Full against scheduler-only before adding another continuity
+policy.
+
+Before controls start,V3455 repairs an evaluation-boundary mismatch.
+Native harness durations include environment startup/cleanup outside
+WORKFLOW_START/WORKFLOW_END,whereas replay workflow elapsed times use those
+events. Both native and replay primary JCT and event-makespan throughput
+now use the actual complete workflow event population. Original native
+harness durations and replay driver wall durations remain separately
+reported; normal tails and arrival spacing stay included. Replay summary
+JCT must agree with its emitted event log. Historical records are preserved,
+with the re-accounting disclosed in V3458 rather than overwritten.
+V3455 freshly passes398 CPU cases; V3456/V3457 retain5702 identities.
+Only the comparison operator and its tests changed,no serving or sampler
+path. V164 continues unchanged. The waiting V165 was explicitly stopped
+before using GPU and will be replaced by V165b from qualified main;
+V166 remains Full then scheduler-only on the same captured work.
 Keep the same36 different projects,
 simultaneous arrival,running/decode24,seed21,256K context,95% compression
 and matched pools. The changed generation policy requires a fresh trajectory;

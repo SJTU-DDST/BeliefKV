@@ -51,8 +51,11 @@ def test_captured_native_reference_keeps_all_workflow_tails_and_exact_work(chang
     work = {"workflows": 2, "requests": 4, "prompt_tokens": 120, "output_tokens": 20}
     launch = {"native_policy_baseline": True}
     graph = NS(
-        nodes=[NS(event=NS(kind=Kind.WORKFLOW_START, workflow_id=value))
-               for value in ("short", "tail")],
+        nodes=[
+            NS(event=NS(kind=kind, workflow_id=value, ts_ms=when))
+            for value, finish in (("short", 900.), ("tail", 9999000.))
+            for kind, when in ((Kind.WORKFLOW_START, 0.), (Kind.WORKFLOW_END, finish))
+        ],
         summary=lambda: work,
     )
     if change == "incomplete":
@@ -75,11 +78,14 @@ def test_captured_native_reference_keeps_all_workflow_tails_and_exact_work(chang
         return
     baseline = comparison.captured_native_baseline(summary, graph, launch)
     assert baseline["kind"] == "natural_native_source_capture"
-    assert baseline["workflow_jct_ms"] == {"short": 1000., "tail": 10000000.}
-    assert baseline["mean_jct_ms"] == 5000500.
-    assert baseline["duration_ms"] == 10001000.
+    assert baseline["workflow_jct_ms"] == {"short": 900., "tail": 9999000.}
+    assert baseline["mean_jct_ms"] == 4999950.
+    assert baseline["duration_ms"] == 9999000.
+    assert baseline["source_harness_workflow_jct_ms"] == {"short": 1000., "tail": 10000000.}
+    assert baseline["source_harness_duration_ms"] == 10001000.
+    assert baseline["metric_boundary"] == comparison.METRIC_BOUNDARY
     assert baseline["requests"] == 4 and baseline["output_tokens"] == 20
-    assert baseline["whole_run_output_tokens_per_second"] == pytest.approx(20 / 10001.)
+    assert baseline["whole_run_output_tokens_per_second"] == pytest.approx(20 / 9999.)
     assert baseline["all_normal_tails_retained"] is True
     assert baseline["fresh_full_native_replay_required"] is False
 
@@ -1227,6 +1233,7 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
         plan["native_baseline"] = {
             "kind": "natural_native_source_capture", "mean_jct_ms": 10000.,
             "whole_run_output_tokens_per_second": .3,
+            "metric_boundary": comparison.METRIC_BOUNDARY,
         }
     registration.write_text(json.dumps(plan))
     root = {"pid": 100, "ppid": 1, "start_ticks": "root", "state": "S"}
@@ -1293,6 +1300,10 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
             "started_monotonic_ms": 100., "finished_monotonic_ms": 5200.,
         }
         (output / "summary.json").write_text(json.dumps(result))
+        (output / "runtime_events.replay.jsonl").write_text("".join(
+            json.dumps({"kind": kind, "workflow_id": "w", "ts_ms": when}) + "\n"
+            for kind, when in (("workflow_start", 150.), ("workflow_end", 5150.))
+        ))
         launched.append(("driver", label, command))
         return Process(102, 1 if failure == "driver" else 0)
 
@@ -1344,7 +1355,10 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
             assert report["results"]["full"]["captured_native_mean_jct_change_percent"] == -50.
             assert report["results"]["full"][
                 "captured_native_output_throughput_change_percent"
-            ] == pytest.approx(100. * ((3. / 5.1) / .3 - 1.))
+            ] == pytest.approx(100.)
+            assert report["results"]["full"]["replay_duration_ms"] == 5100.
+            assert report["results"]["full"]["workflow_event_makespan_ms"] == 5000.
+            assert report["results"]["full"]["replay_driver_wall_output_tokens_per_second"] == pytest.approx(3. / 5.1)
         commands = [row for row in launched if row[0] == "driver"]
         assert [("--event-socket" in command) for _, _, command in commands] == [
             label != "native_matched" for label in order

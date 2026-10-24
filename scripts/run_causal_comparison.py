@@ -40,6 +40,7 @@ DEFAULT_ORDER = ("full", "join_priority_only")
 CONTROLS = (*ORDER, "scheduler_only", "kv_only", "no_tool_prefetch")
 RETENTION_CONTROLS = {f"subagent_{policy}": policy for policy in RETENTION_ORDER}
 ALL_CONTROLS = (*CONTROLS, *RETENTION_CONTROLS)
+METRIC_BOUNDARY = "workflow_start_to_workflow_end"
 SERVER_FIELDS = (
     "PREFETCH_LEAD_MS", "JOIN_PREFETCH_MIN_ADVANCE_MS", "TOOL_PREFETCH_MIN_ADVANCE_MS",
     "PARALLEL_WAIT_PREFETCH", "WAIT_PREFETCH_CONTEXTS",
@@ -349,6 +350,52 @@ def complete_source_population(summary, graph):
     return count
 
 
+def workflow_event_metrics(events, workflow_ids):
+    expected, starts, ends = set(workflow_ids), {}, {}
+    if not expected:
+        raise ValueError("workflow metrics require the complete declared population")
+    for row in events:
+        kind = row.get("kind")
+        if kind not in ("workflow_start", "workflow_end"):
+            continue
+        workflow, when = row.get("workflow_id"), row.get("ts_ms")
+        target = starts if kind == "workflow_start" else ends
+        if (
+            workflow not in expected or workflow in target
+            or type(when) not in (int, float) or not math.isfinite(when) or when < 0
+        ):
+            raise ValueError("workflow metrics have invalid or duplicate event boundaries")
+        target[workflow] = when
+    if starts.keys() != expected or ends.keys() != expected or any(
+        ends[key] <= starts[key] for key in expected
+    ):
+        raise ValueError("workflow metrics require every complete positive event span")
+    elapsed = {key: ends[key] - starts[key] for key in sorted(expected)}
+    return {
+        "metric_boundary": METRIC_BOUNDARY,
+        "workflow_jct_ms": elapsed,
+        "mean_jct_ms": statistics.mean(elapsed.values()),
+        "workflow_event_makespan_ms": max(ends.values()) - min(starts.values()),
+    }
+
+
+def replay_event_metrics(result, arm, workflow_ids):
+    path = arm / "replay/runtime_events.replay.jsonl"
+    with path.open() as stream:
+        metrics = workflow_event_metrics(
+            (json.loads(line) for line in stream if line.strip()), workflow_ids,
+        )
+    measured = result.get("workflow_elapsed_ms", {})
+    if measured.keys() != metrics["workflow_jct_ms"].keys() or any(
+        type(measured[key]) not in (int, float)
+        or not math.isfinite(measured[key])
+        or not math.isclose(value, measured[key], rel_tol=1e-12, abs_tol=1e-5)
+        for key, value in metrics["workflow_jct_ms"].items()
+    ):
+        raise ValueError("replay workflow JCT differs from its emitted event boundaries")
+    return {**metrics, "workflow_event_log_sha256": sha256_file(path)}
+
+
 def captured_native_baseline(summary, graph, launch):
     if not isinstance(launch, dict) or launch.get("native_policy_baseline") is not True:
         raise ValueError("captured native baseline requires a verified native source policy")
@@ -372,15 +419,34 @@ def captured_native_baseline(summary, graph, launch):
         or work["requests"] == 0
     ):
         raise ValueError("captured native baseline requires verified source work totals")
-    elapsed = {row["workflow_id"]: row["duration_seconds"] * 1000. for row in rows}
+    harness = {row["workflow_id"]: row["duration_seconds"] * 1000. for row in rows}
+    try:
+        metrics = workflow_event_metrics(
+            (
+                {"kind": node.event.kind.value, "workflow_id": node.event.workflow_id,
+                 "ts_ms": node.event.ts_ms}
+                for node in graph.nodes if node.event is not None
+                and node.event.kind in (Kind.WORKFLOW_START, Kind.WORKFLOW_END)
+            ),
+            harness,
+        )
+    except (AttributeError, ValueError) as error:
+        raise ValueError("captured native baseline lacks matching workflow event spans") from error
+    elapsed = metrics["workflow_jct_ms"]
+    makespan = metrics["workflow_event_makespan_ms"]
     return {
         "kind": "natural_native_source_capture",
+        **metrics,
         "workflow_count": count, "workflow_jct_ms": elapsed,
         "mean_jct_ms": statistics.mean(elapsed.values()),
-        "duration_ms": duration * 1000.,
+        "duration_ms": makespan,
+        "source_harness_workflow_jct_ms": harness,
+        "source_harness_mean_jct_ms": statistics.mean(harness.values()),
+        "source_harness_duration_ms": duration * 1000.,
+        "source_harness_output_tokens_per_second": work["output_tokens"] / duration,
         "requests": work["requests"], "prompt_tokens": work["prompt_tokens"],
         "output_tokens": work["output_tokens"],
-        "whole_run_output_tokens_per_second": work["output_tokens"] / duration,
+        "whole_run_output_tokens_per_second": work["output_tokens"] * 1000. / makespan,
         "all_normal_tails_retained": True,
         "fresh_full_native_replay_required": False,
         "replay_error_basis": "historical_calibration_not_remeasured_on_this_source",
@@ -829,7 +895,7 @@ def register(args):
         "sampling_mode": args.sampling_mode,
         "maximum_replay_slowdown": args.maximum_replay_slowdown,
         "source_metrics": {
-            "mean_jct_ms": statistics.mean(row["duration_seconds"] for row in quality["workflows"]) * 1000.,
+            "mean_jct_ms": native_baseline["mean_jct_ms"],
             "replay_duration_ms": quality["duration_seconds"] * 1000.,
         },
         "native_baseline": native_baseline,
@@ -900,6 +966,11 @@ def watch(registration):
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         try:
             comparison.verify_sources(plan)
+            if (
+                plan.get("native_baseline") is not None
+                and plan["native_baseline"].get("metric_boundary") != METRIC_BOUNDARY
+            ):
+                raise ValueError("native baseline and replay require identical workflow event boundaries")
             while not predecessor_ready(plan):
                 state["status"] = "waiting_previous_causal_comparison"
                 pulse()
@@ -1031,6 +1102,7 @@ def watch(registration):
                     raise ValueError("causal replay driver failed; preserve its failure evidence")
                 result = load(arm / "replay/summary.json")
                 work = validate_result(plan, result, arm, live_control=event_socket is not None)
+                event_metrics = replay_event_metrics(result, arm, plan["workflow_ids"])
                 if expected_work is not None and work != expected_work:
                     raise ValueError("native request work changed between comparison arms")
                 expected_work = work
@@ -1044,17 +1116,22 @@ def watch(registration):
                 results[label] = {
                     "requests": len(work), "prompt_tokens": sum(row[0] for row in work.values()),
                     "output_tokens": sum(row[1] for row in work.values()),
-                    "workflow_jct_ms": elapsed, "mean_jct_ms": statistics.mean(elapsed.values()),
+                    **event_metrics,
                     "source_unguarded_mean_jct_ms": statistics.mean(eligible),
                     "replay_duration_ms": result["finished_monotonic_ms"] - result["started_monotonic_ms"],
                     "same_request_work_verified": True,
                 }
                 baseline = plan.get("native_baseline")
+                event_seconds = event_metrics["workflow_event_makespan_ms"] / 1000.
+                throughput = results[label]["output_tokens"] / event_seconds
+                results[label].update(
+                    whole_run_output_tokens_per_second=throughput,
+                    replay_driver_wall_output_tokens_per_second=(
+                        results[label]["output_tokens"] * 1000. / results[label]["replay_duration_ms"]
+                    ),
+                )
                 if baseline is not None:
-                    seconds = results[label]["replay_duration_ms"] / 1000.
-                    throughput = results[label]["output_tokens"] / seconds
                     results[label].update(
-                        whole_run_output_tokens_per_second=throughput,
                         captured_native_mean_jct_change_percent=100. * (
                             results[label]["mean_jct_ms"] / baseline["mean_jct_ms"] - 1.
                         ),
