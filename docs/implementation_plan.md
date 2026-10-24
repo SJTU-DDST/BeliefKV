@@ -202,6 +202,24 @@ hashes and V3561 records the retained identities. The earlier V3556 run with118
 optional-fixture skips is not qualification evidence. Freeze this code for V174;
 scripted CPU models do not establish served-model compliance or GPU improvement.
 
+V3562 further attributes the five V3553 large-prefix-loss requests:all five are
+JOIN parents,and all453334 missing previously served common-input tokens are
+covered by exact namespaced Host-eviction intervals. Interval unions exclude
+overlap,new input and output tails. The last matching Host evictions occur
+between the parent's preceding native completion and its next native queue.
+Four parents have only498/499 device tokens and zero Host hit;the fifth also
+has58524 Host-hit tokens. H2D-only opportunity accounting misses this repeated
+prefill cost. Native already reclaims FULL Host duplicates and prefers
+unreferenced leaves,so do not reimplement those as an assumed fix.
+
+Keep V174 and the registered V175/V176 chain frozen. Evaluate whether Full's
+spawn backup,terminal-child release and bounded resident continuation actually
+preserve parent prefixes until EOS/continuation. If similar Host loss persists,
+then test bounded parent retention with capacity recovery;do not add permanent
+pins,change frozen pool capacity,or claim prefetch coverage from only surviving
+Host-backed data. This diagnostic is not a comparison result. See
+`docs/experiments/v174_join_parent_host_loss_20261024.md`.
+
 V3523/V3524 explain why short-tool continuation matters. Of3643 served tool
 successors,2606 have logical Host hits;2734 follow tool rounds shorter than50ms.
 At least1208 short-tool successors have matching large-prefix D2H evidence
