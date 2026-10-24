@@ -6,23 +6,43 @@ Status: 2026-10-25 (Asia/Shanghai). GPU performance remains unproven.
 
 Keep V181's original 18 distinct projects, simultaneous arrival, running/decode
 limits of 24, seed 21, 256K context and original pretokenized `/generate` replay.
-The current source does not use the new root phase budget. Its live prefix at
-2026-10-24T17:47:52Z has 24 JOINs, 16 satisfied JOINs, three returned roots with
-no nondelegating return, and zero nested JOINs. All 1,380 completed native
-requests have prompt and prefill geometry; old common-input reprocessing is
-zero in that prefix. This does not prove zero later losses or safe cold capacity.
-Preserve normal tails and the incomplete live-prefix status.
-
-V181 subsequently completed all 18 workflows and 2,071 requests, with 36 JOINs,
+The current source does not use the new root phase budget. V181 completed all
+18 workflows and 2,071 requests, with 36 JOINs,
 one nested JOIN and no root missing its required delegation. All 18 workflows
 pass the declared source qualification; seven recorded return deferrals remain
 visible. This source is ready for bounded GPU replay qualification, not an
 independent task-correctness grade or a Full performance result.
 
-The first follow-up uses the repaired Full with ordinary frontier restoration
-disabled. Review its completed result before deciding whether to test the
-selected-frontier candidate on the same source or recollect a better-shaped
-workload. No additional complete native replay is required.
+V185 and V186 completed on the identical V181 request trajectory. The latter
+enables the selected ordinary frontier and repairs critical queue donor
+selection. Neither establishes the performance target:
+
+| Arm | Mean Workflow JCT (s) | Whole-Run Output Tokens/s |
+| --- | --- | --- |
+| V181 native capture | 1591.305 | 204.878 |
+| V185 Full | 1538.514 | 211.922 |
+| V186 Full | 1523.872 | 212.811 |
+
+Each arm serves 2,071 requests and 384,371 output tokens, with all 18 normal
+workflow tails retained. V186 lowers mean JCT by 4.24% and increases throughput
+by 3.87% against native in this single comparison. Neither side reprocesses
+previously served same-session common input; Full's additional first-context
+input prefill is 0.223%. These observations do not isolate any module's benefit.
+
+V186 issued 18 ordinary frontier commands, transferring 6,537,609,216 bytes;
+6,134,956,032 bytes have verified first-use identity. JOINs have 28 positive
+pre-completion plans and 11 episodes with pre-completion submission, while 17
+start-window episodes encountered capacity budgets without early submission.
+Tool prefetch issued no commands: most inspected waits lacked a Host-backed
+missing copy, while two positive-plan episodes remained before their start
+window. Do not describe post-JOIN demand recovery as early prefetch.
+
+The next source enables the existing root phase budget with the same 18
+projects and running/decode limits. All 36 V181 JOINs have one member, and 12
+of its 53 root work phases exceed 24 model calls (maximum 81); this motivates
+testing earlier model-selected delegation without a fixed DAG or fanout.
+The changed workload requires its own native capture. No additional complete
+native replay is required.
 
 ## Root Soft Budget
 

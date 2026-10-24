@@ -10028,7 +10028,11 @@ class NativeAdmissionRuntime:
         self._observe_native_admission_capacity(running_batch=running_batch, adder=None)
         budget = self._current_residency_budget()
         slots = budget.request_slots
-        if slots < 1 or budget.byte_limit <= 0:
+        if slots < 1:
+            self.counts["frontier_restore_no_request_slot"] += 1
+            return
+        if budget.byte_limit <= 0:
+            self.counts["frontier_restore_no_free_byte_budget"] += 1
             return
         if self._frontier_probe_after_ms and self._frontier_probes_backed_off(
             waiting_queue, now_ms=now_ms,

@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from scripts.audit_native_system_costs import distribution, finite_number
+from scripts.audit_prefetch_lifecycle import client_event_paths
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 
 
@@ -208,7 +209,7 @@ def summarize(episodes):
 
 def audit_arm(arm, *, start_seconds=0., end_seconds=None):
     reader = SealedRecords()
-    clients = sorted(arm.glob("client_*/workflows/*/runtime_events.deepagents.jsonl"))
+    clients = client_event_paths(arm)
     episodes, anchor = join_reentries(
         (row for path in clients for row in reader(path)),
         start_seconds=start_seconds, end_seconds=end_seconds,
@@ -250,6 +251,7 @@ def main():
     sources = (
         Path(__file__), ROOT / "scripts/audit_native_system_costs.py",
         ROOT / "scripts/audit_sealed_wait_prefetch.py",
+        ROOT / "scripts/audit_prefetch_lifecycle.py",
     )
     report = {
         "schema_version": 1, "created_at": datetime.now(timezone.utc).isoformat(),

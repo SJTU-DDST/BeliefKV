@@ -348,7 +348,7 @@ def test_tool_cli_records_sealed_prefixes_and_preserves_previous_output(tmp_path
     main()
     report = json.loads(output.read_text())
     assert report["arms"]["native"]["summary"]["first_service_observed_requests"] == 1
-    assert len(report["auditor_source_sha256"]) == 5
+    assert len(report["auditor_source_sha256"]) == 6
     assert report["gpu_performance_accepted"] is False
     before = output.read_bytes()
     with pytest.raises(SystemExit):

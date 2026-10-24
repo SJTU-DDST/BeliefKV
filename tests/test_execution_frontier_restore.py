@@ -293,6 +293,7 @@ def test_a_full_running_batch_rejects_before_reading_a_backed_off_queue(monkeypa
         runtime.dispatch_frontier_restore(UnreadQueue(), running_batch=None)
         runtime.plan_native_prefill.assert_not_called()
         assert not runtime.physical_ledger.pending_count
+        assert runtime.counts["frontier_restore_no_request_slot"] == 1
     finally:
         runtime.close()
 
@@ -315,6 +316,7 @@ def test_no_free_byte_budget_skips_queue_planning_with_available_request_rows(mo
         runtime.plan_native_prefill.assert_not_called()
         cache.inspect_beliefkv_reentry.assert_not_called()
         assert not runtime.physical_ledger.pending_count
+        assert runtime.counts["frontier_restore_no_free_byte_budget"] == 1
     finally:
         runtime.close()
 
