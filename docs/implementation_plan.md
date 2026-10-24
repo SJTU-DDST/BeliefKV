@@ -52,8 +52,13 @@ It is an execution preflight,not a workload or performance result.
 V3433 freshly passes353 focused cases; inherited qualification plus these
 checks retains5664 case identities. No per-token scheduler work is added.
 
-Prepare a fresh natural native capture V161 and a V162 qualification queue
-for V163 Full followed by scheduler-only. Keep the same36 different projects,
+V161 is registered from main `065a0a9af2a3`; V162 waits for its qualified
+source before creating V163 Full followed by scheduler-only. V3437 verifies
+the live supervisors and source bindings. After GPU release,the real sampler
+passed seeded repeatability and top-k support checks at batch1/8/24 on H200,
+then V161 entered model startup. This is kernel qualification,not evidence
+that model loops are eliminated or a completed JCT result.
+Keep the same36 different projects,
 simultaneous arrival,running/decode24,seed21,256K context,95% compression
 and matched pools. The changed generation policy requires a fresh trajectory;
 do not reuse V152/V155 work or compare different generated work as speedup.

@@ -1,0 +1,91 @@
+{
+  "observed_at": "2026-10-24T12:31:14.155124+08:00",
+  "status": "registered_resource_aware_capture_and_controls_queue",
+  "performance_accepted": false,
+  "source_registration": "/home/longhao/experiment/ops/v161_36project_coding_cuda130_source_20261024.registration.json",
+  "calibration_registration": "/home/longhao/experiment/ops/v162_36project_coding_cuda130_position_check_20261024.registration.json",
+  "comparison_registration_after_qualification": "/home/longhao/experiment/ops/v163_36project_coding_cuda130_controls_20261024.registration.json",
+  "code_commit": "065a0a9af2a38a3cea0ce9b5d602e572705c6ce2",
+  "engine_tree": "7d77eeccefb31b2465050ddebb1b58ca9d9213a6",
+  "states": {
+    "source": {
+      "status": "recording_native",
+      "error": null,
+      "live_watcher": {
+        "pid": 1384556,
+        "state": "S",
+        "ppid": 1,
+        "start_ticks": "698636929",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/.worktrees/beliefkv-v161-capture-065a0a9af2a3/scripts/run_causal_source_capture.py",
+          "--watch",
+          "/home/longhao/experiment/ops/v161_36project_coding_cuda130_source_20261024.registration.json"
+        ]
+      },
+      "checked_at": "2026-10-24T12:31:05.172486+08:00",
+      "sampling_kernel_preflight": {
+        "path": "/home/longhao/experiment/ops/v161_36project_coding_cuda130_source_20261024.registration.sampling.json",
+        "sha256": "c164b3f4c3345b63f107c815db5c8bf79fd6471076429a328e629e7f62f6d29d",
+        "gpu_sampling_verified": true,
+        "performance_accepted": false,
+        "scope": "Synthetic seeded top-k/top-p kernel execution before model startup, not a workload result.",
+        "cuda_home": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13",
+        "device_name": "NVIDIA H200 NVL",
+        "torch_cuda_version": "13.0",
+        "pid": 1386170,
+        "elapsed_seconds": 0.303556215018034,
+        "cases": [
+          {
+            "batch_size": 1,
+            "seed_repeated": true,
+            "top_k_support_verified": true
+          },
+          {
+            "batch_size": 8,
+            "seed_repeated": true,
+            "top_k_support_verified": true
+          },
+          {
+            "batch_size": 24,
+            "seed_repeated": true,
+            "top_k_support_verified": true
+          }
+        ]
+      }
+    },
+    "qualification_queue": {
+      "status": "waiting_selected_source",
+      "error": null,
+      "live_watcher": {
+        "pid": 1385484,
+        "state": "S",
+        "ppid": 1,
+        "start_ticks": "698641580",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/.worktrees/beliefkv-v162-position-065a0a9af2a3/scripts/run_position_replay_calibration.py",
+          "--watch",
+          "/home/longhao/experiment/ops/v162_36project_coding_cuda130_position_check_20261024.registration.json"
+        ]
+      },
+      "checked_at": "2026-10-24T12:31:05.302714+08:00",
+      "sampling_kernel_preflight": null
+    }
+  },
+  "gpu_processes_pid_and_mib": "",
+  "frozen_sources_and_external_inputs_verified": true,
+  "distinct_original_projects": 36,
+  "running_decode_limit": 24,
+  "context_tokens": 262144,
+  "seed": 21,
+  "sampling_profile": "qwen35_coding",
+  "cuda_home": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13",
+  "bound_toolchain_inputs": 9,
+  "order": [
+    "full",
+    "scheduler_only"
+  ],
+  "extra_complete_native_replay": false,
+  "scope": "Verified live supervisors and immutable registrations, not source completion, loop elimination, kernel execution or a performance gain."
+}
