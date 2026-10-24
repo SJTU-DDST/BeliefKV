@@ -289,6 +289,9 @@ def preflight_runtime(settings, model_path):
         "enable_tool_prefetch": settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "1",
         "enable_frontier_restore": settings["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == "1",
         "enable_frontier_cold_reclaim": settings["BELIEFKV_FRONTIER_COLD_RECLAIM"] == "1",
+        "frontier_cold_reclaim_policy": settings.get(
+            "BELIEFKV_FRONTIER_COLD_RECLAIM_POLICY", "waiting",
+        ),
         "tool_continuity": settings["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == "1",
         "tool_prefetch_priority_ms": float(settings["BELIEFKV_TOOL_PREFETCH_PRIORITY_MS"]),
         "join_prefetch_trigger": settings["JOIN_PREFETCH_TRIGGER"],

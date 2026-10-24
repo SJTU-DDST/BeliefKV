@@ -37,6 +37,14 @@
   per 200 ms with at most 16 native candidate checks; never create a D2H backup,
   preempt an active request, or grant ordinary requests critical-parent queue-tail
   donor rights. Prefer an already fitting prefix before reclaiming more space.
+- A separately declared `selected_queue` cold-reclaim policy may lend settled
+  Host-backed duplicates from at most 16 unstarted queue tails to the actual
+  selected consumer. Its synchronous authority must expire with that selection
+  and retain the raw queue head, selected consumer, ready JOIN dependencies and
+  all native lock/DMA guards. Require capacity for the complete safe input
+  checkpoint plus the native reserve before ordinary speculative enqueue; this
+  is a necessary capacity check, not native admission permission. Keep the
+  historical `waiting` policy and v193 configuration frozen.
 - During critical parent recovery, free request rows are not a selected prefill
   batch. Protect the actual queue head and ready JOIN dependencies; validate
   unstarted ordinary queue tails as possible native FULL donors. Preserve all

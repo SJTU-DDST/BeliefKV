@@ -766,6 +766,11 @@ class NativeAdmissionRuntime:
         self.enable_frontier_cold_reclaim = (
             self.enable_frontier_restore and frontier_reclaim == "1"
         )
+        self.frontier_cold_reclaim_policy = os.environ.get(
+            "BELIEFKV_FRONTIER_COLD_RECLAIM_POLICY", "waiting",
+        )
+        if self.frontier_cold_reclaim_policy not in ("waiting", "selected_queue"):
+            raise ValueError("frontier cold reclaim policy must be waiting or selected_queue")
         self._frontier_reclaim_after_ms = 0.
         self.enable_tool_prefetch = (
             tool_prefetch_requested and self.tool_restore_mode == "speculative"
@@ -2509,6 +2514,7 @@ class NativeAdmissionRuntime:
                 "tool_restore_mode": self.tool_restore_mode,
                 "execution_frontier_restore": self.enable_frontier_restore,
                 "frontier_cold_reclaim": self.enable_frontier_cold_reclaim,
+                "frontier_cold_reclaim_policy": self.frontier_cold_reclaim_policy,
                 "restore_tiers": self.restore_tiers,
                 "restore_tiers_supported": self._restore_tiers_supported,
                 "restore_tiers_native": (
@@ -5986,8 +5992,15 @@ class NativeAdmissionRuntime:
         self, key: PrefillCandidateKey, opportunity: SessionH2DOpportunity, *,
         source: str, admission_candidate: bool = False,
         allow_reclaim: bool = True, max_reclaim_nodes: int | None = None,
+        minimum_full_free_tokens: int = 0,
     ) -> SessionH2DOpportunity | None:
-        if opportunity.fits_current_free_lists is True:
+        if (
+            opportunity.fits_current_free_lists is True
+            and (
+                not minimum_full_free_tokens
+                or opportunity.headroom.device_full_free_tokens >= minimum_full_free_tokens
+            )
+        ):
             return opportunity
         reclaim = getattr(self._native_cache, "reclaim_beliefkv_handoff_capacity", None)
         candidate = getattr(opportunity, "candidate", None)
@@ -6051,7 +6064,10 @@ class NativeAdmissionRuntime:
             self._publish_parent_pressure_candidates(exclude_node_ids=excluded)
             with self._queued_full_donor_scope(key):
                 freed = reclaim(
-                    full_tokens=opportunity.required_full_tokens + budget.reserve_full_tokens,
+                    full_tokens=max(
+                        opportunity.required_full_tokens + budget.reserve_full_tokens,
+                        minimum_full_free_tokens,
+                    ),
                     mamba_slots=opportunity.required_mamba_slots + budget.reserve_mamba_slots,
                     exclude_node_ids=excluded,
                     **({"collect_diagnostics": True} if collect_diagnostics else {}),
@@ -6090,10 +6106,20 @@ class NativeAdmissionRuntime:
         if admission_candidate and allow_reclaim and not freed:
             self.counts["frontier_restore_no_cold_victim"] += 1
             return None
+        headroom = None
+        if minimum_full_free_tokens:
+            headroom = observe_static_full_mamba_headroom(self._native_cache)
+            if (
+                not headroom.observable
+                or headroom.device_full_free_tokens < minimum_full_free_tokens
+            ):
+                return None
         if (
             freed and opportunity.partial_full_step is None
             and not opportunity.capacity_reclaim_probe
-            and (headroom := observe_static_full_mamba_headroom(self._native_cache)).observable
+            and (
+                headroom := headroom or observe_static_full_mamba_headroom(self._native_cache)
+            ).observable
         ):
             budget = self._current_residency_budget(
                 include_evictable=True, headroom=headroom,
@@ -6762,16 +6788,23 @@ class NativeAdmissionRuntime:
 
     @contextmanager
     def _queued_full_donor_scope(self, key: PrefillCandidateKey):
-        """Authorize unstarted queue tails during critical parent recovery."""
+        """Lend backed queue tails only to the live selected capacity transaction."""
         cache = self._native_cache
         original = getattr(cache, "beliefkv_cold_full_owner_validator", None)
         demand = (
             self._live_critical_parent_demand() if self._capacity_waiting_queue else None
         )
         budget = self._residency_budget
+        selected = self._execution_handoff
+        selected_authority = bool(
+            self.enable_frontier_cold_reclaim
+            and self.frontier_cold_reclaim_policy == "selected_queue"
+            and selected is not None and selected.key == key
+            and self._live_selected_queue_reclaim(selected)
+        )
         requests = {}
         if (
-            demand is not None and demand[0] == key
+            (demand is not None and demand[0] == key or selected_authority)
             and getattr(original, "__self__", None) is self
             and getattr(original, "__func__", None) is NativeAdmissionRuntime._live_cold_full_owners
             and budget.source == "native_next_prefill"
@@ -6779,7 +6812,9 @@ class NativeAdmissionRuntime:
         ):
             # Free request rows are an admission ceiling, not a selected batch.
             # Retain the immediate queue head; owner checks protect JOIN dependencies.
-            for request in islice(self._capacity_waiting_queue, 1, 512):
+            for request in islice(
+                self._capacity_waiting_queue, 1, 17 if selected_authority else 512,
+            ):
                 candidate = self.visible.get(getattr(request, "rid", None))
                 if (
                     candidate is not None and candidate.invocation_id != key.invocation_id
@@ -6791,10 +6826,19 @@ class NativeAdmissionRuntime:
                 ):
                     requests[candidate] = request
         if requests:
+            if selected_authority:
+                self.counts["frontier_restore_queued_donor_transactions"] += 1
+                self.counts["frontier_restore_queued_donor_candidates"] += len(requests)
+
             def validate(owners):
-                return self._live_cold_full_owners(
-                    owners, queued_requests=requests,
-                ) if self._live_critical_parent_demand() == demand else original(owners)
+                authorized = (
+                    self._live_selected_queue_reclaim(selected) if selected_authority
+                    else self._live_critical_parent_demand() == demand
+                )
+                return (
+                    self._live_cold_full_owners(owners, queued_requests=requests)
+                    if authorized else original(owners)
+                )
 
             cache.beliefkv_cold_full_owner_validator = validate
         try:
@@ -6802,6 +6846,17 @@ class NativeAdmissionRuntime:
         finally:
             if requests:
                 cache.beliefkv_cold_full_owner_validator = original
+
+    def _live_selected_queue_reclaim(self, ticket: _ExecutionHandoffTicket) -> bool:
+        return bool(
+            self._execution_handoff is ticket
+            and self._live_execution_handoff(ticket)
+            and self._unallocated_waiting_full_request(ticket.key, ticket.request)
+            and any(
+                request is ticket.request
+                for request in islice(self._capacity_waiting_queue, 512)
+            )
+        )
 
     def _pressure_candidate_groups(self) -> dict[PrefillCandidateKey, set[int]]:
         candidates = self._parent_pressure_candidates
@@ -10048,7 +10103,19 @@ class NativeAdmissionRuntime:
         free = self._budget_wait_prefetch_opportunity(
             key, opportunity, fit_current_capacity=True, batched=True, budget=budget,
         )
-        if free.steps:
+        selected_queue = self.frontier_cold_reclaim_policy == "selected_queue"
+        checkpoint = opportunity.checkpoint_plan
+        minimum_full_free_tokens = (
+            checkpoint.full_tokens + budget.reserve_full_tokens
+            if selected_queue and checkpoint is not None else 0
+        )
+        if selected_queue and checkpoint is None:
+            self.counts["frontier_restore_complete_plan_unavailable"] += 1
+            return None
+        if free.steps and (
+            not selected_queue
+            or opportunity.headroom.device_full_free_tokens >= minimum_full_free_tokens
+        ):
             # A first oversized extent can still supply a native prefix fragment.
             return self._reclaim_wait_prefetch_capacity(
                 key, free, source="execution_handoff",
@@ -10063,10 +10130,20 @@ class NativeAdmissionRuntime:
         if not planned.steps:
             return None
         self.counts["frontier_restore_cold_capacity_checks"] += 1
-        return self._reclaim_wait_prefetch_capacity(
+        fitted = self._reclaim_wait_prefetch_capacity(
             key, planned, source="execution_handoff",
             admission_candidate=True, max_reclaim_nodes=16,
+            minimum_full_free_tokens=minimum_full_free_tokens,
         )
+        if selected_queue and (
+            fitted is None
+            or fitted.headroom.device_full_free_tokens < minimum_full_free_tokens
+        ):
+            # A fitting extent alone does not cover native's eventual input
+            # allocation. Native still owns the full admission/compute decision.
+            self.counts["frontier_restore_complete_capacity_unavailable"] += 1
+            return None
+        return fitted
 
     @timed_runtime("frontier_restore")
     def dispatch_frontier_restore(
@@ -10184,23 +10261,27 @@ class NativeAdmissionRuntime:
                 self._native_cache, anchors,
                 max_steps=min(64, available_commands),
                 fit_current_capacity=not self.enable_frontier_cold_reclaim,
+                **(
+                    {"include_checkpoint_plan": True}
+                    if self.frontier_cold_reclaim_policy == "selected_queue" else {}
+                ),
             )
-            if (
-                self.enable_frontier_cold_reclaim
-                and opportunity is not None and opportunity.steps
-            ):
-                opportunity = self._fit_selected_frontier_restore(
-                    key, opportunity, budget=budget, now_ms=now_ms,
-                )
-            if (
-                opportunity is None or not opportunity.steps
-                or opportunity.fits_current_free_lists is not True
-            ):
-                self.counts["frontier_restore_native_fallback"] += 1
-                continue
             ticket = _ExecutionHandoffTicket(key, request, time.monotonic() + 2.)
             self._execution_handoff = ticket
             try:
+                if (
+                    self.enable_frontier_cold_reclaim
+                    and opportunity is not None and opportunity.steps
+                ):
+                    opportunity = self._fit_selected_frontier_restore(
+                        key, opportunity, budget=budget, now_ms=now_ms,
+                    )
+                if (
+                    opportunity is None or not opportunity.steps
+                    or opportunity.fits_current_free_lists is not True
+                ):
+                    self.counts["frontier_restore_native_fallback"] += 1
+                    continue
                 commands = self._issue_handoff_prefetch_steps(ticket, opportunity.steps)
             finally:
                 self._execution_handoff = None

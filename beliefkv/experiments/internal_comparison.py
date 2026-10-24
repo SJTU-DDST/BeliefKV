@@ -50,6 +50,14 @@ def arm_environment(
     if frontier_reclaim not in ("0", "1"):
         raise ValueError("frontier cold reclaim must be 0 or 1")
     frontier_reclaim = str(int(frontier == "1" and frontier_reclaim == "1"))
+    frontier_reclaim_policy = common.get(
+        "BELIEFKV_FRONTIER_COLD_RECLAIM_POLICY",
+        common.get("FRONTIER_COLD_RECLAIM_POLICY", "waiting"),
+    )
+    if frontier_reclaim_policy not in ("waiting", "selected_queue"):
+        raise ValueError("unsupported frontier cold reclaim policy")
+    if frontier_reclaim == "0":
+        frontier_reclaim_policy = "waiting"
     workflow_ordering = scheduling == "workflow" and mode in ("full", "scheduler_only")
     if mode == "join_priority_only":
         scheduling = "join_priority"
@@ -98,6 +106,8 @@ def arm_environment(
         "BELIEFKV_ENABLE_FRONTIER_RESTORE": frontier,
         "FRONTIER_COLD_RECLAIM": frontier_reclaim,
         "BELIEFKV_FRONTIER_COLD_RECLAIM": frontier_reclaim,
+        "FRONTIER_COLD_RECLAIM_POLICY": frontier_reclaim_policy,
+        "BELIEFKV_FRONTIER_COLD_RECLAIM_POLICY": frontier_reclaim_policy,
         "BELIEFKV_IDLE_PREPARE_POLICY": common.get(
             "BELIEFKV_IDLE_PREPARE_POLICY", common.get("IDLE_PREPARE_POLICY", "cold"),
         ),

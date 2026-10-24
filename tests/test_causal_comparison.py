@@ -211,6 +211,23 @@ def test_cold_frontier_requires_explicit_declaration_and_disables_with_custom_kv
     )
 
 
+@pytest.mark.parametrize("mode", ("full", "kv_only", "native_matched", "join_priority_only"))
+def test_selected_queue_policy_is_declared_in_each_actual_control_environment(
+    reference, tmp_path, mode,
+):
+    reference["arms"]["full"].update(
+        EXECUTION_FRONTIER_RESTORE="1", FRONTIER_COLD_RECLAIM="1",
+        FRONTIER_COLD_RECLAIM_POLICY="selected_queue",
+    )
+    settings, _, _ = comparison.environment(
+        reference, mode, tmp_path, tmp_path, tmp_path, 18554, tmp_path,
+        execution_frontier_restore=True, frontier_cold_reclaim=True,
+    )
+    expected = "selected_queue" if mode in ("full", "kv_only") else "waiting"
+    assert settings["FRONTIER_COLD_RECLAIM_POLICY"] == expected
+    assert settings["BELIEFKV_FRONTIER_COLD_RECLAIM_POLICY"] == expected
+
+
 @pytest.mark.parametrize("label", comparison.ORDER)
 def test_explicit_24_running_limit_is_the_same_in_every_control(reference, tmp_path, label):
     reference["arms"]["full"]["ROOT_COUNT"] = "24"
