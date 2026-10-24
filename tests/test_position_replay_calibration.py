@@ -1,10 +1,46 @@
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from beliefkv.experiments.source_provenance import sha256_file
 from scripts import run_position_replay_calibration as calibration
+
+
+@pytest.mark.parametrize("max_tasks_per_project", (1, 2))
+def test_calibration_rejects_shared_projects_before_qualification_or_gpu(
+    tmp_path, monkeypatch, max_tasks_per_project,
+):
+    manifest = tmp_path / "tasks.json"
+    manifest.write_text(json.dumps({
+        "requested_workflows": 2, "max_tasks_per_project": max_tasks_per_project,
+        "workloads": [
+            {"repo": "locobench/shared-project", "instance_id": f"task-{index}",
+             "task_kind": "locobench_agent"}
+            for index in range(2)
+        ],
+    }))
+    registration = tmp_path / "source.json"
+    registration.write_text(json.dumps({
+        "source_profile": "balanced_join",
+        "environment": {"ROOT_COUNT": "2", "WORKLOAD_MANIFEST": str(manifest)},
+    }))
+    args = SimpleNamespace(
+        registration=tmp_path / "queue.json", run_root=tmp_path / "run",
+        comparison_registration=tmp_path / "comparison.json",
+        comparison_root=tmp_path / "comparison", source_registration=registration,
+        experiment_config=None,
+    )
+
+    def unexpected_verification(_plan):
+        pytest.fail("shared-project workload reached source or GPU qualification")
+
+    monkeypatch.setattr(calibration.comparison, "verify_sources", unexpected_verification)
+    with pytest.raises(ValueError, match="source workload"):
+        calibration.register(args)
+    assert not args.registration.exists()
+    assert not args.run_root.exists()
 
 
 @pytest.fixture

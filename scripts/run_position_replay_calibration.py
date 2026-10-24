@@ -204,6 +204,10 @@ def register(args):
     spec = load(spec_path) if spec_path else None
     if source.get("source_profile") != ("nested_oneshot" if spec else "balanced_join"):
         raise ValueError("calibration source differs from the predeclared profile")
+    roots = source_root_count(source)
+    capture.project_disjoint_workload(
+        Path(source["environment"]["WORKLOAD_MANIFEST"]), expected_workflows=roots,
+    )
     policy = getattr(args, "source_selection", "balanced_join")
     if spec is not None:
         policy = "predeclared"
@@ -215,7 +219,6 @@ def register(args):
     fresh.check_hold(source, released=True)
     reference = load(args.reference)
     fresh.verify(reference)
-    roots = source_root_count(source)
     running = 8
     if spec is not None:
         reference = controls.experiment_reference(reference, spec)

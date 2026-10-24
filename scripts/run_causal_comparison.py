@@ -30,7 +30,7 @@ from beliefkv.experiments.source_provenance import git_source_state, sha256_file
 from scripts.run_causal_gpu_replay import source_plan
 from scripts.run_causal_source_capture import (
     comparison, engine_evidence, fresh, load, qualified, reservation, reusable_source,
-    validated_capacity,
+    project_disjoint_workload, validated_capacity,
 )
 from scripts.benchmark_causal_sampling import calibration_batch_sizes
 from beliefkv.core.events import RuntimeEventKind as Kind
@@ -237,6 +237,7 @@ def experiment_source_evidence(spec, quality, smoke_server, arm, roots, running)
         )
     ):
         raise ValueError("captured source differs from the predeclared experiment")
+    project_disjoint_workload(frozen, expected_workflows=roots)
     return {
         "source_registration": str(source_path.resolve()),
         "frozen_manifest": str(frozen.resolve()), "manifest_sha256": expected,
@@ -704,6 +705,12 @@ def register(args):
     if experiment_spec is not None:
         experiment_evidence = experiment_source_evidence(
             experiment_spec, quality, smoke_server, args.source_arm, source_roots, running,
+        )
+    else:
+        source_capture = load(Path(smoke_server["source_registration"]))
+        project_disjoint_workload(
+            Path(source_capture["environment"]["WORKLOAD_MANIFEST"]),
+            expected_workflows=source_roots,
         )
     if retention_spec is not None:
         retention_source_matches(retention_spec, quality, source_roots)

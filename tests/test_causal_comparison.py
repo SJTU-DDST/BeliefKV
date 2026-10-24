@@ -365,9 +365,17 @@ def test_oneshot_source_uses_the_gpu_bound_frozen_manifest_without_an_optional_s
     monkeypatch.setattr(comparison, "ROOT", tmp_path)
     manifest = tmp_path / "configs/tasks.json"
     frozen = tmp_path / "frozen/configs/tasks.json"
+    tasks = {
+        "requested_workflows": 24, "max_tasks_per_project": 1,
+        "workloads": [
+            {"repo": f"locobench/project-{index}", "instance_id": f"task-{index}",
+             "task_kind": "locobench_agent"}
+            for index in range(24)
+        ],
+    }
     for path in (manifest, frozen):
         path.parent.mkdir(parents=True)
-        path.write_text('{"original_tasks": [1, 2]}')
+        path.write_text(json.dumps(tasks))
     digest = sha256_file(manifest)
     common = {
         "ROOT_COUNT": "24", "MAX_RUNNING_REQUESTS": "24",
@@ -408,6 +416,45 @@ def test_oneshot_source_uses_the_gpu_bound_frozen_manifest_without_an_optional_s
         assert evidence["manifest_sha256"] == digest
         assert evidence["frozen_manifest"] == str(frozen)
         assert evidence["source_registration"] == str(source_path)
+
+
+def test_oneshot_source_rejects_shared_projects_even_with_valid_source_hashes(tmp_path, monkeypatch):
+    monkeypatch.setattr(comparison, "ROOT", tmp_path)
+    manifest = tmp_path / "configs/tasks.json"
+    frozen = tmp_path / "frozen/configs/tasks.json"
+    tasks = {
+        "requested_workflows": 2, "max_tasks_per_project": 2,
+        "workloads": [
+            {"repo": "locobench/shared-project", "instance_id": f"task-{index}",
+             "task_kind": "locobench_agent"}
+            for index in range(2)
+        ],
+    }
+    for path in (manifest, frozen):
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps(tasks))
+    digest = sha256_file(manifest)
+    common = {
+        "ROOT_COUNT": "2", "MAX_RUNNING_REQUESTS": "24",
+        "FANOUT_PROFILE": "native_in_graph_nested_2to4",
+        "WORKLOAD_MANIFEST": "configs/tasks.json",
+    }
+    spec = {"source_profile": "nested_oneshot", "common_environment": common}
+    arm = tmp_path / "capture/native_capture"
+    source_path = tmp_path / "source.json"
+    source_path.write_text(json.dumps({
+        "run_root": str(arm.parent), "execution_checkout": str(tmp_path / "frozen"),
+        "environment": {**common, "WORKLOAD_MANIFEST": str(frozen)},
+        "source_profile": "nested_oneshot", "source_sha256": {"configs/tasks.json": digest},
+    }))
+    smoke = {
+        "source_registration": str(source_path),
+        "external_inputs": [{"path": str(source_path), "sha256": sha256_file(source_path)}],
+    }
+    with pytest.raises(ValueError, match="source workload"):
+        comparison.experiment_source_evidence(
+            spec, {"subagent_fanout_profile": common["FANOUT_PROFILE"]}, smoke, arm, 2, 24,
+        )
 
 
 def test_generated_tool_model_settings_are_consumed_by_the_real_runtime_constructor(

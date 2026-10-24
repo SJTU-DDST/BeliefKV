@@ -96,8 +96,14 @@ def validated_workload(path, *, require_disjoint=True):
     return manifest
 
 
-def project_disjoint_workload(path):
-    return validated_workload(path)
+def project_disjoint_workload(path, *, expected_workflows=None):
+    manifest = validated_workload(path)
+    if (
+        expected_workflows is not None
+        and manifest["requested_workflows"] != expected_workflows
+    ):
+        raise ValueError("source workload differs from the declared workflow population")
+    return manifest
 
 
 def declared_workload_inputs(path, *, require_disjoint=True):
@@ -181,9 +187,7 @@ def environment(
     if source_workload is not None:
         if source_profile not in ("reusable_nested", "nested_oneshot"):
             raise ValueError("a new source workload requires an explicit natural source profile")
-        roots = str(validated_workload(
-            target, require_disjoint=source_profile == "reusable_nested",
-        )["requested_workflows"])
+        roots = str(project_disjoint_workload(target)["requested_workflows"])
     result = arm_environment(dict(base), "native_matched")
     result.update(
         PYTHONPATH=str(checkout), WORKLOAD_MANIFEST=str(target),
@@ -525,12 +529,11 @@ def register(args):
         raise FileExistsError("preserve existing frozen capture sources")
     if not args.wait_for_gpu and not qualified.resources(args.port)["ready"]:
         raise ValueError("GPU, port or disk is occupied")
-    workload_inputs = (
-        declared_workload_inputs(
-            args.source_workload.resolve(),
-            require_disjoint=args.source_profile != "nested_oneshot",
-        ) if args.source_workload else []
+    workload_path = (
+        args.source_workload.resolve() if args.source_workload
+        else Path(reference["arms"]["native_matched"]["WORKLOAD_MANIFEST"])
     )
+    workload_inputs = declared_workload_inputs(workload_path)
     subprocess.run(["git", "-C", str(ROOT), "worktree", "add", "--detach", str(checkout), revision],
                    check=True, capture_output=True)
     comparison.verify_cpu_snapshot(checkout, sources)

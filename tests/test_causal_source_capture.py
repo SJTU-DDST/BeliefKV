@@ -229,16 +229,13 @@ def test_explicit_disjoint_capture_changes_only_manifest_root_count_and_profile(
         capture.environment(*args, source_workload=source)
 
 
-def test_oneshot_capture_accepts_24_tasks_from_16_projects_and_explicit_batch(
+def test_oneshot_capture_accepts_disjoint_tasks_and_explicit_batch(
     tmp_path, monkeypatch,
 ):
     plan, checkout = reference(tmp_path)
     source = tmp_path / "configs/oneshot.json"
     source.parent.mkdir()
     manifest = disjoint_manifest(24)
-    manifest["max_tasks_per_project"] = 2
-    for index in range(16, 24):
-        manifest["workloads"][index]["repo"] = f"locobench/project-{index - 16}"
     contents = json.dumps(manifest)
     source.write_text(contents)
     (checkout / "configs/oneshot.json").write_text(contents)
@@ -256,14 +253,32 @@ def test_oneshot_capture_accepts_24_tasks_from_16_projects_and_explicit_batch(
     assert env["DEVICE_FULL_TOKENS"] == "1797968"
     assert env["DEVICE_MAMBA_SLOTS"] == "513"
     assert plan["arms"]["native_matched"]["MAX_RUNNING_REQUESTS"] == "8"
-    with pytest.raises(ValueError, match="source workload"):
-        capture.environment(
-            *args, source_profile="reusable_nested", source_workload=source,
-        )
+    manifest["max_tasks_per_project"] = 2
+    for index in range(16, 24):
+        manifest["workloads"][index]["repo"] = f"locobench/project-{index - 16}"
+    contents = json.dumps(manifest)
+    source.write_text(contents)
+    (checkout / "configs/oneshot.json").write_text(contents)
+    for profile in ("nested_oneshot", "reusable_nested"):
+        with pytest.raises(ValueError, match="source workload"):
+            capture.environment(
+                *args, source_profile=profile, source_workload=source,
+            )
     manifest["workloads"][23]["repo"] = manifest["workloads"][0]["repo"]
     source.write_text(json.dumps(manifest))
     with pytest.raises(ValueError, match="bounded projects"):
         capture.validated_workload(source, require_disjoint=False)
+
+
+@pytest.mark.parametrize("count", (16, 24, 32, 36))
+def test_disjoint_source_binds_the_selected_workflow_population(tmp_path, count):
+    path = tmp_path / "tasks.json"
+    path.write_text(json.dumps(disjoint_manifest(count)))
+    assert capture.project_disjoint_workload(
+        path, expected_workflows=count,
+    )["requested_workflows"] == count
+    with pytest.raises(ValueError, match="declared workflow population"):
+        capture.project_disjoint_workload(path, expected_workflows=count - 1)
 
 
 @pytest.mark.parametrize("value", (0, -1, True, "24", 1.5, 10000))

@@ -2,6 +2,31 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+All future workflow populations must use different original projects:
+one workflow per project,including subsets selected after a concurrency
+reduction. Source capture,position calibration and comparison registration
+must reject shared-project populations before GPU execution. Existing
+shared-project traces remain historical evidence. The running V152 already
+contains36 different projects and continues with its frozen sources.
+If36 roots substantially increase repeated computation,reduce simultaneous
+workflows to32,and further if needed,while retaining project diversity.
+Evaluate missing previously served same-session prefixes,attributed useful
+Host loss and actual prefill work; initial cold source processing is separate.
+Use sustained observations rather than pool occupancy alone. Any changed
+population needs its own matching natural native capture. Running/decode24
+is a separate setting and is not lowered automatically with workflow count.
+V3414 passes339 focused launch-guard cases. It replaces the old test that
+allowed24 tasks from16 projects with project-disjoint one-shot acceptance
+and rejection of both one-shot/reusable shared-project sources. The change
+adds no per-request control work. The old waiting V153 registration is
+preserved and replaced by V153b after CPU qualification; V152 is untouched.
+V3413's collecting snapshot has1955 same-session probes,56177176 common
+previous-input tokens and72125 missing tokens (0.1284%); P99 is63 tokens
+and no request is missing4096 or more. This is a prefix-loss proxy,not
+measured kernel recomputation. The historical24-root reference has a
+different population and phase mix and is not a causal comparison.
+No sustained large-prefix-loss increase is established at this cutoff.
+
 The current user-directed experiment increases the workload to36 roots from36
 different original LoCoBench-Agent projects,allowing shorter contexts.
 The new manifest uses35K--196608-token selection bounds,seed21 and one task
