@@ -227,6 +227,8 @@ def register(args):
         if (
             common["ROOT_COUNT"] != str(roots)
             or source["environment"]["MAX_RUNNING_REQUESTS"] != str(running)
+            or source["environment"].get("SAMPLING_PROFILE", "legacy_greedy")
+            != common.get("SAMPLING_PROFILE", "legacy_greedy")
             or sha256_file(ROOT / common["WORKLOAD_MANIFEST"]) != sha256_file(
                 Path(source["environment"]["WORKLOAD_MANIFEST"])
             )

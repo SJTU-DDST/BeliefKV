@@ -154,6 +154,7 @@ def declared_workload_inputs(path, *, require_disjoint=True):
 def environment(
     reference, checkout: Path, engine: Path, run: Path, port: int, *, source_profile=None,
     capacity=None, source_workload=None, max_running_requests=None,
+    sampling_profile=None,
 ):
     if source_profile not in (None, "balanced_join", "reusable_nested", "nested_oneshot"):
         raise ValueError("unknown predeclared source profile")
@@ -161,6 +162,8 @@ def environment(
         type(max_running_requests) is not int or not 1 <= max_running_requests <= 9999
     ):
         raise ValueError("max running requests must be a positive integer")
+    if sampling_profile not in (None, "legacy_greedy", "qwen35_coding"):
+        raise ValueError("unknown source sampling profile")
     run = run.resolve()
     base = reference["arms"]["native_matched"]
     required = {
@@ -196,6 +199,8 @@ def environment(
         PORT=str(port), CUDA_VISIBLE_DEVICES="0", BELIEFKV_REPLAY_TOKEN_CAPTURE="1",
         BELIEFKV_SUBAGENT_RETENTION="off",
     )
+    if sampling_profile is not None:
+        result["SAMPLING_PROFILE"] = sampling_profile
     if source_profile == "reusable_nested":
         result["FANOUT_PROFILE"] = REUSABLE_NESTED_IN_GRAPH_PROFILE
     elif source_profile == "nested_oneshot":
@@ -553,6 +558,7 @@ def register(args):
         reference, checkout, engine, args.run_root, args.port,
         source_profile=args.source_profile, capacity=capacity, source_workload=args.source_workload,
         max_running_requests=args.max_running_requests,
+        sampling_profile=getattr(args, "sampling_profile", None),
     )
     extra = [
         args.reference, args.reference.with_suffix(".state.json"),
@@ -735,6 +741,7 @@ def main():
     )
     parser.add_argument("--source-workload", type=Path)
     parser.add_argument("--max-running-requests", type=int)
+    parser.add_argument("--sampling-profile", choices=("legacy_greedy", "qwen35_coding"))
     parser.add_argument("--wait-for-gpu", action="store_true")
     parser.add_argument("--after-comparison", type=Path)
     args = parser.parse_args()

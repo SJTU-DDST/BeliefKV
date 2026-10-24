@@ -1,0 +1,207 @@
+{
+  "status": "cpu_qualified_coding_profile_and_factual_tool_feedback",
+  "observed_at": "2026-10-24T11:52:04.047312+08:00",
+  "performance_accepted": false,
+  "model_loop_elimination_verified": false,
+  "sole_root_cause_established": false,
+  "candidate_parent_commit": "4f5df661cf653fb1302eb6240486e2fa7c28906d",
+  "scope": "Request/tool-boundary generation and factual feedback changes only. GPU serving, per-token scheduling, KV policies, workload population, capacities, seeds and stop budgets are unchanged. A new natural native source is required before exact-work controls.",
+  "combined_unique_case_identities": 5658,
+  "inherited_case_identities_retained": 5628,
+  "fresh_unique_case_identities": 776,
+  "additional_covered_identities": [
+    [
+      "tests.test_coding_sampling_profile",
+      "test_cli_preserves_explicit_coding_profile_and_seed"
+    ],
+    [
+      "tests.test_coding_sampling_profile",
+      "test_control_registration_rejects_sampling_profile_mismatch_before_gpu[legacy_greedy-qwen35_coding]"
+    ],
+    [
+      "tests.test_coding_sampling_profile",
+      "test_control_registration_rejects_sampling_profile_mismatch_before_gpu[qwen35_coding-legacy_greedy]"
+    ],
+    [
+      "tests.test_coding_sampling_profile",
+      "test_declared_coding_experiment_keeps_project_disjoint_work_and_system_policy"
+    ],
+    [
+      "tests.test_coding_sampling_profile",
+      "test_profile_reaches_real_chat_payload_without_changing_seed_or_stopping[legacy_greedy-0.0]"
+    ],
+    [
+      "tests.test_coding_sampling_profile",
+      "test_profile_reaches_real_chat_payload_without_changing_seed_or_stopping[qwen35_coding-0.6]"
+    ],
+    [
+      "tests.test_coding_sampling_profile",
+      "test_source_sampling_change_is_explicit_and_preserves_native_capacity_and_work"
+    ],
+    [
+      "tests.test_coding_sampling_profile",
+      "test_unknown_sampling_profile_is_rejected_before_model_construction"
+    ],
+    [
+      "tests.test_deepagents_swebench",
+      "test_test_progress_shadow_in_real_sandbox"
+    ],
+    [
+      "tests.test_tool_observation_feedback",
+      "test_literal_search_feedback_keeps_physical_result_and_does_not_fake_a_repeat[False-Succeeded-False]"
+    ],
+    [
+      "tests.test_tool_observation_feedback",
+      "test_literal_search_feedback_keeps_physical_result_and_does_not_fake_a_repeat[False-class Project-False]"
+    ],
+    [
+      "tests.test_tool_observation_feedback",
+      "test_literal_search_feedback_keeps_physical_result_and_does_not_fake_a_repeat[False-class.*Audit-True]"
+    ],
+    [
+      "tests.test_tool_observation_feedback",
+      "test_literal_search_feedback_keeps_physical_result_and_does_not_fake_a_repeat[False-on_receive|on_message-True]"
+    ],
+    [
+      "tests.test_tool_observation_feedback",
+      "test_literal_search_feedback_keeps_physical_result_and_does_not_fake_a_repeat[True-Succeeded-False]"
+    ],
+    [
+      "tests.test_tool_observation_feedback",
+      "test_literal_search_feedback_keeps_physical_result_and_does_not_fake_a_repeat[True-class Project-False]"
+    ],
+    [
+      "tests.test_tool_observation_feedback",
+      "test_literal_search_feedback_keeps_physical_result_and_does_not_fake_a_repeat[True-class.*Audit-True]"
+    ],
+    [
+      "tests.test_tool_observation_feedback",
+      "test_literal_search_feedback_keeps_physical_result_and_does_not_fake_a_repeat[True-on_receive|on_message-True]"
+    ],
+    [
+      "tests.test_tool_observation_feedback",
+      "test_read_history_does_not_cross_changed_evidence_or_ownership[conversation]"
+    ],
+    [
+      "tests.test_tool_observation_feedback",
+      "test_read_history_does_not_cross_changed_evidence_or_ownership[epoch]"
+    ],
+    [
+      "tests.test_tool_observation_feedback",
+      "test_read_history_does_not_cross_changed_evidence_or_ownership[outcome]"
+    ],
+    [
+      "tests.test_tool_observation_feedback",
+      "test_read_history_does_not_cross_changed_evidence_or_ownership[result]"
+    ],
+    [
+      "tests.test_tool_observation_feedback",
+      "test_read_results_get_history_without_blocking_or_replacing_physical_calls[False-glob]"
+    ],
+    [
+      "tests.test_tool_observation_feedback",
+      "test_read_results_get_history_without_blocking_or_replacing_physical_calls[False-grep]"
+    ],
+    [
+      "tests.test_tool_observation_feedback",
+      "test_read_results_get_history_without_blocking_or_replacing_physical_calls[False-ls]"
+    ],
+    [
+      "tests.test_tool_observation_feedback",
+      "test_read_results_get_history_without_blocking_or_replacing_physical_calls[False-read_file]"
+    ],
+    [
+      "tests.test_tool_observation_feedback",
+      "test_read_results_get_history_without_blocking_or_replacing_physical_calls[True-glob]"
+    ],
+    [
+      "tests.test_tool_observation_feedback",
+      "test_read_results_get_history_without_blocking_or_replacing_physical_calls[True-grep]"
+    ],
+    [
+      "tests.test_tool_observation_feedback",
+      "test_read_results_get_history_without_blocking_or_replacing_physical_calls[True-ls]"
+    ],
+    [
+      "tests.test_tool_observation_feedback",
+      "test_read_results_get_history_without_blocking_or_replacing_physical_calls[True-read_file]"
+    ],
+    [
+      "tests.test_tool_observation_feedback",
+      "test_real_read_tool_feedback_is_append_only_and_survives_observation_budget"
+    ]
+  ],
+  "changed_existing_source_paths": [
+    "beliefkv/experiments/deepagents_swebench.py",
+    "beliefkv/runtime/langchain_tool_safety.py",
+    "scripts/run_causal_source_capture.py",
+    "scripts/run_deepagents_swebench.py",
+    "scripts/run_position_replay_calibration.py",
+    "scripts/run_qwen35_native_regime_probe.sh",
+    "tests/test_tool_observation_feedback.py"
+  ],
+  "new_source_paths": [
+    "configs/migration/qwen35_locobench_oneshot_36project_running24_coding_20261024.json",
+    "tests/test_coding_sampling_profile.py"
+  ],
+  "fresh_execution_reports": [
+    {
+      "path": "experiments/reports/v3424_coding_sampling_tool_feedback_cpu_20261024.xml",
+      "sha256": "840382f138a0dd20a3d2b9cd9adf60684cfb0653ba57dfa91a32b88e23959dfe"
+    },
+    {
+      "path": "experiments/reports/v3425_coding_cli_and_real_sandbox_cpu_20261024.xml",
+      "sha256": "90e619483507fe9118d2e9b498d1961481ec042eb5fbab26fab26538dcf5e1f8"
+    },
+    {
+      "path": "experiments/reports/v3426_real_sandbox_tool_feedback_recheck_cpu_20261024.xml",
+      "sha256": "b76f67018f3b9113c0a2c08d0c449d33dd76118e170f47d3b103334e5667444f"
+    },
+    {
+      "path": "experiments/reports/v3427_coding_wire_and_harness_final_cpu_20261024.xml",
+      "sha256": "f49d2a6543103e835a3e7debcee68a2e791929084493ce50bf66c5e7eb96fb4a"
+    }
+  ],
+  "combined_report": {
+    "path": "experiments/reports/v3428_coding_sampling_combined_app_cpu_20261024.xml",
+    "sha256": "ee455671072466b2c35ccd410c94aee2002228e39524af23bd72c5ce7a855e75"
+  },
+  "sources": {
+    "path": "experiments/reports/v3429_coding_sampling_app_sources_20261024.json",
+    "sha256": "95736d9cfba267f5272064220781e2ed4ba36c2b6a825d91d4b6af191d809162"
+  },
+  "resolved_initial_checks": {
+    "initial_full_subset": "774 passed, one real-container test skipped without an explicit image",
+    "first_container_recheck": "8 profile/CLI tests passed; real-container test failed because the selected cached SymPy image has no pytest",
+    "final_container_recheck": "The same container test passed using the cached pytest-7490 image. No test assertion changed.",
+    "final_harness_subset": "181 tests passed after adding actual outgoing-body sampling diagnostics."
+  },
+  "external_local_evidence": [
+    {
+      "path": "/srv/ai/models/Qwen/Qwen3.5-35B-A3B/README.md",
+      "sha256": "71c3bbc2eadadd5980bbdbb15df958c27d42ede24821015602a021109aacf492"
+    },
+    {
+      "path": "/srv/ai/models/Qwen/Qwen3.5-35B-A3B/generation_config.json",
+      "sha256": "4f25002776b741773666203dcea8f54619f177ace3ae483d311102092a4658e0"
+    }
+  ],
+  "official_remote_fetch": "Direct HTTPS metadata fetch failed with TLS error. Settings were checked against the existing local model README, not a freshly pinned upstream revision.",
+  "model_card_section": "Best Practices: thinking mode for precise coding tasks",
+  "sampling_parameters": {
+    "seed": 21,
+    "temperature": 0.6,
+    "top_p": 0.95,
+    "top_k": 20,
+    "min_p": 0.0,
+    "presence_penalty": 0.0,
+    "repetition_penalty": 1.0
+  },
+  "source_interruption_evidence": "experiments/reports/v3423_v155_repeated_tool_loop_cutoff_20261024.json",
+  "next_sequence": [
+    "V158 natural native capture",
+    "V159 bounded replay qualification",
+    "V160 Full and scheduler-only on the same captured work"
+  ],
+  "native_replay_scheduled": false
+}

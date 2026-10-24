@@ -1,0 +1,569 @@
+{
+  "observed_at": "2026-10-24T11:32:32.870801+08:00",
+  "source_registration": "/home/longhao/experiment/ops/v155_36project_running24_source_20261024.registration.json",
+  "scope": "Independently sealed live prefixes. Repeated identical physical calls justify stopping for investigation, not a performance or task-quality result. No forced completion or rewritten trace.",
+  "performance_accepted": false,
+  "stop_reason": "Repeated child grep loops recurred in a fresh native capture. User requires an experiment free of this correctness problem.",
+  "loops": [
+    {
+      "workflow": "locobench__python_system_monitoring_medium_061_feature_implementation_expert_01",
+      "invocation_id": "deepagents-invocation:b2ac5153b2cbfc8f",
+      "tool": "grep",
+      "input_sha256": "5efca8fff8891392d9ef989ae9a451879d04eefdae9990accc14ba6fb6833ad1",
+      "consecutive_tail_calls": 36,
+      "tail_interval_seconds": 240.8573979845047,
+      "latest_closed_request_candidate": "beliefkv:01a16bf7-4e14-7770-b8d5-87ff589759e1"
+    },
+    {
+      "workflow": "locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01",
+      "invocation_id": "deepagents-invocation:0f5578d4f3fc6b6c",
+      "tool": "grep",
+      "input_sha256": "1c177d528eea3fb22efc59591183d5edba3d956f8561fccaffce2d212c80fb0b",
+      "consecutive_tail_calls": 24,
+      "tail_interval_seconds": 155.6860424861908,
+      "latest_closed_request_candidate": "beliefkv:01a16bf7-5afe-7051-a426-a871bf81e3bb"
+    }
+  ],
+  "runtime_event_counts": {
+    "workflow_start": 36,
+    "invocation_create": 114,
+    "llm_submit": 2320,
+    "llm_result": 2283,
+    "spawn": 78,
+    "join_create": 39,
+    "join_wait": 39,
+    "structured_action": 2934,
+    "tool_start": 3116,
+    "tool_end": 3116,
+    "return": 58,
+    "join_satisfied": 20,
+    "workflow_end": 3
+  },
+  "guard_intervention_event_counts": {},
+  "maximum_identical_result_count": 36,
+  "context_prefix_reuse_evidence": {
+    "counts": {
+      "new_or_changed_prompt_tokens": 2502326,
+      "previously_served_common_prefix_tokens": 65210235,
+      "previously_served_prefix_recompute_proxy_tokens": 85097,
+      "request_probes": 2306,
+      "requests_with_prefix_recompute_proxy": 2145,
+      "with_prior_served_prompt": 2192,
+      "without_prior_served_prompt": 114
+    },
+    "semantics": "Previously served same-session input-prefix loss, not newly appended input or a per-layer FULL/Mamba recomputation count.",
+    "tracked_context_count": 114,
+    "tracking_limit": 1024
+  },
+  "request_cache_evidence": {
+    "after_first_full_host_eviction": {
+      "cached_tokens_device": 13487430,
+      "cached_tokens_host": 31497511,
+      "mamba_host_hit_slots": 713,
+      "prompt_tokens": 45834503,
+      "request_count": 992,
+      "requests_with_full_host_hit": 713,
+      "requests_with_mamba_host_hit": 713,
+      "uncached_prompt_tokens": 849562
+    },
+    "after_first_host_eviction": {
+      "cached_tokens_device": 29960266,
+      "cached_tokens_host": 31768498,
+      "mamba_host_hit_slots": 717,
+      "prompt_tokens": 63742412,
+      "request_count": 1729,
+      "requests_with_full_host_hit": 717,
+      "requests_with_mamba_host_hit": 717,
+      "uncached_prompt_tokens": 2013648
+    },
+    "after_first_mamba_host_eviction": {
+      "cached_tokens_device": 29960266,
+      "cached_tokens_host": 31768498,
+      "mamba_host_hit_slots": 717,
+      "prompt_tokens": 63742412,
+      "request_count": 1729,
+      "requests_with_full_host_hit": 717,
+      "requests_with_mamba_host_hit": 717,
+      "uncached_prompt_tokens": 2013648
+    },
+    "all": {
+      "cached_tokens_device": 33861617,
+      "cached_tokens_host": 31768498,
+      "mamba_host_hit_slots": 717,
+      "prompt_tokens": 71730123,
+      "request_count": 2306,
+      "requests_with_full_host_hit": 717,
+      "requests_with_mamba_host_hit": 717,
+      "uncached_prompt_tokens": 6100008
+    }
+  },
+  "host_pool_evidence": {
+    "full": {
+      "bytes_per_unit": 20480,
+      "capacity_units": 7812501,
+      "d2h_ack_units": 6080690,
+      "evicted_bytes": 5464104960,
+      "evicted_units": 266802,
+      "eviction_calls": 878,
+      "h2d_ack_units": 31350124,
+      "h2d_units_after_first_host_eviction": 31350124,
+      "high_water": {
+        "used_bytes": 119068426240,
+        "used_units": 5813888
+      }
+    },
+    "mamba": {
+      "bytes_per_unit": 64389120,
+      "capacity_units": 622,
+      "d2h_ack_units": 2692,
+      "evicted_bytes": 133285478400,
+      "evicted_units": 2070,
+      "eviction_calls": 2070,
+      "h2d_ack_units": 1434,
+      "h2d_units_after_first_host_eviction": 1434,
+      "high_water": {
+        "used_bytes": 40050032640,
+        "used_units": 622
+      }
+    }
+  },
+  "host_block_eviction_attribution": {
+    "available": true,
+    "counts": {
+      "full_evictions": 878,
+      "mamba_evictions": 2070,
+      "mamba_prefix_revisited_hit_location_unknown": 788,
+      "request_probes": 1729
+    },
+    "evicted_units_by_pool": {
+      "full": 266802,
+      "mamba": 2070
+    },
+    "full_reaccess_semantics": "exact prefix match plus request device/host cached-token intervals; remaining evicted FULL interval is attributed to recomputation",
+    "identity_semantics": "run-keyed HMAC over exact cache namespace and radix token prefix; raw token IDs are not written",
+    "mamba_reaccess_semantics": "exact prefix revisit is observable, but native telemetry does not expose the Mamba hit location per node",
+    "pending_blocks_by_pool": {
+      "full": 878,
+      "mamba": 1282
+    },
+    "pending_latest_evicted_units_by_pool": {
+      "full": 266802,
+      "mamba": 1282
+    },
+    "probe_prefix_length_overflow": 0,
+    "recomputed_full_units": 0,
+    "reused_full_units": 0
+  },
+  "native_status_sha256": "05450e920c361f968ffd1e1751e1c13a950c40d682d7e020331f41f5a9cbad19",
+  "restore_dependency_wait_samples": {
+    "count": 43,
+    "total_gpu_dependency_wait_ms": {
+      "count": 43,
+      "sum": 91.01827249478083,
+      "min": 0.06739199999719858,
+      "p50": 0.12956800044048578,
+      "p90": 5.75050884694793,
+      "p99": 30.03164562064915,
+      "max": 46.03027229185682
+    },
+    "pre_forward_state_gpu_wait_ms": {
+      "count": 43,
+      "sum": 45.95808029174805,
+      "min": 0,
+      "p50": 0,
+      "p90": 0.0,
+      "p99": 26.65568656921379,
+      "max": 45.95808029174805
+    },
+    "semantics": "Sampled load-consuming prefill batches, not all requests, exclusive PCIe delay or removable JCT."
+  },
+  "transfers": {
+    "h2d": {
+      "batches": 687,
+      "bytes": 737211985920,
+      "stream_ms": 22743.24309539795
+    },
+    "d2h": {
+      "batches": 4789,
+      "bytes": 298113904640,
+      "stream_ms": 10512.54563318193
+    }
+  },
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 519501,
+      "complete_prefix_sha256": "77dfed08f4fcb1d645b16e9edb70bf85b0645be4cd591eb5848b843580986187",
+      "first_read_limit_bytes": 519501
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_api_microservice_medium_008_multi_session_development_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 572353,
+      "complete_prefix_sha256": "fc3c36a918aa1f32d2535d6b94f196a835b65a364ebdf64507c5b042831e2ded",
+      "first_read_limit_bytes": 572353
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_api_microservice_medium_044_feature_implementation_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 450246,
+      "complete_prefix_sha256": "b26b3f2ab686623e827349c9919db0aef4c07be836a6500fe27944a095930a7f",
+      "first_read_limit_bytes": 450246
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 466792,
+      "complete_prefix_sha256": "e5a895d5da9b2af5add888d750815ccf2032169ab941f5a3f71fb36d348e492c",
+      "first_read_limit_bytes": 466792
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_data_analytics_easy_082_integration_testing_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 300282,
+      "complete_prefix_sha256": "001c9497fb93dea07908643249864568995de473e0bc999ecb9a7df2942454a1",
+      "first_read_limit_bytes": 300282
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_data_lake_medium_050_integration_testing_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 431847,
+      "complete_prefix_sha256": "7cc3b8523c9fe2981c1e254337c7a0216de8004b202f6d8de48f7e7124f068a7",
+      "first_read_limit_bytes": 431847
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_data_warehouse_hard_048_multi_session_development_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 412010,
+      "complete_prefix_sha256": "c48ecacc4edae870940ace122e62bfc38ac4e1520bd7eba292f0a8029afc873b",
+      "first_read_limit_bytes": 412010
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_data_warehouse_medium_012_cross_file_refactoring_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 343788,
+      "complete_prefix_sha256": "0bca277ea2f0058b86b73435df9a0144b3e80f09731044b4b6cfd039ca97ad96",
+      "first_read_limit_bytes": 343788
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_desktop_media_medium_020_multi_session_development_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 686261,
+      "complete_prefix_sha256": "c67bc480f86e52e1d0a4d7c1e951adf3240502c9f97a7d05c2dcc65eab4eefa6",
+      "first_read_limit_bytes": 686261
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_desktop_media_medium_092_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 587738,
+      "complete_prefix_sha256": "47262143859a981f9994d086adb488b800b7cab040a744b372f5d08536a4ff72",
+      "first_read_limit_bytes": 587738
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_fintech_trading_medium_066_bug_investigation_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 445073,
+      "complete_prefix_sha256": "76d03c6adfc797da6a618ef8dc906f3d801cde41f9a086dad7cfd6826dd48242",
+      "first_read_limit_bytes": 445073
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_game_simulation_easy_069_bug_investigation_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 593199,
+      "complete_prefix_sha256": "cadc1291e3271bfb88d08da2b17cdf765cb512f21d3ce2eb29491ed80634a8c5",
+      "first_read_limit_bytes": 593199
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_game_simulation_medium_033_feature_implementation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 435615,
+      "complete_prefix_sha256": "affb63b5d8c66e9143867b29135ffe24d0cdd85566b4b4c727d1c2708115514e",
+      "first_read_limit_bytes": 435615
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_ml_inference_hard_088_feature_implementation_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 373580,
+      "complete_prefix_sha256": "dbfe47864fe7a5a488849055159e19af1ab574c1141a80a8d2a87ef938f95702",
+      "first_read_limit_bytes": 373580
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_ml_nlp_easy_089_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 396898,
+      "complete_prefix_sha256": "3af5e0ec4ada54fd077209ffae7f212cb07dca5993a028762fdd84593daa7f74",
+      "first_read_limit_bytes": 396898
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_ml_training_medium_087_integration_testing_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 628999,
+      "complete_prefix_sha256": "6e8f5f3c629402ba4319bce6e72f146cabfe3f4f6bc4692bc56a460d89217623",
+      "first_read_limit_bytes": 628999
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_mobile_game_hard_024_bug_investigation_easy_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 700462,
+      "complete_prefix_sha256": "761e864963471c52aedabcbd3c59b266086858507980bc4011da016d2ed38a83",
+      "first_read_limit_bytes": 700462
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_mobile_game_hard_060_multi_session_development_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 461129,
+      "complete_prefix_sha256": "cae351cd55324ff9eaca1b390b631c425adc449e8b8b2135b4d48d6181f90b91",
+      "first_read_limit_bytes": 461129
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_mobile_game_medium_096_integration_testing_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 428482,
+      "complete_prefix_sha256": "44c6e0f12c6071dc199455c815ccda86ac24c824c4ef1e17a87fd80205813d98",
+      "first_read_limit_bytes": 428482
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_mobile_social_easy_058_integration_testing_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 490719,
+      "complete_prefix_sha256": "7251228890dcbed232c3515f5909f76fd7db102f422807b05cd9abc50d80f8be",
+      "first_read_limit_bytes": 490719
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_mobile_social_medium_022_bug_investigation_easy_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 649138,
+      "complete_prefix_sha256": "8dfffd6478953a10afae3652c4e9594e09b7b57fce9f66ab54a9032db4a1e5fc",
+      "first_read_limit_bytes": 649138
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_mobile_utility_medium_023_feature_implementation_easy_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 498606,
+      "complete_prefix_sha256": "9ba255611da83a294280547bf1d34ac635b662a7af55d3efa59a8e0f83fcb581",
+      "first_read_limit_bytes": 498606
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_system_automation_hard_062_integration_testing_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 380577,
+      "complete_prefix_sha256": "7593d7e6b5451e7bcb3193f6e1c710f13af8c9b6ee2553c51ea8fa6893670633",
+      "first_read_limit_bytes": 380577
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_system_automation_medium_098_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 292191,
+      "complete_prefix_sha256": "e71852e461e6df0df1a9277f4b727fd01729a30f85ae4a3db6a897b130fdfb1a",
+      "first_read_limit_bytes": 292191
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_system_monitoring_medium_025_multi_session_development_easy_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 585999,
+      "complete_prefix_sha256": "a2a8196daa3cd8d1030326ac7c74bcf2f06861c2c357211e93db334ade4364a5",
+      "first_read_limit_bytes": 585999
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_system_monitoring_medium_061_feature_implementation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 575748,
+      "complete_prefix_sha256": "b53150b44e567524226d6f02749487c7110e65aa612972f4394abf289f3a83ee",
+      "first_read_limit_bytes": 575748
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_system_networking_hard_027_cross_file_refactoring_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 384524,
+      "complete_prefix_sha256": "e8cca001e22b28ff1aedff1128fe2d5679bf66cb893ad9ba055bd099f9449ab8",
+      "first_read_limit_bytes": 384524
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_system_networking_medium_063_bug_investigation_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 494900,
+      "complete_prefix_sha256": "012edabd88bf3782375e767e2d9ed21b92f6619de67d8eebfe68f15aeeef574d",
+      "first_read_limit_bytes": 494900
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_system_security_medium_028_multi_session_development_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 514671,
+      "complete_prefix_sha256": "e819fd5fea9174e8c4c2fdd695ce2605d40eac99e81802b09e5bf2aa150759bc",
+      "first_read_limit_bytes": 514671
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_system_security_medium_064_multi_session_development_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 437813,
+      "complete_prefix_sha256": "ecbebc8072fec1c4b39091d2db38aa30b68e8aa924dd92a177559048ffa7cc36",
+      "first_read_limit_bytes": 437813
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 450200,
+      "complete_prefix_sha256": "48647f7905302b3dfbbd89714435a2becb84acf82e0f53aa21c947f2073f9ea9",
+      "first_read_limit_bytes": 450200
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_web_blog_hard_076_integration_testing_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 722655,
+      "complete_prefix_sha256": "b9b2980b911b82009e4a30f4150b56aa9547865139e94ee8b14ddba78ca5bc53",
+      "first_read_limit_bytes": 722655
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 772165,
+      "complete_prefix_sha256": "2fe317922b6f200c2af97d05a6b257e8d0d2c60dc507b227d28d968c92eb4aa4",
+      "first_read_limit_bytes": 772165
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_web_dashboard_medium_039_bug_investigation_easy_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 860722,
+      "complete_prefix_sha256": "5ed56756779d8fe15f29eb3fe17e86f0c5827ee3b5bf33e1e252553a63785420",
+      "first_read_limit_bytes": 860722
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_web_portfolio_medium_041_bug_investigation_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 872245,
+      "complete_prefix_sha256": "42aa43bd9b9418493203a77379c949875673f2ea5d40a49afa829c9e3d22a1a1",
+      "first_read_limit_bytes": 872245
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_web_social_hard_001_bug_investigation_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 155019,
+      "complete_prefix_sha256": "dd93f44345686a0ed970ae439be8d723ad8b689d92a8342edb72b4fa8b795ebf",
+      "first_read_limit_bytes": 155019
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_api_gateway_hard_009_feature_implementation_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 8404,
+      "complete_prefix_sha256": "1332d1ea4cd64c456da7a1de3aa8a6fab59994fdbcb3fbbee1a47fa111a2bae2",
+      "first_read_limit_bytes": 8404
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_api_microservice_medium_008_multi_session_development_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 11529,
+      "complete_prefix_sha256": "5f9c0013681d8181f341484ce85a85789679787718bc7edd5cebde19a97cc350",
+      "first_read_limit_bytes": 11529
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_api_microservice_medium_044_feature_implementation_medium_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 6260,
+      "complete_prefix_sha256": "8ff270d98590ceff8653e8ff36ae5f76ebae61661289a1504b4d9b4800d4714c",
+      "first_read_limit_bytes": 6260
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 36338,
+      "complete_prefix_sha256": "90333806e6726b3e33bb018984eae63514f3870f21e4c8d995b6286f504e4fee",
+      "first_read_limit_bytes": 36338
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_data_analytics_easy_082_integration_testing_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 7011,
+      "complete_prefix_sha256": "af29dc6d60e8173efea09dc2ca9c7b4287fb497c68a33c16ba7662433f77d4e6",
+      "first_read_limit_bytes": 7011
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_data_lake_medium_050_integration_testing_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 7519,
+      "complete_prefix_sha256": "b505115d37ca1285c27b88967a05f5c3a584baf58761713f48762a30458afbe8",
+      "first_read_limit_bytes": 7519
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_data_warehouse_hard_048_multi_session_development_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 9412,
+      "complete_prefix_sha256": "3333d552fd7490f426235d845a734c46aeaf1967819b67672b6c49365d3575d1",
+      "first_read_limit_bytes": 9412
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_data_warehouse_medium_012_cross_file_refactoring_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 6679,
+      "complete_prefix_sha256": "88dae0c275e28d652742fbfd75d645e54392d5864411975b2bcef6f48fa6e65b",
+      "first_read_limit_bytes": 6679
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_desktop_media_medium_020_multi_session_development_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 39097,
+      "complete_prefix_sha256": "eb1fe155154daee1d3139ac3beb6269c8163443de7a16e1167a9500efc335b9b",
+      "first_read_limit_bytes": 39097
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_desktop_media_medium_092_cross_file_refactoring_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 29197,
+      "complete_prefix_sha256": "850a17ba460b9587c4a833f112087c1e052bd87b98ac12de6f80802ed9b49703",
+      "first_read_limit_bytes": 29197
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_fintech_trading_medium_066_bug_investigation_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 6943,
+      "complete_prefix_sha256": "5aaa3289cd35a59b74353ba7461de8429b8fcb8b28b88c07d1cbc0430ea061ba",
+      "first_read_limit_bytes": 6943
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_game_simulation_easy_069_bug_investigation_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 22072,
+      "complete_prefix_sha256": "696a2628ee6f42b88e2a514194de8be3fec64b11ad2c5df02f27ace64c5320ef",
+      "first_read_limit_bytes": 22072
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_game_simulation_medium_033_feature_implementation_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 5024,
+      "complete_prefix_sha256": "56f9816e2e73c0490187f6f7dd85a888d6d0fdc1f1057f312aa7d470d5930104",
+      "first_read_limit_bytes": 5024
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_ml_inference_hard_088_feature_implementation_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 6418,
+      "complete_prefix_sha256": "e9c58044e7f6de9092fd06ae616d93e7a594c3c2a582b23c893d2feaf2f85e78",
+      "first_read_limit_bytes": 6418
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_ml_nlp_easy_089_cross_file_refactoring_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 7938,
+      "complete_prefix_sha256": "89ea84e2ef9c27078e5b24c76fcd5942bd1752d42f9fee1d790f05d13f1eb997",
+      "first_read_limit_bytes": 7938
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_ml_training_medium_087_integration_testing_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 25322,
+      "complete_prefix_sha256": "1d91e4a33e50910277c4a33704e27f574039d88ae5bda0fa40a82e1a465e3736",
+      "first_read_limit_bytes": 25322
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_mobile_game_hard_024_bug_investigation_easy_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 40653,
+      "complete_prefix_sha256": "77be5bef7f9be6068304b1a9b188c73396fdc44c75a35d1bee87e464f3924759",
+      "first_read_limit_bytes": 40653
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_mobile_game_hard_060_multi_session_development_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 12356,
+      "complete_prefix_sha256": "e81b0753f82d97ba63cdea8893c8d82737608326d72818eda9684f6298cb2ed5",
+      "first_read_limit_bytes": 12356
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_mobile_game_medium_096_integration_testing_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 8780,
+      "complete_prefix_sha256": "d2f54c178a1d8955912839b71827b274f92b0d8d40e56c163d4f445eb807c7a5",
+      "first_read_limit_bytes": 8780
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_mobile_social_easy_058_integration_testing_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 16584,
+      "complete_prefix_sha256": "9a8fe0943a0e829e7048a977d81923d3fc2d2fbb38fd655759b6bd131319c237",
+      "first_read_limit_bytes": 16584
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_mobile_social_medium_022_bug_investigation_easy_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 32829,
+      "complete_prefix_sha256": "77ad4c2c1386aebec13ac379d00921203c281f31773e786d9f6b5c312cb65398",
+      "first_read_limit_bytes": 32829
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_mobile_utility_medium_023_feature_implementation_easy_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 13484,
+      "complete_prefix_sha256": "0b3de402e2bdc23319bbaef5cb2a01dd2d4ad86c22d4677b18e41f8229326d8d",
+      "first_read_limit_bytes": 13484
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_system_automation_hard_062_integration_testing_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 30135,
+      "complete_prefix_sha256": "c55fe854727774e56003689bf411d950d338ca40b719902f18e9d422b38c42a0",
+      "first_read_limit_bytes": 30135
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_system_automation_medium_098_cross_file_refactoring_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 6480,
+      "complete_prefix_sha256": "ff7600f095b91b2a486f0940c224fe76297ab0c3ff05d02cb424012e534f7a75",
+      "first_read_limit_bytes": 6480
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_system_monitoring_medium_025_multi_session_development_easy_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 18786,
+      "complete_prefix_sha256": "83b0bdcdc29dc4784c3f5cf736a47121796872e111d2a166a6b31bbf98e56b72",
+      "first_read_limit_bytes": 18786
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_system_monitoring_medium_061_feature_implementation_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 35333,
+      "complete_prefix_sha256": "6c83cb8e095164a5baaf548b5b28e1af6c2d37efeb986bca0b464a4783662862",
+      "first_read_limit_bytes": 35333
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_system_networking_hard_027_cross_file_refactoring_medium_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 8581,
+      "complete_prefix_sha256": "2d9dde08ac9d987cc4e7f11e9b8bc4ade22f12046e3bcf129ab376a29edafcbf",
+      "first_read_limit_bytes": 8581
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_system_networking_medium_063_bug_investigation_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 17249,
+      "complete_prefix_sha256": "fc59fe7647654fa17f543a9514f74cc26a9317327977f71bf9848071a49f3673",
+      "first_read_limit_bytes": 17249
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_system_security_medium_028_multi_session_development_medium_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 9161,
+      "complete_prefix_sha256": "9561ed92ea142be17cde1cdc955c91b76efd6e7731b752d6238a58f25e16cfef",
+      "first_read_limit_bytes": 9161
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_system_security_medium_064_multi_session_development_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 6277,
+      "complete_prefix_sha256": "835625483d290511962c4e656d923451960a7a24a18821fa75ff52da487507e7",
+      "first_read_limit_bytes": 6277
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 16345,
+      "complete_prefix_sha256": "e08f5b232a08b7b8f10fe7ca138eeee51d721175f4c553c64659d1a16c33c900",
+      "first_read_limit_bytes": 16345
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_web_blog_hard_076_integration_testing_medium_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 45269,
+      "complete_prefix_sha256": "50d8aeae986cde5e558acb289bf192220d4c4b85cde365cd0f4a3e54f375dbcf",
+      "first_read_limit_bytes": 45269
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_web_cms_hard_074_cross_file_refactoring_expert_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 27530,
+      "complete_prefix_sha256": "84024681e6abc5cf0a4bcb26b29db163c7c28a9c27b6a4f767195209334d5c8a",
+      "first_read_limit_bytes": 27530
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_web_dashboard_medium_039_bug_investigation_easy_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 4557,
+      "complete_prefix_sha256": "21b17717fd53ccbbe2ae7d6bf92781af74420d7434e4abba4da3b919d4e2ca91",
+      "first_read_limit_bytes": 4557
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_web_portfolio_medium_041_bug_investigation_hard_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 60001,
+      "complete_prefix_sha256": "2c087519d5f2e72bf681d5faba254c7e18484cb953cc750daabbaf90a58a1d18",
+      "first_read_limit_bytes": 60001
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/client_36/workflows/locobench__python_web_social_hard_001_bug_investigation_medium_01/sandbox_audit.jsonl": {
+      "complete_prefix_bytes": 3881,
+      "complete_prefix_sha256": "9911a05168258b0e48ada4c4ea6152df13d20951eade869ecfaa467db982e2c6",
+      "first_read_limit_bytes": 3881
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/server/runtime_audit.jsonl": {
+      "complete_prefix_bytes": 238944332,
+      "complete_prefix_sha256": "6588751836e460b28136b22b3047b8486404278ae45cef90ca7f1bd80c978d21",
+      "first_read_limit_bytes": 238944332
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_36project_running24_source_20261024_v155/native_capture/server/transfer_telemetry.jsonl": {
+      "complete_prefix_bytes": 3804180,
+      "complete_prefix_sha256": "43ff70837a27d57638d475ef0b6cba5db0e35ef0bc9f52afbb9c1198c0ee409c",
+      "first_read_limit_bytes": 3804180
+    }
+  },
+  "earlier_capacity_auditor_attempt": {
+    "helper": "scripts/audit_subagent_retention_capacity.py",
+    "error": "server wall/monotonic alignment is absent or unstable",
+    "explanation": "Natural native capture has no predictive admission-opportunity stream. No capacity-auditor result or aligned whole-run occupancy is claimed."
+  }
+}

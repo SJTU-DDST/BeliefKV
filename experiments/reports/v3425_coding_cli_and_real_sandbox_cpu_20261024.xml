@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="9" time="2.941" timestamp="2026-10-23T20:45:15.857375-07:00" hostname="ddst-12"><testcase classname="tests.test_coding_sampling_profile" name="test_profile_reaches_real_chat_payload_without_changing_seed_or_stopping[legacy_greedy-0.0]" time="0.078" /><testcase classname="tests.test_coding_sampling_profile" name="test_profile_reaches_real_chat_payload_without_changing_seed_or_stopping[qwen35_coding-0.6]" time="0.012" /><testcase classname="tests.test_coding_sampling_profile" name="test_unknown_sampling_profile_is_rejected_before_model_construction" time="0.001" /><testcase classname="tests.test_coding_sampling_profile" name="test_cli_preserves_explicit_coding_profile_and_seed" time="0.004" /><testcase classname="tests.test_coding_sampling_profile" name="test_source_sampling_change_is_explicit_and_preserves_native_capacity_and_work" time="0.001" /><testcase classname="tests.test_coding_sampling_profile" name="test_control_registration_rejects_sampling_profile_mismatch_before_gpu[qwen35_coding-legacy_greedy]" time="0.001" /><testcase classname="tests.test_coding_sampling_profile" name="test_control_registration_rejects_sampling_profile_mismatch_before_gpu[legacy_greedy-qwen35_coding]" time="0.001" /><testcase classname="tests.test_coding_sampling_profile" name="test_declared_coding_experiment_keeps_project_disjoint_work_and_system_policy" time="0.000" /><testcase classname="tests.test_deepagents_swebench" name="test_test_progress_shadow_in_real_sandbox" time="0.614"><failure message="AssertionError: /opt/miniconda3/envs/testbed/bin/python: No module named pytest&#10;  &#10;assert 1 == 0&#10; +  where 1 = ExecuteResponse(output='/opt/miniconda3/envs/testbed/bin/python: No module named pytest\n', exit_code=1, truncated=False).exit_code">tmp_path = PosixPath('/tmp/pytest-of-longhao/pytest-2763/test_test_progress_shadow_in_r0')
+
+    @pytest.mark.skipif(
+        os.environ.get("BELIEFKV_TEST_SANDBOX_DOCKER") != "1",
+        reason="requires explicitly selected cached SWE-bench Docker image",
+    )
+    def test_test_progress_shadow_in_real_sandbox(tmp_path: Path) -&gt; None:
+        image = os.environ["BELIEFKV_TEST_SANDBOX_IMAGE"]
+        workspace = tmp_path / "workspace"
+        subprocess.run(["git", "init", "-q", str(workspace)], check=True)
+        (workspace / "test_progress_example.py").write_text(
+            "import time\n"
+            "def test_first():\n    time.sleep(.02)\n"
+            "def test_second():\n    time.sleep(.2)\n"
+        )
+        audit = JsonlAudit(tmp_path / "audit.jsonl")
+        backend = DockerWorkspaceBackend(
+            workspace, image=image, audit=audit,
+            output_timing_shadow=True, test_progress_shadow=True,
+        )
+        try:
+            backend.start()
+            result = backend.execute(
+                "python -m pytest -q -c /dev/null /workspace/test_progress_example.py",
+                timeout=30,
+            )
+&gt;           assert result.exit_code == 0, result.output
+E           AssertionError: /opt/miniconda3/envs/testbed/bin/python: No module named pytest
+E             
+E           assert 1 == 0
+E            +  where 1 = ExecuteResponse(output='/opt/miniconda3/envs/testbed/bin/python: No module named pytest\n', exit_code=1, truncated=False).exit_code
+
+tests/test_deepagents_swebench.py:785: AssertionError</failure></testcase></testsuite></testsuites>

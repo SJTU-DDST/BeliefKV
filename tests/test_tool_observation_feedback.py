@@ -154,3 +154,42 @@ def test_real_read_tool_feedback_is_append_only_and_survives_observation_budget(
     assert "identical tool call and visible result 2 times" in tools[-1].content
     assert tools[-1].content.endswith(tools[-1].additional_kwargs["beliefkv_execution_feedback_text"])
     assert tools[-1].additional_kwargs["beliefkv_physical_execution"] is True
+
+
+@pytest.mark.parametrize("pattern,explain", (
+    ("class.*Audit", True), ("on_receive|on_message", True),
+    ("class Project", False), ("Succeeded", False),
+))
+@pytest.mark.parametrize("asynchronous", (False, True))
+def test_literal_search_feedback_keeps_physical_result_and_does_not_fake_a_repeat(
+    pattern, explain, asynchronous,
+):
+    executed = []
+    circuit = ToolCircuitBreakerMiddleware(
+        state_epoch=lambda: 0, suppress_repeats=False, scope="child", audit=None,
+    )
+    item = ToolCallRequest(
+        tool_call={"name": "grep", "args": {"pattern": pattern}, "id": "search"},
+        tool=None, state={"messages": [HumanMessage(content="Find the implementation.")]},
+        runtime=SimpleNamespace(config={}),
+    )
+
+    def invoke(current):
+        executed.append(current.tool_call)
+        return ToolMessage(content="No matches found", name="grep", tool_call_id="search")
+
+    async def ainvoke(current):
+        return invoke(current)
+
+    result = (
+        asyncio.run(circuit.awrap_tool_call(item, ainvoke))
+        if asynchronous else circuit.wrap_tool_call(item, invoke)
+    )
+    assert len(executed) == 1
+    assert result.content.startswith("No matches found")
+    assert ("not as a regular expression" in result.content) is explain
+    assert result.additional_kwargs["beliefkv_grep_literal_feedback"] is explain
+    assert result.additional_kwargs["beliefkv_repeated_result_feedback"] is False
+    assert result.additional_kwargs["beliefkv_identical_result_count"] == 1
+    assert result.additional_kwargs["beliefkv_physical_execution"] is True
+    assert result.status == "success"

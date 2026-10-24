@@ -3,7 +3,10 @@
 Status: researched and CPU-sized; Full-only serving adaptation and GPU
 qualification have not started. V152 is preserved as a rejected source after
 a child entered a repeated-grep loop and required guard intervention. Fresh
-native capture V155 and the V156/V157 qualification/control queue replace it.
+V155 also reproduced prolonged repeated searches and was interrupted together
+with its V156 queue. V158/V159/V160 will use the explicit coding sampling
+profile after CPU qualification. These generation-policy corrections do not
+qualify a KV-management gain or change the conditional model-migration test.
 This document changes no serving behavior.
 
 ## Decision

@@ -8,6 +8,7 @@ PORT="${PORT:-18454}"
 ROOT_COUNT="${ROOT_COUNT:-108}"
 MAX_RUNNING_REQUESTS="${MAX_RUNNING_REQUESTS:-48}"
 SAMPLING_SEED="${SAMPLING_SEED:-21}"
+SAMPLING_PROFILE="${SAMPLING_PROFILE:-legacy_greedy}"
 SERVER_RANDOM_SEED="${SERVER_RANDOM_SEED:-21}"
 PYTHONHASHSEED="${PYTHONHASHSEED:-$SAMPLING_SEED}"
 MAX_COMPLETION_TOKENS="${MAX_COMPLETION_TOKENS:-16384}"
@@ -385,7 +386,8 @@ setsid "$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
   --context-window-tokens "$CONTEXT_WINDOW_TOKENS" --context-keep-tokens "$CONTEXT_KEEP_TOKENS" \
   --max-completion-tokens "$MAX_COMPLETION_TOKENS" \
   --request-timeout "$MODEL_REQUEST_TIMEOUT_SECONDS" \
-  --sampling-seed "$SAMPLING_SEED" --recursion-limit "$AGENT_RECURSION_LIMIT" \
+  --sampling-seed "$SAMPLING_SEED" --sampling-profile "$SAMPLING_PROFILE" \
+  --recursion-limit "$AGENT_RECURSION_LIMIT" \
   --sandbox-command-timeout 180 \
   --activation-wall-clock-seconds "${ACTIVATION_WALL_CLOCK_SECONDS:-14400}" \
   --stream-completion-shadow --child-stream-content-shadow \

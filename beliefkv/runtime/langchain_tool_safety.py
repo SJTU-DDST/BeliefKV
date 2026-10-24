@@ -554,6 +554,27 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
                 identical_result_count = 1
                 identical_result_elapsed_ms = elapsed_ms
         feedback = None
+        literal_feedback = None
+        pattern = (request.tool_call.get("args") or {}).get("pattern")
+        if (
+            tool_name == "grep" and source_text is not None
+            and source_text.strip() == "No matches found"
+            and isinstance(pattern, str)
+            and any(marker in pattern for marker in ("|", ".*", "\\b", "^", "$", "["))
+        ):
+            literal_feedback = (
+                "\n\n[Search semantics: grep searched the pattern as literal text, "
+                "not as a regular expression. Pipes, .* and character classes are "
+                "not alternatives or wildcards here. If regex was intended, use "
+                "execute with rg or grep -E, or issue separate literal searches.]"
+            )
+            self._emit(
+                "agent_tool_literal_search_feedback",
+                tool_name=tool_name,
+                tool_call_id=str(request.tool_call.get("id", "")),
+                signature=key[1],
+                physical_execution=True,
+            )
         if fingerprint is not None and identical_result_count > 1:
             operation = "command" if tool_name == "execute" else "tool call"
             next_step = (
@@ -565,6 +586,13 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
                 "change the query or inspect the relevant source instead of repeating "
                 "an unchanged observation."
             )
+            if tool_name == "grep":
+                next_step = (
+                    "search result for the assigned deliverable. For matches, use "
+                    "read_file to inspect a returned file. With no matches, change "
+                    "the literal pattern or path, or use execute for regex search. "
+                    "Repeating the same grep is not a different search approach."
+                )
             feedback = (
                 f"\n\n[Execution history: identical {operation} and visible result "
                 f"{identical_result_count} times; total tool wall time "
@@ -584,6 +612,9 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
                 physical_execution=True,
                 suppression_enabled=self._suppress_repeats,
             )
+        repeated_feedback = feedback is not None
+        if literal_feedback is not None:
+            feedback = (feedback or "") + literal_feedback
         return result.model_copy(
             update={
                 "content": source_text + feedback if feedback is not None else result.content,
@@ -603,7 +634,8 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
                         "beliefkv_source_result_chars": len(source_text.strip()),
                         "beliefkv_identical_result_count": identical_result_count,
                         "beliefkv_identical_result_elapsed_ms": identical_result_elapsed_ms,
-                        "beliefkv_repeated_result_feedback": feedback is not None,
+                        "beliefkv_repeated_result_feedback": repeated_feedback,
+                        "beliefkv_grep_literal_feedback": literal_feedback is not None,
                         **({"beliefkv_execution_feedback_text": feedback}
                            if feedback is not None else {}),
                     } if source_digest is not None else {}),

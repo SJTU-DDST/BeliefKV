@@ -1717,6 +1717,7 @@ class DeepAgentsExperimentConfig:
     pool_tokens: int = 163_840
     max_completion_tokens: int = 2048
     sampling_seed: int | None = None
+    sampling_profile: str = "legacy_greedy"
     stream_completion_shadow: bool = False
     child_finish_chunk_shadow: bool = False
     child_report_phase_shadow: bool = False
@@ -1854,6 +1855,8 @@ class DeepAgentsExperimentConfig:
             type(self.sampling_seed) is not int or not 0 <= self.sampling_seed <= 4294967295
         ):
             raise ValueError("sampling_seed must be an unsigned 32-bit integer")
+        if self.sampling_profile not in ("legacy_greedy", "qwen35_coding"):
+            raise ValueError("unknown sampling_profile")
         if self.runtime_event_ack_timeout_s <= 0 or self.runtime_event_ack_retries <= 0:
             raise ValueError("runtime-event ACK policy must be positive")
         if self.context_lifecycle.intermediate_output_tokens > self.max_completion_tokens:
@@ -2903,6 +2906,16 @@ def _model(
         config.output_dir, adapter.record_http_stream_diagnostic,
         observe_stream=natural_eos_shadow or config.stream_http_timing_shadow,
     )
+    sampling = {"temperature": 0.0}
+    if config.sampling_profile == "qwen35_coding":
+        sampling = {
+            "temperature": 0.6,
+            "top_p": 0.95,
+            "presence_penalty": 0.0,
+            "extra_body": {
+                "top_k": 20, "min_p": 0.0, "repetition_penalty": 1.0,
+            },
+        }
     model = BeliefKVChatOpenAI(
         beliefkv_adapter=adapter,
         activation_deadline=(
@@ -2914,7 +2927,7 @@ def _model(
         model=config.model,
         base_url=config.base_url,
         api_key="EMPTY",
-        temperature=0.0,
+        **sampling,
         seed=config.sampling_seed,
         max_completion_tokens=config.max_completion_tokens,
         timeout=config.request_timeout_s,
@@ -2950,9 +2963,17 @@ def _stream_diagnostic_http_clients(
 
     def trace_request(body: bytes) -> Any:
         try:
-            rid = json.loads(body).get("rid")
+            payload = json.loads(body)
+            rid = payload.get("rid")
+            generation_parameters = {
+                name: payload[name] for name in (
+                    "seed", "temperature", "top_p", "top_k", "min_p",
+                    "presence_penalty", "repetition_penalty",
+                ) if name in payload
+            }
         except (ValueError, AttributeError):
             rid = None
+            generation_parameters = {}
         started = time.monotonic()
         submitted_at_ms = time.time() * 1000
         phases: list[tuple[str, float]] = []
@@ -2960,6 +2981,7 @@ def _stream_diagnostic_http_clients(
             "event": "llm_request_http_transport",
             "request_id": rid,
             "request_bytes": len(body),
+            "generation_parameters": generation_parameters,
             "http_request_start_ts_ms": submitted_at_ms,
             "http_body_send_start_ts_ms": None,
             "http_body_sent_ts_ms": None,

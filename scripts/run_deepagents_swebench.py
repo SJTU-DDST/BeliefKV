@@ -171,6 +171,11 @@ def parse_args() -> argparse.Namespace:
             "runs to make load-invariance evidence controlled."
         ),
     )
+    parser.add_argument(
+        "--sampling-profile",
+        choices=("legacy_greedy", "qwen35_coding"),
+        default="legacy_greedy",
+    )
     parser.add_argument("--context-window-tokens", type=int, default=32_768)
     parser.add_argument(
         "--model-context-tokens",
@@ -316,6 +321,7 @@ def main() -> int:
         pool_tokens=args.pool_tokens,
         max_completion_tokens=args.max_completion_tokens,
         sampling_seed=args.sampling_seed,
+        sampling_profile=args.sampling_profile,
         stream_completion_shadow=args.stream_completion_shadow,
         child_finish_chunk_shadow=args.child_finish_chunk_shadow,
         child_report_phase_shadow=args.child_report_phase_shadow,
