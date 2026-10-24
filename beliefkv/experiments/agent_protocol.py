@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import shlex
 import time
 from dataclasses import asdict, dataclass
 from typing import Annotated, Any, Callable, Literal, Protocol, Sequence
@@ -272,6 +273,27 @@ def _tool_metadata(message: ToolMessage) -> dict[str, Any]:
     return dict(message.additional_kwargs or {})
 
 
+def _literal_shell_print(command: str) -> bool:
+    if any(char in command for char in "$`\n\r*?["):
+        return False
+    try:
+        lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
+        lexer.whitespace_split = True
+        lexer.commenters = ""
+        tokens = list(lexer)
+    except ValueError:
+        return False
+    if len(tokens) >= 4 and tokens[0] == "cd" and tokens[2] == "&&":
+        tokens = tokens[3:]
+    return bool(
+        tokens and tokens[0] in ("echo", "printf")
+        and not any(
+            token and all(char in "();<>|&" for char in token)
+            for token in tokens[1:]
+        )
+    )
+
+
 def _credible_progress_key(
     *,
     message: ToolMessage,
@@ -296,6 +318,8 @@ def _credible_progress_key(
         command = ""
         if isinstance(tool_args, dict):
             command = str(tool_args.get("command", "")).strip().lower()
+        if _literal_shell_print(command):
+            return None
         if command.startswith(_SHELL_EVIDENCE_PREFIXES):
             return f"shell-evidence:{signature}:{output_digest}"
         source_chars = metadata.get("beliefkv_source_result_chars")
@@ -896,19 +920,23 @@ class AgentLoopGuardMiddleware(AgentMiddleware[LoopGuardState, Any, Any]):
     ) -> dict[str, Any] | None:
         return self.before_model(state, runtime)
 
-    def _guard_recovery_request(self, request: ModelRequest[Any]) -> ModelRequest[Any]:
-        reason = str(request.state.get("guard_reason", "stuck"))
-        attempt = max(1, int(request.state.get("guard_recovery_attempt", 1)))
-        phase = str(request.state.get("guard_phase", "RECOVERY"))
-        if "guard_phase" not in request.state and reason in {
+    def _guard_recovery_active(self, state: LoopGuardState) -> bool:
+        if "guard_phase" not in state and state.get("guard_reason") in {
             "graph_step_budget_low",
             "graph_step_hard_limit_low",
             "activation_wall_clock_exhausted",
         }:
-            phase = "FINALIZE"
-        recovery_active = (
-            phase == "RECOVERY" and attempt <= self.policy.recovery_model_call_limit
+            return False
+        return (
+            state.get("guard_phase", "RECOVERY") == "RECOVERY"
+            and max(1, int(state.get("guard_recovery_attempt", 1)))
+            <= self.policy.recovery_model_call_limit
         )
+
+    def _guard_recovery_request(self, request: ModelRequest[Any]) -> ModelRequest[Any]:
+        reason = str(request.state.get("guard_reason", "stuck"))
+        attempt = max(1, int(request.state.get("guard_recovery_attempt", 1)))
+        recovery_active = self._guard_recovery_active(request.state)
         retained_tools = (
             list(request.tools)
             if recovery_active
@@ -943,6 +971,24 @@ class AgentLoopGuardMiddleware(AgentMiddleware[LoopGuardState, Any, Any]):
                 "different evidence-producing action, make the assigned change, hand off "
                 "when appropriate, or report the exact blocker honestly. "
                 f"{self.completion_instruction}"
+            ).strip()
+        elif self.accept_natural_completion:
+            recipient = (
+                "Return this partial or complete report to your parent. Only this "
+                "child activation is ending; the parent continues the workflow "
+                "and decides what remains to be done. "
+                if self.completion_schema is ChildCompletion else ""
+            )
+            forced_prompt = (
+                f"{base_prompt}\n\n"
+                "RUNTIME COMPLETION DIRECTIVE\n"
+                f"The bounded recovery opportunity ended because: {reason}. "
+                "Further tool use is disabled for this activation. Return one "
+                "nonempty plain-text assistant report using only existing evidence: "
+                "what was done, observed validation, unresolved work and blockers. "
+                "Do not emit JSON, tool-call markup, another completion notice, "
+                "or an unsupported success claim. "
+                + recipient
             ).strip()
         else:
             forced_prompt = (
@@ -1009,6 +1055,7 @@ class AgentLoopGuardMiddleware(AgentMiddleware[LoopGuardState, Any, Any]):
                     self.policy.enforce_semantic_guard
                     or self._is_safety_finalization(state)
                 )
+                and not self._guard_recovery_active(state)
             )
         )
         if not terminal_only or response.structured_response is not None:

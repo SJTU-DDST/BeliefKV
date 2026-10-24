@@ -2116,6 +2116,10 @@ Avoid repeated tool loops. Do not repeat the same tool call with identical argum
 when the result and workspace are unchanged. After one unproductive repeat, change
 approach, add concrete evidence, edit/test when appropriate, or report the blocker
 honestly. Do not treat equivalent probes as progress.
+Completion bookkeeping is not new evidence. Changing a completed todo's wording or
+printing a success message with echo/printf does not validate the task. Once the
+assigned deliverable is supported, give the required final report instead of another
+bookkeeping tool call. If work remains, take a concrete action that advances it.
 For shell wrappers, report the subprocess's stdout, stderr, and return status
 separately; a printed number or the wrapper's successful exit is not proof that
 the diagnostic or the assigned task succeeded. For recursive linters or walkers,
@@ -2134,6 +2138,10 @@ only after the tool work you need is done; then give the report normally.
 Do not call it merely because you are stopping to use another tool. If new work
 becomes necessary after the notice, continue working and announce again before
 the eventual final report.
+After a successful completion notice, give your final assistant report directly.
+Do not alternate that notice with write_todos or completion echo commands. Updating
+completion bookkeeping alone is not new work requiring another notice. A partial
+or blocked report returns control to the parent; it does not end the workflow.
 """
 
 DELEGATED_TASK_FOCUS_INSTRUCTION = """

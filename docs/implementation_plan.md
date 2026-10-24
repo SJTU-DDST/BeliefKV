@@ -135,6 +135,25 @@ Full constructor preflight keeps continuity enabled. V3539's24-candidate warm
 CPU fixture measures about22.5microseconds added P50 with a ready successor,
 with identical residency-reader call counts. No GPU performance is accepted.
 
+The next user instruction requires avoiding completion loops without directly
+ending the workflow. Common prompts now distinguish final reports from
+todo/echo bookkeeping. Literal shell prints no longer create progress evidence;
+the same CMS history's final no-progress count changes from9 to119.
+Bounded recovery's legitimate tool responses are no longer stripped by the
+terminal sanitizer,and natural-mode child finalization requests a plain report
+to the parent rather than an unavailable structured completion. CPU agent
+graphs verify that a parent continues after both recovered and exhausted child
+activations. Intervention labels and natural-source eligibility stay explicit.
+
+V3545 passes5810 cases,retaining all5790 previous identities and adding20;
+V3546 seals the sources. Keep global semantic finalization observe-only for
+the natural capture. Three V168b loops are roots,so child-local recovery cannot
+repair that old source. Restart one24-project native capture as V171 with
+running/decode24 and seed21;freeze the latest main and unchanged qualified
+engine,then wait for source/token/dependency/stopping qualification before
+Full replay. Do not select away guarded workflows or rerun a full native replay.
+See `docs/experiments/v171_native_recapture_loop_prevention_20261024.md`.
+
 V3523/V3524 explain why short-tool continuation matters. Of3643 served tool
 successors,2606 have logical Host hits;2734 follow tool rounds shorter than50ms.
 At least1208 short-tool successors have matching large-prefix D2H evidence
