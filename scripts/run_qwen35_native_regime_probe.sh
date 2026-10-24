@@ -424,6 +424,10 @@ wait "$client_pid"
 client_status="$?"
 client_pid=""
 set -e
+if [[ "$client_status" == "0" ]]; then
+  "$PYTHON" "$ROOT/scripts/drain_native_telemetry.py" \
+    --arm "$RUN_ROOT" --server-pid "$server_pid"
+fi
 stop_server
 printf 'Native regime probe: client exit=%s, artifacts=%s\n' \
   "$client_status" "$RUN_ROOT"

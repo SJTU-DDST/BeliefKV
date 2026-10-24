@@ -23,6 +23,12 @@
   root calls and use 24 as a soft phase target, resetting only after a real
   completed delegated JOIN. Do not cap total workflow turns or truncate work.
   A changed prompt/budget requires its matching natural native capture.
+- The next separately declared root-phase calibration warns at 8 calls and
+  targets 16 root calls per phase, with child budgets unchanged at 24/32.
+  Preserve the v187 16/24 source. Require a new matching natural native capture
+  and inspect delegation/JOIN density and completion evidence before Full replay.
+  Use the historical `waiting` cold-reclaim policy for this calibration; v194
+  did not establish a performance improvement for `selected_queue`.
 - V181 completed all 18 workflows with 36 JOINs and one nested JOIN, without
   root phase budgets. Keep it frozen. Its old
   waiting V182 qualification was stopped for replacement; the planned V183 must
@@ -60,8 +66,8 @@
   by the user. Do not require chat-ingress alignment or raw chat-body capture.
 - Preserve the frozen source trees of running experiments. Qualify and replace
   pending registrations explicitly when launcher code changes.
-- Successful causal comparisons must observe two freshly published idle native
-  telemetry snapshots before server cleanup. Keep this bounded collection drain
+- Successful native captures and causal comparisons must observe two freshly
+  published idle native telemetry snapshots before server cleanup. Keep this bounded collection drain
   outside measured workflow JCT. A stale queue-depth snapshot is not proof of a
   complete shutdown trace; retain the original status and failed audit.
 - Do not run ablations until predictive establishes clear gains over native.
