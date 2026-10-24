@@ -2,6 +2,19 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+The next conditional direction is a real Full-only adaptation for the locally
+available `Qwen/Qwen3-Coder-30B-A3B-Instruct`,if the current project-disjoint
+comparison still lacks useful native/independent-KV gains. V3420/V3421 size
+its48 Full layers at98304 BF16 bytes/token,4.8 times the current Full-only
+component. The current Mamba allocation would be released,so this is not a
+4.8-times physical-pressure or speedup claim. Retokenized source-only size is
+about295.640GB for36 projects and92.656GB for the first12 seeded projects.
+Start the new model's capacity validation with12 distinct projects,subject to
+real pool sizing and complete-input checks. No serving code or GPU model has
+changed; V152 and the V153b/V154 queue continue. The specific blockers and
+qualification order are recorded in
+`docs/research/full_attention_model_fallback_20261024.md`.
+
 All future workflow populations must use different original projects:
 one workflow per project,including subsets selected after a concurrency
 reduction. Source capture,position calibration and comparison registration
