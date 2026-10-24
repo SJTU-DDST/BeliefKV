@@ -49,6 +49,9 @@ class ChildWorkBudgetMiddleware(AgentMiddleware[ChildWorkBudgetState, Any, Any])
     """Count completed model turns in existing nodes; append at most two notices."""
 
     state_schema = ChildWorkBudgetState
+    model_calls_key = "child_work_model_calls"
+    notice_key = "child_work_notice"
+    audit_prefix = "child_work_budget"
 
     def __init__(self, *, warning_calls: int, target_calls: int, audit: Any, scope: str):
         if (
@@ -61,30 +64,37 @@ class ChildWorkBudgetMiddleware(AgentMiddleware[ChildWorkBudgetState, Any, Any])
         self.audit = audit
         self.scope = scope
 
+    def _model_call_progress(self, request):
+        return int(request.state.get(self.model_calls_key, 0)) + 1, {}
+
+    def _record_return(self, count, message, request):
+        text = message.text.lstrip().casefold()
+        self.audit.emit(
+            self.audit_prefix + "_return", scope=self.scope, model_calls=count,
+            declared_status=(
+                "partial" if text.startswith("partial:") else
+                "blocked" if text.startswith("blocked:") else "unspecified"
+            ),
+            forced=False,
+        )
+
     def _record_response(self, request, response):
         extended = isinstance(response, ExtendedModelResponse)
         model_response = response.model_response if extended else response
         if isinstance(model_response, AIMessage):
             model_response = ModelResponse(result=[model_response])
-        count = int(request.state.get("child_work_model_calls", 0)) + 1
+        count, extra_update = self._model_call_progress(request)
         last = model_response.result[-1]
         calls = last.tool_calls if isinstance(last, AIMessage) else []
         notice = None
         if calls and count in (self.warning_calls, self.target_calls):
             notice = count, calls[-1]["id"]
         if not calls and count >= self.warning_calls and isinstance(last, AIMessage):
-            text = last.text.lstrip().casefold()
-            self.audit.emit(
-                "child_work_budget_return", scope=self.scope, model_calls=count,
-                declared_status=(
-                    "partial" if text.startswith("partial:") else
-                    "blocked" if text.startswith("blocked:") else "unspecified"
-                ),
-                forced=False,
-            )
+            self._record_return(count, last, request)
         update = {
-            "child_work_model_calls": count,
-            "child_work_notice": notice,
+            **extra_update,
+            self.model_calls_key: count,
+            self.notice_key: notice,
         }
         command = response.command if extended else None
         if command is not None:
@@ -101,12 +111,8 @@ class ChildWorkBudgetMiddleware(AgentMiddleware[ChildWorkBudgetState, Any, Any])
     async def awrap_model_call(self, request, handler):
         return self._record_response(request, await handler(request))
 
-    def _append_notice(self, request, result):
-        notice = request.state.get("child_work_notice")
-        if notice is None or request.tool_call.get("id") != notice[1]:
-            return result
-        count = notice[0]
-        instruction = (
+    def _notice_instruction(self, count):
+        return (
             f"\n\nDELEGATED WORK BUDGET: {count} model turns have completed. "
             + (
                 f"Aim to return the assigned evidence by about turn {self.target_calls}. "
@@ -122,6 +128,13 @@ class ChildWorkBudgetMiddleware(AgentMiddleware[ChildWorkBudgetState, Any, Any])
             "action, and let the parent decide the follow-up. Available tools "
             "remain usable for genuine completion needs."
         )
+
+    def _append_notice(self, request, result):
+        notice = request.state.get(self.notice_key)
+        if notice is None or request.tool_call.get("id") != notice[1]:
+            return result
+        count = notice[0]
+        instruction = self._notice_instruction(count)
         if isinstance(result, ToolMessage):
             messages = [result]
         elif isinstance(result, Command) and isinstance(result.update, Mapping):
@@ -143,7 +156,7 @@ class ChildWorkBudgetMiddleware(AgentMiddleware[ChildWorkBudgetState, Any, Any])
         if not changed:
             return result
         self.audit.emit(
-            "child_work_budget_notice", scope=self.scope, model_calls=count,
+            self.audit_prefix + "_notice", scope=self.scope, model_calls=count,
             tool_call_id=notice[1], target_calls=self.target_calls, forced=False,
         )
         return updated[0] if isinstance(result, ToolMessage) else replace(

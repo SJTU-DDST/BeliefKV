@@ -77,6 +77,7 @@ class NestedFixtureModel(BaseChatModel):
                 "tool_choice": kwargs.get("fixture_tool_choice"),
                 "bounds": (kwargs.get("extra_body") or {}).get("beliefkv_task_fanout"),
                 "root_source_present": "ROOT_SOURCE_ONLY_SENTINEL" in system,
+                "root_phase_budget_present": "BOUNDED ROOT WORK PHASES" in system,
             })
 
         def call(name, args):

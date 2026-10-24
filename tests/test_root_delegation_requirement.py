@@ -108,6 +108,7 @@ def test_completed_join_uses_actual_callback_lifecycle_not_declared_task_calls()
     )
     adapter.start()
     assert not adapter.has_completed_join()
+    assert adapter.completed_join_count() == 0
     pending = adapter._declare_task_group("root", "model", [{
         "id": "child", "args": {
             "subagent_type": "repository-explorer", "description": "Review an invariant.",
@@ -139,6 +140,9 @@ def test_completed_join_uses_actual_callback_lifecycle_not_declared_task_calls()
     )
     adapter._complete_task(pending.tool_call_id, cancelled=False, error=None)
     assert adapter.has_completed_join()
+    assert adapter.completed_join_count() == 1
+    adapter._complete_task(pending.tool_call_id, cancelled=False, error=None)
+    assert adapter.completed_join_count() == 1
     assert not adapter.has_completed_join(pending.child_invocation_id)
     adapter.finish(outcome="completed")
 

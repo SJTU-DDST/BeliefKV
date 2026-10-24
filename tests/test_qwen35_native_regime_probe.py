@@ -286,10 +286,7 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
     )
     assert actual["BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY"] == str(int(expected_child))
     assert launch["join_last_child_priority_requested"] is expected_child
-    expected_frontier = (
-        custom_kv and tool_prefetch is not False
-        and tool_restore == "execution" and frontier == "1"
-    )
+    expected_frontier = custom_kv and frontier == "1"
     assert actual["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == str(int(expected_frontier))
     assert launch["execution_frontier_restore_requested"] is expected_frontier
     assert actual["BELIEFKV_TOOL_RESTORE_MODE"] == (
@@ -351,6 +348,7 @@ def test_invalid_tool_prefetch_priority_fails_before_any_launch(tmp_path, value)
 
 
 def test_no_tool_prefetch_disables_the_dependent_frontier_restore_without_gpu(tmp_path):
+    """Retain this regression identity while verifying the now-independent frontier."""
     test_internal_comparison_effective_environment_before_gpu_launch(
         tmp_path, "full", tool_restore="execution", frontier="1", tool_prefetch=False,
     )

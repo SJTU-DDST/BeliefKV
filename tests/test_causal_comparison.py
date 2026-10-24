@@ -177,6 +177,21 @@ def test_comparison_does_not_silently_change_the_requested_profile(reference, tm
         comparison.environment(reference, "full", tmp_path, tmp_path, tmp_path, 18554, tmp_path)
 
 
+def test_explicit_frontier_candidate_preserves_tool_prefetch_and_native_disables_both(
+    reference, tmp_path,
+):
+    reference["arms"]["full"]["EXECUTION_FRONTIER_RESTORE"] = "1"
+    for mode in ("full", "native_matched"):
+        environment, _, _ = comparison.environment(
+            reference, mode, tmp_path, tmp_path, tmp_path, 18554, tmp_path,
+            execution_frontier_restore=True,
+        )
+        expected = str(int(mode == "full"))
+        assert environment["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == expected
+        assert environment["BELIEFKV_ENABLE_TOOL_PREFETCH"] == expected
+        assert environment["TOOL_RESTORE_MODE"] == "speculative"
+
+
 @pytest.mark.parametrize("label", comparison.ORDER)
 def test_explicit_24_running_limit_is_the_same_in_every_control(reference, tmp_path, label):
     reference["arms"]["full"]["ROOT_COUNT"] = "24"

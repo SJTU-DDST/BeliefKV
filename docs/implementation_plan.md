@@ -2,6 +2,48 @@
 
 Status date: 2026-10-25 (Asia/Shanghai).
 
+V181 completed all18 workflows and2071 requests,with36 JOINs and one nested JOIN;
+all18 satisfy the declared native source qualification. It is the frozen native
+reference without root phase budgets. Its stopped-prefix predecessor remains
+historical. V182 was waiting,
+and was explicitly stopped before new mainline edits;its planned V183 Full must
+not launch. Register the replacement qualification and repaired Full only after
+the updated application passes the retained CPU scope. Do not alter V181's source
+tree,existing workload/config files or captured tokens.
+
+A confirmed FULL-only adaptation bug explains a missing EOS path: `_roll_final_stage`
+looked up the Mamba pool even when its required count was zero. Qwen3-Coder has no
+such pool;the caught KeyError skipped the candidate before start-window/ticket
+creation. V177 has105 EOS candidate inspections,88 capacity preparations and17
+no-Host-target observations,but zero latest-start events. A focused CPU reproduction
+fails only the FULL-only case before the fix. Skipping zero-demand pools preserves
+the absent-required-state rejection and permits four actual native H2D commands
+before JOIN completion in the FULL-only fixture. This is a correctness-of-policy
+repair,not a measured GPU JCT gain.
+
+The ordinary-frontier candidate now coexists with speculative tool prefetch.
+Keep one actually selected queued consumer for1.5s instead of speculating on
+additional consumers before it reaches a native batch. Preserve causal classes,
+JOIN/EOS priority,aging and identity validation;do not reclaim cold pages for
+ordinary restoration. Its actual native batch selection consumes the turn and
+resets the existing four-ordinary-admission quota. The disabled profile remains
+the first repaired Full;the enabled profile is a later exact-source candidate.
+
+An optional root workload policy reminds at16 direct root calls and targets24
+per phase,resetting only after a real model-served JOIN. It does not cap total
+workflow turns or discard requirements. The current V181 trajectory remains
+unchanged;using this policy later requires a fresh matching native source.
+Its purpose is bounded useful root phases and further model-selected delegation,
+not claiming a system gain by reducing measured work.
+
+Target at least10% lower all-workflow mean JCT and10% higher whole-run output-token
+throughput on exact matched work,then repeat and compare the strongest simple
+scheduling baseline. Retain all normal tails and negative candidates. Audit JOIN,
+tool and selected-request H2D separately by boundary timing and verified physical
+first use. Do not substitute transfer byte counts or sampled waits for end-to-end
+gains;do not start a broad ablation campaign before clear Full/native gains.
+See `docs/experiments/prefetch_effectiveness_plan_20261024.md`.
+
 V178's18-project source was administratively interrupted because four completed
 roots returned without any actual SPAWN;V179's waiting qualification queue also
 stopped and the planned V180 Full must not start. Shutdown is verified by terminal

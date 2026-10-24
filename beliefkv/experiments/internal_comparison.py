@@ -42,7 +42,7 @@ def arm_environment(
     if frontier not in ("0", "1"):
         raise ValueError("execution frontier restore must be 0 or 1")
     frontier = str(int(
-        frontier == "1" and tool_prefetch_enabled and tool_restore == "execution"
+        frontier == "1" and custom_kv
     ))
     workflow_ordering = scheduling == "workflow" and mode in ("full", "scheduler_only")
     if mode == "join_priority_only":
@@ -179,7 +179,7 @@ def validate_runtime(
         )
     if tool_restore_mode == "execution" or execution_frontier_restore is not None:
         expected["execution_frontier_restore"] = (
-            tool_restore_mode == "execution" and mode in ("full", "kv_only")
+            mode in ("full", "kv_only")
             and execution_frontier_restore is True
         )
     if idle_prepare_policy is not None:

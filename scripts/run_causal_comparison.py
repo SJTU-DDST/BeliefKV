@@ -56,7 +56,7 @@ SERVER_FIELDS = (
 
 def environment(
     reference, mode, checkout, engine, arm, port, plugin, *, sampling_mode="legacy",
-    max_running_requests=8,
+    max_running_requests=8, execution_frontier_restore=False,
 ):
     if mode not in ALL_CONTROLS:
         raise ValueError("unknown causal comparison control: " + mode)
@@ -64,6 +64,8 @@ def environment(
         raise ValueError("unknown causal replay sampling mode")
     if type(max_running_requests) is not int or not 1 <= max_running_requests <= 9999:
         raise ValueError("max running requests must be a positive integer")
+    if type(execution_frontier_restore) is not bool:
+        raise ValueError("execution frontier restore must be explicitly boolean")
     retention = RETENTION_CONTROLS.get(mode)
     policy = "full" if retention or mode in ("no_background_prepare", "no_tool_prefetch") else mode
     required = {
@@ -72,7 +74,7 @@ def environment(
         "HOST_SPLIT": "80:20", "MODEL_CONTEXT_TOKENS": "262144",
         "JOIN_PREFETCH_TRIGGER": "observed_eos", "PREFILL_SCHEDULING_POLICY": "workflow",
         "TOOL_RESTORE_MODE": "speculative", "RESTORE_TIERS": "complete",
-        "EXECUTION_FRONTIER_RESTORE": "0",
+        "EXECUTION_FRONTIER_RESTORE": str(int(execution_frontier_restore)),
     }
     full_only = reference["arms"]["full"].get("MODEL_CACHE_LAYOUT") == "full_only"
     if full_only:
@@ -277,6 +279,7 @@ def preflight_runtime(settings, model_path):
         "tool_restore_mode": settings["TOOL_RESTORE_MODE"],
         "restore_tiers": settings.get("RESTORE_TIERS", settings["BELIEFKV_RESTORE_TIERS"]),
         "enable_tool_prefetch": settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "1",
+        "enable_frontier_restore": settings["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == "1",
         "tool_continuity": settings["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == "1",
         "tool_prefetch_priority_ms": float(settings["BELIEFKV_TOOL_PREFETCH_PRIORITY_MS"]),
         "join_prefetch_trigger": settings["JOIN_PREFETCH_TRIGGER"],
@@ -911,6 +914,9 @@ def register(args):
             str(args.after_registration.resolve()) if args.after_registration is not None else None
         ),
         "reference_environment": reference["arms"]["full"],
+        "execution_frontier_restore": (
+            reference["arms"]["full"].get("EXECUTION_FRONTIER_RESTORE") == "1"
+        ),
         "retention_configuration": str(args.retention_config.resolve()) if args.retention_config else None,
         "experiment_configuration": str(args.experiment_config.resolve()) if args.experiment_config else None,
         "experiment_source_evidence": experiment_evidence,
@@ -939,6 +945,7 @@ def register(args):
             frozen_engine, args.run_root / label, args.port, args.run_root / "plugin",
             sampling_mode=plan["sampling_mode"],
             max_running_requests=plan["max_running_requests"],
+            execution_frontier_restore=plan["execution_frontier_restore"],
         )
         plan["runtime_cpu_preflight"][label] = preflight_runtime(
             settings, plan["source_server_parameters"]["model_path"],
@@ -1034,6 +1041,7 @@ def watch(registration):
                     Path(plan["engine_checkout"]), arm, plan["port"], run / "plugin",
                     sampling_mode=plan.get("sampling_mode", "legacy"),
                     max_running_requests=plan.get("max_running_requests", 8),
+                    execution_frontier_restore=plan.get("execution_frontier_restore", False),
                 )
                 if event_socket is not None and event_socket.exists():
                     raise ValueError("preserve the existing runtime event socket")
@@ -1048,7 +1056,7 @@ def watch(registration):
                     "idle_prepare_policy_requested": env["IDLE_PREPARE_POLICY"],
                     "restore_tiers_requested": env["RESTORE_TIERS"],
                     "join_last_child_priority_requested": False,
-                    "execution_frontier_restore_requested": False,
+                    "execution_frontier_restore_requested": env["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == "1",
                     "tool_continuity_requested": env["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == "1",
                     "auxiliary_causal_replay": True,
                     "replay_sampling_mode": plan.get("sampling_mode", "legacy"),

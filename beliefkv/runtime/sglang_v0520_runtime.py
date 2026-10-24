@@ -758,8 +758,7 @@ class NativeAdmissionRuntime:
         if frontier_setting not in ("0", "1"):
             raise ValueError("execution frontier restore setting must be 0 or 1")
         self.enable_frontier_restore = (
-            self._custom_kv_management and tool_prefetch_requested
-            and self.tool_restore_mode == "execution" and frontier_setting == "1"
+            self._custom_kv_management and frontier_setting == "1"
         )
         self.enable_tool_prefetch = (
             tool_prefetch_requested and self.tool_restore_mode == "speculative"
@@ -768,6 +767,7 @@ class NativeAdmissionRuntime:
         if self.restore_tiers not in ("complete", "dependency"):
             raise ValueError("restore tiers must be complete or dependency")
         self._frontier_probe_after_ms: dict[PrefillCandidateKey, float] = {}
+        self._frontier_restore_consumer: _ExecutionHandoffTicket | None = None
         self.enable_execution_handoff = os.environ.get(
             "BELIEFKV_ENABLE_EXECUTION_HANDOFF",
             "1" if (
@@ -931,6 +931,7 @@ class NativeAdmissionRuntime:
             self.join_wait_hints[hint.join_id] = hint
 
     def close(self) -> None:
+        self._frontier_restore_consumer = None
         for command in tuple(self._prefetch_service_leases):
             self._release_prefetch_service_lease(command, "shutdown")
         self._prefetch_admission_hints.clear()
@@ -3407,6 +3408,7 @@ class NativeAdmissionRuntime:
                         ("kv", observation.required_full_tokens),
                         ("mamba", observation.required_mamba_slots),
                     )
+                    if tokens > 0
                 )
             except (AttributeError, KeyError, TypeError):
                 continue
@@ -9970,6 +9972,14 @@ class NativeAdmissionRuntime:
             else {}
         )
 
+    def _live_frontier_restore_consumer(self) -> _ExecutionHandoffTicket | None:
+        ticket = self._frontier_restore_consumer
+        if ticket is not None and not self._live_execution_handoff(ticket):
+            self._frontier_restore_consumer = None
+            self.counts["frontier_restore_selection_released"] += 1
+            return None
+        return ticket
+
     def _frontier_probes_backed_off(
         self, waiting_queue: Sequence[object], *, now_ms: float,
     ) -> bool:
@@ -10001,6 +10011,11 @@ class NativeAdmissionRuntime:
             or self._critical_parent_demand is not None
             or self.physical_ledger.pending_action_count("PREFETCH_GPU")
         ):
+            return
+        if self._live_frontier_restore_consumer() is not None:
+            self.counts["frontier_restore_selection_pending"] += 1
+            return
+        if self._prefetch_priority_normal_admissions < 4:
             return
         now_ms = time.monotonic() * 1000.
         if now_ms < self._execution_handoff_next_ms:
@@ -10099,6 +10114,9 @@ class NativeAdmissionRuntime:
             finally:
                 self._execution_handoff = None
             if commands:
+                ticket.expires_at = time.monotonic() + 1.5
+                ticket.command_ids = commands
+                self._frontier_restore_consumer = ticket
                 self._frontier_probe_after_ms[key] = float("inf")
                 self.counts["frontier_restore_issued"] += len(commands)
                 self.counts["frontier_restore_beneficiaries"] += 1
@@ -11579,6 +11597,19 @@ class NativeAdmissionRuntime:
             ranks[ordered[0][0]][:2]
             if ordered and waiting_ranks[ordered[0][0]][0] != -1 else None
         )
+        selected_frontier = self._live_frontier_restore_consumer()
+        if selected_frontier is not None and same_class is not None and not any(
+            self._ready_join_parent(request, keys[index]) for index, request in ordered
+        ):
+            candidate = next((
+                pair for pair in ordered
+                if keys[pair[0]] == selected_frontier.key
+                and ranks[pair[0]][:2] == same_class
+            ), None)
+            if candidate is not None:
+                priority_candidates.append((
+                    time.monotonic(), 0, candidate, "frontier",
+                ))
         if (
             self._prefetch_service_leases and same_class is not None
             and self._prefetch_priority_normal_admissions >= 4
@@ -12153,7 +12184,16 @@ class NativeAdmissionRuntime:
         return False
 
     def on_batch_selected(self, batch: object) -> None:
-        pass
+        ticket = self._frontier_restore_consumer
+        if ticket is None or batch is None:
+            return
+        if any(
+            request is ticket.request and self.visible.get(request.rid) == ticket.key
+            for request in getattr(batch, "reqs", ())
+        ):
+            self._frontier_restore_consumer = None
+            self._prefetch_priority_normal_admissions = 0
+            self.counts["frontier_restore_batch_selected"] += 1
 
     @timed_runtime("batch_completed")
     def on_batch_completed(self, batch: object) -> tuple[str, ...]:

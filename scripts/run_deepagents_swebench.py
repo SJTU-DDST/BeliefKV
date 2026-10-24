@@ -97,6 +97,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--child-work-budget-warning-calls", type=int, default=24)
     parser.add_argument("--child-work-budget-target-calls", type=int, default=32)
+    parser.add_argument("--root-work-budget-warning-calls", type=int, default=0)
+    parser.add_argument("--root-work-budget-target-calls", type=int, default=0)
     parser.add_argument("--gpu", type=int, default=0)
     parser.add_argument("--pool-tokens", type=int, default=163_840)
     parser.add_argument("--max-completion-tokens", type=int, default=2048)
@@ -341,6 +343,8 @@ def main() -> int:
         subagent_fanout_profile=args.subagent_fanout_profile,
         child_work_budget_warning_calls=args.child_work_budget_warning_calls,
         child_work_budget_target_calls=args.child_work_budget_target_calls,
+        root_work_budget_warning_calls=args.root_work_budget_warning_calls,
+        root_work_budget_target_calls=args.root_work_budget_target_calls,
         stop_after_first_native_join=args.stop_after_first_native_join,
         recursion_limit=args.recursion_limit,
         request_timeout_s=args.request_timeout,

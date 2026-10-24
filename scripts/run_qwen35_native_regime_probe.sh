@@ -384,6 +384,8 @@ setsid "$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
   --concurrency "$ROOT_COUNT" --subagent-fanout-profile "$FANOUT_PROFILE" \
   --child-work-budget-warning-calls "${CHILD_WORK_BUDGET_WARNING_CALLS:-24}" \
   --child-work-budget-target-calls "${CHILD_WORK_BUDGET_TARGET_CALLS:-32}" \
+  --root-work-budget-warning-calls "${ROOT_WORK_BUDGET_WARNING_CALLS:-0}" \
+  --root-work-budget-target-calls "${ROOT_WORK_BUDGET_TARGET_CALLS:-0}" \
   --workflow-arrival-batch-size "$ARRIVAL_BATCH_SIZE" \
   --workflow-arrival-batch-interval-ms "$ARRIVAL_BATCH_INTERVAL_MS" \
   --native-radix-sessions "${control_flags[@]}" \

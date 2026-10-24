@@ -19,6 +19,19 @@
   model chooses assignments, fanout, timing, later rounds and nesting. Failed
   attempts and safety-finalized violations do not qualify a source. Children
   retain their independent soft budgets and may naturally return without nesting.
+- Root direct-work phase budgets are optional workload controls: remind at 16
+  root calls and use 24 as a soft phase target, resetting only after a real
+  completed delegated JOIN. Do not cap total workflow turns or truncate work.
+  A changed prompt/budget requires its matching natural native capture.
+- V181 completed all 18 workflows with 36 JOINs and one nested JOIN, without
+  root phase budgets. Keep it frozen. Its old
+  waiting V182 qualification was stopped for replacement; the planned V183 must
+  not launch. Qualify updated main before registering the repaired Full.
+- FULL-only EOS planning must not require an absent Mamba pool when state demand
+  is zero. Credit only actual pre-boundary H2D and verified first-use evidence.
+- Ordinary selected-request prefetch is an explicit follow-up candidate. Allow
+  it alongside tool prefetch; keep one selected consumer for at most 1500 ms,
+  retain JOIN precedence and native admission, and require existing free capacity.
 - Count initial cold prefill separately from missing previously served
   same-session prefixes. Cache occupancy and prefix-loss proxies alone do not
   prove expensive recomputation.

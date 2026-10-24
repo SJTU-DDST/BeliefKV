@@ -59,6 +59,9 @@ from beliefkv.experiments.child_work_budget import (
 from beliefkv.experiments.root_delegation_requirement import (
     ROOT_DELEGATION_PRIVATE_KEYS, RootDelegationRequirementMiddleware,
 )
+from beliefkv.experiments.root_work_budget import (
+    ROOT_WORK_BUDGET_PRIVATE_KEYS, RootWorkBudgetMiddleware, root_budget_instruction,
+)
 from beliefkv.runtime.reusable_subagents import ReusableSubagentRegistry
 from beliefkv.runtime.reusable_subagent_middleware import (
     REUSABLE_DELEGATION_PROMPT, ReusableSubAgentMiddleware,
@@ -1741,6 +1744,8 @@ class DeepAgentsExperimentConfig:
     subagent_fanout_profile: str = "natural"
     child_work_budget_warning_calls: int = 24
     child_work_budget_target_calls: int = 32
+    root_work_budget_warning_calls: int = 0
+    root_work_budget_target_calls: int = 0
     stop_after_first_native_join: bool = False
     recursion_limit: int = 2048
     request_timeout_s: float = 600.0
@@ -1815,6 +1820,20 @@ class DeepAgentsExperimentConfig:
             self.mode != "autonomous" or not self.native_radix_sessions
         ):
             raise ValueError("reusable subagents require autonomous native radix sessions")
+        if (
+            type(self.root_work_budget_warning_calls) is not int
+            or type(self.root_work_budget_target_calls) is not int
+            or not (
+                self.root_work_budget_warning_calls == self.root_work_budget_target_calls == 0
+                or 0 < self.root_work_budget_warning_calls < self.root_work_budget_target_calls
+            )
+        ):
+            raise ValueError("root work budget requires both zero or 0 < warning < target")
+        if self.root_work_budget_warning_calls and (
+            self.mode != "autonomous"
+            or self.subagent_fanout_profile not in DYNAMIC_NESTED_IN_GRAPH_PROFILES
+        ):
+            raise ValueError("root work budget requires model-directed autonomous delegation")
         if (
             self.stop_after_first_native_join
             and self.subagent_fanout_profile != "native_subagent_2to3"
@@ -3556,6 +3575,7 @@ def _task_middleware(config, adapter, **kwargs):
     kwargs["private_state_keys"] = (
         kwargs.get("private_state_keys", frozenset())
         | CHILD_WORK_BUDGET_PRIVATE_KEYS | ROOT_DELEGATION_PRIVATE_KEYS
+        | ROOT_WORK_BUDGET_PRIVATE_KEYS
     )
     if config.subagent_fanout_profile == REUSABLE_NESTED_IN_GRAPH_PROFILE:
         kwargs.pop("system_prompt", None)
@@ -3582,6 +3602,13 @@ def _build_autonomous_agent(
         _filesystem_middleware(backend, allow_direct_edits=True),
     ]
     dynamic = config.subagent_fanout_profile in DYNAMIC_NESTED_IN_GRAPH_PROFILES
+    root_budget_enabled = delegation_enabled and config.root_work_budget_warning_calls > 0
+    if root_budget_enabled:
+        middleware.insert(0, RootWorkBudgetMiddleware(
+            adapter=adapter, warning_calls=config.root_work_budget_warning_calls,
+            target_calls=config.root_work_budget_target_calls,
+            audit=backend.audit, scope="autonomous:supervisor",
+        ))
     if delegation_enabled and dynamic:
         middleware.insert(0, DynamicDelegationPromptMiddleware())
     elif delegation_enabled and config.subagent_fanout_profile in IN_GRAPH_SUBAGENT_PROFILES:
@@ -3695,6 +3722,12 @@ def _build_autonomous_agent(
             + _autonomous_fanout_prompt(
                 config,
                 delegation_enabled=delegation_enabled,
+            )
+            + (
+                root_budget_instruction(
+                    config.root_work_budget_warning_calls,
+                    config.root_work_budget_target_calls,
+                ) if root_budget_enabled else ""
             )
             + ("" if dynamic else _repository_context_prompt(workload))
         ),
