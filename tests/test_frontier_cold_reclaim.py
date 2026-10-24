@@ -12,9 +12,11 @@ from scripts.benchmark_wait_prefetch_dispatch_cpu import dispatch_fixture
 from tests.test_execution_frontier_restore import fixture
 
 
-def cold_frontier_fixture(*, free_tokens=1, reclaimed_tokens=128):
+def cold_frontier_fixture(
+    *, free_tokens=1, reclaimed_tokens=128, runtime_class=NativeAdmissionRuntime,
+):
     runtime, key, cache, reads, actions, records, reset, _dispatch, _now = dispatch_fixture(
-        NativeAdmissionRuntime, source="join_ticket", depth=4, native_budget=True, running=0,
+        runtime_class, source="join_ticket", depth=4, native_budget=True, running=0,
     )
     request = NS(
         rid=key.request_id, session_id=key.session_id, session_generation=key.session_generation,
@@ -127,6 +129,82 @@ def test_fitting_partial_prefix_is_used_without_any_cold_reclaim():
         assert cache.split_beliefkv_prefetch_full_prefix.call_args.kwargs["prefix_tokens"] == 64
         assert runtime.physical_ledger.pending_count == len(actions) == 1
         assert free[0] - 64 == runtime._current_residency_budget().reserve_full_tokens
+    finally:
+        runtime.close()
+
+
+def test_free_partial_reuses_the_same_call_plan_and_recaptures_only_after_native_split():
+    runtime, _key, request, cache, _reads, actions, _records, _reset, _free = (
+        cold_frontier_fixture(free_tokens=65)
+    )
+    original_split = cache.split_beliefkv_prefetch_full_prefix.side_effect
+    order = []
+
+    def split(**kwargs):
+        order.append("native_split")
+        return original_split(**kwargs)
+
+    original_refresh = runtime._wait_prefetch_opportunity
+
+    def refresh(*args, **kwargs):
+        order.append("refresh")
+        return original_refresh(*args, **kwargs)
+
+    cache.split_beliefkv_prefetch_full_prefix.side_effect = split
+    try:
+        with patch.object(runtime, "_wait_prefetch_opportunity", side_effect=refresh):
+            runtime.dispatch_frontier_restore([request], running_batch=NS(reqs=[]))
+        assert order == ["native_split", "refresh"]
+        cache.reclaim_beliefkv_handoff_capacity.assert_not_called()
+        assert runtime.physical_ledger.pending_count == len(actions) == 1
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("change", ("eos", "epoch", "session", "split_declined"))
+def test_reusing_the_free_plan_still_rechecks_native_split_and_enqueue_authority(change):
+    runtime, key, request, cache, _reads, actions, _records, _reset, _free = (
+        cold_frontier_fixture(free_tokens=65)
+    )
+    original_split = cache.split_beliefkv_prefetch_full_prefix.side_effect
+
+    def split(**kwargs):
+        if change == "split_declined":
+            return None
+        fragment = original_split(**kwargs)
+        if change == "eos":
+            runtime._eos_prefetch_keys["new-eos"] = key
+        elif change == "epoch":
+            runtime.graph.contexts[key.context_id].epoch += 1
+        else:
+            request.session_generation += 1
+        return fragment
+
+    cache.split_beliefkv_prefetch_full_prefix.side_effect = split
+    try:
+        runtime.dispatch_frontier_restore([request], running_batch=NS(reqs=[]))
+        assert not actions and not runtime.physical_ledger.pending_count
+        assert runtime._execution_handoff is runtime._frontier_restore_consumer is None
+        assert not runtime.physical_disabled
+        cache.reclaim_beliefkv_handoff_capacity.assert_not_called()
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("sampling", (False, True))
+def test_ordinary_reclaim_builds_native_diagnostics_only_when_explicitly_requested(sampling):
+    runtime, _key, request, cache, _reads, _actions, _records, _reset, _free = (
+        cold_frontier_fixture(reclaimed_tokens=0)
+    )
+    runtime.enable_h2d_opportunity_sampling = sampling
+    runtime._borrowable_parent_headroom = True
+    runtime._opportunity_writer = NS(record=lambda _record: None, close=lambda: None)
+    try:
+        runtime.dispatch_frontier_restore([request], running_batch=NS(reqs=[]))
+        cache.reclaim_beliefkv_handoff_capacity.assert_called_once()
+        assert cache.reclaim_beliefkv_handoff_capacity.call_args.kwargs.get(
+            "collect_diagnostics", False,
+        ) is sampling
     finally:
         runtime.close()
 

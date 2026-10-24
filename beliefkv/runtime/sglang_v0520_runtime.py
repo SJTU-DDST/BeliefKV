@@ -6032,12 +6032,15 @@ class NativeAdmissionRuntime:
                         )
                     return free_prefix
         excluded = tuple(node.node_id for node in candidate.nodes)
-        if budget is None:
+        if budget is None and allow_reclaim:
             budget = self._current_residency_budget(include_evictable=True)
         freed, diagnosis = {}, None
         collect_diagnostics = (
             self._opportunity_writer is not None
-            and (self.enable_h2d_opportunity_sampling or self._borrowable_parent_headroom)
+            and (
+                self.enable_h2d_opportunity_sampling
+                or self._borrowable_parent_headroom and not admission_candidate
+            )
         )
         if callable(reclaim) and allow_reclaim:
             if opportunity.capacity_reclaim_probe:
@@ -6054,10 +6057,11 @@ class NativeAdmissionRuntime:
                     **({"collect_diagnostics": True} if collect_diagnostics else {}),
                     **({"max_nodes": max_reclaim_nodes} if max_reclaim_nodes is not None else {}),
                 )
-            observed = getattr(
-                self._native_cache, "beliefkv_handoff_last_capacity", None,
+            observed = (
+                getattr(self._native_cache, "beliefkv_handoff_last_capacity", None)
+                if collect_diagnostics else None
             )
-            if collect_diagnostics and isinstance(observed, dict):
+            if isinstance(observed, dict):
                 checks = []
                 for check in observed.get("waiting_candidate_checks", ()):
                     owner = self._parent_pressure_candidates.get(check["node_id"])
@@ -6137,8 +6141,9 @@ class NativeAdmissionRuntime:
         # Bounded reclaim need not fit the whole checkpoint. Restore the
         # continuous prefix that fits now and leave the tail for a later load.
         refresh_arguments = {"admission_candidate": True} if admission_candidate else {}
-        refreshed = self._wait_prefetch_opportunity(
-            key, fit_current_capacity=True, **refresh_arguments,
+        refreshed = (
+            self._wait_prefetch_opportunity(key, fit_current_capacity=True, **refresh_arguments)
+            if allow_reclaim else opportunity
         )
         if refreshed is None:
             return None
