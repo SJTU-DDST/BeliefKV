@@ -518,6 +518,44 @@ def test_kv_only_cpu_preflight_checks_the_effective_native_order(
     assert result["verified_configuration"] == checked[0]
 
 
+@pytest.mark.parametrize("stale_alias", (False, True))
+def test_cpu_preflight_checks_requested_post_ack_protection(
+    reference, tmp_path, monkeypatch, stale_alias,
+):
+    import beliefkv.runtime.sglang_v0520_runtime as native
+
+    reference["arms"]["full"]["PREFETCH_RESIDENCY_PROTECTION"] = "0"
+    env, _, _ = comparison.environment(
+        reference, "full", tmp_path, tmp_path, tmp_path, 18588, tmp_path,
+    )
+    if stale_alias:
+        env["BELIEFKV_PREFETCH_RESIDENCY_PROTECTION"] = "1"
+    for name in (
+        "BELIEFKV_H2D_SEED", "BELIEFKV_H2D_SEED_SHA256",
+        "BELIEFKV_TRANSFER_SERVICE_SEED", "BELIEFKV_TRANSFER_SERVICE_SEED_SHA256",
+    ):
+        env[name] = ""
+    monkeypatch.setattr(native, "validate_tool_timing_artifact", lambda *_a, **_k: None)
+
+    def execute(command, *, env, **_kwargs):
+        assert env["CUDA_VISIBLE_DEVICES"] == "99999"
+        with monkeypatch.context() as child:
+            for name, value in env.items():
+                if name.startswith("BELIEFKV_"):
+                    child.setenv(name, value)
+            child.setattr(comparison.sys, "argv", ["-c", *command[3:]])
+            exec(command[2], {})
+        return NS(stdout="")
+
+    monkeypatch.setattr(comparison.subprocess, "run", execute)
+    if stale_alias:
+        with pytest.raises(ValueError, match="CPU runtime configuration differs"):
+            comparison.preflight_runtime(env, "cpu-only")
+    else:
+        result = comparison.preflight_runtime(env, "cpu-only")
+        assert result["verified_configuration"]["enable_prefetch_residency_protection"] is False
+
+
 def test_no_tool_prefetch_changes_only_tool_h2d_and_preserves_offload_settings(reference, tmp_path):
     original, original_flags, original_socket = comparison.environment(
         reference, "full", tmp_path, tmp_path, tmp_path, 18554, tmp_path,

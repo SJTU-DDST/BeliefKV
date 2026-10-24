@@ -620,7 +620,7 @@ class NativeAdmissionRuntime:
         if self.idle_prepare_policy not in ("cold", "all"):
             raise ValueError("idle prepare policy must be cold or all")
         self._idle_backup_queue_scope = False
-        self._idle_backup_queued_requests: dict[PrefillCandidateKey, object] | None = None
+        self._idle_backup_queued_requests: dict[PrefillCandidateKey, tuple[int, object]] | None = None
         sampling_setting = os.environ.get("BELIEFKV_H2D_OPPORTUNITY_SAMPLING", "0")
         if sampling_setting not in ("0", "1"):
             raise ValueError("H2D opportunity sampling setting must be 0 or 1")
@@ -6663,18 +6663,22 @@ class NativeAdmissionRuntime:
             return False
         if self._idle_backup_queued_requests is None:
             self._idle_backup_queued_requests = {
-                candidate: request
-                for request in islice(self._capacity_waiting_queue, 512)
+                candidate: (position, request)
+                for position, request in enumerate(islice(self._capacity_waiting_queue, 512))
                 if (candidate := self.visible.get(getattr(request, "rid", None))) is not None
             }
             self.counts["idle_full_prepare_queued_index_builds"] += 1
-        request = self._idle_backup_queued_requests.get(key)
-        return bool(
-            request is not None
-            and self._unallocated_waiting_full_request(key, request)
-            and any(
-                waiting is request for waiting in islice(self._capacity_waiting_queue, 512)
-            )
+        entry = self._idle_backup_queued_requests.get(key)
+        if entry is None:
+            return False
+        position, request = entry
+        if not self._unallocated_waiting_full_request(key, request):
+            return False
+        queue = self._capacity_waiting_queue
+        return (
+            type(queue) is list and position < len(queue) and queue[position] is request
+        ) or any(
+            waiting is request for waiting in islice(queue, 512)
         )
 
     def _unallocated_waiting_full_request(

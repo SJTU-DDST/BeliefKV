@@ -45,7 +45,7 @@ workloads/frozen/*
 workloads/runtime/*
 workloads/sources/*
 # Generated LoCoBench source packs, references, and provenance.
-workloads/locobench_agent_long_*_root_scoped_*/
+workloads/locobench_agent_*_root_scoped_*/
 workloads/assets/locobench_*_references/
 !workloads/raw/.gitkeep
 !workloads/frozen/.gitkeep

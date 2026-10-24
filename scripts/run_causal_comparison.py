@@ -260,6 +260,10 @@ def preflight_runtime(settings, model_path):
         "enable_tool_prefetch": settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "1",
         "tool_prefetch_priority_ms": float(settings["BELIEFKV_TOOL_PREFETCH_PRIORITY_MS"]),
         "join_prefetch_trigger": settings["JOIN_PREFETCH_TRIGGER"],
+        "enable_prefetch_residency_protection": (
+            settings["PREFETCH_RESIDENCY_PROTECTION"] == "1"
+            and settings["BELIEFKV_INTERNAL_COMPARISON_MODE"] in ("full", "kv_only")
+        ),
     }
     with tempfile.TemporaryDirectory(prefix="beliefkv-causal-runtime-") as directory:
         env = qualified.driver_environment({"environment": settings}, os.environ)

@@ -169,6 +169,42 @@ def test_queue_scope_is_bounded_and_released_when_native_backup_raises():
         runtime.close()
 
 
+@pytest.mark.parametrize("change", (
+    "moved", "replaced_queue", "removed", "beyond_bound", "tuple_queue",
+))
+def test_queued_backup_position_hint_is_revalidated_with_live_membership(change):
+    runtime, _, key, request, cache = fixture()
+    other = req("ordinary")
+    runtime._capacity_waiting_queue = [other, request]
+    owners = ((key.session_id, key.session_generation),)
+
+    def prepare():
+        assert runtime._live_backup_full_owners(owners)
+        if change == "moved":
+            runtime._capacity_waiting_queue.reverse()
+        elif change == "replaced_queue":
+            runtime._capacity_waiting_queue = [request, other]
+        elif change == "removed":
+            runtime._capacity_waiting_queue = [other]
+        elif change == "beyond_bound":
+            runtime._capacity_waiting_queue = [other] * 512 + [request]
+        else:
+            runtime._capacity_waiting_queue = (other, request)
+        assert runtime._live_backup_full_owners(owners) is (
+            change in ("moved", "replaced_queue", "tuple_queue")
+        )
+        return ()
+
+    cache.prepare_beliefkv_idle_full = prepare
+    try:
+        runtime.dispatch_idle_prepare()
+        assert not runtime._idle_backup_queue_scope
+        assert runtime._idle_backup_queued_requests is None
+        assert not runtime._cold_full_backups
+    finally:
+        runtime.close()
+
+
 @pytest.mark.parametrize("guard", ("none", "full_lock", "native_row", "running"))
 def test_native_cpu_backup_keeps_device_pages_and_existing_reclaim_guards(native_cache, guard):
     from test_beliefkv_cold_full_prepare import fixture as native_fixture, install_cpu_enqueue

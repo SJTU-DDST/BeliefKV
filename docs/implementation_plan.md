@@ -2,7 +2,46 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
-The latest CPU-qualified candidate,now under V151 validation,reduces attribute lookup in native
+The current user-directed experiment increases the workload to36 roots from36
+different original LoCoBench-Agent projects,allowing shorter contexts.
+The new manifest uses35K--196608-token selection bounds,seed21 and one task
+per project; actual complete-source contexts range35990--194277 tokens,
+sum3257648 and average90490. Running/decode24,the256K model limit,
+95% compression trigger,output16384,4096-token prefill chunks,pools and
+Full policies stay fixed. First capture a new natural native trajectory;
+then replay Full and scheduler-only against that exact work,without a
+second complete native replay. Defer the24-root post-ACK-protection
+ablation. The previous24-root evidence already shows migration and
+capacity pressure; insufficient pressure is a hypothesis to test,not an
+established cause. Measure useful state loss and additional recomputation
+alongside pressure,JOIN coverage and end-to-end results.
+Configuration:
+`configs/migration/qwen35_locobench_oneshot_36project_running24_20261024.json`.
+
+V151 completed with3951 exact requests and958791 output tokens,matching
+the existing natural native and scheduler-only controls. V3403 verifies
+frozen sources,capacities,stopping and process cleanup. Mean JCT1137.332s
+and whole-run throughput593.809 tokens/s are-2.3041%/+1.9568% versus
+native,but+0.0280%/-0.2348% versus scheduler-only. This does not establish
+an independent KV-management gain. All24 normal workflow tails remain.
+V3400 records27 early confirmed JOIN reuses/17.994GB FULL and11 tool
+reuses/2.895GB; these bytes are not exposed wait or removable JCT.
+V3397/V3401 find nearly unchanged steady decode; V150's additional worker
+time is concentrated at decode-to-prefill transitions,without uniquely
+identifying CPU,DMA or admission as its cause.
+
+The pending CPU optimization uses a round-local queue position hint to
+avoid repeated512-entry membership scans in idle backup. Every access
+still validates live allocation/session/request state and current list
+identity; moved,replaced,removed,beyond-bound and non-list queues retain
+the bounded identity-scan fallback. V3399 passes362 cases. V3398's
+synthetic queued-owner dispatch CPU medians fall14.8--52.7%; allocated
+negative controls are0.5--9.9% slower. No online gain is claimed.
+V3405 resolves V3404's missing-engine skip and passes345 cases,including
+requested optional-protection preflight checks. The36-root experiment
+keeps optional post-ACK protection enabled.
+
+The previous CPU-qualified candidate,validated in V151,reduces attribute lookup in native
 `prefetch_gpu_session_node`; it does not cache path validity across a burst.
 Each node still checks current session generation,ownership,live ancestry,
 pending DMA,cycles and parent residence after every preceding enqueue.
@@ -74,21 +113,22 @@ checks remain valid. V3390 records H2D980.628GB/D2H349.748GB,versus
 940.546GB/346.279GB in V149 Full. Native NO_TOKEN attempts are20599/17768;
 these are repeated attempts,not independent blocked requests. Host FULL
 high-water is118.074/160.000GB and Host Mamba40.050/40.050GB. Migration
-is substantial,so increasing roots is not the next response. Registration:
+is substantial; the later36-root increase follows explicit user steering.
+Registration:
 `/home/longhao/experiment/ops/v150_oneshot_batch24_prefetch_capacity_retry_20261024.registration.json`.
 
-V151 is now running only Full on main `e422434fa13c` and the latest
+V151 ran only Full on main `e422434fa13c` and the latest
 CPU-qualified traversal engine above,with the same24 roots,batch24,seed21,
 trajectory and pools. V3394 verifies actual watcher/server/replay driver,
 GPU scheduler1085467,frozen sources,effective policy and capacity. Both
 known targets execute4727/4153 actual prefill tokens followed by decode,
 preserving effective checkpoint reuse. Registration:
 `/home/longhao/experiment/ops/v151_oneshot_batch24_prefetch_local_validation_20261024.registration.json`.
-The complete result remains pending. Existing natural native and scheduler
+The complete result is recorded above. Existing natural native and scheduler
 controls are reused. Preserve V150's negative point and do not claim the
 small traversal reduction fixes the observed decode regression. Its repeat
-result and latest trace determine the next policy change; no new native
-replay or pressure increase is needed.
+result and latest trace remain diagnostic evidence for the new workload.
+No extra full native replay is scheduled.
 
 V3391/V3392 retain113/131 sampled short single-request prefills,including
 one missing-service observation per arm. V3393's broad geometry match
