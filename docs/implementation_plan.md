@@ -2,6 +2,30 @@
 
 Status date: 2026-10-24 (Asia/Shanghai).
 
+The next CPU-qualified candidate reduces per-command attribute lookup in native
+`prefetch_gpu_session_node`; it does not cache path validity across a burst.
+Each node still checks current session generation,ownership,live ancestry,
+pending DMA,cycles and parent residence after every preceding enqueue.
+V3376 compares complete native prefetch/load-back/transfer-builder calls with
+plain counted lookup functions. All28 cases preserve outcomes,indices,
+callbacks,locks,lookups and spec-build counts. Multi-node median thread CPU
+falls about2.7--11.0%,with64-node paths typically4.1--6.5% and256-node
+paths6.4--9.4%. One short single-node case is0.47us slower; these synthetic
+CPU slices do not measure DMA,online frequency or JCT/throughput.
+
+V3378 freshly passes663 native/integration cases plus57 subtests. V3379
+freshly passes802 app cases. V3381/V3382 retain5604 app identities plus2
+inherited subtests across1528 source paths;22 existing EOS cases had source
+but were absent from the previous5582-case execution evidence. This is not
+a fresh full-app run. V3383 records coverage and source proof; V3383a/b
+retain the rejected coverage assumption and explicit normalization of five
+external integration classnames in the raw engine XML. No outcomes changed.
+Candidate engine:
+`/home/longhao/experiment/.worktrees/sglang-prefetch-validation-20261024`,
+tree `7d77eeccefb31b2465050ddebb1b58ca9d9213a6`. Only the native prefetch
+method and its safety test differ from the V150 engine. V150's frozen
+application/engine are unchanged and do not evaluate this later candidate.
+
 The V150 candidate repairs a prefill wakeup gap after
 optional restore protection is revoked. On a NO_TOKEN rejection,the
 runtime already released its own device lock,but native selection could
