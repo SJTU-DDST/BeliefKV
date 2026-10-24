@@ -335,6 +335,88 @@ def test_workflow_continuation_preserves_critical_order_and_fairness(monkeypatch
         runtime.close()
 
 
+@pytest.mark.parametrize("scheduling", ("workflow", "join_priority"))
+@pytest.mark.parametrize("join_credit", (0, 1, 2, 3, 4))
+def test_continuation_never_crosses_ready_join_parent_during_boost_cooldown(
+    monkeypatch, scheduling, join_credit,
+):
+    monkeypatch.setattr("time.monotonic", lambda: 12.)
+    if scheduling == "workflow":
+        runtime, parent, successor, reader = workflow_round(monkeypatch)
+    else:
+        runtime, parent, successor = runtime_round(monkeypatch)
+        reader = None
+    try:
+        runtime._join_priority_pending["parent"] = "join"
+        runtime._join_priority_normal_admissions = join_credit
+        plan = runtime.plan_native_prefill(
+            [parent, successor], running_batch=None, adder=None,
+        )
+        assert [key.request_id for key in plan.prioritized] == [parent.rid, successor.rid]
+        assert runtime._tool_continuity_promoted is None
+        runtime._read_request_reentry.assert_not_called()
+        if reader is not None:
+            assert reader.call_count == (0 if join_credit == 4 else 2)
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("ready_parent", (False, True))
+def test_continuation_can_order_after_join_without_promoting_join_itself(monkeypatch, ready_parent):
+    monkeypatch.setattr("time.monotonic", lambda: 12.)
+    runtime, parent, successor, reader = workflow_round(monkeypatch)
+    try:
+        runtime._join_priority_pending["parent"] = "join"
+        runtime._join_priority_normal_admissions = 0
+        if not ready_parent:
+            runtime.graph.joins["join"].satisfied = False
+        ordinary = request("ordinary")
+        runtime.on_events((
+            observed(140, Kind.INVOCATION_CREATE, invocation_id="ordinary", context_id="ctx-ordinary"),
+        ))
+        runtime.register_visible_request(ordinary)
+        runtime._visible_since[ordinary.rid] = 11.
+        plan = runtime.plan_native_prefill(
+            [parent, ordinary, successor], running_batch=None, adder=None,
+        )
+        expected = (
+            [parent.rid, successor.rid, ordinary.rid]
+            if ready_parent else [successor.rid, parent.rid, ordinary.rid]
+        )
+        assert [key.request_id for key in plan.prioritized] == expected
+        assert runtime._join_priority_promoted is None
+        assert runtime._tool_continuity_promoted == successor.rid
+        assert reader.call_count == 3
+        runtime._read_request_reentry.assert_not_called()
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("join_position", (1, 2))
+def test_continuation_does_not_add_boost_ahead_of_a_later_ready_join(monkeypatch, join_position):
+    monkeypatch.setattr("time.monotonic", lambda: 12.)
+    runtime, parent, successor, reader = workflow_round(monkeypatch)
+    try:
+        runtime._join_priority_pending["parent"] = "join"
+        runtime._join_priority_normal_admissions = 0
+        ordinary = request("ordinary")
+        runtime.on_events((
+            observed(140, Kind.INVOCATION_CREATE, invocation_id="ordinary", context_id="ctx-ordinary"),
+        ))
+        runtime.register_visible_request(ordinary)
+        runtime._visible_since[ordinary.rid] = 11.
+        queue = [ordinary, successor]
+        queue.insert(join_position, parent)
+        plan = runtime.plan_native_prefill(queue, running_batch=None, adder=None)
+        assert [key.request_id for key in plan.prioritized] == [req.rid for req in queue]
+        assert runtime._tool_continuity_promoted is None
+        assert runtime._join_priority_promoted is None
+        assert reader.call_count == 3
+        runtime._read_request_reentry.assert_not_called()
+    finally:
+        runtime.close()
+
+
 def test_runtime_charges_completed_output_once_without_decode_tracking(monkeypatch):
     monkeypatch.setattr("time.monotonic", lambda: 12.)
     runtime, normal, successor, reader = workflow_round(monkeypatch)

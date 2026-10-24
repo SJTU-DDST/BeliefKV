@@ -110,6 +110,31 @@ qualification gate,or register formal Full replay on this rejected source.
 V169c is stopped and V170c never started. The enabled policy remains ready for
 a newly qualified source;the overall performance goal is still unproven.
 
+The follow-up guard audit finds completion-marker loops in all four
+activations:362 NFT-child todo/notice calls,333 data-lake root todo/echo calls,
+365 desktop-media root todo calls,and119 CMS root todo/echo calls in their
+final consecutive suffixes. Each reaches403 model/tool cycles and graph
+step2017 against hard2048 with32 reserved steps. Semantic and soft graph
+guards are observe-only in this capture. Preserve these as invalid natural
+trajectories,not additional productive work or accepted baseline results.
+
+Short-tool priority now remains below every executable satisfied-JOIN parent,
+including while the JOIN boost quota replenishes. A graph/key barrier is
+maintained inside the existing continuity scan;it neither performs another
+residency lookup nor changes JOIN's ordinary-admission fairness quota.
+V3535 passes177 focused CPU cases. Keep the four-request ceiling,including
+the initial ordinary request,and the1024 completed-token stopping condition.
+An offline audit of the20 naturally eligible workflows finds1917 structural
+short-return links;four-request segments admit1427 structural opportunities,
+versus1630 at eight. These ignore residency and scheduling competition,so
+cannot establish GPU benefit or the optimal burst size. See
+`docs/experiments/v168b_guard_and_tool_continuity_20261024.md` for exact scope.
+V3537 passes5790 required CPU cases,retaining all5776 previous identities and
+adding14 JOIN-boundary cases;V3538 seals the current source hashes. The actual
+Full constructor preflight keeps continuity enabled. V3539's24-candidate warm
+CPU fixture measures about22.5microseconds added P50 with a ready successor,
+with identical residency-reader call counts. No GPU performance is accepted.
+
 V3523/V3524 explain why short-tool continuation matters. Of3643 served tool
 successors,2606 have logical Host hits;2734 follow tool rounds shorter than50ms.
 At least1208 short-tool successors have matching large-prefix D2H evidence

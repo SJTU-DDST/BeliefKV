@@ -11217,20 +11217,22 @@ class NativeAdmissionRuntime:
         self.counts["drained_chunk_prefill_skipped"] += 1
         return True
 
+    def _ready_join_parent(self, request: object, key: PrefillCandidateKey | None) -> bool:
+        if key is None:
+            return False
+        join = self.graph.joins.get(self._join_priority_pending.get(key.invocation_id))
+        return (
+            join is not None and join.satisfied
+            and key.invocation_id in join.waiter_invocation_ids
+            and self._executable_waiting_key(request, key=key) == key
+        )
+
     def _join_parent_priority_candidate(
         self, ordered: list[tuple[int, object]],
         keys: dict[int, PrefillCandidateKey | None],
     ) -> tuple[int, object] | None:
         for candidate in ordered:
-            key = keys[candidate[0]]
-            if key is None:
-                continue
-            join = self.graph.joins.get(self._join_priority_pending.get(key.invocation_id))
-            if (
-                join is not None and join.satisfied
-                and key.invocation_id in join.waiter_invocation_ids
-                and self._executable_waiting_key(candidate[1], key=key) == key
-            ):
+            if self._ready_join_parent(candidate[1], keys[candidate[0]]):
                 return candidate
         return None
 
@@ -11881,10 +11883,19 @@ class NativeAdmissionRuntime:
             return
         floor = int(protected_head)
         selected = None
-        for position in range(floor + 1, len(ordered)):
-            index, req = ordered[position]
+        for position, (index, req) in enumerate(ordered):
+            if position < floor:
+                continue
             key = keys[index]
-            if key is None or (key.root_workflow_id, key.invocation_id) not in policy.ready:
+            # Keep locality boosts below every ready JOIN, even during cooldown.
+            if self._join_priority_pending and self._ready_join_parent(req, key):
+                floor = position + 1
+                selected = None
+                continue
+            if (
+                position <= floor or key is None
+                or (key.root_workflow_id, key.invocation_id) not in policy.ready
+            ):
                 continue
             arrival = self._visible_since.get(req.rid, now)
             if now - arrival >= 10.:
