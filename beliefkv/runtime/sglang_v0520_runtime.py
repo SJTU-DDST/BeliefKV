@@ -2620,6 +2620,19 @@ class NativeAdmissionRuntime:
                 "restore_tiers_native": (
                     dict(restore_tier_stats) if isinstance(restore_tier_stats, dict) else {}
                 ),
+                "native_prefetch_batch_dependencies": (
+                    {
+                        "checks": getattr(
+                            self._native_cache, "beliefkv_prefetch_dependency_checks", 0,
+                        ),
+                        "unrelated_waits_skipped": getattr(
+                            self._native_cache, "beliefkv_prefetch_unrelated_waits_skipped", 0,
+                        ),
+                    }
+                    if callable(getattr(
+                        self._native_cache, "beliefkv_prefill_load_consumer", None,
+                    )) else None
+                ),
                 "idle_prepare_policy": self.idle_prepare_policy,
                 "tool_prefetch_planning_slack_ms": TOOL_PREFETCH_PLANNING_SLACK_MS,
                 "prefetch_lead_ms": self.prefetch_lead_ms,
