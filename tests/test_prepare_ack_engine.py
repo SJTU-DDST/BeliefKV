@@ -10,6 +10,8 @@ import pytest
 from beliefkv.experiments.prepare_ack_engine import (
     DEPENDENCY_BINDING, DEPENDENCY_BRANCH, DEPENDENCY_LOAD, DEPENDENCY_METHOD,
     FILE, RETRY, SCHEDULER_FILE, prepare_ack_engine_compatibility,
+    PAPER_PRESSURE_PREFIX, PAPER_PRESSURE_NEW_TEST, PAPER_PRESSURE_NATIVE_TEST,
+    project_paper_pressure_hook,
     verify_prefetch_dependency_projection, verify_prepare_ack_projection,
 )
 
@@ -189,3 +191,41 @@ def test_dependency_compatibility_retains_native_capture_environment_gate(tmp_pa
     source["environment"]["NATIVE_POLICY_BASELINE"] = "0"
     with pytest.raises(ValueError, match="native source"):
         prepare_ack_engine_compatibility(tmp_path, source, candidate_tree=current)
+
+
+def pressure_scheduler():
+    tree = ast.parse("""
+class Scheduler:
+    def update_running_batch(self, batch):
+        pass
+""")
+    method = tree.body[0].body[0]
+    guard = ast.If(
+        test=deepcopy(PAPER_PRESSURE_NATIVE_TEST),
+        body=ast.parse("self.native_retraction()").body, orelse=[],
+    )
+    method.body = [guard, ast.Return(value=ast.Name(id="batch", ctx=ast.Load()))]
+    original = ast.unparse(ast.fix_missing_locations(tree))
+    guard.test = deepcopy(PAPER_PRESSURE_NEW_TEST)
+    method.body[0:0] = deepcopy(PAPER_PRESSURE_PREFIX)
+    return original, ast.unparse(ast.fix_missing_locations(tree))
+
+
+def test_only_the_reviewed_optional_pin_hook_projects_to_native_decode_pressure():
+    original, candidate = pressure_scheduler()
+    assert ast.dump(ast.parse(project_paper_pressure_hook(candidate))) == ast.dump(ast.parse(original))
+
+
+@pytest.mark.parametrize("change", (
+    ("release_pin(batch) is True", "release_pin(batch)"),
+    ("not batch.check_decode_mem()", "False"),
+    ("self.native_retraction()", "self.other_retraction()"),
+))
+def test_decode_pressure_projection_does_not_authorize_other_native_changes(change):
+    original, candidate = pressure_scheduler()
+    candidate = candidate.replace(*change)
+    try:
+        projected = project_paper_pressure_hook(candidate)
+    except ValueError:
+        return
+    assert ast.dump(ast.parse(projected)) != ast.dump(ast.parse(original))

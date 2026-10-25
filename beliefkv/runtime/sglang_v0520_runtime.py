@@ -11211,6 +11211,10 @@ class NativeAdmissionRuntime:
             self._context_session_changed(key.context_id)
             self.demand_hints.pop(key.request_id, None)
             self.semantic_revision += 1
+        if (paper := getattr(self, "_paper_baseline", None)) is not None:
+            requeued = getattr(paper, "requeued", None)
+            if requeued is not None:
+                requeued(requests, is_retracted=is_retracted)
 
     def _forget_session(self, request_id: str) -> None:
         self._visible_since.pop(request_id, None)
@@ -12305,6 +12309,10 @@ class NativeAdmissionRuntime:
         self, req: object, *, admitted: bool, result: str
     ) -> bool:
         """Report whether rejected admission released optional device locks."""
+        if (paper := getattr(self, "_paper_baseline", None)) is not None:
+            callback = getattr(paper, "candidate_result", None)
+            if callback is not None:
+                return callback(req, admitted=admitted, result=result)
         grace = self._tool_residency_grace
         if grace is not None and grace.key is not None:
             key = self.visible.get(getattr(req, "rid", None))
@@ -12847,3 +12855,8 @@ class NativeAdmissionRuntime:
 
     def plan_running_batch_retraction(self, batch: object) -> None:
         return None
+
+    def on_native_decode_capacity_pressure(self, batch: object) -> bool:
+        paper = getattr(self, "_paper_baseline", None)
+        callback = getattr(paper, "decode_pressure", None)
+        return callback is not None and callback(batch) is True

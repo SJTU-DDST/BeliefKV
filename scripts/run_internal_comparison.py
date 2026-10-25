@@ -260,6 +260,10 @@ def observe_arm(
     info = arm / "server/server_info.json"
     if info.exists():
         observed = load(info)
+        if external_policy:
+            from beliefkv.experiments.paper_baselines import validate_server_arguments
+
+            validate_server_arguments(external_policy, observed)
         expected = {
             "max_running_requests": max_running_requests,
             "random_seed": 21, "context_length": 262144,

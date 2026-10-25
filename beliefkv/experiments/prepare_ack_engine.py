@@ -8,6 +8,24 @@ import subprocess
 FILE = "python/sglang/srt/mem_cache/unified_radix_cache.py"
 SCHEDULER_FILE = "python/sglang/srt/managers/scheduler.py"
 DEPENDENCY_TEST = "test/srt/test_beliefkv_prefetch_batch_dependency.py"
+PAPER_PRESSURE_TEST = "test/srt/test_beliefkv_paper_decode_pressure.py"
+PAPER_PRESSURE_PREFIX = ast.parse("""
+kv_full_retract_flag = not batch.check_decode_mem()
+runtime = getattr(self, "beliefkv_runtime", None)
+release_pin = getattr(runtime, "on_native_decode_capacity_pressure", None)
+while kv_full_retract_flag and release_pin is not None and release_pin(batch) is True:
+    kv_full_retract_flag = not batch.check_decode_mem()
+""").body
+PAPER_PRESSURE_NATIVE_TEST = ast.parse("""
+(kv_full_retract_flag := not batch.check_decode_mem()) or (
+    TEST_RETRACT and self.forward_ct % TEST_RETRACT_INTERVAL == 0
+)
+""").body[0].value
+PAPER_PRESSURE_NEW_TEST = ast.parse("""
+kv_full_retract_flag or (
+    TEST_RETRACT and self.forward_ct % TEST_RETRACT_INTERVAL == 0
+)
+""").body[0].value
 DEPENDENCY_METHOD = "beliefkv_prefill_load_consumer"
 # Exact AST of the reviewed FULL-only, write-back, bounded prefix check.
 DEPENDENCY_METHOD_SHA256 = "869160ccdf8d2f3f52bd8c7030c91aa8caf937a3b484d3f157f984210b8556b6"
@@ -138,6 +156,33 @@ def verify_prefetch_dependency_projection(
         raise ValueError("engine does not contain the expected native dependency path") from error
 
 
+def project_paper_pressure_hook(candidate: str) -> str:
+    """Remove only the reviewed optional-pin hook before native OOM retraction."""
+    try:
+        module = ast.parse(candidate)
+        scheduler = next(node for node in module.body
+                         if isinstance(node, ast.ClassDef) and node.name == "Scheduler")
+        method = next(node for node in scheduler.body
+                      if isinstance(node, ast.FunctionDef) and node.name == "update_running_batch")
+        count = len(PAPER_PRESSURE_PREFIX)
+        matches = [
+            index for index in range(len(method.body) - count)
+            if [shape(node) for node in method.body[index:index + count]]
+            == [shape(node) for node in PAPER_PRESSURE_PREFIX]
+        ]
+        if len(matches) != 1:
+            raise ValueError("paper pressure callback differs from reviewed native hook")
+        index = matches[0]
+        guard = method.body[index + count]
+        if not isinstance(guard, ast.If) or shape(guard.test) != shape(PAPER_PRESSURE_NEW_TEST):
+            raise ValueError("paper pressure callback is not immediately before native retraction")
+        del method.body[index:index + count]
+        guard.test = PAPER_PRESSURE_NATIVE_TEST
+        return ast.unparse(module)
+    except (StopIteration, SyntaxError) as error:
+        raise ValueError("engine lacks the expected native decode pressure path") from error
+
+
 def prepare_ack_engine_compatibility(
     engine: Path, source: dict, *, candidate_tree: str,
 ) -> dict | None:
@@ -157,21 +202,29 @@ def prepare_ack_engine_compatibility(
 
     changed = git("diff", "--name-only", original_tree, candidate_tree).splitlines()
     dependency_fix = SCHEDULER_FILE in changed
+    paper_pressure = PAPER_PRESSURE_TEST in changed
     allowed = {FILE, SCHEDULER_FILE, DEPENDENCY_TEST} if dependency_fix else {FILE}
+    if paper_pressure:
+        allowed.add(PAPER_PRESSURE_TEST)
     if FILE not in changed or not set(changed) <= allowed:
         raise ValueError("engine tree changed outside the gated PREPARE ACK cache file")
     original = git("show", original_tree + ":" + FILE)
     candidate = git("show", candidate_tree + ":" + FILE)
     if dependency_fix:
+        scheduler = git("show", candidate_tree + ":" + SCHEDULER_FILE)
+        if paper_pressure:
+            scheduler = project_paper_pressure_hook(scheduler)
         verify_prefetch_dependency_projection(
             original, candidate,
             git("show", original_tree + ":" + SCHEDULER_FILE),
-            git("show", candidate_tree + ":" + SCHEDULER_FILE),
+            scheduler,
         )
     else:
         verify_prepare_ack_projection(original, candidate)
     return {
         "policy": (
+            "custom_prepare_ack_batch_dependency_and_paper_pressure"
+            if paper_pressure else
             "custom_prepare_ack_retry_and_batch_dependency"
             if dependency_fix else "custom_prepare_ack_retry_only"
         ),
@@ -191,10 +244,18 @@ def prepare_ack_engine_compatibility(
             "native_without_custom_producer_keeps_original_consumer": True,
             "changed_files": changed,
         } if dependency_fix else {}),
+        **({
+            "paper_decode_pressure_callback": "on_native_decode_capacity_pressure",
+            "paper_decode_retraction_remains_native": True,
+            "source_has_no_paper_runtime": True,
+        } if paper_pressure else {}),
         "scope": ((
             "The reviewed batch callback is active only for a custom speculative "
             "producer. Native capture has none. Exact scheduler AST projection "
             "and the bounded PREPARE ACK projection both match the source."
+            + (" The optional paper-pin hook is also exactly projected; native "
+               "capture has no callback and keeps its original pressure check."
+               if paper_pressure else "")
         ) if dependency_fix else (
             "The only production delta is a custom-incremental-prepare-gated retry "
             "after the existing D2H completion fence. Native capture has that "

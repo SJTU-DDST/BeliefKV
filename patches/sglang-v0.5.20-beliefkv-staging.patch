@@ -1,5 +1,5 @@
 diff --git a/python/sglang/kernels/jit/csrc/kvcacheio/staged_write_back.cuh b/python/sglang/kernels/jit/csrc/kvcacheio/staged_write_back.cuh
-index 93322643a4bf4927072f7a12e93d3414910332b0..82fce2e98b81c8bef57070cf5800ce3588f8b24d 100644
+index 9332264..82fce2e 100644
 --- a/python/sglang/kernels/jit/csrc/kvcacheio/staged_write_back.cuh
 +++ b/python/sglang/kernels/jit/csrc/kvcacheio/staged_write_back.cuh
 @@ -81,12 +81,20 @@ inline void copy_page_first_pages_fallback(
@@ -28,7 +28,7 @@ index 93322643a4bf4927072f7a12e93d3414910332b0..82fce2e98b81c8bef57070cf5800ce35
    }
  }
 diff --git a/python/sglang/srt/arg_groups/fields/schedule.py b/python/sglang/srt/arg_groups/fields/schedule.py
-index de4267d9514751fea9ca2121be974597e2ef61f8..ff1fd922019a75a1386e1fc04663dd5bb3c48433 100644
+index de4267d..ff1fd92 100644
 --- a/python/sglang/srt/arg_groups/fields/schedule.py
 +++ b/python/sglang/srt/arg_groups/fields/schedule.py
 @@ -39,6 +39,30 @@ class Schedule(msgspec.Struct):
@@ -63,7 +63,7 @@ index de4267d9514751fea9ca2121be974597e2ef61f8..ff1fd922019a75a1386e1fc04663dd5b
          Optional[int],
          "The maximum number of queued requests. This option is ignored when using disaggregation-mode.",
 diff --git a/python/sglang/srt/entrypoints/openai/protocol.py b/python/sglang/srt/entrypoints/openai/protocol.py
-index d1509a7ccc4bbe614f553b55b18b774674e535eb..dcc1f1e301b0a8c30aafc87fbb55500e603820e3 100644
+index d1509a7..dcc1f1e 100644
 --- a/python/sglang/srt/entrypoints/openai/protocol.py
 +++ b/python/sglang/srt/entrypoints/openai/protocol.py
 @@ -878,6 +878,10 @@ class ChatCompletionRequest(BaseModel):
@@ -78,7 +78,7 @@ index d1509a7ccc4bbe614f553b55b18b774674e535eb..dcc1f1e301b0a8c30aafc87fbb55500e
      tool_choice: Union[ToolChoice, Literal["auto", "required", "none"]] = Field(
          default="auto", examples=["none"]
 diff --git a/python/sglang/srt/entrypoints/openai/serving_chat.py b/python/sglang/srt/entrypoints/openai/serving_chat.py
-index 89cac804aff96585f2d066e132668ab6719dfa54..fabd8a7e51c002a1f925d6471da92a2962fb8b34 100644
+index 89cac80..fabd8a7 100644
 --- a/python/sglang/srt/entrypoints/openai/serving_chat.py
 +++ b/python/sglang/srt/entrypoints/openai/serving_chat.py
 @@ -4,6 +4,7 @@ import copy
@@ -396,7 +396,7 @@ index 89cac804aff96585f2d066e132668ab6719dfa54..fabd8a7e51c002a1f925d6471da92a29
          self,
          index: int,
 diff --git a/python/sglang/srt/environ.py b/python/sglang/srt/environ.py
-index 46e9c70dc3a488a9d085d596477d2424ab5d4e88..56ed77270b605c3ee39ea5ef93b6afcb1eb974f4 100644
+index 46e9c70..56ed772 100644
 --- a/python/sglang/srt/environ.py
 +++ b/python/sglang/srt/environ.py
 @@ -750,6 +750,7 @@ class Envs:
@@ -408,7 +408,7 @@ index 46e9c70dc3a488a9d085d596477d2424ab5d4e88..56ed77270b605c3ee39ea5ef93b6afcb
      # File-backend LRU eviction (opt-in; sizes accept SI/IEC suffixes, "0" disables).
      SGLANG_HICACHE_FILE_BACKEND_MAX_SIZE = EnvStr(None)
 diff --git a/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py b/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py
-index b1e4ac897151b293acf84749745c12c5de1536ac..7e290760882977f7ab3b37e31b1ed39e6573bd24 100644
+index b1e4ac8..7e29076 100644
 --- a/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py
 +++ b/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py
 @@ -118,6 +118,28 @@ class MambaAttnBackendBase(AttentionBackend):
@@ -616,7 +616,7 @@ index b1e4ac897151b293acf84749745c12c5de1536ac..7e290760882977f7ab3b37e31b1ed39e
              track_ssm_src_offset = torch.zeros_like(num_h_states)
              track_ssm_src_offset[1:] = torch.cumsum(num_h_states[:-1], dim=0)
 diff --git a/python/sglang/srt/layers/attention/linear/gdn_backend.py b/python/sglang/srt/layers/attention/linear/gdn_backend.py
-index dfdfee7904155fe43a07f70da92e7acc718a2e4f..26bd34f683238c5852b597c191cf95096236cc79 100644
+index dfdfee7..26bd34f 100644
 --- a/python/sglang/srt/layers/attention/linear/gdn_backend.py
 +++ b/python/sglang/srt/layers/attention/linear/gdn_backend.py
 @@ -22,7 +22,14 @@ from sglang.srt.mem_cache.memory_pool import MambaPool
@@ -666,7 +666,7 @@ index dfdfee7904155fe43a07f70da92e7acc718a2e4f..26bd34f683238c5852b597c191cf9509
  
      def forward_decode(
 diff --git a/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py b/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py
-index e66cee0ab5be3d6d23f76059aa7b535e4229e34f..5c8c9d535a9e631590dbfd339139c946e6402bf7 100644
+index e66cee0..5c8c9d5 100644
 --- a/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py
 +++ b/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py
 @@ -67,6 +67,8 @@ def maybe_build_flashinfer_checkpoint_plan(
@@ -706,7 +706,7 @@ index e66cee0ab5be3d6d23f76059aa7b535e4229e34f..5c8c9d535a9e631590dbfd339139c946
      checkpoint_counts = extend_seq_lens // checkpoint_every_n_tokens
      checkpoint_cu_starts = torch.zeros(checkpoint_counts.numel() + 1, dtype=torch.int64)
 diff --git a/python/sglang/srt/managers/cache_controller.py b/python/sglang/srt/managers/cache_controller.py
-index b9a134e13c652566b50fe83cf3ca11b4ca736ca5..92ae767140baaf9ca18f37c7b71c64ba4cd00daa 100644
+index b9a134e..92ae767 100644
 --- a/python/sglang/srt/managers/cache_controller.py
 +++ b/python/sglang/srt/managers/cache_controller.py
 @@ -56,6 +56,7 @@ class LayerLoadingEvent:
@@ -1056,7 +1056,7 @@ index b9a134e13c652566b50fe83cf3ca11b4ca736ca5..92ae767140baaf9ca18f37c7b71c64ba
          )
          return producer_id
 diff --git a/python/sglang/srt/managers/io_struct.py b/python/sglang/srt/managers/io_struct.py
-index d3f13eba8917d3b0dcb8a03e19a76ca02092471e..f44aa49f38db4e8716bd781d4b4a801f14b93d20 100644
+index d3f13eb..f44aa49 100644
 --- a/python/sglang/srt/managers/io_struct.py
 +++ b/python/sglang/srt/managers/io_struct.py
 @@ -301,6 +301,9 @@ class GenerateReqInput:
@@ -1122,7 +1122,7 @@ index d3f13eba8917d3b0dcb8a03e19a76ca02092471e..f44aa49f38db4e8716bd781d4b4a801f
      # LoRA related
      lora_id: Optional[str] = None  # None means just use the base model
 diff --git a/python/sglang/srt/managers/schedule_batch.py b/python/sglang/srt/managers/schedule_batch.py
-index 7811e4477a8f7cfeb26e7152b7748336dd348625..5cf4df98c6e61f51446792d0bd244a4c131ddc39 100755
+index 7811e44..5cf4df9 100755
 --- a/python/sglang/srt/managers/schedule_batch.py
 +++ b/python/sglang/srt/managers/schedule_batch.py
 @@ -978,6 +978,7 @@ class Req(ReqDllmMixin):
@@ -1291,7 +1291,7 @@ index 7811e4477a8f7cfeb26e7152b7748336dd348625..5cf4df98c6e61f51446792d0bd244a4c
          self.mamba_track_mask_next_cpu = None
          self.mamba_decode_batch_idx_cpu = None
 diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
-index 743c8afe067f83b5cd8bbf9cdaf79b59900194bf..e9047484f3a3ad48b161ae269dd07279d2c9dca3 100644
+index 743c8af..160a33f 100644
 --- a/python/sglang/srt/managers/scheduler.py
 +++ b/python/sglang/srt/managers/scheduler.py
 @@ -725,9 +725,152 @@ class Scheduler(
@@ -1941,7 +1941,24 @@ index 743c8afe067f83b5cd8bbf9cdaf79b59900194bf..e9047484f3a3ad48b161ae269dd07279
  
          new_batch.prepare_for_extend()
  
-@@ -4254,6 +4702,9 @@ class Scheduler(
+@@ -4107,8 +4555,15 @@ class Scheduler(
+             batch.batch_is_full = False
+             return batch
+ 
++        # Optional paper-policy pins can be released before native retraction.
++        kv_full_retract_flag = not batch.check_decode_mem()
++        runtime = getattr(self, "beliefkv_runtime", None)
++        release_pin = getattr(runtime, "on_native_decode_capacity_pressure", None)
++        while kv_full_retract_flag and release_pin is not None and release_pin(batch) is True:
++            kv_full_retract_flag = not batch.check_decode_mem()
++
+         # Check if decode out of memory
+-        if (kv_full_retract_flag := not batch.check_decode_mem()) or (
++        if kv_full_retract_flag or (
+             TEST_RETRACT and self.forward_ct % TEST_RETRACT_INTERVAL == 0
+         ):
+             old_available_tokens = self.token_to_kv_pool_allocator.available_size()
+@@ -4254,6 +4709,9 @@ class Scheduler(
          batch.launch_ts = time.monotonic()
          batch.after_idle_gap = self._sched_idled
          self._sched_idled = False
@@ -1951,7 +1968,7 @@ index 743c8afe067f83b5cd8bbf9cdaf79b59900194bf..e9047484f3a3ad48b161ae269dd07279
  
          # Accumulate the prefill-token counter used by the HRRN scheduling policy. Decode / prebuilt batches contribute 0.
          if batch.extend_num_tokens:
-@@ -4622,6 +5073,10 @@ class Scheduler(
+@@ -4622,6 +5080,10 @@ class Scheduler(
          elif batch.forward_mode.is_idle():
              self.batch_result_processor.process_batch_result_idle(batch, result)
  
@@ -1962,7 +1979,7 @@ index 743c8afe067f83b5cd8bbf9cdaf79b59900194bf..e9047484f3a3ad48b161ae269dd07279
          self._record_step_counters(batch, result)
  
          self.metrics_reporter.log_batch_result_stats(batch, result)
-@@ -4634,6 +5089,24 @@ class Scheduler(
+@@ -4634,6 +5096,24 @@ class Scheduler(
          self.maybe_send_health_check_signal()
          self.metrics_reporter.update_device_timer()
  
@@ -1987,7 +2004,7 @@ index 743c8afe067f83b5cd8bbf9cdaf79b59900194bf..e9047484f3a3ad48b161ae269dd07279
      def _record_step_counters(
          self, batch: ScheduleBatch, result: GenerationBatchResult
      ) -> None:
-@@ -5215,6 +5688,9 @@ class Scheduler(
+@@ -5215,6 +5695,9 @@ class Scheduler(
          }
  
      def abort_request(self, recv_req: AbortReq):
@@ -1997,7 +2014,7 @@ index 743c8afe067f83b5cd8bbf9cdaf79b59900194bf..e9047484f3a3ad48b161ae269dd07279
          if (chunked_req := self.chunked_req) is not None:
              if recv_req.abort_all or chunked_req.rid.startswith(recv_req.rid):
                  self._pending_chunked_abort_req = chunked_req
-@@ -5369,6 +5845,25 @@ class Scheduler(
+@@ -5369,6 +5852,25 @@ class Scheduler(
                  else:
                      req.to_finish = FINISH_ABORT()
  
@@ -2023,7 +2040,7 @@ index 743c8afe067f83b5cd8bbf9cdaf79b59900194bf..e9047484f3a3ad48b161ae269dd07279
      def _pause_engine(self) -> Tuple[List[Req], int]:
          raise NotImplementedError()
  
-@@ -5642,6 +6137,8 @@ class Scheduler(
+@@ -5642,6 +6144,8 @@ class Scheduler(
  
      def maybe_sleep_on_idle(self):
          if self.idle_sleeper is not None:
@@ -2032,7 +2049,7 @@ index 743c8afe067f83b5cd8bbf9cdaf79b59900194bf..e9047484f3a3ad48b161ae269dd07279
              self.idle_sleeper.maybe_sleep()
  
      def handle_freeze_gc(self, recv_req: FreezeGCReq):
-@@ -5652,6 +6149,17 @@ class Scheduler(
+@@ -5652,6 +6156,17 @@ class Scheduler(
  
      def handle_shutdown(self, recv_req: ShutdownReq):
          # Break the event loop; the finally in run_scheduler_process releases resources.
@@ -2051,7 +2068,7 @@ index 743c8afe067f83b5cd8bbf9cdaf79b59900194bf..e9047484f3a3ad48b161ae269dd07279
          return None
  
 diff --git a/python/sglang/srt/managers/scheduler_components/idle_sleeper.py b/python/sglang/srt/managers/scheduler_components/idle_sleeper.py
-index 54099ae3ab065670b436cc0d0b429c096d9939ff..1ca241de2305930cce052587b490b1dc93478672 100644
+index 54099ae..1ca241d 100644
 --- a/python/sglang/srt/managers/scheduler_components/idle_sleeper.py
 +++ b/python/sglang/srt/managers/scheduler_components/idle_sleeper.py
 @@ -27,13 +27,14 @@ class IdleSleeper:
@@ -2071,7 +2088,7 @@ index 54099ae3ab065670b436cc0d0b429c096d9939ff..1ca241de2305930cce052587b490b1dc
              self.empty_cache_interval > 0
              and real_time() - self.last_empty_time > self.empty_cache_interval
 diff --git a/python/sglang/srt/managers/tokenizer_manager.py b/python/sglang/srt/managers/tokenizer_manager.py
-index 1b63fb642b23ed58d8cc9db771da61d69620cfb1..385711bafb151e222ec821adca3722385c6730c9 100644
+index 1b63fb6..385711b 100644
 --- a/python/sglang/srt/managers/tokenizer_manager.py
 +++ b/python/sglang/srt/managers/tokenizer_manager.py
 @@ -1502,6 +1502,7 @@ class TokenizerManager(TokenizerControlMixin, TokenizerManagerScoreMixin):
@@ -2103,7 +2120,7 @@ index 1b63fb642b23ed58d8cc9db771da61d69620cfb1..385711bafb151e222ec821adca372238
      def _release_req_states_on_failure(self, rids: Iterable[str]):
          """Release rid_to_state entries created for a failed handler.
 diff --git a/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py b/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
-index 17b37747dee8f7bb406e3eebe6aef6454e75cf07..cf9273c19998403071ebe84932811daf035d3d2d 100644
+index 17b3774..cf9273c 100644
 --- a/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
 +++ b/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
 @@ -327,10 +327,23 @@ class HybridCacheController(BaseHiCacheController):
@@ -2302,7 +2319,7 @@ index 17b37747dee8f7bb406e3eebe6aef6454e75cf07..cf9273c19998403071ebe84932811daf
                  indices = alloc_fn(size)
              if indices is None:
 diff --git a/python/sglang/srt/mem_cache/hybrid_cache/hybrid_pool_assembler.py b/python/sglang/srt/mem_cache/hybrid_cache/hybrid_pool_assembler.py
-index 006b52a7231a2a776a795b74901dec76f24a87d8..83c96cfa9e0fb76e2f8799036072994d54a14a09 100644
+index 006b52a..83c96cf 100644
 --- a/python/sglang/srt/mem_cache/hybrid_cache/hybrid_pool_assembler.py
 +++ b/python/sglang/srt/mem_cache/hybrid_cache/hybrid_pool_assembler.py
 @@ -1,6 +1,7 @@
@@ -2360,7 +2377,7 @@ index 006b52a7231a2a776a795b74901dec76f24a87d8..83c96cfa9e0fb76e2f8799036072994d
      kv_host_pool = build_kv_host_pool(
          kv_pool=kv_pool,
 diff --git a/python/sglang/srt/mem_cache/l2_transfer.py b/python/sglang/srt/mem_cache/l2_transfer.py
-index f80afd9c7e039d458ca9049a950d8067f4836774..821c196144e5836909545ad220554bc4b092f25b 100644
+index f80afd9..821c196 100644
 --- a/python/sglang/srt/mem_cache/l2_transfer.py
 +++ b/python/sglang/srt/mem_cache/l2_transfer.py
 @@ -78,6 +78,7 @@ class L2TransferEngine:
@@ -2381,7 +2398,7 @@ index f80afd9c7e039d458ca9049a950d8067f4836774..821c196144e5836909545ad220554bc4
                      local_layer_id = (
                          transfer.layer_mapper(layer_id)
 diff --git a/python/sglang/srt/mem_cache/memory_pool.py b/python/sglang/srt/mem_cache/memory_pool.py
-index 28333dffb11e4e9b78544600f911de6f05e1e4b1..b2a9adaec915f25f604e3c20ec11682812148e6e 100644
+index 28333df..b2a9ada 100644
 --- a/python/sglang/srt/mem_cache/memory_pool.py
 +++ b/python/sglang/srt/mem_cache/memory_pool.py
 @@ -1467,11 +1467,19 @@ class HybridReqToTokenPool(ReqToTokenPool):
@@ -2420,7 +2437,7 @@ index 28333dffb11e4e9b78544600f911de6f05e1e4b1..b2a9adaec915f25f604e3c20ec116828
  
      def get_speculative_mamba2_params_all_layers(self) -> MambaPool.SpeculativeState:
 diff --git a/python/sglang/srt/mem_cache/radix_cache.py b/python/sglang/srt/mem_cache/radix_cache.py
-index e7bee63c018dd03b9bf3db0d1d12e29ce070763b..41abf6b589fdc61c799cfcf12e4f45205f6165da 100644
+index e7bee63..41abf6b 100644
 --- a/python/sglang/srt/mem_cache/radix_cache.py
 +++ b/python/sglang/srt/mem_cache/radix_cache.py
 @@ -21,6 +21,7 @@ limitations under the License.
@@ -2492,7 +2509,7 @@ index e7bee63c018dd03b9bf3db0d1d12e29ce070763b..41abf6b589fdc61c799cfcf12e4f4520
          """Hashable dict-key for the first ``page_size`` logical units, namespaced by ``extra_key``."""
          return self.child_key_at(offset=0, page_size=page_size)
 diff --git a/python/sglang/srt/mem_cache/unified_cache/components/full.py b/python/sglang/srt/mem_cache/unified_cache/components/full.py
-index 1d4b255fad31758ca29fc4223c92c6d85d7e311c..a356e637a1810d5da19bd028d13805bf0dc4383b 100644
+index 1d4b255..a356e63 100644
 --- a/python/sglang/srt/mem_cache/unified_cache/components/full.py
 +++ b/python/sglang/srt/mem_cache/unified_cache/components/full.py
 @@ -53,6 +53,10 @@ class FullComponent(TreeComponent):
@@ -2599,7 +2616,7 @@ index 1d4b255fad31758ca29fc4223c92c6d85d7e311c..a356e637a1810d5da19bd028d13805bf
              _, x = heapq.heappop(heap)
              if x not in self.tree_core.evictable_host_leaves:
 diff --git a/python/sglang/srt/mem_cache/unified_cache/components/mamba.py b/python/sglang/srt/mem_cache/unified_cache/components/mamba.py
-index 3c18cee301fc5f2c9db8a4218676c3fcddd475b9..74fb7ca53fc8a46b7fd0a544f9ee9698cb8c7c1d 100644
+index 3c18cee..74fb7ca 100644
 --- a/python/sglang/srt/mem_cache/unified_cache/components/mamba.py
 +++ b/python/sglang/srt/mem_cache/unified_cache/components/mamba.py
 @@ -78,10 +78,46 @@ class MambaComponent(TreeComponent):
@@ -2650,7 +2667,7 @@ index 3c18cee301fc5f2c9db8a4218676c3fcddd475b9..74fb7ca53fc8a46b7fd0a544f9ee9698
          cd = leaf.component_data[self.component_type]
          cd.session_ref += 1
 diff --git a/python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py b/python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py
-index 406069aeb2cf24b61ab3667b5c0fc7960b329df3..0e10b68e4f7ab49d9a8531ad9b3e128c22a4625b 100644
+index 406069a..0e10b68 100644
 --- a/python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py
 +++ b/python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py
 @@ -10,6 +10,8 @@ from collections import OrderedDict
@@ -2847,7 +2864,7 @@ index 406069aeb2cf24b61ab3667b5c0fc7960b329df3..0e10b68e4f7ab49d9a8531ad9b3e128c
 +            return None
 +        return released[1]
 diff --git a/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py b/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py
-index 2b279540ca94e9208f3eb7af7b2b6f81878d5944..56221e0b51915af9a9a5d2b62227f8bc8db22e5c 100644
+index 2b27954..56221e0 100644
 --- a/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py
 +++ b/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py
 @@ -421,6 +421,9 @@ class UnifiedTreeCore(UnifiedTreeCoreInterface):
@@ -3136,7 +3153,7 @@ index 2b279540ca94e9208f3eb7af7b2b6f81878d5944..56221e0b51915af9a9a5d2b62227f8bc
                  node, CacheTransferPhase.LOAD_BACK, mamba_pool_idx=mamba_pool_idx
              )
 diff --git a/python/sglang/srt/mem_cache/unified_cache/unified_tree_core_interface.py b/python/sglang/srt/mem_cache/unified_cache/unified_tree_core_interface.py
-index 681567984b9e6abd11705ddf068bd0d5ad494ea6..a143793c57d8169f02a88965c708b0dc25b8b602 100644
+index 6815679..a143793 100644
 --- a/python/sglang/srt/mem_cache/unified_cache/unified_tree_core_interface.py
 +++ b/python/sglang/srt/mem_cache/unified_cache/unified_tree_core_interface.py
 @@ -8,7 +8,7 @@ from __future__ import annotations
@@ -3208,7 +3225,7 @@ index 681567984b9e6abd11705ddf068bd0d5ad494ea6..a143793c57d8169f02a88965c708b0dc
      def evict_device_end(self, component_type: ComponentType) -> None:
          """Finish the component's device-eviction walk."""
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d95b1e18a88c3c951a5c998459422a767c..7681591bdff45c8ffc19b2035aefddeb261a9884 100644
+index d417d7d..7681591 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -4,9 +4,11 @@ import atexit
@@ -6108,7 +6125,7 @@ index d417d7d95b1e18a88c3c951a5c998459422a767c..7681591bdff45c8ffc19b2035aefddeb
          """Return True after the local load-back event is complete.
  
 diff --git a/python/sglang/srt/model_executor/forward_batch_info.py b/python/sglang/srt/model_executor/forward_batch_info.py
-index 04b28b8ac8cb3a5b509273ac57514bef165c09ba..2c9324fc62e8965e26ecce9e18790eb9a44b826a 100644
+index 04b28b8..2c9324f 100644
 --- a/python/sglang/srt/model_executor/forward_batch_info.py
 +++ b/python/sglang/srt/model_executor/forward_batch_info.py
 @@ -476,6 +476,9 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
@@ -6130,7 +6147,7 @@ index 04b28b8ac8cb3a5b509273ac57514bef165c09ba..2c9324fc62e8965e26ecce9e18790eb9
              out_cache_loc_dsv4=batch.out_cache_loc_dsv4,
              mamba_track_indices=batch.mamba_track_indices,
 diff --git a/python/sglang/srt/observability/req_time_stats.py b/python/sglang/srt/observability/req_time_stats.py
-index 4c174950a396f040f536c61f2511e373e4093cd4..634ac87f9154f9fcf5c13797cad4c5c985f396cb 100644
+index 4c17495..634ac87 100644
 --- a/python/sglang/srt/observability/req_time_stats.py
 +++ b/python/sglang/srt/observability/req_time_stats.py
 @@ -240,6 +240,7 @@ class ReqTimeStatsBase:
@@ -6181,7 +6198,7 @@ index 4c174950a396f040f536c61f2511e373e4093cd4..634ac87f9154f9fcf5c13797cad4c5c9
          if self.trace_ctx.tracing_enable:
              self.trace_ctx.trace_slice_start(
 diff --git a/python/sglang/srt/session/session_controller.py b/python/sglang/srt/session/session_controller.py
-index c23c9653c6e3d561d50a194f48be46760df2bf62..73ad611ea1b59e80836c6c5b4c467c47665281d6 100644
+index c23c965..73ad611 100644
 --- a/python/sglang/srt/session/session_controller.py
 +++ b/python/sglang/srt/session/session_controller.py
 @@ -309,6 +309,7 @@ class Session:
@@ -6193,7 +6210,7 @@ index c23c9653c6e3d561d50a194f48be46760df2bf62..73ad611ea1b59e80836c6c5b4c467c47
              vocab_size=vocab_size,
              eos_token_ids=eos_token_ids,
 diff --git a/test/registered/unit/mem_cache/test_hybrid_pool_assembler.py b/test/registered/unit/mem_cache/test_hybrid_pool_assembler.py
-index 8d203fc7a96908ca329899c8a2a0f7d3045bb0a0..4b9f77af7a59d468aaf683506ebaf6a7a92a956c 100644
+index 8d203fc..4b9f77a 100644
 --- a/test/registered/unit/mem_cache/test_hybrid_pool_assembler.py
 +++ b/test/registered/unit/mem_cache/test_hybrid_pool_assembler.py
 @@ -3,12 +3,14 @@
@@ -6233,7 +6250,7 @@ index 8d203fc7a96908ca329899c8a2a0f7d3045bb0a0..4b9f77af7a59d468aaf683506ebaf6a7
          # scalar and (k, v) tuple return shapes both supported
          shares = _split_hicache_size(
 diff --git a/test/registered/unit/mem_cache/test_unified_radix_cache_unittest.py b/test/registered/unit/mem_cache/test_unified_radix_cache_unittest.py
-index b2194679debf185acb4839393c7d6518be48ea07..6ca04e510522f48a3d0be4d0218ae75803179765 100644
+index b219467..6ca04e5 100644
 --- a/test/registered/unit/mem_cache/test_unified_radix_cache_unittest.py
 +++ b/test/registered/unit/mem_cache/test_unified_radix_cache_unittest.py
 @@ -9877,6 +9877,26 @@ class TestUnifiedRadixPrefetchCorruption(CustomTestCase):
@@ -6265,7 +6282,7 @@ index b2194679debf185acb4839393c7d6518be48ea07..6ca04e510522f48a3d0be4d0218ae758
          cache, allocator, _ = build_fixture(self.cfg)
 diff --git a/test/srt/test_beliefkv_backed_full_scan.py b/test/srt/test_beliefkv_backed_full_scan.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..ee51548cd0976d880a2734f2ded0282d01b95187
+index 0000000..ee51548
 --- /dev/null
 +++ b/test/srt/test_beliefkv_backed_full_scan.py
 @@ -0,0 +1,245 @@
@@ -6516,7 +6533,7 @@ index 0000000000000000000000000000000000000000..ee51548cd0976d880a2734f2ded0282d
 +    cache._execute_and_commit_kv_backup.assert_not_called()
 diff --git a/test/srt/test_beliefkv_causal_full_donor.py b/test/srt/test_beliefkv_causal_full_donor.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..e2564506236b02cf6d91650c58de9f64ecedca8d
+index 0000000..e256450
 --- /dev/null
 +++ b/test/srt/test_beliefkv_causal_full_donor.py
 @@ -0,0 +1,148 @@
@@ -6670,7 +6687,7 @@ index 0000000000000000000000000000000000000000..e2564506236b02cf6d91650c58de9f64
 +    ) == {int(CT.FULL): 4}
 diff --git a/test/srt/test_beliefkv_cold_ack_priority.py b/test/srt/test_beliefkv_cold_ack_priority.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..12451a8b0a51bda2f2edd2372a57b328f333bf06
+index 0000000..12451a8
 --- /dev/null
 +++ b/test/srt/test_beliefkv_cold_ack_priority.py
 @@ -0,0 +1,182 @@
@@ -6858,7 +6875,7 @@ index 0000000000000000000000000000000000000000..12451a8b0a51bda2f2edd2372a57b328
 +    assert origin_ref() is None
 diff --git a/test/srt/test_beliefkv_cold_full_prepare.py b/test/srt/test_beliefkv_cold_full_prepare.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..90384395c1b93cc2ba33bd170f506aba8887b4ee
+index 0000000..9038439
 --- /dev/null
 +++ b/test/srt/test_beliefkv_cold_full_prepare.py
 @@ -0,0 +1,676 @@
@@ -7540,7 +7557,7 @@ index 0000000000000000000000000000000000000000..90384395c1b93cc2ba33bd170f506aba
 +    assert leaf.parent is original_parent
 diff --git a/test/srt/test_beliefkv_contiguous_host_copy.py b/test/srt/test_beliefkv_contiguous_host_copy.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..bb3f7fa83200a05810374148929e023f6985fd53
+index 0000000..bb3f7fa
 --- /dev/null
 +++ b/test/srt/test_beliefkv_contiguous_host_copy.py
 @@ -0,0 +1,122 @@
@@ -7668,7 +7685,7 @@ index 0000000000000000000000000000000000000000..bb3f7fa83200a05810374148929e023f
 +    assert "boundaries passed" in result.stdout
 diff --git a/test/srt/test_beliefkv_demand_driven_full_scan.py b/test/srt/test_beliefkv_demand_driven_full_scan.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..fe9fe96290016988490120e7cb8d5ecfbbe9cef4
+index 0000000..fe9fe96
 --- /dev/null
 +++ b/test/srt/test_beliefkv_demand_driven_full_scan.py
 @@ -0,0 +1,175 @@
@@ -7849,7 +7866,7 @@ index 0000000000000000000000000000000000000000..fe9fe96290016988490120e7cb8d5ecf
 +    assert not diagnosis["full_target_satisfied"]
 diff --git a/test/srt/test_beliefkv_execution_handoff.py b/test/srt/test_beliefkv_execution_handoff.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..a7af2badd97a10d17f0b42155dd4f968ae4f28b0
+index 0000000..a7af2ba
 --- /dev/null
 +++ b/test/srt/test_beliefkv_execution_handoff.py
 @@ -0,0 +1,831 @@
@@ -8686,7 +8703,7 @@ index 0000000000000000000000000000000000000000..a7af2badd97a10d17f0b42155dd4f968
 +    cache._preserve_mamba_reentry_node.assert_not_called()
 diff --git a/test/srt/test_beliefkv_full_host_eviction.py b/test/srt/test_beliefkv_full_host_eviction.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..ed834802db63b226d4281a39f6b7c1aca9e144ac
+index 0000000..ed83480
 --- /dev/null
 +++ b/test/srt/test_beliefkv_full_host_eviction.py
 @@ -0,0 +1,106 @@
@@ -8798,7 +8815,7 @@ index 0000000000000000000000000000000000000000..ed834802db63b226d4281a39f6b7c1ac
 +        release_result(result)
 diff --git a/test/srt/test_beliefkv_full_only.py b/test/srt/test_beliefkv_full_only.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..d0a8232e7cd983c3bdf54115309806703cfadbf2
+index 0000000..d0a8232
 --- /dev/null
 +++ b/test/srt/test_beliefkv_full_only.py
 @@ -0,0 +1,52 @@
@@ -8856,7 +8873,7 @@ index 0000000000000000000000000000000000000000..d0a8232e7cd983c3bdf5411530980670
 +    assert cache.inspect_beliefkv_reentry(req)["device_checkpoint_tokens"] == 2
 diff --git a/test/srt/test_beliefkv_gdn_prefill_mask.py b/test/srt/test_beliefkv_gdn_prefill_mask.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..073fe7713cff5a456165d37a7274d77e41af3212
+index 0000000..073fe77
 --- /dev/null
 +++ b/test/srt/test_beliefkv_gdn_prefill_mask.py
 @@ -0,0 +1,272 @@
@@ -9134,7 +9151,7 @@ index 0000000000000000000000000000000000000000..073fe7713cff5a456165d37a7274d77e
 +    assert torch.equal(metadata.conv_states_mask_indices, data.mamba_track_indices)
 diff --git a/test/srt/test_beliefkv_host_eviction_observer.py b/test/srt/test_beliefkv_host_eviction_observer.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..ae52cd28a71f837237b95302b1fa8107bde8a085
+index 0000000..ae52cd2
 --- /dev/null
 +++ b/test/srt/test_beliefkv_host_eviction_observer.py
 @@ -0,0 +1,143 @@
@@ -9283,7 +9300,7 @@ index 0000000000000000000000000000000000000000..ae52cd28a71f837237b95302b1fa8107
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_inherited_full_owners.py b/test/srt/test_beliefkv_inherited_full_owners.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..16ee0dfd1d4521b9a3c3423283494611879de079
+index 0000000..16ee0df
 --- /dev/null
 +++ b/test/srt/test_beliefkv_inherited_full_owners.py
 @@ -0,0 +1,199 @@
@@ -9488,7 +9505,7 @@ index 0000000000000000000000000000000000000000..16ee0dfd1d4521b9a3c3423283494611
 +    assert prefix.component_data[CT.MAMBA].host_value is None
 diff --git a/test/srt/test_beliefkv_latest_anchor_recede.py b/test/srt/test_beliefkv_latest_anchor_recede.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..b1db22cdd34dcf8c2dfac4a10976d9a6ea545d99
+index 0000000..b1db22c
 --- /dev/null
 +++ b/test/srt/test_beliefkv_latest_anchor_recede.py
 @@ -0,0 +1,82 @@
@@ -9576,7 +9593,7 @@ index 0000000000000000000000000000000000000000..b1db22cdd34dcf8c2dfac4a10976d9a6
 +    assert live is not deleted
 diff --git a/test/srt/test_beliefkv_latest_mamba_state.py b/test/srt/test_beliefkv_latest_mamba_state.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..44d24028b05211c8ce4a0e26c3202dc24dcb8836
+index 0000000..44d2402
 --- /dev/null
 +++ b/test/srt/test_beliefkv_latest_mamba_state.py
 @@ -0,0 +1,124 @@
@@ -9706,7 +9723,7 @@ index 0000000000000000000000000000000000000000..44d24028b05211c8ce4a0e26c3202dc2
 +    assert component._session_leaves["s"] == {old, latest}
 diff --git a/test/srt/test_beliefkv_layer_wait_probe.py b/test/srt/test_beliefkv_layer_wait_probe.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..1dff3d46b72b915990c685d0cf5f17cd7372824a
+index 0000000..1dff3d4
 --- /dev/null
 +++ b/test/srt/test_beliefkv_layer_wait_probe.py
 @@ -0,0 +1,110 @@
@@ -9822,7 +9839,7 @@ index 0000000000000000000000000000000000000000..1dff3d46b72b915990c685d0cf5f17cd
 +    assert calls == [("layer", 38, 0), ("native", 38)]
 diff --git a/test/srt/test_beliefkv_lifecycle.py b/test/srt/test_beliefkv_lifecycle.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..1db16d870480f313f14818e9c4f04a5d63d214c2
+index 0000000..1db16d8
 --- /dev/null
 +++ b/test/srt/test_beliefkv_lifecycle.py
 @@ -0,0 +1,308 @@
@@ -10136,7 +10153,7 @@ index 0000000000000000000000000000000000000000..1db16d870480f313f14818e9c4f04a5d
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_mamba_request_mapping.py b/test/srt/test_beliefkv_mamba_request_mapping.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..ddb06ddedff969312537101db466004f02756bc0
+index 0000000..ddb06dd
 --- /dev/null
 +++ b/test/srt/test_beliefkv_mamba_request_mapping.py
 @@ -0,0 +1,152 @@
@@ -10294,7 +10311,7 @@ index 0000000000000000000000000000000000000000..ddb06ddedff969312537101db466004f
 +    assert torch.all(state.req_index_to_mamba_index_mapping == -7)
 diff --git a/test/srt/test_beliefkv_metadata.py b/test/srt/test_beliefkv_metadata.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..0f6eaa20d9aa5e60b8d50e945f886a38a527e609
+index 0000000..0f6eaa2
 --- /dev/null
 +++ b/test/srt/test_beliefkv_metadata.py
 @@ -0,0 +1,280 @@
@@ -10578,9 +10595,119 @@ index 0000000000000000000000000000000000000000..0f6eaa20d9aa5e60b8d50e945f886a38
 +
 +if __name__ == "__main__":
 +    unittest.main()
+diff --git a/test/srt/test_beliefkv_paper_decode_pressure.py b/test/srt/test_beliefkv_paper_decode_pressure.py
+new file mode 100644
+index 0000000..e5ad9a2
+--- /dev/null
++++ b/test/srt/test_beliefkv_paper_decode_pressure.py
+@@ -0,0 +1,104 @@
++"""Run the production native pressure hook with CPU request/allocator stand-ins."""
++
++import ast
++from pathlib import Path
++import logging
++import sys
++from types import SimpleNamespace as NS
++from unittest.mock import Mock
++
++import pytest
++
++
++def production_method(relative, method, namespace):
++    module = ast.parse((Path(__file__).resolve().parents[2] / relative).read_text())
++    node = next(
++        item for item in ast.walk(module)
++        if isinstance(item, ast.FunctionDef) and item.name == method
++    )
++    node.decorator_list = []
++    source = ast.Module(body=[
++        ast.ImportFrom(module="__future__", names=[ast.alias(name="annotations")], level=0),
++        node,
++    ], type_ignores=[])
++    ast.fix_missing_locations(source)
++    exec(compile(source, relative, "exec"), namespace)
++    return namespace[method]
++
++
++def fixture(capacity, release=None):
++    calls = iter(capacity)
++    batch = NS(
++        batch_size=lambda: 2, filter_batch=Mock(), is_empty=lambda: False,
++        check_decode_mem=Mock(side_effect=lambda: next(calls)),
++        retract_decode=Mock(return_value=([], .5, [])),
++        prepare_for_decode=Mock(),
++    )
++    scheduler = NS(
++        token_to_kv_pool_allocator=NS(available_size=lambda: 10),
++        new_token_ratio_tracker=NS(current=.5, decay_step=Mock()),
++        tree_cache=NS(req_to_token_pool=NS(mamba_allocator=None)),
++        metrics_reporter=NS(enable_metrics=False),
++        beliefkv_runtime=NS(on_native_decode_capacity_pressure=release) if release else None,
++    )
++    update = production_method(
++        "python/sglang/srt/managers/scheduler.py", "update_running_batch",
++        {"TEST_RETRACT": False, "logger": logging.getLogger(__name__)},
++    )
++    return update, scheduler, batch
++
++
++def test_native_without_optional_pin_callback_keeps_its_one_pressure_check():
++    update, scheduler, batch = fixture((False,))
++    assert update(scheduler, batch) is batch
++    assert batch.check_decode_mem.call_count == 1
++    assert batch.retract_decode.call_count == 1
++
++
++def test_successful_native_capacity_check_does_not_call_the_paper_policy():
++    release = Mock(return_value=True)
++    update, scheduler, batch = fixture((True,), release)
++    update(scheduler, batch)
++    release.assert_not_called()
++    batch.retract_decode.assert_not_called()
++
++
++def test_actual_pin_release_rechecks_native_capacity_before_retracting():
++    release = Mock(return_value=True)
++    update, scheduler, batch = fixture((False, True), release)
++    update(scheduler, batch)
++    release.assert_called_once_with(batch)
++    assert batch.check_decode_mem.call_count == 2
++    batch.retract_decode.assert_not_called()
++
++
++def test_all_pins_can_be_released_one_by_one_until_capacity_is_sufficient():
++    release = Mock(return_value=True)
++    update, scheduler, batch = fixture((False, False, True), release)
++    update(scheduler, batch)
++    assert release.call_count == 2 and batch.check_decode_mem.call_count == 3
++    batch.retract_decode.assert_not_called()
++
++
++@pytest.mark.parametrize("released", (False, None, 1))
++def test_no_actual_release_leaves_native_retraction_authority_intact(released):
++    release = Mock(return_value=released)
++    update, scheduler, batch = fixture((False,), release)
++    update(scheduler, batch)
++    assert batch.check_decode_mem.call_count == 1
++    assert batch.retract_decode.call_count == 1
++
++
++def test_native_priority_retraction_discards_latest_program_first():
++    method = production_method(
++        "python/sglang/srt/managers/schedule_batch.py", "_get_decode_retraction_order",
++        {"sys": sys, "get_schedule": lambda: NS(
++            retraction_policy="priority", schedule_low_priority_values_first=True,
++        )},
++    )
++    requests = [
++        NS(priority=3, output_ids=[1] * 100, origin_input_ids=[1]),
++        NS(priority=1, output_ids=[1], origin_input_ids=[1] * 100),
++        NS(priority=2, output_ids=[1], origin_input_ids=[1]),
++    ]
++    assert method(requests) == [1, 2, 0]
 diff --git a/test/srt/test_beliefkv_prefetch_batch_dependency.py b/test/srt/test_beliefkv_prefetch_batch_dependency.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..abb0747ff1af9d890546fe9a1604fc3a1fc45c98
+index 0000000..abb0747
 --- /dev/null
 +++ b/test/srt/test_beliefkv_prefetch_batch_dependency.py
 @@ -0,0 +1,98 @@
@@ -10684,7 +10811,7 @@ index 0000000000000000000000000000000000000000..abb0747ff1af9d890546fe9a1604fc3a
 +    assert cache.beliefkv_prefill_load_consumer([NS(last_node=prefix)], 2) == 2
 diff --git a/test/srt/test_beliefkv_prefill_track_metadata.py b/test/srt/test_beliefkv_prefill_track_metadata.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..e21d7b9cbb7ace9fe6859df1f7e88661b8b77500
+index 0000000..e21d7b9
 --- /dev/null
 +++ b/test/srt/test_beliefkv_prefill_track_metadata.py
 @@ -0,0 +1,214 @@
@@ -10904,7 +11031,7 @@ index 0000000000000000000000000000000000000000..e21d7b9cbb7ace9fe6859df1f7e88661
 +    assert hybrid.MambaAttnBackendBase._extend_track_cpu_metadata(original) is None
 diff --git a/test/srt/test_beliefkv_prefill_track_slots.py b/test/srt/test_beliefkv_prefill_track_slots.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..44c9c744b2b71814e3158bf70574f544c48538af
+index 0000000..44c9c74
 --- /dev/null
 +++ b/test/srt/test_beliefkv_prefill_track_slots.py
 @@ -0,0 +1,211 @@
@@ -11121,7 +11248,7 @@ index 0000000000000000000000000000000000000000..44c9c744b2b71814e3158bf70574f544
 +    assert candidate.mamba_extend_track_cpu is None
 diff --git a/test/srt/test_beliefkv_radix_prefix.py b/test/srt/test_beliefkv_radix_prefix.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..da0ca58b336f75769b0693cd0d69ca2abd3b9e71
+index 0000000..da0ca58
 --- /dev/null
 +++ b/test/srt/test_beliefkv_radix_prefix.py
 @@ -0,0 +1,209 @@
@@ -11336,7 +11463,7 @@ index 0000000000000000000000000000000000000000..da0ca58b336f75769b0693cd0d69ca2a
 +        left.is_prefix_at(other, 0)
 diff --git a/test/srt/test_beliefkv_resident_parent_prepare.py b/test/srt/test_beliefkv_resident_parent_prepare.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..0bc5e7e8f3521cbe25ab09388a30fcc20aca2e38
+index 0000000..0bc5e7e
 --- /dev/null
 +++ b/test/srt/test_beliefkv_resident_parent_prepare.py
 @@ -0,0 +1,129 @@
@@ -11471,7 +11598,7 @@ index 0000000000000000000000000000000000000000..0bc5e7e8f3521cbe25ab09388a30fcc2
 +    cache._execute_and_commit_kv_backup.assert_not_called()
 diff --git a/test/srt/test_beliefkv_restore_tiers.py b/test/srt/test_beliefkv_restore_tiers.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..2e9f61a25776cee2f22444e8d9efa2fcdb305226
+index 0000000..2e9f61a
 --- /dev/null
 +++ b/test/srt/test_beliefkv_restore_tiers.py
 @@ -0,0 +1,175 @@
@@ -11652,7 +11779,7 @@ index 0000000000000000000000000000000000000000..2e9f61a25776cee2f22444e8d9efa2fc
 +    assert cache.supports_beliefkv_restore_tiers() is (not quantized)
 diff --git a/test/srt/test_beliefkv_scheduler_hook.py b/test/srt/test_beliefkv_scheduler_hook.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..ca36e52e7a0e6a8aaed3fd671451e96c6df8e943
+index 0000000..ca36e52
 --- /dev/null
 +++ b/test/srt/test_beliefkv_scheduler_hook.py
 @@ -0,0 +1,1231 @@
@@ -12889,7 +13016,7 @@ index 0000000000000000000000000000000000000000..ca36e52e7a0e6a8aaed3fd671451e96c
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_selective_backup.py b/test/srt/test_beliefkv_selective_backup.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..dcfbfd7adab81f68429a6a112a0ce5ff3f4997cb
+index 0000000..dcfbfd7
 --- /dev/null
 +++ b/test/srt/test_beliefkv_selective_backup.py
 @@ -0,0 +1,50 @@
@@ -12945,7 +13072,7 @@ index 0000000000000000000000000000000000000000..dcfbfd7adab81f68429a6a112a0ce5ff
 +    assert cache.prepare_beliefkv_idle_full() == ((leaf.id, leaf.creation_time, 2),)
 diff --git a/test/srt/test_beliefkv_session_anchors.py b/test/srt/test_beliefkv_session_anchors.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..f8adad2e94a26e471736888327275a7b0934fdc2
+index 0000000..f8adad2
 --- /dev/null
 +++ b/test/srt/test_beliefkv_session_anchors.py
 @@ -0,0 +1,71 @@
@@ -13022,7 +13149,7 @@ index 0000000000000000000000000000000000000000..f8adad2e94a26e471736888327275a7b
 +    assert tracker.snapshot_released_session_leaf_anchors("session", generation) is None
 diff --git a/test/srt/test_beliefkv_shadow_dispatch.py b/test/srt/test_beliefkv_shadow_dispatch.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..fd98502c7402c39789d97326b646f981464c6392
+index 0000000..fd98502
 --- /dev/null
 +++ b/test/srt/test_beliefkv_shadow_dispatch.py
 @@ -0,0 +1,1565 @@
@@ -14593,7 +14720,7 @@ index 0000000000000000000000000000000000000000..fd98502c7402c39789d97326b646f981
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_spawn_full_prepare.py b/test/srt/test_beliefkv_spawn_full_prepare.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..0a1b86b3b418c7b65275bbd2991b495348f017d5
+index 0000000..0a1b86b
 --- /dev/null
 +++ b/test/srt/test_beliefkv_spawn_full_prepare.py
 @@ -0,0 +1,167 @@
@@ -14766,7 +14893,7 @@ index 0000000000000000000000000000000000000000..0a1b86b3b418c7b65275bbd2991b4953
 +    assert leaf.component_data[CT.MAMBA].host_value is None
 diff --git a/test/srt/test_beliefkv_terminal_capacity.py b/test/srt/test_beliefkv_terminal_capacity.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..1a99dfcebcbbab19095fc571a3b7dd9e9a2750ce
+index 0000000..1a99dfc
 --- /dev/null
 +++ b/test/srt/test_beliefkv_terminal_capacity.py
 @@ -0,0 +1,979 @@
@@ -15751,7 +15878,7 @@ index 0000000000000000000000000000000000000000..1a99dfcebcbbab19095fc571a3b7dd9e
 +    cache._execute_and_commit_kv_backup.assert_not_called()
 diff --git a/test/srt/test_beliefkv_text_prompt_ids.py b/test/srt/test_beliefkv_text_prompt_ids.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..5b6234c509e2c5cf996ab3d2a5e75c40bf58a9c1
+index 0000000..5b6234c
 --- /dev/null
 +++ b/test/srt/test_beliefkv_text_prompt_ids.py
 @@ -0,0 +1,115 @@
@@ -15872,7 +15999,7 @@ index 0000000000000000000000000000000000000000..5b6234c509e2c5cf996ab3d2a5e75c40
 +    assert "beliefkv_ingress_timing_ms" not in ordinary.__getstate__()
 diff --git a/test/srt/test_beliefkv_tool_host_retention.py b/test/srt/test_beliefkv_tool_host_retention.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..c7f98e50cd0263ff5cd528ae37b848e50bf2c09b
+index 0000000..c7f98e5
 --- /dev/null
 +++ b/test/srt/test_beliefkv_tool_host_retention.py
 @@ -0,0 +1,146 @@
@@ -16024,7 +16151,7 @@ index 0000000000000000000000000000000000000000..c7f98e50cd0263ff5cd528ae37b848e5
 +    assert cache.tree_core._can_reclaim_full_host_duplicate(node)
 diff --git a/test/srt/test_beliefkv_transfer_receipts.py b/test/srt/test_beliefkv_transfer_receipts.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..909001c0cb1c38f6f52187acecf81161b068fb29
+index 0000000..909001c
 --- /dev/null
 +++ b/test/srt/test_beliefkv_transfer_receipts.py
 @@ -0,0 +1,681 @@
@@ -16711,7 +16838,7 @@ index 0000000000000000000000000000000000000000..909001c0cb1c38f6f52187acecf81161
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_unified_ack.py b/test/srt/test_beliefkv_unified_ack.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..873baf56ea2ec82cb69a81622c3b07da946dce01
+index 0000000..873baf5
 --- /dev/null
 +++ b/test/srt/test_beliefkv_unified_ack.py
 @@ -0,0 +1,388 @@
@@ -17105,7 +17232,7 @@ index 0000000000000000000000000000000000000000..873baf56ea2ec82cb69a81622c3b07da
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_write_back_batch.py b/test/srt/test_beliefkv_write_back_batch.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..f86e43653a3df66e3480af0c4e23c97c2c08649a
+index 0000000..f86e436
 --- /dev/null
 +++ b/test/srt/test_beliefkv_write_back_batch.py
 @@ -0,0 +1,341 @@
@@ -17452,7 +17579,7 @@ index 0000000000000000000000000000000000000000..f86e43653a3df66e3480af0c4e23c97c
 +    assert sum(item[0] == "submit" for item in trace) == 1
 diff --git a/test/srt/test_beliefkv_write_back_batch_integration.py b/test/srt/test_beliefkv_write_back_batch_integration.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..89ea94255305718105224f3edd20b0a38bf2fb33
+index 0000000..89ea942
 --- /dev/null
 +++ b/test/srt/test_beliefkv_write_back_batch_integration.py
 @@ -0,0 +1,98 @@

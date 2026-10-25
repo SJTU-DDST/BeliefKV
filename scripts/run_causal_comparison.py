@@ -26,6 +26,7 @@ from beliefkv.experiments.delegation_policy import DYNAMIC_NESTED_IN_GRAPH_PROFI
 from beliefkv.experiments.internal_comparison import arm_environment
 from beliefkv.experiments.paper_baselines import (
     RUNTIME_ARMS as PAPER_CONTROLS, environment as paper_environment,
+    server_flags as paper_server_flags,
 )
 from beliefkv.experiments.subagent_retention import (
     ORDER as RETENTION_ORDER, environment as retention_environment,
@@ -141,7 +142,7 @@ def environment(
             path = Path(settings[source])
             settings["BELIEFKV_" + target] = str(path)
             settings["BELIEFKV_" + digest] = sha256_file(path)
-    flags = ["--enable-custom-logit-processor"]
+    flags = ["--enable-custom-logit-processor", *paper_server_flags(mode)]
     if not full_only:
         flags = ["--mamba-full-memory-ratio", "0.9", *flags]
     if settings.get("DEVICE_FULL_TOKENS"):

@@ -43,8 +43,9 @@
       ],
       "component_fidelity": "1000_author_code_state_combinations_equal",
       "runtime": "implemented_inherited_6207_cpu_cases_pass",
-      "gpu_result": "v208_native_calibration_pass_v209_comparison_running",
-      "dynamic_join_liveness": "sequential_projection_blocking_case_cpu_reproduced_actual_run_audit_pending"
+      "gpu_result": "v209_complete_same_work_mean_jct_s_1091.940321_output_tps_230.646022",
+      "dynamic_join_liveness": "cpu_projection_blocking_case_preserved_v209_all_completed_no_timeout_force",
+      "single_run_performance_accepted": false
     },
     {
       "id": "continuum_public",
@@ -58,18 +59,27 @@
         "pinned_program_then_program_fcfs",
         "native_multi_session_ttl_lock_receipts",
         "queued_reentry_retention",
-        "latest_deadline_pin_capacity_relief"
+        "latest_deadline_pin_capacity_relief",
+        "current_model_native_completed_output_tool_parser",
+        "online_per_tool_reentry_gap_mean_sufficient_statistics"
       ],
       "explicit_adaptations": [
         "full_only_session_anchor_and_generation_guards",
-        "snapshot_iteration_expires_all_eligible_pins_without_list_deletion_skip"
+        "snapshot_iteration_expires_all_eligible_pins_without_list_deletion_skip",
+        "qwen3_coder_tool_format_and_single_call_identity",
+        "parallel_tool_outputs_remain_unidentified_without_a_future_interval"
       ],
       "remaining": [
-        "completed_output_tool_identification",
-        "queue_and_request_lifecycle_integration",
-        "native_running_preemption_and_safe_queue_reentry"
+        "updated_engine_and_application_inherited_cpu_qualification",
+        "gpu_native_data_plane_calibration",
+        "same_work_gpu_comparison"
       ],
-      "runtime": "physical_components_tested_not_exposed_as_runtime_arm",
+      "runtime": "public_policy_adapter_and_native_pressure_retraction_qualification_pending",
+      "native_preemption_adaptation": {
+        "scope": "pressure_only_program_first_arrival_priority",
+        "future_is_last_step_labels_used": false,
+        "optional_pins_released_before_native_decode_retraction": true
+      },
       "gpu_result": "pending"
     },
     {

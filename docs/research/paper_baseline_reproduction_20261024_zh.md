@@ -27,8 +27,8 @@ baseline 的策略，其入口等待仍计入 workflow JCT。
 
 | 方法 | 已实施 | 尚未验证或补齐 |
 | --- | --- | --- |
-| ThunderAgent | 单后端 reasoning/acting 工作集、工具边界暂停、恢复分组与 BFD 投影；6207 项继承 CPU 资格通过，v208 数据面校验通过，v209 同工作量运行中 | 固定轨迹完整 JCT/吞吐及动态 JOIN 活性审计 |
-| Continuum public | 公开版均值与 2 秒 TTL、program FCFS 排序核、多会话真实 native pin、排队续接与容量解锁组件 | 工具解析、准入接线和原生 running 抢占；尚未开放完整 runtime arm |
+| ThunderAgent | 单后端工作集策略，v209 同工作量完整运行与 JCT 路径审计完成 | 配对重复及动态 JOIN 阻塞的独立扩展，不能以单轮作最终验收 |
+| Continuum public | 公开版 TTL、program FCFS、真实 native pin、工具解析、在线间隔和准入已接线；使用原生 program 优先级压力抢占及 pin 解锁 | 新引擎完整 CPU 资格和真实 GPU 数据面及性能验证 |
 | Continuum paper | §4 经验 CDF、全局回退、指数冷启动及 TTL 目标与排序核 | 模型恢复代价、在线队列/记忆性统计、TTL 强制与死锁解除 |
 | CONCUR | 论文 AIMD 公式与阈值，重复样本不重复收缩窗口 | GPU 命中口径、agent 级暂停/恢复、动态 JOIN 依赖映射 |
 | InferCept | §4 的 chunk-discard 代价、全体中断请求按最小浪费排序、换出预算和剩余 preserve/discard 决策 | 实测 profile、每轮预算求解、原生部分换出和 discard、恢复队列 |
@@ -85,13 +85,13 @@ V206 在启动 GPU 前被严格配置预检拦下：校验接续器没有把已�
 57 项相关检查通过。修复显式传递原配置，不放宽校验。
 
 V208 的 24 个真实请求均保持原生停止边界，GPU 数据面和 position sampling
-检查通过，随后启动 v209。V209 继续使用 c527d0dc 的冻结代码；新组件没有
+检查通过，随后完成 v209。V209 使用 c527d0dc 的冻结代码；新组件没有
 加入该运行。原生校验不能代替 paper scheduler 的性能和活性验证。
 
 CPU 新增了一个显式局限样例：1000 token 的逻辑容量中，等待 JOIN 的 parent
 占 900 token 和 100 token buffer，pending child 需要 50+100 token。公开
 策略仅在负容量时暂停 acting program，因此该 child 不会自然恢复，只能等
-1800 秒保险规则。当前已观察到 v209 持续推进，不能据此假设它实际死锁，
+1800 秒保险规则。v209 全部完成且没有触发该保险规则，不能据此假设它实际死锁，
 也不能把此构造的等待当作论文性能结论。若实测出现该情况，须保留原组，
 另行命名最小 observed-JOIN 活性扩展，不注入本系统的 JOIN 优先排序。
 
@@ -117,8 +117,33 @@ native write-back；保留失败记录，修正该锁测试使用原生 drop evi
 
 需要披露一处保留实现差异：作者 TTL sweep 遍历同时删除同一 list，可能让
 相邻到期项延迟到下一步；当前物理组件对 snapshot 遍历，一轮释放所有到期
-且没有排队后继的 pin。running preemption 仍缺少当前引擎的完整物理接线，
-所以此阶段仍是组件复现，不能标为完整 Continuum 或用于性能对比。
+且没有排队后继的 pin。随后已增加准入接线和原生压力抢占适配：每个 program
+继承首次到达优先级，仅在 native decode 容量不足时抢占较晚 program，
+不因新请求到达而主动抢占；单 running 请求受 pin 阻塞时先撤销最晚截止 pin，
+然后重新执行原生容量检查。新引擎资格与 GPU 验证尚未完成，不能计为已验证复现。
+
+动态模型不会预先声明哪条生成是最后一步，因此没有导入作者 artifact 中的
+事后 `is_last_step` 标签；running 请求都按“尚未知道是最后一步”处理。
+公开方法、当前模型格式适配、该信息边界和 snapshot sweep 修复均单列披露。
+
+`ContinuumTools` 复用当前 Qwen3-Coder 的原生完整输出解析器，不解析正在
+生成的输出，也不读取重放的未来 action。shell 沿用公开版的命令首词身份；
+其他工具使用已生成的函数名。单次输出包含多个并行工具时保守视为未识别，
+这与公开版只接受单个 bash action 的输入假设分开披露。
+
+`ContinuumHistory` 仅在同一顺序 invocation 的后继到达时学习
+“上次输出完成到本次请求到达”的间隔。不同工具独立维护 sum/count，
+使用常数时间更新公开版均值，不接入本系统旧工具预测模型。
+未知工具、普通返回或已退休程序不会产生伪造的零间隔样本。
+
+在 v195 全部 2054 个真实完整输出上离线核对，识别出 1990 个工具输出，
+另有 64 个未识别或普通回答；未将这 64 个全部认定为正常最终回答。
+解析 thread CPU 总计 253.31ms，P50 0.050ms、P99 1.374ms。
+这是完整输出解析的 CPU 样本，不能当作 serving 调度、pin 生命周期或
+整个 baseline 的控制开销。证据：
+`/home/longhao/experiment/ops/v3777_continuum_real_output_parser_cpu_20261024.json`。
+新增在线工具与已有物理组件的目标回归 66 项通过，见 v3776 XML；
+完整继承 CPU 资格另行绑定，不覆盖原来的 v3772–v3774。
 
 ## 最新内部对照
 
@@ -131,6 +156,23 @@ V205 scheduler-only 已完整完成，2054 请求、116355888 输入 token、
 | v195 自然 native | 1509.740834 | 201.434306 |
 | v204 Full | 1415.542276 | 214.032350 |
 | v205 scheduler-only | 1458.076082 | 208.423131 |
+| v209 ThunderAgent 单后端公开策略适配 | 1091.940321 | 230.646022 |
+
+V209 的 18 个 workflow、2054 请求、116355888 输入及 387242 输出 token
+完整一致。全部正常长尾保留，无质量排除，337 次控制 tick、0 次 1800 秒
+强制恢复。结束后观察到两份新鲜 idle telemetry，owned 进程清理为空且已
+通过真实 PID 检查。报告仍标记 `performance_accepted=false`，独立任务
+正确性尚未评分，也没有重复实验。
+
+完整实测依赖路径审计见
+`/home/longhao/experiment/ops/v3781_thunderagent_matched_jct_paths_20261024.json`。
+平均路径上的 submit 到首次 launch 从 v204 的 561.38 秒降为 463.19 秒，
+首次 launch 到原生完成从 794.11 秒降为 569.15 秒。各组最后阻塞路径可能
+不同，这些分解不能视为因果消融或纯 GPU 时间。
+
+V209 与 v204 的同 session 旧前缀重算代理均为 0；H2D 与容量周转明显不同。
+该结果说明目前不能只以 native 或 scheduler-only 验收联合方案，应先完成
+其余强 baseline，并研究限制跨请求活跃工作集所减少的反复恢复。
 
 这是同一开发轨迹的单轮结果。Full 相对 scheduler-only 的增量仍较小，
 尚未经过配对重复或独立任务正确性评分。旧输入重算、需求 H2D 和额外

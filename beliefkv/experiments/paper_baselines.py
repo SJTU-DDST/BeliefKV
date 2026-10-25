@@ -5,7 +5,16 @@ from __future__ import annotations
 from beliefkv.experiments.internal_comparison import arm_environment
 
 
-RUNTIME_ARMS = {"thunderagent": "thunderagent_public_single_backend"}
+RUNTIME_ARMS = {
+    "thunderagent": "thunderagent_public_single_backend",
+    "continuum_public": "continuum_public_single_backend",
+}
+CONTINUUM_SERVER_ARGUMENTS = {
+    "enable_priority_scheduling": True,
+    "disable_priority_preemption": True,
+    "schedule_low_priority_values_first": True,
+    "retraction_policy": "priority",
+}
 DISABLED_POLICIES = (
     "custom_kv_management", "prepare_host", "background_prepare",
     "terminal_child_reclaim", "tool_prefetch", "final_stage_prefetch",
@@ -52,3 +61,19 @@ def validate_state(label: str, state: dict) -> None:
         or declared.get("native_capacity_authority_preserved") is not True
     ):
         raise ValueError("effective paper baseline identity or information contract differs")
+
+
+def server_flags(label: str) -> list[str]:
+    if label != "continuum_public":
+        return []
+    return [
+        "--enable-priority-scheduling", "--disable-priority-preemption",
+        "--schedule-low-priority-values-first", "--retraction-policy", "priority",
+    ]
+
+
+def validate_server_arguments(label: str, observed: dict) -> None:
+    if label == "continuum_public" and any(
+        observed.get(name) != expected for name, expected in CONTINUUM_SERVER_ARGUMENTS.items()
+    ):
+        raise ValueError("Continuum requires native program-order pressure retraction")

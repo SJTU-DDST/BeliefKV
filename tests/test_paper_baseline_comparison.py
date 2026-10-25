@@ -51,3 +51,16 @@ def test_external_runtime_must_be_declared_and_cannot_pass_as_our_scheduler():
     observed["paper_baseline"]["future_information_used"] = True
     with pytest.raises(ValueError, match="information"):
         validate_runtime("scheduler_only", observed, external_policy="thunderagent")
+
+
+def test_continuum_uses_native_pressure_priority_without_unconditional_preemption(
+    reference, tmp_path,
+):
+    settings, flags, _socket = comparison.environment(
+        reference, "continuum_public", tmp_path, tmp_path, tmp_path, 18554, tmp_path,
+    )
+    assert settings["BELIEFKV_PAPER_BASELINE"] == RUNTIME_ARMS["continuum_public"]
+    assert "--enable-priority-scheduling" in flags
+    assert "--disable-priority-preemption" in flags
+    assert "--schedule-low-priority-values-first" in flags
+    assert flags[flags.index("--retraction-policy") + 1] == "priority"

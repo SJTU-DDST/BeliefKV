@@ -111,6 +111,21 @@ If no safe capacity or no overlapping compute exists, accept native recovery
 waiting. No scheduling rule can guarantee hidden transfers for an all-cold
 working set that exceeds HBM.
 
+The first paper comparison changes the reference for this design. On the same
+V195 work, V209's single-backend ThunderAgent adaptation completed with mean JCT
+1091.940321 seconds and 230.646022 output tokens/s, versus V204 Full's
+1415.542276 seconds and 214.032350 output tokens/s. Both retained all normal
+tails and the same request/token population. These are single-run observations.
+
+Its working-set admission also transferred substantially less H2D. This
+requires evaluating the bounded *active context set across successive calls*,
+not just the current running count and one next-copy buffer. A completed model
+call followed by a short tool should not immediately make its program compete
+as an unrelated cold arrival. This is a candidate to incorporate after the
+baseline reproductions, with observed JOIN liveness and all external admission
+waiting retained in workflow JCT. Do not attribute the measured gain solely to
+DMA overlap or adopt the sequential program mapping's dependency-blocking case.
+
 ## Transfer Lead Time
 
 Layerwise readiness is a pipeline, not a guarantee of full overlap. For a fixed
