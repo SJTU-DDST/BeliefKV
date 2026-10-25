@@ -70,17 +70,36 @@ The existing min-waste action component remains separate from these queues.
 
 ## Remaining Runtime Work
 
+The separate engine worktree
+`/home/longhao/experiment/.worktrees/sglang-infercept-host-move-20261025`
+adds `release_session_full_host_duplicates`. It validates the current session
+generation, leaf identity and a bounded selected ancestor set before releasing
+settled FULL Host duplicates. Native pending DMA and Host locks defer a move;
+a Host-only checkpoint is never released. Device compute locks can remain
+because this operation preserves the device allocation. Each returned unit is
+freed through the real native Host-pool interface, and a repeated call earns no
+additional capacity. The incremental backup index observes the now-unbacked
+device prefix.
+
+A native lifecycle regression exercises backup ACK, physical device reclaim,
+H2D enqueue, the pre-ACK refusal, post-ACK Host release and duplicate suppression.
+This remains a physical primitive, not an enabled InferCept runtime arm.
+The future adapter must bind each call to the reconciled native receipt and
+current request attempt before advancing `ResumeQueues`. A separately captured
+canonical patch and inherited CPU qualification bind this candidate; the
+running V216 engine stays frozen and does not use it.
+
 Measure the model forward curve, saturation point and transfer bandwidth on
 the shared model/hardware without reading future replay dependencies. Bind the
 profile to model, KV bytes per token and native engine sources. Fill recompute
 chunks according to saturation minus actual running queries.
 
-Implement native partial backup, settled reclamation, partial Host moves,
-discard and query resumption with generation/lock/DMA correctness. Physical
+Implement native partial backup, settled reclamation, receipt-bound Host moves,
+scratch capacity, discard and query resumption with generation/lock/DMA correctness. Physical
 capacity, native row/batch admission, replay receipts and page ownership remain
 authoritative. Isolate the arm from Full migration/priorities; do not enable it
 until the complete inherited CPU scope and native path are qualified.
 
 No GPU result, overlap gain, fairness improvement or full reproduction is
-claimed from these components. Preserve the frozen V215 candidate while this
+claimed from these components. Preserve the frozen V216 candidate while this
 independent baseline work proceeds.

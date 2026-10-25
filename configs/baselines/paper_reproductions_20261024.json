@@ -152,12 +152,14 @@
         "page_quantized_budget_solver",
         "original_agent_arrival_fcfs_query_and_swap_queues",
         "partial_query_and_swap_ack_accounting",
-        "elapsed_time_unknown_interception_estimate"
+        "elapsed_time_unknown_interception_estimate",
+        "targeted_settled_full_host_duplicate_release_native_primitive",
+        "native_backup_reclaim_restore_ack_then_host_move_lifecycle"
       ],
       "remaining": [
         "model_and_link_profiles",
         "safe_partial_swap_and_discard",
-        "physical_host_move_semantics_and_scratch_capacity",
+        "receipt_bound_host_moves_and_scratch_capacity",
         "native_resumption_queue_integration",
         "native_adapter_full_inherited_cpu_qualification",
         "matched_gpu_comparison"
