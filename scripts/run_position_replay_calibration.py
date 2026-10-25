@@ -19,7 +19,8 @@ import httpx
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from beliefkv.experiments.source_provenance import sha256_file
+from beliefkv.experiments.source_provenance import git_source_state, sha256_file
+from beliefkv.experiments.prepare_ack_engine import prepare_ack_engine_compatibility
 from scripts import run_causal_comparison as controls
 from scripts import run_causal_source_capture as capture
 from scripts.benchmark_causal_sampling import calibration_batch_sizes
@@ -255,8 +256,9 @@ def register(args):
     } <= sources.keys():
         raise ValueError("position calibration operator lacks CPU qualification")
     evidence = capture.engine_evidence(args.engine, args.engine_report, args.engine_sources)
-    if evidence["tree"] != source["engine_tree"]:
-        raise ValueError("calibration and source use different native engines")
+    engine_compatibility = prepare_ack_engine_compatibility(
+        args.engine, source, candidate_tree=evidence["tree"],
+    )
     fresh._require_clean(ROOT)
     if qualified.command(["git", "-C", str(ROOT), "branch", "--show-current"]) != "main":
         raise ValueError("freeze qualified main")
@@ -268,6 +270,24 @@ def register(args):
         check=True, capture_output=True,
     )
     comparison.verify_cpu_snapshot(checkout, sources)
+    frozen_engine = Path(source["engine_checkout"])
+    if engine_compatibility is not None:
+        frozen_engine = comparison.EXPERIMENTS / ".worktrees" / (
+            f"sglang-{label}-position-{evidence['tree'][:12]}-{revision[:12]}"
+        )
+        base = qualified.command(["git", "-C", str(args.engine), "rev-parse", "HEAD"])
+        subprocess.run(
+            ["git", "-C", str(args.engine), "worktree", "add", "--detach", str(frozen_engine), base],
+            check=True, capture_output=True,
+        )
+        patch = checkout / "patches/sglang-v0.5.20-beliefkv-staging.patch"
+        subprocess.run(
+            ["git", "-C", str(frozen_engine), "apply", str(patch)],
+            check=True, capture_output=True,
+        )
+        frozen = git_source_state(frozen_engine, canonical_patch=patch)["canonical_patch"]
+        if not frozen["matches_worktree"] or frozen["actual_tree"] != evidence["tree"]:
+            raise ValueError("frozen calibration engine differs from CPU evidence")
     paths = (
         args.source_registration, args.reference, args.cpu_report, args.cpu_sources,
         args.engine_report, args.engine_sources, Path(reservation.__file__),
@@ -290,8 +310,9 @@ def register(args):
         "source_registration": str(args.source_registration.resolve()),
         "source_arm": str((Path(source["run_root"]) / "native_capture").resolve()),
         "reference_registration": str(args.reference.resolve()),
-        "hold_file": source["hold_file"], "engine_checkout": source["engine_checkout"],
-        "engine_tree": source["engine_tree"], "engine_evidence": evidence,
+        "hold_file": source["hold_file"], "engine_checkout": str(frozen_engine),
+        "engine_tree": evidence["tree"], "engine_evidence": evidence,
+        "source_engine_tree": source["engine_tree"], "engine_compatibility": engine_compatibility,
         "engine_cpu_checkout": str(args.engine.resolve()),
         "cpu_report": str(args.cpu_report.resolve()), "cpu_sources": str(args.cpu_sources.resolve()),
         "run_root": str(args.run_root.resolve()), "port": args.port,

@@ -34,6 +34,7 @@ from scripts.run_causal_source_capture import (
     project_disjoint_workload, validated_capacity,
 )
 from scripts.benchmark_causal_sampling import calibration_batch_sizes
+from beliefkv.experiments.prepare_ack_engine import prepare_ack_engine_compatibility
 from beliefkv.core.events import RuntimeEventKind as Kind
 
 ORDER = ("full", "native_matched", "join_priority_only", "no_background_prepare")
@@ -890,6 +891,15 @@ def register(args):
     source_capacity = load(args.source_arm / "server/native_capacity_census.json")["capacity"]
     reference = source_reference(reference, source_roots, running, source_capacity)
     engine = engine_evidence(args.engine, args.engine_report, args.engine_sources)
+    captured_source = load(Path(smoke_server["source_registration"]))
+    engine_compatibility = prepare_ack_engine_compatibility(
+        args.engine, captured_source, candidate_tree=engine["tree"],
+    )
+    if (
+        smoke_server.get("engine_tree") != engine["tree"]
+        or smoke_server.get("engine_compatibility") != engine_compatibility
+    ):
+        raise ValueError("GPU check and controlled engine compatibility differ")
     fresh._require_clean(ROOT)
     if qualified.command(["git", "-C", str(ROOT), "branch", "--show-current"]) != "main":
         raise ValueError("freeze qualified main")
@@ -961,6 +971,8 @@ def register(args):
         "development_checkout": str(ROOT), "execution_checkout": str(checkout),
         "code_commit": revision, "engine_checkout": str(frozen_engine),
         "engine_tree": engine["tree"], "engine_evidence": engine,
+        "source_engine_tree": captured_source["engine_tree"],
+        "engine_compatibility": engine_compatibility,
         "source_sha256": sources, "passing_cpu_cases": count,
         "external_inputs": [
             {"path": str(path.resolve()), "sha256": sha256_file(path)}
