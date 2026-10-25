@@ -147,14 +147,22 @@
       "implemented_components": [
         "chunked_discard_waste",
         "global_min_waste_swap_order",
-        "preserve_discard_residual_decision"
+        "preserve_discard_residual_decision",
+        "paper_integer_transfer_budget_constraints_with_declared_lexicographic_tie_break",
+        "page_quantized_budget_solver",
+        "original_agent_arrival_fcfs_query_and_swap_queues",
+        "partial_query_and_swap_ack_accounting",
+        "elapsed_time_unknown_interception_estimate"
       ],
       "remaining": [
         "model_and_link_profiles",
-        "per_iteration_transfer_budget_optimization",
         "safe_partial_swap_and_discard",
-        "resumption_queue_policy"
+        "physical_host_move_semantics_and_scratch_capacity",
+        "native_resumption_queue_integration",
+        "native_adapter_full_inherited_cpu_qualification",
+        "matched_gpu_comparison"
       ],
+      "component_scope": "paper_strategy_components_not_an_enabled_runtime_arm",
       "gpu_result": "pending"
     },
     {
