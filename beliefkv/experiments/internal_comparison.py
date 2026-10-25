@@ -46,6 +46,13 @@ def arm_environment(
     frontier = str(int(
         frontier == "1" and custom_kv
     ))
+    frontier_quota = common.get(
+        "BELIEFKV_FRONTIER_RESTORE_ORDINARY_QUOTA",
+        common.get("FRONTIER_RESTORE_ORDINARY_QUOTA", "4"),
+    )
+    if frontier_quota not in ("0", "4"):
+        raise ValueError("frontier restore ordinary quota must be 0 or 4")
+    frontier_quota = frontier_quota if frontier == "1" else "4"
     frontier_reclaim = common.get(
         "BELIEFKV_FRONTIER_COLD_RECLAIM", common.get("FRONTIER_COLD_RECLAIM", "0"),
     )
@@ -112,6 +119,8 @@ def arm_environment(
         "TOOL_RESTORE_MODE": tool_restore if custom_kv else "speculative",
         "EXECUTION_FRONTIER_RESTORE": frontier,
         "BELIEFKV_ENABLE_FRONTIER_RESTORE": frontier,
+        "FRONTIER_RESTORE_ORDINARY_QUOTA": frontier_quota,
+        "BELIEFKV_FRONTIER_RESTORE_ORDINARY_QUOTA": frontier_quota,
         "FRONTIER_COLD_RECLAIM": frontier_reclaim,
         "BELIEFKV_FRONTIER_COLD_RECLAIM": frontier_reclaim,
         "FRONTIER_COLD_RECLAIM_POLICY": frontier_reclaim_policy,

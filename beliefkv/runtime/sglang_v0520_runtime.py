@@ -517,6 +517,10 @@ class NativeAdmissionRuntime:
         ] = OrderedDict()
         self._prefetch_lock_release_failures: set[str] = set()
         self._prefetch_priority_normal_admissions = 4
+        frontier_quota = os.environ.get("BELIEFKV_FRONTIER_RESTORE_ORDINARY_QUOTA", "4")
+        if frontier_quota not in ("0", "4"):
+            raise ValueError("frontier restore ordinary quota must be 0 or 4")
+        self.frontier_restore_ordinary_quota = int(frontier_quota)
         self._resident_priority_normal_admissions = 4
         self._prefetch_priority_promoted: str | None = None
         self._prefetch_priority_native_rank: int | None = None
@@ -2605,6 +2609,7 @@ class NativeAdmissionRuntime:
                 "tool_prefetch": self.enable_tool_prefetch,
                 "tool_restore_mode": self.tool_restore_mode,
                 "execution_frontier_restore": self.enable_frontier_restore,
+                "frontier_restore_ordinary_quota": self.frontier_restore_ordinary_quota,
                 "frontier_cold_reclaim": self.enable_frontier_cold_reclaim,
                 "frontier_cold_reclaim_policy": self.frontier_cold_reclaim_policy,
                 "restore_tiers": self.restore_tiers,
@@ -10256,7 +10261,7 @@ class NativeAdmissionRuntime:
         if self._live_frontier_restore_consumer() is not None:
             self.counts["frontier_restore_selection_pending"] += 1
             return
-        if self._prefetch_priority_normal_admissions < 4:
+        if self._prefetch_priority_normal_admissions < self.frontier_restore_ordinary_quota:
             return
         now_ms = time.monotonic() * 1000.
         if now_ms < self._execution_handoff_next_ms:

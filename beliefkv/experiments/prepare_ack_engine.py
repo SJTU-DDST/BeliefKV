@@ -6,13 +6,9 @@ from pathlib import Path
 import subprocess
 
 FILE = "python/sglang/srt/mem_cache/unified_radix_cache.py"
-ASSIGNMENT = ast.parse(
-    "beliefkv_retry_after_write = bool("
-    "getattr(self, '_beliefkv_incremental_full_enabled', False) is True"
-    " and self.ongoing_write_through)"
-).body[0]
 RETRY = ast.parse(
-    "if beliefkv_retry_after_write:\n"
+    "if (getattr(self, '_beliefkv_incremental_full_enabled', False) is True"
+    " and any(tracker[ct] < request_by_type[ct] for ct in self.tree_components)):\n"
     "    self._evict_components(request_by_type, tracker,"
     " available_size_targets=available_size_targets)"
 ).body[0]
@@ -27,7 +23,10 @@ def shape(node):
 
 
 def verify_prepare_ack_projection(original: str, candidate: str) -> None:
-    before, after = ast.parse(original), ast.parse(candidate)
+    try:
+        before, after = ast.parse(original), ast.parse(candidate)
+    except SyntaxError as error:
+        raise ValueError("engine cache source is not valid Python") from error
 
     def guard(module):
         cache = next(node for node in module.body
@@ -38,20 +37,21 @@ def verify_prepare_ack_projection(original: str, candidate: str) -> None:
                    if isinstance(node, ast.If) and shape(node.test) == shape(WRITE_BACK)]
         if len(matches) != 1:
             raise ValueError("expected one native write-back completion guard")
-        return matches[0]
+        return method, matches[0]
 
     try:
-        old, new = guard(before), guard(after)
+        _old_method, old = guard(before)
+        _new_method, new = guard(after)
         sync = ast.parse("self.writing_check(write_back=True)").body[0]
         if (
             old.orelse or new.orelse or len(old.body) != 1
             or shape(old.body[0]) != shape(sync)
-            or len(new.body) != 3
+            or len(new.body) != 2
             or [shape(node) for node in new.body]
-            != [shape(ASSIGNMENT), shape(sync), shape(RETRY)]
+            != [shape(sync), shape(RETRY)]
         ):
             raise ValueError("candidate is not the bounded custom PREPARE ACK retry")
-        new.body = [new.body[1]]
+        new.body = [new.body[0]]
         if shape(before) != shape(after):
             raise ValueError("engine behavior changed outside the gated PREPARE ACK retry")
     except (StopIteration, SyntaxError) as error:

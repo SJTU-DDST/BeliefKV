@@ -289,6 +289,9 @@ def preflight_runtime(settings, model_path):
         "restore_tiers": settings.get("RESTORE_TIERS", settings["BELIEFKV_RESTORE_TIERS"]),
         "enable_tool_prefetch": settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "1",
         "enable_frontier_restore": settings["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == "1",
+        "frontier_restore_ordinary_quota": int(
+            settings.get("BELIEFKV_FRONTIER_RESTORE_ORDINARY_QUOTA", "4"),
+        ),
         "enable_frontier_cold_reclaim": settings["BELIEFKV_FRONTIER_COLD_RECLAIM"] == "1",
         "frontier_cold_reclaim_policy": settings.get(
             "BELIEFKV_FRONTIER_COLD_RECLAIM_POLICY", "waiting",
@@ -584,6 +587,12 @@ def observed_configuration(plan, label, arm, *, final=False):
             if state.get("tool_prefetch_priority_ms") != expected:
                 raise ValueError("effective tool prefetch priority window differs")
     common = plan.get("reference_environment", {})
+    if "FRONTIER_RESTORE_ORDINARY_QUOTA" in common and mode != "native_matched":
+        state = qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
+        if state is not None:
+            expected_quota = int(arm_environment(common, mode)["BELIEFKV_FRONTIER_RESTORE_ORDINARY_QUOTA"])
+            if state.get("frontier_restore_ordinary_quota") != expected_quota:
+                raise ValueError("effective selected-consumer preload quota differs")
     if "TOOL_CONTINUITY" in common and mode != "native_matched":
         state = qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
         if state is not None:

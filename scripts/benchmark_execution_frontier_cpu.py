@@ -21,12 +21,15 @@ from beliefkv.runtime.sglang_v0520_runtime import (
 from scripts.benchmark_wait_prefetch_dispatch_cpu import dispatch_fixture
 
 
-def measure(depth, scenario, samples, *, enabled=True):
+def measure(
+    depth, scenario, samples, *, enabled=True, preload_quota=4, priority_credit=4,
+):
     runtime, key, cache, reads, actions, _, reset, _, _ = dispatch_fixture(
         NativeAdmissionRuntime, source="join_ticket", depth=depth,
         capture_issuance=True,
     )
     runtime.enable_frontier_restore = enabled
+    runtime.frontier_restore_ordinary_quota = preload_quota
     runtime.enable_execution_handoff = runtime.enable_tool_prefetch = False
     runtime.prefill_scheduling_policy = "join_priority"
     request = NS(
@@ -66,7 +69,7 @@ def measure(depth, scenario, samples, *, enabled=True):
             reset()
             runtime._join_ticket = None
             runtime._execution_handoff_next_ms = 0.
-            runtime._prefetch_priority_normal_admissions = 4
+            runtime._prefetch_priority_normal_admissions = priority_credit
             runtime._frontier_probe_after_ms.clear()
             runtime._reentry_observations.clear()
             if enabled and scenario == "selected_pending":
@@ -81,7 +84,7 @@ def measure(depth, scenario, samples, *, enabled=True):
                 len(actions), runtime.physical_ledger.pending_count,
                 runtime.physical_ledger.pending_action_bytes("PREFETCH_GPU"),
             )
-            if enabled and scenario == "positive":
+            if enabled and scenario == "positive" and priority_credit >= preload_quota:
                 if signature[0] != min(depth, runtime.physical_ledger.max_pending) or signature[1] != signature[0]:
                     raise AssertionError(("positive enqueue was lost", signature))
                 consumer = runtime._frontier_restore_consumer
@@ -106,6 +109,7 @@ def measure(depth, scenario, samples, *, enabled=True):
             raise AssertionError("control iterations changed their native payloads")
         return {
             "depth": depth, "scenario": scenario, "frontier_restore": enabled,
+            "preload_ordinary_quota": preload_quota, "scheduling_priority_credit": priority_credit,
             "control_payload_signature": signatures[0],
             "native_reads_last_iteration": dict(reads),
             "selected_pending_checks_last_iteration": (

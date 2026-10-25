@@ -440,6 +440,41 @@ def test_cpu_preflight_verifies_effective_tool_residency_grace(
         assert result["verified_configuration"]["tool_continuity_grace_ms"] == 100.
 
 
+@pytest.mark.parametrize("stale_in_child", (False, True))
+def test_cpu_preflight_checks_preload_quota_separately_from_priority(
+    reference, tmp_path, monkeypatch, stale_in_child,
+):
+    spec = comparison.load(comparison.ROOT / (
+        "configs/migration/qwen3_coder_18project_root_phase16_20261024.json"
+    ))
+    spec["common_environment"]["FRONTIER_RESTORE_ORDINARY_QUOTA"] = "0"
+    env, _, _ = comparison.environment(
+        comparison.experiment_reference(reference, spec),
+        "full", tmp_path, tmp_path, tmp_path, 18568, tmp_path, max_running_requests=24,
+        execution_frontier_restore=True, frontier_cold_reclaim=True,
+    )
+
+    def execute(command, *, env, **_kwargs):
+        assert env["CUDA_VISIBLE_DEVICES"] == "99999"
+        with monkeypatch.context() as child:
+            for name, value in env.items():
+                if name.startswith("BELIEFKV_"):
+                    child.setenv(name, value)
+            if stale_in_child:
+                child.setenv("BELIEFKV_FRONTIER_RESTORE_ORDINARY_QUOTA", "4")
+            child.setattr(comparison.sys, "argv", ["-c", *command[3:]])
+            exec(command[2], {})
+        return NS(stdout="")
+
+    monkeypatch.setattr(comparison.subprocess, "run", execute)
+    if stale_in_child:
+        with pytest.raises(ValueError, match="CPU runtime configuration differs"):
+            comparison.preflight_runtime(env, "cpu-config-check")
+    else:
+        result = comparison.preflight_runtime(env, "cpu-config-check")
+        assert result["verified_configuration"]["frontier_restore_ordinary_quota"] == 0
+
+
 @pytest.mark.parametrize("field,value", (
     ("ROOT_COUNT", None), ("MAX_RUNNING_REQUESTS", "0"),
     ("FANOUT_PROFILE", "native_in_graph_reusable_nested"),

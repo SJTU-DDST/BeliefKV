@@ -7,7 +7,7 @@ import textwrap
 import pytest
 
 from beliefkv.experiments.prepare_ack_engine import (
-    ASSIGNMENT, FILE, RETRY, prepare_ack_engine_compatibility,
+    FILE, RETRY, prepare_ack_engine_compatibility,
     verify_prepare_ack_projection,
 )
 
@@ -16,6 +16,7 @@ ORIGINAL = textwrap.dedent("""
     class UnifiedRadixCache:
         def _evict(self, params):
             tracker = {}
+            self._evict_components(request_by_type, tracker, available_size_targets=available_size_targets)
             if self.cache_controller is not None and self.cache_controller.write_policy == "write_back":
                 self.writing_check(write_back=True)
             return tracker
@@ -27,8 +28,9 @@ ORIGINAL = textwrap.dedent("""
 
 def candidate(original=ORIGINAL):
     tree = ast.parse(original)
-    guard = tree.body[0].body[0].body[1]
-    guard.body = [deepcopy(ASSIGNMENT), *guard.body, deepcopy(RETRY)]
+    method = tree.body[0].body[0]
+    guard = method.body[2]
+    guard.body = [*guard.body, deepcopy(RETRY)]
     return ast.unparse(ast.fix_missing_locations(tree))
 
 
