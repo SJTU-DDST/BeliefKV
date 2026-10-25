@@ -20,8 +20,9 @@ import types
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from beliefkv.policy.paper_baselines import (
-    ThunderProgram, ThunderWorkingSet, continuum_public_ttl,
+    ThunderProgram, ThunderWorkingSet, continuum_public_priority, continuum_public_ttl,
 )
+from beliefkv.runtime.continuum_pins import ContinuumPins
 
 PINS = {
     "thunderagent": "7ddc8610270e56d3b109eed8796b3a4360fc67c9",
@@ -200,6 +201,78 @@ def compare_continuum(source_root, evidence):
     return cases
 
 
+def compare_continuum_queue_and_pressure(source_root, evidence, *, cases):
+    queue_tree = checked_source(
+        source_root / "continuum", "vllm/v1/core/sched/request_queue.py",
+        "continuum", evidence,
+    )
+    scheduler_tree = checked_source(
+        source_root / "continuum", "vllm/v1/core/sched/scheduler.py",
+        "continuum", evidence,
+    )
+    queue = next(
+        node for node in ast.walk(queue_tree)
+        if isinstance(node, ast.FunctionDef) and node.name == "peek_request"
+        and any(arg.arg == "pinned_requests" for arg in node.args.args)
+    )
+    victim = next(
+        node for node in ast.walk(scheduler_tree)
+        if isinstance(node, ast.FunctionDef)
+        and node.name == "pop_running_request_based_on_last_step"
+    )
+    module = types.ModuleType("_beliefkv_continuum_queue_reference")
+    compile_nodes(module, (queue, victim))
+
+    class Queue(list):
+        pass
+
+    rng = random.Random(21)
+    for case in range(cases):
+        requests = Queue(
+            types.SimpleNamespace(
+                job_id=str(index), arrival_time=float(rng.randrange(10)),
+                is_last_step=False,
+            )
+            for index in range(rng.randrange(1, 20))
+        )
+        requests.job_id_first_entry_time = {
+            req.job_id: float(rng.randrange(10)) for req in requests
+        }
+        pinned = [
+            (req, float(rng.randrange(10)))
+            for req in requests if rng.choice((True, False))
+        ]
+        retained = {req.job_id for req, _deadline in pinned}
+        expected = module.peek_request(requests, pinned, None, None)
+        actual = min(enumerate(requests), key=lambda item: continuum_public_priority(
+            ttl_retained=item[1].job_id in retained,
+            program_arrival=requests.job_id_first_entry_time[item[1].job_id],
+            native_position=item[0],
+        ))[1]
+        if actual is not expected:
+            raise ValueError(f"public Continuum queue differs at case {case}")
+        if not pinned:
+            continue
+        # The pinned victim branch is independently verifiable without running
+        # preemption, which is not yet integrated into the shared engine.
+        controller = types.SimpleNamespace(
+            running=[requests[0]], pinned_requests=list(pinned),
+        )
+        expected, unpin = module.pop_running_request_based_on_last_step(
+            controller, requests[0],
+        )
+        physical = ContinuumPins()
+        physical.pins = {
+            req.job_id: types.SimpleNamespace(expires_at=deadline)
+            for req, deadline in pinned
+        }
+        physical.release = lambda identity, reason: identity
+        actual = physical.relieve_pressure(running_requests=1)
+        if not unpin or actual != expected.job_id:
+            raise ValueError(f"public Continuum pin victim differs at case {case}")
+    return {"queue_cases": cases, "all_equal": True, "running_preemption_tested": False}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-root", type=Path, required=True)
@@ -214,12 +287,17 @@ def main():
     module = native_thunder(args.source_root, evidence)
     thunder = asyncio.run(compare_thunder(module, cases=args.cases))
     continuum = compare_continuum(args.source_root, evidence)
+    continuum_queue = compare_continuum_queue_and_pressure(
+        args.source_root, evidence, cases=args.cases,
+    )
     report = {
         "schema_version": 1, "source_evidence": evidence,
         "candidate_sha256": sha(ROOT / "beliefkv/policy/paper_baselines.py"),
         "verifier_sha256": sha(Path(__file__)),
         "thunderagent": {"cases": len(thunder), "all_equal": True},
         "continuum_public": {"cases": len(continuum), "all_equal": True},
+        "continuum_public_queue_and_pin_victim": continuum_queue,
+        "continuum_physical_sha256": sha(ROOT / "beliefkv/runtime/continuum_pins.py"),
         "author_imports_removed": (
             "Only in-method backend.state imports are omitted; the same public "
             "BUFFER_PER_PROGRAM=100 is supplied. No scheduling expressions change."

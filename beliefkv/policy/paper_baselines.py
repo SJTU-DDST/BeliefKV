@@ -102,6 +102,18 @@ def continuum_priority(
     )
 
 
+def continuum_public_priority(
+    *, ttl_retained: bool, program_arrival: float, native_position: int,
+) -> tuple:
+    """Public queue: retained program first, then program FCFS and stable ties."""
+    if type(ttl_retained) is not bool:
+        raise ValueError("TTL state must be an observed boolean")
+    return (
+        not ttl_retained, _number(program_arrival, "program arrival"),
+        _integer(native_position, "native position"),
+    )
+
+
 @dataclass(frozen=True)
 class ConcurConfig:
     additive_increase: int = 2

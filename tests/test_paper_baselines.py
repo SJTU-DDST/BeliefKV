@@ -4,7 +4,8 @@ import pytest
 
 from beliefkv.policy.paper_baselines import (
     ConcurConfig, ConcurWindow, ContinuumTTL, Intercept, ThunderWorkingSet,
-    continuum_priority, continuum_public_ttl, infercept_chunk_discard_waste,
+    continuum_priority, continuum_public_priority, continuum_public_ttl,
+    infercept_chunk_discard_waste,
     infercept_decisions,
 )
 
@@ -81,6 +82,32 @@ def test_continuum_priority_keeps_preemption_ttl_and_original_program_age():
         **dict(zip(("preempted", "ttl_retained", "program_arrival", "native_position"), values[name]))
     ))
     assert order == ["preempted", "pinned", "return", "new"]
+
+
+def test_public_continuum_queue_uses_program_fcfs_with_ttl_first():
+    values = {
+        "new": (False, 10., 0),
+        "return": (False, 1., 8),
+        "pinned_new": (True, 5., 9),
+        "pinned_old": (True, 1., 10),
+    }
+    assert sorted(values, key=lambda name: continuum_public_priority(
+        **dict(zip(("ttl_retained", "program_arrival", "native_position"), values[name]))
+    )) == ["pinned_old", "pinned_new", "return", "new"]
+
+
+def test_thunder_sequential_projection_can_block_a_spawned_dependency():
+    policy = ThunderWorkingSet(1000)
+    policy.arrive("parent", 898, now=0.)
+    policy.completed("parent", 900, now=1.)
+    policy.arrive("child", 50, now=2.)
+    # Public policy has no observed JOIN edge and no negative capacity to fix.
+    for now in (5., 10., 600., 1799.):
+        assert policy.tick(now=now) == ()
+        assert policy.programs["parent"].active
+        assert policy.programs["child"].pending
+        assert not policy.programs["child"].active
+        assert policy.remaining_capacity() == 0
 
 
 def test_concur_requires_both_high_usage_and_low_hits_for_a_decrease():

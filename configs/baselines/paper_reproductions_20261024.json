@@ -42,8 +42,9 @@
         "dynamic_invocations_registered_only_when_observed"
       ],
       "component_fidelity": "1000_author_code_state_combinations_equal",
-      "runtime": "implemented_cpu_qualification_pending",
-      "gpu_result": "pending"
+      "runtime": "implemented_inherited_6207_cpu_cases_pass",
+      "gpu_result": "v208_native_calibration_pass_v209_comparison_running",
+      "dynamic_join_liveness": "sequential_projection_blocking_case_cpu_reproduced_actual_run_audit_pending"
     },
     {
       "id": "continuum_public",
@@ -51,8 +52,24 @@
       "commit": "316a58794a6ff86b216e579b74fd56ed0c5a911f",
       "paper": "2511.02230v7",
       "scope": "public_artifact_policy",
-      "component_fidelity": "12_author_ttl_boundary_cases_equal",
-      "runtime": "pending",
+      "component_fidelity": "12_author_ttl_and_1000_queue_pin_victim_cases_equal",
+      "implemented_components": [
+        "public_ttl_decision",
+        "pinned_program_then_program_fcfs",
+        "native_multi_session_ttl_lock_receipts",
+        "queued_reentry_retention",
+        "latest_deadline_pin_capacity_relief"
+      ],
+      "explicit_adaptations": [
+        "full_only_session_anchor_and_generation_guards",
+        "snapshot_iteration_expires_all_eligible_pins_without_list_deletion_skip"
+      ],
+      "remaining": [
+        "completed_output_tool_identification",
+        "queue_and_request_lifecycle_integration",
+        "native_running_preemption_and_safe_queue_reentry"
+      ],
+      "runtime": "physical_components_tested_not_exposed_as_runtime_arm",
       "gpu_result": "pending"
     },
     {
@@ -67,7 +84,6 @@
         "preemption_ttl_program_fcfs_priority"
       ],
       "remaining": [
-        "native_multi_session_ttl_pins",
         "measured_reconstruction_cost_profile",
         "online_evicted_queue_and_memoryfulness_statistics",
         "deadlock_breaking_and_reentry_integration"

@@ -27,8 +27,8 @@ baseline 的策略，其入口等待仍计入 workflow JCT。
 
 | 方法 | 已实施 | 尚未验证或补齐 |
 | --- | --- | --- |
-| ThunderAgent | 单后端 reasoning/acting 工作集、工具边界暂停、恢复分组与 BFD 投影，已接入当前原生请求选择和完成回调 | 完整 CPU 资格、真实 GPU 数据面检查、固定轨迹 JCT/吞吐 |
-| Continuum public | 公开版均值与 2 秒 TTL 决策，已与作者代码核对 | 多会话 native pin、工具解析与准入接线 |
+| ThunderAgent | 单后端 reasoning/acting 工作集、工具边界暂停、恢复分组与 BFD 投影；6207 项继承 CPU 资格通过，v208 数据面校验通过，v209 同工作量运行中 | 固定轨迹完整 JCT/吞吐及动态 JOIN 活性审计 |
+| Continuum public | 公开版均值与 2 秒 TTL、program FCFS 排序核、多会话真实 native pin、排队续接与容量解锁组件 | 工具解析、准入接线和原生 running 抢占；尚未开放完整 runtime arm |
 | Continuum paper | §4 经验 CDF、全局回退、指数冷启动及 TTL 目标与排序核 | 模型恢复代价、在线队列/记忆性统计、TTL 强制与死锁解除 |
 | CONCUR | 论文 AIMD 公式与阈值，重复样本不重复收缩窗口 | GPU 命中口径、agent 级暂停/恢复、动态 JOIN 依赖映射 |
 | InferCept | §4 的 chunk-discard 代价、全体中断请求按最小浪费排序、换出预算和剩余 preserve/discard 决策 | 实测 profile、每轮预算求解、原生部分换出和 discard、恢复队列 |
@@ -83,6 +83,42 @@ V206 在启动 GPU 前被严格配置预检拦下：校验接续器没有把已�
 没有启动 server，也没有 GPU 性能样本；失败登记和冻结代码保留。
 新增三个 CPU 复现覆盖普通、frontier 和 cold-frontier 配置，修复后
 57 项相关检查通过。修复显式传递原配置，不放宽校验。
+
+V208 的 24 个真实请求均保持原生停止边界，GPU 数据面和 position sampling
+检查通过，随后启动 v209。V209 继续使用 c527d0dc 的冻结代码；新组件没有
+加入该运行。原生校验不能代替 paper scheduler 的性能和活性验证。
+
+CPU 新增了一个显式局限样例：1000 token 的逻辑容量中，等待 JOIN 的 parent
+占 900 token 和 100 token buffer，pending child 需要 50+100 token。公开
+策略仅在负容量时暂停 acting program，因此该 child 不会自然恢复，只能等
+1800 秒保险规则。当前已观察到 v209 持续推进，不能据此假设它实际死锁，
+也不能把此构造的等待当作论文性能结论。若实测出现该情况，须保留原组，
+另行命名最小 observed-JOIN 活性扩展，不注入本系统的 JOIN 优先排序。
+
+## Continuum 物理保留与作者核对
+
+`beliefkv/runtime/continuum_pins.py` 在真实 FULL-only radix tree 上为每个
+顺序 invocation 持有独立锁收据，支持共享前缀、原生节点分裂、增量生长、
+后继请求已入队时延长保留、session 代际变化释放和容量阻塞解锁。它不会
+复制 KV，也不会借用本系统短工具续接的单 pin、1 秒期限或 JOIN 特权。
+
+作者公开队列实际采用 pinned program 优先、program 首次到达 FCFS；
+与论文中的 preempted 首级区别保留为两套明确的排序核。公开容量阻塞
+分支实际选择截止时间最晚的 pin，虽然源码注释写的是最早，当前跟随实际
+表达式。直接执行固定源码的 1000 组队列/pin-victim 核对均一致，连同原有
+1000 组 ThunderAgent 和 12 组 TTL 核对，记录在
+`/home/longhao/experiment/ops/v3771_continuum_queue_author_fidelity_20261024.json`。
+
+物理组件及论文相关目标回归共 80 项通过：
+`experiments/reports/v3770_continuum_native_policy_cpu_20261024.xml`。
+此前 v3769 的一个失败来自测试夹具只接受 custom D2H、无法处理测试末尾的
+native write-back；保留失败记录，修正该锁测试使用原生 drop eviction。
+没有放宽生产锁或容量检查。
+
+需要披露一处保留实现差异：作者 TTL sweep 遍历同时删除同一 list，可能让
+相邻到期项延迟到下一步；当前物理组件对 snapshot 遍历，一轮释放所有到期
+且没有排队后继的 pin。running preemption 仍缺少当前引擎的完整物理接线，
+所以此阶段仍是组件复现，不能标为完整 Continuum 或用于性能对比。
 
 ## 最新内部对照
 
