@@ -293,6 +293,9 @@ def preflight_runtime(settings, model_path):
             "BELIEFKV_FRONTIER_COLD_RECLAIM_POLICY", "waiting",
         ),
         "tool_continuity": settings["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == "1",
+        "tool_continuity_grace_ms": float(
+            settings.get("BELIEFKV_TOOL_CONTINUITY_GRACE_MS", "0"),
+        ),
         "tool_prefetch_priority_ms": float(settings["BELIEFKV_TOOL_PREFETCH_PRIORITY_MS"]),
         "join_prefetch_trigger": settings["JOIN_PREFETCH_TRIGGER"],
         "enable_prefetch_residency_protection": (
@@ -586,6 +589,9 @@ def observed_configuration(plan, label, arm, *, final=False):
             expected = arm_environment(common, mode)["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == "1"
             if state.get("tool_continuity") is not expected:
                 raise ValueError("effective short-tool continuity differs")
+            grace = float(arm_environment(common, mode)["BELIEFKV_TOOL_CONTINUITY_GRACE_MS"])
+            if state.get("tool_continuity_grace_ms", 0.) != grace:
+                raise ValueError("effective short-tool residency grace differs")
     census = arm / "server/native_capacity_census.json"
     if census.exists() and load(census)["capacity"] != plan["source_capacity"]:
         raise ValueError("actual FULL/Mamba/Host pool capacity changed")

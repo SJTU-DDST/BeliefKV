@@ -118,6 +118,16 @@ class ToolContinuationPolicy:
                 self.counts["segment_budget_yields"] += 1
                 self.counts["segment_token_budget_yields"] += int(token_budget_spent)
 
+    def pending_reentry(self, key: PrefillCandidateKey) -> bool:
+        segment = self.segments.get(self.identity(key))
+        return bool(
+            segment is not None and segment.key == key
+            and segment.finished_at is not None
+            and segment.rounds < self.max_rounds
+            and segment.output_tokens < self.max_output_tokens
+            and self.credits.get(key.root_workflow_id, 0)
+        )
+
     def observe(self, event: RuntimeEvent) -> None:
         if event.kind is Kind.WORKFLOW_END:
             for workflow, invocation in tuple(self.segments):

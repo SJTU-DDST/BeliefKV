@@ -66,14 +66,16 @@ def test_launch_frontier_control_precedes_explicit_historical_default(
 
 def join_fixture(
     monkeypatch, *, return_before_wait=False, mode="join_priority_only", scheduling=None,
-    tool_continuity=None,
+    tool_continuity=None, tool_continuity_grace_ms=None,
 ):
     configure(monkeypatch, mode)
     if scheduling is not None:
         monkeypatch.setenv("BELIEFKV_PREFILL_SCHEDULING_POLICY", scheduling)
     if tool_continuity is not None:
         monkeypatch.setenv("BELIEFKV_ENABLE_TOOL_CONTINUITY", str(int(tool_continuity)))
-    if mode == "full":
+    if tool_continuity_grace_ms is not None:
+        monkeypatch.setenv("BELIEFKV_TOOL_CONTINUITY_GRACE_MS", str(tool_continuity_grace_ms))
+    if mode in ("full", "kv_only"):
         monkeypatch.setenv("BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH", "0")
     runtime = NativeAdmissionRuntime()
     runtime.on_events((

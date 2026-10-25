@@ -524,6 +524,7 @@ def test_effective_policy_environment_without_launching_gpu(
         "execution_frontier_restore_requested": False,
         "frontier_cold_reclaim_requested": False,
         "tool_continuity_requested": False,
+        "tool_continuity_grace_ms_requested": 0,
         "tool_timing_requested": tool_timing == "1",
         "tool_prefetch_requested": requested_prefetch == "1",
         "tool_prefetch_priority_ms_requested": 0,

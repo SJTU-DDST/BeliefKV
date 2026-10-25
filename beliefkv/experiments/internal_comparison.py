@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 MODES = ("full", "join_priority_only", "scheduler_only", "kv_only", "native_matched")
 ORDER = ("join_priority_only", "scheduler_only", "kv_only", "native_matched")
 SCHEDULING_ONLY = frozenset(("join_priority_only", "scheduler_only"))
@@ -80,6 +82,12 @@ def arm_environment(
         continuity == "1" and scheduling in ("workflow", "join_priority")
         and mode in ("full", "scheduler_only", "join_priority_only")
     ))
+    grace = common.get(
+        "BELIEFKV_TOOL_CONTINUITY_GRACE_MS", common.get("TOOL_CONTINUITY_GRACE_MS", "0"),
+    )
+    if not math.isfinite(float(grace)) or not 0 <= float(grace) <= 1000.:
+        raise ValueError("tool continuity grace must be in [0, 1000] ms")
+    grace = grace if custom_kv and continuity == "1" else "0"
     native = mode == "native_matched"
     settings = {
         **common,
@@ -128,6 +136,8 @@ def arm_environment(
         "BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY": last_child,
         "TOOL_CONTINUITY": continuity,
         "BELIEFKV_ENABLE_TOOL_CONTINUITY": continuity,
+        "TOOL_CONTINUITY_GRACE_MS": grace,
+        "BELIEFKV_TOOL_CONTINUITY_GRACE_MS": grace,
         "BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY": str(int(workflow_ordering)),
         "BELIEFKV_NATIVE_PREFILL_ORDER": str(int(mode in ("kv_only", "native_matched"))),
         "BELIEFKV_WORKFLOW_ATTAINED_WORK": common.get("BELIEFKV_WORKFLOW_ATTAINED_WORK", "0"),
@@ -166,6 +176,7 @@ def validate_runtime(
     execution_frontier_restore: bool | None = None,
     frontier_cold_reclaim: bool | None = None,
     tool_continuity: bool | None = None,
+    tool_continuity_grace_ms: float | None = None,
     expected_overrides: dict[str, bool] | None = None,
 ) -> None:
     """Check observed effective controls, not just the requested environment."""
@@ -233,6 +244,10 @@ def validate_runtime(
             tool_continuity
             and state.get("prefill_scheduling_policy") in ("workflow", "join_priority")
             and mode in ("full", "scheduler_only", "join_priority_only")
+        )
+    if tool_continuity_grace_ms is not None:
+        expected["tool_continuity_grace_ms"] = (
+            tool_continuity_grace_ms if mode == "full" and state.get("tool_continuity") else 0.
         )
     if expected_overrides:
         if not set(expected_overrides) <= {

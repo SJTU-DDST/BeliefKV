@@ -112,6 +112,7 @@ from beliefkv.runtime.native_transfer_policy import (
     transfer_start_window,
 )
 from beliefkv.runtime.tool_continuity import ToolContinuationPolicy
+from beliefkv.runtime.tool_residency_grace import ToolResidencyGrace
 from beliefkv.runtime.subagent_retention import DormantSubagentRetention
 
 if TYPE_CHECKING:
@@ -448,6 +449,16 @@ class NativeAdmissionRuntime:
         )
         self._tool_continuity_promoted: str | None = None
         self._tool_continuity_normal_admissions = 4
+        grace_ms = float(os.environ.get("BELIEFKV_TOOL_CONTINUITY_GRACE_MS", "0"))
+        if not math.isfinite(grace_ms) or not 0 <= grace_ms <= 1000.:
+            raise ValueError("tool continuity grace must be in [0, 1000] ms")
+        self.tool_continuity_grace_ms = (
+            grace_ms if self._custom_kv_management and self._tool_continuity is not None else 0.
+        )
+        self._tool_residency_grace = (
+            ToolResidencyGrace(self.tool_continuity_grace_ms)
+            if self.tool_continuity_grace_ms else None
+        )
         last_child_setting = os.environ.get("BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY", "0")
         if last_child_setting not in ("0", "1"):
             raise ValueError("JOIN last child priority setting must be 0 or 1")
@@ -943,6 +954,8 @@ class NativeAdmissionRuntime:
             self.join_wait_hints[hint.join_id] = hint
 
     def close(self) -> None:
+        if self._tool_residency_grace is not None:
+            self._release_tool_residency_grace("shutdown")
         self._frontier_restore_consumer = None
         for command in tuple(self._prefetch_service_leases):
             self._release_prefetch_service_lease(command, "shutdown")
@@ -1026,7 +1039,69 @@ class NativeAdmissionRuntime:
         if self._join_ticket is ticket:
             self._join_ticket = None
 
+    def _tool_grace_yields_to_join(self) -> bool:
+        return bool(
+            self._join_priority_pending or self._eos_prefetch_keys
+            or self._join_ticket is not None or self._confirmed_join_tickets
+            or self._join_inflight_tickets or self._critical_parent_demand is not None
+        )
+
+    def _release_tool_residency_grace(self, reason: str) -> PrefillCandidateKey | None:
+        key = self._tool_residency_grace.release(reason)
+        if key is not None:
+            self._residency_ordering_hints.pop(key, None)
+            current = self.context_sessions.get(key.context_id)
+            if current is not None:
+                self._residency_ordering_hints.pop(current, None)
+        return key
+
+    def _refresh_tool_residency_grace(self) -> None:
+        grace = self._tool_residency_grace
+        key = grace.key
+        if key is None:
+            return
+        if self.physical_disabled or self._tool_grace_yields_to_join():
+            self._release_tool_residency_grace("critical_or_disabled")
+            return
+        allocator = getattr(self._native_cache, "token_to_kv_pool_allocator", None)
+        available = getattr(allocator, "available_size", None)
+        page_size = getattr(allocator, "page_size", None)
+        if (
+            callable(available) and type(page_size) is int
+            and available() < page_size * max(
+                1, len(getattr(self._native_running_batch, "reqs", ())),
+            )
+        ):
+            self._release_tool_residency_grace("decode_reserve")
+            return
+        current = self.context_sessions.get(key.context_id)
+        context = self.graph.contexts.get(key.context_id)
+        invocation = self.graph.invocations.get(key.invocation_id)
+        workflow = self.graph.workflows.get(key.root_workflow_id)
+        valid = bool(
+            current is not None
+            and (current.root_workflow_id, current.invocation_id,
+                 current.session_id, current.session_generation)
+            == (key.root_workflow_id, key.invocation_id,
+                key.session_id, key.session_generation)
+            and current.context_epoch in (key.context_epoch, key.context_epoch + 1)
+            and context is not None
+            and context.epoch in (key.context_epoch, key.context_epoch + 1)
+            and invocation is not None and not invocation.state.terminal
+            and invocation.workflow_id == key.root_workflow_id
+            and invocation.context_id == key.context_id
+            and invocation.state is not InvocationState.WAIT_CHILD
+            and workflow is not None and workflow.end_ts_ms is None
+            and self._tool_continuity.pending_reentry(key)
+        )
+        if not valid:
+            self._release_tool_residency_grace("authority_changed")
+        elif time.monotonic() >= grace.pin.expires_at:
+            self._release_tool_residency_grace("expired")
+
     def attach_native_cache(self, cache: object) -> None:
+        if self._tool_residency_grace is not None:
+            self._release_tool_residency_grace("cache_changed")
         self._native_cache = cache
         supports = getattr(cache, "supports_beliefkv_restore_tiers", None)
         self._restore_tiers_supported = (
@@ -1337,6 +1412,8 @@ class NativeAdmissionRuntime:
                 deltas = self.graph.apply_batch(events, atomic=False)
         except Exception:
             # A partially applied batch cannot remain a scheduling authority.
+            if self._tool_residency_grace is not None:
+                self._release_tool_residency_grace("causal_mirror_discarded")
             self.graph = RuntimeCausalContextGraph(strict_timestamps=False)
             self._join_by_invocation.clear()
             self._noncontinuing_joins.clear()
@@ -1453,6 +1530,8 @@ class NativeAdmissionRuntime:
                         if not self.graph.invocations[invocation_id].state.terminal
                         and self.graph.workflows[self.graph.invocations[invocation_id].workflow_id].end_ts_ms is None
                     }
+            if self._tool_residency_grace is not None:
+                self._refresh_tool_residency_grace()
             for hint in hints:
                 if self._terminal(hint.key):
                     self.counts["terminal_prediction_ignored"] += 1
@@ -1969,6 +2048,8 @@ class NativeAdmissionRuntime:
         if parent is None:
             return
         join_id, parent_key = parent
+        if self._tool_residency_grace is not None:
+            self._release_tool_residency_grace("join_eos")
         if self.join_prefetch_trigger == "selective_report_or_eos":
             # Preserve this causal clock pair across child RETURN cleanup.
             pending = self._join_eos_arrival_pending
@@ -2249,6 +2330,8 @@ class NativeAdmissionRuntime:
                 self.event_server.drain(max_messages=128)
         if self._prefetch_service_leases:
             self._refresh_prefetch_service_leases()
+        if self._tool_residency_grace is not None:
+            self._refresh_tool_residency_grace()
         now_ms = time.monotonic() * 1000
         if self._terminal_child_reclaims and now_ms >= self._terminal_child_reclaim_next_ms:
             self._retry_terminal_child_reclaims(now_ms=now_ms)
@@ -2412,6 +2495,15 @@ class NativeAdmissionRuntime:
                 "join_last_child_priority": self.enable_join_last_child_priority,
                 "prefill_scheduling_policy": self.prefill_scheduling_policy,
                 "tool_continuity": self._tool_continuity is not None,
+                "tool_continuity_grace_ms": self.tool_continuity_grace_ms,
+                "tool_residency_grace": (
+                    {
+                        "active": self._tool_residency_grace.key is not None,
+                        "max_contexts": 1,
+                        "revocable_on_capacity_pressure": True,
+                        "counts": dict(self._tool_residency_grace.counts),
+                    } if self._tool_residency_grace is not None else None
+                ),
                 "tool_continuity_policy": (
                     {
                         "short_gap_seconds": self._tool_continuity.short_gap_seconds,
@@ -7421,6 +7513,8 @@ class NativeAdmissionRuntime:
         self, key: PrefillCandidateKey, full_tokens: int, mamba_slots: int,
         expires: float,
     ) -> None:
+        if self._tool_residency_grace is not None:
+            self._release_tool_residency_grace("critical_parent")
         prior = self._live_critical_parent_demand()
         self._critical_parent_demand = (key, full_tokens, mamba_slots, expires)
         if (
@@ -11452,6 +11546,10 @@ class NativeAdmissionRuntime:
         self._workflow_work_promoted = None
         self._tool_continuity_promoted = None
         self._observe_native_admission_capacity(running_batch=running_batch, adder=adder)
+        if self._tool_residency_grace is not None:
+            self._refresh_tool_residency_grace()
+            if not getattr(running_batch, "reqs", ()):
+                self._release_tool_residency_grace("idle_gpu")
         # Reuse causal classification only; residency, hint expiry and aging
         # remain live because native allocation may change between the two calls.
         tagged = []
@@ -12161,6 +12259,22 @@ class NativeAdmissionRuntime:
         self, req: object, *, admitted: bool, result: str
     ) -> bool:
         """Report whether rejected admission released optional device locks."""
+        grace = self._tool_residency_grace
+        if grace is not None and grace.key is not None:
+            key = self.visible.get(getattr(req, "rid", None))
+            if admitted and key is not None and (
+                key.root_workflow_id, key.invocation_id, key.context_id,
+                key.session_id, key.session_generation,
+            ) == (
+                grace.key.root_workflow_id, grace.key.invocation_id, grace.key.context_id,
+                grace.key.session_id, grace.key.session_generation,
+            ):
+                self._release_tool_residency_grace("native_admitted")
+            elif not admitted and result == "NO_TOKEN":
+                released = self._release_tool_residency_grace("allocation_pressure") is not None
+                if getattr(req, "beliefkv_metadata", None) is not None:
+                    self.counts["native_NO_TOKEN"] += 1
+                return released
         if getattr(req, "beliefkv_metadata", None) is not None:
             self.counts["native_admitted" if admitted else f"native_{result}"] += 1
             if admitted and self._tool_continuity is not None:
@@ -12395,6 +12509,12 @@ class NativeAdmissionRuntime:
             not self._report_prediction_enabled
             and self._model_worker is None and self._semantic_worker is None
         )
+        grace_has_active_peer = False
+        if self._tool_residency_grace is not None:
+            self._refresh_tool_residency_grace()
+            grace_has_active_peer = any(not req.finished() for req in batch.reqs)
+            if not grace_has_active_peer:
+                self._release_tool_residency_grace("idle_gpu")
         for req in batch.reqs:
             finished = req.finished()
             # EOS and tool-wait policies consume final counts, not decode progress.
@@ -12528,6 +12648,19 @@ class NativeAdmissionRuntime:
                         key, now=time.monotonic(),
                         output_tokens=len(getattr(req, "output_ids", ()) or ()),
                     )
+                    if (
+                        grace_has_active_peer and self._tool_residency_grace.key is None
+                        and self._tool_continuity.pending_reentry(key)
+                        and not self.physical_disabled and not self._terminal(key)
+                        and not self._tool_grace_yields_to_join()
+                        and any(
+                            token in self._tool_open_token_ids
+                            for token in (getattr(req, "output_ids", ()) or ())
+                        )
+                    ):
+                        self._tool_residency_grace.retain(
+                            self._native_cache, key, now=time.monotonic(),
+                        )
                 if self._workflow_attained_work_enabled:
                     workflow = self.graph.workflows.get(key.root_workflow_id)
                     if workflow is not None and workflow.end_ts_ms is None:
@@ -12555,6 +12688,11 @@ class NativeAdmissionRuntime:
         return tuple(completed_ids) if completed_ids is not None else ()
 
     def on_abort_request(self, abort: object) -> None:
+        grace = self._tool_residency_grace
+        if grace is not None and grace.key is not None and (
+            getattr(abort, "abort_all", False) or grace.key.request_id.startswith(abort.rid)
+        ):
+            self._release_tool_residency_grace("abort")
         removed = [
             rid
             for rid in self.visible

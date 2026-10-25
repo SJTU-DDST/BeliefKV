@@ -68,6 +68,7 @@ JOIN_LAST_CHILD_PRIORITY="${BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY:-${JOIN_LAS
 EXECUTION_FRONTIER_RESTORE="${BELIEFKV_ENABLE_FRONTIER_RESTORE:-${EXECUTION_FRONTIER_RESTORE:-0}}"
 FRONTIER_COLD_RECLAIM="${BELIEFKV_FRONTIER_COLD_RECLAIM:-${FRONTIER_COLD_RECLAIM:-0}}"
 TOOL_CONTINUITY="${BELIEFKV_ENABLE_TOOL_CONTINUITY:-${TOOL_CONTINUITY:-0}}"
+TOOL_CONTINUITY_GRACE_MS="${BELIEFKV_TOOL_CONTINUITY_GRACE_MS:-${TOOL_CONTINUITY_GRACE_MS:-0}}"
 ENABLE_JOIN_PREFETCH="${BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH:-1}"
 JOIN_PREFETCH_MIN_ADVANCE_MS="${JOIN_PREFETCH_MIN_ADVANCE_MS:-0}"
 TOOL_PREFETCH_MIN_ADVANCE_MS="${TOOL_PREFETCH_MIN_ADVANCE_MS:-0}"
@@ -187,6 +188,7 @@ export BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY="$JOIN_LAST_CHILD_PRIORITY"
 export BELIEFKV_ENABLE_FRONTIER_RESTORE="$EXECUTION_FRONTIER_RESTORE"
 export BELIEFKV_FRONTIER_COLD_RECLAIM="$FRONTIER_COLD_RECLAIM"
 export BELIEFKV_ENABLE_TOOL_CONTINUITY="$TOOL_CONTINUITY"
+export BELIEFKV_TOOL_CONTINUITY_GRACE_MS="$TOOL_CONTINUITY_GRACE_MS"
 "$PYTHON" -c 'import json,sys; rows=json.load(open(sys.argv[1]))["workloads"]; count=int(sys.argv[2]); assert count <= len(rows), "requested roots exceed manifest"; assert len({row["instance_id"] for row in rows[:count]}) == count, "duplicate workload"' "$MANIFEST" "$ROOT_COUNT"
 if [[ -n "$WORKFLOW_ARRIVAL_SCHEDULE" ]]; then
   PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -c 'import json,sys; from pathlib import Path; from beliefkv.experiments.arrival_schedule import load_workflow_arrivals; rows=json.load(open(sys.argv[1]))["workloads"][:int(sys.argv[2])]; load_workflow_arrivals(Path(sys.argv[3]), instance_ids=[row["instance_id"] for row in rows])' "$MANIFEST" "$ROOT_COUNT" "$WORKFLOW_ARRIVAL_SCHEDULE"
@@ -313,13 +315,14 @@ jq -n --argjson cache "$CHAT_TOKEN_BLOCK_CACHE" --argjson native "$NATIVE_POLICY
   --argjson frontier "$EXECUTION_FRONTIER_RESTORE" \
   --argjson frontier_reclaim "$FRONTIER_COLD_RECLAIM" \
   --argjson continuity "$TOOL_CONTINUITY" \
+  --argjson continuity_grace "$TOOL_CONTINUITY_GRACE_MS" \
   --argjson tool_timing "$ENABLE_TOOL_TIMING" \
   --argjson tool_prefetch "$ENABLE_TOOL_PREFETCH" \
   --argjson tool_priority "$TOOL_PREFETCH_PRIORITY_MS" \
   --arg tool_restore "${BELIEFKV_TOOL_RESTORE_MODE:-speculative}" \
   --arg idle_prepare "${BELIEFKV_IDLE_PREPARE_POLICY:-cold}" \
   --arg restore_tiers "${BELIEFKV_RESTORE_TIERS:-complete}" \
-  '{schema_version: 1, chat_token_block_cache: ($cache == 1), native_policy_baseline: ($native == 1), prefetch_prefix_diagnostics: ($prefixes == 1), prefetch_residency_protection_requested: ($protection == 1), prefill_scheduling_policy_requested: $scheduling, join_last_child_priority_requested: ($last_child == 1), execution_frontier_restore_requested: ($frontier == 1), frontier_cold_reclaim_requested: ($frontier_reclaim == 1), tool_continuity_requested: ($continuity == 1), tool_timing_requested: ($tool_timing == 1), tool_prefetch_requested: ($tool_prefetch == 1), tool_prefetch_priority_ms_requested: $tool_priority, tool_restore_mode_requested: $tool_restore, idle_prepare_policy_requested: $idle_prepare, restore_tiers_requested: $restore_tiers, server_random_seed: $seed, python_hash_seed: $hash_seed, internal_comparison_mode: $comparison}' \
+  '{schema_version: 1, chat_token_block_cache: ($cache == 1), native_policy_baseline: ($native == 1), prefetch_prefix_diagnostics: ($prefixes == 1), prefetch_residency_protection_requested: ($protection == 1), prefill_scheduling_policy_requested: $scheduling, join_last_child_priority_requested: ($last_child == 1), execution_frontier_restore_requested: ($frontier == 1), frontier_cold_reclaim_requested: ($frontier_reclaim == 1), tool_continuity_requested: ($continuity == 1), tool_continuity_grace_ms_requested: $continuity_grace, tool_timing_requested: ($tool_timing == 1), tool_prefetch_requested: ($tool_prefetch == 1), tool_prefetch_priority_ms_requested: $tool_priority, tool_restore_mode_requested: $tool_restore, idle_prepare_policy_requested: $idle_prepare, restore_tiers_requested: $restore_tiers, server_random_seed: $seed, python_hash_seed: $hash_seed, internal_comparison_mode: $comparison}' \
   > "$RUN_ROOT/server/launch_configuration.json"
 setsid env -u BELIEFKV_FULL_MAMBA_HOST_SPLIT "${unset_env[@]}" \
   "${ab_env[@]}" \
