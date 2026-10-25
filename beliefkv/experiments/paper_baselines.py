@@ -60,6 +60,8 @@ def validate_state(label: str, state: dict) -> None:
         raise ValueError("external baseline requires the isolated common runtime")
     if any(state.get(name) is not False for name in DISABLED_POLICIES):
         raise ValueError("BeliefKV policy leaked into the external baseline")
+    if state.get("agent_admission") is not None:
+        raise ValueError("agent working-set candidate leaked into the external baseline")
     declared = state.get("paper_baseline") or {}
     if (
         declared.get("policy") != RUNTIME_ARMS[label]

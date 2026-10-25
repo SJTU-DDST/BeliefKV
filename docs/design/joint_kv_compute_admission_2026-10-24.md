@@ -1,15 +1,18 @@
 # Joint KV Recovery and Compute Admission
 
-Status: combined design proposal, awaiting the requested paper-baseline
-reproductions. Only the unrelated batch-dependency repair below has been
-implemented. V205 has completed; retain all completed and running frozen trees.
+Status: the agent-working-set and migration composition is now a separately
+enabled candidate, following the user's subsequent authorization and explicit
+agent-granularity correction. See `agent_working_set_migration_2026-10-25.md`.
+Layer-deadline calibration and page-specific fences remain proposals. Retain
+all completed and running frozen baseline trees.
 
 The user has requested that the two descriptions be implemented as one design:
 the layer-deadline model and dependency-specific copy fences refine the same
 bounded execution plan, capacity reservation and admission opportunity described
-below. They are not separate scheduling policies. Reproduce the declared paper
-baselines before implementing this combined proposal. The prerequisite batch
-dependency repair already committed before this request remains a separate fix.
+below. They are not separate scheduling policies. The earlier paper-first
+sequence produced the ThunderAgent and Continuum comparisons; the user's latest
+request authorizes the agent candidate alongside remaining paper baselines.
+The prerequisite batch-dependency repair remains a separate fix.
 
 ## Objective
 

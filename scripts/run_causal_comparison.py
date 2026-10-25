@@ -55,7 +55,7 @@ SERVER_FIELDS = (
     "H2D_OPPORTUNITY_SAMPLING", "JOIN_PREFETCH_TRIGGER",
     "JOIN_PREDICTION_MIN_FULL_BYTES", "JOIN_PREDICTION_INTERVAL_MS",
     "JOIN_PREDICTION_MAX_CANDIDATES", "ONLINE_TOOL_TIMING",
-    "BORROWABLE_PARENT_HEADROOM",
+    "BORROWABLE_PARENT_HEADROOM", "AGENT_ADMISSION",
 )
 
 
@@ -297,6 +297,7 @@ def preflight_runtime(settings, model_path):
             "IDLE_PREPARE_POLICY", settings["BELIEFKV_IDLE_PREPARE_POLICY"],
         ),
         "tool_restore_mode": settings["TOOL_RESTORE_MODE"],
+        "enable_agent_working_set": settings.get("BELIEFKV_AGENT_ADMISSION", "off") == "working_set",
         "restore_tiers": settings.get("RESTORE_TIERS", settings["BELIEFKV_RESTORE_TIERS"]),
         "enable_tool_prefetch": settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "1",
         "enable_frontier_restore": settings["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == "1",
@@ -589,6 +590,29 @@ def observed_configuration(plan, label, arm, *, final=False):
         requests = plan["source_plan"]["requests"]
         if counts.get("registered") != requests or counts.get("completed") != requests:
             raise ValueError("paper policy did not observe the complete request population")
+    if final and mode != "native_matched":
+        state = qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
+        expected_agents = (
+            mode == "full"
+            and plan.get("reference_environment", {}).get(
+                "BELIEFKV_AGENT_ADMISSION",
+                plan.get("reference_environment", {}).get("AGENT_ADMISSION", "off"),
+            ) == "working_set"
+        )
+        actual_agents = state.get("agent_admission")
+        if expected_agents:
+            if (
+                not isinstance(actual_agents, dict)
+                or actual_agents.get("policy") != "agent_working_set_with_native_migration"
+                or actual_agents.get("identity") != "invocation_id"
+                or actual_agents.get("future_information_used") is not False
+                or actual_agents.get("native_capacity_authority_preserved") is not True
+                or actual_agents.get("counts", {}).get("registered") != plan["source_plan"]["requests"]
+                or actual_agents.get("counts", {}).get("completed") != plan["source_plan"]["requests"]
+            ):
+                raise ValueError("agent working-set policy did not execute the declared request population")
+        elif actual_agents is not None:
+            raise ValueError("undeclared agent working-set admission")
     if retention:
         state = qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
         if state is not None:

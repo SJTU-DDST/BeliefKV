@@ -98,9 +98,15 @@ def arm_environment(
         raise ValueError("tool continuity grace must be in [0, 1000] ms")
     grace = grace if custom_kv and continuity == "1" else "0"
     native = mode == "native_matched"
+    agent_admission = common.get("BELIEFKV_AGENT_ADMISSION", common.get("AGENT_ADMISSION", "off"))
+    if agent_admission not in ("off", "working_set"):
+        raise ValueError("unsupported agent working-set admission")
+    agent_admission = agent_admission if mode == "full" else "off"
     settings = {
         **common,
         "BELIEFKV_INTERNAL_COMPARISON_MODE": mode,
+        "AGENT_ADMISSION": agent_admission,
+        "BELIEFKV_AGENT_ADMISSION": agent_admission,
         "NATIVE_POLICY_BASELINE": str(int(native)),
         "AB_MODE": "off" if native or not custom_kv else "predictive_h2d",
         "BELIEFKV_CHAT_TOKEN_BLOCK_CACHE": "1",

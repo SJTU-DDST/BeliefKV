@@ -92,3 +92,10 @@
   Keep paper policy, public artifact and any dynamic-graph extension distinct.
   Missing predictors, preemption, TTL enforcement or physical actions must not
   be silently replaced by our policy or counted as a completed reproduction.
+- The user subsequently authorizes the combined system change at agent
+  granularity, explicitly correcting workflow granularity. Develop the separate
+  Full agent-working-set candidate alongside the remaining paper baselines.
+  Preserve the running frozen baseline and all completed paper policies; do not
+  inject Full migration or JOIN priorities into their results. Use one sequential
+  invocation as the admission identity, retain observed-JOIN liveness, and bind
+  recovery reservations to the same agent's actual native admission.

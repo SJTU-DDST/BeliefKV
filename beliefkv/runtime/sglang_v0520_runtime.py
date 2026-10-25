@@ -907,6 +907,20 @@ class NativeAdmissionRuntime:
         self._opportunity_cursor = 0
         paper_policy = os.environ.get("BELIEFKV_PAPER_BASELINE", "")
         self._paper_baseline = None
+        self._agent_admission = None
+        agent_policy = os.environ.get("BELIEFKV_AGENT_ADMISSION", "off")
+        if agent_policy not in ("off", "working_set"):
+            raise ValueError("agent admission must be off or working_set")
+        self.enable_agent_working_set = agent_policy == "working_set"
+        if agent_policy == "working_set":
+            if (
+                paper_policy or self.internal_comparison_mode != "full"
+                or self.tool_restore_mode != "execution"
+            ):
+                raise ValueError("agent working-set admission requires Full execution recovery")
+            from beliefkv.runtime.agent_working_set import AgentAdmission
+
+            self._agent_admission = AgentAdmission(self)
         if paper_policy:
             from beliefkv.runtime.paper_baseline import create_adapter
 
@@ -964,6 +978,8 @@ class NativeAdmissionRuntime:
             self.join_wait_hints[hint.join_id] = hint
 
     def close(self) -> None:
+        if (agents := getattr(self, "_agent_admission", None)) is not None:
+            agents.close()
         if (paper := getattr(self, "_paper_baseline", None)) is not None:
             paper.close()
         if self._tool_residency_grace is not None:
@@ -1143,6 +1159,8 @@ class NativeAdmissionRuntime:
             cache.beliefkv_cold_full_owner_validator = self._live_cold_full_owners
         if (paper := getattr(self, "_paper_baseline", None)) is not None:
             paper.attach(cache)
+        if self._agent_admission is not None:
+            self._agent_admission.attach(cache)
 
     def _next_physical_command_id(self, kind: str) -> str:
         namespace = self._physical_command_namespace
@@ -1442,6 +1460,8 @@ class NativeAdmissionRuntime:
             self._join_parent_cache = None
             self._terminal_child_reclaims.clear()
             self._join_priority_pending.clear()
+            if self._agent_admission is not None:
+                self._agent_admission.close()
             if self._tool_continuity is not None:
                 self._tool_continuity.clear()
             self._spawn_full_prepares.clear()
@@ -1948,6 +1968,8 @@ class NativeAdmissionRuntime:
 
         if (paper := getattr(self, "_paper_baseline", None)) is not None:
             paper.events(events)
+        if self._agent_admission is not None:
+            self._agent_admission.events(events)
 
     def _clear_semantic_invocation(self, invocation_id: str) -> None:
         for rid, key in tuple(self._semantic_keys.items()):
@@ -2376,6 +2398,8 @@ class NativeAdmissionRuntime:
             self.sample_runtime_observations(waiting_queue, now_ms=now_ms)
         if (paper := getattr(self, "_paper_baseline", None)) is not None:
             paper.tick(now=now_ms / 1000.)
+        if self._agent_admission is not None:
+            self._agent_admission.tick(now=now_ms / 1000.)
 
     def _maintain_wait_predictions(self, now_ms: float) -> None:
         """Refresh advisory wait forecasts after launch when overlap permits."""
@@ -2514,6 +2538,10 @@ class NativeAdmissionRuntime:
                     paper.status()
                     if (paper := getattr(self, "_paper_baseline", None)) is not None else None
                 ),
+                "agent_admission": (
+                    self._agent_admission.status() if self._agent_admission is not None else None
+                ),
+                "agent_admission_enabled": self.enable_agent_working_set,
                 "join_parent_priority": self.enable_join_parent_priority,
                 "join_last_child_priority": self.enable_join_last_child_priority,
                 "prefill_scheduling_policy": self.prefill_scheduling_policy,
@@ -4551,6 +4579,11 @@ class NativeAdmissionRuntime:
             self._discard_join_ticket("batch_start_window_changed")
             return
         if observation is not None and observation.step is not None:
+            if self._agent_admission is not None and not self._agent_admission.claim_restore(
+                ticket.key, source="join_ticket",
+            ):
+                self.counts["agent_restore_deferred_before_reclaim"] += 1
+                return
             observation = self._reclaim_wait_prefetch_capacity(
                 ticket.key, observation, source="join_ticket",
             )
@@ -7527,6 +7560,9 @@ class NativeAdmissionRuntime:
         if time.monotonic() >= expires or parent is None:
             self._critical_parent_demand = None
             return None
+        if self._agent_admission is not None and not self._agent_admission.holds_restore(key):
+            self._critical_parent_demand = None
+            return None
         if (
             parent.state is InvocationState.WAIT_JOIN
             and self.context_sessions.get(key.context_id) == key
@@ -7553,6 +7589,11 @@ class NativeAdmissionRuntime:
         self, key: PrefillCandidateKey, full_tokens: int, mamba_slots: int,
         expires: float,
     ) -> None:
+        if self._agent_admission is not None and not self._agent_admission.claim_restore(
+            key, source="join_ticket",
+        ):
+            self.counts["agent_restore_deferred_before_reclaim"] += 1
+            return
         if self._tool_residency_grace is not None:
             self._release_tool_residency_grace("critical_parent")
         prior = self._live_critical_parent_demand()
@@ -8746,6 +8787,11 @@ class NativeAdmissionRuntime:
         ):
             self.counts["prefetch_step_stale"] += 1
             return None
+        if self._agent_admission is not None and not self._agent_admission.claim_restore(
+            step.key, source=source,
+        ):
+            self.counts["agent_restore_deferred"] += 1
+            return None
         command_id = self._next_physical_command_id("prefetch")
         issue_wall_ms = time.time() * 1000
         registered = False
@@ -8754,6 +8800,9 @@ class NativeAdmissionRuntime:
             nonlocal registered
             if self.event_server is not None:
                 self.event_server.drain(max_messages=128)
+            if self._agent_admission is not None and not self._agent_admission.holds_restore(step.key):
+                self.counts["agent_restore_invalidated_before_enqueue"] += 1
+                return False
             if self.refreshed_prefetch_gpu_step(
                 source=source,
                 **({"context_id": step.key.context_id} if source == "tool_wait" else {}),
@@ -9075,6 +9124,11 @@ class NativeAdmissionRuntime:
                 join_id_override=join_id,
             )
             return ()
+        if self._agent_admission is not None and not self._agent_admission.claim_restore(
+            key, source=source,
+        ):
+            self.counts["agent_restore_deferred"] += 1
+            return ()
         byte_allowance = self._prefetch_byte_allowance(issue_budget)
         commands = tuple(self._next_physical_command_id("prefetch") for _ in steps)
         planned = dict(zip(commands, steps))
@@ -9101,6 +9155,9 @@ class NativeAdmissionRuntime:
                 # check. Validate once, immediately before reserving this node.
                 if not self._live_wait_prefetch(key, source):
                     self.counts["prefetch_causal_invalidated_before_enqueue"] += 1
+                    return False
+                if self._agent_admission is not None and not self._agent_admission.holds_restore(key):
+                    self.counts["agent_restore_invalidated_before_enqueue"] += 1
                     return False
                 self.physical_ledger.register(expected)
             except (PhysicalReceiptError, AttributeError, TypeError, ValueError):
@@ -9169,6 +9226,11 @@ class NativeAdmissionRuntime:
             or len({(step.leaf_node_id, step.leaf_creation_time) for step in steps}) != 1
         ):
             return ()
+        if self._agent_admission is not None and not self._agent_admission.claim_restore(
+            ticket.key, source="execution_handoff",
+        ):
+            self.counts["agent_restore_deferred"] += 1
+            return ()
         issue_budget = self._current_residency_budget(include_evictable=True)
         commands = tuple(self._next_physical_command_id("prefetch") for _ in steps)
         planned = dict(zip(commands, steps))
@@ -9180,6 +9242,9 @@ class NativeAdmissionRuntime:
             step = planned.get(command)
             if step is None or not self._live_execution_handoff(ticket):
                 self.counts["prefetch_causal_invalidated_before_enqueue"] += 1
+                return False
+            if self._agent_admission is not None and not self._agent_admission.holds_restore(ticket.key):
+                self.counts["agent_restore_invalidated_before_enqueue"] += 1
                 return False
             try:
                 expected = prefetch_expectation_from_native_op(
@@ -10179,6 +10244,7 @@ class NativeAdmissionRuntime:
             ))
             and time.monotonic() < ticket.expires_at
             and self._executable_waiting_key(ticket.request) == ticket.key
+            and (self._agent_admission is None or self._agent_admission.allows(ticket.key))
         )
 
     def _restore_tier_arguments(self, tier: str) -> dict:
@@ -11119,6 +11185,8 @@ class NativeAdmissionRuntime:
         self._refresh_prefetch_service_leases(context_id=key.context_id)
         if (paper := getattr(self, "_paper_baseline", None)) is not None:
             paper.registered(req, key)
+        if self._agent_admission is not None:
+            self._agent_admission.registered(req, key)
         return True
 
     def _terminal(self, key: PrefillCandidateKey) -> bool:
@@ -11171,6 +11239,10 @@ class NativeAdmissionRuntime:
 
     def retire_terminal_request(self, request_id: str) -> None:
         if request_id in self.visible:
+            if self._agent_admission is not None:
+                self._agent_admission.forget(
+                    self.visible[request_id].invocation_id, now=time.monotonic(),
+                )
             if self._tool_continuity is not None:
                 key = self.visible[request_id]
                 self._tool_continuity.discard(key.root_workflow_id, key.invocation_id)
@@ -11215,6 +11287,8 @@ class NativeAdmissionRuntime:
             requeued = getattr(paper, "requeued", None)
             if requeued is not None:
                 requeued(requests, is_retracted=is_retracted)
+        if self._agent_admission is not None:
+            self._agent_admission.requeued(requests, is_retracted=is_retracted)
 
     def _forget_session(self, request_id: str) -> None:
         self._visible_since.pop(request_id, None)
@@ -11593,6 +11667,16 @@ class NativeAdmissionRuntime:
     ) -> NativePrefillPlan:
         if (paper := getattr(self, "_paper_baseline", None)) is not None:
             return paper.plan(native_order, running_batch=running_batch, adder=adder)
+        if self._agent_admission is not None:
+            self._agent_admission.tick()
+            permitted = [
+                request for request in native_order
+                if getattr(request, "beliefkv_metadata", None) is None
+                or self._agent_admission.allows(self.visible.get(getattr(request, "rid", None)))
+            ]
+            if len(permitted) != len(native_order):
+                self.counts["agent_admission_deferred"] += len(native_order) - len(permitted)
+                native_order, _queue_inspection = permitted, None
         self._workflow_work_promoted = None
         self._tool_continuity_promoted = None
         self._observe_native_admission_capacity(running_batch=running_batch, adder=adder)
@@ -12309,6 +12393,8 @@ class NativeAdmissionRuntime:
         self, req: object, *, admitted: bool, result: str
     ) -> bool:
         """Report whether rejected admission released optional device locks."""
+        if admitted and self._agent_admission is not None:
+            self._agent_admission.admitted(req)
         if (paper := getattr(self, "_paper_baseline", None)) is not None:
             callback = getattr(paper, "candidate_result", None)
             if callback is not None:
@@ -12745,9 +12831,13 @@ class NativeAdmissionRuntime:
             self._refresh_prefetch_service_leases()
         if (paper := getattr(self, "_paper_baseline", None)) is not None:
             paper.completed(batch, completed_ids or ())
+        if self._agent_admission is not None:
+            self._agent_admission.completed(batch, completed_ids or ())
         return tuple(completed_ids) if completed_ids is not None else ()
 
     def on_abort_request(self, abort: object) -> None:
+        if self._agent_admission is not None:
+            self._agent_admission.aborted(abort.rid, all_requests=getattr(abort, "abort_all", False))
         if (paper := getattr(self, "_paper_baseline", None)) is not None:
             paper.aborted(abort.rid, all_requests=getattr(abort, "abort_all", False))
         grace = self._tool_residency_grace

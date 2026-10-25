@@ -17,9 +17,16 @@
     "future_dynamic_graph_visible": false
   },
   "required_order": [
-    "paper_baseline_reproductions",
-    "combined_compute_transfer_capacity_admission_candidate"
+    "preserve_frozen_paper_reference_results",
+    "cpu_qualified_agent_working_set_with_migration_candidate",
+    "continue_remaining_paper_baseline_reproductions"
   ],
+  "subsequent_user_authorization": {
+    "date": "2026-10-25",
+    "granularity": "agent_invocation_not_whole_workflow",
+    "candidate": "agent_working_set_with_native_migration",
+    "paper_arms_remain_isolated": true
+  },
   "methods": [
     {
       "id": "thunderagent",

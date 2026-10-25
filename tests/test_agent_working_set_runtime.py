@@ -1,0 +1,319 @@
+from dataclasses import replace
+import time
+from types import SimpleNamespace as NS
+from unittest.mock import Mock
+
+import pytest
+
+from beliefkv.core.events import RelationType, RuntimeEventKind as Kind
+from beliefkv.experiments.internal_comparison import arm_environment
+from beliefkv.runtime.sglang_v0520_admission import select_native_prefill_candidates
+from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime, _ExecutionHandoffTicket
+from tests.test_internal_comparison import observed
+from tests.test_paper_baseline_runtime import request
+
+
+def runtime(monkeypatch, tmp_path, *, capacity=500):
+    settings = arm_environment({
+        "AGENT_ADMISSION": "working_set", "TOOL_RESTORE_MODE": "execution",
+        "EXECUTION_FRONTIER_RESTORE": "1", "TOOL_CONTINUITY": "1",
+    }, "full")
+    for name, value in settings.items():
+        monkeypatch.setenv(name, value)
+    live = NativeAdmissionRuntime(event_socket_path=str(tmp_path / "runtime.sock"))
+    live.attach_native_cache(NS(
+        tree_components=(0,), token_to_kv_pool_allocator=NS(size_full=capacity),
+    ))
+    return live
+
+
+def test_real_prefill_filters_paused_agents_and_preserves_full_migration_policies(monkeypatch, tmp_path):
+    live = runtime(monkeypatch, tmp_path)
+    try:
+        first, second = request("one", "a", tokens=300), request("two", "b", tokens=300)
+        live.register_visible_request(first)
+        live.register_visible_request(second)
+        plan = live.plan_native_prefill([second, first], running_batch=NS(reqs=[]), adder=None)
+        selection = select_native_prefill_candidates(
+            [second, first], plan=plan, current_semantic_revision=live.semantic_revision,
+        )
+        assert selection.candidates == (first,)
+        assert live._custom_kv_management and live.enable_prepare_host
+        assert live.enable_join_parent_priority and live.enable_resident_first
+        assert live._tool_continuity is not None and live._paper_baseline is None
+        assert live.enable_frontier_restore and not live.enable_tool_prefetch
+    finally:
+        live.close()
+
+
+def test_two_short_tool_successors_share_one_agent_admission(monkeypatch, tmp_path):
+    live = runtime(monkeypatch, tmp_path)
+    try:
+        first = request("one", "a", tokens=300)
+        live.register_visible_request(first)
+        live.on_prefill_candidate_result(first, admitted=True, result="CONTINUE")
+        live.on_batch_completed(NS(reqs=[first]))
+        live.register_visible_request(request("other", "b", tokens=300))
+        successor = request("two", "a", tokens=310)
+        live.register_visible_request(successor)
+        agents = live._agent_admission
+        assert agents.allows(live.visible["two"])
+        assert not agents.allows(live.visible["other"])
+        assert agents.policy.agents["a"].steps == 2
+        live.on_batch_completed(NS(reqs=[successor]))
+        live.on_batch_completed(NS(reqs=[successor]))
+        assert agents.counts["completed"] == 2
+    finally:
+        live.close()
+
+
+def test_real_join_releases_parent_and_restore_budget_is_bound_to_its_reentry(monkeypatch, tmp_path):
+    live = runtime(monkeypatch, tmp_path)
+    try:
+        live.on_events((
+            observed(0, Kind.WORKFLOW_START),
+            observed(1, Kind.INVOCATION_CREATE, invocation_id="parent", context_id="parent-context"),
+            observed(2, Kind.INVOCATION_CREATE, invocation_id="child", context_id="child-context",
+                     parent_invocation_id="parent", relation_type=RelationType.SPAWN),
+            observed(3, Kind.JOIN_CREATE, join_id="join", member_invocation_ids=("child",)),
+        ))
+        parent = request("parent-one", "parent", tokens=300, workflow="wf")
+        live.register_visible_request(parent)
+        live.on_prefill_candidate_result(parent, admitted=True, result="CONTINUE")
+        live.on_batch_completed(NS(reqs=[parent]))
+        live.on_events((observed(4, Kind.JOIN_WAIT, invocation_id="parent", join_id="join"),))
+        child = request("child-one", "child", tokens=300, workflow="wf")
+        live.register_visible_request(child)
+        agents = live._agent_admission
+        assert agents.allows(live.visible[child.rid])
+        live.on_prefill_candidate_result(child, admitted=True, result="CONTINUE")
+        assert not agents.claim_restore(agents.latest["parent"], source="join_ticket")
+        live.on_batch_completed(NS(reqs=[child]))
+        live.on_events((observed(5, Kind.RETURN, invocation_id="child"),))
+        assert agents.claim_restore(agents.latest["parent"], source="join_ticket")
+        successor = request("parent-two", "parent", tokens=310, workflow="wf")
+        live.register_visible_request(successor)
+        assert agents.allows(live.visible[successor.rid])
+        live.on_prefill_candidate_result(successor, admitted=True, result="CONTINUE")
+        assert agents.policy.restore_owner is None
+        assert "parent" not in live._join_priority_pending
+    finally:
+        live.close()
+
+
+def test_speculative_restore_does_not_restore_paused_agent_or_wrong_generation(monkeypatch, tmp_path):
+    live = runtime(monkeypatch, tmp_path)
+    try:
+        live.register_visible_request(request("a", "one", tokens=300))
+        live.register_visible_request(request("b", "two", tokens=300))
+        agents = live._agent_admission
+        key = live.visible["b"]
+        assert not agents.claim_restore(key, source="execution_handoff")
+        assert not agents.claim_restore(replace(key, session_id="wrong"), source="join_ticket")
+        assert agents.counts["restore_outside_active_set"] == 1
+    finally:
+        live.close()
+
+
+def test_native_retraction_updates_attempt_without_creating_another_agent(monkeypatch, tmp_path):
+    live = runtime(monkeypatch, tmp_path)
+    try:
+        req = request("a", "one", tokens=300)
+        live.register_visible_request(req)
+        old = live.visible["a"]
+        live.on_prefill_candidate_result(req, admitted=True, result="CONTINUE")
+        req.cache_request_handle.attempt_id = 1
+        live.on_requests_requeued([req], is_retracted=True)
+        agents = live._agent_admission
+        assert not agents.allows(old) and agents.allows(live.visible["a"])
+        assert len(agents.policy.agents) == 1
+        assert not agents.policy.agents["one"].in_flight
+    finally:
+        live.close()
+
+
+def test_existing_frontier_ticket_loses_authority_when_agent_is_paused(monkeypatch, tmp_path):
+    live = runtime(monkeypatch, tmp_path)
+    try:
+        req = request("a", "one", tokens=300)
+        live.register_visible_request(req)
+        key = live.visible["a"]
+        live._executable_waiting_key = Mock(return_value=key)
+        ticket = _ExecutionHandoffTicket(key, req, time.monotonic() + 1.5)
+        assert live._live_execution_handoff(ticket)
+        live._agent_admission.policy.block("one", "join", now=time.monotonic())
+        assert not live._live_execution_handoff(ticket)
+        live._native_cache.prefetch_gpu_session_nodes = Mock()
+        assert live._issue_handoff_prefetch_steps(ticket, (NS(key=key),)) == ()
+        live._native_cache.prefetch_gpu_session_nodes.assert_not_called()
+    finally:
+        live.close()
+
+
+def test_low_frequency_maintenance_reuses_existing_long_tool_decision(monkeypatch, tmp_path):
+    live = runtime(monkeypatch, tmp_path)
+    try:
+        req = request("a", "one", tokens=300)
+        live.register_visible_request(req)
+        live.on_batch_completed(NS(reqs=[req]))
+        agents = live._agent_admission
+        agents.tool_waits["one"] = {"_legacy": 10.}
+        live._long_tool_wait = Mock(return_value=True)
+        agents.tick(now=10.1)
+        assert not agents.policy.agents["one"].active
+        agents.tick(now=10.2)
+        assert agents.counts["control_ticks"] == 1
+        live._long_tool_wait.assert_called_once()
+    finally:
+        live.close()
+
+
+def test_abort_all_releases_idle_agent_budget_as_well_as_pending_requests(monkeypatch, tmp_path):
+    live = runtime(monkeypatch, tmp_path)
+    try:
+        req = request("a", "one", tokens=300)
+        live.register_visible_request(req)
+        live.on_batch_completed(NS(reqs=[req]))
+        live.on_abort_request(NS(rid="", abort_all=True))
+        agents = live._agent_admission
+        assert not agents.policy.agents and agents.policy.used_tokens == 0
+        assert not agents.latest
+    finally:
+        live.close()
+
+
+def test_impossible_parent_reservation_does_not_start_capacity_reclamation(monkeypatch, tmp_path):
+    live = runtime(monkeypatch, tmp_path)
+    try:
+        req = request("running", "one", tokens=300)
+        live.register_visible_request(req)
+        live.on_prefill_candidate_result(req, admitted=True, result="CONTINUE")
+        live.register_visible_request(request("parent", "parent", tokens=300))
+        live._set_critical_parent_demand(
+            live.visible["parent"], 300, 0, time.monotonic() + 1.,
+        )
+        assert live._critical_parent_demand is None
+        assert live.counts["agent_restore_deferred_before_reclaim"] == 1
+        assert live._agent_admission.policy.used_tokens == 400
+    finally:
+        live.close()
+
+
+def test_elapsed_tool_wait_can_yield_without_a_duration_model_or_future_end(monkeypatch, tmp_path):
+    live = runtime(monkeypatch, tmp_path)
+    try:
+        req = request("a", "one", tokens=300)
+        live.register_visible_request(req)
+        live.on_batch_completed(NS(reqs=[req]))
+        agents = live._agent_admission
+        agents.tool_waits["one"] = {"_legacy": 10.}
+        live._long_tool_wait = Mock(return_value=False)
+        agents.tick(now=10.1)
+        assert agents.policy.agents["one"].active
+        agents.tick(now=11.2)
+        assert not agents.policy.agents["one"].active
+        assert agents.policy.agents["one"].blocked == "elapsed_tool"
+    finally:
+        live.close()
+
+
+def test_final_observer_requires_declared_agent_identity_and_complete_work(monkeypatch, tmp_path):
+    from scripts import run_causal_comparison as comparison
+
+    monkeypatch.setattr(comparison.comparison, "observe_arm", lambda *_a, **_k: None)
+    actual = {"agent_admission": {
+        "policy": "agent_working_set_with_native_migration",
+        "identity": "invocation_id", "future_information_used": False,
+        "native_capacity_authority_preserved": True,
+        "counts": {"registered": 2, "completed": 2},
+    }}
+    monkeypatch.setattr(comparison.qualified, "last_runtime_state", lambda _path: actual)
+    plan = {"reference_environment": {"AGENT_ADMISSION": "working_set"},
+            "source_plan": {"requests": 2}}
+    comparison.observed_configuration(plan, "full", tmp_path, final=True)
+    actual["agent_admission"]["counts"]["completed"] = 1
+    with pytest.raises(ValueError, match="request population"):
+        comparison.observed_configuration(plan, "full", tmp_path, final=True)
+    plan["reference_environment"]["AGENT_ADMISSION"] = "off"
+    with pytest.raises(ValueError, match="undeclared"):
+        comparison.observed_configuration(plan, "full", tmp_path, final=True)
+
+
+def test_join_checkpoint_reservation_survives_next_epoch_registration(monkeypatch, tmp_path):
+    live = runtime(monkeypatch, tmp_path)
+    try:
+        req = request("first", "parent", tokens=300)
+        req.session_id, req.session_generation = "same-session", 1
+        live.register_visible_request(req)
+        original = live.visible[req.rid]
+        live.on_batch_completed(NS(reqs=[req]))
+        agents = live._agent_admission
+        assert agents.claim_restore(original, source="join_ticket")
+        successor = request("next", "parent", tokens=310)
+        successor.session_id, successor.session_generation = "same-session", 1
+        successor.beliefkv_metadata["context_epoch"] = 1
+        live.register_visible_request(successor)
+        assert agents.holds_restore(original)
+        assert agents.claim_restore(original, source="join_ticket")
+        assert not agents.holds_restore(replace(original, session_generation=2))
+        live.on_prefill_candidate_result(successor, admitted=True, result="CONTINUE")
+        assert not agents.holds_restore(original)
+    finally:
+        live.close()
+
+
+def test_parallel_short_tool_completion_keeps_the_outstanding_long_wait(monkeypatch, tmp_path):
+    live = runtime(monkeypatch, tmp_path)
+    try:
+        live.on_events((
+            observed(0, Kind.WORKFLOW_START),
+            observed(1, Kind.INVOCATION_CREATE, invocation_id="one", context_id="one-context"),
+        ))
+        req = request("first", "one", tokens=100, workflow="wf")
+        live.register_visible_request(req)
+        live.on_batch_completed(NS(reqs=[req]))
+        live.on_events((
+            observed(2, Kind.TOOL_START, invocation_id="one", attributes={"tool_run_id": "long"}),
+            observed(3, Kind.TOOL_START, invocation_id="one", attributes={"tool_run_id": "short"}),
+            observed(4, Kind.TOOL_END, invocation_id="one", attributes={"tool_run_id": "short"}),
+        ))
+        agents = live._agent_admission
+        assert set(agents.tool_waits["one"]) == {"long"}
+        live._long_tool_wait = Mock(return_value=False)
+        agents.tick(now=agents.tool_waits["one"]["long"] + 1.1)
+        assert not agents.policy.agents["one"].active
+    finally:
+        live.close()
+
+
+def test_batched_tool_replacement_does_not_inherit_the_finished_tool_start(monkeypatch, tmp_path):
+    live = runtime(monkeypatch, tmp_path)
+    try:
+        live.on_events((
+            observed(0, Kind.WORKFLOW_START),
+            observed(1, Kind.INVOCATION_CREATE, invocation_id="one", context_id="one-context"),
+        ))
+        req = request("first", "one", tokens=100, workflow="wf")
+        live.register_visible_request(req)
+        live.on_batch_completed(NS(reqs=[req]))
+        live.on_events((observed(
+            2, Kind.TOOL_START, invocation_id="one", attributes={"tool_run_id": "old"},
+        ),))
+        agents = live._agent_admission
+        agents.tool_waits["one"]["old"] = 0.
+        live.on_events((
+            observed(3, Kind.TOOL_END, invocation_id="one", attributes={"tool_run_id": "old"}),
+            observed(4, Kind.TOOL_START, invocation_id="one", attributes={"tool_run_id": "new"}),
+        ))
+        assert set(agents.tool_waits["one"]) == {"new"}
+        assert agents.tool_waits["one"]["new"] > 0.
+    finally:
+        live.close()
+
+
+@pytest.mark.parametrize("mode", ("scheduler_only", "join_priority_only", "kv_only", "native_matched"))
+def test_other_controls_never_inherit_the_new_agent_candidate(mode):
+    settings = arm_environment({
+        "AGENT_ADMISSION": "working_set", "TOOL_RESTORE_MODE": "execution",
+    }, mode)
+    assert settings["BELIEFKV_AGENT_ADMISSION"] == settings["AGENT_ADMISSION"] == "off"
