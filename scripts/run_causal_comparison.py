@@ -297,7 +297,9 @@ def preflight_runtime(settings, model_path):
             "IDLE_PREPARE_POLICY", settings["BELIEFKV_IDLE_PREPARE_POLICY"],
         ),
         "tool_restore_mode": settings["TOOL_RESTORE_MODE"],
-        "enable_agent_working_set": settings.get("BELIEFKV_AGENT_ADMISSION", "off") == "working_set",
+        "enable_agent_working_set": settings.get("BELIEFKV_AGENT_ADMISSION", "off") in (
+            "working_set", "thunderagent",
+        ),
         "restore_tiers": settings.get("RESTORE_TIERS", settings["BELIEFKV_RESTORE_TIERS"]),
         "enable_tool_prefetch": settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "1",
         "enable_frontier_restore": settings["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == "1",
@@ -592,18 +594,19 @@ def observed_configuration(plan, label, arm, *, final=False):
             raise ValueError("paper policy did not observe the complete request population")
     if final and mode != "native_matched":
         state = qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
-        expected_agents = (
-            mode == "full"
-            and plan.get("reference_environment", {}).get(
-                "BELIEFKV_AGENT_ADMISSION",
-                plan.get("reference_environment", {}).get("AGENT_ADMISSION", "off"),
-            ) == "working_set"
+        agent_strategy = plan.get("reference_environment", {}).get(
+            "BELIEFKV_AGENT_ADMISSION",
+            plan.get("reference_environment", {}).get("AGENT_ADMISSION", "off"),
         )
+        expected_agents = mode == "full" and agent_strategy in ("working_set", "thunderagent")
         actual_agents = state.get("agent_admission")
         if expected_agents:
             if (
                 not isinstance(actual_agents, dict)
-                or actual_agents.get("policy") != "agent_working_set_with_native_migration"
+                or actual_agents.get("policy") != (
+                    "thunderagent_with_native_migration" if agent_strategy == "thunderagent"
+                    else "agent_working_set_with_native_migration"
+                )
                 or actual_agents.get("identity") != "invocation_id"
                 or actual_agents.get("future_information_used") is not False
                 or actual_agents.get("native_capacity_authority_preserved") is not True

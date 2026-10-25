@@ -909,10 +909,10 @@ class NativeAdmissionRuntime:
         self._paper_baseline = None
         self._agent_admission = None
         agent_policy = os.environ.get("BELIEFKV_AGENT_ADMISSION", "off")
-        if agent_policy not in ("off", "working_set"):
-            raise ValueError("agent admission must be off or working_set")
-        self.enable_agent_working_set = agent_policy == "working_set"
-        if agent_policy == "working_set":
+        if agent_policy not in ("off", "working_set", "thunderagent"):
+            raise ValueError("agent admission must be off, working_set or thunderagent")
+        self.enable_agent_working_set = agent_policy != "off"
+        if self.enable_agent_working_set:
             if (
                 paper_policy or self.internal_comparison_mode != "full"
                 or self.tool_restore_mode != "execution"
@@ -920,7 +920,7 @@ class NativeAdmissionRuntime:
                 raise ValueError("agent working-set admission requires Full execution recovery")
             from beliefkv.runtime.agent_working_set import AgentAdmission
 
-            self._agent_admission = AgentAdmission(self)
+            self._agent_admission = AgentAdmission(self, strategy=agent_policy)
         if paper_policy:
             from beliefkv.runtime.paper_baseline import create_adapter
 

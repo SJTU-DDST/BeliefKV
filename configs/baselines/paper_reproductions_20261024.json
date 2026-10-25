@@ -130,10 +130,13 @@
         "missing_hit_interval": "unknown_no_multiplicative_decrease"
       },
       "remaining": [
-        "full_inherited_cpu_qualification",
-        "matched_gpu_comparison"
+        "paired_repetitions",
+        "independent_task_correctness_scoring"
       ],
-      "gpu_result": "pending"
+      "runtime": "implemented_inherited_cpu_scope_retained_and_matched_v212_run_complete",
+      "gpu_result": "v212_complete_same_work_mean_jct_s_1434.637044_output_tps_209.888898",
+      "result_audit": "ops/v3810_concur_matched_jct_paths_20261025.json",
+      "single_run_performance_accepted": false
     },
     {
       "id": "infercept",

@@ -12,13 +12,13 @@ from tests.test_paper_baseline_runtime import request
 
 @pytest.mark.parametrize("full_native", (512,), indirect=True)
 def test_agent_join_yield_preserves_real_backup_ack_and_full_restore_ownership(
-    full_native, monkeypatch, tmp_path,
+    full_native, monkeypatch, tmp_path, strategy="working_set",
 ):
     from test_beliefkv_terminal_capacity import insert_session
 
     cache, allocator, writes, loads, _ = full_native
     for name, value in arm_environment({
-        "AGENT_ADMISSION": "working_set", "TOOL_RESTORE_MODE": "execution",
+        "AGENT_ADMISSION": strategy, "TOOL_RESTORE_MODE": "execution",
     }, "full").items():
         monkeypatch.setenv(name, value)
     live = NativeAdmissionRuntime(event_socket_path=str(tmp_path / "native.sock"))
@@ -76,3 +76,10 @@ def test_agent_join_yield_preserves_real_backup_ack_and_full_restore_ownership(
         assert agents.policy.agents["parent"].in_flight
     finally:
         live.close()
+
+
+@pytest.mark.parametrize("full_native", (512,), indirect=True)
+def test_thunderagent_join_yield_preserves_native_physical_ownership(full_native, monkeypatch, tmp_path):
+    test_agent_join_yield_preserves_real_backup_ack_and_full_restore_ownership(
+        full_native, monkeypatch, tmp_path, strategy="thunderagent",
+    )

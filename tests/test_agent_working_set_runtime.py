@@ -13,9 +13,9 @@ from tests.test_internal_comparison import observed
 from tests.test_paper_baseline_runtime import request
 
 
-def runtime(monkeypatch, tmp_path, *, capacity=500):
+def runtime(monkeypatch, tmp_path, *, capacity=500, strategy="working_set"):
     settings = arm_environment({
-        "AGENT_ADMISSION": "working_set", "TOOL_RESTORE_MODE": "execution",
+        "AGENT_ADMISSION": strategy, "TOOL_RESTORE_MODE": "execution",
         "EXECUTION_FRONTIER_RESTORE": "1", "TOOL_CONTINUITY": "1",
     }, "full")
     for name, value in settings.items():
@@ -27,8 +27,8 @@ def runtime(monkeypatch, tmp_path, *, capacity=500):
     return live
 
 
-def test_real_prefill_filters_paused_agents_and_preserves_full_migration_policies(monkeypatch, tmp_path):
-    live = runtime(monkeypatch, tmp_path)
+def test_real_prefill_filters_paused_agents_and_preserves_full_migration_policies(monkeypatch, tmp_path, strategy="working_set"):
+    live = runtime(monkeypatch, tmp_path, strategy=strategy)
     try:
         first, second = request("one", "a", tokens=300), request("two", "b", tokens=300)
         live.register_visible_request(first)
@@ -46,8 +46,8 @@ def test_real_prefill_filters_paused_agents_and_preserves_full_migration_policie
         live.close()
 
 
-def test_two_short_tool_successors_share_one_agent_admission(monkeypatch, tmp_path):
-    live = runtime(monkeypatch, tmp_path)
+def test_two_short_tool_successors_share_one_agent_admission(monkeypatch, tmp_path, strategy="working_set"):
+    live = runtime(monkeypatch, tmp_path, strategy=strategy)
     try:
         first = request("one", "a", tokens=300)
         live.register_visible_request(first)
@@ -67,8 +67,22 @@ def test_two_short_tool_successors_share_one_agent_admission(monkeypatch, tmp_pa
         live.close()
 
 
-def test_real_join_releases_parent_and_restore_budget_is_bound_to_its_reentry(monkeypatch, tmp_path):
+def test_agent_status_declares_ownership_age_separately_from_queue_priority(monkeypatch, tmp_path):
     live = runtime(monkeypatch, tmp_path)
+    try:
+        status = live._agent_admission.status()
+        assert status["eligibility_starvation_seconds"] == 1800.
+        assert status["eligibility_release"] == (
+            "observed_join_long_tool_terminal_growth_or_bounded_starvation"
+        )
+        assert live.enable_join_parent_priority and live.enable_resident_first
+        assert live._tool_continuity is not None
+    finally:
+        live.close()
+
+
+def test_real_join_releases_parent_and_restore_budget_is_bound_to_its_reentry(monkeypatch, tmp_path, strategy="working_set"):
+    live = runtime(monkeypatch, tmp_path, strategy=strategy)
     try:
         live.on_events((
             observed(0, Kind.WORKFLOW_START),
@@ -101,8 +115,8 @@ def test_real_join_releases_parent_and_restore_budget_is_bound_to_its_reentry(mo
         live.close()
 
 
-def test_speculative_restore_does_not_restore_paused_agent_or_wrong_generation(monkeypatch, tmp_path):
-    live = runtime(monkeypatch, tmp_path)
+def test_speculative_restore_does_not_restore_paused_agent_or_wrong_generation(monkeypatch, tmp_path, strategy="working_set"):
+    live = runtime(monkeypatch, tmp_path, strategy=strategy)
     try:
         live.register_visible_request(request("a", "one", tokens=300))
         live.register_visible_request(request("b", "two", tokens=300))
@@ -115,8 +129,8 @@ def test_speculative_restore_does_not_restore_paused_agent_or_wrong_generation(m
         live.close()
 
 
-def test_native_retraction_updates_attempt_without_creating_another_agent(monkeypatch, tmp_path):
-    live = runtime(monkeypatch, tmp_path)
+def test_native_retraction_updates_attempt_without_creating_another_agent(monkeypatch, tmp_path, strategy="working_set"):
+    live = runtime(monkeypatch, tmp_path, strategy=strategy)
     try:
         req = request("a", "one", tokens=300)
         live.register_visible_request(req)
@@ -168,8 +182,8 @@ def test_low_frequency_maintenance_reuses_existing_long_tool_decision(monkeypatc
         live.close()
 
 
-def test_abort_all_releases_idle_agent_budget_as_well_as_pending_requests(monkeypatch, tmp_path):
-    live = runtime(monkeypatch, tmp_path)
+def test_abort_all_releases_idle_agent_budget_as_well_as_pending_requests(monkeypatch, tmp_path, strategy="working_set"):
+    live = runtime(monkeypatch, tmp_path, strategy=strategy)
     try:
         req = request("a", "one", tokens=300)
         live.register_visible_request(req)
@@ -217,18 +231,21 @@ def test_elapsed_tool_wait_can_yield_without_a_duration_model_or_future_end(monk
         live.close()
 
 
-def test_final_observer_requires_declared_agent_identity_and_complete_work(monkeypatch, tmp_path):
+def test_final_observer_requires_declared_agent_identity_and_complete_work(monkeypatch, tmp_path, strategy="working_set"):
     from scripts import run_causal_comparison as comparison
 
     monkeypatch.setattr(comparison.comparison, "observe_arm", lambda *_a, **_k: None)
     actual = {"agent_admission": {
-        "policy": "agent_working_set_with_native_migration",
+        "policy": (
+            "thunderagent_with_native_migration" if strategy == "thunderagent"
+            else "agent_working_set_with_native_migration"
+        ),
         "identity": "invocation_id", "future_information_used": False,
         "native_capacity_authority_preserved": True,
         "counts": {"registered": 2, "completed": 2},
     }}
     monkeypatch.setattr(comparison.qualified, "last_runtime_state", lambda _path: actual)
-    plan = {"reference_environment": {"AGENT_ADMISSION": "working_set"},
+    plan = {"reference_environment": {"AGENT_ADMISSION": strategy},
             "source_plan": {"requests": 2}}
     comparison.observed_configuration(plan, "full", tmp_path, final=True)
     actual["agent_admission"]["counts"]["completed"] = 1
@@ -262,8 +279,8 @@ def test_join_checkpoint_reservation_survives_next_epoch_registration(monkeypatc
         live.close()
 
 
-def test_parallel_short_tool_completion_keeps_the_outstanding_long_wait(monkeypatch, tmp_path):
-    live = runtime(monkeypatch, tmp_path)
+def test_parallel_short_tool_completion_keeps_the_outstanding_long_wait(monkeypatch, tmp_path, strategy="working_set"):
+    live = runtime(monkeypatch, tmp_path, strategy=strategy)
     try:
         live.on_events((
             observed(0, Kind.WORKFLOW_START),
@@ -312,8 +329,27 @@ def test_batched_tool_replacement_does_not_inherit_the_finished_tool_start(monke
 
 
 @pytest.mark.parametrize("mode", ("scheduler_only", "join_priority_only", "kv_only", "native_matched"))
-def test_other_controls_never_inherit_the_new_agent_candidate(mode):
+def test_other_controls_never_inherit_the_new_agent_candidate(mode, strategy="working_set"):
     settings = arm_environment({
-        "AGENT_ADMISSION": "working_set", "TOOL_RESTORE_MODE": "execution",
+        "AGENT_ADMISSION": strategy, "TOOL_RESTORE_MODE": "execution",
     }, mode)
     assert settings["BELIEFKV_AGENT_ADMISSION"] == settings["AGENT_ADMISSION"] == "off"
+
+
+@pytest.mark.parametrize("case", (
+    test_real_prefill_filters_paused_agents_and_preserves_full_migration_policies,
+    test_two_short_tool_successors_share_one_agent_admission,
+    test_real_join_releases_parent_and_restore_budget_is_bound_to_its_reentry,
+    test_speculative_restore_does_not_restore_paused_agent_or_wrong_generation,
+    test_native_retraction_updates_attempt_without_creating_another_agent,
+    test_abort_all_releases_idle_agent_budget_as_well_as_pending_requests,
+    test_final_observer_requires_declared_agent_identity_and_complete_work,
+    test_parallel_short_tool_completion_keeps_the_outstanding_long_wait,
+), ids=lambda case: case.__name__)
+def test_thunderagent_migration_runtime_lifecycle(case, monkeypatch, tmp_path):
+    case(monkeypatch, tmp_path, strategy="thunderagent")
+
+
+@pytest.mark.parametrize("mode", ("scheduler_only", "join_priority_only", "kv_only", "native_matched"))
+def test_other_controls_never_inherit_thunderagent_migration(mode):
+    test_other_controls_never_inherit_the_new_agent_candidate(mode, strategy="thunderagent")

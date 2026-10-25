@@ -99,3 +99,8 @@
   inject Full migration or JOIN priorities into their results. Use one sequential
   invocation as the admission identity, retain observed-JOIN liveness, and bind
   recovery reservations to the same agent's actual native admission.
+- The user explicitly requests starting from ThunderAgent's scheduling policy
+  for the next combined candidate. Reuse the reference ThunderWorkingSet core,
+  retaining its continuation groups, capacity selection and five-second control.
+  Declare observed-JOIN yielding and bounded migration reservations as Full
+  extensions. Keep the V209 paper arm and V214 initial candidate frozen.

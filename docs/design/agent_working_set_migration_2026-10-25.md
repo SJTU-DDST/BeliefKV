@@ -107,3 +107,21 @@ H2D reuse fence or a calibrated layer-deadline start policy. The original
 forward-stream reuse fence remains intact. Physical and performance validation,
 shared-page-aware budget refinement, and independent matched repetitions remain
 separate requirements.
+
+## Stable Eligibility Follow-up
+
+V214 remains frozen with its original ten-second eligibility aging. A live
+complete-line prefix recorded 233 capacity switches by 527 registered calls,
+so that candidate does not yet establish cross-call continuity in practice.
+The follow-up separates ordinary queue ordering age from eligibility eviction.
+Keep the active agent across healthy short tools; transfer eligibility on real
+JOIN/long-tool/terminal events and growth pressure. A 1800-second bounded
+starvation escape can still switch a non-running owner at a call boundary.
+JOIN recovery retains its existing higher authority. The longer bound is a
+declared candidate choice, not a claim of optimal fairness or measured gain.
+
+Publish the eligibility starvation bound and distinguish critical JOIN,
+starvation and growth switch counters. A deterministic 100-call short-tool
+case must retain one owner without a capacity switch; separate cases verify
+starvation, JOIN yielding and running-call safety. Subsequent full CPU and GPU
+qualification are required; preserve the V214 outcome for comparison.

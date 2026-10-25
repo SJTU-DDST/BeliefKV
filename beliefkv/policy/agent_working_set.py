@@ -28,7 +28,7 @@ class AgentWorkingSet:
     yielding, aging, and one recovery consumer are BeliefKV extensions.
     """
 
-    def __init__(self, capacity: int, *, buffer_tokens: int = 100, aging_s: float = 10.):
+    def __init__(self, capacity: int, *, buffer_tokens: int = 100, aging_s: float = 1800.):
         if type(capacity) is not int or capacity <= 0:
             raise ValueError("positive native FULL capacity is required")
         if type(buffer_tokens) is not int or buffer_tokens < 0:
@@ -174,6 +174,7 @@ class AgentWorkingSet:
         for item in victims:
             self._active(item, False)
             self.counts["capacity_switch"] += 1
+            self.counts["capacity_switch:" + ("join" if target.critical else "starvation")] += 1
             needed -= self._cost(item)
             if needed <= 0:
                 break
@@ -204,6 +205,7 @@ class AgentWorkingSet:
                     item.pause_at_boundary = True
                 else:
                     self._active(item, False)
+                self.counts["capacity_pause:growth"] += 1
                 excess -= self._cost(item)
                 if excess <= 0:
                     break
@@ -223,6 +225,8 @@ class AgentWorkingSet:
             and item.restore_until <= now
         )
         for item in waiting:
+            # Queue ordering can age much faster than agent ownership. Reusing
+            # request-scale aging here evicts a healthy agent at each short tool.
             if switchable and (item.critical or now - item.waiting_since >= self.aging_s):
                 self._make_room(item, now=now, candidates=switchable)
             if self.used_tokens + self._cost(item) <= self.capacity:
@@ -235,3 +239,8 @@ class AgentWorkingSet:
             self._active(item, False)
             del self.agents[identity]
             self.rebalance(now=now)
+
+    def clear(self):
+        self.agents.clear()
+        self.used_tokens = 0
+        self.restore_owner = None

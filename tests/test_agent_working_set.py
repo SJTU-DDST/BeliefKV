@@ -62,10 +62,51 @@ def test_aging_can_admit_a_waiter_without_preempting_running_output():
     policy.arrive("b", 300, now=.2)
     policy.arrive("a", 310, now=.3)
     policy.begin("a")
-    policy.rebalance(now=11.)
+    policy.rebalance(now=1801.)
     assert not policy.allowed("b")
-    policy.completed("a", 312, now=11.1)
+    policy.completed("a", 312, now=1801.1)
     assert policy.allowed("b")
+    assert policy.counts["capacity_switch:starvation"] == 1
+
+
+def test_request_aging_does_not_rotate_an_agent_across_repeated_short_tools():
+    policy = AgentWorkingSet(500)
+    policy.arrive("active", 300, now=0.)
+    policy.arrive("waiting", 300, now=.1)
+    for step in range(100):
+        now = float(step * 3)
+        policy.begin("active")
+        policy.completed("active", 302, now=now + 2.)
+        policy.rebalance(now=now + 2.1)
+        assert policy.agents["active"].active
+        assert not policy.allowed("waiting")
+        policy.arrive("active", 300, now=now + 2.2)
+    assert policy.counts["activated"] == 1
+    assert policy.counts["capacity_switch"] == 0
+
+
+def test_agent_starvation_policy_is_independent_of_request_sorting_age():
+    policy = AgentWorkingSet(500, aging_s=30.)
+    policy.arrive("active", 300, now=0.)
+    policy.arrive("waiting", 300, now=.1)
+    policy.begin("active")
+    policy.completed("active", 302, now=10.2)
+    assert policy.agents["active"].active
+    policy.rebalance(now=30.2)
+    assert policy.allowed("waiting")
+    assert not policy.agents["active"].active
+    assert policy.used_tokens == 400
+
+
+def test_observed_join_still_yields_immediately_with_long_starvation_budget():
+    policy = AgentWorkingSet(500)
+    policy.arrive("parent", 300, now=0.)
+    policy.arrive("waiting", 300, now=.1)
+    policy.begin("parent")
+    policy.completed("parent", 302, now=.2)
+    policy.block("parent", "join", now=.3)
+    assert policy.allowed("waiting")
+    assert policy.counts["capacity_switch"] == 0
 
 
 def test_join_restore_has_one_budgeted_opportunity_then_native_consumes_it():

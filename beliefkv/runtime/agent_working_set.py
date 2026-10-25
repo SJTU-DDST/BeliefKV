@@ -9,9 +9,12 @@ from beliefkv.policy.agent_working_set import AgentWorkingSet
 
 
 class AgentAdmission:
-    def __init__(self, runtime):
+    def __init__(self, runtime, *, strategy="working_set"):
         self.runtime = runtime
         self.policy: AgentWorkingSet | None = None
+        self.strategy = strategy
+        if strategy not in ("working_set", "thunderagent"):
+            raise ValueError("unsupported agent admission strategy")
         self.requests, self.latest, self.workflows = {}, {}, {}
         self.tool_waits = {}
         self.next_tick = 0.
@@ -24,7 +27,12 @@ class AgentAdmission:
             raise ValueError("agent working-set admission currently requires FULL-only KV")
         if self.policy is not None:
             raise ValueError("agent working-set capacity cannot silently change")
-        self.policy = AgentWorkingSet(capacity)
+        if self.strategy == "thunderagent":
+            from beliefkv.policy.thunder_agent_migration import ThunderAgentMigration
+
+            self.policy = ThunderAgentMigration(capacity)
+        else:
+            self.policy = AgentWorkingSet(capacity)
 
     def registered(self, req, key):
         if self.policy is None or key.request_id in self.requests:
@@ -219,7 +227,11 @@ class AgentAdmission:
     def status(self):
         policy = self.policy
         return {
-            "policy": "agent_working_set_with_native_migration",
+            "policy": (
+                "thunderagent_with_native_migration" if self.strategy == "thunderagent"
+                else "agent_working_set_with_native_migration"
+            ),
+            "strategy": self.strategy,
             "identity": "invocation_id", "future_information_used": False,
             "native_capacity_authority_preserved": True,
             "capacity_tokens": policy.capacity if policy is not None else None,
@@ -229,15 +241,17 @@ class AgentAdmission:
             "recovery_consumer": policy.restore_owner if policy else None,
             "capacity_semantics": "conservative_sum_of_observed_agent_contexts_plus_growth_buffer",
             "shared_prefixes_deduplicated": False,
-            "control_interval_ms": 1000, "restore_reservation_ms": 1500,
+            "control_interval_ms": getattr(policy, "control_interval_s", 1.) * 1000.,
+            "maintenance_interval_ms": 1000, "restore_reservation_ms": 1500,
+            "eligibility_starvation_seconds": policy.aging_s if policy else None,
+            "eligibility_release":
+                "observed_join_long_tool_terminal_growth_or_bounded_starvation",
             "counts": dict(self.counts), "policy_counts": dict(policy.counts) if policy else {},
         }
 
     def close(self):
         if self.policy is not None:
-            self.policy.agents.clear()
-            self.policy.used_tokens = 0
-            self.policy.restore_owner = None
+            self.policy.clear()
         self.requests.clear()
         self.latest.clear()
         self.workflows.clear()
