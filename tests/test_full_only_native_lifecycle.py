@@ -41,6 +41,7 @@ def full_native(monkeypatch, request):
     cache.is_write_back = True
     cache.host_memory_mode = "cache"
     cache.ongoing_write_through = {}
+    cache.load_back_threshold = 10
     cache.beliefkv_join_pressure_validator = lambda *_: False
     cache.cache_controller = NS(
         mem_pool_host=group, write_policy="write_back",
@@ -52,12 +53,15 @@ def full_native(monkeypatch, request):
 
     def load(host_indices, **kwargs):
         assert kwargs["extra_pools"] is None
-        assert kwargs["beliefkv_no_device_reclaim"] is True
+        assert kwargs["beliefkv_no_device_reclaim"] is (
+            kwargs["beliefkv_command_id"] is not None
+        )
         operation = NS(
             node_id=kwargs["node_id"], host_indices=host_indices.clone(),
             beliefkv_command_id=kwargs["beliefkv_command_id"],
         )
-        if not kwargs["beliefkv_before_enqueue"](operation):
+        before_enqueue = kwargs["beliefkv_before_enqueue"]
+        if before_enqueue is not None and not before_enqueue(operation):
             return None
         indices = allocator.alloc(len(host_indices))
         assert indices is not None

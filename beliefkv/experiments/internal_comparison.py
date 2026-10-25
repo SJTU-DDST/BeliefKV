@@ -99,9 +99,11 @@ def arm_environment(
     grace = grace if custom_kv and continuity == "1" else "0"
     native = mode == "native_matched"
     agent_admission = common.get("BELIEFKV_AGENT_ADMISSION", common.get("AGENT_ADMISSION", "off"))
-    if agent_admission not in ("off", "working_set", "thunderagent"):
+    if agent_admission not in ("off", "working_set", "thunderagent", "thunderagent_retained"):
         raise ValueError("unsupported agent working-set admission")
     agent_admission = agent_admission if mode == "full" else "off"
+    if agent_admission == "thunderagent_retained" and frontier == "1":
+        raise ValueError("retained agent admission uses native ordinary demand recovery")
     settings = {
         **common,
         "BELIEFKV_INTERNAL_COMPARISON_MODE": mode,

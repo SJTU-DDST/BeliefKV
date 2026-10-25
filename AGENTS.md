@@ -104,3 +104,16 @@
   retaining its continuation groups, capacity selection and five-second control.
   Declare observed-JOIN yielding and bounded migration reservations as Full
   extensions. Keep the V209 paper arm and V214 initial candidate frozen.
+- A separate retained ThunderAgent candidate decouples physical KV offload from
+  logical eligibility. Keep blocked owners' eligibility while eligible compute
+  can progress. Lend only blocked, non-running, unprotected budgets when no
+  eligible query/in-flight work exists and a real ready request is waiting.
+  JOIN recovery may claim free logical capacity but cannot evict a ready peer.
+  Preserve V215 and qualify this candidate independently.
+- In the retained candidate, keep JOIN/EOS recovery reservations but disable
+  ordinary execution-frontier prefetch and its recovery/execution binding.
+  Agent eligibility maintains ordinary continuity; offloaded ordinary state
+  still uses native demand recovery without an additional 1500 ms reservation.
+- After JOIN/EOS restoration, retain the same normal agent eligibility policy.
+  Expiring an unused temporary recovery reservation must not itself pause the
+  agent or force physical eviction, including when warming added eligibility.

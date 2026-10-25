@@ -26,8 +26,11 @@ class ThunderAgentMigration(ThunderWorkingSet):
     control_interval_s = 5.
     aging_s = 1800.
 
-    def __init__(self, capacity: int):
+    def __init__(self, capacity: int, *, retain_blocked: bool = False):
         super().__init__(capacity)
+        if type(retain_blocked) is not bool:
+            raise ValueError("blocked eligibility retention must be explicitly boolean")
+        self.retain_blocked = retain_blocked
         self.capacity = capacity
         self.restore_owner: str | None = None
         self.next_control = 0.
@@ -108,7 +111,7 @@ class ThunderAgentMigration(ThunderWorkingSet):
         item = self.programs[identity]
         item.in_flight = False
         super().completed(identity, tokens, now=now)
-        if item.blocked and item.active and item.restore_until <= now:
+        if not self.retain_blocked and item.blocked and item.active and item.restore_until <= now:
             self._pause(item, now)
         self.rebalance(now=now)
 
@@ -117,10 +120,11 @@ class ThunderAgentMigration(ThunderWorkingSet):
         if item is None:
             return
         item.blocked = reason
-        if item.in_flight:
-            item.marked_for_pause = True
-        elif item.active and item.restore_until <= now:
-            self._pause(item, now)
+        if not self.retain_blocked:
+            if item.in_flight:
+                item.marked_for_pause = True
+            elif item.active and item.restore_until <= now:
+                self._pause(item, now)
         self.counts["yield:" + reason] += 1
         self.rebalance(now=now)
 
@@ -134,7 +138,7 @@ class ThunderAgentMigration(ThunderWorkingSet):
     def requeued(self, identity, *, now):
         item = self.programs[identity]
         item.in_flight = False
-        if item.active and (item.marked_for_pause or item.blocked):
+        if item.active and (item.marked_for_pause or item.blocked and not self.retain_blocked):
             self._pause(item, now)
         self.rebalance(now=now)
 
@@ -145,15 +149,20 @@ class ThunderAgentMigration(ThunderWorkingSet):
         if self.restore_owner == identity:
             self.restore_owner = None
 
-    def _activate_target(self, item, *, now, superseded=None):
+    def _activate_target(
+        self, item, *, now, superseded=None, allow_eviction=True, blocked_only=False,
+    ):
         if item.active:
             return True
         needed = item.tokens + self.buffer_tokens - self.remaining_capacity()
+        if needed > 0 and not allow_eviction:
+            return False
         victims = sorted(
             (
                 other for other in self.programs.values()
                 if other.active and not other.in_flight and not other.critical
                 and (other.restore_until <= now or other is superseded)
+                and (not blocked_only or other.blocked)
             ),
             key=lambda other: (not other.acting, other.tokens, other.queue_sequence),
         ) if needed > 0 else ()
@@ -161,7 +170,8 @@ class ThunderAgentMigration(ThunderWorkingSet):
             return False
         for victim in victims:
             self._pause(victim, now)
-            self.counts["capacity_switch:" + ("join" if item.critical else "starvation")] += 1
+            reason = "idle" if blocked_only else "join" if item.critical else "starvation"
+            self.counts["capacity_switch:" + reason] += 1
             needed -= victim.tokens + self.buffer_tokens
             if needed <= 0:
                 break
@@ -182,7 +192,9 @@ class ThunderAgentMigration(ThunderWorkingSet):
                 return False
         previous = item.critical
         item.critical = previous or critical
-        if not self._activate_target(item, now=now, superseded=owner):
+        if not self._activate_target(
+            item, now=now, superseded=owner, allow_eviction=not self.retain_blocked,
+        ):
             item.critical = previous
             self.counts["restore_capacity_deferred"] += 1
             return False
@@ -199,9 +211,36 @@ class ThunderAgentMigration(ThunderWorkingSet):
         if owner is not None and owner.restore_until <= now:
             self.release_restore(owner.identity)
             if owner.blocked and not owner.in_flight:
-                self._pause(owner, now)
+                if not self.retain_blocked:
+                    self._pause(owner, now)
                 owner.critical = False
             self.counts["restore_expired"] += 1
+
+    def _resume_if_idle(self, now):
+        if not any(
+            item.active and item.blocked and not item.in_flight
+            for item in self.programs.values()
+        ):
+            return
+        if any(
+            item.active and (item.in_flight or item.pending and not item.blocked)
+            for item in self.programs.values()
+        ):
+            return
+        waiting = sorted(
+            (item for item in self.programs.values()
+             if not item.active and item.pending and not item.blocked),
+            key=lambda item: (
+                1 if item.steps == 1 else 0 if not item.acting else 2,
+                item.tokens, item.queue_sequence,
+            ),
+        )
+        for item in waiting:
+            # Only known blocked, non-running owners can lend eligibility.
+            # Native allocation/ACKs must separately establish physical space.
+            if self._activate_target(item, now=now, blocked_only=True):
+                self.counts["idle_work_resumed"] += 1
+                return
 
     def rebalance(self, *, now):
         self._expire_restore(now)
@@ -209,7 +248,9 @@ class ThunderAgentMigration(ThunderWorkingSet):
             if item.critical and not item.active and (
                 item.pending and not item.blocked or item.restore_until > now
             ):
-                self._activate_target(item, now=now)
+                self._activate_target(item, now=now, allow_eviction=not self.retain_blocked)
+        if self.retain_blocked:
+            self._resume_if_idle(now)
         if now < self.next_control:
             return
         self.next_control = now + self.control_interval_s
@@ -218,9 +259,11 @@ class ThunderAgentMigration(ThunderWorkingSet):
         for item in sorted(self.programs.values(), key=lambda item: item.waiting_since):
             if (
                 not item.active and item.pending and not item.blocked
-                and now - item.waiting_since >= self.aging_s
+                and now - max(item.waiting_since, item.queued_at) >= self.aging_s
             ):
-                self._activate_target(item, now=now)
+                if self._activate_target(item, now=now):
+                    self.counts["starvation_handover"] += 1
+                    break
 
     def forget(self, identity, *, now):
         self.release_restore(identity)

@@ -298,7 +298,7 @@ def preflight_runtime(settings, model_path):
         ),
         "tool_restore_mode": settings["TOOL_RESTORE_MODE"],
         "enable_agent_working_set": settings.get("BELIEFKV_AGENT_ADMISSION", "off") in (
-            "working_set", "thunderagent",
+            "working_set", "thunderagent", "thunderagent_retained",
         ),
         "restore_tiers": settings.get("RESTORE_TIERS", settings["BELIEFKV_RESTORE_TIERS"]),
         "enable_tool_prefetch": settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "1",
@@ -598,12 +598,16 @@ def observed_configuration(plan, label, arm, *, final=False):
             "BELIEFKV_AGENT_ADMISSION",
             plan.get("reference_environment", {}).get("AGENT_ADMISSION", "off"),
         )
-        expected_agents = mode == "full" and agent_strategy in ("working_set", "thunderagent")
+        expected_agents = mode == "full" and agent_strategy in (
+            "working_set", "thunderagent", "thunderagent_retained",
+        )
         actual_agents = state.get("agent_admission")
         if expected_agents:
             if (
                 not isinstance(actual_agents, dict)
                 or actual_agents.get("policy") != (
+                    "thunderagent_retained_with_native_migration"
+                    if agent_strategy == "thunderagent_retained" else
                     "thunderagent_with_native_migration" if agent_strategy == "thunderagent"
                     else "agent_working_set_with_native_migration"
                 )
@@ -614,6 +618,15 @@ def observed_configuration(plan, label, arm, *, final=False):
                 or actual_agents.get("counts", {}).get("completed") != plan["source_plan"]["requests"]
             ):
                 raise ValueError("agent working-set policy did not execute the declared request population")
+            if agent_strategy == "thunderagent_retained" and (
+                actual_agents.get("blocked_agents_retain_eligibility") is not True
+                or actual_agents.get("control_interval_ms") != 5000.
+                or actual_agents.get("maintenance_interval_ms") != 1000
+                or actual_agents.get("restore_reservation_ms") != 1500
+                or actual_agents.get("restore_reservation_scope") != "join_eos_only"
+                or actual_agents.get("ordinary_restore_reservation_ms") != 0
+            ):
+                raise ValueError("retained ThunderAgent policy differs from declared control")
         elif actual_agents is not None:
             raise ValueError("undeclared agent working-set admission")
     if retention:

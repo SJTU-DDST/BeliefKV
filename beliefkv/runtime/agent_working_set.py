@@ -13,7 +13,7 @@ class AgentAdmission:
         self.runtime = runtime
         self.policy: AgentWorkingSet | None = None
         self.strategy = strategy
-        if strategy not in ("working_set", "thunderagent"):
+        if strategy not in ("working_set", "thunderagent", "thunderagent_retained"):
             raise ValueError("unsupported agent admission strategy")
         self.requests, self.latest, self.workflows = {}, {}, {}
         self.tool_waits = {}
@@ -27,10 +27,12 @@ class AgentAdmission:
             raise ValueError("agent working-set admission currently requires FULL-only KV")
         if self.policy is not None:
             raise ValueError("agent working-set capacity cannot silently change")
-        if self.strategy == "thunderagent":
+        if self.strategy in ("thunderagent", "thunderagent_retained"):
             from beliefkv.policy.thunder_agent_migration import ThunderAgentMigration
 
-            self.policy = ThunderAgentMigration(capacity)
+            self.policy = ThunderAgentMigration(
+                capacity, retain_blocked=self.strategy == "thunderagent_retained",
+            )
         else:
             self.policy = AgentWorkingSet(capacity)
 
@@ -149,6 +151,9 @@ class AgentAdmission:
         if self.policy is None:
             return False
         critical = source == "join_ticket"
+        if self.strategy == "thunderagent_retained" and not critical:
+            self.counts["ordinary_restore_disabled"] += 1
+            return False
         previous = self.latest.get(key.invocation_id)
         if previous is None or (
             previous.root_workflow_id, previous.context_id,
@@ -226,8 +231,11 @@ class AgentAdmission:
 
     def status(self):
         policy = self.policy
+        active = [item for item in policy.agents.values() if item.active] if policy else []
         return {
             "policy": (
+                "thunderagent_retained_with_native_migration"
+                if self.strategy == "thunderagent_retained" else
                 "thunderagent_with_native_migration" if self.strategy == "thunderagent"
                 else "agent_working_set_with_native_migration"
             ),
@@ -236,16 +244,34 @@ class AgentAdmission:
             "native_capacity_authority_preserved": True,
             "capacity_tokens": policy.capacity if policy is not None else None,
             "logical_active_tokens": policy.used_tokens if policy is not None else 0,
-            "active_agents": sum(item.active for item in policy.agents.values()) if policy else 0,
+            "active_agents": len(active),
+            "active_invocation_ids": [item.identity for item in active],
+            "blocked_active_invocation_ids": [
+                item.identity for item in active if item.blocked
+            ],
             "agents": len(self.latest), "pending_requests": len(self.requests),
             "recovery_consumer": policy.restore_owner if policy else None,
             "capacity_semantics": "conservative_sum_of_observed_agent_contexts_plus_growth_buffer",
             "shared_prefixes_deduplicated": False,
             "control_interval_ms": getattr(policy, "control_interval_s", 1.) * 1000.,
             "maintenance_interval_ms": 1000, "restore_reservation_ms": 1500,
+            "restore_reservation_scope": (
+                "join_eos_only" if self.strategy == "thunderagent_retained"
+                else "selected_agent"
+            ),
+            "ordinary_restore_reservation_ms": (
+                0 if self.strategy == "thunderagent_retained" else 1500
+            ),
             "eligibility_starvation_seconds": policy.aging_s if policy else None,
             "eligibility_release":
-                "observed_join_long_tool_terminal_growth_or_bounded_starvation",
+                (
+                    "observed_growth_terminal_no_eligible_work_or_bounded_starvation"
+                    if self.strategy == "thunderagent_retained" else
+                    "observed_join_long_tool_terminal_growth_or_bounded_starvation"
+                ),
+            "blocked_agents_retain_eligibility": bool(
+                getattr(policy, "retain_blocked", False)
+            ),
             "counts": dict(self.counts), "policy_counts": dict(policy.counts) if policy else {},
         }
 

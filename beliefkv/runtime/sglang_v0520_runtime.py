@@ -909,8 +909,12 @@ class NativeAdmissionRuntime:
         self._paper_baseline = None
         self._agent_admission = None
         agent_policy = os.environ.get("BELIEFKV_AGENT_ADMISSION", "off")
-        if agent_policy not in ("off", "working_set", "thunderagent"):
-            raise ValueError("agent admission must be off, working_set or thunderagent")
+        if agent_policy not in ("off", "working_set", "thunderagent", "thunderagent_retained"):
+            raise ValueError("unsupported declared agent admission policy")
+        if agent_policy == "thunderagent_retained" and (
+            self.enable_frontier_restore or self.enable_execution_handoff
+        ):
+            raise ValueError("retained agent admission uses native ordinary demand recovery")
         self.enable_agent_working_set = agent_policy != "off"
         if self.enable_agent_working_set:
             if (

@@ -16,7 +16,8 @@ from tests.test_paper_baseline_runtime import request
 def runtime(monkeypatch, tmp_path, *, capacity=500, strategy="working_set"):
     settings = arm_environment({
         "AGENT_ADMISSION": strategy, "TOOL_RESTORE_MODE": "execution",
-        "EXECUTION_FRONTIER_RESTORE": "1", "TOOL_CONTINUITY": "1",
+        "EXECUTION_FRONTIER_RESTORE": str(int(strategy != "thunderagent_retained")),
+        "TOOL_CONTINUITY": "1",
     }, "full")
     for name, value in settings.items():
         monkeypatch.setenv(name, value)
@@ -41,7 +42,8 @@ def test_real_prefill_filters_paused_agents_and_preserves_full_migration_policie
         assert live._custom_kv_management and live.enable_prepare_host
         assert live.enable_join_parent_priority and live.enable_resident_first
         assert live._tool_continuity is not None and live._paper_baseline is None
-        assert live.enable_frontier_restore and not live.enable_tool_prefetch
+        assert live.enable_frontier_restore is (strategy != "thunderagent_retained")
+        assert not live.enable_tool_prefetch
     finally:
         live.close()
 
@@ -124,7 +126,10 @@ def test_speculative_restore_does_not_restore_paused_agent_or_wrong_generation(m
         key = live.visible["b"]
         assert not agents.claim_restore(key, source="execution_handoff")
         assert not agents.claim_restore(replace(key, session_id="wrong"), source="join_ticket")
-        assert agents.counts["restore_outside_active_set"] == 1
+        assert agents.counts[
+            "ordinary_restore_disabled" if strategy == "thunderagent_retained"
+            else "restore_outside_active_set"
+        ] == 1
     finally:
         live.close()
 
@@ -237,6 +242,8 @@ def test_final_observer_requires_declared_agent_identity_and_complete_work(monke
     monkeypatch.setattr(comparison.comparison, "observe_arm", lambda *_a, **_k: None)
     actual = {"agent_admission": {
         "policy": (
+            "thunderagent_retained_with_native_migration"
+            if strategy == "thunderagent_retained" else
             "thunderagent_with_native_migration" if strategy == "thunderagent"
             else "agent_working_set_with_native_migration"
         ),
@@ -244,6 +251,13 @@ def test_final_observer_requires_declared_agent_identity_and_complete_work(monke
         "native_capacity_authority_preserved": True,
         "counts": {"registered": 2, "completed": 2},
     }}
+    if strategy == "thunderagent_retained":
+        actual["agent_admission"].update({
+            "blocked_agents_retain_eligibility": True, "control_interval_ms": 5000.,
+            "maintenance_interval_ms": 1000, "restore_reservation_ms": 1500,
+            "restore_reservation_scope": "join_eos_only",
+            "ordinary_restore_reservation_ms": 0,
+        })
     monkeypatch.setattr(comparison.qualified, "last_runtime_state", lambda _path: actual)
     plan = {"reference_environment": {"AGENT_ADMISSION": strategy},
             "source_plan": {"requests": 2}}
@@ -353,3 +367,91 @@ def test_thunderagent_migration_runtime_lifecycle(case, monkeypatch, tmp_path):
 @pytest.mark.parametrize("mode", ("scheduler_only", "join_priority_only", "kv_only", "native_matched"))
 def test_other_controls_never_inherit_thunderagent_migration(mode):
     test_other_controls_never_inherit_the_new_agent_candidate(mode, strategy="thunderagent")
+
+
+@pytest.mark.parametrize("case", (
+    test_real_prefill_filters_paused_agents_and_preserves_full_migration_policies,
+    test_two_short_tool_successors_share_one_agent_admission,
+    test_real_join_releases_parent_and_restore_budget_is_bound_to_its_reentry,
+    test_speculative_restore_does_not_restore_paused_agent_or_wrong_generation,
+    test_native_retraction_updates_attempt_without_creating_another_agent,
+    test_abort_all_releases_idle_agent_budget_as_well_as_pending_requests,
+    test_final_observer_requires_declared_agent_identity_and_complete_work,
+), ids=lambda case: case.__name__)
+def test_retained_thunderagent_migration_runtime_lifecycle(case, monkeypatch, tmp_path):
+    case(monkeypatch, tmp_path, strategy="thunderagent_retained")
+
+
+@pytest.mark.parametrize("mode", ("scheduler_only", "join_priority_only", "kv_only", "native_matched"))
+def test_other_controls_never_inherit_retained_thunderagent_migration(mode):
+    test_other_controls_never_inherit_the_new_agent_candidate(mode, strategy="thunderagent_retained")
+
+
+@pytest.mark.parametrize("source", ("execution_handoff", "tool_wait"))
+def test_retained_ordinary_recovery_cannot_create_an_extra_agent_reservation(
+    monkeypatch, tmp_path, source,
+):
+    live = runtime(monkeypatch, tmp_path, strategy="thunderagent_retained")
+    try:
+        req = request("ordinary", "one", tokens=300)
+        live.register_visible_request(req)
+        agents = live._agent_admission
+        key = live.visible[req.rid]
+        assert agents.allows(key)
+        reserve = Mock(wraps=agents.policy.reserve_restore)
+        agents.policy.reserve_restore = reserve
+        assert not agents.claim_restore(key, source=source)
+        reserve.assert_not_called()
+        assert agents.policy.restore_owner is None
+        assert agents.status()["ordinary_restore_reservation_ms"] == 0
+        assert agents.status()["restore_reservation_scope"] == "join_eos_only"
+        assert agents.claim_restore(key, source="join_ticket")
+        reserve.assert_called_once()
+        live.on_prefill_candidate_result(req, admitted=True, result="CONTINUE")
+        assert agents.policy.restore_owner is None
+        assert agents.policy.agents["one"].in_flight
+    finally:
+        live.close()
+
+
+def test_retained_post_forward_keeps_join_and_backup_without_frontier_planning(
+    monkeypatch, tmp_path,
+):
+    live = runtime(monkeypatch, tmp_path, strategy="thunderagent_retained")
+    try:
+        req = request("observed-eos", "child", tokens=100)
+        live.register_visible_request(req)
+        live._eos_prefetch_keys[req.rid] = live.visible[req.rid]
+        for name in (
+            "dispatch_join_prefetch", "dispatch_frontier_restore", "dispatch_tool_prefetch",
+            "dispatch_join_prepare", "dispatch_tool_prepare", "dispatch_idle_prepare",
+        ):
+            monkeypatch.setattr(live, name, Mock())
+        live.dispatch_after_forward([request("next", "one", tokens=300)])
+        live.dispatch_join_prefetch.assert_called_once()
+        live.dispatch_frontier_restore.assert_not_called()
+        live.dispatch_tool_prefetch.assert_not_called()
+        live.dispatch_join_prepare.assert_called_once()
+        live.dispatch_tool_prepare.assert_called_once()
+        live.dispatch_idle_prepare.assert_called_once()
+    finally:
+        live.close()
+
+
+def test_retained_configuration_rejects_ordinary_frontier_restore():
+    with pytest.raises(ValueError, match="native ordinary demand recovery"):
+        arm_environment({
+            "AGENT_ADMISSION": "thunderagent_retained", "TOOL_RESTORE_MODE": "execution",
+            "EXECUTION_FRONTIER_RESTORE": "1",
+        }, "full")
+
+
+@pytest.mark.parametrize("setting", (
+    "BELIEFKV_ENABLE_FRONTIER_RESTORE", "BELIEFKV_ENABLE_EXECUTION_HANDOFF",
+))
+def test_retained_runtime_rejects_direct_ordinary_restore_override(monkeypatch, setting):
+    monkeypatch.setenv("BELIEFKV_AGENT_ADMISSION", "thunderagent_retained")
+    monkeypatch.setenv("BELIEFKV_TOOL_RESTORE_MODE", "execution")
+    monkeypatch.setenv(setting, "1")
+    with pytest.raises(ValueError, match="native ordinary demand recovery"):
+        NativeAdmissionRuntime()

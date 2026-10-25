@@ -1,3 +1,4 @@
+from array import array
 from types import SimpleNamespace as NS
 
 import pytest
@@ -40,7 +41,7 @@ def test_agent_join_yield_preserves_real_backup_ack_and_full_restore_ownership(
         live.on_events((observed(4, Kind.JOIN_WAIT, invocation_id="parent", join_id="join"),))
         agents = live._agent_admission
         key = agents.latest["parent"]
-        assert not agents.policy.agents["parent"].active
+        assert agents.policy.agents["parent"].active is (strategy == "thunderagent_retained")
         free = allocator.available_size()
         result = cache.prepare_beliefkv_spawn_full(
             session_id="parent-session", session_generation=generation,
@@ -83,3 +84,75 @@ def test_thunderagent_join_yield_preserves_native_physical_ownership(full_native
     test_agent_join_yield_preserves_real_backup_ack_and_full_restore_ownership(
         full_native, monkeypatch, tmp_path, strategy="thunderagent",
     )
+
+
+@pytest.mark.parametrize("full_native", (512,), indirect=True)
+def test_retained_eligibility_does_not_pin_real_kv_or_bypass_native_restore(full_native, monkeypatch, tmp_path):
+    test_agent_join_yield_preserves_real_backup_ack_and_full_restore_ownership(
+        full_native, monkeypatch, tmp_path, strategy="thunderagent_retained",
+    )
+
+
+@pytest.mark.parametrize("full_native", (512,), indirect=True)
+def test_retained_ordinary_agent_restores_through_native_demand_without_a_reservation(
+    full_native, monkeypatch, tmp_path,
+):
+    from sglang.srt.mem_cache.base_prefix_cache import InitLoadBackParams, MatchPrefixParams
+    from sglang.srt.mem_cache.radix_cache import RadixKey
+    from test_beliefkv_terminal_capacity import insert_session
+
+    cache, allocator, writes, loads, _ = full_native
+    for name, value in arm_environment({
+        "AGENT_ADMISSION": "thunderagent_retained", "TOOL_RESTORE_MODE": "execution",
+        "EXECUTION_FRONTIER_RESTORE": "0",
+    }, "full").items():
+        monkeypatch.setenv(name, value)
+    live = NativeAdmissionRuntime(event_socket_path=str(tmp_path / "native.sock"))
+    live.attach_native_cache(cache)
+    try:
+        leaf, generation = insert_session(cache, list(range(16)), "ordinary-session")
+        first = request("ordinary-first", "ordinary", tokens=16)
+        first.session_id, first.session_generation = "ordinary-session", generation
+        live.register_visible_request(first)
+        live.on_prefill_candidate_result(first, admitted=True, result="CONTINUE")
+        live.on_batch_completed(NS(reqs=[first]))
+        free = allocator.available_size()
+        assert cache.prepare_beliefkv_spawn_full(
+            session_id=first.session_id, session_generation=generation,
+        )["issued"]
+        assert len(writes) == 1
+        cache.writing_check(finish_count=1)
+        cache.beliefkv_cold_full_owner_validator = lambda _owners: True
+        assert cache.reclaim_beliefkv_handoff_capacity(
+            full_tokens=free + 16, mamba_slots=0,
+        ) == {0: 16}
+        successor = request("ordinary-next", "ordinary", tokens=17)
+        successor.session_id, successor.session_generation = first.session_id, generation
+        live.register_visible_request(successor)
+        agents = live._agent_admission
+        assert agents.allows(live.visible[successor.rid])
+        assert agents.policy.restore_owner is None
+        matched = cache.match_prefix(MatchPrefixParams(
+            key=RadixKey(array("q", range(16))),
+        ))
+        assert matched.host_hit_length == 16
+        successor.last_node = matched.last_device_node
+        successor.swa_host_hit_length = successor.mamba_host_hit_length = 0
+        successor.kv = NS(mamba_pool_idx=None)
+        indices, restored_node = cache.init_load_back(InitLoadBackParams(
+            best_match_node=matched.best_match_node, host_hit_length=16, req=successor,
+        ))
+        assert len(indices) == 16 and restored_node == leaf.id
+        assert len(loads) == 1 and loads[0].beliefkv_command_id is None
+        assert agents.policy.restore_owner is None
+        assert leaf.load_back_pending_id is not None
+        cache.ready_to_load_host_cache()
+        cache.loading_check(finish_count=1)
+        assert leaf.load_back_pending_id is None
+        assert allocator.available_size() == free
+        live.on_prefill_candidate_result(successor, admitted=True, result="CONTINUE")
+        assert agents.policy.agents["ordinary"].active
+        assert agents.policy.agents["ordinary"].in_flight
+        assert agents.policy.restore_owner is None
+    finally:
+        live.close()
