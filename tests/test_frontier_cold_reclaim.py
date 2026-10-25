@@ -14,6 +14,7 @@ from tests.test_execution_frontier_restore import fixture
 
 def cold_frontier_fixture(
     *, free_tokens=1, reclaimed_tokens=128, runtime_class=NativeAdmissionRuntime,
+    reclaim_node_limit=16,
 ):
     runtime, key, cache, reads, actions, records, reset, _dispatch, _now = dispatch_fixture(
         runtime_class, source="join_ticket", depth=4, native_budget=True, running=0,
@@ -54,7 +55,7 @@ def cold_frontier_fixture(
     })
 
     def reclaim(**kwargs):
-        assert kwargs["max_nodes"] == 16
+        assert kwargs["max_nodes"] == reclaim_node_limit
         assert set(kwargs["exclude_node_ids"]) == set(range(5))
         assert not kwargs.get("collect_cold_full_candidates")
         free[0] += reclaimed_tokens

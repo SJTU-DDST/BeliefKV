@@ -28,7 +28,10 @@ SCENARIOS = {
 def measure(scenario, policy):
     initial, freed = SCENARIOS[scenario]
     runtime, _key, request, cache, _reads, actions, _records, _reset, _free = (
-        cold_frontier_fixture(free_tokens=initial, reclaimed_tokens=freed)
+        cold_frontier_fixture(
+            free_tokens=initial, reclaimed_tokens=freed,
+            reclaim_node_limit=64 if policy == "selected_queue" else 16,
+        )
     )
     runtime.frontier_cold_reclaim_policy = policy
     try:

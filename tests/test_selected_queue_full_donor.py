@@ -229,7 +229,9 @@ def test_actual_native_selected_reclaim_keeps_host_state_and_native_guards(nativ
 @pytest.mark.parametrize("freed", (0, 128, 512))
 def test_fitting_fragment_cannot_mask_incomplete_input_capacity(freed):
     runtime, _key, request, cache, _reads, actions, _records, _reset, _free = (
-        cold_frontier_fixture(free_tokens=65, reclaimed_tokens=freed)
+        cold_frontier_fixture(
+            free_tokens=65, reclaimed_tokens=freed, reclaim_node_limit=64,
+        )
     )
     runtime.frontier_cold_reclaim_policy = "selected_queue"
     try:

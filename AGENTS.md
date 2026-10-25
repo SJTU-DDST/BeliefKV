@@ -51,6 +51,13 @@
   checkpoint plus the native reserve before ordinary speculative enqueue; this
   is a necessary capacity check, not native admission permission. Keep the
   historical `waiting` policy and v193 configuration frozen.
+- The segmented-checkpoint repair candidate keeps at most sixteen queued donor
+  requests and the 200 ms global probe backoff, but permits at most 64 native
+  extent checks within `selected_queue`. Stop as soon as the safe input
+  checkpoint plus native reserve fits. The default `waiting` path retains
+  sixteen native checks. This candidate changes no native engine code, creates
+  no backups, and must be CPU-qualified and separately compared on matched work
+  before any performance claim. Preserve the historical sixteen-extent v194.
 - During critical parent recovery, free request rows are not a selected prefill
   batch. Protect the actual queue head and ready JOIN dependencies; validate
   unstarted ordinary queue tails as possible native FULL donors. Preserve all

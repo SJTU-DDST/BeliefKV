@@ -2612,6 +2612,9 @@ class NativeAdmissionRuntime:
                 "frontier_restore_ordinary_quota": self.frontier_restore_ordinary_quota,
                 "frontier_cold_reclaim": self.enable_frontier_cold_reclaim,
                 "frontier_cold_reclaim_policy": self.frontier_cold_reclaim_policy,
+                "frontier_cold_reclaim_max_nodes": (
+                    64 if self.frontier_cold_reclaim_policy == "selected_queue" else 16
+                ),
                 "restore_tiers": self.restore_tiers,
                 "restore_tiers_supported": self._restore_tiers_supported,
                 "restore_tiers_native": (
@@ -10231,7 +10234,9 @@ class NativeAdmissionRuntime:
         self.counts["frontier_restore_cold_capacity_checks"] += 1
         fitted = self._reclaim_wait_prefetch_capacity(
             key, planned, source="execution_handoff",
-            admission_candidate=True, max_reclaim_nodes=16,
+            admission_candidate=True,
+            # One GiB-scale checkpoint can span more than sixteen native extents.
+            max_reclaim_nodes=64 if selected_queue else 16,
             minimum_full_free_tokens=minimum_full_free_tokens,
         )
         if selected_queue and (
