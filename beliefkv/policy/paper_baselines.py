@@ -143,11 +143,11 @@ class ConcurWindow:
         self.config = config
         self.last_sample: int | None = None
 
-    def observe(self, *, sample_id: int, gpu_usage: float, gpu_hit_rate: float) -> int:
+    def observe(self, *, sample_id: int, gpu_usage: float, gpu_hit_rate: float | None) -> int:
         sample = _integer(sample_id, "sample ID")
         usage = _number(gpu_usage, "GPU KV utilization")
-        hit = _number(gpu_hit_rate, "GPU prefix hit rate")
-        if usage > 1 or hit > 1:
+        hit = None if gpu_hit_rate is None else _number(gpu_hit_rate, "GPU prefix hit rate")
+        if usage > 1 or hit is not None and hit > 1:
             raise ValueError("utilization and hit rate must be fractions")
         if self.last_sample is not None:
             if sample < self.last_sample:
@@ -157,7 +157,10 @@ class ConcurWindow:
         self.last_sample = sample
         if usage < self.config.low_usage:
             self.window = min(self.maximum, self.window + self.config.additive_increase)
-        elif usage > self.config.high_usage and hit < self.config.low_hit_rate:
+        elif (
+            usage > self.config.high_usage and hit is not None
+            and hit < self.config.low_hit_rate
+        ):
             self.window = max(1, math.floor(self.window * self.config.multiplicative_decrease))
         return self.window
 

@@ -70,17 +70,17 @@
         "parallel_tool_outputs_remain_unidentified_without_a_future_interval"
       ],
       "remaining": [
-        "updated_engine_and_application_inherited_cpu_qualification",
-        "gpu_native_data_plane_calibration",
-        "same_work_gpu_comparison"
+        "paired_repetitions",
+        "independent_task_correctness_scoring"
       ],
-      "runtime": "public_policy_adapter_and_native_pressure_retraction_qualification_pending",
+      "runtime": "implemented_6263_application_and_726_engine_cpu_cases_pass_v210_native_gpu_calibration_pass",
       "native_preemption_adaptation": {
         "scope": "pressure_only_program_first_arrival_priority",
         "future_is_last_step_labels_used": false,
         "optional_pins_released_before_native_decode_retraction": true
       },
-      "gpu_result": "pending"
+      "gpu_result": "v211_complete_same_work_mean_jct_s_1341.755403_output_tps_220.921987",
+      "single_run_performance_accepted": false
     },
     {
       "id": "continuum_paper",
@@ -103,12 +103,28 @@
     {
       "id": "concur",
       "paper": "2601.22705",
-      "scope": "paper_strategy_reimplementation",
-      "implemented_components": ["paper_aimd_control_law_and_thresholds"],
+      "scope": "paper_strategy_with_separately_named_observed_join_compatibility",
+      "runtime_arm": "concur_observed_join",
+      "runtime_policy": "concur_paper_observed_join",
+      "implemented_components": [
+        "paper_aimd_control_law_and_thresholds",
+        "logical_agent_permits_across_tool_wait",
+        "nonpreemptive_boundary_pause_and_fifo_resume",
+        "native_gpu_only_prefix_hit_feedback",
+        "native_non_evictable_gpu_usage_with_allocated_usage_reported_separately",
+        "observed_join_parent_permit_yield_without_priority_or_kv_actions"
+      ],
+      "declared_completion_choices": {
+        "control_interval_ms": 1000,
+        "initial_agents": "observed_initial_root_count",
+        "maximum_agents": 512,
+        "pause_order": "idle_first_then_latest_admission_boundary_marks",
+        "resume_order": "pending_agent_fifo",
+        "missing_hit_interval": "unknown_no_multiplicative_decrease"
+      },
       "remaining": [
-        "gpu_only_cache_feedback",
-        "agent_pause_resume_and_native_residency",
-        "declared_dynamic_dependency_mapping"
+        "full_inherited_cpu_qualification",
+        "matched_gpu_comparison"
       ],
       "gpu_result": "pending"
     },

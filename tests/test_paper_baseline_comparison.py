@@ -64,3 +64,14 @@ def test_continuum_uses_native_pressure_priority_without_unconditional_preemptio
     assert "--disable-priority-preemption" in flags
     assert "--schedule-low-priority-values-first" in flags
     assert flags[flags.index("--retraction-policy") + 1] == "priority"
+
+
+def test_concur_is_an_agent_window_with_explicit_join_compatibility(reference, tmp_path):
+    settings, flags, _socket = comparison.environment(
+        reference, "concur_observed_join", tmp_path, tmp_path, tmp_path, 18554, tmp_path,
+    )
+    assert settings["BELIEFKV_PAPER_BASELINE"] == "concur_paper_observed_join"
+    assert settings["BELIEFKV_CONCUR_INITIAL_AGENTS"] == settings["ROOT_COUNT"]
+    assert settings["BELIEFKV_CONCUR_INTERVAL_MS"] == "1000"
+    assert "--enable-priority-scheduling" not in flags
+    assert "--enable-beliefkv-admission" in flags

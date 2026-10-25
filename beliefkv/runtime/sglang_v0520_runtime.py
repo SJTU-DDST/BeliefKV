@@ -12524,6 +12524,10 @@ class NativeAdmissionRuntime:
         return False
 
     def on_batch_selected(self, batch: object) -> None:
+        if (paper := getattr(self, "_paper_baseline", None)) is not None:
+            selected = getattr(paper, "selected", None)
+            if selected is not None:
+                selected(batch)
         ticket = self._frontier_restore_consumer
         if ticket is None or batch is None:
             return

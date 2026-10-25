@@ -8,6 +8,7 @@ from beliefkv.experiments.internal_comparison import arm_environment
 RUNTIME_ARMS = {
     "thunderagent": "thunderagent_public_single_backend",
     "continuum_public": "continuum_public_single_backend",
+    "concur_observed_join": "concur_paper_observed_join",
 }
 CONTINUUM_SERVER_ARGUMENTS = {
     "enable_priority_scheduling": True,
@@ -43,6 +44,12 @@ def environment(common: dict[str, str], label: str) -> dict[str, str]:
         "BELIEFKV_WORKFLOW_ATTAINED_WORK": "0",
         "BELIEFKV_SUBAGENT_RETENTION": "off",
     })
+    if label == "concur_observed_join":
+        settings.update({
+            "BELIEFKV_CONCUR_INITIAL_AGENTS": common.get("ROOT_COUNT", "18"),
+            "BELIEFKV_CONCUR_MAX_AGENTS": "512",
+            "BELIEFKV_CONCUR_INTERVAL_MS": "1000",
+        })
     return settings
 
 
@@ -61,6 +68,19 @@ def validate_state(label: str, state: dict) -> None:
         or declared.get("native_capacity_authority_preserved") is not True
     ):
         raise ValueError("effective paper baseline identity or information contract differs")
+    if label == "concur_observed_join" and (
+        type(declared.get("initial_agents")) is not int
+        or not 1 <= declared["initial_agents"] <= 512
+        or declared.get("maximum_agents") != 512
+        or declared.get("control_interval_ms") != 1000
+        or declared.get("feedback_semantics")
+        != "native_non_evictable_gpu_usage_and_new_request_gpu_hits_only"
+        or declared.get("control_law") != {
+            "additive_increase": 2, "multiplicative_decrease": .5,
+            "low_usage": .2, "high_usage": .5, "low_hit_rate": .2,
+        }
+    ):
+        raise ValueError("CONCUR control law or native GPU feedback contract differs")
 
 
 def server_flags(label: str) -> list[str]:

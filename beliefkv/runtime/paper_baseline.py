@@ -351,4 +351,8 @@ def create_adapter(runtime, name):
         return ThunderAgentAdapter(runtime)
     if name == ContinuumPublicAdapter.policy_name:
         return ContinuumPublicAdapter(runtime)
+    if name == "concur_paper_observed_join":
+        from beliefkv.runtime.concur_baseline import ConcurAdapter
+
+        return ConcurAdapter(runtime)
     raise ValueError("paper policy lacks a qualified runtime adapter: " + name)

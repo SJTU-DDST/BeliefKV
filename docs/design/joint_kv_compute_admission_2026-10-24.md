@@ -126,6 +126,39 @@ baseline reproductions, with observed JOIN liveness and all external admission
 waiting retained in workflow JCT. Do not attribute the measured gain solely to
 DMA overlap or adopt the sequential program mapping's dependency-blocking case.
 
+## JOIN Priority And Program Continuity
+
+Retain bounded priority for an executable continuation after its actual JOIN
+is satisfied. Parent identity alone does not establish that every later call
+will shorten the workflow's remaining blocking path. Nested children can also
+be parents, and a parent waiting for its own children must not prevent those
+children from obtaining admission.
+
+The existing Full implementation records satisfied JOIN waiters, verifies the
+current executable request, and consumes the pending priority on its first
+successful native admission. A promoted JOIN request spends a quota that is
+replenished by four ordinary admissions; the underlying queue also ages requests
+at ten seconds. This is an insertion budget, not an unconditional four-request
+round robin. Keep short-tool continuity below ready JOIN requests and preserve
+native feasibility checks. Do not turn this into lifetime root priority.
+
+ThunderAgent's active program set is a different control from queue priority.
+Its public policy retains a program's logical admission across acting intervals,
+pauses programs when the context working set exceeds capacity, and prioritizes
+reasoning continuations when resuming paused programs. The single-backend V209
+adapter maps one sequential invocation to a program, with native HiCache still
+owning physical KV. It neither reserves a non-revocable physical pin nor adds
+BeliefKV's JOIN priority.
+
+The combined candidate should therefore coordinate two decisions: which
+observed programs may keep making progress across calls, and which feasible
+request within that set should run or recover next. A blocked JOIN parent may
+yield logical admission to an observed dependency; its saved KV and eventual
+recovery remain physical capacity obligations. A newly ready JOIN continuation
+may obtain a bounded priority opportunity without permanently expanding the
+active working set. Neither a future DAG nor a free logical permit proves that
+HBM is available.
+
 ## Transfer Lead Time
 
 Layerwise readiness is a pipeline, not a guarantee of full overlap. For a fixed
