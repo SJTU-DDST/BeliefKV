@@ -78,6 +78,12 @@ CacheWise、CacheScout、PBKV、Pythia。需要预声明 Step Graph 的方法使
 未接入的论文名称在预检中直接拒绝。运行日志必须出现真实 paper policy
 身份和全套关闭的本系统策略；不能只凭 arm 标签认定 baseline 已启用。
 
+V206 在启动 GPU 前被严格配置预检拦下：校验接续器没有把已声明的
+`TOOL_RESTORE_MODE=execution` 传递给原生数据面校验，误用旧默认值。
+没有启动 server，也没有 GPU 性能样本；失败登记和冻结代码保留。
+新增三个 CPU 复现覆盖普通、frontier 和 cold-frontier 配置，修复后
+57 项相关检查通过。修复显式传递原配置，不放宽校验。
+
 ## 最新内部对照
 
 V205 scheduler-only 已完整完成，2054 请求、116355888 输入 token、

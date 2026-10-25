@@ -368,6 +368,23 @@ def test_gpu_evidence_requires_actual_position_receipts_and_all_native_stops(tmp
 def test_predeclared_calibration_accepts_the_selected_policy_but_runs_native(
     tmp_path, monkeypatch, reference, frontier,
 ):
+    check_predeclared_calibration(
+        tmp_path, monkeypatch, reference, frontier, tool_restore_mode="speculative",
+    )
+
+
+@pytest.mark.parametrize("frontier", (False, True, "cold"))
+def test_execution_tool_restore_reaches_the_actual_native_calibration_boundary(
+    tmp_path, monkeypatch, reference, frontier,
+):
+    check_predeclared_calibration(
+        tmp_path, monkeypatch, reference, frontier, tool_restore_mode="execution",
+    )
+
+
+def check_predeclared_calibration(
+    tmp_path, monkeypatch, reference, frontier, *, tool_restore_mode,
+):
     from contextlib import nullcontext
 
     cold_reclaim = frontier == "cold"
@@ -407,6 +424,11 @@ def test_predeclared_calibration_accepts_the_selected_policy_but_runs_native(
         + ("_cold_frontier" if cold_reclaim else "_frontier" if frontier else "")
         + "_20261024.json"
     )
+    if tool_restore_mode == "execution":
+        candidate = json.loads(spec.read_bytes())
+        candidate["common_environment"]["TOOL_RESTORE_MODE"] = tool_restore_mode
+        spec = tmp_path / "execution-candidate.json"
+        spec.write_text(json.dumps(candidate))
     run = tmp_path / "calibration"
     registration = tmp_path / "calibration.json"
     registration.write_text(json.dumps({
@@ -452,6 +474,7 @@ def test_predeclared_calibration_accepts_the_selected_policy_but_runs_native(
     [(settings, flags, socket, kwargs)] = observed
     assert kwargs.get("execution_frontier_restore", False) is frontier
     assert kwargs.get("frontier_cold_reclaim", False) is cold_reclaim
+    assert kwargs["tool_restore_mode"] == tool_restore_mode
     assert settings["BELIEFKV_INTERNAL_COMPARISON_MODE"] == "native_matched"
     assert settings["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == "0"
     assert settings["BELIEFKV_FRONTIER_COLD_RECLAIM"] == "0"

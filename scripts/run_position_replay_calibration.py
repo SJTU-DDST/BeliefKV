@@ -457,6 +457,9 @@ def watch(registration):
                 reference, "native_matched", ROOT, Path(plan["engine_checkout"]),
                 run, plan["port"], run / "plugin", sampling_mode="position",
                 max_running_requests=running,
+                tool_restore_mode=reference["arms"]["full"].get(
+                    "TOOL_RESTORE_MODE", "speculative",
+                ),
                 execution_frontier_restore=bool(
                     plan.get("experiment_config")
                     and reference["arms"]["full"].get("EXECUTION_FRONTIER_RESTORE") == "1"
