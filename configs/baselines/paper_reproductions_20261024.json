@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "status": "implementation_and_qualification_in_progress",
+  "evaluation": {
+    "model": "Qwen3-Coder-30B-A3B-Instruct",
+    "source_registration": "v195_qwen3_coder_18project_root_phase16_source_20261024",
+    "roots": 18,
+    "different_projects": 18,
+    "running_limit": 24,
+    "decode_limit": 24,
+    "context_tokens": 262144,
+    "host_gb": 200,
+    "seed": 21,
+    "ingress": "pretokenized_generate_causal_replay",
+    "repeat_full_native": false,
+    "retain_all_normal_tails": true,
+    "future_dynamic_graph_visible": false
+  },
+  "required_order": [
+    "paper_baseline_reproductions",
+    "combined_compute_transfer_capacity_admission_candidate"
+  ],
+  "methods": [
+    {
+      "id": "thunderagent",
+      "repository": "ThunderAgent-org/ThunderAgent",
+      "commit": "7ddc8610270e56d3b109eed8796b3a4360fc67c9",
+      "paper": "2602.13692",
+      "scope": "single_backend_policy_adapted_sglang",
+      "program_mapping": "one_sequential_agent_invocation",
+      "components": [
+        "reasoning_and_acting_working_set",
+        "smallest_acting_first_pause",
+        "running_pause_at_request_boundary",
+        "priority_group_then_bfd_resumption",
+        "five_second_control_period",
+        "native_kv_cache_management"
+      ],
+      "explicit_adaptations": [
+        "exact_input_tokens_from_shared_pretokenized_ingress",
+        "single_backend_bfd_projection",
+        "dynamic_invocations_registered_only_when_observed"
+      ],
+      "component_fidelity": "1000_author_code_state_combinations_equal",
+      "runtime": "implemented_cpu_qualification_pending",
+      "gpu_result": "pending"
+    },
+    {
+      "id": "continuum_public",
+      "repository": "Hanchenli/vllm-continuum",
+      "commit": "316a58794a6ff86b216e579b74fd56ed0c5a911f",
+      "paper": "2511.02230v7",
+      "scope": "public_artifact_policy",
+      "component_fidelity": "12_author_ttl_boundary_cases_equal",
+      "runtime": "pending",
+      "gpu_result": "pending"
+    },
+    {
+      "id": "continuum_paper",
+      "paper": "2511.02230v7",
+      "scope": "paper_strategy_reimplementation",
+      "implemented_components": [
+        "per_tool_and_global_empirical_cdf",
+        "exponential_cold_start",
+        "queue_and_reconstruction_benefit",
+        "ttl_objective",
+        "preemption_ttl_program_fcfs_priority"
+      ],
+      "remaining": [
+        "native_multi_session_ttl_pins",
+        "measured_reconstruction_cost_profile",
+        "online_evicted_queue_and_memoryfulness_statistics",
+        "deadlock_breaking_and_reentry_integration"
+      ],
+      "gpu_result": "pending"
+    },
+    {
+      "id": "concur",
+      "paper": "2601.22705",
+      "scope": "paper_strategy_reimplementation",
+      "implemented_components": ["paper_aimd_control_law_and_thresholds"],
+      "remaining": [
+        "gpu_only_cache_feedback",
+        "agent_pause_resume_and_native_residency",
+        "declared_dynamic_dependency_mapping"
+      ],
+      "gpu_result": "pending"
+    },
+    {
+      "id": "infercept",
+      "repository": "WukLab/InferCept",
+      "commit": "3a1a4dac37cb569e767bc4a95ef8ed0995a13b99",
+      "paper": "ICML2024-abhyankar24a",
+      "scope": "paper_strategy_adapted_sglang",
+      "implemented_components": [
+        "chunked_discard_waste",
+        "global_min_waste_swap_order",
+        "preserve_discard_residual_decision"
+      ],
+      "remaining": [
+        "model_and_link_profiles",
+        "per_iteration_transfer_budget_optimization",
+        "safe_partial_swap_and_discard",
+        "resumption_queue_policy"
+      ],
+      "gpu_result": "pending"
+    },
+    {
+      "id": "tokencake",
+      "repository": "pku-lemonade/TokenCake",
+      "commit": "1901ebf31fdf63590148e61d5c2f65e9fb7ec010",
+      "paper": "2510.18586v5",
+      "scope": "public_artifact_and_paper_strategy_separate",
+      "status": "pinned_sources_and_prior_source_audit_available",
+      "remaining": [
+        "public_event_backup_and_demand_restore_adapter",
+        "paper_ewma_tool_prediction_and_predictive_upload",
+        "importance_and_progressive_capacity_reservations",
+        "declared_graph_input_group"
+      ]
+    },
+    {
+      "id": "agentix_atlas",
+      "paper": "NSDI2026-Agentix",
+      "scope": "formal_paper_strategy_reimplementation",
+      "status": "service_inheritance_reference_exists_not_full_scheduler",
+      "remaining": [
+        "executor_service_account",
+        "mlfq_quanta",
+        "running_call_preemption_and_aggregate_swap",
+        "wait_service_aging"
+      ]
+    },
+    {
+      "id": "kvflow",
+      "repository": "PanZaifeng/KVFlow",
+      "paper": "2507.07400",
+      "status": "pending",
+      "information_contract": "declared_step_graph_group_or_separately_named_observed_graph_extension"
+    },
+    {
+      "id": "cachewise",
+      "paper": "2606.16824",
+      "status": "pending_predictor_and_serving_strategy_reimplementation"
+    },
+    {
+      "id": "cachescout",
+      "paper": "2608.14624",
+      "status": "pending_online_learning_and_prefix_anchor_reimplementation"
+    },
+    {
+      "id": "pbkv",
+      "paper": "2605.06472",
+      "status": "pending_history_and_context_multistep_predictor_reimplementation"
+    },
+    {
+      "id": "pythia",
+      "paper": "2604.25899v2",
+      "status": "pending_single_backend_workflow_profiling_and_lookahead_adaptation"
+    }
+  ],
+  "performance_accepted": false
+}

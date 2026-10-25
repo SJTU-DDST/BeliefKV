@@ -85,3 +85,10 @@
   complete shutdown trace; retain the original status and failed audit.
 - Do not run ablations until predictive establishes clear gains over native.
   Keep completed native/Full results and administratively interrupted controls.
+- The user now explicitly requests paper baselines before implementation of the
+  combined recovery/admission proposal. Reproduce the declared external methods
+  on the current FULL-only model and shared data plane first. This authorizes
+  their comparisons independently of the older ablation restriction.
+  Keep paper policy, public artifact and any dynamic-graph extension distinct.
+  Missing predictors, preemption, TTL enforcement or physical actions must not
+  be silently replaced by our policy or counted as a completed reproduction.

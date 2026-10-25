@@ -189,6 +189,7 @@ def validate_runtime(
     tool_continuity: bool | None = None,
     tool_continuity_grace_ms: float | None = None,
     expected_overrides: dict[str, bool] | None = None,
+    external_policy: str | None = None,
 ) -> None:
     """Check observed effective controls, not just the requested environment."""
     if mode not in MODES:
@@ -267,6 +268,16 @@ def validate_runtime(
         } or any(type(value) is not bool for value in expected_overrides.values()):
             raise ValueError("unsupported module ablation expectations")
         expected.update(expected_overrides)
+    if external_policy is not None:
+        from beliefkv.experiments.paper_baselines import validate_state
+
+        validate_state(external_policy, state)
+        expected.update(
+            resident_first=False, join_parent_priority=False,
+            final_stage_priority=False,
+        )
+    elif state.get("paper_baseline") is not None:
+        raise ValueError("external policy was not declared for this comparison")
     for field, value in expected.items():
         if state.get(field) != value:
             raise ValueError(f"{mode}: observed {field}={state.get(field)!r}, expected {value!r}")

@@ -248,6 +248,7 @@ def observe_arm(
     mode: str, arm: Path, *, max_running_requests: int = 12,
     legacy_execution_frontier_restore: bool | None = None,
     runtime_overrides: dict[str, bool] | None = None,
+    external_policy: str | None = None,
 ) -> None:
     protection = None
     scheduling = None
@@ -295,6 +296,7 @@ def observe_arm(
             frontier_cold_reclaim=frontier_reclaim,
             tool_continuity=continuity,
             expected_overrides=runtime_overrides,
+            external_policy=external_policy,
         )
     telemetry = arm / "server/native_telemetry_status.json"
     if telemetry.exists():

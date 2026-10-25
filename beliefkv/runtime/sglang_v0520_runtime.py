@@ -905,6 +905,12 @@ class NativeAdmissionRuntime:
         ))
         self._opportunity_next_ms = 0.0
         self._opportunity_cursor = 0
+        paper_policy = os.environ.get("BELIEFKV_PAPER_BASELINE", "")
+        self._paper_baseline = None
+        if paper_policy:
+            from beliefkv.runtime.paper_baseline import create_adapter
+
+            self._paper_baseline = create_adapter(self, paper_policy)
         self.event_server = (
             RuntimeEventDatagramServer(
                 event_socket_path, self.on_events, timing=self._hotpath_timing,
@@ -958,6 +964,8 @@ class NativeAdmissionRuntime:
             self.join_wait_hints[hint.join_id] = hint
 
     def close(self) -> None:
+        if (paper := getattr(self, "_paper_baseline", None)) is not None:
+            paper.close()
         if self._tool_residency_grace is not None:
             self._release_tool_residency_grace("shutdown")
         self._frontier_restore_consumer = None
@@ -1133,6 +1141,8 @@ class NativeAdmissionRuntime:
             cache.beliefkv_join_pressure_validator = self._live_parent_pressure_node
             cache.beliefkv_join_pressure_parked = self._on_parent_pressure_parked
             cache.beliefkv_cold_full_owner_validator = self._live_cold_full_owners
+        if (paper := getattr(self, "_paper_baseline", None)) is not None:
+            paper.attach(cache)
 
     def _next_physical_command_id(self, kind: str) -> str:
         namespace = self._physical_command_namespace
@@ -1936,6 +1946,9 @@ class NativeAdmissionRuntime:
                         (self.graph.graph_version, sessions_revision), parent_cache[1],
                     )
 
+        if (paper := getattr(self, "_paper_baseline", None)) is not None:
+            paper.events(events)
+
     def _clear_semantic_invocation(self, invocation_id: str) -> None:
         for rid, key in tuple(self._semantic_keys.items()):
             if key.invocation_id == invocation_id:
@@ -2361,6 +2374,8 @@ class NativeAdmissionRuntime:
             )
         if not defer_observations:
             self.sample_runtime_observations(waiting_queue, now_ms=now_ms)
+        if (paper := getattr(self, "_paper_baseline", None)) is not None:
+            paper.tick(now=now_ms / 1000.)
 
     def _maintain_wait_predictions(self, now_ms: float) -> None:
         """Refresh advisory wait forecasts after launch when overlap permits."""
@@ -2495,6 +2510,10 @@ class NativeAdmissionRuntime:
                 "physical_disabled": self.physical_disabled,
                 "internal_comparison_mode": self.internal_comparison_mode,
                 "custom_kv_management": self._custom_kv_management,
+                "paper_baseline": (
+                    paper.status()
+                    if (paper := getattr(self, "_paper_baseline", None)) is not None else None
+                ),
                 "join_parent_priority": self.enable_join_parent_priority,
                 "join_last_child_priority": self.enable_join_last_child_priority,
                 "prefill_scheduling_policy": self.prefill_scheduling_policy,
@@ -11098,6 +11117,8 @@ class NativeAdmissionRuntime:
         self.semantic_revision += 1
         self._execution_handoff_next_ms = 0.
         self._refresh_prefetch_service_leases(context_id=key.context_id)
+        if (paper := getattr(self, "_paper_baseline", None)) is not None:
+            paper.registered(req, key)
         return True
 
     def _terminal(self, key: PrefillCandidateKey) -> bool:
@@ -11566,6 +11587,8 @@ class NativeAdmissionRuntime:
         self, native_order: Sequence[object], *, running_batch: object, adder: object,
         _queue_inspection: _NativePrefillQueueInspection | None = None,
     ) -> NativePrefillPlan:
+        if (paper := getattr(self, "_paper_baseline", None)) is not None:
+            return paper.plan(native_order, running_batch=running_batch, adder=adder)
         self._workflow_work_promoted = None
         self._tool_continuity_promoted = None
         self._observe_native_admission_capacity(running_batch=running_batch, adder=adder)
@@ -12708,9 +12731,13 @@ class NativeAdmissionRuntime:
                 self.semantic_revision += 1
         if self._prefetch_service_leases:
             self._refresh_prefetch_service_leases()
+        if (paper := getattr(self, "_paper_baseline", None)) is not None:
+            paper.completed(batch, completed_ids or ())
         return tuple(completed_ids) if completed_ids is not None else ()
 
     def on_abort_request(self, abort: object) -> None:
+        if (paper := getattr(self, "_paper_baseline", None)) is not None:
+            paper.aborted(abort.rid, all_requests=getattr(abort, "abort_all", False))
         grace = self._tool_residency_grace
         if grace is not None and grace.key is not None and (
             getattr(abort, "abort_all", False) or grace.key.request_id.startswith(abort.rid)

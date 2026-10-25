@@ -24,6 +24,9 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.experiments.causal_replay_tokens import CapturedTokenCorpus
 from beliefkv.experiments.delegation_policy import DYNAMIC_NESTED_IN_GRAPH_PROFILE, NESTED_IN_GRAPH_PROFILE
 from beliefkv.experiments.internal_comparison import arm_environment
+from beliefkv.experiments.paper_baselines import (
+    RUNTIME_ARMS as PAPER_CONTROLS, environment as paper_environment,
+)
 from beliefkv.experiments.subagent_retention import (
     ORDER as RETENTION_ORDER, environment as retention_environment,
 )
@@ -41,7 +44,7 @@ ORDER = ("full", "native_matched", "join_priority_only", "no_background_prepare"
 DEFAULT_ORDER = ("full", "join_priority_only")
 CONTROLS = (*ORDER, "scheduler_only", "kv_only", "no_tool_prefetch")
 RETENTION_CONTROLS = {f"subagent_{policy}": policy for policy in RETENTION_ORDER}
-ALL_CONTROLS = (*CONTROLS, *RETENTION_CONTROLS)
+ALL_CONTROLS = (*CONTROLS, *RETENTION_CONTROLS, *PAPER_CONTROLS)
 METRIC_BOUNDARY = "workflow_start_to_workflow_end"
 SERVER_FIELDS = (
     "PREFETCH_LEAD_MS", "JOIN_PREFETCH_MIN_ADVANCE_MS", "TOOL_PREFETCH_MIN_ADVANCE_MS",
@@ -79,7 +82,10 @@ def environment(
     ):
         raise ValueError("causal comparison changed the declared frontier cold reclaim")
     retention = RETENTION_CONTROLS.get(mode)
-    policy = "full" if retention or mode in ("no_background_prepare", "no_tool_prefetch") else mode
+    policy = (
+        "scheduler_only" if mode in PAPER_CONTROLS else
+        "full" if retention or mode in ("no_background_prepare", "no_tool_prefetch") else mode
+    )
     required = {
         "MAX_RUNNING_REQUESTS": str(max_running_requests), "SERVER_RANDOM_SEED": "21",
         "SAMPLING_SEED": "21", "PYTHONHASHSEED": "21", "HICACHE_SIZE_GB": "200",
@@ -95,6 +101,7 @@ def environment(
         if reference["arms"]["full"].get(name) != value:
             raise ValueError("causal comparison changed the qualified V108/EOS profile: " + name)
     settings = (
+        paper_environment(reference["arms"]["full"], mode) if mode in PAPER_CONTROLS else
         retention_environment(reference["arms"]["full"], retention) if retention else
         arm_environment(
             reference["arms"]["full"], policy,
@@ -551,7 +558,11 @@ def validate_result(plan, result, arm, *, live_control):
 
 def observed_configuration(plan, label, arm, *, final=False):
     retention = RETENTION_CONTROLS.get(label)
-    mode = "full" if retention or label in ("no_background_prepare", "no_tool_prefetch") else label
+    external_policy = label if label in PAPER_CONTROLS else None
+    mode = (
+        "scheduler_only" if external_policy else
+        "full" if retention or label in ("no_background_prepare", "no_tool_prefetch") else label
+    )
     overrides = (
         {"background_prepare": False} if label == "no_background_prepare" else
         {"tool_prefetch": False} if label == "no_tool_prefetch" else None
@@ -560,14 +571,23 @@ def observed_configuration(plan, label, arm, *, final=False):
         overrides = {
             "tool_prefetch": plan["reference_environment"].get("TOOL_PREFETCH") != "0",
         }
-    comparison.observe_arm(
-        mode, arm, max_running_requests=plan.get("max_running_requests", 8),
-        runtime_overrides=overrides,
-    )
+    observation_options = {
+        "max_running_requests": plan.get("max_running_requests", 8),
+        "runtime_overrides": overrides,
+    }
+    if external_policy:
+        observation_options["external_policy"] = external_policy
+    comparison.observe_arm(mode, arm, **observation_options)
     if final and mode != "native_matched" and qualified.last_runtime_state(
         arm / "opportunities/admission_opportunities.jsonl",
     ) is None:
         raise ValueError("controlled arm has no observed runtime configuration")
+    if final and external_policy:
+        state = qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
+        counts = (state.get("paper_baseline") or {}).get("counts", {})
+        requests = plan["source_plan"]["requests"]
+        if counts.get("registered") != requests or counts.get("completed") != requests:
+            raise ValueError("paper policy did not observe the complete request population")
     if retention:
         state = qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
         if state is not None:
@@ -592,19 +612,30 @@ def observed_configuration(plan, label, arm, *, final=False):
             if state.get("tool_prefetch_priority_ms") != expected:
                 raise ValueError("effective tool prefetch priority window differs")
     common = plan.get("reference_environment", {})
+    requested_settings = (
+        paper_environment(common, label) if external_policy else None
+    )
     if "FRONTIER_RESTORE_ORDINARY_QUOTA" in common and mode != "native_matched":
         state = qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
         if state is not None:
-            expected_quota = int(arm_environment(common, mode)["BELIEFKV_FRONTIER_RESTORE_ORDINARY_QUOTA"])
+            expected_quota = int(
+                (requested_settings or arm_environment(common, mode))
+                ["BELIEFKV_FRONTIER_RESTORE_ORDINARY_QUOTA"]
+            )
             if state.get("frontier_restore_ordinary_quota") != expected_quota:
                 raise ValueError("effective selected-consumer preload quota differs")
     if "TOOL_CONTINUITY" in common and mode != "native_matched":
         state = qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
         if state is not None:
-            expected = arm_environment(common, mode)["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == "1"
+            expected = (
+                requested_settings or arm_environment(common, mode)
+            )["BELIEFKV_ENABLE_TOOL_CONTINUITY"] == "1"
             if state.get("tool_continuity") is not expected:
                 raise ValueError("effective short-tool continuity differs")
-            grace = float(arm_environment(common, mode)["BELIEFKV_TOOL_CONTINUITY_GRACE_MS"])
+            grace = float(
+                (requested_settings or arm_environment(common, mode))
+                ["BELIEFKV_TOOL_CONTINUITY_GRACE_MS"]
+            )
             if state.get("tool_continuity_grace_ms", 0.) != grace:
                 raise ValueError("effective short-tool residency grace differs")
     census = arm / "server/native_capacity_census.json"

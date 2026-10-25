@@ -240,7 +240,8 @@ def register(args):
                 Path(source["environment"]["WORKLOAD_MANIFEST"])
             )
             or not spec.get("order") or any(
-                label not in controls.CONTROLS or label == "native_matched"
+                label not in (*controls.CONTROLS, *controls.PAPER_CONTROLS)
+                or label == "native_matched"
                 for label in spec["order"]
             )
             or len(set(spec["order"])) != len(spec["order"])

@@ -4,6 +4,13 @@ Status: design proposal. Only the unrelated batch-dependency repair below has
 been implemented. GPU correctness and performance validation remain pending.
 Keep the running V205 and its frozen engine unchanged.
 
+The user has requested that the two descriptions be implemented as one design:
+the layer-deadline model and dependency-specific copy fences refine the same
+bounded execution plan, capacity reservation and admission opportunity described
+below. They are not separate scheduling policies. Reproduce the declared paper
+baselines before implementing this combined proposal. The prerequisite batch
+dependency repair already committed before this request remains a separate fix.
+
 ## Objective
 
 Reduce exposed recovery stalls and avoid repeated transfers across all eligible
