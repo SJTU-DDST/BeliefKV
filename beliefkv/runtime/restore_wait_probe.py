@@ -102,16 +102,19 @@ class RestoreWaitProbe:
             if not all(pair[2].query() for pair in sample.layers.values()):
                 retained.append(sample)
                 continue
+            first, last = next(iter(sample.layers.values())), next(
+                reversed(sample.layers.values()),
+            )
+            origin = first[1]
             layers = [{
                 "layer": layer, "consumer_index": consumer,
                 "gpu_wait_ms": max(0., start.elapsed_time(finish)),
+                "gpu_wait_start_offset_ms": max(0., origin.elapsed_time(start)),
+                "gpu_wait_end_offset_ms": max(0., origin.elapsed_time(finish)),
                 "dependency_kind": "pre_forward_state" if layer == -1 else "layer",
                 "cpu_wait_enqueue_ms": max(0., (cpu_finish - cpu_start) * 1000.),
             } for layer, (consumer, start, finish, cpu_start, cpu_finish, _, _)
                 in sample.layers.items()]
-            first, last = next(iter(sample.layers.values())), next(
-                reversed(sample.layers.values()),
-            )
             records.append({
                 **sample.metadata, "layers": layers,
                 "gpu_layer_dependency_wait_ms": sum(row["gpu_wait_ms"] for row in layers),
@@ -127,7 +130,9 @@ class RestoreWaitProbe:
                     "first observed dependency-wait start through last observed wait end; "
                     "GPU span includes kernels and CPU submission gaps between layers; "
                     "CPU span includes dispatch between waits; neither is a complete "
-                    "forward or exclusive kernel duration. Thread CPU span excludes "
+                    "forward or exclusive kernel duration. Layer offsets share the "
+                    "first observed compute-stream wait event; they are not absolute "
+                    "H2D timestamps. Thread CPU span excludes "
                     "other threads and time not scheduled; its wall-clock difference "
                     "does not identify GIL contention or blocking by itself"
                 ),

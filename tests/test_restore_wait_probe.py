@@ -114,6 +114,10 @@ def test_observed_span_includes_interlayer_dispatch_and_preserves_wait_accountin
     row, = probe.poll()
     assert row["gpu_layer_dependency_wait_ms"] == 11.
     assert row["gpu_observed_layer_span_ms"] == 15.
+    assert [
+        (layer["gpu_wait_start_offset_ms"], layer["gpu_wait_end_offset_ms"])
+        for layer in row["layers"]
+    ] == [(0., 8.), (12., 15.)]
     assert abs(row["cpu_observed_layer_span_ms"] - 10.) < 1e-6
     assert abs(row["cpu_layer_wait_enqueue_ms"] - 3.) < 1e-6
     assert row["thread_cpu_observed_layer_span_ms"] == 3.5
