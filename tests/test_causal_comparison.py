@@ -192,6 +192,69 @@ def test_explicit_frontier_candidate_preserves_tool_prefetch_and_native_disables
         assert environment["TOOL_RESTORE_MODE"] == "speculative"
 
 
+@pytest.mark.parametrize("mode", comparison.CONTROLS)
+def test_declared_execution_restore_unifies_ready_requests_and_preserves_controls(
+    reference, tmp_path, mode,
+):
+    reference["arms"]["full"].update(
+        TOOL_RESTORE_MODE="execution", EXECUTION_FRONTIER_RESTORE="1",
+        FRONTIER_COLD_RECLAIM="1", FRONTIER_COLD_RECLAIM_POLICY="waiting",
+        TOOL_PREFETCH_PRIORITY_MS="1500",
+    )
+    settings, _, _ = comparison.environment(
+        reference, mode, tmp_path, tmp_path, tmp_path, 18554, tmp_path,
+        tool_restore_mode="execution",
+        execution_frontier_restore=True, frontier_cold_reclaim=True,
+    )
+    custom = mode in ("full", "kv_only", "no_background_prepare", "no_tool_prefetch")
+    assert settings["TOOL_RESTORE_MODE"] == ("execution" if custom else "speculative")
+    assert settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "0"
+    assert settings["BELIEFKV_TOOL_PREFETCH_PRIORITY_MS"] == "0"
+    assert settings["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == str(int(custom))
+    assert settings["BELIEFKV_FRONTIER_COLD_RECLAIM_POLICY"] == "waiting"
+    assert settings["BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH"] == str(int(custom))
+    assert settings["BELIEFKV_ONLINE_TOOL_TIMING"] == str(int(custom))
+
+
+def test_execution_restore_cpu_preflight_matches_the_effective_runtime(
+    reference, tmp_path,
+):
+    reference["arms"]["full"].update(
+        TOOL_RESTORE_MODE="execution", EXECUTION_FRONTIER_RESTORE="1",
+        FRONTIER_COLD_RECLAIM="1", FRONTIER_COLD_RECLAIM_POLICY="waiting",
+        TOOL_PREFETCH_PRIORITY_MS="1500",
+        TOOL_TIMING_ARTIFACT="", H2D_SEED_ARTIFACT="", TRANSFER_SERVICE_SEED="",
+    )
+    settings, _, _ = comparison.environment(
+        reference, "full", Path(comparison.ROOT), tmp_path, tmp_path, 18554, tmp_path,
+        tool_restore_mode="execution",
+        execution_frontier_restore=True, frontier_cold_reclaim=True,
+    )
+    result = comparison.preflight_runtime(settings, "cpu-config-check")
+    actual = result["verified_configuration"]
+    assert actual["enable_frontier_restore"] is True
+    assert actual["enable_tool_prefetch"] is False
+    assert actual["tool_restore_mode"] == "execution"
+    assert actual["frontier_cold_reclaim_policy"] == "waiting"
+
+
+def test_unified_execution_profile_preserves_the_captured_workload():
+    directory = Path(comparison.ROOT) / "configs/migration"
+    source = comparison.load(directory / "qwen3_coder_18project_root_phase16_20261024.json")
+    candidate = comparison.load(
+        directory / "qwen3_coder_18project_unified_execution_restore_20261024.json",
+    )
+    original, updated = source["common_environment"], candidate["common_environment"]
+    changed = {name for name in original.keys() | updated.keys() if original.get(name) != updated.get(name)}
+    assert changed == {
+        "TOOL_RESTORE_MODE", "TOOL_PREFETCH", "TOOL_PREFETCH_PRIORITY_MS",
+        "FRONTIER_RESTORE_ORDINARY_QUOTA",
+    }
+    assert updated["FRONTIER_COLD_RECLAIM_POLICY"] == "waiting"
+    assert candidate["native_reference"]["repeat_full_native_replay"] is False
+    assert candidate["performance_accepted"] is False
+
+
 @pytest.mark.parametrize("mode", ("full", "kv_only", "native_matched", "join_priority_only"))
 def test_cold_frontier_requires_explicit_declaration_and_disables_with_custom_kv(
     reference, tmp_path, mode,

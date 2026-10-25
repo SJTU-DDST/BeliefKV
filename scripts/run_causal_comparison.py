@@ -58,6 +58,7 @@ SERVER_FIELDS = (
 def environment(
     reference, mode, checkout, engine, arm, port, plugin, *, sampling_mode="legacy",
     max_running_requests=8, execution_frontier_restore=False, frontier_cold_reclaim=False,
+    tool_restore_mode="speculative",
 ):
     if mode not in ALL_CONTROLS:
         raise ValueError("unknown causal comparison control: " + mode)
@@ -67,6 +68,8 @@ def environment(
         raise ValueError("max running requests must be a positive integer")
     if type(execution_frontier_restore) is not bool:
         raise ValueError("execution frontier restore must be explicitly boolean")
+    if tool_restore_mode not in ("speculative", "execution"):
+        raise ValueError("unsupported declared tool restore mode")
     if type(frontier_cold_reclaim) is not bool or (
         frontier_cold_reclaim and not execution_frontier_restore
     ):
@@ -82,7 +85,7 @@ def environment(
         "SAMPLING_SEED": "21", "PYTHONHASHSEED": "21", "HICACHE_SIZE_GB": "200",
         "HOST_SPLIT": "80:20", "MODEL_CONTEXT_TOKENS": "262144",
         "JOIN_PREFETCH_TRIGGER": "observed_eos", "PREFILL_SCHEDULING_POLICY": "workflow",
-        "TOOL_RESTORE_MODE": "speculative", "RESTORE_TIERS": "complete",
+        "TOOL_RESTORE_MODE": tool_restore_mode, "RESTORE_TIERS": "complete",
         "EXECUTION_FRONTIER_RESTORE": str(int(execution_frontier_restore)),
     }
     full_only = reference["arms"]["full"].get("MODEL_CACHE_LAYOUT") == "full_only"
@@ -582,7 +585,9 @@ def observed_configuration(plan, label, arm, *, final=False):
         if state is not None:
             expected = (
                 requested_priority
-                if mode in ("full", "kv_only") and label != "no_tool_prefetch" else 0.
+                if mode in ("full", "kv_only") and label != "no_tool_prefetch"
+                and plan.get("tool_restore_mode", "speculative") == "speculative"
+                else 0.
             )
             if state.get("tool_prefetch_priority_ms") != expected:
                 raise ValueError("effective tool prefetch priority window differs")
@@ -1000,6 +1005,9 @@ def register(args):
             str(args.after_registration.resolve()) if args.after_registration is not None else None
         ),
         "reference_environment": reference["arms"]["full"],
+        "tool_restore_mode": reference["arms"]["full"].get(
+            "TOOL_RESTORE_MODE", "speculative",
+        ),
         "execution_frontier_restore": (
             reference["arms"]["full"].get("EXECUTION_FRONTIER_RESTORE") == "1"
         ),
@@ -1036,6 +1044,7 @@ def register(args):
             max_running_requests=plan["max_running_requests"],
             execution_frontier_restore=plan["execution_frontier_restore"],
             frontier_cold_reclaim=plan["frontier_cold_reclaim"],
+            tool_restore_mode=plan["tool_restore_mode"],
         )
         plan["runtime_cpu_preflight"][label] = preflight_runtime(
             settings, plan["source_server_parameters"]["model_path"],
@@ -1133,6 +1142,7 @@ def watch(registration):
                     max_running_requests=plan.get("max_running_requests", 8),
                     execution_frontier_restore=plan.get("execution_frontier_restore", False),
                     frontier_cold_reclaim=plan.get("frontier_cold_reclaim", False),
+                    tool_restore_mode=plan.get("tool_restore_mode", "speculative"),
                 )
                 if event_socket is not None and event_socket.exists():
                     raise ValueError("preserve the existing runtime event socket")

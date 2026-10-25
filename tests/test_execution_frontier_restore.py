@@ -1,5 +1,6 @@
 from types import SimpleNamespace as NS
 from unittest.mock import Mock, patch
+from dataclasses import replace
 import os
 
 import pytest
@@ -38,6 +39,35 @@ def test_execution_mode_removes_tool_forecast_restore_but_keeps_prepare(monkeypa
         runtime._wait_prefetch_opportunity = Mock(side_effect=AssertionError("no speculative planning"))
         runtime.dispatch_tool_prefetch()
         assert runtime._tool_ticket is None
+    finally:
+        runtime.close()
+
+
+def test_online_execution_hint_defers_physical_read_until_an_actual_backup(monkeypatch):
+    import time
+    from beliefkv.predictor.online_workload_timing import OnlineWorkloadToolTiming
+    from tests.test_tool_predictive_transfers import tool_runtime
+
+    monkeypatch.setenv("BELIEFKV_TOOL_RESTORE_MODE", "execution")
+    runtime, hint = tool_runtime()
+    runtime._online_tool_timing = OnlineWorkloadToolTiming()
+    now = time.monotonic() * 1000.
+    hint = replace(
+        hint, wait_p10_ms=2000., wait_p50_ms=3000., wait_p90_ms=4000.,
+        issued_monotonic_ms=now, expires_monotonic_ms=now + 5000.,
+    )
+    runtime._native_cache = object()
+    try:
+        with patch.object(runtime, "capture_shadow_candidate", return_value=object()) as capture:
+            runtime._accept_tool_wait(hint)
+            runtime._accept_tool_wait(hint)
+            capture.assert_not_called()
+            assert runtime._long_tool_wait(hint.key)
+            runtime._refreshed_shadow_backup_candidate(context_id=hint.key.context_id)
+            capture.assert_called_once()
+        assert runtime.tool_wait_hints[hint.key.context_id] is hint
+        assert runtime.counts["tool_hint_physical_inspection_deferred"] == 2
+        assert not runtime.physical_ledger.pending_count
     finally:
         runtime.close()
 

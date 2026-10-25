@@ -62,6 +62,12 @@
   batch. Protect the actual queue head and ready JOIN dependencies; validate
   unstarted ordinary queue tails as possible native FULL donors. Preserve all
   native lock, allocation, identity, Host-copy and DMA checks.
+- For the next unified execution-restore candidate, tool successors and other
+  ready requests share the selected-consumer path. Keep online long-tool
+  offload prediction and JOIN/EOS recovery independent. Use the `waiting` cold
+  reclaim policy; an unstarted ready queue tail is not intrinsically cold.
+  Preserve last-child dependency protection. The historical `selected_queue`
+  experiments establish safe capacity access, not a net migration benefit.
 - Count initial cold prefill separately from missing previously served
   same-session prefixes. Cache occupancy and prefix-loss proxies alone do not
   prove expensive recomputation.

@@ -145,6 +145,21 @@ def test_scheduling_and_native_cannot_enable_tool_prefetch(mode):
         arm_environment({}, mode, tool_prefetch=True)
 
 
+@pytest.mark.parametrize("mode", ("full", "kv_only"))
+def test_execution_restore_uses_one_path_without_disabling_long_tool_offload(mode):
+    settings = arm_environment({
+        "TOOL_RESTORE_MODE": "execution", "EXECUTION_FRONTIER_RESTORE": "1",
+        "FRONTIER_COLD_RECLAIM": "1", "FRONTIER_COLD_RECLAIM_POLICY": "waiting",
+        "TOOL_PREFETCH_PRIORITY_MS": "1500",
+    }, mode)
+    assert settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "0"
+    assert settings["BELIEFKV_TOOL_PREFETCH_PRIORITY_MS"] == "0"
+    assert settings["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == "1"
+    assert settings["BELIEFKV_FRONTIER_COLD_RECLAIM_POLICY"] == "waiting"
+    assert settings["ENABLE_TOOL_TIMING"] == settings["ONLINE_TOOL_TIMING"] == "1"
+    assert settings["PREPARE_HOST"] == settings["BORROWABLE_PARENT_HEADROOM"] == "1"
+
+
 def test_no_tool_prefetch_keeps_online_prediction_and_cold_tool_eligibility(
     monkeypatch, tmp_path,
 ):

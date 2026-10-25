@@ -4855,7 +4855,7 @@ class NativeAdmissionRuntime:
         self.tool_wait_hints[key.context_id] = hint
         self._refresh_prefetch_service_leases(context_id=key.context_id)
         self.counts["tool_wait_accepted"] += 1
-        if self._tool_timing_only:
+        if self._tool_timing_only or self.tool_restore_mode == "execution":
             # Physical ancestry is read at an action safe point, not for every
             # advisory refresh of the same external wait.
             self.counts["tool_hint_physical_inspection_deferred"] += 1

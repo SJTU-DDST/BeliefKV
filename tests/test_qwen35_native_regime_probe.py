@@ -243,10 +243,11 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
     )
     assert actual["BELIEFKV_ENABLE_PREPARE_HOST"] == str(int(custom_kv))
     assert actual["BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH"] == str(int(custom_kv and join_prefetch == "1"))
-    assert actual["BELIEFKV_ENABLE_TOOL_PREFETCH"] == str(int(
-        custom_kv and tool_prefetch is not False
-    ))
-    expected_priority = float(tool_priority) if custom_kv and tool_prefetch is not False else 0.
+    effective_tool_prefetch = (
+        custom_kv and tool_prefetch is not False and tool_restore == "speculative"
+    )
+    assert actual["BELIEFKV_ENABLE_TOOL_PREFETCH"] == str(int(effective_tool_prefetch))
+    expected_priority = float(tool_priority) if effective_tool_prefetch else 0.
     assert float(actual["BELIEFKV_TOOL_PREFETCH_PRIORITY_MS"]) == expected_priority
     assert actual["FANOUT_PROFILE"] == fanout
     for flag, expected in (
@@ -268,9 +269,7 @@ def test_internal_comparison_effective_environment_before_gpu_launch(
     assert launch["internal_comparison_mode"] == comparison
     assert launch["chat_token_block_cache"] is True
     assert launch["tool_timing_requested"] is custom_kv
-    assert launch["tool_prefetch_requested"] is (
-        custom_kv and tool_prefetch is not False
-    )
+    assert launch["tool_prefetch_requested"] is effective_tool_prefetch
     assert launch["tool_prefetch_priority_ms_requested"] == expected_priority
     if custom_kv:
         assert actual["BELIEFKV_TOOL_TIMING_ARTIFACT"] == str(artifact)

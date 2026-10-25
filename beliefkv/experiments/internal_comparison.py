@@ -19,7 +19,6 @@ def arm_environment(
         raise ValueError("tool prefetch override must be a boolean")
     if tool_prefetch is True and not custom_kv:
         raise ValueError("tool prefetch requires custom KV management")
-    tool_prefetch_enabled = custom_kv and tool_prefetch is not False
     protection = common.get(
         "BELIEFKV_PREFETCH_RESIDENCY_PROTECTION",
         common.get("PREFETCH_RESIDENCY_PROTECTION", "1"),
@@ -37,6 +36,9 @@ def arm_environment(
     )
     if tool_restore not in ("speculative", "execution"):
         raise ValueError("unsupported tool restore mode")
+    tool_prefetch_enabled = (
+        custom_kv and tool_prefetch is not False and tool_restore == "speculative"
+    )
     frontier = common.get(
         "BELIEFKV_ENABLE_FRONTIER_RESTORE",
         common.get("EXECUTION_FRONTIER_RESTORE", "0"),
