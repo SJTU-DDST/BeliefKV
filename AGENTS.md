@@ -765,3 +765,12 @@
   proving identical bytes, tree and all other source-state fields. A new engine
   needs its own GPU component/model and replay smoke evidence before comparison.
   See `docs/design/session_model_launch_preparation_20261026_zh.md`.
+- `scripts/deferred_free_page_validation.py` may register a CPU-only waiter
+  behind the exact 2026-10-27 11:00 Asia/Shanghai hold. It must not query or use
+  GPUs during the hold. Pin the committed operator, prepared sources and inputs;
+  stop on a new pause, reservation/source change or explicit stop. Require
+  actual component/model success and complete owned cleanup before handing
+  off to position replay and Full then ThunderAgent on the same new engine.
+  Verify the live supervisor's PID/start ticks, argv, source map and order.
+  Preserve partial failures and never restart them automatically. A queued
+  CPU waiter is neither a running GPU experiment nor performance acceptance.
