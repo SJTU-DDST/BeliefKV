@@ -71,6 +71,7 @@ async def run(args) -> dict:
     if args.output_dir.exists():
         raise FileExistsError("preserve existing replay artifacts")
     agentx = getattr(args, "agentx_prepared", None) is not None
+    stream_metrics = agentx or getattr(args, "stream_response_metrics", False)
     if agentx:
         plan, timing, _, preparation = load_agentx_preparation(args.agentx_prepared)
         expected = None
@@ -117,9 +118,9 @@ async def run(args) -> dict:
             base_url=args.base_url.rstrip("/"), timeout=httpx.Timeout(args.request_timeout_s),
             limits=httpx.Limits(max_connections=128, max_keepalive_connections=0),
         ) as client:
-            response_metrics = StreamingWorkflowMetrics() if agentx else None
+            response_metrics = StreamingWorkflowMetrics() if stream_metrics else None
             backend = CausalHTTPBackend(
-                corpus, client, emit, observe_request=record, streaming=agentx,
+                corpus, client, emit, observe_request=record, streaming=stream_metrics,
                 response_metrics=response_metrics,
             )
             failure = None
@@ -153,6 +154,7 @@ async def run(args) -> dict:
             exact_tokens_verified=True, original_native_stopping_verified=not agentx,
             published_length_stopping_verified=agentx,
             benchmark_content_synthetic=agentx,
+            streaming_response_metrics_enabled=stream_metrics,
             streaming_response_metrics=response_metrics.summary() if response_metrics else None,
             native_session_http_lifecycle_completed=True,
             physical_session_release_acknowledged=False,
@@ -207,6 +209,7 @@ def main():
     parser.add_argument("--base-url", required=True)
     parser.add_argument("--event-socket", type=Path)
     parser.add_argument("--request-timeout-s", type=float, default=1800.)
+    parser.add_argument("--stream-response-metrics", action="store_true")
     args = parser.parse_args()
     if not 0 < args.request_timeout_s <= 3600.:
         parser.error("request timeout must be in (0, 3600] seconds")

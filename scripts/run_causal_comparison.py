@@ -565,7 +565,57 @@ def validate_result(plan, result, arm, *, live_control):
         or sum(row[1] for row in work.values()) != plan["source_plan"]["output_tokens"]
     ):
         raise ValueError("replay receipt population differs from completed work")
+    validate_response_metrics(plan, result)
     return work
+
+
+def validate_response_metrics(plan, result):
+    enabled = plan.get("stream_response_metrics", False)
+    metrics = result.get("streaming_response_metrics")
+    if (
+        type(enabled) is not bool
+        or result.get("streaming_response_metrics_enabled", False) is not enabled
+        or not enabled and metrics is not None
+    ):
+        raise ValueError("streaming response protocol differs from the declared common control")
+    if not enabled:
+        return
+    if not isinstance(metrics, dict):
+        raise ValueError("streaming workflow metrics are missing")
+    coverage, work = metrics.get("coverage", {}), plan["source_plan"]
+    workflows = metrics.get("workflows", {})
+    if (
+        metrics.get("all_workflows_completed") is not True
+        or set(workflows) != set(plan["workflow_ids"])
+        or coverage.get("requests") != work["requests"]
+        or coverage.get("completed_requests") != work["requests"]
+        or coverage.get("requests_with_output_timing") != work["requests"]
+        or coverage.get("completed_workflows") != len(plan["workflow_ids"])
+        or metrics.get("output_tokens") != work["output_tokens"]
+        or sum(row.get("request_count", 0) for row in workflows.values()) != work["requests"]
+        or sum(row.get("output_tokens", 0) for row in workflows.values()) != work["output_tokens"]
+    ):
+        raise ValueError("complete streaming workflow metric coverage differs from exact replay work")
+    for identity, row in workflows.items():
+        if (
+            row.get("jct_ms") != result["workflow_elapsed_ms"][identity]
+            or row.get("completed_request_count") != row.get("request_count")
+            or row.get("requests_with_output_timing") != row.get("request_count")
+        ):
+            raise ValueError("streaming workflow metric boundaries differ from causal completion")
+
+
+def replay_command(plan, arm, event_socket):
+    command = [
+        sys.executable, str(ROOT / "scripts/run_causal_gpu_replay.py"),
+        "--source-arm", plan["source_arm"], "--output-dir", str(arm / "replay"),
+        "--base-url", f"http://127.0.0.1:{plan['port']}",
+    ]
+    if plan.get("stream_response_metrics", False):
+        command.append("--stream-response-metrics")
+    if event_socket is not None:
+        command += ["--event-socket", str(event_socket)]
+    return command
 
 
 def observed_configuration(plan, label, arm, *, final=False):
@@ -1153,6 +1203,7 @@ def register(args):
         "run_root": str(args.run_root.resolve()), "port": args.port,
         "sampling_calibration": str(args.sampling_calibration.resolve()),
         "sampling_mode": args.sampling_mode,
+        "stream_response_metrics": getattr(args, "stream_response_metrics", False),
         "maximum_replay_slowdown": args.maximum_replay_slowdown,
         "source_metrics": {
             "mean_jct_ms": native_baseline["mean_jct_ms"],
@@ -1350,13 +1401,7 @@ def watch(registration):
                 if str(scheduler["pid"]) not in apps.splitlines():
                     raise ValueError("native scheduler has no actual GPU context")
                 observed_configuration(plan, label, arm)
-                command = [
-                    sys.executable, str(ROOT / "scripts/run_causal_gpu_replay.py"),
-                    "--source-arm", plan["source_arm"], "--output-dir", str(arm / "replay"),
-                    "--base-url", f"http://127.0.0.1:{plan['port']}",
-                ]
-                if event_socket is not None:
-                    command += ["--event-socket", str(event_socket)]
+                command = replay_command(plan, arm, event_socket)
                 with (arm / "replay.log").open("x") as output:
                     driver = subprocess.Popen(
                         command, cwd=ROOT, env={
@@ -1399,6 +1444,8 @@ def watch(registration):
                     "source_unguarded_mean_jct_ms": statistics.mean(eligible),
                     "replay_duration_ms": result["finished_monotonic_ms"] - result["started_monotonic_ms"],
                     "same_request_work_verified": True,
+                    "streaming_response_metrics_enabled": plan.get("stream_response_metrics", False),
+                    "streaming_response_metrics": result.get("streaming_response_metrics"),
                 }
                 baseline = plan.get("native_baseline")
                 event_seconds = event_metrics["workflow_event_makespan_ms"] / 1000.
@@ -1466,6 +1513,7 @@ def main():
     parser.add_argument("--max-running-requests", type=int)
     parser.add_argument("--after-registration", type=Path)
     parser.add_argument("--sampling-mode", choices=("legacy", "position"), default="legacy")
+    parser.add_argument("--stream-response-metrics", action="store_true")
     parser.add_argument("--maximum-replay-slowdown", type=float)
     args = parser.parse_args()
     if args.watch:

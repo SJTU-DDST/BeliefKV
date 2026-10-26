@@ -662,3 +662,21 @@
   `docs/design/tool_loan_return_cpu_candidate_20261026_zh.md`.
   Its 494-case targeted CPU report is not shared GPU/numerical/performance
   qualification and does not complete inactive-owner tool warming.
+- Captured replay workflow service measurement is opt-in through the common
+  frozen `--stream-response-metrics` setting, applied identically to all arms.
+  Count first actual descendant output separately from post-first ready output
+  gaps, exclude genuine all-branch external blocking, preserve every root and
+  disclose SSE coalescing and per-request starvation. Historical worker-launch
+  proxies are not token TTFT. Offline common-budget SLO evaluation supplements
+  rather than replaces full JCT/throughput acceptance. Do not force a poor
+  fairness wrapper on the unchanged paper baseline or mix old nonstreaming
+  results with new streaming controls. Progressive layer-capacity reuse remains
+  a design investigation: current native allocation reserves all layers up
+  front and no engine allocator change has been qualified.
+- Shared CPU report `v238_workflow_service_shared_cpu_20261026.xml` passes
+  1739 tests plus four subtests without skips, retaining the entire V236b
+  1534-case set and adding graph/tool-return/streaming/SLO coverage.
+  The final V230 offline graph replay retains all 22268 events across 18
+  workflows and finds no changed invocation state. Its one append timestamp
+  inversion is sorted explicitly for this offline chronological comparison.
+  No GPU or performance result is implied.

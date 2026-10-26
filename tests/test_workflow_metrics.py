@@ -1,7 +1,9 @@
 import pytest
 
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind as Kind
-from beliefkv.experiments.workflow_metrics import StreamingWorkflowMetrics
+from beliefkv.experiments.workflow_metrics import (
+    StreamingWorkflowMetrics, evaluate_workflow_service_slo,
+)
 
 
 def event(metrics, kind, now, workflow="w"):
@@ -23,6 +25,9 @@ def test_streaming_interactivity_and_workflow_ttft_include_initial_admission_wai
     assert result["workflow_ttft_ms"]["mean"] == 1100.
     assert result["workflow_jct_ms"]["mean"] == 2000.
     assert result["workflow_max_ready_output_gap_ms"]["mean"] == 1000.
+    assert result["workflow_max_post_first_ready_output_gap_ms"]["mean"] == 100.
+    assert result["workflow_event_makespan_ms"] == 2000.
+    assert result["output_tokens"] == 3
     assert result["all_workflows_completed"]
 
 
@@ -38,6 +43,7 @@ def test_external_wait_is_excluded_but_reentry_admission_and_kv_waits_are_includ
     event(metrics, Kind.WORKFLOW_END, 1_000_102.)
     row = metrics.summary()["workflows"]["w"]
     assert row["ready_output_service_gaps_ms"]["max"] == 100.
+    assert row["post_first_ready_output_service_gaps_ms"]["max"] == 100.
     assert row["jct_ms"] == 1_000_102.
     assert row["mean_request_interactivity_tps"] is None
 
@@ -64,6 +70,9 @@ def test_parallel_agent_streams_cannot_reset_workflow_service_age_or_multiply_we
     assert result["request_interactivity_tps"]["mean"] == pytest.approx(20. / 3.)
     assert result["equal_workflow_mean_interactivity_tps"]["mean"] == 7.5
     assert result["workflows"]["w"]["ready_output_service_gaps_ms"]["max"] == 1000.
+    assert result["workflows"]["w"]["post_first_ready_output_service_gaps_ms"]["max"] == 100.
+    assert result["workflows"]["w"]["max_request_ttft_ms"] == 1100.
+    assert result["workflows"]["w"]["max_request_output_gap_ms"] == 200.
 
 
 def test_chunk_coalescing_and_undefined_decode_rates_are_disclosed_without_infinities():
@@ -104,3 +113,76 @@ def test_corrupt_stream_progress_is_not_accepted(bad):
     metrics.submit("r", "w", 0.)
     with pytest.raises(ValueError):
         metrics.progress("r", bad, 1.)
+
+
+def test_first_output_is_separate_from_subsequent_stalls_and_slo_keeps_normal_tails():
+    metrics = StreamingWorkflowMetrics()
+    for workflow, first, last, end in (
+        ("short", 100., 200., 250.), ("tail", 5000., 9000., 10000.),
+    ):
+        event(metrics, Kind.WORKFLOW_START, 0., workflow)
+        metrics.submit(workflow, workflow, 0.)
+        metrics.progress(workflow, 1, first)
+        metrics.progress(workflow, 2, last)
+        metrics.complete(workflow, 2, end)
+        event(metrics, Kind.WORKFLOW_END, end, workflow)
+    summary = metrics.summary()
+    result = evaluate_workflow_service_slo(
+        summary, first_output_budget_ms=1000., ready_gap_budget_ms=1000.,
+    )
+    assert result["workflow_count"] == 2
+    assert result["equal_workflow_attainment"] == .5
+    assert result["qualifying_workflows_per_second"] == .1
+    assert result["qualifying_output_tokens_per_second"] == .2
+    assert not result["workflows"]["tail"]["attained"]
+    assert summary["workflow_jct_ms"]["mean"] == 5125.
+    assert not result["normal_tails_removed"] and not result["policy_modified"]
+
+
+def test_first_service_pass_does_not_hide_an_excessive_post_start_service_gap():
+    metrics = StreamingWorkflowMetrics()
+    event(metrics, Kind.WORKFLOW_START, 0.)
+    metrics.submit("r", "w", 0.)
+    metrics.progress("r", 1, 1.)
+    metrics.progress("r", 2, 1001.)
+    metrics.complete("r", 2, 1002.)
+    event(metrics, Kind.WORKFLOW_END, 1003.)
+    result = evaluate_workflow_service_slo(
+        metrics.summary(), first_output_budget_ms=10., ready_gap_budget_ms=100.,
+    )
+    assert result["workflows"]["w"]["first_output_budget_met"]
+    assert not result["workflows"]["w"]["post_first_ready_gap_budget_met"]
+    assert result["equal_workflow_attainment"] == 0.
+
+
+def test_zero_output_and_unfinished_workflows_remain_in_the_slo_denominator():
+    metrics = StreamingWorkflowMetrics()
+    for workflow in ("complete", "no-output", "unfinished"):
+        event(metrics, Kind.WORKFLOW_START, 0., workflow)
+        metrics.submit(workflow, workflow, 0.)
+    metrics.progress("complete", 1, 10.)
+    metrics.complete("complete", 1, 11.)
+    metrics.complete("no-output", 0, 12.)
+    event(metrics, Kind.WORKFLOW_END, 13., "complete")
+    event(metrics, Kind.WORKFLOW_END, 14., "no-output")
+    summary = metrics.summary()
+    result = evaluate_workflow_service_slo(
+        summary, first_output_budget_ms=100., ready_gap_budget_ms=100.,
+    )
+    assert result["equal_workflow_attainment"] == pytest.approx(1. / 3.)
+    assert not result["all_workflows_completed"]
+    assert result["qualifying_workflows_per_second"] is None
+    assert summary["workflow_event_makespan_ms"] is None
+    assert summary["coverage"]["completed_workflows"] == 2
+    assert summary["coverage"]["workflows_with_output_timing"] == 1
+    assert summary["workflows"]["complete"]["post_first_ready_output_service_gaps_ms"]["count"] == 0
+    assert not result["workflows"]["no-output"]["complete_output_timing"]
+
+
+@pytest.mark.parametrize("budget", (True, 0., -1., float("inf"), float("nan")))
+def test_invalid_service_budgets_are_rejected(budget):
+    with pytest.raises(ValueError, match="budgets"):
+        evaluate_workflow_service_slo(
+            StreamingWorkflowMetrics().summary(),
+            first_output_budget_ms=budget, ready_gap_budget_ms=100.,
+        )
