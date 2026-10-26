@@ -740,3 +740,17 @@
   waiting but increased first-launch-to-complete intervals; those intervals
   include interleaving and are not pure GPU time or causal module attribution.
   See `docs/design/agent_join_release_dependencies_20261026_zh.md`.
+- The read-only request interleaving auditor clips recorded worker membership
+  to each real request lifetime, unions overlapping spans, and preserves stale
+  post-completion descriptors as diagnostics. Its member union and complement
+  reproduce all four complete historical JCT paths. V235's extra post-launch
+  path time partitions into about 140.84s of member intervals and 54.33s of
+  other intervals; neither is pure GPU time or an isolated migration cost.
+  Matching decode geometry finds only about 0.16--0.21% worker-interval
+  differences, supporting admission/service-shape review without proving a
+  unique cause. Do not increase borrowed concurrency just to widen decode.
+  The original source completes 69.916% of output before its first parallel
+  ALL-JOIN wait, but only 7.652% before its first JOIN of any size; preserve that
+  distinction and all normal tails. New audit coverage is 70 CPU cases, 21 new.
+  Common runtime/engine sources are unchanged and retain V243 evidence.
+  See `docs/research/request_service_interleaving_20261026_zh.md`.
