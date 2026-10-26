@@ -67,3 +67,20 @@ v236 原登记在使用 GPU 之前报停：原启动器遇到其他用户正在�
 初始繁忙、组间繁忙、连续观察重置和等待中取消的复现。
 报告为 `experiments/reports/v236b_workflow_entry_shared_cpu_20261026.xml`。
 此修复不改变已声明的模型工作量和测量中的调度策略。
+
+## 执行登记
+
+v236b 已注册在
+`/home/longhao/experiment/ops/v236b_locobench_workflow_entry_20261026.registration.json`。
+冻结 application 为 `6f2ac58f42040dafcd74b41493cf95aa98dbb106`，
+engine tree 为 `6437d7deeacc533f0d795ba166dfd5256b3f44b2`，端口 18647。
+监督进程 PID 3499431/start `719738488` 在初始登记时已核实存活，处于
+`waiting_idle_gpu`，当时无己方 GPU 子进程，外部作业仍占用设备。
+实际 runtime CPU preflight 已确认门槛为八。
+本轮只运行不变 v230 工作量的 Full，不重跑完整 native 或其他 baseline。
+用户随后要求从即刻至北京时间 2026-10-27 11:00 禁止 GPU 实验。
+共享 hold 已更新；v236b 在北京时间 2026-10-26 23:34:53 因
+`HoldChanged('new user pause or extended GPU reservation')` 停止。
+监督进程、server、driver 及其己方后代均已退出，清理记录无遗留。
+原始部分结果保留，但不能作为完整性能比较，也不继续原有部分 arm。
+CPU 验证继续进行；不以登记、排队或中途观测作为性能验收证据。

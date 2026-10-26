@@ -1,0 +1,42 @@
+{
+  "id": "python_api_graphql_easy_043_cross_file_refactoring_expert_01",
+  "task_category": "cross_file_refactoring",
+  "difficulty": "expert",
+  "title": "Architectural Refactoring: Decouple Authentication Logic from Business Services",
+  "description": "In the CinePulse GraphQL Hub, the business logic layer (`ticketing_service.py`) is currently tightly coupled with the GraphQL/web layer. Specifically, service functions directly access the request context (`info.context`) to retrieve the authenticated user. This makes the service layer difficult to test in isolation and impossible to reuse in other contexts (e.g., a CLI tool, a background worker). This task involves refactoring the application to enforce a cleaner separation of concerns, moving the responsibility of user extraction to the GraphQL resolver layer.",
+  "context_files": [
+    "cinepulse_hub//app//services//ticketing_service.py",
+    "cinepulse_hub//app//services//__init__.py",
+    "cinepulse_hub//app//schema.py",
+    "cinepulse_hub//app//__init__.py",
+    "cinepulse_hub//app//middleware//auth.py",
+    "cinepulse_hub//app//main.py",
+    "cinepulse_hub//tests//__init__.py",
+    "cinepulse_hub//config.py",
+    "cinepulse_hub//docs//api_reference.md",
+    "cinepulse_hub//tests//test_auth_middleware.py",
+    "cinepulse_hub//tests//test_schema_mutations.py"
+  ],
+  "context_length": 137300,
+  "task_prompt": "Your task is to refactor the CinePulse application to decouple the `ticketing_service` from the GraphQL request context. \n\n1.  **Analyze `cinepulse_hub/app/services/ticketing_service.py`**: Identify all methods that implicitly depend on the authenticated user by accessing `info.context.user` or a similar mechanism.\n2.  **Refactor Service Methods**: Modify the signatures of these identified methods to explicitly accept a `user` object or `user_id` as a required argument, instead of the generic `info` object.\n3.  **Update GraphQL Resolvers**: Modify the corresponding GraphQL resolvers in `cinepulse_hub/app/schema.py`. These resolvers must now be responsible for extracting the `user` from the `info.context` (which is populated by the auth middleware) and passing it to the newly refactored service methods.\n4.  **Update Tests**: Adjust the unit tests, particularly in `cinepulse_hub/tests/test_schema_mutations.py`, to reflect the new service method signatures. Mocks for the service layer will need to be updated to expect calls with a `user` object instead of an `info` object.\n5.  **Verify**: Ensure the entire test suite passes after your changes to confirm that the application's functionality remains intact.",
+  "expected_approach": "An expert developer would approach this task by following the principle of dependency inversion.\n\n1.  **Static Analysis**: First, they would scan `ticketing_service.py` for any occurrences of `.context` or the GraphQL `Info` type hint to quickly identify all points of coupling.\n2.  **Bottom-Up Refactoring**: They would start the changes in the lowest layer, the `ticketing_service.py`. They would change function signatures first, for example, `def purchase_ticket(info: Info, ...)` would become `def purchase_ticket(user: User, ...)` and update the internal logic to use the new `user` parameter. This will intentionally break the upstream callers.\n3.  **Update the 'Controller' Layer**: Next, they would move up to `schema.py`. They would locate the broken calls to the ticketing service within the resolvers. They would then add the logic to extract the user from `info.context` and pass it to the service calls, effectively 'fixing' the break they introduced. For example: `return ticketing_service.purchase_ticket(info.context.user, ...)`.\n4.  **Update Tests**: The test suite will now fail because the mocks for the service layer are outdated. The developer would go to `test_schema_mutations.py` and other relevant test files. They would update the mock setups and assertions. For example, a `mock_service.purchase_ticket.assert_called_with(mock_info, ...)` would be changed to `mock_service.purchase_ticket.assert_called_with(mock_user, ...)`.\n5.  **Iterative Testing**: Throughout the process, they would run the test suite to get feedback on what is broken and to confirm when their fixes are working, ensuring no regressions are introduced.",
+  "ground_truth": "The core of the solution is shifting the responsibility of user extraction from the service layer to the resolver layer.\n\n**Key Insight:** The service layer should only contain pure business logic and be agnostic to how it's being called (e.g., via GraphQL, REST, or a script). The resolver layer acts as an adapter between the transport protocol (GraphQL) and the business logic.\n\n**Example Transformation:**\n\n**File: `cinepulse_hub/app/services/ticketing_service.py`**\n```python\n# --- BEFORE --- \ndef get_user_bookings(info: \"Info\"):\n    user = info.context.get(\"user\")\n    if not user:\n        raise AuthenticationError(\"User not authenticated.\")\n    # ... logic to fetch bookings using user.id\n    return Bookings.objects.filter(user_id=user.id)\n\n# --- AFTER ---\ndef get_user_bookings(user: \"User\"):\n    # The service now trusts that a valid user object is provided.\n    # The responsibility of checking for authentication is moved upstream.\n    # ... logic to fetch bookings using user.id\n    return Bookings.objects.filter(user_id=user.id)\n```\n\n**File: `cinepulse_hub/app/schema.py`**\n```python\n# --- BEFORE --- \nclass Query(graphene.ObjectType):\n    my_bookings = graphene.List(BookingType)\n\n    def resolve_my_bookings(self, info):\n        # Directly calling the coupled service method\n        return ticketing_service.get_user_bookings(info)\n\n# --- AFTER ---\nclass Query(graphene.ObjectType):\n    my_bookings = graphene.List(BookingType)\n\n    @login_required # A decorator might handle the user check\n    def resolve_my_bookings(self, info):\n        # Resolver is now responsible for getting the user\n        user = info.context.get(\"user\")\n        # The check could also be explicit here:\n        if not user:\n            raise GraphQLError(\"Authentication is required to access this resource.\")\n        # Pass the user object to the decoupled service method\n        return ticketing_service.get_user_bookings(user)\n```\n\n**File: `cinepulse_hub/tests/test_schema_mutations.py`**\n```python\n# --- BEFORE ---\n@patch('cinepulse_hub.app.schema.ticketing_service')\ndef test_get_bookings_for_user(mock_service):\n    mock_info = create_mock_info_with_user()\n    # Call the resolver\n    resolver(mock_info)\n    # Assert the service was called with the entire info object\n    mock_service.get_user_bookings.assert_called_once_with(mock_info)\n\n# --- AFTER ---\n@patch('cinepulse_hub.app.schema.ticketing_service')\ndef test_get_bookings_for_user(mock_service):\n    mock_user = User(id=1, username='testuser')\n    mock_info = create_mock_info_with_user(mock_user)\n    # Call the resolver\n    resolver(mock_info)\n    # Assert the service was called with only the user object\n    mock_service.get_user_bookings.assert_called_once_with(mock_user)\n```",
+  "evaluation_criteria": [
+    "**Service Layer Decoupling**: All service methods in `ticketing_service.py` that require user data must be modified to accept a `user` object or ID as a direct parameter, removing any dependency on the GraphQL `info` object.",
+    "**Resolver Layer Adaptation**: All corresponding resolvers in `schema.py` must be correctly updated to extract the user from `info.context` and pass it to the service layer.",
+    "**Complete Removal of Context Dependency**: The agent must successfully remove all usages of `info.context` from within the `ticketing_service.py` file.",
+    "**Test Suite Correction**: All relevant unit tests, especially those mocking the service layer in `test_schema_mutations.py`, must be updated to align with the new method signatures.",
+    "**Functionality Preservation**: The entire test suite must pass after the refactoring, demonstrating that no existing functionality has been broken.",
+    "**No Unnecessary Changes**: The agent should not modify files unrelated to the core task, such as `config.py` or the `auth.py` middleware itself."
+  ],
+  "metadata": {
+    "context_length": 137300,
+    "files_count": 11,
+    "information_coverage": 0.91410842803976,
+    "coverage_range": [
+      0.8,
+      1.0
+    ],
+    "generation_timestamp": "2025-08-05T15:24:40.923275"
+  }
+}

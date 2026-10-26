@@ -1,0 +1,51 @@
+{
+  "id": "python_ml_training_expert_051_cross_file_refactoring_easy_01",
+  "task_category": "cross_file_refactoring",
+  "difficulty": "easy",
+  "title": "Consolidate Duplicated Data Scaling Logic into a Shared Utility Module",
+  "description": "The StageCraft AI Factory codebase has evolved, leading to some code duplication across different microservices. Specifically, a helper function for scaling numerical features in a pandas DataFrame, `scale_numerical_features`, has been implemented independently in both the `feature-engineering-service` and the `model-training-service`. This violates the DRY (Don't Repeat Yourself) principle, increases the maintenance burden, and creates a risk of inconsistent data processing. The goal of this task is to refactor this duplicated logic into a single, shared utility function.",
+  "context_files": [
+    "stagecraft-ai-factory/services/model-training-service/app/model_definitions/recommendation_model.py",
+    "stagecraft-ai-factory/services/model-training-service/app/model_definitions/audiogen_model.py",
+    "stagecraft-ai-factory/services/data-ingestion-service/app/logic.py",
+    "stagecraft-ai-factory/services/model-serving-service/app/loader.py",
+    "stagecraft-ai-factory/services/hyperparameter-tuning-service/app/search_spaces.py",
+    "stagecraft-ai-factory/services/pipeline-orchestration-service/app/main.py",
+    "stagecraft-ai-factory/shared_libs/event_bus/observer.py",
+    "stagecraft-ai-factory/services/feature-engineering-service/app/main.py",
+    "stagecraft-ai-factory/services/model-serving-service/app/predictor.py",
+    "stagecraft-ai-factory/services/pipeline-orchestration-service/app/__init__.py",
+    "stagecraft-ai-factory/services/pipeline-orchestration-service/tests/test_factory.py",
+    "stagecraft-ai-factory/services/data-ingestion-service/app/__init__.py",
+    "stagecraft-ai-factory/services/pipeline-orchestration-service/app/factory.py",
+    "stagecraft-ai-factory/services/data-preprocessing-service/app/__init__.py",
+    "stagecraft-ai-factory/services/feature-engineering-service/tests/test_logic.py",
+    "stagecraft-ai-factory/services/model-training-service/app/logic.py",
+    "stagecraft-ai-factory/services/model-registry-service/tests/test_api.py",
+    "stagecraft-ai-factory/services/model-evaluation-service/app/__init__.py",
+    "stagecraft-ai-factory/services/model-serving-service/app/monitor.py"
+  ],
+  "context_length": 280157,
+  "task_prompt": "Your task is to refactor the duplicated `scale_numerical_features` function into a shared library to improve code reuse and maintainability.\n\n1.  Locate the two instances of the `scale_numerical_features(df: pd.DataFrame) -> pd.DataFrame` function. You will find them within `stagecraft-ai-factory/services/feature-engineering-service/app/main.py` and `stagecraft-ai-factory/services/model-training-service/app/logic.py`.\n\n2.  Create a new module for shared machine learning utilities at this exact path: `stagecraft-ai-factory/shared_libs/ml_utils/preprocessing.py`. You may need to create the `ml_utils` directory and its `__init__.py` file.\n\n3.  Move the implementation of the `scale_numerical_features` function from one of the source files into the new `preprocessing.py` module. Ensure you include necessary imports (like `pandas` and `sklearn.preprocessing.MinMaxScaler`).\n\n4.  Refactor the two original files (`feature-engineering-service/app/main.py` and `model-training-service/app/logic.py`) to remove their local implementations of the function.\n\n5.  Update these two files to import and use the new, shared `scale_numerical_features` function from `shared_libs.ml_utils.preprocessing`.\n\n6.  Ensure the refactoring does not alter the application's functionality. The tests in `stagecraft-ai-factory/services/feature-engineering-service/tests/test_logic.py` should still pass after your changes.",
+  "expected_approach": "An expert developer would first inspect both versions of the `scale_numerical_features` function to confirm they are functionally identical. They would then create the new directory `stagecraft-ai-factory/shared_libs/ml_utils/` and an empty `__init__.py` file inside it to make it a discoverable Python package. Next, they would create the `preprocessing.py` file in that new directory. They would copy the function definition, along with its necessary imports (e.g., `import pandas as pd`, `from sklearn.preprocessing import MinMaxScaler`), into this new file. After establishing the shared utility, they would navigate to `feature-engineering-service/app/main.py` and `model-training-service/app/logic.py`. In each file, they would delete the local function definition and add the appropriate import statement at the top, such as `from shared_libs.ml_utils.preprocessing import scale_numerical_features`. Finally, they would run the relevant test suite (e.g., for the feature engineering service) to verify that the refactoring did not introduce any regressions.",
+  "ground_truth": "The expected solution involves changes to three files and the creation of a new directory and two new files.\n\n1.  **New Directory Created**:\n    - `stagecraft-ai-factory/shared_libs/ml_utils/`\n\n2.  **New Files Created**:\n    - `stagecraft-ai-factory/shared_libs/ml_utils/__init__.py` (can be empty).\n    - `stagecraft-ai-factory/shared_libs/ml_utils/preprocessing.py` containing the `scale_numerical_features` function and its imports:\n      ```python\n      # stagecraft-ai-factory/shared_libs/ml_utils/preprocessing.py\n      import pandas as pd\n      from sklearn.preprocessing import MinMaxScaler\n\n      def scale_numerical_features(df: pd.DataFrame) -> pd.DataFrame:\n          \"\"\"Scales numerical columns of a DataFrame to the [0, 1] range.\"\"\"\n          numerics = ['int16', 'int32', 'int64', 'float16', 'float32', 'float64']\n          numerical_cols = df.select_dtypes(include=numerics).columns\n          scaler = MinMaxScaler()\n          df[numerical_cols] = scaler.fit_transform(df[numerical_cols])\n          return df\n      ```\n\n3.  **File Modification 1**: `stagecraft-ai-factory/services/feature-engineering-service/app/main.py`\n    - **Removed**: The local definition of `scale_numerical_features`.\n    - **Added**: The import `from shared_libs.ml_utils.preprocessing import scale_numerical_features`.\n\n4.  **File Modification 2**: `stagecraft-ai-factory/services/model-training-service/app/logic.py`\n    - **Removed**: The local definition of `scale_numerical_features`.\n    - **Added**: The import `from shared_libs.ml_utils.preprocessing import scale_numerical_features`.",
+  "evaluation_criteria": [
+    "**Correct File Creation**: The agent must create the new file `preprocessing.py` at the correct path `shared_libs/ml_utils/`.",
+    "**Correct Package Structure**: The agent must create the `__init__.py` file in the `ml_utils` directory, making it a valid Python package.",
+    "**Code Consolidation**: The `scale_numerical_features` function must be correctly implemented in the new shared module, including its dependencies.",
+    "**Redundancy Elimination**: The local implementations of the function must be completely removed from both `feature-engineering-service/app/main.py` and `model-training-service/app/logic.py`.",
+    "**Correct Import Refactoring**: The original files must be updated to use the correct import statement pointing to the new shared module.",
+    "**Functional Equivalence**: The refactoring must not introduce any regressions. The agent's solution should pass the existing test suite, particularly `feature-engineering-service/tests/test_logic.py`.",
+    "**Minimal Changes**: The agent should not make any unrelated or unnecessary changes to the codebase."
+  ],
+  "metadata": {
+    "context_length": 280157,
+    "files_count": 19,
+    "information_coverage": 0.3079409744167514,
+    "coverage_range": [
+      0.2,
+      0.4
+    ],
+    "generation_timestamp": "2025-08-05T19:46:41.899023"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "id": "python_ml_nlp_easy_053_cross_file_refactoring_easy_01",
+  "task_category": "cross_file_refactoring",
+  "difficulty": "easy",
+  "title": "Refactor Text Cleaning Logic into a Unified Strategy Module",
+  "description": "The ChirpPulse project is in its early stages. Currently, a basic text cleaning function is implemented as a private method (`_clean_text`) directly within the `DataProcessingPipeline` class in `processing_pipeline.py`. This approach is inflexible and mixes concerns. The project also contains a `strategies.py` file, which is intended to house various pluggable algorithms (e.g., different tokenizers, feature extractors). To improve code organization, promote reusability, and better adhere to the Strategy design pattern, the hardcoded text cleaning logic must be extracted from the pipeline and moved into the central strategies module.",
+  "context_files": [
+    "ChirpPulse//chirpulse//model_factory.py",
+    "ChirpPulse//chirpulse//processing_pipeline.py",
+    "ChirpPulse//chirpulse//strategies.py",
+    "ChirpPulse//tests//test_pipeline.py"
+  ],
+  "context_length": 53534,
+  "task_prompt": "Your task is to refactor the text cleaning functionality. You will move the logic from a private method inside the `DataProcessingPipeline` into a standalone function in the `strategies.py` file. Then, you will modify the pipeline to use this new strategy function via dependency injection.\n\n**Specific Steps:**\n1.  Locate the `_clean_text` private method within the `DataProcessingPipeline` class in `ChirpPulse//chirpulse//processing_pipeline.py`.\n2.  Create a new, public function named `basic_text_cleaner` in `ChirpPulse//chirpulse//strategies.py`. Copy the implementation of `_clean_text` into this new function.\n3.  In `ChirpPulse//chirpulse//processing_pipeline.py`:\n    a. Remove the original `_clean_text` method from the `DataProcessingPipeline` class.\n    b. Modify the `__init__` method of `DataProcessingPipeline` to accept a new argument `cleaning_strategy` which should be a callable. Set its default value to the `basic_text_cleaner` function you just created.\n    c. Update the `process_batch` method (or any other method that used `_clean_text`) to use the `self.cleaning_strategy` passed during initialization.\n    d. Add the necessary import statement at the top of the file to import `basic_text_cleaner` from `.strategies`.\n4.  Inspect `ChirpPulse//tests//test_pipeline.py`. The tests that instantiate `DataProcessingPipeline` might fail due to the change in the constructor. Update these tests to ensure they work with the refactored pipeline. The existing tests should pass without any changes to their assertions.\n5.  Ensure the entire test suite passes after your refactoring.",
+  "expected_approach": "An expert developer would first analyze the code to understand the coupling between the `_clean_text` method and its usage within `DataProcessingPipeline`. They would then perform the following steps:\n\n1.  **Isolate Logic:** Copy the body of the `_clean_text` method from `processing_pipeline.py`.\n2.  **Create Strategy:** Paste the copied logic into a new function `def basic_text_cleaner(text: str) -> str:` in `strategies.py`.\n3.  **Refactor Pipeline:**\n    - In `processing_pipeline.py`, add `from .strategies import basic_text_cleaner`.\n    - Modify the `DataProcessingPipeline.__init__` signature to include `cleaning_strategy: callable = basic_text_cleaner` and store it as `self.cleaning_strategy`.\n    - Perform a search-and-replace within the class to change all calls from `self._clean_text(..)` to `self.cleaning_strategy(..)`.\n    - Delete the now-unused `_clean_text` method.\n4.  **Update Tests:**\n    - Examine `test_pipeline.py` for any errors related to `DataProcessingPipeline()` instantiation. Since a default is provided for the new parameter, existing instantiations might not need changes, but it's crucial to check.\n    - If tests create mock objects or test the private method directly (which they shouldn't, but could), those tests will need significant updates to test the new public API.\n5.  **Verification:** Run the test suite using `pytest` or a similar tool to confirm that all functionality is preserved and all tests pass.",
+  "ground_truth": "The final state of the code should reflect the following key changes:\n\n-   **`ChirpPulse//chirpulse//strategies.py`:**\n    -   Contains a new function, e.g.:\n        ```python\n        import re\n\n        def basic_text_cleaner(text: str) -> str:\n            # ... (logic from the original _clean_text method)\n            text = re.sub(r'http\\S+', '', text)\n            text = re.sub(r'@[A-Za-z0-9_]+', '', text)\n            text = re.sub(r'[^A-Za-z\\s]', '', text.lower())\n            return text.strip()\n        ```\n\n-   **`ChirpPulse//chirpulse//processing_pipeline.py`:**\n    -   The file now imports the new strategy: `from .strategies import basic_text_cleaner`.\n    -   The `_clean_text` method is completely removed from the `DataProcessingPipeline` class.\n    -   The class constructor is updated:\n        ```python\n        from typing import Callable\n        # ... other imports\n        from .strategies import basic_text_cleaner\n\n        class DataProcessingPipeline:\n            def __init__(self, model, tokenizer, cleaning_strategy: Callable = basic_text_cleaner):\n                self.model = model\n                self.tokenizer = tokenizer\n                self.cleaning_strategy = cleaning_strategy\n                # ...\n        ```\n    -   Calls within the class are updated, for example:\n        ```python\n        # old code\n        # cleaned_text = self._clean_text(raw_text)\n\n        # new code\n        cleaned_text = self.cleaning_strategy(raw_text)\n        ```\n\n-   **`ChirpPulse//tests//test_pipeline.py`:**\n    -   Any instantiation of `DataProcessingPipeline` should remain valid because of the default argument. No changes might be necessary, but the agent must verify this.\n    -   All tests in this file must pass successfully.",
+  "evaluation_criteria": [
+    "**Correctness:** The refactored application must pass all existing unit tests in `ChirpPulse//tests//test_pipeline.py`.",
+    "**Code Relocation:** The agent must successfully move the text cleaning logic from `processing_pipeline.py` to `strategies.py`.",
+    "**Method Removal:** The agent must completely remove the now-redundant `_clean_text` method from the `DataProcessingPipeline` class.",
+    "**Dependency Injection:** The `DataProcessingPipeline` constructor must be correctly modified to accept `cleaning_strategy` as a callable dependency with a proper default.",
+    "**Import Management:** The agent must add the correct `from .strategies import basic_text_cleaner` import to `processing_pipeline.py`.",
+    "**Test Integrity:** The agent must ensure `test_pipeline.py` is still functional and passes, making minimal necessary changes if required.",
+    "**Idempotency:** The agent should not introduce any unrelated changes or unnecessary code."
+  ],
+  "metadata": {
+    "context_length": 53534,
+    "files_count": 4,
+    "information_coverage": 0.36828816929120317,
+    "coverage_range": [
+      0.2,
+      0.4
+    ],
+    "generation_timestamp": "2025-08-05T19:50:18.057439"
+  }
+}

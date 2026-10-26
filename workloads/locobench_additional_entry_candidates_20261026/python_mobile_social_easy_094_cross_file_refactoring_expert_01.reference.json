@@ -1,0 +1,41 @@
+{
+  "id": "python_mobile_social_easy_094_cross_file_refactoring_expert_01",
+  "task_category": "cross_file_refactoring",
+  "difficulty": "expert",
+  "title": "Centralize Disparate Caching Mechanisms into a Unified Caching Service",
+  "description": "The SnapCache Utility Hub project has evolved, leading to technical debt. Initially, different feature modules (`module_1` for photo metadata and `module_2` for user feed data) implemented their own ad-hoc file-based caching logic. This has resulted in code duplication, inconsistent cache invalidation policies (or a lack thereof), and scattered configuration. This task involves refactoring these disparate implementations into a single, robust, and configurable caching service to improve maintainability and consistency.",
+  "context_files": [
+    "snapcache_utility_hub",
+    "tests/test_main.py",
+    "src/module_1.py",
+    "src/module_2.py",
+    "src/config.py",
+    "docs/api.md",
+    "src/utils.py",
+    "src/constants.py",
+    "tests/test_utils.py",
+    "README.md"
+  ],
+  "context_length": 128188,
+  "task_prompt": "Your task is to refactor the caching logic within the SnapCache Utility Hub by creating a centralized caching service. You must not break any existing functionality.\n\n1.  **Analyze Existing Code:** Inspect `src/module_1.py` and `src/module_2.py` to identify the duplicated, ad-hoc file-based caching implementations. Note how they read/write data and any hardcoded configurations like file paths or cache durations.\n\n2.  **Create a Central Caching Module:**\n    -   Create a new file: `src/caching.py`.\n    -   In this file, implement a generic `CacheManager` class. \n    -   The `CacheManager`'s constructor should accept a `base_path` for storage and a `ttl` (time-to-live) in seconds.\n    -   It must have two primary methods: `get(key: str)` and `set(key: str, value: any)`.\n    -   The `set` method should serialize the data (including a timestamp for TTL) and write it to a file.\n    -   The `get` method should retrieve the data, check if it has expired based on the TTL, and return `None` if the cache is stale or non-existent. It should also clean up (delete) the expired cache file.\n\n3.  **Centralize Configuration:**\n    -   Modify `src/config.py` to include a new configuration dictionary for caching, e.g., `CACHE_CONFIG`.\n    -   This dictionary should define the `BASE_PATH` (e.g., 'data/cache/') and a default `TTL` (e.g., 3600 seconds).\n\n4.  **Refactor Modules:**\n    -   Modify `src/module_1.py` and `src/module_2.py` to use the new `CacheManager`.\n    -   Remove the old, ad-hoc caching functions and logic entirely.\n    -   Instantiate `CacheManager` in each module, configured with settings from `src/config.py`. Ensure each module uses a distinct subdirectory for its cache (e.g., by passing `'data/cache/photos'` and `'data/cache/feeds'` as the `base_path`).\n\n5.  **Create New Tests:**\n    -   Create a new test file: `tests/test_caching.py`.\n    -   Write unit tests for the `CacheManager` class. These tests must verify:\n        -   Basic get/set functionality.\n        -   Correct handling of a cache miss (returning `None`).\n        -   Correct enforcement of TTL (a value becomes `None` after the TTL expires).",
+  "expected_approach": "An expert developer would first perform a global search for common file I/O and caching-related patterns (e.g., `json.dump`, `open(...)`, 'cache') within `src/*.py` to identify the target code blocks in `module_1.py` and `module_2.py`.\n\nNext, they would design the `CacheManager` API in a new `src/caching.py` file, focusing on making it generic. The implementation would likely involve storing a dictionary `{'timestamp': time.time(), 'data': value}` as a JSON file, where the filename is a hash of the key.\n\nThey would then create the configuration object in `src/config.py`. \n\nWith the new service built, they would refactor `module_1.py` and `module_2.py` one by one. For each module, they would import `CacheManager` and `CACHE_CONFIG`, instantiate the manager, and replace the old file I/O logic with calls to `cache.get()` and `cache.set()`. They would be careful to remove all the now-dead code.\n\nConcurrently or immediately after, they would create `tests/test_caching.py`. A key test case would involve using `time.sleep()` or a mocking library (like `freezegun`) to simulate the passage of time and confirm that the TTL logic works correctly.\n\nFinally, they would run the entire test suite (including `test_main.py` and `test_utils.py`) to ensure no regressions were introduced in the process.",
+  "ground_truth": "The final state of the codebase should include:\n\n1.  **New File (`src/caching.py`):** Contains a `CacheManager` class. Its `get` method must check `time.time() - stored_timestamp > self.ttl`.\n\n2.  **New File (`tests/test_caching.py`):** Contains tests that validate the `CacheManager`, including a specific test for TTL expiration.\n\n3.  **Modified File (`src/config.py`):** Contains a new configuration structure, for example:\n    ```python\n    CACHE_CONFIG = {\n        'BASE_PATH': 'data/cache/',\n        'DEFAULT_TTL': 3600, # 1 hour\n    }\n    ```\n\n4.  **Modified Files (`src/module_1.py`, `src/module_2.py`):**\n    -   The old, multi-line functions for reading/writing cache files are completely removed.\n    -   They now contain an import statement like `from src.caching import CacheManager` and `from src.config import CACHE_CONFIG`.\n    -   They instantiate the manager, for example:\n        ```python\n        # In module_1.py\n        photo_cache = CacheManager(\n            base_path=f\"{CACHE_CONFIG['BASE_PATH']}/photos\",\n            ttl=CACHE_CONFIG['DEFAULT_TTL']\n        )\n        # ... later\n        photo_cache.set(photo_id, metadata)\n        ```\n\n5.  **No Regressions:** All tests in `tests/test_main.py` and `tests/test_utils.py` must still pass.",
+  "evaluation_criteria": [
+    "**Correctness & Regression:** All pre-existing tests must pass, indicating no existing functionality was broken.",
+    "**Completeness of Refactoring:** The solution must include the creation of `src/caching.py` and `tests/test_caching.py`, the removal of old caching logic from `module_1` and `module_2`, and the centralization of settings in `src/config.py`.",
+    "**Code Abstraction Quality:** The new `CacheManager` class must be generic, reusable, and correctly implement the specified `get`/`set`/`ttl` logic.",
+    "**Test Quality:** The new tests in `tests/test_caching.py` must be meaningful and specifically test the TTL expiration feature, which is the most complex part of the requirement.",
+    "**File System Integrity:** The agent must correctly create new files and modify existing ones without deleting or corrupting unrelated files or code.",
+    "**Idempotency:** The old, redundant code must be fully removed, not just commented out or left orphaned."
+  ],
+  "metadata": {
+    "context_length": 128188,
+    "files_count": 10,
+    "information_coverage": 0.9397258265523055,
+    "coverage_range": [
+      0.8,
+      1.0
+    ],
+    "generation_timestamp": "2025-08-05T15:30:28.165318"
+  }
+}

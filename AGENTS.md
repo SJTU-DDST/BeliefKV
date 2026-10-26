@@ -631,3 +631,25 @@
   Preserve that registration/outcome and use a new frozen retry. The repair
   waits for two fresh resource-ready observations both before initial setup
   and each cold arm, keeps hold/stop checks live, and never kills foreign jobs.
+- V236b supersedes only V236's stopped launch, keeping its entry policy.
+  Frozen application is `6f2ac58f42040dafcd74b41493cf95aa98dbb106`,
+  engine tree `6437d7deeacc533f0d795ba166dfd5256b3f44b2`, port 18647.
+  Registration is
+  `ops/v236b_locobench_workflow_entry_20261026.registration.json`.
+  Its 1534-case shared CPU report retains all 1527 V236 cases, no skips.
+  Supervisor PID 3499431/start `719738488` was initially observed alive in
+  `waiting_idle_gpu`, with no owned GPU children while a foreign job runs.
+  Real runtime CPU preflight verifies entry count eight. Preserve this source
+  and retain its original execution record; do not report performance gains or numerical
+  qualification from the registration or CPU fixtures.
+- The user's 2026-10-26 reservation prohibits all new GPU experiments until
+  2026-10-27 11:00 Asia/Shanghai, as recorded in the shared hold file.
+  V236b stopped on the new hold at 2026-10-26 23:34:53 Asia/Shanghai, with
+  `HoldChanged` and all owned processes confirmed gone. Preserve its partial
+  result as an administrative interruption, not a complete comparison. Do not
+  restart the frozen partial arm or the earlier stopped AgentX queue.
+  Continue CPU-only development with CUDA devices explicitly hidden.
+- Completed implementation changes are now recorded on main in `a8c750ae`
+  and `74afed24`. Commit further completed changes in coherent groups rather
+  than accumulating an unreviewable working tree. Preserve source references
+  required by committed workload manifests as well as executable code.
