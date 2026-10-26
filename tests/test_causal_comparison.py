@@ -1419,7 +1419,7 @@ def test_cleanup_waits_for_slow_device_teardown_but_reports_a_persistent_process
 @pytest.mark.parametrize("failure", (
     None, "driver", "changed_work", "capacity", "no_tool_prefetch",
     "queued_no_tool_prefetch", "failed_predecessor", "source_slowdown", "capture_baseline",
-    "orthogonal_controls", "telemetry_drain",
+    "orthogonal_controls", "telemetry_drain", "busy_start", "busy_between_arms",
 ))
 def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     reference, tmp_path, monkeypatch, failure,
@@ -1427,6 +1427,9 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     queued = failure == "queued_no_tool_prefetch"
     failed_predecessor = failure == "failed_predecessor"
     captured_reference = failure == "capture_baseline"
+    busy_start, busy_between = failure == "busy_start", failure == "busy_between_arms"
+    if busy_start or busy_between:
+        failure = None
     order = (
         ["no_tool_prefetch"] if failure in (
             "no_tool_prefetch", "queued_no_tool_prefetch", "failed_predecessor",
@@ -1475,6 +1478,7 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     current = []
     launched, cleaned, configurations, drained = [], [], [], []
     predecessor_checks = []
+    resource_checks = {}
 
     def previous_ready(_plan):
         predecessor_checks.append(1)
@@ -1485,7 +1489,10 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     def resources(_port):
         if queued:
             assert len(predecessor_checks) >= 3
-        return {"ready": True}
+        round_number = len(cleaned)
+        resource_checks[round_number] = resource_checks.get(round_number, 0) + 1
+        busy = (busy_start and round_number == 0) or (busy_between and round_number == 1)
+        return {"ready": not busy or resource_checks[round_number] > 4}
 
     class Process:
         def __init__(self, pid, code):
@@ -1499,6 +1506,8 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
 
     def popen(command, **kwargs):
         if command[0] == "bash":
+            if busy_start and not cleaned or busy_between and len(cleaned) == 1:
+                assert resource_checks[len(cleaned)] >= 6
             label = Path(kwargs["env"]["RUN_ROOT"]).name
             arm = run / label
             current[:] = [label]
@@ -1640,3 +1649,47 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
             check = json.loads((run / "native_matched/source_replay_calibration.json").read_bytes())
             assert check["accepted"] is False
             assert "slowdown tolerance" in state["error"]
+
+
+@pytest.mark.parametrize("sequence,expected_sleeps", (
+    ([True, True], 1),
+    ([False, False, True, True], 3),
+    ([True, False, True, True], 3),
+))
+def test_resource_queue_requires_consecutive_idle_observations_and_publishes_them(
+    monkeypatch, sequence, expected_sleeps,
+):
+    values, sleeps, snapshots = iter(sequence), [], []
+    state = {"status": "waiting_idle_gpu"}
+    monkeypatch.setattr(comparison.qualified, "resources", lambda port: {
+        "ready": next(values), "port": port,
+    })
+    monkeypatch.setattr(comparison.time, "sleep", sleeps.append)
+    comparison.wait_for_resources(
+        {"port": 18647}, state, pulse=lambda: snapshots.append(dict(state)),
+    )
+    assert sleeps == [10.] * expected_sleeps
+    assert state["resources"] == {"ready": True, "port": 18647}
+    assert len([row for row in snapshots if "resources" in row]) >= len(sequence)
+
+
+@pytest.mark.parametrize("stop_after", (1, 3))
+def test_resource_queue_honors_stop_or_hold_changes_without_allocating_gpu(
+    monkeypatch, stop_after,
+):
+    calls, probes = [], []
+
+    def pulse():
+        calls.append(1)
+        if len(calls) == stop_after:
+            raise ValueError("new user hold")
+
+    def resources(_port):
+        probes.append(1)
+        return {"ready": False}
+
+    monkeypatch.setattr(comparison.qualified, "resources", resources)
+    monkeypatch.setattr(comparison.time, "sleep", lambda _seconds: None)
+    with pytest.raises(ValueError, match="new user hold"):
+        comparison.wait_for_resources({"port": 18647}, {}, pulse=pulse)
+    assert len(probes) == int(stop_after > 1)

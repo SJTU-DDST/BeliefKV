@@ -12,6 +12,7 @@ class AgentAdmission:
     def __init__(
         self, runtime, *, strategy="working_set", coadmit_join_children=False,
         blocked_lending="idle",
+        workflow_entry_min_ready=0,
     ):
         self.runtime = runtime
         self.policy: AgentWorkingSet | None = None
@@ -22,6 +23,12 @@ class AgentAdmission:
         ):
             raise ValueError("backed blocked lending requires retained agent admission")
         self.blocked_lending = blocked_lending
+        if (
+            type(workflow_entry_min_ready) is not int or not 0 <= workflow_entry_min_ready <= 256
+            or workflow_entry_min_ready and strategy != "thunderagent_retained"
+        ):
+            raise ValueError("workflow entry requires retained agent admission")
+        self.workflow_entry_min_ready = workflow_entry_min_ready
         if strategy not in (
             "working_set", "thunderagent", "thunderagent_retained", "thunderagent_workflow",
         ):
@@ -49,6 +56,7 @@ class AgentAdmission:
                 capacity, retain_blocked=self.strategy == "thunderagent_retained",
                 coadmit_join_children=self.coadmit_join_children,
                 recall_join_loans=self.blocked_lending == "backed_demand_recall",
+                workflow_entry_min_ready=self.workflow_entry_min_ready,
             )
         else:
             self.policy = AgentWorkingSet(capacity)
@@ -64,7 +72,7 @@ class AgentAdmission:
         critical = key.invocation_id in self.runtime._join_priority_pending
         workflow = (
             {"workflow_id": key.root_workflow_id}
-            if self.strategy == "thunderagent_workflow" else {}
+            if self.strategy == "thunderagent_workflow" or self.workflow_entry_min_ready else {}
         )
         self.policy.arrive(
             key.invocation_id, len(req.origin_input_ids),
@@ -383,6 +391,9 @@ class AgentAdmission:
             ),
             "coadmit_join_children": self.coadmit_join_children,
             "blocked_lending": self.blocked_lending,
+            "workflow_entry_min_ready_agents": self.workflow_entry_min_ready,
+            "workflow_entry_scope": "unstarted_root_workflow_only",
+            "workflow_entry_started_workflows": len(getattr(policy, "started_workflows", ())),
             "join_loan_recall": bool(getattr(policy, "recall_join_loans", False)),
             "join_loan_scope": "logical_admissions_during_open_blocked_lending_period",
             "join_loan_recall_boundary": "submitted_join_successor;nonrunning_borrower",

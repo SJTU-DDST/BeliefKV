@@ -590,3 +590,44 @@
   no skips, retaining V233's 1396 cases. Preserve early targeted failures and
   the old V233 configuration. Reuse V230 and V232 ThunderAgent, run only Full,
   and evaluate the possible migration/JCT cost along with decode batch width.
+- V235 is now running that single Full candidate from frozen application
+  `f26f1998ae5f7e1526798a4cacff5379248eff3d`, engine tree
+  `6437d7deeacc533f0d795ba166dfd5256b3f44b2`, port 18646.
+  Registration is
+  `ops/v235_locobench_join_loan_return_20261026.registration.json`.
+  Supervisor PID 3463228/start `719247404`; server 3463571/start `719247867`;
+  replay driver 3465018/start `719262732`. Live observations confirm
+  `backed_demand_recall`, `join_loan_recall=true`, and physical_disabled=false.
+  Keep these sources frozen. The engine proof was rebound only to the new
+  canonical patch pathname after confirming every other engine-state field,
+  canonical tree and patch byte hash identical; preserve its pre-GPU check
+  failure and rebinding evidence. Full performance and numeric qualification
+  remain unproven.
+- V235 completed all 3674 requests with identical tokens/stopping, drained
+  telemetry and owned cleanup. Mean JCT is 1344.922s versus ThunderAgent's
+  1339.764s, while whole-run throughput is 280.631 versus 262.225 token/s.
+  This 7.019% throughput gain with 0.385% worse JCT fails the shared gate.
+  Actual mean decode batch increased to 6.418, worker-weighted width to 8.369,
+  with 1518.026s decode worker intervals and 647.027GB actual H2D. Preserve
+  the complete result, all ordinary tails and the additional migration cost.
+  Fourteen JOIN recalls reduced summed successor queue waits to 1361.661s
+  from V233's 3414.865s; overlapping intervals are not removable JCT.
+  The offline loan/budget reports distinguish logical eligibility from physical
+  exclusive/reclaimable pages, and retain unreconciled sampling gaps.
+- The separate workflow-entry candidate keeps V235 agent continuity, lending,
+  JOIN recall and native physical authority. In Full only, defer a workflow's
+  first eligibility when at least eight other active agents have real pending,
+  unblocked model work. Once native service starts, its children and subsequent
+  requests bypass this gate; active agents are never rotated for it. Admit at
+  most one newcomer in each ordinary five-second resume pass, with the original
+  1800-second escape retained. All workflows' JCT still starts at their original
+  submission; do not hide deferred entry. Check the gate before any donor pause
+  or Host-backing proof. This is an unaccepted candidate, not evidence that
+  narrowing initial workflow spread improves decode efficiency or mean JCT.
+- V236 froze application `59a91c28ea8c73723db1fc54667229a42b546e16`
+  with 1527 shared CPU cases and real runtime entry count eight verified.
+  Its supervisor stopped before GPU allocation because the inherited launcher
+  treated another user's busy GPU as a startup failure instead of queuing.
+  Preserve that registration/outcome and use a new frozen retry. The repair
+  waits for two fresh resource-ready observations both before initial setup
+  and each cold arm, keeps hold/stop checks live, and never kills foreign jobs.

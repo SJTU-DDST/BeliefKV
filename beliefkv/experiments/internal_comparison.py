@@ -123,6 +123,16 @@ def arm_environment(
     if mode == "full" and blocked_lending != "idle" and agent_admission != "thunderagent_retained":
         raise ValueError("backed blocked lending requires retained agent admission")
     blocked_lending = blocked_lending if agent_admission == "thunderagent_retained" else "idle"
+    entry = common.get(
+        "BELIEFKV_AGENT_WORKFLOW_ENTRY_MIN_READY", common.get("AGENT_WORKFLOW_ENTRY_MIN_READY", "0"),
+    )
+    if (
+        not isinstance(entry, str) or not entry.isascii() or not entry.isdecimal()
+        or not 0 <= int(entry) <= 256
+        or mode == "full" and int(entry) and agent_admission != "thunderagent_retained"
+    ):
+        raise ValueError("workflow entry requires retained agent admission and a bounded count")
+    entry = entry if agent_admission == "thunderagent_retained" else "0"
     if agent_admission in ("thunderagent_retained", "thunderagent_workflow") and frontier == "1":
         raise ValueError("retained agent admission uses native ordinary demand recovery")
     if agent_admission == "thunderagent_workflow" and scheduling != "join_priority":
@@ -136,6 +146,8 @@ def arm_environment(
         "BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN": siblings,
         "AGENT_BLOCKED_LENDING": blocked_lending,
         "BELIEFKV_AGENT_BLOCKED_LENDING": blocked_lending,
+        "AGENT_WORKFLOW_ENTRY_MIN_READY": entry,
+        "BELIEFKV_AGENT_WORKFLOW_ENTRY_MIN_READY": entry,
         "BELIEFKV_SESSIONLESS_PREFIX_MIGRATION": sessionless_prefix if mode == "full" else "0",
         "NATIVE_POLICY_BASELINE": str(int(native)),
         "AB_MODE": "off" if native or not custom_kv else "predictive_h2d",

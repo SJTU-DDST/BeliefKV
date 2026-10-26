@@ -59,6 +59,7 @@ SERVER_FIELDS = (
     "JOIN_PREDICTION_MIN_FULL_BYTES", "JOIN_PREDICTION_INTERVAL_MS",
     "JOIN_PREDICTION_MAX_CANDIDATES", "ONLINE_TOOL_TIMING",
     "BORROWABLE_PARENT_HEADROOM", "AGENT_ADMISSION", "AGENT_BLOCKED_LENDING",
+    "AGENT_WORKFLOW_ENTRY_MIN_READY",
 )
 
 
@@ -305,6 +306,7 @@ def preflight_runtime(settings, model_path):
             "working_set", "thunderagent", "thunderagent_retained", "thunderagent_workflow",
         ),
         "agent_blocked_lending": settings.get("BELIEFKV_AGENT_BLOCKED_LENDING", "idle"),
+        "agent_workflow_entry_min_ready": int(settings.get("BELIEFKV_AGENT_WORKFLOW_ENTRY_MIN_READY", "0")),
         "restore_tiers": settings.get("RESTORE_TIERS", settings["BELIEFKV_RESTORE_TIERS"]),
         "enable_tool_prefetch": settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "1",
         "enable_frontier_restore": settings["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == "1",
@@ -643,6 +645,10 @@ def observed_configuration(plan, label, arm, *, final=False):
                 actual_agents.get("blocked_lending") == "backed_demand_recall"
             ):
                 raise ValueError("effective JOIN loan recall differs from declared control")
+            if actual_agents.get("workflow_entry_min_ready_agents", 0) != int(common.get(
+                "BELIEFKV_AGENT_WORKFLOW_ENTRY_MIN_READY", common.get("AGENT_WORKFLOW_ENTRY_MIN_READY", "0"),
+            )):
+                raise ValueError("effective workflow entry count differs from declared control")
             if "AGENT_COADMIT_JOIN_CHILDREN" in common and (
                 actual_agents.get("coadmit_join_children") is not (
                     common["AGENT_COADMIT_JOIN_CHILDREN"] == "1"
@@ -1186,6 +1192,19 @@ def register(args):
     }, indent=2))
 
 
+def wait_for_resources(plan, state, *, pulse):
+    """Wait without GPU children; require two fresh idle observations."""
+    consecutive = 0
+    while consecutive < 2:
+        pulse()
+        available = qualified.resources(plan["port"])
+        state["resources"] = available
+        consecutive = consecutive + 1 if available["ready"] else 0
+        pulse()
+        if consecutive < 2:
+            time.sleep(10.)
+
+
 def watch(registration):
     plan = load(registration)
     state_path, run = registration.with_suffix(".state.json"), Path(plan["run_root"])
@@ -1229,8 +1248,9 @@ def watch(registration):
                 time.sleep(10.)
             expected_work = predecessor_work(plan)
             comparison.verify_sources(plan)
-            if not qualified.resources(plan["port"])["ready"]:
-                raise ValueError("GPU, port or disk is occupied before comparison")
+            state["status"] = "waiting_idle_gpu"
+            wait_for_resources(plan, state, pulse=pulse)
+            comparison.verify_sources(plan)
             fresh.check_hold(plan, released=True)
             run.mkdir(parents=True, exist_ok=False)
             with (run / "plugin_install.log").open("x") as output:
@@ -1243,12 +1263,7 @@ def watch(registration):
             results = {}
             for label in plan["order"]:
                 state.update(status="waiting_resources_" + label, current_arm=label)
-                deadline = time.monotonic() + 60.
-                while not qualified.resources(plan["port"])["ready"]:
-                    pulse()
-                    if time.monotonic() >= deadline:
-                        raise ValueError("resources were not released for the next cold start")
-                    time.sleep(2.)
+                wait_for_resources(plan, state, pulse=pulse)
                 pulse()
                 comparison.verify_sources(plan)
                 arm = run / label

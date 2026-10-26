@@ -15,7 +15,7 @@ from tests.test_paper_baseline_runtime import request
 
 def runtime(
     monkeypatch, tmp_path, *, capacity=500, strategy="working_set",
-    coadmit_join_children=False, blocked_lending="idle",
+    coadmit_join_children=False, blocked_lending="idle", workflow_entry_min_ready=0,
 ):
     settings = arm_environment({
         "AGENT_ADMISSION": strategy, "TOOL_RESTORE_MODE": "execution",
@@ -23,6 +23,7 @@ def runtime(
         "TOOL_CONTINUITY": "1",
         "AGENT_COADMIT_JOIN_CHILDREN": str(int(coadmit_join_children)),
         "AGENT_BLOCKED_LENDING": blocked_lending,
+        "AGENT_WORKFLOW_ENTRY_MIN_READY": str(workflow_entry_min_ready),
     }, "full")
     for name, value in settings.items():
         monkeypatch.setenv(name, value)

@@ -14,6 +14,7 @@ class MigratingProgram(ThunderProgram):
     critical: bool = False
     waiting_since: float = 0.
     restore_until: float = 0.
+    workflow_id: str | None = None
 
 
 class ThunderAgentMigration(ThunderWorkingSet):
@@ -29,6 +30,7 @@ class ThunderAgentMigration(ThunderWorkingSet):
     def __init__(
         self, capacity: int, *, retain_blocked: bool = False,
         coadmit_join_children: bool = False, recall_join_loans: bool = False,
+        workflow_entry_min_ready: int = 0,
     ):
         super().__init__(capacity)
         if type(retain_blocked) is not bool:
@@ -42,6 +44,14 @@ class ThunderAgentMigration(ThunderWorkingSet):
         if type(recall_join_loans) is not bool or (recall_join_loans and not retain_blocked):
             raise ValueError("JOIN loan recall requires retained agent eligibility")
         self.recall_join_loans = recall_join_loans
+        if (
+            type(workflow_entry_min_ready) is not int or not 0 <= workflow_entry_min_ready <= 256
+            or workflow_entry_min_ready and not retain_blocked
+        ):
+            raise ValueError("workflow entry requires retained eligibility and a bounded agent count")
+        self.workflow_entry_min_ready = workflow_entry_min_ready
+        self.started_workflows: set[str] = set()
+        self._entry_now = 0.
         self.loan_borrowers: dict[str, set[str]] = {}
         self.borrowed_from: dict[str, set[str]] = {}
         self.observed_sibling_joins = {}
@@ -73,9 +83,24 @@ class ThunderAgentMigration(ThunderWorkingSet):
         # Known blocked agents are not candidates for the author's resumption
         # algorithm. Keep active owners in its capacity sum, including DMA leases.
         all_programs = self.programs
+        established = (
+            self.started_workflows | {
+                item.workflow_id for item in all_programs.values() if item.active
+            } if self.workflow_entry_min_ready else set()
+        )
+        entrant = min((
+            item for item in all_programs.values()
+            if not item.active and item.pending and not item.blocked
+            and item.workflow_id not in established and self._entry_allowed(item, self._entry_now)
+        ), key=lambda item: (
+            1 if item.steps == 1 else 0 if not item.acting else 2,
+            item.tokens, item.queue_sequence,
+        ), default=None) if self.workflow_entry_min_ready else None
         self.programs = {
             identity: item for identity, item in all_programs.items()
-            if item.active or not item.blocked
+            if item.active or not item.blocked and (
+                not self.workflow_entry_min_ready or item.workflow_id in established or item is entrant
+            )
         }
         try:
             resumed = super()._resume()
@@ -111,15 +136,34 @@ class ThunderAgentMigration(ThunderWorkingSet):
                 self.loan_borrowers.setdefault(identity, set()).add(target.identity)
                 self.borrowed_from.setdefault(target.identity, set()).add(identity)
 
-    def arrive(self, identity, tokens, *, now, critical=False):
+    def _entry_allowed(self, item, now):
+        if not self.workflow_entry_min_ready or item.workflow_id in self.started_workflows:
+            return True
+        if now - max(item.waiting_since, item.queued_at) >= self.aging_s:
+            return True
+        ready = 0
+        for other in self.programs.values():
+            if other is item or not other.active:
+                continue
+            if other.workflow_id == item.workflow_id:
+                return True
+            ready += bool(other.pending and not other.blocked)
+        return ready < self.workflow_entry_min_ready
+
+    def arrive(self, identity, tokens, *, now, critical=False, workflow_id=None):
         if type(identity) is not str or not identity:
             raise ValueError("agent identity is required")
         if type(tokens) is not int or tokens <= 0 or not math.isfinite(now):
             raise ValueError("positive observed context and finite arrival are required")
+        if self.workflow_entry_min_ready and (type(workflow_id) is not str or not workflow_id):
+            raise ValueError("workflow entry requires a real root workflow identity")
         item = self.programs.get(identity)
         if item is None:
             item = MigratingProgram(identity, tokens)
             self.programs[identity] = item
+        if item.workflow_id is not None and item.workflow_id != workflow_id:
+            raise ValueError("an agent cannot change workflow identity")
+        item.workflow_id = workflow_id
         if item.pending:
             raise ValueError("an agent cannot have concurrent sequential calls")
         item.blocked, item.waiting_since = None, now
@@ -136,6 +180,10 @@ class ThunderAgentMigration(ThunderWorkingSet):
             super().arrive(identity, tokens, now=now)
         finally:
             self.programs = all_programs
+        if item.active and not before and not self._entry_allowed(item, now):
+            # Reject provisional first-arrival eligibility before native admission.
+            super()._pause(item, now)
+            self.counts["workflow_entry_deferred_on_arrival"] += 1
         self.counts["activated"] += int(item.active and not before)
         if item.active and not before:
             self._record_borrowing(item, tuple(self.loan_borrowers))
@@ -183,6 +231,8 @@ class ThunderAgentMigration(ThunderWorkingSet):
             raise ValueError("agent has no live logical admission")
         item = self.programs[identity]
         item.in_flight, item.critical = True, False
+        if self.workflow_entry_min_ready:
+            self.started_workflows.add(item.workflow_id)
         self.release_restore(identity)
 
     def completed(self, identity, tokens, *, now):
@@ -232,6 +282,9 @@ class ThunderAgentMigration(ThunderWorkingSet):
     ):
         if item.active:
             return True
+        if not self._entry_allowed(item, now):
+            self.counts["workflow_entry_deferred_on_activation"] += 1
+            return False
         needed = item.tokens + self.buffer_tokens - self.remaining_capacity()
         if needed > 0 and not allow_eviction:
             return False
@@ -309,7 +362,8 @@ class ThunderAgentMigration(ThunderWorkingSet):
             return
         waiting = sorted(
             (item for item in self.programs.values()
-             if not item.active and item.pending and not item.blocked),
+             if not item.active and item.pending and not item.blocked
+             and self._entry_allowed(item, now)),
             key=lambda item: (
                 1 if item.steps == 1 else 0 if not item.acting else 2,
                 item.tokens, item.queue_sequence,
@@ -328,7 +382,8 @@ class ThunderAgentMigration(ThunderWorkingSet):
             raise ValueError("backed lending requires retained agent admission")
         waiting = sorted(
             (item for item in self.programs.values()
-             if not item.active and item.pending and not item.blocked),
+             if not item.active and item.pending and not item.blocked
+             and self._entry_allowed(item, now)),
             key=lambda item: (
                 not item.critical,
                 1 if item.steps == 1 else 0 if not item.acting else 2,
@@ -414,6 +469,7 @@ class ThunderAgentMigration(ThunderWorkingSet):
         return True
 
     def rebalance(self, *, now):
+        self._entry_now = now
         self._expire_restore(now)
         for item in self.programs.values():
             if item.critical and not item.active and (
@@ -440,10 +496,16 @@ class ThunderAgentMigration(ThunderWorkingSet):
                     break
 
     def forget(self, identity, *, now):
+        item = self.programs.get(identity)
+        workflow = item.workflow_id if item is not None else None
         self.release_restore(identity)
         self._release_borrowed_budget(identity)
         self._settle_lender(identity)
         super().forget(identity)
+        if workflow is not None and not any(
+            other.workflow_id == workflow for other in self.programs.values()
+        ):
+            self.started_workflows.discard(workflow)
         self.rebalance(now=now)
 
     def clear(self):
@@ -453,3 +515,4 @@ class ThunderAgentMigration(ThunderWorkingSet):
         self.observed_agent_joins.clear()
         self.loan_borrowers.clear()
         self.borrowed_from.clear()
+        self.started_workflows.clear()

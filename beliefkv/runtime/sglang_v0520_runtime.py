@@ -937,6 +937,14 @@ class NativeAdmissionRuntime:
         ):
             raise ValueError("backed blocked lending requires retained agent admission")
         self.agent_blocked_lending = blocked_lending
+        entry_setting = os.environ.get("BELIEFKV_AGENT_WORKFLOW_ENTRY_MIN_READY", "0")
+        if (
+            not entry_setting.isascii() or not entry_setting.isdecimal()
+            or not 0 <= int(entry_setting) <= 256
+            or int(entry_setting) and agent_policy != "thunderagent_retained"
+        ):
+            raise ValueError("workflow entry requires retained agent admission and a bounded count")
+        self.agent_workflow_entry_min_ready = int(entry_setting)
         if self.enable_agent_working_set:
             if (
                 paper_policy or self.internal_comparison_mode != "full"
@@ -950,6 +958,7 @@ class NativeAdmissionRuntime:
             self._agent_admission = AgentAdmission(
                 self, strategy=agent_policy, coadmit_join_children=self.coadmit_join_children,
                 blocked_lending=blocked_lending,
+                workflow_entry_min_ready=self.agent_workflow_entry_min_ready,
             )
         if paper_policy:
             from beliefkv.runtime.paper_baseline import create_adapter
