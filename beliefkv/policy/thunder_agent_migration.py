@@ -1,6 +1,7 @@
 """ThunderAgent's public admission core composed with causal KV recovery."""
 
 from collections import Counter
+from bisect import bisect_left
 from dataclasses import dataclass
 import math
 
@@ -32,6 +33,7 @@ class ThunderAgentMigration(ThunderWorkingSet):
         self, capacity: int, *, retain_blocked: bool = False,
         coadmit_join_children: bool = False, recall_join_loans: bool = False,
         workflow_entry_min_ready: int = 0, recall_tool_loans: bool = False,
+        recall_selection: str = "largest", observe_recall=None, recall_urgent=None,
     ):
         super().__init__(capacity)
         if type(retain_blocked) is not bool:
@@ -50,6 +52,13 @@ class ThunderAgentMigration(ThunderWorkingSet):
         ):
             raise ValueError("tool loan return requires recorded JOIN-capable lending")
         self.recall_tool_loans = recall_tool_loans
+        if recall_selection not in ("largest", "cold_fit") or (
+            recall_selection != "largest" and not recall_join_loans
+        ):
+            raise ValueError("recall selection requires declared JOIN-capable recorded lending")
+        self.recall_selection = recall_selection
+        self.observe_recall = observe_recall
+        self.recall_urgent = recall_urgent
         if (
             type(workflow_entry_min_ready) is not int or not 0 <= workflow_entry_min_ready <= 256
             or workflow_entry_min_ready and not retain_blocked
@@ -460,6 +469,50 @@ class ThunderAgentMigration(ThunderWorkingSet):
             return False
         return self._recall_recorded_loan(item, now=now, source="join")
 
+    def _select_recall_victims(self, candidates, needed):
+        priorities = {}
+        if self.recall_selection == "largest":
+            groups = (candidates,)
+        else:
+            # Classify once at an actual loan return, using only current state.
+            for candidate in candidates:
+                urgent = (
+                    candidate.pending and not candidate.blocked
+                    and self.recall_urgent is not None and self.recall_urgent(candidate.identity)
+                )
+                priorities[candidate.identity] = (
+                    3 if urgent else 0 if candidate.blocked and not candidate.pending
+                    else 1 if not candidate.pending else 2
+                )
+            groups = tuple(sorted(
+                (
+                    candidate for candidate in candidates
+                    if priorities[candidate.identity] == tier
+                ),
+                key=lambda candidate: (candidate.tokens, candidate.queue_sequence, candidate.identity),
+            ) for tier in range(4))
+        selected = []
+        for group in groups:
+            if self.recall_selection == "largest":
+                for candidate in group:
+                    selected.append(candidate)
+                    needed -= candidate.tokens + self.buffer_tokens
+                    if needed <= 0:
+                        return selected, priorities
+                continue
+            group = list(group)
+            credits = [candidate.tokens + self.buffer_tokens for candidate in group]
+            while group:
+                # Finish with one fitting owner; otherwise reduce the gap first.
+                fit = bisect_left(credits, needed)
+                candidate = group[fit] if fit < len(group) else group.pop()
+                selected.append(candidate)
+                needed -= candidate.tokens + self.buffer_tokens
+                if needed <= 0:
+                    return selected, priorities
+                credits.pop()
+        raise ValueError("recall selection did not cover its proven logical shortfall")
+
     def _recall_recorded_loan(self, item, *, now, source):
         needed = item.tokens + self.buffer_tokens - self.remaining_capacity()
         if needed <= 0:
@@ -477,9 +530,29 @@ class ThunderAgentMigration(ThunderWorkingSet):
             if self.loan_borrowers.get(item.identity):
                 self.counts[source + "_loan_recall_deferred"] += 1
             return False
+        selected, priorities = self._select_recall_victims(candidates, needed)
+        detail = None
+        if self.observe_recall is not None:
+            detail = {
+                "source": source, "selection": self.recall_selection, "lender": item.identity,
+                "needed_tokens": needed, "remaining_capacity_before": self.remaining_capacity(),
+                "candidates": [
+                    {
+                        "invocation_id": borrower.identity, "tokens": borrower.tokens,
+                        "credit_tokens": borrower.tokens + self.buffer_tokens,
+                        "blocked": borrower.blocked, "pending": borrower.pending,
+                        "in_flight": borrower.in_flight, "critical": borrower.critical,
+                        "restore_until": borrower.restore_until,
+                        "selection_tier": priorities.get(borrower.identity),
+                    } for borrower in candidates
+                ],
+                "selected_invocation_ids": [borrower.identity for borrower in selected],
+                "selected_credit_tokens": sum(borrower.tokens + self.buffer_tokens for borrower in selected),
+                "policy_monotonic_seconds": now,
+            }
         # Return only recorded loans, after a current request has completed.
         # Native KV allocation and any required backup remain authoritative.
-        for borrower in candidates:
+        for borrower in selected:
             self._pause(borrower, now)
             self.counts["capacity_switch:" + source + "_loan_return"] += 1
             needed -= borrower.tokens + self.buffer_tokens
@@ -488,6 +561,8 @@ class ThunderAgentMigration(ThunderWorkingSet):
         if not self._activate_target(item, now=now, allow_eviction=False):
             raise ValueError("returned " + source + " budgets did not cover their lender")
         self.counts[source + "_loan_recall_admitted"] += 1
+        if detail is not None:
+            self.observe_recall(detail)
         return True
 
     def rebalance(self, *, now):

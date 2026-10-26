@@ -11,8 +11,10 @@ from beliefkv.policy.thunder_agent_migration import ThunderAgentMigration
 from tests.test_agent_working_set_runtime import runtime
 
 
-def loan_policy(*, recall=True):
-    policy = ThunderAgentMigration(1000, retain_blocked=True, recall_join_loans=recall)
+def loan_policy(*, recall=True, selection="largest"):
+    policy = ThunderAgentMigration(
+        1000, retain_blocked=True, recall_join_loans=recall, recall_selection=selection,
+    )
     policy.arrive("parent", 500, now=0.)
     policy.completed("parent", 500, now=.1)
     policy.block("parent", "join", now=.2)
@@ -247,9 +249,11 @@ def test_free_readmission_keeps_open_lending_condition_until_owner_resumes():
 
 
 @pytest.mark.parametrize("seed", (0, 21, 88))
-def test_random_blocking_lending_recall_and_retirement_preserve_live_eligibility(seed):
+def test_random_blocking_lending_recall_and_retirement_preserve_live_eligibility(seed, *, recall_selection="largest"):
     rng = random.Random(seed)
-    policy = ThunderAgentMigration(1500, retain_blocked=True, recall_join_loans=True)
+    policy = ThunderAgentMigration(
+        1500, retain_blocked=True, recall_join_loans=True, recall_selection=recall_selection,
+    )
     now = 0.
     for _ in range(2000):
         now += rng.uniform(.01, .4)

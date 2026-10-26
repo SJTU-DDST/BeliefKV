@@ -123,6 +123,14 @@ def arm_environment(
     if mode == "full" and blocked_lending != "idle" and agent_admission != "thunderagent_retained":
         raise ValueError("backed blocked lending requires retained agent admission")
     blocked_lending = blocked_lending if agent_admission == "thunderagent_retained" else "idle"
+    recall_selection = common.get(
+        "BELIEFKV_AGENT_RECALL_SELECTION", common.get("AGENT_RECALL_SELECTION", "largest"),
+    )
+    if recall_selection not in ("largest", "cold_fit") or (
+        mode == "full" and recall_selection != "largest" and blocked_lending != "backed_demand_recall"
+    ):
+        raise ValueError("recall selection requires recorded blocked lending")
+    recall_selection = recall_selection if mode == "full" else "largest"
     tool_return = common.get(
         "BELIEFKV_AGENT_TOOL_LOAN_RETURN", common.get("AGENT_TOOL_LOAN_RETURN", "0"),
     )
@@ -159,6 +167,8 @@ def arm_environment(
         "BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN": siblings,
         "AGENT_BLOCKED_LENDING": blocked_lending,
         "BELIEFKV_AGENT_BLOCKED_LENDING": blocked_lending,
+        "AGENT_RECALL_SELECTION": recall_selection,
+        "BELIEFKV_AGENT_RECALL_SELECTION": recall_selection,
         "AGENT_TOOL_LOAN_RETURN": tool_return,
         "BELIEFKV_AGENT_TOOL_LOAN_RETURN": tool_return,
         "AGENT_WORKFLOW_ENTRY_MIN_READY": entry,

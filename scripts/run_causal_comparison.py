@@ -58,7 +58,7 @@ SERVER_FIELDS = (
     "H2D_OPPORTUNITY_SAMPLING", "JOIN_PREFETCH_TRIGGER",
     "JOIN_PREDICTION_MIN_FULL_BYTES", "JOIN_PREDICTION_INTERVAL_MS",
     "JOIN_PREDICTION_MAX_CANDIDATES", "ONLINE_TOOL_TIMING",
-    "BORROWABLE_PARENT_HEADROOM", "AGENT_ADMISSION", "AGENT_BLOCKED_LENDING",
+    "BORROWABLE_PARENT_HEADROOM", "AGENT_ADMISSION", "AGENT_BLOCKED_LENDING", "AGENT_RECALL_SELECTION",
     "AGENT_WORKFLOW_ENTRY_MIN_READY", "AGENT_TOOL_LOAN_RETURN",
     "FREE_PAGE_H2D_FENCE",
 )
@@ -307,6 +307,7 @@ def preflight_runtime(settings, model_path):
             "working_set", "thunderagent", "thunderagent_retained", "thunderagent_workflow",
         ),
         "agent_blocked_lending": settings.get("BELIEFKV_AGENT_BLOCKED_LENDING", "idle"),
+        "agent_recall_selection": settings.get("BELIEFKV_AGENT_RECALL_SELECTION", "largest"),
         "agent_tool_loan_return": settings.get("BELIEFKV_AGENT_TOOL_LOAN_RETURN", "0") == "1",
         "free_page_h2d_fence_requested": settings.get("BELIEFKV_FREE_PAGE_H2D_FENCE", "0") == "1",
         "agent_workflow_entry_min_ready": int(settings.get("BELIEFKV_AGENT_WORKFLOW_ENTRY_MIN_READY", "0")),
@@ -721,6 +722,10 @@ def observed_configuration(plan, label, arm, *, final=False):
                 actual_agents.get("blocked_lending") == "backed_demand_recall"
             ):
                 raise ValueError("effective JOIN loan recall differs from declared control")
+            if actual_agents.get("recall_selection", "largest") != common.get(
+                "BELIEFKV_AGENT_RECALL_SELECTION", common.get("AGENT_RECALL_SELECTION", "largest"),
+            ):
+                raise ValueError("effective agent recall selection differs from declared control")
             if actual_agents.get("workflow_entry_min_ready_agents", 0) != int(common.get(
                 "BELIEFKV_AGENT_WORKFLOW_ENTRY_MIN_READY", common.get("AGENT_WORKFLOW_ENTRY_MIN_READY", "0"),
             )):

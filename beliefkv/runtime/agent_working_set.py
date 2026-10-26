@@ -13,6 +13,7 @@ class AgentAdmission:
         self, runtime, *, strategy="working_set", coadmit_join_children=False,
         blocked_lending="idle",
         workflow_entry_min_ready=0, tool_loan_return=False,
+        recall_selection="largest",
     ):
         self.runtime = runtime
         self.policy: AgentWorkingSet | None = None
@@ -28,6 +29,11 @@ class AgentAdmission:
         ):
             raise ValueError("tool loan return requires recorded blocked lending")
         self.tool_loan_return = tool_loan_return
+        if recall_selection not in ("largest", "cold_fit") or (
+            recall_selection != "largest" and blocked_lending != "backed_demand_recall"
+        ):
+            raise ValueError("recall selection requires recorded blocked lending")
+        self.recall_selection = recall_selection
         if (
             type(workflow_entry_min_ready) is not int or not 0 <= workflow_entry_min_ready <= 256
             or workflow_entry_min_ready and strategy != "thunderagent_retained"
@@ -63,9 +69,29 @@ class AgentAdmission:
                 recall_join_loans=self.blocked_lending == "backed_demand_recall",
                 workflow_entry_min_ready=self.workflow_entry_min_ready,
                 recall_tool_loans=self.tool_loan_return,
+                recall_selection=self.recall_selection,
+                recall_urgent=(
+                    self._recall_urgent if self.recall_selection == "cold_fit" else None
+                ),
+                observe_recall=(
+                    self._observe_recall
+                    if getattr(self.runtime, "_opportunity_writer", None) is not None else None
+                ),
             )
         else:
             self.policy = AgentWorkingSet(capacity)
+
+    def _observe_recall(self, detail):
+        self.runtime._opportunity_writer.record({
+            "event": "agent_loan_recall_decision", "ts_ms": time.time() * 1000.,
+            **detail,
+            "native_capacity_authority_preserved": True,
+            "semantics": "Executed logical eligibility return; not physical KV ownership, freed pages or saved H2D.",
+        })
+
+    def _recall_urgent(self, invocation):
+        key = self.latest.get(invocation)
+        return bool(key is not None and self.runtime._last_join_child_has_waiting_parent(key))
 
     def registered(self, req, key):
         if self.policy is None or key.request_id in self.requests:
@@ -410,6 +436,7 @@ class AgentAdmission:
             "workflow_entry_scope": "unstarted_root_workflow_only",
             "workflow_entry_started_workflows": len(getattr(policy, "started_workflows", ())),
             "join_loan_recall": bool(getattr(policy, "recall_join_loans", False)),
+            "recall_selection": self.recall_selection,
             "tool_loan_return": self.tool_loan_return,
             "tool_loan_return_boundary": "matched_all_tools_returned;submitted_successor;nonrunning_borrower",
             "tool_loan_return_priority": "below_join;recorded_lenders_only",

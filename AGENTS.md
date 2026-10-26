@@ -712,3 +712,17 @@
   CPU HTTP/event/parser tests do not qualify GPU or numerical behavior.
   Its shared CPU report `v241_session_native_model_shared_cpu_20261026.xml`
   passes 2083 cases plus four subtests, retaining all 1857 previous cases.
+- The separate `AGENT_RECALL_SELECTION=cold_fit` candidate changes only
+  recorded-loan victim choice. Keep `largest` as the default and isolate paper
+  arms. Retain all in-flight/critical/restore exclusions, check enough total
+  credit before pausing, rank actual blocked owners before between-request and
+  ready owners, and prefer a single fitting budget within each tier. A ready
+  sole JOIN blocker is a last resort, never an unlimited reservation.
+  `agent_loan_recall_decision` records actual executed logical handovers; it
+  grants no physical KV authority. Preserve V235 and its 647.027GB H2D result.
+  The new complete audit reconciles native demand with FULL Host hits and
+  finds 145.205GB associated with short-tool successors in V235; it does not
+  prove a specific recall caused those bytes. Declaration:
+  `configs/migration/predictive_cold_fit_recall_20261026.json`.
+  Shared CPU report `v242_cold_fit_recall_shared_cpu_20261026.xml`: 2123 cases
+  plus four subtests, retaining all 2083 prior cases. GPU effects remain pending.
