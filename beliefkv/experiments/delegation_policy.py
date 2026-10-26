@@ -3,10 +3,14 @@
 NESTED_IN_GRAPH_PROFILE = "native_in_graph_nested_2to4"
 DYNAMIC_NESTED_IN_GRAPH_PROFILE = "native_in_graph_dynamic_nested"
 REUSABLE_NESTED_IN_GRAPH_PROFILE = "native_in_graph_reusable_nested"
+SHORT_WORKSTREAM_IN_GRAPH_PROFILE = "native_in_graph_short_workstreams"
 DYNAMIC_NESTED_IN_GRAPH_PROFILES = frozenset({
     DYNAMIC_NESTED_IN_GRAPH_PROFILE, REUSABLE_NESTED_IN_GRAPH_PROFILE,
+    SHORT_WORKSTREAM_IN_GRAPH_PROFILE,
 })
 NESTED_COORDINATOR_ROLE = "delegation-coordinator"
+MINIMUM_ROOT_JOIN_MEMBERS = 2
+ROOT_RETRY_TASK_FANOUT = (MINIMUM_ROOT_JOIN_MEMBERS, 4)
 NESTED_IN_GRAPH_PROFILES = frozenset({
     NESTED_IN_GRAPH_PROFILE, *DYNAMIC_NESTED_IN_GRAPH_PROFILES,
 })
@@ -20,6 +24,7 @@ SUBAGENT_FANOUT_PROFILES = (
     NESTED_IN_GRAPH_PROFILE,
     DYNAMIC_NESTED_IN_GRAPH_PROFILE,
     REUSABLE_NESTED_IN_GRAPH_PROFILE,
+    SHORT_WORKSTREAM_IN_GRAPH_PROFILE,
 )
 IN_GRAPH_SUBAGENT_PROFILES = frozenset({
     "native_in_graph_1to4", "native_in_graph_2to4", *NESTED_IN_GRAPH_PROFILES,
@@ -68,9 +73,11 @@ def delegation_contract(profile: str) -> dict:
             nested_initial_tool_choice="auto",
             fixed_role_sequence=False,
             natural_final_response_rejected=True,
-            root_minimum_delegations_prompt=1,
-            root_terminal_check="require_completed_model_selected_join",
+            root_minimum_delegations_prompt=MINIMUM_ROOT_JOIN_MEMBERS,
+            minimum_completed_root_join_members=MINIMUM_ROOT_JOIN_MEMBERS,
+            root_terminal_check="require_completed_model_selected_parallel_join",
             root_retry_tool_choice="task",
+            root_retry_fanout_generation_bounds=list(ROOT_RETRY_TASK_FANOUT),
             maximum_root_delegation_attempts=2,
             recommended_root_rounds=[2, 3],
             nested_delegation_required_for_independent_subproblems=True,
@@ -83,5 +90,15 @@ def delegation_contract(profile: str) -> dict:
             physical_retention_affects_prompt=False,
             concurrent_writers_per_handle=1,
             reuse_api="task(description, subagent_type, agent_id=None);close_agent(agent_id)",
+        )
+    if profile == SHORT_WORKSTREAM_IN_GRAPH_PROFILE:
+        contract.update(
+            child_deliverable="one_bounded_evidence_or_change",
+            child_work_budget_enforcement="soft_reminders_then_natural_report",
+            follow_up_delegation="only_for_new_unresolved_deliverables",
+            tool_execution="necessary_real_project_commands",
+            tool_duration_target_seconds=None,
+            artificial_tool_delays=False,
+            repeated_validation_without_new_evidence=False,
         )
     return contract

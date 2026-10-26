@@ -176,6 +176,95 @@ async def compare_thunder(module, *, cases):
     return results
 
 
+async def compare_thunder_streaming(module, *, cases, events_per_case=40):
+    rng, progress, completed = random.Random(21), 0, 0
+    for case in range(cases):
+        capacity = rng.randrange(500, 5001)
+        policy = ThunderWorkingSet(capacity)
+        router = module.MultiBackendRouter.__new__(module.MultiBackendRouter)
+        backend = module.BackendState.__new__(module.BackendState)
+        backend.url, backend.tool_coefficient = "one", 1.
+        backend.metrics_client = types.SimpleNamespace(
+            healthy=True, cache_config=types.SimpleNamespace(total_tokens_capacity=capacity),
+        )
+        backend._programs, backend.shared_tokens, backend.future_paused_tokens = {}, 0, 0
+        backend.use_acting_token_decay = False
+        router.backends, router.programs, router.global_waiting_queue = {"one": backend}, {}, {}
+        router.pause_resume_lock = asyncio.Lock()
+        router.acting_token_weight = 1.
+        for number in range(rng.randrange(2, 10)):
+            identity = str(number)
+            tokens, active = rng.randrange(50, 501), number < 2
+            policy.programs[identity] = ThunderProgram(
+                identity, tokens, steps=2, active=active, pending=True,
+            )
+            program = module.Program(
+                identity, backend_url="one" if active else None, total_tokens=tokens,
+                step_count=2, status=module.ProgramStatus.REASONING,
+                state=module.ProgramState.ACTIVE if active else module.ProgramState.PAUSED,
+            )
+            router.programs[identity] = program
+            if active:
+                backend.register_program(identity, program)
+            else:
+                router._add_to_global_waiting_queue_sync(identity, program, backend=None)
+                policy._queue_sequence += 1
+                policy.programs[identity].queue_sequence = policy._queue_sequence
+        for event in range(events_per_case):
+            running = [
+                identity for identity, item in policy.programs.items()
+                if item.active and item.pending and not item.acting
+            ]
+            if running:
+                identity = rng.choice(running)
+                item, original = policy.programs[identity], router.programs[identity]
+                delta = rng.randrange(1, 501)
+                policy.generated(identity, item.tokens + delta)
+                router.update_program_tokens_streaming(original, delta)
+                progress += 1
+                if rng.random() < .4:
+                    policy.completed(identity, item.tokens, now=event * 5.)
+                    router.update_program_after_request(identity, original, original.total_tokens)
+                    completed += 1
+            elif active_acting := [
+                identity for identity, item in policy.programs.items() if item.active and item.acting
+            ]:
+                identity = rng.choice(active_acting)
+                item, original = policy.programs[identity], router.programs[identity]
+                tokens = item.tokens + rng.randrange(1, 101)
+                policy.arrive(identity, tokens, now=event * 5.)
+                # Exact pretokenized request ingress, as declared for the port.
+                original.total_tokens = tokens
+                original.step_count += 1
+                original.status = module.ProgramStatus.REASONING
+            await router._greedy_resume()
+            if backend.remaining_capacity() < 0:
+                await router._pause_until_safe(backend)
+            policy.tick(now=event * 5.)
+            actual = {
+                identity: (item.active, item.marked_for_pause, item.acting, item.tokens)
+                for identity, item in policy.programs.items()
+            }
+            expected = {
+                identity: (
+                    item.backend_url is not None, item.marked_for_pause,
+                    item.status is module.ProgramStatus.ACTING, item.total_tokens,
+                )
+                for identity, item in router.programs.items()
+            }
+            if actual != expected or policy.remaining_capacity() != backend.remaining_capacity():
+                raise ValueError(
+                    f"ThunderAgent streaming/completion control differs at case {case}, event {event}"
+                )
+    return {
+        "cases": cases, "events_per_case": events_per_case,
+        "control_state_comparisons": cases * events_per_case,
+        "streaming_token_updates": progress, "completed_call_updates": completed,
+        "all_equal": True,
+        "scope": "author_streaming_and_completion_methods_interleaved_with_actual_capacity_control",
+    }
+
+
 def compare_continuum(source_root, evidence):
     tree = checked_source(
         source_root / "continuum", "vllm/v1/core/estimate_with_func.py", "continuum", evidence,
@@ -286,6 +375,7 @@ def main():
     evidence = []
     module = native_thunder(args.source_root, evidence)
     thunder = asyncio.run(compare_thunder(module, cases=args.cases))
+    thunder_streaming = asyncio.run(compare_thunder_streaming(module, cases=args.cases))
     continuum = compare_continuum(args.source_root, evidence)
     continuum_queue = compare_continuum_queue_and_pressure(
         args.source_root, evidence, cases=args.cases,
@@ -295,6 +385,8 @@ def main():
         "candidate_sha256": sha(ROOT / "beliefkv/policy/paper_baselines.py"),
         "verifier_sha256": sha(Path(__file__)),
         "thunderagent": {"cases": len(thunder), "all_equal": True},
+        "thunderagent_streaming_and_completion": thunder_streaming,
+        "runtime_adapter_sha256": sha(ROOT / "beliefkv/runtime/paper_baseline.py"),
         "continuum_public": {"cases": len(continuum), "all_equal": True},
         "continuum_public_queue_and_pin_victim": continuum_queue,
         "continuum_physical_sha256": sha(ROOT / "beliefkv/runtime/continuum_pins.py"),

@@ -1,0 +1,9 @@
+FROM sha256:d622a4f6cc52a890e18ec07bc2d5bf90dde43c3a379a534c843d8a318be81bcd
+
+# These projects still import the pre-4.x mock_dynamodb2 API.
+RUN /opt/miniconda3/envs/testbed/bin/python -m pip install --no-cache-dir \
+    "moto[dynamodb,s3]==3.1.19" "pytest-django==4.8.0" \
+    "Flask==2.1.3" "Werkzeug==2.1.2" "responses==0.13.4" "xmltodict==0.13.0" \
+    && /opt/miniconda3/envs/testbed/bin/python -m pip check \
+    && /opt/miniconda3/envs/testbed/bin/python -c \
+    "from moto import mock_dynamodb, mock_dynamodb2, mock_s3; import pytest_django"

@@ -18,6 +18,7 @@ from beliefkv.experiments.causal_replay_sampling import (
 from beliefkv.experiments.causal_replay_tokens import (
     CapturedReplayRequest, CapturedTokenCorpus,
 )
+from beliefkv.experiments.workflow_metrics import StreamingWorkflowMetrics
 from beliefkv.runtime.clock_evidence import local_monotonic_clock_domain
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 
@@ -61,12 +62,16 @@ def verify_native_receipt(
         or any(type(token) is not int for token in receipt["output_token_ids"])
     ):
         raise ValueError("native replay executed different input or output tokens")
-    if (
-        not _same_wire(receipt.get("sampling_parameters"), captured.sampling_parameters)
-        or not _same_wire(receipt.get("native_finish_reason"), captured.native_finish_reason)
-        or not _same_wire(meta.get("finish_reason"), captured.native_finish_reason)
+    for name, expected, observed in (
+        ("stopping parameters", captured.sampling_parameters, receipt.get("sampling_parameters")),
+        ("native finish reason", captured.native_finish_reason, receipt.get("native_finish_reason")),
+        ("HTTP finish reason", captured.native_finish_reason, meta.get("finish_reason")),
     ):
-        raise ValueError("native replay changed original stopping or finish reason")
+        if not _same_wire(observed, expected):
+            raise ValueError(
+                f"native replay changed original {name}: expected {expected!r}, "
+                f"observed {observed!r}"
+            )
     if captured.generation_parameters is not None and (
         not _same_wire(receipt.get("generation_parameters"), captured.generation_parameters)
         or receipt.get("native_sampler_preserved") is not True
@@ -143,9 +148,14 @@ class CausalHTTPBackend:
     def __init__(
         self, corpus: CapturedTokenCorpus, client, emit_batch: Callable, *,
         observe_request: Callable[[dict], None] | None = None,
+        streaming: bool = False,
+        response_metrics: StreamingWorkflowMetrics | None = None,
     ) -> None:
         self.corpus, self.client, self._emit_batch = corpus, client, emit_batch
         self._observe_request = observe_request
+        if response_metrics is not None and not streaming:
+            raise ValueError("first-token metrics require streaming output")
+        self.streaming, self.response_metrics = streaming, response_metrics
         self._processor = CapturedOutputLogitsProcessor.to_str()
         self._invocations: dict[tuple[str, str], RuntimeEvent] = {}
         self._sessions: dict[tuple[str, str], tuple[str | None, int | None]] = {}
@@ -203,6 +213,8 @@ class CausalHTTPBackend:
                 ):
                     raise ValueError("resume or close lacks its dormant native context")
             await asyncio.to_thread(self._emit_batch, (event,))
+            if self.response_metrics is not None:
+                self.response_metrics.event(event)
             if event.kind is Kind.INVOCATION_CREATE:
                 if owner in self._invocations:
                     raise ValueError("duplicate visible invocation")
@@ -265,6 +277,38 @@ class CausalHTTPBackend:
             full_prompt_replay_guaranteed=True,
         )
 
+    async def _generate(self, payload, request):
+        if not self.streaming:
+            response = await self.client.post("/generate", json=payload)
+            response.raise_for_status()
+            return response.json()
+        payload["stream"] = True
+        final = None
+        async with self.client.stream("POST", "/generate", json=payload) as response:
+            response.raise_for_status()
+            async for line in response.aiter_lines():
+                if not line.startswith("data:"):
+                    continue
+                value = line[5:].strip()
+                if value == "[DONE]":
+                    break
+                chunk = json.loads(value)
+                meta = chunk.get("meta_info") if isinstance(chunk, dict) else None
+                if (
+                    not isinstance(meta, dict) or meta.get("id") != request
+                    or type(meta.get("completion_tokens")) is not int
+                    or meta["completion_tokens"] < 0
+                ):
+                    raise ValueError("streaming replay lacks request and cumulative usage")
+                if self.response_metrics is not None:
+                    self.response_metrics.progress(
+                        request, meta["completion_tokens"], time.monotonic() * 1000.,
+                    )
+                final = chunk
+        if final is None:
+            raise ValueError("streaming replay returned no native output")
+        return final
+
     async def execute(self, request: str, submit: RuntimeEvent) -> NativeReplayCompletion:
         context = submit.workflow_id, submit.context_id
         if (
@@ -284,10 +328,8 @@ class CausalHTTPBackend:
                 raise ValueError("native session changed without visible compaction")
             self._sessions[context] = session
             posted = True
-            response = await self.client.post("/generate", json=payload)
-            response.raise_for_status()
+            native_payload = await self._generate(payload, request)
             now = time.monotonic() * 1000.
-            native_payload = response.json()
             meta = native_payload.get("meta_info") if type(native_payload) is dict else None
             entries = meta.get(RECEIPT_KEY) if type(meta) is dict else None
             observed_generation = (
@@ -326,6 +368,8 @@ class CausalHTTPBackend:
                     })
             self._resume_rebind.discard(context)
             self.verified_requests.add(request)
+            if self.response_metrics is not None:
+                self.response_metrics.complete(request, receipt.output_tokens, now)
             if self._observe_request is not None:
                 self._observe_request({
                     "request_id": request, "submitted_monotonic_ms": started,
@@ -348,6 +392,9 @@ class CausalHTTPBackend:
                         "native_generation": generation,
                     },
                     "exact_tokens_verified": True,
+                    **({
+                        "response_metrics": self.response_metrics.request_summary(request),
+                    } if self.response_metrics is not None else {}),
                     "scope": "one native request only; not full replay qualification",
                 })
             return receipt

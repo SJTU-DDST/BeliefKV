@@ -1195,7 +1195,11 @@ class NativeReactiveTelemetry:
             raise RuntimeError(self._error) from exc
 
     def on_enqueue(self, req: Any) -> None:
-        if self._identity(req) is not None and req.rid not in self._pending:
+        # Retraction requeues the same call, retaining its original arrival.
+        if (
+            self._identity(req) is not None and req.rid not in self._pending
+            and req.rid not in self._active and req.rid not in self._completed
+        ):
             registered = time.time() * 1000
             self._pending[req.rid] = registered
             ingress = getattr(

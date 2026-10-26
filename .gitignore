@@ -31,6 +31,7 @@ experiments/micro/*
 experiments/smoke/*
 experiments/oracle/*
 experiments/replay/*
+experiments/prepared/*
 !experiments/archive/README.md
 
 # Hardware-keyed service artifacts are immutable experiment inputs, not source.
@@ -46,6 +47,7 @@ workloads/runtime/*
 workloads/sources/*
 # Generated LoCoBench source packs, references, and provenance.
 workloads/locobench_agent_*_root_scoped_*/
+workloads/locobench_agent_testable_candidates_20261025/
 workloads/assets/locobench_*_references/
 !workloads/raw/.gitkeep
 !workloads/frozen/.gitkeep

@@ -24,13 +24,14 @@ sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.internal_comparison import arm_environment
 from beliefkv.experiments.delegation_policy import (
-    DYNAMIC_NESTED_IN_GRAPH_PROFILE, NESTED_IN_GRAPH_PROFILE, REUSABLE_NESTED_IN_GRAPH_PROFILE,
+    DYNAMIC_NESTED_IN_GRAPH_PROFILES, NESTED_IN_GRAPH_PROFILE, REUSABLE_NESTED_IN_GRAPH_PROFILE,
 )
 from beliefkv.core.events import RuntimeEventKind as Kind
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
 from scripts import run_eos_pair_after_modules as pair
 from scripts.audit_causal_replay import audit as audit_graph
 from scripts.audit_replay_token_capture import audit as audit_tokens
+from scripts.qualify_locobench_environment import production_execution_evidence
 
 fresh, comparison = pair.fresh, pair.comparison
 qualified, reservation, load = pair.qualified, pair.reservation, pair.load
@@ -113,10 +114,48 @@ def project_disjoint_workload(path, *, expected_workflows=None):
     return manifest
 
 
-def declared_workload_inputs(path, *, require_disjoint=True):
+def declared_workload_inputs(
+    path, *, require_disjoint=True, require_test_execution=False,
+    require_production_execution=False, require_tool_execution=False,
+):
     manifest = validated_workload(path, require_disjoint=require_disjoint)
     inputs = [path]
+    tools = manifest.get("tool_environment_qualification")
+    if require_tool_execution and tools is None:
+        raise ValueError("declared source lacks live root/child tool qualification")
+    if tools is not None:
+        tool_report, tool_base = Path(tools["path"]), Path(tools["base_manifest"])
+        if (
+            sha256_file(tool_report) != tools["sha256"]
+            or sha256_file(tool_base) != tools["base_manifest_sha256"]
+        ):
+            raise ValueError("declared source tool evidence changed")
+        proof = load(tool_report)
+        if (
+            proof.get("tool_execution_passed") is not True
+            or proof.get("qualification_scope") != "live_root_child_tools"
+            or proof.get("manifest_sha256") != tools["base_manifest_sha256"]
+        ):
+            raise ValueError("declared source tools were not qualified")
+        for row in manifest["workloads"]:
+            observed = proof["projects"][row["source_repo"]]
+            image = row["docker_image"]
+            if (
+                observed.get("tool_execution_passed") is not True
+                or observed["source_commit"] != row["base_commit"]
+                or observed["docker_image_id"] != image
+                or observed["sandbox_environment"] != row.get("sandbox_environment", {})
+                or qualified.command(["docker", "image", "inspect", image, "--format", "{{.Id}}"]) != image
+            ):
+                raise ValueError("declared source tool configuration changed")
+        inputs.extend((tool_report, tool_base))
     environment = manifest.get("environment_qualification")
+    if require_test_execution and environment is None:
+        raise ValueError("declared source environment lacks test execution qualification")
+    if require_production_execution and (
+        environment is None or environment.get("production_execution_required") is not True
+    ):
+        raise ValueError("declared source environment lacks project execution qualification")
     if environment is not None:
         report_path, base_path = Path(environment["path"]), Path(environment["base_manifest"])
         if (
@@ -127,7 +166,13 @@ def declared_workload_inputs(path, *, require_disjoint=True):
         report = load(report_path)
         if (
             report.get("dependency_preflight_passed") is not True
+            or report.get("test_execution_passed") is not True
+            or environment.get("test_execution_required") is not True
             or report.get("manifest_sha256") != environment["base_manifest_sha256"]
+            or require_production_execution and (
+                report.get("production_execution_required") is not True
+                or report.get("production_execution_passed") is not True
+            )
         ):
             raise ValueError("declared source environment was not qualified")
         inputs.extend((report_path, base_path))
@@ -138,6 +183,15 @@ def declared_workload_inputs(path, *, require_disjoint=True):
             if (
                 evidence["docker_image_id"] != image
                 or evidence["source_commit"] != row["base_commit"]
+                or evidence.get("test_execution", {}).get("qualified") is not True
+                or evidence.get("original_test_command") != row.get("test_command")
+                or evidence.get("sandbox_environment", {}) != row.get("sandbox_environment", {})
+                or require_production_execution and (
+                    evidence.get("production_execution", {}).get("qualified") is not True
+                    or not production_execution_evidence(
+                        evidence.get("production_probe_result", {}),
+                    )["qualified"]
+                )
                 or qualified.command(["docker", "image", "inspect", image, "--format", "{{.Id}}"]) != image
             ):
                 raise ValueError("declared source environment image changed or is unavailable")
@@ -330,7 +384,7 @@ def observe(arm: Path, *, final=False, expected_capacity=None):
 
 
 def observe_completed_root_delegations(arm: Path, *, profile, checked):
-    if profile not in (DYNAMIC_NESTED_IN_GRAPH_PROFILE, REUSABLE_NESTED_IN_GRAPH_PROFILE):
+    if profile not in DYNAMIC_NESTED_IN_GRAPH_PROFILES:
         return
     for path in arm.glob("client_*/workflows/*/result.json"):
         if path in checked:
@@ -468,8 +522,14 @@ def oneshot_source(summary, graph, *, expected_workflows, expected_profile=NESTE
     )
     if type(minimum) is not int or minimum < 0:
         raise ValueError("invalid declared minimum root delegation count")
+    minimum_parallel = (summary.get("delegation_contract") or {}).get(
+        "minimum_completed_root_join_members", 0,
+    )
+    if type(minimum_parallel) is not int or minimum_parallel < 0:
+        raise ValueError("invalid declared minimum parallel root JOIN")
     root_delegations = None
-    if minimum:
+    root_join_fanout = None
+    if minimum or minimum_parallel:
         roots = {
             (node.event.workflow_id, node.event.invocation_id)
             for node in graph.nodes
@@ -490,6 +550,47 @@ def oneshot_source(summary, graph, *, expected_workflows, expected_profile=NESTE
             reasons.append("root_delegation_evidence_unavailable")
         if any(count < minimum for count in root_delegations.values()):
             reasons.append("root_did_not_delegate")
+        if minimum_parallel:
+            children, served, returned, satisfied, members = {}, set(), set(), set(), {}
+            for node in graph.nodes:
+                event = node.event
+                if event is None or event.attributes.get("runtime_internal"):
+                    continue
+                if (
+                    event.kind is Kind.INVOCATION_CREATE
+                    and event.parent_invocation_id is not None
+                ):
+                    children[(event.workflow_id, event.invocation_id)] = (
+                        event.parent_invocation_id, event.join_id,
+                    )
+                elif event.kind is Kind.LLM_RESULT:
+                    served.add((event.workflow_id, event.invocation_id))
+                elif event.kind is Kind.RETURN:
+                    returned.add((event.workflow_id, event.invocation_id))
+                elif event.kind is Kind.JOIN_SATISFIED:
+                    satisfied.add((event.workflow_id, event.join_id))
+                elif event.kind is Kind.JOIN_CREATE:
+                    members[(event.workflow_id, event.join_id)] = event.member_invocation_ids
+            root_join_fanout = {workflow: 0 for workflow in started}
+            for (workflow, join), member_ids in members.items():
+                if (workflow, join) not in satisfied:
+                    continue
+                parent_ids = {
+                    children.get((workflow, child), (None, None))
+                    for child in member_ids
+                }
+                if len(parent_ids) != 1:
+                    continue
+                parent, declared_join = next(iter(parent_ids))
+                if (workflow, parent) not in roots or declared_join != join:
+                    continue
+                actual = sum(
+                    (workflow, child) in served and (workflow, child) in returned
+                    for child in member_ids
+                )
+                root_join_fanout[workflow] = max(root_join_fanout[workflow], actual)
+            if any(count < minimum_parallel for count in root_join_fanout.values()):
+                reasons.append("root_parallel_join_requirement_unmet")
     return {
         "profile": "nested_oneshot", "accepted": not reasons, "reasons": reasons,
         "workflow_count": len(workflows),
@@ -498,6 +599,8 @@ def oneshot_source(summary, graph, *, expected_workflows, expected_profile=NESTE
         "root_rounds": summary.get("root_delegation_round_counts"),
         "minimum_root_delegations": minimum,
         "observed_root_delegations": root_delegations,
+        "minimum_completed_root_join_members": minimum_parallel,
+        "observed_completed_root_join_max_members": root_join_fanout,
         "root_delegation_return_deferrals": sum(
             (row.get("agent_control") or {}).get("root_delegation_return_deferrals", 0)
             for row in workflows
@@ -688,8 +791,6 @@ def register(args):
     if toolchain is not None and "scripts/preflight_cuda_sampling.py" not in sources:
         raise ValueError("sampling preflight source was not CPU-qualified")
     fresh._require_clean(ROOT)
-    if qualified.command(["git", "-C", str(ROOT), "branch", "--show-current"]) != "main":
-        raise ValueError("capture must freeze main")
     evidence = engine_evidence(args.engine, args.engine_report, args.engine_sources)
     revision = qualified.command(["git", "-C", str(ROOT), "rev-parse", "HEAD"])
     label = args.run_root.name.rsplit("_", 1)[-1]
@@ -703,7 +804,9 @@ def register(args):
         args.source_workload.resolve() if args.source_workload
         else Path(reference["arms"]["native_matched"]["WORKLOAD_MANIFEST"])
     )
-    workload_inputs = declared_workload_inputs(workload_path)
+    workload_inputs = declared_workload_inputs(
+        workload_path, require_tool_execution=True,
+    )
     subprocess.run(["git", "-C", str(ROOT), "worktree", "add", "--detach", str(checkout), revision],
                    check=True, capture_output=True)
     comparison.verify_cpu_snapshot(checkout, sources)

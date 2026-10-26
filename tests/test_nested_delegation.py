@@ -17,7 +17,7 @@ from beliefkv.core.events import RuntimeEventKind
 from beliefkv.experiments.agent_protocol import ActivationDeadline, LoopGuardPolicy
 from beliefkv.experiments.delegation_policy import (
     DYNAMIC_NESTED_IN_GRAPH_PROFILE, NESTED_COORDINATOR_ROLE,
-    NESTED_IN_GRAPH_PROFILE, delegation_contract,
+    NESTED_IN_GRAPH_PROFILE, SHORT_WORKSTREAM_IN_GRAPH_PROFILE, delegation_contract,
 )
 from beliefkv.experiments import deepagents_swebench as harness
 from beliefkv.runtime.deepagents_adapter import DeepAgentsRuntimeAdapter
@@ -78,6 +78,9 @@ class NestedFixtureModel(BaseChatModel):
                 "bounds": (kwargs.get("extra_body") or {}).get("beliefkv_task_fanout"),
                 "root_source_present": "ROOT_SOURCE_ONLY_SENTINEL" in system,
                 "root_phase_budget_present": "BOUNDED ROOT WORK PHASES" in system,
+                "short_root_prompt": "SHORT, EVIDENCE-DRIVEN WORKSTREAMS" in system,
+                "short_child_prompt": "SMALL CHILD DELIVERABLE" in system,
+                "short_task_prompt": "Assign one narrow deliverable per child." in system,
             })
 
         def call(name, args):
@@ -151,6 +154,7 @@ def configuration(tmp_path, profile=NESTED_IN_GRAPH_PROFILE):
     (NESTED_IN_GRAPH_PROFILE, True),
     (DYNAMIC_NESTED_IN_GRAPH_PROFILE, False),
     (DYNAMIC_NESTED_IN_GRAPH_PROFILE, True),
+    (SHORT_WORKSTREAM_IN_GRAPH_PROFILE, True),
 ])
 def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
     tmp_path, monkeypatch, deliver_control, profile, source_context,
@@ -171,7 +175,9 @@ def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
         control_sink=queued, native_radix_sessions=sessions,
     )
     model = NestedFixtureModel()
-    model._dynamic = profile == DYNAMIC_NESTED_IN_GRAPH_PROFILE
+    model._dynamic = profile in (
+        DYNAMIC_NESTED_IN_GRAPH_PROFILE, SHORT_WORKSTREAM_IN_GRAPH_PROFILE,
+    )
     model._adapter, model._sessions, model._closed = adapter, sessions, closed
     monkeypatch.setattr(harness, "_model", lambda *args: model)
     monkeypatch.setattr(harness, "make_summary_model", lambda model, **kwargs: model)
@@ -208,6 +214,19 @@ def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
             queued.close()
         audit.close()
     assert "Controlled root fixture report" in result["messages"][-1].content
+    if profile == SHORT_WORKSTREAM_IN_GRAPH_PROFILE:
+        assert all(
+            row["short_root_prompt"] and row["short_task_prompt"]
+            for row in model._requests if row["role"] == "root"
+        )
+        assert all(
+            row["short_child_prompt"] for row in model._requests
+            if row["role"] != "root"
+        )
+        assert all(
+            row["short_task_prompt"] for row in model._requests
+            if row["role"] == "direct"
+        )
 
     graph = RuntimeCausalContextGraph()
     parent_by_join = {}
@@ -374,13 +393,27 @@ def test_dynamic_contract_has_no_prescribed_rounds_roles_or_generation_bounds():
     assert contract["root_initial_tool_choice"] == contract["nested_initial_tool_choice"] == "auto"
     assert not contract["fixed_role_sequence"]
     assert contract["natural_final_response_rejected"]
-    assert contract["root_terminal_check"] == "require_completed_model_selected_join"
+    assert contract["root_terminal_check"] == "require_completed_model_selected_parallel_join"
     assert contract["root_retry_tool_choice"] == "task"
+    assert contract["root_retry_fanout_generation_bounds"] == [2, 4]
     assert contract["maximum_root_delegation_attempts"] == 2
     assert contract["maximum_spawn_depth"] == 2
-    assert contract["root_minimum_delegations_prompt"] == 1
+    assert contract["root_minimum_delegations_prompt"] == 2
+    assert contract["minimum_completed_root_join_members"] == 2
     assert contract["recommended_root_rounds"] == [2, 3]
     assert contract["nested_delegation_required_for_independent_subproblems"]
+
+
+def test_short_workstreams_keep_dynamic_graph_and_natural_tool_timing():
+    contract = delegation_contract(SHORT_WORKSTREAM_IN_GRAPH_PROFILE)
+    assert contract["root_round_target"] is None
+    assert contract["children_per_round"] is None
+    assert contract["root_initial_tool_choice"] == "auto"
+    assert contract["minimum_completed_root_join_members"] == 2
+    assert contract["child_work_budget_enforcement"] == "soft_reminders_then_natural_report"
+    assert contract["tool_duration_target_seconds"] is None
+    assert not contract["artificial_tool_delays"]
+    assert not contract["repeated_validation_without_new_evidence"]
 
 
 def test_dynamic_delegation_allows_final_response_without_any_spawn(tmp_path):

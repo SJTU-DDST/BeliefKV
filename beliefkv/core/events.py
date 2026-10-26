@@ -58,6 +58,14 @@ class EventConfidence(str, Enum):
     INFERRED = "inferred"
 
 
+_JOIN_EVENT_KINDS = frozenset((
+    RuntimeEventKind.JOIN_CREATE,
+    RuntimeEventKind.JOIN_WAIT,
+    RuntimeEventKind.JOIN_SATISFIED,
+    RuntimeEventKind.JOIN_TIMEOUT,
+))
+
+
 _EVENT_WIRE_FIELDS = frozenset((
     "event_id",
     "ts_ms",
@@ -204,3 +212,12 @@ class RuntimeEvent:
             ),
             attributes=attributes,
         )
+
+
+def is_unobserved_join_event(event: RuntimeEvent) -> bool:
+    """Keep reconstructed dependencies from authorizing online JOIN actions."""
+    return event.kind in _JOIN_EVENT_KINDS and (
+        event.confidence is EventConfidence.INFERRED
+        or event.attributes.get("online_observable") is False
+        or event.attributes.get("source") == "agentx_timestamp_inferred_join"
+    )

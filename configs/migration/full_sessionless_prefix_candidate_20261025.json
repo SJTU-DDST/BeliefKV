@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "candidate": "full_sessionless_observed_prefix",
+  "status": "cpu_integration_candidate_gpu_components_and_model_pending",
+  "performance_accepted": false,
+  "component_qualification": {
+    "registration": "experiments/raw/full_native_prefix_v227_20261025/registration.json",
+    "status": "queued_after_agentix_pressure",
+    "cpu_report": "experiments/reports/full_prefix_gpu_supervisor_all_baselines_cpu_20261025.xml",
+    "gpu_qualified": false,
+    "whole_model_qualified": false
+  },
+  "mode": "full",
+  "policy_overrides": {
+    "AGENT_ADMISSION": "thunderagent_retained",
+    "PREFILL_SCHEDULING_POLICY": "join_priority",
+    "TOOL_RESTORE_MODE": "execution",
+    "SESSIONLESS_PREFIX_MIGRATION": "1",
+    "EXECUTION_FRONTIER_RESTORE": "0",
+    "EXECUTION_HANDOFF": "0",
+    "JOIN_PREFETCH_TRIGGER": "observed_eos"
+  },
+  "physical_contract": {
+    "cache": "native_full_only_write_back",
+    "page_size": 1,
+    "owner": "workflow_context_epoch_and_native_namespace",
+    "fake_native_session_ids": false,
+    "d2h_ack_before_device_release": true,
+    "ready_shared_owner_excluded_from_proactive_demotion": true,
+    "restore_reserves_observed_admitted_input_plus_one_decode_step": true,
+    "restore_does_not_read_future_output_length": true,
+    "background_spawn_grants_offload_authority": false,
+    "inferred_join_boundaries_used": false
+  },
+  "control": {
+    "maintenance_interval_ms": 200,
+    "cold_owner_checks_per_round": 16,
+    "idle_lend_owner_checks_per_round": 16,
+    "delegator_checks_per_round": 4,
+    "delegator_backup_batch_bytes": 4294967296,
+    "cold_backup_batch_bytes": 134217728,
+    "observed_idle_lending_grace_seconds": 1,
+    "idle_lending_requires_no_eligible_compute_and_actual_waiter": true,
+    "ordinary_restore_binding": false
+  },
+  "required_before_full_model": [
+    "real native GPU/Host bytes through Full runtime ACK routing",
+    "native allocation and shared-owner demotion checks",
+    "real model admission and demand recovery lifecycle",
+    "source-bound frozen configuration and common published work"
+  ],
+  "workload_limitations": [
+    "AgentX timestamp-inferred JOINs remain driver-private",
+    "published fixed-length completion is not original semantic EOS",
+    "this declaration does not enable formal GPU comparison"
+  ]
+}

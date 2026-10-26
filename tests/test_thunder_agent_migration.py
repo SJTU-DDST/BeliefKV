@@ -144,6 +144,35 @@ def test_bounded_starvation_switches_only_a_safe_nonrunning_owner():
     assert policy.allowed("waiting") and not policy.agents["active"].active
 
 
+@pytest.mark.parametrize("capacity,admitted", [(1000, True), (700, False)])
+def test_observed_siblings_use_only_available_budget_without_pausing_ready_peer(capacity, admitted):
+    policy = ThunderAgentMigration(
+        capacity, retain_blocked=True, coadmit_join_children=True,
+    )
+    policy.observe_sibling_join("join", ("a", "b"), now=0.)
+    policy.arrive("a", 300, now=.1)
+    policy.arrive("large-peer", 800, now=.2)
+    policy.arrive("b", 300, now=.3)
+    assert policy.allowed("a")
+    assert policy.allowed("b") is admitted
+    assert policy.counts["sibling_coadmitted"] == int(admitted)
+    assert policy.used_tokens <= capacity
+    assert not policy.counts["paused"]
+    policy.forget_sibling_join("join")
+    assert not policy.observed_sibling_joins and not policy.observed_agent_joins
+
+
+def test_sibling_admission_never_waits_for_an_unsubmitted_sibling():
+    policy = ThunderAgentMigration(
+        1000, retain_blocked=True, coadmit_join_children=True,
+    )
+    policy.observe_sibling_join("join", ("a", "b"), now=0.)
+    policy.arrive("a", 300, now=.1)
+    policy.begin("a")
+    assert policy.agents["a"].in_flight
+    assert "b" not in policy.agents
+
+
 def test_starvation_does_not_rotate_all_old_waiters_or_immediately_readmit_a_victim():
     policy = ThunderAgentMigration(500, retain_blocked=True)
     for index, name in enumerate(("a", "b", "c")):

@@ -1,7 +1,9 @@
 import pytest
 
 from beliefkv.experiments.internal_comparison import validate_runtime
-from beliefkv.experiments.paper_baselines import DISABLED_POLICIES, RUNTIME_ARMS
+from beliefkv.experiments.paper_baselines import (
+    DISABLED_POLICIES, RUNTIME_ARMS, TOKENCAKE_PARAMETERS,
+)
 from scripts import run_causal_comparison as comparison
 from tests.test_causal_comparison import reference
 
@@ -43,6 +45,7 @@ def test_external_runtime_must_be_declared_and_cannot_pass_as_our_scheduler():
         "paper_baseline": {
             "policy": RUNTIME_ARMS["thunderagent"], "program_identity": "invocation_id",
             "future_information_used": False, "native_capacity_authority_preserved": True,
+            "streaming_context_accounting": "observed_native_outputs_at_arrival_and_five_second_control",
         },
     }
     validate_runtime("scheduler_only", observed, external_policy="thunderagent")
@@ -75,3 +78,39 @@ def test_concur_is_an_agent_window_with_explicit_join_compatibility(reference, t
     assert settings["BELIEFKV_CONCUR_INTERVAL_MS"] == "1000"
     assert "--enable-priority-scheduling" not in flags
     assert "--enable-beliefkv-admission" in flags
+
+
+def test_kvflow_runtime_constructor_accepts_its_separate_observed_graph_arm(reference, tmp_path):
+    settings, flags, _socket = comparison.environment(
+        reference, "kvflow_observed_graph", tmp_path, tmp_path, tmp_path, 18554, tmp_path,
+    )
+    assert settings["BELIEFKV_PAPER_BASELINE"] == "kvflow_paper_observed_graph"
+    assert settings["BELIEFKV_ENABLE_RESIDENT_FIRST"] == "0"
+    assert settings["BELIEFKV_ENABLE_PREPARE_HOST"] == "0"
+    result = comparison.preflight_runtime(settings, str(tmp_path))
+    assert result["actual_runtime_constructor_accepted"] is True
+    assert result["runtime_configuration_verified"] is True
+    assert "--enable-beliefkv-admission" in flags
+
+
+def test_tokencake_full_runtime_constructor_requires_its_explicit_parameters(reference, tmp_path):
+    with pytest.raises(ValueError, match="seven explicit serving parameters"):
+        comparison.environment(
+            reference, "tokencake_paper_observed", tmp_path, tmp_path, tmp_path, 18554, tmp_path,
+        )
+    values = {
+        "generation_budget": 16384, "context_limit": 262144, "running_limit": 8,
+        "prefill_token_budget": 16384, "chunked_prefill_tokens": 4096,
+        "policy_block_tokens": 1, "eviction_window_tokens": 128,
+    }
+    reference["arms"]["full"].update({
+        variable: str(values[name]) for name, variable in TOKENCAKE_PARAMETERS.items()
+    })
+    settings, flags, _ = comparison.environment(
+        reference, "tokencake_paper_observed", tmp_path, tmp_path, tmp_path, 18554, tmp_path,
+    )
+    result = comparison.preflight_runtime(settings, str(tmp_path))
+    assert result["actual_runtime_constructor_accepted"]
+    assert result["runtime_configuration_verified"]
+    assert "--enable-beliefkv-admission" in flags
+    assert settings["BELIEFKV_ENABLE_PREPARE_HOST"] == "0"

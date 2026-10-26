@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "policy": "tokencake_paper_observed_metadata",
+  "information_contract": "observed_events_or_explicit_application_metadata",
+  "parameters": {
+    "generation_budget": 16384,
+    "context_limit": 262144,
+    "running_limit": 24,
+    "prefill_token_budget": 16384,
+    "chunked_prefill_tokens": 4096,
+    "policy_block_tokens": 1,
+    "eviction_window_tokens": 128
+  },
+  "parameter_sources": {
+    "generation_budget": "Common configured MAX_COMPLETION_TOKENS budget; independent of recorded final output lengths and never a replay truncation rule.",
+    "context_limit": "Common native context_length.",
+    "running_limit": "Common max_running_requests.",
+    "prefill_token_budget": "Common max_prefill_tokens.",
+    "chunked_prefill_tokens": "Common chunked_prefill_size.",
+    "policy_block_tokens": "Common native page_size=1; policy capacity is expressed in native token slots.",
+    "eviction_window_tokens": "Pinned public OffloadConfig eviction_window_blocks=128 projected to common native page_size."
+  },
+  "paper_completion_choices": {
+    "upload_rank": "normalized_current_request_score_plus_normalized_deadline_urgency",
+    "pressure_release": "optional_upload_reservation_before_native_request_preemption",
+    "retry_after_pressure_steps": 8,
+    "unknown_tool_duration": "public_default_then_observed_duration_ewma",
+    "unknown_future_graph_metadata": "neutral_values",
+    "native_consumer_admission": "wait_for_outstanding_paper_prefix_h2d_then_native_demand_for_remaining_prefix"
+  }
+}

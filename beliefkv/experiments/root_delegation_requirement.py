@@ -15,6 +15,10 @@ from langgraph.channels.untracked_value import UntrackedValue
 from langgraph.types import Command
 from typing_extensions import NotRequired
 
+from beliefkv.experiments.delegation_policy import (
+    MINIMUM_ROOT_JOIN_MEMBERS, ROOT_RETRY_TASK_FANOUT,
+)
+
 
 ROOT_DELEGATION_PRIVATE_KEYS = frozenset({
     "root_delegation_retry_pending", "root_delegation_required_task_attempts",
@@ -32,7 +36,7 @@ class RootDelegationState(AgentState[Any]):
 
 
 class RootDelegationRequirementMiddleware(AgentMiddleware[RootDelegationState, Any, Any]):
-    """Defer an undelegated final answer; let the model choose the actual task."""
+    """Require one real parallel root JOIN; let the model choose the work."""
 
     state_schema = RootDelegationState
 
@@ -51,7 +55,7 @@ class RootDelegationRequirementMiddleware(AgentMiddleware[RootDelegationState, A
         if (
             not request.state.get("root_delegation_retry_pending")
             or self._finalizing(request.state)
-            or self.adapter.has_completed_join()
+            or self.adapter.has_completed_join(minimum_members=MINIMUM_ROOT_JOIN_MEMBERS)
         ):
             return request, None
         attempt = int(request.state.get("root_delegation_required_task_attempts", 0)) + 1
@@ -59,15 +63,25 @@ class RootDelegationRequirementMiddleware(AgentMiddleware[RootDelegationState, A
             self.audit.emit(
                 "root_delegation_requirement_failed", reason="required_task_attempts_exhausted",
                 attempts=attempt - 1, successful_join_observed=False,
+                minimum_completed_join_members=MINIMUM_ROOT_JOIN_MEMBERS,
             )
             raise RuntimeError("root could not complete its required model-selected delegation")
         if sum(getattr(tool, "name", None) == "task" for tool in request.tools) != 1:
             raise RuntimeError("root delegation requirement needs exactly one task tool")
         self.audit.emit(
             "root_delegation_required_task_attempt", attempt=attempt,
-            model_selects_assignment=True, prescribed_fanout=None,
+            model_selects_assignment=True,
+            model_selected_fanout_bounds=list(ROOT_RETRY_TASK_FANOUT),
+            minimum_completed_join_members=MINIMUM_ROOT_JOIN_MEMBERS,
         )
-        return request.override(tool_choice="task"), attempt
+        settings = {
+            **request.model_settings, "parallel_tool_calls": True,
+            "extra_body": {
+                **(request.model_settings.get("extra_body") or {}),
+                "beliefkv_task_fanout": list(ROOT_RETRY_TASK_FANOUT),
+            },
+        }
+        return request.override(tool_choice="task", model_settings=settings), attempt
 
     @staticmethod
     def _record_attempt(response, attempt):
@@ -104,12 +118,13 @@ class RootDelegationRequirementMiddleware(AgentMiddleware[RootDelegationState, A
             not isinstance(last, AIMessage) or last.tool_calls or not last.text.strip()
         ):
             return None
-        if self.adapter.has_completed_join():
+        if self.adapter.has_completed_join(minimum_members=MINIMUM_ROOT_JOIN_MEMBERS):
             return None
         if self._finalizing(state):
             self.audit.emit(
                 "root_delegation_requirement_failed", reason="safety_finalization",
                 successful_join_observed=False,
+                minimum_completed_join_members=MINIMUM_ROOT_JOIN_MEMBERS,
             )
             return None
         attempts = int(state.get("root_delegation_required_task_attempts", 0))
@@ -117,22 +132,27 @@ class RootDelegationRequirementMiddleware(AgentMiddleware[RootDelegationState, A
             self.audit.emit(
                 "root_delegation_requirement_failed", reason="required_task_attempts_exhausted",
                 attempts=attempts, successful_join_observed=False,
+                minimum_completed_join_members=MINIMUM_ROOT_JOIN_MEMBERS,
             )
             raise RuntimeError("root returned without completing its required delegation")
         self.audit.emit(
             "root_delegation_return_deferred", attempts=attempts,
             successful_join_observed=False, model_selects_assignment=True,
+            minimum_completed_join_members=MINIMUM_ROOT_JOIN_MEMBERS,
         )
         return {
             "messages": [HumanMessage(content=(
-                "The collaboration requirement is not yet satisfied: no delegated "
-                "task has completed a real JOIN. Before your final answer, choose "
-                "one substantive independent investigation, review, or validation "
-                "using task. If you already have a candidate result, ask a child "
-                "to check a concrete property of it. Supply relevant paths, evidence, "
-                "and an exact deliverable. Integrate the returned report before "
-                "finalizing. Choose the assignment and specialist yourself; do not "
-                "repeat completed work or claim a failed delegation succeeded."
+                "The collaboration requirement is not yet satisfied: you must "
+                "complete at least one parallel JOIN with at least two substantive "
+                "task children. Separate one-child rounds do not satisfy this "
+                "requirement. Choose at least two independent investigation, review, "
+                "or validation deliverables and submit their task calls together "
+                "in ONE assistant response, before waiting for either report. "
+                "If you already have a candidate result, choose distinct properties "
+                "to review or validate. Supply relevant paths, evidence, and disjoint "
+                "write scopes. Integrate all reports before finalizing. Choose the "
+                "assignments and specialists yourself; do not repeat completed work "
+                "or claim a failed delegation succeeded."
             ))],
             "structured_response": None,
             "root_delegation_retry_pending": True,

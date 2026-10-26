@@ -63,7 +63,10 @@ def load_project(archive, metadata_path, *, python_minor_version=9):
         })
         if path.endswith(".py"):
             try:
-                ast.parse(text, filename=path, feature_version=(3, python_minor_version))
+                tree = ast.parse(
+                    text, filename=path, feature_version=(3, python_minor_version),
+                )
+                compile(tree, path, "exec", dont_inherit=True)
             except SyntaxError as error:
                 errors.append({"path": path, "line": error.lineno, "message": error.msg})
     return metadata, files, provenance, errors
@@ -228,7 +231,9 @@ def main():
             "task descriptions and read relevant files from the shared workspace"
         ),
         "code_transformation": "one whole-file Markdown fence removed; no semantic fixes or padding",
-        "python_ast_check": "syntax only; imports, tests and task correctness are not established",
+        "python_ast_check": (
+            "AST and compilation only; imports, tests and task correctness are not established"
+        ),
         "sandbox_python_feature_version": [3, args.sandbox_python_minor_version],
         "candidates": candidates, "qualified_projects": len(loaded),
         "requested_workflows": args.root_count,

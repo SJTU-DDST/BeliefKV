@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from beliefkv.core.events import RelationType, RuntimeEventKind as Kind
+from beliefkv.core.events import EventConfidence, RelationType, RuntimeEventKind as Kind
 from beliefkv.experiments.internal_comparison import arm_environment
 from beliefkv.runtime.sglang_v0520_admission import select_native_prefill_candidates
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime, _ExecutionHandoffTicket
@@ -13,11 +13,16 @@ from tests.test_internal_comparison import observed
 from tests.test_paper_baseline_runtime import request
 
 
-def runtime(monkeypatch, tmp_path, *, capacity=500, strategy="working_set"):
+def runtime(
+    monkeypatch, tmp_path, *, capacity=500, strategy="working_set",
+    coadmit_join_children=False, blocked_lending="idle",
+):
     settings = arm_environment({
         "AGENT_ADMISSION": strategy, "TOOL_RESTORE_MODE": "execution",
         "EXECUTION_FRONTIER_RESTORE": str(int(strategy != "thunderagent_retained")),
         "TOOL_CONTINUITY": "1",
+        "AGENT_COADMIT_JOIN_CHILDREN": str(int(coadmit_join_children)),
+        "AGENT_BLOCKED_LENDING": blocked_lending,
     }, "full")
     for name, value in settings.items():
         monkeypatch.setenv(name, value)
@@ -26,6 +31,43 @@ def runtime(monkeypatch, tmp_path, *, capacity=500, strategy="working_set"):
         tree_components=(0,), token_to_kv_pool_allocator=NS(size_full=capacity),
     ))
     return live
+
+
+@pytest.mark.parametrize("mode", ("all", "any"))
+@pytest.mark.parametrize("confidence", (EventConfidence.OBSERVED_EXACT, EventConfidence.INFERRED))
+def test_retained_sibling_coadmission_requires_an_observed_blocking_all_join(
+    monkeypatch, tmp_path, mode, confidence,
+):
+    live = runtime(
+        monkeypatch, tmp_path, capacity=1000, strategy="thunderagent_retained",
+        coadmit_join_children=True,
+    )
+    try:
+        live.on_events((
+            observed(0, Kind.WORKFLOW_START),
+            observed(1, Kind.INVOCATION_CREATE, invocation_id="parent", context_id="p"),
+            observed(2, Kind.INVOCATION_CREATE, invocation_id="a", context_id="a-context",
+                     parent_invocation_id="parent", relation_type=RelationType.SPAWN),
+            observed(3, Kind.INVOCATION_CREATE, invocation_id="b", context_id="b-context",
+                     parent_invocation_id="parent", relation_type=RelationType.SPAWN),
+            observed(4, Kind.JOIN_CREATE, join_id="join", member_invocation_ids=("a", "b"),
+                     attributes={"mode": mode}, confidence=confidence),
+            observed(5, Kind.JOIN_WAIT, invocation_id="parent", join_id="join",
+                     confidence=confidence),
+        ))
+        live.register_visible_request(request("a-one", "a", tokens=300, workflow="wf"))
+        live.register_visible_request(request("large", "other", tokens=800, workflow="other"))
+        live.register_visible_request(request("b-one", "b", tokens=300, workflow="wf"))
+        policy = live._agent_admission.policy
+        assert policy.allowed("a")
+        observed_all = mode == "all" and confidence is EventConfidence.OBSERVED_EXACT
+        assert policy.allowed("b") is observed_all
+        assert policy.counts["sibling_coadmitted"] == int(observed_all)
+        live.on_events((observed(6, Kind.JOIN_TIMEOUT, join_id="join", confidence=confidence),))
+        assert not policy.observed_sibling_joins
+        assert not policy.observed_agent_joins
+    finally:
+        live.close()
 
 
 def test_real_prefill_filters_paused_agents_and_preserves_full_migration_policies(monkeypatch, tmp_path, strategy="working_set"):
@@ -113,6 +155,46 @@ def test_real_join_releases_parent_and_restore_budget_is_bound_to_its_reentry(mo
         live.on_prefill_candidate_result(successor, admitted=True, result="CONTINUE")
         assert agents.policy.restore_owner is None
         assert "parent" not in live._join_priority_pending
+    finally:
+        live.close()
+
+
+@pytest.mark.parametrize("strategy", ("working_set", "thunderagent", "thunderagent_retained"))
+def test_inferred_join_does_not_release_parent_eligibility_or_grant_return_priority(
+    monkeypatch, tmp_path, strategy,
+):
+    live = runtime(monkeypatch, tmp_path, strategy=strategy)
+    try:
+        live.on_events((
+            observed(0, Kind.WORKFLOW_START),
+            observed(1, Kind.INVOCATION_CREATE, invocation_id="parent", context_id="parent-context"),
+            observed(2, Kind.INVOCATION_CREATE, invocation_id="child", context_id="child-context",
+                     parent_invocation_id="parent", relation_type=RelationType.SPAWN),
+        ))
+        parent = request("parent-one", "parent", tokens=300, workflow="wf")
+        live.register_visible_request(parent)
+        live.on_prefill_candidate_result(parent, admitted=True, result="CONTINUE")
+        live.on_batch_completed(NS(reqs=[parent]))
+        live.on_events((
+            observed(3, Kind.JOIN_CREATE, join_id="inferred", member_invocation_ids=("child",),
+                     confidence=EventConfidence.INFERRED,
+                     attributes={"source": "agentx_timestamp_inferred_join"}),
+            observed(4, Kind.JOIN_WAIT, invocation_id="parent", join_id="inferred",
+                     confidence=EventConfidence.INFERRED),
+        ))
+        agents = live._agent_admission
+        assert agents.policy.agents["parent"].active
+        assert "inferred" not in live.graph.joins
+        assert live.graph.invocations["parent"].state.value == "ready"
+        live.on_events((
+            observed(5, Kind.RETURN, invocation_id="child"),
+            observed(6, Kind.JOIN_SATISFIED, join_id="inferred",
+                     confidence=EventConfidence.INFERRED),
+        ))
+        assert agents.policy.agents["parent"].active
+        assert not live._join_priority_pending
+        assert not live._confirmed_join_tickets
+        assert live.counts["unobserved_join_event_ignored"] == 3
     finally:
         live.close()
 
@@ -455,3 +537,105 @@ def test_retained_runtime_rejects_direct_ordinary_restore_override(monkeypatch, 
     monkeypatch.setenv(setting, "1")
     with pytest.raises(ValueError, match="native ordinary demand recovery"):
         NativeAdmissionRuntime()
+
+
+def test_retained_tool_warming_keeps_original_eligibility_without_new_restore_reservation(
+    monkeypatch, tmp_path,
+):
+    live = runtime(monkeypatch, tmp_path, strategy="thunderagent_retained")
+    try:
+        live.on_events((
+            observed(0, Kind.WORKFLOW_START),
+            observed(1, Kind.INVOCATION_CREATE, invocation_id="one", context_id="one-context"),
+        ))
+        req = request("first", "one", tokens=100, workflow="wf")
+        live.register_visible_request(req)
+        live.on_batch_completed(NS(reqs=[req]))
+        live.on_events((observed(
+            2, Kind.TOOL_START, invocation_id="one", attributes={"tool_run_id": "tool"},
+        ),))
+        agents = live._agent_admission
+        key = agents.latest["one"]
+        reserve = Mock(wraps=agents.policy.reserve_restore)
+        agents.policy.reserve_restore = reserve
+        assert agents.claim_restore(key, source="tool_wait")
+        assert agents.holds_restore(key, source="tool_wait")
+        assert not agents.holds_restore(replace(key, context_epoch=key.context_epoch + 1),
+                                        source="tool_wait")
+        assert agents.policy.restore_owner is None
+        reserve.assert_not_called()
+        agents.policy.agents["one"].active = False
+        assert not agents.claim_restore(key, source="tool_wait")
+        agents.policy.agents["one"].active = True
+        live.on_events((observed(
+            3, Kind.TOOL_END, invocation_id="one", attributes={"tool_run_id": "tool"},
+        ),))
+        assert not agents.holds_restore(key, source="tool_wait")
+    finally:
+        live.close()
+
+
+def test_retained_full_can_enable_conditional_tools_without_enabling_ordinary_frontier(
+    monkeypatch, tmp_path,
+):
+    settings = arm_environment({
+        "AGENT_ADMISSION": "thunderagent_retained", "TOOL_RESTORE_MODE": "speculative",
+        "TOOL_PREFETCH_PRIORITY_MS": "1500", "AGENT_COADMIT_JOIN_CHILDREN": "1",
+    }, "full")
+    for name, value in settings.items():
+        monkeypatch.setenv(name, value)
+    live = NativeAdmissionRuntime(event_socket_path=str(tmp_path / "conditional.sock"))
+    try:
+        assert live.enable_tool_prefetch and live.tool_prefetch_priority_ms == 1500
+        assert live.coadmit_join_children
+        assert not live.enable_frontier_restore and not live.enable_execution_handoff
+    finally:
+        live.close()
+
+
+@pytest.mark.parametrize("change", (None, "siblings", "tool_eligibility", "priority_window"))
+def test_conditional_tool_candidate_observer_checks_its_effective_settings(
+    monkeypatch, tmp_path, change,
+):
+    from scripts import run_causal_comparison as comparison
+
+    monkeypatch.setattr(comparison.comparison, "observe_arm", lambda *_a, **_k: None)
+    agents = {
+        "policy": "thunderagent_retained_with_native_migration",
+        "identity": "invocation_id", "future_information_used": False,
+        "native_capacity_authority_preserved": True,
+        "counts": {"registered": 2, "completed": 2},
+        "blocked_agents_retain_eligibility": True, "control_interval_ms": 5000.,
+        "maintenance_interval_ms": 1000, "restore_reservation_ms": 1500,
+        "restore_reservation_scope": "join_eos_only", "ordinary_restore_reservation_ms": 0,
+        "coadmit_join_children": True,
+        "tool_warming_eligibility": "existing_active_tool_wait_only_no_new_reservation",
+    }
+    actual = {"agent_admission": agents, "tool_prefetch_priority_ms": 1500.}
+    if change == "siblings":
+        agents["coadmit_join_children"] = False
+    elif change == "tool_eligibility":
+        agents["tool_warming_eligibility"] = "selected_agent_restore_reservation"
+    elif change == "priority_window":
+        actual["tool_prefetch_priority_ms"] = 0.
+    monkeypatch.setattr(comparison.qualified, "last_runtime_state", lambda _path: actual)
+    plan = {
+        "reference_environment": {
+            "AGENT_ADMISSION": "thunderagent_retained", "AGENT_COADMIT_JOIN_CHILDREN": "1",
+            "TOOL_PREFETCH": "1", "TOOL_RESTORE_MODE": "speculative",
+        },
+        "source_plan": {"requests": 2}, "tool_prefetch_priority_ms": 1500.,
+    }
+    if change is None:
+        comparison.observed_configuration(plan, "full", tmp_path, final=True)
+    else:
+        with pytest.raises(ValueError):
+            comparison.observed_configuration(plan, "full", tmp_path, final=True)
+
+
+@pytest.mark.parametrize("mode", ("scheduler_only", "join_priority_only", "kv_only", "native_matched"))
+def test_sibling_admission_is_full_only(mode):
+    settings = arm_environment({
+        "AGENT_ADMISSION": "thunderagent_retained", "AGENT_COADMIT_JOIN_CHILDREN": "1",
+    }, mode)
+    assert settings["BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN"] == "0"

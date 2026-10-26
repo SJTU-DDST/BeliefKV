@@ -47,24 +47,63 @@ def full_native(monkeypatch, request):
         mem_pool_host=group, write_policy="write_back",
         write_queue=[], load_queue=[], ack_write_queue=[], ack_load_queue=[],
         load_fence_stream=object(), resume_beliefkv_loading=Mock(),
+        layer_done_counter=NS(
+            num_counters=3, producer_index=-1,
+            events=[NS(finish_event=NS(query=lambda: True)) for _ in range(3)],
+        ),
     )
     writes, commits = install_production_cpu_controller(cache)
     loads = []
+    native_write = cache.cache_controller.write
+    native_start_writing = cache.cache_controller.start_writing
+
+    def child_receipts(operations):
+        if not any(getattr(op, "beliefkv_command_id", None) is not None for op in operations):
+            return ()
+        return tuple(NS(
+            command_id=getattr(op, "beliefkv_command_id", None), node_id=op.node_id,
+            num_tokens_by_pool=(("kv", len(op.device_indices)),),
+            num_bytes=len(op.device_indices) * group.size_per_token,
+        ) for op in operations)
+
+    def start_writing():
+        queued = tuple(cache.cache_controller.write_queue)
+        native_start_writing()
+        if queued:
+            cache.cache_controller.ack_write_queue[-1].child_receipts = child_receipts(queued)
+
+    cache.cache_controller.start_writing = Mock(side_effect=start_writing)
+
+    def write(device_indices, **kwargs):
+        host_indices = native_write(device_indices, **kwargs)
+        operation = writes[-1]
+        operation.node_ids = [kwargs["node_id"]]
+        operation.beliefkv_command_id = kwargs.get("beliefkv_command_id")
+        before_enqueue = kwargs.get("beliefkv_before_enqueue")
+        if before_enqueue is not None and not before_enqueue(operation):
+            cache.cache_controller.write_queue.pop()
+            writes.pop()
+            return None
+        return host_indices
+
+    cache.cache_controller.write = write
 
     def load(host_indices, **kwargs):
         assert kwargs["extra_pools"] is None
         assert kwargs["beliefkv_no_device_reclaim"] is (
             kwargs["beliefkv_command_id"] is not None
         )
+        indices = allocator.alloc(len(host_indices))
+        assert indices is not None
         operation = NS(
             node_id=kwargs["node_id"], host_indices=host_indices.clone(),
+            node_ids=[kwargs["node_id"]], device_indices=indices,
             beliefkv_command_id=kwargs["beliefkv_command_id"],
         )
         before_enqueue = kwargs["beliefkv_before_enqueue"]
         if before_enqueue is not None and not before_enqueue(operation):
+            allocator.free(indices)
             return None
-        indices = allocator.alloc(len(host_indices))
-        assert indices is not None
         loads.append(operation)
         cache.cache_controller.load_queue.append(operation)
         return indices
@@ -74,10 +113,14 @@ def full_native(monkeypatch, request):
             "complete", "eager", "pipeline",
         )
         queue = cache.cache_controller.load_queue
+        counter = cache.cache_controller.layer_done_counter
+        counter.producer_index = (counter.producer_index + 1) % counter.num_counters
+        assert counter.events[counter.producer_index].finish_event.query()
         cache.cache_controller.ack_load_queue.append(NS(
             node_ids=[op.node_id for op in queue],
             finish_event=NS(synchronize=Mock()), timing_enabled=False,
             num_tokens_by_pool={"kv": sum(len(op.host_indices) for op in queue)},
+            child_receipts=child_receipts(queue),
             num_bytes=sum(len(op.host_indices) for op in queue) * 64,
             submit_ts_ms=None, submit_mono=None, unacked_bytes_at_submit=0,
         ))

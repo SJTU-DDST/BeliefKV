@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "candidate": "thunderagent_workflow",
+  "status": "cpu_candidate_gpu_validation_pending_healthy_workload",
+  "performance_accepted": false,
+  "mode": "full",
+  "policy_overrides": {
+    "AGENT_ADMISSION": "thunderagent_workflow",
+    "PREFILL_SCHEDULING_POLICY": "join_priority",
+    "TOOL_RESTORE_MODE": "execution",
+    "EXECUTION_FRONTIER_RESTORE": "0",
+    "EXECUTION_HANDOFF": "0",
+    "JOIN_PREFETCH_TRIGGER": "observed_eos"
+  },
+  "workflow_service_targets": {
+    "first_submit_to_first_service_seconds": 30,
+    "post_start_submitted_ready_gap_seconds": 15,
+    "minimum_agent_eligibility_tenure_seconds": 15,
+    "handover_control_interval_seconds": 5,
+    "hard_slo_guarantee": false,
+    "parameters_calibrated_by_gpu_comparison": false
+  },
+  "workload_requirements": {
+    "simultaneous_roots": 18,
+    "distinct_original_projects": 18,
+    "running_decode_limit": 24,
+    "model": "Qwen3-Coder-30B-A3B-Instruct",
+    "seed": 21,
+    "parallel_model_served_returned_children_per_root_minimum": 2,
+    "actual_test_execution_qualified": true,
+    "complete_population_currently_qualified": false
+  },
+  "acceptance": [
+    "same complete requests, tokens, dependencies and stopping conditions",
+    "first-service latency and post-start ready-gap tails improve together",
+    "complete mean workflow JCT improves with all normal tails retained",
+    "whole-run output throughput does not regress across repeated comparisons",
+    "no correctness failure, fake production implementation or artificial tool delay",
+    "report control cost, repeated H2D, old-input recomputation and deferred opportunities"
+  ]
+}

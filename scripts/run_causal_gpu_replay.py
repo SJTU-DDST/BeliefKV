@@ -20,11 +20,14 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.core.events import RuntimeEvent
+from beliefkv.experiments.agentx_replay import load_agentx_preparation
+from beliefkv.experiments.agentx_tokens import AgentXTokenCorpus
 from beliefkv.experiments.causal_replay import compile_causal_replay, execute_causal_replay
 from beliefkv.experiments.causal_replay_backend import CausalHTTPBackend
 from beliefkv.experiments.causal_replay_delivery import ReplayEventDelivery
 from beliefkv.experiments.causal_replay_tokens import CapturedTokenCorpus
 from beliefkv.experiments.source_provenance import sha256_file
+from beliefkv.experiments.workflow_metrics import StreamingWorkflowMetrics
 from beliefkv.runtime.event_channel import (
     JsonlRuntimeEventSink, UnixDatagramRuntimeEventSink,
 )
@@ -67,14 +70,30 @@ def source_plan(arm: Path):
 async def run(args) -> dict:
     if args.output_dir.exists():
         raise FileExistsError("preserve existing replay artifacts")
-    plan, expected, evidence = source_plan(args.source_arm)
+    agentx = getattr(args, "agentx_prepared", None) is not None
+    if agentx:
+        plan, timing, _, preparation = load_agentx_preparation(args.agentx_prepared)
+        expected = None
+        evidence = {
+            "source_kind": "agentx_published_lengths_and_hashes",
+            "prepared_source": str(args.agentx_prepared),
+            "source_preparation_sha256": sha256_file(args.agentx_prepared / "preparation.json"),
+            "source_plan_sha256": preparation["artifacts"]["plan.json"],
+            "source_full_sha256": preparation["source_full_sha256"],
+            "native_source_capture_required": False,
+            "independent_task_correctness_verified": False,
+        }
+    else:
+        plan, expected, evidence = source_plan(args.source_arm)
+        timing = None
     if not args.base_url.startswith("http://127.0.0.1:"):
         raise ValueError("native replay requires an explicit local server port")
     args.output_dir.mkdir(parents=True, exist_ok=False)
     with ExitStack() as stack:
-        corpus = stack.enter_context(CapturedTokenCorpus(
-            args.source_arm / "server/request_tokens.jsonl", expected,
-        ))
+        corpus = stack.enter_context(
+            AgentXTokenCorpus(args.agentx_token_dir, args.agentx_prepared) if agentx
+            else CapturedTokenCorpus(args.source_arm / "server/request_tokens.jsonl", expected)
+        )
         log = stack.enter_context(JsonlRuntimeEventSink(
             args.output_dir / "runtime_events.replay.jsonl",
         ))
@@ -98,10 +117,16 @@ async def run(args) -> dict:
             base_url=args.base_url.rstrip("/"), timeout=httpx.Timeout(args.request_timeout_s),
             limits=httpx.Limits(max_connections=128, max_keepalive_connections=0),
         ) as client:
-            backend = CausalHTTPBackend(corpus, client, emit, observe_request=record)
+            response_metrics = StreamingWorkflowMetrics() if agentx else None
+            backend = CausalHTTPBackend(
+                corpus, client, emit, observe_request=record, streaming=agentx,
+                response_metrics=response_metrics,
+            )
             failure = None
             try:
-                result = await execute_causal_replay(plan, backend.execute, backend.emit)
+                result = await execute_causal_replay(
+                    plan, backend.execute, backend.emit, timing_policy=timing,
+                )
             except BaseException as error:
                 failure = error
                 raise
@@ -125,7 +150,10 @@ async def run(args) -> dict:
         result.update(
             **evidence, observed_at=datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(),
             source_plan=plan.summary(), token_source=corpus.evidence,
-            exact_tokens_verified=True, original_native_stopping_verified=True,
+            exact_tokens_verified=True, original_native_stopping_verified=not agentx,
+            published_length_stopping_verified=agentx,
+            benchmark_content_synthetic=agentx,
+            streaming_response_metrics=response_metrics.summary() if response_metrics else None,
             native_session_http_lifecycle_completed=True,
             physical_session_release_acknowledged=False,
             session_closes=backend.session_closes,
@@ -149,10 +177,19 @@ async def run(args) -> dict:
                     "beliefkv/experiments/causal_replay_tokens.py",
                     "beliefkv/runtime/replay_token_capture.py",
                     "configs/causal_replay_plugin/pyproject.toml",
+                    "beliefkv/experiments/agentx_replay.py",
+                    "beliefkv/experiments/agentx_tokens.py",
+                    "beliefkv/experiments/replay_timing.py",
+                    "beliefkv/experiments/workflow_metrics.py",
                 )
             },
             scope=(
+                (
+                    "Published AgentX lengths, fixed synthetic benchmark tokens and causal delivery. "
+                    "Original content, original EOS and original application correctness are unavailable. "
+                ) if agentx else
                 "Exact native request work, stopping and causal delivery only. "
+            ) + (
                 "Server source, actual GPU execution, policy configuration and "
                 "same-work comparison require a separately qualified operator."
             ),
@@ -162,7 +199,10 @@ async def run(args) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--source-arm", type=Path, required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--source-arm", type=Path)
+    source.add_argument("--agentx-prepared", type=Path)
+    parser.add_argument("--agentx-token-dir", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--base-url", required=True)
     parser.add_argument("--event-socket", type=Path)
@@ -170,7 +210,13 @@ def main():
     args = parser.parse_args()
     if not 0 < args.request_timeout_s <= 3600.:
         parser.error("request timeout must be in (0, 3600] seconds")
-    args.source_arm = args.source_arm.resolve()
+    if (args.agentx_prepared is None) != (args.agentx_token_dir is None):
+        parser.error("AgentX replay requires both its prepared plan and offline token bundle")
+    if args.source_arm is not None:
+        args.source_arm = args.source_arm.resolve()
+    if args.agentx_prepared is not None:
+        args.agentx_prepared = args.agentx_prepared.resolve()
+        args.agentx_token_dir = args.agentx_token_dir.resolve()
     args.output_dir = args.output_dir.resolve()
     if args.output_dir.exists():
         parser.error("preserve existing replay artifacts")

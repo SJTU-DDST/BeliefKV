@@ -306,6 +306,13 @@ class ThunderWorkingSet:
             item.marked_for_pause = False
             self._pause(item, _number(now, "completion"))
 
+    def generated(self, identity: str, tokens: int) -> None:
+        item = self.programs[identity]
+        size = _integer(tokens, "observed streaming context", minimum=1)
+        if not item.pending or item.acting or not item.active or size < item.tokens:
+            raise ValueError("invalid observed ThunderAgent streaming progress")
+        item.tokens = size
+
     def _resume(self) -> tuple[str, ...]:
         capacity = self.remaining_capacity()
         if capacity <= self.buffer_tokens:

@@ -98,17 +98,45 @@ def arm_environment(
         raise ValueError("tool continuity grace must be in [0, 1000] ms")
     grace = grace if custom_kv and continuity == "1" else "0"
     native = mode == "native_matched"
+    sessionless_prefix = common.get(
+        "BELIEFKV_SESSIONLESS_PREFIX_MIGRATION", common.get("SESSIONLESS_PREFIX_MIGRATION", "0"),
+    )
+    if sessionless_prefix not in ("0", "1"):
+        raise ValueError("sessionless prefix migration must be 0 or 1")
     agent_admission = common.get("BELIEFKV_AGENT_ADMISSION", common.get("AGENT_ADMISSION", "off"))
-    if agent_admission not in ("off", "working_set", "thunderagent", "thunderagent_retained"):
+    if agent_admission not in (
+        "off", "working_set", "thunderagent", "thunderagent_retained", "thunderagent_workflow",
+    ):
         raise ValueError("unsupported agent working-set admission")
     agent_admission = agent_admission if mode == "full" else "off"
-    if agent_admission == "thunderagent_retained" and frontier == "1":
+    siblings = common.get(
+        "BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN", common.get("AGENT_COADMIT_JOIN_CHILDREN", "0"),
+    )
+    if siblings not in ("0", "1"):
+        raise ValueError("JOIN sibling admission must be 0 or 1")
+    siblings = str(int(siblings == "1" and agent_admission == "thunderagent_retained"))
+    blocked_lending = common.get(
+        "BELIEFKV_AGENT_BLOCKED_LENDING", common.get("AGENT_BLOCKED_LENDING", "idle"),
+    )
+    if blocked_lending not in ("idle", "backed_demand", "backed_demand_recall"):
+        raise ValueError("unsupported blocked agent lending policy")
+    if mode == "full" and blocked_lending != "idle" and agent_admission != "thunderagent_retained":
+        raise ValueError("backed blocked lending requires retained agent admission")
+    blocked_lending = blocked_lending if agent_admission == "thunderagent_retained" else "idle"
+    if agent_admission in ("thunderagent_retained", "thunderagent_workflow") and frontier == "1":
         raise ValueError("retained agent admission uses native ordinary demand recovery")
+    if agent_admission == "thunderagent_workflow" and scheduling != "join_priority":
+        raise ValueError("workflow agent admission requires declared JOIN priority ordering")
     settings = {
         **common,
         "BELIEFKV_INTERNAL_COMPARISON_MODE": mode,
         "AGENT_ADMISSION": agent_admission,
         "BELIEFKV_AGENT_ADMISSION": agent_admission,
+        "AGENT_COADMIT_JOIN_CHILDREN": siblings,
+        "BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN": siblings,
+        "AGENT_BLOCKED_LENDING": blocked_lending,
+        "BELIEFKV_AGENT_BLOCKED_LENDING": blocked_lending,
+        "BELIEFKV_SESSIONLESS_PREFIX_MIGRATION": sessionless_prefix if mode == "full" else "0",
         "NATIVE_POLICY_BASELINE": str(int(native)),
         "AB_MODE": "off" if native or not custom_kv else "predictive_h2d",
         "BELIEFKV_CHAT_TOKEN_BLOCK_CACHE": "1",

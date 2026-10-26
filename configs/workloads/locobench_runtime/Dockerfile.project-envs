@@ -1,0 +1,7 @@
+FROM sha256:d7699a143c7ce17e1d50d8b33ff9cd373bc0c924353db0f339b48663cc0adba8
+
+RUN /opt/miniconda3/envs/testbed/bin/python -m pip install --no-cache-dir \
+    "markdown2==2.4.13" "slowapi==0.1.9" "wheel==0.43.0" \
+    && /opt/miniconda3/envs/testbed/bin/python -m pip check
+
+ENV PYTEST_ADDOPTS="--asyncio-mode=auto"

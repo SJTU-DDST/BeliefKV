@@ -5,6 +5,10 @@ from types import SimpleNamespace
 import pytest
 
 from beliefkv.experiments.source_provenance import sha256_file
+from beliefkv.experiments.delegation_policy import (
+    DYNAMIC_NESTED_IN_GRAPH_PROFILE, NESTED_IN_GRAPH_PROFILE,
+    SHORT_WORKSTREAM_IN_GRAPH_PROFILE,
+)
 from scripts import run_position_replay_calibration as calibration
 from tests.test_causal_comparison import reference
 
@@ -217,8 +221,9 @@ def test_predeclared_oneshot_metrics_use_the_actual_complete_population(
 
 
 @pytest.mark.parametrize("profile", (
-    calibration.capture.NESTED_IN_GRAPH_PROFILE,
-    calibration.capture.DYNAMIC_NESTED_IN_GRAPH_PROFILE,
+    NESTED_IN_GRAPH_PROFILE,
+    DYNAMIC_NESTED_IN_GRAPH_PROFILE,
+    SHORT_WORKSTREAM_IN_GRAPH_PROFILE,
 ))
 @pytest.mark.parametrize("change", (None, "wrong_profile", "guard", "incomplete"))
 def test_predeclared_watch_uses_registered_profile_before_token_or_gpu_work(
@@ -318,6 +323,71 @@ def test_queued_oneshot_command_reaches_the_real_comparison_parser_without_nativ
     assert args.sampling_mode == "position"
 
 
+@pytest.mark.parametrize("accepted", (False, True))
+def test_source_opportunity_review_precedes_gpu_resource_or_model_work(
+    complete_source, monkeypatch, accepted,
+):
+    from contextlib import nullcontext
+
+    source, root, summary = complete_source
+    original = json.loads(source.read_bytes())
+    original["environment"] = {
+        "ROOT_COUNT": "36", "FANOUT_PROFILE": SHORT_WORKSTREAM_IN_GRAPH_PROFILE,
+    }
+    source.write_text(json.dumps(original))
+    summary["subagent_fanout_profile"] = SHORT_WORKSTREAM_IN_GRAPH_PROFILE
+    (root / "native_capture/client_36/summary.json").write_text(json.dumps(summary))
+    registration = root.parent / "calibration.json"
+    review_path = root.parent / "source-review.json"
+    run = root.parent / "calibration"
+    registration.write_text(json.dumps({
+        "source_registration": str(source), "source_arm": str(root / "native_capture"),
+        "source_selection_policy": "predeclared", "run_root": str(run),
+        "source_opportunity_audit_path": str(review_path),
+        "port": 18645,
+    }))
+    graph = SimpleNamespace(
+        nodes=[SimpleNamespace(event=SimpleNamespace(
+            kind=calibration.capture.Kind.WORKFLOW_START, workflow_id=row["workflow_id"],
+        )) for row in summary["workflows"]],
+        summary=lambda: {"event_counts": {"join_create": 75}},
+    )
+    monkeypatch.setattr(calibration.signal, "signal", lambda *_args: None)
+    monkeypatch.setattr(calibration.comparison, "verify_sources", lambda _plan: None)
+    monkeypatch.setattr(calibration, "source_ready", lambda _plan: True)
+    monkeypatch.setattr(calibration, "complete_source_metrics", lambda _path: {})
+    monkeypatch.setattr(calibration.controls, "source_plan", lambda _arm: (graph, {}, {}))
+    monkeypatch.setattr(calibration.controls, "CapturedTokenCorpus", lambda *_args: nullcontext())
+    reached = []
+    review = {
+        "accepted_for_full_probe": accepted,
+        "review_reasons": [] if accepted else ["no_recovery"],
+    }
+
+    def source_boundary(arm, *, expected_workflows):
+        assert arm == root / "native_capture" and expected_workflows == 36
+        reached.append("source_review")
+        return review
+
+    def resource_boundary(_port):
+        reached.append("gpu_resources")
+        raise RuntimeError("CPU stopped at the GPU resource boundary")
+
+    monkeypatch.setattr(calibration, "audit_predictive_source", source_boundary)
+    monkeypatch.setattr(calibration.qualified, "resources", resource_boundary)
+    calibration.watch(registration)
+    state = json.loads(registration.with_suffix(".state.json").read_bytes())
+    assert json.loads(review_path.read_bytes()) == review
+    assert state["source_opportunity_review"]["sha256"] == sha256_file(review_path)
+    assert state["status"] == "stopped_for_investigation"
+    assert reached == (["source_review", "gpu_resources"] if accepted else ["source_review"])
+    assert not run.exists()
+    expected_error = (
+        "GPU resource boundary" if accepted else "source lacks observed native recovery"
+    )
+    assert expected_error in state["error"]
+
+
 @pytest.mark.parametrize("change", (
     None, "wrong_sampler", "missing_request", "different_stop_count", "changed_receipts",
     "unverified_tokens", "missing_server",
@@ -395,7 +465,7 @@ def check_predeclared_calibration(
     (arm / "server").mkdir()
     (arm / "client_18/summary.json").write_text(json.dumps({
         "completed_workflows": 18,
-        "subagent_fanout_profile": calibration.capture.DYNAMIC_NESTED_IN_GRAPH_PROFILE,
+        "subagent_fanout_profile": DYNAMIC_NESTED_IN_GRAPH_PROFILE,
         "workflows": [
             {"workflow_id": value, "native_agent_jct_eligible": True} for value in roots
         ],
@@ -414,7 +484,7 @@ def check_predeclared_calibration(
     source.write_text(json.dumps({
         "environment": {
             "ROOT_COUNT": "18",
-            "FANOUT_PROFILE": calibration.capture.DYNAMIC_NESTED_IN_GRAPH_PROFILE,
+            "FANOUT_PROFILE": DYNAMIC_NESTED_IN_GRAPH_PROFILE,
         },
     }))
     reference_path = tmp_path / "reference.json"

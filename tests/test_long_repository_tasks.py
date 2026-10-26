@@ -65,6 +65,32 @@ def test_import_checks_the_sandbox_python_version(tmp_path):
         assert errors == []
 
 
+@pytest.mark.parametrize(("source", "expected_error"), [
+    ("def test_client():\n    async with client:\n        pass\n", "outside async function"),
+    ("def test_client():\n    await client()\n", "outside async function"),
+    ("return 1\n", "outside function"),
+    ("raise RuntimeError('the importer must not execute this')\n", None),
+])
+def test_import_compiles_without_executing_project_code(tmp_path, source, expected_error):
+    path = tmp_path / "data.zip"
+    prefix = "data/generated/python_example/"
+    with zipfile.ZipFile(path, "w") as archive:
+        archive.writestr(prefix + "project_metadata.json", json.dumps({
+            "specification": {"unique_id": "python_example"},
+            "files": [{"path": "tests/test_entry.py"}],
+        }))
+        archive.writestr(prefix + "tests/test_entry.py", source)
+    with zipfile.ZipFile(path) as archive:
+        _, files, _, errors = load_project(archive, prefix + "project_metadata.json")
+    assert files["tests/test_entry.py"] == source
+    if expected_error is None:
+        assert errors == []
+    else:
+        assert len(errors) == 1
+        assert errors[0]["path"] == "tests/test_entry.py"
+        assert expected_error in errors[0]["message"]
+
+
 def test_only_public_task_fields_are_exposed_and_context_is_hash_bound(tmp_path):
     public = scenario_prompt({
         "title": "Repair synchronization", "description": "Observed stale state.",
@@ -202,7 +228,8 @@ def test_only_root_receives_frozen_source_while_children_share_workspace(
     if profile == "native_in_graph_dynamic_nested":
         from beliefkv.experiments.child_work_budget import ChildWorkBudgetMiddleware
 
-        assert "Every root workflow MUST delegate at least one substantive task" in roots[0]["system_prompt"]
+        assert "Every root workflow MUST complete at least one parallel delegation round" in roots[0]["system_prompt"]
+        assert "Two separate one-child rounds do not satisfy this requirement." in roots[0]["system_prompt"]
         assert roots[0]["system_prompt"].index("SOURCE_SENTINEL") < roots[0]["system_prompt"].index(
             "DYNAMIC MULTI-ROUND DELEGATION",
         )

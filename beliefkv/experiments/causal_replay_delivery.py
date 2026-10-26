@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from threading import Lock
 
-from beliefkv.core.events import RuntimeEventKind as Kind
+from beliefkv.core.events import RuntimeEventKind as Kind, is_unobserved_join_event
 from beliefkv.runtime.event_channel import QueuedRuntimeEventSink
 
 
@@ -12,6 +13,20 @@ ASYNC_REENTRY = frozenset((
     Kind.TOOL_END, Kind.RETURN, Kind.JOIN_SATISFIED, Kind.LLM_SUBMIT, Kind.LLM_RESULT,
 ))
 BARRIERS = frozenset((Kind.WORKFLOW_END, Kind.CONTEXT_COMPACT))
+JOIN_INFORMATION_CONTRACT = "observed_runtime_join_boundaries_only_v1"
+
+
+def control_event_counts(events):
+    """Declare exact private and online event populations before a new run."""
+    online, private = Counter(), Counter()
+    for event in events:
+        counts = private if is_unobserved_join_event(event) else online
+        counts[event.workflow_id] += 1
+    return {
+        "join_information_contract": JOIN_INFORMATION_CONTRACT,
+        "online_event_batches_by_workflow": dict(sorted(online.items())),
+        "private_join_events_by_workflow": dict(sorted(private.items())),
+    }
 
 
 class ReplayEventDelivery:
@@ -20,11 +35,22 @@ class ReplayEventDelivery:
         self._factory = transport_factory
         self._queues = {}
         self._lock = Lock()
+        self._private_joins = Counter()
 
     def emit_batch(self, events):
         if not events:
             return
         self._log(events)
+        visible = []
+        with self._lock:
+            for event in events:
+                if is_unobserved_join_event(event):
+                    self._private_joins[event.workflow_id] += 1
+                else:
+                    visible.append(event)
+        events = tuple(visible)
+        if not events:
+            return
         if self._factory is None:
             return
         workflows = {event.workflow_id for event in events}
@@ -50,6 +76,8 @@ class ReplayEventDelivery:
     def summary(self):
         return {
             "mode": "per_workflow_harness_queued" if self._factory else "trace_only",
+            "join_information_contract": JOIN_INFORMATION_CONTRACT,
+            "private_join_events_by_workflow": dict(sorted(self._private_joins.items())),
             "workflows": {
                 workflow: queue.timing_summary()
                 for workflow, queue in self._queues.items()

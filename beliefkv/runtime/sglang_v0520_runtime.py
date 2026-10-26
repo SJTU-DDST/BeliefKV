@@ -22,7 +22,7 @@ from uuid import uuid4
 from beliefkv.control.causal_graph import (
     GraphDelta, InvocationState, RuntimeCausalContextGraph,
 )
-from beliefkv.core.events import RelationType, RuntimeEventKind
+from beliefkv.core.events import RelationType, RuntimeEventKind, is_unobserved_join_event
 from beliefkv.policy.causal_frontier import CausalFrontierScheduler
 from beliefkv.predictor.composer import observed_boundary_action
 from beliefkv.predictor.completion_lead import (
@@ -908,27 +908,62 @@ class NativeAdmissionRuntime:
         paper_policy = os.environ.get("BELIEFKV_PAPER_BASELINE", "")
         self._paper_baseline = None
         self._agent_admission = None
+        self._full_prefix_migration = None
         agent_policy = os.environ.get("BELIEFKV_AGENT_ADMISSION", "off")
-        if agent_policy not in ("off", "working_set", "thunderagent", "thunderagent_retained"):
+        if agent_policy not in (
+            "off", "working_set", "thunderagent", "thunderagent_retained",
+            "thunderagent_workflow",
+        ):
             raise ValueError("unsupported declared agent admission policy")
-        if agent_policy == "thunderagent_retained" and (
+        if agent_policy in ("thunderagent_retained", "thunderagent_workflow") and (
             self.enable_frontier_restore or self.enable_execution_handoff
         ):
             raise ValueError("retained agent admission uses native ordinary demand recovery")
+        if (
+            agent_policy == "thunderagent_workflow"
+            and self.prefill_scheduling_policy != "join_priority"
+        ):
+            raise ValueError("workflow agent admission requires declared JOIN priority ordering")
         self.enable_agent_working_set = agent_policy != "off"
+        sibling_setting = os.environ.get("BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN", "0")
+        if sibling_setting not in ("0", "1") or (
+            sibling_setting == "1" and agent_policy != "thunderagent_retained"
+        ):
+            raise ValueError("JOIN sibling admission requires retained agent eligibility")
+        self.coadmit_join_children = sibling_setting == "1"
+        blocked_lending = os.environ.get("BELIEFKV_AGENT_BLOCKED_LENDING", "idle")
+        if blocked_lending not in ("idle", "backed_demand", "backed_demand_recall") or (
+            blocked_lending != "idle" and agent_policy != "thunderagent_retained"
+        ):
+            raise ValueError("backed blocked lending requires retained agent admission")
+        self.agent_blocked_lending = blocked_lending
         if self.enable_agent_working_set:
             if (
                 paper_policy or self.internal_comparison_mode != "full"
-                or self.tool_restore_mode != "execution"
+                or self.tool_restore_mode != "execution" and agent_policy not in (
+                    "thunderagent_retained", "thunderagent_workflow",
+                )
             ):
                 raise ValueError("agent working-set admission requires Full execution recovery")
             from beliefkv.runtime.agent_working_set import AgentAdmission
 
-            self._agent_admission = AgentAdmission(self, strategy=agent_policy)
+            self._agent_admission = AgentAdmission(
+                self, strategy=agent_policy, coadmit_join_children=self.coadmit_join_children,
+                blocked_lending=blocked_lending,
+            )
         if paper_policy:
             from beliefkv.runtime.paper_baseline import create_adapter
 
             self._paper_baseline = create_adapter(self, paper_policy)
+        prefix_setting = os.environ.get("BELIEFKV_SESSIONLESS_PREFIX_MIGRATION", "0")
+        if prefix_setting not in ("0", "1"):
+            raise ValueError("sessionless prefix migration must be 0 or 1")
+        if prefix_setting == "1":
+            if self._agent_admission is None or not self._custom_kv_management or paper_policy:
+                raise ValueError("sessionless prefix migration requires Full agent admission")
+            from beliefkv.runtime.full_prefix_migration import FullPrefixMigration
+
+            self._full_prefix_migration = FullPrefixMigration(self)
         self.event_server = (
             RuntimeEventDatagramServer(
                 event_socket_path, self.on_events, timing=self._hotpath_timing,
@@ -982,6 +1017,8 @@ class NativeAdmissionRuntime:
             self.join_wait_hints[hint.join_id] = hint
 
     def close(self) -> None:
+        if self._full_prefix_migration is not None:
+            self._full_prefix_migration.close()
         if (agents := getattr(self, "_agent_admission", None)) is not None:
             agents.close()
         if (paper := getattr(self, "_paper_baseline", None)) is not None:
@@ -1165,6 +1202,14 @@ class NativeAdmissionRuntime:
             paper.attach(cache)
         if self._agent_admission is not None:
             self._agent_admission.attach(cache)
+        if self._full_prefix_migration is not None:
+            self._full_prefix_migration.attach(cache)
+
+    def attach_native_scheduler(self, scheduler: object) -> None:
+        paper = getattr(self, "_paper_baseline", None)
+        bind = getattr(paper, "bind_scheduler", None)
+        if bind is not None:
+            bind(scheduler)
 
     def _next_physical_command_id(self, kind: str) -> str:
         namespace = self._physical_command_namespace
@@ -1194,6 +1239,8 @@ class NativeAdmissionRuntime:
         self._capacity_waiting_queue = waiting_queue
         if running_batch is not None:
             self._native_running_batch = running_batch
+        if self._full_prefix_migration is not None:
+            self._full_prefix_migration.dispatch()
         if self._subagent_retention is not None:
             self._subagent_retention.dispatch(self)
         critical_before = self._critical_parent_demand
@@ -1279,6 +1326,13 @@ class NativeAdmissionRuntime:
         ))
 
     def idle_poll_timeout_ms(self) -> int:
+        if self._full_prefix_migration is not None:
+            if self._full_prefix_migration.transfers is not None and (
+                self._full_prefix_migration.transfers.receipts.pending_count
+            ):
+                return 10
+            if self._full_prefix_migration.contexts:
+                return 200
         if self.physical_ledger.pending_count:
             return 10
         if self._spawn_full_prepares:
@@ -1302,6 +1356,9 @@ class NativeAdmissionRuntime:
         filtered = []
         submitted_origins = None
         for event in events:
+            if is_unobserved_join_event(event):
+                self.counts["unobserved_join_event_ignored"] += 1
+                continue
             if self.internal_comparison_mode == "join_priority_only" and (
                 event.attributes.get(SEMANTIC_TEXT) is True
                 or event.kind is RuntimeEventKind.STRUCTURED_ACTION
@@ -1469,6 +1526,9 @@ class NativeAdmissionRuntime:
             if self._tool_continuity is not None:
                 self._tool_continuity.clear()
             self._spawn_full_prepares.clear()
+            if self._full_prefix_migration is not None:
+                for identity in tuple(self._full_prefix_migration.contexts):
+                    self._full_prefix_migration.forget(identity)
             if self._subagent_retention is not None:
                 # Losing the causal mirror revokes every physical authority.
                 self._subagent_retention.states.clear()
@@ -1594,6 +1654,8 @@ class NativeAdmissionRuntime:
                         self._subagent_retention.close_context(event)
                 if event.kind in (RuntimeEventKind.SPAWN, RuntimeEventKind.CALL):
                     self._queue_spawn_prepare(event)
+                elif event.kind is RuntimeEventKind.JOIN_WAIT:
+                    self._queue_join_wait_prepare(event)
                 if self._online_tool_timing is not None:
                     self._online_tool_timing.observe(event)
                 if self._model_worker is not None and event.invocation_id is not None:
@@ -1974,6 +2036,8 @@ class NativeAdmissionRuntime:
             paper.events(events)
         if self._agent_admission is not None:
             self._agent_admission.events(events)
+        if self._full_prefix_migration is not None:
+            self._full_prefix_migration.events(events)
 
     def _clear_semantic_invocation(self, invocation_id: str) -> None:
         for rid, key in tuple(self._semantic_keys.items()):
@@ -2007,7 +2071,11 @@ class NativeAdmissionRuntime:
             and child.context_id == key.context_id
             and context is not None and context.epoch == key.context_epoch
             and context.workflow_id == key.root_workflow_id
-            and self.context_sessions.get(key.context_id) == key
+            and (
+                self.context_sessions.get(key.context_id) == key
+                or self._full_prefix_migration is not None
+                and self._full_prefix_migration.bound_key(key.context_id) == key
+            )
             and (
                 self.visible.get(key.request_id) == key
                 or ended is not None and now_ms - ended[0] <= 2_000
@@ -2546,6 +2614,10 @@ class NativeAdmissionRuntime:
                     self._agent_admission.status() if self._agent_admission is not None else None
                 ),
                 "agent_admission_enabled": self.enable_agent_working_set,
+                "full_prefix_migration": (
+                    self._full_prefix_migration.status()
+                    if self._full_prefix_migration is not None else None
+                ),
                 "join_parent_priority": self.enable_join_parent_priority,
                 "join_last_child_priority": self.enable_join_last_child_priority,
                 "prefill_scheduling_policy": self.prefill_scheduling_policy,
@@ -2597,7 +2669,10 @@ class NativeAdmissionRuntime:
                     if self._subagent_retention is not None else None
                 ),
                 "h2d_opportunity_sampling": self.enable_h2d_opportunity_sampling,
-                "prepare_pool_scope": "missing_full_session_path",
+                "prepare_pool_scope": (
+                    "observed_full_prefix_or_session_path"
+                    if self._full_prefix_migration is not None else "missing_full_session_path"
+                ),
                 "spawn_full_prepare": {
                     "pending_contexts": len(self._spawn_full_prepares),
                     "max_batch_bytes": SPAWN_FULL_PREPARE_MAX_BYTES,
@@ -6231,7 +6306,10 @@ class NativeAdmissionRuntime:
                 )
                 self.counts["wait_prefetch_backed_capacity_probe"] += 1
             self._publish_parent_pressure_candidates(exclude_node_ids=excluded)
-            with self._queued_full_donor_scope(key):
+            with (
+                nullcontext() if source == "tool_wait"
+                else self._queued_full_donor_scope(key)
+            ):
                 freed = reclaim(
                     full_tokens=max(
                         opportunity.required_full_tokens + budget.reserve_full_tokens,
@@ -6450,7 +6528,10 @@ class NativeAdmissionRuntime:
         collect_diagnostics = (
             self._opportunity_writer is not None and self.enable_h2d_opportunity_sampling
         )
-        with self._queued_full_donor_scope(key):
+        with (
+            nullcontext() if source == "tool_wait"
+            else self._queued_full_donor_scope(key)
+        ):
             freed = reclaim(
                 full_tokens=target_tokens + budget.reserve_full_tokens,
                 mamba_slots=budget.reserve_mamba_slots,
@@ -6791,6 +6872,40 @@ class NativeAdmissionRuntime:
         except (AttributeError, IndexError, KeyError, RuntimeError, TypeError, ValueError):
             return False
         return self._live_parent_pressure_key(record[0])
+
+    @timed_runtime("agent_blocked_backing_probe")
+    def _agent_blocked_prefix_backed(self, key: PrefillCandidateKey) -> bool:
+        if not self._live_parent_pressure_key(key):
+            return False
+        anchors = self.snapshot_session_anchors(
+            self._native_cache, context_id=key.context_id, context_epoch=key.context_epoch,
+        )
+        if anchors is None or type(anchors.reusable_input_tokens) is not int:
+            return False
+        candidate = capture_action_local_shadow(
+            self._native_cache, anchors, max_nodes=64, include_non_actionable=True,
+        )
+        if candidate is None or candidate.missing_full_host_tokens:
+            return False
+        self.counts["agent_blocked_backing_probe_nodes"] += len(candidate.nodes)
+        nodes = {node.node_id: node for node in candidate.nodes}
+        ongoing = getattr(self._native_cache, "ongoing_write_through", {})
+        for node in candidate.nodes:
+            if (
+                type(node.key_tokens) is not int or node.key_tokens < 0
+                or node.full_host_tokens != node.key_tokens
+                or node.node_id in ongoing
+                or node.pending_write_id is not None or node.pending_load_id is not None
+            ):
+                return False
+        for leaf, _ in dict(anchors.component_leaves).get(0, ()):
+            covered, node = 0, nodes.get(leaf)
+            while node is not None:
+                covered += node.key_tokens
+                node = nodes.get(node.parent_id)
+            if covered >= anchors.reusable_input_tokens > 0:
+                return True
+        return False
 
     def _live_parent_pressure_key(self, key: PrefillCandidateKey) -> bool:
         parent = self.graph.invocations.get(key.invocation_id)
@@ -7791,6 +7906,43 @@ class NativeAdmissionRuntime:
         ):
             self.counts["spawn_full_prepare_unbound"] += 1
             return
+        self._enqueue_delegator_prepare(key)
+
+    def _queue_join_wait_prepare(self, event: RuntimeEvent) -> None:
+        if (
+            not self.enable_prepare_host or not self.enable_background_prepare
+            or self.physical_disabled or event.attributes.get("runtime_internal")
+            or is_unobserved_join_event(event)
+        ):
+            return
+        parent = self.graph.invocations.get(event.invocation_id)
+        join = self.graph.joins.get(event.join_id)
+        if (
+            parent is None or parent.state is not InvocationState.WAIT_JOIN
+            or join is None or join.satisfied or parent.join_id != join.join_id
+            or parent.invocation_id not in join.waiter_invocation_ids
+            or parent.workflow_id != event.workflow_id or join.workflow_id != event.workflow_id
+        ):
+            self.counts["join_wait_full_prepare_not_blocked"] += 1
+            return
+        key = self.context_sessions.get(parent.context_id)
+        workflow = self.graph.workflows.get(event.workflow_id)
+        if (
+            key is None or key.invocation_id != parent.invocation_id
+            or key.root_workflow_id != event.workflow_id
+            or event.context_id is not None and event.context_id != key.context_id
+            or event.context_epoch is not None and event.context_epoch != key.context_epoch
+            or key.session_id is None or key.session_generation is None
+            or workflow is None or workflow.end_ts_ms is not None
+        ):
+            self.counts["join_wait_full_prepare_unbound"] += 1
+            return
+        # Background SPAWN need not park its parent. Refresh the incremental
+        # checkpoint when the observed JOIN actually parks that continuation.
+        self._enqueue_delegator_prepare(key)
+        self.counts["join_wait_full_prepare_queued"] += 1
+
+    def _enqueue_delegator_prepare(self, key: PrefillCandidateKey) -> None:
         if self._spawn_full_prepares.get(key.context_id) == key:
             self.counts["spawn_full_prepare_coalesced"] += 1
             return
@@ -7800,6 +7952,8 @@ class NativeAdmissionRuntime:
 
     def dispatch_spawn_prepare(self) -> None:
         """Back a known delegator's published FULL without waiting for pressure."""
+        if self._full_prefix_migration is not None:
+            self._full_prefix_migration.dispatch()
         if (
             not self.enable_prepare_host or not self.enable_background_prepare
             or self.physical_disabled or not self._spawn_full_prepares
@@ -7873,13 +8027,17 @@ class NativeAdmissionRuntime:
                 if self._opportunity_writer is not None:
                     self._opportunity_writer.record({
                         "event": "spawn_full_prepare", "ts_ms": time.time() * 1000.,
+                        "trigger_kind": (
+                            "blocked_join_wait" if invocation.state is InvocationState.WAIT_JOIN
+                            else "delegation_backup"
+                        ),
                         "workflow_id": key.root_workflow_id, "invocation_id": key.invocation_id,
                         "context_id": key.context_id, "context_epoch": key.context_epoch,
                         "session_id": key.session_id, "session_generation": key.session_generation,
                         "native_nodes": issued, "include_mamba": False,
                         "max_batch_bytes": SPAWN_FULL_PREPARE_MAX_BYTES,
                         "max_merged_nodes": result["max_merged_nodes"],
-                        "scope": "spawn-triggered incremental FULL backup; no device capacity released",
+                        "scope": "delegator incremental FULL backup; no eligibility change or device capacity released",
                     })
                 break
             self.counts[f"spawn_full_prepare_no_issue:{result['reason']}"] += 1
@@ -8220,6 +8378,11 @@ class NativeAdmissionRuntime:
         next_possible_window_ms = math.inf
         inflight_contexts = self.physical_ledger.pending_h2d_contexts
         for hint in self.tool_wait_hints.values():
+            if self._agent_admission is not None and self._agent_admission.strategy in (
+                "thunderagent_retained", "thunderagent_workflow",
+            ) and not self._agent_admission.holds_restore(hint.key, source="tool_wait"):
+                self.counts["tool_prefetch_outside_retained_eligibility"] += 1
+                continue
             if hint.key in self._tool_inflight_tickets or (
                 hint.key.context_id, hint.key.session_id, hint.key.session_generation,
             ) in inflight_contexts:
@@ -8804,7 +8967,9 @@ class NativeAdmissionRuntime:
             nonlocal registered
             if self.event_server is not None:
                 self.event_server.drain(max_messages=128)
-            if self._agent_admission is not None and not self._agent_admission.holds_restore(step.key):
+            if self._agent_admission is not None and not self._agent_admission.holds_restore(
+                step.key, source=source,
+            ):
                 self.counts["agent_restore_invalidated_before_enqueue"] += 1
                 return False
             if self.refreshed_prefetch_gpu_step(
@@ -9160,7 +9325,9 @@ class NativeAdmissionRuntime:
                 if not self._live_wait_prefetch(key, source):
                     self.counts["prefetch_causal_invalidated_before_enqueue"] += 1
                     return False
-                if self._agent_admission is not None and not self._agent_admission.holds_restore(key):
+                if self._agent_admission is not None and not self._agent_admission.holds_restore(
+                    key, source=source,
+                ):
                     self.counts["agent_restore_invalidated_before_enqueue"] += 1
                     return False
                 self.physical_ledger.register(expected)
@@ -10958,10 +11125,45 @@ class NativeAdmissionRuntime:
         self.counts["admission_prefetch_issued"] += 1
         return True
 
+    def _fail_native_transfer_receipt(self, commit, error, live_epochs, live_sessions):
+        self.physical_disabled = True
+        self._discard_prefetch_tracking("physical_receipt_failure")
+        for command in tuple(self._prefetch_service_leases):
+            self._release_prefetch_service_lease(command, "physical_receipt_failure")
+        self.counts["physical_receipt_failed"] += 1
+        if self._opportunity_writer is not None:
+            self._opportunity_writer.record({
+                "event": "physical_receipt_failure",
+                "ts_ms": time.time() * 1000, "error": str(error),
+                "direction": getattr(commit, "direction", None),
+                "live_context_epochs": live_epochs,
+                "live_context_sessions": live_sessions,
+            })
+
     def on_native_transfer_commit(
         self, commit: object
     ) -> tuple[PhysicalActionCompleted, ...]:
         """Observe synchronized native ACKs, never infer completion from enqueue."""
+        if self._full_prefix_migration is not None:
+            try:
+                handled = self._full_prefix_migration.transfer_completed(commit)
+            except PhysicalReceiptError as error:
+                self._fail_native_transfer_receipt(commit, error, {}, {})
+                return ()
+            if handled is True:
+                self.counts["full_prefix_native_commits_completed"] += 1
+                return ()
+        paper = getattr(self, "_paper_baseline", None)
+        callback = getattr(paper, "transfer_completed", None)
+        if callback is not None:
+            try:
+                handled = callback(commit)
+            except PhysicalReceiptError as error:
+                self._fail_native_transfer_receipt(commit, error, {}, {})
+                return ()
+            if handled is True:
+                self.counts["paper_native_commits_completed"] += 1
+                return ()
         if self.physical_disabled:
             return ()
         live_epochs = {
@@ -11014,19 +11216,7 @@ class NativeAdmissionRuntime:
                 native_cache=cache,
             )
         except PhysicalReceiptError as error:
-            self.physical_disabled = True
-            self._discard_prefetch_tracking("physical_receipt_failure")
-            for command in tuple(self._prefetch_service_leases):
-                self._release_prefetch_service_lease(command, "physical_receipt_failure")
-            self.counts["physical_receipt_failed"] += 1
-            if self._opportunity_writer is not None:
-                self._opportunity_writer.record({
-                    "event": "physical_receipt_failure",
-                    "ts_ms": time.time() * 1000, "error": str(error),
-                    "direction": getattr(commit, "direction", None),
-                    "live_context_epochs": live_epochs,
-                    "live_context_sessions": live_sessions,
-                })
+            self._fail_native_transfer_receipt(commit, error, live_epochs, live_sessions)
             return ()
         completed = tuple(
             replace(action, source=self._prefetch_steps[action.command_id][1])
@@ -11191,6 +11381,8 @@ class NativeAdmissionRuntime:
             paper.registered(req, key)
         if self._agent_admission is not None:
             self._agent_admission.registered(req, key)
+        if self._full_prefix_migration is not None:
+            self._full_prefix_migration.registered(req, key)
         return True
 
     def _terminal(self, key: PrefillCandidateKey) -> bool:
@@ -11293,6 +11485,8 @@ class NativeAdmissionRuntime:
                 requeued(requests, is_retracted=is_retracted)
         if self._agent_admission is not None:
             self._agent_admission.requeued(requests, is_retracted=is_retracted)
+        if self._full_prefix_migration is not None:
+            self._full_prefix_migration.requeued(requests)
 
     def _forget_session(self, request_id: str) -> None:
         self._visible_since.pop(request_id, None)
@@ -11811,6 +12005,10 @@ class NativeAdmissionRuntime:
             if self.prefill_scheduling_policy in ("join_priority", "workflow_completion") or candidate is not None:
                 if self.prefill_scheduling_policy != "workflow":
                     self._order_tool_continuation(
+                        ordered, keys, now=now, protected_head=critical_head,
+                    )
+                if self._agent_admission is not None:
+                    self._agent_admission.order_ready(
                         ordered, keys, now=now, protected_head=critical_head,
                     )
                 return compile_native_prefill_plan(
@@ -12393,12 +12591,23 @@ class NativeAdmissionRuntime:
         self.counts["prefill_capacity_bypassed"] += 1
         return True
 
+    def allow_native_prefill_candidate(
+        self, req: object, *, running_batch: object, adder: object
+    ) -> bool:
+        paper = getattr(self, "_paper_baseline", None)
+        callback = getattr(paper, "allow_candidate", None)
+        return callback is None or callback(
+            req, running_batch=running_batch, adder=adder,
+        ) is True
+
     def on_prefill_candidate_result(
         self, req: object, *, admitted: bool, result: str
     ) -> bool:
         """Report whether rejected admission released optional device locks."""
         if admitted and self._agent_admission is not None:
             self._agent_admission.admitted(req)
+        if admitted and self._full_prefix_migration is not None:
+            self._full_prefix_migration.admitted(req)
         if (paper := getattr(self, "_paper_baseline", None)) is not None:
             callback = getattr(paper, "candidate_result", None)
             if callback is not None:
@@ -12618,6 +12827,8 @@ class NativeAdmissionRuntime:
             selected = getattr(paper, "selected", None)
             if selected is not None:
                 selected(batch)
+        if self._agent_admission is not None:
+            self._agent_admission.selected(batch)
         ticket = self._frontier_restore_consumer
         if ticket is None or batch is None:
             return
@@ -12837,9 +13048,15 @@ class NativeAdmissionRuntime:
             paper.completed(batch, completed_ids or ())
         if self._agent_admission is not None:
             self._agent_admission.completed(batch, completed_ids or ())
+        if self._full_prefix_migration is not None:
+            self._full_prefix_migration.completed(batch, completed_ids or ())
         return tuple(completed_ids) if completed_ids is not None else ()
 
     def on_abort_request(self, abort: object) -> None:
+        if self._full_prefix_migration is not None:
+            self._full_prefix_migration.aborted(
+                abort.rid, all_requests=getattr(abort, "abort_all", False),
+            )
         if self._agent_admission is not None:
             self._agent_admission.aborted(abort.rid, all_requests=getattr(abort, "abort_all", False))
         if (paper := getattr(self, "_paper_baseline", None)) is not None:
@@ -12953,6 +13170,17 @@ class NativeAdmissionRuntime:
 
     def plan_running_batch_retraction(self, batch: object) -> None:
         return None
+
+    def select_native_decode_victim(self, batch: object, indices: tuple[int, ...]) -> int | None:
+        paper = getattr(self, "_paper_baseline", None)
+        callback = getattr(paper, "decode_victim", None)
+        return callback(batch, indices) if callback is not None else None
+
+    def before_native_request_release(self, req: object, *, reason: str) -> None:
+        paper = getattr(self, "_paper_baseline", None)
+        callback = getattr(paper, "before_release", None)
+        if callback is not None:
+            callback(req, reason=reason)
 
     def on_native_decode_capacity_pressure(self, batch: object) -> bool:
         paper = getattr(self, "_paper_baseline", None)

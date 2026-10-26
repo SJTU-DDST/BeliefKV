@@ -57,6 +57,7 @@ def test_environment_probe_preserves_original_failures_and_accepts_new_projects(
 ):
     manifest, output = tmp_path / "manifest.json", tmp_path / "out.json"
     source = tmp_path / project
+    source.mkdir()
     manifest.write_text(json.dumps({
         "workloads": [{
             "source_repo": str(source), "docker_image": "pinned",
@@ -72,23 +73,27 @@ def test_environment_probe_preserves_original_failures_and_accepts_new_projects(
 
     monkeypatch.setattr(environment, "capture", command)
     monkeypatch.setattr(environment.subprocess, "check_output", lambda *a, **k: "sha256:pinned")
+    monkeypatch.setattr(environment.subprocess, "run", lambda *_a, **_k: None)
     monkeypatch.setattr("sys.argv", [
         "qualify", "--manifest", str(manifest), "--output", str(output),
     ])
-    environment.main()
+    with pytest.raises(SystemExit, match="1"):
+        environment.main()
     result = json.loads(output.read_bytes())
     evidence = result["projects"][str(source)]
     assert result["dependency_preflight_passed"] is True
+    assert result["test_execution_passed"] is False
     assert evidence["original_source_modified"] is False
     assert evidence["original_test_result"]["returncode"] == 2
     assert evidence["original_test_result"]["stdout"] == "original failure"
     expected = environment.PROJECT_COMMANDS.get(project, environment.DEFAULT_TEST_COMMAND)
-    assert calls[-1][-1] == expected
+    assert expected in calls[-1][-1]
 
 
 def test_project_image_override_is_explicit_without_rewriting_original_inputs(tmp_path, monkeypatch):
     manifest, output = tmp_path / "manifest.json", tmp_path / "out.json"
     source = str(tmp_path / "project")
+    Path(source).mkdir()
     original = json.dumps({
         "workloads": [{
             "source_repo": source, "docker_image": "original",
@@ -98,9 +103,13 @@ def test_project_image_override_is_explicit_without_rewriting_original_inputs(tm
     manifest.write_text(original)
     calls = []
     monkeypatch.setattr(environment, "capture", lambda args: (
-        calls.append(args) or {"returncode": 0, "stdout": "", "stderr": ""}
+        calls.append(args) or {
+            "returncode": 0, "stdout": "", "stderr": "",
+            "junit_xml": '<testsuite><testcase name="actual"/></testsuite>',
+        }
     ))
     monkeypatch.setattr(environment.subprocess, "check_output", lambda *a, **k: "sha256:actual")
+    monkeypatch.setattr(environment.subprocess, "run", lambda *_a, **_k: None)
     monkeypatch.setattr("sys.argv", [
         "qualify", "--manifest", str(manifest), "--output", str(output),
         "--image", "shared", "--image-override", "project=special",
@@ -134,7 +143,10 @@ def test_unknown_empty_or_duplicate_image_overrides_never_launch_a_container(
         environment.main()
 
 
-@pytest.mark.parametrize("change", (None, "failed_preflight", "missing_project", "commit", "tag"))
+@pytest.mark.parametrize("change", (
+    None, "failed_preflight", "missing_project", "commit", "tag", "no_test_execution",
+    "forged_execution",
+))
 def test_environment_pin_changes_only_images_and_binds_the_actual_report(tmp_path, change):
     original = {"workloads": [{
         "source_repo": "/source/project", "base_commit": "original",
@@ -144,9 +156,16 @@ def test_environment_pin_changes_only_images_and_binds_the_actual_report(tmp_pat
     manifest = deepcopy(original)
     report = {
         "dependency_preflight_passed": True, "manifest": "/manifest.json",
+        "test_execution_passed": True,
         "manifest_sha256": "b" * 64,
         "projects": {"/source/project": {
             "source_commit": "original", "docker_image_id": "sha256:" + "a" * 64,
+            "original_test_command": "python -m pytest -q tests",
+            "original_test_result": {
+                "returncode": 0,
+                "junit_xml": '<testsuite><testcase name="actual"/></testsuite>',
+            },
+            "test_execution": {"qualified": True},
         }},
     }
     if change == "failed_preflight":
@@ -157,6 +176,10 @@ def test_environment_pin_changes_only_images_and_binds_the_actual_report(tmp_pat
         report["projects"]["/source/project"]["source_commit"] = "another"
     elif change == "tag":
         report["projects"]["/source/project"]["docker_image_id"] = "mutable:tag"
+    elif change == "no_test_execution":
+        report["test_execution_passed"] = False
+    elif change == "forged_execution":
+        report["projects"]["/source/project"]["original_test_result"]["junit_xml"] = "<testsuite/>"
     path = tmp_path / "qualification.json"
     path.write_text(json.dumps(report))
     if change is not None:
@@ -165,6 +188,8 @@ def test_environment_pin_changes_only_images_and_binds_the_actual_report(tmp_pat
     else:
         pinned = environment.pin_environment(manifest, report, path)
         assert pinned["workloads"][0]["docker_image"] == "sha256:" + "a" * 64
+        assert pinned["workloads"][0].pop("test_command") == "python -m pytest -q tests"
+        assert pinned["environment_qualification"]["test_execution_required"] is True
         assert pinned["environment_qualification"]["sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
         pinned["workloads"][0]["docker_image"] = "old"
         del pinned["environment_qualification"]

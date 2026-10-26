@@ -105,7 +105,10 @@ def test_reference_capacity_comes_from_the_completed_native_census(tmp_path):
 
 
 @pytest.mark.parametrize("change", ["valid", "undelegated", "failed", "intervention_failed"])
-def test_capture_checks_each_completed_dynamic_root_early(tmp_path, change):
+@pytest.mark.parametrize("profile", [
+    "native_in_graph_dynamic_nested", "native_in_graph_short_workstreams",
+])
+def test_capture_checks_each_completed_dynamic_root_early(tmp_path, change, profile):
     path = tmp_path / "client_18/workflows/root/result.json"
     path.parent.mkdir(parents=True)
     result = {
@@ -123,17 +126,17 @@ def test_capture_checks_each_completed_dynamic_root_early(tmp_path, change):
     checked = set()
     if change == "valid":
         capture.observe_completed_root_delegations(
-            tmp_path, profile="native_in_graph_dynamic_nested", checked=checked,
+            tmp_path, profile=profile, checked=checked,
         )
         assert checked == {path}
         path.write_text("already checked; do not reread")
         capture.observe_completed_root_delegations(
-            tmp_path, profile="native_in_graph_dynamic_nested", checked=checked,
+            tmp_path, profile=profile, checked=checked,
         )
     else:
         with pytest.raises(ValueError, match="delegation contract"):
             capture.observe_completed_root_delegations(
-                tmp_path, profile="native_in_graph_dynamic_nested", checked=checked,
+                tmp_path, profile=profile, checked=checked,
             )
         assert not checked
 
@@ -411,7 +414,10 @@ def test_explicit_workload_binds_context_provenance_and_clone_commit(tmp_path, m
             capture.declared_workload_inputs(path)
 
 
-@pytest.mark.parametrize("change", (None, "report", "base", "image", "preflight"))
+@pytest.mark.parametrize("change", (
+    None, "report", "base", "image", "preflight", "execution", "test_command",
+    "sandbox_environment",
+))
 def test_capture_binds_the_pinned_environment_evidence_before_allocating_resources(
     tmp_path, monkeypatch, change,
 ):
@@ -423,6 +429,7 @@ def test_capture_binds_the_pinned_environment_evidence_before_allocating_resourc
     row.update(
         source_repo=str(tmp_path / "source"), base_commit="a" * 40,
         docker_image="sha256:" + "b" * 64,
+        test_command="python -m pytest -q tests",
         frozen_repository_context={"path": str(context), "sha256": capture.sha256_file(context)},
         dataset_provenance={
             "source_provenance_path": str(provenance),
@@ -433,15 +440,25 @@ def test_capture_binds_the_pinned_environment_evidence_before_allocating_resourc
     base.write_text(json.dumps(raw))
     report.write_text(json.dumps({
         "dependency_preflight_passed": change != "preflight",
+        "test_execution_passed": change != "execution",
         "manifest_sha256": capture.sha256_file(base),
         "projects": {row["source_repo"]: {
             "docker_image_id": row["docker_image"], "source_commit": row["base_commit"],
+            "test_execution": {"qualified": True},
+            "original_test_command": row["test_command"],
         }},
     }))
     raw["environment_qualification"] = {
         "path": str(report), "sha256": capture.sha256_file(report),
         "base_manifest": str(base), "base_manifest_sha256": capture.sha256_file(base),
+        "test_execution_required": True,
     }
+    if change == "test_command":
+        raw["workloads"][0]["test_command"] = "python -m pytest --collect-only"
+    if change == "sandbox_environment":
+        raw["workloads"][0]["sandbox_environment"] = {
+            "DJANGO_SETTINGS_MODULE": "unqualified.settings",
+        }
     path = tmp_path / "pinned.json"
     path.write_text(json.dumps(raw))
     if change in ("base", "report"):
@@ -458,6 +475,87 @@ def test_capture_binds_the_pinned_environment_evidence_before_allocating_resourc
     else:
         with pytest.raises(ValueError, match="declared source environment"):
             capture.declared_workload_inputs(path)
+
+
+@pytest.mark.parametrize("proof", ("missing", "valid", "forged"))
+def test_new_source_requires_actual_project_calls_before_resource_allocation(
+    tmp_path, monkeypatch, proof,
+):
+    test_capture_binds_the_pinned_environment_evidence_before_allocating_resources(
+        tmp_path, monkeypatch, None,
+    )
+    path = tmp_path / "pinned.json"
+    pinned = json.loads(path.read_bytes())
+    report_path = tmp_path / "environment.json"
+    report = json.loads(report_path.read_bytes())
+    if proof != "missing":
+        report.update(production_execution_required=True, production_execution_passed=True)
+        evidence = next(iter(report["projects"].values()))
+        evidence["production_execution"] = {"qualified": True}
+        evidence["production_probe_result"] = {
+            "returncode": 0,
+            "junit_xml": '<testsuite><testcase name="one"/></testsuite>',
+            "production_calls": {
+                "observation": "first_party_python_calls_during_pytest_call_phase",
+                "call_events": 2 if proof == "valid" else 0,
+                "test_cases_reaching_production_count": 1,
+                "production_files": ["app/service.py"],
+                "main_and_future_thread_profile_restored": True,
+            },
+        }
+        pinned["environment_qualification"]["production_execution_required"] = True
+    report_path.write_text(json.dumps(report))
+    pinned["environment_qualification"]["sha256"] = capture.sha256_file(report_path)
+    path.write_text(json.dumps(pinned))
+    if proof == "valid":
+        assert capture.declared_workload_inputs(
+            path, require_test_execution=True, require_production_execution=True,
+        )
+    else:
+        with pytest.raises(ValueError, match="declared source environment"):
+            capture.declared_workload_inputs(
+                path, require_test_execution=True, require_production_execution=True,
+            )
+
+
+@pytest.mark.parametrize("change", [None, "report", "image", "settings", "failed_tool"])
+def test_tool_only_source_gate_preserves_original_failing_project_tests(
+    tmp_path, monkeypatch, change,
+):
+    test_capture_binds_the_pinned_environment_evidence_before_allocating_resources(
+        tmp_path, monkeypatch, None,
+    )
+    path = tmp_path / "pinned.json"
+    raw = json.loads(path.read_bytes())
+    raw.pop("environment_qualification")
+    row = raw["workloads"][0]
+    base, report = tmp_path / "base.json", tmp_path / "tools.json"
+    evidence = {
+        "source_commit": row["base_commit"], "docker_image_id": row["docker_image"],
+        "sandbox_environment": {}, "tool_execution_passed": change != "failed_tool",
+        "task_test_exit_code": 2,
+    }
+    report.write_text(json.dumps({
+        "tool_execution_passed": True, "qualification_scope": "live_root_child_tools",
+        "manifest_sha256": capture.sha256_file(base),
+        "projects": {row["source_repo"]: evidence},
+    }))
+    raw["tool_environment_qualification"] = {
+        "path": str(report), "sha256": capture.sha256_file(report),
+        "base_manifest": str(base), "base_manifest_sha256": capture.sha256_file(base),
+    }
+    if change == "image":
+        row["docker_image"] = "sha256:" + "c" * 64
+    elif change == "settings":
+        row["sandbox_environment"] = {"PYTHONPATH": "/wrong"}
+    elif change == "report":
+        report.write_text("changed")
+    path.write_text(json.dumps(raw))
+    if change is None:
+        assert capture.declared_workload_inputs(path, require_tool_execution=True)
+    else:
+        with pytest.raises(ValueError, match="declared source tool"):
+            capture.declared_workload_inputs(path, require_tool_execution=True)
 
 
 @pytest.mark.parametrize("roots", (16, 24, 36))
@@ -715,6 +813,72 @@ def test_new_dynamic_source_requires_actual_root_spawn_evidence(child_count):
     assert result["observed_root_delegations"] == {"w": child_count}
     if child_count == 0:
         assert "root_did_not_delegate" in result["reasons"]
+
+
+@pytest.mark.parametrize(("round_sizes", "unserved", "satisfied", "accepted"), [
+    ([1, 1], None, True, False),
+    ([2], None, True, True),
+    ([3], None, True, True),
+    ([2], "child-0-1", True, False),
+    ([2], None, False, False),
+])
+@pytest.mark.parametrize("profile", [
+    "native_in_graph_dynamic_nested", "native_in_graph_short_workstreams",
+])
+def test_dynamic_source_qualifies_actual_parallel_join_not_total_spawn_count(
+    round_sizes, unserved, satisfied, accepted, profile,
+):
+    from types import SimpleNamespace as NS
+
+    def event(kind, **kwargs):
+        return NS(
+            kind=kind, workflow_id="w", attributes={}, invocation_id=None,
+            parent_invocation_id=None, join_id=None, member_invocation_ids=(), **kwargs,
+        )
+
+    rows = [
+        event(capture.Kind.WORKFLOW_START),
+        NS(kind=capture.Kind.INVOCATION_CREATE, workflow_id="w", invocation_id="root",
+           parent_invocation_id=None, attributes={}),
+    ]
+    for index, size in enumerate(round_sizes):
+        members = tuple(f"child-{index}-{number}" for number in range(size))
+        for child in members:
+            rows.extend([
+                NS(kind=capture.Kind.INVOCATION_CREATE, workflow_id="w",
+                   invocation_id=child, parent_invocation_id="root",
+                   join_id=f"join-{index}", attributes={}),
+                NS(kind=capture.Kind.SPAWN, workflow_id="w", invocation_id="root",
+                   attributes={}),
+                NS(kind=capture.Kind.RETURN, workflow_id="w", invocation_id=child,
+                   attributes={}),
+            ])
+            if child != unserved:
+                rows.append(NS(kind=capture.Kind.LLM_RESULT, workflow_id="w",
+                               invocation_id=child, attributes={}))
+        rows.append(NS(kind=capture.Kind.JOIN_CREATE, workflow_id="w",
+                       join_id=f"join-{index}", member_invocation_ids=members, attributes={}))
+        if satisfied:
+            rows.append(NS(kind=capture.Kind.JOIN_SATISFIED, workflow_id="w",
+                           join_id=f"join-{index}", attributes={}))
+    graph = NS(
+        nodes=[NS(event=row) for row in rows],
+        summary=lambda: {"event_counts": {capture.Kind.JOIN_CREATE.value: len(round_sizes)}},
+    )
+    summary = {
+        "completed_workflows": 1,
+        "subagent_fanout_profile": profile,
+        "delegation_contract": {
+            "root_minimum_delegations_prompt": 2, "minimum_completed_root_join_members": 2,
+        },
+        "workflows": [{"workflow_id": "w", "native_agent_jct_eligible": True}],
+    }
+    result = capture.oneshot_source(
+        summary, graph, expected_workflows=1, expected_profile=summary["subagent_fanout_profile"],
+    )
+    assert result["accepted"] is accepted
+    if not accepted:
+        assert "root_parallel_join_requirement_unmet" in result["reasons"]
 
 
 def test_predeclared_capture_waits_without_allocating_or_touching_another_job(tmp_path, monkeypatch):

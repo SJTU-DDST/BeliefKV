@@ -24,6 +24,7 @@ from beliefkv.experiments.prepare_ack_engine import prepare_ack_engine_compatibi
 from scripts import run_causal_comparison as controls
 from scripts import run_causal_source_capture as capture
 from scripts.benchmark_causal_sampling import calibration_batch_sizes
+from scripts.audit_predictive_source import audit as audit_predictive_source
 
 comparison, fresh, qualified, reservation, load = (
     controls.comparison, controls.fresh, controls.qualified, controls.reservation, controls.load,
@@ -197,6 +198,7 @@ def register(args):
         args.registration, args.registration.with_suffix(".state.json"),
         args.registration.with_suffix(".log"), args.run_root, args.comparison_registration,
         args.comparison_registration.with_suffix(".state.json"), args.comparison_root,
+        args.registration.with_suffix(".source-audit.json"),
     ):
         if path.exists():
             raise FileExistsError("preserve the existing calibration or comparison")
@@ -261,8 +263,6 @@ def register(args):
         args.engine, source, candidate_tree=evidence["tree"],
     )
     fresh._require_clean(ROOT)
-    if qualified.command(["git", "-C", str(ROOT), "branch", "--show-current"]) != "main":
-        raise ValueError("freeze qualified main")
     revision = qualified.command(["git", "-C", str(ROOT), "rev-parse", "HEAD"])
     label = args.run_root.name.rsplit("_", 1)[-1]
     checkout = comparison.EXPERIMENTS / ".worktrees" / f"beliefkv-{label}-position-{revision[:12]}"
@@ -328,6 +328,12 @@ def register(args):
         "comparison_order": spec["order"] if spec else [
             "native_matched", "no_tool_prefetch", "join_priority_only",
         ],
+        "source_opportunity_audit_path": (
+            str(args.registration.with_suffix(".source-audit.json").resolve())
+            if spec is not None and spec.get("trace_audit", {}).get(
+                "native_trace_exposed_recovery_and_blocking_audited_before_full",
+            ) is True else None
+        ),
     }
     comparison.verify_sources(plan)
     reservation.write_json(args.registration, plan)
@@ -424,6 +430,19 @@ def watch(registration):
                 raise ValueError("actual causal source has too few JOINs")
             with controls.CapturedTokenCorpus(arm / "server/request_tokens.jsonl", expected):
                 pass
+            if plan.get("source_opportunity_audit_path"):
+                review = audit_predictive_source(arm, expected_workflows=roots)
+                review_path = Path(plan["source_opportunity_audit_path"])
+                if review_path.exists():
+                    raise FileExistsError("preserve previous source opportunity review")
+                reservation.write_json(review_path, review)
+                state["source_opportunity_review"] = {
+                    "path": str(review_path), "sha256": sha256_file(review_path),
+                    "accepted_for_full_probe": review["accepted_for_full_probe"],
+                    "review_reasons": review["review_reasons"],
+                }
+                if not review["accepted_for_full_probe"]:
+                    raise ValueError("source lacks observed native recovery or old-input loss")
             while not qualified.resources(plan["port"])["ready"]:
                 state["status"] = "waiting_gpu_calibration"
                 pulse()

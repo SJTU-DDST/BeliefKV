@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
+import os
 import time
 
 from beliefkv.core.events import RuntimeEventKind as Kind
@@ -48,10 +49,12 @@ class ThunderAgentAdapter:
         self.runtime = runtime
         self.policy: ThunderWorkingSet | None = None
         self.requests = {}
+        self._live_requests = {}
         self.workflows: dict[str, str] = {}
         self.counts = Counter()
         self.next_tick = 0.
         self.last_forced = set()
+        self._capacity_snapshot = {}
 
     def attach(self, cache):
         components = getattr(cache, "tree_components", ())
@@ -69,8 +72,11 @@ class ThunderAgentAdapter:
             raise ValueError("duplicate paper-baseline request")
         tokens = len(getattr(req, "origin_input_ids", ()))
         now = time.monotonic()
+        if key.invocation_id not in self.policy.programs:
+            self._refresh_streaming_progress()
         self.policy.arrive(key.invocation_id, tokens, now=now)
         self.requests[key.request_id] = key, now
+        self._live_requests[key.request_id] = req
         self.workflows[key.invocation_id] = key.root_workflow_id
         self.counts["registered"] += 1
 
@@ -85,7 +91,22 @@ class ThunderAgentAdapter:
         for request, (key, _when) in tuple(self.requests.items()):
             if key.invocation_id == invocation:
                 self.requests.pop(request)
+                self._live_requests.pop(request, None)
         self.counts["programs_retired"] += 1
+
+    def _refresh_streaming_progress(self):
+        for request, (key, _arrived) in self.requests.items():
+            req = self._live_requests.get(request)
+            item = self.policy.programs.get(key.invocation_id)
+            if (
+                req is not None and self.runtime.visible.get(request) == key
+                and item is not None and item.active and item.pending and not item.acting
+            ):
+                tokens = len(req.origin_input_ids) + len(req.output_ids)
+                if tokens != item.tokens:
+                    self.counts["streaming_progress_updates"] += 1
+                self.policy.generated(key.invocation_id, tokens)
+                self.counts["streaming_progress_checks"] += 1
 
     def tick(self, *, now=None):
         if self.policy is None:
@@ -95,6 +116,8 @@ class ThunderAgentAdapter:
         if now < self.next_tick:
             return
         self.next_tick = now + 5.
+        # Both new-program arrival and the periodic tick decide capacity.
+        self._refresh_streaming_progress()
         resumed = self.policy.tick(now=now)
         self.counts["control_ticks"] += 1
         self.counts["resumed"] += len(resumed)
@@ -105,6 +128,21 @@ class ThunderAgentAdapter:
                 item.active = True
                 self.last_forced.add(request)
                 self.counts["public_timeout_force_resumed"] += 1
+        programs = tuple(self.policy.programs.values())
+        remaining = self.policy.remaining_capacity()
+        pending = [item for item in programs if item.pending and not item.active]
+        self._capacity_snapshot = {
+            "remaining_capacity_tokens": remaining,
+            "active_acting_programs": sum(item.active and item.acting for item in programs),
+            "active_reasoning_programs": sum(item.active and not item.acting for item in programs),
+            "paused_pending_programs": len(pending),
+            "capacity_blocked_pending_programs": sum(
+                item.tokens + self.policy.buffer_tokens > remaining for item in pending
+            ),
+            "oldest_pending_seconds": max(
+                (max(0., now - arrived) for _key, arrived in self.requests.values()), default=0.,
+            ),
+        }
 
     def plan(self, native_order, *, running_batch, adder):
         self.tick()
@@ -138,6 +176,7 @@ class ThunderAgentAdapter:
             if req.rid not in completed:
                 continue
             record = self.requests.pop(req.rid, None)
+            self._live_requests.pop(req.rid, None)
             self.last_forced.discard(req.rid)
             if record is None:
                 continue
@@ -147,6 +186,24 @@ class ThunderAgentAdapter:
             tokens = len(getattr(req, "origin_input_ids", ())) + len(getattr(req, "output_ids", ()))
             self.policy.completed(key.invocation_id, tokens, now=now)
             self.counts["completed"] += 1
+
+    def requeued(self, requests, *, is_retracted):
+        for req in requests:
+            record = self.requests.get(req.rid)
+            if record is None:
+                continue
+            previous, arrived = record
+            key = _request_key(req, known_keys=self.runtime.visible)
+            if key is None or (
+                key.root_workflow_id, key.invocation_id, key.context_id, key.context_epoch,
+            ) != (
+                previous.root_workflow_id, previous.invocation_id,
+                previous.context_id, previous.context_epoch,
+            ):
+                raise ValueError("ThunderAgent native requeue changed program ownership")
+            self.requests[req.rid] = key, arrived
+            self._live_requests[req.rid] = req
+            self.counts["native_requeues"] += 1
 
     def aborted(self, request_id, *, all_requests=False):
         for rid, (key, _arrived) in tuple(self.requests.items()):
@@ -162,6 +219,8 @@ class ThunderAgentAdapter:
             "program_identity": "invocation_id", "future_information_used": False,
             "native_capacity_authority_preserved": True,
             "scope": "single_backend_exact_token_ingress_policy_adaptation",
+            "streaming_context_accounting": "observed_native_outputs_at_arrival_and_five_second_control",
+            "control_capacity_snapshot": dict(self._capacity_snapshot),
             "capacity_tokens": self.policy.capacity_tokens if self.policy is not None else None,
             "programs": len(self.workflows), "active_programs": active,
             "pending_requests": len(self.requests), "counts": dict(self.counts),
@@ -169,6 +228,7 @@ class ThunderAgentAdapter:
 
     def close(self):
         self.requests.clear()
+        self._live_requests.clear()
         self.workflows.clear()
         self.last_forced.clear()
         if self.policy is not None:
@@ -347,6 +407,21 @@ class ContinuumPublicAdapter:
 
 
 def create_adapter(runtime, name):
+    if (
+        name == "agentix_atlas_native_qualification"
+        and os.environ.get("BELIEFKV_AGENTIX_QUALIFICATION_ONLY") == "1"
+    ):
+        from beliefkv.experiments.agentix_qualification import load_qualification
+        from beliefkv.runtime.agentix_baseline import AgentixAdapter
+
+        document, config, serving = load_qualification(
+            os.environ.get("BELIEFKV_AGENTIX_QUALIFICATION_CONFIG"),
+        )
+        adapter = AgentixAdapter(runtime, config, **serving)
+        adapter.qualification = {
+            "purpose": document["purpose"], "max_requests": document["max_requests"],
+        }
+        return adapter
     if name == ThunderAgentAdapter.policy_name:
         return ThunderAgentAdapter(runtime)
     if name == ContinuumPublicAdapter.policy_name:
@@ -355,4 +430,26 @@ def create_adapter(runtime, name):
         from beliefkv.runtime.concur_baseline import ConcurAdapter
 
         return ConcurAdapter(runtime)
+    if name == "kvflow_paper_observed_graph":
+        from beliefkv.runtime.kvflow_baseline import KVFlowObservedAdapter
+
+        return KVFlowObservedAdapter(runtime)
+    if name in ("tokencake_public_observed_metadata", "tokencake_paper_observed_metadata"):
+        from beliefkv.runtime.tokencake_baseline import TokenCakePaperAdapter, TokenCakePublicAdapter
+
+        parameters = {
+            "generation_budget": "BELIEFKV_TOKENCAKE_GENERATION_BUDGET",
+            "context_limit": "BELIEFKV_TOKENCAKE_CONTEXT_LIMIT",
+            "running_limit": "BELIEFKV_TOKENCAKE_RUNNING_LIMIT",
+            "prefill_token_budget": "BELIEFKV_TOKENCAKE_PREFILL_TOKEN_BUDGET",
+            "chunked_prefill_tokens": "BELIEFKV_TOKENCAKE_CHUNKED_PREFILL_TOKENS",
+            "policy_block_tokens": "BELIEFKV_TOKENCAKE_POLICY_BLOCK_TOKENS",
+            "eviction_window_tokens": "BELIEFKV_TOKENCAKE_EVICTION_WINDOW_TOKENS",
+        }
+        try:
+            values = {key: int(os.environ[variable]) for key, variable in parameters.items()}
+        except (KeyError, ValueError) as error:
+            raise ValueError("TokenCake requires all declared temporal and serving parameters") from error
+        adapter = TokenCakePaperAdapter if name == "tokencake_paper_observed_metadata" else TokenCakePublicAdapter
+        return adapter(runtime, **values)
     raise ValueError("paper policy lacks a qualified runtime adapter: " + name)

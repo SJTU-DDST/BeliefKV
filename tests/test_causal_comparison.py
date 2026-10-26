@@ -324,6 +324,25 @@ def test_observed_configuration_checks_the_registered_batch_limit(tmp_path, monk
     ]
 
 
+def test_short_workstream_source_keeps_budgets_seed_and_requires_a_new_population(reference):
+    spec = json.loads((comparison.ROOT / (
+        "configs/workloads/locobench_short_workstreams_20261026.json"
+    )).read_bytes())
+    configured = comparison.experiment_reference(reference, spec)["arms"]["full"]
+    assert configured["FANOUT_PROFILE"] == "native_in_graph_short_workstreams"
+    assert configured["CHILD_WORK_BUDGET_WARNING_CALLS"] == "4"
+    assert configured["CHILD_WORK_BUDGET_TARGET_CALLS"] == "8"
+    assert configured["SERVER_RANDOM_SEED"] == configured["SAMPLING_SEED"] == "21"
+    assert configured["ROOT_COUNT"] == "18"
+    assert configured["MAX_RUNNING_REQUESTS"] == "24"
+    assert configured["AGENT_ADMISSION"] == "thunderagent_retained"
+    assert configured["BELIEFKV_AGENT_ADMISSION"] == "thunderagent_retained"
+    assert spec["population"]["manifest"] == configured["WORKLOAD_MANIFEST"]
+    assert not spec["qualification"]["actual_project_test_execution_required"]
+    assert spec["qualification"]["live_root_child_tool_execution_required"]
+    assert not spec["qualification"]["gpu_source_started"]
+
+
 @pytest.mark.parametrize("label", (
     "full", "join_priority_only", "native_matched", "scheduler_only", "kv_only",
 ))

@@ -1,11 +1,14 @@
 import asyncio
+from dataclasses import replace
 from threading import Event, Thread
 
 import pytest
 
-from beliefkv.core.events import RuntimeEvent, RuntimeEventKind as Kind
+from beliefkv.core.events import EventConfidence, RuntimeEvent, RuntimeEventKind as Kind
 from beliefkv.experiments.causal_replay_backend import CausalHTTPBackend
-from beliefkv.experiments.causal_replay_delivery import ReplayEventDelivery
+from beliefkv.experiments.causal_replay_delivery import (
+    JOIN_INFORMATION_CONTRACT, ReplayEventDelivery, control_event_counts,
+)
 from beliefkv.runtime.deepagents_adapter import DeepAgentsRuntimeAdapter
 from beliefkv.runtime.event_channel import QueuedRuntimeEventSink
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
@@ -153,5 +156,65 @@ def test_native_replay_logs_events_without_creating_policy_transports():
     with ReplayEventDelivery(log.emit_batch) as delivery:
         delivery.emit_batch((event(Kind.TOOL_END),))
         delivery.flush()
-        assert delivery.summary() == {"mode": "trace_only", "workflows": {}}
+        assert delivery.summary() == {
+            "mode": "trace_only", "workflows": {},
+            "join_information_contract": JOIN_INFORMATION_CONTRACT,
+            "private_join_events_by_workflow": {},
+        }
     assert len(log.rows) == 1
+
+
+@pytest.mark.parametrize("evidence", (
+    {"confidence": EventConfidence.INFERRED},
+    {"attributes": {"source": "agentx_timestamp_inferred_join"}},
+    {"attributes": {"online_observable": False}},
+))
+def test_inferred_join_remains_logged_without_exposing_it_to_policy(evidence):
+    log = Log()
+    transport = BlockedTransport()
+    transport.release.set()
+    joins = tuple(
+        replace(event(kind, number=index), join_id="join", **evidence)
+        for index, kind in enumerate((
+            Kind.JOIN_CREATE, Kind.JOIN_WAIT, Kind.JOIN_SATISFIED, Kind.JOIN_TIMEOUT,
+        ))
+    )
+    submit = event(Kind.LLM_SUBMIT, number=4)
+    with ReplayEventDelivery(log.emit_batch, lambda _workflow: transport) as delivery:
+        delivery.emit_batch((*joins, submit))
+        delivery.flush()
+        assert log.rows == [*joins, submit]
+        assert transport.rows == [submit]
+        assert delivery.summary()["workflows"]["w"]["accepted_batch_count"] == 1
+        assert delivery.summary()["private_join_events_by_workflow"] == {"w": 4}
+        assert control_event_counts((*joins, submit)) == {
+            "join_information_contract": JOIN_INFORMATION_CONTRACT,
+            "online_event_batches_by_workflow": {"w": 1},
+            "private_join_events_by_workflow": {"w": 4},
+        }
+
+
+def test_all_private_join_batch_does_not_create_a_control_transport():
+    log, factories = Log(), []
+    with ReplayEventDelivery(log.emit_batch, lambda workflow: factories.append(workflow)) as delivery:
+        delivery.emit_batch((replace(
+            event(Kind.JOIN_WAIT), confidence=EventConfidence.INFERRED,
+        ),))
+        delivery.flush()
+    assert len(log.rows) == 1
+    assert factories == []
+
+
+def test_inferred_submissions_spawns_and_returns_are_still_delivered():
+    log = Log()
+    transport = BlockedTransport()
+    transport.release.set()
+    events = tuple(
+        replace(event(kind, number=index), confidence=EventConfidence.INFERRED)
+        for index, kind in enumerate((Kind.SPAWN, Kind.LLM_SUBMIT, Kind.RETURN))
+    )
+    with ReplayEventDelivery(log.emit_batch, lambda _workflow: transport) as delivery:
+        delivery.emit_batch(events)
+        delivery.flush()
+        assert transport.rows == list(events)
+        assert delivery.summary()["private_join_events_by_workflow"] == {}

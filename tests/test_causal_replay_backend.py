@@ -1,6 +1,7 @@
 import asyncio
 from copy import deepcopy
 from dataclasses import replace
+import json
 import time
 from types import SimpleNamespace as NS
 
@@ -16,6 +17,7 @@ from beliefkv.experiments.causal_replay_backend import (
 from beliefkv.experiments.causal_replay_native import RECEIPT_KEY, terminal_receipt
 from beliefkv.experiments.causal_replay_sampling import PARAMETER_KEY
 from beliefkv.experiments.causal_replay_tokens import CapturedTokenCorpus
+from beliefkv.experiments.workflow_metrics import StreamingWorkflowMetrics
 from beliefkv.runtime.clock_evidence import local_monotonic_clock_domain
 from beliefkv.runtime.replay_token_capture import encode_tokens
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
@@ -233,6 +235,64 @@ def test_http_execution_and_terminal_close_use_native_receipts_without_reading_l
     assert [path for path, _ in calls] == ["/generate", "/generate", "/close_session"]
     assert len(emitted) == 4 and len(observations) == 2
     assert all(row["exact_tokens_verified"] for row in observations)
+
+
+def test_streaming_backend_measures_output_and_checks_the_same_native_terminal_receipt(corpus):
+    calls, observations = [], []
+    metrics = StreamingWorkflowMetrics()
+
+    class OutputStream(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            for count in (0, 1, 2):
+                await asyncio.sleep(.001)
+                payload = response_payload(corpus.get("r0"))
+                payload["meta_info"]["completion_tokens"] = count
+                if count < 2:
+                    del payload["meta_info"][RECEIPT_KEY]
+                yield ("data: " + json.dumps(payload) + "\n\n").encode()
+            yield b"data: [DONE]\n\n"
+
+    async def run():
+        async def handler(request):
+            body = json.loads(request.content)
+            calls.append((request.url.path, body))
+            if request.url.path == "/generate":
+                assert body["stream"] is True
+                return httpx.Response(200, stream=OutputStream())
+            return httpx.Response(200, json={})
+
+        async with httpx.AsyncClient(
+            base_url="http://127.0.0.1", transport=httpx.MockTransport(handler),
+        ) as client:
+            backend = CausalHTTPBackend(
+                corpus, client, lambda events: None, observe_request=observations.append,
+                streaming=True, response_metrics=metrics,
+            )
+            await backend.emit(RuntimeEvent(
+                "start", time.monotonic() * 1000., Kind.WORKFLOW_START, "w",
+            ))
+            await backend.emit(created())
+            submit = submitted()
+            await backend.emit(submit)
+            await backend.execute("r0", submit)
+            await backend.emit(RuntimeEvent(
+                "end", time.monotonic() * 1000., Kind.WORKFLOW_END, "w",
+            ))
+            await backend.drain()
+
+    asyncio.run(run())
+    row = observations[0]["response_metrics"]
+    assert row["output_tokens"] == row["output_chunks"] == 2
+    assert row["ttft_ms"] > 0 and row["interactivity_tps"] > 0
+    assert row["first_output_monotonic_ms"] < row["last_output_monotonic_ms"]
+    assert metrics.summary()["all_workflows_completed"]
+    assert metrics.summary()["coverage"]["completed_requests"] == 1
+    assert [path for path, _ in calls] == ["/generate", "/close_session"]
+
+
+def test_response_metrics_require_streaming_output(corpus):
+    with pytest.raises(ValueError, match="streaming"):
+        CausalHTTPBackend(corpus, None, None, response_metrics=StreamingWorkflowMetrics())
 
 
 @pytest.mark.parametrize("changed", (False, True))

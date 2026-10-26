@@ -93,7 +93,7 @@ def test_pausing_program_does_not_change_native_running_request(monkeypatch):
     live = runtime(monkeypatch, capacity=500)
     first = request("one", "a", tokens=300)
     live.register_visible_request(first)
-    live._paper_baseline.policy.programs["a"].tokens = 600
+    first.output_ids = list(range(300))
     live._paper_baseline.tick(now=0.)
     program = live._paper_baseline.policy.programs["a"]
     assert program.active and program.marked_for_pause
@@ -159,6 +159,7 @@ def state():
         "paper_baseline": {
             "policy": RUNTIME_ARMS["thunderagent"], "program_identity": "invocation_id",
             "future_information_used": False, "native_capacity_authority_preserved": True,
+            "streaming_context_accounting": "observed_native_outputs_at_arrival_and_five_second_control",
         },
     }
 
@@ -181,4 +182,63 @@ def test_finished_native_request_is_charged_once(monkeypatch):
     # Native may still present a completed object during overlapping publication.
     live.on_batch_completed(batch)
     assert live._paper_baseline.counts["completed"] == 1
+    live.close()
+
+
+def test_running_context_growth_is_charged_at_existing_control_cadence(monkeypatch):
+    live = runtime(monkeypatch, capacity=500)
+    req = request("streaming", "a", tokens=300)
+    live.register_visible_request(req)
+    adapter = live._paper_baseline
+    adapter.next_tick = 0.
+    adapter.tick(now=0.)
+    program = adapter.policy.programs["a"]
+    assert program.tokens == 302 and not program.marked_for_pause
+    req.output_ids.extend(range(298))
+    adapter.tick(now=1.)
+    assert program.tokens == 302
+    adapter.tick(now=5.)
+    assert program.tokens == 600 and program.active and program.marked_for_pause
+    assert adapter.counts["streaming_progress_checks"] == 2
+    live.on_batch_completed(NS(reqs=[req]))
+    assert not program.active and not adapter._live_requests
+    live.close()
+
+
+def test_native_retraction_keeps_request_arrival_and_continues_streaming_accounting(monkeypatch):
+    live = runtime(monkeypatch, capacity=1000)
+    req = request("one", "a", tokens=100)
+    live.register_visible_request(req)
+    adapter = live._paper_baseline
+    _, original_arrival = adapter.requests[req.rid]
+    req.cache_request_handle.attempt_id = 1
+    live.on_requests_requeued([req], is_retracted=True)
+    key, arrived = adapter.requests[req.rid]
+    assert key == live.visible[req.rid] and arrived == original_arrival
+    req.output_ids.extend(range(50))
+    adapter.next_tick = 0.
+    adapter.tick(now=0.)
+    assert adapter.policy.programs["a"].tokens == 152
+    assert adapter.counts["registered"] == 1
+    live.close()
+
+
+def test_a_port_without_streaming_context_accounting_cannot_qualify_as_thunderagent():
+    observed = state()
+    observed["paper_baseline"].pop("streaming_context_accounting")
+    with pytest.raises(ValueError, match="streaming context growth"):
+        validate_state("thunderagent", observed)
+
+
+def test_new_program_cannot_use_stale_decode_occupancy_between_control_ticks(monkeypatch):
+    live = runtime(monkeypatch, capacity=800)
+    first = request("first", "a", tokens=200)
+    live.register_visible_request(first)
+    adapter = live._paper_baseline
+    adapter.next_tick = float("inf")
+    first.output_ids.extend(range(398))
+    second = request("second", "b", tokens=100)
+    live.register_visible_request(second)
+    assert adapter.policy.programs["a"].tokens == 600
+    assert not adapter.policy.programs["b"].active
     live.close()

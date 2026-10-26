@@ -7,6 +7,8 @@ from unittest.mock import Mock, patch
 import pytest
 
 from beliefkv.core.events import RuntimeEventKind as K
+from beliefkv.core.events import EventConfidence, ExecutionMode
+from beliefkv.control.causal_graph import InvocationState
 from beliefkv.runtime.sglang_v0520_runtime import SPAWN_FULL_PREPARE_MAX_BYTES
 from tests.test_sglang_v0520_runtime import event, final_stage_runtime, req
 
@@ -22,6 +24,12 @@ def fixture():
     runtime.attach_native_cache(NS(prepare_beliefkv_spawn_full=prepare))
     runtime.graph.invocations["parent"].state = runtime.graph.invocations["child"].state
     runtime.graph.invocations["child"].parent_invocation_id = "parent"
+    runtime._spawn_full_prepares.clear()
+    for name in (
+        "spawn_full_prepare_queued", "spawn_full_prepare_coalesced",
+        "join_wait_full_prepare_queued",
+    ):
+        runtime.counts.pop(name, None)
     return runtime, key, prepare
 
 
@@ -236,6 +244,126 @@ def test_context_compaction_retires_backup_even_during_the_binding_gap():
         ),))
         runtime.dispatch_spawn_prepare()
         assert not runtime._spawn_full_prepares
+        prepare.assert_not_called()
+    finally:
+        runtime.close()
+
+
+def test_background_spawn_keeps_parent_ready_and_join_wait_refreshes_backup():
+    runtime, key, prepare = fixture()
+    try:
+        runtime.on_events((event(
+            7, K.SPAWN, invocation_id="parent", target_invocation_id="child",
+            execution_mode=ExecutionMode.BACKGROUND,
+        ),))
+        assert runtime.graph.invocations["parent"].state is InvocationState.READY
+        assert not runtime.physical_ledger.pending_count
+        assert not runtime.completed_physical_actions
+        runtime.dispatch_spawn_prepare()
+        runtime._spawn_full_prepares.clear()
+        runtime.on_events((event(
+            8, K.JOIN_WAIT, invocation_id="parent", join_id="join",
+        ),))
+        assert runtime.graph.invocations["parent"].state is InvocationState.WAIT_JOIN
+        assert runtime._spawn_full_prepares == {key.context_id: key}
+        assert runtime.counts["join_wait_full_prepare_queued"] == 1
+        runtime._spawn_prepare_next_ms = 0.
+        runtime.dispatch_spawn_prepare()
+        assert prepare.call_count == 2
+    finally:
+        runtime.close()
+
+
+def test_actual_join_wait_queues_backup_without_a_new_spawn():
+    runtime, key, prepare = fixture()
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    try:
+        runtime.on_events((event(
+            7, K.JOIN_WAIT, invocation_id="parent", join_id="join",
+        ),))
+        assert runtime._spawn_full_prepares == {key.context_id: key}
+        assert runtime.counts["join_wait_full_prepare_queued"] == 1
+        runtime.dispatch_spawn_prepare()
+        prepare.assert_called_once()
+        [issued] = [row for row in records if row["event"] == "spawn_full_prepare"]
+        assert issued["trigger_kind"] == "blocked_join_wait"
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+def test_already_satisfied_join_does_not_prepare_or_offload_ready_parent():
+    runtime, _key, prepare = fixture()
+    try:
+        runtime.on_events((
+            event(7, K.RETURN, invocation_id="child"),
+            event(8, K.RETURN, invocation_id="other"),
+            event(9, K.JOIN_WAIT, invocation_id="parent", join_id="join"),
+        ))
+        assert runtime.graph.invocations["parent"].state is InvocationState.READY
+        assert not runtime._spawn_full_prepares
+        runtime.dispatch_spawn_prepare()
+        prepare.assert_not_called()
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+def test_join_wait_explicitly_counts_missing_native_session_instead_of_claiming_backup():
+    runtime, key, prepare = fixture()
+    runtime.context_sessions[key.context_id] = replace(
+        key, session_id=None, session_generation=None,
+    )
+    try:
+        runtime.on_events((event(
+            7, K.JOIN_WAIT, invocation_id="parent", join_id="join",
+        ),))
+        assert not runtime._spawn_full_prepares
+        assert runtime.counts["join_wait_full_prepare_unbound"] == 1
+        runtime.dispatch_spawn_prepare()
+        prepare.assert_not_called()
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("evidence", (
+    {"confidence": EventConfidence.INFERRED},
+    {"attributes": {"source": "agentx_timestamp_inferred_join"}},
+    {"attributes": {"online_observable": False}},
+))
+def test_inferred_join_wait_cannot_park_parent_prepare_or_change_priority(evidence):
+    runtime, key, prepare = fixture()
+    try:
+        revision = runtime.semantic_revision
+        runtime.on_events((event(
+            7, K.JOIN_WAIT, invocation_id="parent", join_id="join", **evidence,
+        ),))
+        assert runtime.graph.invocations["parent"].state is InvocationState.READY
+        assert runtime.semantic_revision == revision
+        assert not runtime._spawn_full_prepares
+        assert not runtime._join_priority_pending
+        assert not runtime._confirmed_join_tickets
+        assert not runtime.join_wait_hints
+        assert runtime.counts["unobserved_join_event_ignored"] == 1
+        runtime.dispatch_spawn_prepare()
+        prepare.assert_not_called()
+        assert runtime.context_sessions[key.context_id] == key
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+def test_direct_prepare_entry_refuses_inferred_join_even_with_existing_wait_state():
+    runtime, _key, prepare = fixture()
+    try:
+        runtime.graph.invocations["parent"].state = InvocationState.WAIT_JOIN
+        runtime._queue_join_wait_prepare(event(
+            7, K.JOIN_WAIT, invocation_id="parent", join_id="join",
+            confidence=EventConfidence.INFERRED,
+        ))
+        assert not runtime._spawn_full_prepares
+        runtime.dispatch_spawn_prepare()
         prepare.assert_not_called()
     finally:
         runtime.close()

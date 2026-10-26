@@ -943,6 +943,22 @@ def test_cold_reclaim_excludes_every_node_in_the_target_prefix():
     )
 
 
+def test_tool_prefetch_cannot_borrow_join_authority_to_reclaim_a_ready_queued_peer():
+    runtime, key, opportunity, cache, _ = batch_fixture("tool_wait")
+    cache.reclaim_beliefkv_handoff_capacity = Mock(return_value={0: 16})
+    try:
+        with patch.object(runtime, "_publish_parent_pressure_candidates"), \
+            patch.object(runtime, "_wait_prefetch_opportunity", return_value=opportunity), \
+            patch.object(runtime, "_queued_full_donor_scope") as queue_authority:
+            runtime._reclaim_wait_prefetch_capacity(
+                key, replace(opportunity, fits_current_free_lists=False), source="tool_wait",
+            )
+        queue_authority.assert_not_called()
+        cache.reclaim_beliefkv_handoff_capacity.assert_called_once()
+    finally:
+        runtime.close()
+
+
 @pytest.mark.parametrize("source", ["join_ticket", "tool_wait"])
 def test_wait_restore_keeps_native_reserve_from_planning_through_enqueue(source):
     runtime, key, opportunity, cache, _ = batch_fixture(source)

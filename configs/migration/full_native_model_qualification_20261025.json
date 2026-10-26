@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "purpose": "bounded_full_sessionless_model_qualification",
+  "candidate": "configs/migration/full_sessionless_prefix_candidate_20261025.json",
+  "max_requests": 6,
+  "prompt_tokens_min": 65536,
+  "prompt_tokens_max": 131072,
+  "child_prompt_tokens": 128,
+  "generated_tokens": 8,
+  "max_logprob_absolute_delta": 0.05,
+  "sampling_seed": 21,
+  "stage_timeout_seconds": 120,
+  "scope": "Controlled runtime events and unforced greedy outputs; not AgentX semantic EOS, source capture, whole-population qualification or performance acceptance.",
+  "whole_population_qualified": false,
+  "performance_accepted": false
+}

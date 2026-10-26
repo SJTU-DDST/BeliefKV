@@ -11,6 +11,7 @@ import time
 from typing import Awaitable, Callable, Iterable, Mapping
 
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind as Kind
+from beliefkv.experiments.replay_timing import ReplayIdleClock, ReplayTimingPolicy
 from beliefkv.runtime.clock_evidence import local_monotonic_clock_domain
 from beliefkv.runtime.replay_token_capture import native_request_expectations
 
@@ -520,6 +521,8 @@ async def execute_causal_replay(
     plan: CausalReplayPlan,
     execute_request: Callable[[str, RuntimeEvent], Awaitable[NativeReplayCompletion]],
     emit_event: Callable[[RuntimeEvent], Awaitable[None]],
+    *,
+    timing_policy: ReplayTimingPolicy | None = None,
 ) -> dict:
     """Release only ready work; a backend must report its actual native completion."""
     nodes = {node.node_id: node for node in plan.nodes}
@@ -541,16 +544,16 @@ async def execute_causal_replay(
         raise CausalReplayError("replay requires an identified local monotonic clock")
     origin = time.monotonic() * 1000.
     completed, running, dispatched, tool_started, visible_requests = {}, {}, set(), {}, {}
+    deadlines = {}
+    idle_clock = ReplayIdleClock(
+        timing_policy or ReplayTimingPolicy(),
+        {key: node.workflow_id for key, node in nodes.items()}, origin,
+    )
     workflow_releases, workflow_elapsed = {}, {}
     emitted = 0
 
     async def execute(node):
         nonlocal emitted
-        deadline = max((completed[item] for item in node.dependencies), default=origin)
-        deadline += node.delay_ms
-        wait_ms = deadline - time.monotonic() * 1000.
-        if wait_ms > 0:
-            await asyncio.sleep(wait_ms / 1000.)
         if node.request_id is not None:
             submitted = time.monotonic() * 1000.
             submit = visible_requests.pop(node.request_id)
@@ -598,14 +601,43 @@ async def execute_causal_replay(
     try:
         while sorter.is_active():
             for key in sorter.get_ready():
-                task = asyncio.create_task(execute(nodes[key]), name="causal_replay:" + key)
+                node = nodes[key]
+                deadlines[key] = max(
+                    (completed[item] for item in node.dependencies), default=origin,
+                ) + node.delay_ms
+            now = time.monotonic() * 1000.
+            busy = {nodes[key].workflow_id for key in running.values()}
+            idle_clock.adjust(deadlines, busy, now)
+            for key in tuple(key for key, deadline in deadlines.items() if deadline <= now):
+                node = nodes[key]
+                del deadlines[key]
+                if node.request_id is not None:
+                    idle_clock.request_started(node.workflow_id)
+                task = asyncio.create_task(execute(node), name="causal_replay:" + key)
                 running[task] = key
-            if not running:
+            if not running and not deadlines:
                 raise CausalReplayError("replay has no runnable work")
-            done, _ = await asyncio.wait(running, return_when=asyncio.FIRST_COMPLETED)
+            busy = {nodes[key].workflow_id for key in running.values()}
+            timeout = (
+                idle_clock.next_wakeup_ms(deadlines, busy, now) / 1000.
+                if deadlines else None
+            )
+            if not running:
+                idle_started = time.monotonic() * 1000.
+                await asyncio.sleep(timeout)
+                if timeout > 0:
+                    idle_clock.observe_timer_idle_wait(
+                        idle_started, time.monotonic() * 1000.,
+                    )
+                continue
+            done, _ = await asyncio.wait(
+                running, timeout=timeout, return_when=asyncio.FIRST_COMPLETED,
+            )
             for task in done:
                 key = running.pop(task)
                 completed[key] = task.result()
+                if nodes[key].request_id is not None:
+                    idle_clock.request_finished(nodes[key].workflow_id, time.monotonic() * 1000.)
                 sorter.done(key)
     finally:
         pending = tuple(running)
@@ -614,11 +646,18 @@ async def execute_causal_replay(
         await asyncio.gather(*pending, return_exceptions=True)
     if dispatched != set(plan.request_usage):
         raise CausalReplayError("replay request population is incomplete")
+    timing = idle_clock.summary()
+    timing["replay_wall_time_ms"] = time.monotonic() * 1000. - origin
+    timing["no_inflight_external_timer_wait_fraction"] = (
+        timing["no_inflight_external_timer_wait_ms"] / timing["replay_wall_time_ms"]
+        if timing["replay_wall_time_ms"] > 0 else 0.
+    )
     return {
         "causal_execution_completed": True,
         "completed_requests": len(dispatched),
         "emitted_events": emitted,
         "workflow_elapsed_ms": workflow_elapsed,
+        "replay_timing": timing,
         "exact_tokens_verified": False,
         "gpu_replay_qualified": False,
         "performance_accepted": False,

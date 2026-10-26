@@ -9,6 +9,7 @@ from collections import Counter, defaultdict
 from dataclasses import replace
 import hashlib
 import json
+import math
 from pathlib import Path
 import sys
 
@@ -38,7 +39,12 @@ def sealed_records(path: Path, seals: list[dict]):
 
 def read_tools(arm: Path, seals: list[dict]):
     windows, joins = defaultdict(list), []
-    for path in sorted(arm.glob("client_*/workflows/*/runtime_events.deepagents.jsonl")):
+    replay_path = arm / "replay/runtime_events.replay.jsonl"
+    paths = (
+        [replay_path] if replay_path.is_file()
+        else sorted(arm.glob("client_*/workflows/*/runtime_events.deepagents.jsonl"))
+    )
+    for path in paths:
         contexts, active = {}, {}
         for row in sealed_records(path, seals):
             scope = row["workflow_id"], row["invocation_id"]
@@ -277,8 +283,15 @@ def audit(arm: Path) -> dict:
     opportunity_path = arm / "opportunities/admission_opportunities.jsonl"
     for row in sealed_records(opportunity_path, seals):
         kind = row["event"]
-        if kind == "safe_point_census":
-            offset = row["ts_ms"] - row["monotonic_ms"]
+        if kind == "safe_point_census" or (
+            kind == "admission_runtime_state" and "monotonic_ms" in row
+        ):
+            pair = row.get("ts_ms"), row.get("monotonic_ms")
+            if not all(
+                type(value) in (int, float) and math.isfinite(value) for value in pair
+            ):
+                raise ValueError("scheduler clock sample is missing or nonfinite")
+            offset = pair[0] - pair[1]
         elif kind == "tool_wait_forecast":
             forecasts[row["context_id"], row["context_epoch"]] = row
             forecast_count += 1
@@ -318,9 +331,17 @@ def audit(arm: Path) -> dict:
         "path": str(capacity_path), "bytes": len(capacity_bytes),
         "sha256": hashlib.sha256(capacity_bytes).hexdigest(),
     })
-    # Device Mamba allocation includes a reserved slot absent from usable size.
-    full_unit = capacity["host_full_bytes"] // capacity["host_full_tokens"]
-    mamba_unit = capacity["host_mamba_bytes"] // capacity["host_mamba_slots"]
+    units = {}
+    for pool, count_key in (("full", "tokens"), ("mamba", "slots")):
+        size, count = capacity[f"host_{pool}_bytes"], capacity[f"host_{pool}_{count_key}"]
+        if (
+            type(size) is not int or type(count) is not int
+            or size < 0 or count < 0 or (count == 0 and size != 0)
+            or (count > 0 and (size == 0 or size % count))
+        ):
+            raise ValueError(f"invalid Host {pool} pool geometry")
+        units[pool] = size // count if count else 0
+    full_unit, mamba_unit = units["full"], units["mamba"]
     backups = {}
     for source in sorted({row["source"] for row in prepared.values()}):
         selected = [row for row in prepared.values() if row["source"] == source]
@@ -393,7 +414,8 @@ def audit(arm: Path) -> dict:
             "as a nonpositive remaining-time label and a false long-wait decision, "
             "rather than dropping it from precision. Unclosed or ambiguous "
             "boundaries stay unknown. Event wall time is converted using the "
-            "latest preceding paired scheduler census, so millisecond clock "
+            "latest preceding paired scheduler census or runtime-state sample, "
+            "so millisecond clock "
             "pairing uncertainty remains. Only preceding accepted forecasts enter "
             "reconstructed predictions; subsequent tool ends are labels only. "
             "The 2000ms precision measures whether selected waits remain open long "

@@ -22,11 +22,14 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.causal_replay_tokens import CapturedTokenCorpus
-from beliefkv.experiments.delegation_policy import DYNAMIC_NESTED_IN_GRAPH_PROFILE, NESTED_IN_GRAPH_PROFILE
+from beliefkv.experiments.delegation_policy import (
+    DYNAMIC_NESTED_IN_GRAPH_PROFILE, NESTED_IN_GRAPH_PROFILE, SHORT_WORKSTREAM_IN_GRAPH_PROFILE,
+)
 from beliefkv.experiments.internal_comparison import arm_environment
 from beliefkv.experiments.paper_baselines import (
     RUNTIME_ARMS as PAPER_CONTROLS, environment as paper_environment,
     server_flags as paper_server_flags,
+    TOKENCAKE_ARMS, tokencake_parameters, validate_tokencake_parameters,
 )
 from beliefkv.experiments.subagent_retention import (
     ORDER as RETENTION_ORDER, environment as retention_environment,
@@ -55,7 +58,7 @@ SERVER_FIELDS = (
     "H2D_OPPORTUNITY_SAMPLING", "JOIN_PREFETCH_TRIGGER",
     "JOIN_PREDICTION_MIN_FULL_BYTES", "JOIN_PREDICTION_INTERVAL_MS",
     "JOIN_PREDICTION_MAX_CANDIDATES", "ONLINE_TOOL_TIMING",
-    "BORROWABLE_PARENT_HEADROOM", "AGENT_ADMISSION",
+    "BORROWABLE_PARENT_HEADROOM", "AGENT_ADMISSION", "AGENT_BLOCKED_LENDING",
 )
 
 
@@ -197,6 +200,7 @@ def experiment_reference(reference, spec):
         or any(type(key) is not str or type(value) is not str for key, value in common.items())
         or common.get("FANOUT_PROFILE") not in (
             NESTED_IN_GRAPH_PROFILE, DYNAMIC_NESTED_IN_GRAPH_PROFILE,
+            SHORT_WORKSTREAM_IN_GRAPH_PROFILE,
         )
         or common.get("BELIEFKV_SUBAGENT_RETENTION") != "off"
         or any(
@@ -298,8 +302,9 @@ def preflight_runtime(settings, model_path):
         ),
         "tool_restore_mode": settings["TOOL_RESTORE_MODE"],
         "enable_agent_working_set": settings.get("BELIEFKV_AGENT_ADMISSION", "off") in (
-            "working_set", "thunderagent", "thunderagent_retained",
+            "working_set", "thunderagent", "thunderagent_retained", "thunderagent_workflow",
         ),
+        "agent_blocked_lending": settings.get("BELIEFKV_AGENT_BLOCKED_LENDING", "idle"),
         "restore_tiers": settings.get("RESTORE_TIERS", settings["BELIEFKV_RESTORE_TIERS"]),
         "enable_tool_prefetch": settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "1",
         "enable_frontier_restore": settings["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == "1",
@@ -599,7 +604,7 @@ def observed_configuration(plan, label, arm, *, final=False):
             plan.get("reference_environment", {}).get("AGENT_ADMISSION", "off"),
         )
         expected_agents = mode == "full" and agent_strategy in (
-            "working_set", "thunderagent", "thunderagent_retained",
+            "working_set", "thunderagent", "thunderagent_retained", "thunderagent_workflow",
         )
         actual_agents = state.get("agent_admission")
         if expected_agents:
@@ -608,6 +613,8 @@ def observed_configuration(plan, label, arm, *, final=False):
                 or actual_agents.get("policy") != (
                     "thunderagent_retained_with_native_migration"
                     if agent_strategy == "thunderagent_retained" else
+                    "thunderagent_workflow_with_native_migration"
+                    if agent_strategy == "thunderagent_workflow" else
                     "thunderagent_with_native_migration" if agent_strategy == "thunderagent"
                     else "agent_working_set_with_native_migration"
                 )
@@ -618,7 +625,7 @@ def observed_configuration(plan, label, arm, *, final=False):
                 or actual_agents.get("counts", {}).get("completed") != plan["source_plan"]["requests"]
             ):
                 raise ValueError("agent working-set policy did not execute the declared request population")
-            if agent_strategy == "thunderagent_retained" and (
+            if agent_strategy in ("thunderagent_retained", "thunderagent_workflow") and (
                 actual_agents.get("blocked_agents_retain_eligibility") is not True
                 or actual_agents.get("control_interval_ms") != 5000.
                 or actual_agents.get("maintenance_interval_ms") != 1000
@@ -627,6 +634,42 @@ def observed_configuration(plan, label, arm, *, final=False):
                 or actual_agents.get("ordinary_restore_reservation_ms") != 0
             ):
                 raise ValueError("retained ThunderAgent policy differs from declared control")
+            common = plan["reference_environment"]
+            if actual_agents.get("blocked_lending", "idle") != common.get(
+                "BELIEFKV_AGENT_BLOCKED_LENDING", common.get("AGENT_BLOCKED_LENDING", "idle"),
+            ):
+                raise ValueError("effective blocked agent lending differs from declared control")
+            if actual_agents.get("join_loan_recall", False) is not (
+                actual_agents.get("blocked_lending") == "backed_demand_recall"
+            ):
+                raise ValueError("effective JOIN loan recall differs from declared control")
+            if "AGENT_COADMIT_JOIN_CHILDREN" in common and (
+                actual_agents.get("coadmit_join_children") is not (
+                    common["AGENT_COADMIT_JOIN_CHILDREN"] == "1"
+                )
+            ):
+                raise ValueError("effective sibling co-admission differs from declared control")
+            if (
+                agent_strategy in ("thunderagent_retained", "thunderagent_workflow")
+                and common.get("TOOL_PREFETCH") == "1"
+                and common.get("TOOL_RESTORE_MODE", "speculative") == "speculative"
+                and actual_agents.get("tool_warming_eligibility")
+                != "existing_active_tool_wait_only_no_new_reservation"
+            ):
+                raise ValueError("retained tool warming differs from declared eligibility")
+            if agent_strategy == "thunderagent_workflow":
+                service = actual_agents.get("workflow_service") or {}
+                if any(
+                    service.get(name) != expected for name, expected in {
+                        "first_service_target_s": 30.,
+                        "ready_gap_target_s": 15.,
+                        "minimum_agent_tenure_s": 15.,
+                        "handover_interval_s": 5.,
+                        "observation": "selected_batch_submission_not_token_delivery",
+                        "capacity_or_running_work_may_defer_target": True,
+                    }.items()
+                ):
+                    raise ValueError("workflow service candidate differs from declared control")
         elif actual_agents is not None:
             raise ValueError("undeclared agent working-set admission")
     if retention:
@@ -653,6 +696,12 @@ def observed_configuration(plan, label, arm, *, final=False):
             if state.get("tool_prefetch_priority_ms") != expected:
                 raise ValueError("effective tool prefetch priority window differs")
     common = plan.get("reference_environment", {})
+    if label in TOKENCAKE_ARMS:
+        state = qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
+        if state is not None:
+            validate_tokencake_parameters(
+                state.get("paper_baseline") or {}, tokencake_parameters(common),
+            )
     requested_settings = (
         paper_environment(common, label) if external_policy else None
     )
@@ -987,8 +1036,6 @@ def register(args):
     ):
         raise ValueError("GPU check and controlled engine compatibility differ")
     fresh._require_clean(ROOT)
-    if qualified.command(["git", "-C", str(ROOT), "branch", "--show-current"]) != "main":
-        raise ValueError("freeze qualified main")
     revision = qualified.command(["git", "-C", str(ROOT), "rev-parse", "HEAD"])
     checkout = comparison.EXPERIMENTS / ".worktrees" / f"beliefkv-causal-{revision[:12]}"
     subprocess.run(

@@ -2399,3 +2399,56 @@ def test_aborted_waiting_and_started_requests_do_not_leave_pending_telemetry(
     status = json.loads((tmp_path / "server/native_telemetry_status.json").read_text())
     assert status["pending_request_count"] == 0
     assert status["pending_batch_count"] == 0
+
+
+@pytest.mark.parametrize("requeues", (1, 3))
+def test_requeued_active_requests_keep_one_arrival_and_drain_after_completion(tmp_path, requeues):
+    audit = NativeReactiveTelemetry(tmp_path / "server")
+    request = SimpleNamespace(
+        rid="requeued", beliefkv_metadata={
+            "root_workflow_id": "workflow", "invocation_id": "agent",
+            "context_id": "context", "context_epoch": 0,
+        },
+        origin_input_ids=[1, 2], output_ids=[], extend_input_len=2,
+        cached_tokens_device=0, cached_tokens_host=0,
+        sampling_params=SimpleNamespace(max_new_tokens=8),
+        time_stats=SimpleNamespace(beliefkv_ingress_timing_ms={}),
+        finished=lambda: False,
+    )
+    try:
+        audit.on_enqueue(request)
+        arrival = audit._pending[request.rid]
+        audit.on_enqueue(request)
+        assert audit._pending[request.rid] == arrival
+        batch = SimpleNamespace(
+            forward_mode=_Mode("prefill"), launch_ts=time.monotonic(),
+            forward_iter=1, reqs=[request],
+        )
+        audit.on_launch(batch)
+        audit.on_completed(batch)
+        for iteration in range(requeues):
+            audit.on_enqueue(request)
+            assert not audit._pending
+            assert request.time_stats.beliefkv_ingress_timing_ms[
+                "native_queue_registered_ts_ms"
+            ] == arrival
+            batch.forward_iter = iteration + 2
+            batch.launch_ts = time.monotonic()
+            audit.on_launch(batch)
+            audit.on_completed(batch)
+        batch.forward_mode = _Mode("decode")
+        batch.forward_iter = requeues + 2
+        batch.launch_ts = time.monotonic()
+        audit.on_launch(batch)
+        request.output_ids.append(3)
+        request.finished = lambda: True
+        audit.on_completed(batch)
+        audit.on_enqueue(request)
+    finally:
+        audit.close()
+    status = json.loads((tmp_path / "server/native_telemetry_status.json").read_bytes())
+    assert status["pending_request_count"] == status["pending_batch_count"] == 0
+    assert status["request_cache_evidence"]["all"]["request_count"] == 1
+    assert status["writer_queue_depth"] == status["failed_records"] == 0
+    events = _read(tmp_path / "server/runtime_events.sglang.jsonl")
+    assert [event["kind"] for event in events] == ["llm_submit", "llm_result"]

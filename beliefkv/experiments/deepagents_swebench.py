@@ -45,6 +45,7 @@ from beliefkv.experiments.delegation_policy import (
     DYNAMIC_NESTED_IN_GRAPH_PROFILE,
     DYNAMIC_NESTED_IN_GRAPH_PROFILES,
     REUSABLE_NESTED_IN_GRAPH_PROFILE,
+    SHORT_WORKSTREAM_IN_GRAPH_PROFILE,
     IN_GRAPH_SUBAGENT_PROFILES,
     NESTED_COORDINATOR_ROLE,
     NESTED_IN_GRAPH_PROFILE,
@@ -67,6 +68,12 @@ from beliefkv.runtime.reusable_subagent_middleware import (
     REUSABLE_DELEGATION_PROMPT, ReusableSubAgentMiddleware,
 )
 from beliefkv.experiments.sandbox_progress import observe_output
+from beliefkv.experiments.sandbox_environment import (
+    merge_project_environment, project_environment,
+)
+from beliefkv.experiments.test_tool_evidence import (
+    ENVIRONMENT_FAILURE_STATUSES, is_test_command, result_evidence,
+)
 from beliefkv.predictor.project_tool_history import ProjectToolHistory
 from beliefkv.experiments.swebench_prompt import (
     build_swebench_task_prompt,
@@ -367,13 +374,35 @@ class SweBenchWorkload:
     source_repo: Path | None = None
     docker_image: str | None = None
     preflight_command: str | None = None
+    test_command: str | None = None
+    sandbox_environment: Mapping[str, str] | None = None
     oracle_kv_pressure: OracleKVPressureContext | None = None
     task_kind: str = "swebench"
     frozen_repository_context: FrozenRepositoryContext | None = None
+    test_entrypoint_scope: str | None = None
 
 
 def repository_sandbox_contract(workload: SweBenchWorkload) -> str:
-    return repository_sandbox_contract_for_repo(workload.repo)
+    contract = repository_sandbox_contract_for_repo(workload.repo)
+    if workload.test_command:
+        contract += (
+            "\nThe environment-qualified baseline test entry point is:\n"
+            f"  {workload.test_command}\n"
+            "Preserve its working directory, import path, and framework settings "
+            "when selecting focused tests. A collection or fixture-setup error is "
+            "not evidence that the behavior under test ran; fix that configuration "
+            "or report the blocker honestly before claiming validation.\n"
+        )
+        if workload.test_entrypoint_scope == "original_production_examples_not_entire_test_suite":
+            contract += (
+                "This baseline executes original implementation examples. It is "
+                "an environment check, not validation of the requested change. "
+                "Add or run focused regression tests against project implementation "
+                "for the assigned behavior. Keep unrelated bundled-test collection "
+                "errors and test-local substitute implementations separate; do not "
+                "count them as passing application validation.\n"
+            )
+    return contract
 
 
 @dataclass(frozen=True)
@@ -421,6 +450,13 @@ def load_workload_bundle(path: Path) -> WorkloadBundle:
                 if item.get("preflight_command")
                 else None
             ),
+            test_command=(
+                str(item["test_command"]) if item.get("test_command") else None
+            ),
+            test_entrypoint_scope=(
+                str(item["test_entrypoint_scope"]) if item.get("test_entrypoint_scope") else None
+            ),
+            sandbox_environment=project_environment(item.get("sandbox_environment")),
             task_kind=str(item.get("task_kind", "swebench")),
             frozen_repository_context=parse_repository_context(
                 item.get("frozen_repository_context")
@@ -639,6 +675,7 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         unbuffered_output_shadow: bool = False,
         test_progress_shadow: bool = False,
         random_seed: int | None = None,
+        sandbox_environment: Mapping[str, str] | None = None,
     ) -> None:
         super().__init__(root_dir=workspace, virtual_mode=True)
         if cpus <= 0 or memory_gib <= 0 or default_timeout_s <= 0:
@@ -666,6 +703,7 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         ):
             raise ValueError("sandbox random seed must be an unsigned 32-bit integer")
         self.random_seed = random_seed
+        self.sandbox_environment = project_environment(sandbox_environment)
         self.support_dir = support_dir.resolve() if support_dir is not None else None
         if not self.test_env_path.startswith("/"):
             raise ValueError("sandbox test environment path must be absolute")
@@ -745,6 +783,12 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
                 f"PYTHONHASHSEED={self.random_seed}",
                 f"BELIEFKV_SANDBOX_RANDOM_SEED={self.random_seed}",
             )
+        if self.sandbox_environment:
+            merged = merge_project_environment(
+                dict(value.split("=", 1) for value in environment),
+                self.sandbox_environment,
+            )
+            environment = tuple(f"{key}={value}" for key, value in merged.items())
         return [item for value in environment for item in ("--env", value)]
 
     def _docker_exec_argv(self, command: str) -> list[str]:
@@ -1002,6 +1046,7 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         truncated = len(output) > self.max_output_chars
         if truncated:
             output = output[: self.max_output_chars] + "\n... output truncated ..."
+        test_evidence = result_evidence(output, exit_code) if is_test_command(command) else None
         self.audit.emit(
             "sandbox_execute",
             container_name=self._container_name,
@@ -1016,6 +1061,7 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
             output_chars=len(output),
             output_sha256=hashlib.sha256(output.encode("utf-8")).hexdigest(),
             truncated=truncated,
+            **({"test_execution": test_evidence} if test_evidence is not None else {}),
             **({
                 "first_output_after_execute_ms": timing.first_output_ms,
                 "last_output_after_execute_ms": timing.last_output_ms,
@@ -2378,9 +2424,12 @@ DYNAMIC MULTI-ROUND DELEGATION
 Complete this assignment through collaboration with task children. Use the full
 project snapshot to identify substantial independent workstreams and delegate
 them while you coordinate dependencies, integration, and the overall result.
-Every root workflow MUST delegate at least one substantive task and integrate
-its report before the final answer. If you already have a candidate solution,
-delegate an independent focused review or validation of that candidate.
+Every root workflow MUST complete at least one parallel delegation round with
+at least two substantive, independent task children. Submit those task calls
+together in ONE assistant response and integrate both reports before the final
+answer. Two separate one-child rounds do not satisfy this requirement.
+Choose complementary workstreams such as source-path analysis and independent
+reproduction, or separate review and validation of a candidate solution.
 Plan for two to three useful rounds when implementation, review, and validation
 expose further work; one early investigation should not absorb the whole repair.
 Delegate useful investigation, implementation, review, and validation work as
@@ -2406,7 +2455,7 @@ Do not paste the entire source snapshot into task descriptions or assign a
 child's nested questions to its siblings as well.
 
 Let the task determine whether investigation, implementation, review, or validation
-is needed next. Apart from the mandatory first delegation, there is no fixed phase
+is needed next. Apart from one required parallel round, there is no fixed phase
 order, mandatory role, or enforced round quota.
 For analysis-only work, validate the diagnosis without unrequested code changes.
 Do not duplicate finished work, add artificial tool delays, or pad the conversation
@@ -2448,6 +2497,9 @@ Available child types:
 
 DYNAMIC_COLLABORATIVE_TASK_INSTRUCTION = """
 Complete this assignment as a collaborating multi-agent team using task.
+Complete at least one root round with two or more independent task calls together
+in the same response; integrate all their reports. Serial single-child rounds
+do not replace this parallel round.
 Delegate substantial independent work, integrate the reports, and keep the
 dependent coordination work in the root. Continue using the team when new
 implementation, review, or validation needs arise after a JOIN or material edit.
@@ -2469,6 +2521,44 @@ Grandchildren receive only your task description and their own tools; pass the
 relevant paths, symbols, short evidence, and expected result, not the whole project.
 Do not expand the overall task or delegate the same investigation twice.
 Grandchildren are leaves; the maximum spawn depth is root=0, child=1, grandchild=2.
+"""
+
+SHORT_WORKSTREAM_ROOT_PROMPT = """
+SHORT, EVIDENCE-DRIVEN WORKSTREAMS
+Keep each child assignment small: one concrete diagnosis, one disjoint change,
+one regression case, or one compatibility check. Prefer two to four complementary
+children together when those deliverables can proceed independently. Retain
+dependent integration in the parent. Do not assign the entire repair to a child
+or ask one child to perform investigation, implementation, review, and validation
+of the whole project. After each JOIN, integrate the results and delegate newly
+exposed independent deliverables when useful. There is no required round count.
+
+Use real repository tools to establish evidence: reproduce relevant behavior,
+run focused tests against project implementation, and validate affected boundaries
+after changes. Run broader validation when the change warrants it. A collection
+error, missing dependency, skipped suite, or test-local substitute is not evidence
+that the project behavior was exercised; identify and repair the entry point or
+report the concrete blocker. Never add sleeps, repeat an unchanged failed command,
+or rerun finished checks merely to make a tool call longer.
+"""
+
+SHORT_WORKSTREAM_CHILD_PROMPT = """
+SMALL CHILD DELIVERABLE
+Resolve only the assigned bounded question or change, then report promptly with
+the concrete evidence, command outcomes, and remaining gaps. The parent will
+choose any subsequent assignment. Do not expand into the entire workflow.
+Use real project implementations in validation; distinguish task assertion
+failures from collection, dependency, and configuration failures. Use nested
+children only for independent substantive questions within this assignment.
+The model-call budget is a soft work target. Complete an in-flight tool or nested
+JOIN and produce an honest final report; do not claim unfinished work is complete.
+"""
+
+SHORT_WORKSTREAM_TASK_PROMPT = """
+Assign one narrow deliverable per child. Prefer a fresh bounded follow-up after
+integrating a report over extending one child into an open-ended repair.
+Require relevant implementation evidence or necessary real tool results.
+Do not duplicate finished investigations or repeat tools to increase waiting.
 """
 
 
@@ -2575,6 +2665,10 @@ class NativeDelegationRoundPromptMiddleware(AgentMiddleware[Any, Any, Any]):
 class DynamicDelegationPromptMiddleware(AgentMiddleware[Any, Any, Any]):
     """Keep delegation available without prescribing the next model action."""
 
+    def __init__(self, *, profile: str = DYNAMIC_NESTED_IN_GRAPH_PROFILE) -> None:
+        super().__init__()
+        self.short_workstreams = profile == SHORT_WORKSTREAM_IN_GRAPH_PROFILE
+
     def wrap_model_call(self, request: ModelRequest, handler: Any) -> ModelResponse:
         return handler(request.override(model_settings={
             **request.model_settings, "parallel_tool_calls": True,
@@ -2597,6 +2691,12 @@ class DynamicDelegationPromptMiddleware(AgentMiddleware[Any, Any, Any]):
             "required round count, role sequence, or next tool. Do not duplicate "
             "completed work; return naturally when the assignment is complete."
         )
+        if self.short_workstreams:
+            instruction += (
+                " Give each new child one small unresolved deliverable and let it "
+                "report promptly. Use necessary real project tools; do not repeat "
+                "finished checks or expand the task to create more rounds."
+            )
         updated = [
             message.model_copy(update={"content": _message_text(message) + instruction})
             if isinstance(message, ToolMessage)
@@ -2703,6 +2803,8 @@ def _autonomous_fanout_prompt(
         return DYNAMIC_NESTED_ROOT_PROMPT + "\n" + REUSABLE_DELEGATION_PROMPT
     if config.subagent_fanout_profile == DYNAMIC_NESTED_IN_GRAPH_PROFILE:
         return DYNAMIC_NESTED_ROOT_PROMPT
+    if config.subagent_fanout_profile == SHORT_WORKSTREAM_IN_GRAPH_PROFILE:
+        return DYNAMIC_NESTED_ROOT_PROMPT + "\n" + SHORT_WORKSTREAM_ROOT_PROMPT
     if config.subagent_fanout_profile == NESTED_IN_GRAPH_PROFILE:
         return NATIVE_NESTED_2TO4_PROMPT
     return AUTONOMOUS_NATURAL_SUBAGENT_PROMPT
@@ -3470,6 +3572,11 @@ def _autonomous_subagents(
                         if nested and dynamic else ""
                     )
                     + (
+                        "\n\n" + SHORT_WORKSTREAM_CHILD_PROMPT
+                        if config.subagent_fanout_profile == SHORT_WORKSTREAM_IN_GRAPH_PROFILE
+                        else ""
+                    )
+                    + (
                         budget_instruction(
                             config.child_work_budget_warning_calls,
                             config.child_work_budget_target_calls,
@@ -3553,7 +3660,11 @@ def _autonomous_subagents(
                     backend=backend,
                     private_state_keys=CONTEXT_LIFECYCLE_PRIVATE_STATE_KEYS,
                     **({
-                        "system_prompt": DYNAMIC_TASK_SYSTEM_PROMPT,
+                        "system_prompt": DYNAMIC_TASK_SYSTEM_PROMPT + (
+                            SHORT_WORKSTREAM_TASK_PROMPT
+                            if config.subagent_fanout_profile == SHORT_WORKSTREAM_IN_GRAPH_PROFILE
+                            else ""
+                        ),
                         "task_description": DYNAMIC_TASK_DESCRIPTION,
                     } if dynamic else {}),
                     subagents=_autonomous_subagents(
@@ -3563,7 +3674,9 @@ def _autonomous_subagents(
                 ),
             ])
             if dynamic:
-                subagents[-1]["middleware"].append(DynamicDelegationPromptMiddleware())
+                subagents[-1]["middleware"].append(DynamicDelegationPromptMiddleware(
+                    profile=config.subagent_fanout_profile,
+                ))
             elif name == NESTED_COORDINATOR_ROLE:
                 subagents[-1]["middleware"].append(InitialInGraphDelegationMiddleware(
                     audit=backend.audit, task_fanout=(2, 4),
@@ -3610,7 +3723,9 @@ def _build_autonomous_agent(
             audit=backend.audit, scope="autonomous:supervisor",
         ))
     if delegation_enabled and dynamic:
-        middleware.insert(0, DynamicDelegationPromptMiddleware())
+        middleware.insert(0, DynamicDelegationPromptMiddleware(
+            profile=config.subagent_fanout_profile,
+        ))
     elif delegation_enabled and config.subagent_fanout_profile in IN_GRAPH_SUBAGENT_PROFILES:
         middleware.insert(0, NativeDelegationRoundPromptMiddleware(
             backend.audit,
@@ -3629,7 +3744,11 @@ def _build_autonomous_agent(
                 backend=backend,
                 private_state_keys=CONTEXT_LIFECYCLE_PRIVATE_STATE_KEYS,
                 **({
-                    "system_prompt": DYNAMIC_TASK_SYSTEM_PROMPT,
+                    "system_prompt": DYNAMIC_TASK_SYSTEM_PROMPT + (
+                        SHORT_WORKSTREAM_TASK_PROMPT
+                        if config.subagent_fanout_profile == SHORT_WORKSTREAM_IN_GRAPH_PROFILE
+                        else ""
+                    ),
                     "task_description": DYNAMIC_TASK_DESCRIPTION,
                 } if dynamic else {}),
                 subagents=_autonomous_subagents(
@@ -3897,6 +4016,7 @@ def _run_planned_child(
         unbuffered_output_shadow=backend.unbuffered_output_shadow,
         test_progress_shadow=backend.test_progress_shadow,
         random_seed=backend.random_seed,
+        sandbox_environment=backend.sandbox_environment,
     )
     deadline_controller.register_backend(child_backend)
     try:
@@ -4736,6 +4856,7 @@ def classify_workflow_measurement(
     control_delivery: Mapping[str, Any],
     trace: Mapping[str, Any],
     child_reports: Sequence[Mapping[str, Any]] = (),
+    require_healthy_tests: bool = False,
 ) -> dict[str, Any]:
     """Separate system-measurement validity from native agent quality."""
 
@@ -4750,6 +4871,11 @@ def classify_workflow_measurement(
         system_reasons.append("protocol_repair_failed")
     if int(agent_control.get("root_delegation_requirement_failures", 0)):
         system_reasons.append("root_delegation_requirement_unmet")
+    if require_healthy_tests:
+        if int(agent_control.get("test_environment_failures", 0)):
+            system_reasons.append("test_environment_failure")
+        if not int(agent_control.get("executed_test_calls", 0)):
+            system_reasons.append("missing_test_execution_evidence")
     if any(
         "no_natural_final_text" in (
             (item.get("semantic_completion") or {}).get("unresolved") or []
@@ -4826,7 +4952,18 @@ def summarize_agent_control(path: Path) -> dict[str, Any]:
         str(item["event"]) for item in records
         if str(item.get("event", "")).startswith("root_delegation_")
     )
+    tests = [
+        item["test_execution"] for item in records
+        if item.get("event") == "sandbox_execute"
+        and isinstance(item.get("test_execution"), dict)
+    ]
     return {
+        "test_command_count": len(tests),
+        "executed_test_calls": sum(item["reported_test_calls"] for item in tests),
+        "test_environment_failures": sum(
+            item["status"] in ENVIRONMENT_FAILURE_STATUSES for item in tests
+        ),
+        "test_execution_status_counts": dict(Counter(item["status"] for item in tests)),
         "root_delegation_return_deferrals": delegation_counts["root_delegation_return_deferred"],
         "root_delegation_required_task_attempts": delegation_counts["root_delegation_required_task_attempt"],
         "root_delegation_requirement_failures": delegation_counts["root_delegation_requirement_failed"],
@@ -4903,6 +5040,7 @@ def _run_workflow(
             os.environ.get("BELIEFKV_SANDBOX_TEST_PROGRESS_SHADOW") == "1"
         ),
         random_seed=config.sampling_seed,
+        sandbox_environment=workload.sandbox_environment,
     )
     workflow_token = hashlib.sha256(
         f"{config.output_dir.name}:{config.mode}:{workload.instance_id}".encode()
@@ -5125,6 +5263,7 @@ def _run_workflow(
         control_delivery=control_delivery,
         trace=trace,
         child_reports=child_reports,
+        require_healthy_tests=False,
     )
     task_correctness_valid = (
         bool(correctness_gate.get("passed")) and not bool(control_delivery.get("degraded"))
@@ -5146,6 +5285,8 @@ def _run_workflow(
         "base_commit": workload.base_commit,
         "source_repo": str(workload.source_repo) if workload.source_repo else None,
         "docker_image": workload.docker_image or config.docker_image,
+        "sandbox_environment": backend.sandbox_environment,
+        "qualified_test_command": workload.test_command,
         "mode": config.mode,
         "workflow_id": workflow_id,
         "outcome": outcome,

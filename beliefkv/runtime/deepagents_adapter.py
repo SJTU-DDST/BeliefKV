@@ -381,6 +381,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._join_parent: dict[str, str] = {}
         self._first_satisfied_join_by_parent: dict[str, tuple[str, float]] = {}
         self._model_served_join_parents: dict[str, int] = {}
+        self._model_served_join_max_members: dict[str, int] = {}
         self._post_join_model_runs: dict[str, str] = {}
         self._semantic_gate_result: dict[str, Any] | None = None
         self._ordinary_tools: dict[str, _OrdinaryToolRun] = {}
@@ -2157,16 +2158,21 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 self._first_satisfied_join_by_parent.setdefault(
                     parent_id, (pending.join_id, ts_ms)
                 )
-                if any(
+                served_members = sum(
                     self._model_epochs.get(child_id, -1) > (
                         self._identities[child_id].metadata.context_epoch
                         if self._identities[child_id].metadata.context_mode == ContextMode.RESUME.value
                         else -1
                     )
                     for child_id in self._join_members[pending.join_id]
-                ):
+                )
+                if served_members:
                     self._model_served_join_parents[parent_id] = (
                         self._model_served_join_parents.get(parent_id, 0) + 1
+                    )
+                    self._model_served_join_max_members[parent_id] = max(
+                        self._model_served_join_max_members.get(parent_id, 0),
+                        served_members,
                     )
         kind = (
             RuntimeEventKind.INVOCATION_CANCEL
@@ -2236,12 +2242,16 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             )
         return tuple(events)
 
-    def has_completed_join(self, invocation_id: str | None = None) -> bool:
+    def has_completed_join(
+        self, invocation_id: str | None = None, *, minimum_members: int = 1,
+    ) -> bool:
         """Check actual successful child returns without scanning conversation history."""
+        if type(minimum_members) is not int or minimum_members < 1:
+            raise ValueError("minimum JOIN members must be a positive integer")
         with self._lock:
-            return (
-                invocation_id or self.root_metadata.invocation_id
-            ) in self._model_served_join_parents
+            return self._model_served_join_max_members.get(
+                invocation_id or self.root_metadata.invocation_id, 0,
+            ) >= minimum_members
 
     def completed_join_count(self, invocation_id: str | None = None) -> int:
         with self._lock:
