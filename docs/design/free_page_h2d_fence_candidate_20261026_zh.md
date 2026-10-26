@@ -91,6 +91,54 @@ allocator 代次、scheduler 绑定/前导以及 fixture 的方法选择扩展�
 不包含真实 CUDA event 创建/record、allocator、driver、copy 或 GPU
 时间，不能把这组数字当作完整控制开销或加速比。
 
+## 预约后的独立组件检查
+
+`scripts/qualify_free_page_h2d_fence.py` 使用真实 native FULL pool、
+allocator 和 controller，创建 128 个 Device token、257 个 Host token、
+两层 BF16 K/V。每 token 为 1024 字节，每次恢复八个 token。
+先执行真实 D2H 和单/双 operation H2D 预热，再提交有限时长的 CUDA
+writer。检查 controlled/native load、关闭开关、新回收页、分组回收、
+混合证明、同证明合并、更新 boundary 和故意移除 fence 的九种场景。
+writer 提交前等待索引准备所在的 stream，避免验证器自身引入索引竞争。
+
+已经空闲的目标须在无关 writer 完成前收到 H2D ACK；复用旧 writer 页的
+目标须等待它完成。所有安全场景在旧 writer 真正执行后逐字比较全部层
+K/V；负对照只写 fixture 自己拥有的页，必须实际检出损坏，不能仅凭
+“代码走过了错误分支”通过。另核对合并 ACK、每个 tagged child 的唯一
+归属与字节数，以及 Host/Device 全部容量归还。
+
+CLI 在分配 GPU pool 前检查固定预约截止时间、共享 hold/pause 和外部
+GPU PID，并在场景之间复查。它没有登记或启动 GPU 作业。执行副本
+`sglang-free-page-h2d-fence-exec-20261026` 保持 base commit 加提交补丁，
+其实际 tree 已与候选 `11b84f7c31986782be3fbe699bae2574ef092389`
+核对一致；开发分支仍是独立的干净提交，冻结实验树未改动。
+
+预约结束且无更新限制后，组件检查的入口为：
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python scripts/qualify_free_page_h2d_fence.py \
+  --engine-checkout /home/longhao/experiment/.worktrees/sglang-free-page-h2d-fence-exec-20261026 \
+  --canonical-patch patches/sglang_v0520_free_page_h2d_fence_20261026.patch \
+  --output-dir experiments/raw/free_page_fence_components_20261027
+```
+
+`tests/test_free_page_fence_gpu_qualification.py` 在 CPU 上调用同一组场景，
+执行真实 native allocator/controller，使用明确延迟执行的 copy/writer
+与 event/stream 替身。它验证检查器能拒绝错误 fence、缺失污染、重复或
+错误字节的 receipt、过期来源以及预约违规，不是实际 GPU 验证结果。
+报告校验还要求 native AST projection、共同 native-demand 证明及实际
+GPU PID/device 字段；组件结果始终保留 `whole_model_qualified=false`、
+`model_numerical_equivalence_verified=false` 和 `performance_accepted=false`。
+
+共享回归 `v240_free_page_fence_qualifier_shared_cpu_20261026.xml`
+通过 1857 项及四个子测试，无失败或跳过，逐项保留 v239b 的全部
+1815 项并新增 42 项验证器测试。使用上述补丁执行副本并明确隐藏 CUDA。
+此前 D2H 替身缺少可选 start event 的失败报告，以及后续两轮 35 项
+通过的中间报告保留，不覆盖。最终代码/配置/测试 hash 和执行树绑定
+另存 `v240_free_page_fence_qualifier_sources_cpu_20261026.json`。
+本轮没有修改 native candidate，因此沿用 v239b 的 726 项 native CPU
+结果，不将相同检查重复执行包装成新增 GPU 证据。
+
 ## 后续验收
 
 预约结束后先在独占设备做有旧 writer 的页污染/恢复测试，确认所有层
