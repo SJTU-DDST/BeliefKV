@@ -754,3 +754,14 @@
   distinction and all normal tails. New audit coverage is 70 CPU cases, 21 new.
   Common runtime/engine sources are unchanged and retain V243 evidence.
   See `docs/research/request_service_interleaving_20261026_zh.md`.
+- Session model registration must contain the frozen candidate's exact
+  `reference_environment` for the actual component CUDA toolchain builder.
+  Reject missing or changed toolchain/device declarations before execution.
+  V245 reproduces the previous missing-field KeyError and passes 2180 shared
+  CPU cases plus four subtests, retaining all 2176 earlier case identities.
+  Independent prepared execution may bind the reviewed free-page delta to its
+  local staging-patch path through the existing freeze utility; preserve main's
+  historical patch and user indexes. Rebind native proof paths only after
+  proving identical bytes, tree and all other source-state fields. A new engine
+  needs its own GPU component/model and replay smoke evidence before comparison.
+  See `docs/design/session_model_launch_preparation_20261026_zh.md`.

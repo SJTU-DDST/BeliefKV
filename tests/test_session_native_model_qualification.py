@@ -335,7 +335,10 @@ def test_reservation_precedes_freezing_and_any_model_process(monkeypatch, tmp_pa
     forbidden.assert_not_called()
 
 
-@pytest.mark.parametrize("fault", (None, "source", "reference", "prompts", "engine", "base"))
+@pytest.mark.parametrize("fault", (
+    None, "source", "reference", "prompts", "engine", "base",
+    "missing_environment", "changed_toolchain", "changed_visible_device",
+))
 def test_registration_rechecks_original_source_inputs_and_native_engine(monkeypatch, tmp_path, fault):
     reference = tmp_path / "reference.json"
     reference.write_text("{}")
@@ -346,6 +349,9 @@ def test_registration_rechecks_original_source_inputs_and_native_engine(monkeypa
         "configuration": qualifier.configuration(), **deepcopy(inputs),
         "engine_tree": candidate["candidate_tree"], "engine_base_commit": candidate["base_commit"],
         "source_sha256": {name: qualifier.sha256_file(qualifier.ROOT / name) for name in qualifier.SOURCES},
+        "reference_environment": json.loads(
+            (qualifier.ROOT / qualifier.components.CONFIG).read_bytes()
+        )["common_environment"],
     }
     monkeypatch.setattr(qualifier, "probe_inputs", lambda *_: deepcopy(inputs))
     if fault == "source":
@@ -358,11 +364,65 @@ def test_registration_rechecks_original_source_inputs_and_native_engine(monkeypa
         registration["engine_tree"] = "wrong"
     elif fault == "base":
         registration["engine_base_commit"] = "wrong"
+    elif fault == "missing_environment":
+        del registration["reference_environment"]
+    elif fault == "changed_toolchain":
+        registration["reference_environment"]["CUDA_HOME"] = "/unregistered-toolchain"
+    elif fault == "changed_visible_device":
+        registration["reference_environment"]["CUDA_VISIBLE_DEVICES"] = "1"
     if fault is None:
         qualifier.check_registration(registration)
     else:
         with pytest.raises(ValueError, match="session model"):
             qualifier.check_registration(registration)
+
+
+def test_run_records_the_environment_needed_by_the_actual_component_launcher(monkeypatch, tmp_path):
+    reference = tmp_path / "reference.json"
+    reference.write_text("{}")
+    inputs = {"prompts": [[1], [2]], "bytes_per_token": 98304, "probe_requests": ["a", "b"]}
+    candidate = json.loads(
+        (qualifier.ROOT / qualifier.components.CONFIG).read_bytes()
+    )["engine_candidate"]
+    monkeypatch.setattr(qualifier, "check_hold", lambda: None)
+    monkeypatch.setattr(qualifier, "probe_inputs", lambda *_: deepcopy(inputs))
+    monkeypatch.setattr(qualifier, "freeze", lambda *_: {
+        "checkout": str(qualifier.ROOT), "engine_checkout": "/fixture/engine",
+        "engine_tree": candidate["candidate_tree"],
+    })
+    monkeypatch.setattr(
+        qualifier.subprocess, "check_output", lambda *_args, **_kwargs: candidate["base_commit"],
+    )
+    launched = Mock(return_value=NS(returncode=0))
+    monkeypatch.setattr(qualifier.subprocess, "run", launched)
+    output = tmp_path / "run"
+    qualifier.run(NS(
+        reference=reference, output_dir=output, engine_checkout=tmp_path / "engine",
+        canonical_patch=tmp_path / "patch", port=12345,
+    ))
+    registration = json.loads((output / "registration.json").read_bytes())
+    expected = json.loads(
+        (qualifier.ROOT / qualifier.components.CONFIG).read_bytes()
+    )["common_environment"]
+    assert registration["reference_environment"] == expected
+    qualifier.check_registration(registration)
+    assert launched.call_args.args[0][2] == "execute"
+
+    # Exercise the real component environment builder with a private CPU fixture.
+    toolchain = tmp_path / "cuda"
+    (toolchain / "bin").mkdir(parents=True)
+    (toolchain / "lib").mkdir()
+    nvcc = toolchain / "bin/nvcc"
+    nvcc.write_text("fixture is never executed\n")
+    nvcc.chmod(0o700)
+    (toolchain / "lib/libcudart.so.13").touch()
+    fixture = deepcopy(registration)
+    fixture["reference_environment"]["CUDA_HOME"] = str(toolchain)
+    environment = qualifier.prefix_qualification_environment(fixture, {"CUDA_VISIBLE_DEVICES": "99999"})
+    assert environment["CUDA_HOME"] == str(toolchain)
+    assert environment["CUDA_VISIBLE_DEVICES"] == expected.get("CUDA_VISIBLE_DEVICES", "0")
+    assert environment["OMP_NUM_THREADS"] == "1"
+    assert environment["PATH"].split(":")[0] == str(toolchain / "bin")
 
 
 def test_busy_foreign_gpu_is_waited_for_without_launch_or_termination(monkeypatch, tmp_path):

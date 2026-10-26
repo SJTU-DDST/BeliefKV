@@ -416,6 +416,10 @@ def check_registration(registration):
         name: sha256_file(ROOT / name) for name in SOURCES
     }:
         raise ValueError("session model sources differ from the frozen qualification")
+    if registration.get("reference_environment") != json.loads(
+        (ROOT / components.CONFIG).read_bytes()
+    )["common_environment"]:
+        raise ValueError("session model component environment differs from the declared candidate")
     reference_path = Path(registration["reference"])
     if sha256_file(reference_path) != registration["reference_sha256"]:
         raise ValueError("session model source registration changed")
@@ -441,6 +445,9 @@ def run(args):
     checkout = Path(frozen["checkout"])
     registration = {
         **frozen, "configuration": document, "port": args.port,
+        "reference_environment": json.loads(
+            (checkout / components.CONFIG).read_bytes()
+        )["common_environment"],
         **inputs,
         "reference": str(args.reference.resolve()), "reference_sha256": sha256_file(args.reference),
         "engine_base_commit": subprocess.check_output(
