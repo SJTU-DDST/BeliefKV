@@ -726,3 +726,17 @@
   `configs/migration/predictive_cold_fit_recall_20261026.json`.
   Shared CPU report `v242_cold_fit_recall_shared_cpu_20261026.xml`: 2123 cases
   plus four subtests, retaining all 2083 prior cases. GPU effects remain pending.
+- Agent admission may clear a JOIN wait only when that waiter still names
+  the same JOIN and the causal graph is READY. Other tools, foreground children
+  and later JOINs retain their blocking state; an old release cannot grant new
+  critical protection. The complete historical serial replay projection found
+  no suppressed releases in four arms of 72 explicit JOIN releases each, so do
+  not claim this boundary fix explains V235 performance.
+  `v243c_agent_join_release_shared_cpu_20261026.xml` assembles 2153 passing
+  shared cases with the exact two passing Docker fixture retries, retaining all
+  2123 previous cases and adding 32, plus four subtests. Preserve the original
+  failure/skip reports and disclose that this is a two-execution assembly.
+  The full causal JCT path audit shows V235 reduced submit-to-first-launch
+  waiting but increased first-launch-to-complete intervals; those intervals
+  include interleaving and are not pure GPU time or causal module attribution.
+  See `docs/design/agent_join_release_dependencies_20261026_zh.md`.

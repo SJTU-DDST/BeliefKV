@@ -239,7 +239,12 @@ class AgentAdmission:
                 join = self.runtime.graph.joins.get(event.join_id)
                 if join is not None:
                     for waiter in join.waiter_invocation_ids:
-                        self.policy.unblock(waiter, now=now, critical=True)
+                        state = self.runtime.graph.invocations.get(waiter)
+                        if (
+                            state is not None and state.join_id == join.join_id
+                            and state.state is InvocationState.READY
+                        ):
+                            self.policy.unblock(waiter, now=now, critical=True)
             elif event.kind is Kind.TOOL_START:
                 if event.invocation_id in self.latest:
                     identity = str(event.attributes.get("tool_run_id")
