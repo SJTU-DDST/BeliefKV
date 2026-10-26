@@ -100,6 +100,7 @@ class JoinRecord:
     waiter_invocation_ids: set[str] = field(default_factory=set)
     completed_member_ids: set[str] = field(default_factory=set)
     satisfied: bool = False
+    released_waiter_ids: set[str] = field(default_factory=set)
 
 
 @dataclass
@@ -274,6 +275,7 @@ class RuntimeCausalContextGraph:
                     str(item) for item in value.get("completed", ())
                 },
                 satisfied=bool(value.get("satisfied", False)),
+                released_waiter_ids={str(item) for item in value.get("released_waiters", ())},
             )
         for value in communication_edges:
             if not isinstance(value, Mapping):
@@ -637,16 +639,26 @@ class RuntimeCausalContextGraph:
         join_id = require_id(event.join_id, "join_id")
         join = self._join(join_id, event.workflow_id)
         join.waiter_invocation_ids.add(invocation.invocation_id)
+        join.released_waiter_ids.discard(invocation.invocation_id)
         invocation.join_id = join_id
         invocation.updated_ts_ms = event.ts_ms
         if join.satisfied:
-            invocation.state = InvocationState.READY
+            invocation.state = (
+                InvocationState.WAIT_CHILD if invocation.blocking_child_ids
+                else InvocationState.WAIT_TOOL if invocation.active_tool_calls
+                else InvocationState.READY
+            )
             return GraphDelta(
                 event.event_id,
-                awakened_invocations=frozenset({invocation.invocation_id}),
+                awakened_invocations=(
+                    frozenset({invocation.invocation_id})
+                    if invocation.state is InvocationState.READY else frozenset()
+                ),
                 changed_contexts=frozenset({invocation.context_id}),
             )
-        invocation.state = InvocationState.WAIT_JOIN
+        invocation.state = (
+            InvocationState.WAIT_CHILD if invocation.blocking_child_ids else InvocationState.WAIT_JOIN
+        )
         return GraphDelta(
             event.event_id,
             parked_invocations=frozenset({invocation.invocation_id}),
@@ -681,7 +693,8 @@ class RuntimeCausalContextGraph:
     def _on_tool_start(self, event: RuntimeEvent) -> GraphDelta:
         invocation = self._event_invocation(event)
         self._ensure_not_terminal(invocation)
-        invocation.state = InvocationState.WAIT_TOOL
+        if invocation.state not in (InvocationState.WAIT_JOIN, InvocationState.WAIT_CHILD):
+            invocation.state = InvocationState.WAIT_TOOL
         invocation.updated_ts_ms = event.ts_ms
         invocation.active_tool_family = str(event.attributes.get("tool_family", "unknown"))
         invocation.active_tool_start_ms = event.ts_ms
@@ -707,9 +720,10 @@ class RuntimeCausalContextGraph:
             or event.attributes.get("tool_call_id") or "_legacy"
         )
         invocation.active_tool_calls.pop(identity, None)
-        invocation.state = (
-            InvocationState.WAIT_TOOL if invocation.active_tool_calls else InvocationState.READY
-        )
+        if invocation.state not in (InvocationState.WAIT_JOIN, InvocationState.WAIT_CHILD):
+            invocation.state = (
+                InvocationState.WAIT_TOOL if invocation.active_tool_calls else InvocationState.READY
+            )
         invocation.updated_ts_ms = event.ts_ms
         invocation.active_tool_family = None
         invocation.active_tool_start_ms = None
@@ -719,8 +733,8 @@ class RuntimeCausalContextGraph:
         return GraphDelta(
             event.event_id,
             awakened_invocations=(
-                frozenset() if invocation.active_tool_calls
-                else frozenset({invocation.invocation_id})
+                frozenset({invocation.invocation_id})
+                if invocation.state is InvocationState.READY else frozenset()
             ),
             changed_contexts=frozenset({invocation.context_id}),
         )
@@ -783,10 +797,11 @@ class RuntimeCausalContextGraph:
                 join_pending = bool(
                     join is not None and not join.satisfied
                     and parent.invocation_id in join.waiter_invocation_ids
+                    and parent.invocation_id not in join.released_waiter_ids
                 )
                 parent.state = (
-                    InvocationState.WAIT_TOOL if parent.active_tool_calls
-                    else InvocationState.WAIT_JOIN if join_pending else InvocationState.READY
+                    InvocationState.WAIT_JOIN if join_pending
+                    else InvocationState.WAIT_TOOL if parent.active_tool_calls else InvocationState.READY
                 )
                 parent.updated_ts_ms = ts_ms
                 if not join_pending and not parent.active_tool_calls:
@@ -810,10 +825,18 @@ class RuntimeCausalContextGraph:
         awakened: set[str] = set()
         for waiter_id in join.waiter_invocation_ids:
             waiter = self.invocations[waiter_id]
+            join.released_waiter_ids.add(waiter_id)
+            if waiter.join_id != join.join_id:
+                continue
             if waiter.state == InvocationState.WAIT_JOIN:
-                waiter.state = InvocationState.READY
+                waiter.state = (
+                    InvocationState.WAIT_CHILD if waiter.blocking_child_ids
+                    else InvocationState.WAIT_TOOL if waiter.active_tool_calls
+                    else InvocationState.READY
+                )
                 waiter.updated_ts_ms = ts_ms
-                awakened.add(waiter_id)
+                if waiter.state is InvocationState.READY:
+                    awakened.add(waiter_id)
         return awakened
 
     def _touch_context(self, context_id: str, event: RuntimeEvent) -> None:
@@ -1014,6 +1037,7 @@ class RuntimeCausalContextGraph:
             "members": sorted(value.member_invocation_ids),
             "completed": sorted(value.completed_member_ids),
             "waiters": sorted(value.waiter_invocation_ids),
+            "released_waiters": sorted(value.released_waiter_ids),
             "mode": value.mode.value,
             "satisfied": value.satisfied,
         }

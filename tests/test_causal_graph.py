@@ -191,6 +191,109 @@ class CausalGraphTest(unittest.TestCase):
         )
         self.assertEqual(self.graph.invocations["reviewer"].pending_messages, 1)
 
+    def test_parallel_tool_and_join_wait_for_both_dependencies_in_either_order(self):
+        for start_tool_first in (False, True):
+            for finish_tool_first in (False, True):
+                with self.subTest(start_tool_first=start_tool_first, finish_tool_first=finish_tool_first):
+                    self.setUp()
+                    self.create(1, "parent", "ctx-parent")
+                    self.create(2, "child", "ctx-child")
+                    self.graph.apply(event(
+                        3, RuntimeEventKind.JOIN_CREATE, join_id="join",
+                        member_invocation_ids=("child",),
+                    ))
+                    starts = (
+                        (RuntimeEventKind.TOOL_START, {"attributes": {"tool_run_id": "tool"}}),
+                        (RuntimeEventKind.JOIN_WAIT, {"join_id": "join"}),
+                    )
+                    if not start_tool_first:
+                        starts = starts[::-1]
+                    for sequence, (kind, details) in enumerate(starts, 4):
+                        self.graph.apply(event(sequence, kind, invocation_id="parent", **details))
+                    self.assertEqual(self.graph.invocations["parent"].state, InvocationState.WAIT_JOIN)
+                    completions = (
+                        (RuntimeEventKind.TOOL_END, "parent", {"attributes": {"tool_run_id": "tool"}}),
+                        (RuntimeEventKind.RETURN, "child", {}),
+                    )
+                    if not finish_tool_first:
+                        completions = completions[::-1]
+                    first = self.graph.apply(event(
+                        6, completions[0][0], invocation_id=completions[0][1], **completions[0][2],
+                    ))
+                    self.assertFalse(first.awakened_invocations)
+                    self.assertEqual(
+                        self.graph.invocations["parent"].state,
+                        InvocationState.WAIT_JOIN if finish_tool_first else InvocationState.WAIT_TOOL,
+                    )
+                    last = self.graph.apply(event(
+                        7, completions[1][0], invocation_id=completions[1][1], **completions[1][2],
+                    ))
+                    self.assertEqual(last.awakened_invocations, frozenset({"parent"}))
+                    self.assertEqual(self.graph.invocations["parent"].state, InvocationState.READY)
+
+    def test_tool_completion_does_not_bypass_a_foreground_child(self):
+        self.create(1, "parent", "ctx-parent")
+        self.create(2, "child", "ctx-child")
+        self.graph.apply(event(3, RuntimeEventKind.CALL, invocation_id="parent", target_invocation_id="child"))
+        self.graph.apply(event(4, RuntimeEventKind.TOOL_START, invocation_id="parent"))
+        tool = self.graph.apply(event(5, RuntimeEventKind.TOOL_END, invocation_id="parent"))
+        self.assertFalse(tool.awakened_invocations)
+        self.assertEqual(self.graph.invocations["parent"].state, InvocationState.WAIT_CHILD)
+        child = self.graph.apply(event(6, RuntimeEventKind.RETURN, invocation_id="child"))
+        self.assertEqual(child.awakened_invocations, frozenset({"parent"}))
+
+    def test_join_timeout_releases_only_the_join_dependency_while_a_tool_is_active(self):
+        self.create(1, "parent", "ctx-parent")
+        self.create(2, "child", "ctx-child")
+        self.graph.apply(event(
+            3, RuntimeEventKind.JOIN_CREATE, join_id="join", member_invocation_ids=("child",),
+        ))
+        self.graph.apply(event(4, RuntimeEventKind.JOIN_WAIT, invocation_id="parent", join_id="join"))
+        self.graph.apply(event(5, RuntimeEventKind.TOOL_START, invocation_id="parent"))
+        timeout = self.graph.apply(event(6, RuntimeEventKind.JOIN_TIMEOUT, join_id="join"))
+        self.assertFalse(timeout.awakened_invocations)
+        self.assertEqual(self.graph.invocations["parent"].state, InvocationState.WAIT_TOOL)
+        tool = self.graph.apply(event(7, RuntimeEventKind.TOOL_END, invocation_id="parent"))
+        self.assertEqual(tool.awakened_invocations, frozenset({"parent"}))
+        self.assertEqual(self.graph.invocations["parent"].state, InvocationState.READY)
+
+    def test_timed_out_join_is_not_reinstated_after_a_foreground_child_returns(self):
+        self.create(1, "parent", "ctx-parent")
+        self.create(2, "child", "ctx-child")
+        self.create(3, "summary", "ctx-summary")
+        self.graph.apply(event(
+            4, RuntimeEventKind.JOIN_CREATE, join_id="join", member_invocation_ids=("child",),
+        ))
+        self.graph.apply(event(5, RuntimeEventKind.CALL, invocation_id="parent", target_invocation_id="summary"))
+        self.graph.apply(event(6, RuntimeEventKind.JOIN_WAIT, invocation_id="parent", join_id="join"))
+        timeout = self.graph.apply(event(7, RuntimeEventKind.JOIN_TIMEOUT, join_id="join"))
+        self.assertFalse(timeout.awakened_invocations)
+        self.assertEqual(self.graph.invocations["parent"].state, InvocationState.WAIT_CHILD)
+        restored = RuntimeCausalContextGraph.from_snapshot(self.graph.snapshot())
+        released = restored.apply(event(8, RuntimeEventKind.RETURN, invocation_id="summary"))
+        self.assertEqual(released.awakened_invocations, frozenset({"parent"}))
+        self.assertEqual(restored.invocations["parent"].state, InvocationState.READY)
+        self.assertFalse(restored.joins["join"].satisfied)
+
+    def test_old_join_completion_cannot_release_a_new_join_wait(self):
+        self.create(1, "parent", "ctx-parent")
+        self.create(2, "old-child", "ctx-old-child")
+        self.create(3, "new-child", "ctx-new-child")
+        self.graph.apply(event(
+            4, RuntimeEventKind.JOIN_CREATE, join_id="old", member_invocation_ids=("old-child",),
+        ))
+        self.graph.apply(event(5, RuntimeEventKind.JOIN_WAIT, invocation_id="parent", join_id="old"))
+        self.graph.apply(event(6, RuntimeEventKind.JOIN_TIMEOUT, join_id="old"))
+        self.graph.apply(event(
+            7, RuntimeEventKind.JOIN_CREATE, join_id="new", member_invocation_ids=("new-child",),
+        ))
+        self.graph.apply(event(8, RuntimeEventKind.JOIN_WAIT, invocation_id="parent", join_id="new"))
+        old = self.graph.apply(event(9, RuntimeEventKind.RETURN, invocation_id="old-child"))
+        self.assertFalse(old.awakened_invocations)
+        self.assertEqual(self.graph.invocations["parent"].state, InvocationState.WAIT_JOIN)
+        new = self.graph.apply(event(10, RuntimeEventKind.RETURN, invocation_id="new-child"))
+        self.assertEqual(new.awakened_invocations, frozenset({"parent"}))
+
     def test_duplicate_event_is_idempotent(self):
         self.create(1, "root", "ctx")
         message = event(2, RuntimeEventKind.TOOL_START, invocation_id="root")
