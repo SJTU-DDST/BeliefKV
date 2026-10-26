@@ -60,6 +60,7 @@ SERVER_FIELDS = (
     "JOIN_PREDICTION_MAX_CANDIDATES", "ONLINE_TOOL_TIMING",
     "BORROWABLE_PARENT_HEADROOM", "AGENT_ADMISSION", "AGENT_BLOCKED_LENDING",
     "AGENT_WORKFLOW_ENTRY_MIN_READY", "AGENT_TOOL_LOAN_RETURN",
+    "FREE_PAGE_H2D_FENCE",
 )
 
 
@@ -307,6 +308,7 @@ def preflight_runtime(settings, model_path):
         ),
         "agent_blocked_lending": settings.get("BELIEFKV_AGENT_BLOCKED_LENDING", "idle"),
         "agent_tool_loan_return": settings.get("BELIEFKV_AGENT_TOOL_LOAN_RETURN", "0") == "1",
+        "free_page_h2d_fence_requested": settings.get("BELIEFKV_FREE_PAGE_H2D_FENCE", "0") == "1",
         "agent_workflow_entry_min_ready": int(settings.get("BELIEFKV_AGENT_WORKFLOW_ENTRY_MIN_READY", "0")),
         "restore_tiers": settings.get("RESTORE_TIERS", settings["BELIEFKV_RESTORE_TIERS"]),
         "enable_tool_prefetch": settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "1",
@@ -618,6 +620,28 @@ def replay_command(plan, arm, event_socket):
     return command
 
 
+def validate_free_page_fence(plan, state):
+    common = plan.get("reference_environment", {})
+    declared = common.get("BELIEFKV_FREE_PAGE_H2D_FENCE", common.get("FREE_PAGE_H2D_FENCE", "0"))
+    observed = state.get("native_free_page_h2d_fence", {})
+    expected = declared == "1"
+    if (
+        declared not in ("0", "1")
+        or observed.get("requested", False) is not expected
+        or observed.get("enabled", False) is not expected
+        or expected and observed.get("supported") is not True
+    ):
+        raise ValueError("effective native free-page H2D fence differs from the declared common control")
+    counts = observed.get("counts", {})
+    if (
+        not isinstance(counts, dict)
+        or any(type(value) is not int or value < 0 for value in counts.values())
+        or expected and counts.get("free_boundary_events", 0) == 0
+        or not expected and any(counts.values())
+    ):
+        raise ValueError("native free-page H2D fence has no valid executed boundary evidence")
+
+
 def observed_configuration(plan, label, arm, *, final=False):
     retention = RETENTION_CONTROLS.get(label)
     external_policy = label if label in PAPER_CONTROLS else None
@@ -652,6 +676,7 @@ def observed_configuration(plan, label, arm, *, final=False):
             raise ValueError("paper policy did not observe the complete request population")
     if final and mode != "native_matched":
         state = qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
+        validate_free_page_fence(plan, state)
         agent_strategy = plan.get("reference_environment", {}).get(
             "BELIEFKV_AGENT_ADMISSION",
             plan.get("reference_environment", {}).get("AGENT_ADMISSION", "off"),

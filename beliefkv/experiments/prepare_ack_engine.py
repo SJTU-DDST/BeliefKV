@@ -201,6 +201,27 @@ def prepare_ack_engine_compatibility(
         )
 
     changed = git("diff", "--name-only", original_tree, candidate_tree).splitlines()
+    from beliefkv.experiments.free_page_h2d_fence import (
+        FILES as FENCE_FILES, verify_free_page_fence_projection,
+    )
+    if set(changed) == FENCE_FILES:
+        if environment.get("BELIEFKV_FREE_PAGE_H2D_FENCE", environment.get("FREE_PAGE_H2D_FENCE", "0")) != "0":
+            raise ValueError("free-page fence source capture must retain its original fence")
+        result = verify_free_page_fence_projection(
+            {name: git("show", original_tree + ":" + name) for name in FENCE_FILES},
+            {name: git("show", candidate_tree + ":" + name) for name in FENCE_FILES},
+        )
+        return {
+            **result, "policy": "opt_in_preexisting_free_page_h2d_fence",
+            "source_engine_tree": original_tree, "candidate_engine_tree": candidate_tree,
+            "changed_files": changed,
+            "scope": (
+                "Exact reviewed AST projection, including original default-off load fences. "
+                "Native and controlled loads use the same proof when enabled. "
+                "Added allocator generations grant no capacity or eviction authority. "
+                "CPU projection is not GPU copy safety or numerical equivalence."
+            ),
+        }
     dependency_fix = SCHEDULER_FILE in changed
     paper_pressure = PAPER_PRESSURE_TEST in changed
     allowed = {FILE, SCHEDULER_FILE, DEPENDENCY_TEST} if dependency_fix else {FILE}

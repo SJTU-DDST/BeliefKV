@@ -621,6 +621,10 @@ class NativeAdmissionRuntime:
             else None if priority_setting is None else priority_setting == "1"
         )
         self.enable_prepare_host = os.environ.get("BELIEFKV_ENABLE_PREPARE_HOST", "1") == "1"
+        free_fence = os.environ.get("BELIEFKV_FREE_PAGE_H2D_FENCE", "0")
+        if free_fence not in ("0", "1"):
+            raise ValueError("free-page H2D fence must be 0 or 1")
+        self.free_page_h2d_fence_requested = free_fence == "1"
         background_setting = os.environ.get("BELIEFKV_ENABLE_BACKGROUND_PREPARE", "1")
         retirement_setting = os.environ.get("BELIEFKV_ENABLE_TERMINAL_CHILD_RECLAIM", "1")
         if background_setting not in ("0", "1") or retirement_setting not in ("0", "1"):
@@ -2604,6 +2608,8 @@ class NativeAdmissionRuntime:
 
     def _record_runtime_state(self, *, final: bool = False) -> None:
         if self._opportunity_writer is not None:
+            controller = getattr(self._native_cache, "cache_controller", None)
+            fence_counts = getattr(controller, "beliefkv_h2d_fence_counts", None)
             idle_prepare_stats = getattr(
                 self._native_cache, "beliefkv_idle_full_prepare_stats", None,
             )
@@ -2762,6 +2768,12 @@ class NativeAdmissionRuntime:
                 "restore_tiers_native": (
                     dict(restore_tier_stats) if isinstance(restore_tier_stats, dict) else {}
                 ),
+                "native_free_page_h2d_fence": {
+                    "requested": self.free_page_h2d_fence_requested,
+                    "enabled": getattr(controller, "beliefkv_free_page_fence_enabled", False) is True,
+                    "supported": callable(getattr(controller, "beliefkv_record_free_page_boundary", None)),
+                    "counts": dict(fence_counts) if isinstance(fence_counts, dict) else {},
+                },
                 "native_prefetch_batch_dependencies": (
                     {
                         "checks": getattr(

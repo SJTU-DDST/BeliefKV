@@ -680,3 +680,23 @@
   workflows and finds no changed invocation state. Its one append timestamp
   inversion is sorted explicitly for this offline chronological comparison.
   No GPU or performance result is implied.
+- The CPU-only free-page H2D fence candidate is isolated in native branch
+  `beliefkv-free-page-h2d-fence-20261026`, commit
+  `d3f9f37648be64af598fb936b7631fa8e6c215ba`, tree
+  `11b84f7c31986782be3fbe699bae2574ef092389`. Its delta applies only over
+  base commit `fa5cb52afaeaad1f59f6d3eb2c5cf124f72bb491` / qualified tree
+  `6437d7deeacc533f0d795ba166dfd5256b3f44b2`.
+  Declaration: `configs/migration/predictive_free_page_fence_20261026.json`.
+  Keep default off; no GPU job is registered. An immutable pre-forward event
+  may replace the whole-forward wait only for allocations from an unchanged
+  proven free set, with one shared proof for every merged operation and no
+  extra-pool transfer. New or unproven reclaimed pages keep the original fence.
+  Native demand and controlled loads receive the same optimization under the
+  common flag; compare Full and ThunderAgent with matching enablement rather
+  than giving the baseline event overhead without access to the fast path.
+  Shared CPU: 1815 tests plus four subtests, retaining all 1739 previous cases.
+  Native CPU: 726 tests plus 57 subtests. AST projection, CPU timing stand-ins
+  and sub-microsecond Python guard measurements do not establish CUDA safety,
+  event costs, model numerical equivalence or performance. Complete real
+  writer/page-poison/copy tests and unforced session-model checks after the
+  reservation before accepting this engine for a full comparison.

@@ -141,6 +141,11 @@ def arm_environment(
     ):
         raise ValueError("workflow entry requires retained agent admission and a bounded count")
     entry = entry if agent_admission == "thunderagent_retained" else "0"
+    free_fence = common.get(
+        "BELIEFKV_FREE_PAGE_H2D_FENCE", common.get("FREE_PAGE_H2D_FENCE", "0"),
+    )
+    if free_fence not in ("0", "1"):
+        raise ValueError("free-page H2D fence must be 0 or 1")
     if agent_admission in ("thunderagent_retained", "thunderagent_workflow") and frontier == "1":
         raise ValueError("retained agent admission uses native ordinary demand recovery")
     if agent_admission == "thunderagent_workflow" and scheduling != "join_priority":
@@ -158,6 +163,8 @@ def arm_environment(
         "BELIEFKV_AGENT_TOOL_LOAN_RETURN": tool_return,
         "AGENT_WORKFLOW_ENTRY_MIN_READY": entry,
         "BELIEFKV_AGENT_WORKFLOW_ENTRY_MIN_READY": entry,
+        "FREE_PAGE_H2D_FENCE": free_fence,
+        "BELIEFKV_FREE_PAGE_H2D_FENCE": free_fence,
         "BELIEFKV_SESSIONLESS_PREFIX_MIGRATION": sessionless_prefix if mode == "full" else "0",
         "NATIVE_POLICY_BASELINE": str(int(native)),
         "AB_MODE": "off" if native or not custom_kv else "predictive_h2d",
