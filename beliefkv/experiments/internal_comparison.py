@@ -123,6 +123,14 @@ def arm_environment(
     if mode == "full" and blocked_lending != "idle" and agent_admission != "thunderagent_retained":
         raise ValueError("backed blocked lending requires retained agent admission")
     blocked_lending = blocked_lending if agent_admission == "thunderagent_retained" else "idle"
+    tool_return = common.get(
+        "BELIEFKV_AGENT_TOOL_LOAN_RETURN", common.get("AGENT_TOOL_LOAN_RETURN", "0"),
+    )
+    if tool_return not in ("0", "1") or (
+        mode == "full" and tool_return == "1" and blocked_lending != "backed_demand_recall"
+    ):
+        raise ValueError("tool loan return requires recorded blocked lending")
+    tool_return = tool_return if agent_admission == "thunderagent_retained" else "0"
     entry = common.get(
         "BELIEFKV_AGENT_WORKFLOW_ENTRY_MIN_READY", common.get("AGENT_WORKFLOW_ENTRY_MIN_READY", "0"),
     )
@@ -146,6 +154,8 @@ def arm_environment(
         "BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN": siblings,
         "AGENT_BLOCKED_LENDING": blocked_lending,
         "BELIEFKV_AGENT_BLOCKED_LENDING": blocked_lending,
+        "AGENT_TOOL_LOAN_RETURN": tool_return,
+        "BELIEFKV_AGENT_TOOL_LOAN_RETURN": tool_return,
         "AGENT_WORKFLOW_ENTRY_MIN_READY": entry,
         "BELIEFKV_AGENT_WORKFLOW_ENTRY_MIN_READY": entry,
         "BELIEFKV_SESSIONLESS_PREFIX_MIGRATION": sessionless_prefix if mode == "full" else "0",

@@ -653,3 +653,12 @@
   and `74afed24`. Commit further completed changes in coherent groups rather
   than accumulating an unreviewable working tree. Preserve source references
   required by committed workload manifests as well as executable code.
+- The CPU-only tool-loan-return candidate defaults off. A matched final
+  TOOL_END may mark an inactive recorded long-tool lender, but recall requires
+  its actually submitted successor and enough recorded nonrunning, unprotected
+  borrower budget. JOIN recall remains first; speculative tool warming cannot
+  recall ready budgets. Independent tool/JOIN/foreground-child dependencies
+  must all clear before eligibility is unblocked. See
+  `docs/design/tool_loan_return_cpu_candidate_20261026_zh.md`.
+  Its 494-case targeted CPU report is not shared GPU/numerical/performance
+  qualification and does not complete inactive-owner tool warming.

@@ -937,6 +937,12 @@ class NativeAdmissionRuntime:
         ):
             raise ValueError("backed blocked lending requires retained agent admission")
         self.agent_blocked_lending = blocked_lending
+        tool_return = os.environ.get("BELIEFKV_AGENT_TOOL_LOAN_RETURN", "0")
+        if tool_return not in ("0", "1") or (
+            tool_return == "1" and blocked_lending != "backed_demand_recall"
+        ):
+            raise ValueError("tool loan return requires recorded blocked lending")
+        self.agent_tool_loan_return = tool_return == "1"
         entry_setting = os.environ.get("BELIEFKV_AGENT_WORKFLOW_ENTRY_MIN_READY", "0")
         if (
             not entry_setting.isascii() or not entry_setting.isdecimal()
@@ -959,6 +965,7 @@ class NativeAdmissionRuntime:
                 self, strategy=agent_policy, coadmit_join_children=self.coadmit_join_children,
                 blocked_lending=blocked_lending,
                 workflow_entry_min_ready=self.agent_workflow_entry_min_ready,
+                tool_loan_return=self.agent_tool_loan_return,
             )
         if paper_policy:
             from beliefkv.runtime.paper_baseline import create_adapter

@@ -97,3 +97,51 @@ def test_disabled_physical_runtime_and_empty_capture_are_rejected():
         inspect([row])
     with pytest.raises(ValueError, match="no observed"):
         inspect([])
+
+
+def tool_state(when, *, admitted=0):
+    row = state(when)
+    row["agent_admission"].update(
+        tool_loan_return=True,
+        tool_loan_return_boundary="matched_all_tools_returned;submitted_successor;nonrunning_borrower",
+        tool_loan_return_priority="below_join;recorded_lenders_only",
+    )
+    row["agent_admission"]["policy_counts"].update({
+        "recorded_lender_tool_returned": 1,
+        "tool_loan_recall_admitted": admitted,
+        "capacity_switch:tool_loan_return": admitted,
+    })
+    return row
+
+
+def test_tool_return_counters_remain_distinct_from_join_returns():
+    result = inspect([tool_state(1000.), tool_state(2000., admitted=1)])
+    assert result["tool_loan_return_enabled"] is True
+    assert result["maximum_policy_counters"]["tool_loan_recall_admitted"] == 1
+    assert result["maximum_policy_counters"]["join_loan_recall_admitted"] == 0
+
+
+@pytest.mark.parametrize("field,value", [
+    ("tool_loan_return", 1),
+    ("tool_loan_return_boundary", "forecast_before_return"),
+    ("tool_loan_return_priority", "above_join"),
+])
+def test_tool_recall_requires_its_observed_boundary_and_priority(field, value):
+    row = tool_state(1000.)
+    row["agent_admission"][field] = value
+    with pytest.raises(ValueError, match="tool loan"):
+        inspect([row])
+
+
+def test_tool_policy_cannot_change_mid_run_or_report_execution_while_disabled():
+    with pytest.raises(ValueError, match="tool loan"):
+        inspect([state(1000.), tool_state(2000.)])
+    row = state(1000.)
+    row["agent_admission"]["policy_counts"]["tool_loan_recall_admitted"] = 1
+    with pytest.raises(ValueError, match="disabled tool"):
+        inspect([row])
+
+
+def test_tool_recall_counter_regression_is_rejected():
+    with pytest.raises(ValueError, match="regressed"):
+        inspect([tool_state(1000., admitted=2), tool_state(2000., admitted=1)])

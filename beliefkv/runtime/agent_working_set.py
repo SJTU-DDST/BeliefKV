@@ -12,7 +12,7 @@ class AgentAdmission:
     def __init__(
         self, runtime, *, strategy="working_set", coadmit_join_children=False,
         blocked_lending="idle",
-        workflow_entry_min_ready=0,
+        workflow_entry_min_ready=0, tool_loan_return=False,
     ):
         self.runtime = runtime
         self.policy: AgentWorkingSet | None = None
@@ -23,6 +23,11 @@ class AgentAdmission:
         ):
             raise ValueError("backed blocked lending requires retained agent admission")
         self.blocked_lending = blocked_lending
+        if type(tool_loan_return) is not bool or (
+            tool_loan_return and blocked_lending != "backed_demand_recall"
+        ):
+            raise ValueError("tool loan return requires recorded blocked lending")
+        self.tool_loan_return = tool_loan_return
         if (
             type(workflow_entry_min_ready) is not int or not 0 <= workflow_entry_min_ready <= 256
             or workflow_entry_min_ready and strategy != "thunderagent_retained"
@@ -57,6 +62,7 @@ class AgentAdmission:
                 coadmit_join_children=self.coadmit_join_children,
                 recall_join_loans=self.blocked_lending == "backed_demand_recall",
                 workflow_entry_min_ready=self.workflow_entry_min_ready,
+                recall_tool_loans=self.tool_loan_return,
             )
         else:
             self.policy = AgentWorkingSet(capacity)
@@ -217,11 +223,20 @@ class AgentAdmission:
                 identity = str(event.attributes.get("tool_run_id")
                                or event.attributes.get("tool_call_id") or "_legacy")
                 waiting = self.tool_waits.get(event.invocation_id)
+                matched = waiting is not None and identity in waiting
                 if waiting is not None:
                     waiting.pop(identity, None)
                     if not waiting:
                         del self.tool_waits[event.invocation_id]
-                if invocation is not None and not invocation.active_tool_calls:
+                if (
+                    invocation is not None and not invocation.active_tool_calls
+                    and not self.tool_waits.get(event.invocation_id)
+                    and invocation.state not in (
+                        InvocationState.WAIT_JOIN, InvocationState.WAIT_CHILD,
+                    )
+                ):
+                    if matched and self.tool_loan_return:
+                        self.policy.note_tool_return(event.invocation_id)
                     self.policy.unblock(event.invocation_id, now=now)
         self.restore_backoff.clear()
 
@@ -395,6 +410,9 @@ class AgentAdmission:
             "workflow_entry_scope": "unstarted_root_workflow_only",
             "workflow_entry_started_workflows": len(getattr(policy, "started_workflows", ())),
             "join_loan_recall": bool(getattr(policy, "recall_join_loans", False)),
+            "tool_loan_return": self.tool_loan_return,
+            "tool_loan_return_boundary": "matched_all_tools_returned;submitted_successor;nonrunning_borrower",
+            "tool_loan_return_priority": "below_join;recorded_lenders_only",
             "join_loan_scope": "logical_admissions_during_open_blocked_lending_period",
             "join_loan_recall_boundary": "submitted_join_successor;nonrunning_borrower",
             "join_loan_borrowers": {

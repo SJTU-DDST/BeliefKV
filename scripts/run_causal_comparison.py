@@ -59,7 +59,7 @@ SERVER_FIELDS = (
     "JOIN_PREDICTION_MIN_FULL_BYTES", "JOIN_PREDICTION_INTERVAL_MS",
     "JOIN_PREDICTION_MAX_CANDIDATES", "ONLINE_TOOL_TIMING",
     "BORROWABLE_PARENT_HEADROOM", "AGENT_ADMISSION", "AGENT_BLOCKED_LENDING",
-    "AGENT_WORKFLOW_ENTRY_MIN_READY",
+    "AGENT_WORKFLOW_ENTRY_MIN_READY", "AGENT_TOOL_LOAN_RETURN",
 )
 
 
@@ -306,6 +306,7 @@ def preflight_runtime(settings, model_path):
             "working_set", "thunderagent", "thunderagent_retained", "thunderagent_workflow",
         ),
         "agent_blocked_lending": settings.get("BELIEFKV_AGENT_BLOCKED_LENDING", "idle"),
+        "agent_tool_loan_return": settings.get("BELIEFKV_AGENT_TOOL_LOAN_RETURN", "0") == "1",
         "agent_workflow_entry_min_ready": int(settings.get("BELIEFKV_AGENT_WORKFLOW_ENTRY_MIN_READY", "0")),
         "restore_tiers": settings.get("RESTORE_TIERS", settings["BELIEFKV_RESTORE_TIERS"]),
         "enable_tool_prefetch": settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "1",
@@ -649,6 +650,10 @@ def observed_configuration(plan, label, arm, *, final=False):
                 "BELIEFKV_AGENT_WORKFLOW_ENTRY_MIN_READY", common.get("AGENT_WORKFLOW_ENTRY_MIN_READY", "0"),
             )):
                 raise ValueError("effective workflow entry count differs from declared control")
+            if actual_agents.get("tool_loan_return", False) is not (common.get(
+                "BELIEFKV_AGENT_TOOL_LOAN_RETURN", common.get("AGENT_TOOL_LOAN_RETURN", "0"),
+            ) == "1"):
+                raise ValueError("effective tool loan return differs from declared control")
             if "AGENT_COADMIT_JOIN_CHILDREN" in common and (
                 actual_agents.get("coadmit_join_children") is not (
                     common["AGENT_COADMIT_JOIN_CHILDREN"] == "1"

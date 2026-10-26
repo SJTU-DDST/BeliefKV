@@ -15,6 +15,7 @@ class MigratingProgram(ThunderProgram):
     waiting_since: float = 0.
     restore_until: float = 0.
     workflow_id: str | None = None
+    tool_return_ready: bool = False
 
 
 class ThunderAgentMigration(ThunderWorkingSet):
@@ -30,7 +31,7 @@ class ThunderAgentMigration(ThunderWorkingSet):
     def __init__(
         self, capacity: int, *, retain_blocked: bool = False,
         coadmit_join_children: bool = False, recall_join_loans: bool = False,
-        workflow_entry_min_ready: int = 0,
+        workflow_entry_min_ready: int = 0, recall_tool_loans: bool = False,
     ):
         super().__init__(capacity)
         if type(retain_blocked) is not bool:
@@ -44,6 +45,11 @@ class ThunderAgentMigration(ThunderWorkingSet):
         if type(recall_join_loans) is not bool or (recall_join_loans and not retain_blocked):
             raise ValueError("JOIN loan recall requires retained agent eligibility")
         self.recall_join_loans = recall_join_loans
+        if type(recall_tool_loans) is not bool or (
+            recall_tool_loans and not recall_join_loans
+        ):
+            raise ValueError("tool loan return requires recorded JOIN-capable lending")
+        self.recall_tool_loans = recall_tool_loans
         if (
             type(workflow_entry_min_ready) is not int or not 0 <= workflow_entry_min_ready <= 256
             or workflow_entry_min_ready and not retain_blocked
@@ -231,6 +237,7 @@ class ThunderAgentMigration(ThunderWorkingSet):
             raise ValueError("agent has no live logical admission")
         item = self.programs[identity]
         item.in_flight, item.critical = True, False
+        item.tool_return_ready = False
         if self.workflow_entry_min_ready:
             self.started_workflows.add(item.workflow_id)
         self.release_restore(identity)
@@ -248,6 +255,7 @@ class ThunderAgentMigration(ThunderWorkingSet):
         if item is None:
             return
         item.blocked = reason
+        item.tool_return_ready = False
         if not self.retain_blocked:
             if item.in_flight:
                 item.marked_for_pause = True
@@ -255,6 +263,17 @@ class ThunderAgentMigration(ThunderWorkingSet):
                 self._pause(item, now)
         self.counts["yield:" + reason] += 1
         self.rebalance(now=now)
+
+    def note_tool_return(self, identity):
+        item = self.programs.get(identity)
+        if (
+            self.recall_tool_loans and item is not None
+            and identity in self.loan_borrowers and not item.active
+            and not item.pending and not item.in_flight
+            and item.blocked in ("long_tool", "elapsed_tool")
+        ):
+            item.tool_return_ready = True
+            self.counts["recorded_lender_tool_returned"] += 1
 
     def unblock(self, identity, *, now, critical=False):
         item = self.programs.get(identity)
@@ -439,6 +458,9 @@ class ThunderAgentMigration(ThunderWorkingSet):
             and not item.active and not item.blocked
         ):
             return False
+        return self._recall_recorded_loan(item, now=now, source="join")
+
+    def _recall_recorded_loan(self, item, *, now, source):
         needed = item.tokens + self.buffer_tokens - self.remaining_capacity()
         if needed <= 0:
             return self._activate_target(item, now=now, allow_eviction=False)
@@ -453,19 +475,19 @@ class ThunderAgentMigration(ThunderWorkingSet):
         )
         if sum(borrower.tokens + self.buffer_tokens for borrower in candidates) < needed:
             if self.loan_borrowers.get(item.identity):
-                self.counts["join_loan_recall_deferred"] += 1
+                self.counts[source + "_loan_recall_deferred"] += 1
             return False
         # Return only recorded loans, after a current request has completed.
         # Native KV allocation and any required backup remain authoritative.
         for borrower in candidates:
             self._pause(borrower, now)
-            self.counts["capacity_switch:join_loan_return"] += 1
+            self.counts["capacity_switch:" + source + "_loan_return"] += 1
             needed -= borrower.tokens + self.buffer_tokens
             if needed <= 0:
                 break
         if not self._activate_target(item, now=now, allow_eviction=False):
-            raise ValueError("returned JOIN budgets did not cover their lender")
-        self.counts["join_loan_recall_admitted"] += 1
+            raise ValueError("returned " + source + " budgets did not cover their lender")
+        self.counts[source + "_loan_recall_admitted"] += 1
         return True
 
     def rebalance(self, *, now):
@@ -479,6 +501,17 @@ class ThunderAgentMigration(ThunderWorkingSet):
                     item, now=now, allow_eviction=not self.retain_blocked,
                 ):
                     self._recall_ready_join(item, now=now)
+        if self.recall_tool_loans:
+            for identity in sorted(
+                self.loan_borrowers, key=lambda identity: self.programs[identity].waiting_since,
+            ):
+                item = self.programs[identity]
+                if (
+                    item.tool_return_ready and item.pending and not item.blocked
+                    and not item.active and not item.critical
+                ):
+                    if self._recall_recorded_loan(item, now=now, source="tool"):
+                        break
         if self.retain_blocked:
             self._resume_if_idle(now)
         if now < self.next_control:

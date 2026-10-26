@@ -23,6 +23,8 @@ COUNTERS = (
     "backed_wait_admitted", "backed_wait_free_admitted", "backed_wait_probes",
     "capacity_switch:backed_wait", "join_loan_recall_admitted",
     "capacity_switch:join_loan_return", "join_loan_recall_deferred",
+    "recorded_lender_tool_returned", "tool_loan_recall_admitted",
+    "capacity_switch:tool_loan_return", "tool_loan_recall_deferred",
 )
 
 
@@ -35,6 +37,7 @@ def inspect(states):
     maximum, counts = Counter(), Counter()
     lenders, borrowers = set(), set()
     last = None
+    tool_return = None
     for row in states:
         if row.get("event") != "admission_runtime_state":
             continue
@@ -54,6 +57,18 @@ def inspect(states):
             or admission.get("join_loan_recall_boundary") != "submitted_join_successor;nonrunning_borrower"
         ):
             raise ValueError("runtime does not observe the declared JOIN loan policy")
+        observed_tool_return = admission.get("tool_loan_return", False)
+        if (
+            type(observed_tool_return) is not bool
+            or tool_return is not None and observed_tool_return is not tool_return
+            or observed_tool_return and (
+                admission.get("tool_loan_return_boundary")
+                != "matched_all_tools_returned;submitted_successor;nonrunning_borrower"
+                or admission.get("tool_loan_return_priority") != "below_join;recorded_lenders_only"
+            )
+        ):
+            raise ValueError("runtime has changed or undeclared tool loan return")
+        tool_return = observed_tool_return
         active, loans, policy = (
             admission.get("active_invocation_ids"),
             admission.get("join_loan_borrowers"), admission.get("policy_counts"),
@@ -84,6 +99,11 @@ def inspect(states):
             if type(value) is not int or value < 0 or value < maximum[name]:
                 raise ValueError("loan policy counters regressed or are invalid")
             maximum[name] = value
+        if not tool_return and any(policy.get(name, 0) for name in (
+            "recorded_lender_tool_returned", "tool_loan_recall_admitted",
+            "capacity_switch:tool_loan_return", "tool_loan_recall_deferred",
+        )):
+            raise ValueError("disabled tool loan return has executed policy counters")
         counts["snapshots"] += 1
         counts["snapshots_with_open_loans"] += bool(loans)
         counts["snapshots_with_borrowers"] += bool(observed_borrowers)
@@ -102,6 +122,7 @@ def inspect(states):
         "counts": dict(counts), "maximum_policy_counters": dict(maximum),
         "distinct_observed_lenders": len(lenders),
         "distinct_observed_borrowers": len(borrowers),
+        "tool_loan_return_enabled": tool_return,
         "last_observation": {
             "ts_ms": last["ts_ms"], "active_agents": final["active_agents"],
             "open_loans": final["join_loan_borrowers"],
