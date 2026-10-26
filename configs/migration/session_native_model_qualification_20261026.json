@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "purpose": "bounded_full_session_model_qualification",
+  "candidate": "configs/migration/predictive_free_page_fence_20261026.json",
+  "arms": ["native_matched", "full"],
+  "requests_per_arm": 4,
+  "prompt_tokens": 32768,
+  "generated_tokens": 8,
+  "device_full_tokens": 49152,
+  "context_length": 49152,
+  "host_size_gb": 8,
+  "max_running_requests": 24,
+  "minimum_restored_tokens": 8192,
+  "sampling_seed": 21,
+  "max_logprob_absolute_delta": 0.05,
+  "stage_timeout_seconds": 180,
+  "scope": "Small-pool native session model correctness fixture with actual pressure and unforced greedy output. This is not the production capacity, workload replay, semantic EOS or a performance comparison.",
+  "whole_population_qualified": false,
+  "performance_accepted": false
+}

@@ -144,7 +144,9 @@ GPU PID/device 字段；组件结果始终保留 `whole_model_qualified=false`�
 预约结束后先在独占设备做有旧 writer 的页污染/恢复测试，确认所有层
 K/V 字节、ACK 和 allocator 容量，并验证真实无关 forward 与 H2D 重叠。
 再完成 unforced session-bound 模型数值检查；forced-token 同工作量
-重放不能替代该项。通过后再按需要进行 Full/ThunderAgent 完整比较，
+重放不能替代该项。独立入口及小池作用域见
+`docs/design/session_native_model_qualification_20261026_zh.md`；
+目前只有 CPU 检查证据。通过后再按需要进行 Full/ThunderAgent 完整比较，
 保持同请求、token、工具时长、容量、种子和传输协议，保留普通长尾。
 同时检查提前 copy 是否增加计算竞争或重复迁移。
 若暴露等待占比很小，不应继续堆叠 allocator 改动以追逐很小的窗口；

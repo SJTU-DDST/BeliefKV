@@ -231,6 +231,35 @@ def test_launch_accepts_selective_write_through(tmp_path: Path) -> None:
     assert args[args.index("--hicache-write-policy") + 1] == "write_through_selective"
 
 
+@pytest.mark.parametrize("mismatch", (None, "head", "patch", "invalid_base"))
+def test_explicit_engine_base_preserves_patch_validation_before_launch(tmp_path, mismatch):
+    env = _stub(tmp_path)
+    scheduler = tmp_path / "sglang/python/sglang/srt/managers/scheduler.py"
+    scheduler.parent.mkdir(parents=True)
+    scheduler.write_text("")
+    base = "fa5cb52afaeaad1f59f6d3eb2c5cf124f72bb491"
+    env.update(
+        SGLANG_SOURCE_CHECKOUT=str(tmp_path / "sglang"),
+        SGLANG_SOURCE_BASE_COMMIT=base, GIT_HEAD=base,
+    )
+    if mismatch == "head":
+        env["GIT_HEAD"] = "0" * 40
+    elif mismatch == "patch":
+        env["GIT_APPLY_STATUS"] = "1"
+    elif mismatch == "invalid_base":
+        env["SGLANG_SOURCE_BASE_COMMIT"] = "HEAD"
+    result = subprocess.run(["bash", str(LAUNCH)], env=env, capture_output=True, text=True)
+    if mismatch is None:
+        assert result.returncode == 0, result.stderr
+        assert (tmp_path / "git-args").read_text().splitlines()[-4:] == [
+            "apply", "--reverse", "--check", str(ROOT / "patches/sglang-v0.5.20-beliefkv-staging.patch"),
+        ]
+        assert (tmp_path / "numactl-args").exists()
+    else:
+        assert result.returncode != 0
+        assert not (tmp_path / "numactl-args").exists()
+
+
 @pytest.mark.parametrize("enabled", ("0", "1"))
 def test_native_close_candidate_checks_combined_patch_and_forwards_opt_in(
     tmp_path: Path, enabled: str,

@@ -9,6 +9,7 @@ MODEL_CACHE_LAYOUT="${MODEL_CACHE_LAYOUT:-hybrid}"
 REASONING_PARSER="${REASONING_PARSER-qwen3}"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 SGLANG_SOURCE_CHECKOUT="${SGLANG_SOURCE_CHECKOUT:-}"
+SGLANG_SOURCE_BASE_COMMIT="${SGLANG_SOURCE_BASE_COMMIT:-94602c9c2b7cbdb8efd5c52802dac6a1c180089e}"
 SGLANG_PATCH_FLAVOR="${SGLANG_PATCH_FLAVOR:-staging}"
 HOST="${HOST:-127.0.0.1}"
 PORT="${PORT:-18000}"
@@ -190,8 +191,9 @@ fi
 "${PYTHON}" -c 'import importlib.metadata as m; assert m.version("sglang") == "0.5.20"'
 if [[ -n "${SGLANG_SOURCE_CHECKOUT}" ]]; then
   SGLANG_SOURCE_CHECKOUT="$(realpath "${SGLANG_SOURCE_CHECKOUT}")"
-  if [[ ! -f "${SGLANG_SOURCE_CHECKOUT}/python/sglang/srt/managers/scheduler.py" ]] \
-      || [[ "$(git -C "${SGLANG_SOURCE_CHECKOUT}" rev-parse HEAD)" != "94602c9c2b7cbdb8efd5c52802dac6a1c180089e" ]]; then
+  if [[ ! "${SGLANG_SOURCE_BASE_COMMIT}" =~ ^[0-9a-f]{40}$ ]] \
+      || [[ ! -f "${SGLANG_SOURCE_CHECKOUT}/python/sglang/srt/managers/scheduler.py" ]] \
+      || [[ "$(git -C "${SGLANG_SOURCE_CHECKOUT}" rev-parse HEAD)" != "${SGLANG_SOURCE_BASE_COMMIT}" ]]; then
     printf 'Expected patched v0.5.20 checkout: %s\n' "${SGLANG_SOURCE_CHECKOUT}" >&2
     exit 2
   fi

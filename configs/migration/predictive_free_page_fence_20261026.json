@@ -15,6 +15,7 @@
     "PYTHONHASHSEED": "21",
     "SAMPLING_PROFILE": "qwen3_coder",
     "CUDA_HOME": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13",
+    "SGLANG_SOURCE_BASE_COMMIT": "fa5cb52afaeaad1f59f6d3eb2c5cf124f72bb491",
     "FANOUT_PROFILE": "native_in_graph_short_workstreams",
     "WORKLOAD_MANIFEST": "configs/workloads/locobench_tools18_20261026.json",
     "CHILD_WORK_BUDGET_WARNING_CALLS": "4",
@@ -90,6 +91,10 @@
     "component_checker_previous_cases_retained": 1815,
     "component_checker_cases": 42,
     "component_checker_uses_cpu_copy_and_event_standins": true,
+    "session_model_shared_report": "experiments/reports/v241_session_native_model_shared_cpu_20261026.xml",
+    "session_model_shared_cases": 2083,
+    "session_model_previous_cases_retained": 1857,
+    "session_model_checker_cases": 52,
     "gpu_or_performance_evidence": false
   },
   "gpu_execution": {
@@ -100,6 +105,9 @@
     "component_execution_checkout": "/home/longhao/experiment/.worktrees/sglang-free-page-h2d-fence-exec-20261026",
     "component_qualification_includes_native_demand_and_unsafe_negative_control": true,
     "component_qualification_does_not_qualify_model_or_policy": true,
+    "session_model_qualifier": "scripts/qualify_session_native_model.py",
+    "session_model_qualification_config": "configs/migration/session_native_model_qualification_20261026.json",
+    "session_model_qualification_uses_separate_small_pool_fixture": true,
     "requires_newer_hold_and_resource_checks": true,
     "requires_real_copy_fence_and_reclaimed_page_poison_checks": true,
     "requires_unforced_session_bound_model_equivalence": true,

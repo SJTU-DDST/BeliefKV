@@ -700,3 +700,15 @@
   event costs, model numerical equivalence or performance. Complete real
   writer/page-poison/copy tests and unforced session-model checks after the
   reservation before accepting this engine for a full comparison.
+- The separate session model qualifier is
+  `scripts/qualify_session_native_model.py`, declared by
+  `configs/migration/session_native_model_qualification_20261026.json`.
+  Its 49152-token Device / 8 GB Host fixture uses two 32768-token real-source
+  inputs, unforced eight-token greedy output, actual demand/JOIN restoration,
+  native session-generation capture and verified allocation reuse. These small
+  capacities and synthetic JOIN events are only model correctness fixtures;
+  retain the complete V230 work and original capacities for performance.
+  Run its real writer/copy prerequisite and model checks after the reservation.
+  CPU HTTP/event/parser tests do not qualify GPU or numerical behavior.
+  Its shared CPU report `v241_session_native_model_shared_cpu_20261026.xml`
+  passes 2083 cases plus four subtests, retaining all 1857 previous cases.
