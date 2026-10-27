@@ -1455,3 +1455,26 @@
   capacity, avoided H2D or proof of globally reclaimed unique state. They do
   not support blaming persistent metadata for retaining every finished child.
   See `docs/research/v378_collecting_and_source_geometry_20261027_zh.md`.
+- V378 has completed all 3674 exact requests, 145565966 input tokens,
+  549671 output tokens and 18 workflows with original stopping, all normal
+  tails, two fresh idle snapshots and actual owned cleanup. V388 verifies
+  mean JCT 1644.823912s and end-to-end output 238.234276 token/s, versus
+  V364 1641.531479s / 241.831711 token/s and V345 optional-decay ThunderAgent
+  1697.583645s / 233.371801 token/s. V378 is 0.20057% worse in mean JCT
+  and 1.48758% worse in throughput than V364; this is not an isolated fitting
+  ablation because V378 also includes pressure-mark revalidation. V386 finds
+  total H2D 3270.265GB versus V364 3434.262GB, without improved performance.
+  Keep fitting opt-in and unpromoted, preserve all reports and complete V380
+  figures, reuse V345, and leave the clear/repeated/all-baseline goal incomplete.
+  No next GPU experiment is queued.
+- The user's latest critique is accepted: blocked-budget lending, recall and
+  fitting are engineering variants of working-set switching, not independent
+  research contributions. The executed path pauses donors and activates the
+  selected target using the existing working-set core; relationship bookkeeping
+  does not create a new migration primitive. Do not add or rename more loan,
+  recall or lease variants as an innovation. Further design must first establish
+  an exposed KV-transfer/compute bottleneck and demonstrate a distinct mechanism
+  against a simpler strong control with complete matched JCT/throughput evidence.
+  JOIN/EOS prefetch and prediction remain mechanisms to validate, not automatic
+  novelty or performance claims. See
+  `docs/research/v378_working_set_switching_results_20261027_zh.md`.

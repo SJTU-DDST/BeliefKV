@@ -4,6 +4,10 @@ V378 于 2026-10-27 23:15:35 Asia/Shanghai 注册，随后进入实际
 GPU 重放。该轮只运行 FULL，复用完整 V345 工具衰减版 ThunderAgent；
 没有再次执行 native 或 ThunderAgent。
 
+本轮已于同日 23:57:16 Asia/Shanghai 完整结束，所有 owned 进程已退出。
+完整结果未证明相对 V364 的增量性能收益；fitting 不晋级，
+借出与召回归为工作集切换的工程实现。[完整结论](v378_working_set_switching_results_20261027_zh.md)。
+
 ## 冻结条件
 
 - 应用提交：`83d7c3c2eb34d974a6475591ba7c88eeb7c60413`。
@@ -56,16 +60,19 @@ owner 的逻辑资格，不将差值直接换算成 H2D 或 JCT 收益。
 
 ## 完成后的处理
 
-CPU 后处理进程 117226 已实际核验存活，nice19、隐藏 CUDA。它只在
-本轮完整成功及实际 owned 进程退出之后生成匹配 V378/V345 图表，
-不会启动新的 GPU 实验；中断时保留部分证据并停止。
+CPU 后处理进程 117226 以 nice19、隐藏 CUDA 运行；在本轮完整成功
+及实际 owned 进程退出之后，已生成匹配 V378/V345 图表并退出。
+该进程没有启动新的 GPU 实验。
 
 - 后处理：`ops/plot_v378_after_completion_20261027.py`。
 - 状态：`ops/v380_fitting_lending_decode_plots_20261027.state.json`。
 - 输出：`experiments/figures/decode_diagnostics_20261027_v380/`。
 
-完整平均 JCT、makespan、工具后继 H2D、控制成本和重复性能验收
-仍然待定。目标保持未完成，其他 baseline 继续等待明确且可重复的
-同工作量改善。
+V388 已核验完整平均 JCT、makespan、工作量和退出；V386 对账完整
+H2D，V387/V390 保留实际选择与后续请求关联。相比 V364，平均 JCT
+增加约 0.20%，端到端输出吞吐下降约 1.49%；不能以较少逻辑预算或
+较少 H2D 代替性能验收。整体控制成本和重复性能仍未完成验收。
+总体目标保持未完成，其他 baseline 继续等待明确且可重复的同工作量改善。
+当前没有后续 GPU 实验排队。
 
 机制与 CPU 证据见[设计记录](../design/fitting_blocked_agent_lending_20261027_zh.md)。
