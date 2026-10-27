@@ -848,3 +848,31 @@
   shared regression or new GPU/performance qualification. The callback-only
   CPU benchmark is source-bound and grants no whole-controller cost or JCT
   claim. See `docs/research/v247_full_and_observed_growth_20261027_zh.md`.
+- V247 completed both arms with identical complete work, original stopping,
+  fresh idle telemetry and actual owned-process exit. Full mean JCT is
+  1423.068672s versus ThunderAgent 1320.207142s; throughput is 286.592505
+  versus 259.792268 token/s. The 10.3160% throughput gain and 7.7913% worse
+  JCT fail the shared gate. Full actual H2D is 733.581902GB versus 242.571903GB.
+  Preserve this negative result and keep other baselines deferred.
+- The observed-growth repair now has 2249-case shared CPU coverage. Main's
+  original 2247-pass/two-skip report and exact passing Docker retries remain
+  separate; v257c is explicitly a two-execution assembly. Prepared application
+  `d2e9835d64a328a3d6ad76482eea10010a06a015` independently passed all 2249
+  cases plus four subtests in one execution, no skips. Native implementation,
+  tree and patch bytes remain identical; only its canonical path provenance
+  is rebound. Keep all earlier qualification/failure reports.
+- V260 is running a single Full observed-growth comparison after V247's actual
+  exit: `ops/v260_locobench_observed_growth_20261027.registration.json`,
+  execution `beliefkv-causal-d2e9835d64a3`, supervisor 3932462/start
+  `724661409`, port 18650. Source work, capacities, environment and common
+  engine equal V247; only `beliefkv/runtime/agent_working_set.py` changes within
+  the BeliefKV package. Reuse complete V247 ThunderAgent; do not rerun full
+  native or other paper policies. Startup is not new-policy GPU/performance
+  acceptance. Complete and review this candidate against both primary metrics.
+- At 2026-10-27 12:52 Asia/Shanghai, V260's supervisor, server
+  3932975/start `724664165`, GPU scheduler 3933294/start `724665579`, and
+  driver 3934418/start `724679062` were independently verified live. Actual
+  runtime shows observed-growth accounting and 326 updates; the first 339
+  sealed completed receipts have exact tokens. Source and predecessor exit
+  checks passed. See `v260_observed_growth_live_gpu_20261027.json`. Keep
+  whole-population correctness and performance acceptance pending.
