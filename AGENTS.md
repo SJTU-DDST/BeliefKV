@@ -1185,3 +1185,10 @@
   and the pinned TraceLab prior; both ThunderAgent arms inherit none of these.
   CPU native allocator tests prove logical lending grants no free Device pages.
   Whole-model correctness and matched V311 JCT/throughput remain pending.
+- Current Full/baseline declarations select native base fa5cb52afaea. Regenerate
+  the canonical patch against that base from the already qualified
+  11b84f7c3198 tree; the historical main patch was relative to 94602c9c and
+  fails repeated application on fa5cb52afaea. This is a patch-base packaging
+  correction, not new native behavior. Preserve old commits and frozen engine
+  trees, bind fresh provenance to the new patch path, and require the resulting
+  actual tree to remain exactly 11b84f7c31986782be3fbe699bae2574ef092389.

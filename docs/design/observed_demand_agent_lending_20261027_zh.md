@@ -87,3 +87,10 @@ V325 的一次完整 shared CPU 执行通过 2916 项及四个 subtest，无失�
 时间表以及真实构造检查：Full 为 `observed_demand + demand_cost`，
 加载固定 SHA 的 TraceLab 先验；两个 ThunderAgent arm 没有这些扩展。
 这是 CPU 资格，尚未证明 GPU 运行或完整性能。
+
+首次 V327 注册在占用 GPU 前被原生来源检查拒绝：main 的大补丁相对
+旧 94602c9c 基线，声明却选择了已包含这些改动的 fa5cb52afaea。
+随后从已验证的原生树重新生成相对 fa5cb52afaea 的五文件补丁，
+不改变原生代码或树。新的注册须独立绑定该补丁路径，并验证实际树
+仍为 `11b84f7c31986782be3fbe699bae2574ef092389`，不能跳过来源检查
+或悄悄把不同原生实现加入性能对比。
