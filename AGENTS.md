@@ -828,3 +828,23 @@
   false; independent GPU ownership and position evidence are in its separate
   `gpu_smoke.json`. Keep population/performance acceptance pending until each
   full arm completes with exact work, drained telemetry and owned cleanup.
+- V247 Full completed all 3674 requests and exact tokens with original native
+  stopping, all 18 workflow tails, two fresh idle telemetry snapshots and owned
+  cleanup. Mean JCT is 1423.068672s and whole-run throughput 286.592505 token/s;
+  actual H2D is 733.581902GB, including 606.647058GB native demand. Its mean
+  JCT is worse than historical V235; do not call this a performance win.
+  The common-engine ThunderAgent arm is running: server 3903870/start
+  `724362693`, scheduler 3904251/start `724363947`, driver 3905991/start
+  `724377980`, verified at 2026-10-27 12:13 Asia/Shanghai. Preserve its frozen
+  sources and complete it before another GPU job or final acceptance.
+- The separate observed-growth repair refreshes Full's ThunderAgent-derived
+  context accounting from actual native output lists at new-agent arrivals
+  and five-second maintenance points. Release live request references at
+  completion/retirement/abort and rebind native attempts; reject stale visible
+  identity as progress evidence. Keep native allocation authoritative and the
+  original working_set and paper policies unchanged. V247 does not contain
+  this repair. Its targeted CPU reports pass 136 and 248 cases without skips,
+  including native lifecycle with copy/event stand-ins; this is not the entire
+  shared regression or new GPU/performance qualification. The callback-only
+  CPU benchmark is source-bound and grants no whole-controller cost or JCT
+  claim. See `docs/research/v247_full_and_observed_growth_20261027_zh.md`.

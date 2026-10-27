@@ -45,8 +45,10 @@ class AgentAdmission:
         ):
             raise ValueError("unsupported agent admission strategy")
         self.requests, self.latest, self.workflows = {}, {}, {}
+        self._live_requests = {}
         self.tool_waits = {}
         self.next_tick = 0.
+        self._next_progress_refresh = 0.
         self.restore_backoff = {}
         self.counts = Counter()
 
@@ -101,6 +103,8 @@ class AgentAdmission:
             old.root_workflow_id, old.context_id,
         ) != (key.root_workflow_id, key.context_id):
             raise ValueError("an agent cannot change workflow or context identity")
+        if key.invocation_id not in self.policy.agents:
+            self._refresh_streaming_progress()
         critical = key.invocation_id in self.runtime._join_priority_pending
         workflow = (
             {"workflow_id": key.root_workflow_id}
@@ -115,6 +119,7 @@ class AgentAdmission:
         ):
             self.policy.release_restore(key.invocation_id)
         self.requests[key.request_id] = key
+        self._live_requests[key.request_id] = req
         self.latest[key.invocation_id] = key
         self.workflows[key.invocation_id] = key.root_workflow_id
         self.tool_waits.pop(key.invocation_id, None)
@@ -166,6 +171,7 @@ class AgentAdmission:
             if req.rid not in finished:
                 continue
             key = self.requests.pop(req.rid, None)
+            self._live_requests.pop(req.rid, None)
             if key is not None and key.invocation_id in self.policy.agents:
                 self.policy.completed(
                     key.invocation_id, len(req.origin_input_ids) + len(req.output_ids),
@@ -271,12 +277,33 @@ class AgentAdmission:
                     self.policy.unblock(event.invocation_id, now=now)
         self.restore_backoff.clear()
 
+    def _refresh_streaming_progress(self):
+        generated = getattr(self.policy, "generated", None)
+        if not callable(generated):
+            return
+        self.counts["streaming_progress_rounds"] += 1
+        for request, key in self.requests.items():
+            req = self._live_requests.get(request)
+            item = self.policy.agents.get(key.invocation_id)
+            if (
+                req is not None and self.runtime.visible.get(request) == key
+                and item is not None and item.active and item.pending and not item.acting
+            ):
+                tokens = len(req.origin_input_ids) + len(req.output_ids)
+                if tokens != item.tokens:
+                    self.counts["streaming_progress_updates"] += 1
+                generated(key.invocation_id, tokens)
+                self.counts["streaming_progress_checks"] += 1
+
     def tick(self, *, now=None):
         timestamp = time.monotonic() if now is None else now
         if self.policy is None or timestamp < self.next_tick:
             return
         self.next_tick = timestamp + 1.
         self.counts["control_ticks"] += 1
+        if timestamp >= self._next_progress_refresh:
+            self._next_progress_refresh = timestamp + 5.
+            self._refresh_streaming_progress()
         # Reuse the existing causal prediction; never parse tool text or run a
         # second estimator here. Native eviction still validates physical state.
         for invocation, waiting in tuple(self.tool_waits.items()):
@@ -377,6 +404,7 @@ class AgentAdmission:
             ) != (key.root_workflow_id, key.invocation_id, key.context_id):
                 raise ValueError("agent requeue changed its logical identity")
             self.requests[req.rid] = self.latest[key.invocation_id] = key
+            self._live_requests[req.rid] = req
             self.policy.requeued(key.invocation_id, now=now)
             self.counts["retracted" if is_retracted else "requeued"] += 1
 
@@ -389,6 +417,7 @@ class AgentAdmission:
         for rid, key in tuple(self.requests.items()):
             if key.invocation_id == invocation:
                 del self.requests[rid]
+                self._live_requests.pop(rid, None)
         self.counts["retired"] += 1
 
     def aborted(self, request_id, *, all_requests=False):
@@ -425,6 +454,10 @@ class AgentAdmission:
             "agents": len(self.latest), "pending_requests": len(self.requests),
             "recovery_consumer": policy.restore_owner if policy else None,
             "capacity_semantics": "conservative_sum_of_observed_agent_contexts_plus_growth_buffer",
+            "streaming_context_accounting": (
+                "observed_native_outputs_at_new_agent_arrival_and_five_second_control"
+                if callable(getattr(policy, "generated", None)) else "request_boundaries_only"
+            ),
             "shared_prefixes_deduplicated": False,
             "control_interval_ms": getattr(policy, "control_interval_s", 1.) * 1000.,
             "maintenance_interval_ms": 1000, "restore_reservation_ms": 1500,
@@ -501,6 +534,7 @@ class AgentAdmission:
         if self.policy is not None:
             self.policy.clear()
         self.requests.clear()
+        self._live_requests.clear()
         self.latest.clear()
         self.workflows.clear()
         self.tool_waits.clear()
