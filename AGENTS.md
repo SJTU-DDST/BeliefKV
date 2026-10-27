@@ -1192,3 +1192,19 @@
   correction, not new native behavior. Preserve old commits and frozen engine
   trees, bind fresh provenance to the new patch path, and require the resulting
   actual tree to remain exactly 11b84f7c31986782be3fbe699bae2574ef092389.
+- V330 independently registers Full then optional-decay ThunderAgent using
+  commit bdd74e9c280b and the exact V311 map, V230 work, capacity and seed21:
+  `ops/v330_locobench_demand_lending_20261027.registration.json`, port 18654.
+  Actual supervisor 4170080, server 4170626 and GPU scheduler 4171097 were
+  verified during startup; do not overlap another GPU job or change frozen
+  inputs. V327/V329 were pre-GPU registration rejections, not performance arms.
+  V331 reproduces the TraceLab prior from the pinned raw public gzip and obtains
+  the identical 949e2b45b7f6 SHA. Keep whole-model, complete JCT/throughput and
+  repeated/all-baseline acceptance pending until actual evidence proves them.
+- V330 subsequently reaches running_full with actual driver 4172595. Runtime
+  observes demand lending, demand-cost offload, the pinned TraceLab prior and
+  healthy physical control; an early snapshot records seven executed demand
+  admissions, which are not freed-page evidence. V332 independently seals
+  228 exact completed receipts matching the full original work and native
+  stopping, with a fixed complete-prefix hash. Preserve current frozen run;
+  partial receipts do not establish complete correctness or performance.
