@@ -1234,3 +1234,32 @@
   authority. Account for occupancy, displaced work, repeated copies and
   recomputation in full JCT/throughput. Disable the feature if matched evidence
   shows net harm; never force transfers to increase coverage.
+- V330 Full has completed all 3674 exact requests, 18 workflows and original
+  stopping, with two fresh idle snapshots and actual owned cleanup. V341
+  independently verifies mean JCT 1646.612839s and full-run throughput
+  237.838282 token/s. V338 reconstructs all complete JCT paths; the slowest
+  has 530.409s submit-to-first-launch waiting as well as tool intervals, so
+  do not attribute the tail solely to fixed external waits. V339 reconciles
+  3223.391207GB native demand H2D; V340 full mean decode batch is 6.250711,
+  not its earlier 11.035 prefix. Matching V311 optional-decay ThunderAgent
+  started (server 4193558, scheduler 4193919, driver 2218), then stopped for
+  the new user reservation. V342 verifies cleanup before 20:00 and preserves
+  847 exact partial receipts. Keep the raw administrative-stop evidence;
+  its partial result cannot qualify a performance comparison.
+- The user prohibits GPU experiments from 2026-10-27 20:00 through
+  2026-10-28 08:00 Asia/Shanghai, consistent with the existing reservation
+  timezone. The shared hold now rejects launches before the latter deadline.
+  V330 owned cleanup completed at 19:53:15, including release of the GPU
+  context. Do not restart its interrupted partial arm; continue CPU-only
+  work with CUDA devices hidden during the reservation.
+- All future ThunderAgent experiments use only `thunderagent_acting_decay`.
+  Preserve historical default results. Reuse an existing matched control when
+  only Full changes; V295's V269 timers differ from V330's V311 timers and
+  therefore do not supply a same-timing performance control.
+- Call fixed-trace total output divided by makespan end-to-end output
+  throughput, never decode kernel throughput. It is not independent evidence
+  from makespan. Keep complete mean JCT and all normal tails; separately
+  report complete decode worker output rate, batch/context/padding geometry,
+  and demand-outstanding service throughput as diagnostics. Worker intervals
+  include runtime and waits, not pure kernel duration. See
+  `docs/research/throughput_metric_contract_20261027_zh.md`.
