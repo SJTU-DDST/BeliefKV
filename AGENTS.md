@@ -1507,3 +1507,14 @@
   checks before a Full-only GPU run, reusing complete V345 on the same full
   V230 work, V311 timing, native tree, capacity and seed21.
   See `docs/design/reference_thunder_migration_composition_20261027_zh.md`.
+- V396's first registration attempt stopped before writing a registration or
+  starting a GPU watcher: `after_registration` compares the entire environment,
+  and V378 has a different Full admission configuration. Preserve both unused
+  frozen checkouts and
+  `v396_reference_thunder_pre_gpu_dependency_rejection_20261027.json`.
+  The original V378 success and actual owned exit were independently rechecked.
+  The distinct V396b retry omits that inapplicable same-configuration dependency,
+  retaining current hold, resource, port and GPU-lock checks. Native binding V396
+  changes only the canonical patch path; every other native-state field and
+  actual11b84f7c3198 tree remain equal to the earlier proof. CPU-qualified runtime
+  sources are unchanged by this startup record.

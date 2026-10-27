@@ -1,0 +1,17 @@
+{
+  "observed_at": "2026-10-28T00:45:24.216700+08:00",
+  "failure": "predecessor causal comparison differs: reference_environment",
+  "stage": "registration_before_gpu_watcher_start",
+  "cause": "Optional same-configuration predecessor flag was supplied for a different Full admission configuration.",
+  "failed_commit": "aceccac82abe60970ee9b7e73e4f07f289a6d339",
+  "preserved_unregistered_checkouts": [
+    "/home/longhao/experiment/.worktrees/beliefkv-causal-aceccac82abe",
+    "/home/longhao/experiment/.worktrees/sglang-causal-11b84f7c3198-aceccac82abe"
+  ],
+  "previous_registration": "/home/longhao/experiment/ops/v378_locobench_fitting_lending_20261027.registration.json",
+  "previous_success_and_actual_owned_exit_independently_rechecked": true,
+  "registration_written": false,
+  "gpu_experiment_started": false,
+  "retry": "Use a distinct frozen registration without the inapplicable same-configuration dependency; retain hold, resource and GPU lock checks.",
+  "performance_accepted": false
+}
