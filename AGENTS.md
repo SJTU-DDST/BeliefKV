@@ -1282,3 +1282,15 @@
   Preserve V330's administrative stop and 847 partial receipts; do not resume
   or combine that partial run, repeat Full, or schedule additional GPU arms.
   Current availability, ownership, port and newer hold checks still apply.
+- V345 independently registers only `thunderagent_acting_decay` using commit
+  `0b1ca5de0933`, port 18655 and the unchanged V330 native tree and V311 map:
+  `ops/v345_locobench_categorized_thunder_decay_20261027.registration.json`.
+  V348 verifies 17 matching common fields, unchanged qualified runtime sources,
+  actual tool-decay configuration and live supervisor 27137/server 27645/
+  GPU scheduler 28011/driver 29479 identities. V346 seals 141 exact completed
+  requests against the complete V330 Full receipt population. Preserve the
+  running frozen control; partial work supplies no complete performance claim.
+  The one-shot CPU-only V347 postprocessor waits for complete success and
+  owned process exit before drawing matched V330/V345 plots. It launches no
+  GPU job and stops without plots if the control is interrupted. See
+  `docs/research/v345_v311_thunder_decay_control_20261027_zh.md`.
