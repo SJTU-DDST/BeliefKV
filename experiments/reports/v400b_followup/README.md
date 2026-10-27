@@ -50,3 +50,13 @@ identify active agents or complete logical budgets. The restore reader now
 keeps those missing fields unknown while still reconciling actual request
 Host hits with physical demand H2D bytes. No serving policy changes are
 introduced by this analysis compatibility repair.
+
+`shared_cpu.xml`, `shared_cpu.sources.json` and `shared_cpu.evidence.json`
+record one complete source-bound regression: 3038 passing tests plus four
+passing subtests, no failures or skips. All 3035 prior test identities are
+retained and three are added. The actual Full, default ThunderAgent and
+acting-decay ThunderAgent constructors remain isolated, and the reference
+scheduling/lifecycle methods are still inherited without replacement.
+The qualifier is `scripts/qualify_reference_thunder_admission.py`, using
+`v399_reference_thunder_offload_cpu_evidence_20261027.json` as its prior.
+No new GPU run is registered by this qualification.
