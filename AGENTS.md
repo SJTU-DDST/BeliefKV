@@ -968,3 +968,28 @@
   historical budget audit reconciles only about 109 seconds of V260 and does
   not establish whole-run blocked occupancy or physical sharing. Keep its
   unreconciled interval explicit and retain the original negative results.
+- The separate JOIN-dependent agent admission candidate is now implemented in
+  `configs/migration/predictive_join_dependency_admission_20261027.json`,
+  default off and isolated from all paper/control arms. At existing periodic,
+  idle and backed-lending selections, preserve ready JOIN parent precedence,
+  then prefer the sole remaining necessary ALL-JOIN member and other necessary
+  members of an actually blocked waiter. Recheck live observed dependencies;
+  do not assume a child is short, await unready siblings or evict ready peers.
+  The optional `observed_blocked` backing proof decouples logical budget lending
+  from long-tool prediction while retaining current identity, complete settled
+  Host checkpoint, native DMA, in-flight and restore guards. It does not grant
+  physical eviction authority or zero a blocked owner's budget without demand.
+- The complete V230 prefix audit V276 verifies 92 parent/child pairs in compatible
+  namespaces, each with only three common tokens. This does not establish native
+  physical sharing and provides no reason for blanket parent/child discounts.
+  Keep conservative extent accounting explicit; actual physical shared-page
+  union credit remains unimplemented. New candidate snapshots include actual
+  per-agent logical budgets, so the budget auditor can reconcile observed decode
+  growth without altering older incomplete telemetry. Targeted CPU reports
+  V277/V278 do not establish GPU effects or performance acceptance.
+- The final V279 shared CPU regression passes 2342 cases and four subtests in
+  one execution without failures/skips, retaining all 2304 V273c identities and
+  adding 38. V280 binds the source map, declarations and real runtime constructor
+  checks. Native CPU tree/allocator fixtures retain copy/event stand-ins. This
+  candidate has no GPU/performance acceptance yet; future Full must match V273's
+  exact V269 overlay, streaming metrics, engine, capacities and seed21.

@@ -34,6 +34,7 @@ class ThunderAgentMigration(ThunderWorkingSet):
         coadmit_join_children: bool = False, recall_join_loans: bool = False,
         workflow_entry_min_ready: int = 0, recall_tool_loans: bool = False,
         recall_selection: str = "largest", observe_recall=None, recall_urgent=None,
+        admission_dependency=None, observe_lending=None,
     ):
         super().__init__(capacity)
         if type(retain_blocked) is not bool:
@@ -59,6 +60,12 @@ class ThunderAgentMigration(ThunderWorkingSet):
         self.recall_selection = recall_selection
         self.observe_recall = observe_recall
         self.recall_urgent = recall_urgent
+        if admission_dependency is not None and (
+            not callable(admission_dependency) or not retain_blocked
+        ):
+            raise ValueError("JOIN-dependent admission requires retained agent eligibility")
+        self.admission_dependency = admission_dependency
+        self.observe_lending = observe_lending
         if (
             type(workflow_entry_min_ready) is not int or not 0 <= workflow_entry_min_ready <= 256
             or workflow_entry_min_ready and not retain_blocked
@@ -107,7 +114,7 @@ class ThunderAgentMigration(ThunderWorkingSet):
             item for item in all_programs.values()
             if not item.active and item.pending and not item.blocked
             and item.workflow_id not in established and self._entry_allowed(item, self._entry_now)
-        ), key=lambda item: (
+        ), key=self._waiting_key if self.admission_dependency is not None else lambda item: (
             1 if item.steps == 1 else 0 if not item.acting else 2,
             item.tokens, item.queue_sequence,
         ), default=None) if self.workflow_entry_min_ready else None
@@ -118,7 +125,23 @@ class ThunderAgentMigration(ThunderWorkingSet):
             )
         }
         try:
-            resumed = super()._resume()
+            if self.admission_dependency is None:
+                resumed = super()._resume()
+            else:
+                available = self.remaining_capacity()
+                selected = []
+                for item in sorted(
+                    (item for item in self.programs.values() if not item.active),
+                    key=self._waiting_key,
+                ):
+                    required = item.tokens + self.buffer_tokens
+                    if required <= available:
+                        selected.append(item)
+                        available -= required
+                selected.sort(key=lambda item: -item.tokens)
+                for item in selected:
+                    item.active = True
+                resumed = tuple(item.identity for item in selected)
         finally:
             self.programs = all_programs
         self.counts["activated"] += len(resumed)
@@ -128,6 +151,18 @@ class ThunderAgentMigration(ThunderWorkingSet):
         for identity in resumed:
             self._record_borrowing(self.programs[identity], lenders)
         return resumed
+
+    def _waiting_key(self, item):
+        original = (
+            1 if item.steps == 1 else 0 if not item.acting else 2,
+            item.tokens, item.queue_sequence,
+        )
+        if self.admission_dependency is None:
+            return (not item.critical, *original)
+        rank = self.admission_dependency(item.identity) if item.pending and not item.blocked else 2
+        if type(rank) is not int or rank not in (0, 1, 2):
+            raise ValueError("admission dependency must be a current observed JOIN rank")
+        return (not item.critical, rank, *original)
 
     def _release_borrowed_budget(self, identity):
         for lender in self.borrowed_from.pop(identity, ()):
@@ -392,7 +427,7 @@ class ThunderAgentMigration(ThunderWorkingSet):
             (item for item in self.programs.values()
              if not item.active and item.pending and not item.blocked
              and self._entry_allowed(item, now)),
-            key=lambda item: (
+            key=self._waiting_key if self.admission_dependency is not None else lambda item: (
                 1 if item.steps == 1 else 0 if not item.acting else 2,
                 item.tokens, item.queue_sequence,
             ),
@@ -412,11 +447,7 @@ class ThunderAgentMigration(ThunderWorkingSet):
             (item for item in self.programs.values()
              if not item.active and item.pending and not item.blocked
              and self._entry_allowed(item, now)),
-            key=lambda item: (
-                not item.critical,
-                1 if item.steps == 1 else 0 if not item.acting else 2,
-                item.tokens, item.queue_sequence,
-            ),
+            key=self._waiting_key,
         )[:8]
         donors = sorted(
             (item for item in self.programs.values()
@@ -458,6 +489,20 @@ class ThunderAgentMigration(ThunderWorkingSet):
                 raise ValueError("proven blocked budgets did not cover selected admission")
             self._record_borrowing(target, lenders)
             self.counts["backed_wait_admitted"] += 1
+            if self.observe_lending is not None:
+                self.observe_lending({
+                    "target_invocation_id": target.identity,
+                    "target_tokens": target.tokens,
+                    "target_join_rank": (
+                        self.admission_dependency(target.identity)
+                        if self.admission_dependency is not None else None
+                    ),
+                    "available_tokens_before": available,
+                    "donor_invocation_ids": [donor.identity for donor in selected],
+                    "donor_budget_tokens": released,
+                    "buffer_tokens_per_agent": self.buffer_tokens,
+                    "policy_monotonic_seconds": now,
+                })
             return target.identity
         return None
 

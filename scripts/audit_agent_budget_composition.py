@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Partition observed Full agent budgets using native request boundaries."""
+"""Partition Full logical budgets from snapshots or native request boundaries."""
 
 from __future__ import annotations
 
@@ -53,6 +53,33 @@ def composition(state, latest, pending, *, buffer_tokens=100):
         or type(buffer_tokens) is not int or buffer_tokens < 0
     ):
         raise ValueError("unsupported agent budget observations")
+    observed = admission.get("active_agent_budgets")
+    if observed is not None:
+        if type(observed) is not list:
+            raise ValueError("invalid per-agent observed budgets")
+        latest, pending = dict(latest), dict(pending)
+        identities, observed_blocked = set(), set()
+        for row in observed:
+            if (
+                type(row) is not dict or type(identity := row.get("invocation_id")) is not str
+                or identity in identities or identity not in active
+                or type(tokens := row.get("tokens")) is not int or tokens <= 0
+                or type(row.get("buffer_tokens")) is not int or row["buffer_tokens"] != buffer_tokens
+                or type(row.get("pending")) is not bool or type(row.get("in_flight")) is not bool
+                or row.get("blocked") is not None and type(row["blocked"]) is not str
+                or row["in_flight"] and not row["pending"]
+            ):
+                raise ValueError("invalid per-agent observed budgets")
+            identities.add(identity)
+            if row["blocked"]:
+                observed_blocked.add(identity)
+            latest[identity] = tokens
+            if row["pending"]:
+                pending.setdefault(identity, "_observed_snapshot")
+            else:
+                pending.pop(identity, None)
+        if identities != set(active) or observed_blocked != set(blocked):
+            raise ValueError("per-agent observed budget identities disagree")
     values = Counter()
     for invocation in active:
         if invocation not in latest:
@@ -109,6 +136,10 @@ def inspect(states, events, *, buffer_tokens=100, maximum_age_ms=1500.):
         values = composition(state, latest, pending, buffer_tokens=buffer_tokens)
         counts["covered_ms"] += duration
         counts["snapshots_in_request_span"] += 1
+        counts[
+            "observed_budget_snapshots" if (state.get("agent_admission") or {}).get("active_agent_budgets") is not None
+            else "boundary_reconstructed_snapshots"
+        ] += 1
         if values is None:
             counts["unreconciled_ms"] += duration
             counts["unreconciled_snapshots"] += 1
@@ -174,7 +205,7 @@ def main():
         "same_native_request_identities_and_token_counts": True,
         "auditor_sha256": sha256_file(Path(__file__)),
         "scope": [
-            "Logical context budgets reconstructed from native arrival input counts and completed output counts; no future request context is used at an earlier snapshot.",
+            "Logical budgets use same-snapshot per-agent observations when available; older results fall back to native arrival and completion counts. No future context is used.",
             "Each snapshot is held until the next sample or 1500ms, clipped to the native request span. This can miss transitions within that interval.",
             "Reported fractions use only snapshots whose reconstructed sum exactly matches the observed logical active budget; mismatches and sampling gaps remain explicit.",
             "Model pending includes both running and queued native model requests. Between native requests includes tools, client work and transport; it is not proven cold time.",

@@ -941,6 +941,18 @@ class NativeAdmissionRuntime:
         ):
             raise ValueError("backed blocked lending requires retained agent admission")
         self.agent_blocked_lending = blocked_lending
+        join_admission = os.environ.get("BELIEFKV_AGENT_JOIN_DEPENDENCY_ADMISSION", "0")
+        if join_admission not in ("0", "1") or (
+            join_admission == "1" and agent_policy != "thunderagent_retained"
+        ):
+            raise ValueError("JOIN-dependent admission requires retained agent eligibility")
+        self.agent_join_dependency_admission = join_admission == "1"
+        budget_proof = os.environ.get("BELIEFKV_AGENT_BLOCKED_BUDGET_PROOF", "predicted_pressure")
+        if budget_proof not in ("predicted_pressure", "observed_blocked") or (
+            budget_proof != "predicted_pressure" and blocked_lending == "idle"
+        ):
+            raise ValueError("observed blocked budget proof requires backed lending")
+        self.agent_blocked_budget_proof = budget_proof
         recall_selection = os.environ.get("BELIEFKV_AGENT_RECALL_SELECTION", "largest")
         if recall_selection not in ("largest", "cold_fit") or (
             recall_selection != "largest" and blocked_lending != "backed_demand_recall"
@@ -977,6 +989,8 @@ class NativeAdmissionRuntime:
                 workflow_entry_min_ready=self.agent_workflow_entry_min_ready,
                 tool_loan_return=self.agent_tool_loan_return,
                 recall_selection=self.agent_recall_selection,
+                join_dependency_admission=self.agent_join_dependency_admission,
+                blocked_budget_proof=self.agent_blocked_budget_proof,
             )
         if paper_policy:
             from beliefkv.runtime.paper_baseline import create_adapter
@@ -6908,9 +6922,34 @@ class NativeAdmissionRuntime:
             return False
         return self._live_parent_pressure_key(record[0])
 
+    def _agent_observed_blocked_budget_key(self, key: PrefillCandidateKey) -> bool:
+        invocation = self.graph.invocations.get(key.invocation_id)
+        if (
+            self.physical_disabled or not self._custom_kv_management
+            or self.context_sessions.get(key.context_id) != key or self._terminal(key)
+            or invocation is None or invocation.context_id != key.context_id
+            or invocation.workflow_id != key.root_workflow_id
+        ):
+            return False
+        if invocation.state is InvocationState.WAIT_TOOL:
+            return bool(invocation.active_tool_calls)
+        if invocation.state is InvocationState.WAIT_CHILD:
+            return bool(invocation.blocking_child_ids)
+        join = self.graph.joins.get(invocation.join_id)
+        return bool(
+            invocation.state is InvocationState.WAIT_JOIN and join is not None
+            and not join.satisfied and join.workflow_id == invocation.workflow_id
+            and key.invocation_id in join.waiter_invocation_ids
+        )
+
     @timed_runtime("agent_blocked_backing_probe")
-    def _agent_blocked_prefix_backed(self, key: PrefillCandidateKey) -> bool:
-        if not self._live_parent_pressure_key(key):
+    def _agent_blocked_prefix_backed(
+        self, key: PrefillCandidateKey, *, observed_blocked: bool = False,
+    ) -> bool:
+        if not (
+            self._agent_observed_blocked_budget_key(key) if observed_blocked
+            else self._live_parent_pressure_key(key)
+        ):
             return False
         anchors = self.snapshot_session_anchors(
             self._native_cache, context_id=key.context_id, context_epoch=key.context_epoch,

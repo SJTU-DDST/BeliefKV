@@ -14,6 +14,7 @@ class AgentAdmission:
         blocked_lending="idle",
         workflow_entry_min_ready=0, tool_loan_return=False,
         recall_selection="largest",
+        join_dependency_admission=False, blocked_budget_proof="predicted_pressure",
     ):
         self.runtime = runtime
         self.policy: AgentWorkingSet | None = None
@@ -24,6 +25,16 @@ class AgentAdmission:
         ):
             raise ValueError("backed blocked lending requires retained agent admission")
         self.blocked_lending = blocked_lending
+        if type(join_dependency_admission) is not bool or (
+            join_dependency_admission and strategy != "thunderagent_retained"
+        ):
+            raise ValueError("JOIN-dependent admission requires retained agent eligibility")
+        self.join_dependency_admission = join_dependency_admission
+        if blocked_budget_proof not in ("predicted_pressure", "observed_blocked") or (
+            blocked_budget_proof != "predicted_pressure" and blocked_lending == "idle"
+        ):
+            raise ValueError("observed blocked budget proof requires backed lending")
+        self.blocked_budget_proof = blocked_budget_proof
         if type(tool_loan_return) is not bool or (
             tool_loan_return and blocked_lending != "backed_demand_recall"
         ):
@@ -79,6 +90,13 @@ class AgentAdmission:
                     self._observe_recall
                     if getattr(self.runtime, "_opportunity_writer", None) is not None else None
                 ),
+                admission_dependency=(
+                    self._admission_dependency if self.join_dependency_admission else None
+                ),
+                observe_lending=(
+                    self._observe_lending if self.join_dependency_admission
+                    and getattr(self.runtime, "_opportunity_writer", None) is not None else None
+                ),
             )
         else:
             self.policy = AgentWorkingSet(capacity)
@@ -94,6 +112,38 @@ class AgentAdmission:
     def _recall_urgent(self, invocation):
         key = self.latest.get(invocation)
         return bool(key is not None and self.runtime._last_join_child_has_waiting_parent(key))
+
+    def _admission_dependency(self, invocation):
+        """Rank only necessary members of a currently observed blocked ALL-JOIN."""
+        child = self.runtime.graph.invocations.get(invocation)
+        if child is None or child.state.terminal:
+            return 2
+        rank = 2
+        for identity in self.runtime._join_by_invocation.get(invocation, ()):
+            join = self.runtime.graph.joins.get(identity)
+            if (
+                join is None or join.satisfied or join.mode.value != "all"
+                or join.workflow_id != child.workflow_id
+                or invocation not in join.member_invocation_ids - join.completed_member_ids
+            ):
+                continue
+            if any(
+                (parent := self.runtime.graph.invocations.get(waiter)) is not None
+                and parent.state is InvocationState.WAIT_JOIN and parent.join_id == identity
+                and parent.workflow_id == child.workflow_id and not parent.active_tool_calls
+                and not parent.blocking_child_ids
+                for waiter in join.waiter_invocation_ids
+            ):
+                rank = min(rank, int(len(join.member_invocation_ids - join.completed_member_ids) > 1))
+        return rank
+
+    def _observe_lending(self, detail):
+        self.runtime._opportunity_writer.record({
+            "event": "agent_blocked_budget_lent", "ts_ms": time.time() * 1000.,
+            **detail, "backing_proof": self.blocked_budget_proof,
+            "native_capacity_authority_preserved": True,
+            "semantics": "Executed logical budget handover; not physical eviction or freed-page evidence.",
+        })
 
     def registered(self, req, key):
         if self.policy is None or key.request_id in self.requests:
@@ -330,7 +380,11 @@ class AgentAdmission:
         return bool(
             item is not None and item.active and item.blocked and not item.pending
             and not item.in_flight and key is not None
-            and self.runtime._agent_blocked_prefix_backed(key)
+            and (
+                self.runtime._agent_blocked_prefix_backed(key, observed_blocked=True)
+                if self.blocked_budget_proof == "observed_blocked"
+                else self.runtime._agent_blocked_prefix_backed(key)
+            )
         )
 
     def claim_restore(self, key, *, source):
@@ -470,6 +524,15 @@ class AgentAdmission:
             ),
             "coadmit_join_children": self.coadmit_join_children,
             "blocked_lending": self.blocked_lending,
+            "join_dependency_admission": self.join_dependency_admission,
+            "blocked_budget_proof": self.blocked_budget_proof,
+            "active_agent_budgets": [
+                {
+                    "invocation_id": item.identity, "tokens": item.tokens,
+                    "buffer_tokens": policy.buffer_tokens, "pending": item.pending,
+                    "in_flight": item.in_flight, "blocked": item.blocked,
+                } for item in active
+            ] if self.join_dependency_admission else None,
             "workflow_entry_min_ready_agents": self.workflow_entry_min_ready,
             "workflow_entry_scope": "unstarted_root_workflow_only",
             "workflow_entry_started_workflows": len(getattr(policy, "started_workflows", ())),

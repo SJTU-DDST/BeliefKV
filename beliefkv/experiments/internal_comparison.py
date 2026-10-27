@@ -123,6 +123,22 @@ def arm_environment(
     if mode == "full" and blocked_lending != "idle" and agent_admission != "thunderagent_retained":
         raise ValueError("backed blocked lending requires retained agent admission")
     blocked_lending = blocked_lending if agent_admission == "thunderagent_retained" else "idle"
+    join_admission = common.get(
+        "BELIEFKV_AGENT_JOIN_DEPENDENCY_ADMISSION", common.get("AGENT_JOIN_DEPENDENCY_ADMISSION", "0"),
+    )
+    if join_admission not in ("0", "1") or (
+        mode == "full" and join_admission == "1" and agent_admission != "thunderagent_retained"
+    ):
+        raise ValueError("JOIN-dependent admission requires retained agent eligibility")
+    join_admission = join_admission if agent_admission == "thunderagent_retained" else "0"
+    budget_proof = common.get(
+        "BELIEFKV_AGENT_BLOCKED_BUDGET_PROOF", common.get("AGENT_BLOCKED_BUDGET_PROOF", "predicted_pressure"),
+    )
+    if budget_proof not in ("predicted_pressure", "observed_blocked") or (
+        mode == "full" and budget_proof != "predicted_pressure" and blocked_lending == "idle"
+    ):
+        raise ValueError("observed blocked budget proof requires backed lending")
+    budget_proof = budget_proof if mode == "full" else "predicted_pressure"
     recall_selection = common.get(
         "BELIEFKV_AGENT_RECALL_SELECTION", common.get("AGENT_RECALL_SELECTION", "largest"),
     )
@@ -167,6 +183,10 @@ def arm_environment(
         "BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN": siblings,
         "AGENT_BLOCKED_LENDING": blocked_lending,
         "BELIEFKV_AGENT_BLOCKED_LENDING": blocked_lending,
+        "AGENT_JOIN_DEPENDENCY_ADMISSION": join_admission,
+        "BELIEFKV_AGENT_JOIN_DEPENDENCY_ADMISSION": join_admission,
+        "AGENT_BLOCKED_BUDGET_PROOF": budget_proof,
+        "BELIEFKV_AGENT_BLOCKED_BUDGET_PROOF": budget_proof,
         "AGENT_RECALL_SELECTION": recall_selection,
         "BELIEFKV_AGENT_RECALL_SELECTION": recall_selection,
         "AGENT_TOOL_LOAN_RETURN": tool_return,

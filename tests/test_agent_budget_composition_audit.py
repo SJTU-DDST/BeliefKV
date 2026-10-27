@@ -44,6 +44,41 @@ def test_missing_or_inconsistent_history_remains_unreconciled():
     assert composition(row, {"agent": 101}, {}) is None
 
 
+def test_same_snapshot_growth_resolves_old_request_boundary_mismatch():
+    row = state(1., ("a", "b"), ("b",), 600)
+    row["agent_admission"]["active_agent_budgets"] = [
+        {"invocation_id": "a", "tokens": 300, "buffer_tokens": 100,
+         "pending": True, "in_flight": True, "blocked": None},
+        {"invocation_id": "b", "tokens": 100, "buffer_tokens": 100,
+         "pending": False, "in_flight": False, "blocked": "join"},
+    ]
+    values = composition(row, {"a": 100, "b": 100}, {"a": "r"})
+    assert values["model_pending_tokens"] == 400
+    assert values["known_blocked_tokens"] == 200
+
+
+@pytest.mark.parametrize("change", ("missing", "duplicate", "wrong_buffer", "false_pending", "blocked_mismatch"))
+def test_inconsistent_per_agent_snapshot_is_not_silently_reconstructed(change):
+    row = state(1., ("a",), (), 200)
+    observation = {
+        "invocation_id": "a", "tokens": 100, "buffer_tokens": 100,
+        "pending": True, "in_flight": True, "blocked": None,
+    }
+    budgets = row["agent_admission"]["active_agent_budgets"] = [observation]
+    if change == "missing":
+        budgets.clear()
+    elif change == "duplicate":
+        budgets.append(dict(observation))
+    elif change == "wrong_buffer":
+        observation["buffer_tokens"] = 0
+    elif change == "false_pending":
+        observation["pending"] = False
+    else:
+        observation["blocked"] = "join"
+    with pytest.raises(ValueError, match="observed budget"):
+        composition(row, {"a": 100}, {"a": "r"})
+
+
 def test_no_future_completion_output_is_charged_before_its_native_timestamp():
     events = [
         event("llm_submit", 0., "a", "r", 100),

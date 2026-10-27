@@ -61,6 +61,7 @@ SERVER_FIELDS = (
     "JOIN_PREDICTION_MAX_CANDIDATES", "ONLINE_TOOL_TIMING",
     "BORROWABLE_PARENT_HEADROOM", "AGENT_ADMISSION", "AGENT_BLOCKED_LENDING", "AGENT_RECALL_SELECTION",
     "AGENT_WORKFLOW_ENTRY_MIN_READY", "AGENT_TOOL_LOAN_RETURN",
+    "AGENT_JOIN_DEPENDENCY_ADMISSION", "AGENT_BLOCKED_BUDGET_PROOF",
     "FREE_PAGE_H2D_FENCE",
 )
 
@@ -308,6 +309,8 @@ def preflight_runtime(settings, model_path):
             "working_set", "thunderagent", "thunderagent_retained", "thunderagent_workflow",
         ),
         "agent_blocked_lending": settings.get("BELIEFKV_AGENT_BLOCKED_LENDING", "idle"),
+        "agent_join_dependency_admission": settings.get("BELIEFKV_AGENT_JOIN_DEPENDENCY_ADMISSION", "0") == "1",
+        "agent_blocked_budget_proof": settings.get("BELIEFKV_AGENT_BLOCKED_BUDGET_PROOF", "predicted_pressure"),
         "agent_recall_selection": settings.get("BELIEFKV_AGENT_RECALL_SELECTION", "largest"),
         "agent_tool_loan_return": settings.get("BELIEFKV_AGENT_TOOL_LOAN_RETURN", "0") == "1",
         "free_page_h2d_fence_requested": settings.get("BELIEFKV_FREE_PAGE_H2D_FENCE", "0") == "1",
@@ -744,6 +747,14 @@ def observed_configuration(plan, label, arm, *, final=False):
                 "BELIEFKV_AGENT_RECALL_SELECTION", common.get("AGENT_RECALL_SELECTION", "largest"),
             ):
                 raise ValueError("effective agent recall selection differs from declared control")
+            if actual_agents.get("join_dependency_admission", False) is not (common.get(
+                "BELIEFKV_AGENT_JOIN_DEPENDENCY_ADMISSION", common.get("AGENT_JOIN_DEPENDENCY_ADMISSION", "0"),
+            ) == "1"):
+                raise ValueError("effective JOIN-dependent admission differs from declared control")
+            if actual_agents.get("blocked_budget_proof", "predicted_pressure") != common.get(
+                "BELIEFKV_AGENT_BLOCKED_BUDGET_PROOF", common.get("AGENT_BLOCKED_BUDGET_PROOF", "predicted_pressure"),
+            ):
+                raise ValueError("effective blocked budget proof differs from declared control")
             if actual_agents.get("workflow_entry_min_ready_agents", 0) != int(common.get(
                 "BELIEFKV_AGENT_WORKFLOW_ENTRY_MIN_READY", common.get("AGENT_WORKFLOW_ENTRY_MIN_READY", "0"),
             )):
