@@ -1,0 +1,412 @@
+{
+  "observed_at": "2026-10-27T18:01:42.368387+00:00",
+  "scope": "complete_matched_reference_core_full_vs_existing_acting_decay_control",
+  "requests": 3674,
+  "prompt_tokens": 145565966,
+  "output_tokens": 549671,
+  "all_normal_tails_retained": true,
+  "same_exact_tokens_and_native_stopping_verified": true,
+  "two_fresh_idle_snapshots_verified": true,
+  "all_owned_processes_exited": true,
+  "proofs": {
+    "reference_full": {
+      "registration": "/home/longhao/experiment/ops/v400b_locobench_reference_thunder_offload_20261027.registration.json",
+      "code_commit": "a5e31ae7464fa9fe06e2e00f3c9c244e619c28ff",
+      "engine_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+      "exact_requests": 3674,
+      "normal_tails_retained": true,
+      "final_agent_admission": {
+        "policy": "full_with_reference_thunderagent_acting_decay",
+        "author_commit": "7ddc8610270e56d3b109eed8796b3a4360fc67c9",
+        "program_identity": "invocation_id",
+        "future_information_used": false,
+        "native_capacity_authority_preserved": true,
+        "scope": "single_backend_exact_token_ingress_policy_adaptation",
+        "streaming_context_accounting": "observed_native_outputs_at_arrival_and_five_second_control",
+        "control_capacity_snapshot": {
+          "remaining_capacity_tokens": 805198,
+          "active_acting_programs": 0,
+          "active_reasoning_programs": 0,
+          "paused_pending_programs": 0,
+          "capacity_blocked_pending_programs": 0,
+          "oldest_pending_seconds": 0.0
+        },
+        "capacity_tokens": 805198,
+        "programs": 0,
+        "active_programs": 0,
+        "pending_requests": 0,
+        "counts": {
+          "control_ticks": 471,
+          "resumed": 1293,
+          "registered": 3674,
+          "streaming_progress_checks": 3845,
+          "streaming_progress_updates": 3400,
+          "completed": 3674,
+          "restore_outside_active_set": 541,
+          "programs_retired": 110,
+          "restore_existing_eligibility": 70
+        },
+        "acting_token_decay": true,
+        "decay_half_life_s": 1.0,
+        "decay_scope": "periodic_resume_only",
+        "decay_age_source": "observed_native_completion_monotonic",
+        "undiscounted_capacity_enforced": true,
+        "resume_capacity_tokens_at_last_control": 805198,
+        "physical_capacity_credit": false,
+        "strategy": "thunderagent_reference",
+        "identity": "invocation_id",
+        "control_interval_ms": 5000.0,
+        "blocked_lending": "disabled",
+        "join_loan_recall": false,
+        "tool_loan_return": false,
+        "coadmit_join_children": false,
+        "logical_borrowing_enabled": false,
+        "restore_changes_eligibility": false,
+        "restore_reservation_ms": 0,
+        "ordinary_restore_reservation_ms": 0,
+        "tool_warming_eligibility": "existing_active_tool_wait_only_no_new_reservation"
+      },
+      "final_paper_baseline": null,
+      "physical_disabled": false
+    },
+    "thunderagent_acting_decay": {
+      "registration": "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.json",
+      "code_commit": "0b1ca5de0933ddc5ba20328fccbf013c998ef361",
+      "engine_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+      "exact_requests": 3674,
+      "normal_tails_retained": true,
+      "final_agent_admission": null,
+      "final_paper_baseline": {
+        "policy": "thunderagent_public_single_backend_acting_decay",
+        "author_commit": "7ddc8610270e56d3b109eed8796b3a4360fc67c9",
+        "program_identity": "invocation_id",
+        "future_information_used": false,
+        "native_capacity_authority_preserved": true,
+        "scope": "single_backend_exact_token_ingress_policy_adaptation",
+        "streaming_context_accounting": "observed_native_outputs_at_arrival_and_five_second_control",
+        "control_capacity_snapshot": {
+          "remaining_capacity_tokens": 805198,
+          "active_acting_programs": 0,
+          "active_reasoning_programs": 0,
+          "paused_pending_programs": 0,
+          "capacity_blocked_pending_programs": 0,
+          "oldest_pending_seconds": 0.0
+        },
+        "capacity_tokens": 805198,
+        "programs": 0,
+        "active_programs": 0,
+        "pending_requests": 0,
+        "counts": {
+          "control_ticks": 471,
+          "resumed": 1315,
+          "registered": 3674,
+          "streaming_progress_checks": 3946,
+          "streaming_progress_updates": 3510,
+          "deferred_selections": 701924,
+          "completed": 3674,
+          "programs_retired": 110
+        },
+        "acting_token_decay": true,
+        "decay_half_life_s": 1.0,
+        "decay_scope": "periodic_resume_only",
+        "decay_age_source": "observed_native_completion_monotonic",
+        "undiscounted_capacity_enforced": true,
+        "resume_capacity_tokens_at_last_control": 805198,
+        "physical_capacity_credit": false
+      },
+      "physical_disabled": false
+    }
+  },
+  "metrics": {
+    "reference_full": {
+      "mean_jct_s": 1648.8363053527937,
+      "makespan_s": 2354.472905614853,
+      "end_to_end_output_tokens_per_s": 233.45819724200967,
+      "decode": {
+        "batches": 99734,
+        "request_steps": 549478,
+        "worker_ms": 1585902.6603950188,
+        "request_step_ms": 12677092.947315425,
+        "output_tokens": 545997,
+        "context_tokens": 30623017626,
+        "graph_batches": 99734,
+        "graph_request_steps": 549478,
+        "configured_bucket_rows": 634569,
+        "batches_needing_padding": 45029,
+        "worker_ms_in_batches_needing_padding": 995380.5339802057,
+        "mean_batch": 5.509435097358975,
+        "worker_weighted_mean_batch": 7.993613519859912,
+        "worker_interval_sum_s": 1585.9026603950188,
+        "mean_worker_interval_ms": 15.901324126125681,
+        "output_tokens_per_worker_interval_second": 344.2815335614623,
+        "mean_observed_request_context_tokens": 55731.10775317665,
+        "graph_batch_fraction": 1.0,
+        "configured_padding_rows_per_real_graph_row": 0.15485788330015038
+      },
+      "workflow_ttft_ms": {
+        "count": 18,
+        "mean": 135177.31497690413,
+        "p50": 101881.1334142685,
+        "p75": 199720.8473291397,
+        "p90": 241576.85213508608,
+        "p95": 266373.73554768553,
+        "p99": 311624.2595767306,
+        "max": 322936.890583992
+      },
+      "workflow_max_post_first_ready_output_gap_ms": {
+        "count": 18,
+        "mean": 81261.83457952076,
+        "p50": 54704.132054805756,
+        "p75": 97682.32452845573,
+        "p90": 163850.46209764484,
+        "p95": 212497.33787074074,
+        "p99": 291215.77749617555,
+        "max": 310895.3874025345
+      }
+    },
+    "thunderagent_acting_decay": {
+      "mean_jct_s": 1697.5836446114117,
+      "makespan_s": 2355.3445512609483,
+      "end_to_end_output_tokens_per_s": 233.37180104105374,
+      "decode": {
+        "batches": 95635,
+        "request_steps": 549478,
+        "worker_ms": 1605126.1432459578,
+        "request_step_ms": 13014821.739329025,
+        "output_tokens": 545997,
+        "context_tokens": 30622786652,
+        "graph_batches": 95635,
+        "graph_request_steps": 549478,
+        "configured_bucket_rows": 635038,
+        "batches_needing_padding": 44660,
+        "worker_ms_in_batches_needing_padding": 1034827.5028280914,
+        "mean_batch": 5.745574319025462,
+        "worker_weighted_mean_batch": 8.108285940075632,
+        "worker_interval_sum_s": 1605.1261432459578,
+        "mean_worker_interval_ms": 16.78387769379367,
+        "output_tokens_per_worker_interval_second": 340.15831235286,
+        "mean_observed_request_context_tokens": 55730.687401497424,
+        "graph_batch_fraction": 1.0,
+        "configured_padding_rows_per_real_graph_row": 0.15571142065742394
+      },
+      "workflow_ttft_ms": {
+        "count": 18,
+        "mean": 139028.4033548037,
+        "p50": 101804.63458967209,
+        "p75": 206657.0104496479,
+        "p90": 255089.30521106723,
+        "p95": 290016.01505255693,
+        "p99": 318113.38459239,
+        "max": 325137.7269773483
+      },
+      "workflow_max_post_first_ready_output_gap_ms": {
+        "count": 18,
+        "mean": 73449.10657278697,
+        "p50": 47096.99371767044,
+        "p75": 91929.44760537148,
+        "p90": 122965.2473207474,
+        "p95": 163231.7360606668,
+        "p99": 273821.28838873835,
+        "max": 301468.67647075653
+      }
+    }
+  },
+  "mean_jct_reduction_percent": 2.8715721557141083,
+  "end_to_end_throughput_increase_percent": 0.03702083995176242,
+  "paired_workflow_jct": [
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "reference_full_jct_s": 2139.437053442955,
+      "thunderagent_jct_s": 2143.0720389862063,
+      "difference_s": -3.6349855432510374
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+      "reference_full_jct_s": 1216.141375520706,
+      "thunderagent_jct_s": 1310.3102204837799,
+      "difference_s": -94.16884496307372
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+      "reference_full_jct_s": 2187.8471505594252,
+      "thunderagent_jct_s": 2210.663888081551,
+      "difference_s": -22.816737522125244
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+      "reference_full_jct_s": 1827.4927535486222,
+      "thunderagent_jct_s": 1863.2544221143723,
+      "difference_s": -35.76166856575012
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+      "reference_full_jct_s": 1870.3841214361191,
+      "thunderagent_jct_s": 1951.0916595363617,
+      "difference_s": -80.70753810024262
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+      "reference_full_jct_s": 1697.8987200536728,
+      "thunderagent_jct_s": 1763.6024745235443,
+      "difference_s": -65.70375446987153
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+      "reference_full_jct_s": 1397.1164187955856,
+      "thunderagent_jct_s": 1488.004803372383,
+      "difference_s": -90.88838457679749
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+      "reference_full_jct_s": 1245.2906842164994,
+      "thunderagent_jct_s": 1303.070973467827,
+      "difference_s": -57.78028925132752
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+      "reference_full_jct_s": 1646.4591500148774,
+      "thunderagent_jct_s": 1675.2771588926316,
+      "difference_s": -28.818008877754213
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+      "reference_full_jct_s": 1633.059030817032,
+      "thunderagent_jct_s": 1678.834104347229,
+      "difference_s": -45.77507353019714
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+      "reference_full_jct_s": 2354.3488668785094,
+      "thunderagent_jct_s": 2355.220275929451,
+      "difference_s": -0.8714090509414673
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+      "reference_full_jct_s": 1750.0403137235642,
+      "thunderagent_jct_s": 1772.083014930725,
+      "difference_s": -22.04270120716095
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa",
+      "reference_full_jct_s": 1650.1937977514267,
+      "thunderagent_jct_s": 1741.8561432914735,
+      "difference_s": -91.66234554004669
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+      "reference_full_jct_s": 1747.090021949768,
+      "thunderagent_jct_s": 1801.1945013303757,
+      "difference_s": -54.10447938060761
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+      "reference_full_jct_s": 1012.7259094715118,
+      "thunderagent_jct_s": 1057.949221226692,
+      "difference_s": -45.22331175518036
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+      "reference_full_jct_s": 1430.0917160015106,
+      "thunderagent_jct_s": 1540.0990009698867,
+      "difference_s": -110.00728496837615
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+      "reference_full_jct_s": 1256.3219330320358,
+      "thunderagent_jct_s": 1309.2981366748809,
+      "difference_s": -52.97620364284516
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+      "reference_full_jct_s": 1617.114479136467,
+      "thunderagent_jct_s": 1591.6235648460388,
+      "difference_s": 25.49091429042816
+    }
+  ],
+  "faster_workflows": 17,
+  "slower_workflows": 1,
+  "restore": {
+    "reference_full": {
+      "d2h_bytes": 1275027062784,
+      "d2h_tagged_bytes": 5743214592,
+      "d2h_operations": 14330,
+      "h2d_bytes": 2679208181760,
+      "h2d_tagged_bytes": 34208022528,
+      "h2d_operations": 354
+    },
+    "thunderagent_acting_decay": {
+      "d2h_bytes": 2255862595584,
+      "d2h_tagged_bytes": 0,
+      "d2h_operations": 27591,
+      "h2d_bytes": 2809042010112,
+      "h2d_tagged_bytes": 0,
+      "h2d_operations": 281
+    }
+  },
+  "mean_observed_critical_path_components_s": {
+    "reference_full": {
+      "event:workflow_end": 0.0025404098828633627,
+      "event:return": 0.07344611533482868,
+      "event:llm_result": 3.2666260910564,
+      "request_dispatch": 0.2583733746210734,
+      "request_submit_to_first_launch": 361.7427169582579,
+      "request_first_launch_to_native_complete": 861.1422450269594,
+      "event:llm_submit": 43.05044828134113,
+      "event:tool_end": 377.155570766237,
+      "event:tool_start": 1.9548066603872511,
+      "event:join_satisfied": 0.012620076550377739,
+      "event:structured_action": 0.014007753954993355,
+      "event:spawn": 0.14994007428487144,
+      "event:invocation_create": 0.012963763925764295
+    },
+    "thunderagent_acting_decay": {
+      "event:workflow_end": 0.002487103727128771,
+      "event:return": 0.07395598581102159,
+      "event:llm_result": 3.3385261946254303,
+      "request_dispatch": 0.26005340724521214,
+      "request_submit_to_first_launch": 393.9507528005176,
+      "request_first_launch_to_native_complete": 877.3261121342978,
+      "event:llm_submit": 43.206043309264714,
+      "event:tool_end": 377.2649021566179,
+      "event:tool_start": 1.976137111345927,
+      "event:join_satisfied": 0.010647569020589193,
+      "event:structured_action": 0.015381797790527344,
+      "event:spawn": 0.14332865137524076,
+      "event:invocation_create": 0.015316389772627089
+    }
+  },
+  "figures_directory": "/home/longhao/experiment/BeliefKV/experiments/figures/decode_diagnostics_20261027_v402",
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/figures/decode_diagnostics_20261027_v402/evidence.json.gz": "0b70f66edf5d97fb7bf39c72f1e643686813572d95c2e9c64d25076421a67907",
+    "/home/longhao/experiment/ops/v400b_locobench_reference_thunder_offload_20261027.registration.json": "f8e9afdad12b6cfdfcda546450d492cca7f99241e1f2815dcca498fdcbba7eb3",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_thunder_offload_20261027_v400b/full/replay/summary.json": "16e1672c6a40231c9d8896e7b00172b3602e88018348917ef6f6267dd777f28c",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_thunder_offload_20261027_v400b/full/server/server_info.json": "df259865ba15175aa32fee394ba2f104e237936648154f61c959acca6a6a9b0b",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_thunder_offload_20261027_v400b/full/server/native_telemetry_status.json": "410c0ea3664f84151b416c1e8c543c80d46dddcabe62dc59670975b5421a46c6",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_thunder_offload_20261027_v400b/full/server/native_capacity_census.json": "9bc9f92cdef13cad00a66f2d0ca5ad5b64a6dda9ce2217fa99d1450fa14bb897",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_thunder_offload_20261027_v400b/full/opportunities/admission_opportunities.jsonl": "866b003c9f2b6485778cad4dafca96cfc4a7a125c0f12946d8f31f42380a0a31",
+    "/home/longhao/experiment/ops/v400b_locobench_reference_thunder_offload_20261027.registration.state.json": "2f197a881ccc4e4eaecb838d044f9aa404a4a7d513771f7278932562a18b54c1",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_thunder_offload_20261027_v400b/full/telemetry_drain.json": "06330565ed28b5df2873736a766ae2e019f85cddbc28727bf02e6ed49a7b07aa",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_thunder_offload_20261027_v400b/full/owned_process_cleanup.json": "678f2223bb18ce862b253878edf62fd5e83946983f5a49152b10868e7531a086",
+    "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.json": "66a5bac27ce8d8f70a91e5c45fcc377b7950db56bc3bd2a7588124fd5209902b",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/replay/summary.json": "3b9cdf028d27c6c5b5ed7004e401f18192bc518a4811e50103505cbfe39174a6",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/server_info.json": "d2fa80cb9272916c97f053d113fecb546840171b14c3aa2e5eacaa66aba50a42",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/native_telemetry_status.json": "a2c597cf6d745ad728c7661bc961b39dc2256f2bbd3cbc3e88c6688cc7ee8a47",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/native_capacity_census.json": "c68ac3494755caf07860b503b60d00f733d8263298218c59caaceb2dd9a6578e",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/opportunities/admission_opportunities.jsonl": "053a1db66e1508b968aef559bd7a155672829836ef2a00a2ae9030791892d24e",
+    "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.state.json": "3160dca6a649c72ad6e4172c1b96d6f9d66d637af16425cf6e93c34d557c1e49",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/telemetry_drain.json": "c943425208f021f403bd392ae6c4a0476254d739d4e32e511abb7b6ae5645fa2",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/owned_process_cleanup.json": "4e7c0bd7050a4ecacc70819785bd7492cc5d12794b58cc3127dae0b1d7162ad5",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/v400b_followup/complete_restore_churn.json": "c71db027e6ba38004816908fef6988b0f0c15cf8dad8c82694f2119a54b4c4cd",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/v400b_followup/complete_jct_paths.json": "e4942eb341f9b9a4ad80f2c1c1344534bcffc280c405b775c2affaafa180aa45"
+  },
+  "operator_sha256": "281ec4d505af4aa9e7e8382aa11406127301f8f4d7a1547e78b1ae165f8851fc",
+  "performance_accepted": false,
+  "repeated_run_acceptance": false,
+  "all_baseline_goal_complete": false,
+  "limitations": [
+    "One complete run per method; a 0.037% output-throughput difference is not a clear gain.",
+    "The follow-up consumer-selection repair did not run in frozen V400b.",
+    "Critical-path components contain overlapping/interleaved work, not isolated GPU or removable transfer cost.",
+    "Sampled layer waits cannot be expanded into whole-run migration overhead."
+  ]
+}

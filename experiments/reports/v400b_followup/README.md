@@ -60,3 +60,14 @@ scheduling/lifecycle methods are still inherited without replacement.
 The qualifier is `scripts/qualify_reference_thunder_admission.py`, using
 `v399_reference_thunder_offload_cpu_evidence_20261027.json` as its prior.
 No new GPU run is registered by this qualification.
+
+`complete_review.py` independently verifies complete V400b against completed
+V345, including exact receipt work, native stopping, final configuration,
+unchanged plotted input prefixes, two fresh idle snapshots and actual owned
+exit. Its output is `complete_review.json`; full restore reconciliation,
+critical paths and unexpanded sampled waits are retained in the other
+`complete_*.json` files. The final figures are in
+`experiments/figures/decode_diagnostics_20261027_v402/`.
+These describe the frozen original candidate, not the follow-up repair:
+mean JCT improves 2.87157%, while complete output throughput improves only
+0.03702%. The primary performance goal remains incomplete.

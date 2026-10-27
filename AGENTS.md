@@ -1566,3 +1566,23 @@
   full success plus actual owned exit. It launches no GPU work, stops on failure,
   and preserves all normal tails. No GPU follow-up is queued. See
   `docs/research/v400b_reference_thunder_start_20261027_zh.md`.
+- V400b now completes all3674 exact requests,145565966 input and549671 output
+  tokens,18 workflows, original stopping, two fresh idle snapshots and actual
+  owned cleanup. Its reference-core Full mean JCT is1648.836305s versus
+  V3451697.583645s (2.87157% lower), but output throughput233.458197 versus
+  233.371801 token/s improves only0.03702%. Total H2D2679.208GB versus2809.042GB
+  does not establish a clear throughput gain. Retain17 improved workflows,
+  one25.491s regression and worse mean maximum post-first ready-output gaps.
+  V402 plots are complete and inspected. Complete evidence/operator are under
+  `experiments/reports/v400b_followup/`; reuse V345 and keep the global goal
+  incomplete. No next GPU run is queued.
+- Follow-up main repairs reference tool-offload consumer selection: an inactive
+  or already fitting Host-recovery waiter must not hide a later eligible,
+  capacity-stalled consumer within the existing eight-candidate/200ms bound.
+  Two real-native CPU counterexamples reproduce the old failure and pass after
+  repair, preserving Host backing and reference state. One shared execution
+  passes3038 cases plus4 subtests, retaining all3035 prior identities. The
+  offline restore reader keeps absent reference eligibility/budget fields
+  unknown. Neither repair ran in frozen V400b; historical frequency, control
+  cost and incremental GPU performance remain unverified. Do not equate zero
+  extra predicted offload with absence of native pressure-triggered tool release.
