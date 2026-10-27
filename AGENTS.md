@@ -876,3 +876,12 @@
   sealed completed receipts have exact tokens. Source and predecessor exit
   checks passed. See `v260_observed_growth_live_gpu_20261027.json`. Keep
   whole-population correctness and performance acceptance pending.
+- A CPU-only real-runtime counterexample shows backed lending can choose an
+  ordinary continuation while its donor parent is WAIT_JOIN and the sole
+  remaining child has a pending but ineligible request. Host backing is an
+  explicit stand-in; there is no physical copy, trace-frequency or JCT proof.
+  See `v261_join_dependency_admission_counterexample_cpu_20261027.json` and
+  `docs/design/join_dependency_agent_admission_20261027_zh.md`. The existing
+  JOIN_LAST_CHILD_PRIORITY is restricted to request join_priority mode and
+  cannot silently become an agent-admission option in workflow mode. Keep
+  V260 frozen and finish it before choosing another GPU candidate.
