@@ -1623,3 +1623,20 @@
   A next isolated integration repair may admit a genuinely WAIT_JOIN parent
   for warming only against existing free complete logical budget, with no
   peer pause, logical lending/recall or new novelty claim. Keep R1 frozen.
+- The default-off `BELIEFKV_AGENT_JOIN_FREE_ADMISSION` candidate now allows
+  only a current exact-checkpoint, non-pending, unmarked, genuine WAIT_JOIN
+  parent to claim existing full undiscounted logical capacity. No peer is
+  paused and no lending/recall/TTL is added; ordinary/tool warming cannot
+  claim eligibility. Native physical allocation, locks and ACKs remain separate.
+  The declaration is `configs/migration/predictive_reference_join_free_20261027.json`.
+  Targeted55 cases include actual native tree/allocator acceptance/refusal
+  with copy/event stand-ins. One shared execution passes3143 cases plus4
+  subtests, retaining all3039 earlier identities and adding104. Actual
+  Full/default-TA/decay-TA constructor isolation and inherited reference
+  methods are source-bound. The first two fixture failures remain under
+  `experiments/reports/reference_join_free_admission_20261027/`.
+  A synthetic33-program claim-only CPU check measures new-grant median
+  8.393us/P9910.391us, not whole-controller cost or GPU performance.
+  Qualify and freeze this separate Full, reuse completeV345 on unchanged
+  complete work/V311 timing/native tree/capacity/seed; do not modify R1.
+  See `docs/design/reference_join_free_admission_20261027_zh.md`.

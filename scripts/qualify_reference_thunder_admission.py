@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Qualify Full composition with the exact reference ThunderAgent decay core."""
+"""Qualify reference-core Full and its explicit free-capacity JOIN extension."""
 
 import argparse
 from datetime import datetime, timezone
@@ -33,23 +33,38 @@ def main():
     parser.add_argument("--report", type=Path, default=REPORT)
     parser.add_argument("--sources", type=Path, default=MANIFEST)
     parser.add_argument("--output", type=Path, default=OUTPUT)
+    parser.add_argument("--configuration", type=Path, default=CONFIG)
     args = parser.parse_args()
     if any(path.exists() for path in (args.report, args.sources, args.output)):
         raise FileExistsError("preserve previous qualification outputs")
     prior = json.loads(args.prior.read_bytes())
-    configuration = json.loads(CONFIG.read_bytes())
+    configuration = json.loads(args.configuration.read_bytes())
+    join_free = configuration["common_environment"].get("AGENT_JOIN_FREE_ADMISSION", "0") == "1"
     paths = set(json.loads(Path(prior["source_manifest"]["path"]).read_bytes()))
     paths.update((
-        str(CONFIG.relative_to(ROOT)), str(Path(__file__).resolve().relative_to(ROOT)),
+        str(args.configuration.resolve().relative_to(ROOT)), str(Path(__file__).resolve().relative_to(ROOT)),
         "beliefkv/runtime/reference_thunder_admission.py",
         "tests/test_reference_thunder_admission.py",
         "beliefkv/runtime/paper_baseline.py", "beliefkv/policy/paper_baselines.py",
     ))
+    extra_tests = (
+        "tests/test_reference_join_free_admission.py",
+        "tests/test_request_agent_eligibility_audit.py",
+        "tests/test_collecting_agent_pipeline_audit.py",
+        "tests/test_audit_tool_reentry_service.py",
+    ) if join_free else ()
+    paths.update(extra_tests)
+    if join_free:
+        paths.update((
+            "scripts/audit_request_agent_eligibility.py",
+            "scripts/audit_collecting_agent_pipeline.py",
+        ))
     sources = {name: sha256_file(ROOT / name) for name in sorted(paths)}
     write(args.sources, sources)
     command = [part for part in prior["command"] if not part.startswith("--junitxml=")]
     if "tests/test_reference_thunder_admission.py" not in command:
         command.append("tests/test_reference_thunder_admission.py")
+    command.extend(name for name in extra_tests if name not in command)
     command.append(f"--junitxml={args.report.resolve().relative_to(ROOT)}")
     environment = {
         **os.environ, **prior["environment"],
@@ -77,6 +92,8 @@ def main():
         expected = "thunderagent_reference" if label == "full" else "off"
         if settings["BELIEFKV_AGENT_ADMISSION"] != expected:
             raise ValueError("Full composition leaked into a paper control")
+        if settings["BELIEFKV_AGENT_JOIN_FREE_ADMISSION"] != str(int(join_free and label == "full")):
+            raise ValueError("free-capacity JOIN admission leaked into a paper control")
         constructors[label] = preflight_runtime(
             {**settings, "SGLANG_SOURCE_CHECKOUT": environment["SGLANG_SOURCE_CHECKOUT"]},
             configuration["common_environment"]["MODEL_PATH"],
@@ -95,7 +112,10 @@ def main():
         "retained_previous_cases_including_subtests": len(previous),
         "new_cases": len(current - previous),
         "reference_methods_inherited_without_override": list(inherited),
-        "configuration": {"path": str(CONFIG), "sha256": sha256_file(CONFIG)},
+        "configuration": {
+            "path": str(args.configuration.resolve()), "sha256": sha256_file(args.configuration),
+        },
+        "join_free_admission": join_free,
         "constructors": constructors,
         "preserved_development_reports": [
             str(REPORTS / name) for name in (

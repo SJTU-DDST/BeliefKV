@@ -25,12 +25,13 @@ from tests.test_tool_policy_adaptation import demand_runtime
 from tests.test_tool_predictive_transfers import event
 
 
-def full_runtime(monkeypatch, tmp_path, *, capacity=1000):
+def full_runtime(monkeypatch, tmp_path, *, capacity=1000, join_free_admission=False):
     settings = arm_environment({
         "AGENT_ADMISSION": "thunderagent_reference",
         "TOOL_RESTORE_MODE": "speculative",
         "EXECUTION_FRONTIER_RESTORE": "0",
         "TOOL_CONTINUITY": "1",
+        "AGENT_JOIN_FREE_ADMISSION": str(int(join_free_admission)),
     }, "full")
     for name, value in settings.items():
         monkeypatch.setenv(name, value)

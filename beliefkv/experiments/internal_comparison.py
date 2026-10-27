@@ -118,6 +118,14 @@ def arm_environment(
     agent_admission = agent_admission if mode == "full" else "off"
     if agent_admission == "thunderagent_reference" and sessionless_prefix == "1":
         raise ValueError("reference ThunderAgent admission requires session-bound migration")
+    join_free = common.get(
+        "BELIEFKV_AGENT_JOIN_FREE_ADMISSION", common.get("AGENT_JOIN_FREE_ADMISSION", "0"),
+    )
+    if join_free not in ("0", "1") or (
+        mode == "full" and join_free == "1" and agent_admission != "thunderagent_reference"
+    ):
+        raise ValueError("free-capacity JOIN admission requires the reference Full core")
+    join_free = join_free if agent_admission == "thunderagent_reference" else "0"
     siblings = common.get(
         "BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN", common.get("AGENT_COADMIT_JOIN_CHILDREN", "0"),
     )
@@ -219,6 +227,8 @@ def arm_environment(
         ),
         "AGENT_ADMISSION": agent_admission,
         "BELIEFKV_AGENT_ADMISSION": agent_admission,
+        "AGENT_JOIN_FREE_ADMISSION": join_free,
+        "BELIEFKV_AGENT_JOIN_FREE_ADMISSION": join_free,
         "AGENT_COADMIT_JOIN_CHILDREN": siblings,
         "BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN": siblings,
         "AGENT_BLOCKED_LENDING": blocked_lending,

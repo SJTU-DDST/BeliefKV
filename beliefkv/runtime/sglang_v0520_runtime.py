@@ -970,6 +970,12 @@ class NativeAdmissionRuntime:
         ):
             raise ValueError("workflow agent admission requires declared JOIN priority ordering")
         self.enable_agent_working_set = agent_policy != "off"
+        join_free = os.environ.get("BELIEFKV_AGENT_JOIN_FREE_ADMISSION", "0")
+        if join_free not in ("0", "1") or (
+            join_free == "1" and agent_policy != "thunderagent_reference"
+        ):
+            raise ValueError("free-capacity JOIN admission requires the reference Full core")
+        self.agent_join_free_admission = join_free == "1"
         sibling_setting = os.environ.get("BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN", "0")
         if sibling_setting not in ("0", "1") or (
             sibling_setting == "1" and agent_policy != "thunderagent_retained"
@@ -2723,6 +2729,7 @@ class NativeAdmissionRuntime:
                     self._agent_admission.status() if self._agent_admission is not None else None
                 ),
                 "agent_admission_enabled": self.enable_agent_working_set,
+                "agent_join_free_admission": self.agent_join_free_admission,
                 "full_prefix_migration": (
                     self._full_prefix_migration.status()
                     if self._full_prefix_migration is not None else None

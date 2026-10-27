@@ -9,6 +9,7 @@ from beliefkv.runtime.paper_baseline import ThunderAgentDecayAdapter
 class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
     strategy = "thunderagent_reference"
     policy_name = "full_with_reference_thunderagent_acting_decay"
+    join_free_policy_name = "full_with_reference_thunderagent_free_join_admission"
 
     def __init__(self, runtime):
         if (
@@ -31,6 +32,9 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         self.last_forced = set()
         self._capacity_snapshot = {}
         self.latest = {}
+        self.join_free_admission = getattr(runtime, "agent_join_free_admission", False)
+        if self.join_free_admission:
+            self.policy_name = self.join_free_policy_name
 
     def registered(self, req, key):
         previous = self.latest.get(key.invocation_id)
@@ -57,9 +61,9 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
     def order_ready(self, ordered, keys, *, now, protected_head=False):
         pass
 
-    def holds_restore(self, key, *, source="join_ticket"):
+    def _restore_owner(self, key, *, source):
         if self.policy is None or key is None or source not in ("join_ticket", "tool_wait"):
-            return False
+            return None
         previous = self.latest.get(key.invocation_id)
         if previous is None or (
             previous.root_workflow_id, previous.context_id,
@@ -69,27 +73,57 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         ) or key.context_epoch not in (
             previous.context_epoch - 1, previous.context_epoch, previous.context_epoch + 1,
         ):
-            return False
+            return None
         item = self.policy.programs.get(key.invocation_id)
         invocation = self.runtime.graph.invocations.get(key.invocation_id)
         if (
-            item is None or not item.active or invocation is None or invocation.state.terminal
+            item is None or invocation is None or invocation.state.terminal
             or invocation.workflow_id != key.root_workflow_id
             or invocation.context_id != key.context_id
         ):
-            return False
+            return None
         if source == "tool_wait":
-            return bool(
+            if not (
                 not item.pending and invocation.state is InvocationState.WAIT_TOOL
                 and invocation.active_tool_calls and key.context_epoch == previous.context_epoch
-            )
-        return True
+            ):
+                return None
+        return item
+
+    def holds_restore(self, key, *, source="join_ticket"):
+        item = self._restore_owner(key, source=source)
+        return bool(item is not None and item.active)
 
     def claim_restore(self, key, *, source):
-        # Warming may use existing eligibility; it never changes the active set
-        # or creates a logical reservation. Native capacity checks still apply.
         allowed = self.holds_restore(key, source=source)
-        self.counts["restore_existing_eligibility" if allowed else "restore_outside_active_set"] += 1
+        existing = allowed
+        if not allowed and self.join_free_admission and source == "join_ticket":
+            item = self._restore_owner(key, source=source)
+            invocation = self.runtime.graph.invocations.get(key.invocation_id) if item is not None else None
+            join = self.runtime.graph.joins.get(invocation.join_id) if invocation is not None else None
+            if (
+                item is not None and key == self.latest.get(key.invocation_id)
+                and not item.pending and not item.marked_for_pause
+                and invocation.state is InvocationState.WAIT_JOIN
+                and not invocation.active_tool_calls and not invocation.blocking_child_ids
+                and join is not None and not join.satisfied
+                and join.workflow_id == key.root_workflow_id
+                and key.invocation_id in join.waiter_invocation_ids - join.released_waiter_ids
+            ):
+                required = item.tokens + self.policy.buffer_tokens
+                if required <= self.policy.remaining_capacity():
+                    # This is a complete raw-budget grant. Native allocation,
+                    # locks, copies and later pressure revocation stay separate.
+                    item.active = True
+                    allowed = True
+                    self.counts["join_free_capacity_admitted"] += 1
+                else:
+                    self.counts["join_free_capacity_insufficient"] += 1
+        counter = (
+            "restore_existing_eligibility" if existing else
+            "restore_new_join_eligibility" if allowed else "restore_outside_active_set"
+        )
+        self.counts[counter] += 1
         return allowed
 
     def tool_offload_protected(self, key):
@@ -119,7 +153,9 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             "tool_loan_return": False,
             "coadmit_join_children": False,
             "logical_borrowing_enabled": False,
-            "restore_changes_eligibility": False,
+            "restore_changes_eligibility": self.join_free_admission,
+            "join_free_admission": self.join_free_admission,
+            "join_free_admission_authority": "complete_undiscounted_unused_logical_budget_only",
             "restore_reservation_ms": 0,
             "ordinary_restore_reservation_ms": 0,
             "tool_warming_eligibility": "existing_active_tool_wait_only_no_new_reservation",
@@ -143,9 +179,14 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         self.latest.clear()
 
 
-def validate_reference_admission(state):
+def validate_reference_admission(state, *, join_free_admission=False):
+    if type(join_free_admission) is not bool:
+        raise ValueError("JOIN admission declaration must be a boolean")
     expected = {
-        "policy": ReferenceThunderAdmission.policy_name,
+        "policy": (
+            ReferenceThunderAdmission.join_free_policy_name
+            if join_free_admission else ReferenceThunderAdmission.policy_name
+        ),
         "strategy": ReferenceThunderAdmission.strategy,
         "identity": "invocation_id",
         "acting_token_decay": True,
@@ -162,12 +203,12 @@ def validate_reference_admission(state):
         "join_loan_recall": False,
         "tool_loan_return": False,
         "coadmit_join_children": False,
-        "restore_changes_eligibility": False,
+        "restore_changes_eligibility": join_free_admission,
         "restore_reservation_ms": 0,
         "ordinary_restore_reservation_ms": 0,
         "tool_warming_eligibility": "existing_active_tool_wait_only_no_new_reservation",
     }
-    if not isinstance(state, dict) or any(
+    if not isinstance(state, dict) or state.get("join_free_admission", False) is not join_free_admission or any(
         type(state.get(name)) is not type(value) or state[name] != value
         for name, value in expected.items()
     ):

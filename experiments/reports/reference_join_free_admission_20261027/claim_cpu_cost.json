@@ -1,0 +1,41 @@
+{
+  "scope": "claim_restore CPU call only; synthetic fixed33-program state",
+  "fixtures": {
+    "already_active": {
+      "programs": 33,
+      "samples": 2000,
+      "thread_cpu_us": {
+        "median": 1.695,
+        "p99": 2.048,
+        "max": 5.773
+      }
+    },
+    "new_free_join_grant": {
+      "programs": 33,
+      "samples": 2000,
+      "thread_cpu_us": {
+        "median": 8.3925,
+        "p99": 10.391,
+        "max": 19.335
+      }
+    },
+    "insufficient_complete_budget": {
+      "programs": 33,
+      "samples": 2000,
+      "thread_cpu_us": {
+        "median": 8.5365,
+        "p99": 10.5,
+        "max": 15.421
+      }
+    }
+  },
+  "eligibility_reset_between_calls_for_timing_only": true,
+  "sources": {
+    "experiments/reports/reference_join_free_admission_20261027/claim_cpu_cost.py": "527993b10742100d3dba96032f5aab7f38c11350ec7fd3631fd899691a9af58e",
+    "beliefkv/runtime/reference_thunder_admission.py": "ece3b164898428482e53c87ac29f354890942e1daf67f27179b02364d993da3b",
+    "beliefkv/runtime/paper_baseline.py": "bcb6466df233996710a8cb84bada8a4f1e81945580e4fee597016b1db3254ee4",
+    "beliefkv/policy/paper_baselines.py": "ed3d57e13d43572d0399b7db766aadd3ca4dadfffbfdda509897afd8742a80fb"
+  },
+  "whole_controller_cost_measured": false,
+  "gpu_or_end_to_end_performance_verified": false
+}
