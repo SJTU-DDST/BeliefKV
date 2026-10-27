@@ -112,9 +112,12 @@ def arm_environment(
     agent_admission = common.get("BELIEFKV_AGENT_ADMISSION", common.get("AGENT_ADMISSION", "off"))
     if agent_admission not in (
         "off", "working_set", "thunderagent", "thunderagent_retained", "thunderagent_workflow",
+        "thunderagent_reference",
     ):
         raise ValueError("unsupported agent working-set admission")
     agent_admission = agent_admission if mode == "full" else "off"
+    if agent_admission == "thunderagent_reference" and sessionless_prefix == "1":
+        raise ValueError("reference ThunderAgent admission requires session-bound migration")
     siblings = common.get(
         "BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN", common.get("AGENT_COADMIT_JOIN_CHILDREN", "0"),
     )
@@ -195,7 +198,9 @@ def arm_environment(
     )
     if free_fence not in ("0", "1"):
         raise ValueError("free-page H2D fence must be 0 or 1")
-    if agent_admission in ("thunderagent_retained", "thunderagent_workflow") and frontier == "1":
+    if agent_admission in (
+        "thunderagent_retained", "thunderagent_workflow", "thunderagent_reference",
+    ) and frontier == "1":
         raise ValueError("retained agent admission uses native ordinary demand recovery")
     if agent_admission == "thunderagent_workflow" and scheduling != "join_priority":
         raise ValueError("workflow agent admission requires declared JOIN priority ordering")

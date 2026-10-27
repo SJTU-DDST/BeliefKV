@@ -311,6 +311,7 @@ def preflight_runtime(settings, model_path):
         "tool_restore_mode": settings["TOOL_RESTORE_MODE"],
         "enable_agent_working_set": settings.get("BELIEFKV_AGENT_ADMISSION", "off") in (
             "working_set", "thunderagent", "thunderagent_retained", "thunderagent_workflow",
+            "thunderagent_reference",
         ),
         "agent_blocked_lending": settings.get("BELIEFKV_AGENT_BLOCKED_LENDING", "idle"),
         "agent_join_dependency_admission": settings.get("BELIEFKV_AGENT_JOIN_DEPENDENCY_ADMISSION", "0") == "1",
@@ -749,12 +750,15 @@ def observed_configuration(plan, label, arm, *, final=False):
         )
         expected_agents = mode == "full" and agent_strategy in (
             "working_set", "thunderagent", "thunderagent_retained", "thunderagent_workflow",
+            "thunderagent_reference",
         )
         actual_agents = state.get("agent_admission")
         if expected_agents:
             if (
                 not isinstance(actual_agents, dict)
                 or actual_agents.get("policy") != (
+                    "full_with_reference_thunderagent_acting_decay"
+                    if agent_strategy == "thunderagent_reference" else
                     "thunderagent_retained_with_native_migration"
                     if agent_strategy == "thunderagent_retained" else
                     "thunderagent_workflow_with_native_migration"
@@ -769,6 +773,10 @@ def observed_configuration(plan, label, arm, *, final=False):
                 or actual_agents.get("counts", {}).get("completed") != plan["source_plan"]["requests"]
             ):
                 raise ValueError("agent working-set policy did not execute the declared request population")
+            if agent_strategy == "thunderagent_reference":
+                from beliefkv.runtime.reference_thunder_admission import validate_reference_admission
+
+                validate_reference_admission(actual_agents)
             if agent_strategy in ("thunderagent_retained", "thunderagent_workflow") and (
                 actual_agents.get("blocked_agents_retain_eligibility") is not True
                 or actual_agents.get("control_interval_ms") != 5000.
@@ -779,9 +787,12 @@ def observed_configuration(plan, label, arm, *, final=False):
             ):
                 raise ValueError("retained ThunderAgent policy differs from declared control")
             common = plan["reference_environment"]
-            if actual_agents.get("blocked_lending", "idle") != common.get(
-                "BELIEFKV_AGENT_BLOCKED_LENDING", common.get("AGENT_BLOCKED_LENDING", "idle"),
-            ):
+            expected_lending = (
+                "disabled" if agent_strategy == "thunderagent_reference" else common.get(
+                    "BELIEFKV_AGENT_BLOCKED_LENDING", common.get("AGENT_BLOCKED_LENDING", "idle"),
+                )
+            )
+            if actual_agents.get("blocked_lending", "idle") != expected_lending:
                 raise ValueError("effective blocked agent lending differs from declared control")
             if actual_agents.get("join_loan_recall", False) is not (
                 actual_agents.get("blocked_lending") == "backed_demand_recall"

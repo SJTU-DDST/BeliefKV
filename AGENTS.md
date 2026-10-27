@@ -1478,3 +1478,32 @@
   JOIN/EOS prefetch and prediction remain mechanisms to validate, not automatic
   novelty or performance claims. See
   `docs/research/v378_working_set_switching_results_20261027_zh.md`.
+- V391 audits the existing complete V345/V364/V378 CUDA restore-wait samples,
+  without expansion. V345 has 18 sampled load-consuming batches; first
+  observed FULL waits total31.907ms and later FULL waits2630.928ms.
+  Sixteen samples are tool successors and only one is JOIN, so this is evidence
+  of late-layer stalls, not a whole-run estimate or matched cohort speedup.
+  V392 reconstructs every workflow JCT in all three complete arms. V378
+  reduces mean critical-path submit-to-first-launch from393.951s to281.658s,
+  but first-launch-to-native-complete increases from877.326s to936.984s.
+  The latter includes interleaving and runtime waits, not pure GPU execution
+  or isolated transfer attribution.
+- The separate simplification candidate is
+  `configs/migration/predictive_reference_thunder_20261027.json`.
+  Explicit Full `thunderagent_reference` uses the exact
+  `ThunderActingDecayWorkingSet` and inherited reference adapter tick,
+  completion, observed-growth, abort and native capacity attachment methods.
+  It adds no logical loan, recall, recovery eligibility or reservation.
+  JOIN/tool warming requires existing active eligibility; tools additionally
+  require a real current tool wait. Keep ordinary frontier recovery off and
+  reject the unqualified sessionless adapter. Preserve the retained candidate
+  and all paper arms unchanged; do not call this composition a new algorithm.
+  V394 passes3030 shared CPU cases plus4 subtests without failures/skips,
+  retaining all3003 V376b identities. V395 binds all sources and three real
+  constructors. Four240-step observed event fixtures match reference policy
+  state after every step; this is not historical trace, GPU or performance proof.
+  Preserve V393/V393b test-fixture failures and passing V393c. Native copy/event
+  stand-ins remain explicit. Require frozen sources and current hold/resource
+  checks before a Full-only GPU run, reusing complete V345 on the same full
+  V230 work, V311 timing, native tree, capacity and seed21.
+  See `docs/design/reference_thunder_migration_composition_20261027_zh.md`.

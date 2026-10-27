@@ -955,10 +955,12 @@ class NativeAdmissionRuntime:
         agent_policy = os.environ.get("BELIEFKV_AGENT_ADMISSION", "off")
         if agent_policy not in (
             "off", "working_set", "thunderagent", "thunderagent_retained",
-            "thunderagent_workflow",
+            "thunderagent_workflow", "thunderagent_reference",
         ):
             raise ValueError("unsupported declared agent admission policy")
-        if agent_policy in ("thunderagent_retained", "thunderagent_workflow") and (
+        if agent_policy in (
+            "thunderagent_retained", "thunderagent_workflow", "thunderagent_reference",
+        ) and (
             self.enable_frontier_restore or self.enable_execution_handoff
         ):
             raise ValueError("retained agent admission uses native ordinary demand recovery")
@@ -1031,23 +1033,28 @@ class NativeAdmissionRuntime:
             if (
                 paper_policy or self.internal_comparison_mode != "full"
                 or self.tool_restore_mode != "execution" and agent_policy not in (
-                    "thunderagent_retained", "thunderagent_workflow",
+                    "thunderagent_retained", "thunderagent_workflow", "thunderagent_reference",
                 )
             ):
                 raise ValueError("agent working-set admission requires Full execution recovery")
-            from beliefkv.runtime.agent_working_set import AgentAdmission
+            if agent_policy == "thunderagent_reference":
+                from beliefkv.runtime.reference_thunder_admission import ReferenceThunderAdmission
 
-            self._agent_admission = AgentAdmission(
-                self, strategy=agent_policy, coadmit_join_children=self.coadmit_join_children,
-                blocked_lending=blocked_lending,
-                workflow_entry_min_ready=self.agent_workflow_entry_min_ready,
-                tool_loan_return=self.agent_tool_loan_return,
-                recall_selection=self.agent_recall_selection,
-                join_dependency_admission=self.agent_join_dependency_admission,
-                blocked_budget_proof=self.agent_blocked_budget_proof,
-                pressure_pause_policy=self.agent_pressure_pause_policy,
-                lending_selection=self.agent_lending_selection,
-            )
+                self._agent_admission = ReferenceThunderAdmission(self)
+            else:
+                from beliefkv.runtime.agent_working_set import AgentAdmission
+
+                self._agent_admission = AgentAdmission(
+                    self, strategy=agent_policy, coadmit_join_children=self.coadmit_join_children,
+                    blocked_lending=blocked_lending,
+                    workflow_entry_min_ready=self.agent_workflow_entry_min_ready,
+                    tool_loan_return=self.agent_tool_loan_return,
+                    recall_selection=self.agent_recall_selection,
+                    join_dependency_admission=self.agent_join_dependency_admission,
+                    blocked_budget_proof=self.agent_blocked_budget_proof,
+                    pressure_pause_policy=self.agent_pressure_pause_policy,
+                    lending_selection=self.agent_lending_selection,
+                )
         if paper_policy:
             from beliefkv.runtime.paper_baseline import create_adapter
 
@@ -1056,7 +1063,10 @@ class NativeAdmissionRuntime:
         if prefix_setting not in ("0", "1"):
             raise ValueError("sessionless prefix migration must be 0 or 1")
         if prefix_setting == "1":
-            if self._agent_admission is None or not self._custom_kv_management or paper_policy:
+            if (
+                self._agent_admission is None or not self._custom_kv_management or paper_policy
+                or agent_policy == "thunderagent_reference"
+            ):
                 raise ValueError("sessionless prefix migration requires Full agent admission")
             from beliefkv.runtime.full_prefix_migration import FullPrefixMigration
 
@@ -8544,7 +8554,7 @@ class NativeAdmissionRuntime:
         inflight_contexts = self.physical_ledger.pending_h2d_contexts
         for hint in self.tool_wait_hints.values():
             if self._agent_admission is not None and self._agent_admission.strategy in (
-                "thunderagent_retained", "thunderagent_workflow",
+                "thunderagent_retained", "thunderagent_workflow", "thunderagent_reference",
             ) and not self._agent_admission.holds_restore(hint.key, source="tool_wait"):
                 self.counts["tool_prefetch_outside_retained_eligibility"] += 1
                 continue

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="25" time="1.257" timestamp="2026-10-27T09:31:40.508670-07:00" hostname="ddst-12"><testcase classname="tests.test_reference_thunder_admission" name="test_actual_full_lifecycle_matches_reference_decay_without_logical_loans[21]" time="0.067" /><testcase classname="tests.test_reference_thunder_admission" name="test_actual_full_lifecycle_matches_reference_decay_without_logical_loans[43]" time="0.063" /><testcase classname="tests.test_reference_thunder_admission" name="test_actual_full_lifecycle_matches_reference_decay_without_logical_loans[79]" time="0.063" /><testcase classname="tests.test_reference_thunder_admission" name="test_actual_full_lifecycle_matches_reference_decay_without_logical_loans[107]" time="0.064" /><testcase classname="tests.test_reference_thunder_admission" name="test_native_prefill_filters_paused_agents_with_full_migration_enabled" time="0.001" /><testcase classname="tests.test_reference_thunder_admission" name="test_join_warming_keeps_existing_eligibility_and_rejects_paused_or_stale_owner" time="0.001"><failure message="beliefkv.control.causal_graph.CausalGraphError: unknown invocation: child">beliefkv/control/causal_graph.py:871: in _invocation
+    invocation = self.invocations[invocation_id]
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'child'
+
+The above exception was the direct cause of the following exception:
+tests/test_reference_thunder_admission.py:135: in test_join_warming_keeps_existing_eligibility_and_rejects_paused_or_stale_owner
+    live.on_events((
+beliefkv/runtime/hotpath_timing.py:104: in measured
+    return function(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/sglang_v0520_runtime.py:1612: in on_events
+    deltas = self.graph.apply_batch(events, atomic=False)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/control/causal_graph.py:329: in apply_batch
+    return [self.apply(event) for event in events]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/control/causal_graph.py:329: in &lt;listcomp&gt;
+    return [self.apply(event) for event in events]
+            ^^^^^^^^^^^^^^^^^
+beliefkv/control/causal_graph.py:317: in apply
+    delta = handler(event)
+            ^^^^^^^^^^^^^^
+beliefkv/control/causal_graph.py:621: in _on_join_create
+    self._invocation(member, event.workflow_id)
+beliefkv/control/causal_graph.py:873: in _invocation
+    raise CausalGraphError(f"unknown invocation: {invocation_id}") from exc
+E   beliefkv.control.causal_graph.CausalGraphError: unknown invocation: child</failure></testcase><testcase classname="tests.test_reference_thunder_admission" name="test_tool_warming_requires_real_tool_wait_and_existing_active_owner" time="0.002" /><testcase classname="tests.test_reference_thunder_admission" name="test_terminal_events_clear_reference_programs_and_restore_identity" time="0.001" /><testcase classname="tests.test_reference_thunder_admission" name="test_effective_reference_state_rejects_changed_policy[logical_borrowing_enabled-True]" time="0.001" /><testcase classname="tests.test_reference_thunder_admission" name="test_effective_reference_state_rejects_changed_policy[restore_changes_eligibility-True]" time="0.001" /><testcase classname="tests.test_reference_thunder_admission" name="test_effective_reference_state_rejects_changed_policy[blocked_lending-backed_demand_recall]" time="0.001" /><testcase classname="tests.test_reference_thunder_admission" name="test_effective_reference_state_rejects_changed_policy[restore_reservation_ms-1500]" time="0.001" /><testcase classname="tests.test_reference_thunder_admission" name="test_effective_reference_state_rejects_changed_policy[acting_token_decay-False]" time="0.001" /><testcase classname="tests.test_reference_thunder_admission" name="test_effective_reference_state_rejects_changed_policy[decay_half_life_s-True]" time="0.001" /><testcase classname="tests.test_reference_thunder_admission" name="test_effective_reference_state_rejects_changed_policy[undiscounted_capacity_enforced-False]" time="0.001" /><testcase classname="tests.test_reference_thunder_admission" name="test_effective_reference_state_rejects_changed_policy[physical_capacity_credit-True]" time="0.001" /><testcase classname="tests.test_reference_thunder_admission" name="test_reference_candidate_rejects_retained_extensions[setting0]" time="0.000" /><testcase classname="tests.test_reference_thunder_admission" name="test_reference_candidate_rejects_retained_extensions[setting1]" time="0.000" /><testcase classname="tests.test_reference_thunder_admission" name="test_reference_candidate_rejects_retained_extensions[setting2]" time="0.000" /><testcase classname="tests.test_reference_thunder_admission" name="test_reference_candidate_rejects_retained_extensions[setting3]" time="0.000" /><testcase classname="tests.test_reference_thunder_admission" name="test_reference_candidate_rejects_retained_extensions[setting4]" time="0.000" /><testcase classname="tests.test_reference_thunder_admission" name="test_reference_candidate_does_not_leak_into_controls[scheduler_only]" time="0.000" /><testcase classname="tests.test_reference_thunder_admission" name="test_reference_candidate_does_not_leak_into_controls[kv_only]" time="0.000" /><testcase classname="tests.test_reference_thunder_admission" name="test_reference_candidate_does_not_leak_into_controls[native_matched]" time="0.000" /><testcase classname="tests.test_reference_thunder_admission" name="test_production_preflight_constructs_the_reference_full_candidate" time="0.237" /></testsuite></testsuites>
