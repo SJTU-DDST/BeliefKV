@@ -910,3 +910,28 @@
   synthesized timing as natural LoCoBench execution, expose future sampled
   completion times to the online policy, assume long tools necessarily cause
   ThunderAgent migrations, or launch this GPU workload during the reservation.
+- Empirical tool timing is now CPU-prepared through
+  `scripts/prepare_empirical_tool_timing.py` and the optional
+  `--tool-duration-overlay` in the causal driver/comparison supervisor. Pin
+  TraceLab v0.0.1 compressed data digest
+  `9d265eae69a31cae203848bea936f018148eed7ca8bf56050c5abe96da0b4e6b`.
+  Use reported internal times without wall-gap imputation, duration filtering,
+  scaling or tail clipping. Two predeclared profiles preserve V230's complete
+  graph/work and change only 931 execute timers. The network profile has
+  313 deduplicated observed samples, substantial missing-time coverage limits,
+  and sampled median 6.167s; the shell profile retains many reported zeros.
+  Keep both profiles and their negative outcomes. See
+  `docs/research/empirical_tool_timing_cpu_20261027_zh.md` and final CPU maps
+  `v268_v230_empirical_shell_timing_cpu_20261027.json` /
+  `v269_v230_empirical_network_timing_cpu_20261027.json`.
+  Timing samples stay private to replay; online TOOL_START gets no future
+  duration. Every arm pins the same map, and natural native time is removed
+  as a synthetic performance baseline. Complete CPU DAG and mock HTTP checks
+  are not new GPU, whole shared regression or performance qualification.
+  Nothing is registered for GPU during the active reservation. Before a
+  long-tool-policy claim, separately qualify the public ThunderAgent optional
+  acting-token-decay resume behavior; the historical paper projection omits it.
+  Final targeted CPU coverage is 433 passing cases without skips in
+  `v271_empirical_tool_timing_final_cpu_20261027.xml`; source/config/artifact
+  digests and the explicit pending GPU/performance scope are in
+  `v272_empirical_tool_timing_cpu_evidence_20261027.json`.

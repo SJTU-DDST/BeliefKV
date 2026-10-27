@@ -27,6 +27,7 @@ from beliefkv.experiments.causal_replay_backend import CausalHTTPBackend
 from beliefkv.experiments.causal_replay_delivery import ReplayEventDelivery
 from beliefkv.experiments.causal_replay_tokens import CapturedTokenCorpus
 from beliefkv.experiments.source_provenance import sha256_file
+from beliefkv.experiments.tool_timing_overlay import load_overlay
 from beliefkv.experiments.workflow_metrics import StreamingWorkflowMetrics
 from beliefkv.runtime.event_channel import (
     JsonlRuntimeEventSink, UnixDatagramRuntimeEventSink,
@@ -71,6 +72,9 @@ async def run(args) -> dict:
     if args.output_dir.exists():
         raise FileExistsError("preserve existing replay artifacts")
     agentx = getattr(args, "agentx_prepared", None) is not None
+    overlay_path = getattr(args, "tool_duration_overlay", None)
+    if agentx and overlay_path is not None:
+        raise ValueError("empirical tool timing requires explicitly observed tool boundaries")
     stream_metrics = agentx or getattr(args, "stream_response_metrics", False)
     if agentx:
         plan, timing, _, preparation = load_agentx_preparation(args.agentx_prepared)
@@ -87,6 +91,9 @@ async def run(args) -> dict:
     else:
         plan, expected, evidence = source_plan(args.source_arm)
         timing = None
+    tool_timing_overlay = None
+    if overlay_path is not None:
+        plan, tool_timing_overlay = load_overlay(plan, overlay_path)
     if not args.base_url.startswith("http://127.0.0.1:"):
         raise ValueError("native replay requires an explicit local server port")
     args.output_dir.mkdir(parents=True, exist_ok=False)
@@ -154,6 +161,8 @@ async def run(args) -> dict:
             exact_tokens_verified=True, original_native_stopping_verified=not agentx,
             published_length_stopping_verified=agentx,
             benchmark_content_synthetic=agentx,
+            benchmark_timing_synthetic=tool_timing_overlay is not None,
+            tool_timing_overlay=tool_timing_overlay,
             streaming_response_metrics_enabled=stream_metrics,
             streaming_response_metrics=response_metrics.summary() if response_metrics else None,
             native_session_http_lifecycle_completed=True,
@@ -183,6 +192,7 @@ async def run(args) -> dict:
                     "beliefkv/experiments/agentx_tokens.py",
                     "beliefkv/experiments/replay_timing.py",
                     "beliefkv/experiments/workflow_metrics.py",
+                    "beliefkv/experiments/tool_timing_overlay.py",
                 )
             },
             scope=(
@@ -191,6 +201,9 @@ async def run(args) -> dict:
                     "Original content, original EOS and original application correctness are unavailable. "
                 ) if agentx else
                 "Exact native request work, stopping and causal delivery only. "
+            ) + (
+                "Tool timing is synthesized from a declared public empirical distribution. "
+                if tool_timing_overlay is not None else ""
             ) + (
                 "Server source, actual GPU execution, policy configuration and "
                 "same-work comparison require a separately qualified operator."
@@ -210,11 +223,16 @@ def main():
     parser.add_argument("--event-socket", type=Path)
     parser.add_argument("--request-timeout-s", type=float, default=1800.)
     parser.add_argument("--stream-response-metrics", action="store_true")
+    parser.add_argument("--tool-duration-overlay", type=Path)
     args = parser.parse_args()
     if not 0 < args.request_timeout_s <= 3600.:
         parser.error("request timeout must be in (0, 3600] seconds")
     if (args.agentx_prepared is None) != (args.agentx_token_dir is None):
         parser.error("AgentX replay requires both its prepared plan and offline token bundle")
+    if args.tool_duration_overlay is not None:
+        if args.agentx_prepared is not None:
+            parser.error("tool timing overlays require explicitly observed natural tool boundaries")
+        args.tool_duration_overlay = args.tool_duration_overlay.resolve()
     if args.source_arm is not None:
         args.source_arm = args.source_arm.resolve()
     if args.agentx_prepared is not None:

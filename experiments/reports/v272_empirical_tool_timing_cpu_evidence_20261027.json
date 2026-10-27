@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-10-27T13:58:29+08:00",
+  "scope": "Targeted causal replay CPU tests, public-data preparation and complete zero-model-service DAG consistency. Not the whole shared regression, GPU qualification or performance acceptance.",
+  "cpu_environment": {
+    "cuda_visible_devices": "",
+    "python_hash_seed": "21"
+  },
+  "tests": {
+    "report": "experiments/reports/v271_empirical_tool_timing_final_cpu_20261027.xml",
+    "sha256": "6205fe00ae501440dc1063fde299c16225a565eaa0ea6d92b1a95c35d4dc780d",
+    "passed": 433,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "implementation_test_configuration_sha256": {
+    "scripts/prepare_empirical_tool_timing.py": "0a37c7bdf9e95c84ff9b19d776c19c9a301fa4747a76aa7ca3dd759595f70c4c",
+    "beliefkv/experiments/tool_timing_overlay.py": "2e265ba1ccde39fb16a75a61fed9e26aba33d298b398757187f50c92e976ce97",
+    "scripts/run_causal_gpu_replay.py": "ccef9048e0ccecb3153917433290c830d898dfb4cf1087888477e7838c51be19",
+    "scripts/run_causal_comparison.py": "3f152877dd7ddfb370189ff8a15fbb31e3866e710185b07cb5d71baba3f272d7",
+    "tests/test_tool_timing_overlay.py": "8928af2cc38bc3c1478e24e75d19631110c95d9ea5d65b25a6b4e8a43e634915",
+    "tests/test_causal_gpu_replay_driver.py": "e9d4352b2639085db99580cb76a1a27d292960dc38bf95cd171b543411f5cfe1",
+    "tests/test_causal_comparison.py": "362585fff47be017e1949e65a9a365e12e76f6ecda101d1fd8dccf1e8f9738e2",
+    "tests/test_causal_replay.py": "5f9778338952c3d56450ecf5ca683e2f968933b1dda67a267296c8b98d0298dd",
+    "tests/test_causal_replay_backend.py": "72e8e44578ecef5bfa55549cd8825056cdf09c31729da334e630dbab328d3e91",
+    "tests/test_causal_replay_delivery.py": "bac0b2453b5a30bd7e8d6fc71d7f0f9f80ee546a984a2e7e14e4106121282303",
+    "tests/test_replay_timing.py": "559d613d01469637fbfa25b939c684d182afa926fe72fd9b7a9e031430efdf9f",
+    "tests/test_causal_replay_response_metrics.py": "c82bc93a79745e37f4cd8b6ca74957d01cc9c5f834a31639e052a9a16a625db5",
+    "configs/workloads/tracelab_shell_tool_timing_20261027.json": "76b6f05a6e023b3ab96c19527a1ee60236d3e03c92ed9fc807eabe8e8100b26b",
+    "configs/workloads/tracelab_network_tool_timing_20261027.json": "2b20a4fe8c93074697dddc4da4f3f6252356413cca31b18cd5e2c41250fb2b53"
+  },
+  "prepared_artifact_sha256": {
+    "experiments/reports/v268_v230_empirical_shell_timing_cpu_20261027.json": "15d2b44c0f1a9008cd8bd0056e753f0bd163682a49fa7bd2b157e4fad5fd84d2",
+    "experiments/reports/v269_v230_empirical_network_timing_cpu_20261027.json": "fa75164726e37277772d181f3601f6eaf234d3e55d8503710bdc0fc966cca5be"
+  },
+  "source_work_preserved": {
+    "workflows": 18,
+    "joins": 72,
+    "requests": 3674,
+    "prompt_tokens": 145565966,
+    "output_tokens": 549671,
+    "nodes": 18640,
+    "dependency_edges": 25635,
+    "changed_execute_timers": 931
+  },
+  "complete_cpu_dag_checks_passed": true,
+  "shared_timing_map_enforced_for_every_arm": true,
+  "natural_native_performance_reference_removed_for_synthetic_timing": true,
+  "future_sampled_duration_delivered_to_online_policy": false,
+  "gpu_launch_guard": "HoldChanged: automatic resume was disabled",
+  "gpu_experiment_registered": false,
+  "gpu_qualified": false,
+  "performance_accepted": false,
+  "pending": [
+    "Explicit user release of the current server reservation.",
+    "Whole shared qualification and a frozen launch registration before new GPU work.",
+    "Separately qualified public ThunderAgent optional acting-token-decay behavior.",
+    "Actual safe cold capacity, migration and exposed recovery-wait measurements.",
+    "Repeatable complete-workflow JCT and whole-run throughput improvements."
+  ]
+}

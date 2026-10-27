@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "synthetic_tool_timing": true,
+  "seed": 21,
+  "public_source": {
+    "name": "TraceLab",
+    "attribution": "TraceLab, SyFI Lab, University of Washington",
+    "project_url": "https://tracelab.cs.washington.edu",
+    "release": "v0.0.1",
+    "release_published_at": "2026-06-22T17:26:15Z",
+    "asset": "syfi_coding_trace.jsonl.gz",
+    "url": "https://github.com/uw-syfi/TraceLab/releases/download/v0.0.1/syfi_coding_trace.jsonl.gz",
+    "sha256": "9d265eae69a31cae203848bea936f018148eed7ca8bf56050c5abe96da0b4e6b",
+    "schema_repository_commit": "5c6550b0d08beff983e9159fe2575e7a2334c8c1",
+    "license": "CC-BY-4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "timing_semantics": "Tool/runner-reported WebFetch and WebSearch call durations. Applying this distribution to execute is explicitly a network-tool timing sensitivity workload, not a measurement of natural shell execution."
+  },
+  "sample_selection": {
+    "provider": "claude",
+    "tool_names": ["WebFetch", "WebSearch"],
+    "latency_field": "tool_internal_latency_ms",
+    "wall_time_fallback": false
+  },
+  "target_tool_names": ["execute"],
+  "rationale": "Predeclared external-tool-latency sensitivity workload, before GPU evaluation. Sample the full observed internal-duration population of these named public tool classes. Do not filter by duration, multiply times, clip tails, slow file operations, or treat timing changes as real project execution.",
+  "baseline_requirements": [
+    "Every compared arm uses the identical prepared timing-map file and original source token corpus.",
+    "Natural native timings cannot serve as a performance control for this timing workload.",
+    "Keep both this network profile and the shell profile, including negative outcomes, without selecting a profile from GPU wins.",
+    "Measure actual cold-state lending, native recovery waits and repeated migration; longer tools alone do not establish an advantage.",
+    "Qualify the optional public ThunderAgent acting-token-decay strategy separately before claiming a long-tool-policy comparison."
+  ],
+  "gpu_experiment_registered": false,
+  "performance_accepted": false
+}

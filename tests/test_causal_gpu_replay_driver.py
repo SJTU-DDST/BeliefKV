@@ -8,10 +8,12 @@ import httpx
 import pytest
 
 from beliefkv.experiments.causal_replay_tokens import CapturedTokenCorpus
+from beliefkv.experiments.tool_timing_overlay import load_overlay
 from beliefkv.runtime.replay_token_capture import capture_record, native_request_expectations
 from scripts import run_causal_gpu_replay as driver
 from tests.test_causal_replay import sequential_trace
 from tests.test_causal_replay_backend import response_payload
+from tests.test_tool_timing_overlay import document_for
 
 
 def prepare(tmp_path):
@@ -150,3 +152,47 @@ def test_cli_refusal_does_not_add_failure_artifacts_to_an_existing_run(tmp_path,
         driver.main()
     assert error.value.code == 2
     assert sorted(path.name for path in output.iterdir()) == ["summary.json"]
+
+
+def test_http_replay_records_synthetic_timing_without_changing_native_work(tmp_path, monkeypatch):
+    arm, expected = prepare(tmp_path)
+    path = arm / "client_1/workflows/w/runtime_events.deepagents.jsonl"
+    events = [json.loads(line) for line in path.read_text().splitlines()]
+    for event in events:
+        if event["kind"] in ("tool_start", "tool_end"):
+            event["attributes"]["tool_name"] = "execute"
+    path.write_text("".join(json.dumps(event) + "\n" for event in events))
+    plan, _, _ = driver.source_plan(arm)
+    overlay = tmp_path / "tool_timing.json"
+    overlay.write_text(json.dumps(document_for(plan, durations=(5.,))))
+    output = tmp_path / "retimed"
+    original_client = httpx.AsyncClient
+    with CapturedTokenCorpus(arm / "server/request_tokens.jsonl", expected) as corpus:
+        async def handler(request):
+            body = json.loads(request.content)
+            return httpx.Response(200, json=(
+                response_payload(corpus.get(body["rid"]))
+                if request.url.path == "/generate" else {"accepted": True}
+            ))
+
+        monkeypatch.setattr(
+            driver.httpx, "AsyncClient",
+            lambda **kwargs: original_client(transport=httpx.MockTransport(handler), **kwargs),
+        )
+        result = asyncio.run(driver.run(NS(
+            source_arm=arm, output_dir=output, base_url="http://127.0.0.1:18546",
+            event_socket=None, request_timeout_s=30., tool_duration_overlay=overlay,
+        )))
+    assert result["source_plan"] == plan.summary()
+    assert result["tool_timing_overlay"] == load_overlay(plan, overlay)[1]
+    assert result["benchmark_timing_synthetic"]
+    assert not result["benchmark_content_synthetic"]
+    assert result["completed_requests"] == 2 and result["exact_tokens_verified"]
+    assert result["original_native_stopping_verified"]
+    replayed = [
+        json.loads(line) for line in (output / "runtime_events.replay.jsonl").read_text().splitlines()
+    ]
+    start, end = [event for event in replayed if event["kind"] in ("tool_start", "tool_end")]
+    assert "duration_ms" not in start["attributes"]
+    assert end["attributes"]["duration_ms"] >= 5.
+    assert all("sample_id" not in event["attributes"] for event in replayed)

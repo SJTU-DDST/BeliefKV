@@ -43,6 +43,7 @@ from scripts.run_causal_source_capture import (
 from scripts.benchmark_causal_sampling import calibration_batch_sizes
 from beliefkv.experiments.prepare_ack_engine import prepare_ack_engine_compatibility
 from beliefkv.core.events import RuntimeEventKind as Kind
+from beliefkv.experiments.tool_timing_overlay import load_overlay
 
 ORDER = ("full", "native_matched", "join_priority_only", "no_background_prepare")
 DEFAULT_ORDER = ("full", "join_priority_only")
@@ -519,6 +520,17 @@ def captured_native_baseline(summary, graph, launch):
     }
 
 
+def timing_reference(graph, overlay_path, native_baseline, *, maximum_replay_slowdown=None):
+    if overlay_path is None:
+        return graph, None, native_baseline
+    if maximum_replay_slowdown is not None:
+        raise ValueError("synthetic tool timing cannot calibrate against natural source time")
+    graph, evidence = load_overlay(graph, overlay_path)
+    if evidence["seed"] != 21:
+        raise ValueError("current comparisons require the shared fixed tool timing seed 21")
+    return graph, evidence, None
+
+
 def retention_source_matches(spec, summary, count):
     if spec["common_environment"].get("ROOT_COUNT") != str(count):
         raise ValueError("retention source differs from the declared root population")
@@ -554,6 +566,10 @@ def validate_result(plan, result, arm, *, live_control):
         )
         or result.get("completed_requests") != plan["source_plan"]["requests"]
         or result.get("source_plan") != plan["source_plan"]
+        or result.get("tool_timing_overlay") != plan.get("tool_timing_overlay")
+        or result.get("benchmark_timing_synthetic", False) is not (
+            plan.get("tool_timing_overlay") is not None
+        )
         or result.get("token_source", {}).get("token_source_sha256") != plan["token_source_sha256"]
         or set(result.get("workflow_elapsed_ms", {})) != set(plan["workflow_ids"])
         or sha256_file(arm / "replay/native_requests.jsonl") != result.get("native_requests_sha256")
@@ -616,6 +632,8 @@ def replay_command(plan, arm, event_socket):
     ]
     if plan.get("stream_response_metrics", False):
         command.append("--stream-response-metrics")
+    if plan.get("tool_timing_overlay") is not None:
+        command += ["--tool-duration-overlay", plan["tool_timing_overlay"]["path"]]
     if event_socket is not None:
         command += ["--event-socket", str(event_socket)]
     return command
@@ -833,6 +851,7 @@ def predecessor_ready(plan):
         "source_arm", "source_plan", "token_source_sha256", "source_capacity",
         "source_server_parameters", "workflow_ids", "quality_exclusions",
         "quality_exclusion_details", "reference_environment", "engine_tree",
+        "tool_timing_overlay",
     ):
         if previous.get(name) != plan.get(name):
             raise ValueError("predecessor causal comparison differs: " + name)
@@ -1087,12 +1106,23 @@ def register(args):
     quality = load(summaries[0])
     source_roots = complete_source_population(quality, graph)
     source_launch = args.source_arm / "server/launch_configuration.json"
-    native_baseline = captured_native_baseline(quality, graph, load(source_launch))
-    native_baseline.update(
+    natural_baseline = captured_native_baseline(quality, graph, load(source_launch))
+    natural_baseline.update(
         source_arm=str(args.source_arm.resolve()),
         client_summary_sha256=sha256_file(summaries[0]),
         launch_configuration_sha256=sha256_file(source_launch),
     )
+    overlay_path = getattr(args, "tool_duration_overlay", None)
+    graph, tool_timing_overlay, native_baseline = timing_reference(
+        graph, overlay_path, natural_baseline,
+        maximum_replay_slowdown=args.maximum_replay_slowdown,
+    )
+    if overlay_path is not None and not {
+        "beliefkv/experiments/tool_timing_overlay.py",
+        "tests/test_tool_timing_overlay.py",
+        "scripts/prepare_empirical_tool_timing.py",
+    } <= sources.keys():
+        raise ValueError("empirical tool timing sources lack CPU qualification")
     if smoke_server["source_server_parameters"].get("max_running_requests") != running:
         raise ValueError("comparison running limit differs from the GPU-checked source")
     experiment_evidence = None
@@ -1157,6 +1187,8 @@ def register(args):
         source_launch,
         Path(reservation.__file__),
     ]
+    if overlay_path is not None:
+        inputs.append(overlay_path)
     if args.retention_config is not None:
         inputs.append(args.retention_config)
         if not {
@@ -1233,15 +1265,22 @@ def register(args):
         "run_root": str(args.run_root.resolve()), "port": args.port,
         "sampling_calibration": str(args.sampling_calibration.resolve()),
         "sampling_mode": args.sampling_mode,
+        "tool_timing_overlay": tool_timing_overlay,
         "stream_response_metrics": getattr(args, "stream_response_metrics", False),
         "maximum_replay_slowdown": args.maximum_replay_slowdown,
         "source_metrics": {
-            "mean_jct_ms": native_baseline["mean_jct_ms"],
+            "mean_jct_ms": natural_baseline["mean_jct_ms"],
             "replay_duration_ms": quality["duration_seconds"] * 1000.,
+            "timing_comparable_to_replay": tool_timing_overlay is None,
         },
         "native_baseline": native_baseline,
         "gpu_replay_qualified": False, "performance_accepted": False,
-        "scope": "Auxiliary same-work causal controls; retain all tails and source guard qualifications.",
+        "scope": (
+            "Empirical shell-time sensitivity replay; retain original work and all tails. "
+            "Natural-source timings are not a performance baseline."
+            if tool_timing_overlay is not None else
+            "Auxiliary same-work causal controls; retain all tails and source guard qualifications."
+        ),
     }
     if args.maximum_replay_slowdown is not None:
         source_speed_check(plan["source_metrics"], plan["source_metrics"], args.maximum_replay_slowdown)
@@ -1476,6 +1515,7 @@ def watch(registration):
                     "same_request_work_verified": True,
                     "streaming_response_metrics_enabled": plan.get("stream_response_metrics", False),
                     "streaming_response_metrics": result.get("streaming_response_metrics"),
+                    "tool_timing_overlay": plan.get("tool_timing_overlay"),
                 }
                 baseline = plan.get("native_baseline")
                 event_seconds = event_metrics["workflow_event_makespan_ms"] / 1000.
@@ -1510,6 +1550,7 @@ def watch(registration):
                     "scope": plan["scope"],
                     "after_registration": plan.get("after_registration"),
                     "native_baseline": plan.get("native_baseline"),
+                    "tool_timing_overlay": plan.get("tool_timing_overlay"),
                 })
                 pulse()
                 if speed is not None and not speed["accepted"]:
@@ -1544,6 +1585,7 @@ def main():
     parser.add_argument("--after-registration", type=Path)
     parser.add_argument("--sampling-mode", choices=("legacy", "position"), default="legacy")
     parser.add_argument("--stream-response-metrics", action="store_true")
+    parser.add_argument("--tool-duration-overlay", type=Path)
     parser.add_argument("--maximum-replay-slowdown", type=float)
     args = parser.parse_args()
     if args.watch:
@@ -1553,6 +1595,7 @@ def main():
             "watch", "port", "arms", "after_registration", "sampling_mode", "maximum_replay_slowdown",
             "retention_config",
             "experiment_config",
+            "tool_duration_overlay",
             "tool_prefetch_priority_ms",
             "max_running_requests",
         )):
