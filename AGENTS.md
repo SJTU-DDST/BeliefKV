@@ -1702,3 +1702,19 @@
   aggregate-only budgets remain unknown for per-agent token-time; do not infer
   physical occupancy or compare prefix decode rate to fullV345. Keep525c7cc6
   and its registered external inputs frozen while continuing the complete run.
+- The independent CPU-only JOIN grant auditor now binds actual grant identities
+  to completed native session/clock and exact-context service. It bounds older
+  grants by later same-owner grants, keeps unproven rows and attempt identity
+  unknown, and credits only separately witnessed version2 FULL reuse. Final104
+  targeted cases pass; initial4 and later1 auditor boundary failures remain
+  preserved. No frozen runtime/engine/source/config changed or new GPU job
+  registered. The sibling collecting pipeline seals1722 exact completions.
+  Its sealed grant prefix has18 grants/21 served requests:2 parent and16 sibling
+  grants covering19 child requests, with22.242--166.213ms child grant-to-service;
+  three two-member grants have0/0/137.904ms service-entry spread. Parent grants
+  associate12.524519GB verified reuse including post-completion copies; only
+  6.569165GB in the separate prefetch prefix is confirmed early reuse. Preserve
+  an expired0.403GB recovery and127.6s ACK-to-service observation elsewhere.
+  These are collecting associations, not complete JCT, pure GPU timing, an
+  atomic snapshot or causal speedup. See
+  docs/research/reference_join_sibling_grant_audit_20261027_zh.md.
