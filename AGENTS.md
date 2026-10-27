@@ -1263,3 +1263,22 @@
   and demand-outstanding service throughput as diagnostics. Worker intervals
   include runtime and waits, not pure kernel duration. See
   `docs/research/throughput_metric_contract_20261027_zh.md`.
+- V344 adds CPU-only complete decode plots via
+  `scripts/plot_causal_decode_diagnostics.py` (32 targeted tests passed).
+  Historical V286 Full and V295 tool-decay ThunderAgent share V269 and may
+  be overlaid; V330 uses V311 and has only a separate completed-run plot.
+  Keep fixed 60s bins, all warmup/idle/normal tails, actual partial-bin widths,
+  time-weighted CDFs, and no post-termination zero padding. Distinguish wall
+  decode output rate from worker output rate; neither is pure kernel time.
+  Actual KV capacity, free-page fence and exact work/timing guards passed.
+  Final artifacts and captions are in
+  `docs/research/decode_throughput_figures_20261027_zh.md`; plots do not satisfy
+  repeated or matching-V311 performance acceptance.
+- The user explicitly releases the latest GPU reservation at approximately
+  2026-10-27 20:28 Asia/Shanghai and requests completion of the latest-tool
+  ThunderAgent control. Archive the old hold with its digest and register a
+  new complete `thunderagent_acting_decay` arm using V330's exact V311 timing,
+  V230 requests/tokens/graph, native tree, capacity, streaming and seed21.
+  Preserve V330's administrative stop and 847 partial receipts; do not resume
+  or combine that partial run, repeat Full, or schedule additional GPU arms.
+  Current availability, ownership, port and newer hold checks still apply.
