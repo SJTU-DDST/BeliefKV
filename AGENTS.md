@@ -1280,7 +1280,8 @@
   new complete `thunderagent_acting_decay` arm using V330's exact V311 timing,
   V230 requests/tokens/graph, native tree, capacity, streaming and seed21.
   Preserve V330's administrative stop and 847 partial receipts; do not resume
-  or combine that partial run, repeat Full, or schedule additional GPU arms.
+  or combine that partial run. The V345 registration itself contains only the
+  requested complete tool-decay control.
   Current availability, ownership, port and newer hold checks still apply.
 - V345 independently registers only `thunderagent_acting_decay` using commit
   `0b1ca5de0933`, port 18655 and the unchanged V330 native tree and V311 map:
@@ -1311,3 +1312,29 @@
   are actually alive by PID/start-tick checks. Keep its prefix batch and
   worker rate separate from complete V330 averages; final matching JCT,
   makespan and decode geometry remain pending.
+- V345 subsequently completes all 3674 exact requests and 18 workflows, with
+  exit zero, native stopping, two fresh idle snapshots and actual owned cleanup.
+  V361 independently validates the matching V311 pair: Full mean JCT
+  1646.612839s versus 1697.583645s (3.00255% lower), makespan 2311.112390s
+  versus 2355.344551s, end-to-end output 237.838282 versus 233.371801 token/s
+  (1.91389% higher), decode worker rate 354.557302 versus 340.158312 token/s.
+  Sixteen workflows improve and two regress. V347 has final matched plots.
+  This single small improvement does not meet clear/repeated/all-baseline
+  acceptance. Preserve all tails and the V360 tool-demand H2D regression:
+  Full 2686.823GB versus control 2137.059GB.
+- The continuing user optimization goal now proceeds to the separately
+  qualified Full `projected_release` pressure candidate, reusing complete
+  V345 without another ThunderAgent arm. Native allocation receives no future
+  capacity credit: existing marks only bound additional running-request marks,
+  and actual completion/requeue remains the release boundary. Keep default
+  and paper policies unchanged, protect JOIN restores, and never count an
+  unstarted queued request as an impending release. The new config is
+  `configs/migration/predictive_projected_pressure_20261027.json`.
+  V358c passes all 2942 shared CPU cases plus four subtests, retaining every
+  V325 case. V359c binds actual constructors and baseline isolation. Preserve
+  V358's snapshot-schema failure and V358b's earlier 2940-case pass. V362
+  proves a CPU overmarking counterexample; V330's sampled overcommit conditions
+  do not prove actual historical mark transitions or a performance cause.
+  Freeze sources and recheck current GPU resources/hold before Full execution;
+  no newer reservation is superseded by this candidate. See
+  `docs/design/projected_pressure_release_20261027_zh.md`.

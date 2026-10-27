@@ -35,11 +35,17 @@ class ThunderAgentMigration(ThunderWorkingSet):
         workflow_entry_min_ready: int = 0, recall_tool_loans: bool = False,
         recall_selection: str = "largest", observe_recall=None, recall_urgent=None,
         admission_dependency=None, observe_lending=None,
+        pressure_pause_policy: str = "reference",
     ):
         super().__init__(capacity)
         if type(retain_blocked) is not bool:
             raise ValueError("blocked eligibility retention must be explicitly boolean")
         self.retain_blocked = retain_blocked
+        if pressure_pause_policy not in ("reference", "projected_release") or (
+            pressure_pause_policy != "reference" and not retain_blocked
+        ):
+            raise ValueError("projected pressure release requires retained agent eligibility")
+        self.pressure_pause_policy = pressure_pause_policy
         if type(coadmit_join_children) is not bool or (
             coadmit_join_children and not retain_blocked
         ):
@@ -625,6 +631,49 @@ class ThunderAgentMigration(ThunderWorkingSet):
             self.observe_recall(detail)
         return True
 
+    def _control_pressure(self, *, now):
+        if self.pressure_pause_policy == "reference":
+            return super().tick(now=now)
+        resumed = self._resume()
+        acting = sorted(
+            (
+                item for item in self.programs.values()
+                if item.active and item.acting and not item.in_flight
+                and not item.critical and item.restore_until <= now
+            ),
+            key=lambda item: item.tokens,
+        )
+        for item in acting:
+            if self.remaining_capacity() >= 0:
+                break
+            self._pause(item, now)
+            self.counts["pressure_paused_acting"] += 1
+        deficit = max(0, -self.remaining_capacity())
+        if not deficit:
+            return resumed
+        # Planned releases only bound further marks; they grant no capacity.
+        planned = sum(
+            item.tokens + self.buffer_tokens for item in self.programs.values()
+            if item.active and item.marked_for_pause
+        )
+        candidates = sorted(
+            (
+                item for item in self.programs.values()
+                if item.active and not item.acting and not item.marked_for_pause
+                and item.in_flight
+                and not item.critical and item.restore_until <= now
+            ),
+            key=lambda item: item.tokens,
+        )
+        for item in candidates:
+            if planned >= deficit:
+                break
+            item.marked_for_pause = True
+            planned += item.tokens + self.buffer_tokens
+            self.counts["pressure_planned_pauses"] += 1
+        self.counts["pressure_projected_shortfall_tokens_last"] = max(0, deficit - planned)
+        return resumed
+
     def rebalance(self, *, now):
         self._entry_now = now
         self._expire_restore(now)
@@ -653,7 +702,7 @@ class ThunderAgentMigration(ThunderWorkingSet):
             return
         self.next_control = now + self.control_interval_s
         self.counts["control_ticks"] += 1
-        super().tick(now=now)
+        self._control_pressure(now=now)
         for item in sorted(self.programs.values(), key=lambda item: item.waiting_since):
             if (
                 not item.active and item.pending and not item.blocked

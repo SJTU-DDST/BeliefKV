@@ -96,3 +96,11 @@ decode worker 输出率、时间加权 batch 和实际 workflow 完成数，
 V351 新封存前缀中 2088/3674 个完整回执均与 V330 的原始工作及停止条件
 一致。当前前缀的 batch 或输出率不能与 V330 全程平均值组成加速比。
 证据为 `experiments/reports/v351_v345_collecting_exact_work_20261027.json`。
+
+本轮于 2026-10-27 21:15:25 Asia/Shanghai 完整收尾，exit code 为零。
+所有 3674 个请求、18 个 workflow 和原生停止条件通过，两个新鲜
+idle 遥测快照及全部 owned 进程退出已验证。V347 绘图任务也已完成。
+最终 FULL/对照的平均 JCT 为 1646.613/1697.584s，
+端到端输出吞吐为 237.838/233.372 token/s，分别改善 3.003%/1.914%。
+仍未达到明显、可重复优于强对照的整体目标，完整记录见
+[匹配结果与图](v330_v345_matched_results_20261027_zh.md)。

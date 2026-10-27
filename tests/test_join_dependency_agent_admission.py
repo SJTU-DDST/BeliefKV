@@ -250,6 +250,7 @@ def test_budget_status_captures_observed_decode_growth_at_the_same_snapshot(monk
         assert status["active_agent_budgets"] == [{
             "invocation_id": "a", "tokens": 222, "buffer_tokens": 100,
             "pending": True, "in_flight": True, "blocked": None,
+            "marked_for_pause": False,
         }]
         assert status["logical_active_tokens"] == 322
         assert status["shared_prefixes_deduplicated"] is False

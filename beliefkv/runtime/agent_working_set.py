@@ -17,10 +17,16 @@ class AgentAdmission:
         workflow_entry_min_ready=0, tool_loan_return=False,
         recall_selection="largest",
         join_dependency_admission=False, blocked_budget_proof="predicted_pressure",
+        pressure_pause_policy="reference",
     ):
         self.runtime = runtime
         self.policy: AgentWorkingSet | None = None
         self.strategy = strategy
+        if pressure_pause_policy not in ("reference", "projected_release") or (
+            pressure_pause_policy != "reference" and strategy != "thunderagent_retained"
+        ):
+            raise ValueError("projected pressure release requires retained agent eligibility")
+        self.pressure_pause_policy = pressure_pause_policy
         self.coadmit_join_children = coadmit_join_children
         if blocked_lending not in ("idle", "backed_demand", "backed_demand_recall") or (
             blocked_lending != "idle" and strategy != "thunderagent_retained"
@@ -108,6 +114,7 @@ class AgentAdmission:
                     self._observe_lending if self.join_dependency_admission
                     and getattr(self.runtime, "_opportunity_writer", None) is not None else None
                 ),
+                pressure_pause_policy=self.pressure_pause_policy,
             )
             self.policy.growth_headroom_tokens = capacity - int(capacity * watermark)
         else:
@@ -552,6 +559,8 @@ class AgentAdmission:
             "physical_capacity_tokens": getattr(self, "physical_capacity_tokens", None),
             "kv_high_watermark": getattr(self, "high_watermark", 1.),
             "growth_headroom_tokens": getattr(policy, "growth_headroom_tokens", 0),
+            "pressure_pause_policy": self.pressure_pause_policy,
+            "planned_release_grants_capacity": False,
             "logical_active_tokens": policy.used_tokens if policy is not None else 0,
             "active_agents": len(active),
             "active_invocation_ids": [item.identity for item in active],
@@ -588,6 +597,7 @@ class AgentAdmission:
                     "invocation_id": item.identity, "tokens": item.tokens,
                     "buffer_tokens": policy.buffer_tokens, "pending": item.pending,
                     "in_flight": item.in_flight, "blocked": item.blocked,
+                    "marked_for_pause": item.marked_for_pause,
                 } for item in active
             ] if self.join_dependency_admission else None,
             "workflow_entry_min_ready_agents": self.workflow_entry_min_ready,

@@ -44,6 +44,7 @@ def qualify(args):
         "tests/test_idle_full_prepare_pipeline.py",
         "tests/test_sglang_v0520_runtime.py",
         "tests/test_demand_agent_lending.py",
+        "tests/test_projected_pressure_release.py",
     }
     if not all((ROOT / path).is_file() for path in paths):
         raise ValueError("previous CPU modules cannot be located")
@@ -86,6 +87,9 @@ def qualify(args):
             )
             or verified["agent_blocked_budget_proof"] != (
                 common["AGENT_BLOCKED_BUDGET_PROOF"] if arm == "full" else "predicted_pressure"
+            )
+            or verified["agent_pressure_pause_policy"] != (
+                common.get("AGENT_PRESSURE_PAUSE_POLICY", "reference") if arm == "full" else "reference"
             )
         ):
             raise ValueError("adaptive tool policy leaked into a paper arm or failed to load")

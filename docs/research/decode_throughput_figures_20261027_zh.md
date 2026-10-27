@@ -5,6 +5,11 @@
 `scripts/plot_causal_decode_diagnostics.py`，定量口径仍遵守
 `docs/research/throughput_metric_contract_20261027_zh.md`。
 
+最新匹配的 V311 对比已完成，正式引用
+[V330 FULL / V345 工具衰减版结果与图](v330_v345_matched_results_20261027_zh.md)。
+V347 的趋势、分布和 geometry 图均保留全部正常长尾；下列 V344
+图作为历史同条件对比及 V330 单组诊断继续保留。
+
 ## 同条件历史对比
 
 V286 Full 与 V295 ThunderAgent 工具衰减版均使用 V269 工具时间表、
@@ -54,9 +59,9 @@ V286 Full 与 V295 ThunderAgent 工具衰减版均使用 V269 工具时间表、
 
 V330 使用 V311 时间表。匹配 ThunderAgent 因用户预约中断，
 不将其部分运行或 V295 的不同时间表叠加为正式对比。
-用户随后释放 GPU，匹配的完整 V345 工具衰减版已单独启动；
+用户随后释放 GPU，匹配的完整 V345 工具衰减版已完成；
 其[运行记录](v345_v311_thunder_decay_control_20261027_zh.md)
-和 CPU 后处理任务将保留 V344 原图，并在 V347 输出新的匹配比较。
+和 CPU 后处理任务保留了 V344 原图，并在 V347 输出新的匹配比较。
 V330 前中段 batch 较宽，约 31 分钟后加权 batch 接近一，
 末段墙钟输出率下降，worker 输出率也随 batch 变化。
 全程普通平均 batch 为 6.251，worker 区间加权为 9.023，

@@ -18,6 +18,7 @@ def runtime(
     coadmit_join_children=False, blocked_lending="idle", workflow_entry_min_ready=0,
     tool_loan_return=False,
     join_dependency_admission=False, blocked_budget_proof="predicted_pressure",
+    pressure_pause_policy="reference",
 ):
     settings = arm_environment({
         "AGENT_ADMISSION": strategy, "TOOL_RESTORE_MODE": "execution",
@@ -29,6 +30,7 @@ def runtime(
         "AGENT_TOOL_LOAN_RETURN": str(int(tool_loan_return)),
         "AGENT_JOIN_DEPENDENCY_ADMISSION": str(int(join_dependency_admission)),
         "AGENT_BLOCKED_BUDGET_PROOF": blocked_budget_proof,
+        "AGENT_PRESSURE_PAUSE_POLICY": pressure_pause_policy,
     }, "full")
     for name, value in settings.items():
         monkeypatch.setenv(name, value)
