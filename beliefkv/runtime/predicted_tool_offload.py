@@ -441,15 +441,25 @@ class DemandAwareToolOffload(PredictedToolOffload):
         waiting = runtime._capacity_waiting_queue
         self.consumer = None
         count = len(waiting)
+        agents = runtime._agent_admission
+        reference = getattr(agents, "strategy", None) == "thunderagent_reference"
         for offset in range(min(count, self.max_consumers)):
             request = waiting[(self.consumer_cursor + offset) % count]
             key = runtime._executable_waiting_key(request)
-            if key is not None:
+            if key is None:
+                continue
+            if reference:
+                # This core cannot lend eligibility. An inactive or already
+                # fitting waiter must not hide another eligible consumer.
+                if not agents.allows(key) or self._demand(request, key) is None:
+                    continue
+            else:
                 # Logical borrowing is checked against each actual donor later.
                 observation = runtime._read_request_reentry(request, key=key)
-                if observation is not None and observation.get("missing_full_tokens", 0) > 0:
-                    self.consumer = (request, key)
-                    break
+                if observation is None or observation.get("missing_full_tokens", 0) <= 0:
+                    continue
+            self.consumer = (request, key)
+            break
         self.consumer_cursor += self.max_consumers
         if self.consumer is None:
             self.next_ms = time.monotonic() * 1000. + self.interval_ms

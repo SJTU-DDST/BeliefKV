@@ -1,5 +1,11 @@
 # Experiment Invariants
 
+- Keep experiment, configuration and analysis identities separate. Historical
+  `vNNN` references remain immutable, but new CPU checks, progress observations,
+  plots and result analyses belong to their parent experiment's named evidence
+  directory and must not each consume a new main experiment version. A failed
+  startup or partial GPU attempt remains explicitly identified as such, never
+  counted as a completed comparison or silently resumed.
 - Every future naturally captured source workload must use a different original project for each root
   workflow. Different task IDs, labels or sessions from the same project do not
   satisfy this rule. Retain it when selecting a smaller workload population.

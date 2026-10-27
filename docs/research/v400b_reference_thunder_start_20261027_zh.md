@@ -56,6 +56,28 @@ V402 只启动 CPU 后处理，实际进程167057、nice19、隐藏CUDA。
 目前没有后续GPU实验排队。完整平均JCT及全程输出吞吐须同时得到
 明确、可重复改善后，才继续其他baseline；全局目标仍未完成。
 
+## 运行期间发现的后续修复
+
+主工作区发现 reference 模式的工具卸载候选选择缺陷：先选中第一个
+需要从Host恢复前缀的请求，随后才检查活跃资格和实际容量缺口。该请求
+未获准入，或者当前空间已经足够时，会挡住后续真正需要容量的请求。
+修复仅在 reference 模式下提前执行现有资格和需求检查，仍只检查
+最多8个候选，每200ms一次。预测门槛、逐节点重新授权、原生锁、
+Host 副本、实际释放边界和参考调度核心均保留。
+
+两个反例使用真实 native FULL-only tree/allocator，配合已有
+copy/event/Host-index替身；修复前均失败，修复后相关242项CPU检查
+全部通过，无跳过。反例确认释放32个Device槽、保留Host副本且不改变
+参考program状态。报告归于
+`experiments/reports/v400b_followup/`，不新增主实验编号。
+早期测试夹具的请求与图身份不一致，未覆盖该缺陷，其报告保留并明确
+排除为复现证据。这里没有证明该缺陷在V400b中的发生次数或性能影响。
+
+该修复不在冻结的V400b中，不能归因于本轮结果。当前运行继续使用
+`a5e31ae7464f`，没有热更新、重启或安排新GPU实验。逐层卸载A并复用
+空间加载B的分层分配器仍未实现，相关状态见
+[容量流水线设计](../design/workflow_service_and_layer_recycling_20261026_zh.md)。
+
 ## 证据
 
 - `experiments/reports/v399_reference_thunder_offload_cpu_evidence_20261027.json`。

@@ -1,3 +1,4 @@
+from array import array
 from copy import deepcopy
 from dataclasses import asdict, replace
 import random
@@ -19,7 +20,9 @@ from scripts import run_causal_comparison as comparison
 from tests.test_internal_comparison import observed
 from tests.test_paper_baseline_runtime import request
 from tests.test_full_only_native_lifecycle import full_native
+from tests.test_sglang_v0520_runtime import req as native_request
 from tests.test_tool_policy_adaptation import demand_runtime
+from tests.test_tool_predictive_transfers import event
 
 
 def full_runtime(monkeypatch, tmp_path, *, capacity=1000):
@@ -315,4 +318,63 @@ def test_actual_demand_offload_uses_reference_eligibility_without_retained_polic
         assert donor.component_data[0].value is not None
         assert allocator.available_size() == 4
         assert not runtime.counts["predicted_tool_offload_freed_component_0"]
+    assert state(adapter) == before
+
+
+@pytest.mark.parametrize("first_consumer", ("inactive", "already_fits"))
+def test_reference_tool_offload_skips_unusable_waiter_before_real_capacity_demand(
+    demand_runtime, first_consumer,
+):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    runtime, controller, cache, allocator, donor, consumer, _writes = demand_runtime
+    runtime.enable_execution_handoff = False
+    runtime.enable_frontier_restore = False
+    adapter = ReferenceThunderAdmission(runtime)
+    adapter.attach(cache)
+    adapter.policy.buffer_tokens = 0
+    donor_key = runtime.context_sessions["ctx-tool"]
+    adapter.policy.arrive("tool", 32, now=0.)
+    adapter.policy.completed("tool", 32, now=.1)
+    adapter.latest["tool"] = donor_key
+    adapter.policy.arrive("hot", 12, now=.15)
+    adapter.registered(consumer, runtime.visible["consumer"])
+    runtime._agent_admission = adapter
+
+    tokens = tuple(range(301, 305 if first_consumer == "inactive" else 303))
+    leaf, generation = insert_session(cache, list(tokens), "first-consumer-session")
+    data = leaf.component_data[0]
+    data.host_value = data.value.clone()
+    cache.tree_core._update_duplicate_tracking(leaf)
+    cache._demote(leaf.id, {})
+    first = native_request("first-consumer")
+    first.origin_input_ids = array("q", (*tokens, 999))
+    first.output_ids = array("q")
+    first.session_id, first.session_generation = "first-consumer-session", generation
+    first.extra_key = first.cache_salt = None
+    first.kv = NS(req_pool_idx=None, kv_allocated_len=0, kv_committed_len=0)
+    first.is_retracted = first.retracted_stain = False
+    runtime.on_events((
+        event(5, Kind.INVOCATION_CREATE, invocation_id=first.rid,
+              context_id=f"ctx-{first.rid}"),
+        event(6, Kind.LLM_SUBMIT, invocation_id=first.rid, context_id=f"ctx-{first.rid}",
+              attributes={"request_id": first.rid}),
+    ))
+    runtime.register_visible_request(first)
+    runtime._capacity_waiting_queue = [first, consumer]
+    first_key = runtime.visible[first.rid]
+    assert runtime._executable_waiting_key(first) == first_key
+    assert runtime._unallocated_waiting_full_request(first_key, first)
+    assert cache.inspect_beliefkv_reentry(first)["missing_full_tokens"] == len(tokens)
+    assert adapter.allows(first_key) is (first_consumer == "already_fits")
+    assert controller._demand(first, first_key) is None
+    before = state(adapter)
+
+    controller.dispatch()
+
+    assert controller.consumer == (consumer, runtime.visible[consumer.rid])
+    assert donor.component_data[0].value is None
+    assert donor.component_data[0].host_value is not None
+    assert allocator.available_size() == 36
+    assert runtime.counts["predicted_tool_offload_freed_component_0"] == 32
     assert state(adapter) == before
