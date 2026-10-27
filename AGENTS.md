@@ -781,3 +781,26 @@
   deadline, user-message provenance and timezone-aware times. Current shared
   hold/pause checks still apply. Qualify and freeze the updated launch guards;
   keep the prepared native engine and Full/ThunderAgent policy sources unchanged.
+- V246's first real component attempt failed before model startup: the fixture's
+  scalar indexed writer submission consumed its own overlap window. Preserve
+  that failure and the V251/V251b diagnostics. Commit `c688f850` changes only
+  the fixture to prewarmed `index_fill_` writers and records scenario-specific
+  ordering failures; the native engine is unchanged. Targeted CPU: 148 passing
+  cases, no skips (`v252_writer_fixture_retry_cpu_20261027.xml`).
+- V246b passed all nine real native copy/writer scenarios and the unforced
+  session model demand/JOIN checks at 2026-10-27 11:11:33 Asia/Shanghai.
+  Actual greedy tokens match and model numerical checks pass; all owned
+  processes exited. Frozen application is `7375e3aa1d47`, native tree
+  `11b84f7c31986782be3fbe699bae2574ef092389`. The 49152-token Device / 8GB
+  Host fixture remains distinct from measured population capacity. Proof:
+  `experiments/reports/v252_session_model_gpu_verified_20261027.json`.
+  This does not establish whole-population correctness or performance gains.
+- V246 position replay now runs from the original qualified prepared policy
+  sources: `ops/v246_free_page_position_20261027.registration.json`,
+  supervisor PID 3880964/start ticks `724121790`, port 18649, application
+  `b185ccaf19753516ac1cace00efc620ccb495949`. It owns its real GPU server
+  and runs the eight-context/three-turn token/session/stop smoke before
+  registering V247 Full then ThunderAgent. Model-to-position handoff is
+  independently verified in `v252_model_to_position_handoff_20261027.json`.
+  Keep these sources frozen, retain exact V230 work/capacity/seed21 and do not
+  start other baselines before the shared JCT/throughput improvement gate.
