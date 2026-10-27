@@ -1851,3 +1851,20 @@
   were revalidated. Freeze committed sources and check the current reservation,
   actual previous exit, free GPU/port before a Full-only run; reuseV345.
   No new GPU run has yet been registered and performance acceptance is false.
+- Free-continuation R1 now runs from frozen1f1678b266e1 on port18664:
+  ops/reference_free_continuation_20261027_r1.registration.json. Actual nice0
+  watcher318424/start731387723, server318870/start731390336, GPU scheduler
+  319195/start731391750 and driver320163/start731405400 are independently
+  live; GPU PID matches NVML. Source-bound live_start.py/.json seals164
+  exact completed receipts and13 common work/timing/capacity/engine/serving
+  fields equal to completeV345. The actual new policy/flags and healthy
+  physical control are verified, not complete correctness/performance.
+  A later independently sealed collecting_grants_after_start.json binds one
+  actual new continuation grant of8967 complete logical tokens to its current
+  native request/context/session service, with18.183ms grant-to-run_batch
+  observation and no service before the grant. This is not GPU kernel timing
+  or a performance gain. Preserve frozen sources and all external inputs.
+  Nice19 CUDA-hidden CPU plot waiter320361/start731406698 explicitly uses
+  ops/cpu_plotting_20261027/bin/python and only draws after full success plus
+  actual owned exit. State: ops/reference_free_continuation_20261027_r1.plots.state.json.
+  No further GPU experiment is queued. ReuseV345; goal remains incomplete.

@@ -99,3 +99,31 @@ GPU 实验。通过后只运行新的完整 Full，复用 V345 的相同请求�
 工具 overlay、控制复用及执行顺序完全相同。native 11b84f7c3198
 的 726 项源码绑定证据也已重新核对。此时仍未登记 GPU 实验，
 共享 CPU 成功不构成 GPU 或完整性能证明。
+
+## 实际运行
+
+前一轮实际 owned 退出、最新预约、空闲 GPU、端口和源码检查通过后，
+登记 `ops/reference_free_continuation_20261027_r1.registration.json`。
+冻结应用为 `1f1678b266e15bc0427a0f98b683bc6b098ec026`，native 树仍为
+11b84f7c3198，端口 18664，socket 为 `/tmp/bkv-causal-18664.sock`。
+只运行本轮 Full，继续复用完整 V345，没有重新运行 native 或对照。
+
+同目录 `live_start.py/.json` 独立核对实际 watcher318424/start731387723、
+server318870/start731390336、GPU scheduler319195/start731391750、
+driver320163/start731405400 均为 live/nice0；GPU PID 与 NVML 一致。
+13 项工作量、工具时间、容量、引擎、流式及种子字段与完整 V345 相同，
+五个相关 runtime/core 文件与 3291 项资格源摘要一致，实际新策略
+开关、JOIN 扩展与物理控制均已核对。
+
+启动证据封存 164 个精确完成请求。随后独立
+`collecting_grants_after_start.json` 观察到一个新 continuation 授权，
+完整预算 8967 tokens，与相同当前请求/context/session 的实际原生
+服务匹配；此前尚未服务，授权到原生 run_batch 观察入口为 18.183ms。
+这不是 CUDA kernel 开始时间、隐藏传输时间或最终 JCT 改善证明；
+两个审计封存的前缀也不是同一原子快照。
+
+CPU 绘图等待器320361/start731406698保持 nice19、隐藏 CUDA，显式
+使用 `ops/cpu_plotting_20261027/bin/python`，仅在完整成功且实际 owned
+退出后绘制共同 60 秒分桶图，失败则停止，不启动 GPU。状态为
+`ops/reference_free_continuation_20261027_r1.plots.state.json`。没有后续
+GPU 实验排队，冻结代码、配置和外部输入保持不变。

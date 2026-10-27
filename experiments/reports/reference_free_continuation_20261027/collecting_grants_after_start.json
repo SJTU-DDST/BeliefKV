@@ -1,0 +1,110 @@
+{
+  "observed_at": "2026-10-27T23:34:27.978545+00:00",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_free_continuation_20261027_r1/full",
+  "summary": {
+    "journal_grants": 1,
+    "journal_programs": 1,
+    "grant_events": {
+      "agent_continuation_free_capacity_admitted": 1
+    },
+    "program_statuses": {
+      "service_after_grant_verified": 1
+    },
+    "grant_refresh_declaration_snapshots": 249,
+    "native_service_records": 2799,
+    "verified_reused_copy_bytes_after_grant": null
+  },
+  "groups": [
+    {
+      "grant_number": 1,
+      "event": "agent_continuation_free_capacity_admitted",
+      "join_id": null,
+      "newly_granted_programs": 1,
+      "verified_served_programs": 1,
+      "newly_granted_service_start_spread_ms": null
+    }
+  ],
+  "programs": [
+    {
+      "grant_number": 1,
+      "grant_event": "agent_continuation_free_capacity_admitted",
+      "join_id": null,
+      "grant_ts_ms": 1793143996711.991,
+      "grant_monotonic_s": 7314259.812569635,
+      "key": {
+        "request_id": "beliefkv:01a177a7-0705-7a10-89e1-6b474f09e7ee",
+        "root_workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "invocation_id": "deepagents-invocation:774c21d38b88ade0",
+        "context_id": "deepagents-context:774c21d38b88ade0",
+        "context_epoch": 5,
+        "attempt_id": 0,
+        "session_id": "beliefkv-304317e2748a48d331271cd296deadf0",
+        "session_generation": 21
+      },
+      "complete_budget_tokens": 8967,
+      "service_request_id": "beliefkv:01a177a7-0705-7a10-89e1-6b474f09e7ee",
+      "parent_successor": false,
+      "status": "service_after_grant_verified",
+      "first_service_ts_ms": 1793143996730.174,
+      "next_service_after_grant_ts_ms": 1793143996730.174,
+      "copy_evidence_available": false,
+      "verified_reused_copy_bytes_after_grant": null,
+      "associated_copy_command_ids": [],
+      "attempt_identity_verified": false,
+      "next_grant_ts_ms": null,
+      "service_identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:774c21d38b88ade0",
+        "deepagents-context:774c21d38b88ade0",
+        5
+      ],
+      "service_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec",
+      "session_binding_verified": true,
+      "request_had_service_before_grant": false,
+      "logical_host_hit_tokens_at_service": 8293,
+      "grant_to_next_native_service_ms": 18.18310546875
+    }
+  ],
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_free_continuation_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 3850971,
+      "complete_prefix_sha256": "649a28fd6bb5ca6aca3d0f4aea1f4d2e627f41a4c93d404b3360f042ab493c9a",
+      "first_read_limit_bytes": 3850971
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_free_continuation_20261027_r1/full/replay/runtime_events.replay.jsonl": {
+      "complete_prefix_bytes": 2122993,
+      "complete_prefix_sha256": "8f96b01ad80ee3b6d64a9375fc4a2cd0456401451757c76443a0c3a117673ef8",
+      "first_read_limit_bytes": 2122993
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_free_continuation_20261027_r1/full/server/runtime_events.sglang.jsonl": {
+      "complete_prefix_bytes": 831374,
+      "complete_prefix_sha256": "75f4982ec0c5673fefcb2b7cd697ea911aa7b68c5a2b8e85716c4add8390c5dc",
+      "first_read_limit_bytes": 831374
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_free_continuation_20261027_r1/full/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 1176646,
+      "complete_prefix_sha256": "beb478cd3d5940d857eb5be643a6c99bb6bffbbad57cd3ed5f90eacaac8ebc43",
+      "first_read_limit_bytes": 1176646
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_free_continuation_20261027_r1/full/server/runtime_audit.jsonl": {
+      "complete_prefix_bytes": 15825787,
+      "complete_prefix_sha256": "0c14f1e4e2f2031536f8ee964a7e9ea6572a78b166d26fa967a23a1148603a2d",
+      "first_read_limit_bytes": 15825787
+    }
+  },
+  "report_inputs_sha256": {},
+  "auditor_sha256": "f691176be2d52e2b3629ecb616f2a576fcd3d5c235ab9e9376b64f5ffcae74ab",
+  "complete_run_verified": false,
+  "performance_accepted": false,
+  "semantics": [
+    "Grant logs describe actual logical eligibility changes, not physical allocation.",
+    "Service associations require workflow/invocation/context/epoch and completed native session/clock identity.",
+    "Service samples do not expose attempt identity; no per-attempt proof is claimed.",
+    "Service start is the recorded native run_batch entry, not a CUDA kernel timestamp.",
+    "Only server wall timestamps are subtracted; client JOIN events select identities only.",
+    "Later grants bound earlier associations, preventing duplicate credit for the same future service or copy.",
+    "Service-start spread describes newly granted members only, not all siblings or JOIN completion.",
+    "Host-hit spans are not individual DMA bytes; only separate verified copy evidence is credited.",
+    "Concurrent prefixes are independently sealed, not an atomic snapshot or a causal speedup experiment."
+  ]
+}
