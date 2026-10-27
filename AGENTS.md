@@ -1226,3 +1226,11 @@
   These prefixes do not establish complete work, exclusive causes or a matched
   performance win. Keep V330 frozen and review full results before expanding
   inactive-owner warming or any speculative donor permissions.
+- Tool prefetch is optional by the user's explicit clarification. Zero copies
+  and inactive-owner rejection counts alone are not bugs or benefit evidence:
+  the eligibility gate precedes physical restore planning. Repair only a
+  separately evidenced useful opportunity with missing KV, safe free/blocked
+  backed capacity and timely normal admission; preserve ready peers and native
+  authority. Account for occupancy, displaced work, repeated copies and
+  recomputation in full JCT/throughput. Disable the feature if matched evidence
+  shows net harm; never force transfers to increase coverage.
