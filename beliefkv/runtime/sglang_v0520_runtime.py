@@ -754,10 +754,12 @@ class NativeAdmissionRuntime:
                     isinstance(template, str) and template
                     and "<think>" not in template and "</think>" not in template
                 )
+                # Either boundary is tool-turn evidence; the model may omit
+                # the dedicated opener while still emitting the closer.
                 self._tool_open_token_ids = frozenset(
                     int(token_id) for token_id, token in tokens.items()
                     if isinstance(token, dict) and token.get("content") in (
-                        "<tool_call>", "<|tool_call|>",
+                        "<tool_call>", "</tool_call>", "<|tool_call|>",
                     )
                 )
                 self._reasoning_close_token_ids = frozenset(

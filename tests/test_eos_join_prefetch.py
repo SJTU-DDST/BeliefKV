@@ -95,6 +95,54 @@ def test_eos_runtime_never_loads_legacy_semantic_model(monkeypatch):
         runtime.close()
 
 
+@pytest.mark.parametrize("kind", ("closer_only_tool", "opener_tool", "report"))
+def test_native_tool_closer_without_opener_does_not_predict_child_return(tmp_path, kind):
+    (tmp_path / "tokenizer_config.json").write_text(json.dumps({
+        "chat_template": "plain assistant",
+        "added_tokens_decoder": {
+            "151657": {"content": "<tool_call>"},
+            "151658": {"content": "</tool_call>"},
+        },
+    }))
+    runtime = final_stage_runtime(model_path=str(tmp_path))
+    runtime._clear_final_stage("join")
+    runtime._child_report_notices.clear()
+    child = req("child")
+    child.session_id, child.session_generation = "cs", 1
+    child.beliefkv_metadata.update(context_epoch=1, parent_invocation_id="parent")
+    child.origin_input_ids = [1, 2]
+    # Actual tool response: ordinary <function=ls> tokens, a dedicated closer,
+    # then native EOS. The model did not emit the dedicated tool opener.
+    child.output_ids = {
+        "closer_only_tool": [
+            40, 3278, 4211, 279, 1565, 2386, 3317, 12195, 13681, 63, 729, 304,
+            1565, 3548, 21902, 7197, 28587, 5512, 11, 1077, 752, 13186, 279,
+            12542, 5944, 311, 3535, 1246, 3847, 525, 9768, 323, 1380, 419,
+            729, 1265, 387, 11537, 382, 27, 1688, 28, 4730, 397, 27, 16181,
+            81940, 397, 93381, 198, 522, 16181, 397, 522, 1688, 397, 151658, 151645,
+        ],
+        "opener_tool": [151657, 10, 151645],
+        "report": [10, 151645],
+    }[kind]
+    child.tokenizer = NS(decode=lambda *_args, **_kwargs: "Visible response.")
+    child.finished_reason = NS(to_json=lambda: {"type": "stop", "matched": 151645})
+    child.finished = lambda: True
+    runtime.on_events((event(
+        7, RuntimeEventKind.LLM_SUBMIT, invocation_id="child",
+        context_id="ctx-child", context_epoch=1, attributes={"request_id": "child"},
+    ),))
+    runtime.register_visible_request(child)
+    try:
+        runtime.on_batch_completed(NS(reqs=(child,)))
+        expected = kind == "report"
+        assert runtime._semantic_eos_proofs["child"] is expected
+        assert bool(runtime._eos_prefetch_keys) is expected
+        assert bool(runtime._final_stages) is expected
+        assert ("child" in runtime._decoded_tool_requests) is not expected
+    finally:
+        runtime.close()
+
+
 @pytest.mark.parametrize("prompt,outputs,expected", (
     ([98, 1, 99, 1], [10, 11], True),
     ([98, 1, 99, 1], [], False),

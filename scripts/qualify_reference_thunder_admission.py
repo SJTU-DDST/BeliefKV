@@ -54,8 +54,13 @@ def main():
         "tests/test_collecting_agent_pipeline_audit.py",
         "tests/test_audit_tool_reentry_service.py",
     ) if join_free or siblings else ()
+    extra_tests += ("tests/test_eos_join_prefetch.py",)
     if siblings:
-        extra_tests += ("tests/test_reference_sibling_coadmission.py",)
+        extra_tests += (
+            "tests/test_reference_sibling_coadmission.py",
+            "tests/test_reference_join_grant_audit.py",
+        )
+        paths.add("scripts/audit_reference_join_grants.py")
     paths.update(extra_tests)
     if join_free or siblings:
         paths.update((
@@ -72,6 +77,9 @@ def main():
     environment = {
         **os.environ, **prior["environment"],
         "CUDA_VISIBLE_DEVICES": "99999", "PYTHONHASHSEED": "21",
+        "BELIEFKV_CONTEXT_TOKENIZER_TEST": configuration["common_environment"].get(
+            "CONTEXT_TOKENIZER_PATH", configuration["common_environment"]["MODEL_PATH"],
+        ),
     }
     subprocess.run(command, cwd=ROOT, env=environment, check=True)
     previous, current = passed_cases(Path(prior["report"]["path"])), passed_cases(args.report)
@@ -109,7 +117,17 @@ def main():
         "observed_at": datetime.now(timezone.utc).isoformat(),
         "scope": "source_bound_cpu_full_with_reference_thunderagent_decay",
         "command": command,
-        "environment": {key: environment[key] for key in prior["environment"]},
+        "environment": {
+            key: environment[key]
+            for key in (*prior["environment"], "BELIEFKV_CONTEXT_TOKENIZER_TEST")
+        },
+        "context_tokenizer": {
+            "path": environment["BELIEFKV_CONTEXT_TOKENIZER_TEST"],
+            "files_sha256": {
+                name: sha256_file(Path(environment["BELIEFKV_CONTEXT_TOKENIZER_TEST"]) / name)
+                for name in ("tokenizer_config.json", "tokenizer.json")
+            },
+        },
         "report": {"path": str(args.report.resolve()), "sha256": sha256_file(args.report)},
         "source_manifest": {"path": str(args.sources.resolve()), "sha256": sha256_file(args.sources)},
         "previous_report": prior["report"],
