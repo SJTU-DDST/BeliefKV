@@ -85,3 +85,9 @@ are in`eligibility_snapshot_targeted.xml`. The32-program synthetic CPU cost
 fixture in`snapshot_cpu_cost.py/.json` measures status construction only:
 median10.691us andP99 13.734us, versus parent aggregate3.817/4.720us.
 These additions do not retroactively change the frozen V400b evidence.
+
+`eligibility_shared_cpu.xml`, its `.sources.json` and `.evidence.json`
+qualify this follow-up in one execution:3039 passing tests plus four passing
+subtests, no failures or skips, all3038 previous identities retained.
+The original reference attach, tick, completion, abort and observed-growth
+methods remain inherited unchanged; all three actual constructors are checked.
