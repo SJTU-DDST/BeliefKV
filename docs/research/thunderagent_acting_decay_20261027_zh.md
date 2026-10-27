@@ -80,3 +80,29 @@ V269 timing map、streaming、seed21、running/decode24、Device/Host
 只有获得相同完整工作量的 JCT 和吞吐，才能判断默认选项与此选项
 各自的表现。当前正确性差分和 CPU 回归不能代替这项实验，也不触发
 其他论文 baseline 的提前运行。
+
+## 独立排队记录
+
+实现和初次 CPU 证据已提交为 `2d744d18`。从该版本独立冻结后的
+application 为 `d6a4ce4c7bc11d6fc64b20edf45bb655907141b1`，
+native tree 仍为 `11b84f7c31986782be3fbe699bae2574ef092389`。
+准备目录再次一次性通过全部 2376 项及四个 subtest，没有失败或跳过；
+原生引擎除 canonical patch 路径外所有字段相同，四个已经 GPU
+检查的 sampler/receipt 模块字节也保持一致。
+
+- `experiments/reports/v294_thunder_acting_decay_prepared_shared_cpu_20261027.xml`
+- `experiments/reports/v294_thunder_acting_decay_prepared_sources_cpu_20261027.json`
+- `experiments/reports/v294_thunder_acting_decay_native_state_cpu_20261027.json`
+
+独立注册：
+`/home/longhao/experiment/ops/v295_locobench_network_thunder_decay_20261027.registration.json`。
+唯一 arm 是 `thunderagent_acting_decay`，端口 18653，显式依赖 V286。
+supervisor 4052961/start ticks 725763196 已独立确认存活，状态为
+`waiting_previous_causal_comparison`，没有 server、driver 或子进程。
+source plan、所有容量、common environment、V269 map、streaming 和
+3600 秒 client timeout 均逐项与 V286 相等，前置进程仍然存活且未满足
+释放条件。证明为
+`experiments/reports/v296_thunder_acting_decay_waiting_cpu_20261027.json`。
+
+这是有来源约束的 CPU 等待进程，没有开始新的 GPU 实验，也没有
+optional-decay 模型或吞吐/JCT 结果。当前 V286 保持原顺序不变。

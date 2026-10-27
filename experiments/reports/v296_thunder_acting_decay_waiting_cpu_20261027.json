@@ -1,0 +1,52 @@
+{
+  "observed_at": "2026-10-27T15:58:48.339168+08:00",
+  "registration": "/home/longhao/experiment/ops/v295_locobench_network_thunder_decay_20261027.registration.json",
+  "registration_sha256": "b989488c18d234c24b283dbd80fc6039d39a2c0c89f06e4c8f04ef10889c05aa",
+  "status": "waiting_previous_causal_comparison",
+  "watcher": {
+    "pid": 4052961,
+    "state": "S",
+    "ppid": 1,
+    "start_ticks": "725763196",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-causal-d6a4ce4c7bc1/scripts/run_causal_comparison.py",
+      "--watch",
+      "/home/longhao/experiment/ops/v295_locobench_network_thunder_decay_20261027.registration.json"
+    ]
+  },
+  "owned_children": [],
+  "predecessor_registration": "/home/longhao/experiment/ops/v286_locobench_network_join_admission_20261027.registration.json",
+  "predecessor_status": "running_thunderagent",
+  "predecessor_watcher": {
+    "pid": 4025266,
+    "state": "S",
+    "ppid": 1,
+    "start_ticks": "725518522",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-causal-1e8c8ca75eef/scripts/run_causal_comparison.py",
+      "--watch",
+      "/home/longhao/experiment/ops/v286_locobench_network_join_admission_20261027.registration.json"
+    ]
+  },
+  "predecessor_ready": false,
+  "order": [
+    "thunderagent_acting_decay"
+  ],
+  "application_commit": "d6a4ce4c7bc11d6fc64b20edf45bb655907141b1",
+  "engine_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+  "tool_timing_overlay_sha256": "fa75164726e37277772d181f3601f6eaf234d3e55d8503710bdc0fc966cca5be",
+  "same_complete_source_plan_and_capacities": true,
+  "same_common_reference_environment": true,
+  "same_stream_response_metrics": true,
+  "same_request_timeout_s": 3600.0,
+  "shared_cpu_passing_cases": 2376,
+  "shared_cpu_single_execution": true,
+  "shared_cpu_report": "/home/longhao/experiment/BeliefKV/experiments/reports/v294_thunder_acting_decay_prepared_shared_cpu_20261027.xml",
+  "shared_cpu_report_sha256": "41a8e486234bc2ab13b02e0426285316b0f8689600fe0897c13db476392ef62f",
+  "frozen_sources_and_inputs_unchanged": true,
+  "gpu_execution_started": false,
+  "performance_accepted": false,
+  "scope": "A source-qualified live CPU waiter behind actual V286 exit and complete cleanup. No optional-decay GPU/model/workload result is implied."
+}

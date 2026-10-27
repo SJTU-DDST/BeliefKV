@@ -1046,3 +1046,22 @@
   cycle; any independent decay GPU control must wait for its actual exit and
   complete cleanup and use the same V269 map, work, stream metrics, capacity
   and seed. See `docs/research/thunderagent_acting_decay_20261027_zh.md`.
+- V293 verifies V286 continuing beyond the old HTTP timeout: the unchanged
+  public force-resume counter reached two, and two exact completed requests
+  exceeded 1800 seconds from HTTP submit to response. It records 2900 sealed
+  exact completions while the original watcher/server/driver remain live.
+  This proves transport continuation, not complete-workflow performance;
+  preserve the V273 failure and all ordinary waiting.
+- V295 queues only the separately named `thunderagent_acting_decay` control
+  behind V286's actual complete exit and owned cleanup:
+  `ops/v295_locobench_network_thunder_decay_20261027.registration.json`,
+  application `d6a4ce4c7bc11d6fc64b20edf45bb655907141b1`, port 18653,
+  native tree `11b84f7c31986782be3fbe699bae2574ef092389`.
+  Prepared V294 independently passes all 2376 CPU cases plus four subtests
+  in one execution without failures/skips. V296 verifies supervisor
+  4052961/start `725763196` live in `waiting_previous_causal_comparison`,
+  no server/driver/owned children, predecessor still live, unchanged frozen
+  inputs, and exact equality of work, capacity, V269 map, streaming and 3600s
+  transport deadline. This CPU waiter is not a running optional-decay GPU
+  job or a performance result. Keep current V286 frozen and do not overlap
+  GPU experiments or advance other paper baselines before the shared gate.
