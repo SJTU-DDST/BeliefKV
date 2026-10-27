@@ -1,0 +1,558 @@
+{
+  "observed_at": "2026-10-27T15:23:26.944687+00:00",
+  "registration": "/home/longhao/experiment/ops/v378_locobench_fitting_lending_20261027.registration.json",
+  "registration_sha256": "29674ad9876687c4c9f45a431ca0280302866507d7d856b2094126a8a0f3fea6",
+  "code_commit": "83d7c3c2eb34d974a6475591ba7c88eeb7c60413",
+  "native_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+  "reused_control": "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.json",
+  "matching_common_fields": [
+    "source_arm",
+    "source_plan",
+    "token_source_sha256",
+    "source_capacity",
+    "source_server_parameters",
+    "workflow_ids",
+    "engine_tree",
+    "sampling_mode",
+    "stream_response_metrics",
+    "request_timeout_s",
+    "tool_timing_overlay"
+  ],
+  "live_processes": {
+    "watcher": {
+      "pid": 114948,
+      "state": "S",
+      "ppid": 1,
+      "start_ticks": "728439976",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-causal-83d7c3c2eb34/scripts/run_causal_comparison.py",
+        "--watch",
+        "/home/longhao/experiment/ops/v378_locobench_fitting_lending_20261027.registration.json"
+      ],
+      "nice": 0
+    },
+    "server": {
+      "pid": 115402,
+      "state": "S",
+      "ppid": 114948,
+      "start_ticks": "728442549",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+        "--served-model-name",
+        "Qwen3-Coder-30B-A3B-Instruct",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "18657",
+        "--dtype",
+        "bfloat16",
+        "--kv-cache-dtype",
+        "bfloat16",
+        "--tensor-parallel-size",
+        "1",
+        "--context-length",
+        "262144",
+        "--mem-fraction-static",
+        "0.94",
+        "--chunked-prefill-size",
+        "4096",
+        "--max-running-requests",
+        "24",
+        "--random-seed",
+        "21",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--enable-metrics",
+        "--enable-hierarchical-cache",
+        "--hicache-size",
+        "200",
+        "--hicache-write-policy",
+        "write_back",
+        "--hicache-io-backend",
+        "kernel",
+        "--hicache-mem-layout",
+        "page_first",
+        "--enable-session-radix-cache",
+        "--enable-custom-logit-processor",
+        "--max-total-tokens",
+        "805198",
+        "--enable-beliefkv-admission",
+        "--beliefkv-event-socket-path",
+        "/tmp/bkv-causal-18657.sock"
+      ],
+      "nice": 0
+    },
+    "driver": {
+      "pid": 116684,
+      "state": "R",
+      "ppid": 114948,
+      "start_ticks": "728457783",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-causal-83d7c3c2eb34/scripts/run_causal_gpu_replay.py",
+        "--source-arm",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_parallel_retry_source_20261026_v230/native_capture",
+        "--output-dir",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_fitting_lending_20261027_v378/full/replay",
+        "--base-url",
+        "http://127.0.0.1:18657",
+        "--request-timeout-s",
+        "3600.0",
+        "--stream-response-metrics",
+        "--tool-duration-overlay",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/v311_v230_categorized_network_timing_cpu_20261027.json",
+        "--event-socket",
+        "/tmp/bkv-causal-18657.sock"
+      ],
+      "nice": 0
+    }
+  },
+  "actual_owned_gpu_processes": [
+    {
+      "pid": 115750,
+      "state": "R",
+      "ppid": 115402,
+      "start_ticks": "728444000",
+      "argv": [
+        "sglang::scheduler"
+      ],
+      "nice": 0
+    }
+  ],
+  "observed_agent_admission": {
+    "policy": "thunderagent_retained_with_native_migration",
+    "strategy": "thunderagent_retained",
+    "identity": "invocation_id",
+    "future_information_used": false,
+    "native_capacity_authority_preserved": true,
+    "capacity_tokens": 805198,
+    "physical_capacity_tokens": 805198,
+    "kv_high_watermark": 1.0,
+    "growth_headroom_tokens": 0,
+    "pressure_pause_policy": "projected_release",
+    "planned_release_grants_capacity": false,
+    "pressure_plan_revalidation": "observed_budget_changes",
+    "logical_active_tokens": 805156,
+    "active_agents": 16,
+    "active_invocation_ids": [
+      "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root",
+      "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root",
+      "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root",
+      "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:root",
+      "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:root",
+      "deepagents-invocation:649818db6a48d692",
+      "deepagents-invocation:76aeaea63220d752",
+      "deepagents-invocation:2907efdaa9adfa07",
+      "deepagents-invocation:5055fd56f6f9d254",
+      "deepagents-invocation:15415946e8089cac",
+      "deepagents-invocation:c85f08691118384c",
+      "deepagents-invocation:3584b8fc30f4d76f",
+      "deepagents-invocation:94cdd6e0338ac17a",
+      "deepagents-invocation:3dffade2fc78cb6a",
+      "deepagents-invocation:a9fdd146083bc610",
+      "deepagents-invocation:c7ce1237385a8aa5"
+    ],
+    "blocked_active_invocation_ids": [],
+    "agents": 30,
+    "pending_requests": 16,
+    "recovery_consumer": null,
+    "capacity_semantics": "conservative_sum_of_observed_agent_contexts_plus_growth_buffer",
+    "streaming_context_accounting": "observed_native_outputs_at_new_agent_arrival_and_five_second_control",
+    "shared_prefixes_deduplicated": false,
+    "control_interval_ms": 5000.0,
+    "maintenance_interval_ms": 1000,
+    "restore_reservation_ms": 1500,
+    "restore_reservation_scope": "join_eos_only",
+    "ordinary_restore_reservation_ms": 0,
+    "coadmit_join_children": true,
+    "blocked_lending": "backed_demand_recall",
+    "lending_selection": "fit",
+    "join_dependency_admission": true,
+    "blocked_budget_proof": "observed_demand",
+    "blocked_lending_requires_complete_host_checkpoint": false,
+    "blocked_lending_grants_physical_capacity": false,
+    "active_agent_budgets": [
+      {
+        "invocation_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root",
+        "tokens": 115366,
+        "buffer_tokens": 100,
+        "pending": true,
+        "in_flight": true,
+        "blocked": null,
+        "marked_for_pause": false
+      },
+      {
+        "invocation_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root",
+        "tokens": 117515,
+        "buffer_tokens": 100,
+        "pending": true,
+        "in_flight": true,
+        "blocked": null,
+        "marked_for_pause": false
+      },
+      {
+        "invocation_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root",
+        "tokens": 118429,
+        "buffer_tokens": 100,
+        "pending": true,
+        "in_flight": true,
+        "blocked": null,
+        "marked_for_pause": false
+      },
+      {
+        "invocation_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:root",
+        "tokens": 131503,
+        "buffer_tokens": 100,
+        "pending": true,
+        "in_flight": true,
+        "blocked": null,
+        "marked_for_pause": false
+      },
+      {
+        "invocation_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:root",
+        "tokens": 129479,
+        "buffer_tokens": 100,
+        "pending": true,
+        "in_flight": true,
+        "blocked": null,
+        "marked_for_pause": false
+      },
+      {
+        "invocation_id": "deepagents-invocation:649818db6a48d692",
+        "tokens": 28064,
+        "buffer_tokens": 100,
+        "pending": true,
+        "in_flight": true,
+        "blocked": null,
+        "marked_for_pause": false
+      },
+      {
+        "invocation_id": "deepagents-invocation:76aeaea63220d752",
+        "tokens": 30746,
+        "buffer_tokens": 100,
+        "pending": true,
+        "in_flight": true,
+        "blocked": null,
+        "marked_for_pause": false
+      },
+      {
+        "invocation_id": "deepagents-invocation:2907efdaa9adfa07",
+        "tokens": 21031,
+        "buffer_tokens": 100,
+        "pending": false,
+        "in_flight": false,
+        "blocked": null,
+        "marked_for_pause": false
+      },
+      {
+        "invocation_id": "deepagents-invocation:5055fd56f6f9d254",
+        "tokens": 10865,
+        "buffer_tokens": 100,
+        "pending": true,
+        "in_flight": true,
+        "blocked": null,
+        "marked_for_pause": false
+      },
+      {
+        "invocation_id": "deepagents-invocation:15415946e8089cac",
+        "tokens": 15172,
+        "buffer_tokens": 100,
+        "pending": true,
+        "in_flight": true,
+        "blocked": null,
+        "marked_for_pause": false
+      },
+      {
+        "invocation_id": "deepagents-invocation:c85f08691118384c",
+        "tokens": 12898,
+        "buffer_tokens": 100,
+        "pending": true,
+        "in_flight": true,
+        "blocked": null,
+        "marked_for_pause": false
+      },
+      {
+        "invocation_id": "deepagents-invocation:3584b8fc30f4d76f",
+        "tokens": 8073,
+        "buffer_tokens": 100,
+        "pending": true,
+        "in_flight": true,
+        "blocked": null,
+        "marked_for_pause": false
+      },
+      {
+        "invocation_id": "deepagents-invocation:94cdd6e0338ac17a",
+        "tokens": 18399,
+        "buffer_tokens": 100,
+        "pending": true,
+        "in_flight": true,
+        "blocked": null,
+        "marked_for_pause": false
+      },
+      {
+        "invocation_id": "deepagents-invocation:3dffade2fc78cb6a",
+        "tokens": 18947,
+        "buffer_tokens": 100,
+        "pending": true,
+        "in_flight": true,
+        "blocked": null,
+        "marked_for_pause": false
+      },
+      {
+        "invocation_id": "deepagents-invocation:a9fdd146083bc610",
+        "tokens": 14472,
+        "buffer_tokens": 100,
+        "pending": true,
+        "in_flight": true,
+        "blocked": null,
+        "marked_for_pause": false
+      },
+      {
+        "invocation_id": "deepagents-invocation:c7ce1237385a8aa5",
+        "tokens": 12597,
+        "buffer_tokens": 100,
+        "pending": true,
+        "in_flight": true,
+        "blocked": null,
+        "marked_for_pause": false
+      }
+    ],
+    "workflow_entry_min_ready_agents": 0,
+    "workflow_entry_scope": "unstarted_root_workflow_only",
+    "workflow_entry_started_workflows": 0,
+    "join_loan_recall": true,
+    "recall_selection": "cold_fit",
+    "tool_loan_return": false,
+    "tool_loan_return_boundary": "matched_all_tools_returned;submitted_successor;nonrunning_borrower",
+    "tool_loan_return_priority": "below_join;recorded_lenders_only",
+    "join_loan_scope": "logical_admissions_during_open_blocked_lending_period",
+    "join_loan_recall_boundary": "submitted_join_successor;nonrunning_borrower",
+    "join_loan_borrowers": {
+      "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root": [
+        "deepagents-invocation:15415946e8089cac",
+        "deepagents-invocation:2907efdaa9adfa07",
+        "deepagents-invocation:3584b8fc30f4d76f",
+        "deepagents-invocation:3dffade2fc78cb6a",
+        "deepagents-invocation:5055fd56f6f9d254",
+        "deepagents-invocation:76aeaea63220d752",
+        "deepagents-invocation:94cdd6e0338ac17a",
+        "deepagents-invocation:a9fdd146083bc610",
+        "deepagents-invocation:c7ce1237385a8aa5",
+        "deepagents-invocation:c85f08691118384c",
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:root",
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root",
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root",
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:root"
+      ],
+      "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1:root": [
+        "deepagents-invocation:15415946e8089cac",
+        "deepagents-invocation:2907efdaa9adfa07",
+        "deepagents-invocation:3584b8fc30f4d76f",
+        "deepagents-invocation:3dffade2fc78cb6a",
+        "deepagents-invocation:5055fd56f6f9d254",
+        "deepagents-invocation:94cdd6e0338ac17a",
+        "deepagents-invocation:a9fdd146083bc610",
+        "deepagents-invocation:c7ce1237385a8aa5",
+        "deepagents-invocation:c85f08691118384c",
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:root",
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root",
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root",
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:root"
+      ],
+      "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70:root": [
+        "deepagents-invocation:15415946e8089cac",
+        "deepagents-invocation:2907efdaa9adfa07",
+        "deepagents-invocation:3584b8fc30f4d76f",
+        "deepagents-invocation:3dffade2fc78cb6a",
+        "deepagents-invocation:5055fd56f6f9d254",
+        "deepagents-invocation:94cdd6e0338ac17a",
+        "deepagents-invocation:a9fdd146083bc610",
+        "deepagents-invocation:c7ce1237385a8aa5",
+        "deepagents-invocation:c85f08691118384c",
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:root",
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root",
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root",
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:root"
+      ],
+      "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e:root": [
+        "deepagents-invocation:15415946e8089cac",
+        "deepagents-invocation:2907efdaa9adfa07",
+        "deepagents-invocation:3584b8fc30f4d76f",
+        "deepagents-invocation:3dffade2fc78cb6a",
+        "deepagents-invocation:5055fd56f6f9d254",
+        "deepagents-invocation:94cdd6e0338ac17a",
+        "deepagents-invocation:a9fdd146083bc610",
+        "deepagents-invocation:c7ce1237385a8aa5",
+        "deepagents-invocation:c85f08691118384c",
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:root",
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root",
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:root"
+      ],
+      "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709:root": [
+        "deepagents-invocation:15415946e8089cac",
+        "deepagents-invocation:3584b8fc30f4d76f",
+        "deepagents-invocation:3dffade2fc78cb6a",
+        "deepagents-invocation:94cdd6e0338ac17a",
+        "deepagents-invocation:a9fdd146083bc610",
+        "deepagents-invocation:c7ce1237385a8aa5",
+        "deepagents-invocation:c85f08691118384c",
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:root",
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root",
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:root"
+      ],
+      "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46:root": [
+        "deepagents-invocation:3584b8fc30f4d76f",
+        "deepagents-invocation:3dffade2fc78cb6a",
+        "deepagents-invocation:94cdd6e0338ac17a",
+        "deepagents-invocation:a9fdd146083bc610",
+        "deepagents-invocation:c7ce1237385a8aa5",
+        "deepagents-invocation:c85f08691118384c",
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:root",
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root",
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:root"
+      ],
+      "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a:root": [
+        "deepagents-invocation:3584b8fc30f4d76f",
+        "deepagents-invocation:3dffade2fc78cb6a",
+        "deepagents-invocation:94cdd6e0338ac17a",
+        "deepagents-invocation:a9fdd146083bc610",
+        "deepagents-invocation:c7ce1237385a8aa5",
+        "deepagents-invocation:c85f08691118384c",
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:root",
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root",
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:root"
+      ],
+      "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:root": [
+        "deepagents-invocation:3dffade2fc78cb6a",
+        "deepagents-invocation:94cdd6e0338ac17a",
+        "deepagents-invocation:a9fdd146083bc610",
+        "deepagents-invocation:c7ce1237385a8aa5",
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:root",
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root",
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:root"
+      ],
+      "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055:root": [
+        "deepagents-invocation:3dffade2fc78cb6a",
+        "deepagents-invocation:a9fdd146083bc610",
+        "deepagents-invocation:c7ce1237385a8aa5",
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:root",
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root"
+      ],
+      "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root": [
+        "deepagents-invocation:3dffade2fc78cb6a",
+        "deepagents-invocation:a9fdd146083bc610",
+        "deepagents-invocation:c7ce1237385a8aa5",
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:root"
+      ],
+      "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root": [
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:root"
+      ],
+      "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1:root": [
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:root"
+      ]
+    },
+    "blocked_lending_max_probes_per_tick": 8,
+    "blocked_lending_max_path_nodes": 0,
+    "blocked_lending_max_admissions_per_tick": 1,
+    "tool_warming_eligibility": "existing_active_tool_wait_only_no_new_reservation",
+    "eligibility_starvation_seconds": 1800.0,
+    "eligibility_release": "observed_blocking_demand_terminal_growth_or_bounded_starvation",
+    "blocked_agents_retain_eligibility": true,
+    "counts": {
+      "control_ticks": 260,
+      "streaming_progress_rounds": 84,
+      "registered": 415,
+      "streaming_progress_checks": 788,
+      "streaming_progress_updates": 438,
+      "completed": 399,
+      "observed_demand_lender_proofs": 63
+    },
+    "policy_counts": {
+      "control_ticks": 55,
+      "activated": 37,
+      "pressure_planned_pauses": 1,
+      "pressure_projected_shortfall_tokens_last": 0,
+      "paused": 21,
+      "pressure_paused_acting": 2,
+      "yield:join": 12,
+      "yield:long_tool": 16,
+      "backed_wait_free_admitted": 9,
+      "yield:elapsed_tool": 31,
+      "backed_wait_probes": 63,
+      "capacity_switch:backed_wait": 18,
+      "backed_wait_admitted": 16
+    },
+    "workflow_service": null
+  },
+  "actual_fitting_decisions_verified": 16,
+  "first_fitting_decision": {
+    "event": "agent_blocked_budget_lent",
+    "ts_ms": 1793114451503.371,
+    "target_invocation_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e:root",
+    "target_tokens": 131729,
+    "target_join_rank": 2,
+    "available_tokens_before": 56843,
+    "donor_invocation_ids": [
+      "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1:root"
+    ],
+    "donor_budget_tokens": 80276,
+    "buffer_tokens_per_agent": 100,
+    "lending_selection": "fit",
+    "required_budget_tokens": 74986,
+    "eligible_donors": [
+      {
+        "invocation_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root",
+        "budget_tokens": 116776,
+        "blocked": "join"
+      },
+      {
+        "invocation_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root",
+        "budget_tokens": 112882,
+        "blocked": "elapsed_tool"
+      },
+      {
+        "invocation_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1:root",
+        "budget_tokens": 80276,
+        "blocked": "elapsed_tool"
+      }
+    ],
+    "policy_monotonic_seconds": 7284714.603789166,
+    "backing_proof": "observed_demand",
+    "native_capacity_authority_preserved": true,
+    "semantics": "Executed logical budget handover; not physical eviction or freed-page evidence."
+  },
+  "exact_completed_prefix": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v381_v378_collecting_exact_work_20261027.json",
+    "sha256": "4b337d8c2b32d4c4a122392113dea2510270cc76132e0e943e3d07dd8b97571d",
+    "requests": 405
+  },
+  "decision_input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_fitting_lending_20261027_v378/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 5236236,
+      "complete_prefix_sha256": "ddfda17194e5e23ec77ac481240df485364d49932112a4875021dade25184200",
+      "first_read_limit_bytes": 5236236
+    }
+  },
+  "auditor_sha256": "c8bcc0452412deea035add39649cd7de6ce3c5a380d28319a33d17e263f14631",
+  "scope": [
+    "Actual process identity/ownership, matched common conditions and independently checked executed logical choices.",
+    "Recorded eligible-donor proof is not an independent native physical ownership or freed-page proof.",
+    "A correct complete prefix is not complete-work correctness or performance acceptance.",
+    "The run stays frozen; no normal tail, future timer or source work is changed."
+  ],
+  "performance_accepted": false,
+  "all_baseline_goal_complete": false
+}

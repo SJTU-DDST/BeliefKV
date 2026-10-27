@@ -1412,3 +1412,18 @@
   full controller or GPU performance evidence. Freeze the qualified candidate,
   recheck resources/hold, run only Full and reuse complete V345. See
   `docs/design/fitting_blocked_agent_lending_20261027_zh.md`.
+- V378 independently registers only fitting Full at commit `83d7c3c2eb34`,
+  port 18657, with the unchanged native tree, V230 complete work and V311
+  timing: `ops/v378_locobench_fitting_lending_20261027.registration.json`.
+  V379 verifies actual watcher 114948/server 115402/GPU scheduler 115750/
+  driver 116684 identities, ownership and nice0. The actual runtime selects
+  fitting plus observed-demand proof and pressure-mark revalidation.
+  Sixteen executed fitting decisions independently attain the minimum proven
+  budget/owner-count objective; V381 seals 405 exact complete requests against
+  V330's full original work and stopping. These are prefixes, not full
+  correctness or performance acceptance. Keep this run frozen, do not overlap
+  GPU work or restart from a stale status. V378 includes the later V370 fix
+  absent in V364, so it is not a one-module ablation or repeated V364 trial.
+  Reuse complete V345. The verified nice19 CPU waiter 117226 generates V380
+  matched plots only after complete success and actual owned exit; no GPU
+  follow-up is queued. See `docs/research/v378_fitting_lending_start_20261027_zh.md`.
