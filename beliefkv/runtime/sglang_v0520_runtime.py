@@ -987,7 +987,7 @@ class NativeAdmissionRuntime:
             raise ValueError("JOIN-dependent admission requires retained agent eligibility")
         self.agent_join_dependency_admission = join_admission == "1"
         budget_proof = os.environ.get("BELIEFKV_AGENT_BLOCKED_BUDGET_PROOF", "predicted_pressure")
-        if budget_proof not in ("predicted_pressure", "observed_blocked") or (
+        if budget_proof not in ("predicted_pressure", "observed_blocked", "observed_demand") or (
             budget_proof != "predicted_pressure" and blocked_lending == "idle"
         ):
             raise ValueError("observed blocked budget proof requires backed lending")

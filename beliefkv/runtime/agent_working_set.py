@@ -32,7 +32,9 @@ class AgentAdmission:
         ):
             raise ValueError("JOIN-dependent admission requires retained agent eligibility")
         self.join_dependency_admission = join_dependency_admission
-        if blocked_budget_proof not in ("predicted_pressure", "observed_blocked") or (
+        if blocked_budget_proof not in (
+            "predicted_pressure", "observed_blocked", "observed_demand",
+        ) or (
             blocked_budget_proof != "predicted_pressure" and blocked_lending == "idle"
         ):
             raise ValueError("observed blocked budget proof requires backed lending")
@@ -381,21 +383,59 @@ class AgentAdmission:
             running = len(getattr(self.runtime._native_running_batch, "reqs", ()))
             if ceiling is None or running < ceiling:
                 self.policy.lend_backed_blocked(
-                    self._can_lend_blocked, now=timestamp,
+                    lambda invocation: self._can_lend_blocked(invocation, now=timestamp),
+                    now=timestamp,
                 )
 
-    def _can_lend_blocked(self, invocation):
+    def _can_lend_blocked(self, invocation, *, now=None):
         item = self.policy.agents.get(invocation)
         key = self.latest.get(invocation)
-        return bool(
+        if not (
             item is not None and item.active and item.blocked and not item.pending
             and not item.in_flight and key is not None
-            and (
-                self.runtime._agent_blocked_prefix_backed(key, observed_blocked=True)
-                if self.blocked_budget_proof == "observed_blocked"
-                else self.runtime._agent_blocked_prefix_backed(key)
-            )
+        ):
+            return False
+        if self.blocked_budget_proof == "observed_demand":
+            return self._observed_demand_lender(key, now=now)
+        return (
+            self.runtime._agent_blocked_prefix_backed(key, observed_blocked=True)
+            if self.blocked_budget_proof == "observed_blocked"
+            else self.runtime._agent_blocked_prefix_backed(key)
         )
+
+    def _observed_demand_lender(self, key, *, now=None):
+        runtime = self.runtime
+        if not runtime._agent_observed_blocked_budget_key(key):
+            return False
+        context = runtime.graph.contexts.get(key.context_id)
+        tracker = getattr(runtime._native_cache, "session_refs", None)
+        if (
+            context is None or context.epoch != key.context_epoch
+            or context.workflow_id != key.root_workflow_id
+            or tracker is None or key.session_id is None
+            or tracker._session_generations.get(key.session_id) != key.session_generation
+            or key.session_id in tracker._closed_session_ids
+            or self.holds_restore(key)
+            or runtime._tool_ticket is not None and runtime._tool_ticket.key == key
+            or key in runtime._tool_inflight_tickets
+            or any(
+                lease.key.context_id == key.context_id
+                for lease in runtime._prefetch_service_leases.values()
+            )
+        ):
+            return False
+        invocation = runtime.graph.invocations[key.invocation_id]
+        if invocation.state is InvocationState.WAIT_TOOL:
+            waiting = self.tool_waits.get(key.invocation_id)
+            if not waiting:
+                return False
+            timestamp = time.monotonic() if now is None else now
+            if timestamp - min(waiting.values()) < 1. and not runtime._predicted_long_tool_wait(key):
+                return False
+        # Only logical eligibility is lent. Native demand allocation still has
+        # to back, evict and restore real pages before admitting the borrower.
+        self.counts["observed_demand_lender_proofs"] += 1
+        return True
 
     def claim_restore(self, key, *, source):
         if self.policy is None:
@@ -539,6 +579,10 @@ class AgentAdmission:
             "blocked_lending": self.blocked_lending,
             "join_dependency_admission": self.join_dependency_admission,
             "blocked_budget_proof": self.blocked_budget_proof,
+            "blocked_lending_requires_complete_host_checkpoint": (
+                self.blocked_budget_proof != "observed_demand"
+            ),
+            "blocked_lending_grants_physical_capacity": False,
             "active_agent_budgets": [
                 {
                     "invocation_id": item.identity, "tokens": item.tokens,
@@ -561,7 +605,9 @@ class AgentAdmission:
                 for lender, borrowers in getattr(policy, "loan_borrowers", {}).items()
             },
             "blocked_lending_max_probes_per_tick": 8,
-            "blocked_lending_max_path_nodes": 64,
+            "blocked_lending_max_path_nodes": (
+                0 if self.blocked_budget_proof == "observed_demand" else 64
+            ),
             "blocked_lending_max_admissions_per_tick": 1,
             "tool_warming_eligibility": (
                 "existing_active_tool_wait_only_no_new_reservation"
@@ -573,6 +619,8 @@ class AgentAdmission:
                 (
                     "observed_growth_terminal_idle_or_workflow_service_handover"
                     if self.strategy == "thunderagent_workflow" else
+                    "observed_blocking_demand_terminal_growth_or_bounded_starvation"
+                    if self.blocked_budget_proof == "observed_demand" else
                     "observed_backed_blocking_demand_terminal_growth_or_bounded_starvation"
                     if self.blocked_lending in ("backed_demand", "backed_demand_recall") else
                     "observed_growth_terminal_no_eligible_work_or_bounded_starvation"

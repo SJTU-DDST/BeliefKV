@@ -1166,3 +1166,22 @@
   ready compute to exercise backed lending rather than the existing idle path.
   Native copy/event/Host-index stand-ins remain explicit. This change registers
   no new GPU comparison and proves neither whole-model correctness nor performance.
+- The separately declared demand-lending candidate uses
+  `configs/migration/predictive_demand_lending_20261027.json` and
+  `AGENT_BLOCKED_BUDGET_PROOF=observed_demand`. Logical donor proof requires
+  actual blocking, current context/epoch/native session identity, no compute or
+  recovery protection, and an elapsed one-second tool wait unless current long
+  prediction permits earlier. It does not require a complete Host checkpoint
+  and does not grant physical capacity: native demand allocation, write-back,
+  locks and H2D remain authoritative. Do not weaken the predictive physical
+  `demand_cost` threshold or grant ordinary prefetch ready-peer donor rights.
+  Preserve old proof modes, V323/V324 failed fixture evidence and all V321
+  shared CPU cases. Future comparisons use the same V311 categorized map for
+  Full and optional-decay ThunderAgent; V286/V295 are V269 historical controls.
+- V325 passes all 2916 shared CPU cases and four subtests in one execution,
+  without failures/skips, retaining V321's 2890 identities and adding 26.
+  V326 binds sources and actual constructor configuration: Full uses
+  observed-demand lending, unchanged demand-cost predictive physical offload
+  and the pinned TraceLab prior; both ThunderAgent arms inherit none of these.
+  CPU native allocator tests prove logical lending grants no free Device pages.
+  Whole-model correctness and matched V311 JCT/throughput remain pending.

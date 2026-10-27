@@ -140,7 +140,7 @@ def arm_environment(
     budget_proof = common.get(
         "BELIEFKV_AGENT_BLOCKED_BUDGET_PROOF", common.get("AGENT_BLOCKED_BUDGET_PROOF", "predicted_pressure"),
     )
-    if budget_proof not in ("predicted_pressure", "observed_blocked") or (
+    if budget_proof not in ("predicted_pressure", "observed_blocked", "observed_demand") or (
         mode == "full" and budget_proof != "predicted_pressure" and blocked_lending == "idle"
     ):
         raise ValueError("observed blocked budget proof requires backed lending")

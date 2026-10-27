@@ -43,6 +43,7 @@ def qualify(args):
         "tests/test_online_workload_timing.py",
         "tests/test_idle_full_prepare_pipeline.py",
         "tests/test_sglang_v0520_runtime.py",
+        "tests/test_demand_agent_lending.py",
     }
     if not all((ROOT / path).is_file() for path in paths):
         raise ValueError("previous CPU modules cannot be located")
@@ -82,6 +83,9 @@ def qualify(args):
             or verified["tool_offload_policy"] != ("demand_cost" if arm == "full" else "off")
             or verified["tool_timing_prior_sha256"] != (
                 common["BELIEFKV_TOOL_TIMING_PRIOR_SHA256"] if arm == "full" else None
+            )
+            or verified["agent_blocked_budget_proof"] != (
+                common["AGENT_BLOCKED_BUDGET_PROOF"] if arm == "full" else "predicted_pressure"
             )
         ):
             raise ValueError("adaptive tool policy leaked into a paper arm or failed to load")
