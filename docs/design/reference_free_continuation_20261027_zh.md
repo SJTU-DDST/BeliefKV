@@ -80,3 +80,22 @@ GPU 实验。通过后只运行新的完整 Full，复用 V345 的相同请求�
 依赖、V311 工具时间、engine、容量、流式协议和种子。完整 JCT、全程
 吞吐、资格等待、迁移/重算、真实授权消费及控制开销共同决定是否保留
 此候选。将等待从 inactive 移至 active 不构成性能改善。
+
+## 完整共享资格
+
+同目录 `shared_cpu.xml` 在一次执行中通过 3291 项及四个子测试，
+无失败或跳过，保留前一轮全部 3247 项身份并增加 44 项。新增部分还
+覆盖普通 continuation 授权日志：仅允许一个当前请求，JOIN identity
+可以为空，原生 context/epoch、session、时钟和实际服务证据保持原有
+严格检查，不将它当作尚未提交的 parent 后继。
+
+`shared_cpu.sources.json` 和 `shared_cpu.evidence.json` 绑定了测试、
+候选配置及代码摘要。三种实际 runtime 构造器均通过，Full 新开关为
+真，原始和工具衰减版 ThunderAgent 均为假。原始 ReferenceThunderAdmission
+的参考方法继承关系保持不变，新子类只扩展声明的事件入口。
+
+本轮配置与上一轮 sibling 配置的 common_environment 仅相差
+`AGENT_FREE_CONTINUATION_ADMISSION` 及其 BELIEFKV 前缀形式，源轨迹、
+工具 overlay、控制复用及执行顺序完全相同。native 11b84f7c3198
+的 726 项源码绑定证据也已重新核对。此时仍未登记 GPU 实验，
+共享 CPU 成功不构成 GPU 或完整性能证明。

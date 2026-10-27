@@ -18,7 +18,10 @@ from scripts.audit_native_system_costs import finite_number
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 
 
-GRANTS = {"agent_join_free_capacity_admitted", "agent_join_siblings_coadmitted"}
+GRANTS = {
+    "agent_join_free_capacity_admitted", "agent_join_siblings_coadmitted",
+    "agent_continuation_free_capacity_admitted",
+}
 
 
 def nonnegative_integer(value):
@@ -27,13 +30,20 @@ def nonnegative_integer(value):
 
 def validate_grant(row):
     programs = row.get("programs")
+    continuation = row.get("event") == "agent_continuation_free_capacity_admitted"
+    join_id = row.get("join_id")
     if (
         row.get("event") not in GRANTS or not finite_number(row.get("ts_ms"))
         or not finite_number(row.get("monotonic_s"))
         or row["ts_ms"] < 0 or row["monotonic_s"] < 0
-        or not isinstance(row.get("join_id"), str) or not row["join_id"]
+        or not (
+            continuation and join_id is None
+            or type(join_id) is str and bool(join_id)
+        )
         or type(programs) is not list or not 1 <= len(programs) <= 24
-        or row["event"] == "agent_join_free_capacity_admitted" and len(programs) != 1
+        or row["event"] in (
+            "agent_join_free_capacity_admitted", "agent_continuation_free_capacity_admitted",
+        ) and len(programs) != 1
         or row.get("native_capacity_authority_preserved") is not True
         or any(not nonnegative_integer(row.get(name)) for name in (
             "required_tokens", "remaining_before_tokens", "remaining_after_tokens",

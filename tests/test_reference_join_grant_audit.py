@@ -100,6 +100,39 @@ def test_group_service_requires_each_completed_current_native_session():
     assert observed["summary"]["verified_reused_copy_bytes_after_grant"] is None
 
 
+@pytest.mark.parametrize("join_id", (None, "join"))
+def test_submitted_continuation_grant_binds_its_exact_current_request(join_id):
+    row = grant()
+    row["event"] = "agent_continuation_free_capacity_admitted"
+    row["join_id"] = join_id
+    event = submit(row["programs"][0]["key"])
+    observed = inspect(
+        [row], replay(), [event], [receipt(event)], [service(1, event, start=130.)],
+    )
+    assert observed["summary"]["program_statuses"] == {"service_after_grant_verified": 1}
+    assert observed["programs"][0]["service_request_id"] == event["attributes"]["request_id"]
+    assert observed["programs"][0]["parent_successor"] is False
+
+
+@pytest.mark.parametrize("change", ("two_programs", "empty_join", "foreign_epoch", "foreign_session"))
+def test_continuation_grants_do_not_relax_group_or_native_identity_proofs(change):
+    row = grant(names=("first", "second") if change == "two_programs" else ("child",))
+    row["event"] = "agent_continuation_free_capacity_admitted"
+    row["join_id"] = "" if change == "empty_join" else None
+    if change in ("two_programs", "empty_join"):
+        with pytest.raises(ValueError):
+            validate_grant(row)
+        return
+    event = submit(row["programs"][0]["key"])
+    completed, sample = receipt(event), service(1, event, start=130.)
+    if change == "foreign_epoch":
+        sample["request_samples"][0]["context_epoch"] += 1
+    else:
+        completed["native_receipt"]["session_id"] = "other"
+    observed = inspect([row], replay(), [event], [completed], [sample])
+    assert "service_after_grant_verified" not in observed["summary"]["program_statuses"]
+
+
 @pytest.mark.parametrize("change", ("session", "generation", "clock", "epoch", "no_receipt", "request_id"))
 def test_unproven_native_identity_is_never_credited_as_verified_service(change):
     row = grant()

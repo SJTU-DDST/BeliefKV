@@ -1838,3 +1838,16 @@
   isolation checks remain pending. No GPU run is registered. See
   docs/design/reference_free_continuation_20261027_zh.md; keep the global goal
   incomplete and reuse completeV345 only after qualification/current guards.
+- The free-continuation candidate now passes one source-bound shared execution
+  of3291 cases plus4 subtests without failures/skips, preserving all3247
+  previous identities and adding44. The three actual constructor preflights
+  verify Full enablement and both ThunderAgent controls disabled. Shared
+  sources/evidence/XML are under reference_free_continuation_20261027.
+  The grant auditor now recognizes the single exact current continuation
+  request with optional JOIN identity, preserving native session/clock/epoch
+  service proof. The candidate common environment changes only its two new
+  flag forms relative to the previous sibling declaration; source/timing/
+  control/order remain identical. Native11b84f7c3198 and the726-case binding
+  were revalidated. Freeze committed sources and check the current reservation,
+  actual previous exit, free GPU/port before a Full-only run; reuseV345.
+  No new GPU run has yet been registered and performance acceptance is false.
