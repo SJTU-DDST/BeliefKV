@@ -993,3 +993,17 @@
   checks. Native CPU tree/allocator fixtures retain copy/event stand-ins. This
   candidate has no GPU/performance acceptance yet; future Full must match V273's
   exact V269 overlay, streaming metrics, engine, capacities and seed21.
+- V273 stopped with HTTP `ReadTimeout` at 2026-10-27 14:52 Asia/Shanghai,
+  preserving 2430 exact completed requests of 3674. Its last pending capacity
+  sample records 1799.648 seconds; the driver's default 1800-second read
+  timeout races the public router's 1800-second force-resume escape and the
+  adapter's five-second control interval. The server was still serving other
+  work before cancellation; do not call this a complete baseline or JCT result.
+  Owned cleanup and actual supervisor/server/driver exit are verified in V283.
+  Keep the original frozen failed run and registration unchanged.
+- New causal comparisons explicitly declare a common 3600-second client request
+  timeout and pass it to every arm. Old registrations retain their 1800-second
+  default. This is a transport-only repair: preserve the author's force-resume
+  policy, full queued time, exact tokens, source graph and tool map. Requalify
+  and register a distinct complete ThunderAgent-first retry; do not resume the
+  partial population or continue into Full after a failed baseline.

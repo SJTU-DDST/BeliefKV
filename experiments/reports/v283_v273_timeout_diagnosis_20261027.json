@@ -1,0 +1,206 @@
+{
+  "observed_at": "2026-10-27T15:01:54.868677+08:00",
+  "registration": "/home/longhao/experiment/ops/v273_locobench_network_thunderagent_20261027.registration.json",
+  "registration_sha256": "f748be1e22e8b71e32aaa75f7b6af3a20dc842d9cd0ea8933f81ceacca40cefa",
+  "state": "/home/longhao/experiment/ops/v273_locobench_network_thunderagent_20261027.registration.state.json",
+  "state_sha256": "f2c934ba0474a3789728de50d83d254b6742519497cea3575e07f226f3cabe18",
+  "original_exit_code": 1,
+  "driver_error": "httpx.ReadTimeout",
+  "sealed_exact_completed_requests": 2430,
+  "expected_complete_requests": 3674,
+  "last_waiting_baseline": {
+    "policy": "thunderagent_public_single_backend",
+    "author_commit": "7ddc8610270e56d3b109eed8796b3a4360fc67c9",
+    "program_identity": "invocation_id",
+    "future_information_used": false,
+    "native_capacity_authority_preserved": true,
+    "scope": "single_backend_exact_token_ingress_policy_adaptation",
+    "streaming_context_accounting": "observed_native_outputs_at_arrival_and_five_second_control",
+    "control_capacity_snapshot": {
+      "remaining_capacity_tokens": 55293,
+      "active_acting_programs": 7,
+      "active_reasoning_programs": 2,
+      "paused_pending_programs": 3,
+      "capacity_blocked_pending_programs": 3,
+      "oldest_pending_seconds": 1799.64848533459
+    },
+    "capacity_tokens": 805198,
+    "programs": 12,
+    "active_programs": 9,
+    "pending_requests": 5,
+    "counts": {
+      "control_ticks": 368,
+      "resumed": 129,
+      "registered": 2435,
+      "streaming_progress_checks": 1336,
+      "streaming_progress_updates": 1043,
+      "deferred_selections": 18920538,
+      "completed": 2430,
+      "programs_retired": 70
+    }
+  },
+  "last_waiting_observed_wall_ms": 1793083952769.0295,
+  "last_waiting_observed_monotonic_ms": 7254215869.607754,
+  "client_request_read_timeout_s": 1800.0,
+  "author_force_resume_s": 1800.0,
+  "baseline_control_interval_s": 5.0,
+  "replacement_common_client_request_timeout_s": 3600.0,
+  "replacement_changes_author_policy": false,
+  "frozen_sources_and_external_inputs_unchanged": true,
+  "processes": {
+    "watcher": {
+      "recorded_identity": {
+        "pid": 3988473,
+        "state": "R",
+        "ppid": 1,
+        "start_ticks": "725219729",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/.worktrees/beliefkv-causal-29396b2f53a0/scripts/run_causal_comparison.py",
+          "--watch",
+          "/home/longhao/experiment/ops/v273_locobench_network_thunderagent_20261027.registration.json"
+        ]
+      },
+      "current": null,
+      "old_identity_alive": false
+    },
+    "server": {
+      "recorded_identity": {
+        "pid": 3988975,
+        "state": "R",
+        "ppid": 3988473,
+        "start_ticks": "725222405",
+        "argv": [
+          "bash",
+          "/home/longhao/experiment/.worktrees/beliefkv-causal-29396b2f53a0/scripts/launch_qwen35_native_v0520.sh",
+          "--enable-custom-logit-processor",
+          "--max-total-tokens",
+          "805198",
+          "--enable-beliefkv-admission",
+          "--beliefkv-event-socket-path",
+          "/tmp/bkv-causal-18651.sock"
+        ]
+      },
+      "current": null,
+      "old_identity_alive": false
+    },
+    "driver": {
+      "recorded_identity": {
+        "pid": 3990697,
+        "state": "R",
+        "ppid": 3988473,
+        "start_ticks": "725237362",
+        "argv": []
+      },
+      "current": null,
+      "old_identity_alive": false
+    }
+  },
+  "cleanup": {
+    "reason": "causal_comparison_failure_or_stop",
+    "started_at": "2026-10-27T14:52:41.803542+08:00",
+    "identities": [
+      {
+        "pid": 3988975,
+        "state": "R",
+        "ppid": 3988473,
+        "start_ticks": "725222405",
+        "argv": [
+          "bash",
+          "/home/longhao/experiment/.worktrees/beliefkv-causal-29396b2f53a0/scripts/launch_qwen35_native_v0520.sh",
+          "--enable-custom-logit-processor",
+          "--max-total-tokens",
+          "805198",
+          "--enable-beliefkv-admission",
+          "--beliefkv-event-socket-path",
+          "/tmp/bkv-causal-18651.sock"
+        ]
+      },
+      {
+        "pid": 3989349,
+        "state": "S",
+        "ppid": 3988975,
+        "start_ticks": "725223819",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "-c",
+          "from multiprocessing.resource_tracker import main;main(21)"
+        ]
+      },
+      {
+        "pid": 3989350,
+        "state": "R",
+        "ppid": 3988975,
+        "start_ticks": "725223819",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "-c",
+          "from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=22, pipe_handle=24)",
+          "--multiprocessing-fork"
+        ]
+      },
+      {
+        "pid": 3989351,
+        "state": "R",
+        "ppid": 3988975,
+        "start_ticks": "725223819",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "-c",
+          "from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=22, pipe_handle=24)",
+          "--multiprocessing-fork"
+        ]
+      },
+      {
+        "pid": 3991078,
+        "state": "S",
+        "ppid": 3989350,
+        "start_ticks": "725240861",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/_inductor/compile_worker/__main__.py",
+          "--pickler=torch._inductor.compile_worker.subproc_pool.SubprocPickler",
+          "--kind=fork",
+          "--workers=32",
+          "--parent=3989350",
+          "--read-fd=108",
+          "--write-fd=111",
+          "--torch-key=cTo03RUSqfmcYCgUyy2MUjPCGJXm6IgGWiWGw//uJng="
+        ]
+      }
+    ],
+    "signals": [
+      {
+        "pid": 3988975,
+        "signal": "SIGTERM"
+      },
+      {
+        "pid": 3989349,
+        "signal": "SIGTERM"
+      },
+      {
+        "pid": 3989350,
+        "signal": "SIGTERM"
+      },
+      {
+        "pid": 3989351,
+        "signal": "SIGTERM"
+      },
+      {
+        "pid": 3991078,
+        "signal": "SIGTERM"
+      }
+    ],
+    "remaining_processes": [],
+    "finished_at": "2026-10-27T14:52:48.020100+08:00"
+  },
+  "evidence_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_empirical_network_thunderagent_20261027_v273/thunderagent/replay.log": "1efba7b3924725b77ead953b3889af59b483c3b270f643df3c3738560eb4f943",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_empirical_network_thunderagent_20261027_v273/thunderagent/owned_process_cleanup.json": "47dc8a4f53f2b9d36145aace7253a9a33c049a1c027ee4478b86dfbf435540df",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_empirical_network_thunderagent_20261027_v273/thunderagent/replay/native_requests.jsonl": "2aa70b1b2bcdff00accb554289472e8d79167b2394d8df977f407459a7e13d35",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_empirical_network_thunderagent_20261027_v273/thunderagent/opportunities/admission_opportunities.jsonl": "34d1480489d4265945a46e1d018b27e39aa7ec279d22d3a7accfc0cac944240a"
+  },
+  "complete_comparison": false,
+  "performance_accepted": false,
+  "scope": "The HTTP read deadline coincides with the public force-resume deadline; last periodic check records 1799.65s. Preserve partial work and repeat the complete population with a larger common transport deadline. No workflow tail or queued time is removed."
+}

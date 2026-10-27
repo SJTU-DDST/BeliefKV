@@ -9,6 +9,28 @@ from beliefkv.experiments.source_provenance import sha256_file
 from scripts import run_causal_comparison as comparison
 
 
+@pytest.mark.parametrize("declared,expected", ((None, 1800.), (3600., 3600.)))
+def test_replay_transport_timeout_preserves_old_plans_and_allows_author_force_resume(
+    tmp_path, declared, expected,
+):
+    plan = {"source_arm": "/source", "port": 18554}
+    if declared is not None:
+        plan["request_timeout_s"] = declared
+    command = comparison.replay_command(plan, tmp_path, None)
+    assert float(command[command.index("--request-timeout-s") + 1]) == expected
+    assert comparison.REPLAY_REQUEST_TIMEOUT_S > 1800. + 5.
+    assert "--stream-response-metrics" not in command
+
+
+@pytest.mark.parametrize("value", (True, 0., -1., float("inf"), float("nan"), 3601.))
+def test_replay_transport_timeout_requires_a_bounded_finite_declaration(tmp_path, value):
+    with pytest.raises(ValueError, match="request timeout"):
+        comparison.replay_command(
+            {"source_arm": "/source", "port": 18554, "request_timeout_s": value},
+            tmp_path, None,
+        )
+
+
 @pytest.mark.parametrize("root_count", (16, 24, 36))
 def test_replay_population_binds_every_declared_workflow_and_rejects_subsets(root_count):
     from beliefkv.core.events import RuntimeEventKind as Kind

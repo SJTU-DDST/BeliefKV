@@ -51,6 +51,7 @@ CONTROLS = (*ORDER, "scheduler_only", "kv_only", "no_tool_prefetch")
 RETENTION_CONTROLS = {f"subagent_{policy}": policy for policy in RETENTION_ORDER}
 ALL_CONTROLS = (*CONTROLS, *RETENTION_CONTROLS, *PAPER_CONTROLS)
 METRIC_BOUNDARY = "workflow_start_to_workflow_end"
+REPLAY_REQUEST_TIMEOUT_S = 3600.
 SERVER_FIELDS = (
     "PREFETCH_LEAD_MS", "JOIN_PREFETCH_MIN_ADVANCE_MS", "TOOL_PREFETCH_MIN_ADVANCE_MS",
     "PARALLEL_WAIT_PREFETCH", "WAIT_PREFETCH_CONTEXTS",
@@ -628,10 +629,15 @@ def validate_response_metrics(plan, result):
 
 
 def replay_command(plan, arm, event_socket):
+    # Keep the transport deadline beyond the author's 1800s force-resume escape.
+    timeout = plan.get("request_timeout_s", 1800.)
+    if type(timeout) not in (int, float) or not math.isfinite(timeout) or not 0 < timeout <= 3600.:
+        raise ValueError("causal replay request timeout must be in (0, 3600] seconds")
     command = [
         sys.executable, str(ROOT / "scripts/run_causal_gpu_replay.py"),
         "--source-arm", plan["source_arm"], "--output-dir", str(arm / "replay"),
         "--base-url", f"http://127.0.0.1:{plan['port']}",
+        "--request-timeout-s", str(timeout),
     ]
     if plan.get("stream_response_metrics", False):
         command.append("--stream-response-metrics")
@@ -1276,6 +1282,7 @@ def register(args):
         "run_root": str(args.run_root.resolve()), "port": args.port,
         "sampling_calibration": str(args.sampling_calibration.resolve()),
         "sampling_mode": args.sampling_mode,
+        "request_timeout_s": REPLAY_REQUEST_TIMEOUT_S,
         "tool_timing_overlay": tool_timing_overlay,
         "stream_response_metrics": getattr(args, "stream_response_metrics", False),
         "maximum_replay_slowdown": args.maximum_replay_slowdown,

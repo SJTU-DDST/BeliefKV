@@ -87,6 +87,7 @@
   "comparison": {
     "reuse_v273_thunderagent": true,
     "stream_response_metrics": true,
+    "request_timeout_s": 3600,
     "exact_complete_work": true,
     "all_normal_tails_retained": true
   },
