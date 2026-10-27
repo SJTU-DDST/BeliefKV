@@ -1718,3 +1718,36 @@
   These are collecting associations, not complete JCT, pure GPU timing, an
   atomic snapshot or causal speedup. See
   docs/research/reference_join_sibling_grant_audit_20261027_zh.md.
+- Sibling R1 completes all3674 exact requests,145565966 input/549671 output
+  tokens and18 workflows, original stopping/tails, two fresh idle snapshots
+  and actual owned exit. Mean JCT1643.381962s versusV3451697.583645s improves
+  3.19287%; full-run output239.104804 versus233.371801token/s improves2.45660%.
+  Sixteen workflows improve; desktop_media/game_simulation regress5.695610/
+  19.749224s. Mean maximum post-first ready gap89.947849 versus73.449107s
+  remains worse. Actual H2D2606.499GB/D2H1213.625GB;120 requests in112 grants
+  all bind to completed native service. Nine JOINs early-start and prove reuse
+  of38.132023GB, distinct from20.918993GB grant-associated reuse including
+  post-completion copies. No tool prefetch copied; independent predicted offload
+  released159tokens/15630336bytes. Keep the global dual-metric/repetition gate
+  incomplete and reuseV345; no other baseline/ablation is enabled.
+- The sibling plotting waiter failed only because the serving Python lacked
+  matplotlib; preserve its stopped state/log and empty original figure directory.
+  Correct CPU retry figures are in
+  experiments/figures/reference_join_siblings_20261027_r1_cpu_retry/, with all
+  three PNG/PDF inspected. Always use
+  /home/longhao/experiment/ops/cpu_plotting_20261027/bin/python for future plot
+  waiters, never sys.executable from beliefkv-next. Serving environments were
+  not changed. Complete review is under the sibling named report directory.
+- A real dashboard tool response has no151657 opener but does have151658
+  </tool_call>; old EOS detection incorrectly predicted parent reentry124.8s
+  before actual JOIN completion. Native post-completion queue wait was only
+  3.02s, so its127.6s ACK-to-service interval is mostly an early-trigger error,
+  not ready-queue fairness loss. Offline60-trigger classification finds4 such
+  tool/intermediate responses and56 actual final requests. Main now includes
+  the closing delimiter in the existing token-evidence set, with no extra
+  decoding/predictor/queue scan or future information. A real58-token CPU case
+  fails on old code and passes after repair. New source-bound shared execution
+  passes3247 cases plus4subtests without failures/skips, retaining3174 and
+  adding73, including real local tokenizer EOS and grant-audit tests. Preserve
+  the initial red report and partial native-fixture skips. Frozen525c7cc6 did
+  not run this fix; see docs/design/tool_closer_eos_guard_20261027_zh.md.
