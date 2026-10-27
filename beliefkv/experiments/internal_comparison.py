@@ -126,6 +126,15 @@ def arm_environment(
     ):
         raise ValueError("free-capacity JOIN admission requires the reference Full core")
     join_free = join_free if agent_admission == "thunderagent_reference" else "0"
+    continuation_free = common.get(
+        "BELIEFKV_AGENT_FREE_CONTINUATION_ADMISSION",
+        common.get("AGENT_FREE_CONTINUATION_ADMISSION", "0"),
+    )
+    if continuation_free not in ("0", "1") or (
+        mode == "full" and continuation_free == "1" and agent_admission != "thunderagent_reference"
+    ):
+        raise ValueError("free continuation admission requires the reference Full core")
+    continuation_free = continuation_free if agent_admission == "thunderagent_reference" else "0"
     siblings = common.get(
         "BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN", common.get("AGENT_COADMIT_JOIN_CHILDREN", "0"),
     )
@@ -232,6 +241,8 @@ def arm_environment(
         "BELIEFKV_AGENT_ADMISSION": agent_admission,
         "AGENT_JOIN_FREE_ADMISSION": join_free,
         "BELIEFKV_AGENT_JOIN_FREE_ADMISSION": join_free,
+        "AGENT_FREE_CONTINUATION_ADMISSION": continuation_free,
+        "BELIEFKV_AGENT_FREE_CONTINUATION_ADMISSION": continuation_free,
         "AGENT_COADMIT_JOIN_CHILDREN": siblings,
         "BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN": siblings,
         "AGENT_BLOCKED_LENDING": blocked_lending,

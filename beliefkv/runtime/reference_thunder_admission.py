@@ -290,11 +290,21 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         self.latest.clear()
 
 
-def validate_reference_admission(state, *, join_free_admission=False, coadmit_join_children=False):
-    if type(join_free_admission) is not bool or type(coadmit_join_children) is not bool:
+def validate_reference_admission(
+    state, *, join_free_admission=False, coadmit_join_children=False,
+    free_continuation_admission=False,
+):
+    if any(type(value) is not bool for value in (
+        join_free_admission, coadmit_join_children, free_continuation_admission,
+    )):
         raise ValueError("JOIN admission declarations must be booleans")
+    admission_type = ReferenceThunderAdmission
+    if free_continuation_admission:
+        from beliefkv.runtime.reference_free_continuation import ReferenceFreeContinuationAdmission
+
+        admission_type = ReferenceFreeContinuationAdmission
     expected = {
-        "policy": ReferenceThunderAdmission.composition_name(
+        "policy": admission_type.composition_name(
             join_free_admission=join_free_admission,
             coadmit_join_children=coadmit_join_children,
         ),
@@ -319,13 +329,27 @@ def validate_reference_admission(state, *, join_free_admission=False, coadmit_jo
         "ordinary_restore_reservation_ms": 0,
         "tool_warming_eligibility": "existing_active_tool_wait_only_no_new_reservation",
     }
+    if free_continuation_admission:
+        expected.update({
+            "free_continuation_admission": True,
+            "free_continuation_authority": "complete_undiscounted_unused_logical_budget",
+            "free_continuation_updates": "registration_native_completion_runtime_events",
+            "free_continuation_candidate_limit": 8,
+            "free_continuation_join_limit": 24,
+            "free_continuation_max_grants_per_event": 1,
+            "free_continuation_new_programs": False,
+            "free_continuation_physical_prefetch": False,
+        })
     if coadmit_join_children:
         expected.update({
             "sibling_admission_authority": "observed_blocking_all_join_complete_unused_budget",
             "sibling_admission_max_members": ReferenceThunderAdmission.max_sibling_members,
             "sibling_admission_update_scope": "request_registration_and_join_or_member_terminal_event",
         })
-    if not isinstance(state, dict) or state.get("join_free_admission", False) is not join_free_admission or any(
+    if not isinstance(state, dict) or (
+        state.get("join_free_admission", False) is not join_free_admission
+        or state.get("free_continuation_admission", False) is not free_continuation_admission
+    ) or any(
         type(state.get(name)) is not type(value) or state[name] != value
         for name, value in expected.items()
     ):

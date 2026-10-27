@@ -978,6 +978,12 @@ class NativeAdmissionRuntime:
         ):
             raise ValueError("free-capacity JOIN admission requires the reference Full core")
         self.agent_join_free_admission = join_free == "1"
+        continuation_free = os.environ.get("BELIEFKV_AGENT_FREE_CONTINUATION_ADMISSION", "0")
+        if continuation_free not in ("0", "1") or (
+            continuation_free == "1" and agent_policy != "thunderagent_reference"
+        ):
+            raise ValueError("free continuation admission requires the reference Full core")
+        self.agent_free_continuation_admission = continuation_free == "1"
         sibling_setting = os.environ.get("BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN", "0")
         if sibling_setting not in ("0", "1") or (
             sibling_setting == "1"
@@ -1049,7 +1055,12 @@ class NativeAdmissionRuntime:
             if agent_policy == "thunderagent_reference":
                 from beliefkv.runtime.reference_thunder_admission import ReferenceThunderAdmission
 
-                self._agent_admission = ReferenceThunderAdmission(self)
+                if self.agent_free_continuation_admission:
+                    from beliefkv.runtime.reference_free_continuation import ReferenceFreeContinuationAdmission
+
+                    self._agent_admission = ReferenceFreeContinuationAdmission(self)
+                else:
+                    self._agent_admission = ReferenceThunderAdmission(self)
             else:
                 from beliefkv.runtime.agent_working_set import AgentAdmission
 
@@ -2733,6 +2744,7 @@ class NativeAdmissionRuntime:
                 ),
                 "agent_admission_enabled": self.enable_agent_working_set,
                 "agent_join_free_admission": self.agent_join_free_admission,
+                "agent_free_continuation_admission": self.agent_free_continuation_admission,
                 "full_prefix_migration": (
                     self._full_prefix_migration.status()
                     if self._full_prefix_migration is not None else None

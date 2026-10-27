@@ -41,6 +41,9 @@ def main():
     configuration = json.loads(args.configuration.read_bytes())
     join_free = configuration["common_environment"].get("AGENT_JOIN_FREE_ADMISSION", "0") == "1"
     siblings = configuration["common_environment"].get("AGENT_COADMIT_JOIN_CHILDREN", "0") == "1"
+    continuation_free = configuration["common_environment"].get(
+        "AGENT_FREE_CONTINUATION_ADMISSION", "0",
+    ) == "1"
     paths = set(json.loads(Path(prior["source_manifest"]["path"]).read_bytes()))
     paths.update((
         str(args.configuration.resolve().relative_to(ROOT)), str(Path(__file__).resolve().relative_to(ROOT)),
@@ -55,6 +58,15 @@ def main():
         "tests/test_audit_tool_reentry_service.py",
     ) if join_free or siblings else ()
     extra_tests += ("tests/test_eos_join_prefetch.py",)
+    if continuation_free:
+        extra_tests += (
+            "tests/test_reference_free_continuation.py",
+            "tests/test_reference_capacity_wait_audit.py",
+        )
+        paths.update((
+            "beliefkv/runtime/reference_free_continuation.py",
+            "scripts/audit_reference_capacity_waits.py",
+        ))
     if siblings:
         extra_tests += (
             "tests/test_reference_sibling_coadmission.py",
@@ -107,6 +119,10 @@ def main():
             raise ValueError("free-capacity JOIN admission leaked into a paper control")
         if settings["BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN"] != str(int(siblings and label == "full")):
             raise ValueError("sibling admission leaked into a paper control")
+        if settings["BELIEFKV_AGENT_FREE_CONTINUATION_ADMISSION"] != str(
+            int(continuation_free and label == "full")
+        ):
+            raise ValueError("free continuation admission leaked into a paper control")
         constructors[label] = preflight_runtime(
             {**settings, "SGLANG_SOURCE_CHECKOUT": environment["SGLANG_SOURCE_CHECKOUT"]},
             configuration["common_environment"]["MODEL_PATH"],
@@ -140,6 +156,7 @@ def main():
         },
         "join_free_admission": join_free,
         "coadmit_join_children": siblings,
+        "free_continuation_admission": continuation_free,
         "constructors": constructors,
         "preserved_development_reports": [
             str(REPORTS / name) for name in (

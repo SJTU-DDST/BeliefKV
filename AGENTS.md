@@ -1814,3 +1814,27 @@
   qualified optimization. No new GPU job is queued; reuseV345 and leave the
   clear/repeated/all-baseline goal incomplete. Progressive layer handoff is
   still unimplemented and was not evaluated by this run.
+- The complete same-snapshot capacity audit now partitions the506 long tool
+  successors into241.582s active,813.651s inactive with full raw logical input
+  budget fitting,2510.259s inactive shortfall and8.989s unknown. There are282
+  waits with some fitting evidence; overlapping sampled intervals are not
+  removable JCT. Cached physical headroom has no observation age and is not
+  admission authority. Preserve complete_capacity_waits.json and27 passing
+  audit tests. Do not schedule a run solely for the39 rare marked snapshots.
+- A separate default-off Full candidate now adds event-driven free continuation
+  admission through ReferenceFreeContinuationAdmission while retaining the
+  exact reference working-set core/tick and normal native demand recovery.
+  It checks current submitted non-new ready agents only, complete raw budgets
+  with actual streaming refresh, at most24 known JOIN parents then8 ordinary
+  candidates including the actual new submit, and grants at most one extra
+  eligibility per relevant event. Empty decode/event callbacks return before
+  scans. No timer, ready-peer pause, loan/recall, physical prefetch, speculative
+  tool eligibility or ordinary restore reservation is added. Controls clear
+  AGENT_FREE_CONTINUATION_ADMISSION. The declaration is
+  configs/migration/predictive_reference_free_continuation_20261027.json.
+  Targeted419 cases pass without failures/skips, including real runtime
+  integration and existing native CPU stand-ins; preserve initial fixture
+  failures. Full shared/source-bound qualification and three constructor
+  isolation checks remain pending. No GPU run is registered. See
+  docs/design/reference_free_continuation_20261027_zh.md; keep the global goal
+  incomplete and reuse completeV345 only after qualification/current guards.

@@ -66,6 +66,7 @@ SERVER_FIELDS = (
     "AGENT_PRESSURE_PAUSE_POLICY",
     "AGENT_LENDING_SELECTION",
     "AGENT_JOIN_FREE_ADMISSION",
+    "AGENT_FREE_CONTINUATION_ADMISSION",
     "FREE_PAGE_H2D_FENCE",
 )
 
@@ -316,6 +317,9 @@ def preflight_runtime(settings, model_path):
         ),
         "agent_blocked_lending": settings.get("BELIEFKV_AGENT_BLOCKED_LENDING", "idle"),
         "agent_join_free_admission": settings.get("BELIEFKV_AGENT_JOIN_FREE_ADMISSION", "0") == "1",
+        "agent_free_continuation_admission": settings.get(
+            "BELIEFKV_AGENT_FREE_CONTINUATION_ADMISSION", "0",
+        ) == "1",
         "coadmit_join_children": settings.get("BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN", "0") == "1",
         "agent_join_dependency_admission": settings.get("BELIEFKV_AGENT_JOIN_DEPENDENCY_ADMISSION", "0") == "1",
         "agent_blocked_budget_proof": settings.get("BELIEFKV_AGENT_BLOCKED_BUDGET_PROOF", "predicted_pressure"),
@@ -767,7 +771,15 @@ def observed_configuration(plan, label, arm, *, final=False):
             if agent_strategy == "thunderagent_reference":
                 from beliefkv.runtime.reference_thunder_admission import ReferenceThunderAdmission
 
-                reference_policy = ReferenceThunderAdmission.composition_name(
+                reference_type = ReferenceThunderAdmission
+                if common.get(
+                    "BELIEFKV_AGENT_FREE_CONTINUATION_ADMISSION",
+                    common.get("AGENT_FREE_CONTINUATION_ADMISSION", "0"),
+                ) == "1":
+                    from beliefkv.runtime.reference_free_continuation import ReferenceFreeContinuationAdmission
+
+                    reference_type = ReferenceFreeContinuationAdmission
+                reference_policy = reference_type.composition_name(
                     join_free_admission=join_free,
                     coadmit_join_children=plan["reference_environment"].get(
                         "BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN",
@@ -800,6 +812,10 @@ def observed_configuration(plan, label, arm, *, final=False):
                     coadmit_join_children=plan["reference_environment"].get(
                         "BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN",
                         plan["reference_environment"].get("AGENT_COADMIT_JOIN_CHILDREN", "0"),
+                    ) == "1",
+                    free_continuation_admission=common.get(
+                        "BELIEFKV_AGENT_FREE_CONTINUATION_ADMISSION",
+                        common.get("AGENT_FREE_CONTINUATION_ADMISSION", "0"),
                     ) == "1",
                 )
             if state.get("agent_join_free_admission", False) is not join_free:
