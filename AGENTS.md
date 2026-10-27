@@ -885,3 +885,28 @@
   JOIN_LAST_CHILD_PRIORITY is restricted to request join_priority mode and
   cannot silently become an agent-admission option in workflow mode. Keep
   V260 frozen and finish it before choosing another GPU candidate.
+- The user's latest reservation permits V260 to finish, then prohibits every
+  new GPU experiment until an explicit availability notice. V260 completed at
+  2026-10-27 13:21:22 Asia/Shanghai, exit code zero, with no owned processes
+  remaining in its terminal state. The shared hold now disables automatic
+  resume and `/tmp/beliefkv-experiments.paused` blocks new launches. Do not
+  infer permission from idle GPUs, an old release or the previous 11:00
+  deadline. Continue CPU-only analysis and implementation with CUDA devices
+  hidden; preserve V260's performance review as pending until audited.
+- V260's complete summary preserves all 3674 requests, 145565966 prompt tokens,
+  549671 output tokens and 18 workflow tails, with exact tokens and original
+  stopping verified. Its mean JCT is 1395.545895s and throughput 284.644416
+  token/s. Against unchanged V247 ThunderAgent, JCT is 5.7066% worse and
+  throughput 9.5662% higher; the shared gate still fails. Two fresh idle
+  telemetry snapshots, cleanup and independent PID/port checks establish owned
+  exit. Main comparison/qualification and frozen V260 launch guards reject the
+  new reservation. See `v262_v260_completion_gpu_hold_20261027.json`; this
+  arithmetic review is not a new GPU run or complete causal attribution.
+- The user authorizes a separately declared synthetic tool-timing workload
+  if the current natural trace offers limited opportunity. Derive durations
+  from public records of actual tool execution, pin provenance and use one
+  fixed identity-indexed duration map for every compared method. Preserve the
+  source graph, requests, tokens, tool outputs and normal tails. Do not label
+  synthesized timing as natural LoCoBench execution, expose future sampled
+  completion times to the online policy, assume long tools necessarily cause
+  ThunderAgent migrations, or launch this GPU workload during the reservation.

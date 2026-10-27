@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-10-27T13:29:17+08:00",
+  "timezone": "Asia/Shanghai",
+  "scope": "Read-only completion checks, shared GPU launch hold, and arithmetic comparison of complete same-work summaries. No new GPU experiment or hardware query was launched.",
+  "instruction": "这次实验结束后就先不要继续GPU实验了，服务器被预约了一段时间，等空闲了我会通知你",
+  "gpu_hold": {
+    "hold_file": "/home/longhao/experiment/ops/gpu_hold_until_20261022_0600.json",
+    "hold_sha256": "cd0726b64906f3bcf4ed39ba02e3cfa47e42ff8a9c6f9858691df1e7d8eff930",
+    "pause_file": "/tmp/beliefkv-experiments.paused",
+    "pause_sha256": "36fbe626525f7eb8b0052c5e724a6f2f54e689fb92fcf486177ccfbb0db34eac",
+    "automatic_resume_allowed": false,
+    "explicit_user_release_required": true,
+    "deadline": null,
+    "cpu_only_guard_checks": {
+      "cuda_visible_devices": "",
+      "main_comparison_launch": "HoldChanged: automatic resume was disabled",
+      "main_gpu_qualification": "HoldChanged: automatic resume was disabled",
+      "frozen_v260_launch": "HoldChanged: automatic resume was disabled"
+    }
+  },
+  "v260_completion": {
+    "state": "/home/longhao/experiment/ops/v260_locobench_observed_growth_20261027.registration.state.json",
+    "state_sha256": "03102b2e73ac786c1c194685d29ccc274cf64a90c771a4167b9e97025cede722",
+    "finished_at": "2026-10-27T13:21:22.864483+08:00",
+    "original_exit_code": 0,
+    "completed_requests": 3674,
+    "completed_workflows": 18,
+    "exact_tokens_verified": true,
+    "original_native_stopping_verified": true,
+    "all_normal_tails_retained": true,
+    "quality_exclusions": [],
+    "fresh_idle_telemetry_snapshots": 2,
+    "dropped_records": 0,
+    "failed_records": 0,
+    "writer_error": null,
+    "cleanup_remaining_processes": [],
+    "checked_pids_absent": [
+      3932462, 3932975, 3933293, 3933294, 3933295, 3934418, 3934771
+    ],
+    "port_18650_listening": false,
+    "active_experiment_or_waiter_found_in_user_process_scan": false
+  },
+  "same_work_comparison": {
+    "full_run": "locobench_observed_growth_20261027_v260",
+    "control_run": "locobench_cold_fit_free_page_20261027_v247",
+    "control_arm": "thunderagent",
+    "requests_per_arm": 3674,
+    "prompt_tokens_per_arm": 145565966,
+    "output_tokens_per_arm": 549671,
+    "full_mean_jct_seconds": 1395.545894564205,
+    "thunderagent_mean_jct_seconds": 1320.2071418601142,
+    "full_output_tokens_per_second": 284.6444163280427,
+    "thunderagent_output_tokens_per_second": 259.7922677311632,
+    "jct_change_percent": 5.706585755773275,
+    "throughput_change_percent": 9.56616176990952,
+    "both_primary_metrics_improved": false,
+    "performance_accepted": false
+  },
+  "evidence_sha256": {
+    "experiments/raw/locobench_observed_growth_20261027_v260/causal_comparison.json": "925380b5f1af5729e1cbb2ded3496bcc69d74d350c4db6123cd1f860eaed9825",
+    "experiments/raw/locobench_cold_fit_free_page_20261027_v247/causal_comparison.json": "e8d5fbbf6bb795579d121ac7d0b5af4d64dedb8fff62a7e95de1fee9c1f1138f",
+    "experiments/raw/locobench_observed_growth_20261027_v260/full/replay/summary.json": "62d98776c5f2d0ddd77399dd40029e99c24df9d5d085aa80e80f723814f5dd60",
+    "experiments/raw/locobench_observed_growth_20261027_v260/full/owned_process_cleanup.json": "7a31dedf78c72179aa1922a6f3ee3b2de394c55d6980209545661e5eae360b8d",
+    "experiments/raw/locobench_observed_growth_20261027_v260/full/telemetry_drain.json": "6c47bbaae00c18b00f37e664f4d5d0752e72d3956ba6218365f109c708c71af6"
+  }
+}
