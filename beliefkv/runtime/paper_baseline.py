@@ -8,7 +8,9 @@ import time
 
 from beliefkv.core.events import RuntimeEventKind as Kind
 from beliefkv.policy.continuum_history import ContinuumHistory
-from beliefkv.policy.paper_baselines import ThunderWorkingSet, continuum_public_priority
+from beliefkv.policy.paper_baselines import (
+    ThunderActingDecayWorkingSet, ThunderWorkingSet, continuum_public_priority,
+)
 from beliefkv.runtime.continuum_pins import ContinuumPins
 from beliefkv.runtime.sglang_v0520_admission import (
     _request_key, compile_native_prefill_plan,
@@ -43,6 +45,7 @@ def _retired(runtime, workflows, events):
 class ThunderAgentAdapter:
     policy_name = "thunderagent_public_single_backend"
     author_commit = "7ddc8610270e56d3b109eed8796b3a4360fc67c9"
+    working_set_type = ThunderWorkingSet
 
     def __init__(self, runtime):
         _isolated(runtime)
@@ -63,7 +66,7 @@ class ThunderAgentAdapter:
             raise ValueError("paper adapter requires measured FULL-only KV capacity")
         if self.policy is not None:
             raise ValueError("paper adapter cannot silently change cache capacity")
-        self.policy = ThunderWorkingSet(capacity)
+        self.policy = self.working_set_type(capacity)
 
     def registered(self, req, key):
         if self.policy is None:
@@ -233,6 +236,29 @@ class ThunderAgentAdapter:
         self.last_forced.clear()
         if self.policy is not None:
             self.policy.programs.clear()
+
+
+class ThunderAgentDecayAdapter(ThunderAgentAdapter):
+    policy_name = "thunderagent_public_single_backend_acting_decay"
+    working_set_type = ThunderActingDecayWorkingSet
+
+    def status(self):
+        return {
+            **super().status(),
+            "acting_token_decay": True, "decay_half_life_s": 1.,
+            "decay_scope": "periodic_resume_only",
+            "decay_age_source": "observed_native_completion_monotonic",
+            "undiscounted_capacity_enforced": True,
+            "resume_capacity_tokens_at_last_control": (
+                self.policy.last_resume_capacity_tokens if self.policy is not None else None
+            ),
+            "physical_capacity_credit": False,
+        }
+
+    def close(self):
+        super().close()
+        if self.policy is not None:
+            self.policy.acting_since.clear()
 
 
 class ContinuumPublicAdapter:
@@ -424,6 +450,8 @@ def create_adapter(runtime, name):
         return adapter
     if name == ThunderAgentAdapter.policy_name:
         return ThunderAgentAdapter(runtime)
+    if name == ThunderAgentDecayAdapter.policy_name:
+        return ThunderAgentDecayAdapter(runtime)
     if name == ContinuumPublicAdapter.policy_name:
         return ContinuumPublicAdapter(runtime)
     if name == "concur_paper_observed_join":

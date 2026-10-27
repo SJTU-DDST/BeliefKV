@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "status": "cpu_candidate_gpu_comparison_pending",
+  "arm": "thunderagent_acting_decay",
+  "policy": "thunderagent_public_single_backend_acting_decay",
+  "author_repository": "https://github.com/ThunderAgent-org/ThunderAgent",
+  "author_commit": "7ddc8610270e56d3b109eed8796b3a4360fc67c9",
+  "public_default_enabled": false,
+  "program_identity": "invocation_id",
+  "capacity": {
+    "decay_half_life_s": 1.0,
+    "age_source": "observed_native_request_completion_monotonic",
+    "resume": "capacity - int(reasoning_tokens + sum(acting_tokens * 2**(-elapsed_s))) - active_programs * 100",
+    "pressure": "original_undiscounted_author_capacity",
+    "initial_arrival": "original_undiscounted_author_capacity",
+    "shared_prefix_credit": "none_without_native_shared_extent_authority",
+    "physical_capacity_credit": false
+  },
+  "isolation": {
+    "full_agent_admission": false,
+    "join_priority": false,
+    "resident_priority": false,
+    "tool_prediction": false,
+    "controlled_kv_transfers": false,
+    "future_tool_durations": false
+  },
+  "comparison": {
+    "running_default_and_full_unchanged": true,
+    "same_complete_work_and_tool_timing_map_required": true,
+    "all_normal_tails_retained": true,
+    "stream_response_metrics": true,
+    "common_request_timeout_s": 3600,
+    "gpu_registration": null
+  },
+  "performance_accepted": false
+}

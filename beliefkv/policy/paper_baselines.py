@@ -359,3 +359,74 @@ class ThunderWorkingSet:
 
     def forget(self, identity: str) -> None:
         self.programs.pop(identity, None)
+
+
+class ThunderActingDecayWorkingSet(ThunderWorkingSet):
+    """Public opt-in acting decay for resume; pressure still uses full tokens."""
+
+    def __init__(self, capacity_tokens: int, *, acting_weight: float = 1., buffer_tokens: int = 100):
+        super().__init__(capacity_tokens, acting_weight=acting_weight, buffer_tokens=buffer_tokens)
+        self.acting_since: dict[str, float] = {}
+        self._resume_now: float | None = None
+        self.last_resume_capacity_tokens: int | None = None
+
+    def arrive(self, identity: str, tokens: int, *, now: float) -> None:
+        super().arrive(identity, tokens, now=now)
+        self.acting_since.pop(identity, None)
+
+    def completed(self, identity: str, tokens: int, *, now: float) -> None:
+        timestamp = _number(now, "ACTING transition")
+        super().completed(identity, tokens, now=timestamp)
+        self.acting_since[identity] = timestamp
+
+    def remaining_capacity_with_decay(self, *, now: float) -> int:
+        timestamp = _number(now, "decay observation")
+        reasoning, acting, count = 0, 0., 0
+        for item in self.programs.values():
+            if not item.active:
+                continue
+            count += 1
+            if not item.acting:
+                reasoning += item.tokens
+            elif (since := self.acting_since.get(item.identity)) is not None:
+                if since > timestamp:
+                    raise ValueError("decay observation precedes the ACTING transition")
+                acting += item.tokens * (2. ** -(timestamp - since))
+        # The author's optional formula does not apply tool_coefficient here.
+        return self.capacity_tokens - int(reasoning + acting) - count * self.buffer_tokens
+
+    def _resume(self) -> tuple[str, ...]:
+        if self._resume_now is None:
+            raise ValueError("decay resume requires its current control timestamp")
+        capacity = self.remaining_capacity_with_decay(now=self._resume_now)
+        self.last_resume_capacity_tokens = capacity
+        if capacity <= self.buffer_tokens:
+            return ()
+        paused = sorted(
+            (item for item in self.programs.values() if not item.active),
+            key=lambda item: (
+                1 if item.steps == 1 else 0 if not item.acting else 2,
+                item.tokens, item.queue_sequence,
+            ),
+        )
+        selected, cumulative = [], 0
+        for item in paused:
+            required = item.tokens + self.buffer_tokens
+            if cumulative + required <= capacity:
+                selected.append(item)
+                cumulative += required
+        selected.sort(key=lambda item: -item.tokens)
+        for item in selected:
+            item.active = True
+        return tuple(item.identity for item in selected)
+
+    def tick(self, *, now: float) -> tuple[str, ...]:
+        self._resume_now = _number(now, "decay control tick")
+        try:
+            return super().tick(now=self._resume_now)
+        finally:
+            self._resume_now = None
+
+    def forget(self, identity: str) -> None:
+        super().forget(identity)
+        self.acting_since.pop(identity, None)

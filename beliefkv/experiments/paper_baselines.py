@@ -7,6 +7,7 @@ from beliefkv.experiments.internal_comparison import arm_environment
 
 RUNTIME_ARMS = {
     "thunderagent": "thunderagent_public_single_backend",
+    "thunderagent_acting_decay": "thunderagent_public_single_backend_acting_decay",
     "continuum_public": "continuum_public_single_backend",
     "concur_observed_join": "concur_paper_observed_join",
     "kvflow_observed_graph": "kvflow_paper_observed_graph",
@@ -116,10 +117,20 @@ def validate_state(label: str, state: dict) -> None:
         or declared.get("native_capacity_authority_preserved") is not True
     ):
         raise ValueError("effective paper baseline identity or information contract differs")
-    if label == "thunderagent" and declared.get("streaming_context_accounting") != (
+    if label in ("thunderagent", "thunderagent_acting_decay") and declared.get("streaming_context_accounting") != (
         "observed_native_outputs_at_arrival_and_five_second_control"
     ):
         raise ValueError("ThunderAgent must account for observed streaming context growth")
+    if label == "thunderagent_acting_decay" and (
+        declared.get("acting_token_decay") is not True
+        or type(declared.get("decay_half_life_s")) not in (int, float)
+        or declared.get("decay_half_life_s") != 1.
+        or declared.get("decay_scope") != "periodic_resume_only"
+        or declared.get("decay_age_source") != "observed_native_completion_monotonic"
+        or declared.get("undiscounted_capacity_enforced") is not True
+        or declared.get("physical_capacity_credit") is not False
+    ):
+        raise ValueError("ThunderAgent acting decay differs from its declared resume-only rule")
     if label == "kvflow_observed_graph" and (
         declared.get("graph_information_source") != "observed_events"
         or declared.get("fixed_prefix_source") != "completed_same_context_input_lcp"

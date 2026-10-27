@@ -1028,3 +1028,21 @@
   V269 overlay and streaming metrics; Full agent admission is null. Keep the
   full population and both primary metrics pending; early receipts do not
   establish complete correctness or a performance improvement.
+- The separate `thunderagent_acting_decay` arm now implements the pinned
+  author's optional one-second-half-life ACTING-token decay for periodic resume
+  only. Keep default ThunderAgent and all Full policy classes unchanged.
+  First direct admission and post-resume pressure use original undiscounted
+  capacity; buffers never decay, no physical capacity credit is granted and
+  native allocation stays authoritative. Track only actual native-completion
+  ACTING age with a monotonic clock and clear it at the next request.
+  No JOIN, predictor, residency or controlled migration privilege is added.
+- V289 executes the actual pinned author capacity and scheduled-check methods,
+  with fixed CPU program/metric fixtures and zero shared-token credit. All
+  2000 seed21 fixtures match decayed capacity, selection order, post-control
+  program state and raw capacity. This is not whole-workload or GPU evidence.
+  V290 passes 2376 shared CPU cases plus four subtests in one execution, no
+  skips/failures, retaining V285's 2350 cases and adding 26. Default policy AST
+  and Full's three controller files match frozen V286. Preserve that running
+  cycle; any independent decay GPU control must wait for its actual exit and
+  complete cleanup and use the same V269 map, work, stream metrics, capacity
+  and seed. See `docs/research/thunderagent_acting_decay_20261027_zh.md`.

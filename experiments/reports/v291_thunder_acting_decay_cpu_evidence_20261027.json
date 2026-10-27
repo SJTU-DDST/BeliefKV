@@ -1,0 +1,30 @@
+{
+  "observed_at": "2026-10-27T15:39:24.005977+08:00",
+  "shared_report": "/home/longhao/experiment/BeliefKV/experiments/reports/v290_thunder_acting_decay_shared_cpu_20261027.xml",
+  "shared_report_sha256": "a59a57159960134f79069c23d63093f05629498da3fb7ffa31d91d1fbde77881",
+  "unique_passing_cases": 2376,
+  "previous_passing_cases_retained": 2350,
+  "new_passing_cases": 26,
+  "single_execution": true,
+  "source_map": "/home/longhao/experiment/BeliefKV/experiments/reports/v291_thunder_acting_decay_sources_cpu_20261027.json",
+  "source_map_sha256": "f69aaf29e1945f45ea690e72faddf5f9dd3f330c433b68c91dfd65992c5299be",
+  "actual_author_differential_report": "/home/longhao/experiment/BeliefKV/experiments/reports/v289_thunder_acting_decay_author_cpu_20261027.json",
+  "actual_author_differential_sha256": "0d639421b9e5b223cc660077a32e21765fe965dc47743c206208ecd347ff6ca8",
+  "actual_author_fixture_cases": 2000,
+  "reference_default_comparison": "/home/longhao/experiment/ops/v286_locobench_network_join_admission_20261027.registration.json",
+  "default_policy_ast_sha256": {
+    "ThunderProgram": "5c9bc253dca843f72789123cd445241a93830ebe6c31c40d410098a4ae102687",
+    "ThunderWorkingSet": "6323f1bd9f2f9915a95d6b07c9f2ffd56c94d00b4a5ce702fc72202ee2e1623d"
+  },
+  "default_policy_ast_identical_to_running_v286": true,
+  "full_controller_sha256": {
+    "beliefkv/policy/thunder_agent_migration.py": "bf166baf293d108747ac39433892bf2bdb3a910054b1229123a5d1b6b194a1aa",
+    "beliefkv/runtime/agent_working_set.py": "999293f94078f1e3ae85ef8ecfb668d2c172765aa5a89f07c9d458c3d079b1db",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "a2caff67d823f01efc59d2b4ffca481e85cfe62d821ddf8dd548a111e80eda02"
+  },
+  "full_controllers_identical_to_running_v286": true,
+  "running_frozen_sources_and_inputs_unchanged": true,
+  "gpu_used": false,
+  "performance_accepted": false,
+  "scope": "CPU-only optional author-policy qualification and preservation of current default/Full methods. Does not qualify whole-model or whole-workload optional-decay performance."
+}

@@ -1,0 +1,39 @@
+{
+  "cases": 2000,
+  "seed": 21,
+  "fixture_sha256": "93fef803e88f19632cfab1b39194650ba99f65350ce3ce7c35faf62e5a98a336",
+  "transitions": {
+    "resumed": 1170,
+    "paused_acting": 11205,
+    "marked_reasoning": 9637
+  },
+  "actual_author_methods": [
+    "BackendState.remaining_capacity_with_decay",
+    "MultiBackendRouter._scheduled_check",
+    "MultiBackendRouter._greedy_resume",
+    "MultiBackendRouter._pause_until_safe"
+  ],
+  "author_commit": "7ddc8610270e56d3b109eed8796b3a4360fc67c9",
+  "author_checkout": "/home/longhao/experiment/ops/paper_baselines_20261024/thunderagent",
+  "author_source_sha256": {
+    "ThunderAgent/backend/state.py": "b0a6167497c46df9f945f0da0be704d5a646edcadbe7cd17dbe95a806da988a1",
+    "ThunderAgent/scheduler/router.py": "87f946f62a4e8c81fe7939aa6a2a16bcf1ba554bd5b6c110f166a943a7bde752",
+    "ThunderAgent/program/state.py": "bd7664a37abf4c45cd1cb77bc321d290a8110db66636fc2dd0361aa34ae6e441"
+  },
+  "adaptation_source_sha256": {
+    "scripts/qualify_thunder_acting_decay_author.py": "11ee70bd5e46bbae307f9f5a2dc91b665bc0edde9bf11961f8edcbf1bd6aae30",
+    "beliefkv/policy/paper_baselines.py": "ed3d57e13d43572d0399b7db766aadd3ca4dadfffbfdda509897afd8742a80fb",
+    "beliefkv/runtime/paper_baseline.py": "bcb6466df233996710a8cb84bada8a4f1e81945580e4fee597016b1db3254ee4",
+    "beliefkv/experiments/paper_baselines.py": "dc210187b89f3998a9cba33de20b8486722cc40d417ee8dee5d9308c2cff794c",
+    "tests/test_thunder_acting_decay.py": "ae5b201783da92919b42d2cf751039b80ae0e48c581b5dadef1d27f0c4e1990b"
+  },
+  "scope": [
+    "Actual pinned author capacity and scheduled-check methods execute without source rewriting.",
+    "Shared tokens are zero; one backend, exact observed token counts, synthetic CPU program states and fixed metric replies.",
+    "Every fixture compares decayed capacity, resume order, full post-control state and undiscounted pressure capacity.",
+    "A monotonic elapsed clock replaces the author's wall clock for the adapter's observed ACTING age.",
+    "No HTTP server, GPU, physical KV transfer, whole workload, JCT or throughput qualification."
+  ],
+  "gpu_used": false,
+  "performance_accepted": false
+}
