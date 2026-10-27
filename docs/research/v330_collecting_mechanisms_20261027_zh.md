@@ -1,0 +1,78 @@
+# V330 运行中机制证据
+
+本记录只解释固定前缀，不接受完整性能。V330 仍使用冻结 application
+`bdd74e9c280bcedcf322aa5e00a78be8aaa1a2e6`、原生树
+`11b84f7c31986782be3fbe699bae2574ef092389`，先 Full，后
+`thunderagent_acting_decay`。新增只读分析不改变运行代码、原始工作量、
+V311 工具时间表、容量或停止条件。
+
+## V335：工作量、预算与 batch
+
+`experiments/reports/v335_v330_collecting_agent_pipeline_20261027.json`
+封存 2877/3674 个完整回执，输入输出 token 数、哈希及原生停止原因
+全部匹配。各文件前缀独立固定，终点不是一个原子快照。
+
+原生请求观察区间 1505.724s，1441 个预算快照覆盖 1504.199s，
+全部同快照对账，未覆盖 1.525s。逻辑预算 token·时间中：
+
+- model pending 为 88.500%；
+- 已知阻塞为 7.125%，请求间为 4.375%；
+- 阻塞原因中 elapsed tool 为 3.861%、JOIN 为 1.740%、
+  predicted long tool 为 1.523%；
+- 另有已提交但 inactive 请求时，阻塞预算占总预算 token·时间的 3.901%。
+
+这些不是物理 HBM 占用、独占可回收页或可消除 JCT。model pending
+同时包含已排队与正在执行的原生请求。
+
+38163 个 decode batch 的平均大小为 11.035，worker 区间加权为
+11.110。累计 prefill worker 区间为 400.467s，decode 为 1106.355s。
+区间包含运行时和等待，不能当作纯 kernel 时间，也不能用其区间内
+输出率替代全程吞吐。
+
+独立 native status 前缀有 2890 个 request probe，旧输入前缀丢失代理
+为零；这不能排除其他形式的重新计算。writer error、failed/dropped
+records 均未出现。完整工作量和最终遥测仍须重新审计。
+
+## V336：JOIN 与工具预取
+
+`experiments/reports/v336_v330_sealed_wait_prefetch_20261027.json.gz`
+及同名 `_summary.json` 封存实际传输、ACK、首次使用和计划记录。
+
+JOIN 的 387 个受控 FULL 传输回执合计 94.933GB，全部有首次服务
+复用证据；没有观察到传入部分在首次服务前再次原生加载。按已观察的
+52 个 JOIN 完成边界归因，7 个有完成前启动并随后复用的 FULL，
+合计 30.148GB。不能把全部 94.933GB 都称作 JOIN 完成前预取，
+也不能把字节数直接换算为节省的 JCT。
+
+50 个 JOIN 在完成前有正 FULL 计划，但计划日志只记录了 6 个完成前
+提交。44 个表面缺口中，实际传输时间又确认 1 个在完成前提交、8 个
+在完成后提交，35 个未观察到关联原生提交。缺少提交时间不是独占
+容量不足或没有传输的证明。首个正计划相对完成边界的中位提前量约
+23.186ms；它不是原始 EOS 到所有后继服务的完整机会窗口。
+
+工具受控预取目前为零。此审计只覆盖有计划/票据记录的等待轮次，
+其中 12 个工具轮次均没有正 FULL 计划，不能用 12 代表全部工具调用。
+运行计数也记录了 retained eligibility 之外的工具预取检查和尾部
+支持不足，不能把它们归并成一个唯一失败原因。
+
+代码仍只允许已有 active 资格、没有 pending/in-flight 请求的
+WAIT_TOOL owner 使用工具 warming。实际需求借出会撤销某些阻塞
+owner 的资格，因此“工具预取开关已打开”不保证 offload 后存在可用的
+预取对象。这是完整比较后应检查的机制边界；当前不扩大 speculative
+权限、不驱逐 ready peer，也不更改冻结实验来补齐该路径。
+
+ACK 记录可能晚于已提交的首次服务观察，原生依赖保证仍然有效；
+负 ACK-to-service 差值不能被解释为负等待或额外加速。
+
+## V337：借出关系
+
+`experiments/reports/v337_v330_collecting_agent_loans_20261027.json`
+检查 1734 个采样快照，观察到最多 18 个 open lender、
+19 个 distinct borrower，采样关系不变量通过。记录 293 次 demand
+admission、129 次 free-capacity admission 和 33 次 JOIN recall。
+这些是执行分支计数，不能相加为独立 agent 数或物理换出次数。
+
+快照间有 10 个超过 1500ms 的间隔。最后一个前缀快照没有 open loan，
+但仍有未完成请求；这不证明全轮清理或每次真实切换的原生安全性。
+完整 Full、匹配的 optional-decay ThunderAgent、正常尾部、最终迁移
+归因和两个主指标均继续保留为未完成验证。

@@ -1216,3 +1216,13 @@
   decode batch is 12.229. These are incomplete, independently sealed prefixes,
   not full JCT, whole-run throughput, pure kernel time or matched baseline
   improvements. Do not modify V330 or run another GPU job before its exit.
+- V335 seals 2877 exact completed V330 receipts and reconciles 1441 logical
+  snapshots; mean prefix decode batch is 11.035. V336 observes 94.933GB of
+  controlled JOIN FULL copies with actual reuse, including 30.148GB started
+  before observed JOIN completion, and zero controlled tool-prefetch copies.
+  Retained tool warming still requires existing active eligibility; blocked
+  budget lending does not itself provide a tool restore reservation. V337
+  passes sampled loan-relationship invariants but has ten long sampling gaps.
+  These prefixes do not establish complete work, exclusive causes or a matched
+  performance win. Keep V330 frozen and review full results before expanding
+  inactive-owner warming or any speculative donor permissions.
