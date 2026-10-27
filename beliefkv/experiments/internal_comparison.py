@@ -145,6 +145,17 @@ def arm_environment(
     ):
         raise ValueError("observed blocked budget proof requires backed lending")
     budget_proof = budget_proof if mode == "full" else "predicted_pressure"
+    lending_selection = common.get(
+        "BELIEFKV_AGENT_LENDING_SELECTION", common.get("AGENT_LENDING_SELECTION", "largest"),
+    )
+    if lending_selection not in ("largest", "fit") or (
+        mode == "full" and lending_selection != "largest" and (
+            agent_admission != "thunderagent_retained" or blocked_lending == "idle"
+            or budget_proof != "observed_demand"
+        )
+    ):
+        raise ValueError("fitting lending requires observed-demand retained admission")
+    lending_selection = lending_selection if mode == "full" else "largest"
     pressure_policy = common.get(
         "BELIEFKV_AGENT_PRESSURE_PAUSE_POLICY", common.get("AGENT_PRESSURE_PAUSE_POLICY", "reference"),
     )
@@ -211,6 +222,8 @@ def arm_environment(
         "BELIEFKV_AGENT_JOIN_DEPENDENCY_ADMISSION": join_admission,
         "AGENT_BLOCKED_BUDGET_PROOF": budget_proof,
         "BELIEFKV_AGENT_BLOCKED_BUDGET_PROOF": budget_proof,
+        "AGENT_LENDING_SELECTION": lending_selection,
+        "BELIEFKV_AGENT_LENDING_SELECTION": lending_selection,
         "AGENT_PRESSURE_PAUSE_POLICY": pressure_policy,
         "BELIEFKV_AGENT_PRESSURE_PAUSE_POLICY": pressure_policy,
         "AGENT_RECALL_SELECTION": recall_selection,

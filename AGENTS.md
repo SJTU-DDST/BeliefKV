@@ -1382,3 +1382,33 @@
   repair did not run in frozen V364 and has no new GPU performance evidence.
   See `docs/research/v364_v345_matched_results_20261027_zh.md` and the updated
   pressure design. No new GPU experiment is registered by this final audit.
+- V374 independently joins complete V364 lending/recall events to subsequent
+  native requests and V372 Host hits. Its 317 lending decisions pause 416
+  owners, releasing 30395360 logical token budget against 16286396 required;
+  per-decision release/need P50 is 1.606 and P90 10.231. The next native
+  request arrives within five seconds for 175 selected owners and one second
+  for 27. These are offline associations, not causal physical eviction, unique
+  H2D savings or online future information. Preserve the original complete work.
+- The separate fitting-lending candidate is
+  `configs/migration/predictive_fitting_lending_20261027.json`, default
+  `largest` unchanged. Explicit retained Full `AGENT_LENDING_SELECTION=fit`
+  requires observed-demand proof. Keep the same eight-owner donor window and
+  eight waiting targets; probe each current owner at most once per maintenance
+  pass, select the minimum proven token budget covering the actual gap from
+  at most 256 subsets, then prefer fewer owners and original stable order.
+  Insufficient total proof pauses no partial set. Preserve all blocking,
+  in-flight, JOIN/restore guards, native allocation/DMA authority and existing
+  lending/recall scopes. There is no new timer, Host path scan, future-duration
+  feature or ready-peer prefetch privilege.
+- V375 passes 160 targeted cases. V376b passes all 3003 shared CPU cases and
+  four subtests in one execution, retaining every V370 case and adding 52
+  case identities. V377b binds current sources and actual constructors:
+  Full uses fitting, both ThunderAgent arms remain largest/default-isolated.
+  Preserve V376's passing shared report and initial source map: its subsequent
+  preflight failed because the new qualification helper omitted production
+  environment conversion; only that helper changed for the successful retry.
+  Native tests retain copy/event/Host-index stand-ins. Local eight-owner
+  selector thread CPU median/P99 is 41.28/46.09us over 1000 calls; this is not
+  full controller or GPU performance evidence. Freeze the qualified candidate,
+  recheck resources/hold, run only Full and reuse complete V345. See
+  `docs/design/fitting_blocked_agent_lending_20261027_zh.md`.

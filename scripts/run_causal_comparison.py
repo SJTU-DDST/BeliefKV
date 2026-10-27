@@ -64,6 +64,7 @@ SERVER_FIELDS = (
     "AGENT_WORKFLOW_ENTRY_MIN_READY", "AGENT_TOOL_LOAN_RETURN",
     "AGENT_JOIN_DEPENDENCY_ADMISSION", "AGENT_BLOCKED_BUDGET_PROOF",
     "AGENT_PRESSURE_PAUSE_POLICY",
+    "AGENT_LENDING_SELECTION",
     "FREE_PAGE_H2D_FENCE",
 )
 
@@ -314,6 +315,7 @@ def preflight_runtime(settings, model_path):
         "agent_blocked_lending": settings.get("BELIEFKV_AGENT_BLOCKED_LENDING", "idle"),
         "agent_join_dependency_admission": settings.get("BELIEFKV_AGENT_JOIN_DEPENDENCY_ADMISSION", "0") == "1",
         "agent_blocked_budget_proof": settings.get("BELIEFKV_AGENT_BLOCKED_BUDGET_PROOF", "predicted_pressure"),
+        "agent_lending_selection": settings.get("BELIEFKV_AGENT_LENDING_SELECTION", "largest"),
         "agent_pressure_pause_policy": settings.get("BELIEFKV_AGENT_PRESSURE_PAUSE_POLICY", "reference"),
         "agent_recall_selection": settings.get("BELIEFKV_AGENT_RECALL_SELECTION", "largest"),
         "agent_tool_loan_return": settings.get("BELIEFKV_AGENT_TOOL_LOAN_RETURN", "0") == "1",
@@ -797,6 +799,10 @@ def observed_configuration(plan, label, arm, *, final=False):
                 "BELIEFKV_AGENT_BLOCKED_BUDGET_PROOF", common.get("AGENT_BLOCKED_BUDGET_PROOF", "predicted_pressure"),
             ):
                 raise ValueError("effective blocked budget proof differs from declared control")
+            if actual_agents.get("lending_selection", "largest") != common.get(
+                "BELIEFKV_AGENT_LENDING_SELECTION", common.get("AGENT_LENDING_SELECTION", "largest"),
+            ):
+                raise ValueError("effective blocked lending selection differs from declared control")
             if actual_agents.get("pressure_pause_policy", "reference") != common.get(
                 "BELIEFKV_AGENT_PRESSURE_PAUSE_POLICY", common.get("AGENT_PRESSURE_PAUSE_POLICY", "reference"),
             ) or actual_agents.get("planned_release_grants_capacity", False) is not False:

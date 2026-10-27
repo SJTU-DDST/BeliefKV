@@ -36,6 +36,7 @@ class ThunderAgentMigration(ThunderWorkingSet):
         recall_selection: str = "largest", observe_recall=None, recall_urgent=None,
         admission_dependency=None, observe_lending=None,
         pressure_pause_policy: str = "reference",
+        lending_selection: str = "largest",
     ):
         super().__init__(capacity)
         if type(retain_blocked) is not bool:
@@ -46,6 +47,11 @@ class ThunderAgentMigration(ThunderWorkingSet):
         ):
             raise ValueError("projected pressure release requires retained agent eligibility")
         self.pressure_pause_policy = pressure_pause_policy
+        if lending_selection not in ("largest", "fit") or (
+            lending_selection != "largest" and not retain_blocked
+        ):
+            raise ValueError("fitting lending requires retained agent eligibility")
+        self.lending_selection = lending_selection
         if type(coadmit_join_children) is not bool or (
             coadmit_join_children and not retain_blocked
         ):
@@ -489,17 +495,26 @@ class ThunderAgentMigration(ThunderWorkingSet):
                     self.counts["backed_wait_free_admitted"] += 1
                     return target.identity
                 continue
-            selected, released = [], 0
-            for donor in donors:
-                if donor.identity not in checked:
-                    self.counts["backed_wait_probes"] += 1
-                    checked[donor.identity] = can_lend(donor.identity) is True
-                if not checked[donor.identity]:
-                    continue
-                selected.append(donor)
-                released += donor.tokens + self.buffer_tokens
-                if released >= required:
-                    break
+            if self.lending_selection == "fit":
+                for donor in donors:
+                    if donor.identity not in checked:
+                        self.counts["backed_wait_probes"] += 1
+                        checked[donor.identity] = can_lend(donor.identity) is True
+                eligible = [donor for donor in donors if checked[donor.identity]]
+                selected = self._fitting_lenders(eligible, required)
+                released = sum(donor.tokens + self.buffer_tokens for donor in selected)
+            else:
+                selected, released = [], 0
+                for donor in donors:
+                    if donor.identity not in checked:
+                        self.counts["backed_wait_probes"] += 1
+                        checked[donor.identity] = can_lend(donor.identity) is True
+                    if not checked[donor.identity]:
+                        continue
+                    selected.append(donor)
+                    released += donor.tokens + self.buffer_tokens
+                    if released >= required:
+                        break
             if released < required:
                 continue
             lenders = {
@@ -525,10 +540,37 @@ class ThunderAgentMigration(ThunderWorkingSet):
                     "donor_invocation_ids": [donor.identity for donor in selected],
                     "donor_budget_tokens": released,
                     "buffer_tokens_per_agent": self.buffer_tokens,
+                    "lending_selection": self.lending_selection,
+                    "required_budget_tokens": required,
+                    "eligible_donors": [
+                        {
+                            "invocation_id": donor.identity,
+                            "budget_tokens": donor.tokens + self.buffer_tokens,
+                            "blocked": donor.blocked,
+                        }
+                        for donor in donors if checked.get(donor.identity)
+                    ],
                     "policy_monotonic_seconds": now,
                 })
             return target.identity
         return None
+
+    def _fitting_lenders(self, donors, required):
+        # The existing eight-owner probe bound limits this to 256 subsets.
+        choices = [(0, ())]
+        for index, donor in enumerate(donors):
+            credit = donor.tokens + self.buffer_tokens
+            choices += [
+                (total + credit, (*members, index))
+                for total, members in choices if total < required
+            ]
+        fitting = [choice for choice in choices if choice[0] >= required]
+        if not fitting:
+            return []
+        _, members = min(fitting, key=lambda choice: (
+            choice[0], len(choice[1]), choice[1],
+        ))
+        return [donors[index] for index in members]
 
     def _recall_ready_join(self, item, *, now):
         if not (

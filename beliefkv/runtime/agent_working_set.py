@@ -18,6 +18,7 @@ class AgentAdmission:
         recall_selection="largest",
         join_dependency_admission=False, blocked_budget_proof="predicted_pressure",
         pressure_pause_policy="reference",
+        lending_selection="largest",
     ):
         self.runtime = runtime
         self.policy: AgentWorkingSet | None = None
@@ -45,6 +46,14 @@ class AgentAdmission:
         ):
             raise ValueError("observed blocked budget proof requires backed lending")
         self.blocked_budget_proof = blocked_budget_proof
+        if lending_selection not in ("largest", "fit") or (
+            lending_selection != "largest" and (
+                strategy != "thunderagent_retained" or blocked_lending == "idle"
+                or blocked_budget_proof != "observed_demand"
+            )
+        ):
+            raise ValueError("fitting lending requires observed-demand retained admission")
+        self.lending_selection = lending_selection
         if type(tool_loan_return) is not bool or (
             tool_loan_return and blocked_lending != "backed_demand_recall"
         ):
@@ -115,6 +124,7 @@ class AgentAdmission:
                     and getattr(self.runtime, "_opportunity_writer", None) is not None else None
                 ),
                 pressure_pause_policy=self.pressure_pause_policy,
+                lending_selection=self.lending_selection,
             )
             self.policy.growth_headroom_tokens = capacity - int(capacity * watermark)
         else:
@@ -590,6 +600,7 @@ class AgentAdmission:
             ),
             "coadmit_join_children": self.coadmit_join_children,
             "blocked_lending": self.blocked_lending,
+            "lending_selection": self.lending_selection,
             "join_dependency_admission": self.join_dependency_admission,
             "blocked_budget_proof": self.blocked_budget_proof,
             "blocked_lending_requires_complete_host_checkpoint": (

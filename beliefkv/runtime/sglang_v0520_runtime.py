@@ -992,6 +992,15 @@ class NativeAdmissionRuntime:
         ):
             raise ValueError("observed blocked budget proof requires backed lending")
         self.agent_blocked_budget_proof = budget_proof
+        lending_selection = os.environ.get("BELIEFKV_AGENT_LENDING_SELECTION", "largest")
+        if lending_selection not in ("largest", "fit") or (
+            lending_selection != "largest" and (
+                agent_policy != "thunderagent_retained" or blocked_lending == "idle"
+                or budget_proof != "observed_demand"
+            )
+        ):
+            raise ValueError("fitting lending requires observed-demand retained admission")
+        self.agent_lending_selection = lending_selection
         pressure_policy = os.environ.get("BELIEFKV_AGENT_PRESSURE_PAUSE_POLICY", "reference")
         if pressure_policy not in ("reference", "projected_release") or (
             pressure_policy != "reference" and agent_policy != "thunderagent_retained"
@@ -1037,6 +1046,7 @@ class NativeAdmissionRuntime:
                 join_dependency_admission=self.agent_join_dependency_admission,
                 blocked_budget_proof=self.agent_blocked_budget_proof,
                 pressure_pause_policy=self.agent_pressure_pause_policy,
+                lending_selection=self.agent_lending_selection,
             )
         if paper_policy:
             from beliefkv.runtime.paper_baseline import create_adapter
