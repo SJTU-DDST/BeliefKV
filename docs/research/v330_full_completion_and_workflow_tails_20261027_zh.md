@@ -96,3 +96,9 @@ V340：
 全程输出吞吐应称为端到端输出吞吐；固定 token 下与 makespan 互为
 倒数，不能当作独立 decode 效率。完整口径见
 `docs/research/throughput_metric_contract_20261027_zh.md`。
+
+完整逻辑预算与工具卸载机制现另有
+[V349/V350b 审计](v330_complete_capacity_and_offload_audit_20261027_zh.md)。
+全程已知阻塞预算占比为 23.586%，同时存在 inactive 已提交请求的
+阻塞预算占比为 2.974%，均不是物理 HBM 或可消除等待。预测式提前
+释放仅 0.119GB，另有实际容量不足时的工具与 JOIN 驱逐，应分别归因。

@@ -1294,3 +1294,20 @@
   owned process exit before drawing matched V330/V345 plots. It launches no
   GPU job and stops without plots if the control is interrupted. See
   `docs/research/v345_v311_thunder_decay_control_20261027_zh.md`.
+- V349 audits complete V330 budgets: all 2209 snapshots reconcile, covering
+  2277.917s of a 2279.442s native-request span. Model-pending budget token-time
+  is 72.282%, known blocking 23.586% and between-request 4.132%; the earlier
+  V335 prefix is not the final mix. Blocking with actual inactive submitted
+  demand is only 2.974% of total active-budget token-time, not removable JCT or
+  physical HBM. V350b reconciles actual guarded releases: allocation-pressure
+  tools 13.240GB/355 events, JOIN 114.285GB/559 events and additional predicted
+  tool offload 0.119GB/10 events. Do not conflate these paths or relax prediction
+  just to increase copied bytes. Preserve the first offline geometry assertion:
+  Device allocation includes one padding slot; exact FULL bytes/token come
+  from divisible Host geometry. V345 is still frozen and live. See
+  `docs/research/v330_complete_capacity_and_offload_audit_20261027_zh.md`.
+- V351 independently seals 2088 exact complete V345 receipts. At 20:56
+  Asia/Shanghai the original watcher/server/driver and CPU plotting waiter
+  are actually alive by PID/start-tick checks. Keep its prefix batch and
+  worker rate separate from complete V330 averages; final matching JCT,
+  makespan and decode geometry remain pending.

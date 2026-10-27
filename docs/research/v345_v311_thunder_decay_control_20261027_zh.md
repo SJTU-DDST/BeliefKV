@@ -90,3 +90,9 @@ decode worker 输出率、时间加权 batch 和实际 workflow 完成数，
 端到端输出吞吐；decode worker 输出率不等同于纯 kernel 吞吐。
 
 当前只确认本轮实际启动和首批正确性，完整性能及重复实验结论仍待验证。
+
+2026-10-27 20:56 Asia/Shanghai 再次按实际 PID/start ticks 检查，
+原 supervisor、server 和 replay driver 均存活，CPU 绘图任务仍在等待。
+V351 新封存前缀中 2088/3674 个完整回执均与 V330 的原始工作及停止条件
+一致。当前前缀的 batch 或输出率不能与 V330 全程平均值组成加速比。
+证据为 `experiments/reports/v351_v345_collecting_exact_work_20261027.json`。
