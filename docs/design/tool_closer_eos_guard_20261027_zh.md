@@ -59,3 +59,27 @@ SGLang 源及 copy/event CPU 替身。三种真实构造器隔离仍通过。
 `tool_closer_shared_cpu.evidence.json`。CPU 验证不等于 GPU 性能证明。
 冻结 525c7cc6 的已完成 FULL 未包含本修复；后续只能另行冻结完整 FULL，
 保持相同工作量/工具时间/容量/种子并继续复用完整 V345。
+
+## 实际运行
+
+完整 sibling R1 的 owned 退出、最新预约、空闲 GPU、端口和 socket 检查
+通过后，登记 `ops/reference_tool_eos_guard_20261027_r1.registration.json`。
+只执行修复后的 FULL，配置仍为相同 sibling 配置，没有重跑 V345。
+冻结应用为 `ac94b2bcd1187906c2439c4a69705cbc74264cef`，native 树仍为
+11b84f7c3198，端口 18663，socket 为 `/tmp/bkv-causal-18663.sock`。
+
+`experiments/reports/reference_tool_eos_guard_20261027/live_start.py/.json`
+确认实际 watcher280028/start730778349、server280459/start730781053、
+GPU scheduler280797/start730782464、driver281924/start730796166 均为
+live/nice0，GPU PID 与 NVML 一致。13 项工作量、工具时间、容量、引擎、
+流式和种子字段与完整 V345 相同；实际 serving tokenizer 摘要与 CPU
+真实 tokenizer 测试一致，冻结 runtime 源摘要与 3247 项资格证据一致。
+
+这只是启动及源码身份验证，尚未到达并验证四个旧误触发案例，不作为
+完整请求正确性、传输行为、JCT 或吞吐证明。源、配置和外部输入冻结。
+
+CPU 绘图等待器281239/start730784077为 nice19，隐藏 CUDA，显式使用
+`ops/cpu_plotting_20261027/bin/python` 生成最终图表，仅在完整成功且
+实际 owned 退出后执行，失败则停止，不启动 GPU。状态为
+`ops/reference_tool_eos_guard_20261027_r1.plots.state.json`。没有后续
+GPU 实验排队。

@@ -1751,3 +1751,17 @@
   adding73, including real local tokenizer EOS and grant-audit tests. Preserve
   the initial red report and partial native-fixture skips. Frozen525c7cc6 did
   not run this fix; see docs/design/tool_closer_eos_guard_20261027_zh.md.
+- The guarded Full is now running from frozenac94b2bcd118, unchanged native
+  tree11b84f7c3198, port18663:
+  ops/reference_tool_eos_guard_20261027_r1.registration.json. Actual nice0
+  watcher280028/start730778349, server280459/start730781053, GPU scheduler
+  280797/start730782464 and driver281924/start730796166 are independently live;
+  the GPU PID matches NVML. Startup seals13 common work/timing/capacity/engine/
+  serving fields equal to completeV345, qualified runtime hash and actual
+  tokenizer file hashes. It has not reached/verified all four earlier false
+  trigger cases and proves no complete correctness or performance yet. Preserve
+  frozen sources/config/external inputs. Nice19 CUDA-hidden plot waiter281239/
+  start730784077 explicitly selects ops/cpu_plotting_20261027/bin/python and
+  only plots after complete success plus actual owned exit. State:
+  ops/reference_tool_eos_guard_20261027_r1.plots.state.json. No further GPU
+  experiment is queued. Keep the global goal active and other baselines deferred.
