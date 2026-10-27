@@ -1,0 +1,114 @@
+{
+  "scope": "Added Python callback thread CPU only; synthetic 33-program state and real async journal.",
+  "registration": "/home/longhao/experiment/ops/reference_free_continuation_20261027_r1.registration.json",
+  "registration_sha256": "8b906a43081802a16364d2be6e849e82d3c72ad8afc805996c5a990f2524c5b1",
+  "running_code_commit": "1f1678b266e15bc0427a0f98b683bc6b098ec026",
+  "fixtures": {
+    "new_grant": {
+      "programs": 33,
+      "pending_records": 33,
+      "ordinary_candidates_limit": 8,
+      "known_join_parents": 0,
+      "samples": 500,
+      "thread_cpu_us": {
+        "median": 91.4425,
+        "p99": 118.24419,
+        "max": 926.538
+      },
+      "journal_enabled": true,
+      "journal_enqueued": {
+        "agent_continuation_free_capacity_admitted": 550
+      },
+      "journal_sha256": "e00e6296c9d919ba6d23d6b5384b9c3327134496a783e8a3dfd4ada16101644a",
+      "writer_status_sha256": "8dc9fd3b6aacdbad5e0e34da238b6e21a8027eeeabbacb7b685007f8f2199482"
+    },
+    "full_budget_insufficient": {
+      "programs": 33,
+      "pending_records": 33,
+      "ordinary_candidates_limit": 8,
+      "known_join_parents": 0,
+      "samples": 500,
+      "thread_cpu_us": {
+        "median": 32.153000000000006,
+        "p99": 51.416669999999996,
+        "max": 93.067
+      },
+      "journal_enabled": true,
+      "journal_enqueued": {},
+      "journal_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "writer_status_sha256": "6f378ac13e70c7075123f449221ff8069d887fbc447254dc88dbbb19f88723ab"
+    },
+    "live_growth_refuses_grant": {
+      "programs": 33,
+      "pending_records": 33,
+      "ordinary_candidates_limit": 8,
+      "known_join_parents": 0,
+      "samples": 500,
+      "thread_cpu_us": {
+        "median": 40.826,
+        "p99": 44.60192,
+        "max": 56.47
+      },
+      "journal_enabled": true,
+      "journal_enqueued": {},
+      "journal_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "writer_status_sha256": "b83275a6ce389e0bab65c1a4989b3273b2ef2fe6a589b5d07e81130baa8a92f1"
+    },
+    "empty_decode_completion": {
+      "programs": 33,
+      "pending_records": 33,
+      "ordinary_candidates_limit": 8,
+      "known_join_parents": 0,
+      "samples": 500,
+      "thread_cpu_us": {
+        "median": 0.5055000000000001,
+        "p99": 0.5640799999999999,
+        "max": 0.722
+      },
+      "journal_enabled": true,
+      "journal_enqueued": {},
+      "journal_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "writer_status_sha256": "1832b6c73e0b85f913579eb48ea2c0b2a568c2b2f3ae0a2aebb740bbdbac88ef"
+    },
+    "empty_runtime_events": {
+      "programs": 33,
+      "pending_records": 33,
+      "ordinary_candidates_limit": 8,
+      "known_join_parents": 0,
+      "samples": 500,
+      "thread_cpu_us": {
+        "median": 0.376,
+        "p99": 0.42300999999999994,
+        "max": 0.522
+      },
+      "journal_enabled": true,
+      "journal_enqueued": {},
+      "journal_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "writer_status_sha256": "c34e59af399f90feeb43f2debf27fabd3377a0ea906f3c03e1ca510f5705d20c"
+    }
+  },
+  "sources_sha256": {
+    "beliefkv/runtime/reference_free_continuation.py": "6859de49ff8217b69225d0bdddc9ead5a38d2959d8f90b65ce3113ad2dd2561a",
+    "beliefkv/runtime/reference_thunder_admission.py": "a733815e60db9719e761f2471d54dc7ea721aa55921c850b98c288fd7c5fabe6",
+    "beliefkv/runtime/paper_baseline.py": "bcb6466df233996710a8cb84bada8a4f1e81945580e4fee597016b1db3254ee4",
+    "beliefkv/policy/paper_baselines.py": "ed3d57e13d43572d0399b7db766aadd3ca4dadfffbfdda509897afd8742a80fb",
+    "beliefkv/runtime/v0520_opportunity_telemetry.py": "2c455f2bb00a999be762745309ece02158016ccef0cc861ff3b2ede493a1d8a0"
+  },
+  "operator_sha256": "8b5da78a19bd5d0c55661feecee6101d2c46220fa17ef5e787f2fc6e2141533e",
+  "timing_fixture_resets_eligibility_or_cached_size_between_calls": true,
+  "background_writer_thread_cpu_included": false,
+  "whole_controller_cost_measured": false,
+  "gpu_or_end_to_end_performance_verified": false,
+  "preserved_initial_validation_failure": {
+    "operator_sha256": "318e3390f847659cb228c738e2d149c1532648def9a1476782d1a59e24c2e599",
+    "journal_directory": "/home/longhao/experiment/BeliefKV/experiments/reports/reference_free_continuation_20261027/cpu_journal/new_grant",
+    "reason": "The initial operator compared the writer's event-count dictionary with an integer.",
+    "observed_complete_new_grant_records": 550
+  },
+  "limitations": [
+    "Synthetic ranges preserve constant-time length observations, not actual KV or DMA.",
+    "Only the ordinary continuation window is timed; the 24-parent JOIN scan is not benchmarked here.",
+    "Empty completion timing includes construction of its small batch stand-in.",
+    "Sub-millisecond callback cost does not establish lower JCT, higher throughput or harmless GPU interference."
+  ]
+}

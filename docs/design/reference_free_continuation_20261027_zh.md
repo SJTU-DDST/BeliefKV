@@ -127,3 +127,33 @@ CPU 绘图等待器320361/start731406698保持 nice19、隐藏 CUDA，显式
 退出后绘制共同 60 秒分桶图，失败则停止，不启动 GPU。状态为
 `ops/reference_free_continuation_20261027_r1.plots.state.json`。没有后续
 GPU 实验排队，冻结代码、配置和外部输入保持不变。
+
+## 新增回调的 CPU 代价
+
+同目录 `admission_cpu_cost.py/.json` 对照运行中冻结源码的摘要，使用
+33 个 program、33 个 pending 记录和真实异步日志 writer，单独测量
+新增 Python 路径。每档预热 50 次、采样 500 次，计时使用 thread CPU：
+
+| 路径 | 中位数 / 微秒 | P99 / 微秒 | 最大值 / 微秒 |
+| --- | ---: | ---: | ---: |
+| 新普通 continuation 授权 | 91.443 | 118.244 | 926.538 |
+| 完整预算不足 | 32.153 | 51.417 | 93.067 |
+| 流式增长重检后拒绝 | 40.826 | 44.602 | 56.470 |
+| 空 decode 完成回调 | 0.506 | 0.564 | 0.722 |
+| 空 runtime 事件回调 | 0.376 | 0.423 | 0.522 |
+
+空回调的候选扫描计数保持不变。普通窗口上限为八个；这份测量没有
+覆盖 24 个已知 JOIN parent 的窗口，不包含异步 writer 线程、整个
+控制器、真实 KV/DMA、模型执行或 JCT。夹具为了重复测量而重置资格
+或缓存长度，不能当作在线 workload。首次脚本把 writer 的分类计数
+字典误当成总数，校验失败；首次 550 条完整日志及该失败单独保留，
+修正后的记录在 `cpu_journal_verified/`。
+
+后续 `collecting_pipeline_with_live_grants.json` 封存 1189 个精确完成
+请求；reference 的 per-agent 预算时间占比继续保持未知。较晚的
+`collecting_grants_with_completed_service.json` 记录 54 次授权，其中
+52 次来自新 continuation 路径、两次来自原 sibling 路径；其中 50 个
+continuation 和两个 sibling 授权关联已绑定完成后的原生服务，另两个
+continuation 仍缺完成或 session 证明。
+独立封存的前缀不能当作跨文件原子快照，也不能与完整 V345 的平均
+吞吐或 JCT 直接比较。

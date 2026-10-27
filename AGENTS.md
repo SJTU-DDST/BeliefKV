@@ -1868,3 +1868,18 @@
   ops/cpu_plotting_20261027/bin/python and only draws after full success plus
   actual owned exit. State: ops/reference_free_continuation_20261027_r1.plots.state.json.
   No further GPU experiment is queued. ReuseV345; goal remains incomplete.
+- The source-bound ordinary continuation callback CPU fixture now measures
+  33 programs/pending records with a real async journal: new-grant thread CPU
+  median91.443us/P99118.244us/max926.538us; budget refusal32.153us median,
+  live-growth refusal40.826us; empty completion/events0.506/0.376us medians
+  and no candidate scans. It does not measure the24-parent JOIN window,
+  writer-thread CPU, whole-controller cost or GPU/end-to-end gains. Preserve
+  the initial dict-versus-integer counter-validation failure and550 complete
+  initial journal rows; verified retry is under cpu_journal_verified/.
+  Named admission_cpu_cost.py/.json bind running source hashes. The separate
+  collecting pipeline seals1189 exact completions with unknown per-agent
+  reference budget composition. A later grant prefix has54 grants (52 new
+  continuation,2 sibling):50 continuation and2 sibling service associations
+  verify;2 continuations still lack completion/session proof. These are
+  independently sealed live prefixes, not final performance. Keep frozen
+  1f1678b266e1 and V345 unchanged.

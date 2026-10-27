@@ -1,0 +1,28 @@
+{
+  "background_writer_timing": {
+    "categories": {
+      "agent_continuation_free_capacity_admitted": {
+        "max_sample_cpu_ms": 0.04461,
+        "max_sample_wall_ms": 7.635729,
+        "mean_sample_cpu_ms": 0.017901,
+        "mean_sample_wall_ms": 0.8610368888888889,
+        "records_seen": 550,
+        "sampled_cpu_ms": 0.161109,
+        "sampled_wall_ms": 7.749332,
+        "samples": 9
+      }
+    },
+    "cpu_clock": "thread_time_ns",
+    "sample_every": 64,
+    "schema_version": 1,
+    "scope": "Every 64th record per category, starting with its first record. Measured processing samples only; queue waiting and status publication are excluded. Wall includes scheduling and GIL waiting; thread CPU excludes waiting. No full-run cost, GPU stall, GIL attribution or JCT saving is inferred.",
+    "snapshot_ts_ms": 1793144778802.4502,
+    "wall_clock": "perf_counter_ns"
+  },
+  "complete": true,
+  "enqueued": {
+    "agent_continuation_free_capacity_admitted": 550
+  },
+  "error": null,
+  "schema_version": 1
+}

@@ -1,0 +1,15 @@
+{
+  "scope": "preserved offline benchmark validation failure, not a runtime or performance result",
+  "operator_sha256": "318e3390f847659cb228c738e2d149c1532648def9a1476782d1a59e24c2e599",
+  "exception": "ValueError: CPU admission journal did not retain every successful grant",
+  "cause": "The first operator compared a per-event count dictionary with the integer 550.",
+  "observed_enqueued": {
+    "agent_continuation_free_capacity_admitted": 550
+  },
+  "observed_writer_complete": true,
+  "observed_writer_error": null,
+  "writer_status": "experiments/reports/reference_free_continuation_20261027/cpu_journal/new_grant/admission_opportunities_status.json",
+  "writer_status_sha256": "9e388847ebaa2c3f1585c2462d4aaff26acda489da41f9f06adc7fdf18be6450",
+  "measured_costs_accepted": false,
+  "runtime_sources_changed": false
+}
