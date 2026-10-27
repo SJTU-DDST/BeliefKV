@@ -1007,3 +1007,24 @@
   policy, full queued time, exact tokens, source graph and tool map. Requalify
   and register a distinct complete ThunderAgent-first retry; do not resume the
   partial population or continue into Full after a failed baseline.
+- V286 is the separately frozen complete retry at application
+  `1e8c8ca75eef3ce1da3f9219bd479531c2d59ec3`, common native tree
+  `11b84f7c31986782be3fbe699bae2574ef092389`, port 18652:
+  `ops/v286_locobench_network_join_admission_20261027.registration.json`.
+  It runs unchanged ThunderAgent first, then the explicit JOIN-dependent Full,
+  using the same V269 map, streaming, complete V230 work/capacity/seed21 and
+  3600-second common client timeout. Initial supervisor 4025266/start
+  `725518522` and server 4025775/start `725521000` were verified during model
+  startup. Keep this execution frozen and do not overlap another GPU job.
+  Independent prepared shared CPU qualification V285 passes 2350 cases plus
+  four subtests in one execution, no skips/failures, retaining all V279 cases.
+  The descriptive old reuse_v273 flag is corrected on main; V286's actual
+  two-arm order never reuses the failed partial baseline. Complete GPU,
+  correctness and performance acceptance remain pending.
+- V287 independently verifies V286 as `running_thunderagent`, with owned GPU
+  scheduler 4026143, driver 4027494/start `725535972`, unchanged frozen
+  sources/inputs, 118 registered requests and 99 sealed exact completed
+  receipts. Actual driver arguments contain the 3600-second common timeout,
+  V269 overlay and streaming metrics; Full agent admission is null. Keep the
+  full population and both primary metrics pending; early receipts do not
+  establish complete correctness or a performance improvement.

@@ -85,7 +85,8 @@
     "future_timing_delivered_to_policy": false
   },
   "comparison": {
-    "reuse_v273_thunderagent": true,
+    "reuse_v273_thunderagent": false,
+    "reference_control": "complete_thunderagent_arm_of_same_matched_comparison",
     "stream_response_metrics": true,
     "request_timeout_s": 3600,
     "exact_complete_work": true,

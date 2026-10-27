@@ -1,0 +1,213 @@
+{
+  "observed_at": "2026-10-27T15:14:01.877091+08:00",
+  "registration": "/home/longhao/experiment/ops/v286_locobench_network_join_admission_20261027.registration.json",
+  "registration_sha256": "c726db4a4cc3d0c477fe3616edf2f5cef6ed8fab1312d53d37f4192d3238bc1d",
+  "status": "running_thunderagent",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_network_join_admission_20261027_v286",
+  "order": [
+    "thunderagent",
+    "full"
+  ],
+  "code_commit": "1e8c8ca75eef3ce1da3f9219bd479531c2d59ec3",
+  "engine_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+  "processes": {
+    "watcher": {
+      "pid": 4025266,
+      "state": "S",
+      "ppid": 1,
+      "start_ticks": "725518522",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-causal-1e8c8ca75eef/scripts/run_causal_comparison.py",
+        "--watch",
+        "/home/longhao/experiment/ops/v286_locobench_network_join_admission_20261027.registration.json"
+      ]
+    },
+    "server": {
+      "pid": 4025775,
+      "state": "S",
+      "ppid": 4025266,
+      "start_ticks": "725521000",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+        "--served-model-name",
+        "Qwen3-Coder-30B-A3B-Instruct",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "18652",
+        "--dtype",
+        "bfloat16",
+        "--kv-cache-dtype",
+        "bfloat16",
+        "--tensor-parallel-size",
+        "1",
+        "--context-length",
+        "262144",
+        "--mem-fraction-static",
+        "0.94",
+        "--chunked-prefill-size",
+        "4096",
+        "--max-running-requests",
+        "24",
+        "--random-seed",
+        "21",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--enable-metrics",
+        "--enable-hierarchical-cache",
+        "--hicache-size",
+        "200",
+        "--hicache-write-policy",
+        "write_back",
+        "--hicache-io-backend",
+        "kernel",
+        "--enable-session-radix-cache",
+        "--enable-custom-logit-processor",
+        "--max-total-tokens",
+        "805198",
+        "--enable-beliefkv-admission",
+        "--beliefkv-event-socket-path",
+        "/tmp/bkv-causal-18652.sock"
+      ]
+    },
+    "driver": {
+      "pid": 4027494,
+      "state": "S",
+      "ppid": 4025266,
+      "start_ticks": "725535972",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-causal-1e8c8ca75eef/scripts/run_causal_gpu_replay.py",
+        "--source-arm",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_parallel_retry_source_20261026_v230/native_capture",
+        "--output-dir",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_network_join_admission_20261027_v286/thunderagent/replay",
+        "--base-url",
+        "http://127.0.0.1:18652",
+        "--request-timeout-s",
+        "3600.0",
+        "--stream-response-metrics",
+        "--tool-duration-overlay",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/v269_v230_empirical_network_timing_cpu_20261027.json",
+        "--event-socket",
+        "/tmp/bkv-causal-18652.sock"
+      ]
+    },
+    "scheduler": {
+      "pid": 4026143,
+      "state": "R",
+      "ppid": 4025775,
+      "start_ticks": "725522392",
+      "argv": [
+        "sglang::scheduler"
+      ]
+    }
+  },
+  "owned_gpu_processes": [
+    "4026143, sglang::scheduler, 136036 MiB"
+  ],
+  "paper_baseline": {
+    "policy": "thunderagent_public_single_backend",
+    "author_commit": "7ddc8610270e56d3b109eed8796b3a4360fc67c9",
+    "program_identity": "invocation_id",
+    "future_information_used": false,
+    "native_capacity_authority_preserved": true,
+    "scope": "single_backend_exact_token_ingress_policy_adaptation",
+    "streaming_context_accounting": "observed_native_outputs_at_arrival_and_five_second_control",
+    "control_capacity_snapshot": {
+      "remaining_capacity_tokens": -3461,
+      "active_acting_programs": 0,
+      "active_reasoning_programs": 10,
+      "paused_pending_programs": 8,
+      "capacity_blocked_pending_programs": 8,
+      "oldest_pending_seconds": 98.35358725115657
+    },
+    "capacity_tokens": 805198,
+    "programs": 19,
+    "active_programs": 0,
+    "pending_requests": 17,
+    "counts": {
+      "control_ticks": 29,
+      "resumed": 11,
+      "registered": 118,
+      "streaming_progress_checks": 308,
+      "streaming_progress_updates": 61,
+      "deferred_selections": 382646,
+      "completed": 101
+    }
+  },
+  "agent_admission": null,
+  "source_plan": {
+    "causal_graph_compiled": true,
+    "nodes": 18640,
+    "dependency_edges": 25635,
+    "event_counts": {
+      "invocation_create": 110,
+      "join_create": 72,
+      "join_satisfied": 72,
+      "join_wait": 72,
+      "llm_result": 3674,
+      "llm_submit": 3674,
+      "native_request": 3674,
+      "return": 110,
+      "spawn": 92,
+      "structured_action": 106,
+      "tool_end": 3474,
+      "tool_start": 3474,
+      "workflow_end": 18,
+      "workflow_start": 18
+    },
+    "workflows": 18,
+    "requests": 3674,
+    "prompt_tokens": 145565966,
+    "output_tokens": 549671,
+    "native_completion_boundaries_verified": true,
+    "omitted_diagnostic_events": 7302,
+    "gpu_replay_qualified": false,
+    "performance_accepted": false,
+    "scope": "Causal event/request graph and native usage only. Native service is an unresolved request operation, not its original elapsed time. Exact token execution, native EOS, session equivalence and GPU performance require separate qualification."
+  },
+  "tool_timing_overlay": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v269_v230_empirical_network_timing_cpu_20261027.json",
+    "sha256": "fa75164726e37277772d181f3601f6eaf234d3e55d8503710bdc0fc966cca5be",
+    "kind": "empirical_tool_timing_overlay",
+    "seed": 21,
+    "public_source": {
+      "name": "TraceLab",
+      "attribution": "TraceLab, SyFI Lab, University of Washington",
+      "project_url": "https://tracelab.cs.washington.edu",
+      "release": "v0.0.1",
+      "release_published_at": "2026-06-22T17:26:15Z",
+      "asset": "syfi_coding_trace.jsonl.gz",
+      "url": "https://github.com/uw-syfi/TraceLab/releases/download/v0.0.1/syfi_coding_trace.jsonl.gz",
+      "sha256": "9d265eae69a31cae203848bea936f018148eed7ca8bf56050c5abe96da0b4e6b",
+      "schema_repository_commit": "5c6550b0d08beff983e9159fe2575e7a2334c8c1",
+      "license": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "timing_semantics": "Tool/runner-reported WebFetch and WebSearch call durations. Applying this distribution to execute is explicitly a network-tool timing sensitivity workload, not a measurement of natural shell execution."
+    },
+    "sample_sha256": "44ea6fce2b617ec004495fb2806474b0000a1cd7cbec0402a8f6bb20f73f4eb1",
+    "entries_sha256": "62a1d0df200eda2e614da7a7645efaecc9011d05dcb94442684031a2c7e4cf01",
+    "target_tool_names": [
+      "execute"
+    ],
+    "calls": 931,
+    "source_plan_sha256": "e39263e165969b55023589a381ec212494ffe244bcbe9a532b8449aafe90f932",
+    "transformed_plan_sha256": "68cb57857aff37a5be6d768d727d7d302bc3625bfae1b105ad896b669e9ec17a",
+    "synthetic_tool_timing": true,
+    "future_timing_delivered_to_policy": false
+  },
+  "stream_response_metrics": true,
+  "request_timeout_s": 3600.0,
+  "source_and_external_inputs_unchanged": true,
+  "sealed_exact_completed_receipts": 99,
+  "whole_population_correctness_accepted": false,
+  "gpu_replay_qualified": false,
+  "performance_accepted": false,
+  "scope": "Independent live GPU ownership, isolated author-default ThunderAgent, explicit common transport deadline and sealed early receipts. Full remains pending behind complete baseline and cleanup; no full JCT or throughput acceptance."
+}
