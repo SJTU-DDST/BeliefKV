@@ -108,6 +108,7 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         self.latest.pop(invocation, None)
 
     def status(self):
+        programs = tuple(self.policy.programs.values()) if self.policy is not None else ()
         return {
             **super().status(),
             "strategy": self.strategy,
@@ -122,6 +123,19 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             "restore_reservation_ms": 0,
             "ordinary_restore_reservation_ms": 0,
             "tool_warming_eligibility": "existing_active_tool_wait_only_no_new_reservation",
+            "active_invocation_ids": [item.identity for item in programs if item.active],
+            "paused_pending_invocation_ids": [
+                item.identity for item in programs if item.pending and not item.active
+            ],
+            "marked_for_pause_invocation_ids": [
+                item.identity for item in programs if item.marked_for_pause
+            ],
+            "logical_active_tokens": (
+                self.policy.capacity_tokens - self.policy.remaining_capacity()
+                if self.policy is not None else None
+            ),
+            "logical_capacity_semantics": "reference_undiscounted_contexts_plus_buffers",
+            "snapshot_changes_policy": False,
         }
 
     def close(self):

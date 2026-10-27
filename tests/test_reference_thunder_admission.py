@@ -259,6 +259,38 @@ def test_scheduling_and_native_lifecycle_methods_are_the_reference_implementatio
         assert getattr(ReferenceThunderAdmission, name) is getattr(ThunderAgentDecayAdapter, name)
 
 
+def test_reference_snapshot_exposes_actual_eligibility_and_pause_marks_without_mutation(
+    monkeypatch, tmp_path,
+):
+    live = full_runtime(monkeypatch, tmp_path, capacity=500)
+    try:
+        adapter = live._agent_admission
+        live.register_visible_request(request("one", "a", tokens=300))
+        live.register_visible_request(request("two", "b", tokens=300))
+        adapter.policy.generated("a", 450)
+        adapter.policy.tick(now=time.monotonic())
+        before = state(adapter)
+
+        snapshot = adapter.status()
+
+        assert snapshot["active_invocation_ids"] == ["a"]
+        assert snapshot["paused_pending_invocation_ids"] == ["b"]
+        assert snapshot["marked_for_pause_invocation_ids"] == ["a"]
+        assert snapshot["logical_active_tokens"] == 550
+        assert snapshot["logical_capacity_semantics"] == "reference_undiscounted_contexts_plus_buffers"
+        assert snapshot["snapshot_changes_policy"] is False
+        assert state(adapter) == before
+        validate_reference_admission(snapshot)
+        paper = ThunderAgentDecayAdapter(paper_runtime())
+        paper.attach(NS(tree_components=(0,), token_to_kv_pool_allocator=NS(size_full=500)))
+        try:
+            assert "active_invocation_ids" not in paper.status()
+        finally:
+            paper.close()
+    finally:
+        live.close()
+
+
 def test_native_requeue_refreshes_the_restore_identity_without_new_program_arrival(monkeypatch, tmp_path):
     live = full_runtime(monkeypatch, tmp_path)
     try:

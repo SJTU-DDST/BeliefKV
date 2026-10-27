@@ -71,3 +71,17 @@ critical paths and unexpanded sampled waits are retained in the other
 These describe the frozen original candidate, not the follow-up repair:
 mean JCT improves 2.87157%, while complete output throughput improves only
 0.03702%. The primary performance goal remains incomplete.
+
+`tail_request_waits.py/.json` aligns all 201 requests on the identical realized
+final-workflow paths. Epoch38 accounts for a 194.553-second queue increase:
+Full waits194.641 seconds after a3.015-second tool, while the control waits
+0.088 seconds. The cache counters are observed at service, not at arrival.
+Old aggregate snapshots cannot identify this request's exact eligibility.
+
+Follow-up reference snapshots now expose actual active, paused-pending and
+marked-for-pause identities plus undiscounted logical budget once per second,
+without changing policy state or paper controls. The48 passing targeted cases
+are in`eligibility_snapshot_targeted.xml`. The32-program synthetic CPU cost
+fixture in`snapshot_cpu_cost.py/.json` measures status construction only:
+median10.691us andP99 13.734us, versus parent aggregate3.817/4.720us.
+These additions do not retroactively change the frozen V400b evidence.

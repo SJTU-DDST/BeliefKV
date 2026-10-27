@@ -1,0 +1,23 @@
+{
+  "programs": 32,
+  "samples_per_variant": 2000,
+  "thread_cpu_us": {
+    "parent_aggregate_status": {
+      "median": 3.817,
+      "p99": 4.72,
+      "max": 9.277
+    },
+    "full_identity_status": {
+      "median": 10.691,
+      "p99": 13.734,
+      "max": 20.484
+    }
+  },
+  "source_sha256": {
+    "experiments/reports/v400b_followup/snapshot_cpu_cost.py": "56bb07abfa2c7ab1a7b553fb91fc7c4f8b28e4403754adbf4cc00c4aa5ded0bb",
+    "beliefkv/runtime/reference_thunder_admission.py": "431c8be049642fe13d1484b88c142ec9f1c5da340acac8ddf5da1944211faae8",
+    "beliefkv/runtime/paper_baseline.py": "bcb6466df233996710a8cb84bada8a4f1e81945580e4fee597016b1db3254ee4"
+  },
+  "policy_state_unchanged": true,
+  "scope": "CPU snapshot construction only; synthetic fixture; not whole-controller or GPU performance."
+}
