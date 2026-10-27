@@ -935,3 +935,36 @@
   `v271_empirical_tool_timing_final_cpu_20261027.xml`; source/config/artifact
   digests and the explicit pending GPU/performance scope are in
   `v272_empirical_tool_timing_cpu_evidence_20261027.json`.
+- The user has explicitly released the later GPU hold with "现在可以进行GPU实验了"
+  and requests ThunderAgent on the new trace before the predictive repairs.
+  This supersedes the previous reservation and Full-first ordering for this
+  comparison. Preserve the archived hold and the frozen V260/V247 results.
+  V273 is running only the unchanged ThunderAgent reproduction on V230 with
+  the fixed V269 empirical network-tool timing map and streaming metrics:
+  `ops/v273_locobench_network_thunderagent_20261027.registration.json`,
+  application `29396b2f53a0b897d4d704fd65fd17859c84e1a6`, native tree
+  `11b84f7c31986782be3fbe699bae2574ef092389`, port 18651. Supervisor
+  3988473/start `725219729`, server 3988975/start `725222405`, scheduler
+  3989350/start `725223819` and driver 3990697/start `725237362` were
+  independently checked live. Keep this baseline frozen; no overlapping GPU
+  job or restart based on a stale empty argv/receipt snapshot.
+- V273 retains all 3674 requests, 145565966 prompt tokens, 549671 output
+  tokens, 18 distinct-project workflows and 72 JOINs. Only the declared 931
+  execute timers change. Pin V269 SHA256
+  `fa75164726e37277772d181f3601f6eaf234d3e55d8503710bdc0fc966cca5be`
+  in subsequent controls. Natural native timing is not its performance control.
+  Live ownership, isolated policy and 275 early exact receipts are recorded in
+  `v274_network_thunderagent_live_gpu_20261027.json`; complete work, drained
+  telemetry and performance remain pending. Prepared shared CPU qualification
+  is explicitly the 2304-case two-execution assembly V273c, with the original
+  two Docker-environment failures and exact successful retries preserved.
+- The next predictive repairs concern observed JOIN dependency in agent
+  admission and conservative capacity accounting. Both current methods use
+  invocation IDs, not a single workflow program. Do not claim that blocked
+  budget lending happens only at GPU idleness: the existing backed-demand
+  path also checks real queued demand at one-second maintenance. Shared-prefix
+  credit requires current native identity/extent evidence; textual overlap,
+  workflow membership and similar prompts alone grant no credit. V275's
+  historical budget audit reconciles only about 109 seconds of V260 and does
+  not establish whole-run blocked occupancy or physical sharing. Keep its
+  unreconciled interval explicit and retain the original negative results.

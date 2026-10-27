@@ -1,0 +1,120 @@
+{
+  "observed_at": "2026-10-27T06:28:30.454194+00:00",
+  "arms": {
+    "v260": {
+      "counts": {
+        "covered_ms": 1897687.0964355469,
+        "snapshots_in_request_span": 1835,
+        "reconciled_ms": 108909.91650390625,
+        "reconciled_snapshots": 107,
+        "unreconciled_ms": 1788777.1799316406,
+        "unreconciled_snapshots": 1728
+      },
+      "native_request_span_ms": 1899441.0754394531,
+      "uncovered_ms": 1753.97900390625,
+      "time_weighted_agents": {
+        "model_pending": 3.392434801860979,
+        "known_blocked": 1.666446770315646,
+        "between_native_requests": 0.5169667575171172,
+        "inactive_pending": 1.016841970201066
+      },
+      "active_budget_token_time_fraction": {
+        "model_pending": 0.43711980513191173,
+        "known_blocked": 0.5086329818442865,
+        "between_native_requests": 0.05424721302380182
+      },
+      "buffer_tokens_per_agent": 100,
+      "maximum_snapshot_age_ms": 1500.0,
+      "work": {
+        "requests": 3674,
+        "workflow_ids": [
+          "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+          "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+          "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+          "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+          "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+          "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+          "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+          "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+          "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+          "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+          "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+          "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+          "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa",
+          "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+          "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+          "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+          "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+          "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e"
+        ],
+        "prompt_tokens": 145565966,
+        "output_tokens": 549671,
+        "request_identity_and_token_count_sha256": "03b0ad5343e41410479bb058fc3cee2bdc00da04e0bb5b37390312a7fda15cd7",
+        "clock": {
+          "monotonic_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec",
+          "completion_wall_minus_monotonic_span_ms": 0.00537109375,
+          "maximum_allowed_clock_offset_span_ms": 5.0,
+          "interval_clock": "native recorded wall timestamps"
+        },
+        "by_arrival_boundary": {
+          "api_received": {
+            "outstanding_union_ms": 1891117.3703613281,
+            "first_arrival_to_last_completion_ms": 1899447.8210449219,
+            "no_outstanding_request_ms_within_span": 8330.45068359375,
+            "outstanding_fraction_of_span": 0.9956142776909708,
+            "time_weighted_outstanding_requests": 13.149302406059128,
+            "output_tokens_per_outstanding_second": 290.65937874335987
+          },
+          "scheduler_received": {
+            "outstanding_union_ms": 1890987.572265625,
+            "first_arrival_to_last_completion_ms": 1899441.3276367188,
+            "no_outstanding_request_ms_within_span": 8453.75537109375,
+            "outstanding_fraction_of_span": 0.9955493464061815,
+            "time_weighted_outstanding_requests": 13.107712826718995,
+            "output_tokens_per_outstanding_second": 290.679329712056
+          },
+          "queue_registered": {
+            "outstanding_union_ms": 1890981.4973144531,
+            "first_arrival_to_last_completion_ms": 1899441.0754394531,
+            "no_outstanding_request_ms_within_span": 8459.578125,
+            "outstanding_fraction_of_span": 0.995546280306146,
+            "time_weighted_outstanding_requests": 13.107445047952504,
+            "output_tokens_per_outstanding_second": 290.68026354601324
+          }
+        },
+        "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_observed_growth_20261027_v260/full",
+        "events": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_observed_growth_20261027_v260/full/server/runtime_events.sglang.jsonl",
+          "observed_size_bytes": 9512466,
+          "analyzed_bytes": 9512466,
+          "sha256": "50eca6ef3e1033ee75af2e04ea7095af89030ceb576dc4acfaeea4b7b1be3cbb",
+          "discarded_partial_tail_bytes": 0
+        },
+        "status_sha256": "7b05a0cbf49ab6d1df2c010e5650068e6dbf13ec6560b2594c556afd12a94dc6",
+        "summary_sha256": "62d98776c5f2d0ddd77399dd40029e99c24df9d5d085aa80e80f723814f5dd60"
+      },
+      "input_jsonl_prefixes": {
+        "experiments/raw/locobench_observed_growth_20261027_v260/full/opportunities/admission_opportunities.jsonl": {
+          "complete_prefix_bytes": 49381556,
+          "complete_prefix_sha256": "7a3437305141bbb5efac880000f54048592490901f0529b4919da66962e94bfe",
+          "first_read_limit_bytes": 49381556
+        },
+        "experiments/raw/locobench_observed_growth_20261027_v260/full/server/runtime_events.sglang.jsonl": {
+          "complete_prefix_bytes": 9512466,
+          "complete_prefix_sha256": "50eca6ef3e1033ee75af2e04ea7095af89030ceb576dc4acfaeea4b7b1be3cbb",
+          "first_read_limit_bytes": 9512466
+        }
+      }
+    }
+  },
+  "same_native_request_identities_and_token_counts": true,
+  "auditor_sha256": "52743ae801d46d963524607e3c03a112908e28a81357083999d88508fb81a888",
+  "scope": [
+    "Logical context budgets reconstructed from native arrival input counts and completed output counts; no future request context is used at an earlier snapshot.",
+    "Each snapshot is held until the next sample or 1500ms, clipped to the native request span. This can miss transitions within that interval.",
+    "Reported fractions use only snapshots whose reconstructed sum exactly matches the observed logical active budget; mismatches and sampling gaps remain explicit.",
+    "Model pending includes both running and queued native model requests. Between native requests includes tools, client work and transport; it is not proven cold time.",
+    "A logical token budget is neither physical exclusive occupancy, reclaimable capacity nor removable GPU waiting. No tail is removed from workflow JCT."
+  ],
+  "performance_accepted": false
+}

@@ -1,0 +1,24 @@
+{
+  "scope": "Explicit two-execution assembly, not a single successful execution. Original failures remain preserved.",
+  "original_report": "/home/longhao/experiment/BeliefKV/experiments/reports/v273_network_thunderagent_prepared_shared_cpu_20261027.xml",
+  "original_sha256": "25d7edbfcaaf75a9d2bbf307c6fdf93b86c17484f25c326abd37f6a4c499c232",
+  "retry_report": "/home/longhao/experiment/BeliefKV/experiments/reports/v273b_network_thunderagent_docker_retry_cpu_20261027.xml",
+  "retry_sha256": "44a730bb54e9f6bf343563140f7b6a4cc730b8279bcb6b363c79ade02ec17547",
+  "assembled_report": "/home/longhao/experiment/BeliefKV/experiments/reports/v273c_network_thunderagent_shared_assembled_cpu_20261027.xml",
+  "assembled_sha256": "cb8fd8a11e1d4d069c6c10498cdcccae7df297adaab4300675be5c0998d9896b",
+  "passing_unique_cases": 2304,
+  "retried_cases": [
+    [
+      "tests.test_workload_production_execution",
+      "test_real_probe_preserves_async_image_configuration_and_private_runtime_writes"
+    ],
+    [
+      "tests.test_workload_production_execution",
+      "test_real_readonly_docker_probe_distinguishes_application_from_local_fallback"
+    ]
+  ],
+  "source_map": "/home/longhao/experiment/BeliefKV/experiments/reports/v273_network_thunderagent_prepared_sources_cpu_20261027.json",
+  "source_map_sha256": "f1f8f702709dc7d4be0d380f1682cef208aea7f843a753d49a5782d34f55a0cd",
+  "application_checkout": "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-29396b2f53a0",
+  "gpu_performance_accepted": false
+}
