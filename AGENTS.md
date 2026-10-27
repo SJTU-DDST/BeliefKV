@@ -1788,3 +1788,29 @@
   actual owned exit, fresh idle drain, matched figures and complete independent
   migration/JCT/wait/prefetch/grant/known-case/lifecycle audits. This operator
   is not yet executed and all-baseline/performance acceptance remains pending.
+- EOS-guard R1 now completes all3674 exact requests,145565966 input/549671
+  output tokens and18 workflows, with original stopping/all normal tails,
+  two fresh idle snapshots and actual owned exit; the CPU plot waiter also
+  completes and all three matched PNGs are inspected. The actual complete
+  operator succeeds: meanJCT1646.862394s versusV3451697.583645s improves
+  2.98785%; whole-run output237.444652 versus233.371801token/s improves
+  1.74522%. Seventeen workflows improve; desktop_media regresses2.567029s.
+  Mean maximum post-first ready gap76.981333s remains worse than73.449107s.
+  Compared with earlier sibling Full, meanJCT/throughput regress0.21178%/
+  0.69432%; these single changed configurations are not repeated trials.
+  Keep the real EOS bug fix without claiming performance superiority.
+  Four known cases pass and all55 actual final-EOS triggers have real final
+  RETURN evidence. All573 tagged JOIN commands prove reuse104.141685GB;
+  ten JOINs early-start and prove25.818759GB, distinct from21.595914GB of
+  grant-associated reuse including later copies. All110 unique granted
+  requests bind to native service. Actual H2D2721.542504GB/D2H1189.520572GB;
+  tool prefetch copies zero and independent predicted offload releases only
+  82tokens/8060928bytes. Of506 tool successors waiting at least1s,92.990% of
+  sampled cumulative wait is inactive; this is not exact or removable JCT.
+  Twenty-four sampled restore batches wait2470.806ms versus18/2662.835ms,
+  without expansion or matched-cohort claims. Preserve all complete evidence,
+  source failures and ordinary tails; see the named complete research doc.
+  Next inspect actual long inactive capacity decisions before choosing another
+  qualified optimization. No new GPU job is queued; reuseV345 and leave the
+  clear/repeated/all-baseline goal incomplete. Progressive layer handoff is
+  still unimplemented and was not evaluated by this run.
