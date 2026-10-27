@@ -804,3 +804,17 @@
   independently verified in `v252_model_to_position_handoff_20261027.json`.
   Keep these sources frozen, retain exact V230 work/capacity/seed21 and do not
   start other baselines before the shared JCT/throughput improvement gate.
+- V246 completed its 24-request bounded position/session/stop GPU smoke and
+  registered V247 at 2026-10-27 11:20 Asia/Shanghai. V247 is now `running_full`:
+  `ops/v247_cold_fit_free_page_20261027.registration.json`, supervisor
+  PID 3884554/start ticks `724148546`, GPU scheduler PID 3885477.
+  Live runtime confirms physical control enabled, `thunderagent_retained`,
+  `backed_demand_recall` and `cold_fit`. Its Device capacity is 805198 tokens,
+  Host capacity 200000077824 bytes, running/decode24 and seed21.
+  Full then ThunderAgent share engine tree
+  `11b84f7c31986782be3fbe699bae2574ef092389` and the enabled free-page fence.
+  Proof: `experiments/reports/v253_full_live_start_20261027.json`.
+  The standalone smoke correctly leaves whole-workflow replay qualification
+  false; independent GPU ownership and position evidence are in its separate
+  `gpu_smoke.json`. Keep population/performance acceptance pending until each
+  full arm completes with exact work, drained telemetry and owned cleanup.
