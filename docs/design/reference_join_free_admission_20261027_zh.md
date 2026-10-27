@@ -80,3 +80,35 @@ native CPU测试明确使用copy/event/Host-index替身，不是GPU或性能验�
 共享CPU验证通过后才可冻结新的FULL运行，继续复用完整V345，
 保持相同全部请求/token/停止、工具时间、容量、模型、种子及batch。
 完整JCT和全程输出吞吐的明确、可重复收益仍是后续baseline门槛。
+
+## 本轮实际启动
+
+冻结应用为`3a23fe1028ce724ab1a67f16a216f4d8ddcec8ae`，注册为
+`ops/reference_join_free_admission_20261027_r1.registration.json`，
+端口18661，socket`/tmp/bkv-causal-18661.sock`。实际目录为
+`/home/longhao/experiment/.worktrees/beliefkv-causal-3a23fe1028ce`，
+native树仍为`11b84f7c31986782be3fbe699bae2574ef092389`。
+启动前独立确认完整R1实际退出、GPU空闲、没有新的预约暂停。
+
+- watcher230037/start ticks730081130；
+- server230477/start730083676；
+- GPU scheduler230812/start730085104；
+- replay driver232018/start730098727。
+
+四个实际服务进程均为nice0，GPU进程与NVML匹配。CPU绘图等待器
+231428/start730089097为nice19，隐藏CUDA，仅在完整成功和实际owned
+退出后生成同口径60秒曲线、时间加权分布及geometry图；失败则停止，
+不启动GPU任务。状态为
+`ops/reference_join_free_admission_20261027_r1.plots.state.json`。
+
+`live_start.py/.json`独立核验13项工作量/工具时间/容量/引擎/种子及
+流式配置字段与完整V345一致，封存179条完成回执并逐项核对token、
+hash与原生停止。真实状态policy为
+`full_with_reference_thunderagent_free_join_admission`，
+开关生效且物理控制健康。最早的`live_pipeline_start.json`封存时
+尚无完成回执，是不同时间点的初始观察，不作为工作量正确性证据。
+所有前缀独立封存，不能将179条推及剩余3495条。
+
+原始数据为`experiments/raw/locobench_reference_join_free_admission_20261027_r1/full/`。
+图表完成后写入`experiments/figures/reference_join_free_admission_20261027_r1/`。
+没有后续GPU轮次排队，本轮尚无完整JCT、吞吐或新授权消费效果结论。

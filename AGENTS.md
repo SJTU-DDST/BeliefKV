@@ -1640,3 +1640,17 @@
   Qualify and freeze this separate Full, reuse completeV345 on unchanged
   complete work/V311 timing/native tree/capacity/seed; do not modify R1.
   See `docs/design/reference_join_free_admission_20261027_zh.md`.
+- The isolated free-JOIN Full now runs from frozen3a23fe1028ce on port18661:
+  `ops/reference_join_free_admission_20261027_r1.registration.json`.
+  Actual nice0 watcher230037/start730081130, server230477/start730083676,
+  GPU scheduler230812/start730085104 and driver232018/start730098727 are
+  verified; the GPU PID matches NVML. Independent startup evidence seals179
+  exact completed receipts, not full correctness/performance. Thirteen common
+  work/timing/capacity/engine/serving fields equal completeV345; actual
+  `full_with_reference_thunderagent_free_join_admission` is effective and
+  physical control is healthy. Preserve the running frozen tree.
+  Nice19 CUDA-hidden plotting waiter231428/start730089097 only draws after
+  complete success plus actual owned exit and launches no GPU work. Its state
+  is `ops/reference_join_free_admission_20261027_r1.plots.state.json`.
+  No follow-up GPU job is queued. Reports/operators belong to
+  `experiments/reports/reference_join_free_admission_20261027/`.
