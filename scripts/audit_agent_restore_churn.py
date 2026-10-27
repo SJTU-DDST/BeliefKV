@@ -96,8 +96,13 @@ def inspect(native, transfers, categories, *, bytes_per_token, states=()):
         index = bisect_right(times, event["ts_ms"]) - 1
         if index >= 0 and event["ts_ms"] - times[index] <= 1500.:
             admission = states[index]["agent_admission"]
-            row["queue_snapshot_logical_overcommit_tokens"] = max(
-                0, admission["logical_active_tokens"] - admission["capacity_tokens"],
+            logical, capacity = (
+                admission.get("logical_active_tokens"), admission.get("capacity_tokens"),
+            )
+            row["queue_snapshot_logical_overcommit_tokens"] = (
+                max(0, logical - capacity)
+                if type(logical) is int and logical >= 0
+                and type(capacity) is int and capacity > 0 else None
             )
         rows.append(row)
     demand = copied["h2d_bytes"] - copied["h2d_tagged_bytes"]
@@ -183,6 +188,7 @@ def main():
             "Complete unchanged replay work; no workflow or normal tail is removed.",
             "FULL-only aggregate untagged H2D reconciles exactly with native request Host-hit bytes. Per-request cohorts are Host-hit associations, not individual DMA command attribution.",
             "Eligibility uses independent samples held at most 1500ms; all_sampled_active cannot exclude unsampled pauses. First-service path observation is not kernel start.",
+            "Adapters without per-agent eligibility or logical-budget fields remain unknown; program counts do not establish active identities or logical overcommit.",
             "Logical overcommit and observed inactivity do not prove physical eviction cause, reclaimable pages, saved transfer time or removable JCT.",
         ],
     }

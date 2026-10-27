@@ -81,3 +81,21 @@ def test_first_model_request_does_not_inherit_another_agents_service_history():
         event["invocation_id"] = "child"
     result = inspect(events, [transfer()], {}, bytes_per_token=100)
     assert result["host_hit_requests"][0]["eligibility_cohort"] == "no_prior_same_invocation"
+
+
+def test_reference_program_counts_do_not_establish_eligibility_or_logical_overcommit():
+    snapshots = [{
+        "ts_ms": when, "agent_admission": {
+            "strategy": "thunderagent_reference", "capacity_tokens": 100,
+            "active_programs": 1, "pending_requests": 1,
+        },
+    } for when in (0., 1000.)]
+    result = inspect(native(), [transfer()], {}, bytes_per_token=100, states=snapshots)
+    row = result["host_hit_requests"][0]
+    assert row["eligibility_cohort"] == "active_or_unknown"
+    assert row["eligibility_partition"] == {
+        "active_ms": 0., "inactive_ms": 0., "unknown_ms": 1500.,
+    }
+    assert row["queue_snapshot_logical_overcommit_tokens"] is None
+    assert result["native_demand_bytes_reconciled"]
+    assert result["request_host_hit_bytes"] == 300

@@ -43,3 +43,10 @@ All invocations use `python -m pytest -q ... --tb=short --junitxml=...`.
 Native copy, event and Host-index stand-ins remain explicit. These tests do not
 establish real GPU behavior, historical defect frequency, prediction quality,
 control cost or a complete JCT/throughput improvement.
+
+`reference_analysis_targeted.xml` contains 35 passing checks for the offline
+restore, eligibility and sampled-wait readers. Reference program counts do not
+identify active agents or complete logical budgets. The restore reader now
+keeps those missing fields unknown while still reconciling actual request
+Host hits with physical demand H2D bytes. No serving policy changes are
+introduced by this analysis compatibility repair.
