@@ -266,6 +266,7 @@ if [[ "${HICACHE_SIZE_GB}" -gt 0 ]]; then
     --hicache-size "${HICACHE_SIZE_GB}"
     --hicache-write-policy "${HICACHE_WRITE_POLICY}"
     --hicache-io-backend kernel
+    --hicache-mem-layout "${HICACHE_MEM_LAYOUT:-page_first}"
   )
 fi
 if [[ "${ENABLE_SESSION_RADIX_CACHE}" == "1" ]]; then

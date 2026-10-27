@@ -185,6 +185,14 @@ def arm_environment(
         "BELIEFKV_INTERNAL_COMPARISON_MODE": mode,
         "PREDICTED_TOOL_OFFLOAD": tool_offload,
         "BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD": tool_offload,
+        "BELIEFKV_TOOL_OFFLOAD_POLICY": common.get("BELIEFKV_TOOL_OFFLOAD_POLICY", "fixed") if custom_kv else "fixed",
+        "BELIEFKV_TOOL_TIMING_PRIOR": common.get("BELIEFKV_TOOL_TIMING_PRIOR", "") if custom_kv else "",
+        "BELIEFKV_TOOL_TIMING_PRIOR_SHA256": common.get("BELIEFKV_TOOL_TIMING_PRIOR_SHA256", "") if custom_kv else "",
+        "BELIEFKV_IDLE_PREPARE_IO_BACKEND": common.get("BELIEFKV_IDLE_PREPARE_IO_BACKEND", "native") if custom_kv else "native",
+        "BELIEFKV_AGENT_KV_HIGH_WATERMARK": (
+            common.get("BELIEFKV_AGENT_KV_HIGH_WATERMARK", "1")
+            if agent_admission == "thunderagent_retained" else "1"
+        ),
         "AGENT_ADMISSION": agent_admission,
         "BELIEFKV_AGENT_ADMISSION": agent_admission,
         "AGENT_COADMIT_JOIN_CHILDREN": siblings,

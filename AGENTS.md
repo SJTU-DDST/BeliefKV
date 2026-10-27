@@ -1116,3 +1116,53 @@
   keep repeated-performance and all-baseline acceptance pending. Owned
   predecessor processes exited and V295 is now running the independently
   frozen optional-decay arm; do not overlap another GPU experiment.
+- The separately declared adaptive tool candidate is
+  `configs/migration/predictive_adaptive_tool_offload_20261027.json`.
+  Keep the historical fixed-threshold candidate and all V269/V286/V295 evidence.
+  `BELIEFKV_TOOL_OFFLOAD_POLICY=demand_cost` requires a real, unallocated waiting
+  consumer with native-proven Host prefix and a current physical capacity deficit,
+  eligible already or fitting after the actual blocked donor lends its budget.
+  Budget incremental donor D2H, beneficiary H2D, cumulative evicted-donor H2D,
+  two 200ms control periods and one logical tick if needed. Use measured P90
+  including queue costs; the declared cold fallback is 8GB/s and at least one
+  second. Require supported remaining survival >=90%, revalidate before enqueue
+  and each private native-leaf release, and stop when the consumer fits.
+  Physical release never grants logical admission or evicts a ready peer.
+- V286's actual tool estimator was online-only, not the old SWE-bench artifact.
+  New domain-specific empirical survival priors fuse with current-run completed
+  history at eight equivalent prior samples. Pin the artifact SHA; keep runtime
+  domain and surviving-tail support. Reset online history per arm. The legacy
+  tool artifact is exclusive with this prior; do not describe it as automatically
+  retrained or claim its old accuracy on new tool scenarios.
+- V311 is a new, explicitly synthetic observable-category timing contract.
+  Preserve V269's mixed WebFetch/WebSearch map. Assign category independently
+  before drawing a conditional duration, reveal only domain/category at TOOL_START,
+  and retain future samples/timers privately. Its offline prior uses 222 calls
+  from 54 public sessions; evaluation uses 91 calls from 17 different sessions.
+  Every new compared method must use this same V311 map and complete V230 work,
+  not a historical V269 control. Registration validates prior/domain/held-out
+  group identity. File SHA256 is
+  `0a7b7cc72f3d41de83117c0bd4857574a5a1c70c941e8a3ee7e2e15c401f624d`;
+  the prior SHA256 is
+  `949e2b45b7f6c31c39ac4ff497a2a8bd9bcc6c1fdd055a3a94cc847bbc0835da`.
+- Background prepare still uses the native incremental dirty index and bounded
+  cold-owner batches. Optional `BELIEFKV_IDLE_PREPARE_IO_BACKEND=direct` supports
+  FULL-only, idle, storage-free `layer_first` controllers, preserving native
+  streams/ACKs and restoring kernel mode for ordinary migration. Current frozen
+  experiments use `page_first`, so leave this optional path off. Its ACK timing
+  is excluded from kernel service estimates; any layout follow-up must change
+  the common declared layout for every compared arm and qualify real GPU copies.
+  CPU success does not establish reduced SM interference or control overhead.
+- The pinned author uses 100 tokens of per-program growth buffer, already retained
+  here. An optional Full-only soft `BELIEFKV_AGENT_KV_HIGH_WATERMARK` reserves
+  additional logical growth capacity without shrinking the physical pool and
+  permits a fitting sole large request. Main adaptive comparison keeps it at 1,
+  and keeps background DMA native, to avoid mixing unmeasured follow-ups.
+- V321 passes 2890 shared CPU cases plus four subtests in one execution with no
+  failures/skips, retaining all 2523 V307 cases. V322 binds sources and actual
+  Full/default-ThunderAgent/optional-decay constructors. Preserve V316/V319
+  development failures: the former also reproduced on frozen d6a4ce4c7bc1 and
+  required a correct JOIN-then-tool test sequence; the latter needed competing
+  ready compute to exercise backed lending rather than the existing idle path.
+  Native copy/event/Host-index stand-ins remain explicit. This change registers
+  no new GPU comparison and proves neither whole-model correctness nor performance.

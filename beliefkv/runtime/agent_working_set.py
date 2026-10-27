@@ -1,6 +1,8 @@
 """Compose agent working-set admission with BeliefKV's native migration paths."""
 
 from collections import Counter
+import math
+import os
 import time
 
 from beliefkv.control.causal_graph import InvocationState
@@ -65,6 +67,13 @@ class AgentAdmission:
 
     def attach(self, cache):
         capacity = getattr(getattr(cache, "token_to_kv_pool_allocator", None), "size_full", None)
+        watermark = float(os.environ.get("BELIEFKV_AGENT_KV_HIGH_WATERMARK", "1"))
+        if not math.isfinite(watermark) or not .5 <= watermark <= 1.:
+            raise ValueError("agent KV high watermark must be between 0.5 and 1")
+        if watermark != 1. and self.strategy != "thunderagent_retained":
+            raise ValueError("growth high watermark requires retained Full agent admission")
+        self.physical_capacity_tokens = capacity
+        self.high_watermark = watermark
         if getattr(cache, "tree_components", ()) != (0,):
             raise ValueError("agent working-set admission currently requires FULL-only KV")
         if self.policy is not None:
@@ -98,6 +107,7 @@ class AgentAdmission:
                     and getattr(self.runtime, "_opportunity_writer", None) is not None else None
                 ),
             )
+            self.policy.growth_headroom_tokens = capacity - int(capacity * watermark)
         else:
             self.policy = AgentWorkingSet(capacity)
 
@@ -499,6 +509,9 @@ class AgentAdmission:
             "identity": "invocation_id", "future_information_used": False,
             "native_capacity_authority_preserved": True,
             "capacity_tokens": policy.capacity if policy is not None else None,
+            "physical_capacity_tokens": getattr(self, "physical_capacity_tokens", None),
+            "kv_high_watermark": getattr(self, "high_watermark", 1.),
+            "growth_headroom_tokens": getattr(policy, "growth_headroom_tokens", 0),
             "logical_active_tokens": policy.used_tokens if policy is not None else 0,
             "active_agents": len(active),
             "active_invocation_ids": [item.identity for item in active],

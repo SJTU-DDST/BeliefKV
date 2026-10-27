@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "synthetic_tool_timing": true,
+  "seed": 21,
+  "observable_categories": true,
+  "timing_domain": "tracelab_network_categories_v2",
+  "public_source": {
+    "name": "TraceLab",
+    "attribution": "TraceLab, SyFI Lab, University of Washington",
+    "release": "v0.0.1",
+    "asset": "syfi_coding_trace.jsonl.gz",
+    "sha256": "9d265eae69a31cae203848bea936f018148eed7ca8bf56050c5abe96da0b4e6b",
+    "schema_repository_commit": "5c6550b0d08beff983e9159fe2575e7a2334c8c1",
+    "license": "CC-BY-4.0",
+    "timing_semantics": "Synthetic observable latency categories from reported WebFetch and WebSearch internal execution durations, keeping original execute outputs and tokens."
+  },
+  "sample_selection": {
+    "provider": "claude",
+    "tool_names": ["WebFetch", "WebSearch"],
+    "latency_field": "tool_internal_latency_ms",
+    "wall_time_fallback": false
+  },
+  "target_tool_names": ["execute"],
+  "partition": "provider/session hash modulo five: one evaluation, four training; seed21",
+  "category_assignment": "identity hash, weighted by evaluation category counts, before an independent conditional duration draw",
+  "online_information": ["timing_domain", "observed_timing_class"],
+  "private_information": ["sample_id", "duration_ms", "source_group"],
+  "preserve_v1_results": true,
+  "gpu_experiment_registered": false,
+  "performance_accepted": false
+}

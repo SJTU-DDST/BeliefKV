@@ -1,0 +1,398 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="178" time="10.953" timestamp="2026-10-27T02:44:29.158924-07:00" hostname="ddst-12"><testcase classname="tests.test_tool_policy_adaptation" name="test_session_split_is_stable_and_independent_of_durations" time="0.003" /><testcase classname="tests.test_tool_policy_adaptation" name="test_offline_prior_rejects_unpinned_or_invalid_evidence[sha]" time="0.002" /><testcase classname="tests.test_tool_policy_adaptation" name="test_offline_prior_rejects_unpinned_or_invalid_evidence[overlap]" time="0.002" /><testcase classname="tests.test_tool_policy_adaptation" name="test_offline_prior_rejects_unpinned_or_invalid_evidence[censored]" time="0.002" /><testcase classname="tests.test_tool_policy_adaptation" name="test_offline_prior_rejects_unpinned_or_invalid_evidence[nan]" time="0.002" /><testcase classname="tests.test_tool_policy_adaptation" name="test_domain_prior_bootstraps_then_recent_completions_change_the_distribution" time="0.002" /><testcase classname="tests.test_tool_policy_adaptation" name="test_runtime_loads_domain_prior_and_keeps_legacy_artifact_exclusive" time="0.002"><failure message="NameError: name 'hashlib' is not defined">tmp_path = PosixPath('/tmp/pytest-of-longhao/pytest-3113/test_runtime_loads_domain_prio0')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x73ef3e12f750&gt;
+
+    def test_runtime_loads_domain_prior_and_keeps_legacy_artifact_exclusive(tmp_path, monkeypatch):
+        prior, path, _, _ = prior_fixture(tmp_path)
+        monkeypatch.setenv("BELIEFKV_ONLINE_TOOL_TIMING", "1")
+        monkeypatch.setenv("BELIEFKV_TOOL_TIMING_PRIOR", str(path))
+        monkeypatch.setenv("BELIEFKV_TOOL_TIMING_PRIOR_SHA256", prior.sha256)
+&gt;       runtime = NativeAdmissionRuntime()
+                  ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_tool_policy_adaptation.py:111: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;beliefkv.runtime.sglang_v0520_runtime.NativeAdmissionRuntime object at 0x73ef3e144950&gt;
+event_socket_path = None, predictor_sha256 = None
+predictor_artifact_path = None, model_path = None
+enable_local_predictor = False, enable_admission_prefetch = False
+enable_confirmed_join_canary = False, enable_final_stage_prefetch = False
+completion_lead = None, opportunity_dir = None, tool_timing_artifact_path = None
+tool_timing_sha256 = None, enable_tool_prefetch = False
+
+    def __init__(
+        self,
+        *,
+        event_socket_path: str | None = None,
+        predictor_sha256: str | None = None,
+        predictor_artifact_path: str | None = None,
+        model_path: str | None = None,
+        enable_local_predictor: bool = False,
+        enable_admission_prefetch: bool = False,
+        enable_confirmed_join_canary: bool = False,
+        enable_final_stage_prefetch: bool = False,
+        completion_lead: CompletionLead | None = None,
+        opportunity_dir: str | None = None,
+        tool_timing_artifact_path: str | None = None,
+        tool_timing_sha256: str | None = None,
+        enable_tool_prefetch: bool = False,
+    ) -&gt; None:
+        self.internal_comparison_mode = os.environ.get(
+            "BELIEFKV_INTERNAL_COMPARISON_MODE", "full",
+        )
+        if self.internal_comparison_mode not in (
+            "full", "join_priority_only", "scheduler_only", "kv_only",
+        ):
+            raise ValueError("unsupported internal runtime comparison mode")
+        self._custom_kv_management = self.internal_comparison_mode not in (
+            "join_priority_only", "scheduler_only",
+        )
+        self._join_priority_pending: dict[str, str] = {}
+        self._join_priority_promoted: str | None = None
+        self._join_priority_normal_admissions = 4
+        stage_setting = os.environ.get("BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH", "0")
+        if stage_setting not in ("0", "1"):
+            raise ValueError("final stage prefetch setting must be 0 or 1")
+        enable_final_stage_prefetch = (
+            enable_final_stage_prefetch or stage_setting == "1"
+        )
+        if enable_final_stage_prefetch and (
+            not event_socket_path or enable_confirmed_join_canary
+        ):
+            raise ValueError("final stage prefetch requires an event socket and no canary")
+        if enable_confirmed_join_canary and (
+            enable_admission_prefetch
+            or enable_local_predictor
+            or predictor_sha256 is not None
+            or predictor_artifact_path is not None
+            or not event_socket_path
+        ):
+            raise ValueError(
+                "confirmed JOIN canary requires an event socket and no predictor "
+                "or predictive admission"
+            )
+        if enable_admission_prefetch and (
+            not enable_local_predictor or not predictor_artifact_path
+        ):
+            raise ValueError("admission H2D requires a pinned, live action predictor")
+        completion_path = os.environ.get("BELIEFKV_COMPLETION_LEAD_ARTIFACT")
+        completion_sha = os.environ.get("BELIEFKV_COMPLETION_LEAD_SHA256")
+        if bool(completion_path) != bool(completion_sha):
+            raise ValueError("completion lead requires both artifact and SHA-256")
+        if completion_path:
+            if completion_lead is not None:
+                raise ValueError("completion lead supplied by two sources")
+            completion_lead = load_pinned_completion_lead(
+                completion_path, completion_sha
+            )
+        if bool(predictor_sha256) != bool(predictor_artifact_path):
+            raise ValueError("predictive admission requires both artifact and SHA-256")
+        if predictor_sha256 is not None and (
+            type(predictor_sha256) is not str
+            or len(predictor_sha256) != 64
+            or any(c not in "0123456789abcdef" for c in predictor_sha256)
+            or not event_socket_path
+        ):
+            raise ValueError("predictive admission requires a pinned SHA-256 and event socket")
+        if predictor_sha256 is not None:
+            if not model_path:
+                raise ValueError("predictive admission requires a model path")
+            validate_admission_artifact(
+                predictor_artifact_path,
+                expected_sha256=predictor_sha256,
+                model_path=model_path,
+                require_physical_actions=enable_admission_prefetch,
+            )
+        self.semantic_revision = 0
+        native_order_setting = os.environ.get("BELIEFKV_NATIVE_PREFILL_ORDER", "0")
+        if native_order_setting not in ("0", "1"):
+            raise ValueError("native prefill order setting must be 0 or 1")
+        self._native_prefill_order = native_order_setting == "1"
+        join_priority_setting = os.environ.get("BELIEFKV_ENABLE_JOIN_PARENT_PRIORITY", "1")
+        if join_priority_setting not in ("0", "1"):
+            raise ValueError("JOIN parent priority setting must be 0 or 1")
+        self.enable_join_parent_priority = (
+            join_priority_setting == "1" and not self._native_prefill_order
+            and self.internal_comparison_mode != "kv_only"
+        )
+        scheduling_setting = os.environ.get("BELIEFKV_PREFILL_SCHEDULING_POLICY", "workflow")
+        if scheduling_setting not in ("workflow", "join_priority", "workflow_completion"):
+            raise ValueError("prefill scheduling policy must be workflow, join_priority or workflow_completion")
+        self.prefill_scheduling_policy = (
+            "native" if self._native_prefill_order else
+            "join_priority" if self.internal_comparison_mode == "join_priority_only"
+            else scheduling_setting
+        )
+        continuity_setting = os.environ.get("BELIEFKV_ENABLE_TOOL_CONTINUITY", "0")
+        if continuity_setting not in ("0", "1"):
+            raise ValueError("tool continuity setting must be 0 or 1")
+        self._tool_continuity = (
+            ToolContinuationPolicy()
+            if continuity_setting == "1"
+            and self.prefill_scheduling_policy in ("workflow", "join_priority")
+            and self.internal_comparison_mode != "kv_only"
+            else None
+        )
+        self._tool_continuity_promoted: str | None = None
+        self._tool_continuity_normal_admissions = 4
+        grace_ms = float(os.environ.get("BELIEFKV_TOOL_CONTINUITY_GRACE_MS", "0"))
+        if not math.isfinite(grace_ms) or not 0 &lt;= grace_ms &lt;= 1000.:
+            raise ValueError("tool continuity grace must be in [0, 1000] ms")
+        self.tool_continuity_grace_ms = (
+            grace_ms if self._custom_kv_management and self._tool_continuity is not None else 0.
+        )
+        self._tool_residency_grace = (
+            ToolResidencyGrace(self.tool_continuity_grace_ms)
+            if self.tool_continuity_grace_ms else None
+        )
+        last_child_setting = os.environ.get("BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY", "0")
+        if last_child_setting not in ("0", "1"):
+            raise ValueError("JOIN last child priority setting must be 0 or 1")
+        self.enable_join_last_child_priority = (
+            last_child_setting == "1" and self.prefill_scheduling_policy == "join_priority"
+            and self.internal_comparison_mode != "kv_only"
+        )
+        self._workflow_attained_work_enabled = (
+            os.environ.get("BELIEFKV_WORKFLOW_ATTAINED_WORK", "0") == "1"
+            and self.prefill_scheduling_policy != "join_priority"
+        )
+        if self.prefill_scheduling_policy == "workflow_completion":
+            self._workflow_attained_work_enabled = True
+        self._workflow_attained_output_tokens: dict[str, int] = {}
+        self._workflow_work_promoted: str | None = None
+        self.predictor_sha256 = predictor_sha256
+        self.demand_hints: dict[str, NativeDemandHint] = {}
+        self.tool_wait_hints: dict[str, NativeToolWaitHint] = {}
+        self.join_wait_hints: dict[str, NativeJoinWaitHint] = {}
+        self.completion_lead = completion_lead
+        self._completion_hints: dict[str, _CompletionReentryHint] = {}
+        self._final_stages: OrderedDict[str, _ChildFinalStage] = OrderedDict()
+        self._final_request_stages: dict[str, _ChildFinalStage] = {}
+        self._h2d_samples: deque[tuple[int, float]] = deque(maxlen=64)
+        self._native_service_samples: deque[NativeServiceSample] = deque(maxlen=256)
+        self._h2d_full_service_samples: deque[tuple[float, NativeServiceSample]] = deque(
+            maxlen=32,
+        )
+        self._h2d_service_estimates: dict[tuple[int, str], NativeServiceEstimate | None] = {}
+        self._d2h_service_estimates: dict[tuple[int, str], NativeServiceEstimate | None] = {}
+        self._residency_ordering_hints: dict[PrefillCandidateKey, tuple[float, dict]] = {}
+        self._residency_hint_admissions: dict[str, tuple[int, PrefillCandidateKey, int]] = {}
+        service_path = os.environ.get("BELIEFKV_TRANSFER_SERVICE_SEED")
+        service_sha = os.environ.get("BELIEFKV_TRANSFER_SERVICE_SEED_SHA256")
+        if bool(service_path) != bool(service_sha):
+            raise ValueError("transfer service seed requires a path and SHA256")
+        if service_path:
+            self._native_service_samples.extend(load_native_service_seed(service_path, service_sha))
+        self._prefetch_issue_times: dict[str, float] = {}
+        self._physical_command_namespace: str | None = None
+        self._physical_command_sequence = count(1)
+        self._prefetch_steps: dict[
+            str, tuple[PrefetchLoadStep, str, float | None]
+        ] = {}
+        self._prefetch_issue_budgets: dict[str, PrefetchResidencyBudget] = {}
+        self._prefetch_service_leases: dict[str, _PrefetchServiceLease] = {}
+        protection_setting = os.environ.get("BELIEFKV_PREFETCH_RESIDENCY_PROTECTION", "1")
+        if protection_setting not in ("0", "1"):
+            raise ValueError("prefetch residency protection must be 0 or 1")
+        self.enable_prefetch_residency_protection = (
+            protection_setting == "1" and self._custom_kv_management
+        )
+        self._prefetch_admission_hints: dict[str, PrefillCandidateKey] = {}
+        self._tool_prefetch_survival_evidence: OrderedDict[
+            PrefillCandidateKey, tuple[NativeToolWaitHint, bool]
+        ] = OrderedDict()
+        self._prefetch_lock_release_failures: set[str] = set()
+        self._prefetch_priority_normal_admissions = 4
+        frontier_quota = os.environ.get("BELIEFKV_FRONTIER_RESTORE_ORDINARY_QUOTA", "4")
+        if frontier_quota not in ("0", "4"):
+            raise ValueError("frontier restore ordinary quota must be 0 or 4")
+        self.frontier_restore_ordinary_quota = int(frontier_quota)
+        self._resident_priority_normal_admissions = 4
+        self._prefetch_priority_promoted: str | None = None
+        self._prefetch_priority_native_rank: int | None = None
+        self._prefetch_priority_aged_head_bypassed = False
+        self._prefetch_priority_complete_ready_quota: int | None = None
+        self._prefetch_priority_partial_restore_details: dict | None = None
+        self._resident_priority_promoted: str | None = None
+        self._resident_priority_details: dict | None = None
+        self._native_running_batch: object | None = None
+        self._capacity_waiting_queue: Sequence[object] = ()
+        self._native_max_running: int | None = None
+        self._native_prefill_slots: int | None = None
+        self._native_page_size = 1
+        self._native_input_reserve = 0
+        self._native_chunk_input_reserve: int | None = None
+        self._residency_budget = PrefetchResidencyBudget(4, 1024 ** 3)
+        self._residency_headroom: StaticPoolHeadroomObservation | None = None
+        self._visible_since: dict[str, float] = {}
+        lead_setting = float(os.environ.get("BELIEFKV_PREFETCH_LEAD_MS", "1000"))
+        if not math.isfinite(lead_setting) or lead_setting &lt; 0:
+            raise ValueError("prefetch lead must be finite and nonnegative")
+        self.prefetch_lead_ms = lead_setting
+        self.tool_prefetch_priority_ms = float(os.environ.get(
+            "BELIEFKV_TOOL_PREFETCH_PRIORITY_MS", "0",
+        ))
+        if not math.isfinite(self.tool_prefetch_priority_ms) or self.tool_prefetch_priority_ms &lt; 0:
+            raise ValueError("tool prefetch priority window must be finite and nonnegative")
+        self.join_prefetch_min_advance_ms = float(os.environ.get(
+            "BELIEFKV_JOIN_PREFETCH_MIN_ADVANCE_MS", "0",
+        ))
+        self.tool_prefetch_min_advance_ms = float(os.environ.get(
+            "BELIEFKV_TOOL_PREFETCH_MIN_ADVANCE_MS", "0",
+        ))
+        self._prediction_maintenance_interval_ms = float(os.environ.get(
+            "BELIEFKV_PREDICTION_MAINTENANCE_INTERVAL_MS", "0",
+        ))
+        if not all(math.isfinite(value) and value &gt;= 0 for value in (
+            self.join_prefetch_min_advance_ms, self.tool_prefetch_min_advance_ms,
+            self._prediction_maintenance_interval_ms,
+        )):
+            raise ValueError("prefetch advance and maintenance intervals must be finite and nonnegative")
+        parallel_setting = os.environ.get("BELIEFKV_PARALLEL_WAIT_PREFETCH", "0")
+        if parallel_setting not in ("0", "1"):
+            raise ValueError("parallel wait prefetch must be 0 or 1")
+        self._parallel_wait_prefetch = parallel_setting == "1"
+        self._wait_prefetch_contexts = int(os.environ.get("BELIEFKV_WAIT_PREFETCH_CONTEXTS", "1"))
+        if not 1 &lt;= self._wait_prefetch_contexts &lt;= 2:
+            raise ValueError("wait prefetch contexts must be one or two")
+        self._prediction_maintenance_next_ms = 0.
+        self._prediction_maintenance_graph_version = -1
+        self._wait_prediction_maintenance_deferred = False
+        self._lease_refresh_signature = None
+        self._lease_refresh_next_ms = 0.
+        self.semantic_work_statistic = os.environ.get(
+            "BELIEFKV_SEMANTIC_WORK_STATISTIC", "upper",
+        )
+        if self.semantic_work_statistic not in ("upper", "center"):
+            raise ValueError("semantic work statistic must be upper or center")
+        self.eos_protocol_window_ms = float(os.environ.get(
+            "BELIEFKV_EOS_PROTOCOL_WINDOW_MS", "50",
+        ))
+        if not math.isfinite(self.eos_protocol_window_ms) or not 50 &lt;= self.eos_protocol_window_ms &lt;= 500:
+            raise ValueError("EOS protocol window must be between 50 and 500 ms")
+        seed_path = os.environ.get("BELIEFKV_H2D_SEED")
+        seed_sha = os.environ.get("BELIEFKV_H2D_SEED_SHA256")
+        if bool(seed_path) != bool(seed_sha):
+            raise ValueError("H2D cold-start seed requires path and SHA256")
+        seed = load_h2d_seed(seed_path, seed_sha) if seed_path else ()
+        self._h2d_samples.extend(seed)
+        self._h2d_seed_count = len(seed)
+        self._join_prepare_cursor = 0
+        self._join_prepare_next_ms = 0.
+        self._join_prepare_commands: dict[_JoinPrefetchIdentity, str] = {}
+        self._prepare_probe_after_ms: dict[PrefillCandidateKey, float] = {}
+        self._parent_pressure_candidates: dict[int, tuple[PrefillCandidateKey, int | float]] = {}
+        self._parent_pressure_groups: dict[PrefillCandidateKey, set[int]] = {}
+        self._parent_pressure_group_source: dict | None = None
+        self._parent_pressure_group_size = 0
+        self._parent_pressure_positions: dict[int, int] = {}
+        self._parent_pressure_next_position = 0
+        self._final_priority_normal_admissions = 4
+        self._final_priority_promoted: str | None = None
+        self._final_priority_native_rank: int | None = None
+        self._join_last_child_priority_promoted: str | None = None
+        self._join_ticket: _JoinPrefetchTicket | None = None
+        self._confirmed_join_tickets: dict[str, _JoinPrefetchTicket] = {}
+        self._empty_join_reentry_origins: dict[str, PrefillCandidateKey] = {}
+        self._join_inflight_tickets: dict[str, _JoinPrefetchTicket] = {}
+        self._join_prefetch_issued: Counter[_JoinPrefetchIdentity] = Counter()
+        self.enable_admission_prefetch = enable_admission_prefetch
+        self.enable_final_stage_prefetch = enable_final_stage_prefetch
+        self.enable_resident_first = os.environ.get(
+            "BELIEFKV_ENABLE_RESIDENT_FIRST", "1",
+        ) == "1" and self.prefill_scheduling_policy not in ("join_priority", "workflow_completion")
+        priority_setting = os.environ.get("BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY")
+        self.enable_final_stage_priority = (
+            False if self.prefill_scheduling_policy in ("join_priority", "workflow_completion")
+            else None if priority_setting is None else priority_setting == "1"
+        )
+        self.enable_prepare_host = os.environ.get("BELIEFKV_ENABLE_PREPARE_HOST", "1") == "1"
+        offload_setting = os.environ.get("BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD", "0")
+        if offload_setting not in ("0", "1"):
+            raise ValueError("predicted tool offload setting must be 0 or 1")
+        self.enable_predicted_tool_offload = (
+            self._custom_kv_management and self.enable_prepare_host and offload_setting == "1"
+        )
+        self._predicted_tool_offload = (
+            PredictedToolOffload.from_environment(self)
+            if self.enable_predicted_tool_offload else None
+        )
+        free_fence = os.environ.get("BELIEFKV_FREE_PAGE_H2D_FENCE", "0")
+        if free_fence not in ("0", "1"):
+            raise ValueError("free-page H2D fence must be 0 or 1")
+        self.free_page_h2d_fence_requested = free_fence == "1"
+        background_setting = os.environ.get("BELIEFKV_ENABLE_BACKGROUND_PREPARE", "1")
+        retirement_setting = os.environ.get("BELIEFKV_ENABLE_TERMINAL_CHILD_RECLAIM", "1")
+        if background_setting not in ("0", "1") or retirement_setting not in ("0", "1"):
+            raise ValueError("background prepare and child reclaim settings must be 0 or 1")
+        self.enable_background_prepare = (
+            self._custom_kv_management and self.enable_prepare_host and background_setting == "1"
+        )
+        self.enable_terminal_child_reclaim = (
+            self._custom_kv_management and retirement_setting == "1"
+        )
+        self.idle_prepare_policy = os.environ.get("BELIEFKV_IDLE_PREPARE_POLICY", "cold")
+        if self.idle_prepare_policy not in ("cold", "all"):
+            raise ValueError("idle prepare policy must be cold or all")
+        self._idle_backup_queue_scope = False
+        self._idle_prepare_direct_nodes = set()
+        self.idle_prepare_io_backend = os.environ.get(
+            "BELIEFKV_IDLE_PREPARE_IO_BACKEND", "native",
+        )
+        if self.idle_prepare_io_backend not in ("native", "direct"):
+            raise ValueError("idle prepare backend must be native or direct")
+        self._idle_backup_queued_requests: dict[PrefillCandidateKey, tuple[int, object]] | None = None
+        sampling_setting = os.environ.get("BELIEFKV_H2D_OPPORTUNITY_SAMPLING", "0")
+        if sampling_setting not in ("0", "1"):
+            raise ValueError("H2D opportunity sampling setting must be 0 or 1")
+        self.enable_h2d_opportunity_sampling = sampling_setting == "1"
+        self.join_prefetch_trigger = os.environ.get(
+            "BELIEFKV_JOIN_PREFETCH_TRIGGER", "observed_eos",
+        )
+        if self.join_prefetch_trigger not in (
+            "observed_eos", "report_service_or_eos", "selective_report_or_eos",
+        ):
+            raise ValueError("unsupported JOIN prefetch trigger")
+        self._selective_join_policy = SelectiveJoinPrefetchPolicy(
+            min_full_bytes=int(os.environ.get(
+                "BELIEFKV_JOIN_PREDICTION_MIN_FULL_BYTES", str(512 * 1024 ** 2),
+            )),
+            interval_ms=float(os.environ.get("BELIEFKV_JOIN_PREDICTION_INTERVAL_MS", "200")),
+            max_candidates=int(os.environ.get("BELIEFKV_JOIN_PREDICTION_MAX_CANDIDATES", "4")),
+        )
+        self._join_eos_arrival_pending: OrderedDict[
+            str, tuple[str, PrefillCandidateKey, PrefillCandidateKey, float]
+        ] = OrderedDict()
+        self._join_eos_arrival_samples: deque[float] = deque(maxlen=64)
+        self._join_eos_arrival_window_ms = self.eos_protocol_window_ms
+        self._online_tool_timing = (
+            OnlineWorkloadToolTiming()
+            if os.environ.get("BELIEFKV_ONLINE_TOOL_TIMING", "0") == "1" else None
+        )
+        prior_path = os.environ.get("BELIEFKV_TOOL_TIMING_PRIOR", "")
+        prior_sha = os.environ.get("BELIEFKV_TOOL_TIMING_PRIOR_SHA256", "")
+        if bool(prior_path) != bool(prior_sha):
+            raise ValueError("tool timing prior requires a path and SHA256")
+        if prior_path:
+            if self._online_tool_timing is None:
+                raise ValueError("tool timing prior requires online timing adaptation")
+            from beliefkv.predictor.tool_timing_prior import ToolTimingPrior
+    
+            self._online_tool_timing.prior = ToolTimingPrior.load(prior_path, prior_sha)
+&gt;           self.predictor_sha256 = hashlib.sha256(
+                                    ^^^^^^^
+                ("hybrid_tool_prior_v1:" + prior_sha).encode(),
+            ).hexdigest()
+E           NameError: name 'hashlib' is not defined
+
+beliefkv/runtime/sglang_v0520_runtime.py:698: NameError</failure></testcase><testcase classname="tests.test_tool_policy_adaptation" name="test_category_is_assigned_before_duration_and_both_boundaries_get_only_observable_metadata" time="0.002" /><testcase classname="tests.test_tool_policy_adaptation" name="test_categorized_overlay_rejects_foreign_classes[timing_domain-foreign]" time="0.001" /><testcase classname="tests.test_tool_policy_adaptation" name="test_categorized_overlay_rejects_foreign_classes[observed_timing_class-foreign]" time="0.001" /><testcase classname="tests.test_tool_policy_adaptation" name="test_demand_gated_offload_frees_real_pages_only_until_the_waiter_fits" time="7.153"><failure message="AssertionError: {'tool_wait_predictor_unavailable': 1, 'incremental_full_tracking_enabled': 1, 'prepare_backed_full_tail_registered': 1}&#10;assert tensor([ 1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18,\n        19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]) is None&#10; +  where tensor([ 1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18,\n        19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]) = ComponentData(value=tensor([ 1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18,\n        19, 20, 21...8,\n        19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]), host_lock_ref=0, session_ref=1, session_ids={'s'}).value">demand_runtime = (&lt;beliefkv.runtime.sglang_v0520_runtime.NativeAdmissionRuntime object at 0x73ed99a5d610&gt;, &lt;beliefkv.runtime.predicted_...=namespace(req_pool_idx=None, kv_allocated_len=0, kv_committed_len=0), is_retracted=False, retracted_stain=False), ...)
+
+    def test_demand_gated_offload_frees_real_pages_only_until_the_waiter_fits(demand_runtime):
+        runtime, controller, cache, allocator, donor, request, _ = demand_runtime
+        controller.dispatch()
+&gt;       assert donor.component_data[0].value is None, dict(runtime.counts)
+E       AssertionError: {'tool_wait_predictor_unavailable': 1, 'incremental_full_tracking_enabled': 1, 'prepare_backed_full_tail_registered': 1}
+E       assert tensor([ 1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18,\n        19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]) is None
+E        +  where tensor([ 1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18,\n        19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]) = ComponentData(value=tensor([ 1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18,\n        19, 20, 21...8,\n        19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]), host_lock_ref=0, session_ref=1, session_ids={'s'}).value
+
+tests/test_tool_policy_adaptation.py:219: AssertionError</failure></testcase><testcase classname="tests.test_tool_policy_adaptation" name="test_no_offload_without_a_live_cold_capacity_stalled_consumer[empty]" time="0.004" /><testcase classname="tests.test_tool_policy_adaptation" name="test_no_offload_without_a_live_cold_capacity_stalled_consumer[resident]" time="0.004" /><testcase classname="tests.test_tool_policy_adaptation" name="test_no_offload_without_a_live_cold_capacity_stalled_consumer[finished]" time="0.004" /><testcase classname="tests.test_tool_policy_adaptation" name="test_no_offload_without_a_live_cold_capacity_stalled_consumer[tool_return]" time="0.003" /><testcase classname="tests.test_tool_policy_adaptation" name="test_no_offload_without_a_live_cold_capacity_stalled_consumer[no_capacity_pressure]" time="0.003" /><testcase classname="tests.test_tool_policy_adaptation" name="test_no_offload_without_a_live_cold_capacity_stalled_consumer[no_prediction]" time="0.003" /><testcase classname="tests.test_tool_policy_adaptation" name="test_cost_threshold_depends_on_missing_backup_and_measured_restore" time="0.004" /><testcase classname="tests.test_tool_policy_adaptation" name="test_background_direct_scope_restores_normal_backend_including_exceptions[False]" time="0.001" /><testcase classname="tests.test_tool_policy_adaptation" name="test_background_direct_scope_restores_normal_backend_including_exceptions[True]" time="0.001" /><testcase classname="tests.test_tool_policy_adaptation" name="test_direct_prepare_keeps_native_backend_for_unsupported_or_busy_paths[layout]" time="0.001" /><testcase classname="tests.test_tool_policy_adaptation" name="test_direct_prepare_keeps_native_backend_for_unsupported_or_busy_paths[hybrid]" time="0.001" /><testcase classname="tests.test_tool_policy_adaptation" name="test_direct_prepare_keeps_native_backend_for_unsupported_or_busy_paths[busy]" time="0.001" /><testcase classname="tests.test_tool_policy_adaptation" name="test_direct_prepare_keeps_native_backend_for_unsupported_or_busy_paths[storage]" time="0.001" /><testcase classname="tests.test_tool_policy_adaptation" name="test_paper_arms_cannot_inherit_full_prior_dma_watermark_or_tool_cost[thunderagent]" time="0.001" /><testcase classname="tests.test_tool_policy_adaptation" name="test_paper_arms_cannot_inherit_full_prior_dma_watermark_or_tool_cost[thunderagent_acting_decay]" time="0.001" /><testcase classname="tests.test_tool_policy_adaptation" name="test_paper_arms_cannot_inherit_full_prior_dma_watermark_or_tool_cost[kvflow_observed_graph]" time="0.001" /><testcase classname="tests.test_tool_policy_adaptation" name="test_high_watermark_preserves_author_buffer_and_physical_capacity" time="0.006" /><testcase classname="tests.test_tool_policy_adaptation" name="test_invalid_watermark_is_rejected[nan]" time="0.001" /><testcase classname="tests.test_tool_policy_adaptation" name="test_invalid_watermark_is_rejected[0]" time="0.001" /><testcase classname="tests.test_tool_policy_adaptation" name="test_invalid_watermark_is_rejected[1.1]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_tools_learn_only_completed_causal_observations" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_timeout_does_not_become_an_observed_completion" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[workflow-0.0-samples0]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[workflow-0.0-samples1]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[workflow-0.0-samples2]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[workflow-500.0-samples0]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[workflow-500.0-samples1]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[workflow-500.0-samples2]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[workflow-1000.0-samples0]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[workflow-1000.0-samples1]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[workflow-1000.0-samples2]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[workflow-2500.0-samples0]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[workflow-2500.0-samples1]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[workflow-2500.0-samples2]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[run-0.0-samples0]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[run-0.0-samples1]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[run-0.0-samples2]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[run-500.0-samples0]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[run-500.0-samples1]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[run-500.0-samples2]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[run-1000.0-samples0]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[run-1000.0-samples1]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[run-1000.0-samples2]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[run-2500.0-samples0]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[run-2500.0-samples1]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_hint_preserves_empirical_release_times_and_conditional_quantiles[run-2500.0-samples2]" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_active_tool_index_preserves_duplicate_and_terminal_event_semantics" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_online_tool_hints_do_not_build_unused_legacy_features" time="0.003" /><testcase classname="tests.test_online_workload_timing" name="test_worker_feature_run_groups_retire_after_last_tool_and_workflow_end" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_report_work_adapts_without_using_current_future_length" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_report_service_can_trigger_before_eos_and_invalidates_on_tool" time="0.002" /><testcase classname="tests.test_online_workload_timing" name="test_report_does_not_predict_while_waiting_for_service" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_borrowed_capacity_includes_restore_and_native_service_reserve" time="0.002" /><testcase classname="tests.test_online_workload_timing" name="test_unsupported_h2d_timing_prepares_capacity_without_starting_transfer" time="0.002" /><testcase classname="tests.test_online_workload_timing" name="test_unsupported_timing_keeps_ineligible_capacity_preparation_idle[disabled]" time="0.002" /><testcase classname="tests.test_online_workload_timing" name="test_unsupported_timing_keeps_ineligible_capacity_preparation_idle[distant]" time="0.002" /><testcase classname="tests.test_online_workload_timing" name="test_unsupported_timing_keeps_ineligible_capacity_preparation_idle[no_restore]" time="0.002" /><testcase classname="tests.test_online_workload_timing" name="test_soft_headroom_has_no_reclaim_when_capacity_already_suffices" time="0.002" /><testcase classname="tests.test_online_workload_timing" name="test_ratio_compaction_counts_total_prompt_including_frozen_source" time="0.258" /><testcase classname="tests.test_online_workload_timing" name="test_95_percent_input_gets_a_completion_that_fits" time="0.001" /><testcase classname="tests.test_online_workload_timing" name="test_capacity_price_retains_safe_restore_when_free_list_plan_is_empty" time="0.011" /><testcase classname="tests.test_online_workload_timing" name="test_critical_headroom_can_prepare_an_unhinted_tool_wait_but_not_active_llm" time="0.002" /><testcase classname="tests.test_tool_timing_overlay" name="test_public_sampling_preserves_zero_errors_and_tail_without_gap_fallback" time="0.001" /><testcase classname="tests.test_tool_timing_overlay" name="test_invalid_public_timing_is_not_imputed[-1.0]" time="0.001" /><testcase classname="tests.test_tool_timing_overlay" name="test_invalid_public_timing_is_not_imputed[nan]" time="0.001" /><testcase classname="tests.test_tool_timing_overlay" name="test_invalid_public_timing_is_not_imputed[inf]" time="0.001" /><testcase classname="tests.test_tool_timing_overlay" name="test_invalid_public_timing_is_not_imputed[True]" time="0.001" /><testcase classname="tests.test_tool_timing_overlay" name="test_invalid_public_timing_is_not_imputed[1]" time="0.001" /><testcase classname="tests.test_tool_timing_overlay" name="test_missing_internal_times_and_conflicting_duplicates_are_rejected" time="0.001" /><testcase classname="tests.test_tool_timing_overlay" name="test_only_target_duration_changes_without_changing_work_events_or_edges" time="0.004" /><testcase classname="tests.test_tool_timing_overlay" name="test_identity_sampling_is_independent_of_plan_iteration_order" time="0.003" /><testcase classname="tests.test_tool_timing_overlay" name="test_mismatched_or_incomplete_timing_maps_fail_closed[source]" time="0.002" /><testcase classname="tests.test_tool_timing_overlay" name="test_mismatched_or_incomplete_timing_maps_fail_closed[seed]" time="0.001" /><testcase classname="tests.test_tool_timing_overlay" name="test_mismatched_or_incomplete_timing_maps_fail_closed[sampling]" time="0.001" /><testcase classname="tests.test_tool_timing_overlay" name="test_mismatched_or_incomplete_timing_maps_fail_closed[work]" time="0.001" /><testcase classname="tests.test_tool_timing_overlay" name="test_mismatched_or_incomplete_timing_maps_fail_closed[future]" time="0.001" /><testcase classname="tests.test_tool_timing_overlay" name="test_mismatched_or_incomplete_timing_maps_fail_closed[hash]" time="0.002" /><testcase classname="tests.test_tool_timing_overlay" name="test_mismatched_or_incomplete_timing_maps_fail_closed[missing]" time="0.002" /><testcase classname="tests.test_tool_timing_overlay" name="test_mismatched_or_incomplete_timing_maps_fail_closed[duplicate]" time="0.002" /><testcase classname="tests.test_tool_timing_overlay" name="test_mismatched_or_incomplete_timing_maps_fail_closed[foreign_node]" time="0.002" /><testcase classname="tests.test_tool_timing_overlay" name="test_mismatched_or_incomplete_timing_maps_fail_closed[foreign_identity]" time="0.002" /><testcase classname="tests.test_tool_timing_overlay" name="test_mismatched_or_incomplete_timing_maps_fail_closed[negative]" time="0.002" /><testcase classname="tests.test_tool_timing_overlay" name="test_mismatched_or_incomplete_timing_maps_fail_closed[nan]" time="0.002" /><testcase classname="tests.test_tool_timing_overlay" name="test_mismatched_or_incomplete_timing_maps_fail_closed[bool]" time="0.002" /><testcase classname="tests.test_tool_timing_overlay" name="test_mismatched_or_incomplete_timing_maps_fail_closed[original_time]" time="0.002" /><testcase classname="tests.test_tool_timing_overlay" name="test_parallel_tools_keep_independent_clocks_and_join_dependencies" time="0.003" /><testcase classname="tests.test_tool_timing_overlay" name="test_online_events_do_not_receive_sampled_future_duration" time="0.025" /><testcase classname="tests.test_tool_timing_overlay" name="test_synthetic_comparison_removes_natural_baseline_and_pins_shared_artifact" time="0.003" /><testcase classname="tests.test_tool_timing_overlay" name="test_comparison_rejects_natural_or_differently_sampled_control[None]" time="0.002" /><testcase classname="tests.test_tool_timing_overlay" name="test_comparison_rejects_natural_or_differently_sampled_control[missing]" time="0.001" /><testcase classname="tests.test_tool_timing_overlay" name="test_comparison_rejects_natural_or_differently_sampled_control[changed]" time="0.001" /><testcase classname="tests.test_tool_timing_overlay" name="test_comparison_rejects_natural_or_differently_sampled_control[undeclared]" time="0.001" /><testcase classname="tests.test_tool_timing_overlay" name="test_comparison_rejects_natural_or_differently_sampled_control[label]" time="0.002" /><testcase classname="tests.test_tool_timing_overlay" name="test_cpu_preparation_pins_public_bytes_and_preserves_complete_source_graph" time="0.007" /><testcase classname="tests.test_predicted_tool_offload" name="test_configuration_enables_offload_only_in_kv_arms[full]" time="0.001" /><testcase classname="tests.test_predicted_tool_offload" name="test_configuration_enables_offload_only_in_kv_arms[join_priority_only]" time="0.001" /><testcase classname="tests.test_predicted_tool_offload" name="test_configuration_enables_offload_only_in_kv_arms[scheduler_only]" time="0.001" /><testcase classname="tests.test_predicted_tool_offload" name="test_configuration_enables_offload_only_in_kv_arms[kv_only]" time="0.001" /><testcase classname="tests.test_predicted_tool_offload" name="test_configuration_enables_offload_only_in_kv_arms[native_matched]" time="0.001" /><testcase classname="tests.test_predicted_tool_offload" name="test_paper_baselines_never_inherit_predictive_offload[thunderagent]" time="0.001" /><testcase classname="tests.test_predicted_tool_offload" name="test_paper_baselines_never_inherit_predictive_offload[thunderagent_acting_decay]" time="0.001" /><testcase classname="tests.test_predicted_tool_offload" name="test_paper_baselines_never_inherit_predictive_offload[kvflow_observed_graph]" time="0.001" /><testcase classname="tests.test_predicted_tool_offload" name="test_runtime_installs_explicit_offload_controller" time="0.001" /><testcase classname="tests.test_predicted_tool_offload" name="test_candidate_keeps_the_frozen_comparison_profile_except_explicit_offload" time="0.001" /><testcase classname="tests.test_predicted_tool_offload" name="test_real_native_offload_frees_device_slots_and_retains_host_and_agent" time="0.686" /><testcase classname="tests.test_predicted_tool_offload" name="test_existing_tool_prepare_hook_also_offloads_without_a_running_forward" time="0.007" /><testcase classname="tests.test_predicted_tool_offload" name="test_native_offload_rejects_stale_locked_unbacked_and_restoring_state[tool_return]" time="0.007" /><testcase classname="tests.test_predicted_tool_offload" name="test_native_offload_rejects_stale_locked_unbacked_and_restoring_state[context_epoch]" time="0.006" /><testcase classname="tests.test_predicted_tool_offload" name="test_native_offload_rejects_stale_locked_unbacked_and_restoring_state[session_generation]" time="0.006" /><testcase classname="tests.test_predicted_tool_offload" name="test_native_offload_rejects_stale_locked_unbacked_and_restoring_state[native_generation]" time="0.006" /><testcase classname="tests.test_predicted_tool_offload" name="test_native_offload_rejects_stale_locked_unbacked_and_restoring_state[native_closed]" time="0.006" /><testcase classname="tests.test_predicted_tool_offload" name="test_native_offload_rejects_stale_locked_unbacked_and_restoring_state[prediction_expired]" time="0.006" /><testcase classname="tests.test_predicted_tool_offload" name="test_native_offload_rejects_stale_locked_unbacked_and_restoring_state[prediction_short]" time="0.007" /><testcase classname="tests.test_predicted_tool_offload" name="test_native_offload_rejects_stale_locked_unbacked_and_restoring_state[foreign_predictor]" time="0.006" /><testcase classname="tests.test_predicted_tool_offload" name="test_native_offload_rejects_stale_locked_unbacked_and_restoring_state[no_prediction]" time="0.006" /><testcase classname="tests.test_predicted_tool_offload" name="test_native_offload_rejects_stale_locked_unbacked_and_restoring_state[device_lock]" time="0.006" /><testcase classname="tests.test_predicted_tool_offload" name="test_native_offload_rejects_stale_locked_unbacked_and_restoring_state[shared]" time="0.006" /><testcase classname="tests.test_predicted_tool_offload" name="test_native_offload_rejects_stale_locked_unbacked_and_restoring_state[foreign_owner]" time="0.006" /><testcase classname="tests.test_predicted_tool_offload" name="test_native_offload_rejects_stale_locked_unbacked_and_restoring_state[write_pending]" time="0.007" /><testcase classname="tests.test_predicted_tool_offload" name="test_native_offload_rejects_stale_locked_unbacked_and_restoring_state[load_pending]" time="0.006" /><testcase classname="tests.test_predicted_tool_offload" name="test_native_offload_rejects_stale_locked_unbacked_and_restoring_state[host_copy_missing]" time="0.006" /><testcase classname="tests.test_predicted_tool_offload" name="test_native_offload_rejects_stale_locked_unbacked_and_restoring_state[prefetch_selected]" time="0.006" /><testcase classname="tests.test_predicted_tool_offload" name="test_native_offload_rejects_stale_locked_unbacked_and_restoring_state[physical_disabled]" time="0.006" /><testcase classname="tests.test_predicted_tool_offload" name="test_tool_return_delivered_at_dispatch_prevents_offload" time="0.006" /><testcase classname="tests.test_predicted_tool_offload" name="test_backup_enqueue_is_not_eviction_and_next_dispatch_requires_settled_copy" time="0.007" /><testcase classname="tests.test_predicted_tool_offload" name="test_control_is_throttled_and_never_uses_critical_demand_as_a_prediction" time="0.006" /><testcase classname="tests.test_predicted_tool_offload" name="test_full_only_native_backup_ack_offload_and_return_race[waiting]" time="0.004" /><testcase classname="tests.test_predicted_tool_offload" name="test_full_only_native_backup_ack_offload_and_return_race[returned_before_ack]" time="0.004" /><testcase classname="tests.test_predicted_tool_offload" name="test_full_only_native_backup_ack_offload_and_return_race[short_at_enqueue]" time="0.003" /><testcase classname="tests.test_predicted_tool_offload" name="test_full_only_native_backup_ack_offload_and_return_race[short_after_event_drain]" time="0.003" /><testcase classname="tests.test_predicted_tool_offload" name="test_bounded_node_scan_progresses_through_a_long_segmented_prefix" time="0.010" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_incremental_full_tracking_is_attached_only_for_enabled_prepare[True-False]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_incremental_full_tracking_is_attached_only_for_enabled_prepare[False-False]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_incremental_full_tracking_is_attached_only_for_enabled_prepare[True-True]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_idle_prepare_tracks_issuance_without_any_capacity_or_prefetch_credit" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_background_checks_wait_200ms_without_accumulating_missed_rounds" time="0.003" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_empty_incremental_index_skips_native_scanning_at_the_shorter_cadence" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_background_copy_yields_before_entering_the_native_backend[disabled]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_background_copy_yields_before_entering_the_native_backend[physical_disabled]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_background_copy_yields_before_entering_the_native_backend[critical]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_background_copy_yields_before_entering_the_native_backend[prepare_pending]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_background_copy_yields_before_entering_the_native_backend[prefetch_pending]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_background_copy_yields_before_entering_the_native_backend[old_engine]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_background_copy_yields_before_entering_the_native_backend[cadence]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_empty_round_and_native_aggregate_are_recorded_without_extra_node_scan" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_critical_reclaim_rearms_prefetch_before_queuing_another_d2h[freed0]" time="0.003" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_critical_reclaim_rearms_prefetch_before_queuing_another_d2h[freed1]" time="0.003" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_legacy_backend_keeps_the_original_reclaim_signature" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_urgent_copy_waits_for_the_existing_backed_capacity_scan[native_full_scan_truncated]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_urgent_copy_waits_for_the_existing_backed_capacity_scan[transaction_truncated]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_only_settled_same_identity_d2h_ack_rearms_a_live_parent[valid-idle]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_only_settled_same_identity_d2h_ack_rearms_a_live_parent[valid-critical]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_only_settled_same_identity_d2h_ack_rearms_a_live_parent[different_generation-idle]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_only_settled_same_identity_d2h_ack_rearms_a_live_parent[different_generation-critical]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_only_settled_same_identity_d2h_ack_rearms_a_live_parent[no_host_copy-idle]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_only_settled_same_identity_d2h_ack_rearms_a_live_parent[no_host_copy-critical]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_only_settled_same_identity_d2h_ack_rearms_a_live_parent[still_pending-idle]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_only_settled_same_identity_d2h_ack_rearms_a_live_parent[still_pending-critical]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_only_settled_same_identity_d2h_ack_rearms_a_live_parent[ongoing_write-idle]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_only_settled_same_identity_d2h_ack_rearms_a_live_parent[ongoing_write-critical]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_only_settled_same_identity_d2h_ack_rearms_a_live_parent[h2d-idle]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_only_settled_same_identity_d2h_ack_rearms_a_live_parent[h2d-critical]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_only_settled_same_identity_d2h_ack_rearms_a_live_parent[failed-idle]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_only_settled_same_identity_d2h_ack_rearms_a_live_parent[failed-critical]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_only_settled_same_identity_d2h_ack_rearms_a_live_parent[expired_demand-idle]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_only_settled_same_identity_d2h_ack_rearms_a_live_parent[expired_demand-critical]" time="0.002" /><testcase classname="tests.test_idle_full_prepare_pipeline" name="test_dispatch_consumes_acked_capacity_before_prefetch_and_background" time="0.001" /></testsuite></testsuites>

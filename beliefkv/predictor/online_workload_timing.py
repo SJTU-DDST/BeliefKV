@@ -9,6 +9,7 @@ from statistics import median
 
 from beliefkv.core.events import RuntimeEventKind
 from beliefkv.predictor.tool_survival import KaplanMeierCurve
+from beliefkv.predictor.tool_timing_prior import tool_signature
 
 
 _MINIMUM_HISTORY = {"workflow": 4, "run": 8}
@@ -25,8 +26,9 @@ class OnlineToolEstimate:
 
 
 class OnlineWorkloadToolTiming:
-    def __init__(self, *, window: int = 64, max_keys: int = 256) -> None:
+    def __init__(self, *, window: int = 64, max_keys: int = 256, prior=None) -> None:
         self.window, self.max_keys = window, max_keys
+        self.prior = prior
         self.open: dict[tuple, tuple[tuple, float]] = {}
         self._open_by_invocation: dict[tuple, dict[tuple, tuple[tuple, float]]] = {}
         self.samples: OrderedDict[tuple, deque] = OrderedDict()
@@ -44,10 +46,7 @@ class OnlineWorkloadToolTiming:
             name = attrs.get("tool_name", "")
             if name in {"announce_completion_intent", "ChildCompletion", "WorkflowCompletion"}:
                 return
-            command = attrs.get("observed_command_shape")
-            if not command or command == "unknown":
-                command = attrs.get("observed_command_class") or name
-            signature = (str(attrs.get("backend_class") or "unknown"), str(command))
+            signature = tool_signature(attrs)
             started = self.open.setdefault(identity, (signature, event.ts_ms))
             self._open_by_invocation.setdefault(identity[:2], {})[identity] = started
         elif event.kind is RuntimeEventKind.TOOL_END:
@@ -102,20 +101,28 @@ class OnlineWorkloadToolTiming:
             identity, started,
             self._history_revisions.get((workflow, *signature)),
             self._history_revisions.get(("*", *signature)),
+            self.prior.sha256 if self.prior is not None else None,
         )
 
     def prefetch_supported(
         self, workflow: str, invocation: str, *, now_ms: float, scope: str,
     ) -> bool:
         """Require support among calls that survived the current wait."""
-        minimum = _MINIMUM_HISTORY.get(scope)
         active = self._open_by_invocation.get((workflow, invocation), {})
-        if minimum is None or len(active) != 1:
+        if len(active) != 1:
             return False
         signature, started = next(iter(active.values()))
+        elapsed = max(0., now_ms - started)
+        if scope.startswith("hybrid_") or scope == "offline_prior":
+            prior = self.prior.curves.get(signature) if self.prior is not None else None
+            if prior is not None and prior.sample_count * prior.survival(elapsed) >= 8:
+                return True
+            scope = scope.removeprefix("hybrid_")
+        minimum = _MINIMUM_HISTORY.get(scope)
+        if minimum is None:
+            return False
         prefix = workflow if scope == "workflow" else "*"
         history = self.samples.get((prefix, *signature), ())
-        elapsed = max(0., now_ms - started)
         return sum(
             completed and duration > elapsed for duration, completed in history
         ) >= minimum
@@ -152,8 +159,38 @@ class OnlineWorkloadToolTiming:
                 ))
                 for future in times
             )
-            return OnlineToolEstimate(*values, cdf, len(history), scope)
-        return None
+            estimate = OnlineToolEstimate(*values, cdf, len(history), scope)
+            return self._blend_prior(signature, elapsed, estimate)
+        return self._blend_prior(signature, elapsed, None)
+
+    def _blend_prior(self, signature, elapsed, online):
+        prior = self.prior.curves.get(signature) if self.prior is not None else None
+        if prior is None or prior.survival(elapsed) <= 0:
+            return online
+        base = prior.survival(elapsed)
+        times = {t - elapsed for t, _ in prior._steps if t > elapsed}
+        weight = 0.
+        if online is not None:
+            weight = online.samples / (online.samples + self.prior.strength)
+            times.update(t for t, _ in online.release_cdf)
+        points = dict(online.release_cdf) if online is not None else {}
+        last, cdf = 0., []
+        for future in sorted(times):
+            last = points.get(future, last)
+            probability = (
+                weight * last
+                + (1. - weight) * (1. - prior.survival(elapsed + future) / base)
+            )
+            cdf.append((future, max(0., min(1., probability))))
+        values = tuple(next(
+            (t for t, probability in cdf if probability >= q), math.inf,
+        ) for q in (.1, .5, .9))
+        if not all(math.isfinite(value) for value in values):
+            return online
+        return OnlineToolEstimate(
+            *values, tuple(cdf), online.samples if online is not None else 0,
+            f"hybrid_{online.scope}" if online is not None else "offline_prior",
+        )
 
 
 class OnlineReportWork:

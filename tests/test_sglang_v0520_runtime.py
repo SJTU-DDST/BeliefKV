@@ -1937,10 +1937,13 @@ def test_native_shadow_burst_reserves_each_node_and_credits_only_its_ack(source,
     runtime.predictor_sha256 = "a" * 64
     key = runtime.context_sessions["ctx-parent"]
     if source == "tool_wait":
-        runtime.on_events((event(
-            7, RuntimeEventKind.TOOL_START, invocation_id="parent",
-            attributes={"tool_family": "shell"},
-        ),))
+        runtime.on_events((
+            event(7, RuntimeEventKind.RETURN, invocation_id="child", context_id="ctx-child"),
+            event(8, RuntimeEventKind.JOIN_SATISFIED, invocation_id="parent", join_id="join"),
+            event(9, RuntimeEventKind.TOOL_START, invocation_id="parent",
+                  attributes={"tool_family": "shell"}),
+        ))
+        assert runtime.graph.invocations["parent"].state.value == "wait_tool"
         now = time.monotonic() * 1000
         runtime.tool_wait_hints[key.context_id] = NativeToolWaitHint(
             key, 20_000., 30_000., 40_000., now, now + 60_000.,

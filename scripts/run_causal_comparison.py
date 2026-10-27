@@ -322,6 +322,12 @@ def preflight_runtime(settings, model_path):
         "enable_predicted_tool_offload": (
             settings.get("BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD", "0") == "1"
         ),
+        "idle_prepare_io_backend": settings.get("BELIEFKV_IDLE_PREPARE_IO_BACKEND", "native"),
+        "tool_offload_policy": (
+            settings.get("BELIEFKV_TOOL_OFFLOAD_POLICY", "fixed")
+            if settings.get("BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD", "0") == "1" else "off"
+        ),
+        "tool_timing_prior_sha256": settings.get("BELIEFKV_TOOL_TIMING_PRIOR_SHA256") or None,
         "enable_frontier_restore": settings["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == "1",
         "frontier_restore_ordinary_quota": int(
             settings.get("BELIEFKV_FRONTIER_RESTORE_ORDINARY_QUOTA", "4"),
@@ -537,6 +543,24 @@ def timing_reference(graph, overlay_path, native_baseline, *, maximum_replay_slo
     if evidence["seed"] != 21:
         raise ValueError("current comparisons require the shared fixed tool timing seed 21")
     return graph, evidence, None
+
+
+def validate_timing_prior_contract(common, overlay):
+    path = common.get("BELIEFKV_TOOL_TIMING_PRIOR", "")
+    digest = common.get("BELIEFKV_TOOL_TIMING_PRIOR_SHA256", "")
+    if not path and not digest:
+        return
+    from beliefkv.predictor.tool_timing_prior import ToolTimingPrior
+
+    ToolTimingPrior.load(path, digest)
+    prior = load(Path(path))
+    if (
+        overlay is None or overlay.get("timing_domain") != prior["domain"]
+        or overlay.get("evaluation_groups") != prior["evaluation_groups"]
+        or set(prior["training_groups"]) & set(overlay["evaluation_groups"])
+        or (overlay.get("offline_prior") or {}).get("sha256") != digest
+    ):
+        raise ValueError("offline tool prior differs from the held-out timing workload")
 
 
 def retention_source_matches(spec, summary, count):
@@ -1144,6 +1168,7 @@ def register(args):
         graph, overlay_path, natural_baseline,
         maximum_replay_slowdown=args.maximum_replay_slowdown,
     )
+    validate_timing_prior_contract(reference["arms"]["full"], tool_timing_overlay)
     if overlay_path is not None and not {
         "beliefkv/experiments/tool_timing_overlay.py",
         "tests/test_tool_timing_overlay.py",
@@ -1240,6 +1265,7 @@ def register(args):
         inputs.append(args.after_registration)
     inputs.extend(Path(reference["arms"]["full"][name]) for name in (
         "TOOL_TIMING_ARTIFACT", "H2D_SEED_ARTIFACT", "TRANSFER_SERVICE_SEED",
+        "BELIEFKV_TOOL_TIMING_PRIOR",
     ) if reference["arms"]["full"].get(name))
     reuse_selection = (
         reusable_source(quality, graph, expected_workflows=source_roots)

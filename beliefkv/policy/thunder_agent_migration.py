@@ -91,6 +91,21 @@ class ThunderAgentMigration(ThunderWorkingSet):
     def used_tokens(self):
         return self.capacity - self.remaining_capacity()
 
+    def remaining_capacity(self):
+        available = super().remaining_capacity()
+        reserve = getattr(self, "growth_headroom_tokens", 0)
+        if not reserve:
+            return available
+        active = [item for item in self.programs.values() if item.active]
+        if len(active) <= 1:
+            candidates = active or [
+                item for item in self.programs.values() if item.pending and not item.blocked
+            ]
+            largest = max((item.tokens + self.buffer_tokens for item in candidates), default=0)
+            # A soft growth reserve must not strand a request that fits alone.
+            reserve = min(reserve, max(0, self.capacity_tokens - largest))
+        return available - reserve
+
     def _pause(self, item, now):
         if item.in_flight:
             raise ValueError("running agent capacity cannot be credited before completion")

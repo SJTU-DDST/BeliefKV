@@ -11,6 +11,7 @@ from contextlib import contextmanager, nullcontext
 from dataclasses import asdict, dataclass, field, replace
 from heapq import nsmallest
 from itertools import chain, count, islice
+import hashlib
 import math
 import json
 import os
@@ -115,6 +116,7 @@ from beliefkv.runtime.tool_continuity import ToolContinuationPolicy
 from beliefkv.runtime.tool_residency_grace import ToolResidencyGrace
 from beliefkv.runtime.subagent_retention import DormantSubagentRetention
 from beliefkv.runtime.predicted_tool_offload import PredictedToolOffload
+from beliefkv.runtime.idle_prepare_backend import idle_prepare_backend
 
 if TYPE_CHECKING:
     from beliefkv.core.events import RuntimeEvent
@@ -629,7 +631,12 @@ class NativeAdmissionRuntime:
             self._custom_kv_management and self.enable_prepare_host and offload_setting == "1"
         )
         self._predicted_tool_offload = (
-            PredictedToolOffload(self) if self.enable_predicted_tool_offload else None
+            PredictedToolOffload.from_environment(self)
+            if self.enable_predicted_tool_offload else None
+        )
+        self.tool_offload_policy = (
+            os.environ.get("BELIEFKV_TOOL_OFFLOAD_POLICY", "fixed")
+            if self.enable_predicted_tool_offload else "off"
         )
         free_fence = os.environ.get("BELIEFKV_FREE_PAGE_H2D_FENCE", "0")
         if free_fence not in ("0", "1"):
@@ -649,6 +656,12 @@ class NativeAdmissionRuntime:
         if self.idle_prepare_policy not in ("cold", "all"):
             raise ValueError("idle prepare policy must be cold or all")
         self._idle_backup_queue_scope = False
+        self._idle_prepare_direct_nodes = set()
+        self.idle_prepare_io_backend = os.environ.get(
+            "BELIEFKV_IDLE_PREPARE_IO_BACKEND", "native",
+        )
+        if self.idle_prepare_io_backend not in ("native", "direct"):
+            raise ValueError("idle prepare backend must be native or direct")
         self._idle_backup_queued_requests: dict[PrefillCandidateKey, tuple[int, object]] | None = None
         sampling_setting = os.environ.get("BELIEFKV_H2D_OPPORTUNITY_SAMPLING", "0")
         if sampling_setting not in ("0", "1"):
@@ -677,6 +690,20 @@ class NativeAdmissionRuntime:
             OnlineWorkloadToolTiming()
             if os.environ.get("BELIEFKV_ONLINE_TOOL_TIMING", "0") == "1" else None
         )
+        prior_path = os.environ.get("BELIEFKV_TOOL_TIMING_PRIOR", "")
+        prior_sha = os.environ.get("BELIEFKV_TOOL_TIMING_PRIOR_SHA256", "")
+        self.tool_timing_prior_sha256 = prior_sha or None
+        if bool(prior_path) != bool(prior_sha):
+            raise ValueError("tool timing prior requires a path and SHA256")
+        if prior_path:
+            if self._online_tool_timing is None:
+                raise ValueError("tool timing prior requires online timing adaptation")
+            from beliefkv.predictor.tool_timing_prior import ToolTimingPrior
+
+            self._online_tool_timing.prior = ToolTimingPrior.load(prior_path, prior_sha)
+            self.predictor_sha256 = hashlib.sha256(
+                ("hybrid_tool_prior_v1:" + prior_sha).encode(),
+            ).hexdigest()
         self._online_tool_queries: dict[
             PrefillCandidateKey, tuple[float, tuple | None, float]
         ] = {}
@@ -842,6 +869,8 @@ class NativeAdmissionRuntime:
         if bool(tool_timing_artifact_path) != bool(tool_timing_sha256):
             raise ValueError("tool event predictor requires path and SHA256")
         if tool_timing_artifact_path:
+            if prior_path:
+                raise ValueError("legacy tool artifact and domain timing prior are exclusive")
             if enable_local_predictor or predictor_sha256 is not None or not model_path:
                 raise ValueError("tool-only timing and legacy admission predictors are exclusive")
             validate_tool_timing_artifact(
@@ -2768,7 +2797,17 @@ class NativeAdmissionRuntime:
                 "tool_timing_only": self._tool_timing_only,
                 "tool_predictor_configured": self._model_worker is not None,
                 "online_tool_timing": self._online_tool_timing is not None,
+                "tool_timing_prior_sha256": (
+                    self._online_tool_timing.prior.sha256
+                    if self._online_tool_timing is not None
+                    and self._online_tool_timing.prior is not None else None
+                ),
                 "predicted_tool_offload": self.enable_predicted_tool_offload,
+                "tool_offload_policy": (
+                    type(self._predicted_tool_offload).__name__
+                    if self._predicted_tool_offload is not None else None
+                ),
+                "idle_prepare_io_backend": self.idle_prepare_io_backend,
                 "online_tool_timing_revision": (
                     self._online_tool_timing.revision if self._online_tool_timing else None
                 ),
@@ -8182,12 +8221,17 @@ class NativeAdmissionRuntime:
         self._idle_backup_queue_scope = self.idle_prepare_policy == "cold"
         self._idle_backup_queued_requests = None
         try:
-            issued = prepare()
+            with idle_prepare_backend(
+                cache, self.idle_prepare_io_backend, self.counts,
+            ) as direct:
+                issued = prepare()
         finally:
             self._idle_backup_queue_scope, self._idle_backup_queued_requests = (
                 previous_scope, previous_requests,
             )
         if issued:
+            if direct:
+                self._idle_prepare_direct_nodes.update(item[0] for item in issued)
             self.counts["idle_full_prepare_issued_batches"] += 1
             self._cold_full_backups.update({
                 node_id: (created, "idle") for node_id, created, _ in issued
@@ -8702,10 +8746,7 @@ class NativeAdmissionRuntime:
             and not self._online_tool_timing.prefetch_supported(
                 hint.key.root_workflow_id, hint.key.invocation_id,
                 now_ms=now_ms,
-                scope=(
-                    "workflow" if hint.residual_support_detail == "online_workflow_command"
-                    else "run"
-                ),
+                scope=hint.residual_support_detail.removeprefix("online_").removesuffix("_command"),
             )
         ):
             self.counts["tool_prefetch_conditional_tail_unsupported"] += 1
@@ -11337,6 +11378,15 @@ class NativeAdmissionRuntime:
         }
         actual_bytes = getattr(commit, "actual_bytes", None)
         ack_ms = getattr(commit, "submit_to_ack_ms", None)
+        direct_d2h = (
+            getattr(commit, "direction", None) == "d2h"
+            and bool(self._idle_prepare_direct_nodes.intersection(
+                getattr(commit, "node_ids", ()),
+            ))
+        )
+        if direct_d2h:
+            self._idle_prepare_direct_nodes.difference_update(getattr(commit, "node_ids", ()))
+            self.counts["idle_prepare_direct_acks"] += 1
         if (
             getattr(commit, "status", None) == "completed"
             and getattr(commit, "direction", None) == "h2d"
@@ -11350,6 +11400,7 @@ class NativeAdmissionRuntime:
         if (
             getattr(commit, "status", None) == "completed"
             and getattr(commit, "direction", None) in ("h2d", "d2h")
+            and not direct_d2h
             and type(actual_bytes) is int and actual_bytes > 0
             and type(ack_ms) in (int, float) and math.isfinite(ack_ms)
             and 0 < ack_ms <= 60_000

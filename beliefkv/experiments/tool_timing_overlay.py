@@ -55,7 +55,7 @@ def duration_summary(values):
     }
 
 
-def tracelab_samples(rows, *, provider, tool_names):
+def tracelab_samples(rows, *, provider, tool_names, include_session=False):
     """Use reported internal times only; never substitute inter-record gaps."""
     if not provider or not tool_names or len(set(tool_names)) != len(tool_names):
         raise ValueError("declare a provider and distinct public tool families")
@@ -82,6 +82,8 @@ def tracelab_samples(rows, *, provider, tool_names):
                 "provider": provider, "tool_name": tool["tool_name"],
                 "duration_ms": float(value),
             }
+            if include_session:
+                sample["source_group"] = fingerprint([provider, row["session_id"]])
             if key in seen:
                 if seen[key] != sample:
                     raise ValueError("public duplicate tool identity has conflicting timing")
@@ -172,11 +174,60 @@ def build_overlay(plan, samples, *, public_source, sample_audit, target_tool_nam
     }
 
 
+def build_categorized_overlay(
+    plan, samples, *, public_source, sample_audit, target_tool_names, domain, seed=21,
+):
+    """Declare a category first, then independently sample its duration."""
+    document = build_overlay(
+        plan, samples, public_source=public_source, sample_audit=sample_audit,
+        target_tool_names=target_tool_names, seed=seed,
+    )
+    pools = {}
+    for sample in samples:
+        pools.setdefault(sample["tool_name"], []).append(sample)
+    if not domain or any(not category for category in pools):
+        raise ValueError("categorized timing requires a domain and named tool families")
+    categories = sorted(pools)
+    weights = [len(pools[category]) for category in categories]
+    for entry in document["entries"]:
+        identity = entry["tool_identity"]
+        draw = int(fingerprint(["tool_category_sha256_v2", seed, identity]), 16) % sum(weights)
+        for category, weight in zip(categories, weights):
+            if draw < weight:
+                break
+            draw -= weight
+        pool = pools[category]
+        index = int(fingerprint([
+            "conditional_tool_duration_sha256_v2", seed, identity, category,
+        ]), 16) % len(pool)
+        sample = pool[index]
+        entry.update(
+            observed_timing_class=category, timing_domain=domain,
+            duration_ms=sample["duration_ms"], sample_id=sample["sample_id"],
+        )
+    document.update(
+        schema_version=2, sampling="category_then_duration_sha256_v2",
+        timing_domain=domain,
+        category_population=dict(zip(categories, weights)),
+        evaluation_groups=sorted({item["source_group"] for item in samples}),
+        entries_sha256=fingerprint(document["entries"]),
+        sampled_target_durations=duration_summary([
+            entry["duration_ms"] for entry in document["entries"]
+        ]),
+        online_metadata="timing_domain_and_observed_timing_class_at_tool_start",
+        semantics="Synthetic observable latency classes; original execute outputs and tokens retained.",
+    )
+    return document
+
+
 def apply_overlay(plan, document):
+    categorized = document.get("schema_version") == 2
     if (
-        document.get("schema_version") != 1
+        document.get("schema_version") not in (1, 2)
         or document.get("kind") != "empirical_tool_timing_overlay"
-        or document.get("sampling") != "tool_timing_sha256_mod_v1"
+        or document.get("sampling") != (
+            "category_then_duration_sha256_v2" if categorized else "tool_timing_sha256_mod_v1"
+        )
         or type(document.get("seed")) is not int or document["seed"] < 0
         or document.get("synthetic_tool_timing") is not True
         or document.get("request_work_changed") is not False
@@ -184,11 +235,21 @@ def apply_overlay(plan, document):
         or document.get("source_plan_sha256") != plan_fingerprint(plan)
     ):
         raise ValueError("tool timing overlay is undeclared or belongs to another source graph")
+    if categorized and (
+        not isinstance(document.get("timing_domain"), str) or not document["timing_domain"]
+        or not isinstance(document.get("category_population"), dict)
+        or not document["category_population"]
+        or any(
+            not isinstance(name, str) or not name or type(count) is not int or count <= 0
+            for name, count in document["category_population"].items()
+        )
+    ):
+        raise ValueError("categorized timing lacks a declared observable population")
     targets = _targets(plan, document.get("target_tool_names"))
     entries = document.get("entries")
     if not isinstance(entries, list) or document.get("entries_sha256") != fingerprint(entries):
         raise ValueError("tool timing map changed after preparation")
-    changes = {}
+    changes, metadata = {}, {}
     for entry in entries:
         node_id = entry.get("end_node_id")
         if node_id not in targets or node_id in changes:
@@ -203,10 +264,27 @@ def apply_overlay(plan, document):
         ):
             raise ValueError("tool timing entry changes identity or has an invalid duration")
         changes[node_id] = float(duration)
+        if categorized:
+            if (
+                entry.get("timing_domain") != document["timing_domain"]
+                or entry.get("observed_timing_class") not in document["category_population"]
+            ):
+                raise ValueError("timing category differs from the declared domain")
+            attrs = {
+                "timing_domain": document["timing_domain"],
+                "observed_timing_class": entry["observed_timing_class"],
+            }
+            metadata[node_id] = attrs
+            metadata[node.dependencies[0]] = attrs
     if changes.keys() != targets.keys():
         raise ValueError("tool timing map does not cover the complete declared population")
     return replace(plan, nodes=tuple(
-        replace(node, delay_ms=changes[node.node_id]) if node.node_id in changes else node
+        replace(
+            node, delay_ms=changes.get(node.node_id, node.delay_ms),
+            event=replace(node.event, attributes={
+                **node.event.attributes, **metadata[node.node_id],
+            }) if node.node_id in metadata else node.event,
+        ) if node.node_id in changes or node.node_id in metadata else node
         for node in plan.nodes
     ))
 
@@ -229,4 +307,12 @@ def load_overlay(plan, path: Path):
         "transformed_plan_sha256": transformed_hash,
         "synthetic_tool_timing": True, "future_timing_delivered_to_policy": False,
     }
+    if document["schema_version"] == 2:
+        evidence.update(
+            timing_domain=document["timing_domain"],
+            category_population=document["category_population"],
+            evaluation_groups=document["evaluation_groups"],
+            offline_prior=document.get("offline_prior"),
+            online_metadata=document["online_metadata"],
+        )
     return transformed, evidence
