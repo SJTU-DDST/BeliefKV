@@ -673,6 +673,16 @@
   results with new streaming controls. Progressive layer-capacity reuse remains
   a design investigation: current native allocation reserves all layers up
   front and no engine allocator change has been qualified.
+- Future progressive layer-capacity reuse must coordinate with retained agent
+  admission, which currently charges complete contexts even after physical
+  offload. Use an explicit safe A-to-B handover: the final full working set must
+  fit, each layer must have proven exclusive capacity and dependencies, and the
+  donor's logical budget may transfer only once while its draining physical
+  pages remain accounted. A warming consumer cannot bypass native admission
+  without a separately qualified engine contract. Do not fractionally discount
+  complete context costs, admit both owners against the same budget, or create
+  ready-agent rotations to exercise the pipeline. V247's engine change is the
+  common free-page fence; it has no progressive layer allocator.
 - Shared CPU report `v238_workflow_service_shared_cpu_20261026.xml` passes
   1739 tests plus four subtests without skips, retaining the entire V236b
   1534-case set and adding graph/tool-return/streaming/SLO coverage.
