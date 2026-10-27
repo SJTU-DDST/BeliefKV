@@ -6,7 +6,7 @@ The SGLang cache remains the physical capacity and transfer authority.
 from __future__ import annotations
 
 from collections import Counter, OrderedDict, deque
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from contextlib import contextmanager, nullcontext
 from dataclasses import asdict, dataclass, field, replace
 from heapq import nsmallest
@@ -114,6 +114,7 @@ from beliefkv.runtime.native_transfer_policy import (
 from beliefkv.runtime.tool_continuity import ToolContinuationPolicy
 from beliefkv.runtime.tool_residency_grace import ToolResidencyGrace
 from beliefkv.runtime.subagent_retention import DormantSubagentRetention
+from beliefkv.runtime.predicted_tool_offload import PredictedToolOffload
 
 if TYPE_CHECKING:
     from beliefkv.core.events import RuntimeEvent
@@ -621,6 +622,15 @@ class NativeAdmissionRuntime:
             else None if priority_setting is None else priority_setting == "1"
         )
         self.enable_prepare_host = os.environ.get("BELIEFKV_ENABLE_PREPARE_HOST", "1") == "1"
+        offload_setting = os.environ.get("BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD", "0")
+        if offload_setting not in ("0", "1"):
+            raise ValueError("predicted tool offload setting must be 0 or 1")
+        self.enable_predicted_tool_offload = (
+            self._custom_kv_management and self.enable_prepare_host and offload_setting == "1"
+        )
+        self._predicted_tool_offload = (
+            PredictedToolOffload(self) if self.enable_predicted_tool_offload else None
+        )
         free_fence = os.environ.get("BELIEFKV_FREE_PAGE_H2D_FENCE", "0")
         if free_fence not in ("0", "1"):
             raise ValueError("free-page H2D fence must be 0 or 1")
@@ -2758,6 +2768,7 @@ class NativeAdmissionRuntime:
                 "tool_timing_only": self._tool_timing_only,
                 "tool_predictor_configured": self._model_worker is not None,
                 "online_tool_timing": self._online_tool_timing is not None,
+                "predicted_tool_offload": self.enable_predicted_tool_offload,
                 "online_tool_timing_revision": (
                     self._online_tool_timing.revision if self._online_tool_timing else None
                 ),
@@ -6722,6 +6733,7 @@ class NativeAdmissionRuntime:
 
     def issue_shadow_backup_step(
         self, step: ShadowBackupStep, *, source: str = "tool_wait",
+        _authorization: Callable[[], bool] | None = None,
     ) -> str | None:
         """Submit a revalidated native shadow; return its ID, not ACK credit.
 
@@ -6732,6 +6744,7 @@ class NativeAdmissionRuntime:
         if (
             self.physical_disabled
             or cache is None
+            or _authorization is not None and not _authorization()
             or self.physical_ledger.pending_action_count("PREPARE_HOST")
             or not isinstance(step, ShadowBackupStep)
             or self.refreshed_shadow_backup_step(
@@ -6745,6 +6758,9 @@ class NativeAdmissionRuntime:
 
         def before_enqueue(operation: object) -> bool:
             nonlocal registered
+            if _authorization is not None and not _authorization():
+                self.counts["shadow_authorization_changed"] += 1
+                return False
             try:
                 expected = shadow_expectation_from_native_op(
                     command_id, step, operation, cache.cache_controller
@@ -6794,12 +6810,16 @@ class NativeAdmissionRuntime:
     def issue_shadow_backup_steps(
         self, step: ShadowBackupStep, *, source: str = "tool_wait",
         _selection_candidate: ActionLocalShadowCandidate | None = None,
+        _authorization: Callable[[], bool] | None = None,
     ) -> tuple[tuple[ShadowBackupStep, str], ...]:
         """Reserve one FULL prefix burst; each extent retains its own ACK."""
         cache = self._native_cache
         burst = getattr(cache, "prepare_host_session_nodes", None)
         if not callable(burst):
-            command = self.issue_shadow_backup_step(step, source=source)
+            command = self.issue_shadow_backup_step(
+                step, source=source,
+                **({"_authorization": _authorization} if _authorization is not None else {}),
+            )
             return ((step, command),) if command is not None else ()
         deliveries = (
             self.event_server.drain(max_messages=128)
@@ -6808,6 +6828,7 @@ class NativeAdmissionRuntime:
         if (
             self.physical_disabled
             or cache is not self._native_cache
+            or _authorization is not None and not _authorization()
             or self.physical_ledger.pending_action_count("PREPARE_HOST")
             or not isinstance(step, ShadowBackupStep)
         ):
@@ -6846,7 +6867,10 @@ class NativeAdmissionRuntime:
         def before_enqueue(operation: object) -> bool:
             command = getattr(operation, "beliefkv_command_id", None)
             planned_step = planned.get(command)
-            if planned_step is None or not self._live_parent_pressure_key(step.key):
+            if (
+                planned_step is None or not self._live_parent_pressure_key(step.key)
+                or _authorization is not None and not _authorization()
+            ):
                 self.counts["shadow_causal_invalidated_before_enqueue"] += 1
                 return False
             try:
@@ -8303,6 +8327,10 @@ class NativeAdmissionRuntime:
     def _long_tool_wait(self, key: PrefillCandidateKey) -> bool:
         if self._critical_tool_donor(key):
             return True
+        return self._predicted_long_tool_wait(key)
+
+    def _predicted_long_tool_wait(self, key: PrefillCandidateKey) -> bool:
+        """Prediction only; critical JOIN demand does not establish tool length."""
         hint = self._live_tool_hint(key)
         if hint is None:
             return False
@@ -8319,6 +8347,8 @@ class NativeAdmissionRuntime:
         _defer_pressure_publication: bool = False,
     ) -> bool | None:
         """Back tool waits; return True only for deferred publication."""
+        if self._predicted_tool_offload is not None:
+            self._predicted_tool_offload.dispatch()
         if not self.enable_prepare_host or self.physical_disabled or self._native_cache is None:
             return
         now_ms = time.monotonic() * 1000
@@ -11384,6 +11414,8 @@ class NativeAdmissionRuntime:
                 and key.context_epoch in (action.context_epoch, action.context_epoch + 1)
             ):
                 self._invalidate_wait_transfer_observation(key)
+                if self._predicted_tool_offload is not None:
+                    self._predicted_tool_offload.next_ms = 0.
                 if self._critical_tool_donor(key):
                     self._critical_reclaim_next_ms = 0.
             if (

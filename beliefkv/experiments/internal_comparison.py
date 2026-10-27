@@ -15,6 +15,12 @@ def arm_environment(
     if mode not in MODES:
         raise ValueError(f"unknown internal comparison: {mode}")
     custom_kv = mode in ("full", "kv_only")
+    tool_offload = common.get(
+        "BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD", common.get("PREDICTED_TOOL_OFFLOAD", "0"),
+    )
+    if tool_offload not in ("0", "1"):
+        raise ValueError("predicted tool offload must be 0 or 1")
+    tool_offload = tool_offload if custom_kv else "0"
     if tool_prefetch is not None and type(tool_prefetch) is not bool:
         raise ValueError("tool prefetch override must be a boolean")
     if tool_prefetch is True and not custom_kv:
@@ -177,6 +183,8 @@ def arm_environment(
     settings = {
         **common,
         "BELIEFKV_INTERNAL_COMPARISON_MODE": mode,
+        "PREDICTED_TOOL_OFFLOAD": tool_offload,
+        "BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD": tool_offload,
         "AGENT_ADMISSION": agent_admission,
         "BELIEFKV_AGENT_ADMISSION": agent_admission,
         "AGENT_COADMIT_JOIN_CHILDREN": siblings,

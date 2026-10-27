@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "scope": "single_root_cpu_graph_construction_with_fake_model",
+  "fanout_profile": "native_in_graph_short_workstreams",
+  "elapsed_s": 1.225089023821056,
+  "construction": [
+    {
+      "file": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/deepagents_swebench.py",
+      "line": 3511,
+      "function": "_autonomous_subagents",
+      "calls": 6,
+      "self_cpu_s": 0.000698454,
+      "cumulative_cpu_s": 0.9401674860000001,
+      "sha256": "5ee0346864cbb231eda4f93f2d5ea84568fe59ec321bda193112714e78f92e1b"
+    },
+    {
+      "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langchain/agents/factory.py",
+      "line": 808,
+      "function": "create_agent",
+      "calls": 26,
+      "self_cpu_s": 0.002667749,
+      "cumulative_cpu_s": 1.0265319750000002,
+      "sha256": "8f7502b3f99369300d805a0d46d2fda278f8bb92de9118ae3eaa9b3f605ae9b6"
+    },
+    {
+      "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/deepagents/middleware/subagents.py",
+      "line": 459,
+      "function": "create_sub_agent",
+      "calls": 25,
+      "self_cpu_s": 0.000293564,
+      "cumulative_cpu_s": 0.985579571,
+      "sha256": "7a7aaea43f9a8bd66e2f31def346adaeb4ce3b956c908ace0fa3913ab56428a6"
+    },
+    {
+      "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/deepagents/middleware/subagents.py",
+      "line": 528,
+      "function": "_build_task_tool",
+      "calls": 6,
+      "self_cpu_s": 0.000103813,
+      "cumulative_cpu_s": 0.9864281500000001,
+      "sha256": "7a7aaea43f9a8bd66e2f31def346adaeb4ce3b956c908ace0fa3913ab56428a6"
+    }
+  ],
+  "model_requests": 0,
+  "tool_executions": 0,
+  "gpu_experiment": false,
+  "historical_30s_gap_profiled": false,
+  "concurrent_root_contention_measured": false,
+  "performance_improvement_claimed": false
+}

@@ -1081,3 +1081,38 @@
   include seven policy-emitted sole-JOIN-child ranks. These are not independent
   dependency reconstruction, physical freed-page or final performance proof.
   Complete Full JCT/throughput and V295 optional-decay results remain pending.
+- The explicit predicted-tool physical-offload candidate is now implemented in
+  `configs/migration/predictive_tool_offload_20261027.json`. It extends the V286
+  Full profile only through `PREDICTED_TOOL_OFFLOAD=1`; preserve V286/V295's
+  frozen execution. Prediction-only remaining survival >=90% at one second
+  authorizes incremental PREPARE and settled private native-leaf Device
+  release before allocator shortage. Critical JOIN demand is not tool-length
+  evidence. Recheck authorization after event drain and before enqueue; keep
+  original session/epoch, native lock, ownership and DMA guards. Never evict a
+  ready peer or a restoring/prefetched consumer, start a global write barrier,
+  use private future tool timers, or equate physical release with logical
+  eligibility. Unsupported/cold prediction abstains.
+- V307 passes 2523 shared CPU cases plus four subtests in one execution, no
+  failures/skips, retaining every V294 case and adding 147. V305's segmented
+  prefix continuation failure remains preserved; a bounded remembered
+  frontier fixes it. V309 binds current sources and actual Full/default
+  ThunderAgent/optional-decay constructors, proving explicit enablement and
+  paper isolation. Native tree/allocator/ACK tests still use copy/event/Host
+  index stand-ins. New offload GPU, complete-model correctness, control-cost
+  and full-workload performance acceptance remain pending.
+- V300/V308 audit every workflow's initial preparation without rewriting
+  historical clocks: V230 source mean 36.283566s, V286 ThunderAgent mean
+  36.297232s and V286 Full mean 36.297035s. Preserve end-to-end
+  `workflow_start -> workflow_end` as primary JCT; first-submit-to-end is
+  diagnostic. V302's CPU fake-model profile constructs 25 subagent graphs
+  and one root graph per root, but is not a historical profile of the entire
+  30-second gap. Lazy graph construction is not implemented by this change.
+- V286 subsequently completed Full: all 18 workflows, 3674 exact requests,
+  145565966 prompt tokens and 549671 output tokens, original stopping and
+  normal tails retained. Its collected mean JCT is 1669.294213s and
+  whole-run output throughput 189.339669 token/s versus default ThunderAgent
+  1876.334933s / 175.160173 token/s, improvements 11.0343% / 8.0952%.
+  These are one complete frozen comparison, without the new offload module;
+  keep repeated-performance and all-baseline acceptance pending. Owned
+  predecessor processes exited and V295 is now running the independently
+  frozen optional-decay arm; do not overlap another GPU experiment.

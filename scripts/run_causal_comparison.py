@@ -220,6 +220,7 @@ def experiment_reference(reference, spec):
         "EXECUTION_FRONTIER_RESTORE": "BELIEFKV_ENABLE_FRONTIER_RESTORE",
         "JOIN_LAST_CHILD_PRIORITY": "BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY",
         "TOOL_CONTINUITY": "BELIEFKV_ENABLE_TOOL_CONTINUITY",
+        "PREDICTED_TOOL_OFFLOAD": "BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD",
     }
     for name, value in common.items():
         if name.startswith("BELIEFKV_"):
@@ -318,6 +319,9 @@ def preflight_runtime(settings, model_path):
         "agent_workflow_entry_min_ready": int(settings.get("BELIEFKV_AGENT_WORKFLOW_ENTRY_MIN_READY", "0")),
         "restore_tiers": settings.get("RESTORE_TIERS", settings["BELIEFKV_RESTORE_TIERS"]),
         "enable_tool_prefetch": settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "1",
+        "enable_predicted_tool_offload": (
+            settings.get("BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD", "0") == "1"
+        ),
         "enable_frontier_restore": settings["BELIEFKV_ENABLE_FRONTIER_RESTORE"] == "1",
         "frontier_restore_ordinary_quota": int(
             settings.get("BELIEFKV_FRONTIER_RESTORE_ORDINARY_QUOTA", "4"),
@@ -704,6 +708,12 @@ def observed_configuration(plan, label, arm, *, final=False):
             raise ValueError("paper policy did not observe the complete request population")
     if final and mode != "native_matched":
         state = qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
+        common = plan.get("reference_environment", {})
+        expected_tool_offload = mode in ("full", "kv_only") and common.get(
+            "BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD", common.get("PREDICTED_TOOL_OFFLOAD", "0"),
+        ) == "1"
+        if state.get("predicted_tool_offload", False) is not expected_tool_offload:
+            raise ValueError("effective predicted tool offload differs from declared control")
         validate_free_page_fence(plan, state)
         agent_strategy = plan.get("reference_environment", {}).get(
             "BELIEFKV_AGENT_ADMISSION",
@@ -1430,6 +1440,9 @@ def watch(registration):
                     "prefill_scheduling_policy_requested": env["PREFILL_SCHEDULING_POLICY"],
                     "tool_restore_mode_requested": env["TOOL_RESTORE_MODE"],
                     "tool_prefetch_requested": env["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "1",
+                    "predicted_tool_offload_requested": (
+                        env.get("BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD", "0") == "1"
+                    ),
                     "tool_prefetch_priority_ms_requested": float(env["BELIEFKV_TOOL_PREFETCH_PRIORITY_MS"]),
                     "idle_prepare_policy_requested": env["IDLE_PREPARE_POLICY"],
                     "restore_tiers_requested": env["RESTORE_TIERS"],
