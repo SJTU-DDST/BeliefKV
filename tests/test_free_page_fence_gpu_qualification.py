@@ -357,6 +357,65 @@ def test_gpu_guard_precedes_all_pool_allocation(monkeypatch, tmp_path, when):
     create.assert_not_called()
 
 
+@pytest.mark.parametrize("fault", (
+    None, "archive_changed", "not_user", "empty_instruction", "future_record",
+    "naive_release", "different_deadline", "wrong_prior_deadline", "pause",
+))
+def test_only_an_archived_explicit_user_release_can_advance_the_gpu_deadline(
+    monkeypatch, tmp_path, fault,
+):
+    previous = tmp_path / "previous_hold.json"
+    previous.write_text(json.dumps({
+        "gpu_not_before": "2026-10-27T11:00:00+08:00",
+        "automatic_resume_allowed": True,
+    }))
+    release = {
+        "source": "user_message", "instruction": "GPU experiments may start now",
+        "previous_hold_file": str(previous),
+        "previous_hold_sha256": qualifier.sha256_file(previous),
+        "released_at": "2026-10-27T10:45:00+08:00",
+        "recorded_at": "2026-10-27T10:45:00+08:00",
+    }
+    hold = {
+        "gpu_not_before": release["released_at"], "automatic_resume_allowed": True,
+        "status": "user_released_gpu_reservation", "explicit_user_release": release,
+    }
+    if fault == "archive_changed":
+        previous.write_text("{}")
+    elif fault == "not_user":
+        release["source"] = "automatic_timer"
+    elif fault == "empty_instruction":
+        release["instruction"] = ""
+    elif fault == "future_record":
+        release["recorded_at"] = "2026-10-27T10:55:00+08:00"
+    elif fault == "naive_release":
+        release["released_at"] = "2026-10-27T10:45:00"
+    elif fault == "different_deadline":
+        hold["gpu_not_before"] = "2026-10-27T10:40:00+08:00"
+    elif fault == "wrong_prior_deadline":
+        previous.write_text(json.dumps({"gpu_not_before": "2026-10-28T11:00:00+08:00"}))
+        release["previous_hold_sha256"] = qualifier.sha256_file(previous)
+    path = tmp_path / "hold.json"
+    path.write_text(json.dumps(hold))
+    monkeypatch.setattr(qualifier, "HOLD", path)
+    pause = tmp_path / "pause"
+    if fault == "pause":
+        pause.touch()
+    monkeypatch.setattr(qualifier.controls.fresh, "PAUSE", pause)
+    monkeypatch.setattr(qualifier.controls.reservation, "now", lambda: datetime(
+        2026, 10, 27, 10, 50, tzinfo=ZoneInfo("Asia/Shanghai"),
+    ))
+    processes = Mock(return_value=[])
+    monkeypatch.setattr(qualifier, "gpu_processes", processes)
+    if fault is None:
+        qualifier.guard_gpu()
+        processes.assert_called_once()
+    else:
+        with pytest.raises((ValueError, KeyError, TypeError)):
+            qualifier.guard_gpu()
+        processes.assert_not_called()
+
+
 def test_a_new_hold_during_a_scenario_stops_before_a_writer_is_started(fixture_factory):
     fixture = fixture_factory(enabled=True)
     count = [0]

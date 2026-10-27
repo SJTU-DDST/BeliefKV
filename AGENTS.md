@@ -774,3 +774,10 @@
   Verify the live supervisor's PID/start ticks, argv, source map and order.
   Preserve partial failures and never restart them automatically. A queued
   CPU waiter is neither a running GPU experiment nor performance acceptance.
+- The user explicitly releases the GPU reservation at approximately
+  2026-10-27 10:45 Asia/Shanghai. Preserve the stopped V246 CPU waiter and the
+  archived original hold. Component/session qualifiers may honor the new
+  `explicit_user_release` only after checking its archived hold hash, original
+  deadline, user-message provenance and timezone-aware times. Current shared
+  hold/pause checks still apply. Qualify and freeze the updated launch guards;
+  keep the prepared native engine and Full/ThunderAgent policy sources unchanged.

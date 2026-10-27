@@ -73,9 +73,7 @@ def configuration():
 
 
 def check_hold():
-    if controls.reservation.now() < components.NOT_BEFORE:
-        raise controls.fresh.HoldChanged("session model GPU check is reserved until 2026-10-27 11:00 Asia/Shanghai")
-    controls.fresh.check_hold({"hold_file": str(components.HOLD)}, released=True)
+    return components.check_reservation()
 
 
 def select_probes(expected, corpus, document):
@@ -445,6 +443,7 @@ def run(args):
     checkout = Path(frozen["checkout"])
     registration = {
         **frozen, "configuration": document, "port": args.port,
+        "gpu_authorization": check_hold(),
         "reference_environment": json.loads(
             (checkout / components.CONFIG).read_bytes()
         )["common_environment"],

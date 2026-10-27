@@ -51,11 +51,37 @@ REQUIRED = (
 )
 
 
-def guard_gpu(*, allow_current=False):
+def check_reservation():
     at = controls.reservation.now()
-    if at < NOT_BEFORE:
-        raise controls.fresh.HoldChanged("GPU qualification is reserved until 2026-10-27 11:00 Asia/Shanghai")
     controls.fresh.check_hold({"hold_file": str(HOLD)}, released=True, at=at)
+    if at < NOT_BEFORE:
+        hold = json.loads(HOLD.read_bytes())
+        release = hold.get("explicit_user_release")
+        if not isinstance(release, dict):
+            raise controls.fresh.HoldChanged("GPU qualification is reserved until 2026-10-27 11:00 Asia/Shanghai")
+        previous_path = Path(release["previous_hold_file"])
+        previous = json.loads(previous_path.read_bytes())
+        released = datetime.fromisoformat(release["released_at"])
+        recorded = datetime.fromisoformat(release["recorded_at"])
+        if (
+            release.get("source") != "user_message"
+            or not isinstance(release.get("instruction"), str) or not release["instruction"].strip()
+            or sha256_file(previous_path) != release.get("previous_hold_sha256")
+            or datetime.fromisoformat(previous["gpu_not_before"]) != NOT_BEFORE
+            or released.tzinfo is None or recorded.tzinfo is None
+            or not released <= recorded <= at
+            or datetime.fromisoformat(hold["gpu_not_before"]) != released
+            or hold.get("status") != "user_released_gpu_reservation"
+        ):
+            raise controls.fresh.HoldChanged("explicit user GPU reservation release is invalid")
+    return {
+        "hold_file": str(HOLD), "hold_sha256": sha256_file(HOLD),
+        "checked_at": at.isoformat(),
+    }
+
+
+def guard_gpu(*, allow_current=False):
+    check_reservation()
     pids = gpu_processes()
     if any(not allow_current or pid != os.getpid() for pid in pids):
         raise ValueError("GPU is occupied by a process outside this component qualification")
@@ -452,6 +478,7 @@ def qualify(engine, patch):
         raise ValueError("native fence qualification did not execute on its owned GPU")
     report = {
         "status": "native_free_page_fence_components_qualified",
+        "gpu_authorization": check_reservation(),
         "native_engine": native, "native_compatibility": compatibility,
         "native_patch_sha256": sha256_file(patch),
         "source_sha256": {name: sha256_file(ROOT / name) for name in SOURCES},
