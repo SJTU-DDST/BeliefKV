@@ -316,6 +316,7 @@ def preflight_runtime(settings, model_path):
         ),
         "agent_blocked_lending": settings.get("BELIEFKV_AGENT_BLOCKED_LENDING", "idle"),
         "agent_join_free_admission": settings.get("BELIEFKV_AGENT_JOIN_FREE_ADMISSION", "0") == "1",
+        "coadmit_join_children": settings.get("BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN", "0") == "1",
         "agent_join_dependency_admission": settings.get("BELIEFKV_AGENT_JOIN_DEPENDENCY_ADMISSION", "0") == "1",
         "agent_blocked_budget_proof": settings.get("BELIEFKV_AGENT_BLOCKED_BUDGET_PROOF", "predicted_pressure"),
         "agent_lending_selection": settings.get("BELIEFKV_AGENT_LENDING_SELECTION", "largest"),
@@ -762,13 +763,21 @@ def observed_configuration(plan, label, arm, *, final=False):
             raise ValueError("free-capacity JOIN admission lacks its declared reference core")
         actual_agents = state.get("agent_admission")
         if expected_agents:
+            reference_policy = None
+            if agent_strategy == "thunderagent_reference":
+                from beliefkv.runtime.reference_thunder_admission import ReferenceThunderAdmission
+
+                reference_policy = ReferenceThunderAdmission.composition_name(
+                    join_free_admission=join_free,
+                    coadmit_join_children=plan["reference_environment"].get(
+                        "BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN",
+                        plan["reference_environment"].get("AGENT_COADMIT_JOIN_CHILDREN", "0"),
+                    ) == "1",
+                )
             if (
                 not isinstance(actual_agents, dict)
                 or actual_agents.get("policy") != (
-                    "full_with_reference_thunderagent_free_join_admission"
-                    if agent_strategy == "thunderagent_reference" and join_free else
-                    "full_with_reference_thunderagent_acting_decay"
-                    if agent_strategy == "thunderagent_reference" else
+                    reference_policy if agent_strategy == "thunderagent_reference" else
                     "thunderagent_retained_with_native_migration"
                     if agent_strategy == "thunderagent_retained" else
                     "thunderagent_workflow_with_native_migration"
@@ -786,7 +795,13 @@ def observed_configuration(plan, label, arm, *, final=False):
             if agent_strategy == "thunderagent_reference":
                 from beliefkv.runtime.reference_thunder_admission import validate_reference_admission
 
-                validate_reference_admission(actual_agents, join_free_admission=join_free)
+                validate_reference_admission(
+                    actual_agents, join_free_admission=join_free,
+                    coadmit_join_children=plan["reference_environment"].get(
+                        "BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN",
+                        plan["reference_environment"].get("AGENT_COADMIT_JOIN_CHILDREN", "0"),
+                    ) == "1",
+                )
             if state.get("agent_join_free_admission", False) is not join_free:
                 raise ValueError("effective free-capacity JOIN admission differs from declaration")
             if agent_strategy in ("thunderagent_retained", "thunderagent_workflow") and (

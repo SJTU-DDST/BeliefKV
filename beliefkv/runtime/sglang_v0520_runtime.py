@@ -978,9 +978,10 @@ class NativeAdmissionRuntime:
         self.agent_join_free_admission = join_free == "1"
         sibling_setting = os.environ.get("BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN", "0")
         if sibling_setting not in ("0", "1") or (
-            sibling_setting == "1" and agent_policy != "thunderagent_retained"
+            sibling_setting == "1"
+            and agent_policy not in ("thunderagent_retained", "thunderagent_reference")
         ):
-            raise ValueError("JOIN sibling admission requires retained agent eligibility")
+            raise ValueError("JOIN sibling admission requires retained or reference Full eligibility")
         self.coadmit_join_children = sibling_setting == "1"
         blocked_lending = os.environ.get("BELIEFKV_AGENT_BLOCKED_LENDING", "idle")
         if blocked_lending not in ("idle", "backed_demand", "backed_demand_recall") or (

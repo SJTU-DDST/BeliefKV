@@ -40,6 +40,7 @@ def main():
     prior = json.loads(args.prior.read_bytes())
     configuration = json.loads(args.configuration.read_bytes())
     join_free = configuration["common_environment"].get("AGENT_JOIN_FREE_ADMISSION", "0") == "1"
+    siblings = configuration["common_environment"].get("AGENT_COADMIT_JOIN_CHILDREN", "0") == "1"
     paths = set(json.loads(Path(prior["source_manifest"]["path"]).read_bytes()))
     paths.update((
         str(args.configuration.resolve().relative_to(ROOT)), str(Path(__file__).resolve().relative_to(ROOT)),
@@ -52,9 +53,11 @@ def main():
         "tests/test_request_agent_eligibility_audit.py",
         "tests/test_collecting_agent_pipeline_audit.py",
         "tests/test_audit_tool_reentry_service.py",
-    ) if join_free else ()
+    ) if join_free or siblings else ()
+    if siblings:
+        extra_tests += ("tests/test_reference_sibling_coadmission.py",)
     paths.update(extra_tests)
-    if join_free:
+    if join_free or siblings:
         paths.update((
             "scripts/audit_request_agent_eligibility.py",
             "scripts/audit_collecting_agent_pipeline.py",
@@ -94,6 +97,8 @@ def main():
             raise ValueError("Full composition leaked into a paper control")
         if settings["BELIEFKV_AGENT_JOIN_FREE_ADMISSION"] != str(int(join_free and label == "full")):
             raise ValueError("free-capacity JOIN admission leaked into a paper control")
+        if settings["BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN"] != str(int(siblings and label == "full")):
+            raise ValueError("sibling admission leaked into a paper control")
         constructors[label] = preflight_runtime(
             {**settings, "SGLANG_SOURCE_CHECKOUT": environment["SGLANG_SOURCE_CHECKOUT"]},
             configuration["common_environment"]["MODEL_PATH"],
@@ -116,6 +121,7 @@ def main():
             "path": str(args.configuration.resolve()), "sha256": sha256_file(args.configuration),
         },
         "join_free_admission": join_free,
+        "coadmit_join_children": siblings,
         "constructors": constructors,
         "preserved_development_reports": [
             str(REPORTS / name) for name in (

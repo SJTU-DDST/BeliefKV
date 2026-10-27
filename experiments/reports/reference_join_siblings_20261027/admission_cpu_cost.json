@@ -1,0 +1,92 @@
+{
+  "scope": "Event-admission callback CPU only, synthetic 33-program state and real async journal.",
+  "fixtures": {
+    "parent_already_active": {
+      "programs": 33,
+      "pending_live_records": 32,
+      "samples": 500,
+      "thread_cpu_us": {
+        "median": 2.7095000000000002,
+        "p99": 3.009,
+        "max": 11.59
+      },
+      "journal_enabled": true,
+      "journal_enqueued": {},
+      "journal_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "writer_status_sha256": "167c610f1be0ba19d173913542013337911df1353688b62906318c76495eb9ff"
+    },
+    "parent_new_grant": {
+      "programs": 33,
+      "pending_live_records": 32,
+      "samples": 500,
+      "thread_cpu_us": {
+        "median": 78.7025,
+        "p99": 124.958,
+        "max": 1281.367
+      },
+      "journal_enabled": true,
+      "journal_enqueued": {
+        "agent_join_free_capacity_admitted": 550
+      },
+      "journal_sha256": "eae5da62fd909f25e7b20490aca9e346854d83305771f6713464b5e59003d6f6",
+      "writer_status_sha256": "3e73894c78c7fd08f7c54a13396ae7b1fa876157d3fef83e5e65db3ff6b1098f"
+    },
+    "parent_insufficient": {
+      "programs": 33,
+      "pending_live_records": 32,
+      "samples": 500,
+      "thread_cpu_us": {
+        "median": 36.832,
+        "p99": 45.293,
+        "max": 73.844
+      },
+      "journal_enabled": true,
+      "journal_enqueued": {},
+      "journal_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "writer_status_sha256": "ebb84e2514eb72160876d039430f99f4333d7e2866c87d22f76361f2e8d89dff"
+    },
+    "siblings_new_group": {
+      "programs": 33,
+      "pending_live_records": 32,
+      "samples": 500,
+      "thread_cpu_us": {
+        "median": 68.32849999999999,
+        "p99": 93.76,
+        "max": 150.382
+      },
+      "journal_enabled": true,
+      "journal_enqueued": {
+        "agent_join_siblings_coadmitted": 550
+      },
+      "journal_sha256": "f6d3b2c4c05fb3b315f21bcd76a7cc0018aedf041d429b84ddca3acc3df7d661",
+      "writer_status_sha256": "819a3fe42963a015a9ca02f91e105c8641b6cf519db7ad6cc0d14086704fe5e2"
+    },
+    "siblings_insufficient": {
+      "programs": 33,
+      "pending_live_records": 32,
+      "samples": 500,
+      "thread_cpu_us": {
+        "median": 38.998000000000005,
+        "p99": 45.858,
+        "max": 61.667
+      },
+      "journal_enabled": true,
+      "journal_enqueued": {},
+      "journal_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "writer_status_sha256": "ec84bd4d6db2e1ab884d13ece02780bdf1706e43d093b4c275e60a3cd56b8faf"
+    }
+  },
+  "sources": {
+    "experiments/reports/reference_join_siblings_20261027/admission_cpu_cost.py": "9a358f677237ae30e316a9994982a27fa35773d2330c18a2fea57e6df1ac37a9",
+    "beliefkv/runtime/reference_thunder_admission.py": "562239e9e41d6b684bfc61d668b95a954d5f975cab07ca7b4d4d7471f54d40f0",
+    "beliefkv/runtime/paper_baseline.py": "bcb6466df233996710a8cb84bada8a4f1e81945580e4fee597016b1db3254ee4",
+    "beliefkv/policy/paper_baselines.py": "ed3d57e13d43572d0399b7db766aadd3ca4dadfffbfdda509897afd8742a80fb",
+    "beliefkv/runtime/v0520_opportunity_telemetry.py": "2c455f2bb00a999be762745309ece02158016ccef0cc861ff3b2ede493a1d8a0"
+  },
+  "observed_lengths_only": true,
+  "future_context_or_duration_used": false,
+  "eligibility_reset_between_calls_for_timing_only": true,
+  "background_writer_thread_cpu_included": false,
+  "whole_controller_cost_measured": false,
+  "gpu_or_end_to_end_performance_verified": false
+}

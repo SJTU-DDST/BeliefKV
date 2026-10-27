@@ -45,6 +45,7 @@ def test_actual_join_can_use_free_complete_budget_without_changing_a_peer(monkey
     try:
         adapter, key = join_wait(live)
         live.register_visible_request(request("peer", "peer", tokens=400))
+        adapter._refresh_streaming_progress()
         peer = deepcopy(adapter.policy.programs["peer"])
         before = adapter.policy.remaining_capacity()
         assert adapter.claim_restore(key, source="join_ticket")
@@ -80,6 +81,57 @@ def test_join_admission_never_uses_decayed_acting_capacity_or_pauses_a_peer(monk
         assert not adapter.claim_restore(key, source="join_ticket")
         assert state(adapter) == before
         assert adapter.counts["join_free_capacity_insufficient"] == 1
+    finally:
+        live.close()
+
+
+def test_parent_grant_refreshes_current_streaming_growth_after_another_owner_retires(
+    monkeypatch, tmp_path,
+):
+    live = full_runtime(monkeypatch, tmp_path, capacity=1004, join_free_admission=True)
+    try:
+        adapter, key = join_wait(live, continuation=True)
+        peer = request("peer", "peer", tokens=600)
+        small = request("small", "small", tokens=100)
+        live.register_visible_request(peer)
+        live.register_visible_request(small)
+        adapter.tick(now=time.monotonic())
+        assert adapter.policy.programs["peer"].active
+        assert not adapter.policy.programs["parent"].active
+        live.on_batch_completed(NS(reqs=[small]))
+        adapter.forget("small")
+        assert adapter.policy.remaining_capacity() == 304
+        peer.output_ids.extend([1] * 18)
+        assert not adapter.claim_restore(key, source="join_ticket")
+        assert adapter.policy.programs["peer"].tokens == 620
+        assert adapter.policy.remaining_capacity() == 284
+        assert not adapter.policy.programs["parent"].active
+    finally:
+        live.close()
+
+
+def test_parent_grant_journal_identifies_one_actual_complete_budget_grant(monkeypatch, tmp_path):
+    live = full_runtime(monkeypatch, tmp_path, join_free_admission=True)
+    try:
+        adapter, key = join_wait(live)
+        records = []
+        with monkeypatch.context() as patch:
+            patch.setattr(live, "_opportunity_writer", NS(record=records.append))
+            assert adapter.claim_restore(key, source="join_ticket")
+            assert adapter.claim_restore(key, source="join_ticket")
+        assert len(records) == 1
+        row = records[0]
+        assert row["event"] == "agent_join_free_capacity_admitted"
+        assert row["join_id"] == "join"
+        assert row["required_tokens"] == 302
+        assert row["remaining_before_tokens"] == 1000
+        assert row["remaining_after_tokens"] == 698
+        assert row["programs"][0]["key"]["request_id"] == key.request_id
+        assert row["programs"][0]["key"]["context_epoch"] == key.context_epoch
+        assert row["programs"][0]["observed_context_tokens"] == 202
+        assert row["programs"][0]["complete_budget_tokens"] == 302
+        assert row["native_capacity_authority_preserved"]
+        assert row["ts_ms"] > 0 and row["monotonic_s"] > 0
     finally:
         live.close()
 

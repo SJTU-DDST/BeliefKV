@@ -131,7 +131,10 @@ def arm_environment(
     )
     if siblings not in ("0", "1"):
         raise ValueError("JOIN sibling admission must be 0 or 1")
-    siblings = str(int(siblings == "1" and agent_admission == "thunderagent_retained"))
+    siblings = str(int(
+        siblings == "1"
+        and agent_admission in ("thunderagent_retained", "thunderagent_reference")
+    ))
     blocked_lending = common.get(
         "BELIEFKV_AGENT_BLOCKED_LENDING", common.get("AGENT_BLOCKED_LENDING", "idle"),
     )
