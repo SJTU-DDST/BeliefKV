@@ -1349,3 +1349,36 @@
   and exits, without launching GPUs. Complete correctness, control cost,
   JCT/throughput and repeated/all-baseline acceptance remain pending. See
   `docs/research/v364_projected_pressure_start_20261027_zh.md`.
+- V364 subsequently completes all 3674 exact requests, 145565966 input tokens,
+  549671 output tokens and all 18 workflows, with original native stopping,
+  two fresh idle snapshots and actual owned exit. V373 independently verifies
+  the unchanged V311 work/timing/capacity/native tree against complete V345:
+  mean JCT 1641.531479s versus 1697.583645s (3.30188% lower), makespan
+  2272.948399s versus 2355.344551s, end-to-end output 241.831711 versus
+  233.371801 token/s (3.62508% higher), and decode worker rate 357.857794
+  versus 340.158312 token/s. Seventeen workflows improve and one regresses;
+  retain it and every normal tail. V366 figures are complete and inspected.
+  V330 and V364 are distinct configurations sharing V345, not independent
+  repeated trials. This modest gain does not meet clear/repeated/all-baseline
+  acceptance. The requested latest-tool ThunderAgent control is complete;
+  reuse V345 when only Full changes rather than launching another control.
+- V372 reconciles complete native demand H2D: V330 3223.391GB, V364
+  3330.043GB and V345 2809.042GB. V364 tool-successor demand H2D is
+  2747.670GB versus 2137.059GB, a 28.5725% increase. Reduced JOIN demand
+  bytes are not equal to total migration savings because Full also has tagged
+  recovery. V364 records 505 logical pauses: 416 blocked-budget handovers,
+  70 JOIN loan returns, 16 pressure ACTING pauses and 3 planned pressure
+  pauses. These counters do not prove one-to-one physical migration causes.
+  Prioritize lending/recall continuity evidence; do not spend another GPU
+  run solely to demonstrate fewer rare pressure marks.
+- Main now separately revalidates only its owned projected-pressure marks
+  after observed budget changes, actual pauses and existing lifecycle events.
+  Cancel obsolete/excess marks and newly protected JOIN owners without
+  clearing external marks, adding timers or granting planned capacity.
+  V370 passes 2951 shared CPU cases plus four subtests in one execution,
+  without failures/skips, retaining all 2942 V358c identities and adding nine.
+  V371 binds actual constructors and source hashes; V369's 18 environment
+  skips remain preserved and are not the shared qualification. This later
+  repair did not run in frozen V364 and has no new GPU performance evidence.
+  See `docs/research/v364_v345_matched_results_20261027_zh.md` and the updated
+  pressure design. No new GPU experiment is registered by this final audit.

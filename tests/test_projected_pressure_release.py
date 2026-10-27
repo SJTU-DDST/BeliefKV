@@ -169,6 +169,7 @@ def test_actual_runtime_binds_and_reports_the_candidate(monkeypatch, tmp_path):
         state = live._agent_admission.status()
         assert state["pressure_pause_policy"] == "projected_release"
         assert state["planned_release_grants_capacity"] is False
+        assert state["pressure_plan_revalidation"] == "observed_budget_changes"
     finally:
         live.close()
 
@@ -218,3 +219,102 @@ def test_candidate_changes_only_the_declared_common_pressure_policy():
     assert candidate["order"] == ["full"]
     assert candidate["tool_timing_overlay"] == base["tool_timing_overlay"]
     assert candidate["gpu_execution"] == {"registered": False}
+
+
+def test_returned_peer_cancels_an_obsolete_plan_before_the_five_second_tick():
+    value = policy()
+    value.rebalance(now=10.)
+    value.completed("c", 260, now=11.)
+    value.forget("c", now=11.1)
+    assert value.next_control == 15.
+    assert not marked(value)
+    assert value.remaining_capacity() == 280
+    assert value.programs["a"].active and value.programs["a"].in_flight
+    assert value.counts["pressure_plans_cancelled"] == 1
+    value.completed("a", 260, now=12.)
+    value.arrive("a", 260, now=12.1)
+    assert value.allowed("a")
+    assert not value.counts["paused"]
+
+
+def test_reference_keeps_its_original_completion_pause_after_a_peer_returns():
+    value = policy(mode="reference")
+    value.rebalance(now=10.)
+    value.completed("c", 260, now=11.)
+    value.forget("c", now=11.1)
+    assert marked(value) == {"a", "b"}
+    assert not value._pressure_marks
+    value.completed("a", 260, now=12.)
+    assert not value.programs["a"].active
+
+
+def test_an_actual_pressure_pause_revalidates_other_plans_immediately():
+    value = policy()
+    value.rebalance(now=10.)
+    value.programs["c"].acting = True
+    value.programs["c"].pending = value.programs["c"].in_flight = False
+    value._pause(value.programs["c"], now=11.)
+    assert not marked(value)
+    assert value.remaining_capacity() == 280
+    assert value.programs["a"].active and value.programs["a"].in_flight
+
+
+def test_partial_budget_return_keeps_only_enough_of_the_existing_plans():
+    value = policy()
+    for name in ("d", "e"):
+        value.programs[name] = MigratingProgram(
+            name, 260, steps=2, active=True, pending=True, in_flight=True,
+        )
+    value.rebalance(now=10.)
+    assert marked(value) == {"a", "b", "c"}
+    value.completed("d", 260, now=11.)
+    value.forget("d", now=11.1)
+    assert marked(value) == {"a", "b"}
+    assert value.remaining_capacity() == -440
+    assert value.counts["pressure_plans_cancelled"] == 1
+    assert all(item.active for item in value.programs.values())
+
+
+@pytest.mark.parametrize("protection", ("critical", "restore"))
+def test_new_join_protection_cancels_only_the_existing_pressure_plan(protection):
+    value = policy()
+    value.rebalance(now=10.)
+    if protection == "critical":
+        value.programs["a"].critical = True
+    else:
+        value.programs["a"].restore_until = 100.
+    value.rebalance(now=11.)
+    assert not marked(value)
+    assert value.remaining_capacity() == -80
+    assert value.programs["a"].active and value.programs["a"].in_flight
+
+
+def test_revalidation_does_not_clear_a_mark_it_did_not_create():
+    value = policy()
+    value.programs["a"].marked_for_pause = True
+    value.rebalance(now=10.)
+    value.completed("c", 260, now=11.)
+    value.forget("c", now=11.1)
+    assert marked(value) == {"a"}
+    assert not value._pressure_marks
+
+
+def test_actual_completion_removes_the_consumed_plan_owner():
+    value = policy()
+    value.rebalance(now=10.)
+    assert value._pressure_marks == {"a"}
+    value.completed("a", 260, now=11.)
+    assert not value._pressure_marks
+    assert not value.programs["a"].active
+    assert not value.counts["pressure_plans_cancelled"]
+
+
+def test_an_external_mark_can_cover_the_deficit_without_being_cancelled():
+    value = policy()
+    value.rebalance(now=10.)
+    value.programs["b"].marked_for_pause = True
+    value.rebalance(now=11.)
+    assert marked(value) == {"b"}
+    assert not value._pressure_marks
+    assert value.remaining_capacity() == -80
+    assert all(item.active and item.in_flight for item in value.programs.values())

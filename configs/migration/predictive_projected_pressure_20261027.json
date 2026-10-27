@@ -84,6 +84,8 @@
     "pause_at_safe_completion_boundary": true,
     "marked_release_limits_additional_marks": true,
     "marked_release_grants_capacity": false,
+    "revalidate_on_observed_budget_change": true,
+    "reconcile_only_owned_pressure_marks": true,
     "physical_capacity_authority": "unchanged_native_allocator",
     "protected_join_consumers_are_not_new_pressure_victims": true,
     "new_prefetch_or_ready_peer_eviction_rights": false

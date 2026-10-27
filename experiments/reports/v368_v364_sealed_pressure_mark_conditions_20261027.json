@@ -1,0 +1,80 @@
+{
+  "observed_at": "2026-10-27T22:01:36.124803+08:00",
+  "scope": "sealed_collecting_mark_conditions_and_cpu_counterexample_not_complete_performance",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_projected_pressure_20261027_v364/full",
+  "budget_validation": {
+    "counts": {
+      "covered_ms": 1103038.4924316406,
+      "snapshots_in_request_span": 1050,
+      "observed_budget_snapshots": 1050,
+      "reconciled_ms": 1103038.4924316406,
+      "reconciled_snapshots": 1050
+    },
+    "native_request_span_ms": 1104547.9013671875,
+    "uncovered_ms": 1509.408935546875,
+    "time_weighted_agents": {
+      "model_pending": 11.449446860117117,
+      "known_blocked": 1.0637596012434283,
+      "between_native_requests": 0.6565602926459133,
+      "inactive_pending": 3.299382482447751
+    },
+    "active_budget_token_time_fraction": {
+      "model_pending": 0.9036184656091771,
+      "known_blocked": 0.05419298390092231,
+      "between_native_requests": 0.04218855048990052
+    },
+    "buffer_tokens_per_agent": 100,
+    "maximum_snapshot_age_ms": 1500.0
+  },
+  "actual_planned_pause_counter_at_last_snapshot": 3,
+  "sampled_pressure_conditions": {
+    "covered_ms": 1103038.4924316406,
+    "sampled_marked_snapshots": 5,
+    "sampled_marked_agent_ms": 5208.78515625,
+    "sampled_mark_without_current_shortfall_snapshots": 1,
+    "sampled_mark_without_current_shortfall_agent_ms": 1026.73876953125
+  },
+  "examples": [
+    {
+      "ts_ms": 1793108899627.1223,
+      "logical_tokens": 804796,
+      "capacity_tokens": 805198,
+      "marked_invocation_ids": [
+        "deepagents-invocation:3584b8fc30f4d76f"
+      ]
+    }
+  ],
+  "stale_mark_cpu_fixture": {
+    "after_other_agent_completed_and_returned": {
+      "remaining_capacity": 280,
+      "marked": true,
+      "in_flight": true
+    },
+    "after_marked_agent_completed_and_its_successor_arrived": {
+      "remaining_capacity": 640,
+      "successor_allowed": false,
+      "next_control_seconds": 15.0
+    },
+    "scope": "CPU fixture at valid native completion and terminal boundaries; not a GPU or performance measurement"
+  },
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_projected_pressure_20261027_v364/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 37704902,
+      "complete_prefix_sha256": "f0d81fdbd6117c54cbd02c5b75a6a14e3f4fb30380a071f71bc5fbe485316003",
+      "first_read_limit_bytes": 37704902
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_projected_pressure_20261027_v364/full/server/runtime_events.sglang.jsonl": {
+      "complete_prefix_bytes": 6217663,
+      "complete_prefix_sha256": "658fb4dfdc5ae10e538ac21af432c3f41f4265ba84848456904a2be70cdd569b",
+      "first_read_limit_bytes": 6217663
+    }
+  },
+  "policy_source_sha256": "0817814f5edbe51ae22888c6dff7799591d86eac75dbfb2c74aa308bb6716c9e",
+  "limitations": [
+    "Independent sealed file prefixes are not an atomic cross-file snapshot.",
+    "Sampled mark observations can miss all short-lived marks; the policy counter is not a transition history.",
+    "A marked agent without a current logical shortfall does not prove physical HBM availability, a saved copy or removable JCT.",
+    "The CPU fixture proves a policy path, not its frequency or contribution to V364 performance."
+  ],
+  "performance_accepted": false
+}

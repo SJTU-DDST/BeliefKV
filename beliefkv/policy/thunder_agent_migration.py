@@ -88,6 +88,7 @@ class ThunderAgentMigration(ThunderWorkingSet):
         self.restore_owner: str | None = None
         self.next_control = 0.
         self.counts = Counter()
+        self._pressure_marks: set[str] = set()
 
     @property
     def agents(self):
@@ -119,8 +120,10 @@ class ThunderAgentMigration(ThunderWorkingSet):
         super()._pause(item, now)
         self._release_borrowed_budget(item.identity)
         item.marked_for_pause = False
+        self._pressure_marks.discard(item.identity)
         if was_active:
             self.counts["paused"] += 1
+        self._reconcile_pressure_marks(now=now)
 
     def _resume(self):
         # Known blocked agents are not candidates for the author's resumption
@@ -631,6 +634,34 @@ class ThunderAgentMigration(ThunderWorkingSet):
             self.observe_recall(detail)
         return True
 
+    def _reconcile_pressure_marks(self, *, now):
+        if self.pressure_pause_policy != "projected_release" or not self._pressure_marks:
+            return
+        deficit = max(0, -self.remaining_capacity())
+        owners = []
+        for identity in tuple(self._pressure_marks):
+            item = self.programs.get(identity)
+            if item is None or not item.active or not item.marked_for_pause:
+                self._pressure_marks.discard(identity)
+            else:
+                owners.append(item)
+        planned = sum(
+            item.tokens + self.buffer_tokens for item in self.programs.values()
+            if item.active and item.marked_for_pause and item.identity not in self._pressure_marks
+        )
+        for item in sorted(owners, key=lambda item: (
+            item.tokens, item.queue_sequence, item.identity,
+        )):
+            if (
+                planned < deficit and item.in_flight and not item.critical
+                and item.restore_until <= now
+            ):
+                planned += item.tokens + self.buffer_tokens
+                continue
+            item.marked_for_pause = False
+            self._pressure_marks.discard(item.identity)
+            self.counts["pressure_plans_cancelled"] += 1
+
     def _control_pressure(self, *, now):
         if self.pressure_pause_policy == "reference":
             return super().tick(now=now)
@@ -669,6 +700,7 @@ class ThunderAgentMigration(ThunderWorkingSet):
             if planned >= deficit:
                 break
             item.marked_for_pause = True
+            self._pressure_marks.add(item.identity)
             planned += item.tokens + self.buffer_tokens
             self.counts["pressure_planned_pauses"] += 1
         self.counts["pressure_projected_shortfall_tokens_last"] = max(0, deficit - planned)
@@ -677,6 +709,7 @@ class ThunderAgentMigration(ThunderWorkingSet):
     def rebalance(self, *, now):
         self._entry_now = now
         self._expire_restore(now)
+        self._reconcile_pressure_marks(now=now)
         for item in self.programs.values():
             if item.critical and not item.active and (
                 item.pending and not item.blocked or item.restore_until > now
@@ -719,6 +752,7 @@ class ThunderAgentMigration(ThunderWorkingSet):
         self._release_borrowed_budget(identity)
         self._settle_lender(identity)
         super().forget(identity)
+        self._pressure_marks.discard(identity)
         if workflow is not None and not any(
             other.workflow_id == workflow for other in self.programs.values()
         ):

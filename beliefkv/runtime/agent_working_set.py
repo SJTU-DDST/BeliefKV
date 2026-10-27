@@ -561,6 +561,10 @@ class AgentAdmission:
             "growth_headroom_tokens": getattr(policy, "growth_headroom_tokens", 0),
             "pressure_pause_policy": self.pressure_pause_policy,
             "planned_release_grants_capacity": False,
+            "pressure_plan_revalidation": (
+                "observed_budget_changes" if self.pressure_pause_policy == "projected_release"
+                else "disabled"
+            ),
             "logical_active_tokens": policy.used_tokens if policy is not None else 0,
             "active_agents": len(active),
             "active_invocation_ids": [item.identity for item in active],

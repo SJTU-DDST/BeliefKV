@@ -52,5 +52,8 @@ CPU-only 后处理进程 74773 等待本轮完整成功及全部实验进程退�
 - 状态：`ops/v366_projected_pressure_decode_plots_20261027.state.json`。
 - 计划输出：`experiments/figures/decode_diagnostics_20261027_v366/`。
 
-完整 JCT、makespan、工具 H2D、暂停标记和控制成本继续等待实际结果。
+本轮随后于 2026-10-27 22:20:47 Asia/Shanghai 完整完成并释放 GPU，
+V366 后处理成功生成图表。完整比较与迁移结果见
+[完成报告](v364_v345_matched_results_20261027_zh.md)。
+后补的压力标记复核修复仅有 CPU 资格，未包含在冻结 V364 中。
 设计与失败记录见[压力暂停预算计划](../design/projected_pressure_release_20261027_zh.md)。
