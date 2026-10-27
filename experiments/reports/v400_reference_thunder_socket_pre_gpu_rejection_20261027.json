@@ -1,0 +1,17 @@
+{
+  "observed_at": "2026-10-28T01:10:04.657163+08:00",
+  "registration": "/home/longhao/experiment/ops/v400_locobench_reference_thunder_offload_20261027.registration.json",
+  "registration_sha256": "85a82108130aa3679160f9bb560f344237145bf8a410b858c3f02bda09965a49",
+  "code_commit": "7fe941c0dfdfad05a01f24add6cb43e3549d87ea",
+  "state_sha256": "dd690247328673086d94eddb0aeaffa49e189eda1e0c5c88ff3b052ae5d93151",
+  "cleanup_sha256": "6d058fc9754b2df1cc42737aa895eafc202ea64bd62a62ad75bfa73a9f075d7c",
+  "error": "ValueError('preserve the existing runtime event socket')",
+  "gpu_experiment_started": false,
+  "model_requests": 0,
+  "actual_owned_exit_verified": true,
+  "preserved_socket": "/tmp/bkv-causal-18658.sock",
+  "retry_port": 18659,
+  "retry_socket": "/tmp/bkv-causal-18659.sock",
+  "runtime_or_cpu_qualified_sources_changed": false,
+  "performance_accepted": false
+}

@@ -42,7 +42,19 @@ GPU 锁和所有工作量/容量/引擎校验。CPU 资格覆盖的运行时代�
 
 ## 证据
 
+修复后的 V399 已通过3035项共享 CPU 检查及4个子测试，保留之前
+全部3030个case身份。代码修复提交为
+`7fe941c0dfdfad05a01f24add6cb43e3549d87ea`。
+
+V400 使用该修复代码，但在模型/server/driver 启动前发现上轮崩溃
+留下的 `/tmp/bkv-causal-18658.sock`，按原保护逻辑停止。没有模型请求
+或 GPU serving，owned cleanup 为空。保留注册、未使用冻结副本及
+旧 socket，V400b 改用已确认空闲的18659端口和新的通信 socket。
+这次隔离调整没有修改运行时代码或 CPU 资格。
+
 - `experiments/reports/v395_reference_thunder_cpu_evidence_20261027.json`。
 - `experiments/reports/v396_reference_thunder_native_source_binding_cpu_20261027.json`。
 - `experiments/reports/v396_reference_thunder_pre_gpu_dependency_rejection_20261027.json`。
 - `experiments/reports/v397_reference_thunder_offload_integration_failure_20261027.json`。
+- `experiments/reports/v399_reference_thunder_offload_cpu_evidence_20261027.json`。
+- `experiments/reports/v400_reference_thunder_socket_pre_gpu_rejection_20261027.json`。

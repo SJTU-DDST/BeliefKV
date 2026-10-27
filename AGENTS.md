@@ -1538,3 +1538,11 @@
   retaining all3030 V394 identities and adding5, and binds all current sources
   plus the three real constructors. GPU correctness/performance remain pending;
   use a separately frozen complete retry and reuse V345.
+- V400's repaired-code registration froze7fe941c0dfdf but stopped before server
+  or driver startup because the preserved V396b crash socket still exists at
+  `/tmp/bkv-causal-18658.sock`. No model request or GPU serving started.
+  V400 records terminal watcher exit and empty owned cleanup; preserve its
+  registration, unused snapshots, socket and
+  `v400_reference_thunder_socket_pre_gpu_rejection_20261027.json`.
+  The distinct V400b retry uses verified-free port18659 and a fresh socket.
+  Runtime and V399-qualified sources are unchanged.
