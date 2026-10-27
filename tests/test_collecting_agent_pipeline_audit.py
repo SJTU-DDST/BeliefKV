@@ -2,6 +2,7 @@ from copy import deepcopy
 
 import pytest
 
+from scripts.audit_agent_budget_composition import inspect
 from scripts.audit_collecting_agent_pipeline import blocked_composition, validate_receipts
 
 
@@ -45,6 +46,34 @@ def test_old_uninstrumented_samples_remain_unknown_and_are_not_assumed_zero():
     result = blocked_composition([old], begin=0., end=5000.)
     assert result["observation_ms"]["unknown_ms"] == 1500.
     assert result["active_budget_fraction_blocked_with_inactive_requests"] is None
+
+
+def test_reference_aggregate_budget_keeps_both_partitions_unknown_without_breaking_collection():
+    states = [{
+        "ts_ms": 100., "agent_admission": {
+            "strategy": "thunderagent_reference", "active_invocation_ids": ["agent"],
+            "logical_active_tokens": 300,
+            "logical_capacity_semantics": "reference_undiscounted_contexts_plus_buffers",
+        },
+    }]
+    events = [
+        {
+            "kind": "llm_submit", "ts_ms": 0., "invocation_id": "agent",
+            "attributes": {"request_id": "request", "prompt_tokens": 200},
+        },
+        {
+            "kind": "llm_result", "ts_ms": 1000., "invocation_id": "agent",
+            "attributes": {"request_id": "request", "output_tokens": 10},
+        },
+    ]
+    budgets = inspect(states, events)
+    assert budgets["counts"]["reference_aggregate_only_snapshots"] == 1
+    assert budgets["counts"]["unreconciled_ms"] == 900.
+    assert budgets["active_budget_token_time_fraction"]["known_blocked"] is None
+    assert budgets["uncovered_ms"] == 100.
+    reasons = blocked_composition(states, begin=0., end=1000.)
+    assert reasons["observation_ms"]["unknown_ms"] == 900.
+    assert reasons["active_budget_fraction_by_block_reason"] == {}
 
 
 def test_snapshot_age_limit_and_request_span_clip_the_diagnostic():

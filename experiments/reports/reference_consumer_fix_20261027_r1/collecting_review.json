@@ -1,0 +1,212 @@
+{
+  "observed_at": "2026-10-27T19:10:17.589844+00:00",
+  "scope": "sealed_collecting_diagnostic_not_complete_performance",
+  "exact_completed_receipts": 3191,
+  "expected_requests": 3674,
+  "same_request": {
+    "request_id": "beliefkv:01a177aa-05e6-7633-b98d-02added92e81",
+    "prompt_tokens": 129003,
+    "output_tokens": 100,
+    "context_epoch": 38
+  },
+  "native_queue_to_first_launch_ms": {
+    "r1_full": 78881.92065429688,
+    "complete_v345_control": 10.224365234375
+  },
+  "r1_preceding_tool_round_ms": 3015.5376348495483,
+  "r1_request_sample_hold_partition": {
+    "active_ms": 0.0,
+    "inactive_ms": 78881.92065429688,
+    "unknown_ms": 0.0
+  },
+  "r1_observed_identity_changes": [
+    {
+      "ts_ms": 1793126797940.174,
+      "from_native_queue_ms": -9557.7607421875,
+      "active": true,
+      "paused_pending": false,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": null,
+      "active_removed_since_previous_sample": null,
+      "logical_active_tokens": 798769,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 6490,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 13,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 35.40383011754602
+      },
+      "control_counts": {
+        "control_ticks": 113,
+        "resumed": 296,
+        "registered": 1033,
+        "streaming_progress_checks": 1568,
+        "streaming_progress_updates": 1152,
+        "completed": 1017,
+        "restore_outside_active_set": 155,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126807092.8535,
+      "from_native_queue_ms": -405.081298828125,
+      "active": false,
+      "paused_pending": false,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [
+        "deepagents-invocation:61c6413bdc63294c",
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a:root",
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root"
+      ],
+      "active_removed_since_previous_sample": [
+        "deepagents-invocation:8cf141e8950b45dd",
+        "deepagents-invocation:ed7c58e8e023e49d",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root",
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root"
+      ],
+      "logical_active_tokens": 691642,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 113556,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 12,
+        "paused_pending_programs": 1,
+        "capacity_blocked_pending_programs": 1,
+        "oldest_pending_seconds": 45.43206218536943
+      },
+      "control_counts": {
+        "control_ticks": 115,
+        "resumed": 301,
+        "registered": 1039,
+        "streaming_progress_checks": 1589,
+        "streaming_progress_updates": 1173,
+        "completed": 1026,
+        "restore_outside_active_set": 155,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126808103.7295,
+      "from_native_queue_ms": 605.794677734375,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 691642,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 113556,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 12,
+        "paused_pending_programs": 1,
+        "capacity_blocked_pending_programs": 1,
+        "oldest_pending_seconds": 45.43206218536943
+      },
+      "control_counts": {
+        "control_ticks": 115,
+        "resumed": 301,
+        "registered": 1040,
+        "streaming_progress_checks": 1589,
+        "streaming_progress_updates": 1173,
+        "completed": 1026,
+        "restore_outside_active_set": 155,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126886998.5193,
+      "from_native_queue_ms": 79500.58447265625,
+      "active": true,
+      "paused_pending": false,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [
+        "deepagents-invocation:76aeaea63220d752",
+        "deepagents-invocation:ed7c58e8e023e49d",
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root"
+      ],
+      "active_removed_since_previous_sample": [
+        "deepagents-invocation:82a3d7252ab98e78",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root"
+      ],
+      "logical_active_tokens": 769425,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 35773,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 11,
+        "paused_pending_programs": 2,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 78.8499713037163
+      },
+      "control_counts": {
+        "control_ticks": 131,
+        "resumed": 352,
+        "registered": 1146,
+        "streaming_progress_checks": 1743,
+        "streaming_progress_updates": 1325,
+        "completed": 1133,
+        "restore_outside_active_set": 191,
+        "programs_retired": 22
+      },
+      "native_no_token_count": 168
+    }
+  ],
+  "long_tool_successor_waits": {
+    "selected_waits": 306,
+    "native_queue_to_service_ms": 2238629.5634765625,
+    "active_ms": 161014.83276367188,
+    "inactive_ms": 2069758.8054199219,
+    "unknown_ms": 7855.92529296875,
+    "definition": "tool-successor requests with at least 1000ms native queue-to-service waiting; not long-duration tools",
+    "inactive_sample_hold_fraction": 0.9245651175112748,
+    "active_sample_hold_fraction": 0.07192562601273698,
+    "unknown_fraction": 0.003509256475988194
+  },
+  "passing_cpu_cases": 110,
+  "cpu_report": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/reference_consumer_fix_20261027_r1/collecting_eligibility_cpu.xml",
+    "sha256": "9e76df7571778eef51058eb0650925b281d33df54dbffb464456678dc5934c70"
+  },
+  "input_reports": {
+    "request": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/reference_consumer_fix_20261027_r1/mobile_game_epoch38_eligibility.json",
+      "sha256": "7a742007e6b8e77a74244d6af3e4614a4bdc17cd21cfe90ff88a5872673627bc"
+    },
+    "control_request": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/reference_consumer_fix_20261027_r1/control_mobile_game_epoch38_eligibility.json",
+      "sha256": "56bd05dc893f50b2f77bda4d9da035b5226bf1338fe09d4175cad242263adc75"
+    },
+    "tool_waits": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/reference_consumer_fix_20261027_r1/tool_eligibility_waits_collecting.json",
+      "sha256": "08f8301185e0f823316e086503e92f00f5b4302c439fe87c2c1eaf8305f8a36e"
+    },
+    "pipeline": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/reference_consumer_fix_20261027_r1/collecting_pipeline.json",
+      "sha256": "7cf46e21ba31122d80e4482dbfea7ece9e2aeb7f3f7419e0a6cdf05cf5748002"
+    }
+  },
+  "source_sha256": {
+    "scripts/audit_request_agent_eligibility.py": "cd20866bc99051e013bd88c945310ece2317693761a0f469ff1f03324bdb6cd3",
+    "scripts/audit_agent_budget_composition.py": "99f8dac99620337c53189f19b07b9d03d85fd818dcdd3c425af5cabbed43c71e",
+    "scripts/audit_agent_admission_wait.py": "4620532e6ff9332a8e7eac91b69ff0725bed757c92cbcb2703a4136224236c18",
+    "scripts/audit_collecting_agent_pipeline.py": "c1c14eff358fe325f9aab997988451077cf65ed0648ceb5f7b467f59bc48201f",
+    "scripts/audit_join_reentry_service.py": "f6245dc999082cc225b70ca3a0e92ea0b42eaa89dfea16b345c3d97e1a0beced",
+    "scripts/audit_tool_reentry_service.py": "ef94ad8c8e8dd75a9a782f827f15d1d027209b0641a8ddc9b5fa13f320dab74c",
+    "scripts/audit_sealed_wait_prefetch.py": "467c33297fdfc1358b91455bb775d58e6edb287cb11dc51dc35d219c00995b46",
+    "tests/test_request_agent_eligibility_audit.py": "a5c1839b8894604593ef42f7b7b924d8f11643fb3f9073368ad2ed5604d4150b",
+    "tests/test_collecting_agent_pipeline_audit.py": "82977643b43acceda87855c0659eb1b48bfc73eb46163c204af87c00eba11ffa"
+  },
+  "operator_sha256": "6733cbc11dc9eb0e9bccb2c8e00cf030bbbb104d5acac5f7273158cbaf1d1827",
+  "limitations": [
+    "Every input uses its own sealed prefix; the populations and end times are not atomic.",
+    "Holding an identity snapshot for at most1500ms is a convention, not an exact transition log.",
+    "The reference-only aggregate budget has no proven blocked-owner byte partition.",
+    "A large inactive fraction does not quantify removable JCT or attribute the entire delay to one policy choice.",
+    "One paired request does not establish full-run superiority, regression or frequency.",
+    "No progressive layer-capacity handoff is implemented or qualified by this evidence."
+  ],
+  "complete_performance_accepted": false,
+  "goal_complete": false
+}

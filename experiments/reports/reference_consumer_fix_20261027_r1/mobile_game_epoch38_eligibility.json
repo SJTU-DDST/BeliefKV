@@ -1,0 +1,2783 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-10-27T19:01:04.046980+00:00",
+  "scope": "one completed request in independently sealed collecting prefixes",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_consumer_fix_20261027_r1/full",
+  "request_id": "beliefkv:01a177aa-05e6-7633-b98d-02added92e81",
+  "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+  "invocation_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root",
+  "context_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:context:root",
+  "context_epoch": 38,
+  "prompt_tokens": 129003,
+  "output_tokens": 100,
+  "native_queue_wall_ms": 1793126807497.9348,
+  "first_launch_wall_ms": 1793126886379.8555,
+  "submit_to_first_launch_ms": 78981.75011539459,
+  "native_queue_to_first_launch_ms": 78881.92065429688,
+  "first_launch_to_native_complete_ms": 3953.5368185043335,
+  "native_service_prefix_records": 40758,
+  "first_launch_sample_id": "native-service-000014784",
+  "previous_native_complete_wall_ms": 1793126804300.4482,
+  "preceding_tool_round": {
+    "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+    "invocation_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root",
+    "origin_request_id": "beliefkv:01a177a9-eaf7-7193-b8f3-dbca7d3442d0",
+    "origin_context_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:context:root",
+    "origin_context_epoch": 37,
+    "origin_submit_ts_ms": 7297065140.715466,
+    "tool_wait_start_ts_ms": 7297067424.513033,
+    "tool_call_ids": [
+      "call_11aa1cb24cd24e49bedb6774"
+    ],
+    "tool_run_ids": [
+      "01a177aa-0574-7580-9fc3-399744617143"
+    ],
+    "observed_tool_starts": 1,
+    "tool_names": [
+      "execute"
+    ],
+    "status": "submitted_no_native_service_in_prefix",
+    "delegation_calls_in_round": 0,
+    "tool_membership_evidence": "structured_action_kinds",
+    "expected_tool_starts": 1,
+    "tool_completed_ts_ms": 7297070440.050668,
+    "tool_round_duration_ms": 3015.5376348495483,
+    "client_ready_ts_ms": 7297070440.050668,
+    "request_id": "beliefkv:01a177aa-05e6-7633-b98d-02added92e81",
+    "context_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:context:root",
+    "context_epoch": 38,
+    "client_submit_ts_ms": 7297070491.37714,
+    "client_ready_to_submit_ms": 51.32647228240967,
+    "context_compactions_before_successor": 0,
+    "ready_seconds_from_first_arrival": 575.5972031526566
+  },
+  "service_host_hit_tokens": 128239,
+  "service_device_hit_tokens": 547,
+  "service_uncached_tokens": 217,
+  "maximum_sample_age_ms": 1500.0,
+  "sample_hold_partition": {
+    "active_ms": 0.0,
+    "inactive_ms": 78881.92065429688,
+    "unknown_ms": 0.0
+  },
+  "eligibility_samples": [
+    {
+      "ts_ms": 1793126797940.174,
+      "from_native_queue_ms": -9557.7607421875,
+      "active": true,
+      "paused_pending": false,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": null,
+      "active_removed_since_previous_sample": null,
+      "logical_active_tokens": 798769,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 6490,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 13,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 35.40383011754602
+      },
+      "control_counts": {
+        "control_ticks": 113,
+        "resumed": 296,
+        "registered": 1033,
+        "streaming_progress_checks": 1568,
+        "streaming_progress_updates": 1152,
+        "completed": 1017,
+        "restore_outside_active_set": 155,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126798955.186,
+      "from_native_queue_ms": -8542.748779296875,
+      "active": true,
+      "paused_pending": false,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 798896,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 6490,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 13,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 35.40383011754602
+      },
+      "control_counts": {
+        "control_ticks": 113,
+        "resumed": 296,
+        "registered": 1034,
+        "streaming_progress_checks": 1568,
+        "streaming_progress_updates": 1152,
+        "completed": 1018,
+        "restore_outside_active_set": 155,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126799965.2715,
+      "from_native_queue_ms": -7532.663330078125,
+      "active": true,
+      "paused_pending": false,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 798896,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 6490,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 13,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 35.40383011754602
+      },
+      "control_counts": {
+        "control_ticks": 113,
+        "resumed": 296,
+        "registered": 1034,
+        "streaming_progress_checks": 1568,
+        "streaming_progress_updates": 1152,
+        "completed": 1018,
+        "restore_outside_active_set": 155,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126800976.6443,
+      "from_native_queue_ms": -6521.29052734375,
+      "active": true,
+      "paused_pending": false,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 799066,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 6490,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 13,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 35.40383011754602
+      },
+      "control_counts": {
+        "control_ticks": 113,
+        "resumed": 296,
+        "registered": 1035,
+        "streaming_progress_checks": 1568,
+        "streaming_progress_updates": 1152,
+        "completed": 1019,
+        "restore_outside_active_set": 155,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126802001.1575,
+      "from_native_queue_ms": -5496.77734375,
+      "active": true,
+      "paused_pending": false,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [
+        "deepagents-invocation:75164210ec1e071c"
+      ],
+      "active_removed_since_previous_sample": [
+        "deepagents-invocation:15415946e8089cac"
+      ],
+      "logical_active_tokens": 792164,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 13089,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 13,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 40.410858023911715
+      },
+      "control_counts": {
+        "control_ticks": 114,
+        "resumed": 297,
+        "registered": 1036,
+        "streaming_progress_checks": 1580,
+        "streaming_progress_updates": 1164,
+        "completed": 1021,
+        "restore_outside_active_set": 155,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126803040.7751,
+      "from_native_queue_ms": -4457.15966796875,
+      "active": true,
+      "paused_pending": false,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 792841,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 13089,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 13,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 40.410858023911715
+      },
+      "control_counts": {
+        "control_ticks": 114,
+        "resumed": 297,
+        "registered": 1038,
+        "streaming_progress_checks": 1580,
+        "streaming_progress_updates": 1164,
+        "completed": 1023,
+        "restore_outside_active_set": 155,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126804048.5615,
+      "from_native_queue_ms": -3449.373291015625,
+      "active": true,
+      "paused_pending": false,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 792841,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 13089,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 13,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 40.410858023911715
+      },
+      "control_counts": {
+        "control_ticks": 114,
+        "resumed": 297,
+        "registered": 1038,
+        "streaming_progress_checks": 1580,
+        "streaming_progress_updates": 1164,
+        "completed": 1023,
+        "restore_outside_active_set": 155,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126805072.296,
+      "from_native_queue_ms": -2425.638916015625,
+      "active": true,
+      "paused_pending": false,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 793039,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 13089,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 13,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 40.410858023911715
+      },
+      "control_counts": {
+        "control_ticks": 114,
+        "resumed": 297,
+        "registered": 1039,
+        "streaming_progress_checks": 1580,
+        "streaming_progress_updates": 1164,
+        "completed": 1025,
+        "restore_outside_active_set": 155,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126806086.1384,
+      "from_native_queue_ms": -1411.79638671875,
+      "active": true,
+      "paused_pending": false,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 793185,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 13089,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 13,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 40.410858023911715
+      },
+      "control_counts": {
+        "control_ticks": 114,
+        "resumed": 297,
+        "registered": 1039,
+        "streaming_progress_checks": 1580,
+        "streaming_progress_updates": 1164,
+        "completed": 1026,
+        "restore_outside_active_set": 155,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126807092.8535,
+      "from_native_queue_ms": -405.081298828125,
+      "active": false,
+      "paused_pending": false,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [
+        "deepagents-invocation:61c6413bdc63294c",
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a:root",
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root"
+      ],
+      "active_removed_since_previous_sample": [
+        "deepagents-invocation:8cf141e8950b45dd",
+        "deepagents-invocation:ed7c58e8e023e49d",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root",
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root"
+      ],
+      "logical_active_tokens": 691642,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 113556,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 12,
+        "paused_pending_programs": 1,
+        "capacity_blocked_pending_programs": 1,
+        "oldest_pending_seconds": 45.43206218536943
+      },
+      "control_counts": {
+        "control_ticks": 115,
+        "resumed": 301,
+        "registered": 1039,
+        "streaming_progress_checks": 1589,
+        "streaming_progress_updates": 1173,
+        "completed": 1026,
+        "restore_outside_active_set": 155,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126808103.7295,
+      "from_native_queue_ms": 605.794677734375,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 691642,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 113556,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 12,
+        "paused_pending_programs": 1,
+        "capacity_blocked_pending_programs": 1,
+        "oldest_pending_seconds": 45.43206218536943
+      },
+      "control_counts": {
+        "control_ticks": 115,
+        "resumed": 301,
+        "registered": 1040,
+        "streaming_progress_checks": 1589,
+        "streaming_progress_updates": 1173,
+        "completed": 1026,
+        "restore_outside_active_set": 155,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126809116.0596,
+      "from_native_queue_ms": 1618.124755859375,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 691756,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 113556,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 12,
+        "paused_pending_programs": 1,
+        "capacity_blocked_pending_programs": 1,
+        "oldest_pending_seconds": 45.43206218536943
+      },
+      "control_counts": {
+        "control_ticks": 115,
+        "resumed": 301,
+        "registered": 1042,
+        "streaming_progress_checks": 1589,
+        "streaming_progress_updates": 1173,
+        "completed": 1027,
+        "restore_outside_active_set": 155,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126810119.8604,
+      "from_native_queue_ms": 2621.925537109375,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 692866,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 113556,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 12,
+        "paused_pending_programs": 1,
+        "capacity_blocked_pending_programs": 1,
+        "oldest_pending_seconds": 45.43206218536943
+      },
+      "control_counts": {
+        "control_ticks": 115,
+        "resumed": 301,
+        "registered": 1043,
+        "streaming_progress_checks": 1599,
+        "streaming_progress_updates": 1183,
+        "completed": 1029,
+        "restore_outside_active_set": 155,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126811126.0466,
+      "from_native_queue_ms": 3628.11181640625,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 692866,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 113556,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 12,
+        "paused_pending_programs": 1,
+        "capacity_blocked_pending_programs": 1,
+        "oldest_pending_seconds": 45.43206218536943
+      },
+      "control_counts": {
+        "control_ticks": 115,
+        "resumed": 301,
+        "registered": 1045,
+        "streaming_progress_checks": 1599,
+        "streaming_progress_updates": 1183,
+        "completed": 1029,
+        "restore_outside_active_set": 155,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126812155.146,
+      "from_native_queue_ms": 4657.211181640625,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [
+        "deepagents-invocation:82a3d7252ab98e78",
+        "deepagents-invocation:8cf141e8950b45dd",
+        "deepagents-invocation:ed7c58e8e023e49d",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root"
+      ],
+      "active_removed_since_previous_sample": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root"
+      ],
+      "logical_active_tokens": 799411,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 5826,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 14,
+        "paused_pending_programs": 2,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 50.45643053483218
+      },
+      "control_counts": {
+        "control_ticks": 116,
+        "resumed": 306,
+        "registered": 1046,
+        "streaming_progress_checks": 1609,
+        "streaming_progress_updates": 1193,
+        "completed": 1030,
+        "restore_outside_active_set": 155,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126813180.541,
+      "from_native_queue_ms": 5682.606201171875,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 799507,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 5826,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 14,
+        "paused_pending_programs": 2,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 50.45643053483218
+      },
+      "control_counts": {
+        "control_ticks": 116,
+        "resumed": 306,
+        "registered": 1047,
+        "streaming_progress_checks": 1609,
+        "streaming_progress_updates": 1193,
+        "completed": 1031,
+        "restore_outside_active_set": 155,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126814194.2444,
+      "from_native_queue_ms": 6696.3095703125,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 799842,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 5826,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 14,
+        "paused_pending_programs": 2,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 50.45643053483218
+      },
+      "control_counts": {
+        "control_ticks": 116,
+        "resumed": 306,
+        "registered": 1049,
+        "streaming_progress_checks": 1609,
+        "streaming_progress_updates": 1193,
+        "completed": 1035,
+        "restore_outside_active_set": 155,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126815204.3296,
+      "from_native_queue_ms": 7706.394775390625,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 800674,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 5826,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 14,
+        "paused_pending_programs": 2,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 50.45643053483218
+      },
+      "control_counts": {
+        "control_ticks": 116,
+        "resumed": 306,
+        "registered": 1052,
+        "streaming_progress_checks": 1609,
+        "streaming_progress_updates": 1193,
+        "completed": 1037,
+        "restore_outside_active_set": 155,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126816220.121,
+      "from_native_queue_ms": 8722.186279296875,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [
+        "deepagents-invocation:15415946e8089cac",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root"
+      ],
+      "active_removed_since_previous_sample": [
+        "deepagents-invocation:75164210ec1e071c",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root",
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a:root"
+      ],
+      "logical_active_tokens": 725217,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 79981,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 14,
+        "paused_pending_programs": 1,
+        "capacity_blocked_pending_programs": 1,
+        "oldest_pending_seconds": 55.46699367649853
+      },
+      "control_counts": {
+        "control_ticks": 117,
+        "resumed": 309,
+        "registered": 1055,
+        "streaming_progress_checks": 1621,
+        "streaming_progress_updates": 1205,
+        "completed": 1040,
+        "restore_outside_active_set": 155,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126817229.2478,
+      "from_native_queue_ms": 9731.31298828125,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 725252,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 79981,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 14,
+        "paused_pending_programs": 1,
+        "capacity_blocked_pending_programs": 1,
+        "oldest_pending_seconds": 55.46699367649853
+      },
+      "control_counts": {
+        "control_ticks": 117,
+        "resumed": 309,
+        "registered": 1056,
+        "streaming_progress_checks": 1621,
+        "streaming_progress_updates": 1205,
+        "completed": 1042,
+        "restore_outside_active_set": 158,
+        "programs_retired": 18
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126818246.3406,
+      "from_native_queue_ms": 10748.40576171875,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [
+        "deepagents-invocation:f35d6ad2e40f2a2c"
+      ],
+      "logical_active_tokens": 700427,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 79981,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 14,
+        "paused_pending_programs": 1,
+        "capacity_blocked_pending_programs": 1,
+        "oldest_pending_seconds": 55.46699367649853
+      },
+      "control_counts": {
+        "control_ticks": 117,
+        "resumed": 309,
+        "registered": 1059,
+        "streaming_progress_checks": 1621,
+        "streaming_progress_updates": 1205,
+        "completed": 1044,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126819246.4727,
+      "from_native_queue_ms": 11748.537841796875,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 700716,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 79981,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 14,
+        "paused_pending_programs": 1,
+        "capacity_blocked_pending_programs": 1,
+        "oldest_pending_seconds": 55.46699367649853
+      },
+      "control_counts": {
+        "control_ticks": 117,
+        "resumed": 309,
+        "registered": 1062,
+        "streaming_progress_checks": 1621,
+        "streaming_progress_updates": 1205,
+        "completed": 1047,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126820263.4602,
+      "from_native_queue_ms": 12765.525390625,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 701817,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 79981,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 14,
+        "paused_pending_programs": 1,
+        "capacity_blocked_pending_programs": 1,
+        "oldest_pending_seconds": 55.46699367649853
+      },
+      "control_counts": {
+        "control_ticks": 117,
+        "resumed": 309,
+        "registered": 1064,
+        "streaming_progress_checks": 1621,
+        "streaming_progress_updates": 1205,
+        "completed": 1048,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126821417.5693,
+      "from_native_queue_ms": 13919.634521484375,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1:root",
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root"
+      ],
+      "active_removed_since_previous_sample": [
+        "deepagents-invocation:15415946e8089cac"
+      ],
+      "logical_active_tokens": 801590,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 3608,
+        "active_acting_programs": 2,
+        "active_reasoning_programs": 12,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 60.47972061764449
+      },
+      "control_counts": {
+        "control_ticks": 118,
+        "resumed": 312,
+        "registered": 1065,
+        "streaming_progress_checks": 1632,
+        "streaming_progress_updates": 1216,
+        "completed": 1050,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126822432.8599,
+      "from_native_queue_ms": 14934.925048828125,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 801611,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 3608,
+        "active_acting_programs": 2,
+        "active_reasoning_programs": 12,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 60.47972061764449
+      },
+      "control_counts": {
+        "control_ticks": 118,
+        "resumed": 312,
+        "registered": 1065,
+        "streaming_progress_checks": 1632,
+        "streaming_progress_updates": 1216,
+        "completed": 1051,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126823452.013,
+      "from_native_queue_ms": 15954.078125,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 804176,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 3608,
+        "active_acting_programs": 2,
+        "active_reasoning_programs": 12,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 60.47972061764449
+      },
+      "control_counts": {
+        "control_ticks": 118,
+        "resumed": 312,
+        "registered": 1067,
+        "streaming_progress_checks": 1632,
+        "streaming_progress_updates": 1216,
+        "completed": 1053,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126824462.931,
+      "from_native_queue_ms": 16964.99609375,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 804389,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 3608,
+        "active_acting_programs": 2,
+        "active_reasoning_programs": 12,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 60.47972061764449
+      },
+      "control_counts": {
+        "control_ticks": 118,
+        "resumed": 312,
+        "registered": 1067,
+        "streaming_progress_checks": 1632,
+        "streaming_progress_updates": 1216,
+        "completed": 1056,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126825471.5073,
+      "from_native_queue_ms": 17973.572509765625,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 806173,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 3608,
+        "active_acting_programs": 2,
+        "active_reasoning_programs": 12,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 60.47972061764449
+      },
+      "control_counts": {
+        "control_ticks": 118,
+        "resumed": 312,
+        "registered": 1070,
+        "streaming_progress_checks": 1632,
+        "streaming_progress_updates": 1216,
+        "completed": 1058,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126826562.0237,
+      "from_native_queue_ms": 19064.0888671875,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root"
+      ],
+      "active_removed_since_previous_sample": [
+        "deepagents-invocation:be5614e15c235933",
+        "deepagents-invocation:ed7c58e8e023e49d",
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1:root"
+      ],
+      "logical_active_tokens": 802558,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 2640,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 11,
+        "paused_pending_programs": 2,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 65.50268175918609
+      },
+      "control_counts": {
+        "control_ticks": 119,
+        "resumed": 314,
+        "registered": 1071,
+        "streaming_progress_checks": 1642,
+        "streaming_progress_updates": 1226,
+        "completed": 1058,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126827590.5303,
+      "from_native_queue_ms": 20092.595458984375,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 802609,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 2640,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 11,
+        "paused_pending_programs": 2,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 65.50268175918609
+      },
+      "control_counts": {
+        "control_ticks": 119,
+        "resumed": 314,
+        "registered": 1072,
+        "streaming_progress_checks": 1642,
+        "streaming_progress_updates": 1226,
+        "completed": 1060,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126828613.2153,
+      "from_native_queue_ms": 21115.280517578125,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 802689,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 2640,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 11,
+        "paused_pending_programs": 2,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 65.50268175918609
+      },
+      "control_counts": {
+        "control_ticks": 119,
+        "resumed": 314,
+        "registered": 1074,
+        "streaming_progress_checks": 1642,
+        "streaming_progress_updates": 1226,
+        "completed": 1061,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126829622.65,
+      "from_native_queue_ms": 22124.715087890625,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 803199,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 2640,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 11,
+        "paused_pending_programs": 2,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 65.50268175918609
+      },
+      "control_counts": {
+        "control_ticks": 119,
+        "resumed": 314,
+        "registered": 1076,
+        "streaming_progress_checks": 1642,
+        "streaming_progress_updates": 1226,
+        "completed": 1064,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126830645.1025,
+      "from_native_queue_ms": 23147.167724609375,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 803341,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 2640,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 11,
+        "paused_pending_programs": 2,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 65.50268175918609
+      },
+      "control_counts": {
+        "control_ticks": 119,
+        "resumed": 314,
+        "registered": 1078,
+        "streaming_progress_checks": 1642,
+        "streaming_progress_updates": 1226,
+        "completed": 1065,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126831647.673,
+      "from_native_queue_ms": 24149.73828125,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [
+        "deepagents-invocation:75164210ec1e071c"
+      ],
+      "active_removed_since_previous_sample": [
+        "deepagents-invocation:82a3d7252ab98e78",
+        "deepagents-invocation:d467f49894387cc0"
+      ],
+      "logical_active_tokens": 788068,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 17136,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 10,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 70.52045526262373
+      },
+      "control_counts": {
+        "control_ticks": 120,
+        "resumed": 316,
+        "registered": 1078,
+        "streaming_progress_checks": 1651,
+        "streaming_progress_updates": 1235,
+        "completed": 1066,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126832663.0688,
+      "from_native_queue_ms": 25165.134033203125,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 788360,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 17136,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 10,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 70.52045526262373
+      },
+      "control_counts": {
+        "control_ticks": 120,
+        "resumed": 316,
+        "registered": 1080,
+        "streaming_progress_checks": 1651,
+        "streaming_progress_updates": 1235,
+        "completed": 1069,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126833687.4204,
+      "from_native_queue_ms": 26189.485595703125,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 788470,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 17136,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 10,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 70.52045526262373
+      },
+      "control_counts": {
+        "control_ticks": 120,
+        "resumed": 316,
+        "registered": 1082,
+        "streaming_progress_checks": 1651,
+        "streaming_progress_updates": 1235,
+        "completed": 1070,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126834707.4006,
+      "from_native_queue_ms": 27209.4658203125,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 788621,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 17136,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 10,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 70.52045526262373
+      },
+      "control_counts": {
+        "control_ticks": 120,
+        "resumed": 316,
+        "registered": 1083,
+        "streaming_progress_checks": 1651,
+        "streaming_progress_updates": 1235,
+        "completed": 1072,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126835721.5276,
+      "from_native_queue_ms": 28223.5927734375,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 788885,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 17136,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 10,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 70.52045526262373
+      },
+      "control_counts": {
+        "control_ticks": 120,
+        "resumed": 316,
+        "registered": 1084,
+        "streaming_progress_checks": 1651,
+        "streaming_progress_updates": 1235,
+        "completed": 1072,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126836721.7434,
+      "from_native_queue_ms": 29223.80859375,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [
+        "deepagents-invocation:15415946e8089cac",
+        "deepagents-invocation:be5614e15c235933",
+        "deepagents-invocation:ed7c58e8e023e49d"
+      ],
+      "active_removed_since_previous_sample": [
+        "deepagents-invocation:61c6413bdc63294c",
+        "deepagents-invocation:76aeaea63220d752",
+        "deepagents-invocation:8cf141e8950b45dd"
+      ],
+      "logical_active_tokens": 778300,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 26898,
+        "active_acting_programs": 2,
+        "active_reasoning_programs": 9,
+        "paused_pending_programs": 2,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 75.52135191392154
+      },
+      "control_counts": {
+        "control_ticks": 121,
+        "resumed": 321,
+        "registered": 1084,
+        "streaming_progress_checks": 1657,
+        "streaming_progress_updates": 1241,
+        "completed": 1073,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126837723.306,
+      "from_native_queue_ms": 30225.37109375,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 778300,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 26898,
+        "active_acting_programs": 2,
+        "active_reasoning_programs": 9,
+        "paused_pending_programs": 2,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 75.52135191392154
+      },
+      "control_counts": {
+        "control_ticks": 121,
+        "resumed": 321,
+        "registered": 1084,
+        "streaming_progress_checks": 1657,
+        "streaming_progress_updates": 1241,
+        "completed": 1073,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126838727.622,
+      "from_native_queue_ms": 31229.687255859375,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 778451,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 26898,
+        "active_acting_programs": 2,
+        "active_reasoning_programs": 9,
+        "paused_pending_programs": 2,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 75.52135191392154
+      },
+      "control_counts": {
+        "control_ticks": 121,
+        "resumed": 321,
+        "registered": 1085,
+        "streaming_progress_checks": 1657,
+        "streaming_progress_updates": 1241,
+        "completed": 1075,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126839744.65,
+      "from_native_queue_ms": 32246.715087890625,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 778451,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 26898,
+        "active_acting_programs": 2,
+        "active_reasoning_programs": 9,
+        "paused_pending_programs": 2,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 75.52135191392154
+      },
+      "control_counts": {
+        "control_ticks": 121,
+        "resumed": 321,
+        "registered": 1085,
+        "streaming_progress_checks": 1657,
+        "streaming_progress_updates": 1241,
+        "completed": 1075,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126840751.7856,
+      "from_native_queue_ms": 33253.850830078125,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 778515,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 26898,
+        "active_acting_programs": 2,
+        "active_reasoning_programs": 9,
+        "paused_pending_programs": 2,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 75.52135191392154
+      },
+      "control_counts": {
+        "control_ticks": 121,
+        "resumed": 321,
+        "registered": 1086,
+        "streaming_progress_checks": 1657,
+        "streaming_progress_updates": 1241,
+        "completed": 1076,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126841765.5046,
+      "from_native_queue_ms": 34267.56982421875,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [
+        "deepagents-invocation:8cf141e8950b45dd",
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root"
+      ],
+      "active_removed_since_previous_sample": [
+        "deepagents-invocation:be5614e15c235933",
+        "deepagents-invocation:ed7c58e8e023e49d",
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root"
+      ],
+      "logical_active_tokens": 792278,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 12920,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 9,
+        "paused_pending_programs": 1,
+        "capacity_blocked_pending_programs": 1,
+        "oldest_pending_seconds": 80.52496574632823
+      },
+      "control_counts": {
+        "control_ticks": 122,
+        "resumed": 325,
+        "registered": 1087,
+        "streaming_progress_checks": 1664,
+        "streaming_progress_updates": 1248,
+        "completed": 1076,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126842780.2913,
+      "from_native_queue_ms": 35282.3564453125,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 792278,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 12920,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 9,
+        "paused_pending_programs": 1,
+        "capacity_blocked_pending_programs": 1,
+        "oldest_pending_seconds": 80.52496574632823
+      },
+      "control_counts": {
+        "control_ticks": 122,
+        "resumed": 325,
+        "registered": 1088,
+        "streaming_progress_checks": 1664,
+        "streaming_progress_updates": 1248,
+        "completed": 1076,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126843785.1987,
+      "from_native_queue_ms": 36287.263916015625,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 792368,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 12920,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 9,
+        "paused_pending_programs": 1,
+        "capacity_blocked_pending_programs": 1,
+        "oldest_pending_seconds": 80.52496574632823
+      },
+      "control_counts": {
+        "control_ticks": 122,
+        "resumed": 325,
+        "registered": 1092,
+        "streaming_progress_checks": 1664,
+        "streaming_progress_updates": 1248,
+        "completed": 1077,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126844804.737,
+      "from_native_queue_ms": 37306.80224609375,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 792368,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 12920,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 9,
+        "paused_pending_programs": 1,
+        "capacity_blocked_pending_programs": 1,
+        "oldest_pending_seconds": 80.52496574632823
+      },
+      "control_counts": {
+        "control_ticks": 122,
+        "resumed": 325,
+        "registered": 1092,
+        "streaming_progress_checks": 1664,
+        "streaming_progress_updates": 1248,
+        "completed": 1077,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126845816.8284,
+      "from_native_queue_ms": 38318.8935546875,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 792368,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 12920,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 9,
+        "paused_pending_programs": 1,
+        "capacity_blocked_pending_programs": 1,
+        "oldest_pending_seconds": 80.52496574632823
+      },
+      "control_counts": {
+        "control_ticks": 122,
+        "resumed": 325,
+        "registered": 1092,
+        "streaming_progress_checks": 1664,
+        "streaming_progress_updates": 1248,
+        "completed": 1077,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126846822.3516,
+      "from_native_queue_ms": 39324.416748046875,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 794007,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 11191,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 10,
+        "paused_pending_programs": 6,
+        "capacity_blocked_pending_programs": 6,
+        "oldest_pending_seconds": 72.89827553927898
+      },
+      "control_counts": {
+        "control_ticks": 123,
+        "resumed": 325,
+        "registered": 1095,
+        "streaming_progress_checks": 1674,
+        "streaming_progress_updates": 1258,
+        "completed": 1078,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126847847.3193,
+      "from_native_queue_ms": 40349.384521484375,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 794045,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 11191,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 10,
+        "paused_pending_programs": 6,
+        "capacity_blocked_pending_programs": 6,
+        "oldest_pending_seconds": 72.89827553927898
+      },
+      "control_counts": {
+        "control_ticks": 123,
+        "resumed": 325,
+        "registered": 1095,
+        "streaming_progress_checks": 1674,
+        "streaming_progress_updates": 1258,
+        "completed": 1079,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126848848.2427,
+      "from_native_queue_ms": 41350.307861328125,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 794313,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 11191,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 10,
+        "paused_pending_programs": 6,
+        "capacity_blocked_pending_programs": 6,
+        "oldest_pending_seconds": 72.89827553927898
+      },
+      "control_counts": {
+        "control_ticks": 123,
+        "resumed": 325,
+        "registered": 1098,
+        "streaming_progress_checks": 1674,
+        "streaming_progress_updates": 1258,
+        "completed": 1082,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126849868.558,
+      "from_native_queue_ms": 42370.623291015625,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 794313,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 11191,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 10,
+        "paused_pending_programs": 6,
+        "capacity_blocked_pending_programs": 6,
+        "oldest_pending_seconds": 72.89827553927898
+      },
+      "control_counts": {
+        "control_ticks": 123,
+        "resumed": 325,
+        "registered": 1098,
+        "streaming_progress_checks": 1674,
+        "streaming_progress_updates": 1258,
+        "completed": 1082,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126850883.6978,
+      "from_native_queue_ms": 43385.762939453125,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 794313,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 11191,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 10,
+        "paused_pending_programs": 6,
+        "capacity_blocked_pending_programs": 6,
+        "oldest_pending_seconds": 72.89827553927898
+      },
+      "control_counts": {
+        "control_ticks": 123,
+        "resumed": 325,
+        "registered": 1098,
+        "streaming_progress_checks": 1674,
+        "streaming_progress_updates": 1258,
+        "completed": 1082,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 167
+    },
+    {
+      "ts_ms": 1793126851909.9001,
+      "from_native_queue_ms": 44411.96533203125,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [
+        "deepagents-invocation:61c6413bdc63294c",
+        "deepagents-invocation:be5614e15c235933",
+        "deepagents-invocation:d467f49894387cc0",
+        "deepagents-invocation:ed7c58e8e023e49d"
+      ],
+      "active_removed_since_previous_sample": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root"
+      ],
+      "logical_active_tokens": 796532,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 8666,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 13,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 77.89859607443213
+      },
+      "control_counts": {
+        "control_ticks": 124,
+        "resumed": 329,
+        "registered": 1098,
+        "streaming_progress_checks": 1683,
+        "streaming_progress_updates": 1267,
+        "completed": 1082,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126852942.454,
+      "from_native_queue_ms": 45444.519287109375,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 796532,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 8666,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 13,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 77.89859607443213
+      },
+      "control_counts": {
+        "control_ticks": 124,
+        "resumed": 329,
+        "registered": 1098,
+        "streaming_progress_checks": 1683,
+        "streaming_progress_updates": 1267,
+        "completed": 1082,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126853973.2517,
+      "from_native_queue_ms": 46475.31689453125,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 796750,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 8666,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 13,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 77.89859607443213
+      },
+      "control_counts": {
+        "control_ticks": 124,
+        "resumed": 329,
+        "registered": 1100,
+        "streaming_progress_checks": 1683,
+        "streaming_progress_updates": 1267,
+        "completed": 1085,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126854985.8457,
+      "from_native_queue_ms": 47487.910888671875,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 796975,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 8666,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 13,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 77.89859607443213
+      },
+      "control_counts": {
+        "control_ticks": 124,
+        "resumed": 329,
+        "registered": 1101,
+        "streaming_progress_checks": 1683,
+        "streaming_progress_updates": 1267,
+        "completed": 1087,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126856001.1072,
+      "from_native_queue_ms": 48503.17236328125,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 796975,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 8666,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 13,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 77.89859607443213
+      },
+      "control_counts": {
+        "control_ticks": 124,
+        "resumed": 329,
+        "registered": 1102,
+        "streaming_progress_checks": 1683,
+        "streaming_progress_updates": 1267,
+        "completed": 1087,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126857012.1658,
+      "from_native_queue_ms": 49514.23095703125,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [
+        "deepagents-invocation:76aeaea63220d752",
+        "deepagents-invocation:82a3d7252ab98e78"
+      ],
+      "active_removed_since_previous_sample": [
+        "deepagents-invocation:be5614e15c235933",
+        "deepagents-invocation:d467f49894387cc0",
+        "deepagents-invocation:ed7c58e8e023e49d"
+      ],
+      "logical_active_tokens": 773450,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 31760,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 12,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 82.90864718798548
+      },
+      "control_counts": {
+        "control_ticks": 125,
+        "resumed": 331,
+        "registered": 1104,
+        "streaming_progress_checks": 1693,
+        "streaming_progress_updates": 1277,
+        "completed": 1089,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126858012.9187,
+      "from_native_queue_ms": 50514.98388671875,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 773490,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 31760,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 12,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 82.90864718798548
+      },
+      "control_counts": {
+        "control_ticks": 125,
+        "resumed": 331,
+        "registered": 1106,
+        "streaming_progress_checks": 1693,
+        "streaming_progress_updates": 1277,
+        "completed": 1089,
+        "restore_outside_active_set": 163,
+        "programs_retired": 19
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126859027.8203,
+      "from_native_queue_ms": 51529.885498046875,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [
+        "deepagents-invocation:15415946e8089cac",
+        "deepagents-invocation:8cf141e8950b45dd"
+      ],
+      "logical_active_tokens": 724939,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 31760,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 12,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 82.90864718798548
+      },
+      "control_counts": {
+        "control_ticks": 125,
+        "resumed": 331,
+        "registered": 1110,
+        "streaming_progress_checks": 1693,
+        "streaming_progress_updates": 1277,
+        "completed": 1096,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126860039.1348,
+      "from_native_queue_ms": 52541.199951171875,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 724971,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 31760,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 12,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 82.90864718798548
+      },
+      "control_counts": {
+        "control_ticks": 125,
+        "resumed": 331,
+        "registered": 1111,
+        "streaming_progress_checks": 1693,
+        "streaming_progress_updates": 1277,
+        "completed": 1097,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126861059.7576,
+      "from_native_queue_ms": 53561.82275390625,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 725032,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 31760,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 12,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 82.90864718798548
+      },
+      "control_counts": {
+        "control_ticks": 125,
+        "resumed": 331,
+        "registered": 1111,
+        "streaming_progress_checks": 1693,
+        "streaming_progress_updates": 1277,
+        "completed": 1098,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126862076.8618,
+      "from_native_queue_ms": 54578.927001953125,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [
+        "deepagents-invocation:be5614e15c235933",
+        "deepagents-invocation:d467f49894387cc0",
+        "deepagents-invocation:ed7c58e8e023e49d",
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root"
+      ],
+      "active_removed_since_previous_sample": [
+        "deepagents-invocation:75164210ec1e071c",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "deepagents-invocation:a2cfb5f0bc8f46b4",
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:root"
+      ],
+      "logical_active_tokens": 695373,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 109827,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 10,
+        "paused_pending_programs": 4,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 76.59022424649447
+      },
+      "control_counts": {
+        "control_ticks": 126,
+        "resumed": 335,
+        "registered": 1112,
+        "streaming_progress_checks": 1699,
+        "streaming_progress_updates": 1283,
+        "completed": 1099,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126863104.3088,
+      "from_native_queue_ms": 55606.3740234375,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 695373,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 109827,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 10,
+        "paused_pending_programs": 4,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 76.59022424649447
+      },
+      "control_counts": {
+        "control_ticks": 126,
+        "resumed": 335,
+        "registered": 1112,
+        "streaming_progress_checks": 1699,
+        "streaming_progress_updates": 1283,
+        "completed": 1099,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126864112.6782,
+      "from_native_queue_ms": 56614.743408203125,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 695373,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 109827,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 10,
+        "paused_pending_programs": 4,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 76.59022424649447
+      },
+      "control_counts": {
+        "control_ticks": 126,
+        "resumed": 335,
+        "registered": 1112,
+        "streaming_progress_checks": 1699,
+        "streaming_progress_updates": 1283,
+        "completed": 1099,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126865120.812,
+      "from_native_queue_ms": 57622.877197265625,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 695643,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 109827,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 10,
+        "paused_pending_programs": 4,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 76.59022424649447
+      },
+      "control_counts": {
+        "control_ticks": 126,
+        "resumed": 335,
+        "registered": 1115,
+        "streaming_progress_checks": 1699,
+        "streaming_progress_updates": 1283,
+        "completed": 1102,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126866135.0623,
+      "from_native_queue_ms": 58637.12744140625,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 695643,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 109827,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 10,
+        "paused_pending_programs": 4,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 76.59022424649447
+      },
+      "control_counts": {
+        "control_ticks": 126,
+        "resumed": 335,
+        "registered": 1116,
+        "streaming_progress_checks": 1699,
+        "streaming_progress_updates": 1283,
+        "completed": 1102,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126867137.1729,
+      "from_native_queue_ms": 59639.238037109375,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [
+        "deepagents-invocation:75164210ec1e071c",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "deepagents-invocation:a2cfb5f0bc8f46b4",
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46:root"
+      ],
+      "active_removed_since_previous_sample": [
+        "deepagents-invocation:61c6413bdc63294c"
+      ],
+      "logical_active_tokens": 791268,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 13930,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 12,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 81.60024869255722
+      },
+      "control_counts": {
+        "control_ticks": 127,
+        "resumed": 339,
+        "registered": 1118,
+        "streaming_progress_checks": 1707,
+        "streaming_progress_updates": 1290,
+        "completed": 1103,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126868141.79,
+      "from_native_queue_ms": 60643.855224609375,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 791268,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 13930,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 12,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 81.60024869255722
+      },
+      "control_counts": {
+        "control_ticks": 127,
+        "resumed": 339,
+        "registered": 1118,
+        "streaming_progress_checks": 1707,
+        "streaming_progress_updates": 1290,
+        "completed": 1103,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126869149.4524,
+      "from_native_queue_ms": 61651.517578125,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 791778,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 13930,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 12,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 81.60024869255722
+      },
+      "control_counts": {
+        "control_ticks": 127,
+        "resumed": 339,
+        "registered": 1120,
+        "streaming_progress_checks": 1707,
+        "streaming_progress_updates": 1290,
+        "completed": 1108,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126870168.2285,
+      "from_native_queue_ms": 62670.293701171875,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 794536,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 13930,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 12,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 81.60024869255722
+      },
+      "control_counts": {
+        "control_ticks": 127,
+        "resumed": 339,
+        "registered": 1123,
+        "streaming_progress_checks": 1707,
+        "streaming_progress_updates": 1290,
+        "completed": 1109,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126871179.3762,
+      "from_native_queue_ms": 63681.44140625,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 794726,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 13930,
+        "active_acting_programs": 1,
+        "active_reasoning_programs": 12,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 81.60024869255722
+      },
+      "control_counts": {
+        "control_ticks": 127,
+        "resumed": 339,
+        "registered": 1124,
+        "streaming_progress_checks": 1707,
+        "streaming_progress_updates": 1290,
+        "completed": 1111,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126872196.016,
+      "from_native_queue_ms": 64698.081298828125,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [
+        "deepagents-invocation:61c6413bdc63294c"
+      ],
+      "active_removed_since_previous_sample": [
+        "deepagents-invocation:75164210ec1e071c",
+        "deepagents-invocation:a2cfb5f0bc8f46b4"
+      ],
+      "logical_active_tokens": 793958,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 11285,
+        "active_acting_programs": 4,
+        "active_reasoning_programs": 8,
+        "paused_pending_programs": 4,
+        "capacity_blocked_pending_programs": 4,
+        "oldest_pending_seconds": 63.823736852034926
+      },
+      "control_counts": {
+        "control_ticks": 128,
+        "resumed": 340,
+        "registered": 1128,
+        "streaming_progress_checks": 1715,
+        "streaming_progress_updates": 1297,
+        "completed": 1113,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126873222.22,
+      "from_native_queue_ms": 65724.28515625,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 794068,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 11285,
+        "active_acting_programs": 4,
+        "active_reasoning_programs": 8,
+        "paused_pending_programs": 4,
+        "capacity_blocked_pending_programs": 4,
+        "oldest_pending_seconds": 63.823736852034926
+      },
+      "control_counts": {
+        "control_ticks": 128,
+        "resumed": 340,
+        "registered": 1129,
+        "streaming_progress_checks": 1715,
+        "streaming_progress_updates": 1297,
+        "completed": 1115,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126874241.5771,
+      "from_native_queue_ms": 66743.64233398438,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 794244,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 11285,
+        "active_acting_programs": 4,
+        "active_reasoning_programs": 8,
+        "paused_pending_programs": 4,
+        "capacity_blocked_pending_programs": 4,
+        "oldest_pending_seconds": 63.823736852034926
+      },
+      "control_counts": {
+        "control_ticks": 128,
+        "resumed": 340,
+        "registered": 1129,
+        "streaming_progress_checks": 1715,
+        "streaming_progress_updates": 1297,
+        "completed": 1118,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126875245.3901,
+      "from_native_queue_ms": 67747.45532226562,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 794436,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 11285,
+        "active_acting_programs": 4,
+        "active_reasoning_programs": 8,
+        "paused_pending_programs": 4,
+        "capacity_blocked_pending_programs": 4,
+        "oldest_pending_seconds": 63.823736852034926
+      },
+      "control_counts": {
+        "control_ticks": 128,
+        "resumed": 340,
+        "registered": 1131,
+        "streaming_progress_checks": 1715,
+        "streaming_progress_updates": 1297,
+        "completed": 1119,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126876253.2354,
+      "from_native_queue_ms": 68755.30053710938,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 794710,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 11285,
+        "active_acting_programs": 4,
+        "active_reasoning_programs": 8,
+        "paused_pending_programs": 4,
+        "capacity_blocked_pending_programs": 4,
+        "oldest_pending_seconds": 63.823736852034926
+      },
+      "control_counts": {
+        "control_ticks": 128,
+        "resumed": 340,
+        "registered": 1132,
+        "streaming_progress_checks": 1715,
+        "streaming_progress_updates": 1297,
+        "completed": 1119,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126877273.6929,
+      "from_native_queue_ms": 69775.75805664062,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [
+        "deepagents-invocation:75164210ec1e071c",
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:root"
+      ],
+      "active_removed_since_previous_sample": [
+        "deepagents-invocation:61c6413bdc63294c",
+        "deepagents-invocation:76aeaea63220d752",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46:root"
+      ],
+      "logical_active_tokens": 732198,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 73000,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 10,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 68.83089243806899
+      },
+      "control_counts": {
+        "control_ticks": 129,
+        "resumed": 343,
+        "registered": 1133,
+        "streaming_progress_checks": 1723,
+        "streaming_progress_updates": 1305,
+        "completed": 1119,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126878282.6487,
+      "from_native_queue_ms": 70784.7138671875,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 732228,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 73000,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 10,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 68.83089243806899
+      },
+      "control_counts": {
+        "control_ticks": 129,
+        "resumed": 343,
+        "registered": 1133,
+        "streaming_progress_checks": 1723,
+        "streaming_progress_updates": 1305,
+        "completed": 1120,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126879296.428,
+      "from_native_queue_ms": 71798.4931640625,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 732300,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 73000,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 10,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 68.83089243806899
+      },
+      "control_counts": {
+        "control_ticks": 129,
+        "resumed": 343,
+        "registered": 1134,
+        "streaming_progress_checks": 1723,
+        "streaming_progress_updates": 1305,
+        "completed": 1121,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126880307.7878,
+      "from_native_queue_ms": 72809.85302734375,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 732451,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 73000,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 10,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 68.83089243806899
+      },
+      "control_counts": {
+        "control_ticks": 129,
+        "resumed": 343,
+        "registered": 1136,
+        "streaming_progress_checks": 1723,
+        "streaming_progress_updates": 1305,
+        "completed": 1123,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126881312.3684,
+      "from_native_queue_ms": 73814.43359375,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 733522,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 73000,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 10,
+        "paused_pending_programs": 3,
+        "capacity_blocked_pending_programs": 3,
+        "oldest_pending_seconds": 68.83089243806899
+      },
+      "control_counts": {
+        "control_ticks": 129,
+        "resumed": 343,
+        "registered": 1137,
+        "streaming_progress_checks": 1729,
+        "streaming_progress_updates": 1311,
+        "completed": 1124,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126882334.808,
+      "from_native_queue_ms": 74836.87329101562,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [
+        "deepagents-invocation:61c6413bdc63294c",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "deepagents-invocation:893664b32c440622",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root",
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46:root"
+      ],
+      "active_removed_since_previous_sample": [
+        "deepagents-invocation:75164210ec1e071c",
+        "deepagents-invocation:ed7c58e8e023e49d",
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:root",
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ],
+      "logical_active_tokens": 709851,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 95347,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 11,
+        "paused_pending_programs": 2,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 73.83554252143949
+      },
+      "control_counts": {
+        "control_ticks": 130,
+        "resumed": 348,
+        "registered": 1138,
+        "streaming_progress_checks": 1735,
+        "streaming_progress_updates": 1317,
+        "completed": 1124,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126883346.5056,
+      "from_native_queue_ms": 75848.57080078125,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 709937,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 95347,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 11,
+        "paused_pending_programs": 2,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 73.83554252143949
+      },
+      "control_counts": {
+        "control_ticks": 130,
+        "resumed": 348,
+        "registered": 1139,
+        "streaming_progress_checks": 1735,
+        "streaming_progress_updates": 1317,
+        "completed": 1126,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126884443.786,
+      "from_native_queue_ms": 76945.85107421875,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [],
+      "logical_active_tokens": 710959,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 95347,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 11,
+        "paused_pending_programs": 2,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 73.83554252143949
+      },
+      "control_counts": {
+        "control_ticks": 130,
+        "resumed": 348,
+        "registered": 1143,
+        "streaming_progress_checks": 1735,
+        "streaming_progress_updates": 1317,
+        "completed": 1130,
+        "restore_outside_active_set": 180,
+        "programs_retired": 21
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126885444.7952,
+      "from_native_queue_ms": 77946.8603515625,
+      "active": false,
+      "paused_pending": true,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [],
+      "active_removed_since_previous_sample": [
+        "deepagents-invocation:d467f49894387cc0"
+      ],
+      "logical_active_tokens": 689607,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 95347,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 11,
+        "paused_pending_programs": 2,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 73.83554252143949
+      },
+      "control_counts": {
+        "control_ticks": 130,
+        "resumed": 348,
+        "registered": 1145,
+        "streaming_progress_checks": 1735,
+        "streaming_progress_updates": 1317,
+        "completed": 1132,
+        "restore_outside_active_set": 191,
+        "programs_retired": 22
+      },
+      "native_no_token_count": 168
+    },
+    {
+      "ts_ms": 1793126886998.5193,
+      "from_native_queue_ms": 79500.58447265625,
+      "active": true,
+      "paused_pending": false,
+      "marked_for_pause": false,
+      "active_added_since_previous_sample": [
+        "deepagents-invocation:76aeaea63220d752",
+        "deepagents-invocation:ed7c58e8e023e49d",
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root"
+      ],
+      "active_removed_since_previous_sample": [
+        "deepagents-invocation:82a3d7252ab98e78",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root"
+      ],
+      "logical_active_tokens": 769425,
+      "control_capacity_snapshot": {
+        "remaining_capacity_tokens": 35773,
+        "active_acting_programs": 0,
+        "active_reasoning_programs": 11,
+        "paused_pending_programs": 2,
+        "capacity_blocked_pending_programs": 2,
+        "oldest_pending_seconds": 78.8499713037163
+      },
+      "control_counts": {
+        "control_ticks": 131,
+        "resumed": 352,
+        "registered": 1146,
+        "streaming_progress_checks": 1743,
+        "streaming_progress_updates": 1325,
+        "completed": 1133,
+        "restore_outside_active_set": 191,
+        "programs_retired": 22
+      },
+      "native_no_token_count": 168
+    }
+  ],
+  "input_jsonl_prefixes": {
+    "experiments/raw/locobench_reference_consumer_fix_20261027_r1/full/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 9481071,
+      "complete_prefix_sha256": "19477343dac759eab279aae41fb1f5bbd9952bfbc226bf6270819fc1ac1f17c1",
+      "first_read_limit_bytes": 9481071
+    },
+    "experiments/raw/locobench_reference_consumer_fix_20261027_r1/full/server/runtime_events.sglang.jsonl": {
+      "complete_prefix_bytes": 7953758,
+      "complete_prefix_sha256": "adb3356cbf489ca72a020666c3fdad5fe443f4c438f9915546f4ba1fdbb9af54",
+      "first_read_limit_bytes": 7953758
+    },
+    "experiments/raw/locobench_reference_consumer_fix_20261027_r1/full/server/runtime_audit.jsonl": {
+      "complete_prefix_bytes": 235755822,
+      "complete_prefix_sha256": "9256b13f1a0fe3de0bc778fc2a28ea4371521286e6df9f4363840594fa85213a",
+      "first_read_limit_bytes": 235755822
+    },
+    "experiments/raw/locobench_reference_consumer_fix_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 30630340,
+      "complete_prefix_sha256": "1f4149dc2a97d95145813b5df5716bff18148e431c410ef70a5ad78d87db7758",
+      "first_read_limit_bytes": 30630340
+    },
+    "experiments/raw/locobench_reference_consumer_fix_20261027_r1/full/replay/runtime_events.replay.jsonl": {
+      "complete_prefix_bytes": 14329108,
+      "complete_prefix_sha256": "5bd1846ff902b8475680e8e9446cafd28a41950670f1f7feda104c20835a0eb1",
+      "first_read_limit_bytes": 14329108
+    }
+  },
+  "auditor_sha256": "cd20866bc99051e013bd88c945310ece2317693761a0f469ff1f03324bdb6cd3",
+  "semantics": [
+    "First launch is scheduler.run_batch entry, not CUDA kernel start.",
+    "The sample-hold partition is an observation convention, not exact state-transition timing.",
+    "An eligibility transition can occur between snapshots, including before the first launch.",
+    "Inactive observations identify a logical admission restriction; active time is not pure GPU transfer waiting.",
+    "Predecessor tool duration remains in the client clock; no client tool timestamp is subtracted from a server timestamp.",
+    "Service cache hits do not establish residency at arrival or the exclusive cause of eviction.",
+    "Concurrent collecting prefixes are separately sealed and are not an atomic full-run comparison."
+  ],
+  "complete_run_verified": false,
+  "performance_accepted": false
+}

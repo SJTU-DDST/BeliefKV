@@ -46,6 +46,19 @@ def event_changes(events):
 def composition(state, latest, pending, *, buffer_tokens=100):
     admission = state.get("agent_admission") or {}
     active, blocked = admission.get("active_invocation_ids"), admission.get("blocked_active_invocation_ids")
+    if admission.get("strategy") == "thunderagent_reference":
+        if (
+            type(active) is not list or len(set(active)) != len(active)
+            or any(type(invocation) is not str or not invocation for invocation in active)
+            or admission.get("logical_capacity_semantics")
+            != "reference_undiscounted_contexts_plus_buffers"
+            or type(admission.get("logical_active_tokens")) is not int
+            or admission["logical_active_tokens"] < 0
+        ):
+            raise ValueError("invalid reference aggregate budget observations")
+        # Native submit records may be emitted after queueing. The reference
+        # aggregate does not prove a per-agent pending or blocked partition.
+        return None
     if (
         type(active) is not list or len(set(active)) != len(active)
         or type(blocked) is not list or not set(blocked) <= set(active)
@@ -136,10 +149,13 @@ def inspect(states, events, *, buffer_tokens=100, maximum_age_ms=1500.):
         values = composition(state, latest, pending, buffer_tokens=buffer_tokens)
         counts["covered_ms"] += duration
         counts["snapshots_in_request_span"] += 1
-        counts[
-            "observed_budget_snapshots" if (state.get("agent_admission") or {}).get("active_agent_budgets") is not None
+        admission = state.get("agent_admission") or {}
+        source = (
+            "reference_aggregate_only_snapshots" if admission.get("strategy") == "thunderagent_reference"
+            else "observed_budget_snapshots" if admission.get("active_agent_budgets") is not None
             else "boundary_reconstructed_snapshots"
-        ] += 1
+        )
+        counts[source] += 1
         if values is None:
             counts["unreconciled_ms"] += duration
             counts["unreconciled_snapshots"] += 1

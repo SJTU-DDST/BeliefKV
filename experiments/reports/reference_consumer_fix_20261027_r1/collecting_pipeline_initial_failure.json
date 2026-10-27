@@ -1,0 +1,15 @@
+{
+  "scope": "preserved_cpu_observer_failure_not_gpu_experiment_failure",
+  "observer": "scripts/audit_collecting_agent_pipeline.py",
+  "source_before_repair": "1abcb4c1",
+  "registration": "/home/longhao/experiment/ops/reference_consumer_fix_20261027_r1.registration.json",
+  "arm": "full",
+  "exception": "ValueError: unsupported agent budget observations",
+  "site": "audit_agent_budget_composition.composition",
+  "cause": "The reference adapter reports aggregate logical tokens and active identities, without retained-policy blocked-owner identities or per-agent budget records.",
+  "output_written_before_failure": false,
+  "gpu_run_stopped": false,
+  "repair": "Validate the explicit reference aggregate schema and keep its unavailable per-agent composition unknown.",
+  "retry_output": "collecting_pipeline.json",
+  "performance_accepted": false
+}

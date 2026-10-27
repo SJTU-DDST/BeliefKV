@@ -1,0 +1,247 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-10-27T19:03:24.452833+00:00",
+  "scope": "one completed request in independently sealed collecting prefixes",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay",
+  "request_id": "beliefkv:01a177aa-05e6-7633-b98d-02added92e81",
+  "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+  "invocation_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root",
+  "context_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:context:root",
+  "context_epoch": 38,
+  "prompt_tokens": 129003,
+  "output_tokens": 100,
+  "native_queue_wall_ms": 1793105110850.6677,
+  "first_launch_wall_ms": 1793105110860.892,
+  "submit_to_first_launch_ms": 88.17995929718018,
+  "native_queue_to_first_launch_ms": 10.224365234375,
+  "first_launch_to_native_complete_ms": 3276.945761680603,
+  "native_service_prefix_records": 99196,
+  "first_launch_sample_id": "native-service-000011246",
+  "previous_native_complete_wall_ms": 1793105107675.598,
+  "preceding_tool_round": {
+    "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+    "invocation_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root",
+    "origin_request_id": "beliefkv:01a177a9-eaf7-7193-b8f3-dbca7d3442d0",
+    "origin_context_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:context:root",
+    "origin_context_epoch": 37,
+    "origin_submit_ts_ms": 7275368847.596491,
+    "tool_wait_start_ts_ms": 7275370802.114764,
+    "tool_call_ids": [
+      "call_11aa1cb24cd24e49bedb6774"
+    ],
+    "tool_run_ids": [
+      "01a177aa-0574-7580-9fc3-399744617143"
+    ],
+    "observed_tool_starts": 1,
+    "tool_names": [
+      "execute"
+    ],
+    "status": "submitted_no_native_service_in_prefix",
+    "delegation_calls_in_round": 0,
+    "tool_membership_evidence": "structured_action_kinds",
+    "expected_tool_starts": 1,
+    "tool_completed_ts_ms": 7275373817.573214,
+    "tool_round_duration_ms": 3015.4584493637085,
+    "client_ready_ts_ms": 7275373817.573214,
+    "request_id": "beliefkv:01a177aa-05e6-7633-b98d-02added92e81",
+    "context_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:context:root",
+    "context_epoch": 38,
+    "client_submit_ts_ms": 7275373866.252139,
+    "client_ready_to_submit_ms": 48.67892551422119,
+    "context_compactions_before_successor": 0,
+    "ready_seconds_from_first_arrival": 552.9417272052765
+  },
+  "service_host_hit_tokens": 0,
+  "service_device_hit_tokens": 128786,
+  "service_uncached_tokens": 217,
+  "maximum_sample_age_ms": 1500.0,
+  "sample_hold_partition": {
+    "active_ms": 0.0,
+    "inactive_ms": 0.0,
+    "unknown_ms": 10.224365234375
+  },
+  "eligibility_samples": [
+    {
+      "ts_ms": 1793105101632.0051,
+      "from_native_queue_ms": -9218.66259765625,
+      "active": null,
+      "paused_pending": null,
+      "marked_for_pause": null,
+      "active_added_since_previous_sample": null,
+      "active_removed_since_previous_sample": null,
+      "logical_active_tokens": null,
+      "control_capacity_snapshot": null,
+      "control_counts": null,
+      "native_no_token_count": 46
+    },
+    {
+      "ts_ms": 1793105102657.1467,
+      "from_native_queue_ms": -8193.52099609375,
+      "active": null,
+      "paused_pending": null,
+      "marked_for_pause": null,
+      "active_added_since_previous_sample": null,
+      "active_removed_since_previous_sample": null,
+      "logical_active_tokens": null,
+      "control_capacity_snapshot": null,
+      "control_counts": null,
+      "native_no_token_count": 46
+    },
+    {
+      "ts_ms": 1793105103671.9575,
+      "from_native_queue_ms": -7178.710205078125,
+      "active": null,
+      "paused_pending": null,
+      "marked_for_pause": null,
+      "active_added_since_previous_sample": null,
+      "active_removed_since_previous_sample": null,
+      "logical_active_tokens": null,
+      "control_capacity_snapshot": null,
+      "control_counts": null,
+      "native_no_token_count": 46
+    },
+    {
+      "ts_ms": 1793105104700.1091,
+      "from_native_queue_ms": -6150.55859375,
+      "active": null,
+      "paused_pending": null,
+      "marked_for_pause": null,
+      "active_added_since_previous_sample": null,
+      "active_removed_since_previous_sample": null,
+      "logical_active_tokens": null,
+      "control_capacity_snapshot": null,
+      "control_counts": null,
+      "native_no_token_count": 46
+    },
+    {
+      "ts_ms": 1793105105710.8464,
+      "from_native_queue_ms": -5139.8212890625,
+      "active": null,
+      "paused_pending": null,
+      "marked_for_pause": null,
+      "active_added_since_previous_sample": null,
+      "active_removed_since_previous_sample": null,
+      "logical_active_tokens": null,
+      "control_capacity_snapshot": null,
+      "control_counts": null,
+      "native_no_token_count": 46
+    },
+    {
+      "ts_ms": 1793105106729.5007,
+      "from_native_queue_ms": -4121.1669921875,
+      "active": null,
+      "paused_pending": null,
+      "marked_for_pause": null,
+      "active_added_since_previous_sample": null,
+      "active_removed_since_previous_sample": null,
+      "logical_active_tokens": null,
+      "control_capacity_snapshot": null,
+      "control_counts": null,
+      "native_no_token_count": 46
+    },
+    {
+      "ts_ms": 1793105107736.582,
+      "from_native_queue_ms": -3114.085693359375,
+      "active": null,
+      "paused_pending": null,
+      "marked_for_pause": null,
+      "active_added_since_previous_sample": null,
+      "active_removed_since_previous_sample": null,
+      "logical_active_tokens": null,
+      "control_capacity_snapshot": null,
+      "control_counts": null,
+      "native_no_token_count": 46
+    },
+    {
+      "ts_ms": 1793105108742.2856,
+      "from_native_queue_ms": -2108.382080078125,
+      "active": null,
+      "paused_pending": null,
+      "marked_for_pause": null,
+      "active_added_since_previous_sample": null,
+      "active_removed_since_previous_sample": null,
+      "logical_active_tokens": null,
+      "control_capacity_snapshot": null,
+      "control_counts": null,
+      "native_no_token_count": 46
+    },
+    {
+      "ts_ms": 1793105109753.123,
+      "from_native_queue_ms": -1097.544677734375,
+      "active": null,
+      "paused_pending": null,
+      "marked_for_pause": null,
+      "active_added_since_previous_sample": null,
+      "active_removed_since_previous_sample": null,
+      "logical_active_tokens": null,
+      "control_capacity_snapshot": null,
+      "control_counts": null,
+      "native_no_token_count": 46
+    },
+    {
+      "ts_ms": 1793105110769.374,
+      "from_native_queue_ms": -81.293701171875,
+      "active": null,
+      "paused_pending": null,
+      "marked_for_pause": null,
+      "active_added_since_previous_sample": null,
+      "active_removed_since_previous_sample": null,
+      "logical_active_tokens": null,
+      "control_capacity_snapshot": null,
+      "control_counts": null,
+      "native_no_token_count": 46
+    },
+    {
+      "ts_ms": 1793105111795.955,
+      "from_native_queue_ms": 945.287353515625,
+      "active": null,
+      "paused_pending": null,
+      "marked_for_pause": null,
+      "active_added_since_previous_sample": null,
+      "active_removed_since_previous_sample": null,
+      "logical_active_tokens": null,
+      "control_capacity_snapshot": null,
+      "control_counts": null,
+      "native_no_token_count": 46
+    }
+  ],
+  "input_jsonl_prefixes": {
+    "experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 13686836,
+      "complete_prefix_sha256": "971780ae36bbc6dd99de53bcc5bb26a0d909baeba4dcd9ce4e28dc22f05bab73",
+      "first_read_limit_bytes": 13686836
+    },
+    "experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/runtime_events.sglang.jsonl": {
+      "complete_prefix_bytes": 10910865,
+      "complete_prefix_sha256": "51c8b04b32047b69d8ace654784d7dd407fb39a799ad2a1c88d30e411e7bec5b",
+      "first_read_limit_bytes": 10910865
+    },
+    "experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/runtime_audit.jsonl": {
+      "complete_prefix_bytes": 366436413,
+      "complete_prefix_sha256": "045aac8a0a9a04c06b8bae10386995838b8374f27f7f3c45c25ef685c7bbab89",
+      "first_read_limit_bytes": 366436413
+    },
+    "experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 15974352,
+      "complete_prefix_sha256": "053a1db66e1508b968aef559bd7a155672829836ef2a00a2ae9030791892d24e",
+      "first_read_limit_bytes": 15974352
+    },
+    "experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/replay/runtime_events.replay.jsonl": {
+      "complete_prefix_bytes": 20515544,
+      "complete_prefix_sha256": "b895eb2915903d99c1a4389fd4f862dc05a5105a602eb958d0d14c3c77a5817f",
+      "first_read_limit_bytes": 20515544
+    }
+  },
+  "auditor_sha256": "cd20866bc99051e013bd88c945310ece2317693761a0f469ff1f03324bdb6cd3",
+  "semantics": [
+    "First launch is scheduler.run_batch entry, not CUDA kernel start.",
+    "The sample-hold partition is an observation convention, not exact state-transition timing.",
+    "An eligibility transition can occur between snapshots, including before the first launch.",
+    "Inactive observations identify a logical admission restriction; active time is not pure GPU transfer waiting.",
+    "Predecessor tool duration remains in the client clock; no client tool timestamp is subtracted from a server timestamp.",
+    "Service cache hits do not establish residency at arrival or the exclusive cause of eviction.",
+    "Concurrent collecting prefixes are separately sealed and are not an atomic full-run comparison."
+  ],
+  "complete_run_verified": false,
+  "performance_accepted": false
+}

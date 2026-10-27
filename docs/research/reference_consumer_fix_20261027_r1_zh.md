@@ -76,3 +76,54 @@ CPU绘图等待器200332/start ticks729643148，nice19、隐藏CUDA。
 本轮也未开启sibling特殊共同准入，不能作为全部设计完成的证明。
 完整平均JCT和全程输出吞吐明确、可重复改善后，再进入其他baseline。
 总体目标保持未完成。
+
+## 收集中已确认的资格等待
+
+本次每秒身份快照已提供此前没有的直接观测。对同一
+`beliefkv:01a177aa-05e6-7633-b98d-02added92e81`，epoch38、
+129003输入/100输出token：
+
+- R1从native队列登记到首次`run_batch`为78.881921秒；
+  完整V345同请求为10.224毫秒。这里首次执行不是CUDA kernel起点。
+- 前一轮工具实际持续3015.538毫秒。前一个native请求于
+  `1793126804300.4482ms`完成，后继于`1793126807497.9348ms`登记。
+  root在后继登记前1412毫秒的快照仍active，前405毫秒的快照已inactive；
+  这个状态变化落在两次请求之间，约一秒的采样不能确定精确转换点。
+- 后继登记后，快照持续记录该root为paused-pending，直到首次执行附近
+  才重新观察到active。1500毫秒最大持有规则将78.882秒全部归到
+  inactive采样区间；这不是逐次状态转换日志，不能宣称每一微秒都未准入。
+- 该请求服务记账为Host128239、Device547、未缓存217token，
+  不能倒推出提交时的驻留位置。含前后诊断范围的全局`native_NO_TOKEN`
+  只由167变为168，也不能把这79秒解释成该请求的GPU复制等待。
+
+独立封存的工具后继前缀含1971个已观察首次服务的后继，其中306个
+native排队至少一秒。这306个区间合计2238.630秒：
+inactive采样持有2069.759秒，占92.4565%；active161.015秒，
+占7.1926%；unknown7.856秒。这里按排队时间筛选诊断对象，
+没有删除任何workflow或正常长尾，也没有估计可减少的JCT。
+
+这个结果把后续瓶颈检查指向资格选择及返回连续性。它没有证明衰减的
+某个选择是全部等待的唯一原因，也没有证明逐层容量交接没有价值；
+不能把修改传输实现当作这段资格等待已经得到解决。
+
+新增`audit_request_agent_eligibility.py`绑定真实完成回执、同身份
+native提交/结果、首次`run_batch`和五个独立封存前缀。针对身份、
+时钟、样本缺失、重复、完整生命周期和unknown的检查，以及现有工具、
+资格与预算审计，一次通过110项CPU检查。
+
+通用收集审计曾因reference缺少旧retained的逐agent阻塞预算字段退出。
+该CPU失败单独保存在`collecting_pipeline_initial_failure.json`。
+修复后明确保留reference预算分解为unknown，实际核验3191/3674条
+回执与完整V345的请求、输入输出token、hash及原生停止一致。
+其1644个预算快照只有聚合观测，不补造逐agent预算。
+
+证据位于`experiments/reports/reference_consumer_fix_20261027_r1/`：
+
+- `mobile_game_epoch38_eligibility.json`及
+  `control_mobile_game_epoch38_eligibility.json`；
+- `tool_reentries_collecting.json`及`tool_eligibility_waits_collecting.json`；
+- `collecting_pipeline.json`、`collecting_eligibility_cpu.xml`；
+- `collecting_review.py/.json`绑定上述报告及分析源码摘要。
+
+这些是收集中诊断，不是完整R1性能结论。运行代码仍冻结为
+`eecf7293e711`，尚未实施新调度策略或逐层空间交接，也未安排额外GPU轮次。
