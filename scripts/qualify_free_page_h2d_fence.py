@@ -263,12 +263,16 @@ class NativeFenceFixture:
                     self.release(name)
             self.loaded.clear()
             self.commands.clear()
+        writer = self.allocate("warm-writer", self.tokens)
+        self.enqueue_writer(writer, delayed=False)
+        self.cuda.synchronize()
+        self.release("warm-writer")
         self.controller.beliefkv_h2d_fence_counts.clear()
 
     def poison(self, indices):
         for key, value in zip(self.pool.k_buffer, self.pool.v_buffer, strict=True):
-            key[indices] = -17.
-            value[indices] = -31.
+            key.index_fill_(0, indices, -17.)
+            value.index_fill_(0, indices, -31.)
 
     def enqueue_writer(self, indices, *, delayed=True):
         schedule = self.cuda.current_stream()
@@ -354,7 +358,11 @@ def scenario(f, name, *, pulse=lambda: None):
     match = f.restored_bytes_match()
     expected_overlap = name in EARLY or name == "negative_control"
     if writer_finished is expected_overlap:
-        raise ValueError("actual copy/writer ordering differs from the declared fence scenario")
+        raise ValueError(
+            f"{name}: actual copy/writer ordering differs from the declared fence scenario; "
+            f"writer_finished_at_copy_ack={writer_finished}; "
+            f"fence_counts={dict(f.controller.beliefkv_h2d_fence_counts)}"
+        )
     if match is (name == "negative_control"):
         raise ValueError("native fence did not preserve safe bytes or detect the unsafe control")
     tokens = f.tokens * len(f.loaded)
