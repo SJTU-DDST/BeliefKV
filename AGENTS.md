@@ -1603,3 +1603,23 @@
   root pausing during a3s tool, without copies; it does not establish the cause
   of V400b's194s wait. Use actual new identities to diagnose it. See
   `docs/research/reference_consumer_fix_20261027_r1_zh.md`.
+- R1 now completes all3674 exact requests,145565966 input and549671 output
+  tokens,18 workflows, original stopping, two fresh idle snapshots and actual
+  owned cleanup. Its mean JCT1641.251236s is3.3184% lower than completeV345;
+  whole-run output236.995937token/s improves1.5529%. Retain17 faster workflows,
+  desktop_media17.922s slower and worse mean maximum post-first ready gaps
+  82.605s versus73.449s. H2D2587.286GB versus2809.042GB is7.8944% lower;
+  no extra predicted-tool physical release or tool-prefetch copy occurred.
+  Seven JOINs start before completion and prove reuse of36.369GB. Do not
+  attribute the small output gain to a tool-offload repair that performed no
+  physical release. Complete533 tool successors with at least1s queue wait
+  spend94.7951% of their sampled interval inactive; this is a sample-hold
+  observation, not exact transition timing or removable JCT.
+  The CPU observer now preserves reference aggregate-only budgets as unknown;
+  110 targeted cases pass. Its initial unsupported-budget failure is retained.
+  Complete reports, operators and inspected matched plots belong to the R1
+  named directory, without new main experiment version numbers. ReuseV345,
+  keep the global goal incomplete and do not launch other baselines/ablations.
+  A next isolated integration repair may admit a genuinely WAIT_JOIN parent
+  for warming only against existing free complete logical budget, with no
+  peer pause, logical lending/recall or new novelty claim. Keep R1 frozen.
