@@ -1,0 +1,134 @@
+{
+  "observed_at": "2026-10-27T22:07:32.590843+00:00",
+  "scope": "completed known counterexamples and sealed native frontier; not complete performance",
+  "registration": "/home/longhao/experiment/ops/reference_tool_eos_guard_20261027_r1.registration.json",
+  "registration_sha256": "19d86746766f4276b5def38aed87217e320225f06a0b29c52d61ab71ca6b593b",
+  "code_commit": "ac94b2bcd1187906c2439c4a69705cbc74264cef",
+  "case_report": "/home/longhao/experiment/BeliefKV/experiments/reports/reference_join_siblings_20261027/tool_closer_trigger_audit.json",
+  "case_report_sha256": "0f99121db27e17db5846945e50e7c4560856cdadecb909543ec78b4eaf50e576",
+  "same_common_fields_as_prior": [
+    "source_plan",
+    "token_source_sha256",
+    "source_capacity",
+    "source_server_parameters",
+    "workflow_ids",
+    "quality_exclusions",
+    "quality_exclusion_details",
+    "engine_tree",
+    "tool_timing_overlay",
+    "sampling_mode",
+    "stream_response_metrics",
+    "request_timeout_s",
+    "max_running_requests"
+  ],
+  "exact_completed_receipts": 2013,
+  "reader_monotonic_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec",
+  "summary": {
+    "known_cases": 4,
+    "statuses": {
+      "completed_tool_response_without_final_eos_trigger": 4
+    },
+    "all_cases_verified": true
+  },
+  "cases": [
+    {
+      "request_id": "beliefkv:01a177a9-1efb-7f53-9ae7-178ef8416a6a",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+        "deepagents-invocation:75164210ec1e071c",
+        "deepagents-context:75164210ec1e071c",
+        0
+      ],
+      "status": "completed_tool_response_without_final_eos_trigger",
+      "observed_final_eos_trigger_count": 0,
+      "trigger_records": [],
+      "native_complete_monotonic_ms": 7308496505.378073,
+      "runtime_frontier_monotonic_ms": 7309115318.973251,
+      "eos_evidence_window_ms": 1000.0,
+      "native_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec",
+      "output_sha256": "dbe0d499cd4c509227a0ac451e1c73f7923433681a5e8777a3deef2cdf218193",
+      "following_request_id": "beliefkv:01a177a9-3a8f-70e2-82d7-631fb7065566",
+      "following_native_complete_monotonic_ms": 7308497143.613125
+    },
+    {
+      "request_id": "beliefkv:01a177ae-dea7-7210-9cf1-3d13cd977e88",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:03dc226027d7d5ff",
+        "deepagents-context:03dc226027d7d5ff",
+        0
+      ],
+      "status": "completed_tool_response_without_final_eos_trigger",
+      "observed_final_eos_trigger_count": 0,
+      "trigger_records": [],
+      "native_complete_monotonic_ms": 7308838281.20498,
+      "runtime_frontier_monotonic_ms": 7309115318.973251,
+      "eos_evidence_window_ms": 1000.0,
+      "native_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec",
+      "output_sha256": "5b3738e57631f4297533079db87059a40cd68a8e6aa12704fde3e40a86f93cd8",
+      "following_request_id": "beliefkv:01a177af-2abf-7180-9ac4-5f83669ba063",
+      "following_native_complete_monotonic_ms": 7308840261.585155
+    },
+    {
+      "request_id": "beliefkv:01a177b6-33f9-7332-82f6-9be1be9caa70",
+      "identity": [
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+        "deepagents-invocation:14473377ff0e0097",
+        "deepagents-context:14473377ff0e0097",
+        0
+      ],
+      "status": "completed_tool_response_without_final_eos_trigger",
+      "observed_final_eos_trigger_count": 0,
+      "trigger_records": [],
+      "native_complete_monotonic_ms": 7309043388.138863,
+      "runtime_frontier_monotonic_ms": 7309115318.973251,
+      "eos_evidence_window_ms": 1000.0,
+      "native_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec",
+      "output_sha256": "01db77b903f24a69e5e01cfc977ebc4150df1556026c7b04b7df14df60d96963",
+      "following_request_id": "beliefkv:01a177b6-494f-7dd3-ad79-7dd362f99bac",
+      "following_native_complete_monotonic_ms": 7309044651.444702
+    },
+    {
+      "request_id": "beliefkv:01a177b5-ec36-7fc0-b79c-cd9ed3ea8b84",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+        "deepagents-invocation:219c6e67f120f6d7",
+        "deepagents-context:219c6e67f120f6d7",
+        0
+      ],
+      "status": "completed_tool_response_without_final_eos_trigger",
+      "observed_final_eos_trigger_count": 0,
+      "trigger_records": [],
+      "native_complete_monotonic_ms": 7309048334.841618,
+      "runtime_frontier_monotonic_ms": 7309115318.973251,
+      "eos_evidence_window_ms": 1000.0,
+      "native_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec",
+      "output_sha256": "c62f5ea81b32a6d5a36a026085f6058063f67109fcd7e4d47d0a1e82a88a6696",
+      "following_request_id": "beliefkv:01a177b6-198b-7990-b9b6-3ef4665fc2ca",
+      "following_native_complete_monotonic_ms": 7309049624.579319
+    }
+  ],
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_tool_eos_guard_20261027_r1/full/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 7492422,
+      "complete_prefix_sha256": "d14563e621125c9bc59aae851ea942d36b73c2e30949d6b7829e595b4cdbc7ff",
+      "first_read_limit_bytes": 7492422
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_tool_eos_guard_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 27545283,
+      "complete_prefix_sha256": "33bec30e29dc4a2fb1e252f54fb0f1351ffdd336a810331b5809bb362383a509",
+      "first_read_limit_bytes": 27545283
+    }
+  },
+  "auditor_sha256": "dd3768bf0874beacecc161927dbfd05c1ddd8d15b830a1e43bd657b7a2f8c945",
+  "complete_work_verified": false,
+  "performance_accepted": false,
+  "semantics": [
+    "Known cases are offline regression targets, not online future-request or RETURN features.",
+    "Every completed receipt in the sealed prefix matches the prior complete work and native stopping.",
+    "A missing request remains unobserved; an absent trigger alone does not pass a case.",
+    "A completed same-context successor bounds the old result callback; a later snapshot beyond its EOS window settles same-writer FIFO observations.",
+    "Monotonic comparisons require the same Linux boot/time-namespace clock domain.",
+    "This verifies the known delimiter guard, not all tool formats or an end-to-end speedup."
+  ]
+}

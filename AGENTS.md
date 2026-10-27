@@ -1765,3 +1765,15 @@
   only plots after complete success plus actual owned exit. State:
   ops/reference_tool_eos_guard_20261027_r1.plots.state.json. No further GPU
   experiment is queued. Keep the global goal active and other baselines deferred.
+- The guarded Full's four old closing-only tool/EOS counterexamples now all
+  verify on actual replay in a sealed2013-completion prefix. The offline
+  `scripts/audit_tool_eos_guard_cases.py` requires exact old output/native
+  identity/stop, a completed same-context higher-epoch successor and a later
+  same-clock-domain FIFO runtime frontier beyond the1000ms EOS evidence window;
+  missing evidence cannot pass and persistent false triggers stay failures.
+  Targeted68 audit tests pass without failures/skips. Evidence is under
+  `experiments/reports/reference_tool_eos_guard_20261027/`, including
+  `collecting_guard_cases_after_resume.json` and `guard_case_audit_cpu.xml`.
+  These are known-case collecting proofs, not complete work or performance.
+  The actual watcher/server/GPU scheduler/driver remain live/nice0 and frozen;
+  preserve ac94b2bcd118, reuseV345, and queue no extra GPU job before completion.

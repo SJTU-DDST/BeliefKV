@@ -83,3 +83,25 @@ CPU 绘图等待器281239/start730784077为 nice19，隐藏 CUDA，显式使用
 实际 owned 退出后执行，失败则停止，不启动 GPU。状态为
 `ops/reference_tool_eos_guard_20261027_r1.plots.state.json`。没有后续
 GPU 实验排队。
+
+## 旧误触发案例的真实重放核验
+
+`scripts/audit_tool_eos_guard_cases.py` 只在离线审计中使用四个历史反例。
+它先封存当前已完成的 native receipt 前缀，将每个请求的输入、输出、
+哈希与原生停止条件逐项对照上一轮完整工作量。随后检查四个原请求
+仍为相同 context/epoch、相同输出且只有工具闭合标记，并要求同 context
+更高 epoch 的已知后继也真实完成。最后要求同一 monotonic clock domain
+下的 runtime 快照晚于后继完成及 EOS 观察窗口，才允许将“没有误触发”
+判为通过。缺失请求、后继、时钟证明或足够晚的快照均保留为未验证；
+出现旧触发则明确记录失败。
+
+`guard_case_audit_cpu.xml` 通过 68 项定向测试，无失败或跳过，覆盖新审计、
+已有 JOIN 授权服务审计与资格观察审计。报告位于
+`experiments/reports/reference_tool_eos_guard_20261027/`，与同目录
+`collecting_guard_cases_after_resume.json` 一并保留。
+
+该真实前缀封存 2013 个精确完成请求，四个历史反例全部为
+`completed_tool_response_without_final_eos_trigger`，均观察到后继完成及
+超过 1000ms 证据窗口的 runtime 快照。它验证了已知误触发的修复；
+未验证所有工具格式，也不是完整工作量、JCT 或吞吐结果。运行中的
+冻结应用和 engine 未因此改动，没有登记新的 GPU 实验。
