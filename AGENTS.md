@@ -1208,3 +1208,11 @@
   228 exact completed receipts matching the full original work and native
   stopping, with a fixed complete-prefix hash. Preserve current frozen run;
   partial receipts do not establish complete correctness or performance.
+- The new read-only collecting observer
+  `scripts/audit_collecting_agent_pipeline.py` is outside frozen V330. V333
+  passes 59 targeted CPU audit cases. V334 seals 1280 exact completed receipts
+  and reconciles 630 logical snapshots: sampled active-budget token-time is
+  90.594% model-pending and 5.963% blocked, including 2.018% JOIN. Prefix mean
+  decode batch is 12.229. These are incomplete, independently sealed prefixes,
+  not full JCT, whole-run throughput, pure kernel time or matched baseline
+  improvements. Do not modify V330 or run another GPU job before its exit.
