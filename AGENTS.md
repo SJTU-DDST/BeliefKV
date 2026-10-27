@@ -1065,3 +1065,19 @@
   transport deadline. This CPU waiter is not a running optional-decay GPU
   job or a performance result. Keep current V286 frozen and do not overlap
   GPU experiments or advance other paper baselines before the shared gate.
+- V286 default ThunderAgent completed with exit zero, all 18 workflows and
+  3674 exact requests, 145565966 prompt tokens and 549671 output tokens,
+  original stopping, complete normal tails, two fresh idle snapshots and
+  actual owned cleanup. V297 independently validates the complete result:
+  mean JCT 1876.334933s, workflow event makespan 3138.104909s and whole-run
+  output throughput 175.160173 token/s. This is V269 synthetic timing and
+  streaming; do not compare it as equivalent to historical natural timing.
+- V298 verifies V286 Full actually running from the original frozen sources:
+  server 4060371/start `725854916`, GPU scheduler 4060747, driver
+  4062095/start `725869576`. New dependency admission and observed-blocked
+  Host proof are enabled, ordinary frontier recovery disabled, physical control
+  healthy and paper policy absent. Its first 1181 sealed receipts are exact;
+  same-snapshot logical budgets reconcile. Nineteen executed logical handovers
+  include seven policy-emitted sole-JOIN-child ranks. These are not independent
+  dependency reconstruction, physical freed-page or final performance proof.
+  Complete Full JCT/throughput and V295 optional-decay results remain pending.

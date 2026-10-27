@@ -1,0 +1,565 @@
+{
+  "observed_at": "2026-10-27T16:13:07.528472+08:00",
+  "registration": "/home/longhao/experiment/ops/v286_locobench_network_join_admission_20261027.registration.json",
+  "registration_sha256": "c726db4a4cc3d0c477fe3616edf2f5cef6ed8fab1312d53d37f4192d3238bc1d",
+  "arm": "thunderagent",
+  "application_commit": "1e8c8ca75eef3ce1da3f9219bd479531c2d59ec3",
+  "engine_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+  "workflows": 18,
+  "requests": 3674,
+  "prompt_tokens": 145565966,
+  "output_tokens": 549671,
+  "mean_jct_seconds": 1876.3349330245655,
+  "workflow_event_makespan_seconds": 3138.1049093408583,
+  "whole_run_output_tokens_per_second": 175.1601733784787,
+  "workflow_jct_ms": {
+    "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c": 3137976.7812929153,
+    "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055": 685601.8273410797,
+    "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70": 2758488.9574975967,
+    "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1": 1171953.0746421814,
+    "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709": 1386255.4865980148,
+    "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00": 1315576.566827774,
+    "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9": 814423.5904312134,
+    "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9": 2634085.9596538544,
+    "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99": 1820770.6781511307,
+    "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67": 2122389.1845874786,
+    "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d": 2902318.2348012924,
+    "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46": 1357044.071940422,
+    "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa": 2680523.888072014,
+    "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a": 2627507.688876152,
+    "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612": 1201391.8442735672,
+    "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35": 2596203.558066368,
+    "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1": 1477534.770324707,
+    "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e": 1083982.631064415
+  },
+  "streaming_metric_summary": {
+    "definitions": {
+      "workflow_ttft": "first nonempty streaming output from any descendant minus WORKFLOW_START; internal model service, not necessarily a user-visible root response",
+      "request_interactivity": "(output_tokens - 1) / (last_output_s - first_output_s)",
+      "e2e_interactivity": "output_tokens / (http_completion_s - visible_submit_s)",
+      "e2e_normalized_interactivity": "1 / percentile(e2e_seconds_per_output_token, p); p90 names the slow tail, not the fast p90 of token rates",
+      "ready_service_gap": "client-observed gaps to output while at least one descendant has submitted incomplete model work; includes initial ready wait, admission and KV waits",
+      "post_first_ready_service_gap": "ready output gaps after the workflow's first output; excludes initial TTFT and resets at reentry after all-branch external blocking",
+      "service_gap_resolution": "streaming chunks; coalesced tokens are disclosed",
+      "per_agent_starvation": "workflow aggregate output can hide an individual stalled agent; also report maximum request TTFT and request output gap",
+      "workflow_weight": "one root per workflow aggregate, independent of fanout",
+      "normal_tails_removed": false
+    },
+    "all_workflows_completed": true,
+    "workflow_event_makespan_ms": 3138104.9093408585,
+    "output_tokens": 549671,
+    "workflow_jct_ms": {
+      "count": 18,
+      "mean": 1876334.9330245655,
+      "p50": 1649152.7242379189,
+      "p75": 2632441.391959429,
+      "p90": 2801637.7406887054,
+      "p95": 2937667.0167750353,
+      "p99": 3097914.828389339,
+      "max": 3137976.7812929153
+    },
+    "workflow_ttft_ms": {
+      "count": 18,
+      "mean": 659984.4865958425,
+      "p50": 101956.98490905762,
+      "p75": 1382789.557170868,
+      "p90": 1843842.8052111627,
+      "p95": 1864573.8762954236,
+      "p99": 1874393.6404949855,
+      "max": 1876848.581544876
+    },
+    "request_interactivity_tps": {
+      "count": 3674,
+      "mean": 98.1423887124275,
+      "p50": 88.70586742244592,
+      "p75": 121.02415160625586,
+      "p90": 174.07525430877863,
+      "p95": 196.474169767362,
+      "p99": 210.06325175450692,
+      "max": 217.36664042503654
+    },
+    "request_e2e_interactivity_tps": {
+      "count": 3674,
+      "mean": 83.50868619538878,
+      "p50": 77.66719718946015,
+      "p75": 106.76918286791891,
+      "p90": 148.2140921111494,
+      "p95": 170.00341012753628,
+      "p99": 189.933016951002,
+      "max": 203.3589110863976
+    },
+    "e2e_normalized_interactivity_p90_tps": 32.56040424534933,
+    "e2e_normalized_interactivity_p75_tps": 55.70464321834569,
+    "equal_workflow_mean_interactivity_tps": {
+      "count": 18,
+      "mean": 95.97247556486383,
+      "p50": 90.17591277815642,
+      "p75": 107.1653394495123,
+      "p90": 111.55120412425205,
+      "p95": 120.66344313325274,
+      "p99": 139.62871473152984,
+      "max": 144.37003263109915
+    },
+    "workflow_max_ready_output_gap_ms": {
+      "count": 18,
+      "mean": 742124.3201949331,
+      "p50": 482803.2306070328,
+      "p75": 1344212.9022240639,
+      "p90": 1804928.5706496239,
+      "p95": 1825630.7100877762,
+      "p99": 1835403.6037775038,
+      "max": 1837846.827199936
+    },
+    "workflow_max_post_first_ready_output_gap_ms": {
+      "count": 18,
+      "mean": 222992.7752084732,
+      "p50": 159800.16449785233,
+      "p75": 369718.187492609,
+      "p90": 573366.7634593011,
+      "p95": 647849.8942652226,
+      "p99": 648772.524562273,
+      "max": 649003.1821365356
+    },
+    "coverage": {
+      "workflows": 18,
+      "completed_workflows": 18,
+      "workflows_with_output_timing": 18,
+      "requests": 3674,
+      "completed_requests": 3674,
+      "requests_with_output_timing": 3674,
+      "undefined_interactivity_requests": 0,
+      "coalesced_output_chunks": 1978,
+      "e2e_normalized_interactivity_requests": 3674
+    }
+  },
+  "exact_tokens_and_original_stopping_verified": true,
+  "all_normal_tails_retained": true,
+  "common_tool_timing_overlay_sha256": "fa75164726e37277772d181f3601f6eaf234d3e55d8503710bdc0fc966cca5be",
+  "stream_response_metrics": true,
+  "request_timeout_s": 3600.0,
+  "telemetry_drain": {
+    "observed_at": "2026-10-27T16:04:06.791675+08:00",
+    "elapsed_seconds": 0.6260904707014561,
+    "status_path": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_network_join_admission_20261027_v286/thunderagent/server/native_telemetry_status.json",
+    "drained_status": {
+      "background_writer_timing": {
+        "categories": {
+          "audit:gpu_restore_dependency_wait": {
+            "max_sample_cpu_ms": 0.419983,
+            "max_sample_wall_ms": 0.571551,
+            "mean_sample_cpu_ms": 0.419983,
+            "mean_sample_wall_ms": 0.571551,
+            "records_seen": 5,
+            "sampled_cpu_ms": 0.419983,
+            "sampled_wall_ms": 0.571551,
+            "samples": 1
+          },
+          "audit:gpu_service_sample": {
+            "max_sample_cpu_ms": 0.377503,
+            "max_sample_wall_ms": 2.600068,
+            "mean_sample_cpu_ms": 0.0515972447114129,
+            "mean_sample_wall_ms": 0.09934404074170801,
+            "records_seen": 245027,
+            "sampled_cpu_ms": 197.56585,
+            "sampled_wall_ms": 380.388332,
+            "samples": 3829
+          },
+          "audit:prefill_turnover_sample": {
+            "max_sample_cpu_ms": 0.212335,
+            "max_sample_wall_ms": 0.45232,
+            "mean_sample_cpu_ms": 0.162947,
+            "mean_sample_wall_ms": 0.223251,
+            "records_seen": 250,
+            "sampled_cpu_ms": 0.651788,
+            "sampled_wall_ms": 0.893004,
+            "samples": 4
+          },
+          "events:record": {
+            "max_sample_cpu_ms": 0.652544,
+            "max_sample_wall_ms": 0.859755,
+            "mean_sample_cpu_ms": 0.05436143478260869,
+            "mean_sample_wall_ms": 0.056215165217391304,
+            "records_seen": 7348,
+            "sampled_cpu_ms": 6.251565,
+            "sampled_wall_ms": 6.464744,
+            "samples": 115
+          },
+          "eviction_attribution:context_prefix_probe": {
+            "max_sample_cpu_ms": 0.706782,
+            "max_sample_wall_ms": 0.708034,
+            "mean_sample_cpu_ms": 0.2331022068965517,
+            "mean_sample_wall_ms": 0.23353365517241378,
+            "records_seen": 3674,
+            "sampled_cpu_ms": 13.519928,
+            "sampled_wall_ms": 13.544952,
+            "samples": 58
+          },
+          "eviction_attribution:host_block_eviction": {
+            "max_sample_cpu_ms": 12.86914,
+            "max_sample_wall_ms": 12.869512,
+            "mean_sample_cpu_ms": 1.7575380158730158,
+            "mean_sample_wall_ms": 1.7819147777777777,
+            "records_seen": 3972,
+            "sampled_cpu_ms": 110.724895,
+            "sampled_wall_ms": 112.260631,
+            "samples": 63
+          },
+          "eviction_attribution:request_probe": {
+            "max_sample_cpu_ms": 0.900021,
+            "max_sample_wall_ms": 1.042308,
+            "mean_sample_cpu_ms": 0.3626492,
+            "mean_sample_wall_ms": 0.3919238666666666,
+            "records_seen": 1903,
+            "sampled_cpu_ms": 10.879476,
+            "sampled_wall_ms": 11.757716,
+            "samples": 30
+          },
+          "eviction_attribution:served_context_prefix": {
+            "max_sample_cpu_ms": 0.3777,
+            "max_sample_wall_ms": 0.38176,
+            "mean_sample_cpu_ms": 0.12080743103448276,
+            "mean_sample_wall_ms": 0.12117860344827586,
+            "records_seen": 3674,
+            "sampled_cpu_ms": 7.006831,
+            "sampled_wall_ms": 7.028359,
+            "samples": 58
+          },
+          "host_pool:host_pool_eviction": {
+            "max_sample_cpu_ms": 0.055077,
+            "max_sample_wall_ms": 0.057556,
+            "mean_sample_cpu_ms": 0.017029176470588235,
+            "mean_sample_wall_ms": 0.016980882352941176,
+            "records_seen": 1075,
+            "sampled_cpu_ms": 0.289496,
+            "sampled_wall_ms": 0.288675,
+            "samples": 17
+          },
+          "host_pool:host_pool_transfer_ack": {
+            "max_sample_cpu_ms": 0.064792,
+            "max_sample_wall_ms": 0.100561,
+            "mean_sample_cpu_ms": 0.01420996694214876,
+            "mean_sample_wall_ms": 0.014707628099173553,
+            "records_seen": 7700,
+            "sampled_cpu_ms": 1.719406,
+            "sampled_wall_ms": 1.779623,
+            "samples": 121
+          },
+          "host_pool:host_pool_usage": {
+            "max_sample_cpu_ms": 0.143128,
+            "max_sample_wall_ms": 0.14537,
+            "mean_sample_cpu_ms": 0.044746975609756094,
+            "mean_sample_wall_ms": 0.04484407317073171,
+            "records_seen": 2564,
+            "sampled_cpu_ms": 1.834626,
+            "sampled_wall_ms": 1.838607,
+            "samples": 41
+          },
+          "transfer:transfer_telemetry": {
+            "max_sample_cpu_ms": 0.11668,
+            "max_sample_wall_ms": 0.117095,
+            "mean_sample_cpu_ms": 0.031530834710743805,
+            "mean_sample_wall_ms": 0.03381436363636364,
+            "records_seen": 7700,
+            "sampled_cpu_ms": 3.815231,
+            "sampled_wall_ms": 4.091538,
+            "samples": 121
+          }
+        },
+        "cpu_clock": "thread_time_ns",
+        "sample_every": 64,
+        "schema_version": 1,
+        "scope": "Every 64th record per category, starting with its first record. Measured processing samples only; queue waiting and status publication are excluded. Wall includes scheduling and GIL waiting; thread CPU excludes waiting. No full-run cost, GPU stall, GIL attribution or JCT saving is inferred.",
+        "snapshot_ts_ms": 1793088246710.5884,
+        "wall_clock": "perf_counter_ns"
+      },
+      "checkpoint_path_shadow": false,
+      "collection_mode": "admission_observation",
+      "context_prefix_reuse_evidence": {
+        "counts": {
+          "new_or_changed_prompt_tokens": 2331532,
+          "previously_served_common_prefix_tokens": 140952652,
+          "previously_served_prefix_recompute_proxy_tokens": 0,
+          "request_probes": 3674,
+          "requests_with_prefix_recompute_proxy": 0,
+          "with_prior_served_prompt": 3564,
+          "without_prior_served_prompt": 110
+        },
+        "semantics": "Previously served same-session input-prefix loss, not newly appended input or a per-layer FULL/Mamba recomputation count.",
+        "tracked_context_count": 110,
+        "tracking_limit": 1024
+      },
+      "dropped_records": 0,
+      "failed_records": 0,
+      "gpu_restore_wait_probe": {
+        "counts": {
+          "completed_samples": 5,
+          "duplicate_or_captured_wait": 240,
+          "eligible_batches": 67,
+          "sampled_batches": 5
+        },
+        "pending_samples": 0,
+        "queue_limit": 32,
+        "sampling_interval": 16
+      },
+      "host_block_eviction_attribution": {
+        "available": true,
+        "counts": {
+          "full_device_hit": 682,
+          "full_evictions": 3972,
+          "full_host_hit": 28,
+          "request_probes": 1903
+        },
+        "evicted_units_by_pool": {
+          "full": 2497604
+        },
+        "full_reaccess_semantics": "exact prefix match plus request device/host cached-token intervals; remaining evicted FULL interval is attributed to recomputation",
+        "identity_semantics": "run-keyed HMAC over exact cache namespace and radix token prefix; raw token IDs are not written",
+        "mamba_reaccess_semantics": "exact prefix revisit is observable, but native telemetry does not expose the Mamba hit location per node",
+        "pending_blocks_by_pool": {
+          "full": 3262
+        },
+        "pending_latest_evicted_units_by_pool": {
+          "full": 1682513
+        },
+        "probe_prefix_length_overflow": 0,
+        "recomputed_full_units": 0,
+        "reused_full_units": 815091
+      },
+      "host_pool_evidence": {
+        "full": {
+          "bytes_per_unit": 98304,
+          "capacity_units": 2034506,
+          "d2h_ack_units": 4531174,
+          "evicted_bytes": 245524463616,
+          "evicted_units": 2497604,
+          "eviction_calls": 1075,
+          "h2d_ack_units": 2968863,
+          "h2d_units_after_first_host_eviction": 2968863,
+          "high_water": {
+            "used_bytes": 199999881216,
+            "used_units": 2034504
+          }
+        },
+        "mamba": {
+          "bytes_per_unit": null,
+          "capacity_units": null,
+          "d2h_ack_units": 0,
+          "evicted_bytes": 0,
+          "evicted_units": 0,
+          "eviction_calls": 0,
+          "h2d_ack_units": 0,
+          "h2d_units_after_first_host_eviction": 0,
+          "high_water": {}
+        }
+      },
+      "host_tier_enabled": true,
+      "pending_batch_count": 0,
+      "pending_request_count": 0,
+      "prefill_turnover_probe": {
+        "counts": {
+          "completed_samples": 250,
+          "eligible_prefills": 3989,
+          "selected_samples": 250
+        },
+        "pending_samples": 0,
+        "queue_limit": 32,
+        "sampling_interval": 16
+      },
+      "record_counts": {
+        "audit": 248327,
+        "events": 7348,
+        "eviction_attribution": 13223,
+        "host_pool": 11339,
+        "transfer": 7700
+      },
+      "record_output_token_ids": true,
+      "replay_token_capture": false,
+      "request_cache_evidence": {
+        "after_first_full_host_eviction": {
+          "cached_tokens_device": 81628968,
+          "cached_tokens_host": 551685,
+          "mamba_host_hit_slots": 0,
+          "prompt_tokens": 83998103,
+          "request_count": 1903,
+          "requests_with_full_host_hit": 22,
+          "requests_with_mamba_host_hit": 0,
+          "uncached_prompt_tokens": 1817450
+        },
+        "after_first_host_eviction": {
+          "cached_tokens_device": 81628968,
+          "cached_tokens_host": 551685,
+          "mamba_host_hit_slots": 0,
+          "prompt_tokens": 83998103,
+          "request_count": 1903,
+          "requests_with_full_host_hit": 22,
+          "requests_with_mamba_host_hit": 0,
+          "uncached_prompt_tokens": 1817450
+        },
+        "after_first_mamba_host_eviction": {},
+        "all": {
+          "cached_tokens_device": 138856545,
+          "cached_tokens_host": 2968863,
+          "mamba_host_hit_slots": 0,
+          "prompt_tokens": 145565966,
+          "request_count": 3674,
+          "requests_with_full_host_hit": 80,
+          "requests_with_mamba_host_hit": 0,
+          "uncached_prompt_tokens": 3740558
+        }
+      },
+      "request_cache_evidence_semantics": {
+        "after_eviction": "pool-level request hits and uncached prompt tokens after the first eviction; use eviction_attribution.jsonl for node-level FULL reaccess attribution",
+        "full_host_hit": "cached_tokens_host input-token count",
+        "mamba_host_hit": "mamba_host_hit_length checkpoint-slot count; not tokens"
+      },
+      "schema_version": 1,
+      "snapshot_ts_ms": 1793088246710.585,
+      "source": "native_sglang_v0520",
+      "write_back_batch": {
+        "counts": {
+          "attempts": 0,
+          "batches": 0,
+          "enqueue_failed": 0,
+          "full_tokens": 0,
+          "no_chain": 0,
+          "no_planner": 0,
+          "nodes": 0,
+          "partial_batches": 0,
+          "planned_nodes": 0,
+          "unsupported_or_queued": 0
+        },
+        "max_nodes": 1
+      },
+      "writer_error": null,
+      "writer_queue_depth": 0
+    },
+    "previous_zero_snapshot_ts_ms": 1793088246206.1213,
+    "scope": "Two fresh idle writer snapshots after all replay requests completed, before process cleanup. This collection wait is outside measured workflow JCT."
+  },
+  "cleanup": {
+    "reason": "complete_same_work_arm",
+    "started_at": "2026-10-27T16:04:06.841852+08:00",
+    "identities": [
+      {
+        "pid": 4025775,
+        "state": "R",
+        "ppid": 4025266,
+        "start_ticks": "725521000",
+        "argv": [
+          "bash",
+          "/home/longhao/experiment/.worktrees/beliefkv-causal-1e8c8ca75eef/scripts/launch_qwen35_native_v0520.sh",
+          "--enable-custom-logit-processor",
+          "--max-total-tokens",
+          "805198",
+          "--enable-beliefkv-admission",
+          "--beliefkv-event-socket-path",
+          "/tmp/bkv-causal-18652.sock"
+        ]
+      },
+      {
+        "pid": 4026142,
+        "state": "S",
+        "ppid": 4025775,
+        "start_ticks": "725522392",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "-c",
+          "from multiprocessing.resource_tracker import main;main(21)"
+        ]
+      },
+      {
+        "pid": 4026143,
+        "state": "R",
+        "ppid": 4025775,
+        "start_ticks": "725522392",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "-c",
+          "from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=22, pipe_handle=24)",
+          "--multiprocessing-fork"
+        ]
+      },
+      {
+        "pid": 4026144,
+        "state": "R",
+        "ppid": 4025775,
+        "start_ticks": "725522393",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "-c",
+          "from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=22, pipe_handle=24)",
+          "--multiprocessing-fork"
+        ]
+      },
+      {
+        "pid": 4027871,
+        "state": "S",
+        "ppid": 4026143,
+        "start_ticks": "725539509",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/_inductor/compile_worker/__main__.py",
+          "--pickler=torch._inductor.compile_worker.subproc_pool.SubprocPickler",
+          "--kind=fork",
+          "--workers=32",
+          "--parent=4026143",
+          "--read-fd=108",
+          "--write-fd=111",
+          "--torch-key=cTo03RUSqfmcYCgUyy2MUjPCGJXm6IgGWiWGw//uJng="
+        ]
+      }
+    ],
+    "signals": [
+      {
+        "pid": 4025775,
+        "signal": "SIGTERM"
+      },
+      {
+        "pid": 4026142,
+        "signal": "SIGTERM"
+      },
+      {
+        "pid": 4026143,
+        "signal": "SIGTERM"
+      },
+      {
+        "pid": 4026144,
+        "signal": "SIGTERM"
+      },
+      {
+        "pid": 4027871,
+        "signal": "SIGTERM"
+      }
+    ],
+    "remaining_processes": [],
+    "finished_at": "2026-10-27T16:04:12.055738+08:00"
+  },
+  "old_process_identity_checks": [
+    {
+      "pid": 4025775,
+      "old_identity_alive": false,
+      "current": null
+    },
+    {
+      "pid": 4026143,
+      "old_identity_alive": false,
+      "current": null
+    },
+    {
+      "pid": 4027494,
+      "old_identity_alive": false,
+      "current": null
+    }
+  ],
+  "complete_arm_accepted": true,
+  "full_comparison_complete": false,
+  "performance_accepted": false,
+  "evidence_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_network_join_admission_20261027_v286/thunderagent/replay/summary.json": "63dd4a57876fd06faef51dc25614b3f4b556bb0709662f731872f9d13647ce58",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_network_join_admission_20261027_v286/thunderagent/replay/native_requests.jsonl": "14b9db6a54e3f11669dfab8f4584e62bf4f95a8ef4d97c6e90733c8a4e63ad05",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_network_join_admission_20261027_v286/thunderagent/replay/runtime_events.replay.jsonl": "4ef324ada2219d7f50becdf2e6a035045fcac4b44a4c23edd7452ae92bf1e2b9",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_network_join_admission_20261027_v286/thunderagent/server/native_telemetry_status.json": "3dd6b3859052089ecb17edb1d49349dcb1feefedf17231df6ebca5869a91cbdd",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_network_join_admission_20261027_v286/thunderagent/owned_process_cleanup.json": "389c923c59ccb07e80b52bbb6ce6f638362f246ce41a11b702667e6d19076a68"
+  },
+  "scope": "Complete author-default ThunderAgent arm on synthetic V269 timing, all 18 workflows and all exact source requests. Full and optional decay remain pending; no cross-timing historical performance ranking."
+}
