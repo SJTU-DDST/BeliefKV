@@ -1777,3 +1777,14 @@
   These are known-case collecting proofs, not complete work or performance.
   The actual watcher/server/GPU scheduler/driver remain live/nice0 and frozen;
   preserve ac94b2bcd118, reuseV345, and queue no extra GPU job before completion.
+- The separate offline `scripts/audit_eos_trigger_lifecycle.py` now classifies
+  every observed final-EOS trigger against exact native receipts and actual
+  same-context successor/RETURN evidence. Missing RETURN or completion stays
+  unknown; lifecycle labels never enter online policy. A sealed3543-completion
+  prefix has55 triggers, all actual final requests and none with a dedicated
+  tool boundary. Seventeen new tests plus the earlier68 audit tests pass85
+  cases without failures/skips. The named report directory preserves that
+  collecting result and a prepared complete_review.py requiring terminal work,
+  actual owned exit, fresh idle drain, matched figures and complete independent
+  migration/JCT/wait/prefetch/grant/known-case/lifecycle audits. This operator
+  is not yet executed and all-baseline/performance acceptance remains pending.

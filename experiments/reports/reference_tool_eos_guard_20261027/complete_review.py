@@ -131,6 +131,21 @@ def main():
         ):
             raise ValueError("guard cases were not audited on complete immutable input")
     inputs[str(guard_path)] = sha256_file(guard_path)
+    lifecycle_path = directory / "complete_eos_trigger_lifecycle.json"
+    lifecycle = causal.load(lifecycle_path)
+    if (
+        lifecycle.get("registration_sha256") != sha256_file(full_registration)
+        or lifecycle.get("code_commit") != proofs["full"]["code_commit"]
+        or lifecycle.get("exact_completed_receipts") != len(work)
+    ):
+        raise ValueError("complete EOS lifecycle evidence belongs to different work")
+    for source, prefix in lifecycle["input_jsonl_prefixes"].items():
+        if (
+            Path(source).stat().st_size != prefix["complete_prefix_bytes"]
+            or sha256_file(Path(source)) != prefix["complete_prefix_sha256"]
+        ):
+            raise ValueError("EOS lifecycle evidence is not a complete immutable input")
+    inputs[str(lifecycle_path)] = sha256_file(lifecycle_path)
     full, control = metrics["full"], metrics["thunderagent_acting_decay"]
     paired = [{
         "workflow_id": identity, "full_jct_s": elapsed["full"][identity] / 1000.,
@@ -199,6 +214,7 @@ def main():
             for name, row in supplemental["complete_restore_churn"]["arms"].items()
         },
         "known_counterexample_summary": guard["summary"],
+        "all_observed_eos_trigger_summary": lifecycle["summary"],
         "prefetch_summary": {
             "copies_by_source": {
                 name: {
