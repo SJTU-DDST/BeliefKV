@@ -91,3 +91,10 @@ qualify this follow-up in one execution:3039 passing tests plus four passing
 subtests, no failures or skips, all3038 previous identities retained.
 The original reference attach, tick, completion, abort and observed-growth
 methods remain inherited unchanged; all three actual constructors are checked.
+
+`reference_phase_counterexample.py/.json` executes the actual unchanged reference
+core on a three-program fixture. The same arrivals and three-second tool can
+leave the returning root paused when a control occurs during the tool, while a
+control after return preserves eligibility. No KV transfer or resident-first
+ordering is needed. This is a possible mechanism, not an attribution of the
+historical194-second wait or a GPU performance result.

@@ -1,0 +1,472 @@
+{
+  "scope": "CPU reference policy counterexample; synthetic three-program fixture",
+  "capacity_tokens": 805198,
+  "buffer_tokens": 100,
+  "control_interval_s": 5.0,
+  "same_program_arrivals_and_tool_return": true,
+  "cases": [
+    {
+      "control_during_tool": true,
+      "root_active_after_three_following_controls": false,
+      "observed_tool_round_ms": 3000.0,
+      "timeline": [
+        {
+          "action": "child_waits_while_root_is_ACTING",
+          "now_s": 0.2,
+          "remaining_raw_tokens": 25998,
+          "programs": {
+            "other_running_agent": {
+              "identity": "other_running_agent",
+              "tokens": 650000,
+              "steps": 1,
+              "acting": false,
+              "active": true,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.0,
+              "queue_sequence": 0
+            },
+            "returning_root": {
+              "identity": "returning_root",
+              "tokens": 129000,
+              "steps": 1,
+              "acting": true,
+              "active": true,
+              "marked_for_pause": false,
+              "pending": false,
+              "queued_at": 0.0,
+              "queue_sequence": 0
+            },
+            "new_child": {
+              "identity": "new_child",
+              "tokens": 50000,
+              "steps": 1,
+              "acting": false,
+              "active": false,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.2,
+              "queue_sequence": 1
+            }
+          }
+        },
+        {
+          "action": "periodic_control_during_tool",
+          "now_s": 1.2,
+          "remaining_raw_tokens": 104998,
+          "programs": {
+            "other_running_agent": {
+              "identity": "other_running_agent",
+              "tokens": 650000,
+              "steps": 1,
+              "acting": false,
+              "active": true,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.0,
+              "queue_sequence": 0
+            },
+            "returning_root": {
+              "identity": "returning_root",
+              "tokens": 129000,
+              "steps": 1,
+              "acting": true,
+              "active": false,
+              "marked_for_pause": false,
+              "pending": false,
+              "queued_at": 1.2,
+              "queue_sequence": 2
+            },
+            "new_child": {
+              "identity": "new_child",
+              "tokens": 50000,
+              "steps": 1,
+              "acting": false,
+              "active": true,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.2,
+              "queue_sequence": 1
+            }
+          }
+        },
+        {
+          "action": "observed_tool_return_and_successor",
+          "now_s": 3.1,
+          "remaining_raw_tokens": 104998,
+          "programs": {
+            "other_running_agent": {
+              "identity": "other_running_agent",
+              "tokens": 650000,
+              "steps": 1,
+              "acting": false,
+              "active": true,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.0,
+              "queue_sequence": 0
+            },
+            "returning_root": {
+              "identity": "returning_root",
+              "tokens": 129100,
+              "steps": 2,
+              "acting": false,
+              "active": false,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 1.2,
+              "queue_sequence": 2
+            },
+            "new_child": {
+              "identity": "new_child",
+              "tokens": 50000,
+              "steps": 1,
+              "acting": false,
+              "active": true,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.2,
+              "queue_sequence": 1
+            }
+          }
+        },
+        {
+          "action": "periodic_control_after_return",
+          "now_s": 6.2,
+          "remaining_raw_tokens": 104998,
+          "programs": {
+            "other_running_agent": {
+              "identity": "other_running_agent",
+              "tokens": 650000,
+              "steps": 1,
+              "acting": false,
+              "active": true,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.0,
+              "queue_sequence": 0
+            },
+            "returning_root": {
+              "identity": "returning_root",
+              "tokens": 129100,
+              "steps": 2,
+              "acting": false,
+              "active": false,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 1.2,
+              "queue_sequence": 2
+            },
+            "new_child": {
+              "identity": "new_child",
+              "tokens": 50000,
+              "steps": 1,
+              "acting": false,
+              "active": true,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.2,
+              "queue_sequence": 1
+            }
+          }
+        },
+        {
+          "action": "periodic_control_after_return",
+          "now_s": 11.2,
+          "remaining_raw_tokens": 104998,
+          "programs": {
+            "other_running_agent": {
+              "identity": "other_running_agent",
+              "tokens": 650000,
+              "steps": 1,
+              "acting": false,
+              "active": true,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.0,
+              "queue_sequence": 0
+            },
+            "returning_root": {
+              "identity": "returning_root",
+              "tokens": 129100,
+              "steps": 2,
+              "acting": false,
+              "active": false,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 1.2,
+              "queue_sequence": 2
+            },
+            "new_child": {
+              "identity": "new_child",
+              "tokens": 50000,
+              "steps": 1,
+              "acting": false,
+              "active": true,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.2,
+              "queue_sequence": 1
+            }
+          }
+        },
+        {
+          "action": "periodic_control_after_return",
+          "now_s": 16.2,
+          "remaining_raw_tokens": 104998,
+          "programs": {
+            "other_running_agent": {
+              "identity": "other_running_agent",
+              "tokens": 650000,
+              "steps": 1,
+              "acting": false,
+              "active": true,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.0,
+              "queue_sequence": 0
+            },
+            "returning_root": {
+              "identity": "returning_root",
+              "tokens": 129100,
+              "steps": 2,
+              "acting": false,
+              "active": false,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 1.2,
+              "queue_sequence": 2
+            },
+            "new_child": {
+              "identity": "new_child",
+              "tokens": 50000,
+              "steps": 1,
+              "acting": false,
+              "active": true,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.2,
+              "queue_sequence": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "control_during_tool": false,
+      "root_active_after_three_following_controls": true,
+      "observed_tool_round_ms": 3000.0,
+      "timeline": [
+        {
+          "action": "child_waits_while_root_is_ACTING",
+          "now_s": 0.2,
+          "remaining_raw_tokens": 25998,
+          "programs": {
+            "other_running_agent": {
+              "identity": "other_running_agent",
+              "tokens": 650000,
+              "steps": 1,
+              "acting": false,
+              "active": true,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.0,
+              "queue_sequence": 0
+            },
+            "returning_root": {
+              "identity": "returning_root",
+              "tokens": 129000,
+              "steps": 1,
+              "acting": true,
+              "active": true,
+              "marked_for_pause": false,
+              "pending": false,
+              "queued_at": 0.0,
+              "queue_sequence": 0
+            },
+            "new_child": {
+              "identity": "new_child",
+              "tokens": 50000,
+              "steps": 1,
+              "acting": false,
+              "active": false,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.2,
+              "queue_sequence": 1
+            }
+          }
+        },
+        {
+          "action": "observed_tool_return_and_successor",
+          "now_s": 3.1,
+          "remaining_raw_tokens": 25898,
+          "programs": {
+            "other_running_agent": {
+              "identity": "other_running_agent",
+              "tokens": 650000,
+              "steps": 1,
+              "acting": false,
+              "active": true,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.0,
+              "queue_sequence": 0
+            },
+            "returning_root": {
+              "identity": "returning_root",
+              "tokens": 129100,
+              "steps": 2,
+              "acting": false,
+              "active": true,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.0,
+              "queue_sequence": 0
+            },
+            "new_child": {
+              "identity": "new_child",
+              "tokens": 50000,
+              "steps": 1,
+              "acting": false,
+              "active": false,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.2,
+              "queue_sequence": 1
+            }
+          }
+        },
+        {
+          "action": "periodic_control_after_return",
+          "now_s": 4.0,
+          "remaining_raw_tokens": 25898,
+          "programs": {
+            "other_running_agent": {
+              "identity": "other_running_agent",
+              "tokens": 650000,
+              "steps": 1,
+              "acting": false,
+              "active": true,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.0,
+              "queue_sequence": 0
+            },
+            "returning_root": {
+              "identity": "returning_root",
+              "tokens": 129100,
+              "steps": 2,
+              "acting": false,
+              "active": true,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.0,
+              "queue_sequence": 0
+            },
+            "new_child": {
+              "identity": "new_child",
+              "tokens": 50000,
+              "steps": 1,
+              "acting": false,
+              "active": false,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.2,
+              "queue_sequence": 1
+            }
+          }
+        },
+        {
+          "action": "periodic_control_after_return",
+          "now_s": 9.0,
+          "remaining_raw_tokens": 25898,
+          "programs": {
+            "other_running_agent": {
+              "identity": "other_running_agent",
+              "tokens": 650000,
+              "steps": 1,
+              "acting": false,
+              "active": true,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.0,
+              "queue_sequence": 0
+            },
+            "returning_root": {
+              "identity": "returning_root",
+              "tokens": 129100,
+              "steps": 2,
+              "acting": false,
+              "active": true,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.0,
+              "queue_sequence": 0
+            },
+            "new_child": {
+              "identity": "new_child",
+              "tokens": 50000,
+              "steps": 1,
+              "acting": false,
+              "active": false,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.2,
+              "queue_sequence": 1
+            }
+          }
+        },
+        {
+          "action": "periodic_control_after_return",
+          "now_s": 14.0,
+          "remaining_raw_tokens": 25898,
+          "programs": {
+            "other_running_agent": {
+              "identity": "other_running_agent",
+              "tokens": 650000,
+              "steps": 1,
+              "acting": false,
+              "active": true,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.0,
+              "queue_sequence": 0
+            },
+            "returning_root": {
+              "identity": "returning_root",
+              "tokens": 129100,
+              "steps": 2,
+              "acting": false,
+              "active": true,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.0,
+              "queue_sequence": 0
+            },
+            "new_child": {
+              "identity": "new_child",
+              "tokens": 50000,
+              "steps": 1,
+              "acting": false,
+              "active": false,
+              "marked_for_pause": false,
+              "pending": true,
+              "queued_at": 0.2,
+              "queue_sequence": 1
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "gpu_used": false,
+  "kv_transfers_performed": false,
+  "historical_frequency_verified": false,
+  "performance_accepted": false,
+  "source_sha256": {
+    "experiments/reports/v400b_followup/reference_phase_counterexample.py": "3c2be29cf2f9a3141d3d31eae2d64f87acf3e23b2cbc0196b7380b5398358fdf",
+    "beliefkv/policy/paper_baselines.py": "ed3d57e13d43572d0399b7db766aadd3ca4dadfffbfdda509897afd8742a80fb"
+  },
+  "interpretation": "A periodic control during a three-second tool can resume a smaller child against decayed ACTING cost, then pause the root under raw capacity. Its successor no longer fits after return. A different phase preserves the root on the same arrival/return sequence. This proves a possible reference-core mechanism, not the cause or duration of the historical 194-second wait. No KV copy or resident-first ordering is required for this counterexample."
+}

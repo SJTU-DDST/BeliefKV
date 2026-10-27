@@ -1586,3 +1586,20 @@
   unknown. Neither repair ran in frozen V400b; historical frequency, control
   cost and incremental GPU performance remain unverified. Do not equate zero
   extra predicted offload with absence of native pressure-triggered tool release.
+- The descriptive `reference_consumer_fix_20261027_r1` Full run now uses frozen
+  eecf7293e711 with the repaired offload consumer and once-per-second actual
+  reference eligibility/pressure-mark identities. One shared CPU execution
+  passes3039 cases plus4 subtests, retaining all3038 prior identities; no
+  scheduling method or reference paper core changed. Its registry is
+  `ops/reference_consumer_fix_20261027_r1.registration.json`, port18660.
+  Watcher198769/start729631601, server199253/start729634027, GPU scheduler
+  199600/start729635483 and driver200694/start729649161 are verified live/nice0.
+  All work, V311 timers, native tree, capacity and seeds match completeV345.
+  The startup receipt seals179 exact completions, not full correctness or
+  performance. Keep this run frozen, do not overlap or restart on stale state.
+  Nice19 CPU waiter200332/start729643148 draws matched figures only after
+  complete success and actual owned exit; no follow-up GPU job is queued.
+  A three-program CPU reference fixture proves possible control-phase-induced
+  root pausing during a3s tool, without copies; it does not establish the cause
+  of V400b's194s wait. Use actual new identities to diagnose it. See
+  `docs/research/reference_consumer_fix_20261027_r1_zh.md`.
