@@ -82,7 +82,36 @@ copy/event/Host-index CPU 替身，不能推及 GPU 数值或性能正确性。
 GPU 干扰或 JCT 收益。旧 claim-only 8.393 微秒夹具没有这些 pending
 记录及新刷新/日志路径，不能继续作为当前实现的开销结论。
 
-当前未登记该候选的 GPU 实验。完整 free-JOIN 实验只带来 2.5869% 的
+CPU 验证时尚未登记该候选的 GPU 实验。完整 free-JOIN 实验只带来 2.5869% 的
 平均 JCT 改善和 1.4620% 的全程输出吞吐改善，且持续服务间隔变差；
 应保留负面结果。后续若验证本候选，继续使用完整 V345 工具衰减控制，
 不得重采一条获胜轨迹、删去普通长尾或启动其他 baseline/消融。
+
+## 实际运行
+
+后续已核对完整 free-JOIN 和 V345 的真实进程退出、预约、空闲 GPU、
+端口及 socket，登记 `ops/reference_join_siblings_20261027_r1.registration.json`，
+只执行 FULL，继续复用完整 V345。冻结应用为
+`525c7cc66e1f80a0c35f1ecf98f080939441e943`，native 树仍为 11b84f7c3198，
+端口 18662，socket 为 `/tmp/bkv-causal-18662.sock`。
+
+实际启动的 watcher255889/start ticks730446159、server256436/
+730448880、GPU scheduler256898/730450297、driver257923/730463855
+均独立确认 live/nice0，实际 GPU PID 与 NVML 一致。真实 runtime policy
+为 `full_with_reference_thunderagent_join_and_sibling_admission`，共同准入
+及授权前 streaming 刷新均生效，物理控制健康。
+
+`live_start.py/.json` 核对与完整 V345 相同的 13 项工作量、工具时间、
+容量、引擎、流式和种子字段。这个最早快照尚无完成回执，不能作为
+完成请求正确性、授权消费、完整 JCT 或吞吐的证据。
+
+随后独立的 `collecting_pipeline_after_start.json` 封存并验证 138 个完成
+请求与完整 V345 的 token、hash 和原生停止一致。其 reference 预算只有
+聚合信息，逐 agent 阻塞 token-time 仍为 unknown；没有用 program 数或
+全程均值补齐。该前缀也不能用于与完整对照比较性能。
+
+CPU 绘图等待器256660/start ticks730449328为 nice19，隐藏 CUDA，
+只在完整成功且 owned 退出后生成同口径 60 秒曲线、时间加权分布及
+geometry 图。它不启动 GPU 工作，状态为
+`ops/reference_join_siblings_20261027_r1.plots.state.json`。本轮源、配置
+和外部输入保持冻结，没有再排其他 GPU 实验。

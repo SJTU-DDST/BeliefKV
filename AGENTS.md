@@ -1683,3 +1683,22 @@
   medians78.703/68.328us, not whole-controller/GPU cost. No new GPU job is
   registered; preserve failures and see
   docs/design/reference_join_siblings_20261027_zh.md.
+- The sibling Full is now running from frozen525c7cc66e1f on port18662:
+  ops/reference_join_siblings_20261027_r1.registration.json. Actual watcher
+  255889/start730446159, server256436/start730448880, GPU scheduler256898/
+  start730450297 and driver257923/start730463855 are independently live/nice0;
+  the GPU PID matches NVML. The real policy is
+  full_with_reference_thunderagent_join_and_sibling_admission and grant-time
+  streaming refresh is effective. Thirteen common work/timing/capacity/engine/
+  serving fields match completeV345. The earliest live_start prefix contains
+  zero completed receipts and proves neither request completion nor performance.
+  Preserve frozen sources/config/external inputs. The nice19 CUDA-hidden CPU
+  plot waiter256660/start730449328 waits for complete success and actual owned
+  exit; its state is ops/reference_join_siblings_20261027_r1.plots.state.json.
+  It launches no GPU work. No further GPU experiment is queued.
+- The separate sibling collecting_pipeline_after_start.json now seals138 exact
+  completed requests against completeV345, preserving hashes/tokens/native
+  stopping. This is a prefix, not complete correctness/performance. Reference
+  aggregate-only budgets remain unknown for per-agent token-time; do not infer
+  physical occupancy or compare prefix decode rate to fullV345. Keep525c7cc6
+  and its registered external inputs frozen while continuing the complete run.
