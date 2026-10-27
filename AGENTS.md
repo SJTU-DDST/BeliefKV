@@ -1338,3 +1338,14 @@
   Freeze sources and recheck current GPU resources/hold before Full execution;
   no newer reservation is superseded by this candidate. See
   `docs/design/projected_pressure_release_20261027_zh.md`.
+- V364 independently runs only Full at commit `012765524309`, port 18656,
+  with the unchanged native tree and V311 timers:
+  `ops/v364_locobench_projected_pressure_20261027.registration.json`.
+  V367 verifies live watcher 72569/server 73085/GPU scheduler 73491/driver
+  74538 and the sole common environment addition `AGENT_PRESSURE_PAUSE_POLICY`.
+  V365 seals 129 exact completed requests and 105 reconciled budget snapshots.
+  Keep this execution frozen and do not overlap GPU work. Complete V345 is
+  reused; the CPU-only V366 waiter draws matched plots after Full succeeds
+  and exits, without launching GPUs. Complete correctness, control cost,
+  JCT/throughput and repeated/all-baseline acceptance remain pending. See
+  `docs/research/v364_projected_pressure_start_20261027_zh.md`.
