@@ -1427,3 +1427,31 @@
   Reuse complete V345. The verified nice19 CPU waiter 117226 generates V380
   matched plots only after complete success and actual owned exit; no GPU
   follow-up is queued. See `docs/research/v378_fitting_lending_start_20261027_zh.md`.
+- V384 seals 2595 exact completed V378 requests and 1343 reconciled budget
+  snapshots covering 1402.118 seconds, with 1.331 seconds uncovered.
+  Prefix model-pending/known-blocked/between-request active-budget token-time
+  is 88.606/6.866/4.528%; these are not physical occupancy or complete-run
+  statistics. Do not compare its 373.244 worker token/s or 11.069 weighted
+  batch against full V345 to claim a speedup.
+- V385 independently verifies 347 actual fitting decisions. On each recorded
+  proven donor set, selected budget totals 27785573 tokens versus 34879826
+  for the original-order adequate prefix, but selected owners total 447 versus
+  428: 16 decisions use more owners, three fewer and 328 the same. This local
+  counterfactual is not an old-policy run or proof of lower physical migration.
+  Preserve the tradeoff and await complete JCT/throughput/H2D before retention.
+- V383 audits all V230 source invocations: roots 18/844 calls/188999 output
+  tokens; direct children 92/2830 calls/360672 output tokens; no grandchildren.
+  Child calls min10/P50 29.5/P90 44.9/max66 despite warning4/target8. All
+  184 notices link through actual tool-call IDs to the 92 children, each with
+  thresholds4 and8; return-count multisets reconcile with native child calls.
+  Missing parameter propagation is ruled out, not a reason to repeat the same
+  prompt/budget change. Nesting was already available; source shape or task
+  scopes need evidence before a separately declared fresh capture.
+- Every V230 child RETURN declares context_retired=true. V382 finds actual
+  positive terminal release for all92 V364 children: cumulative183.522GB
+  Device FULL/66.478GB Host FULL, first-release delay P50 3.174ms. Four last
+  visible pending-anchor counts do not establish a final live backlog because
+  no-release retries can be silent. These totals are not simultaneous free
+  capacity, avoided H2D or proof of globally reclaimed unique state. They do
+  not support blaming persistent metadata for retaining every finished child.
+  See `docs/research/v378_collecting_and_source_geometry_20261027_zh.md`.
