@@ -41,9 +41,13 @@ class PredictedToolOffload:
             return False
         agents = runtime._agent_admission
         if agents is not None:
-            item = agents.policy.agents.get(key.invocation_id)
-            if agents.holds_restore(key) or item is not None and item.in_flight:
-                return False
+            if getattr(agents, "strategy", None) == "thunderagent_reference":
+                if agents.tool_offload_protected(key):
+                    return False
+            else:
+                item = agents.policy.agents.get(key.invocation_id)
+                if agents.holds_restore(key) or item is not None and item.in_flight:
+                    return False
         ticket = runtime._tool_ticket
         return not (
             ticket is not None and ticket.key == key
@@ -285,6 +289,8 @@ class DemandAwareToolOffload(PredictedToolOffload):
             return None
         agents = runtime._agent_admission
         if agents is not None and not agents.allows(key):
+            if getattr(agents, "strategy", None) == "thunderagent_reference":
+                return None
             policy = agents.policy
             owner = policy.agents.get(donor.invocation_id) if donor is not None else None
             target = policy.agents.get(key.invocation_id)

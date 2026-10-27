@@ -91,6 +91,30 @@ V394 在一次执行中通过 3030 项共享检查及 4 个子测试，无失败
 原生树、running/decode24、流式计时和种子21，保留所有正常长尾。
 完整目标及其他 baseline 的启动门槛保持不变。
 
+## 首次 GPU 组合故障与修复
+
+V396b 在第一次进入 demand-cost 工具卸载路径时因接口不兼容停止：
+旧卸载器直接读取 `.policy.agents/.in_flight`，参考核心使用
+`.programs`。V397 封存 99 个精确完成请求，核验原始失败日志及
+实际进程退出。保留完整失败，不用这段前缀计算性能，也不续跑部分轨迹。
+
+原 CPU 检查分别验证了准入和物理卸载，遗漏了两者组合，这是实际
+覆盖缺口。修复为参考准入提供明确的 `tool_offload_protected` 检查，
+以当前身份和是否已有模型请求判断保护；实际在途预取、服务 lease、
+Host 备份与原生锁仍由原卸载路径检查。准入资格只表示可执行或
+可提前恢复，不等于已经持有物理恢复锁。
+
+参考核心下，受益请求必须已经取得正常资格；未准入请求直接退出
+该次卸载判断，不能调用旧 retained 预算借出逻辑。旧 retained
+分支行为保持原样。V398b 的 109 项针对性检查通过，新增五种组合
+使用真实 FULL-only native tree/allocator 与 copy/event 替身，验证
+实际释放32槽、Host副本保留、未准入受益者拒绝、pending/恢复中/
+身份不明 donor 拒绝，以及整个 reference program 状态不变。
+V398 首次夹具沿用 legacy execution recovery 的失败也保留。
+V399 随后一次通过 3035 项共享检查及4个子测试，无失败或跳过，
+保留 V394 全部3030个case身份并新增5个；源文件、三个实际构造器
+与 V397 原始 GPU 故障均绑定到资格报告。完整 GPU 重试仍待验证。
+
 ## 证据
 
 - `experiments/reports/v391_v345_v364_v378_restore_wait_cohorts_20261027.json`。
@@ -98,5 +122,9 @@ V394 在一次执行中通过 3030 项共享检查及 4 个子测试，无失败
 - `experiments/reports/v393c_reference_thunder_admission_targeted_cpu_20261027.xml`。
 - `experiments/reports/v394_reference_thunder_shared_cpu_20261027.xml`。
 - `experiments/reports/v395_reference_thunder_cpu_evidence_20261027.json`，
+  及同名 `.sources.json`。
+- `experiments/reports/v397_reference_thunder_offload_integration_failure_20261027.json`。
+- `experiments/reports/v398b_reference_thunder_offload_targeted_cpu_20261027.xml`。
+- `experiments/reports/v399_reference_thunder_offload_cpu_evidence_20261027.json`，
   及同名 `.sources.json`。
 - [上一轮完整结果与贡献边界](../research/v378_working_set_switching_results_20261027_zh.md)。

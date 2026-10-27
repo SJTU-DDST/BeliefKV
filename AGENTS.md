@@ -1518,3 +1518,23 @@
   changes only the canonical patch path; every other native-state field and
   actual11b84f7c3198 tree remain equal to the earlier proof. CPU-qualified runtime
   sources are unchanged by this startup record.
+- V396b started the reference-core Full but stopped with scheduler
+  `AttributeError: ThunderActingDecayWorkingSet has no attribute agents` on
+  its first demand-aware predicted-offload path. The offloader had retained
+  policy `.agents/.in_flight` assumptions not covered by the original separate
+  admission and offload tests. V397 seals99 exact completed receipts out of3674,
+  preserves the failure and independently verifies terminal owned cleanup.
+  This partial run is not a performance result and must not be resumed.
+- Main now gives reference admission an explicit `tool_offload_protected`
+  predicate for current identity and submitted model work; physical transfer,
+  prefetch-ticket, lease and native lock protection remains in the offloader.
+  Existing eligibility is warming permission, not a physical restoration lock.
+  Demand offload with this reference core requires an already eligible
+  consumer and never invokes retained-budget lending. Old retained behavior
+  stays unchanged. V398b passes109 targeted cases, including five combinations
+  of the actual reference adapter and real native FULL-only allocator with
+  copy/event stand-ins; V398's fixture-profile failure is retained. V399 passes
+  all3035 shared CPU cases plus4 subtests in one execution without failures/skips,
+  retaining all3030 V394 identities and adding5, and binds all current sources
+  plus the three real constructors. GPU correctness/performance remain pending;
+  use a separately frozen complete retry and reuse V345.

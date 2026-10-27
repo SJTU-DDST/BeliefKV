@@ -92,6 +92,10 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         self.counts["restore_existing_eligibility" if allowed else "restore_outside_active_set"] += 1
         return allowed
 
+    def tool_offload_protected(self, key):
+        item = self.policy.programs.get(key.invocation_id) if self.policy is not None else None
+        return item is None or item.pending or self.latest.get(key.invocation_id) != key
+
     def requeued(self, requests, *, is_retracted):
         super().requeued(requests, is_retracted=is_retracted)
         for req in requests:

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Qualify Full composition with the exact reference ThunderAgent decay core."""
 
+import argparse
 from datetime import datetime, timezone
 import json
 import os
@@ -27,9 +28,15 @@ OUTPUT = REPORTS / "v395_reference_thunder_cpu_evidence_20261027.json"
 
 
 def main():
-    if any(path.exists() for path in (REPORT, MANIFEST, OUTPUT)):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--prior", type=Path, default=PRIOR)
+    parser.add_argument("--report", type=Path, default=REPORT)
+    parser.add_argument("--sources", type=Path, default=MANIFEST)
+    parser.add_argument("--output", type=Path, default=OUTPUT)
+    args = parser.parse_args()
+    if any(path.exists() for path in (args.report, args.sources, args.output)):
         raise FileExistsError("preserve previous qualification outputs")
-    prior = json.loads(PRIOR.read_bytes())
+    prior = json.loads(args.prior.read_bytes())
     configuration = json.loads(CONFIG.read_bytes())
     paths = set(json.loads(Path(prior["source_manifest"]["path"]).read_bytes()))
     paths.update((
@@ -39,17 +46,17 @@ def main():
         "beliefkv/runtime/paper_baseline.py", "beliefkv/policy/paper_baselines.py",
     ))
     sources = {name: sha256_file(ROOT / name) for name in sorted(paths)}
-    write(MANIFEST, sources)
+    write(args.sources, sources)
     command = [part for part in prior["command"] if not part.startswith("--junitxml=")]
-    command.extend((
-        "tests/test_reference_thunder_admission.py", f"--junitxml={REPORT.relative_to(ROOT)}",
-    ))
+    if "tests/test_reference_thunder_admission.py" not in command:
+        command.append("tests/test_reference_thunder_admission.py")
+    command.append(f"--junitxml={args.report.resolve().relative_to(ROOT)}")
     environment = {
         **os.environ, **prior["environment"],
         "CUDA_VISIBLE_DEVICES": "99999", "PYTHONHASHSEED": "21",
     }
     subprocess.run(command, cwd=ROOT, env=environment, check=True)
-    previous, current = passed_cases(Path(prior["report"]["path"])), passed_cases(REPORT)
+    previous, current = passed_cases(Path(prior["report"]["path"])), passed_cases(args.report)
     if not previous <= current:
         raise ValueError("shared CPU coverage lost previous case identities")
     inherited = ("attach", "tick", "completed", "aborted", "_refresh_streaming_progress")
@@ -81,8 +88,8 @@ def main():
         "scope": "source_bound_cpu_full_with_reference_thunderagent_decay",
         "command": command,
         "environment": {key: environment[key] for key in prior["environment"]},
-        "report": {"path": str(REPORT), "sha256": sha256_file(REPORT)},
-        "source_manifest": {"path": str(MANIFEST), "sha256": sha256_file(MANIFEST)},
+        "report": {"path": str(args.report.resolve()), "sha256": sha256_file(args.report)},
+        "source_manifest": {"path": str(args.sources.resolve()), "sha256": sha256_file(args.sources)},
         "previous_report": prior["report"],
         "passing_cases_including_subtests": len(current),
         "retained_previous_cases_including_subtests": len(previous),
@@ -94,19 +101,29 @@ def main():
             str(REPORTS / name) for name in (
                 "v393_reference_thunder_admission_targeted_cpu_20261027.xml",
                 "v393b_reference_thunder_admission_targeted_cpu_20261027.xml",
+                "v398_reference_thunder_offload_targeted_cpu_20261027.xml",
+                "v398b_reference_thunder_offload_targeted_cpu_20261027.xml",
             )
         ],
         "development_failures": (
             "New test fixtures initially omitted the required event socket and one "
-            "JOIN member's invocation_create; production scheduler was unchanged."
+            "JOIN member's invocation_create; the native offload fixture initially "
+            "retained legacy execution recovery and was aligned with the declared "
+            "reference profile. Preserve the separate actual V396b integration failure."
         ),
+        "gpu_development_failure": {
+            "path": str(REPORTS / "v397_reference_thunder_offload_integration_failure_20261027.json"),
+            "sha256": sha256_file(
+                REPORTS / "v397_reference_thunder_offload_integration_failure_20261027.json",
+            ),
+        } if (REPORTS / "v397_reference_thunder_offload_integration_failure_20261027.json").exists() else None,
         "native_cpu_copy_event_and_host_index_standins": True,
         "gpu_execution_registered": False,
         "gpu_correctness_verified": False,
         "performance_accepted": False,
         "research_contribution_claimed": False,
     }
-    write(OUTPUT, result)
+    write(args.output, result)
     print(json.dumps({
         key: result[key] for key in (
             "passing_cases_including_subtests", "new_cases",

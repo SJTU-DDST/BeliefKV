@@ -5,6 +5,11 @@ V394 的 3030 项共享 CPU 检查及 4 个子测试通过，V395 封存源码�
 配置和三个实际构造器。候选用途与证据边界见
 [组合设计](../design/reference_thunder_migration_composition_20261027_zh.md)。
 
+V396b 随后从 `df0bd5cf4e3c839185defcfd946755cbcffb969e` 启动 FULL，
+在首次预测工具卸载时因旧 policy 字段假设停止。V397 封存99条精确
+完成回执并验证所有 owned 进程退出。该轮没有完整性能结果；
+保留原始失败，修复后需要新注册完整重跑。
+
 ## 使用原生引擎与现有对照
 
 继续使用实际树 `11b84f7c31986782be3fbe699bae2574ef092389`。
@@ -40,3 +45,4 @@ GPU 锁和所有工作量/容量/引擎校验。CPU 资格覆盖的运行时代�
 - `experiments/reports/v395_reference_thunder_cpu_evidence_20261027.json`。
 - `experiments/reports/v396_reference_thunder_native_source_binding_cpu_20261027.json`。
 - `experiments/reports/v396_reference_thunder_pre_gpu_dependency_rejection_20261027.json`。
+- `experiments/reports/v397_reference_thunder_offload_integration_failure_20261027.json`。

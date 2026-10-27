@@ -18,6 +18,8 @@ from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from scripts import run_causal_comparison as comparison
 from tests.test_internal_comparison import observed
 from tests.test_paper_baseline_runtime import request
+from tests.test_full_only_native_lifecycle import full_native
+from tests.test_tool_policy_adaptation import demand_runtime
 
 
 def full_runtime(monkeypatch, tmp_path, *, capacity=1000):
@@ -270,3 +272,47 @@ def test_native_requeue_refreshes_the_restore_identity_without_new_program_arriv
         assert adapter.counts["registered"] == 1
     finally:
         live.close()
+
+
+@pytest.mark.parametrize("scenario", (
+    "allowed", "inactive_consumer", "pending_donor", "restoring_donor", "unknown_donor",
+))
+def test_actual_demand_offload_uses_reference_eligibility_without_retained_policy_fields(
+    demand_runtime, scenario,
+):
+    runtime, controller, cache, allocator, donor, consumer, _writes = demand_runtime
+    runtime.enable_execution_handoff = False
+    runtime.enable_frontier_restore = False
+    adapter = ReferenceThunderAdmission(runtime)
+    adapter.attach(cache)
+    # The native CPU fixture has 64 slots; normalize the 100-token buffer only
+    # for this fixture, as in the existing retained-policy physical test.
+    adapter.policy.buffer_tokens = 0
+    if scenario == "inactive_consumer":
+        adapter.policy.capacity_tokens = 48
+    donor_key = runtime.context_sessions["ctx-tool"]
+    adapter.policy.arrive("tool", 32, now=0.)
+    adapter.policy.completed("tool", 32, now=.1)
+    adapter.latest["tool"] = donor_key
+    adapter.policy.arrive("hot", 12, now=.15)
+    adapter.registered(consumer, runtime.visible["consumer"])
+    runtime._agent_admission = adapter
+    if scenario == "pending_donor":
+        adapter.policy.arrive("tool", 32, now=.2)
+    elif scenario == "restoring_donor":
+        runtime._tool_ticket = NS(key=donor_key)
+    elif scenario == "unknown_donor":
+        adapter.latest.pop("tool")
+    before = state(adapter)
+    controller.dispatch()
+    if scenario == "allowed":
+        assert donor.component_data[0].value is None
+        assert donor.component_data[0].host_value is not None
+        assert allocator.available_size() == 36
+        assert controller.action_detail["logical_handover_budget_ms"] == 0.
+        assert runtime.counts["predicted_tool_offload_freed_component_0"] == 32
+    else:
+        assert donor.component_data[0].value is not None
+        assert allocator.available_size() == 4
+        assert not runtime.counts["predicted_tool_offload_freed_component_0"]
+    assert state(adapter) == before

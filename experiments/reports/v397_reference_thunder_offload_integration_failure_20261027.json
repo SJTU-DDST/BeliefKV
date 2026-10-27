@@ -1,0 +1,27 @@
+{
+  "observed_at": "2026-10-28T00:59:32.359091+08:00",
+  "registration": "/home/longhao/experiment/ops/v396b_locobench_reference_thunder_20261027.registration.json",
+  "registration_sha256": "09fc9a9e22c7be5e2c6d327f8ff2d8aeaa0eb6e99539c5ca06a76e402011274f",
+  "failed_code_commit": "df0bd5cf4e3c839185defcfd946755cbcffb969e",
+  "terminal_state_sha256": "b0b988666aa20ebb34e491c1c615e7dd99acf0106539075b6b9f3314b7a3e0c6",
+  "server_log_sha256": "c201fcf3c1d7591153441f02f607e7076c07f2b64890889334fc15482d680f03",
+  "cleanup_sha256": "cc3d9dc6ca933ce9afba73715ff2e83a8d1cae0d59a762f5e215268b14d02aba",
+  "actual_owned_exit_verified": true,
+  "exact_completed_receipts": 99,
+  "expected_requests": 3674,
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_thunder_20261027_v396b/full/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 321572,
+      "complete_prefix_sha256": "46191f6804ac86cb155b304f79eb8a77fb2e6a6919a541a35a410dfa7a6f479f",
+      "first_read_limit_bytes": 321572
+    }
+  },
+  "error": "AttributeError: 'ThunderActingDecayWorkingSet' object has no attribute 'agents'",
+  "integration_boundary": "PredictedToolOffload read retained-policy .agents/.in_flight fields from the reference .programs core.",
+  "test_gap": "The initial CPU suite compared reference admission state and the physical offloader separately; it did not combine them.",
+  "repair_scope": "Use explicit reference-native offload protection; require existing consumer eligibility without logical borrowing; preserve old retained-policy behavior.",
+  "complete_work_verified": false,
+  "gpu_correctness_verified": false,
+  "performance_accepted": false,
+  "partial_result_used_for_performance": false
+}
