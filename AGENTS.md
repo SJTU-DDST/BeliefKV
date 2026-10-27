@@ -1654,3 +1654,32 @@
   is `ops/reference_join_free_admission_20261027_r1.plots.state.json`.
   No follow-up GPU job is queued. Reports/operators belong to
   `experiments/reports/reference_join_free_admission_20261027/`.
+- Free-JOIN R1 now completes all3674 exact requests,145565966 input and549671
+  output tokens, all18 normal workflow tails, original stopping, two fresh idle
+  snapshots and independently verified actual owned exit. Its mean JCT is
+  1653.668345s versus completeV3451697.583645s (2.58693% lower), whole-run
+  output236.783654 versus233.371801token/s (1.46198% higher), and decode
+  worker347.328338 versus340.158312token/s. Seventeen workflows improve;
+  python_web_cms regresses66.417252s and mean maximum post-first ready gaps
+  worsen91.578837 versus73.449107s. Eleven JOINs early-start and prove reuse
+  of53.658845GB; all controlled JOIN copies92.888236GB prove reuse. Seven
+  free-budget grants have no individual identity journal and cannot be directly
+  attributed to those copies. Sampled layer waits3959.456ms/21batches versus
+  2662.835ms/18batches are not whole-run or matched-cohort time. No superiority
+  gate is satisfied; preserve all reports/inspected figures and reuseV345.
+- The separate reference-core sibling candidate preserves the exact reference
+  lifecycle/control and allows only visible submitted inactive ready members
+  of an actual blocking ALL-JOIN with2--24 total members to use complete unused
+  undiscounted budget as a group. It never waits for unsubmitted siblings or
+  pauses a ready peer; native physical authority stays separate. The flag is
+  BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN, default off. Two red CPU cases prove
+  stale streaming size can overgrant parent or sibling capacity; extra grants
+  now refresh actual visible native output lengths first. Frozen3a23fe10
+  did not include this fix. New success-only identity journals permit future
+  grant-to-transfer audits, not physical ownership claims. Targeted86 cases
+  and one shared3174-case execution plus4subtests pass without failures/skips,
+  retaining all3143 prior identities. Synthetic33-program callbacks with32
+  pending records and real async journal measure parent/sibling new-grant
+  medians78.703/68.328us, not whole-controller/GPU cost. No new GPU job is
+  registered; preserve failures and see
+  docs/design/reference_join_siblings_20261027_zh.md.

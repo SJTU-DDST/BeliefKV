@@ -111,4 +111,8 @@ hash与原生停止。真实状态policy为
 
 原始数据为`experiments/raw/locobench_reference_join_free_admission_20261027_r1/full/`。
 图表完成后写入`experiments/figures/reference_join_free_admission_20261027_r1/`。
-没有后续GPU轮次排队，本轮尚无完整JCT、吞吐或新授权消费效果结论。
+没有后续GPU轮次排队。完整结果现已独立核对，见
+`docs/research/reference_join_free_complete_20261027_zh.md`：
+平均JCT降低2.58693%、全程输出吞吐提高1.46198%，仍未达到目标。
+冻结版本没有授权前streaming刷新及逐授权身份日志；不能把新资格
+计数直接等同于后续的实际预取复用。
