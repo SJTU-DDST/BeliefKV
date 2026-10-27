@@ -1546,3 +1546,17 @@
   `v400_reference_thunder_socket_pre_gpu_rejection_20261027.json`.
   The distinct V400b retry uses verified-free port18659 and a fresh socket.
   Runtime and V399-qualified sources are unchanged.
+- V400b independently runs only Full from a5e31ae7464f, containing the
+  7fe941c0dfdf offload integration repair:
+  `ops/v400b_locobench_reference_thunder_offload_20261027.registration.json`.
+  V401 verifies actual watcher163362/server163860/driver165104, nice0,
+  reference admission without logical loans/recalls, healthy physical control,
+  26 equal work/timing/capacity/serving fields versus complete V345, and198
+  sealed exact completed receipts out of3674. These are prefixes, not complete
+  correctness or performance. Keep the frozen run unchanged and do not restart
+  on a stale/empty argv observation or overlap another GPU job.
+  The nice19 CUDA-hidden V402 CPU waiter167057 is confirmed live; it uses
+  `scripts/deferred_causal_decode_plots.py` and only draws matched60s plots after
+  full success plus actual owned exit. It launches no GPU work, stops on failure,
+  and preserves all normal tails. No GPU follow-up is queued. See
+  `docs/research/v400b_reference_thunder_start_20261027_zh.md`.

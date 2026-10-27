@@ -1,0 +1,48 @@
+{
+  "observed_at": "2026-10-28T01:20:04.930888+08:00",
+  "scope": "cpu_only_deferred_complete_matched_plots",
+  "operator": "/home/longhao/experiment/BeliefKV/scripts/deferred_causal_decode_plots.py",
+  "operator_sha256": "11127c05067dae8160e0966608d2e0ef98e958fb1e2402dfa7ee45a1cbb35a75",
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/BeliefKV/scripts/deferred_causal_decode_plots.py",
+    "--full-registration",
+    "/home/longhao/experiment/ops/v400b_locobench_reference_thunder_offload_20261027.registration.json",
+    "--control-registration",
+    "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.json",
+    "--output-dir",
+    "/home/longhao/experiment/BeliefKV/experiments/figures/decode_diagnostics_20261027_v402",
+    "--state",
+    "/home/longhao/experiment/ops/v402_reference_thunder_decode_plots_20261027.state.json",
+    "--plot-python",
+    "/home/longhao/experiment/ops/cpu_plotting_20261027/bin/python"
+  ],
+  "actual_waiter": {
+    "pid": 167057,
+    "state": "S",
+    "ppid": 166993,
+    "start_ticks": "729186752",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/BeliefKV/scripts/deferred_causal_decode_plots.py",
+      "--full-registration",
+      "/home/longhao/experiment/ops/v400b_locobench_reference_thunder_offload_20261027.registration.json",
+      "--control-registration",
+      "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.json",
+      "--output-dir",
+      "/home/longhao/experiment/BeliefKV/experiments/figures/decode_diagnostics_20261027_v402",
+      "--state",
+      "/home/longhao/experiment/ops/v402_reference_thunder_decode_plots_20261027.state.json",
+      "--plot-python",
+      "/home/longhao/experiment/ops/cpu_plotting_20261027/bin/python"
+    ]
+  },
+  "nice": 19,
+  "cuda_visible_devices": "99999",
+  "state": "/home/longhao/experiment/ops/v402_reference_thunder_decode_plots_20261027.state.json",
+  "output": "/home/longhao/experiment/BeliefKV/experiments/figures/decode_diagnostics_20261027_v402",
+  "log": "/home/longhao/experiment/ops/v402_reference_thunder_decode_plots_20261027.log",
+  "requires_complete_success_and_actual_owned_exit": true,
+  "launches_gpu_work": false,
+  "performance_accepted": false
+}
