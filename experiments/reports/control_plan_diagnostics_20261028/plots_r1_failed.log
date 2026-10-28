@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/home/longhao/experiment/BeliefKV/experiments/reports/control_plan_diagnostics_20261028/deferred_plots.py", line 141, in <module>
+    main()
+  File "/home/longhao/experiment/BeliefKV/experiments/reports/control_plan_diagnostics_20261028/deferred_plots.py", line 74, in main
+    full, control = validate()
+                    ^^^^^^^^^^
+  File "/home/longhao/experiment/BeliefKV/experiments/reports/control_plan_diagnostics_20261028/deferred_plots.py", line 39, in validate
+    raise ValueError("unexpected arms, engine pair, profiling or exclusions")
+ValueError: unexpected arms, engine pair, profiling or exclusions

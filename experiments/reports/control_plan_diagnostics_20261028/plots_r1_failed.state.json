@@ -1,0 +1,12 @@
+{
+  "status": "stopped_without_gpu_action",
+  "observed_at": "2026-10-28T16:37:41.001070+00:00",
+  "pins": {
+    "/home/longhao/experiment/ops/control_plan_diagnostics_20261028_r1.registration.json": "8ffc6c50f08ec4de76c25ed011aff09ab21020b8aaeb9b88b4a624e23e53a8f5",
+    "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.json": "66a5bac27ce8d8f70a91e5c45fcc377b7950db56bc3bd2a7588124fd5209902b",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/control_plan_diagnostics_20261028/deferred_plots.py": "3c0bbfe6b3ef2fa19df0ad636391ae5213f785e0b07ab0c1e2ed280235551e8b"
+  },
+  "gpu_work_authorized": false,
+  "performance_accepted": false,
+  "error": "ValueError('unexpected arms, engine pair, profiling or exclusions')"
+}

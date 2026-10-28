@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[3]
 OPS = ROOT.parent / "ops"
 FULL = OPS / "control_plan_diagnostics_20261028_r1.registration.json"
 CONTROL = OPS / "v345_locobench_categorized_thunder_decay_20261027.registration.json"
-STATE = OPS / "control_plan_diagnostics_20261028_r1.plots.state.json"
+STATE = OPS / "control_plan_diagnostics_20261028_r1.plots_r2.state.json"
 OUTPUT = ROOT / "experiments/figures/control_plan_diagnostics_20261028_r1"
 
 
@@ -33,8 +33,14 @@ def main():
             full["order"] != ["full"] or control["order"] != ["thunderagent_acting_decay"]
             or full["engine_tree"] != SIBLING_CAPACITY_TREE
             or control["engine_tree"] != COMMON_TREE or full["quality_exclusions"]
-            or full["reference_environment"].get("BELIEFKV_PROFILE_SHARED_PATH") != "1"
-            or control["reference_environment"].get("BELIEFKV_PROFILE_SHARED_PATH", "0") != "0"
+            or full["reference_environment"].get(
+                "BELIEFKV_PROFILE_SHARED_PATH",
+                full["reference_environment"].get("PROFILE_SHARED_PATH", "0"),
+            ) != "1"
+            or control["reference_environment"].get(
+                "BELIEFKV_PROFILE_SHARED_PATH",
+                control["reference_environment"].get("PROFILE_SHARED_PATH", "0"),
+            ) != "0"
         ):
             raise ValueError("unexpected arms, engine pair, profiling or exclusions")
         for field in (

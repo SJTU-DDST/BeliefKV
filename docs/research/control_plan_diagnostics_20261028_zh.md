@@ -100,3 +100,9 @@ nice0 watcher774837/server775366/driver776815/GPU scheduler775715，
 引擎和 profiling 差异，不授权下一轮 GPU 工作。
 模型请求 token 包和阶段记录以 `.json.gz` 原字节归档，原始本地
 JSON 保留，不把长 token 数组展开为 Git 文本差异。
+
+CPU 绘图观察器首轮只查服务端别名，但注册文件的 reference environment
+保存的是短名 `PROFILE_SHARED_PATH`，因此在绘图前拒绝并退出。保留
+`plots_r1_failed.state.json/.log`，且其算子 SHA 与提交 `fe330e64` 的
+原始文件一致。后续观察器接受相同配置的两种字段表示，改用独立
+`plots_r2.state.json`，GPU FULL 的冻结源码和进程保持原状。
