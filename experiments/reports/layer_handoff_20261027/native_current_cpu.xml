@@ -1,0 +1,485 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="15" skipped="0" tests="15" time="6.168" timestamp="2026-10-27T22:50:29.816761-07:00" hostname="ddst-12"><testcase classname="srt.test_beliefkv_layer_handoff" name="test_shared_extent_preserves_all_donor_layers_and_restores_consumer" time="0.002"><failure message="AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'">handoff = (&lt;sglang.srt.mem_cache.l2_transfer.L2TransferEngine object at 0x703e83d7f090&gt;, L2Transfer(host_pool=namespace(layer_nu...ace(layer_num=3, k_buffer=[tensor([0., 1., 2., 3.]), tensor([10., 11., 12., 13.]), tensor([20., 21., 22., 23.])]), ...)
+
+    def test_shared_extent_preserves_all_donor_layers_and_restores_consumer(handoff):
+        engine, donor, consumer, last_use, calls, pool, original, source, host = handoff
+&gt;       result = engine.submit_layer_handoff(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            donor, consumer, layer_num=3, donor_last_use_event=last_use,
+        )
+E       AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'
+
+test/srt/test_beliefkv_layer_handoff.py:73: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_layer_handoff" name="test_first_consumer_layer_does_not_wait_for_the_last_donor_layer" time="0.001"><failure message="AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'">handoff = (&lt;sglang.srt.mem_cache.l2_transfer.L2TransferEngine object at 0x703e833ee750&gt;, L2Transfer(host_pool=namespace(layer_nu...ace(layer_num=3, k_buffer=[tensor([0., 1., 2., 3.]), tensor([10., 11., 12., 13.]), tensor([20., 21., 22., 23.])]), ...)
+
+    def test_first_consumer_layer_does_not_wait_for_the_last_donor_layer(handoff):
+        engine, donor, consumer, last_use, calls, *_ = handoff
+&gt;       result = engine.submit_layer_handoff(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            donor, consumer, layer_num=3, donor_last_use_event=last_use,
+        )
+E       AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'
+
+test/srt/test_beliefkv_layer_handoff.py:86: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_layer_handoff" name="test_consumer_can_reuse_a_prefix_without_losing_the_donor_tail" time="0.001"><failure message="AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'">handoff = (&lt;sglang.srt.mem_cache.l2_transfer.L2TransferEngine object at 0x703e83346390&gt;, L2Transfer(host_pool=namespace(layer_nu...ace(layer_num=3, k_buffer=[tensor([0., 1., 2., 3.]), tensor([10., 11., 12., 13.]), tensor([20., 21., 22., 23.])]), ...)
+
+    def test_consumer_can_reuse_a_prefix_without_losing_the_donor_tail(handoff):
+        engine, donor, consumer, last_use, _calls, pool, original, source, host = handoff
+        consumer = consumer._replace(
+            device_indices=donor.device_indices[:2], host_indices=consumer.host_indices[:2],
+        )
+    
+        def load(_pool, _host, indices, layer, _backend):
+            pool.k_buffer[layer][indices] = source[layer][:len(indices)]
+    
+        consumer.host_pool.load_to_device_per_layer = load
+&gt;       engine.submit_layer_handoff(donor, consumer, layer_num=3, donor_last_use_event=last_use)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'
+
+test/srt/test_beliefkv_layer_handoff.py:108: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_layer_handoff" name="test_invalid_contract_is_rejected_before_any_device_operation[no_writer_fence]" time="0.001"><failure message="AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'">handoff = (&lt;sglang.srt.mem_cache.l2_transfer.L2TransferEngine object at 0x703e833bd190&gt;, L2Transfer(host_pool=namespace(layer_nu...ace(layer_num=3, k_buffer=[tensor([0., 1., 2., 3.]), tensor([10., 11., 12., 13.]), tensor([20., 21., 22., 23.])]), ...)
+invalid = 'no_writer_fence'
+
+    @pytest.mark.parametrize("invalid", (
+        "no_writer_fence", "foreign_device", "different_indices", "empty_extent",
+        "different_host_count", "draft", "layer_mapper", "layer_count", "unsupported",
+        "same_host_source",
+    ))
+    def test_invalid_contract_is_rejected_before_any_device_operation(handoff, invalid):
+        engine, donor, consumer, last_use, calls, *_ = handoff
+        layers = 3
+        if invalid == "no_writer_fence":
+            last_use = None
+        elif invalid == "foreign_device":
+            consumer = consumer._replace(device_pool=object())
+        elif invalid == "different_indices":
+            consumer = consumer._replace(device_indices=consumer.device_indices.clone())
+        elif invalid == "empty_extent":
+            donor = donor._replace(device_indices=torch.empty(0, dtype=torch.int64))
+        elif invalid == "different_host_count":
+            consumer = consumer._replace(host_indices=consumer.host_indices[:2])
+        elif invalid == "draft":
+            donor = donor._replace(is_draft=True)
+        elif invalid == "layer_mapper":
+            donor = donor._replace(layer_mapper=lambda layer: layer)
+        elif invalid == "layer_count":
+            layers = 2
+        elif invalid == "unsupported":
+            donor.host_pool.supports_layer_handoff = lambda *_: False
+        else:
+            consumer = consumer._replace(host_pool=donor.host_pool, host_indices=donor.host_indices)
+        with pytest.raises((ValueError, NotImplementedError)):
+&gt;           engine.submit_layer_handoff(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                donor, consumer, layer_num=layers, donor_last_use_event=last_use,
+            )
+E           AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'
+
+test/srt/test_beliefkv_layer_handoff.py:144: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_layer_handoff" name="test_invalid_contract_is_rejected_before_any_device_operation[foreign_device]" time="0.001"><failure message="AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'">handoff = (&lt;sglang.srt.mem_cache.l2_transfer.L2TransferEngine object at 0x703e833f0190&gt;, L2Transfer(host_pool=namespace(layer_nu...ace(layer_num=3, k_buffer=[tensor([0., 1., 2., 3.]), tensor([10., 11., 12., 13.]), tensor([20., 21., 22., 23.])]), ...)
+invalid = 'foreign_device'
+
+    @pytest.mark.parametrize("invalid", (
+        "no_writer_fence", "foreign_device", "different_indices", "empty_extent",
+        "different_host_count", "draft", "layer_mapper", "layer_count", "unsupported",
+        "same_host_source",
+    ))
+    def test_invalid_contract_is_rejected_before_any_device_operation(handoff, invalid):
+        engine, donor, consumer, last_use, calls, *_ = handoff
+        layers = 3
+        if invalid == "no_writer_fence":
+            last_use = None
+        elif invalid == "foreign_device":
+            consumer = consumer._replace(device_pool=object())
+        elif invalid == "different_indices":
+            consumer = consumer._replace(device_indices=consumer.device_indices.clone())
+        elif invalid == "empty_extent":
+            donor = donor._replace(device_indices=torch.empty(0, dtype=torch.int64))
+        elif invalid == "different_host_count":
+            consumer = consumer._replace(host_indices=consumer.host_indices[:2])
+        elif invalid == "draft":
+            donor = donor._replace(is_draft=True)
+        elif invalid == "layer_mapper":
+            donor = donor._replace(layer_mapper=lambda layer: layer)
+        elif invalid == "layer_count":
+            layers = 2
+        elif invalid == "unsupported":
+            donor.host_pool.supports_layer_handoff = lambda *_: False
+        else:
+            consumer = consumer._replace(host_pool=donor.host_pool, host_indices=donor.host_indices)
+        with pytest.raises((ValueError, NotImplementedError)):
+&gt;           engine.submit_layer_handoff(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                donor, consumer, layer_num=layers, donor_last_use_event=last_use,
+            )
+E           AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'
+
+test/srt/test_beliefkv_layer_handoff.py:144: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_layer_handoff" name="test_invalid_contract_is_rejected_before_any_device_operation[different_indices]" time="0.001"><failure message="AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'">handoff = (&lt;sglang.srt.mem_cache.l2_transfer.L2TransferEngine object at 0x703e83393f90&gt;, L2Transfer(host_pool=namespace(layer_nu...ace(layer_num=3, k_buffer=[tensor([0., 1., 2., 3.]), tensor([10., 11., 12., 13.]), tensor([20., 21., 22., 23.])]), ...)
+invalid = 'different_indices'
+
+    @pytest.mark.parametrize("invalid", (
+        "no_writer_fence", "foreign_device", "different_indices", "empty_extent",
+        "different_host_count", "draft", "layer_mapper", "layer_count", "unsupported",
+        "same_host_source",
+    ))
+    def test_invalid_contract_is_rejected_before_any_device_operation(handoff, invalid):
+        engine, donor, consumer, last_use, calls, *_ = handoff
+        layers = 3
+        if invalid == "no_writer_fence":
+            last_use = None
+        elif invalid == "foreign_device":
+            consumer = consumer._replace(device_pool=object())
+        elif invalid == "different_indices":
+            consumer = consumer._replace(device_indices=consumer.device_indices.clone())
+        elif invalid == "empty_extent":
+            donor = donor._replace(device_indices=torch.empty(0, dtype=torch.int64))
+        elif invalid == "different_host_count":
+            consumer = consumer._replace(host_indices=consumer.host_indices[:2])
+        elif invalid == "draft":
+            donor = donor._replace(is_draft=True)
+        elif invalid == "layer_mapper":
+            donor = donor._replace(layer_mapper=lambda layer: layer)
+        elif invalid == "layer_count":
+            layers = 2
+        elif invalid == "unsupported":
+            donor.host_pool.supports_layer_handoff = lambda *_: False
+        else:
+            consumer = consumer._replace(host_pool=donor.host_pool, host_indices=donor.host_indices)
+        with pytest.raises((ValueError, NotImplementedError)):
+&gt;           engine.submit_layer_handoff(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                donor, consumer, layer_num=layers, donor_last_use_event=last_use,
+            )
+E           AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'
+
+test/srt/test_beliefkv_layer_handoff.py:144: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_layer_handoff" name="test_invalid_contract_is_rejected_before_any_device_operation[empty_extent]" time="0.001"><failure message="AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'">handoff = (&lt;sglang.srt.mem_cache.l2_transfer.L2TransferEngine object at 0x703e833fe2d0&gt;, L2Transfer(host_pool=namespace(layer_nu...ace(layer_num=3, k_buffer=[tensor([0., 1., 2., 3.]), tensor([10., 11., 12., 13.]), tensor([20., 21., 22., 23.])]), ...)
+invalid = 'empty_extent'
+
+    @pytest.mark.parametrize("invalid", (
+        "no_writer_fence", "foreign_device", "different_indices", "empty_extent",
+        "different_host_count", "draft", "layer_mapper", "layer_count", "unsupported",
+        "same_host_source",
+    ))
+    def test_invalid_contract_is_rejected_before_any_device_operation(handoff, invalid):
+        engine, donor, consumer, last_use, calls, *_ = handoff
+        layers = 3
+        if invalid == "no_writer_fence":
+            last_use = None
+        elif invalid == "foreign_device":
+            consumer = consumer._replace(device_pool=object())
+        elif invalid == "different_indices":
+            consumer = consumer._replace(device_indices=consumer.device_indices.clone())
+        elif invalid == "empty_extent":
+            donor = donor._replace(device_indices=torch.empty(0, dtype=torch.int64))
+        elif invalid == "different_host_count":
+            consumer = consumer._replace(host_indices=consumer.host_indices[:2])
+        elif invalid == "draft":
+            donor = donor._replace(is_draft=True)
+        elif invalid == "layer_mapper":
+            donor = donor._replace(layer_mapper=lambda layer: layer)
+        elif invalid == "layer_count":
+            layers = 2
+        elif invalid == "unsupported":
+            donor.host_pool.supports_layer_handoff = lambda *_: False
+        else:
+            consumer = consumer._replace(host_pool=donor.host_pool, host_indices=donor.host_indices)
+        with pytest.raises((ValueError, NotImplementedError)):
+&gt;           engine.submit_layer_handoff(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                donor, consumer, layer_num=layers, donor_last_use_event=last_use,
+            )
+E           AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'
+
+test/srt/test_beliefkv_layer_handoff.py:144: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_layer_handoff" name="test_invalid_contract_is_rejected_before_any_device_operation[different_host_count]" time="0.001"><failure message="AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'">handoff = (&lt;sglang.srt.mem_cache.l2_transfer.L2TransferEngine object at 0x703e833fb590&gt;, L2Transfer(host_pool=namespace(layer_nu...ace(layer_num=3, k_buffer=[tensor([0., 1., 2., 3.]), tensor([10., 11., 12., 13.]), tensor([20., 21., 22., 23.])]), ...)
+invalid = 'different_host_count'
+
+    @pytest.mark.parametrize("invalid", (
+        "no_writer_fence", "foreign_device", "different_indices", "empty_extent",
+        "different_host_count", "draft", "layer_mapper", "layer_count", "unsupported",
+        "same_host_source",
+    ))
+    def test_invalid_contract_is_rejected_before_any_device_operation(handoff, invalid):
+        engine, donor, consumer, last_use, calls, *_ = handoff
+        layers = 3
+        if invalid == "no_writer_fence":
+            last_use = None
+        elif invalid == "foreign_device":
+            consumer = consumer._replace(device_pool=object())
+        elif invalid == "different_indices":
+            consumer = consumer._replace(device_indices=consumer.device_indices.clone())
+        elif invalid == "empty_extent":
+            donor = donor._replace(device_indices=torch.empty(0, dtype=torch.int64))
+        elif invalid == "different_host_count":
+            consumer = consumer._replace(host_indices=consumer.host_indices[:2])
+        elif invalid == "draft":
+            donor = donor._replace(is_draft=True)
+        elif invalid == "layer_mapper":
+            donor = donor._replace(layer_mapper=lambda layer: layer)
+        elif invalid == "layer_count":
+            layers = 2
+        elif invalid == "unsupported":
+            donor.host_pool.supports_layer_handoff = lambda *_: False
+        else:
+            consumer = consumer._replace(host_pool=donor.host_pool, host_indices=donor.host_indices)
+        with pytest.raises((ValueError, NotImplementedError)):
+&gt;           engine.submit_layer_handoff(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                donor, consumer, layer_num=layers, donor_last_use_event=last_use,
+            )
+E           AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'
+
+test/srt/test_beliefkv_layer_handoff.py:144: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_layer_handoff" name="test_invalid_contract_is_rejected_before_any_device_operation[draft]" time="0.001"><failure message="AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'">handoff = (&lt;sglang.srt.mem_cache.l2_transfer.L2TransferEngine object at 0x703e8290e910&gt;, L2Transfer(host_pool=namespace(layer_nu...ace(layer_num=3, k_buffer=[tensor([0., 1., 2., 3.]), tensor([10., 11., 12., 13.]), tensor([20., 21., 22., 23.])]), ...)
+invalid = 'draft'
+
+    @pytest.mark.parametrize("invalid", (
+        "no_writer_fence", "foreign_device", "different_indices", "empty_extent",
+        "different_host_count", "draft", "layer_mapper", "layer_count", "unsupported",
+        "same_host_source",
+    ))
+    def test_invalid_contract_is_rejected_before_any_device_operation(handoff, invalid):
+        engine, donor, consumer, last_use, calls, *_ = handoff
+        layers = 3
+        if invalid == "no_writer_fence":
+            last_use = None
+        elif invalid == "foreign_device":
+            consumer = consumer._replace(device_pool=object())
+        elif invalid == "different_indices":
+            consumer = consumer._replace(device_indices=consumer.device_indices.clone())
+        elif invalid == "empty_extent":
+            donor = donor._replace(device_indices=torch.empty(0, dtype=torch.int64))
+        elif invalid == "different_host_count":
+            consumer = consumer._replace(host_indices=consumer.host_indices[:2])
+        elif invalid == "draft":
+            donor = donor._replace(is_draft=True)
+        elif invalid == "layer_mapper":
+            donor = donor._replace(layer_mapper=lambda layer: layer)
+        elif invalid == "layer_count":
+            layers = 2
+        elif invalid == "unsupported":
+            donor.host_pool.supports_layer_handoff = lambda *_: False
+        else:
+            consumer = consumer._replace(host_pool=donor.host_pool, host_indices=donor.host_indices)
+        with pytest.raises((ValueError, NotImplementedError)):
+&gt;           engine.submit_layer_handoff(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                donor, consumer, layer_num=layers, donor_last_use_event=last_use,
+            )
+E           AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'
+
+test/srt/test_beliefkv_layer_handoff.py:144: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_layer_handoff" name="test_invalid_contract_is_rejected_before_any_device_operation[layer_mapper]" time="0.001"><failure message="AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'">handoff = (&lt;sglang.srt.mem_cache.l2_transfer.L2TransferEngine object at 0x703e833ecad0&gt;, L2Transfer(host_pool=namespace(layer_nu...ace(layer_num=3, k_buffer=[tensor([0., 1., 2., 3.]), tensor([10., 11., 12., 13.]), tensor([20., 21., 22., 23.])]), ...)
+invalid = 'layer_mapper'
+
+    @pytest.mark.parametrize("invalid", (
+        "no_writer_fence", "foreign_device", "different_indices", "empty_extent",
+        "different_host_count", "draft", "layer_mapper", "layer_count", "unsupported",
+        "same_host_source",
+    ))
+    def test_invalid_contract_is_rejected_before_any_device_operation(handoff, invalid):
+        engine, donor, consumer, last_use, calls, *_ = handoff
+        layers = 3
+        if invalid == "no_writer_fence":
+            last_use = None
+        elif invalid == "foreign_device":
+            consumer = consumer._replace(device_pool=object())
+        elif invalid == "different_indices":
+            consumer = consumer._replace(device_indices=consumer.device_indices.clone())
+        elif invalid == "empty_extent":
+            donor = donor._replace(device_indices=torch.empty(0, dtype=torch.int64))
+        elif invalid == "different_host_count":
+            consumer = consumer._replace(host_indices=consumer.host_indices[:2])
+        elif invalid == "draft":
+            donor = donor._replace(is_draft=True)
+        elif invalid == "layer_mapper":
+            donor = donor._replace(layer_mapper=lambda layer: layer)
+        elif invalid == "layer_count":
+            layers = 2
+        elif invalid == "unsupported":
+            donor.host_pool.supports_layer_handoff = lambda *_: False
+        else:
+            consumer = consumer._replace(host_pool=donor.host_pool, host_indices=donor.host_indices)
+        with pytest.raises((ValueError, NotImplementedError)):
+&gt;           engine.submit_layer_handoff(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                donor, consumer, layer_num=layers, donor_last_use_event=last_use,
+            )
+E           AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'
+
+test/srt/test_beliefkv_layer_handoff.py:144: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_layer_handoff" name="test_invalid_contract_is_rejected_before_any_device_operation[layer_count]" time="0.001"><failure message="AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'">handoff = (&lt;sglang.srt.mem_cache.l2_transfer.L2TransferEngine object at 0x703e833913d0&gt;, L2Transfer(host_pool=namespace(layer_nu...ace(layer_num=3, k_buffer=[tensor([0., 1., 2., 3.]), tensor([10., 11., 12., 13.]), tensor([20., 21., 22., 23.])]), ...)
+invalid = 'layer_count'
+
+    @pytest.mark.parametrize("invalid", (
+        "no_writer_fence", "foreign_device", "different_indices", "empty_extent",
+        "different_host_count", "draft", "layer_mapper", "layer_count", "unsupported",
+        "same_host_source",
+    ))
+    def test_invalid_contract_is_rejected_before_any_device_operation(handoff, invalid):
+        engine, donor, consumer, last_use, calls, *_ = handoff
+        layers = 3
+        if invalid == "no_writer_fence":
+            last_use = None
+        elif invalid == "foreign_device":
+            consumer = consumer._replace(device_pool=object())
+        elif invalid == "different_indices":
+            consumer = consumer._replace(device_indices=consumer.device_indices.clone())
+        elif invalid == "empty_extent":
+            donor = donor._replace(device_indices=torch.empty(0, dtype=torch.int64))
+        elif invalid == "different_host_count":
+            consumer = consumer._replace(host_indices=consumer.host_indices[:2])
+        elif invalid == "draft":
+            donor = donor._replace(is_draft=True)
+        elif invalid == "layer_mapper":
+            donor = donor._replace(layer_mapper=lambda layer: layer)
+        elif invalid == "layer_count":
+            layers = 2
+        elif invalid == "unsupported":
+            donor.host_pool.supports_layer_handoff = lambda *_: False
+        else:
+            consumer = consumer._replace(host_pool=donor.host_pool, host_indices=donor.host_indices)
+        with pytest.raises((ValueError, NotImplementedError)):
+&gt;           engine.submit_layer_handoff(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                donor, consumer, layer_num=layers, donor_last_use_event=last_use,
+            )
+E           AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'
+
+test/srt/test_beliefkv_layer_handoff.py:144: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_layer_handoff" name="test_invalid_contract_is_rejected_before_any_device_operation[unsupported]" time="0.001"><failure message="AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'">handoff = (&lt;sglang.srt.mem_cache.l2_transfer.L2TransferEngine object at 0x703e833fdf10&gt;, L2Transfer(host_pool=namespace(layer_nu...ace(layer_num=3, k_buffer=[tensor([0., 1., 2., 3.]), tensor([10., 11., 12., 13.]), tensor([20., 21., 22., 23.])]), ...)
+invalid = 'unsupported'
+
+    @pytest.mark.parametrize("invalid", (
+        "no_writer_fence", "foreign_device", "different_indices", "empty_extent",
+        "different_host_count", "draft", "layer_mapper", "layer_count", "unsupported",
+        "same_host_source",
+    ))
+    def test_invalid_contract_is_rejected_before_any_device_operation(handoff, invalid):
+        engine, donor, consumer, last_use, calls, *_ = handoff
+        layers = 3
+        if invalid == "no_writer_fence":
+            last_use = None
+        elif invalid == "foreign_device":
+            consumer = consumer._replace(device_pool=object())
+        elif invalid == "different_indices":
+            consumer = consumer._replace(device_indices=consumer.device_indices.clone())
+        elif invalid == "empty_extent":
+            donor = donor._replace(device_indices=torch.empty(0, dtype=torch.int64))
+        elif invalid == "different_host_count":
+            consumer = consumer._replace(host_indices=consumer.host_indices[:2])
+        elif invalid == "draft":
+            donor = donor._replace(is_draft=True)
+        elif invalid == "layer_mapper":
+            donor = donor._replace(layer_mapper=lambda layer: layer)
+        elif invalid == "layer_count":
+            layers = 2
+        elif invalid == "unsupported":
+            donor.host_pool.supports_layer_handoff = lambda *_: False
+        else:
+            consumer = consumer._replace(host_pool=donor.host_pool, host_indices=donor.host_indices)
+        with pytest.raises((ValueError, NotImplementedError)):
+&gt;           engine.submit_layer_handoff(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                donor, consumer, layer_num=layers, donor_last_use_event=last_use,
+            )
+E           AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'
+
+test/srt/test_beliefkv_layer_handoff.py:144: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_layer_handoff" name="test_invalid_contract_is_rejected_before_any_device_operation[same_host_source]" time="0.001"><failure message="AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'">handoff = (&lt;sglang.srt.mem_cache.l2_transfer.L2TransferEngine object at 0x703e8291d350&gt;, L2Transfer(host_pool=namespace(layer_nu...ace(layer_num=3, k_buffer=[tensor([0., 1., 2., 3.]), tensor([10., 11., 12., 13.]), tensor([20., 21., 22., 23.])]), ...)
+invalid = 'same_host_source'
+
+    @pytest.mark.parametrize("invalid", (
+        "no_writer_fence", "foreign_device", "different_indices", "empty_extent",
+        "different_host_count", "draft", "layer_mapper", "layer_count", "unsupported",
+        "same_host_source",
+    ))
+    def test_invalid_contract_is_rejected_before_any_device_operation(handoff, invalid):
+        engine, donor, consumer, last_use, calls, *_ = handoff
+        layers = 3
+        if invalid == "no_writer_fence":
+            last_use = None
+        elif invalid == "foreign_device":
+            consumer = consumer._replace(device_pool=object())
+        elif invalid == "different_indices":
+            consumer = consumer._replace(device_indices=consumer.device_indices.clone())
+        elif invalid == "empty_extent":
+            donor = donor._replace(device_indices=torch.empty(0, dtype=torch.int64))
+        elif invalid == "different_host_count":
+            consumer = consumer._replace(host_indices=consumer.host_indices[:2])
+        elif invalid == "draft":
+            donor = donor._replace(is_draft=True)
+        elif invalid == "layer_mapper":
+            donor = donor._replace(layer_mapper=lambda layer: layer)
+        elif invalid == "layer_count":
+            layers = 2
+        elif invalid == "unsupported":
+            donor.host_pool.supports_layer_handoff = lambda *_: False
+        else:
+            consumer = consumer._replace(host_pool=donor.host_pool, host_indices=donor.host_indices)
+        with pytest.raises((ValueError, NotImplementedError)):
+&gt;           engine.submit_layer_handoff(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                donor, consumer, layer_num=layers, donor_last_use_event=last_use,
+            )
+E           AttributeError: 'L2TransferEngine' object has no attribute 'submit_layer_handoff'
+
+test/srt/test_beliefkv_layer_handoff.py:144: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_layer_handoff" name="test_mha_layer_backup_uses_the_selected_host_view_without_touching_other_layers[layer_first]" time="2.146"><failure message="AttributeError: 'MHATokenToKVPoolHost' object has no attribute 'backup_from_device_per_layer'">layout = 'layer_first'
+
+    @pytest.mark.parametrize("layout", ("layer_first", "page_first"))
+    def test_mha_layer_backup_uses_the_selected_host_view_without_touching_other_layers(layout):
+        from sglang.srt.mem_cache.pool_host import mha
+    
+        pool = NS(
+            layer_num=3, layer_shard_enabled=False,
+            k_buffer=[torch.arange(8.).reshape(4, 1, 2) + i * 10 for i in range(3)],
+            v_buffer=[torch.arange(8.).reshape(4, 1, 2) + 100 + i * 10 for i in range(3)],
+        )
+        host = object.__new__(mha.MHATokenToKVPoolHost)
+        host.layout, host.can_use_jit = layout, True
+        host.mtp_draft_device_pools = ()
+        host.device_pool = pool
+        host.layer_num = host.target_layer_num = 3
+        host.element_dim = 2
+        host.pin_memory = False
+        host.kv_buffer = None
+        storage = torch.zeros((2, 3, 4, 1, 2) if layout == "layer_first" else (2, 4, 3, 1, 2))
+        host.k_data_refs = [storage[0, i] if layout == "layer_first" else storage[0, :, i] for i in range(3)]
+        host.v_data_refs = [storage[1, i] if layout == "layer_first" else storage[1, :, i] for i in range(3)]
+        indices = torch.tensor([1, 3])
+    
+        def copy(**kwargs):
+            for kind in ("k", "v"):
+                dst, src = kwargs[f"{kind}_cache_dst"], kwargs[f"{kind}_cache_src"]
+                dst.index_copy_(0, kwargs["indices_dst"], src[kwargs["indices_src"]])
+    
+        with patch.object(mha, "jit_transfer_hicache_one_layer", side_effect=copy):
+&gt;           host.backup_from_device_per_layer(pool, indices, indices, 1, "kernel")
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'MHATokenToKVPoolHost' object has no attribute 'backup_from_device_per_layer'
+
+test/srt/test_beliefkv_layer_handoff.py:178: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_layer_handoff" name="test_mha_layer_backup_uses_the_selected_host_view_without_touching_other_layers[page_first]" time="0.001"><failure message="AttributeError: 'MHATokenToKVPoolHost' object has no attribute 'backup_from_device_per_layer'">layout = 'page_first'
+
+    @pytest.mark.parametrize("layout", ("layer_first", "page_first"))
+    def test_mha_layer_backup_uses_the_selected_host_view_without_touching_other_layers(layout):
+        from sglang.srt.mem_cache.pool_host import mha
+    
+        pool = NS(
+            layer_num=3, layer_shard_enabled=False,
+            k_buffer=[torch.arange(8.).reshape(4, 1, 2) + i * 10 for i in range(3)],
+            v_buffer=[torch.arange(8.).reshape(4, 1, 2) + 100 + i * 10 for i in range(3)],
+        )
+        host = object.__new__(mha.MHATokenToKVPoolHost)
+        host.layout, host.can_use_jit = layout, True
+        host.mtp_draft_device_pools = ()
+        host.device_pool = pool
+        host.layer_num = host.target_layer_num = 3
+        host.element_dim = 2
+        host.pin_memory = False
+        host.kv_buffer = None
+        storage = torch.zeros((2, 3, 4, 1, 2) if layout == "layer_first" else (2, 4, 3, 1, 2))
+        host.k_data_refs = [storage[0, i] if layout == "layer_first" else storage[0, :, i] for i in range(3)]
+        host.v_data_refs = [storage[1, i] if layout == "layer_first" else storage[1, :, i] for i in range(3)]
+        indices = torch.tensor([1, 3])
+    
+        def copy(**kwargs):
+            for kind in ("k", "v"):
+                dst, src = kwargs[f"{kind}_cache_dst"], kwargs[f"{kind}_cache_src"]
+                dst.index_copy_(0, kwargs["indices_dst"], src[kwargs["indices_src"]])
+    
+        with patch.object(mha, "jit_transfer_hicache_one_layer", side_effect=copy):
+&gt;           host.backup_from_device_per_layer(pool, indices, indices, 1, "kernel")
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'MHATokenToKVPoolHost' object has no attribute 'backup_from_device_per_layer'
+
+test/srt/test_beliefkv_layer_handoff.py:178: AttributeError</failure></testcase></testsuite></testsuites>

@@ -1,5 +1,6 @@
 """Native cache ownership/admission with event/copy stand-ins, not GPU proof."""
 
+import asyncio
 from array import array
 from dataclasses import replace
 from types import SimpleNamespace as NS
@@ -13,6 +14,42 @@ from beliefkv.experiments.paper_baselines import environment as paper_environmen
 from tests.test_full_only_native_lifecycle import full_native
 from tests.test_tool_offload_before_admission import enable_early, configuration
 from tests.test_tool_policy_adaptation import demand_runtime
+
+
+def test_model_probe_reader_waits_for_complete_jsonl_records(tmp_path):
+    from scripts.qualify_layer_handoff_model import records
+
+    path = tmp_path / "observations.jsonl"
+    assert records(path) == []
+    path.write_text('{"event":"old"}\n{"event":"pending"')
+    assert records(path) == [{"event": "old"}]
+    path.write_text('{"event":"old"}\n{"event":"new"}\n')
+    assert records(path) == [{"event": "old"}, {"event": "new"}]
+    path.write_text('{"broken":\n')
+    with pytest.raises(ValueError):
+        records(path)
+
+
+def test_model_probe_requires_actual_matching_delivered_evidence(tmp_path, monkeypatch):
+    from scripts import qualify_layer_handoff_model as qualifier
+
+    path = tmp_path / "observations.jsonl"
+    path.write_text('{"request":"other"}\n')
+    delivered = []
+
+    async def flush(_interval):
+        delivered.append(True)
+        path.write_text('{"request":"other"}\n{"request":"selected"}\n')
+
+    monkeypatch.setattr(qualifier.asyncio, "sleep", flush)
+    ready = lambda rows: any(row.get("request") == "selected" for row in rows)
+    result = asyncio.run(qualifier.wait_evidence(path, ready, lambda: None))
+    assert delivered == [True]
+    assert result[-1] == {"request": "selected"}
+    with pytest.raises(TimeoutError):
+        asyncio.run(qualifier.wait_evidence(
+            path, lambda _rows: False, lambda: None, timeout=0.,
+        ))
 
 
 @pytest.fixture

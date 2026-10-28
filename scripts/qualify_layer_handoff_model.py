@@ -31,16 +31,61 @@ from scripts.run_causal_gpu_replay import source_plan
 
 
 DOCUMENT = {"generated_tokens": 8, "sampling_seed": 21}
+WARM_TOOL_SECONDS = 4.
 
 
 def records(path):
-    return [json.loads(line) for line in path.read_text().splitlines()] if path.exists() else []
+    if not path.exists():
+        return []
+    rows = []
+    with path.open() as source:
+        for line in source:
+            if not line.endswith("\n"):
+                break
+            rows.append(json.loads(line))
+    return rows
+
+
+async def wait_evidence(path, ready, pulse, *, timeout=5.):
+    deadline = time.monotonic() + timeout
+    while True:
+        pulse()
+        rows = records(path)
+        if ready(rows):
+            return rows
+        if time.monotonic() >= deadline:
+            raise TimeoutError("model qualification evidence did not arrive: " + str(path))
+        await asyncio.sleep(.05)
 
 
 async def probe(directory, port, prompts, pulse):
     socket = Path(f"/tmp/bkv-layer-model-{port}.sock")
     sequence, rows, bodies = 0, {}, {}
+    observations = directory / "arm/opportunities/admission_opportunities.jsonl"
+    stages = {}
     leases = NativeRadixSessionLeases(lambda _session: None)
+
+    async def stage(label, ready, *, timeout=5.):
+        try:
+            evidence = await wait_evidence(observations, ready, pulse, timeout=timeout)
+        except BaseException:
+            evidence = records(observations)
+            stages[label] = {"status": "failed"}
+            raise
+        else:
+            stages[label] = {"status": "observed"}
+            return evidence
+        finally:
+            latest = next((
+                row for row in reversed(evidence)
+                if row.get("event") == "admission_runtime_state"
+            ), None)
+            stages[label]["last_runtime_state"] = latest
+            stages[label]["non_state_events"] = [
+                row for row in evidence if row.get("event") != "admission_runtime_state"
+            ]
+            controls.reservation.write_json(directory / "probe_stages.json", stages)
+
     with (
         JsonlRuntimeEventSink(directory / "events.jsonl") as log,
         UnixDatagramRuntimeEventSink(socket) as sink,
@@ -56,6 +101,7 @@ async def probe(directory, port, prompts, pulse):
                 )
                 log.emit_batch((item,))
                 await asyncio.to_thread(sink.emit_batch, (item,))
+                return item
 
             async def create(identity):
                 await send(
@@ -89,7 +135,7 @@ async def probe(directory, port, prompts, pulse):
                 return rows[label]["output_token_ids"]
 
             async def tool(kind, identity, tool_id):
-                await send(kind, identity, attributes={
+                return await send(kind, identity, attributes={
                     "tool_family": "shell", "tool_name": "execute",
                     "tool_run_id": tool_id, "command": "fixture_wait",
                 })
@@ -100,7 +146,7 @@ async def probe(directory, port, prompts, pulse):
             # These are measured fixture waits, not private future durations.
             for index in range(8):
                 await tool(Kind.TOOL_START, "b", f"warm-{index}")
-                await asyncio.sleep(2.)
+                await asyncio.sleep(WARM_TOOL_SECONDS)
                 await tool(Kind.TOOL_END, "b", f"warm-{index}")
             await tool(Kind.TOOL_START, "b", "b_wait")
             await create("c")
@@ -108,11 +154,21 @@ async def probe(directory, port, prompts, pulse):
             await send(Kind.RETURN, "c", attributes={"context_retired": False})
             await create("a")
             a_output = await call("a_initial", "a", prompts[2])
-            await tool(Kind.TOOL_START, "a", "a_wait")
+            a_started = await tool(Kind.TOOL_START, "a", "a_wait")
             a_timer = asyncio.create_task(asyncio.sleep(20.))
+            await stage("a_prediction", lambda evidence: any(
+                row.get("event") == "tool_wait_forecast"
+                and row.get("invocation_id") == "a"
+                and row.get("invocation_revision_ts_ms") == a_started.ts_ms
+                for row in evidence
+            ))
             await tool(Kind.TOOL_END, "b", "b_wait")
             await call("b_handoff", "b", prompts[0] + b_output)
-            journal = records(directory / "arm/opportunities/admission_opportunities.jsonl")
+            journal = await stage("b_handoff", lambda evidence: any(
+                row.get("event") == "layer_kv_handoff_submitted"
+                and row.get("beneficiary_request_id") == "layer-model:b_handoff"
+                for row in evidence
+            ))
             handoffs = [row for row in journal if row.get("event") == "layer_kv_handoff_submitted"]
             if len(handoffs) != 1 or handoffs[0]["beneficiary_request_id"] != "layer-model:b_handoff":
                 raise ValueError("actual model consumer did not execute one predicted layer handoff")
@@ -131,6 +187,13 @@ async def probe(directory, port, prompts, pulse):
                 response = await client.post("/close_session", json={"session_id": session})
                 response.raise_for_status()
             await send(Kind.WORKFLOW_END)
+            ended = time.monotonic() * 1000.
+            await stage("workflow_drained", lambda evidence: any(
+                row.get("event") == "admission_runtime_state"
+                and row.get("monotonic_ms", 0) >= ended
+                and row.get("agent_admission", {}).get("programs") == 0
+                for row in evidence
+            ))
     deltas = {}
     for label, reference in (("b_handoff", "b_reference"), ("a_recovered", "a_reference")):
         if rows[label]["output_token_ids"] != rows[reference]["output_token_ids"]:
@@ -197,6 +260,7 @@ def main():
         CONTEXT_LENGTH="49152", HICACHE_SIZE_GB="8", SGLANG_PLUGINS="",
         BELIEFKV_CAUSAL_REPLAY_BRIDGE="0", BELIEFKV_REPLAY_TOKEN_CAPTURE="1",
         BELIEFKV_ENABLE_BACKGROUND_PREPARE="0",
+        BELIEFKV_ENABLE_TOOL_PREFETCH="0",
         BELIEFKV_TOOL_TIMING_PRIOR="", BELIEFKV_TOOL_TIMING_PRIOR_SHA256="",
     )
     flags.remove("--enable-custom-logit-processor")
@@ -209,7 +273,8 @@ def main():
         "native_engine": state, "component_sha256": sha256_file(args.components),
         "source_requests": selected, "fixture": {
             "device_tokens": 49152, "host_gb": 8, "warm_tools": 8,
-            "warm_tool_seconds": 2, "donor_tool_seconds": 20,
+            "warm_tool_seconds": WARM_TOOL_SECONDS, "donor_tool_seconds": 20,
+            "speculative_tool_prefetch": False,
             "model_inputs": [len(tokens) for tokens in prompts],
             "sampling": DOCUMENT, "max_logprob_delta": .05,
         },
