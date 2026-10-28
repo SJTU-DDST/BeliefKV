@@ -1,0 +1,87 @@
+{
+  "observed_at": "2026-10-28T00:27:43.141060+00:00",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_free_continuation_20261027_r1/full",
+  "code_commit": "1f1678b266e15bc0427a0f98b683bc6b098ec026",
+  "complete_review_sha256": "2b1078402e00f79f52faeecae6a8adaad878e599e1884dca760a4d236b086535",
+  "independent_wait_offload_audit_sha256": "7e8954998291269002328fd6df6fa8cfba5aa1f524043c1109eb0e40af06c367",
+  "full_bytes_per_token": 98304,
+  "release_paths": {
+    "additional_predicted_tool_offload": {
+      "events": 0,
+      "full_tokens": 0,
+      "full_bytes": 0
+    },
+    "allocation_pressure_join_wait": {
+      "events": 612,
+      "full_tokens": 1277340,
+      "full_bytes": 125567631360
+    },
+    "allocation_pressure_tool_wait": {
+      "events": 189,
+      "full_tokens": 20408,
+      "full_bytes": 2006188032
+    }
+  },
+  "final_recorded_no_eligible_host_waiter_checks": 3800,
+  "final_recorded_predicted_context_checks": 1,
+  "final_recorded_idle_prepare": {
+    "interval_ms": 200.0,
+    "queued_owner_backup": true,
+    "native": {
+      "checks": 9965,
+      "max_batch_bytes": 536870912,
+      "dirty_nodes_last": 290,
+      "dirty_nodes_high_water": 667,
+      "scanned_nodes": 72771,
+      "eligible_nodes": 97,
+      "eligible_full_tokens": 25998,
+      "uninspected_nodes_last": 290,
+      "scan_limited_rounds": 2252,
+      "host_free_tokens_last": 683,
+      "host_reserved_tokens": 5461,
+      "full_bytes_per_token": 98304,
+      "max_scanned_nodes": 32,
+      "max_merged_nodes": 32,
+      "host_budget_tokens_last": 0,
+      "host_budget_limited_rounds": 7254,
+      "issued_tokens": 24014,
+      "issued_nodes": 97,
+      "byte_budget_reached_rounds": 2,
+      "host_budget_reached_rounds": 1,
+      "extent_limit_reached_rounds": 0,
+      "dirty_nodes_after_last": 290,
+      "rounds_without_eligible_nodes": 2204,
+      "issued_rounds": 83,
+      "empty_rounds": 9455,
+      "hot_or_unknown_owner_nodes": 68191,
+      "blocked_d2h_ack": 113,
+      "blocked_native_queues": 427,
+      "stale_nodes": 4483,
+      "blocked_h2d_ack": 351,
+      "blocked_host_capacity_rounds": 7251,
+      "host_budget_pre_scan_skips": 7251
+    }
+  },
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_free_continuation_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 59966762,
+      "complete_prefix_sha256": "a3e254ac4989da296e0ffbc1658a033992e871cacb8471e80400a474cd35ac1e",
+      "first_read_limit_bytes": 59966762
+    }
+  },
+  "capacity_census_sha256": "5b1b1e1a39c187db56114b4639b60d7be6d928ee44c9bbb0e52f721dfe6cf135",
+  "operator_sha256": "d0b12be71ff0e4acccfc5452abd02788a136c4499448b0dad69ea6b0ad5e0c43",
+  "runtime_sources_sha256": {
+    "beliefkv/runtime/predicted_tool_offload.py": "7878ef50879ba664e4b74b5fb53689c61d2fba5e86c79bf9b70adb35075663c5",
+    "scripts/audit_wait_offload.py": "b567b6173eba349861e0d309ede687c76dc7cdf68c3cfdfe0454137d56b711ab"
+  },
+  "performance_accepted": false,
+  "limitations": [
+    "Node-release totals are cumulative, not simultaneous free capacity or unique whole-agent bytes.",
+    "PREPARE_HOST acknowledgments are backups and are not counted as physical HBM release.",
+    "Native untagged eviction and terminal child discard remain separate.",
+    "Snapshot counters describe recorded gates, not continuously observed opportunity recall or causes of every rejected call.",
+    "Host-free budget refusal does not prove that safe Host victims were available or that eviction would improve JCT.",
+    "No future tool-end labels enter the actual online policy."
+  ]
+}

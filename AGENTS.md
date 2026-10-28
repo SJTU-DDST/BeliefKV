@@ -1894,3 +1894,30 @@
   execution passes300 CPU cases without failures/skips; preserve its XML.
   No frozen runtime/config/engine changed, no final Full result is implied,
   and progressive layer-capacity handoff remains unimplemented.
+- ContinuationR1 now completes all3674 exact requests,145565966 input/549671
+  output tokens and18 normal workflow tails, original stopping, two fresh
+  idle snapshots and actual owned exit. The plot waiter also exits and all
+  three matched figures are inspected. The complete operator succeeds after
+  preserving its original-source-graph seal boundary failure and authorizing
+  only the registered source graph separately. MeanJCT1630.055849s versus
+  V3451697.583645s improves3.97788%; full-run output236.040223 versus
+  233.371801token/s improves1.14342%. Versus priorEOS Full, meanJCT improves
+  1.02052% but throughput regresses0.59148%. Preserve17 faster workflows and
+  game_simulation25.059875s slower. Do not promote this as clear/repeated
+  superiority or start other baselines/ablations.
+  All286 program service associations in283 grants verify, including191
+  ordinary continuations. ActualH2D2679.432806GB/D2H1079.603331GB;366 JOIN
+  copies47.787049GB prove reuse and five JOINs early-reuse22.562734GB.
+  Tools copy zero. Both arms'140952652 common previously served input tokens
+  have zero missing-prefix probes; this is not every kernel recomputation.
+  Independent complete_offload_paths.py/.json separates612 allocation-pressure
+  JOIN releases125.567631GB and189 tool releases2.006188GB from zero additional
+  predictive early releases. Final recorded demand-offload no-waiter checks
+  are3800; idle prepare has7251 Host-budget pre-scan refusals/9965 checks.
+  These are not continuously observed opportunity recall or safe Host-victim
+  proof. Inspect admission/demand timing and physical/Host capacity before
+  another candidate, not more loan variants or forced ready-peer prefetch.
+  Complete reports/figures and limitations remain in the named directory and
+  docs/research/reference_free_continuation_complete_20261027_zh.md. ReuseV345,
+  queue no extra GPU run by this audit, and keep the global goal incomplete.
+  Progressive layer-capacity handoff remains unimplemented and unevaluated.

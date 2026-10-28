@@ -1,0 +1,11 @@
+{
+  "recorded_at": "2026-10-28T00:15:22.467822+00:00",
+  "scope": "Preserve the observed first complete-review failure; not a serving or GPU experiment failure.",
+  "operator_sha256": "d979b1ec3539d5450db5612deafeb4dd34f23ca115690c3d0533949113000d1e",
+  "exception_type": "ValueError",
+  "exception_message": "sealed audit input belongs to another arm: /home/longhao/experiment/BeliefKV/experiments/raw/locobench_parallel_retry_source_20261026_v230/native_capture/client_18/workflows/locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl",
+  "failure_boundary": "complete_review.py main line171 -> verify_seals line52 while verifying complete_jct_paths.source_evidence",
+  "cause": "The JCT path auditor legitimately seals the registered original source graph as well as the compared arms; the new review operator permitted arm paths only.",
+  "complete_review_json_written": false,
+  "frozen_runtime_or_experiment_inputs_changed": false
+}

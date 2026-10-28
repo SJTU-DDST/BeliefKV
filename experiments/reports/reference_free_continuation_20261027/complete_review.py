@@ -168,7 +168,17 @@ def main():
         for script, digest in report.get("auditor_source_sha256", {}).items():
             if sha256_file(ROOT / script) != digest:
                 raise ValueError(f"audit helper source changed: {script}")
-        verify_seals(report, inputs, tuple(arms.values()))
+        sealed_report = report
+        if name == "complete_jct_paths":
+            source_arm = Path(full_plan["source_arm"]).resolve()
+            if (
+                Path(report["source_evidence"]["source_arm"]).resolve() != source_arm
+                or report["source_graph"] != full_plan["source_plan"]
+            ):
+                raise ValueError("JCT path audit changed the registered source graph")
+            verify_seals(report["source_evidence"], inputs, (source_arm,))
+            sealed_report = {key: value for key, value in report.items() if key != "source_evidence"}
+        verify_seals(sealed_report, inputs, tuple(arms.values()))
         if "arms" in report:
             if set(report["arms"]) != {"Full", "ThunderAgent decay"}:
                 raise ValueError(f"incomplete arm population: {name}")
@@ -179,6 +189,16 @@ def main():
                 verify_seals(report["arms"][label], inputs, (arms[method],))
         elif "arm" in report and Path(report["arm"]).resolve() != arms["full"]:
             raise ValueError(f"audit belongs to a different Full: {name}")
+        for path_field, digest_field in (
+            ("report", "report_sha256"), ("reentries", "reentries_sha256"),
+        ):
+            if path_field in report:
+                dependency = directory / "complete_tool_reentries.json"
+                if (
+                    Path(report[path_field]).resolve() != dependency.resolve()
+                    or report[digest_field] != sha256_file(dependency)
+                ):
+                    raise ValueError(f"tool-wait audit used different reentry evidence: {name}")
         supplemental[name] = report
         inputs[str(source)] = sha256_file(source)
     for name in ("complete_guard_cases", "complete_eos_trigger_lifecycle"):
