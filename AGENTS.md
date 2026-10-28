@@ -2671,3 +2671,9 @@
   model progress/output and current position/session/stopping before Full.
   Tool prefetch stays off; reuseV345, retain all tails/negative results, and
   keep the clear/repeated/all-baseline goal active.
+- Preserve gpu_components_r1 as pre-scene CUDA_HOME import failure andr2 as
+  first-scene delayed-copy shim is_draft TypeError, both from clean7e7e79e9.
+  Only the qualifier shim now forwards native optional keywords. Full CPU
+  service_gpu_r2 passes4060 plus6subtests with all4060 prior identities and
+  actual constructors/source hashes rebound. Freeze that repair before the
+  next component attempt; no completed GPU/model/performance proof yet.

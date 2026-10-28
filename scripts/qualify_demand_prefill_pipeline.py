@@ -165,10 +165,10 @@ def scenario(engine, name):
         if selection.can_run_list != members:
             raise ValueError("native capacity did not approve the whole selected fixture")
 
-        def delayed_load(device, host_indices, device_indices, layer, backend):
+        def delayed_load(device, host_indices, device_indices, layer, backend, **options):
             if layer == f.layers - 1:
                 torch.cuda._sleep(2_000_000_000)
-            return original_load(device, host_indices, device_indices, layer, backend)
+            return original_load(device, host_indices, device_indices, layer, backend, **options)
 
         host.load_to_device_per_layer = delayed_load
         cc.beliefkv_record_free_page_boundary()

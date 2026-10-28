@@ -1,0 +1,40 @@
+Traceback (most recent call last):
+  File "/home/longhao/experiment/.worktrees/beliefkv-demand-prefill-components-20261028/scripts/qualify_demand_prefill_pipeline.py", line 378, in <module>
+    main()
+  File "/home/longhao/experiment/.worktrees/beliefkv-demand-prefill-components-20261028/scripts/qualify_demand_prefill_pipeline.py", line 360, in main
+    report["scenarios"].append(scenario(engine, name))
+                               ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/longhao/experiment/.worktrees/beliefkv-demand-prefill-components-20261028/scripts/qualify_demand_prefill_pipeline.py", line 32, in scenario
+    from sglang.srt.managers.schedule_batch import Req
+  File "/home/longhao/experiment/.worktrees/sglang-demand-prefill-pipeline-20261028/python/sglang/srt/managers/schedule_batch.py", line 3, in <module>
+    from sglang.srt.dllm.config import DllmConfig
+  File "/home/longhao/experiment/.worktrees/sglang-demand-prefill-pipeline-20261028/python/sglang/srt/dllm/config.py", line 4, in <module>
+    from sglang.srt.configs.model_config import ModelConfig
+  File "/home/longhao/experiment/.worktrees/sglang-demand-prefill-pipeline-20261028/python/sglang/srt/configs/model_config.py", line 32, in <module>
+    from sglang.srt.layers.quantization import QUANTIZATION_METHODS
+  File "/home/longhao/experiment/.worktrees/sglang-demand-prefill-pipeline-20261028/python/sglang/srt/layers/quantization/__init__.py", line 8, in <module>
+    from sglang.srt.layers.quantization.auto_round import AutoRoundConfig
+  File "/home/longhao/experiment/.worktrees/sglang-demand-prefill-pipeline-20261028/python/sglang/srt/layers/quantization/auto_round.py", line 12, in <module>
+    from sglang.srt.layers.quantization.utils import get_scalar_types
+  File "/home/longhao/experiment/.worktrees/sglang-demand-prefill-pipeline-20261028/python/sglang/srt/layers/quantization/utils.py", line 15, in <module>
+    from sglang.kernels.ops.quantization.fp8_kernel import scaled_fp8_quant
+  File "/home/longhao/experiment/.worktrees/sglang-demand-prefill-pipeline-20261028/python/sglang/kernels/ops/quantization/fp8_kernel.py", line 28, in <module>
+    from sglang.srt.layers import deep_gemm_wrapper
+  File "/home/longhao/experiment/.worktrees/sglang-demand-prefill-pipeline-20261028/python/sglang/srt/layers/deep_gemm_wrapper/__init__.py", line 1, in <module>
+    from .entrypoint import *
+  File "/home/longhao/experiment/.worktrees/sglang-demand-prefill-pipeline-20261028/python/sglang/srt/layers/deep_gemm_wrapper/entrypoint.py", line 8, in <module>
+    from sglang.srt.layers.deep_gemm_wrapper import compile_utils
+  File "/home/longhao/experiment/.worktrees/sglang-demand-prefill-pipeline-20261028/python/sglang/srt/layers/deep_gemm_wrapper/compile_utils.py", line 19, in <module>
+    from sglang.srt.layers.deep_gemm_wrapper.configurer import ENABLE_JIT_DEEPGEMM
+  File "/home/longhao/experiment/.worktrees/sglang-demand-prefill-pipeline-20261028/python/sglang/srt/layers/deep_gemm_wrapper/configurer.py", line 39, in <module>
+    ENABLE_JIT_DEEPGEMM = _compute_enable_deep_gemm()
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/longhao/experiment/.worktrees/sglang-demand-prefill-pipeline-20261028/python/sglang/srt/layers/deep_gemm_wrapper/configurer.py", line 32, in _compute_enable_deep_gemm
+    import deep_gemm  # noqa: F401
+    ^^^^^^^^^^^^^^^^
+  File "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/deep_gemm/__init__.py", line 561, in <module>
+    find_cuda_home()
+  File "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/deep_gemm/cuda_helpers.py", line 20, in find_cuda_home
+    assert cuda_home is not None
+           ^^^^^^^^^^^^^^^^^^^^^
+AssertionError

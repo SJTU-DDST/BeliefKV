@@ -1,0 +1,22 @@
+sgl_kernel.kvcacheio.get_device_accessible_ptr is missing from the installed sglang-kernel; using raw host addresses for kernel pointer tables. Build sglang-kernel from python/sglang/kernels/aot to enable it.
+Traceback (most recent call last):
+  File "/home/longhao/experiment/.worktrees/beliefkv-demand-prefill-components-20261028/scripts/qualify_demand_prefill_pipeline.py", line 378, in <module>
+    main()
+  File "/home/longhao/experiment/.worktrees/beliefkv-demand-prefill-components-20261028/scripts/qualify_demand_prefill_pipeline.py", line 360, in main
+    report["scenarios"].append(scenario(engine, name))
+                               ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/longhao/experiment/.worktrees/beliefkv-demand-prefill-components-20261028/scripts/qualify_demand_prefill_pipeline.py", line 175, in scenario
+    if not pipeline.stage(
+           ^^^^^^^^^^^^^^^
+  File "/home/longhao/experiment/.worktrees/beliefkv-demand-prefill-components-20261028/beliefkv/runtime/demand_prefill_pipeline.py", line 186, in stage
+    consumer = self.cache.ready_to_load_host_cache()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/longhao/experiment/.worktrees/sglang-demand-prefill-pipeline-20261028/python/sglang/srt/mem_cache/unified_radix_cache.py", line 5858, in ready_to_load_host_cache
+    producer = self.cache_controller.start_loading()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/longhao/experiment/.worktrees/sglang-demand-prefill-pipeline-20261028/python/sglang/srt/managers/cache_controller.py", line 1193, in start_loading
+    completion = self.l2_transfer_engine.submit_host_to_device(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/longhao/experiment/.worktrees/sglang-demand-prefill-pipeline-20261028/python/sglang/srt/mem_cache/l2_transfer.py", line 109, in submit_host_to_device
+    transfer.host_pool.load_to_device_per_layer(
+TypeError: scenario.<locals>.delayed_load() got an unexpected keyword argument 'is_draft'

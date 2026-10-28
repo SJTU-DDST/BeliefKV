@@ -1,0 +1,37 @@
+{
+  "status": "failed",
+  "performance_accepted": false,
+  "application": {
+    "commit": "7e7e79e9598eaa1e96b779705c7204fefd1e093c",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "52ffea0da6d97a5846c9f29c829506fc72809c317dcc5122de9a63f8914a2514"
+  },
+  "native_engine": {
+    "commit": "d3da19c1ca85581342a14b322fdc94cdc290654d",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "fc39cb9c2ff0b219a47539149f830c5d2bcdd5f6a45932606ba444f86668f21f"
+  },
+  "native_tree": "729aa0caa7a1ffac84463f46b3d1843d1a6a22e4",
+  "canonical_patch_sha256": "c9b3ae50490a5023e5d7fd1fb473c97b1c4c7f22923d06211bf1ea6173f86f0b",
+  "operator_sha256": "f38e6297eacc951c335eddabcbcc181e811fd8015fd28f974368ee4d806b87e4",
+  "owned_gpu_pid": 905520,
+  "authorization": {
+    "hold_file": "/home/longhao/experiment/ops/gpu_hold_until_20261022_0600.json",
+    "hold_sha256": "57a02d25be864ec84fc1c4e6c0afba31b1282ce681e18f7c4dd6974f3f788f9d",
+    "checked_at": "2026-10-29T05:19:38.950177+08:00"
+  },
+  "cpu_evidence": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/service_gpu_r1_cpu.evidence.json",
+    "sha256": "04950bfd01119abf3d509c3f0c57a8d41fdb863c036f0a5db1266ba66a975c08"
+  },
+  "scenarios": [],
+  "error": "AssertionError()"
+}
