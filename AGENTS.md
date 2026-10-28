@@ -2179,3 +2179,12 @@
   Native2a927b88939c remains unchanged; actual GPU/model and matched layer
   performance remain pending. Keep handoff off in running Full, and do not
   infer a performance win from these correctness repairs.
+- ModelR5 is queued behind actual online-refresh Full cleanup:
+  ops/layer_handoff_model_r5_20261027.registration.json. Actual nice0 CPU
+  supervisor511897 is live in waiting_complete_full; it owns no GPU child.
+  The application is isolated at269b6423 and the clean native checkout at
+  2a927b88939c, identical to the real component proof. It rechecks3436-case
+  sources, pins, reservation, actual predecessor exit and idle GPU/port before
+  the numerical qualification. Do not overlap another GPU launch with this
+  queue or call it a passed model/performance result. Preserve all R1-R4
+  failures, current frozen Full and the incomplete global goal.

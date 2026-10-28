@@ -103,6 +103,16 @@ handoff或模型数值恢复结论。
 修复尚待GPU模型重试；当前正式Full冻结在此前29c58c8b，不含此修复，
 并保持handoff关闭。
 
+模型R5已单独排队：
+`ops/layer_handoff_model_r5_20261027.registration.json`。CPU等待器511897
+实际存活，当前状态为waiting_complete_full，尚无该次GPU进程。
+应用冻结在独立worktree269b6423，原生冻结在独立clean worktree2a927b，
+与已通过的真实GPU组件提交相同；共享3436项源码在两个边界复核。
+等待器只有在当前online-refresh Full完整成功、实际进程退出、
+预约允许且GPU和端口空闲后才运行模型资格检查。它不注册完整层
+交换性能实验或其他baseline，失败仍保留原始报告。完整性能验收
+和全局目标均未完成。
+
 目前逐层handoff的完整Full性能实验尚未注册。引擎兼容性声明、绑定当前源码的
 共享检查、实际模型恢复及位置重放检查仍是正式比较前的待完成项。
 既有完整Full及V345保持原样；若此候选在相同完整工作量上产生负收益，
