@@ -1,0 +1,6264 @@
+{
+  "observed_at": "2026-10-28T18:30:21.007073+00:00",
+  "scope": "Complete same-critical-tool-request decode membership geometry.",
+  "arms": {
+    "before": {
+      "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full",
+      "critical_tool_requests": 2973,
+      "critical_decode_member_s_per_workflow": 624.327388036569,
+      "critical_member_time_weighted_actual_batch": 10.19398292450247,
+      "critical_member_time_weighted_batch_mean_context": 59407.53278476872,
+      "positive_lifetime_member_observations": 464588,
+      "no_same_request_decode_interval_overlap_verified": true
+    },
+    "grouped": {
+      "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/join_blocked_layer_groups_20261028_r1/full",
+      "critical_tool_requests": 2973,
+      "critical_decode_member_s_per_workflow": 638.9289058300653,
+      "critical_member_time_weighted_actual_batch": 10.397392743626945,
+      "critical_member_time_weighted_batch_mean_context": 59693.8585995848,
+      "positive_lifetime_member_observations": 464588,
+      "no_same_request_decode_interval_overlap_verified": true
+    }
+  },
+  "critical_decode_delta_s_per_workflow": 14.601517793496328,
+  "descriptive_symmetric_bin_decomposition_s_per_workflow": {
+    "membership_count_and_shape_composition": -12.113765458679508,
+    "within_common_bin_member_interval": 2.607385265181108,
+    "unmatched_bins": 24.10789798699485
+  },
+  "bins": {
+    "before": [
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 3,
+        "cuda_graph": true,
+        "observations": 216,
+        "member_ms": 1050.5456972122192
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 4,
+        "cuda_graph": true,
+        "observations": 30,
+        "member_ms": 157.42443180084229
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 5,
+        "cuda_graph": true,
+        "observations": 76,
+        "member_ms": 359.68350410461426
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 6,
+        "cuda_graph": true,
+        "observations": 83,
+        "member_ms": 410.86124324798584
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 7,
+        "cuda_graph": true,
+        "observations": 665,
+        "member_ms": 3234.8540573120117
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 8,
+        "cuda_graph": true,
+        "observations": 844,
+        "member_ms": 4234.186870574951
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 9,
+        "cuda_graph": true,
+        "observations": 912,
+        "member_ms": 4570.38760471344
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 10,
+        "cuda_graph": true,
+        "observations": 1221,
+        "member_ms": 6219.721472740173
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 11,
+        "cuda_graph": true,
+        "observations": 1950,
+        "member_ms": 10047.505670547485
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 12,
+        "cuda_graph": true,
+        "observations": 2007,
+        "member_ms": 10282.043273925781
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 13,
+        "cuda_graph": true,
+        "observations": 1917,
+        "member_ms": 9914.18792629242
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 14,
+        "cuda_graph": true,
+        "observations": 2599,
+        "member_ms": 13505.179406166077
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 15,
+        "cuda_graph": true,
+        "observations": 602,
+        "member_ms": 3187.7660665512085
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 2391,
+        "member_ms": 12669.11262512207
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 1534,
+        "member_ms": 8181.583963394165
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 50,
+        "member_ms": 271.70964431762695
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 38,
+        "cuda_graph": true,
+        "observations": 88,
+        "member_ms": 567.203405380249
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 39,
+        "cuda_graph": true,
+        "observations": 621,
+        "member_ms": 3967.2252893447876
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 40,
+        "cuda_graph": true,
+        "observations": 121,
+        "member_ms": 789.3609600067139
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 41,
+        "cuda_graph": true,
+        "observations": 600,
+        "member_ms": 3911.0115356445312
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 42,
+        "cuda_graph": true,
+        "observations": 821,
+        "member_ms": 5378.539538383484
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 43,
+        "cuda_graph": true,
+        "observations": 795,
+        "member_ms": 5204.263748168945
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 53,
+        "cuda_graph": true,
+        "observations": 74,
+        "member_ms": 539.5094747543335
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 69,
+        "cuda_graph": true,
+        "observations": 17,
+        "member_ms": 136.98254299163818
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 71,
+        "cuda_graph": true,
+        "observations": 408,
+        "member_ms": 3228.446524620056
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 77,
+        "cuda_graph": true,
+        "observations": 248,
+        "member_ms": 2028.8669061660767
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 78,
+        "cuda_graph": true,
+        "observations": 176,
+        "member_ms": 1471.6640853881836
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 3,
+        "cuda_graph": true,
+        "observations": 144,
+        "member_ms": 801.9230031967163
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 4,
+        "cuda_graph": true,
+        "observations": 45,
+        "member_ms": 250.98338413238525
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 5,
+        "cuda_graph": true,
+        "observations": 7,
+        "member_ms": 45.20810031890869
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 6,
+        "cuda_graph": true,
+        "observations": 170,
+        "member_ms": 1057.6994543075562
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 7,
+        "cuda_graph": true,
+        "observations": 409,
+        "member_ms": 2487.980706214905
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 8,
+        "cuda_graph": true,
+        "observations": 780,
+        "member_ms": 4814.706374168396
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 9,
+        "cuda_graph": true,
+        "observations": 787,
+        "member_ms": 4955.404901504517
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 10,
+        "cuda_graph": true,
+        "observations": 1464,
+        "member_ms": 9284.156211853027
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 11,
+        "cuda_graph": true,
+        "observations": 2733,
+        "member_ms": 17629.883437156677
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 12,
+        "cuda_graph": true,
+        "observations": 1756,
+        "member_ms": 11493.176033973694
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 13,
+        "cuda_graph": true,
+        "observations": 1670,
+        "member_ms": 11241.632677078247
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 14,
+        "cuda_graph": true,
+        "observations": 1932,
+        "member_ms": 13143.170136451721
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 15,
+        "cuda_graph": true,
+        "observations": 828,
+        "member_ms": 5724.824308395386
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 48,
+        "member_ms": 354.75457763671875
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 31,
+        "member_ms": 232.48799800872803
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 11,
+        "member_ms": 83.53818607330322
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 421,
+        "member_ms": 3239.011339187622
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 52,
+        "member_ms": 481.99977684020996
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 204,
+        "member_ms": 1574.657283782959
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 34,
+        "member_ms": 269.96290493011475
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 330,
+        "member_ms": 2616.813316345215
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 117,
+        "member_ms": 950.3579006195068
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 29,
+        "cuda_graph": true,
+        "observations": 666,
+        "member_ms": 5422.817189216614
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 31,
+        "cuda_graph": true,
+        "observations": 338,
+        "member_ms": 2840.459218978882
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 32,
+        "cuda_graph": true,
+        "observations": 119,
+        "member_ms": 1023.7209463119507
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 34,
+        "cuda_graph": true,
+        "observations": 97,
+        "member_ms": 864.358226776123
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 35,
+        "cuda_graph": true,
+        "observations": 90,
+        "member_ms": 942.6756820678711
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 37,
+        "cuda_graph": true,
+        "observations": 15,
+        "member_ms": 145.71868419647217
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 39,
+        "cuda_graph": true,
+        "observations": 10,
+        "member_ms": 114.21506881713867
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 41,
+        "cuda_graph": true,
+        "observations": 508,
+        "member_ms": 4790.07856464386
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 42,
+        "cuda_graph": true,
+        "observations": 22,
+        "member_ms": 229.6360626220703
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 45,
+        "cuda_graph": true,
+        "observations": 112,
+        "member_ms": 1099.4780521392822
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 56,
+        "cuda_graph": true,
+        "observations": 269,
+        "member_ms": 2864.6264667510986
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 60,
+        "cuda_graph": true,
+        "observations": 48,
+        "member_ms": 547.162015914917
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 64,
+        "cuda_graph": true,
+        "observations": 206,
+        "member_ms": 2400.6481914520264
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 5,
+        "cuda_graph": true,
+        "observations": 3,
+        "member_ms": 21.871868133544922
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 6,
+        "cuda_graph": true,
+        "observations": 296,
+        "member_ms": 2407.180675506592
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 7,
+        "cuda_graph": true,
+        "observations": 470,
+        "member_ms": 3849.844570159912
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 8,
+        "cuda_graph": true,
+        "observations": 407,
+        "member_ms": 3412.5422258377075
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 9,
+        "cuda_graph": true,
+        "observations": 234,
+        "member_ms": 2146.009973526001
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 10,
+        "cuda_graph": true,
+        "observations": 333,
+        "member_ms": 2896.3123254776
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 11,
+        "cuda_graph": true,
+        "observations": 2616,
+        "member_ms": 22865.663224220276
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 12,
+        "cuda_graph": true,
+        "observations": 739,
+        "member_ms": 6567.3256368637085
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 13,
+        "cuda_graph": true,
+        "observations": 2330,
+        "member_ms": 20757.253264427185
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 14,
+        "cuda_graph": true,
+        "observations": 706,
+        "member_ms": 6352.749572753906
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 15,
+        "cuda_graph": true,
+        "observations": 173,
+        "member_ms": 1643.1107559204102
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 48,
+        "member_ms": 515.0809993743896
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 709,
+        "member_ms": 6803.331783294678
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 127,
+        "member_ms": 1279.0039892196655
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 217,
+        "member_ms": 2144.505527496338
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 285,
+        "member_ms": 2837.9309968948364
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 6,
+        "member_ms": 82.55971717834473
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 24,
+        "member_ms": 256.6060209274292
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 497,
+        "member_ms": 5327.038534164429
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 129,
+        "member_ms": 1413.257469177246
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 51,
+        "member_ms": 638.1109056472778
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 32,
+        "member_ms": 369.79842948913574
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 29,
+        "cuda_graph": true,
+        "observations": 148,
+        "member_ms": 1692.1996870040894
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 30,
+        "cuda_graph": true,
+        "observations": 377,
+        "member_ms": 4265.202054023743
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 31,
+        "cuda_graph": true,
+        "observations": 65,
+        "member_ms": 749.5583972930908
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 32,
+        "cuda_graph": true,
+        "observations": 147,
+        "member_ms": 1691.2353887557983
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 33,
+        "cuda_graph": true,
+        "observations": 100,
+        "member_ms": 1225.606499671936
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 36,
+        "cuda_graph": true,
+        "observations": 222,
+        "member_ms": 2677.304723739624
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 37,
+        "cuda_graph": true,
+        "observations": 17,
+        "member_ms": 527.316743850708
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 40,
+        "cuda_graph": true,
+        "observations": 396,
+        "member_ms": 5097.205361366272
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 41,
+        "cuda_graph": true,
+        "observations": 30,
+        "member_ms": 389.2919158935547
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 43,
+        "cuda_graph": true,
+        "observations": 50,
+        "member_ms": 727.3235692977905
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 45,
+        "cuda_graph": true,
+        "observations": 51,
+        "member_ms": 706.3257207870483
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 46,
+        "cuda_graph": true,
+        "observations": 457,
+        "member_ms": 6287.910222053528
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 47,
+        "cuda_graph": true,
+        "observations": 142,
+        "member_ms": 2368.204879760742
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 48,
+        "cuda_graph": true,
+        "observations": 565,
+        "member_ms": 7774.731733322144
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 53,
+        "cuda_graph": true,
+        "observations": 1,
+        "member_ms": 4.530241012573242
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 63,
+        "cuda_graph": true,
+        "observations": 45,
+        "member_ms": 727.7244358062744
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 65,
+        "cuda_graph": true,
+        "observations": 86,
+        "member_ms": 1394.6980409622192
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 6,
+        "cuda_graph": true,
+        "observations": 426,
+        "member_ms": 3298.257984161377
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 7,
+        "cuda_graph": true,
+        "observations": 250,
+        "member_ms": 2110.2836112976074
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 8,
+        "cuda_graph": true,
+        "observations": 635,
+        "member_ms": 5306.757134437561
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 9,
+        "cuda_graph": true,
+        "observations": 1065,
+        "member_ms": 9184.086525917053
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 10,
+        "cuda_graph": true,
+        "observations": 846,
+        "member_ms": 7438.208964347839
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 11,
+        "cuda_graph": true,
+        "observations": 443,
+        "member_ms": 4045.344630241394
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 12,
+        "cuda_graph": true,
+        "observations": 1520,
+        "member_ms": 14161.93295288086
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 13,
+        "cuda_graph": true,
+        "observations": 1113,
+        "member_ms": 10317.316833496094
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 14,
+        "cuda_graph": true,
+        "observations": 1418,
+        "member_ms": 13276.45139503479
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 15,
+        "cuda_graph": true,
+        "observations": 707,
+        "member_ms": 6908.844511985779
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 21,
+        "member_ms": 195.8979721069336
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 592,
+        "member_ms": 5912.010098457336
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 358,
+        "member_ms": 3719.210912704468
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 131,
+        "member_ms": 1385.1037216186523
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 197,
+        "member_ms": 2202.020432472229
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 620,
+        "member_ms": 6858.694585800171
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 53,
+        "member_ms": 633.8671264648438
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 24,
+        "member_ms": 314.37128734588623
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 8,
+        "member_ms": 114.49113845825195
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 21,
+        "member_ms": 278.17544746398926
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 94,
+        "member_ms": 1242.6753911972046
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 30,
+        "cuda_graph": true,
+        "observations": 1211,
+        "member_ms": 15265.933222770691
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 32,
+        "cuda_graph": true,
+        "observations": 987,
+        "member_ms": 13026.643604278564
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 33,
+        "cuda_graph": true,
+        "observations": 121,
+        "member_ms": 1643.0172863006592
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 35,
+        "cuda_graph": true,
+        "observations": 200,
+        "member_ms": 2739.7643537521362
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 37,
+        "cuda_graph": true,
+        "observations": 225,
+        "member_ms": 3127.236662864685
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 38,
+        "cuda_graph": true,
+        "observations": 909,
+        "member_ms": 14709.680193901062
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 39,
+        "cuda_graph": true,
+        "observations": 849,
+        "member_ms": 12015.54961013794
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 41,
+        "cuda_graph": true,
+        "observations": 3,
+        "member_ms": 61.9143705368042
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 43,
+        "cuda_graph": true,
+        "observations": 426,
+        "member_ms": 6859.422050476074
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 44,
+        "cuda_graph": true,
+        "observations": 128,
+        "member_ms": 1968.1928796768188
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 45,
+        "cuda_graph": true,
+        "observations": 8,
+        "member_ms": 150.89664459228516
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 47,
+        "cuda_graph": true,
+        "observations": 154,
+        "member_ms": 2511.9617195129395
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 48,
+        "cuda_graph": true,
+        "observations": 182,
+        "member_ms": 2902.884943008423
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 49,
+        "cuda_graph": true,
+        "observations": 119,
+        "member_ms": 2450.0828619003296
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 7,
+        "cuda_graph": true,
+        "observations": 281,
+        "member_ms": 3256.9924144744873
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 8,
+        "cuda_graph": true,
+        "observations": 317,
+        "member_ms": 3823.4031229019165
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 9,
+        "cuda_graph": true,
+        "observations": 161,
+        "member_ms": 1914.717656135559
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 10,
+        "cuda_graph": true,
+        "observations": 301,
+        "member_ms": 3767.95027923584
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 11,
+        "cuda_graph": true,
+        "observations": 187,
+        "member_ms": 3805.933096885681
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 12,
+        "cuda_graph": true,
+        "observations": 670,
+        "member_ms": 8399.057043075562
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 13,
+        "cuda_graph": true,
+        "observations": 555,
+        "member_ms": 7220.231843948364
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 14,
+        "cuda_graph": true,
+        "observations": 99,
+        "member_ms": 1283.6005001068115
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 15,
+        "cuda_graph": true,
+        "observations": 258,
+        "member_ms": 3478.1948204040527
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 714,
+        "member_ms": 9654.092909812927
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 271,
+        "member_ms": 3838.2301664352417
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 519,
+        "member_ms": 7337.337850570679
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 32,
+        "member_ms": 451.3914451599121
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 232,
+        "member_ms": 3580.4810514450073
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 43,
+        "member_ms": 655.2138614654541
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 96,
+        "member_ms": 1487.2378406524658
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 161,
+        "member_ms": 2547.696301460266
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 105,
+        "member_ms": 1679.4783725738525
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 270,
+        "member_ms": 4248.697045326233
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 129,
+        "member_ms": 2176.8627738952637
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 219,
+        "member_ms": 3453.7462873458862
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 630,
+        "member_ms": 10103.682547569275
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 29,
+        "cuda_graph": true,
+        "observations": 232,
+        "member_ms": 4050.121703147888
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 30,
+        "cuda_graph": true,
+        "observations": 35,
+        "member_ms": 599.1240787506104
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 31,
+        "cuda_graph": true,
+        "observations": 80,
+        "member_ms": 1367.59352684021
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 32,
+        "cuda_graph": true,
+        "observations": 63,
+        "member_ms": 1104.074938774109
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 33,
+        "cuda_graph": true,
+        "observations": 910,
+        "member_ms": 16171.118701934814
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 34,
+        "cuda_graph": true,
+        "observations": 14,
+        "member_ms": 274.20959758758545
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 35,
+        "cuda_graph": true,
+        "observations": 315,
+        "member_ms": 5814.305658340454
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 36,
+        "cuda_graph": true,
+        "observations": 111,
+        "member_ms": 2054.0574426651
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 37,
+        "cuda_graph": true,
+        "observations": 314,
+        "member_ms": 8858.422597885132
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 38,
+        "cuda_graph": true,
+        "observations": 399,
+        "member_ms": 7684.793441772461
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 39,
+        "cuda_graph": true,
+        "observations": 692,
+        "member_ms": 15962.128043174744
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 40,
+        "cuda_graph": true,
+        "observations": 419,
+        "member_ms": 8473.906728744507
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 41,
+        "cuda_graph": true,
+        "observations": 69,
+        "member_ms": 1387.5880002975464
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 43,
+        "cuda_graph": true,
+        "observations": 9,
+        "member_ms": 206.1932020187378
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 44,
+        "cuda_graph": true,
+        "observations": 358,
+        "member_ms": 8404.558349609375
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 45,
+        "cuda_graph": true,
+        "observations": 145,
+        "member_ms": 3041.3162231445312
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 46,
+        "cuda_graph": true,
+        "observations": 4,
+        "member_ms": 82.15150451660156
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 48,
+        "cuda_graph": true,
+        "observations": 25,
+        "member_ms": 508.4402275085449
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 49,
+        "cuda_graph": true,
+        "observations": 71,
+        "member_ms": 1575.1242456436157
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 52,
+        "cuda_graph": true,
+        "observations": 139,
+        "member_ms": 3134.8427124023438
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 9,
+        "cuda_graph": true,
+        "observations": 83,
+        "member_ms": 1024.0100622177124
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 10,
+        "cuda_graph": true,
+        "observations": 746,
+        "member_ms": 9618.827301979065
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 11,
+        "cuda_graph": true,
+        "observations": 502,
+        "member_ms": 6633.353668212891
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 12,
+        "cuda_graph": true,
+        "observations": 498,
+        "member_ms": 6805.6619300842285
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 13,
+        "cuda_graph": true,
+        "observations": 420,
+        "member_ms": 5780.529726982117
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 14,
+        "cuda_graph": true,
+        "observations": 308,
+        "member_ms": 4322.671359062195
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 15,
+        "cuda_graph": true,
+        "observations": 525,
+        "member_ms": 7442.527601242065
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 431,
+        "member_ms": 6140.270757675171
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 78,
+        "member_ms": 1161.7368516921997
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 159,
+        "member_ms": 6126.986170768738
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 293,
+        "member_ms": 4525.391677856445
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 112,
+        "member_ms": 1819.1790952682495
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 1055,
+        "member_ms": 16938.28862762451
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 876,
+        "member_ms": 14060.454900741577
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 316,
+        "member_ms": 5371.02659702301
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 17,
+        "member_ms": 283.39227294921875
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 703,
+        "member_ms": 11926.163633346558
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 573,
+        "member_ms": 10270.328163146973
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 430,
+        "member_ms": 7687.247827529907
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 146,
+        "member_ms": 2668.996067047119
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 29,
+        "cuda_graph": true,
+        "observations": 50,
+        "member_ms": 924.4147338867188
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 30,
+        "cuda_graph": true,
+        "observations": 79,
+        "member_ms": 1498.4407720565796
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 31,
+        "cuda_graph": true,
+        "observations": 109,
+        "member_ms": 2089.559394836426
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 32,
+        "cuda_graph": true,
+        "observations": 533,
+        "member_ms": 12214.414005279541
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 33,
+        "cuda_graph": true,
+        "observations": 1352,
+        "member_ms": 26197.82882118225
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 34,
+        "cuda_graph": true,
+        "observations": 674,
+        "member_ms": 13656.549925804138
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 35,
+        "cuda_graph": true,
+        "observations": 925,
+        "member_ms": 20622.623317718506
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 36,
+        "cuda_graph": true,
+        "observations": 60,
+        "member_ms": 1298.6759061813354
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 37,
+        "cuda_graph": true,
+        "observations": 358,
+        "member_ms": 10192.099895477295
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 38,
+        "cuda_graph": true,
+        "observations": 1103,
+        "member_ms": 24526.20285797119
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 39,
+        "cuda_graph": true,
+        "observations": 70,
+        "member_ms": 1475.6786403656006
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 40,
+        "cuda_graph": true,
+        "observations": 152,
+        "member_ms": 3299.523859024048
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 41,
+        "cuda_graph": true,
+        "observations": 36,
+        "member_ms": 753.9655065536499
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 42,
+        "cuda_graph": true,
+        "observations": 24,
+        "member_ms": 574.7122001647949
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 43,
+        "cuda_graph": true,
+        "observations": 665,
+        "member_ms": 14896.322776794434
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 44,
+        "cuda_graph": true,
+        "observations": 580,
+        "member_ms": 13606.791989326477
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 45,
+        "cuda_graph": true,
+        "observations": 554,
+        "member_ms": 12855.639720916748
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 46,
+        "cuda_graph": true,
+        "observations": 60,
+        "member_ms": 1441.3164882659912
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 47,
+        "cuda_graph": true,
+        "observations": 16,
+        "member_ms": 372.01123809814453
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 48,
+        "cuda_graph": true,
+        "observations": 435,
+        "member_ms": 11283.7201089859
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 51,
+        "cuda_graph": true,
+        "observations": 149,
+        "member_ms": 3650.025315284729
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 52,
+        "cuda_graph": true,
+        "observations": 30,
+        "member_ms": 721.9110488891602
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 58,
+        "cuda_graph": true,
+        "observations": 160,
+        "member_ms": 4433.106399536133
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 8,
+        "cuda_graph": true,
+        "observations": 20,
+        "member_ms": 320.54590606689453
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 9,
+        "cuda_graph": true,
+        "observations": 153,
+        "member_ms": 2192.1100931167603
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 10,
+        "cuda_graph": true,
+        "observations": 1283,
+        "member_ms": 18012.746788024902
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 11,
+        "cuda_graph": true,
+        "observations": 263,
+        "member_ms": 3550.591113090515
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 12,
+        "cuda_graph": true,
+        "observations": 157,
+        "member_ms": 2407.5766916275024
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 13,
+        "cuda_graph": true,
+        "observations": 719,
+        "member_ms": 11477.496521949768
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 14,
+        "cuda_graph": true,
+        "observations": 149,
+        "member_ms": 2170.075295448303
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 320,
+        "member_ms": 5163.36891746521
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 115,
+        "member_ms": 1958.0553579330444
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 74,
+        "member_ms": 1244.4168910980225
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 561,
+        "member_ms": 9920.285077095032
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 944,
+        "member_ms": 17919.90898513794
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 428,
+        "member_ms": 8393.58512020111
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 86,
+        "member_ms": 1631.0435018539429
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 109,
+        "member_ms": 3134.4987955093384
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 491,
+        "member_ms": 12690.652509689331
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 847,
+        "member_ms": 19159.367338180542
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 216,
+        "member_ms": 4313.097039222717
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 29,
+        "cuda_graph": true,
+        "observations": 1319,
+        "member_ms": 31097.314538002014
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 30,
+        "cuda_graph": true,
+        "observations": 3438,
+        "member_ms": 74891.698554039
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 31,
+        "cuda_graph": true,
+        "observations": 1164,
+        "member_ms": 24144.891092300415
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 32,
+        "cuda_graph": true,
+        "observations": 124,
+        "member_ms": 4396.0275802612305
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 33,
+        "cuda_graph": true,
+        "observations": 881,
+        "member_ms": 28034.560256004333
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 34,
+        "cuda_graph": true,
+        "observations": 590,
+        "member_ms": 15273.050449371338
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 35,
+        "cuda_graph": true,
+        "observations": 1025,
+        "member_ms": 24843.27614879608
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 36,
+        "cuda_graph": true,
+        "observations": 1494,
+        "member_ms": 35290.32178020477
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 37,
+        "cuda_graph": true,
+        "observations": 1114,
+        "member_ms": 30867.50648498535
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 38,
+        "cuda_graph": true,
+        "observations": 503,
+        "member_ms": 14745.8696641922
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 39,
+        "cuda_graph": true,
+        "observations": 607,
+        "member_ms": 16415.24178791046
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 40,
+        "cuda_graph": true,
+        "observations": 482,
+        "member_ms": 12722.959608078003
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 41,
+        "cuda_graph": true,
+        "observations": 462,
+        "member_ms": 11789.632778167725
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 42,
+        "cuda_graph": true,
+        "observations": 454,
+        "member_ms": 12323.696702003479
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 43,
+        "cuda_graph": true,
+        "observations": 566,
+        "member_ms": 15093.425838470459
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 44,
+        "cuda_graph": true,
+        "observations": 60,
+        "member_ms": 1551.3321857452393
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 45,
+        "cuda_graph": true,
+        "observations": 185,
+        "member_ms": 4967.562944412231
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 46,
+        "cuda_graph": true,
+        "observations": 90,
+        "member_ms": 2564.9087505340576
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 47,
+        "cuda_graph": true,
+        "observations": 473,
+        "member_ms": 12853.173768997192
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 48,
+        "cuda_graph": true,
+        "observations": 88,
+        "member_ms": 2423.0983533859253
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 49,
+        "cuda_graph": true,
+        "observations": 18,
+        "member_ms": 484.22108459472656
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 51,
+        "cuda_graph": true,
+        "observations": 207,
+        "member_ms": 5872.252164840698
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 8,
+        "cuda_graph": true,
+        "observations": 247,
+        "member_ms": 3410.6432762145996
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 9,
+        "cuda_graph": true,
+        "observations": 261,
+        "member_ms": 3469.958948135376
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 10,
+        "cuda_graph": true,
+        "observations": 389,
+        "member_ms": 5634.154517173767
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 12,
+        "cuda_graph": true,
+        "observations": 214,
+        "member_ms": 3277.7996463775635
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 82,
+        "member_ms": 1376.2119693756104
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 1237,
+        "member_ms": 25428.77299785614
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 562,
+        "member_ms": 10848.28749370575
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 666,
+        "member_ms": 12054.402299880981
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 211,
+        "member_ms": 4211.1365394592285
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 529,
+        "member_ms": 10910.650866508484
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 662,
+        "member_ms": 13454.265308380127
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 1204,
+        "member_ms": 26922.507223129272
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 706,
+        "member_ms": 16256.112648010254
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 1260,
+        "member_ms": 31241.929430007935
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 1106,
+        "member_ms": 26191.639848709106
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 29,
+        "cuda_graph": true,
+        "observations": 478,
+        "member_ms": 10445.858947753906
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 30,
+        "cuda_graph": true,
+        "observations": 822,
+        "member_ms": 21921.228929519653
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 31,
+        "cuda_graph": true,
+        "observations": 2968,
+        "member_ms": 67434.42661762238
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 32,
+        "cuda_graph": true,
+        "observations": 3603,
+        "member_ms": 84811.44986915588
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 33,
+        "cuda_graph": true,
+        "observations": 2673,
+        "member_ms": 63838.930788993835
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 34,
+        "cuda_graph": true,
+        "observations": 813,
+        "member_ms": 19866.356002807617
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 35,
+        "cuda_graph": true,
+        "observations": 1809,
+        "member_ms": 45646.12836551666
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 36,
+        "cuda_graph": true,
+        "observations": 2243,
+        "member_ms": 56548.91487598419
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 37,
+        "cuda_graph": true,
+        "observations": 2324,
+        "member_ms": 59129.70738887787
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 38,
+        "cuda_graph": true,
+        "observations": 2854,
+        "member_ms": 74132.80236816406
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 39,
+        "cuda_graph": true,
+        "observations": 856,
+        "member_ms": 22059.71834087372
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 40,
+        "cuda_graph": true,
+        "observations": 363,
+        "member_ms": 10123.956232070923
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 41,
+        "cuda_graph": true,
+        "observations": 1014,
+        "member_ms": 30690.585879325867
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 42,
+        "cuda_graph": true,
+        "observations": 598,
+        "member_ms": 16596.020197868347
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 43,
+        "cuda_graph": true,
+        "observations": 1232,
+        "member_ms": 34368.00799655914
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 44,
+        "cuda_graph": true,
+        "observations": 223,
+        "member_ms": 6195.170799255371
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 45,
+        "cuda_graph": true,
+        "observations": 609,
+        "member_ms": 19185.02193069458
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 46,
+        "cuda_graph": true,
+        "observations": 441,
+        "member_ms": 13023.208649635315
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 9,
+        "cuda_graph": true,
+        "observations": 244,
+        "member_ms": 3871.4262313842773
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 14,
+        "cuda_graph": true,
+        "observations": 170,
+        "member_ms": 2978.4860048294067
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 292,
+        "member_ms": 5582.321592330933
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 800,
+        "member_ms": 15859.298740386963
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 336,
+        "member_ms": 6915.377367019653
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 139,
+        "member_ms": 2983.2304220199585
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 55,
+        "member_ms": 1146.1870193481445
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 281,
+        "member_ms": 7149.904068946838
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 787,
+        "member_ms": 17088.94657421112
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 742,
+        "member_ms": 16903.036162376404
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 1549,
+        "member_ms": 38276.973445892334
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 2309,
+        "member_ms": 61268.86166381836
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 1894,
+        "member_ms": 47703.840759277344
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 1295,
+        "member_ms": 31197.528020858765
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 29,
+        "cuda_graph": true,
+        "observations": 2617,
+        "member_ms": 67783.17298793793
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 30,
+        "cuda_graph": true,
+        "observations": 3025,
+        "member_ms": 76977.0750989914
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 31,
+        "cuda_graph": true,
+        "observations": 2454,
+        "member_ms": 66009.39857196808
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 32,
+        "cuda_graph": true,
+        "observations": 4045,
+        "member_ms": 107672.98386192322
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 33,
+        "cuda_graph": true,
+        "observations": 4494,
+        "member_ms": 120415.8790397644
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 34,
+        "cuda_graph": true,
+        "observations": 4374,
+        "member_ms": 118463.16402816772
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 35,
+        "cuda_graph": true,
+        "observations": 3569,
+        "member_ms": 99668.00285339355
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 36,
+        "cuda_graph": true,
+        "observations": 4089,
+        "member_ms": 118049.39741325378
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 37,
+        "cuda_graph": true,
+        "observations": 2665,
+        "member_ms": 80089.01423072815
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 38,
+        "cuda_graph": true,
+        "observations": 2288,
+        "member_ms": 66754.44495868683
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 39,
+        "cuda_graph": true,
+        "observations": 3043,
+        "member_ms": 93155.2153339386
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 40,
+        "cuda_graph": true,
+        "observations": 2439,
+        "member_ms": 76107.45775699615
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 41,
+        "cuda_graph": true,
+        "observations": 828,
+        "member_ms": 25409.953325271606
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 42,
+        "cuda_graph": true,
+        "observations": 974,
+        "member_ms": 30802.403317451477
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 15,
+        "cuda_graph": true,
+        "observations": 208,
+        "member_ms": 4187.255170822144
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 1531,
+        "member_ms": 31938.19632911682
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 767,
+        "member_ms": 16273.70613861084
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 135,
+        "member_ms": 2829.8003826141357
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 795,
+        "member_ms": 17249.30987930298
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 2117,
+        "member_ms": 47175.94243144989
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 610,
+        "member_ms": 14018.632287979126
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 1576,
+        "member_ms": 38697.53364276886
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 2164,
+        "member_ms": 55988.17144203186
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 3649,
+        "member_ms": 93805.64031600952
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 2187,
+        "member_ms": 56840.49465084076
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 3284,
+        "member_ms": 85503.71171283722
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 5363,
+        "member_ms": 150031.65710258484
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 29,
+        "cuda_graph": true,
+        "observations": 3533,
+        "member_ms": 95244.43679332733
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 30,
+        "cuda_graph": true,
+        "observations": 5142,
+        "member_ms": 137754.55106544495
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 31,
+        "cuda_graph": true,
+        "observations": 4483,
+        "member_ms": 130557.00495243073
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 32,
+        "cuda_graph": true,
+        "observations": 6350,
+        "member_ms": 179116.18111038208
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 33,
+        "cuda_graph": true,
+        "observations": 6916,
+        "member_ms": 201192.40608978271
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 34,
+        "cuda_graph": true,
+        "observations": 5520,
+        "member_ms": 164694.7245388031
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 35,
+        "cuda_graph": true,
+        "observations": 4081,
+        "member_ms": 122692.83529758453
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 36,
+        "cuda_graph": true,
+        "observations": 3518,
+        "member_ms": 108164.54566669464
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 37,
+        "cuda_graph": true,
+        "observations": 4154,
+        "member_ms": 131319.82182502747
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 38,
+        "cuda_graph": true,
+        "observations": 706,
+        "member_ms": 23383.980076789856
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 91,
+        "member_ms": 2028.745901107788
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 795,
+        "member_ms": 18072.161485671997
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 365,
+        "member_ms": 8059.407892227173
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 1004,
+        "member_ms": 22870.39750099182
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 2589,
+        "member_ms": 62483.78223514557
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 1144,
+        "member_ms": 27608.373207092285
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 1182,
+        "member_ms": 30992.995248794556
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 1257,
+        "member_ms": 30891.12507534027
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 2687,
+        "member_ms": 68415.2880449295
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 3283,
+        "member_ms": 85077.10091686249
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 4829,
+        "member_ms": 128525.7590303421
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 5751,
+        "member_ms": 157581.78981781006
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 5169,
+        "member_ms": 150505.65609169006
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 29,
+        "cuda_graph": true,
+        "observations": 5202,
+        "member_ms": 153808.87210178375
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 30,
+        "cuda_graph": true,
+        "observations": 5436,
+        "member_ms": 159279.98077583313
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 31,
+        "cuda_graph": true,
+        "observations": 8710,
+        "member_ms": 260616.58454704285
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 32,
+        "cuda_graph": true,
+        "observations": 6549,
+        "member_ms": 199381.12269592285
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 33,
+        "cuda_graph": true,
+        "observations": 4264,
+        "member_ms": 130791.55409049988
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 34,
+        "cuda_graph": true,
+        "observations": 4572,
+        "member_ms": 143659.91779518127
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 35,
+        "cuda_graph": true,
+        "observations": 2223,
+        "member_ms": 71372.56792831421
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 15,
+        "cuda_graph": true,
+        "observations": 34,
+        "member_ms": 852.2675304412842
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 817,
+        "member_ms": 18552.041034698486
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 306,
+        "member_ms": 7083.524569511414
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 2196,
+        "member_ms": 50389.63031387329
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 1544,
+        "member_ms": 35893.984592437744
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 2402,
+        "member_ms": 60196.73292541504
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 4413,
+        "member_ms": 110775.26291561127
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 2375,
+        "member_ms": 61375.40932941437
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 3621,
+        "member_ms": 97112.74524879456
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 4926,
+        "member_ms": 135928.50899124146
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 4113,
+        "member_ms": 117133.37577438354
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 1514,
+        "member_ms": 41348.515513420105
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 3598,
+        "member_ms": 103510.29898834229
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 29,
+        "cuda_graph": true,
+        "observations": 7580,
+        "member_ms": 226957.86161136627
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 30,
+        "cuda_graph": true,
+        "observations": 4914,
+        "member_ms": 148866.22275352478
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 31,
+        "cuda_graph": true,
+        "observations": 4354,
+        "member_ms": 135109.79745483398
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 32,
+        "cuda_graph": true,
+        "observations": 1894,
+        "member_ms": 60593.27553653717
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 15,
+        "cuda_graph": true,
+        "observations": 12,
+        "member_ms": 245.75390625
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 195,
+        "member_ms": 4630.437173843384
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 1000,
+        "member_ms": 24656.35523033142
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 1855,
+        "member_ms": 46740.517654418945
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 976,
+        "member_ms": 25210.028639793396
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 3492,
+        "member_ms": 92988.92326545715
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 1791,
+        "member_ms": 48213.26055240631
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 3478,
+        "member_ms": 95870.74860858917
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 4729,
+        "member_ms": 139408.92525863647
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 3683,
+        "member_ms": 108070.82168960571
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 2042,
+        "member_ms": 62166.70466423035
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 2965,
+        "member_ms": 91713.83529567719
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 5257,
+        "member_ms": 165888.16764831543
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 29,
+        "cuda_graph": true,
+        "observations": 4516,
+        "member_ms": 146218.48483753204
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 30,
+        "cuda_graph": true,
+        "observations": 60,
+        "member_ms": 1839.808702468872
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 857,
+        "member_ms": 21215.053683280945
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 1878,
+        "member_ms": 46164.35953235626
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 65,
+        "member_ms": 1683.4533939361572
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 1213,
+        "member_ms": 33695.84764289856
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 1940,
+        "member_ms": 54441.72616672516
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 1752,
+        "member_ms": 49353.718512535095
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 3106,
+        "member_ms": 92805.71462059021
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 4192,
+        "member_ms": 128131.69821453094
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 3735,
+        "member_ms": 112288.58990764618
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 484,
+        "member_ms": 14957.008532524109
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 7087,
+        "member_ms": 228153.08860206604
+      },
+      {
+        "batch": 15,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 595,
+        "member_ms": 15097.516592025757
+      },
+      {
+        "batch": 15,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 445,
+        "member_ms": 11707.084800720215
+      },
+      {
+        "batch": 15,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 165,
+        "member_ms": 4642.367548942566
+      },
+      {
+        "batch": 15,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 614,
+        "member_ms": 17678.851404190063
+      },
+      {
+        "batch": 15,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 2717,
+        "member_ms": 81933.68772888184
+      },
+      {
+        "batch": 15,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 2565,
+        "member_ms": 76730.88227844238
+      },
+      {
+        "batch": 15,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 1223,
+        "member_ms": 37542.299973487854
+      },
+      {
+        "batch": 15,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 1988,
+        "member_ms": 62851.172103881836
+      },
+      {
+        "batch": 15,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 133,
+        "member_ms": 3906.665783882141
+      },
+      {
+        "batch": 16,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 238,
+        "member_ms": 5892.652770996094
+      },
+      {
+        "batch": 16,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 1097,
+        "member_ms": 32992.78169250488
+      },
+      {
+        "batch": 16,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 249,
+        "member_ms": 7466.323854446411
+      },
+      {
+        "batch": 16,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 339,
+        "member_ms": 10158.822953224182
+      }
+    ],
+    "grouped": [
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 3,
+        "cuda_graph": true,
+        "observations": 11,
+        "member_ms": 56.80804252624512
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 4,
+        "cuda_graph": true,
+        "observations": 4,
+        "member_ms": 30.27730369567871
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 5,
+        "cuda_graph": true,
+        "observations": 42,
+        "member_ms": 218.95667552947998
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 6,
+        "cuda_graph": true,
+        "observations": 108,
+        "member_ms": 545.3699884414673
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 7,
+        "cuda_graph": true,
+        "observations": 43,
+        "member_ms": 233.89797687530518
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 8,
+        "cuda_graph": true,
+        "observations": 518,
+        "member_ms": 2591.563729286194
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 9,
+        "cuda_graph": true,
+        "observations": 620,
+        "member_ms": 3081.4269876480103
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 10,
+        "cuda_graph": true,
+        "observations": 1399,
+        "member_ms": 7039.298132896423
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 11,
+        "cuda_graph": true,
+        "observations": 3923,
+        "member_ms": 19938.497851371765
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 12,
+        "cuda_graph": true,
+        "observations": 2146,
+        "member_ms": 10910.9091091156
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 13,
+        "cuda_graph": true,
+        "observations": 3044,
+        "member_ms": 15696.370936393738
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 14,
+        "cuda_graph": true,
+        "observations": 2258,
+        "member_ms": 11737.749680519104
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 15,
+        "cuda_graph": true,
+        "observations": 882,
+        "member_ms": 4664.456736564636
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 1245,
+        "member_ms": 6627.0355615615845
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 1103,
+        "member_ms": 5894.46372127533
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 40,
+        "cuda_graph": true,
+        "observations": 49,
+        "member_ms": 317.3323907852173
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 41,
+        "cuda_graph": true,
+        "observations": 914,
+        "member_ms": 5931.211545944214
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 42,
+        "cuda_graph": true,
+        "observations": 1333,
+        "member_ms": 8711.00636100769
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 43,
+        "cuda_graph": true,
+        "observations": 666,
+        "member_ms": 4383.958354949951
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 51,
+        "cuda_graph": true,
+        "observations": 26,
+        "member_ms": 189.21029567718506
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 61,
+        "cuda_graph": true,
+        "observations": 401,
+        "member_ms": 2993.7964429855347
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 69,
+        "cuda_graph": true,
+        "observations": 13,
+        "member_ms": 111.23396110534668
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 70,
+        "cuda_graph": true,
+        "observations": 7,
+        "member_ms": 58.4798469543457
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 71,
+        "cuda_graph": true,
+        "observations": 283,
+        "member_ms": 2243.172396659851
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 77,
+        "cuda_graph": true,
+        "observations": 248,
+        "member_ms": 2021.9746017456055
+      },
+      {
+        "batch": 1,
+        "mean_context_2048_bin": 78,
+        "cuda_graph": true,
+        "observations": 176,
+        "member_ms": 1461.9324579238892
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 3,
+        "cuda_graph": true,
+        "observations": 19,
+        "member_ms": 114.9010009765625
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 5,
+        "cuda_graph": true,
+        "observations": 440,
+        "member_ms": 2549.95761013031
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 6,
+        "cuda_graph": true,
+        "observations": 282,
+        "member_ms": 1675.0803880691528
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 7,
+        "cuda_graph": true,
+        "observations": 231,
+        "member_ms": 1392.1663265228271
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 8,
+        "cuda_graph": true,
+        "observations": 554,
+        "member_ms": 3437.2808513641357
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 9,
+        "cuda_graph": true,
+        "observations": 515,
+        "member_ms": 3225.7894897460938
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 10,
+        "cuda_graph": true,
+        "observations": 977,
+        "member_ms": 6292.142902374268
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 11,
+        "cuda_graph": true,
+        "observations": 1655,
+        "member_ms": 10689.254658699036
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 12,
+        "cuda_graph": true,
+        "observations": 2393,
+        "member_ms": 15527.82801246643
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 13,
+        "cuda_graph": true,
+        "observations": 637,
+        "member_ms": 4234.004550933838
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 14,
+        "cuda_graph": true,
+        "observations": 664,
+        "member_ms": 4450.308856964111
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 15,
+        "cuda_graph": true,
+        "observations": 548,
+        "member_ms": 3774.9577198028564
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 279,
+        "member_ms": 1900.0224123001099
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 4,
+        "member_ms": 39.72854232788086
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 1347,
+        "member_ms": 10585.958410263062
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 258,
+        "member_ms": 2044.2768898010254
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 31,
+        "cuda_graph": true,
+        "observations": 74,
+        "member_ms": 659.4284076690674
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 34,
+        "cuda_graph": true,
+        "observations": 2,
+        "member_ms": 19.82669162750244
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 35,
+        "cuda_graph": true,
+        "observations": 250,
+        "member_ms": 2148.638434410095
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 36,
+        "cuda_graph": true,
+        "observations": 242,
+        "member_ms": 2188.9003171920776
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 38,
+        "cuda_graph": true,
+        "observations": 241,
+        "member_ms": 2192.677406311035
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 39,
+        "cuda_graph": true,
+        "observations": 25,
+        "member_ms": 233.05209350585938
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 40,
+        "cuda_graph": true,
+        "observations": 319,
+        "member_ms": 2982.0633726119995
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 41,
+        "cuda_graph": true,
+        "observations": 205,
+        "member_ms": 1975.0982503890991
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 43,
+        "cuda_graph": true,
+        "observations": 152,
+        "member_ms": 1499.862753868103
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 60,
+        "cuda_graph": true,
+        "observations": 139,
+        "member_ms": 1581.8238496780396
+      },
+      {
+        "batch": 2,
+        "mean_context_2048_bin": 65,
+        "cuda_graph": true,
+        "observations": 157,
+        "member_ms": 1830.828616142273
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 5,
+        "cuda_graph": true,
+        "observations": 226,
+        "member_ms": 1721.0340757369995
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 6,
+        "cuda_graph": true,
+        "observations": 90,
+        "member_ms": 696.1896018981934
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 7,
+        "cuda_graph": true,
+        "observations": 607,
+        "member_ms": 4817.853481292725
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 8,
+        "cuda_graph": true,
+        "observations": 703,
+        "member_ms": 5815.19236946106
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 9,
+        "cuda_graph": true,
+        "observations": 395,
+        "member_ms": 3310.7039918899536
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 10,
+        "cuda_graph": true,
+        "observations": 40,
+        "member_ms": 355.13180351257324
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 11,
+        "cuda_graph": true,
+        "observations": 417,
+        "member_ms": 3668.8619108200073
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 12,
+        "cuda_graph": true,
+        "observations": 1593,
+        "member_ms": 14105.23736667633
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 13,
+        "cuda_graph": true,
+        "observations": 915,
+        "member_ms": 8152.6335344314575
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 14,
+        "cuda_graph": true,
+        "observations": 1162,
+        "member_ms": 10451.008128166199
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 15,
+        "cuda_graph": true,
+        "observations": 56,
+        "member_ms": 524.8945541381836
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 61,
+        "member_ms": 603.2404918670654
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 88,
+        "member_ms": 862.325309753418
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 137,
+        "member_ms": 1375.0261631011963
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 152,
+        "member_ms": 1536.7337436676025
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 430,
+        "member_ms": 4499.868744850159
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 204,
+        "member_ms": 2166.3588314056396
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 678,
+        "member_ms": 7307.46199798584
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 15,
+        "member_ms": 163.91519451141357
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 123,
+        "member_ms": 1352.706660270691
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 501,
+        "member_ms": 5605.588194847107
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 29,
+        "cuda_graph": true,
+        "observations": 139,
+        "member_ms": 1577.5548124313354
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 30,
+        "cuda_graph": true,
+        "observations": 95,
+        "member_ms": 1102.9766578674316
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 32,
+        "cuda_graph": true,
+        "observations": 56,
+        "member_ms": 655.1785430908203
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 33,
+        "cuda_graph": true,
+        "observations": 41,
+        "member_ms": 467.89953804016113
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 42,
+        "cuda_graph": true,
+        "observations": 20,
+        "member_ms": 263.4601516723633
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 46,
+        "cuda_graph": true,
+        "observations": 63,
+        "member_ms": 862.1587905883789
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 48,
+        "cuda_graph": true,
+        "observations": 179,
+        "member_ms": 2457.8875942230225
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 51,
+        "cuda_graph": true,
+        "observations": 53,
+        "member_ms": 771.3480310440063
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 52,
+        "cuda_graph": true,
+        "observations": 29,
+        "member_ms": 393.8919744491577
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 54,
+        "cuda_graph": true,
+        "observations": 9,
+        "member_ms": 1256.3539352416992
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 62,
+        "cuda_graph": true,
+        "observations": 89,
+        "member_ms": 1453.8353357315063
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 64,
+        "cuda_graph": true,
+        "observations": 18,
+        "member_ms": 295.2483100891113
+      },
+      {
+        "batch": 3,
+        "mean_context_2048_bin": 66,
+        "cuda_graph": true,
+        "observations": 3,
+        "member_ms": 1503.5684995651245
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 6,
+        "cuda_graph": true,
+        "observations": 114,
+        "member_ms": 901.0257196426392
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 7,
+        "cuda_graph": true,
+        "observations": 465,
+        "member_ms": 3853.141212463379
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 8,
+        "cuda_graph": true,
+        "observations": 401,
+        "member_ms": 3452.2099103927612
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 9,
+        "cuda_graph": true,
+        "observations": 348,
+        "member_ms": 3015.256088256836
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 10,
+        "cuda_graph": true,
+        "observations": 91,
+        "member_ms": 822.8888235092163
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 11,
+        "cuda_graph": true,
+        "observations": 265,
+        "member_ms": 3502.917942047119
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 12,
+        "cuda_graph": true,
+        "observations": 2418,
+        "member_ms": 22167.619500160217
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 13,
+        "cuda_graph": true,
+        "observations": 180,
+        "member_ms": 1746.7903852462769
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 14,
+        "cuda_graph": true,
+        "observations": 386,
+        "member_ms": 3738.515375137329
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 15,
+        "cuda_graph": true,
+        "observations": 21,
+        "member_ms": 212.6833734512329
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 77,
+        "member_ms": 803.2754983901978
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 142,
+        "member_ms": 1451.2277936935425
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 562,
+        "member_ms": 5812.283009529114
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 49,
+        "member_ms": 523.0534553527832
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 343,
+        "member_ms": 3712.421506881714
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 18,
+        "member_ms": 194.35485076904297
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 302,
+        "member_ms": 3373.963339805603
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 450,
+        "member_ms": 5083.911832809448
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 661,
+        "member_ms": 8685.247952461243
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 87,
+        "member_ms": 1054.103624343872
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 496,
+        "member_ms": 6596.790174484253
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 67,
+        "member_ms": 770.5680999755859
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 51,
+        "member_ms": 685.3045930862427
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 29,
+        "cuda_graph": true,
+        "observations": 3,
+        "member_ms": 21.624515533447266
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 32,
+        "cuda_graph": true,
+        "observations": 38,
+        "member_ms": 537.6736068725586
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 34,
+        "cuda_graph": true,
+        "observations": 15,
+        "member_ms": 208.14943313598633
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 35,
+        "cuda_graph": true,
+        "observations": 8,
+        "member_ms": 163.1158447265625
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 36,
+        "cuda_graph": true,
+        "observations": 32,
+        "member_ms": 439.1231155395508
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 37,
+        "cuda_graph": true,
+        "observations": 12,
+        "member_ms": 217.60306930541992
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 39,
+        "cuda_graph": true,
+        "observations": 84,
+        "member_ms": 1228.4164972305298
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 41,
+        "cuda_graph": true,
+        "observations": 102,
+        "member_ms": 2712.550064086914
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 42,
+        "cuda_graph": true,
+        "observations": 28,
+        "member_ms": 418.67567443847656
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 48,
+        "cuda_graph": true,
+        "observations": 8,
+        "member_ms": 123.37412643432617
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 50,
+        "cuda_graph": true,
+        "observations": 135,
+        "member_ms": 2261.183228492737
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 51,
+        "cuda_graph": true,
+        "observations": 378,
+        "member_ms": 8819.715613365173
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 59,
+        "cuda_graph": true,
+        "observations": 174,
+        "member_ms": 3119.402226448059
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 60,
+        "cuda_graph": true,
+        "observations": 148,
+        "member_ms": 5051.954212188721
+      },
+      {
+        "batch": 4,
+        "mean_context_2048_bin": 64,
+        "cuda_graph": true,
+        "observations": 21,
+        "member_ms": 411.3132104873657
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 6,
+        "cuda_graph": true,
+        "observations": 210,
+        "member_ms": 2218.528528213501
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 7,
+        "cuda_graph": true,
+        "observations": 111,
+        "member_ms": 1298.1112327575684
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 8,
+        "cuda_graph": true,
+        "observations": 521,
+        "member_ms": 6135.01225566864
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 9,
+        "cuda_graph": true,
+        "observations": 102,
+        "member_ms": 1198.9275350570679
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 10,
+        "cuda_graph": true,
+        "observations": 694,
+        "member_ms": 8552.238547325134
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 11,
+        "cuda_graph": true,
+        "observations": 283,
+        "member_ms": 3503.611654281616
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 12,
+        "cuda_graph": true,
+        "observations": 1092,
+        "member_ms": 13551.881316184998
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 13,
+        "cuda_graph": true,
+        "observations": 1039,
+        "member_ms": 14072.662963867188
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 14,
+        "cuda_graph": true,
+        "observations": 310,
+        "member_ms": 4072.078826904297
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 15,
+        "cuda_graph": true,
+        "observations": 110,
+        "member_ms": 1490.938847541809
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 526,
+        "member_ms": 7122.096255302429
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 655,
+        "member_ms": 9046.071180343628
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 34,
+        "member_ms": 466.5395393371582
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 196,
+        "member_ms": 2790.4459590911865
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 327,
+        "member_ms": 4657.445195198059
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 251,
+        "member_ms": 3572.0466871261597
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 846,
+        "member_ms": 12962.483612060547
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 338,
+        "member_ms": 5250.46114730835
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 199,
+        "member_ms": 3015.5749311447144
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 366,
+        "member_ms": 6072.112621307373
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 117,
+        "member_ms": 1889.5860967636108
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 187,
+        "member_ms": 3470.7323274612427
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 188,
+        "member_ms": 3091.0800800323486
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 29,
+        "cuda_graph": true,
+        "observations": 8,
+        "member_ms": 123.54655361175537
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 30,
+        "cuda_graph": true,
+        "observations": 132,
+        "member_ms": 2216.5448694229126
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 31,
+        "cuda_graph": true,
+        "observations": 175,
+        "member_ms": 3023.918646812439
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 32,
+        "cuda_graph": true,
+        "observations": 95,
+        "member_ms": 1675.4589385986328
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 33,
+        "cuda_graph": true,
+        "observations": 163,
+        "member_ms": 3201.8431034088135
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 34,
+        "cuda_graph": true,
+        "observations": 203,
+        "member_ms": 3716.027590751648
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 35,
+        "cuda_graph": true,
+        "observations": 468,
+        "member_ms": 8527.139516830444
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 36,
+        "cuda_graph": true,
+        "observations": 299,
+        "member_ms": 5478.590861320496
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 37,
+        "cuda_graph": true,
+        "observations": 205,
+        "member_ms": 4666.46240234375
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 38,
+        "cuda_graph": true,
+        "observations": 16,
+        "member_ms": 297.08778381347656
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 39,
+        "cuda_graph": true,
+        "observations": 75,
+        "member_ms": 1419.6760559082031
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 40,
+        "cuda_graph": true,
+        "observations": 28,
+        "member_ms": 539.6920909881592
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 41,
+        "cuda_graph": true,
+        "observations": 81,
+        "member_ms": 2074.84086227417
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 42,
+        "cuda_graph": true,
+        "observations": 107,
+        "member_ms": 2197.4112215042114
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 43,
+        "cuda_graph": true,
+        "observations": 77,
+        "member_ms": 4049.8943157196045
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 44,
+        "cuda_graph": true,
+        "observations": 35,
+        "member_ms": 714.7223949432373
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 45,
+        "cuda_graph": true,
+        "observations": 101,
+        "member_ms": 2111.522508621216
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 46,
+        "cuda_graph": true,
+        "observations": 20,
+        "member_ms": 423.96244525909424
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 48,
+        "cuda_graph": true,
+        "observations": 50,
+        "member_ms": 1329.3663835525513
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 49,
+        "cuda_graph": true,
+        "observations": 258,
+        "member_ms": 5959.857088088989
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 50,
+        "cuda_graph": true,
+        "observations": 28,
+        "member_ms": 599.5064315795898
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 51,
+        "cuda_graph": true,
+        "observations": 25,
+        "member_ms": 592.0017623901367
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 53,
+        "cuda_graph": true,
+        "observations": 109,
+        "member_ms": 2500.543091773987
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 54,
+        "cuda_graph": true,
+        "observations": 101,
+        "member_ms": 2274.977593421936
+      },
+      {
+        "batch": 5,
+        "mean_context_2048_bin": 56,
+        "cuda_graph": true,
+        "observations": 104,
+        "member_ms": 2413.564126968384
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 7,
+        "cuda_graph": true,
+        "observations": 185,
+        "member_ms": 2209.4832191467285
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 8,
+        "cuda_graph": true,
+        "observations": 209,
+        "member_ms": 2581.423192024231
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 9,
+        "cuda_graph": true,
+        "observations": 185,
+        "member_ms": 2382.3370971679688
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 10,
+        "cuda_graph": true,
+        "observations": 724,
+        "member_ms": 9248.306449890137
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 11,
+        "cuda_graph": true,
+        "observations": 362,
+        "member_ms": 4846.400420188904
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 12,
+        "cuda_graph": true,
+        "observations": 237,
+        "member_ms": 3169.2602434158325
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 13,
+        "cuda_graph": true,
+        "observations": 666,
+        "member_ms": 9184.344142913818
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 14,
+        "cuda_graph": true,
+        "observations": 103,
+        "member_ms": 1438.3980312347412
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 15,
+        "cuda_graph": true,
+        "observations": 599,
+        "member_ms": 8440.422793388367
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 234,
+        "member_ms": 3341.17969417572
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 81,
+        "member_ms": 1238.0604972839355
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 56,
+        "member_ms": 849.136420249939
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 64,
+        "member_ms": 1057.8879957199097
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 277,
+        "member_ms": 5945.97943687439
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 582,
+        "member_ms": 9443.570593833923
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 998,
+        "member_ms": 16442.822823524475
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 690,
+        "member_ms": 12991.677829742432
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 669,
+        "member_ms": 11400.403465270996
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 29,
+        "member_ms": 531.224781036377
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 100,
+        "member_ms": 1934.8154773712158
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 209,
+        "member_ms": 3699.7306756973267
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 29,
+        "cuda_graph": true,
+        "observations": 74,
+        "member_ms": 1423.9053220748901
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 30,
+        "cuda_graph": true,
+        "observations": 1146,
+        "member_ms": 22005.52601337433
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 31,
+        "cuda_graph": true,
+        "observations": 956,
+        "member_ms": 21502.509868621826
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 32,
+        "cuda_graph": true,
+        "observations": 225,
+        "member_ms": 4323.840754508972
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 33,
+        "cuda_graph": true,
+        "observations": 1233,
+        "member_ms": 23963.95526790619
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 34,
+        "cuda_graph": true,
+        "observations": 53,
+        "member_ms": 1480.2974071502686
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 35,
+        "cuda_graph": true,
+        "observations": 438,
+        "member_ms": 8855.661962509155
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 36,
+        "cuda_graph": true,
+        "observations": 925,
+        "member_ms": 20363.076515197754
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 37,
+        "cuda_graph": true,
+        "observations": 758,
+        "member_ms": 17405.822525024414
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 38,
+        "cuda_graph": true,
+        "observations": 253,
+        "member_ms": 5928.882943153381
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 39,
+        "cuda_graph": true,
+        "observations": 2695,
+        "member_ms": 61459.02516078949
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 40,
+        "cuda_graph": true,
+        "observations": 1097,
+        "member_ms": 24202.31587791443
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 41,
+        "cuda_graph": true,
+        "observations": 38,
+        "member_ms": 820.8377332687378
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 42,
+        "cuda_graph": true,
+        "observations": 52,
+        "member_ms": 1161.8089046478271
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 43,
+        "cuda_graph": true,
+        "observations": 241,
+        "member_ms": 5811.324946403503
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 44,
+        "cuda_graph": true,
+        "observations": 1527,
+        "member_ms": 39272.99119949341
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 45,
+        "cuda_graph": true,
+        "observations": 11,
+        "member_ms": 226.4418363571167
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 46,
+        "cuda_graph": true,
+        "observations": 149,
+        "member_ms": 4791.202538490295
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 47,
+        "cuda_graph": true,
+        "observations": 72,
+        "member_ms": 1847.708667755127
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 48,
+        "cuda_graph": true,
+        "observations": 91,
+        "member_ms": 2202.0629863739014
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 49,
+        "cuda_graph": true,
+        "observations": 61,
+        "member_ms": 1577.1212882995605
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 50,
+        "cuda_graph": true,
+        "observations": 135,
+        "member_ms": 3739.1126203536987
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 51,
+        "cuda_graph": true,
+        "observations": 478,
+        "member_ms": 11764.979674339294
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 53,
+        "cuda_graph": true,
+        "observations": 29,
+        "member_ms": 740.866678237915
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 55,
+        "cuda_graph": true,
+        "observations": 23,
+        "member_ms": 755.1575107574463
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 56,
+        "cuda_graph": true,
+        "observations": 167,
+        "member_ms": 4524.78183555603
+      },
+      {
+        "batch": 6,
+        "mean_context_2048_bin": 58,
+        "cuda_graph": true,
+        "observations": 17,
+        "member_ms": 469.8978395462036
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 9,
+        "cuda_graph": true,
+        "observations": 1126,
+        "member_ms": 14452.574277877808
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 10,
+        "cuda_graph": true,
+        "observations": 137,
+        "member_ms": 2009.5863151550293
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 11,
+        "cuda_graph": true,
+        "observations": 89,
+        "member_ms": 1190.5563764572144
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 12,
+        "cuda_graph": true,
+        "observations": 155,
+        "member_ms": 2133.641312599182
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 13,
+        "cuda_graph": true,
+        "observations": 84,
+        "member_ms": 1216.2056350708008
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 14,
+        "cuda_graph": true,
+        "observations": 284,
+        "member_ms": 4164.772114753723
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 15,
+        "cuda_graph": true,
+        "observations": 102,
+        "member_ms": 1529.794054031372
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 43,
+        "member_ms": 669.5109930038452
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 4,
+        "member_ms": 43.78219223022461
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 482,
+        "member_ms": 8665.794167518616
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 929,
+        "member_ms": 15605.313139915466
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 683,
+        "member_ms": 12162.664470672607
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 943,
+        "member_ms": 16117.62802696228
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 569,
+        "member_ms": 9888.640570640564
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 410,
+        "member_ms": 7367.214454650879
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 178,
+        "member_ms": 3403.1550312042236
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 500,
+        "member_ms": 9954.642999649048
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 802,
+        "member_ms": 16294.730308532715
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 579,
+        "member_ms": 14509.194121360779
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 112,
+        "member_ms": 2162.490014076233
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 29,
+        "cuda_graph": true,
+        "observations": 233,
+        "member_ms": 6318.260400772095
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 30,
+        "cuda_graph": true,
+        "observations": 523,
+        "member_ms": 11145.658025741577
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 31,
+        "cuda_graph": true,
+        "observations": 456,
+        "member_ms": 9534.116000175476
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 32,
+        "cuda_graph": true,
+        "observations": 423,
+        "member_ms": 9481.349102020264
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 33,
+        "cuda_graph": true,
+        "observations": 965,
+        "member_ms": 25003.22272491455
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 34,
+        "cuda_graph": true,
+        "observations": 1170,
+        "member_ms": 28298.259638786316
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 35,
+        "cuda_graph": true,
+        "observations": 1206,
+        "member_ms": 27430.03711795807
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 36,
+        "cuda_graph": true,
+        "observations": 877,
+        "member_ms": 24709.0974445343
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 37,
+        "cuda_graph": true,
+        "observations": 650,
+        "member_ms": 15253.041830062866
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 38,
+        "cuda_graph": true,
+        "observations": 588,
+        "member_ms": 16890.896795272827
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 39,
+        "cuda_graph": true,
+        "observations": 1191,
+        "member_ms": 29631.26720714569
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 40,
+        "cuda_graph": true,
+        "observations": 1683,
+        "member_ms": 41707.97023010254
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 41,
+        "cuda_graph": true,
+        "observations": 497,
+        "member_ms": 12637.610916137695
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 42,
+        "cuda_graph": true,
+        "observations": 576,
+        "member_ms": 14846.967813491821
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 43,
+        "cuda_graph": true,
+        "observations": 1341,
+        "member_ms": 34326.16123962402
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 44,
+        "cuda_graph": true,
+        "observations": 709,
+        "member_ms": 19410.589513778687
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 45,
+        "cuda_graph": true,
+        "observations": 76,
+        "member_ms": 1917.4607191085815
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 46,
+        "cuda_graph": true,
+        "observations": 135,
+        "member_ms": 3545.166869163513
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 47,
+        "cuda_graph": true,
+        "observations": 91,
+        "member_ms": 2629.107597351074
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 48,
+        "cuda_graph": true,
+        "observations": 120,
+        "member_ms": 3200.7542934417725
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 49,
+        "cuda_graph": true,
+        "observations": 202,
+        "member_ms": 5279.864037513733
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 50,
+        "cuda_graph": true,
+        "observations": 231,
+        "member_ms": 6783.552696228027
+      },
+      {
+        "batch": 7,
+        "mean_context_2048_bin": 51,
+        "cuda_graph": true,
+        "observations": 69,
+        "member_ms": 1907.8989114761353
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 9,
+        "cuda_graph": true,
+        "observations": 579,
+        "member_ms": 8259.017793655396
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 10,
+        "cuda_graph": true,
+        "observations": 12,
+        "member_ms": 172.9162359237671
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 11,
+        "cuda_graph": true,
+        "observations": 36,
+        "member_ms": 543.5148239135742
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 12,
+        "cuda_graph": true,
+        "observations": 209,
+        "member_ms": 3315.3261251449585
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 13,
+        "cuda_graph": true,
+        "observations": 431,
+        "member_ms": 6468.800860404968
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 14,
+        "cuda_graph": true,
+        "observations": 306,
+        "member_ms": 5259.954692840576
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 15,
+        "cuda_graph": true,
+        "observations": 610,
+        "member_ms": 9541.01807975769
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 74,
+        "member_ms": 1161.446475982666
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 1026,
+        "member_ms": 20422.410009384155
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 781,
+        "member_ms": 16310.88987827301
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 1270,
+        "member_ms": 23315.500610351562
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 1045,
+        "member_ms": 20125.551785469055
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 979,
+        "member_ms": 19322.38897418976
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 905,
+        "member_ms": 19693.741625785828
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 119,
+        "member_ms": 2399.9446516036987
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 335,
+        "member_ms": 6711.314314842224
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 174,
+        "member_ms": 3600.546851158142
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 597,
+        "member_ms": 12486.791350364685
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 645,
+        "member_ms": 15581.297766685486
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 724,
+        "member_ms": 15361.042727470398
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 29,
+        "cuda_graph": true,
+        "observations": 1514,
+        "member_ms": 32607.921271324158
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 30,
+        "cuda_graph": true,
+        "observations": 1164,
+        "member_ms": 26183.38286590576
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 31,
+        "cuda_graph": true,
+        "observations": 2084,
+        "member_ms": 48111.07553291321
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 32,
+        "cuda_graph": true,
+        "observations": 1048,
+        "member_ms": 25297.601033210754
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 33,
+        "cuda_graph": true,
+        "observations": 1740,
+        "member_ms": 39656.09133911133
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 34,
+        "cuda_graph": true,
+        "observations": 1198,
+        "member_ms": 29358.93865776062
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 35,
+        "cuda_graph": true,
+        "observations": 2015,
+        "member_ms": 48645.42383670807
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 36,
+        "cuda_graph": true,
+        "observations": 1838,
+        "member_ms": 45938.02227687836
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 37,
+        "cuda_graph": true,
+        "observations": 1306,
+        "member_ms": 33711.15791988373
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 38,
+        "cuda_graph": true,
+        "observations": 2873,
+        "member_ms": 77555.65857315063
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 39,
+        "cuda_graph": true,
+        "observations": 1879,
+        "member_ms": 51707.07289981842
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 40,
+        "cuda_graph": true,
+        "observations": 1665,
+        "member_ms": 45923.1137304306
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 41,
+        "cuda_graph": true,
+        "observations": 1112,
+        "member_ms": 30848.33215713501
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 42,
+        "cuda_graph": true,
+        "observations": 1047,
+        "member_ms": 28551.9350566864
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 43,
+        "cuda_graph": true,
+        "observations": 1209,
+        "member_ms": 33232.723848342896
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 44,
+        "cuda_graph": true,
+        "observations": 1839,
+        "member_ms": 50358.190658569336
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 45,
+        "cuda_graph": true,
+        "observations": 493,
+        "member_ms": 14846.502831459045
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 46,
+        "cuda_graph": true,
+        "observations": 199,
+        "member_ms": 5874.006203651428
+      },
+      {
+        "batch": 8,
+        "mean_context_2048_bin": 47,
+        "cuda_graph": true,
+        "observations": 1421,
+        "member_ms": 43956.22898674011
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 9,
+        "cuda_graph": true,
+        "observations": 4,
+        "member_ms": 53.45224380493164
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 10,
+        "cuda_graph": true,
+        "observations": 7,
+        "member_ms": 109.48346042633057
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 11,
+        "cuda_graph": true,
+        "observations": 42,
+        "member_ms": 876.0968074798584
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 12,
+        "cuda_graph": true,
+        "observations": 249,
+        "member_ms": 4469.844753265381
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 13,
+        "cuda_graph": true,
+        "observations": 157,
+        "member_ms": 2865.8299436569214
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 14,
+        "cuda_graph": true,
+        "observations": 535,
+        "member_ms": 9448.168801307678
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 15,
+        "cuda_graph": true,
+        "observations": 860,
+        "member_ms": 16896.830137252808
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 1267,
+        "member_ms": 24934.370470046997
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 659,
+        "member_ms": 13390.189867973328
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 601,
+        "member_ms": 13118.686254501343
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 487,
+        "member_ms": 10183.77324962616
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 301,
+        "member_ms": 5969.650752067566
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 967,
+        "member_ms": 21005.061777114868
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 213,
+        "member_ms": 4683.656433105469
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 616,
+        "member_ms": 13711.286937713623
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 833,
+        "member_ms": 18340.631365776062
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 1512,
+        "member_ms": 37908.92669010162
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 1801,
+        "member_ms": 41674.5901966095
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 959,
+        "member_ms": 25530.379981040955
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 2429,
+        "member_ms": 58923.465604782104
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 29,
+        "cuda_graph": true,
+        "observations": 1858,
+        "member_ms": 46031.26441574097
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 30,
+        "cuda_graph": true,
+        "observations": 2125,
+        "member_ms": 55816.59086608887
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 31,
+        "cuda_graph": true,
+        "observations": 1795,
+        "member_ms": 48804.76061916351
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 32,
+        "cuda_graph": true,
+        "observations": 2679,
+        "member_ms": 74093.01037216187
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 33,
+        "cuda_graph": true,
+        "observations": 2765,
+        "member_ms": 78970.64161872864
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 34,
+        "cuda_graph": true,
+        "observations": 1856,
+        "member_ms": 53429.93238735199
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 35,
+        "cuda_graph": true,
+        "observations": 4396,
+        "member_ms": 122879.27633953094
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 36,
+        "cuda_graph": true,
+        "observations": 2957,
+        "member_ms": 85653.17100715637
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 37,
+        "cuda_graph": true,
+        "observations": 2716,
+        "member_ms": 81734.79815196991
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 38,
+        "cuda_graph": true,
+        "observations": 4034,
+        "member_ms": 118084.38213443756
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 39,
+        "cuda_graph": true,
+        "observations": 1786,
+        "member_ms": 55196.76876068115
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 40,
+        "cuda_graph": true,
+        "observations": 3550,
+        "member_ms": 110835.32284832001
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 41,
+        "cuda_graph": true,
+        "observations": 1805,
+        "member_ms": 59823.14670944214
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 42,
+        "cuda_graph": true,
+        "observations": 696,
+        "member_ms": 22888.061470985413
+      },
+      {
+        "batch": 9,
+        "mean_context_2048_bin": 43,
+        "cuda_graph": true,
+        "observations": 63,
+        "member_ms": 1983.6488180160522
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 9,
+        "cuda_graph": true,
+        "observations": 16,
+        "member_ms": 234.1705846786499
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 12,
+        "cuda_graph": true,
+        "observations": 123,
+        "member_ms": 2374.3806762695312
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 13,
+        "cuda_graph": true,
+        "observations": 368,
+        "member_ms": 6983.264506340027
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 14,
+        "cuda_graph": true,
+        "observations": 357,
+        "member_ms": 7095.546057701111
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 15,
+        "cuda_graph": true,
+        "observations": 237,
+        "member_ms": 4615.893651008606
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 194,
+        "member_ms": 4079.932204246521
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 851,
+        "member_ms": 17135.00088787079
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 463,
+        "member_ms": 11148.037969589233
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 796,
+        "member_ms": 16528.31003189087
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 981,
+        "member_ms": 22913.879878997803
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 1105,
+        "member_ms": 25116.115100860596
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 856,
+        "member_ms": 21810.2684173584
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 1628,
+        "member_ms": 40946.011865615845
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 1692,
+        "member_ms": 40924.963636398315
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 1139,
+        "member_ms": 30379.359803199768
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 2224,
+        "member_ms": 59599.631196022034
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 3149,
+        "member_ms": 78731.57541656494
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 951,
+        "member_ms": 27234.016520500183
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 29,
+        "cuda_graph": true,
+        "observations": 1985,
+        "member_ms": 53991.811252593994
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 30,
+        "cuda_graph": true,
+        "observations": 2456,
+        "member_ms": 69701.58356380463
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 31,
+        "cuda_graph": true,
+        "observations": 3839,
+        "member_ms": 112978.23662185669
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 32,
+        "cuda_graph": true,
+        "observations": 2784,
+        "member_ms": 78418.72405147552
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 33,
+        "cuda_graph": true,
+        "observations": 5204,
+        "member_ms": 153654.64820575714
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 34,
+        "cuda_graph": true,
+        "observations": 2356,
+        "member_ms": 75153.12417316437
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 35,
+        "cuda_graph": true,
+        "observations": 2459,
+        "member_ms": 74439.70926856995
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 36,
+        "cuda_graph": true,
+        "observations": 6598,
+        "member_ms": 208109.47455596924
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 37,
+        "cuda_graph": true,
+        "observations": 3927,
+        "member_ms": 128153.96683311462
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 38,
+        "cuda_graph": true,
+        "observations": 3822,
+        "member_ms": 129254.45958805084
+      },
+      {
+        "batch": 10,
+        "mean_context_2048_bin": 39,
+        "cuda_graph": true,
+        "observations": 53,
+        "member_ms": 1905.937889099121
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 9,
+        "cuda_graph": true,
+        "observations": 230,
+        "member_ms": 3727.9251775741577
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 12,
+        "cuda_graph": true,
+        "observations": 258,
+        "member_ms": 4902.227184295654
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 13,
+        "cuda_graph": true,
+        "observations": 345,
+        "member_ms": 6600.603816986084
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 14,
+        "cuda_graph": true,
+        "observations": 384,
+        "member_ms": 6979.980046272278
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 15,
+        "cuda_graph": true,
+        "observations": 83,
+        "member_ms": 1669.892780303955
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 72,
+        "member_ms": 1586.7951879501343
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 531,
+        "member_ms": 11010.469638824463
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 955,
+        "member_ms": 20587.816791534424
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 1399,
+        "member_ms": 31678.05194568634
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 2243,
+        "member_ms": 52804.95648288727
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 908,
+        "member_ms": 21593.251530647278
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 2424,
+        "member_ms": 58331.22528743744
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 3787,
+        "member_ms": 94326.47634983063
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 2883,
+        "member_ms": 73390.22071170807
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 2671,
+        "member_ms": 71401.2132024765
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 1973,
+        "member_ms": 55281.406041145325
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 2959,
+        "member_ms": 80143.9327173233
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 2055,
+        "member_ms": 56413.14048576355
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 29,
+        "cuda_graph": true,
+        "observations": 7195,
+        "member_ms": 211752.049161911
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 30,
+        "cuda_graph": true,
+        "observations": 4995,
+        "member_ms": 146992.59984111786
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 31,
+        "cuda_graph": true,
+        "observations": 9453,
+        "member_ms": 275348.4749555588
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 32,
+        "cuda_graph": true,
+        "observations": 4076,
+        "member_ms": 123045.31817817688
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 33,
+        "cuda_graph": true,
+        "observations": 6665,
+        "member_ms": 207531.92215633392
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 34,
+        "cuda_graph": true,
+        "observations": 8092,
+        "member_ms": 256663.85564041138
+      },
+      {
+        "batch": 11,
+        "mean_context_2048_bin": 35,
+        "cuda_graph": true,
+        "observations": 3739,
+        "member_ms": 119326.41351985931
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 12,
+        "cuda_graph": true,
+        "observations": 551,
+        "member_ms": 10365.540328025818
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 13,
+        "cuda_graph": true,
+        "observations": 757,
+        "member_ms": 14977.722579956055
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 14,
+        "cuda_graph": true,
+        "observations": 391,
+        "member_ms": 8049.54003238678
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 15,
+        "cuda_graph": true,
+        "observations": 95,
+        "member_ms": 1957.9151735305786
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 83,
+        "member_ms": 1901.7114667892456
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 920,
+        "member_ms": 20109.768307685852
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 2249,
+        "member_ms": 52019.61412715912
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 1379,
+        "member_ms": 32325.745175361633
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 710,
+        "member_ms": 16637.720670700073
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 2493,
+        "member_ms": 60832.47204589844
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 4080,
+        "member_ms": 101190.86585044861
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 4483,
+        "member_ms": 118435.04174900055
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 1651,
+        "member_ms": 43841.933113098145
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 2296,
+        "member_ms": 63138.33139896393
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 5353,
+        "member_ms": 149655.006316185
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 6237,
+        "member_ms": 176466.64523792267
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 5399,
+        "member_ms": 155858.58821678162
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 29,
+        "cuda_graph": true,
+        "observations": 5812,
+        "member_ms": 170200.3694009781
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 30,
+        "cuda_graph": true,
+        "observations": 7264,
+        "member_ms": 226980.54163742065
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 31,
+        "cuda_graph": true,
+        "observations": 6168,
+        "member_ms": 191059.28359413147
+      },
+      {
+        "batch": 12,
+        "mean_context_2048_bin": 32,
+        "cuda_graph": true,
+        "observations": 6002,
+        "member_ms": 190914.94947052002
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 13,
+        "cuda_graph": true,
+        "observations": 12,
+        "member_ms": 241.53385162353516
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 14,
+        "cuda_graph": true,
+        "observations": 72,
+        "member_ms": 1566.197196006775
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 679,
+        "member_ms": 15100.783004760742
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 358,
+        "member_ms": 8426.337619781494
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 3637,
+        "member_ms": 91159.39959430695
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 54,
+        "member_ms": 1335.3977155685425
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 2562,
+        "member_ms": 66010.61311340332
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 1951,
+        "member_ms": 51990.603388786316
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 3112,
+        "member_ms": 88235.75802326202
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 1648,
+        "member_ms": 44816.773871421814
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 4692,
+        "member_ms": 140254.4285364151
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 5577,
+        "member_ms": 165849.050031662
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 3345,
+        "member_ms": 101510.73228263855
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 5680,
+        "member_ms": 178764.64985847473
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 28,
+        "cuda_graph": true,
+        "observations": 4663,
+        "member_ms": 151303.31468772888
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 29,
+        "cuda_graph": true,
+        "observations": 4994,
+        "member_ms": 163937.2681388855
+      },
+      {
+        "batch": 13,
+        "mean_context_2048_bin": 30,
+        "cuda_graph": true,
+        "observations": 3089,
+        "member_ms": 102263.25765895844
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 90,
+        "member_ms": 2101.663245201111
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 2539,
+        "member_ms": 63800.455936431885
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 62,
+        "member_ms": 1574.3890743255615
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 463,
+        "member_ms": 12201.49700832367
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 181,
+        "member_ms": 4722.33162021637
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 1587,
+        "member_ms": 44785.479155540466
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 1054,
+        "member_ms": 30476.467798233032
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 4971,
+        "member_ms": 146041.5818490982
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 1102,
+        "member_ms": 32440.20992088318
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 2305,
+        "member_ms": 72138.61068534851
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 2981,
+        "member_ms": 96704.94856834412
+      },
+      {
+        "batch": 14,
+        "mean_context_2048_bin": 27,
+        "cuda_graph": true,
+        "observations": 1806,
+        "member_ms": 59125.35874938965
+      },
+      {
+        "batch": 15,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 1045,
+        "member_ms": 25773.821891784668
+      },
+      {
+        "batch": 15,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 911,
+        "member_ms": 23060.855863571167
+      },
+      {
+        "batch": 15,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 45,
+        "member_ms": 1151.0605573654175
+      },
+      {
+        "batch": 15,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 374,
+        "member_ms": 10252.497482299805
+      },
+      {
+        "batch": 15,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 1017,
+        "member_ms": 28834.723650932312
+      },
+      {
+        "batch": 15,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 665,
+        "member_ms": 19732.626665115356
+      },
+      {
+        "batch": 15,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 1596,
+        "member_ms": 46911.27610492706
+      },
+      {
+        "batch": 15,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 735,
+        "member_ms": 22151.159491539
+      },
+      {
+        "batch": 15,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 2194,
+        "member_ms": 67184.29114341736
+      },
+      {
+        "batch": 15,
+        "mean_context_2048_bin": 25,
+        "cuda_graph": true,
+        "observations": 1067,
+        "member_ms": 34799.268939971924
+      },
+      {
+        "batch": 15,
+        "mean_context_2048_bin": 26,
+        "cuda_graph": true,
+        "observations": 148,
+        "member_ms": 4697.155813217163
+      },
+      {
+        "batch": 16,
+        "mean_context_2048_bin": 16,
+        "cuda_graph": true,
+        "observations": 35,
+        "member_ms": 844.3605670928955
+      },
+      {
+        "batch": 16,
+        "mean_context_2048_bin": 17,
+        "cuda_graph": true,
+        "observations": 90,
+        "member_ms": 2420.281448364258
+      },
+      {
+        "batch": 16,
+        "mean_context_2048_bin": 18,
+        "cuda_graph": true,
+        "observations": 15,
+        "member_ms": 379.79259967803955
+      },
+      {
+        "batch": 16,
+        "mean_context_2048_bin": 19,
+        "cuda_graph": true,
+        "observations": 1204,
+        "member_ms": 34409.8404417038
+      },
+      {
+        "batch": 16,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 142,
+        "member_ms": 3985.5158739089966
+      },
+      {
+        "batch": 16,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 1012,
+        "member_ms": 29008.80100440979
+      },
+      {
+        "batch": 16,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 410,
+        "member_ms": 12382.481366157532
+      },
+      {
+        "batch": 16,
+        "mean_context_2048_bin": 23,
+        "cuda_graph": true,
+        "observations": 453,
+        "member_ms": 13856.861504554749
+      },
+      {
+        "batch": 16,
+        "mean_context_2048_bin": 24,
+        "cuda_graph": true,
+        "observations": 1062,
+        "member_ms": 32903.066435813904
+      },
+      {
+        "batch": 17,
+        "mean_context_2048_bin": 20,
+        "cuda_graph": true,
+        "observations": 665,
+        "member_ms": 21100.67994403839
+      },
+      {
+        "batch": 17,
+        "mean_context_2048_bin": 21,
+        "cuda_graph": true,
+        "observations": 836,
+        "member_ms": 26244.290425300598
+      },
+      {
+        "batch": 17,
+        "mean_context_2048_bin": 22,
+        "cuda_graph": true,
+        "observations": 1430,
+        "member_ms": 44358.98127746582
+      }
+    ]
+  },
+  "sources_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tool_offload_before_admission_20261027/control_regression_audit.json": "a689e22297789a8551fa19798906118966ccdd87af9796fd5c6d0ec27cbedc96",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tool_offload_before_admission_20261027/recent_comparison.json": "eed5432f1e9db71ac26c8696eb4211aa2fe54c2b4356c4ac35ede6a1c467e732",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tool_offload_before_admission_20261027/recent_preadmission_service_interleaving.json": "d8b37db073e67086fef7c26833218fa2d6e5e08701a366eeacb6debf3e25b6ed",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tool_offload_before_admission_20261027/complete_jct_paths.json": "c06d9fe5b79d7693d51307701dcb6330d403ec18fd0cbc658a16fea527af6166",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/replay/native_requests.jsonl": "2a6ac180d5f7cecd7ae63917c599d10b7e8f98c84b66de1fb54e1dcdfb3f7345",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/server/runtime_audit.jsonl": "2c613efd35d77820c8b53c74c005c8c61ea1825f6259fdac6136b6c02000997e",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tool_offload_before_admission_20261027/recent_grouped_and_curve_service_interleaving.json": "83a6a7fd0eb3b3b6ff57a775f9d21ade3f96f91b4d16bd014c8f7f233dc1902f",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tool_offload_before_admission_20261027/recent_grouped_and_curve_jct_paths.json": "e45fab9269e5be6ab275bb1f1f266ab7d667a7614013620c4789617004c84774",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/join_blocked_layer_groups_20261028_r1/full/replay/native_requests.jsonl": "f5b498e1be2f58db757f3e986e7a83eb6f2ed93a6b8c72e994b6ca5d8dadaa2b",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/join_blocked_layer_groups_20261028_r1/full/server/runtime_audit.jsonl": "9e5bfe41ab6acd3e6e379b5b9846f6e834ade38f125d091519c2e46c400c7072",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/critical_decode_shape_review.py": "ae436779207abcfc37b74e2e5eff7abbef35363fe6ef2a3382a0aa678925acac",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tool_offload_before_admission_20261027/control_regression_audit.py": "9705e743a488aba2fd54882e5b8aa6a36b4866397665dc9c0fceefff6276321e"
+  },
+  "gpu_experiment_started": false,
+  "production_code_changed": false,
+  "performance_accepted": false,
+  "isolated_control_cost_attribution": false,
+  "limitations": [
+    "All critical tool successors and normal tails are retained; none are matched away.",
+    "Each positive member interval counts in its workflow path, including other batch members.",
+    "Actual batch means and 2048-token context bins are coarse; differing batches are not identical.",
+    "The symmetric bin identity is arithmetic, not a causal estimate or an isolated scheduling effect.",
+    "Within-bin changes include clipping, context variation, dependencies, runtime and waits.",
+    "These worker intervals do not identify pure kernels, exposed control CPU or removable JCT."
+  ]
+}

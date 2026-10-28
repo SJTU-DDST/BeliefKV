@@ -86,3 +86,9 @@ owned 退出、完整精确工作、原生停止及已完成的三幅匹配图�
 `mechanism_review.py` 复用原生 ACK 审计及 sibling/grant 服务关联，并
 要求单独的 `complete_wait_prefetch.json.gz`。这些完成算子尚未执行。
 冻结应用、native、配置和 GPU 工作量均未修改，没有新增 GPU 排队项。
+
+另有两份只读历史核对进一步细分原始 24.98 秒：新增其他 worker
+区间主要为其他 prefill 覆盖 +11.188698 秒，其他 decode -0.121374 秒；
+关键工具后继两轮均有 464588 个有效 decode 成员观测，但成员平均
+区间 24.188944-to-24.754665ms。它们不提供当前候选的结果或独占
+控制成本归因，详见[阶段及形态核对](critical_service_phase_geometry_20261028_zh.md)。

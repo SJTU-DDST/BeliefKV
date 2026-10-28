@@ -2597,3 +2597,14 @@
   pass, including actual live-Full rejection and complete-control acceptance.
   No complete result or additional GPU job is created. Keepa5164fe3 frozen,
   all normal tails, completeV345 and the global goal active.
+- Two read-only historical audits now split the old grouped24.981494s
+  critical-tool delta further. Other-prefill-only coverage grows11.188698s,
+  other-decode-only falls0.121374s, with no cross-phase/uncovered remainder.
+  Both arms have464588 positive decode member observations; mean member
+  intervals grow24.188944-to-24.754665ms and time-weighted actual batch
+  10.193983-to-10.397393. Same-request nonoverlap and all original interval
+  unions reconcile. Coarse-bin unmatched changes remain explicit; none of
+  these worker intervals identify pure kernels, incremental control CPU or
+  causal module effects. They are not currenta5164fe3 performance. See
+  docs/research/critical_service_phase_geometry_20261028_zh.md and the two
+  named review operators/results under full_only_pressure_index_20261028.

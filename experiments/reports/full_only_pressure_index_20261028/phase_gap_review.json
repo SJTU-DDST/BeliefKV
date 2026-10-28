@@ -1,0 +1,95 @@
+{
+  "observed_at": "2026-10-28T18:26:37.369866+00:00",
+  "scope": "Complete historical outside-member worker-phase attribution.",
+  "arms": {
+    "before": {
+      "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full",
+      "native_worker_samples": 100176,
+      "critical_partitions": {
+        "all_critical_requests": {
+          "requests": 3153,
+          "workflow_equal_weight_s": {
+            "other_prefill_only_s": 171.3108867401547,
+            "other_decode_only_s": 2.9876412427690293,
+            "other_cross_phase_s": 0.0,
+            "outside_all_workers_s": 0.0
+          }
+        },
+        "critical_tool_successors": {
+          "requests": 2973,
+          "workflow_equal_weight_s": {
+            "other_prefill_only_s": 141.5105605574184,
+            "other_decode_only_s": 2.842442073398166,
+            "other_cross_phase_s": 0.0,
+            "outside_all_workers_s": 0.0
+          }
+        }
+      }
+    },
+    "grouped": {
+      "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/join_blocked_layer_groups_20261028_r1/full",
+      "native_worker_samples": 94898,
+      "critical_partitions": {
+        "all_critical_requests": {
+          "requests": 3153,
+          "workflow_equal_weight_s": {
+            "other_prefill_only_s": 180.3280127599504,
+            "other_decode_only_s": 2.836302509148916,
+            "other_cross_phase_s": 0.0,
+            "outside_all_workers_s": 0.0
+          }
+        },
+        "critical_tool_successors": {
+          "requests": 2973,
+          "workflow_equal_weight_s": {
+            "other_prefill_only_s": 152.69925903733574,
+            "other_decode_only_s": 2.7210684486495125,
+            "other_cross_phase_s": 0.0,
+            "outside_all_workers_s": 0.0
+          }
+        }
+      }
+    }
+  },
+  "critical_delta_workflow_equal_weight_s": {
+    "all_critical_requests": {
+      "other_prefill_only_s": 9.017126019795711,
+      "other_decode_only_s": -0.15133873362011352,
+      "other_cross_phase_s": 0.0,
+      "outside_all_workers_s": 0.0
+    },
+    "critical_tool_successors": {
+      "other_prefill_only_s": 11.188698479917349,
+      "other_decode_only_s": -0.12137362474865343,
+      "other_cross_phase_s": 0.0,
+      "outside_all_workers_s": 0.0
+    }
+  },
+  "interval_fixtures_verified": 3,
+  "sources_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tool_offload_before_admission_20261027/control_regression_audit.json": "a689e22297789a8551fa19798906118966ccdd87af9796fd5c6d0ec27cbedc96",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tool_offload_before_admission_20261027/recent_comparison.json": "eed5432f1e9db71ac26c8696eb4211aa2fe54c2b4356c4ac35ede6a1c467e732",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tool_offload_before_admission_20261027/recent_preadmission_service_interleaving.json": "d8b37db073e67086fef7c26833218fa2d6e5e08701a366eeacb6debf3e25b6ed",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tool_offload_before_admission_20261027/complete_jct_paths.json": "c06d9fe5b79d7693d51307701dcb6330d403ec18fd0cbc658a16fea527af6166",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/server/runtime_audit.jsonl": "2c613efd35d77820c8b53c74c005c8c61ea1825f6259fdac6136b6c02000997e",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/replay/native_requests.jsonl": "2a6ac180d5f7cecd7ae63917c599d10b7e8f98c84b66de1fb54e1dcdfb3f7345",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tool_offload_before_admission_20261027/recent_grouped_and_curve_service_interleaving.json": "83a6a7fd0eb3b3b6ff57a775f9d21ade3f96f91b4d16bd014c8f7f233dc1902f",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tool_offload_before_admission_20261027/recent_grouped_and_curve_jct_paths.json": "e45fab9269e5be6ab275bb1f1f266ab7d667a7614013620c4789617004c84774",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/join_blocked_layer_groups_20261028_r1/full/server/runtime_audit.jsonl": "9e5bfe41ab6acd3e6e379b5b9846f6e834ade38f125d091519c2e46c400c7072",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/join_blocked_layer_groups_20261028_r1/full/replay/native_requests.jsonl": "f5b498e1be2f58db757f3e986e7a83eb6f2ed93a6b8c72e994b6ca5d8dadaa2b",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/phase_gap_review.py": "6eabbbd5121e45188c5882f0dd93bc312eb1e9fbe8dce34c921610513150c4c8",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tool_offload_before_admission_20261027/control_regression_audit.py": "9705e743a488aba2fd54882e5b8aa6a36b4866397665dc9c0fceefff6276321e",
+    "/home/longhao/experiment/BeliefKV/scripts/audit_decode_transfer_envelopes.py": "0db073af82eed12d6b9fd372ba296d9e9dce56b8589dc0176271ee04a583c6c3"
+  },
+  "gpu_experiment_started": false,
+  "production_code_changed": false,
+  "performance_accepted": false,
+  "isolated_control_cost_attribution": false,
+  "limitations": [
+    "Every original critical request and normal workflow tail remains included.",
+    "Exclusive categories describe recorded worker intervals, not CUDA kernel occupancy.",
+    "Cross-phase coverage is counted once; runtime and transfer waits can occur in every phase.",
+    "An absent request member does not establish preemption, a priority error or a removable delay.",
+    "This historical comparison cannot attribute the effects of current implementation repairs."
+  ]
+}
