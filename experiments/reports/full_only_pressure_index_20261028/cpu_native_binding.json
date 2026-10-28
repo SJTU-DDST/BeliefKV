@@ -1,0 +1,42 @@
+{
+  "observed_at": "2026-10-28T17:44:11.635951+00:00",
+  "frozen_application": {
+    "commit": "a5164fe30cf880a072069d1d9414a28286d72afd",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "27f42053f79e1750c5be5868fd1fed092c70b07e2052c4e73ef21848a7c17251"
+  },
+  "native_tree": "cdd58a4acbb5038207d3a5020c54d7cbcef983b9",
+  "passing_cpu_cases": 3718,
+  "performance_accepted": false,
+  "native_binding_changed_field_only": "canonical_patch.path",
+  "native_component_operator_and_groups_verified": true,
+  "model_qualified": false,
+  "native_evidence": {
+    "report": "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/native_targeted_r1.xml",
+    "report_sha256": "9c5acbc043e1803f817393b2349b33d411ba8b63b719a85943cfacf2f0c4b4ff",
+    "sources": "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/native_registration_sources.json",
+    "sources_sha256": "a27419ebcc627ee590e332627a85d53ac4627235ef0ca44a37976a7ee0566c2a",
+    "tree": "cdd58a4acbb5038207d3a5020c54d7cbcef983b9",
+    "passing_cases": 92,
+    "gpu_validation_pending": true
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/shared_cpu_r1.evidence.json": "28f1cec7e475fdff634e82814ef6cd03fecc4827cc3568038b951aef1033dd42",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/shared_cpu_r1.sources.json": "0a9a4d0208db53eaecac970b122f5053822e7f25db87cd1277c2fa1bbce0f398",
+    "/home/longhao/experiment/.worktrees/beliefkv-full-only-pressure-index-a5164fe3/configs/migration/predictive_sibling_service_capacity_20261028.json": "aa9905724498f9e5db7f7ef8e437e7a92248fa6a179bbf6fe6ef022486794422",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/control_plan_diagnostics_20261028/native_registration_sources.json": "51ecc6677e996ed50a8592ddf2ae4b0d812e6a4e04225c239e59d25dcf1841cc",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/gpu_components_r1.json": "53b13d06f4f3ddc3cdbdffd5dc3b536d1c869cca63735d85e108bc10116c39ba",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/native_targeted_r1.xml": "9c5acbc043e1803f817393b2349b33d411ba8b63b719a85943cfacf2f0c4b4ff",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/review_qualification.py": "8faf7f9fa595288c08ddb265f536456acd199c192b0905a097403cf1f543e898"
+  },
+  "limitations": [
+    "CPU native trees use copy/event stand-ins; local cost is not whole-run or JCT benefit.",
+    "Unchanged native components are reused only with exact tree/operator/group binding.",
+    "The model fixture exercises demand handoff/recovery, not every JOIN ancestor topology.",
+    "Complete same-work Full performance remains to be established."
+  ]
+}

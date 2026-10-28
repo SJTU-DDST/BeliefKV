@@ -2569,3 +2569,20 @@
   not an isolated publication ablation. Freeze and qualify before GPU work,
   reuseV345, retain all normal tails and negative results, keep the goal
   active. See docs/design/full_only_pressure_index_20261028_zh.md.
+- Full-only-index candidate now runs frozena5164fe3/nativecdd58a4acbb5,
+  port18685: ops/full_only_pressure_index_20261028_r1.registration.json.
+  New seven-request unforced model actually hands off12296tokens in8/4
+  groups and restores donor with zero maximum logprob deltas; active cleanup
+  ends the model parent with-9, not natural exit. Position24 exact/session/
+  native-stop checks pass, running24 dispatch increment0.010198ms; actual
+  predecessor cleanup precedes Full. live_start.py/.json independently
+  verifies nice0 watcher816387/server816848/driver817864/sole GPU816937,
+  unchanged complete V230/V311 work/capacity/seed/stopping and153 exact
+  completed receipts, not complete performance. Profiling/tool-prefetch/
+  priority/frontier restore remain off. Preserve frozen sources and inputs.
+  Nice19 CUDA-hidden plotting waiter817706/start738051857 is actually live
+  in waiting_complete_full and draws only after full success/owned exit.
+  It authorizes no GPU job. Reuse completeV345 with explicit native-engine
+  difference, retain all normal tails, keep other baselines/ablations
+  deferred and the goal active. See
+  docs/research/full_only_pressure_index_start_20261028_zh.md.

@@ -1,0 +1,91 @@
+{
+  "text": "isoformat(ts_str.replace(\"Z\",",
+  "output_ids": [
+    15420,
+    2243,
+    35864,
+    2895,
+    6980,
+    445,
+    57,
+    497
+  ],
+  "meta_info": {
+    "id": "layer-model:a_recovered",
+    "finish_reason": {
+      "type": "length",
+      "length": 8
+    },
+    "prompt_tokens": 24584,
+    "weight_version": "default",
+    "num_retractions": 0,
+    "forward_entry_time": 1793209631.967528,
+    "prefill_finished_time": 1793209632.0556402,
+    "queue_time": 0.002797365188598633,
+    "input_token_logprobs": [],
+    "output_token_logprobs": [
+      [
+        0.0,
+        15420,
+        null
+      ],
+      [
+        -1.1920928244535389e-07,
+        2243,
+        null
+      ],
+      [
+        0.0,
+        35864,
+        null
+      ],
+      [
+        0.0,
+        2895,
+        null
+      ],
+      [
+        0.0,
+        6980,
+        null
+      ],
+      [
+        0.0,
+        445,
+        null
+      ],
+      [
+        0.0,
+        57,
+        null
+      ],
+      [
+        0.0,
+        497,
+        null
+      ]
+    ],
+    "output_token_logprobs_length": 8,
+    "reasoning_tokens": 0,
+    "completion_tokens": 8,
+    "cached_tokens": 24583,
+    "weight_versions": [
+      {
+        "version": "default",
+        "start": 0,
+        "end": 8
+      }
+    ],
+    "cached_tokens_details": {
+      "device": 12288,
+      "host": 12295
+    },
+    "dp_rank": null,
+    "e2e_latency": 0.13124564476311207,
+    "request_received_ts": 1793209631.9615173,
+    "api_server_dispatch_finish_ts": 1793209631.9637048,
+    "request_finished_ts": 1793209632.092763,
+    "decode_throughput": 1965017.717124183,
+    "response_sent_to_client_ts": 1793209632.0934575
+  }
+}
