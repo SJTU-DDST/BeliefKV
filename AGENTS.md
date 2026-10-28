@@ -2503,3 +2503,14 @@
   current unforced model and position smoke. This is diagnosis, not isolated
   optimization or repeated performance acceptance. Tool prefetch stays off.
   See docs/research/control_plan_diagnostics_20261028_zh.md.
+- Diagnostic FullR1 now runs frozenfe0ce6b2/nativecdd58a4acbb5, port18681:
+  ops/control_plan_diagnostics_20261028_r1.registration.json. Current unforced
+  model actually hands off12296tokens and restores donor with zero logprob
+  deltas; real GPU runtime observes thread-CPU/wall sampling64. Position24
+  exact/session/native-stop checks pass, dispatch increment0.009996ms.
+  Preserve its pre-GPU canonical-path refusal and identical-tree rebind.
+  Independent startup verifies nice0 watcher774837/server775366/driver776815/
+  scheduler775715 and168 exact receipts, not complete work/performance.
+  Keep profiling1/tool-prefetch0/frontier0, unchanged work/timers/capacity,
+  frozen sources and completeV345 with explicit engine/profiling differences.
+  No other baseline or follow-up GPU job is authorized by the CPU plot waiter.

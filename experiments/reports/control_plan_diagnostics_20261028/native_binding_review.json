@@ -1,0 +1,27 @@
+{
+  "observed_at": "2026-10-28T16:18:00.253037+00:00",
+  "pre_gpu_rejection": "ValueError('engine source tree or CPU evidence changed')",
+  "original_registration_created": false,
+  "only_changed_provenance_field": "canonical_patch.path",
+  "state_digest_recomputed": true,
+  "old_patch_path": "/home/longhao/experiment/.worktrees/beliefkv-sibling-capacity-gpu-100ec17e/patches/sglang-sibling-capacity-runtime-20261028.patch",
+  "new_patch_path": "/home/longhao/experiment/.worktrees/beliefkv-control-plan-diagnostics-fe0ce6b2/patches/sglang-sibling-capacity-runtime-20261028.patch",
+  "native_tree_unchanged": "cdd58a4acbb5038207d3a5020c54d7cbcef983b9",
+  "engine_evidence": {
+    "report": "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/native_targeted_r1.xml",
+    "report_sha256": "9c5acbc043e1803f817393b2349b33d411ba8b63b719a85943cfacf2f0c4b4ff",
+    "sources": "/home/longhao/experiment/BeliefKV/experiments/reports/control_plan_diagnostics_20261028/native_registration_sources.json",
+    "sources_sha256": "51ecc6677e996ed50a8592ddf2ae4b0d812e6a4e04225c239e59d25dcf1841cc",
+    "tree": "cdd58a4acbb5038207d3a5020c54d7cbcef983b9",
+    "passing_cases": 92,
+    "gpu_validation_pending": true
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/native_registration_sources.json": "85eecea0d9a1c40b73956b345b31c69056ac62948db783cc307fe30f07e5c323",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/native_targeted_r1.xml": "9c5acbc043e1803f817393b2349b33d411ba8b63b719a85943cfacf2f0c4b4ff",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/control_plan_diagnostics_20261028/native_registration_sources.json": "51ecc6677e996ed50a8592ddf2ae4b0d812e6a4e04225c239e59d25dcf1841cc",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/control_plan_diagnostics_20261028/rebind_native.py": "db1803c2666f5482f603eedc822133b31e289fc22c714da5596920aa0d96e919"
+  },
+  "gpu_work_started": false,
+  "performance_accepted": false
+}

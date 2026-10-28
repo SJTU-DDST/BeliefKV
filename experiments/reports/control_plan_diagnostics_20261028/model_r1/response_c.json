@@ -1,0 +1,88 @@
+{
+  "text": " as exc:\n   242",
+  "output_ids": [
+    438,
+    3438,
+    510,
+    256,
+    220,
+    17,
+    19,
+    17
+  ],
+  "meta_info": {
+    "id": "layer-model:c",
+    "finish_reason": {
+      "type": "length",
+      "length": 8
+    },
+    "prompt_tokens": 16384,
+    "weight_version": "default",
+    "num_retractions": 0,
+    "forward_entry_time": 1793203813.3589606,
+    "prefill_finished_time": 1793203813.924513,
+    "queue_time": 0.0008361339569091797,
+    "input_token_logprobs": [],
+    "output_token_logprobs": [
+      [
+        -3.2066785934148356e-05,
+        438,
+        null
+      ],
+      [
+        -1.0728830375228426e-06,
+        3438,
+        null
+      ],
+      [
+        -0.000296310376143083,
+        510,
+        null
+      ],
+      [
+        -0.16183072328567505,
+        256,
+        null
+      ],
+      [
+        -3.290122185717337e-05,
+        220,
+        null
+      ],
+      [
+        0.0,
+        17,
+        null
+      ],
+      [
+        -1.1920928244535389e-07,
+        19,
+        null
+      ],
+      [
+        -5.960462772236497e-07,
+        17,
+        null
+      ]
+    ],
+    "output_token_logprobs_length": 8,
+    "reasoning_tokens": 0,
+    "completion_tokens": 8,
+    "cached_tokens": 0,
+    "weight_versions": [
+      {
+        "version": "default",
+        "start": 0,
+        "end": 8
+      }
+    ],
+    "cached_tokens_details": null,
+    "dp_rank": null,
+    "e2e_latency": 0.6064194366335869,
+    "request_received_ts": 1793203813.3556566,
+    "api_server_dispatch_finish_ts": 1793203813.357289,
+    "request_finished_ts": 1793203813.9620762,
+    "decode_throughput": 1737848.0388439307,
+    "response_sent_to_client_ts": 1793203813.9626489
+  }
+}

@@ -62,3 +62,41 @@ GPU 资格、小模型夹具或开始执行都不表示完整性能验收通过�
 了只用于路径检查的 `{}` 假 service-seed 文件，真实构造器正确拒绝；
 该测试随后显式关闭这三个无关种子，与既有真实构造器测试一致。
 这不是 serving 运行中的模型或迁移故障。
+
+## GPU 资格与实际启动
+
+冻结应用为 `fe0ce6b27f40cffd7c44e8a97b3ea02f05217699`，1798 个
+资格源文件逐项匹配干净执行树。原生组件沿用相同 clean engine、
+同一算子 SHA 和 8/4 分组的既有真实 GPU 证明；当前应用重新完成七次
+非强制模型调用，实际交接 12296 token。消费者 handoff 和 donor
+恢复均与独立参考输出相同，最大 logprob 差为零。
+
+真实模型 runtime 已观察到 schema 2、`thread_time_ns`、每 64 次顶层
+采样及实际 phase 数据。小夹具为 Device49152/Host8GB，不是正式
+工作量容量。模型父进程在主动清理后已不存在，GPU 无残余计算进程；
+其记录的最终退出码为 -9，不将主动清理表述为自然退出。
+
+位置注册第一次在 GPU 启动前因 canonical patch 路径不同而拒绝，
+没有创建注册文件。`rebind_native.py` 复现旧拒绝，确认仅
+`canonical_patch.path` 改变，补丁 SHA、实际/预期树和其余字段全部
+一致后写入独立新证明；旧证明保留。对应
+`native_binding_review.json` 不表示新增 GPU 资格。
+
+随后 `control_plan_diagnostics_position_20261028_r1` 完成 24 个精确
+token/session/stop 检查，24 个均原生停止；running24 的位置分派
+增量 wall 均值为 0.009996 ms。实际位置 supervisor/server 已退出。
+
+诊断 FULL 注册为
+`ops/control_plan_diagnostics_20261028_r1.registration.json`，端口18681，
+只执行 FULL，复用完整 V345。`live_start.py/.json` 独立验证实际
+nice0 watcher774837/server775366/driver776815/GPU scheduler775715，
+完整工作量/工具时间/容量/停止契约、实际 profiling 和原生状态。
+首次封存前缀核对 168 个精确完成回执；不是完整工作或性能结果，
+不以该前缀吞吐比较完整对照。
+
+本轮报告目录保存模型、CPU、路径拒绝/重新绑定与启动证据；运行中
+冻结应用、原生树、配置和原始轨迹均不再更改。CPU 绘图观察器只在
+完整成功及实际 owned 退出后生成趋势/分布/geometry 图，图中保留
+引擎和 profiling 差异，不授权下一轮 GPU 工作。
+模型请求 token 包和阶段记录以 `.json.gz` 原字节归档，原始本地
+JSON 保留，不把长 token 数组展开为 Git 文本差异。
