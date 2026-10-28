@@ -1,0 +1,310 @@
+{
+  "observed_at": "2026-10-28T08:03:40.396540+00:00",
+  "scope": "complete observed counters and forecast gates, not causal module attribution",
+  "runs": {
+    "tool_offload_before_admission_20261027_r1": {
+      "registration": "/home/longhao/experiment/ops/tool_offload_before_admission_20261027_r1.registration.json",
+      "registration_sha256": "c3e820493fe5eabdb0884d52a1f1e06529507b38b472b23ba56f6a0f941535d6",
+      "code_commit": "716ef9a3e4adc45da086b55a14f096490ca5086b",
+      "mean_jct_s": 1631.194643497467,
+      "makespan_s": 2304.90656282711,
+      "end_to_end_output_tokens_per_s": 238.4786476228323,
+      "counts": {
+        "online_tool_supported": 2784,
+        "online_tool_cold_or_tail_unsupported": 690,
+        "tool_wait_accepted": 2668,
+        "tool_wait_expired": 881,
+        "tool_hint_physical_inspection_deferred": 0,
+        "prediction_maintenance_sweeps": 15694,
+        "tool_prefetch_scans": 3690,
+        "tool_offload_cost_rejected": 1,
+        "predicted_tool_offload_evicted_nodes": 41,
+        "predicted_tool_offload_freed_bytes": 392724480,
+        "predicted_tool_offload_backup_issued": 12
+      },
+      "counts_scope": "last recorded snapshot in complete file; not a shutdown-final record",
+      "forecast_gate": {
+        "forecast_records": 2668,
+        "observed_wait_groups": 2668,
+        "same_wait_groups_with_multiple_forecasts": 0,
+        "gate_evaluated_only_for_current_frozen_curve_semantics": false,
+        "passing_at_issuance": 0,
+        "failing_or_unsupported_at_issuance": 0,
+        "first_failed_then_later_passed_wait_groups": 0,
+        "examples": [],
+        "horizon_ms": 1000.0,
+        "minimum_survival": 0.9,
+        "not_actual_cost_capacity_tail_support_or_physical_eligibility": true
+      },
+      "predicted_offload_journal_events": 41,
+      "predicted_offload_journal_bytes": 392724480,
+      "transfer_bytes": {
+        "d2h": 1132365250560,
+        "h2d": 2714687471616
+      },
+      "native_demand_h2d_bytes": 2630786088960,
+      "transfer_stream_ms_sum_not_exposed_wait": {
+        "d2h": 27797.24567087926,
+        "h2d": 85968.20566499233
+      },
+      "transfer_operations": {
+        "d2h": 12870,
+        "h2d": 444
+      },
+      "full_scheduler_profile_enabled": false,
+      "forecast_journal_writer_samples": {
+        "records_seen": 2668,
+        "samples": 42,
+        "sampled_cpu_ms": 12.067251,
+        "sampled_wall_ms": 14.405865,
+        "mean_sample_cpu_ms": 0.2873155,
+        "mean_sample_wall_ms": 0.3429967857142857,
+        "max_sample_cpu_ms": 1.330739,
+        "max_sample_wall_ms": 1.826488
+      },
+      "input_jsonl_prefixes": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+          "complete_prefix_bytes": 63439977,
+          "complete_prefix_sha256": "7b9f7059c3a596171566fab9ddaad8861e4b40283f4e062c3456120fb9a5b81a",
+          "first_read_limit_bytes": 63439977
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/server/transfer_telemetry.jsonl": {
+          "complete_prefix_bytes": 9544945,
+          "complete_prefix_sha256": "ba0246aabb25d160c0f1500b840acc831824056ae75ed0a1eb60d4804170cffe",
+          "first_read_limit_bytes": 9544945
+        }
+      },
+      "summary_sha256": "bce325a54a5cfcb44011fd94ea99201bf3f5a6ca9a6b841d1bbd10ce97a112ce"
+    },
+    "tool_prediction_curve_repair_20261027_r1": {
+      "registration": "/home/longhao/experiment/ops/tool_prediction_curve_repair_20261027_r1.registration.json",
+      "registration_sha256": "e27d075acd006794e2bd3fadd2c9b29dcb2ce9460a1f441feaf3d6cb933d7107",
+      "code_commit": "c04a47e5b49d498719698b6b1962c845ced9e2e3",
+      "mean_jct_s": 1635.6204421565267,
+      "makespan_s": 2323.4519868555067,
+      "end_to_end_output_tokens_per_s": 236.5751490065904,
+      "counts": {
+        "online_tool_supported": 2784,
+        "online_tool_cold_or_tail_unsupported": 690,
+        "tool_wait_accepted": 2679,
+        "tool_wait_expired": 881,
+        "tool_hint_physical_inspection_deferred": 0,
+        "prediction_maintenance_sweeps": 15684,
+        "tool_prefetch_scans": 3939,
+        "tool_offload_cost_rejected": 1,
+        "predicted_tool_offload_evicted_nodes": 64,
+        "predicted_tool_offload_freed_bytes": 786628608,
+        "predicted_tool_offload_backup_issued": 24
+      },
+      "counts_scope": "last recorded snapshot in complete file; not a shutdown-final record",
+      "forecast_gate": {
+        "forecast_records": 2679,
+        "observed_wait_groups": 2679,
+        "same_wait_groups_with_multiple_forecasts": 0,
+        "gate_evaluated_only_for_current_frozen_curve_semantics": false,
+        "passing_at_issuance": 0,
+        "failing_or_unsupported_at_issuance": 0,
+        "first_failed_then_later_passed_wait_groups": 0,
+        "examples": [],
+        "horizon_ms": 1000.0,
+        "minimum_survival": 0.9,
+        "not_actual_cost_capacity_tail_support_or_physical_eligibility": true
+      },
+      "predicted_offload_journal_events": 64,
+      "predicted_offload_journal_bytes": 786628608,
+      "transfer_bytes": {
+        "d2h": 1109291433984,
+        "h2d": 2629177737216
+      },
+      "native_demand_h2d_bytes": 2544588914688,
+      "transfer_stream_ms_sum_not_exposed_wait": {
+        "d2h": 27453.72165840119,
+        "h2d": 81680.13577640057
+      },
+      "transfer_operations": {
+        "d2h": 12533,
+        "h2d": 477
+      },
+      "full_scheduler_profile_enabled": false,
+      "forecast_journal_writer_samples": {
+        "records_seen": 2679,
+        "samples": 42,
+        "sampled_cpu_ms": 6.903368,
+        "sampled_wall_ms": 8.932202,
+        "mean_sample_cpu_ms": 0.16436590476190477,
+        "mean_sample_wall_ms": 0.2126714761904762,
+        "max_sample_cpu_ms": 0.989139,
+        "max_sample_wall_ms": 1.232271
+      },
+      "input_jsonl_prefixes": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_prediction_curve_repair_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+          "complete_prefix_bytes": 64882964,
+          "complete_prefix_sha256": "9b34c4ae10d26b0556c3f1a3c1c40319c4c3d7e3bd447f3e167b783a0138a416",
+          "first_read_limit_bytes": 64882964
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_prediction_curve_repair_20261027_r1/full/server/transfer_telemetry.jsonl": {
+          "complete_prefix_bytes": 9407380,
+          "complete_prefix_sha256": "523b5832042cf5fdecb582414a4981f33fe69ea9efa29b1404314782568e341e",
+          "first_read_limit_bytes": 9407380
+        }
+      },
+      "summary_sha256": "66aeb7469de9e4912073195e7f829bc8bef2b5c370a7dc51e41ebc11bfce2d99"
+    },
+    "tool_online_refresh_20261027_r1": {
+      "registration": "/home/longhao/experiment/ops/tool_online_refresh_20261027_r1.registration.json",
+      "registration_sha256": "9f64a748729f059ea7eda75f83fbec9ceb4960b817a6c1c6e132bc7c9cca5664",
+      "code_commit": "29c58c8b678fd6615e183a2ddb95e7f185807ebf",
+      "mean_jct_s": 1639.2089340174991,
+      "makespan_s": 2324.878505270004,
+      "end_to_end_output_tokens_per_s": 236.42998924632533,
+      "counts": {
+        "online_tool_supported": 16866,
+        "online_tool_cold_or_tail_unsupported": 732,
+        "tool_wait_accepted": 16773,
+        "tool_wait_expired": 52,
+        "tool_hint_physical_inspection_deferred": 16773,
+        "prediction_maintenance_sweeps": 25219,
+        "tool_prefetch_scans": 13160,
+        "tool_offload_cost_rejected": 42,
+        "predicted_tool_offload_evicted_nodes": 179,
+        "predicted_tool_offload_freed_bytes": 12311592960,
+        "predicted_tool_offload_backup_issued": 29
+      },
+      "counts_scope": "last recorded snapshot in complete file; not a shutdown-final record",
+      "forecast_gate": {
+        "forecast_records": 16773,
+        "observed_wait_groups": 2670,
+        "same_wait_groups_with_multiple_forecasts": 887,
+        "gate_evaluated_only_for_current_frozen_curve_semantics": true,
+        "passing_at_issuance": 8300,
+        "failing_or_unsupported_at_issuance": 8473,
+        "first_failed_then_later_passed_wait_groups": 208,
+        "examples": [
+          {
+            "wait_identity": [
+              "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+              "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:root",
+              "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:context:root",
+              16,
+              7339921916.532385
+            ],
+            "first_completion_probability_within_1s": 0.2207612456747404,
+            "later_completion_probability_within_1s": 0.003036053130929799,
+            "delay_to_first_pass_ms": 560.250973701477,
+            "first_scope": "online_hybrid_run_command",
+            "later_scope": "online_hybrid_run_command"
+          },
+          {
+            "wait_identity": [
+              "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+              "deepagents-invocation:3dffade2fc78cb6a",
+              "deepagents-context:3dffade2fc78cb6a",
+              18,
+              7339924712.768198
+            ],
+            "first_completion_probability_within_1s": 0.2207612456747404,
+            "later_completion_probability_within_1s": 0.003036053130929799,
+            "delay_to_first_pass_ms": 557.4867849349976,
+            "first_scope": "online_hybrid_run_command",
+            "later_scope": "online_hybrid_run_command"
+          },
+          {
+            "wait_identity": [
+              "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+              "deepagents-invocation:94cdd6e0338ac17a",
+              "deepagents-context:94cdd6e0338ac17a",
+              14,
+              7339925924.997095
+            ],
+            "first_completion_probability_within_1s": 0.2207612456747404,
+            "later_completion_probability_within_1s": 0.003036053130929799,
+            "delay_to_first_pass_ms": 503.04738330841064,
+            "first_scope": "online_hybrid_run_command",
+            "later_scope": "online_hybrid_run_command"
+          },
+          {
+            "wait_identity": [
+              "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+              "deepagents-invocation:3dffade2fc78cb6a",
+              "deepagents-context:3dffade2fc78cb6a",
+              19,
+              7339931156.192079
+            ],
+            "first_completion_probability_within_1s": 0.20849673202614372,
+            "later_completion_probability_within_1s": 0.0028673835125448102,
+            "delay_to_first_pass_ms": 562.4356107711792,
+            "first_scope": "online_hybrid_run_command",
+            "later_scope": "online_hybrid_run_command"
+          },
+          {
+            "wait_identity": [
+              "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+              "deepagents-invocation:5055fd56f6f9d254",
+              "deepagents-context:5055fd56f6f9d254",
+              13,
+              7339931578.466118
+            ],
+            "first_completion_probability_within_1s": 0.20849673202614372,
+            "later_completion_probability_within_1s": 0.0028673835125448102,
+            "delay_to_first_pass_ms": 547.8698329925537,
+            "first_scope": "online_hybrid_run_command",
+            "later_scope": "online_hybrid_run_command"
+          }
+        ],
+        "horizon_ms": 1000.0,
+        "minimum_survival": 0.9,
+        "not_actual_cost_capacity_tail_support_or_physical_eligibility": true
+      },
+      "predicted_offload_journal_events": 179,
+      "predicted_offload_journal_bytes": 12311592960,
+      "transfer_bytes": {
+        "d2h": 1101094158336,
+        "h2d": 2648332959744
+      },
+      "native_demand_h2d_bytes": 2569188114432,
+      "transfer_stream_ms_sum_not_exposed_wait": {
+        "d2h": 26573.976612515748,
+        "h2d": 81961.855378896
+      },
+      "transfer_operations": {
+        "d2h": 12643,
+        "h2d": 502
+      },
+      "full_scheduler_profile_enabled": false,
+      "forecast_journal_writer_samples": {
+        "records_seen": 16773,
+        "samples": 263,
+        "sampled_cpu_ms": 42.359587,
+        "sampled_wall_ms": 53.778604,
+        "mean_sample_cpu_ms": 0.16106306844106466,
+        "mean_sample_wall_ms": 0.20448138403041824,
+        "max_sample_cpu_ms": 0.903344,
+        "max_sample_wall_ms": 1.902409
+      },
+      "input_jsonl_prefixes": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_online_refresh_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+          "complete_prefix_bytes": 128137558,
+          "complete_prefix_sha256": "30043d7724232cfdaafab05aa6789b980435892e814cabe3064f4390a8bfc740",
+          "first_read_limit_bytes": 128137558
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_online_refresh_20261027_r1/full/server/transfer_telemetry.jsonl": {
+          "complete_prefix_bytes": 9484333,
+          "complete_prefix_sha256": "62328467402a695bfaf64d624b76b54dbc2a86442a567cdb3165468f0eb2be75",
+          "first_read_limit_bytes": 9484333
+        }
+      },
+      "summary_sha256": "10643ea52cf13c75513e6cf42290528f62afac53b4d05eeca75b5057917b6fe1"
+    }
+  },
+  "current_vs_first": {
+    "mean_jct_difference_s": 8.014290520032091,
+    "mean_jct_increase_percent": 0.4913141759004702
+  },
+  "current_vs_direct_predecessor": {
+    "mean_jct_difference_s": 3.5884918609724537,
+    "mean_jct_increase_percent": 0.21939636901584514
+  },
+  "measured_frozen_checkout": "/home/longhao/experiment/.worktrees/beliefkv-causal-29c58c8b678f",
+  "operator_sha256": "ae78907603ee7c601f6f1933d1b4ed9d1205c1ea2bc6f764c94dff18943be516",
+  "performance_accepted": false
+}

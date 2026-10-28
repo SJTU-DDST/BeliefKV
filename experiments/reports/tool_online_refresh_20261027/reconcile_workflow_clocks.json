@@ -1,0 +1,114 @@
+{
+  "observed_at": "2026-10-28T08:12:53.294565+00:00",
+  "scope": "complete identical work and workflow-event clock, all normal tails",
+  "initial_audit_preserved": "/home/longhao/experiment/BeliefKV/experiments/reports/tool_online_refresh_20261027/refresh_audit.json",
+  "initial_audit_sha256": "1d0bdba745593d028e21b7c54606444aec6922229bb3ba30a4082e5159a1a018",
+  "supersedes_only_initial_driver_clock_performance_fields": true,
+  "initial_forecast_and_transfer_observations_unchanged": true,
+  "runs": {
+    "tool_offload_before_admission_20261027_r1": {
+      "registration": "/home/longhao/experiment/ops/tool_offload_before_admission_20261027_r1.registration.json",
+      "registration_sha256": "c3e820493fe5eabdb0884d52a1f1e06529507b38b472b23ba56f6a0f941535d6",
+      "application_commit": "716ef9a3e4adc45da086b55a14f096490ca5086b",
+      "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full",
+      "mean_jct_s": 1631.194643497467,
+      "workflow_event_makespan_s": 2304.709796286583,
+      "end_to_end_output_tokens_per_s": 238.49900793828633,
+      "output_tokens": 549671,
+      "completed_requests": 3674,
+      "summary_sha256": "bce325a54a5cfcb44011fd94ea99201bf3f5a6ca9a6b841d1bbd10ce97a112ce",
+      "workflow_events": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/replay/runtime_events.replay.jsonl": {
+          "complete_prefix_bytes": 20515641,
+          "complete_prefix_sha256": "95567f85a9ea32f03376fca4af9050e27f8e9ad8992f7c7b52b134288ffaaf86",
+          "first_read_limit_bytes": 20515641
+        }
+      },
+      "initial_driver_clock_diagnostic": {
+        "makespan_s": 2304.90656282711,
+        "end_to_end_output_tokens_per_s": 238.4786476228323,
+        "extra_driver_interval_s": 0.19676654052727827,
+        "not_the_declared_performance_metric": true
+      },
+      "existing_figure_evidence_sha256": "c4bc6afb1ddcec3a5c643458f2ab67981b0721ad69a2bc95efd64252141a4d5f",
+      "jct_improvement_vs_control_percent": 3.9107941057680007
+    },
+    "tool_prediction_curve_repair_20261027_r1": {
+      "registration": "/home/longhao/experiment/ops/tool_prediction_curve_repair_20261027_r1.registration.json",
+      "registration_sha256": "e27d075acd006794e2bd3fadd2c9b29dcb2ce9460a1f441feaf3d6cb933d7107",
+      "application_commit": "c04a47e5b49d498719698b6b1962c845ced9e2e3",
+      "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_prediction_curve_repair_20261027_r1/full",
+      "mean_jct_s": 1635.6204421565267,
+      "workflow_event_makespan_s": 2323.2344938669203,
+      "end_to_end_output_tokens_per_s": 236.59729633451556,
+      "output_tokens": 549671,
+      "completed_requests": 3674,
+      "summary_sha256": "66aeb7469de9e4912073195e7f829bc8bef2b5c370a7dc51e41ebc11bfce2d99",
+      "workflow_events": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_prediction_curve_repair_20261027_r1/full/replay/runtime_events.replay.jsonl": {
+          "complete_prefix_bytes": 20515516,
+          "complete_prefix_sha256": "c2a66f8257ade33824dbee73e4f3f25ae31aaaad649f7cc5fd01430a8555f9ee",
+          "first_read_limit_bytes": 20515516
+        }
+      },
+      "initial_driver_clock_diagnostic": {
+        "makespan_s": 2323.4519868555067,
+        "end_to_end_output_tokens_per_s": 236.5751490065904,
+        "extra_driver_interval_s": 0.21749298858640032,
+        "not_the_declared_performance_metric": true
+      },
+      "existing_figure_evidence_sha256": "0a06c1bc645f9a104263a5e6d9bf3ceea41db599abefd5929dc045c6e2baea53",
+      "jct_improvement_vs_control_percent": 3.6500824363837947
+    },
+    "tool_online_refresh_20261027_r1": {
+      "registration": "/home/longhao/experiment/ops/tool_online_refresh_20261027_r1.registration.json",
+      "registration_sha256": "9f64a748729f059ea7eda75f83fbec9ceb4960b817a6c1c6e132bc7c9cca5664",
+      "application_commit": "29c58c8b678fd6615e183a2ddb95e7f185807ebf",
+      "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_online_refresh_20261027_r1/full",
+      "mean_jct_s": 1639.2089340174991,
+      "workflow_event_makespan_s": 2324.69648788929,
+      "end_to_end_output_tokens_per_s": 236.44850106822943,
+      "output_tokens": 549671,
+      "completed_requests": 3674,
+      "summary_sha256": "10643ea52cf13c75513e6cf42290528f62afac53b4d05eeca75b5057917b6fe1",
+      "workflow_events": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_online_refresh_20261027_r1/full/replay/runtime_events.replay.jsonl": {
+          "complete_prefix_bytes": 20515519,
+          "complete_prefix_sha256": "89c529acd00d181f9c3b01030957ea11e12a2660e9546f458fc5b6f0b684bb9c",
+          "first_read_limit_bytes": 20515519
+        }
+      },
+      "initial_driver_clock_diagnostic": {
+        "makespan_s": 2324.878505270004,
+        "end_to_end_output_tokens_per_s": 236.42998924632533,
+        "extra_driver_interval_s": 0.18201738071411455,
+        "not_the_declared_performance_metric": true
+      },
+      "existing_figure_evidence_sha256": "349c84990c272d14bd595f5c13aacbb484fe37d75baadc4159f324eba2ec751f",
+      "jct_improvement_vs_control_percent": 3.438694215699456
+    },
+    "v345_locobench_categorized_thunder_decay_20261027": {
+      "registration": "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.json",
+      "registration_sha256": "66a5bac27ce8d8f70a91e5c45fcc377b7950db56bc3bd2a7588124fd5209902b",
+      "application_commit": "0b1ca5de0933ddc5ba20328fccbf013c998ef361",
+      "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay",
+      "mean_jct_s": 1697.5836446114117,
+      "workflow_event_makespan_s": 2355.3445512609483,
+      "end_to_end_output_tokens_per_s": 233.37180104105374,
+      "output_tokens": 549671,
+      "completed_requests": 3674,
+      "summary_sha256": "3b9cdf028d27c6c5b5ed7004e401f18192bc518a4811e50103505cbfe39174a6",
+      "workflow_events": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/replay/runtime_events.replay.jsonl": {
+          "complete_prefix_bytes": 20515544,
+          "complete_prefix_sha256": "b895eb2915903d99c1a4389fd4f862dc05a5105a602eb958d0d14c3c77a5817f",
+          "first_read_limit_bytes": 20515544
+        }
+      },
+      "jct_improvement_vs_control_percent": 0.0
+    }
+  },
+  "operator_sha256": "132aec535cbcd0b0e942511db96f61638af6c14936de64060176e345fa5cce5f",
+  "causal_refresh_attribution_verified": false,
+  "repeated_performance_accepted": false
+}

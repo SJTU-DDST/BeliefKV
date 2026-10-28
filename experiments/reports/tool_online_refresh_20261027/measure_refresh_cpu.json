@@ -1,0 +1,133 @@
+{
+  "observed_at": "2026-10-28T08:03:21.002690+00:00",
+  "scope": "frozen callback CPU fixture: 110 contexts, 8 active tools, 64 completed same-class samples",
+  "measured_checkout": "/home/longhao/experiment/.worktrees/beliefkv-causal-29c58c8b678f",
+  "application_commit": "29c58c8b678fd6615e183a2ddb95e7f185807ebf",
+  "sources_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "f37f8cca3804b4fb736a18a3a1c03e732cfdc22bcdd6f3fdbb35bfb6f9e094aa",
+    "beliefkv/predictor/online_workload_timing.py": "351dd9efb46bcbe52195c435f838f36a11b6cf7602f62c83a48cffea30a9b22a",
+    "beliefkv/runtime/sglang_v0520_prediction.py": "c5cc2d48c68c6a3b8f314c655cf687408c5e927ca06972945bd4456717b9f5ec",
+    "beliefkv/runtime/v0520_opportunity_telemetry.py": "2c455f2bb00a999be762745309ece02158016ccef0cc861ff3b2ede493a1d8a0"
+  },
+  "scenarios": {
+    "not_due": {
+      "measured_callbacks": 300,
+      "actual_forecasts_including_warmup": 0,
+      "scheduler_thread_cpu_us": {
+        "median": 0.894,
+        "p99": 2.9032299999999998,
+        "max": 4.527
+      },
+      "callback_wall_us": {
+        "median": 0.466,
+        "p99": 2.23325,
+        "max": 4.087
+      }
+    },
+    "due_but_per_context_backoff": {
+      "measured_callbacks": 300,
+      "actual_forecasts_including_warmup": 0,
+      "scheduler_thread_cpu_us": {
+        "median": 62.9375,
+        "p99": 79.33303,
+        "max": 254.034
+      },
+      "callback_wall_us": {
+        "median": 62.393,
+        "p99": 78.80993000000001,
+        "max": 253.406
+      }
+    },
+    "eight_recompute": {
+      "measured_callbacks": 300,
+      "actual_forecasts_including_warmup": 2600,
+      "scheduler_thread_cpu_us": {
+        "median": 1228.293,
+        "p99": 1326.2353,
+        "max": 1456.092
+      },
+      "callback_wall_us": {
+        "median": 1227.2935,
+        "p99": 1325.1898499999998,
+        "max": 1455.05
+      }
+    },
+    "eight_recompute_uncached_index": {
+      "measured_callbacks": 300,
+      "actual_forecasts_including_warmup": 2600,
+      "scheduler_thread_cpu_us": {
+        "median": 1246.2939999999999,
+        "p99": 1450.34892,
+        "max": 1679.25
+      },
+      "callback_wall_us": {
+        "median": 1245.187,
+        "p99": 1449.3813100000002,
+        "max": 1678.038
+      }
+    },
+    "eight_recompute_with_async_journal": {
+      "measured_callbacks": 300,
+      "actual_forecasts_including_warmup": 2600,
+      "scheduler_thread_cpu_us": {
+        "median": 1811.221,
+        "p99": 2040.5640400000002,
+        "max": 12144.975
+      },
+      "callback_wall_us": {
+        "median": 1843.6,
+        "p99": 2426.84814,
+        "max": 12568.436
+      },
+      "journal_status": {
+        "background_writer_timing": {
+          "categories": {
+            "admission_runtime_state": {
+              "max_sample_cpu_ms": 0.28853,
+              "max_sample_wall_ms": 0.288886,
+              "mean_sample_cpu_ms": 0.28853,
+              "mean_sample_wall_ms": 0.288886,
+              "records_seen": 1,
+              "sampled_cpu_ms": 0.28853,
+              "sampled_wall_ms": 0.288886,
+              "samples": 1
+            },
+            "tool_wait_forecast": {
+              "max_sample_cpu_ms": 0.171057,
+              "max_sample_wall_ms": 5.225422,
+              "mean_sample_cpu_ms": 0.07428985365853658,
+              "mean_sample_wall_ms": 0.3206336585365853,
+              "records_seen": 2600,
+              "sampled_cpu_ms": 3.045884,
+              "sampled_wall_ms": 13.14598,
+              "samples": 41
+            }
+          },
+          "cpu_clock": "thread_time_ns",
+          "sample_every": 64,
+          "schema_version": 1,
+          "scope": "Every 64th record per category, starting with its first record. Measured processing samples only; queue waiting and status publication are excluded. Wall includes scheduling and GIL waiting; thread CPU excludes waiting. No full-run cost, GPU stall, GIL attribution or JCT saving is inferred.",
+          "snapshot_ts_ms": 1793174601000.8796,
+          "wall_clock": "perf_counter_ns"
+        },
+        "complete": true,
+        "enqueued": {
+          "admission_runtime_state": 1,
+          "tool_wait_forecast": 2600
+        },
+        "error": null,
+        "schema_version": 1
+      }
+    }
+  },
+  "limitations": [
+    "Not an instrumentation of the historical GPU run or a whole-scheduler cost measurement.",
+    "Monotonic policy time is frozen; CPU and wall measurement clocks are real.",
+    "No native cache, DMA, physical offload, nonempty restore leases or concurrent event drain.",
+    "The journal case includes scheduler-thread enqueue and real writer contention; writer CPU is separate.",
+    "History, deadline resets and fixture setup are outside the timed callback.",
+    "No fixture cost is extrapolated into removable JCT."
+  ],
+  "operator_sha256": "c312590e388b59a8361382afb396fc4f501dc0bd8847dedf1608cecf2c7465a5",
+  "gpu_or_jct_performance_verified": false
+}
