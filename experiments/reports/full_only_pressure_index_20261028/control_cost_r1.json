@@ -1,0 +1,313 @@
+{
+  "observed_at": "2026-10-28T17:35:47.944575+00:00",
+  "scope": "Read-only candidate publication on real native CPU trees; no GPU/JCT attribution.",
+  "baseline_commit": "e45a9c6b",
+  "baseline_runtime_sha256": "b19f3bdce267569ecfa2b5669447e2e53b9b9b75b89f9348ec5e8b6b9e0aa6c2",
+  "sources_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "675fb977608ddb348ca15c799beb21b83fd905afdbf19e7637cd95ef348167b5",
+    "tests/test_component_pressure_publication.py": "7c226129f5803b29add9c87dd1696dabc6a8f246a2585e5e77c0e203ce39427e",
+    "tests/test_full_only_native_lifecycle.py": "4de52d01708fef41df881652c61b8e0623c9dec12228fb9e5f3988a201713624",
+    "experiments/reports/full_only_pressure_index_20261028/control_cost.py": "32d5db936555a9c1a573ffdda648d28e640129b4d2e6529b482c68e10380d7d9"
+  },
+  "cases": {
+    "full_1": {
+      "owners": 1,
+      "candidate_nodes": 128,
+      "declared_components": [
+        0
+      ],
+      "single_call_native_node_lookups_outside_timing": {
+        "previous": 128,
+        "current": 17
+      },
+      "samples_per_variant": 200,
+      "costs": {
+        "previous": {
+          "thread_cpu_p50_us": 51.912499999999994,
+          "thread_cpu_p99_us": 56.011,
+          "thread_cpu_max_us": 66.357,
+          "wall_p50_us": 52.4345
+        },
+        "current": {
+          "thread_cpu_p50_us": 14.059999999999999,
+          "thread_cpu_p99_us": 17.378,
+          "thread_cpu_max_us": 18.115,
+          "wall_p50_us": 14.513
+        }
+      },
+      "candidate_prefix": {
+        "0": [
+          [
+            10,
+            23.0
+          ]
+        ],
+        "2": []
+      },
+      "same_native_candidate_prefix_and_free_slots": true
+    },
+    "full_12": {
+      "owners": 12,
+      "candidate_nodes": 1536,
+      "declared_components": [
+        0
+      ],
+      "single_call_native_node_lookups_outside_timing": {
+        "previous": 1536,
+        "current": 24
+      },
+      "samples_per_variant": 200,
+      "costs": {
+        "previous": {
+          "thread_cpu_p50_us": 642.7139999999999,
+          "thread_cpu_p99_us": 687.353,
+          "thread_cpu_max_us": 694.413,
+          "wall_p50_us": 643.2915
+        },
+        "current": {
+          "thread_cpu_p50_us": 30.705,
+          "thread_cpu_p99_us": 37.015,
+          "thread_cpu_max_us": 39.34,
+          "wall_p50_us": 31.2535
+        }
+      },
+      "candidate_prefix": {
+        "0": [
+          [
+            148,
+            427.0
+          ],
+          [
+            276,
+            811.0
+          ],
+          [
+            404,
+            1195.0
+          ],
+          [
+            532,
+            1579.0
+          ],
+          [
+            660,
+            1963.0
+          ],
+          [
+            788,
+            2347.0
+          ],
+          [
+            916,
+            2731.0
+          ],
+          [
+            1044,
+            3115.0
+          ]
+        ],
+        "2": []
+      },
+      "same_native_candidate_prefix_and_free_slots": true
+    },
+    "full_24": {
+      "owners": 24,
+      "candidate_nodes": 3072,
+      "declared_components": [
+        0
+      ],
+      "single_call_native_node_lookups_outside_timing": {
+        "previous": 3072,
+        "current": 24
+      },
+      "samples_per_variant": 200,
+      "costs": {
+        "previous": {
+          "thread_cpu_p50_us": 1251.369,
+          "thread_cpu_p99_us": 1333.663,
+          "thread_cpu_max_us": 1340.042,
+          "wall_p50_us": 1252.1644999999999
+        },
+        "current": {
+          "thread_cpu_p50_us": 35.3795,
+          "thread_cpu_p99_us": 39.077,
+          "thread_cpu_max_us": 67.968,
+          "wall_p50_us": 35.8905
+        }
+      },
+      "candidate_prefix": {
+        "0": [
+          [
+            1694,
+            5055.0
+          ],
+          [
+            1822,
+            5439.0
+          ],
+          [
+            1950,
+            5823.0
+          ],
+          [
+            2078,
+            6207.0
+          ],
+          [
+            2206,
+            6591.0
+          ],
+          [
+            2334,
+            6975.0
+          ],
+          [
+            2462,
+            7359.0
+          ],
+          [
+            2590,
+            7743.0
+          ]
+        ],
+        "2": []
+      },
+      "same_native_candidate_prefix_and_free_slots": true
+    },
+    "unknown_12": {
+      "owners": 12,
+      "candidate_nodes": 1536,
+      "declared_components": [],
+      "single_call_native_node_lookups_outside_timing": {
+        "previous": 1536,
+        "current": 1536
+      },
+      "samples_per_variant": 200,
+      "costs": {
+        "previous": {
+          "thread_cpu_p50_us": 632.9804999999999,
+          "thread_cpu_p99_us": 676.067,
+          "thread_cpu_max_us": 678.071,
+          "wall_p50_us": 633.558
+        },
+        "current": {
+          "thread_cpu_p50_us": 641.9559999999999,
+          "thread_cpu_p99_us": 680.726,
+          "thread_cpu_max_us": 685.763,
+          "wall_p50_us": 642.5575
+        }
+      },
+      "candidate_prefix": {
+        "0": [
+          [
+            4776,
+            14291.0
+          ],
+          [
+            4904,
+            14675.0
+          ],
+          [
+            5032,
+            15059.0
+          ],
+          [
+            5160,
+            15443.0
+          ],
+          [
+            5288,
+            15827.0
+          ],
+          [
+            5416,
+            16211.0
+          ],
+          [
+            5544,
+            16595.0
+          ],
+          [
+            5672,
+            16979.0
+          ]
+        ],
+        "2": []
+      },
+      "same_native_candidate_prefix_and_free_slots": true
+    },
+    "incomplete_hybrid_12": {
+      "owners": 12,
+      "candidate_nodes": 1536,
+      "declared_components": [
+        0,
+        2
+      ],
+      "single_call_native_node_lookups_outside_timing": {
+        "previous": 1536,
+        "current": 1536
+      },
+      "samples_per_variant": 200,
+      "costs": {
+        "previous": {
+          "thread_cpu_p50_us": 638.3430000000001,
+          "thread_cpu_p99_us": 677.566,
+          "thread_cpu_max_us": 680.46,
+          "wall_p50_us": 639.0830000000001
+        },
+        "current": {
+          "thread_cpu_p50_us": 636.9590000000001,
+          "thread_cpu_p99_us": 685.085,
+          "thread_cpu_max_us": 690.061,
+          "wall_p50_us": 637.6545
+        }
+      },
+      "candidate_prefix": {
+        "0": [
+          [
+            6322,
+            18919.0
+          ],
+          [
+            6450,
+            19303.0
+          ],
+          [
+            6578,
+            19687.0
+          ],
+          [
+            6706,
+            20071.0
+          ],
+          [
+            6834,
+            20455.0
+          ],
+          [
+            6962,
+            20839.0
+          ],
+          [
+            7090,
+            21223.0
+          ],
+          [
+            7218,
+            21607.0
+          ]
+        ],
+        "2": []
+      },
+      "same_native_candidate_prefix_and_free_slots": true
+    }
+  },
+  "gpu_used": false,
+  "performance_accepted": false,
+  "limitations": [
+    "Known FULL-only layouts use actual native trees/allocators with Host index stand-ins.",
+    "Unknown and incomplete-hybrid declarations test conservative fallback, not hybrid model execution.",
+    "Lookup counting is excluded from timing; construction and equality checks are also excluded.",
+    "This local publication cost does not quantify whole-controller cost or removable JCT."
+  ]
+}

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="6.926" timestamp="2026-10-28T10:30:06.324748-07:00" hostname="ddst-12"><testcase classname="tests.test_component_pressure_publication" name="test_real_full_only_publication_uses_sparse_device_leaves_without_mamba_index[1-4096]" time="6.564"><failure message="AssertionError: assert 128 &lt;= (16 + 1)&#10; +  where 128 = &lt;MagicMock name='node_by_id' id='140623165254416'&gt;.call_count&#10; +  and   1 = min(1, 8)">tests/test_component_pressure_publication.py:60: in test_real_full_only_publication_uses_sparse_device_leaves_without_mamba_index
+    assert lookup.call_count &lt;= 16 + min(owners, 8)
+E   AssertionError: assert 128 &lt;= (16 + 1)
+E    +  where 128 = &lt;MagicMock name='node_by_id' id='140623165254416'&gt;.call_count
+E    +  and   1 = min(1, 8)</failure></testcase><testcase classname="tests.test_component_pressure_publication" name="test_real_full_only_publication_uses_sparse_device_leaves_without_mamba_index[12-4096]" time="0.056"><failure message="AssertionError: assert 1536 &lt;= (16 + 8)&#10; +  where 1536 = &lt;MagicMock name='node_by_id' id='140623160698576'&gt;.call_count&#10; +  and   8 = min(12, 8)">tests/test_component_pressure_publication.py:60: in test_real_full_only_publication_uses_sparse_device_leaves_without_mamba_index
+    assert lookup.call_count &lt;= 16 + min(owners, 8)
+E   AssertionError: assert 1536 &lt;= (16 + 8)
+E    +  where 1536 = &lt;MagicMock name='node_by_id' id='140623160698576'&gt;.call_count
+E    +  and   8 = min(12, 8)</failure></testcase></testsuite></testsuites>

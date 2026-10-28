@@ -7565,7 +7565,8 @@ class NativeAdmissionRuntime:
         # Both native consumers use these pool tables; their generic fallback
         # is unreachable after this publication supplies both component keys.
         limit = 8
-        full_left = mamba_left = limit
+        full_left = limit
+        mamba_left = 0 if getattr(cache, "tree_components", None) == (0,) else limit
         tree = getattr(cache, "tree_core", None)
         device_leaves = getattr(tree, "evictable_device_leaves", ())
         indexed = False
@@ -7578,7 +7579,9 @@ class NativeAdmissionRuntime:
             nonlocal indexed, full_ids, mamba_ids
             lrus = getattr(tree, "lru_lists", None)
             mamba_lru = getattr(lrus.get(2), "cache", None) if isinstance(lrus, dict) else None
-            if isinstance(device_leaves, set) and isinstance(mamba_lru, dict):
+            if isinstance(device_leaves, set) and (
+                not mamba_left or isinstance(mamba_lru, dict)
+            ):
                 # Inspect only the sparse pool members when sorting those IDs
                 # costs less than walking the remaining owner-node table.
                 visited = {node_id for node_id, _ in head}

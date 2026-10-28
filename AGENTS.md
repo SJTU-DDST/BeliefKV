@@ -2552,3 +2552,20 @@
   and profiling differ fromV345. Preserve reports/negative results, reuseV345,
   queue no next GPU job by this audit, and keep the goal active. See
   docs/research/control_plan_diagnostics_result_20261028_zh.md.
+- Main repairs a confirmed FULL-only publication fallback: the original
+  sparse path required both Device leaves and a Mamba LRU, but native(0,)
+  has no Mamba index. Only that exact known layout sets Mamba quota0 and
+  uses the existing live FULL index. Preserve order,8-item quotas, all
+  native candidate checks and unknown/incomplete-hybrid fallback. No policy,
+  logical capacity, physical allocation or native engine changes.
+  Two real-native red cases previously inspected128/1536 nodes. Current
+  3718-case shared CPU plus6subtests retains3705 and adds13; all constructors
+  and inherited reference methods verify. Alternating same-tree200-sample
+  publication medians at1536/3072 candidates fall642.714-to30.705us and
+  1251.369-to35.3795us; unknown layout locally regresses about1.4%, preserved.
+  This is not full-controller, GPU or JCT evidence. Use unchanged formal
+  sibling-capacity configuration with profiling off for the next separately
+  qualified Full; it also includes the prior Host-only-tail repair and is
+  not an isolated publication ablation. Freeze and qualify before GPU work,
+  reuseV345, retain all normal tails and negative results, keep the goal
+  active. See docs/design/full_only_pressure_index_20261028_zh.md.

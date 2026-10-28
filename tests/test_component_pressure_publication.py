@@ -9,11 +9,141 @@ from tests.test_native_join_residency import native
 from tests.test_prepare_publication_batch import publication_fixture
 from tests.test_sglang_v0520_runtime import final_stage_runtime
 from tests.test_waiting_full_tail_backup import native_cache, waiting_tail
+from tests.test_full_only_native_lifecycle import full_native
 
 
 class UnreadableFallback:
     def __getitem__(self, _):
         raise AssertionError("native used the obsolete generic pressure table")
+
+
+def full_only_publication_runtime(full_native, *, owners):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    cache, allocator, *_ = full_native
+    runtime = final_stage_runtime()
+    runtime._native_cache = cache
+    key = runtime.context_sessions["ctx-parent"]
+    prefixes, leaves = [], []
+    for owner in range(owners):
+        leaf, _generation = insert_session(
+            cache, list(range(1000 * owner + 1, 1000 * owner + 129)), f"owner-{owner}",
+        )
+        for _ in range(127):
+            prefix, action = cache.tree_core._split_node(leaf.key, leaf, 1)
+            assert action is None
+            prefixes.append(prefix)
+        leaves.append(leaf)
+    for node in (*prefixes, *leaves):
+        full = node.component_data[0]
+        full.host_value = full.value.clone()
+        cache.tree_core._update_duplicate_tracking(node)
+        runtime._remember_parent_pressure_node(node.id, key, node.creation_time)
+    assert cache.tree_components == (0,)
+    assert 2 not in cache.tree_core.lru_lists
+    assert set(leaves) == cache.tree_core.evictable_device_leaves
+    return runtime, leaves
+
+
+@pytest.mark.parametrize("full_native", (4096,), indirect=True)
+@pytest.mark.parametrize("owners", (1, 12))
+def test_real_full_only_publication_uses_sparse_device_leaves_without_mamba_index(
+    full_native, owners,
+):
+    cache, allocator, *_ = full_native
+    runtime, leaves = full_only_publication_runtime(full_native, owners=owners)
+    free = allocator.available_size()
+    try:
+        with patch.object(cache.tree_core, "node_by_id", wraps=cache.tree_core.node_by_id) as lookup:
+            runtime._publish_parent_pressure_candidates()
+        assert cache.beliefkv_join_pressure_candidates == ()
+        assert cache.beliefkv_join_pressure_candidates_by_component == {
+            0: tuple((node.id, node.creation_time) for node in leaves[:8]), 2: (),
+        }
+        assert allocator.available_size() == free
+        assert not cache.ongoing_write_through
+        assert not cache.ongoing_load_back
+        assert lookup.call_count <= 16 + min(owners, 8)
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("full_native", (4096,), indirect=True)
+@pytest.mark.parametrize("cause", (
+    "locked", "shared", "unbacked", "write_pending", "load_pending", "writing", "stale",
+    "excluded",
+))
+def test_full_only_sparse_publication_keeps_live_candidate_guards(full_native, cause):
+    cache, allocator, *_ = full_native
+    runtime, leaves = full_only_publication_runtime(full_native, owners=3)
+    node, excluded = leaves[0], ()
+    if cause == "locked":
+        node.component_data[0].lock_ref += 1
+    elif cause == "shared":
+        node.component_data[0].session_ref += 1
+    elif cause == "unbacked":
+        node.component_data[0].host_value = None
+    elif cause == "write_pending":
+        node.write_through_pending_id = node.id
+    elif cause == "load_pending":
+        node.load_back_pending_id = node.id
+    elif cause == "writing":
+        cache.ongoing_write_through[node.id] = object()
+    elif cause == "stale":
+        key, created = runtime._parent_pressure_candidates[node.id]
+        runtime._parent_pressure_candidates[node.id] = key, created + 1
+    else:
+        excluded = (node.id,)
+    free = allocator.available_size()
+    try:
+        runtime._publish_parent_pressure_candidates(exclude_node_ids=excluded)
+        assert cache.beliefkv_join_pressure_candidates_by_component == {
+            0: tuple((node.id, node.creation_time) for node in leaves[1:]), 2: (),
+        }
+        assert allocator.available_size() == free
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("full_native", (4096,), indirect=True)
+def test_full_only_publication_observes_new_native_leaf_after_real_demotion(full_native):
+    cache, allocator, *_ = full_native
+    runtime, leaves = full_only_publication_runtime(full_native, owners=3)
+    free = allocator.available_size()
+    try:
+        runtime._publish_parent_pressure_candidates()
+        first = leaves[0]
+        assert cache._can_beliefkv_full_demote(first, full_session_ref=1)
+        cache._demote(first.id, {})
+        assert allocator.available_size() == free + 1
+        runtime._publish_parent_pressure_candidates()
+        assert cache.beliefkv_join_pressure_candidates_by_component == {
+            0: tuple(
+                (node.id, node.creation_time) for node in (first.parent, *leaves[1:])
+            ),
+            2: (),
+        }
+        assert not cache.cache_controller.write_queue
+        assert not cache.cache_controller.load_queue
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("full_native", (4096,), indirect=True)
+@pytest.mark.parametrize("components", ((), (0, 2)))
+def test_unknown_or_hybrid_layout_without_mamba_index_keeps_full_walk(full_native, components):
+    cache, *_ = full_native
+    runtime, leaves = full_only_publication_runtime(full_native, owners=3)
+    cache.tree_components = components
+    try:
+        with patch.object(cache.tree_core, "node_by_id", wraps=cache.tree_core.node_by_id) as lookup:
+            runtime._publish_parent_pressure_candidates()
+        assert cache.beliefkv_join_pressure_candidates_by_component == {
+            0: tuple((node.id, node.creation_time) for node in leaves), 2: (),
+        }
+        assert lookup.call_count == 384
+    finally:
+        runtime.close()
 
 
 @pytest.mark.parametrize("contexts", (36, 108))
