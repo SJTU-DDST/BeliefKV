@@ -2733,3 +2733,14 @@
   post-stage forward IDs with actual positive native decode worker deltas.
   The pre-stage launched result is excluded. This confirms model progress
   during normal DMA without requalifying the failed cold/numerical fixture.
+- Numerical entry adds explicit --deterministic-numerics and optional
+  --reference-build continuation. Deterministic math is fixture-only, has a
+  distinct model-qualified status and must observe actual FA3/sampler/cache/
+  capacity/running flags. Independent continuation references build the same
+  initial8-token histories and compare those too; old cold references remain
+  default and gates/failures unchanged. Complete deterministic_entry_r1_cpu
+  passes4096+6, retains4086/adds10; focused34 pass. Prepared native basefa5cb52
+  plus c9b3ae50 patch reproduces729aa0caa7a1 and92 native CPU tests pass.
+  Freeze/rerun current components before actual deterministic model. Do not
+  silently use its math flags for formal performance or claim ordinary math
+  qualified from it. Goal remains active with tool prefetch off.

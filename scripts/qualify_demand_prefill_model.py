@@ -40,13 +40,46 @@ DEVICE_TOKENS = 61440
 RESIDENT_OUTPUT = 512
 DOCUMENT = {"generated_tokens": 8, "sampling_seed": 21}
 LABELS = ("b_initial", "c", "a_initial", "a_resident", "b_demand", "a_reference", "b_reference")
+REFERENCE_INITIALS = {"a_reference_initial": "a_initial", "b_reference_initial": "b_initial"}
+
+
+def generation_document(label):
+    return {
+        **DOCUMENT, "generated_tokens": RESIDENT_OUTPUT
+        if label in ("a_resident", "a_reference") else 8,
+    }
+
+
+def numerical_flags(capacity, deterministic):
+    return ["--max-total-tokens", str(capacity), *(
+        ["--enable-deterministic-inference", "--attention-backend", "fa3"]
+        if deterministic else []
+    )]
+
+
+def validate_model_parameters(info, *, deterministic, capacity):
+    expected = {
+        "enable_deterministic_inference": deterministic, "attention_backend": "fa3",
+        "sampling_backend": "pytorch" if deterministic else "flashinfer",
+        "max_running_requests": 24, "max_total_tokens": capacity,
+        "context_length": 65536, "enable_session_radix_cache": True,
+        "disable_radix_cache": False, "enable_custom_logit_processor": False,
+        "hicache_io_backend": "kernel",
+    }
+    if any(type(info.get(name)) is not type(value) or info[name] != value
+           for name, value in expected.items()):
+        raise ValueError("actual model numerical or cache parameters differ from the fixture")
+    return expected
 
 
 def output_diagnostics(rows):
-    if set(rows) != set(LABELS):
+    if set(rows) not in (set(LABELS), set(LABELS) | REFERENCE_INITIALS.keys()):
         raise ValueError("demand model qualifier requires every unforced call")
     pairs = {}
-    for name, reference in (("a_resident", "a_reference"), ("b_demand", "b_reference")):
+    comparisons = [("a_resident", "a_reference"), ("b_demand", "b_reference")]
+    if set(REFERENCE_INITIALS) <= rows.keys():
+        comparisons += [(actual, reference) for reference, actual in REFERENCE_INITIALS.items()]
+    for name, reference in comparisons:
         actual, expected = rows[name], rows[reference]
         first = next((
             index for index, (left, right) in enumerate(zip(
@@ -139,7 +172,12 @@ def verify_progress(journals, workers):
     }
 
 
-async def probe(directory, port, prompts, pulse, *, diagnostic_native_demand=False):
+async def probe(
+    directory, port, prompts, pulse, *,
+    diagnostic_native_demand=False, reference_build="cold",
+):
+    if reference_build not in ("cold", "continuation"):
+        raise ValueError("unknown independent reference prefix construction")
     socket = Path(f"/tmp/bkv-demand-model-{port}.sock")
     observations = directory / "arm/opportunities/admission_opportunities.jsonl"
     audit = directory / "arm/server/runtime_audit.jsonl"
@@ -179,10 +217,7 @@ async def probe(directory, port, prompts, pulse, *, diagnostic_native_demand=Fal
                     relation_type="root", execution_mode="foreground",
                     full_prompt_replay_guaranteed=True,
                 )
-                document = {
-                    **DOCUMENT,
-                    "generated_tokens": RESIDENT_OUTPUT if label.startswith("a_r") else 8,
-                }
+                document = generation_document(label)
                 request = "demand-model:" + label
                 body = numerical.payload(request, tokens, owner, document)
                 body["session_id"] = leases.for_request(owner)
@@ -232,9 +267,17 @@ async def probe(directory, port, prompts, pulse, *, diagnostic_native_demand=Fal
             await send(Kind.RETURN, "b", attributes={"context_retired": False})
             await send(Kind.RETURN, "a", attributes={"context_retired": False})
             await create("a_reference")
+            if reference_build == "continuation":
+                reference_output = await call("a_reference_initial", "a_reference", prompts[2])
+                if reference_output != a_output:
+                    raise ValueError("independent resident reference built a different initial history")
             await call("a_reference", "a_reference", prompts[2] + a_output)
             await send(Kind.RETURN, "a_reference", attributes={"context_retired": False})
             await create("b_reference")
+            if reference_build == "continuation":
+                reference_output = await call("b_reference_initial", "b_reference", prompts[0])
+                if reference_output != b_output:
+                    raise ValueError("independent cold reference built a different initial history")
             await call("b_reference", "b_reference", prompts[0] + b_output)
             await send(Kind.RETURN, "b_reference", attributes={"context_retired": False})
             for session in {body["session_id"] for body in bodies.values()}:
@@ -257,6 +300,7 @@ async def probe(directory, port, prompts, pulse, *, diagnostic_native_demand=Fal
             "requests": rows, "output_diagnostics": output_diagnostics(rows),
             "diagnostic_control_only": True, "model_qualified": False,
             "pipeline_installed": False, "model_outputs_forced": False,
+            "reference_build": reference_build,
         }
     progress = verify_progress(journals, workers)
     transfers = model_common.records(directory / "arm/server/transfer_telemetry.jsonl")
@@ -273,6 +317,7 @@ async def probe(directory, port, prompts, pulse, *, diagnostic_native_demand=Fal
         "requests": rows, **compare_outputs(rows), "progress": progress,
         "staged_native_ack": staged, "subsequent_native_service": services,
         "model_outputs_forced": False, "artificial_copy_delay": False,
+        "reference_build": reference_build,
     }
 
 
@@ -287,6 +332,11 @@ def main():
         "--diagnostic-native-demand", action="store_true",
         help="Repeat the original 3x24576/Device57344 fixture without the new pipeline; never qualifies it.",
     )
+    parser.add_argument(
+        "--deterministic-numerics", action="store_true",
+        help="Use the native deterministic FA3/math mode only for this numerical fixture.",
+    )
+    parser.add_argument("--reference-build", choices=("cold", "continuation"), default="cold")
     args = parser.parse_args()
     directory = args.output_dir.resolve()
     if directory.exists():
@@ -352,7 +402,7 @@ def main():
         BELIEFKV_TOOL_TIMING_PRIOR="", BELIEFKV_TOOL_TIMING_PRIOR_SHA256="",
     )
     flags.remove("--enable-custom-logit-processor")
-    flags += ["--max-total-tokens", str(capacity)]
+    flags += numerical_flags(capacity, args.deterministic_numerics)
     flags[flags.index("--beliefkv-event-socket-path") + 1] = str(model_socket)
     inherited = prefix_qualification_environment({"reference_environment": env}, os.environ)
     env = {**inherited, **env}
@@ -364,6 +414,8 @@ def main():
             "device_tokens": capacity, "host_gb": 8, "prefix_tokens": list(sizes),
             "resident_output": RESIDENT_OUTPUT, "other_output": 8, "artificial_copy_delay": False,
             "progress_probe": True, "model_outputs_forced": False, "max_logprob_delta": .05,
+            "deterministic_numerics": args.deterministic_numerics,
+            "reference_build": args.reference_build,
         },
         "diagnostic_control_only": args.diagnostic_native_demand,
     }
@@ -394,13 +446,23 @@ def main():
                 except httpx.HTTPError:
                     pass
                 time.sleep(.5)
+            info = httpx.get(
+                f"http://127.0.0.1:{args.port}/get_server_info", timeout=10.,
+            ).json()
+            controls.reservation.write_json(directory / "server_info.json", info)
+            report["actual_numerical_parameters"] = validate_model_parameters(
+                info, deterministic=args.deterministic_numerics, capacity=capacity,
+            )
             report["model"] = asyncio.run(probe(
                 directory, args.port, prompts, pulse,
                 diagnostic_native_demand=args.diagnostic_native_demand,
+                reference_build=args.reference_build,
             ))
             report.update(
                 status=(
                     "native_demand_model_diagnostic_collected" if args.diagnostic_native_demand
+                    else "unforced_demand_prefill_deterministic_model_qualified"
+                    if args.deterministic_numerics
                     else "unforced_demand_prefill_model_qualified"
                 ),
                 observed_at=datetime.now(timezone.utc).isoformat(), whole_workload_qualified=False,
@@ -425,7 +487,14 @@ def main():
                 report["cleanup_error"] = "owned processes remain"
         report["server_exit_code"] = None if server is None else server.returncode
         controls.reservation.write_json(directory / "report.json", report)
-    print(json.dumps({"status": report["status"], "model": report["model"]}, indent=2))
+    print(json.dumps({
+        "status": report["status"],
+        "diagnostic_control_only": report["diagnostic_control_only"],
+        "actual_numerical_parameters": report["actual_numerical_parameters"],
+        "maximum_logprob_delta": report["model"].get("maximum_logprob_delta"),
+        "output_diagnostics": report["model"].get("output_diagnostics"),
+        "model_qualified": report["model"].get("model_qualified"),
+    }, indent=2))
 
 
 if __name__ == "__main__":

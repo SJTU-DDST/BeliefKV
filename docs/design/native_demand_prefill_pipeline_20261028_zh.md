@@ -218,3 +218,17 @@ native commit 和对应累计补丁的 reverse-check。模型入口先检查实�
 staged journal，状态只能为 `native_demand_model_diagnostic_collected`，
 明确 `model_qualified=false`，不沿用正式模型资格标签。原有正式
 `compare_outputs` 的 token 相同和 0.05 门槛保持不变。
+
+数值入口新增两个显式选项。`--deterministic-numerics` 仅在这个有界
+fixture 中使用 native 确定性 FA3/math 分支，状态另标
+`unforced_demand_prefill_deterministic_model_qualified`，不改正式性能配置。
+启动后读取实际 server 参数，验证确定性位、FA3、对应 sampling backend、
+session radix、缓存开关、容量及 running24，不能只相信 CLI。
+`--reference-build continuation` 则在独立 namespace 中先对原前缀生成
+同样八个 token，再续接；两个初始历史也必须通过原有 token/logprob
+比较。冷参考保持默认，原有失败记录和严格门槛均保留。
+
+`deterministic_entry_r1_cpu` 单次完整执行通过 4096 项及六个子测试，
+保留此前 4086 个身份并新增十个；定向数值入口 34 项通过。准备给
+重放的 base-plus-patch native checkout 重建 tree `729aa0caa7a1`，
+另有 92 项 native 检查通过。它们尚不建立新的真实模型或性能资格。

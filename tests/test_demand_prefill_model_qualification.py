@@ -105,6 +105,65 @@ def test_native_diagnostic_reports_output_differences_without_qualifying_the_mod
         qualifier.compare_outputs(rows)
 
 
+def test_continuation_reference_requires_both_complete_independent_initial_histories():
+    rows = outputs()
+    rows.update({name: deepcopy(rows[original])
+                 for name, original in qualifier.REFERENCE_INITIALS.items()})
+    assert set(qualifier.compare_outputs(rows)["maximum_logprob_delta"]) == {
+        "a_resident", "b_demand", "a_initial", "b_initial",
+    }
+    rows["a_reference_initial"]["output_token_ids"][0] += 1
+    with pytest.raises(ValueError, match="greedy"):
+        qualifier.compare_outputs(rows)
+    rows.pop("b_reference_initial")
+    with pytest.raises(ValueError, match="every unforced"):
+        qualifier.compare_outputs(rows)
+
+
+def test_reference_initial_calls_keep_eight_tokens_and_long_continuations_keep_512():
+    assert qualifier.generation_document("a_reference_initial")["generated_tokens"] == 8
+    assert qualifier.generation_document("b_reference_initial")["generated_tokens"] == 8
+    for label in ("a_resident", "a_reference"):
+        assert qualifier.generation_document(label)["generated_tokens"] == 512
+
+
+@pytest.mark.parametrize("deterministic", (False, True))
+def test_numerical_mode_is_explicit_and_observed_at_actual_model_server(deterministic):
+    flags = qualifier.numerical_flags(61440, deterministic)
+    assert ("--enable-deterministic-inference" in flags) is deterministic
+    info = {
+        "enable_deterministic_inference": deterministic, "attention_backend": "fa3",
+        "sampling_backend": "pytorch" if deterministic else "flashinfer",
+        "max_running_requests": 24, "max_total_tokens": 61440,
+        "context_length": 65536, "enable_session_radix_cache": True,
+        "disable_radix_cache": False, "enable_custom_logit_processor": False,
+        "hicache_io_backend": "kernel",
+    }
+    assert qualifier.validate_model_parameters(
+        info, deterministic=deterministic, capacity=61440,
+    ) == info
+    info["enable_deterministic_inference"] = not deterministic
+    with pytest.raises(ValueError, match="actual model"):
+        qualifier.validate_model_parameters(info, deterministic=deterministic, capacity=61440)
+
+
+@pytest.mark.parametrize("field", (
+    "sampling_backend", "max_running_requests", "enable_session_radix_cache",
+    "disable_radix_cache", "enable_custom_logit_processor", "hicache_io_backend",
+))
+def test_deterministic_numerics_cannot_hide_changed_actual_cache_or_sampler(field):
+    info = {
+        "enable_deterministic_inference": True, "attention_backend": "fa3",
+        "sampling_backend": "pytorch", "max_running_requests": 24, "max_total_tokens": 61440,
+        "context_length": 65536, "enable_session_radix_cache": True,
+        "disable_radix_cache": False, "enable_custom_logit_processor": False,
+        "hicache_io_backend": "kernel",
+    }
+    info.pop(field)
+    with pytest.raises(ValueError, match="actual model"):
+        qualifier.validate_model_parameters(info, deterministic=True, capacity=61440)
+
+
 @pytest.mark.parametrize("fault", ("missing", "resident_token", "restored_token", "logprob", "nan"))
 def test_correct_usage_cannot_hide_wrong_model_tokens_or_logprobs(fault):
     rows = outputs()
