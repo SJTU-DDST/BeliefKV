@@ -1,0 +1,81 @@
+{
+  "observed_at": "2026-10-28T07:29:42.114218+00:00",
+  "scope": "complete_core_work_metrics_not_per_module_causal_attribution",
+  "requests": 3674,
+  "all_normal_tails_retained": true,
+  "prompt_tokens": 145565966,
+  "output_tokens": 549671,
+  "exact_work_and_native_stopping_verified": true,
+  "fresh_idle_drain_and_actual_owned_exit_verified": true,
+  "metrics": {
+    "Full": {
+      "mean_jct_s": 1639.2089340174991,
+      "makespan_s": 2324.69648788929,
+      "end_to_end_output_tokens_per_s": 236.44850106822943,
+      "decode": {
+        "batches": 94916,
+        "request_steps": 549488,
+        "worker_ms": 1569573.3654368669,
+        "request_step_ms": 12992134.238745086,
+        "output_tokens": 545997,
+        "context_tokens": 30622777702,
+        "graph_batches": 94916,
+        "graph_request_steps": 549488,
+        "configured_bucket_rows": 634590,
+        "batches_needing_padding": 43697,
+        "worker_ms_in_batches_needing_padding": 1007170.1339473948,
+        "mean_batch": 5.789203084832905,
+        "worker_weighted_mean_batch": 8.277494078863223,
+        "worker_interval_sum_s": 1569.5733654368669,
+        "mean_worker_interval_ms": 16.536446599486567,
+        "output_tokens_per_worker_interval_second": 347.86331879939235,
+        "mean_observed_request_context_tokens": 55729.65688422677,
+        "graph_batch_fraction": 1.0,
+        "configured_padding_rows_per_real_graph_row": 0.15487508371429404
+      }
+    },
+    "ThunderAgent decay": {
+      "mean_jct_s": 1697.5836446114117,
+      "makespan_s": 2355.3445512609483,
+      "end_to_end_output_tokens_per_s": 233.37180104105374,
+      "decode": {
+        "batches": 95635,
+        "request_steps": 549478,
+        "worker_ms": 1605126.1432459578,
+        "request_step_ms": 13014821.739329025,
+        "output_tokens": 545997,
+        "context_tokens": 30622786652,
+        "graph_batches": 95635,
+        "graph_request_steps": 549478,
+        "configured_bucket_rows": 635038,
+        "batches_needing_padding": 44660,
+        "worker_ms_in_batches_needing_padding": 1034827.5028280914,
+        "mean_batch": 5.745574319025462,
+        "worker_weighted_mean_batch": 8.108285940075632,
+        "worker_interval_sum_s": 1605.1261432459578,
+        "mean_worker_interval_ms": 16.78387769379367,
+        "output_tokens_per_worker_interval_second": 340.15831235286,
+        "mean_observed_request_context_tokens": 55730.687401497424,
+        "graph_batch_fraction": 1.0,
+        "configured_padding_rows_per_real_graph_row": 0.15571142065742394
+      }
+    }
+  },
+  "mean_jct_reduction_percent": 3.438694215699456,
+  "end_to_end_output_increase_percent": 1.3183683776063715,
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/figures/tool_online_refresh_20261027_r1/evidence.json.gz": "349c84990c272d14bd595f5c13aacbb484fe37d75baadc4159f324eba2ec751f",
+    "/home/longhao/experiment/ops/tool_online_refresh_20261027_r1.registration.json": "9f64a748729f059ea7eda75f83fbec9ceb4960b817a6c1c6e132bc7c9cca5664",
+    "/home/longhao/experiment/ops/tool_online_refresh_20261027_r1.registration.state.json": "6437130a056d90cd7b935171f51f9f2452ab20bf96ed2209e507df9e7de8b836",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_online_refresh_20261027_r1/full/replay/summary.json": "10643ea52cf13c75513e6cf42290528f62afac53b4d05eeca75b5057917b6fe1",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_online_refresh_20261027_r1/full/telemetry_drain.json": "9e71be5973dc29b780ee3f54e232e53e27f4e38a1071d77b1e950d8a3c9fed3c",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_online_refresh_20261027_r1/full/owned_process_cleanup.json": "93d9e3a52815c9ed06e33c3a8488c9ce569a4ef1458025c35ac9f5123987b1be",
+    "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.json": "66a5bac27ce8d8f70a91e5c45fcc377b7950db56bc3bd2a7588124fd5209902b",
+    "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.state.json": "3160dca6a649c72ad6e4172c1b96d6f9d66d637af16425cf6e93c34d557c1e49",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/replay/summary.json": "3b9cdf028d27c6c5b5ed7004e401f18192bc518a4811e50103505cbfe39174a6",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/telemetry_drain.json": "c943425208f021f403bd392ae6c4a0476254d739d4e32e511abb7b6ae5645fa2",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/owned_process_cleanup.json": "4e7c0bd7050a4ecacc70819785bd7492cc5d12794b58cc3127dae0b1d7162ad5"
+  },
+  "operator_sha256": "ba903f4ff4be1240329b8c06261fb64773b4e58c25d2d963ac8ebfb773df947f",
+  "performance_accepted": false
+}

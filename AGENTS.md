@@ -2188,3 +2188,56 @@
   the numerical qualification. Do not overlap another GPU launch with this
   queue or call it a passed model/performance result. Preserve all R1-R4
   failures, current frozen Full and the incomplete global goal.
+- The latest user explicitly permits changing the90% tool-offload survival
+  gate and requests testing it together with actual per-layer D2H/H2D handoff
+  for a quick joint-policy result. This supersedes the earlier unchanged90%
+  instruction and defers an isolated handoff-off control. Preserve all old
+  configurations; the new declaration is
+  configs/migration/predictive_host_demand_layer_handoff_20261028.json.
+  It explicitly selects75%,2GiB optional-backup Host reserve and layer handoff.
+  This is a policy threshold, not predictor accuracy. Legacy quantile-only
+  hints use an existing no-weaker quantile and never invent P25.
+- HostDemandCapacity caps SPAWN/idle optional backups, keeps a one-second
+  actual-demand reserve and reclaims at most64 settled complete Device-pinned
+  Host mirrors only after a real tool-offload beneficiary/cost check. Preserve
+  Host-only copies, DMA/Host locks, donors and prefetch-service protection.
+  Native demand eviction already prefers duplicates; do not claim this is
+  newly invented or that finite Host can never exhaust. Idle speculative
+  mirror recycling remains disabled. Layer handoff still needs complete donor
+  Host capacity; do not remove prepare_host without measured evidence.
+- OnlineRefreshFull completes3674 exact requests/145565966 input/549671 output
+  tokens and all18 normal tails, original stopping, fresh idle drain and actual
+  owned exit. Its complete_core_review.json independently verifies meanJCT
+  1639.208934s and output236.448501token/s,3.43869%/1.31837% better thanV345.
+  Its three complete figures are inspected. These modest single-run results
+  are not isolated attribution or repeated/all-baseline acceptance.
+- ModelR5 passes actual layer handoff and unforced donor recovery with matching
+  tokens and zero maximum logprob difference. The current589ff977 joint-policy
+  model check independently passes with actual75% evidence and the same zero
+  deltas. Its report is under
+  experiments/reports/host_demand_layer_handoff_20261028/combined_model/.
+  Shared current CPU passes3462 cases plus4subtests, retaining3436 and adding26;
+  native related CPU passes102. All three constructors preserve paper-policy
+  isolation. Initial fixture/quantile/test-curve failures remain preserved.
+- Replay launchers accept only the explicitly reviewed layer tree
+  0d407f981c5179b20859e82e7088d85589cd08b3 with its separate immutable patch.
+  New current24-request GPU position/session/stop smoke passes before Full.
+  Do not silently reuse the common-engine smoke or normalize away the engine
+  difference from a performance report. Its native engine is the same exact
+  tree as the real component and model proofs, packaged from basefa5cb52.
+- JointFullR1 is registered from frozen589ff977cebc on port18675:
+  ops/host_demand_layer_handoff_20261028_r1.registration.json, after the actual
+  position qualifier cleanup. It preserves completeV230 work, V311 category
+  timers, streaming, Device805198/Host200GB, running/decode24 and seed21.
+  No native/ThunderAgent rerun or ablation is queued. Reuse completeV345 with
+  its common11b84f7c3198 engine explicitly declared as different. This is a
+  combined-system comparison, not isolated overlap performance attribution.
+  Preserve frozen execution, inputs, all normal tails and any negative result.
+  Verify actual server/driver/GPU state before claiming measured work started.
+- The named nice19 CUDA-hidden deferred_plots.py waits for complete success
+  and actual owned exit. It checks every work/timing/capacity field and the
+  exact reviewed engine pair, then labels figures with that engine difference.
+  Keep ops/host_demand_layer_handoff_20261028_r1.plots.state.json and the
+  no-GPU scope. Benefit estimates are separately documented in
+  docs/research/design_benefit_ranking_20261028_zh.md; none are additive
+  isolated module gains. Keep the global goal active until actual acceptance.
