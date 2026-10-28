@@ -1,0 +1,54 @@
+{
+  "status": "failed",
+  "performance_accepted": false,
+  "native_engine": {
+    "commit": "2a927b88939cc687617c32e23bb3440fabb6d7f7",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "2e3ae3636f5bdd3165425abdfdad42d50615de3578176450e2d0d24676470808"
+  },
+  "component_sha256": "4649d5148b34957327d51195371df3129cd9ad66c70471e39246124d5bd87f0f",
+  "source_requests": [
+    "beliefkv:01a177b9-c215-7ea0-ba14-0de09c4f8a9c",
+    "beliefkv:01a177bb-6df3-7023-8614-561913e62059",
+    "beliefkv:01a177be-76cd-70b0-b0e6-d3f300c18ba6"
+  ],
+  "fixture": {
+    "device_tokens": 49152,
+    "host_gb": 8,
+    "warm_tools": 8,
+    "warm_tool_seconds": 2,
+    "donor_tool_seconds": 20,
+    "model_inputs": [
+      16384,
+      16384,
+      24576
+    ],
+    "sampling": {
+      "generated_tokens": 8,
+      "sampling_seed": 21
+    },
+    "max_logprob_delta": 0.05
+  },
+  "operator_sha256": "b34132c60a65a897d71826ecd7b7856bf3df9a266c9e005b5886e6335742a6e1",
+  "server": {
+    "pid": 461387,
+    "state": "R",
+    "ppid": 461347,
+    "start_ticks": "733567350",
+    "argv": [
+      "bash",
+      "/home/longhao/experiment/BeliefKV/scripts/launch_qwen35_native_v0520.sh",
+      "--enable-beliefkv-admission",
+      "--beliefkv-event-socket-path",
+      "/tmp/bkv-layer-model-18668.sock",
+      "--max-total-tokens",
+      "49152"
+    ]
+  },
+  "error": "ValueError('actual model consumer did not execute one predicted layer handoff')",
+  "server_exit_code": -9
+}

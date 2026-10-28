@@ -1,0 +1,125 @@
+{
+  "observed_at": "2026-10-28T05:39:33.924413+00:00",
+  "registration": "/home/longhao/experiment/ops/tool_prediction_curve_repair_20261027_r1.registration.json",
+  "registration_sha256": "e27d075acd006794e2bd3fadd2c9b29dcb2ce9460a1f441feaf3d6cb933d7107",
+  "scope": "complete run counters; sampled Host pressure; class-prior quantiles",
+  "idle_prepare": {
+    "native_checks": 9972,
+    "host_budget_pre_scan_skips": 7073,
+    "host_budget_pre_scan_skip_fraction": 0.7092860008022462,
+    "reserved_tokens": 5461,
+    "reserved_bytes": 536838144,
+    "not_unique_failed_tools_or_lost_JCT": true
+  },
+  "host_usage": {
+    "samples": 1940,
+    "sample_span_ms": 2328102.1735839844,
+    "covered_sample_hold_ms": 2054289.2084960938,
+    "uncovered_gaps_over_5s": [
+      37091.318115234375,
+      8715.217041015625,
+      6554.583251953125,
+      5575.005859375,
+      7878.43896484375,
+      8380.676025390625,
+      5272.93798828125,
+      5995.45166015625,
+      5413.753662109375,
+      5783.203369140625,
+      18691.830810546875,
+      7461.364013671875,
+      8518.226806640625,
+      26259.01904296875,
+      9618.58447265625,
+      8630.658203125,
+      5774.97412109375,
+      17254.65869140625,
+      9477.492919921875,
+      52428.951904296875,
+      7215.68505859375,
+      5820.93310546875
+    ],
+    "covered_sample_hold_fraction_at_or_above_99pct": 0.7282428333905512,
+    "covered_sample_hold_fraction_below_backup_reserve": 0.6645063467185182,
+    "minimum_observed_free_tokens": 0,
+    "scope": "Sample-hold approximation; not continuous occupancy or causal policy loss."
+  },
+  "prior_sha256": "949e2b45b7f6c31c39ac4ff497a2a8bd9bcc6c1fdd055a3a94cc847bbc0835da",
+  "prior_quantiles": {
+    "WebFetch": [
+      {
+        "elapsed_s": 0.0,
+        "remaining_p10_s": 2.3,
+        "remaining_p50_s": 5.314,
+        "remaining_p90_s": 19.206
+      },
+      {
+        "elapsed_s": 5.0,
+        "remaining_p10_s": 0.5,
+        "remaining_p50_s": 3.333,
+        "remaining_p90_s": 17.814
+      },
+      {
+        "elapsed_s": 10.0,
+        "remaining_p10_s": 0.789,
+        "remaining_p50_s": 8.699,
+        "remaining_p90_s": 20.916
+      }
+    ],
+    "WebSearch": [
+      {
+        "elapsed_s": 0.0,
+        "remaining_p10_s": 5.492,
+        "remaining_p50_s": 18.249,
+        "remaining_p90_s": 43.947
+      },
+      {
+        "elapsed_s": 5.0,
+        "remaining_p10_s": 1.076,
+        "remaining_p50_s": 13.69,
+        "remaining_p90_s": 40.11
+      },
+      {
+        "elapsed_s": 10.0,
+        "remaining_p10_s": 5.027,
+        "remaining_p50_s": 16.493,
+        "remaining_p90_s": 36.415
+      }
+    ]
+  },
+  "held_out_evaluation": {
+    "WebFetch": {
+      "train_calls": 170,
+      "held_out_calls": 63,
+      "held_out_fraction_at_or_above_p10": 0.8888888888888888,
+      "held_out_fraction_at_or_below_p90": 0.9523809523809523,
+      "held_out_brier_at_1s": 0.07328390179601248
+    },
+    "WebSearch": {
+      "train_calls": 52,
+      "held_out_calls": 28,
+      "held_out_fraction_at_or_above_p10": 0.8928571428571429,
+      "held_out_fraction_at_or_below_p90": 0.9285714285714286,
+      "held_out_brier_at_1s": 0.0
+    }
+  },
+  "current_network_signature": [
+    "timing_domain",
+    "observed_timing_class"
+  ],
+  "original_execute_semantics_predict_private_within_class_sample": false,
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_prediction_curve_repair_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 64882964,
+      "complete_prefix_sha256": "9b34c4ae10d26b0556c3f1a3c1c40319c4c3d7e3bd447f3e167b783a0138a416",
+      "first_read_limit_bytes": 64882964
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_prediction_curve_repair_20261027_r1/full/server/host_pool_telemetry.jsonl": {
+      "complete_prefix_bytes": 4344551,
+      "complete_prefix_sha256": "c1ad1f49bf8e66f05108a7616029a7a592cf29bd6c4e180d02ac324923063251",
+      "first_read_limit_bytes": 4344551
+    }
+  },
+  "operator_sha256": "480c060f46efa373a91ac575ed9289783b862fd6ac69c8a84e3607e109f2aec2",
+  "performance_accepted": false
+}

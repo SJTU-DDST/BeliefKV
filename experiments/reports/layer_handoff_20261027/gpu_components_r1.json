@@ -1,0 +1,66 @@
+{
+  "status": "native_gpu_layer_handoff_components_qualified",
+  "performance_accepted": false,
+  "operator_sha256": "bae53c22f7391cbaa305f8b457078f0615e4a30a18e786f3ba674ceb3d025869",
+  "native_engine": {
+    "commit": "2a927b88939cc687617c32e23bb3440fabb6d7f7",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "2e3ae3636f5bdd3165425abdfdad42d50615de3578176450e2d0d24676470808"
+  },
+  "owned_gpu_pid": 460691,
+  "authorization": {
+    "hold_file": "/home/longhao/experiment/ops/gpu_hold_until_20261022_0600.json",
+    "hold_sha256": "57a02d25be864ec84fc1c4e6c0afba31b1282ce681e18f7c4dd6974f3f788f9d",
+    "checked_at": "2026-10-28T13:28:13.385884+08:00"
+  },
+  "scenarios": [
+    {
+      "delayed_final_donor_layer": false,
+      "donor_node_id": 10,
+      "consumer_node_id": 11,
+      "donor_tokens": 48,
+      "reused_tokens": 32,
+      "reserved_tail_tokens": 16,
+      "consumer_index": 0,
+      "donor_nodes": 1,
+      "consumer_nodes": 1,
+      "initial_free_tokens": 4,
+      "post_submit_free_tokens": 4,
+      "final_free_tokens": 20,
+      "all_donor_host_and_consumer_device_kv_verified": true,
+      "protected_resident_kv_unchanged": true,
+      "old_donor_reader_completed_before_overwrite": true,
+      "first_consumer_layer_read_before_final_donor_ack": false,
+      "actual_native_pool_layer_counter_and_accessors_used": true,
+      "donor_early_return_blocked_until_backup_ack": true
+    },
+    {
+      "delayed_final_donor_layer": true,
+      "donor_node_id": 23,
+      "consumer_node_id": 24,
+      "donor_tokens": 48,
+      "reused_tokens": 32,
+      "reserved_tail_tokens": 16,
+      "consumer_index": 0,
+      "donor_nodes": 1,
+      "consumer_nodes": 1,
+      "initial_free_tokens": 4,
+      "post_submit_free_tokens": 4,
+      "final_free_tokens": 20,
+      "all_donor_host_and_consumer_device_kv_verified": true,
+      "protected_resident_kv_unchanged": true,
+      "old_donor_reader_completed_before_overwrite": true,
+      "first_consumer_layer_read_before_final_donor_ack": true,
+      "actual_native_pool_layer_counter_and_accessors_used": true,
+      "donor_early_return_blocked_until_backup_ack": true
+    }
+  ],
+  "observed_at": "2026-10-28T05:28:20.921551+00:00",
+  "model_forward_qualified": false,
+  "whole_workload_qualified": false,
+  "synthetic_finite_layer_delay_is_fixture_only": true
+}
