@@ -1,0 +1,3629 @@
+{
+  "summary": {
+    "join_commands": 438,
+    "tool_commands": 0,
+    "handoff_commands": 0,
+    "by_source": {
+      "execution_handoff": {
+        "issued_commands": 0,
+        "acknowledged_commands": 0,
+        "actual_bytes": 0,
+        "full_transfer_commands": 0,
+        "full_reused_commands": 0,
+        "full_not_reused_commands": 0,
+        "full_identity_not_verified_commands": 0,
+        "full_identity_not_verified_bytes_known": 0,
+        "negative_identity_with_native_full_reload_association": 0,
+        "negative_identity_without_native_full_reload_association": 0,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 0,
+        "full_verified_reused_bytes_known": 0,
+        "full_reuse_proof_versions": {},
+        "native_reloaded_prefetched_full_before_first_service": 0,
+        "protection_revoked_commands": 0,
+        "protection_revocation_reasons": {},
+        "full_reuse_by_residency": [],
+        "mamba_forward_verified_commands": 0,
+        "ack_to_first_service_ms": {
+          "count": 0
+        }
+      },
+      "join_ticket": {
+        "issued_commands": 438,
+        "acknowledged_commands": 438,
+        "actual_bytes": 85390688256,
+        "full_transfer_commands": 438,
+        "full_reused_commands": 438,
+        "full_not_reused_commands": 0,
+        "full_identity_not_verified_commands": 0,
+        "full_identity_not_verified_bytes_known": 0,
+        "negative_identity_with_native_full_reload_association": 0,
+        "negative_identity_without_native_full_reload_association": 0,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 85390688256,
+        "full_verified_reused_bytes_known": 85390688256,
+        "full_reuse_proof_versions": {
+          "2": 438
+        },
+        "native_reloaded_prefetched_full_before_first_service": 0,
+        "protection_revoked_commands": 0,
+        "protection_revocation_reasons": {},
+        "full_reuse_by_residency": [
+          {
+            "native_locked_at_registration": false,
+            "protection_reason_at_registration": "covered_by_existing_lock",
+            "last_observed_release_reason": "first_gpu_service",
+            "protection_revoked_commands": 0,
+            "protection_revocation_reasons": {},
+            "full_transfer_commands": 105,
+            "full_reused_commands": 105,
+            "full_not_reused_commands": 0,
+            "full_identity_not_verified_commands": 0,
+            "full_identity_not_verified_bytes_known": 0,
+            "negative_identity_with_native_full_reload_association": 0,
+            "negative_identity_without_native_full_reload_association": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 36759601152,
+            "full_verified_reused_bytes_known": 36759601152,
+            "full_reuse_proof_versions": {
+              "2": 105
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 105,
+              "p50": 6.79931640625,
+              "p90": 147.796875,
+              "max": 426.2060546875
+            }
+          },
+          {
+            "native_locked_at_registration": null,
+            "protection_reason_at_registration": null,
+            "last_observed_release_reason": null,
+            "protection_revoked_commands": 0,
+            "protection_revocation_reasons": {},
+            "full_transfer_commands": 324,
+            "full_reused_commands": 324,
+            "full_not_reused_commands": 0,
+            "full_identity_not_verified_commands": 0,
+            "full_identity_not_verified_bytes_known": 0,
+            "negative_identity_with_native_full_reload_association": 0,
+            "negative_identity_without_native_full_reload_association": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 45545324544,
+            "full_verified_reused_bytes_known": 45545324544,
+            "full_reuse_proof_versions": {
+              "2": 324
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 324,
+              "p50": -314.5213623046875,
+              "p90": -140.4292724609375,
+              "max": -140.4130859375
+            }
+          },
+          {
+            "native_locked_at_registration": true,
+            "protection_reason_at_registration": "native_locked",
+            "last_observed_release_reason": "first_gpu_service",
+            "protection_revoked_commands": 0,
+            "protection_revocation_reasons": {},
+            "full_transfer_commands": 9,
+            "full_reused_commands": 9,
+            "full_not_reused_commands": 0,
+            "full_identity_not_verified_commands": 0,
+            "full_identity_not_verified_bytes_known": 0,
+            "negative_identity_with_native_full_reload_association": 0,
+            "negative_identity_without_native_full_reload_association": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 3085762560,
+            "full_verified_reused_bytes_known": 3085762560,
+            "full_reuse_proof_versions": {
+              "2": 9
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 9,
+              "p50": 81.748046875,
+              "p90": 214.52998046875004,
+              "max": 426.22021484375
+            }
+          }
+        ],
+        "mamba_forward_verified_commands": 0,
+        "ack_to_first_service_ms": {
+          "count": 438,
+          "p50": -280.238037109375,
+          "p90": 118.10341796875,
+          "max": 426.22021484375
+        }
+      },
+      "tool_wait": {
+        "issued_commands": 0,
+        "acknowledged_commands": 0,
+        "actual_bytes": 0,
+        "full_transfer_commands": 0,
+        "full_reused_commands": 0,
+        "full_not_reused_commands": 0,
+        "full_identity_not_verified_commands": 0,
+        "full_identity_not_verified_bytes_known": 0,
+        "negative_identity_with_native_full_reload_association": 0,
+        "negative_identity_without_native_full_reload_association": 0,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 0,
+        "full_verified_reused_bytes_known": 0,
+        "full_reuse_proof_versions": {},
+        "native_reloaded_prefetched_full_before_first_service": 0,
+        "protection_revoked_commands": 0,
+        "protection_revocation_reasons": {},
+        "full_reuse_by_residency": [],
+        "mamba_forward_verified_commands": 0,
+        "ack_to_first_service_ms": {
+          "count": 0
+        }
+      }
+    },
+    "trigger_kinds": {
+      "observed_no_tool_eos": 194,
+      "confirmed_join": 244
+    },
+    "by_join_trigger": {
+      "confirmed_join": {
+        "issued_commands": 244,
+        "acknowledged_commands": 244,
+        "actual_bytes": 42808246272,
+        "full_transfer_commands": 244,
+        "full_reused_commands": 244,
+        "full_not_reused_commands": 0,
+        "full_identity_not_verified_commands": 0,
+        "full_identity_not_verified_bytes_known": 0,
+        "negative_identity_with_native_full_reload_association": 0,
+        "negative_identity_without_native_full_reload_association": 0,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 42808246272,
+        "full_verified_reused_bytes_known": 42808246272,
+        "full_reuse_proof_versions": {
+          "2": 244
+        },
+        "native_reloaded_prefetched_full_before_first_service": 0,
+        "protection_revoked_commands": 0,
+        "protection_revocation_reasons": {},
+        "full_reuse_by_residency": [
+          {
+            "native_locked_at_registration": false,
+            "protection_reason_at_registration": "covered_by_existing_lock",
+            "last_observed_release_reason": "first_gpu_service",
+            "protection_revoked_commands": 0,
+            "protection_revocation_reasons": {},
+            "full_transfer_commands": 50,
+            "full_reused_commands": 50,
+            "full_not_reused_commands": 0,
+            "full_identity_not_verified_commands": 0,
+            "full_identity_not_verified_bytes_known": 0,
+            "negative_identity_with_native_full_reload_association": 0,
+            "negative_identity_without_native_full_reload_association": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 19399606272,
+            "full_verified_reused_bytes_known": 19399606272,
+            "full_reuse_proof_versions": {
+              "2": 50
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 50,
+              "p50": 118.1185302734375,
+              "p90": 118.201953125,
+              "max": 118.221435546875
+            }
+          },
+          {
+            "native_locked_at_registration": null,
+            "protection_reason_at_registration": null,
+            "last_observed_release_reason": null,
+            "protection_revoked_commands": 0,
+            "protection_revocation_reasons": {},
+            "full_transfer_commands": 191,
+            "full_reused_commands": 191,
+            "full_not_reused_commands": 0,
+            "full_identity_not_verified_commands": 0,
+            "full_identity_not_verified_bytes_known": 0,
+            "negative_identity_with_native_full_reload_association": 0,
+            "negative_identity_without_native_full_reload_association": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 22738698240,
+            "full_verified_reused_bytes_known": 22738698240,
+            "full_reuse_proof_versions": {
+              "2": 191
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 191,
+              "p50": -314.5224609375,
+              "p90": -280.2158203125,
+              "max": -280.2041015625
+            }
+          },
+          {
+            "native_locked_at_registration": true,
+            "protection_reason_at_registration": "native_locked",
+            "last_observed_release_reason": "first_gpu_service",
+            "protection_revoked_commands": 0,
+            "protection_revocation_reasons": {},
+            "full_transfer_commands": 3,
+            "full_reused_commands": 3,
+            "full_not_reused_commands": 0,
+            "full_identity_not_verified_commands": 0,
+            "full_identity_not_verified_bytes_known": 0,
+            "negative_identity_with_native_full_reload_association": 0,
+            "negative_identity_without_native_full_reload_association": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 669941760,
+            "full_verified_reused_bytes_known": 669941760,
+            "full_reuse_proof_versions": {
+              "2": 3
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 3,
+              "p50": -14.703369140625,
+              "p90": 91.640380859375,
+              "max": 118.226318359375
+            }
+          }
+        ],
+        "mamba_forward_verified_commands": 0,
+        "ack_to_first_service_ms": {
+          "count": 244,
+          "p50": -314.3843994140625,
+          "p90": 118.1245849609375,
+          "max": 118.226318359375
+        }
+      },
+      "observed_no_tool_eos": {
+        "issued_commands": 194,
+        "acknowledged_commands": 194,
+        "actual_bytes": 42582441984,
+        "full_transfer_commands": 194,
+        "full_reused_commands": 194,
+        "full_not_reused_commands": 0,
+        "full_identity_not_verified_commands": 0,
+        "full_identity_not_verified_bytes_known": 0,
+        "negative_identity_with_native_full_reload_association": 0,
+        "negative_identity_without_native_full_reload_association": 0,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 42582441984,
+        "full_verified_reused_bytes_known": 42582441984,
+        "full_reuse_proof_versions": {
+          "2": 194
+        },
+        "native_reloaded_prefetched_full_before_first_service": 0,
+        "protection_revoked_commands": 0,
+        "protection_revocation_reasons": {},
+        "full_reuse_by_residency": [
+          {
+            "native_locked_at_registration": false,
+            "protection_reason_at_registration": "covered_by_existing_lock",
+            "last_observed_release_reason": "first_gpu_service",
+            "protection_revoked_commands": 0,
+            "protection_revocation_reasons": {},
+            "full_transfer_commands": 55,
+            "full_reused_commands": 55,
+            "full_not_reused_commands": 0,
+            "full_identity_not_verified_commands": 0,
+            "full_identity_not_verified_bytes_known": 0,
+            "negative_identity_with_native_full_reload_association": 0,
+            "negative_identity_without_native_full_reload_association": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 17359994880,
+            "full_verified_reused_bytes_known": 17359994880,
+            "full_reuse_proof_versions": {
+              "2": 55
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 55,
+              "p50": 6.761474609375,
+              "p90": 147.82529296875,
+              "max": 426.2060546875
+            }
+          },
+          {
+            "native_locked_at_registration": null,
+            "protection_reason_at_registration": null,
+            "last_observed_release_reason": null,
+            "protection_revoked_commands": 0,
+            "protection_revocation_reasons": {},
+            "full_transfer_commands": 133,
+            "full_reused_commands": 133,
+            "full_not_reused_commands": 0,
+            "full_identity_not_verified_commands": 0,
+            "full_identity_not_verified_bytes_known": 0,
+            "negative_identity_with_native_full_reload_association": 0,
+            "negative_identity_without_native_full_reload_association": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 22806626304,
+            "full_verified_reused_bytes_known": 22806626304,
+            "full_reuse_proof_versions": {
+              "2": 133
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 133,
+              "p50": -232.272705078125,
+              "p90": -140.416015625,
+              "max": -140.4130859375
+            }
+          },
+          {
+            "native_locked_at_registration": true,
+            "protection_reason_at_registration": "native_locked",
+            "last_observed_release_reason": "first_gpu_service",
+            "protection_revoked_commands": 0,
+            "protection_revocation_reasons": {},
+            "full_transfer_commands": 6,
+            "full_reused_commands": 6,
+            "full_not_reused_commands": 0,
+            "full_identity_not_verified_commands": 0,
+            "full_identity_not_verified_bytes_known": 0,
+            "negative_identity_with_native_full_reload_association": 0,
+            "negative_identity_without_native_full_reload_association": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 2415820800,
+            "full_verified_reused_bytes_known": 2415820800,
+            "full_reuse_proof_versions": {
+              "2": 6
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 6,
+              "p50": 114.788818359375,
+              "p90": 293.913818359375,
+              "max": 426.22021484375
+            }
+          }
+        ],
+        "mamba_forward_verified_commands": 0,
+        "ack_to_first_service_ms": {
+          "count": 194,
+          "p50": -232.2373046875,
+          "p90": 81.7203369140625,
+          "max": 426.22021484375
+        }
+      }
+    },
+    "join_bytes": 85390688256,
+    "tool_bytes": 0,
+    "handoff_bytes": 0,
+    "join_submitted_before_eos": 0,
+    "full_reused": 438,
+    "full_not_reused": 0,
+    "full_use_unknown": 0,
+    "full_reuse_proof_versions": {
+      "2": 438
+    },
+    "mamba_forward_verified": 0,
+    "redemoted_before_first_service": 0,
+    "native_reloaded_before_first_service": 0,
+    "native_reloaded_prefetched_full_before_first_service": 0,
+    "native_reloaded_prefetched_mamba_before_first_service": 0,
+    "native_reload_pool_associations_by_evidence": {
+      "kv": {
+        "reconciled_native_receipt": 0,
+        "legacy_batch_pool_presence": 0
+      },
+      "mamba": {
+        "reconciled_native_receipt": 0,
+        "legacy_batch_pool_presence": 0
+      }
+    },
+    "issue_to_submit_ms": {
+      "count": 438,
+      "p50": 11.9423828125,
+      "p90": 22.216796875,
+      "max": 22.216796875
+    },
+    "enqueue_to_submit_ms": {
+      "count": 438,
+      "p50": 11.765558272600174,
+      "p90": 21.906458772718906,
+      "max": 21.906458772718906
+    },
+    "submit_to_ack_ms": {
+      "count": 438,
+      "p50": 396.56457398086786,
+      "p90": 565.4789172112942,
+      "max": 565.4789172112942
+    },
+    "ack_to_first_service_ms": {
+      "count": 438,
+      "p50": -280.238037109375,
+      "p90": 118.10341796875,
+      "max": 426.22021484375
+    },
+    "join_submit_after_eos_ms": {
+      "count": 194,
+      "p50": 18.990966796875,
+      "p90": 43.265380859375,
+      "max": 43.265380859375
+    },
+    "completion_lead_ms": {
+      "count": 0
+    },
+    "pressure_events": 790,
+    "pressure_events_with_prior_prepare_ack": 210,
+    "unique_prepared_nodes_demoted": 210,
+    "prepare_issued_commands": 632,
+    "prepare_acknowledged_commands": 632,
+    "prepare_commands_with_observed_restore": 477,
+    "prepare_commands_with_native_restore": 477,
+    "prepare_commands_with_controlled_restore": 1,
+    "prepare_commands_without_observed_restore": 155,
+    "prepare_commands_with_later_node_pool_d2h": 292,
+    "prepare_commands_with_host_eviction_before_later_d2h": 292,
+    "prepare_host_lifetime": {
+      "host_eviction_evidence_available": true,
+      "command_categories": {
+        "no_restore": 155,
+        "before_observed_eviction_only": 477,
+        "after_observed_eviction_only": 0,
+        "mixed": 0,
+        "unknown_eviction_evidence": 0
+      },
+      "restore_node_pool_associations": {
+        "before_observed_eviction": 478,
+        "after_observed_eviction": 0,
+        "unknown": 0
+      },
+      "by_pool": {
+        "kv": {
+          "prepared_commands": 632,
+          "commands_with_observed_eviction": 585,
+          "ack_to_first_observed_eviction_ms": {
+            "count": 585,
+            "p50": 68176.35424804688,
+            "p90": 216642.70688476565,
+            "max": 1077718.2045898438
+          }
+        }
+      },
+      "repeated_context_epoch_node_creation_groups": 0,
+      "additional_prepares_on_same_identity": 0,
+      "max_commands_on_same_identity": 1,
+      "prepare_identity_evidence_missing_commands": 0,
+      "scope": "Node/pool associations, not allocation continuity or model-forward reuse. A restore after observed Host eviction cannot establish consumption of the original prepared copy. Eviction latency stops at the next observed same-node/pool D2H write; absent eviction records are not zero evictions. Reported latencies include only observed evictions, excluding censored copies. Repeated context/epoch/node/creation identities are not exact duplicate bytes and do not establish the same wait episode across splits."
+    },
+    "prepare_selection": {
+      "candidate_records": 606,
+      "records_without_command_id": 0,
+      "burst_records": 0,
+      "explicit_burst_commands": 606,
+      "acknowledged_burst_commands": 606,
+      "by_source": {
+        "join_prepare": {
+          "candidate_records": 25,
+          "acknowledged_command_records": 25,
+          "direct_reclaim_potential_commands": 25,
+          "zero_direct_reclaim_potential_commands": 0,
+          "direct_reclaim_potential_unknown_commands": 0,
+          "selected_transfer_bytes_known": 393609216.0,
+          "selected_transfer_bytes_unknown_records": 0,
+          "zero_direct_reclaim_selected_transfer_bytes_known": 0,
+          "missing_full_prefix_tokens": {
+            "count": 25,
+            "p50": 155.0,
+            "p90": 186.60000000000002,
+            "max": 231.0
+          }
+        },
+        "tool_wait": {
+          "candidate_records": 581,
+          "acknowledged_command_records": 581,
+          "direct_reclaim_potential_commands": 581,
+          "zero_direct_reclaim_potential_commands": 0,
+          "direct_reclaim_potential_unknown_commands": 0,
+          "selected_transfer_bytes_known": 5738299392.0,
+          "selected_transfer_bytes_unknown_records": 0,
+          "zero_direct_reclaim_selected_transfer_bytes_known": 0,
+          "missing_full_prefix_tokens": {
+            "count": 581,
+            "p50": 67.0,
+            "p90": 207.0,
+            "max": 934.0
+          }
+        }
+      },
+      "scope": "Candidate selection-time estimates, not reclaimed bytes, DMA bytes or forward-use credit. Zero direct reclaim may be a necessary ancestor backup before an exclusive checkpoint becomes reclaimable. Match ACKs by command ID only; legacy records without it remain unassociated. Missing candidate estimates remain unknown. For a burst, candidate transfer/reclaim estimates describe the selected first extent only; explicit burst IDs link additional per-node receipts without multiplying this estimate or granting reuse credit."
+    },
+    "native_full_prepare": {
+      "issued_batches": 202,
+      "issued_nodes": 880,
+      "issued_full_tokens": 1168553,
+      "issued_full_bytes_known": 114873434112,
+      "issued_full_bytes_unknown_batches": 0,
+      "reconciled_ack_batches": 202,
+      "ambiguous_ack_batches": 0,
+      "ack_unobserved_batches": 0,
+      "acknowledged_full_bytes": 114873434112,
+      "batches_with_capacity_release": 18,
+      "observed_released_full_tokens": 90485,
+      "batches_with_restore_association": 71,
+      "restore_node_associations": 171,
+      "restore_associations_with_verified_controlled_first_service": 115,
+      "host_eviction_evidence_available": true,
+      "by_source": {
+        "idle": {
+          "issued_batches": 74,
+          "reconciled_ack_batches": 74
+        },
+        "critical": {
+          "issued_batches": 8,
+          "reconciled_ack_batches": 8
+        },
+        "spawn": {
+          "issued_batches": 120,
+          "reconciled_ack_batches": 120
+        }
+      }
+    },
+    "wait_events": {
+      "observed_wait_events": 251,
+      "records_without_wait_event_identity": 0,
+      "plan_timing": {
+        "by_source": {
+          "join_ticket": {
+            "observed_wait_events": 64,
+            "first_plan_relative_to_completion_ms": {
+              "count": 64,
+              "p50": -21.016357421875,
+              "p90": -13.354443359374995,
+              "max": 43.53125
+            },
+            "first_positive_full_plan_relative_to_completion_ms": {
+              "count": 55,
+              "p50": -22.217529296875,
+              "p90": -14.375634765625,
+              "max": 43.53125
+            },
+            "plan_timing_categories": {
+              "only_zero_full_plan_before_completion": {
+                "independent_events": 9,
+                "max_snapshot_pre_completion_full_bytes_known": 0,
+                "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+                "remaining_native_full_host_hit_bytes_known": 32538624,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0,
+                "early_started_and_reused_full_bytes": 0
+              },
+              "positive_full_plan_before_completion": {
+                "independent_events": 54,
+                "max_snapshot_pre_completion_full_bytes_known": 528846422016,
+                "max_snapshot_pre_completion_fitting_full_bytes_known": 31906529280,
+                "remaining_native_full_host_hit_bytes_known": 493373915136,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 7,
+                "early_started_and_reused_full_bytes": 31906529280
+              },
+              "positive_full_plan_only_at_or_after_completion": {
+                "independent_events": 1,
+                "max_snapshot_pre_completion_full_bytes_known": 0,
+                "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+                "remaining_native_full_host_hit_bytes_known": 2849144832,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0,
+                "early_started_and_reused_full_bytes": 0
+              }
+            }
+          },
+          "tool_wait": {
+            "observed_wait_events": 187,
+            "first_plan_relative_to_completion_ms": {
+              "count": 187,
+              "p50": 3.518798828125,
+              "p90": 13.342578125000001,
+              "max": 33.6328125
+            },
+            "first_positive_full_plan_relative_to_completion_ms": {
+              "count": 0
+            },
+            "plan_timing_categories": {
+              "no_plan_observation_before_completion": {
+                "independent_events": 118,
+                "max_snapshot_pre_completion_full_bytes_known": 0,
+                "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0,
+                "early_started_and_reused_full_bytes": 0
+              },
+              "only_zero_full_plan_before_completion": {
+                "independent_events": 69,
+                "max_snapshot_pre_completion_full_bytes_known": 0,
+                "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0,
+                "early_started_and_reused_full_bytes": 0
+              }
+            }
+          }
+        }
+      },
+      "by_source": {
+        "join_ticket": {
+          "observed_events": 64,
+          "events_with_observed_full_plan": 55,
+          "events_with_capacity_observation": 0,
+          "events_with_capacity_condition": {
+            "none": 0,
+            "full_only": 0,
+            "mamba_only": 0,
+            "both": 0
+          },
+          "max_snapshot_full_bytes_under_mamba_only_shortfall_known": 0,
+          "max_snapshot_planned_full_bytes_known": 542754963456,
+          "planned_full_bytes_unknown_events": 0,
+          "events_with_early_reused_full": 7,
+          "completion_boundary_unknown_events": 0,
+          "events_first_observed_after_completion": 1,
+          "events_with_tool_ids_outside_request_round": 0,
+          "early_started_and_reused_full_bytes": 31906529280,
+          "post_completion_reused_full_by_phase": {
+            "completion_to_client_submit": {
+              "events_with_reused_full": 5,
+              "full_bytes": 36325195776,
+              "unknown_or_unordered_boundary_events": 0
+            },
+            "client_submit_to_native_arrival": {
+              "events_with_reused_full": 3,
+              "full_bytes": 17158963200,
+              "unknown_or_unordered_boundary_events": 0
+            },
+            "native_arrival_to_first_service": {
+              "events_with_reused_full": 0,
+              "full_bytes": 0,
+              "unknown_or_unordered_boundary_events": 0
+            }
+          },
+          "remaining_native_full_host_hit_bytes_known": 496255598592,
+          "remaining_native_full_evidence_unknown_events": 0,
+          "plan_evidence_categories": {
+            "only_zero_full_plan": {
+              "independent_events": 9,
+              "events_with_known_completion_boundary": 9,
+              "remaining_native_full_host_hit_bytes_known": 32538624,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            },
+            "positive_full_plan": {
+              "independent_events": 55,
+              "events_with_known_completion_boundary": 55,
+              "remaining_native_full_host_hit_bytes_known": 496223059968,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 7
+            }
+          },
+          "restore_burst_size_evidence": {
+            "one_to_fifteen_nodes_observed": {
+              "independent_events": 2,
+              "events_with_known_completion_boundary": 2,
+              "remaining_native_full_host_hit_bytes_known": 16613965824,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            },
+            "only_empty_plan_observed": {
+              "independent_events": 9,
+              "events_with_known_completion_boundary": 9,
+              "remaining_native_full_host_hit_bytes_known": 32538624,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            },
+            "sixteen_or_more_nodes_observed": {
+              "independent_events": 53,
+              "events_with_known_completion_boundary": 53,
+              "remaining_native_full_host_hit_bytes_known": 479609094144,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 7
+            }
+          },
+          "residual_native_demand_by_observed_planning_evidence": {
+            "observed_plan_reasons": {
+              "enqueue_causal_changed": {
+                "independent_events": 1,
+                "events_with_known_completion_boundary": 1,
+                "remaining_native_full_host_hit_bytes_known": 3875733504,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              },
+              "no_restore_plan": {
+                "independent_events": 12,
+                "events_with_known_completion_boundary": 12,
+                "remaining_native_full_host_hit_bytes_known": 18455298048,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              },
+              "start_window": {
+                "independent_events": 54,
+                "events_with_known_completion_boundary": 54,
+                "remaining_native_full_host_hit_bytes_known": 493373915136,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 7
+              },
+              "submitted": {
+                "independent_events": 11,
+                "events_with_known_completion_boundary": 11,
+                "remaining_native_full_host_hit_bytes_known": 29866819584,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 7
+              }
+            },
+            "observed_planning_no_step_reasons": {
+              "closure_unobservable": {
+                "independent_events": 1,
+                "events_with_known_completion_boundary": 1,
+                "remaining_native_full_host_hit_bytes_known": 13658062848,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              },
+              "no_host_backed_missing_copy": {
+                "independent_events": 9,
+                "events_with_known_completion_boundary": 9,
+                "remaining_native_full_host_hit_bytes_known": 32538624,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              },
+              "prefetch_capacity_budget": {
+                "independent_events": 2,
+                "events_with_known_completion_boundary": 2,
+                "remaining_native_full_host_hit_bytes_known": 4764696576,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              }
+            },
+            "observed_planning_blocked_details": {
+              "pending_write_transfer": {
+                "independent_events": 1,
+                "events_with_known_completion_boundary": 1,
+                "remaining_native_full_host_hit_bytes_known": 13658062848,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              },
+              "prefetch_full_capacity_budget": {
+                "independent_events": 2,
+                "events_with_known_completion_boundary": 2,
+                "remaining_native_full_host_hit_bytes_known": 4764696576,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              }
+            },
+            "observed_no_live_details": {}
+          },
+          "planning_gap_semantics": "One count per independent wait per observed reason, regardless of repeated samples. Evidence categories partition waits; reason/detail groups overlap and must not be summed. Zero or missing plans do not prove zero physical demand. Residual bytes are next-request native FULL Host hits, not a proven pre-boundary opportunity, exclusive rejection cause or oracle speedup. Hybrid Host-hit spans may include resident FULL pages with Host copies and must not be converted into physical DMA bytes. Burst categories partition waits by the largest explicitly observed plan, not lifetime node commands. A sixteen-node plan is not proof of truncation or that a larger early transfer would fit capacity or the service window.",
+          "client_submit_to_native_arrival_ms": {
+            "count": 64,
+            "p50": 115.8155517578125,
+            "p90": 195.52180175781254,
+            "max": 381.520751953125
+          },
+          "client_submit_to_http_request_ms": {
+            "count": 0
+          },
+          "http_request_to_body_sent_ms": {
+            "count": 0
+          },
+          "body_sent_to_native_arrival_ms": {
+            "count": 0
+          },
+          "http_request_to_response_headers_ms": {
+            "count": 0
+          },
+          "body_sent_to_api_received_ms": {
+            "count": 0
+          },
+          "api_received_to_chat_conversion_ms": {
+            "count": 0
+          },
+          "chat_conversion_ms": {
+            "count": 0
+          },
+          "chat_conversion_to_tokenized_ms": {
+            "count": 0
+          },
+          "tokenized_to_dispatch_ms": {
+            "count": 64,
+            "p50": 0.0107421875,
+            "p90": 0.0116455078125,
+            "max": 0.012451171875
+          },
+          "dispatch_to_scheduler_received_ms": {
+            "count": 64,
+            "p50": 12.4766845703125,
+            "p90": 36.659252929687504,
+            "max": 346.82958984375
+          },
+          "scheduler_received_to_queue_registered_ms": {
+            "count": 64,
+            "p50": 0.1719970703125,
+            "p90": 0.2529296875,
+            "max": 0.480224609375
+          },
+          "client_submit_to_first_service_ms": {
+            "count": 64,
+            "p50": 1573.3974609375,
+            "p90": 16921.479223632814,
+            "max": 374756.8425292969
+          },
+          "submit_to_first_service_ms": {
+            "count": 64,
+            "p50": 1441.292236328125,
+            "p90": 16788.733569335942,
+            "max": 374604.86181640625
+          },
+          "last_ack_to_first_service_ms": {
+            "count": 11,
+            "p50": -113.9638671875,
+            "p90": 18.265869140625,
+            "max": 131.93310546875
+          },
+          "full_expiration_commands_by_stage": {},
+          "full_expiration_bytes_by_stage": {}
+        },
+        "tool_wait": {
+          "observed_events": 187,
+          "events_with_observed_full_plan": 0,
+          "events_with_capacity_observation": 0,
+          "events_with_capacity_condition": {
+            "none": 0,
+            "full_only": 0,
+            "mamba_only": 0,
+            "both": 0
+          },
+          "max_snapshot_full_bytes_under_mamba_only_shortfall_known": 0,
+          "max_snapshot_planned_full_bytes_known": 0,
+          "planned_full_bytes_unknown_events": 0,
+          "events_with_early_reused_full": 0,
+          "completion_boundary_unknown_events": 0,
+          "events_first_observed_after_completion": 118,
+          "events_with_tool_ids_outside_request_round": 0,
+          "early_started_and_reused_full_bytes": 0,
+          "post_completion_reused_full_by_phase": {
+            "completion_to_client_submit": {
+              "events_with_reused_full": 0,
+              "full_bytes": 0,
+              "unknown_or_unordered_boundary_events": 0
+            },
+            "client_submit_to_native_arrival": {
+              "events_with_reused_full": 0,
+              "full_bytes": 0,
+              "unknown_or_unordered_boundary_events": 0
+            },
+            "native_arrival_to_first_service": {
+              "events_with_reused_full": 0,
+              "full_bytes": 0,
+              "unknown_or_unordered_boundary_events": 0
+            }
+          },
+          "remaining_native_full_host_hit_bytes_known": 0,
+          "remaining_native_full_evidence_unknown_events": 0,
+          "plan_evidence_categories": {
+            "only_zero_full_plan": {
+              "independent_events": 187,
+              "events_with_known_completion_boundary": 187,
+              "remaining_native_full_host_hit_bytes_known": 0,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            }
+          },
+          "restore_burst_size_evidence": {
+            "only_empty_plan_observed": {
+              "independent_events": 187,
+              "events_with_known_completion_boundary": 187,
+              "remaining_native_full_host_hit_bytes_known": 0,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            }
+          },
+          "residual_native_demand_by_observed_planning_evidence": {
+            "observed_plan_reasons": {
+              "no_restore_plan": {
+                "independent_events": 187,
+                "events_with_known_completion_boundary": 187,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              }
+            },
+            "observed_planning_no_step_reasons": {
+              "no_host_backed_missing_copy": {
+                "independent_events": 187,
+                "events_with_known_completion_boundary": 187,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              }
+            },
+            "observed_planning_blocked_details": {},
+            "observed_no_live_details": {}
+          },
+          "planning_gap_semantics": "One count per independent wait per observed reason, regardless of repeated samples. Evidence categories partition waits; reason/detail groups overlap and must not be summed. Zero or missing plans do not prove zero physical demand. Residual bytes are next-request native FULL Host hits, not a proven pre-boundary opportunity, exclusive rejection cause or oracle speedup. Hybrid Host-hit spans may include resident FULL pages with Host copies and must not be converted into physical DMA bytes. Burst categories partition waits by the largest explicitly observed plan, not lifetime node commands. A sixteen-node plan is not proof of truncation or that a larger early transfer would fit capacity or the service window.",
+          "client_submit_to_native_arrival_ms": {
+            "count": 187,
+            "p50": 20.59619140625,
+            "p90": 32.630224609375006,
+            "max": 150.313232421875
+          },
+          "client_submit_to_http_request_ms": {
+            "count": 0
+          },
+          "http_request_to_body_sent_ms": {
+            "count": 0
+          },
+          "body_sent_to_native_arrival_ms": {
+            "count": 0
+          },
+          "http_request_to_response_headers_ms": {
+            "count": 0
+          },
+          "body_sent_to_api_received_ms": {
+            "count": 0
+          },
+          "api_received_to_chat_conversion_ms": {
+            "count": 0
+          },
+          "chat_conversion_ms": {
+            "count": 0
+          },
+          "chat_conversion_to_tokenized_ms": {
+            "count": 0
+          },
+          "tokenized_to_dispatch_ms": {
+            "count": 187,
+            "p50": 0.00927734375,
+            "p90": 0.01025390625,
+            "max": 0.052978515625
+          },
+          "dispatch_to_scheduler_received_ms": {
+            "count": 187,
+            "p50": 2.689208984375,
+            "p90": 11.87177734375001,
+            "max": 138.3359375
+          },
+          "scheduler_received_to_queue_registered_ms": {
+            "count": 187,
+            "p50": 0.141357421875,
+            "p90": 0.2283203125,
+            "max": 0.296142578125
+          },
+          "client_submit_to_first_service_ms": {
+            "count": 187,
+            "p50": 30.799072265625,
+            "p90": 55.439599609375016,
+            "max": 192.1552734375
+          },
+          "submit_to_first_service_ms": {
+            "count": 187,
+            "p50": 10.81396484375,
+            "p90": 18.36865234375,
+            "max": 153.831298828125
+          },
+          "last_ack_to_first_service_ms": {
+            "count": 0
+          },
+          "full_expiration_commands_by_stage": {},
+          "full_expiration_bytes_by_stage": {}
+        }
+      }
+    },
+    "terminal_capacity_handoff": {
+      "reclaim_records": 174,
+      "terminal_contexts": 110,
+      "freed_device_units": {
+        "0": 1913812
+      },
+      "freed_host_units": {
+        "0": 776050
+      },
+      "freed_device_bytes_known": {
+        "0": 188135374848
+      },
+      "freed_host_bytes_known": {
+        "0": 76288819200
+      },
+      "freed_device_units_with_unknown_byte_size": {},
+      "freed_host_units_with_unknown_byte_size": {},
+      "terminal_children": 92,
+      "by_invocation_scope": {
+        "dynamic_subagent": {
+          "reclaim_records": 156,
+          "terminal_contexts": 92,
+          "freed_device_units": {
+            "0": 1859497
+          },
+          "freed_host_units": {
+            "0": 764917
+          },
+          "freed_device_bytes_known": {
+            "0": 182795993088
+          },
+          "freed_host_bytes_known": {
+            "0": 75194400768
+          },
+          "freed_device_units_with_unknown_byte_size": {},
+          "freed_host_units_with_unknown_byte_size": {}
+        },
+        "workflow_root": {
+          "reclaim_records": 18,
+          "terminal_contexts": 18,
+          "freed_device_units": {
+            "0": 54315
+          },
+          "freed_host_units": {
+            "0": 11133
+          },
+          "freed_device_bytes_known": {
+            "0": 5339381760
+          },
+          "freed_host_bytes_known": {
+            "0": 1094418432
+          },
+          "freed_device_units_with_unknown_byte_size": {},
+          "freed_host_units_with_unknown_byte_size": {}
+        }
+      },
+      "parent_first_services": 72,
+      "parent_services_with_prior_device_release": 72,
+      "last_child_return_to_first_service_ms": {
+        "count": 72,
+        "p50": 2756.1041259765625,
+        "p90": 17617.972607421874,
+        "max": 375243.0310058594
+      },
+      "request_wait_ms": {
+        "count": 72,
+        "p50": 2674.0110237151384,
+        "p90": 17464.0921369195,
+        "max": 375085.7522673905
+      },
+      "restore_lookahead_records": 0,
+      "parent_services_with_prior_restore_lookahead": 0,
+      "restore_lookahead_to_first_service_ms": {
+        "count": 0
+      },
+      "queue_wait_before_restore_lookahead_ms": {
+        "count": 0
+      },
+      "sibling_release_windows": {
+        "observed_join_events": 64,
+        "completion_unobserved_events": 0,
+        "joins_with_sibling_device_release_before_join": 18,
+        "joins_with_early_reused_full_after_sibling_release": 4,
+        "early_reused_full_bytes_after_sibling_release_known": 21433614336,
+        "cumulative_sibling_device_release_before_join": {
+          "reclaim_records": 20,
+          "terminal_contexts": 18,
+          "freed_device_units": {
+            "0": 309669
+          },
+          "freed_host_units": {
+            "0": 79344
+          },
+          "freed_device_bytes_known": {
+            "0": 30441701376
+          },
+          "freed_host_bytes_known": {
+            "0": 7799832576
+          },
+          "freed_device_units_with_unknown_byte_size": {},
+          "freed_host_units_with_unknown_byte_size": {}
+        },
+        "sibling_device_release_lead_ms": {
+          "count": 18,
+          "p50": 55907.498779296875,
+          "p90": 204691.83308105473,
+          "max": 310601.2028808594
+        },
+        "rows": [
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+            "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:context:root",
+            "join_id": "deepagents-join:12a95088f11a9c30",
+            "completion_ts_ms": 1793159153113.7722,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+            "context_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:context:root",
+            "join_id": "deepagents-join:427c82735502216b",
+            "completion_ts_ms": 1793159170624.5623,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+            "context_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055:context:root",
+            "join_id": "deepagents-join:4aab6b22f87e1997",
+            "completion_ts_ms": 1793159196557.506,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+            "context_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709:context:root",
+            "join_id": "deepagents-join:bc9943ab3a196599",
+            "completion_ts_ms": 1793159215733.868,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+            "context_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:context:root",
+            "join_id": "deepagents-join:498dcc6d8a54c4a0",
+            "completion_ts_ms": 1793159235314.2383,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+            "context_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:context:root",
+            "join_id": "deepagents-join:591dcd4088da049b",
+            "completion_ts_ms": 1793159236479.5894,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+            "context_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e:context:root",
+            "join_id": "deepagents-join:8dd587ba4aeaa3bc",
+            "completion_ts_ms": 1793159237220.8787,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+            "context_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055:context:root",
+            "join_id": "deepagents-join:e7303c7832f748b2",
+            "completion_ts_ms": 1793159256364.0945,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+            "context_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:context:root",
+            "join_id": "deepagents-join:8693725b71cbc497",
+            "completion_ts_ms": 1793159263015.941,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+            "context_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70:context:root",
+            "join_id": "deepagents-join:92022145e7daf594",
+            "completion_ts_ms": 1793159286320.6755,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+            "context_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:context:root",
+            "join_id": "deepagents-join:aa77a71fb76af369",
+            "completion_ts_ms": 1793159301791.609,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+            "context_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1:context:root",
+            "join_id": "deepagents-join:fd37987bc55fc65d",
+            "completion_ts_ms": 1793159332134.7576,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+            "context_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:context:root",
+            "join_id": "deepagents-join:ffeb8b898319a598",
+            "completion_ts_ms": 1793159342694.2883,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+            "context_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:context:root",
+            "join_id": "deepagents-join:47010a59a8b61bb6",
+            "completion_ts_ms": 1793159343082.6133,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+            "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:context:root",
+            "join_id": "deepagents-join:5c76fa3be676cb64",
+            "completion_ts_ms": 1793159349112.9792,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+            "context_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:context:root",
+            "join_id": "deepagents-join:db13bfb292e386d4",
+            "completion_ts_ms": 1793159367219.445,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+            "context_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:context:root",
+            "join_id": "deepagents-join:b9a166e34a5b4c96",
+            "completion_ts_ms": 1793159404797.4846,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+            "context_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:context:root",
+            "join_id": "deepagents-join:e5a5d5b8c20f856f",
+            "completion_ts_ms": 1793159434162.4512,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+            "context_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46:context:root",
+            "join_id": "deepagents-join:5bc17416c2a790f1",
+            "completion_ts_ms": 1793159442113.4355,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+            "context_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709:context:root",
+            "join_id": "deepagents-join:c708d1778ba10cd1",
+            "completion_ts_ms": 1793159473955.3237,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+            "context_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1:context:root",
+            "join_id": "deepagents-join:a7288873c144009b",
+            "completion_ts_ms": 1793159477182.779,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa",
+            "context_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa:context:root",
+            "join_id": "deepagents-join:7ee5e1f5210c431c",
+            "completion_ts_ms": 1793159484656.9788,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+            "context_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:context:root",
+            "join_id": "deepagents-join:627ef3b7221fa6c4",
+            "completion_ts_ms": 1793159521151.1511,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+            "context_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1:context:root",
+            "join_id": "deepagents-join:23fa947a8903c2ef",
+            "completion_ts_ms": 1793159564563.4614,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+            "context_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a:context:root",
+            "join_id": "deepagents-join:fd4fa16f52b36cd0",
+            "completion_ts_ms": 1793159591391.7122,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+            "context_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:context:root",
+            "join_id": "deepagents-join:b40ea21335a85982",
+            "completion_ts_ms": 1793159677683.8381,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+            "context_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1:context:root",
+            "join_id": "deepagents-join:20a72d382c822eaf",
+            "completion_ts_ms": 1793159706776.2693,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+            "context_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1:context:root",
+            "join_id": "deepagents-join:6cb274196568c7c9",
+            "completion_ts_ms": 1793159750452.5623,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+            "context_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:context:root",
+            "join_id": "deepagents-join:71a58790a6632d09",
+            "completion_ts_ms": 1793159799492.7524,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+            "context_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46:context:root",
+            "join_id": "deepagents-join:2f840cd95e365f86",
+            "completion_ts_ms": 1793159817291.0798,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+            "context_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055:context:root",
+            "join_id": "deepagents-join:69165022136f6076",
+            "completion_ts_ms": 1793159875657.6907,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 13988
+              },
+              "freed_host_units": {
+                "0": 10615
+              },
+              "freed_device_bytes_known": {
+                "0": 1375076352
+              },
+              "freed_host_bytes_known": {
+                "0": 1043496960
+              },
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 70529.7265625,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+            "context_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46:context:root",
+            "join_id": "deepagents-join:2e8864d5e818cba4",
+            "completion_ts_ms": 1793159940346.3481,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+            "context_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a:context:root",
+            "join_id": "deepagents-join:2a587a848bd5d60d",
+            "completion_ts_ms": 1793159955255.397,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+            "context_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70:context:root",
+            "join_id": "deepagents-join:86504e40f7c22057",
+            "completion_ts_ms": 1793159972804.9434,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+            "context_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e:context:root",
+            "join_id": "deepagents-join:ee1761d57a1938c5",
+            "completion_ts_ms": 1793160026926.2424,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+            "context_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:context:root",
+            "join_id": "deepagents-join:e2b8418d537d9176",
+            "completion_ts_ms": 1793160041161.5115,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 2,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 18915
+              },
+              "freed_host_units": {
+                "0": 15935
+              },
+              "freed_device_bytes_known": {
+                "0": 1859420160
+              },
+              "freed_host_bytes_known": {
+                "0": 1566474240
+              },
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 135234.328125,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+            "context_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a:context:root",
+            "join_id": "deepagents-join:cde9f541b4de9529",
+            "completion_ts_ms": 1793160069284.1675,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+            "context_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:context:root",
+            "join_id": "deepagents-join:eab78751b9fc7f30",
+            "completion_ts_ms": 1793160114383.4744,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+            "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:context:root",
+            "join_id": "deepagents-join:0d9148afd60b7300",
+            "completion_ts_ms": 1793160181506.8438,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 18942
+              },
+              "freed_host_units": {
+                "0": 13345
+              },
+              "freed_device_bytes_known": {
+                "0": 1862074368
+              },
+              "freed_host_bytes_known": {
+                "0": 1311866880
+              },
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 22074.054443359375,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+            "context_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:context:root",
+            "join_id": "deepagents-join:14fa7230c0d3a6f0",
+            "completion_ts_ms": 1793160188553.0332,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+            "context_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1:context:root",
+            "join_id": "deepagents-join:9a8964242351c037",
+            "completion_ts_ms": 1793160220955.675,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+            "context_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709:context:root",
+            "join_id": "deepagents-join:3c5924091e8c4294",
+            "completion_ts_ms": 1793160237861.6619,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+            "context_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:context:root",
+            "join_id": "deepagents-join:dedef10e71b04b84",
+            "completion_ts_ms": 1793160285293.9856,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 18957
+              },
+              "freed_host_units": {},
+              "freed_device_bytes_known": {
+                "0": 1863548928
+              },
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 95382.71166992188,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+            "context_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:context:root",
+            "join_id": "deepagents-join:85ce65c62ac78d5a",
+            "completion_ts_ms": 1793160289024.2578,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 8453
+              },
+              "freed_host_units": {
+                "0": 139
+              },
+              "freed_device_bytes_known": {
+                "0": 830963712
+              },
+              "freed_host_bytes_known": {
+                "0": 13664256
+              },
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 22300.537109375,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+            "context_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:context:root",
+            "join_id": "deepagents-join:5abfb3bf3a0f1903",
+            "completion_ts_ms": 1793160311342.4526,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 16828
+              },
+              "freed_host_units": {
+                "0": 15625
+              },
+              "freed_device_bytes_known": {
+                "0": 1654259712
+              },
+              "freed_host_bytes_known": {
+                "0": 1536000000
+              },
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 30919.43896484375,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+            "context_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:context:root",
+            "join_id": "deepagents-join:0b6e7a2967e30b3d",
+            "completion_ts_ms": 1793160385016.2385,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+            "context_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70:context:root",
+            "join_id": "deepagents-join:3e55d3269a0bddf9",
+            "completion_ts_ms": 1793160403861.393,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+            "context_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709:context:root",
+            "join_id": "deepagents-join:5a4a5c984c442385",
+            "completion_ts_ms": 1793160430544.2087,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+            "context_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e:context:root",
+            "join_id": "deepagents-join:58ea188ae47c1cb0",
+            "completion_ts_ms": 1793160435123.8894,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 14447
+              },
+              "freed_host_units": {},
+              "freed_device_bytes_known": {
+                "0": 1420197888
+              },
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 60377.947509765625,
+            "early_reused_full_commands_after_sibling_release": [
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2c0",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2c1",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2c2",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2c3",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2c4",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2c5",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2c6",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2c7",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2c8",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2c9",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2ca",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2cb",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2cc",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2cd",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2ce",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2cf",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2d0",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2d1",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2d2",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2d3",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2d4",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2d5",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2d6",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-2d7"
+            ],
+            "early_reused_full_bytes_after_sibling_release_known": 7811629056
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa",
+            "context_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa:context:root",
+            "join_id": "deepagents-join:b7360b5c84f9a36f",
+            "completion_ts_ms": 1793160441632.1223,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 18841
+              },
+              "freed_host_units": {
+                "0": 186
+              },
+              "freed_device_bytes_known": {
+                "0": 1852145664
+              },
+              "freed_host_bytes_known": {
+                "0": 18284544
+              },
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 27107.09130859375,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+            "context_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:context:root",
+            "join_id": "deepagents-join:2e0cba618ce91b2b",
+            "completion_ts_ms": 1793160501309.0146,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 16903
+              },
+              "freed_host_units": {},
+              "freed_device_bytes_known": {
+                "0": 1661632512
+              },
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 21827.491943359375,
+            "early_reused_full_commands_after_sibling_release": [
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-307",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-308",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-309",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-30a",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-30b"
+            ],
+            "early_reused_full_bytes_after_sibling_release_known": 1260158976
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+            "context_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a:context:root",
+            "join_id": "deepagents-join:63dd6ccf0e5a8af3",
+            "completion_ts_ms": 1793160513122.9355,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 17503
+              },
+              "freed_host_units": {
+                "0": 220
+              },
+              "freed_device_bytes_known": {
+                "0": 1720614912
+              },
+              "freed_host_bytes_known": {
+                "0": 21626880
+              },
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 51437.050048828125,
+            "early_reused_full_commands_after_sibling_release": [
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-34c",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-34d",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-34e",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-34f",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-350",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-351",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-352",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-353",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-354",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-355",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-356",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-357",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-358",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-359",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-35a",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-35b",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-35c",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-35d",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-35e",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-35f",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-360",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-361",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-362",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-363",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-364",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-365",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-366",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-367",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-368",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-369",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-36a",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-36b",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-36c",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-36d",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-36e",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-36f",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-370",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-371",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-372",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-373",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-374",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-375",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-376",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-377",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-378",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-379",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-37a",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-37b",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-37c",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-37d",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-37e",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-37f",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-380",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-381",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-382",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-383",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-384",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-385",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-386",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-387",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-388",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-389",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-38a",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-38b"
+            ],
+            "early_reused_full_bytes_after_sibling_release_known": 9499410432
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+            "context_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709:context:root",
+            "join_id": "deepagents-join:410fc81f05cbdf80",
+            "completion_ts_ms": 1793160537686.6555,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+            "context_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46:context:root",
+            "join_id": "deepagents-join:99fb482cb7bc330d",
+            "completion_ts_ms": 1793160552513.374,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 23874
+              },
+              "freed_host_units": {
+                "0": 23094
+              },
+              "freed_device_bytes_known": {
+                "0": 2346909696
+              },
+              "freed_host_bytes_known": {
+                "0": 2270232576
+              },
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 310601.2028808594,
+            "early_reused_full_commands_after_sibling_release": [
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-3d9",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-3da",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-3db",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-3dc",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-3dd",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-3de",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-3df",
+              "beliefkv-prefetch-ef1fcf130eaa4596a0b75168d8f7ad27-64f3b-3e0"
+            ],
+            "early_reused_full_bytes_after_sibling_release_known": 2862415872
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+            "context_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709:context:root",
+            "join_id": "deepagents-join:4443485cedc959ad",
+            "completion_ts_ms": 1793160613463.842,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 16836
+              },
+              "freed_host_units": {},
+              "freed_device_bytes_known": {
+                "0": 1655046144
+              },
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 18208.470458984375,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+            "context_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1:context:root",
+            "join_id": "deepagents-join:7467e825949570bc",
+            "completion_ts_ms": 1793160617511.5112,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 16725
+              },
+              "freed_host_units": {
+                "0": 45
+              },
+              "freed_device_bytes_known": {
+                "0": 1644134400
+              },
+              "freed_host_bytes_known": {
+                "0": 4423680
+              },
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 25261.36181640625,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+            "context_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70:context:root",
+            "join_id": "deepagents-join:3a608ff3a40afc32",
+            "completion_ts_ms": 1793160617533.381,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+            "context_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:context:root",
+            "join_id": "deepagents-join:2bc200926d15ee44",
+            "completion_ts_ms": 1793160630808.6116,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+            "context_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709:context:root",
+            "join_id": "deepagents-join:8cd62ef8b3de937a",
+            "completion_ts_ms": 1793160686667.3977,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 14352
+              },
+              "freed_host_units": {},
+              "freed_device_bytes_known": {
+                "0": 1410859008
+              },
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 1467.929443359375,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+            "context_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:context:root",
+            "join_id": "deepagents-join:b3a53ebdf5251cf4",
+            "completion_ts_ms": 1793160776332.6018,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 16305
+              },
+              "freed_host_units": {
+                "0": 140
+              },
+              "freed_device_bytes_known": {
+                "0": 1602846720
+              },
+              "freed_host_bytes_known": {
+                "0": 13762560
+              },
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 73643.64624023438,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+            "context_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:context:root",
+            "join_id": "deepagents-join:d4c8dc1514238360",
+            "completion_ts_ms": 1793160820457.4177,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 2,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 25362
+              },
+              "freed_host_units": {},
+              "freed_device_bytes_known": {
+                "0": 2493186048
+              },
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 88875.29125976562,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+            "context_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70:context:root",
+            "join_id": "deepagents-join:fde06083a43ae801",
+            "completion_ts_ms": 1793160870030.0278,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 18043
+              },
+              "freed_host_units": {},
+              "freed_device_bytes_known": {
+                "0": 1773699072
+              },
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 186697.68505859375,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+            "context_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:context:root",
+            "join_id": "deepagents-join:55fdd3610fd60c4b",
+            "completion_ts_ms": 1793160909470.2114,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+            "context_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:context:root",
+            "join_id": "deepagents-join:367eeae799158142",
+            "completion_ts_ms": 1793161121356.6946,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 14395
+              },
+              "freed_host_units": {},
+              "freed_device_bytes_known": {
+                "0": 1415086080
+              },
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 246678.17846679688,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          }
+        ],
+        "semantics": "Independent observed JOIN episodes, not all workload JOINs. Actual allocator release uses scheduler wall time; complete JOIN uses the existing client-clock offset conversion. Only explicitly identified dynamic subagents link by workflow/parent context/JOIN. Host-only or post-JOIN releases cannot support pre-JOIN H2D. A command qualifies only with the existing proof of actual pre-JOIN submission and FULL reuse by the following request. Temporal association does not prove exclusive capacity, child-to-parent page identity, that these bytes were necessary for prefetch, or a native-relative saving. Cumulative releases are not simultaneously free capacity; transferred FULL bytes are command receipts, not a count of unique pages. Unobserved JOIN completion leaves the release window unknown."
+      },
+      "rows": [
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+          "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:context:root",
+          "join_id": "deepagents-join:12a95088f11a9c30",
+          "request_id": "beliefkv:01a177a8-42fb-7280-85a3-be7b3f83341d",
+          "freed_device_units_before_service": {
+            "0": 22100
+          },
+          "last_child_return_to_first_service_ms": 1274.517578125,
+          "request_wait_ms": 1151.6602877527475,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+          "context_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:context:root",
+          "join_id": "deepagents-join:427c82735502216b",
+          "request_id": "beliefkv:01a177a7-e97e-70d0-b648-5f2cd1716d8f",
+          "freed_device_units_before_service": {
+            "0": 13754
+          },
+          "last_child_return_to_first_service_ms": 3860.60693359375,
+          "request_wait_ms": 3807.345386594534,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+          "context_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:context:root",
+          "join_id": "deepagents-join:9a5adcb2bab8dfec",
+          "request_id": "beliefkv:01a177a8-2b45-7cf0-a120-80f8e854b24a",
+          "freed_device_units_before_service": {
+            "0": 16219
+          },
+          "last_child_return_to_first_service_ms": 3043.687255859375,
+          "request_wait_ms": 2941.1862287670374,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+          "context_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055:context:root",
+          "join_id": "deepagents-join:4aab6b22f87e1997",
+          "request_id": "beliefkv:01a177a8-483c-7911-99ad-21c5c2b2fbb1",
+          "freed_device_units_before_service": {
+            "0": 14230
+          },
+          "last_child_return_to_first_service_ms": 3256.198974609375,
+          "request_wait_ms": 3140.771887265146,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+          "context_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709:context:root",
+          "join_id": "deepagents-join:bc9943ab3a196599",
+          "request_id": "beliefkv:01a177a8-3cc3-7d32-9837-c4532af0a9aa",
+          "freed_device_units_before_service": {
+            "0": 5402
+          },
+          "last_child_return_to_first_service_ms": 4153.26953125,
+          "request_wait_ms": 4010.5000380426645,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+          "context_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:context:root",
+          "join_id": "deepagents-join:498dcc6d8a54c4a0",
+          "request_id": "beliefkv:01a177a9-0398-74d0-9605-d9c1c229219f",
+          "freed_device_units_before_service": {
+            "0": 7531
+          },
+          "last_child_return_to_first_service_ms": 603.209716796875,
+          "request_wait_ms": 202.02473923563957,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+          "context_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:context:root",
+          "join_id": "deepagents-join:591dcd4088da049b",
+          "request_id": "beliefkv:01a177a8-d100-7451-8c38-47bd1439df70",
+          "freed_device_units_before_service": {
+            "0": 8760
+          },
+          "last_child_return_to_first_service_ms": 3215.940673828125,
+          "request_wait_ms": 3068.8520735129714,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+          "context_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e:context:root",
+          "join_id": "deepagents-join:8dd587ba4aeaa3bc",
+          "request_id": "beliefkv:01a177a8-e73f-7051-8c1c-e0762600a179",
+          "freed_device_units_before_service": {
+            "0": 27220
+          },
+          "last_child_return_to_first_service_ms": 12679.107666015625,
+          "request_wait_ms": 12522.32901006937,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+          "context_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055:context:root",
+          "join_id": "deepagents-join:e7303c7832f748b2",
+          "request_id": "beliefkv:01a177a9-45ce-7382-a0eb-5c9eba18706e",
+          "freed_device_units_before_service": {
+            "0": 15677
+          },
+          "last_child_return_to_first_service_ms": 3284.720458984375,
+          "request_wait_ms": 3178.5281766206026,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+          "context_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:context:root",
+          "join_id": "deepagents-join:8693725b71cbc497",
+          "request_id": "beliefkv:01a177a8-f703-7af1-b8ba-331e5b9d9a2f",
+          "freed_device_units_before_service": {
+            "0": 14596
+          },
+          "last_child_return_to_first_service_ms": 1763.12158203125,
+          "request_wait_ms": 1637.8589645028114,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+          "context_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70:context:root",
+          "join_id": "deepagents-join:92022145e7daf594",
+          "request_id": "beliefkv:01a177a8-ade5-72b2-a6cb-25b123942979",
+          "freed_device_units_before_service": {
+            "0": 14854
+          },
+          "last_child_return_to_first_service_ms": 3414.026611328125,
+          "request_wait_ms": 3328.1512428075075,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+          "context_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:context:root",
+          "join_id": "deepagents-join:aa77a71fb76af369",
+          "request_id": "beliefkv:01a177a9-11a7-7cd0-a5d2-913bef49b3f9",
+          "freed_device_units_before_service": {
+            "0": 26666
+          },
+          "last_child_return_to_first_service_ms": 3071.4775390625,
+          "request_wait_ms": 2916.727442294359,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+          "context_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1:context:root",
+          "join_id": "deepagents-join:fd37987bc55fc65d",
+          "request_id": "beliefkv:01a177a9-0447-70b3-9512-52f63bf10e53",
+          "freed_device_units_before_service": {
+            "0": 14267
+          },
+          "last_child_return_to_first_service_ms": 2810.668701171875,
+          "request_wait_ms": 2722.5474808365107,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+          "context_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:context:root",
+          "join_id": "deepagents-join:47010a59a8b61bb6",
+          "request_id": "beliefkv:01a177a9-6a68-75f2-9f73-50a0a00541f7",
+          "freed_device_units_before_service": {
+            "0": 11915
+          },
+          "last_child_return_to_first_service_ms": 2262.01318359375,
+          "request_wait_ms": 2136.440796777606,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+          "context_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a:context:root",
+          "join_id": "deepagents-join:76263e5fd30add63",
+          "request_id": "beliefkv:01a177a9-e629-72d2-8f69-dd3206a78cec",
+          "freed_device_units_before_service": {
+            "0": 13715
+          },
+          "last_child_return_to_first_service_ms": 3810.444091796875,
+          "request_wait_ms": 3688.3685011416674,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+          "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:context:root",
+          "join_id": "deepagents-join:5c76fa3be676cb64",
+          "request_id": "beliefkv:01a177ad-8c9e-7d93-9452-a6c0500f1eb8",
+          "freed_device_units_before_service": {
+            "0": 22289
+          },
+          "last_child_return_to_first_service_ms": 1524.861083984375,
+          "request_wait_ms": 1398.6995825544,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+          "context_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:context:root",
+          "join_id": "deepagents-join:ffeb8b898319a598",
+          "request_id": "beliefkv:01a177a8-fe6f-77e3-b1d1-8b1491a932c2",
+          "freed_device_units_before_service": {
+            "0": 15712
+          },
+          "last_child_return_to_first_service_ms": 17734.116455078125,
+          "request_wait_ms": 17580.095203593373,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+          "context_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:context:root",
+          "join_id": "deepagents-join:db13bfb292e386d4",
+          "request_id": "beliefkv:01a177aa-afa5-7452-87a9-f6fee8818a5d",
+          "freed_device_units_before_service": {
+            "0": 12789
+          },
+          "last_child_return_to_first_service_ms": 3265.348388671875,
+          "request_wait_ms": 3183.7263386696577,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+          "context_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:context:root",
+          "join_id": "deepagents-join:e5a5d5b8c20f856f",
+          "request_id": "beliefkv:01a177ad-9044-7482-9f6d-5ffff18e42e9",
+          "freed_device_units_before_service": {
+            "0": 17875
+          },
+          "last_child_return_to_first_service_ms": 1166.96728515625,
+          "request_wait_ms": 1027.4374410510063,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+          "context_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46:context:root",
+          "join_id": "deepagents-join:5bc17416c2a790f1",
+          "request_id": "beliefkv:01a177aa-7b14-7892-a54a-d3d787a6e722",
+          "freed_device_units_before_service": {
+            "0": 17040
+          },
+          "last_child_return_to_first_service_ms": 3526.30859375,
+          "request_wait_ms": 3388.592046685517,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+          "context_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:context:root",
+          "join_id": "deepagents-join:b9a166e34a5b4c96",
+          "request_id": "beliefkv:01a177ab-0b6a-7c41-b318-fc743d45b066",
+          "freed_device_units_before_service": {
+            "0": 18134
+          },
+          "last_child_return_to_first_service_ms": 41399.3935546875,
+          "request_wait_ms": 41194.75942850113,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+          "context_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1:context:root",
+          "join_id": "deepagents-join:a7288873c144009b",
+          "request_id": "beliefkv:01a177ab-8073-7e73-b85f-057f7539ee6a",
+          "freed_device_units_before_service": {
+            "0": 11114
+          },
+          "last_child_return_to_first_service_ms": 8591.2607421875,
+          "request_wait_ms": 8484.23172160983,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+          "context_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709:context:root",
+          "join_id": "deepagents-join:c708d1778ba10cd1",
+          "request_id": "beliefkv:01a177ac-dba1-7c63-ad1c-766c9155a839",
+          "freed_device_units_before_service": {
+            "0": 24922
+          },
+          "last_child_return_to_first_service_ms": 16572.677978515625,
+          "request_wait_ms": 16420.064536854625,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+          "context_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1:context:root",
+          "join_id": "deepagents-join:23fa947a8903c2ef",
+          "request_id": "beliefkv:01a177b0-5bbf-7c21-8da7-3da14c681e80",
+          "freed_device_units_before_service": {
+            "0": 17753
+          },
+          "last_child_return_to_first_service_ms": 11027.509033203125,
+          "request_wait_ms": 10943.275011144578,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+          "context_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:context:root",
+          "join_id": "deepagents-join:627ef3b7221fa6c4",
+          "request_id": "beliefkv:01a177ac-c271-7640-9ac2-4f2bfba58c20",
+          "freed_device_units_before_service": {
+            "0": 27619
+          },
+          "last_child_return_to_first_service_ms": 60054.859375,
+          "request_wait_ms": 59848.86684268713,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+          "context_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a:context:root",
+          "join_id": "deepagents-join:fd4fa16f52b36cd0",
+          "request_id": "beliefkv:01a177ae-7227-7531-a1ea-76e9aeca4b04",
+          "freed_device_units_before_service": {
+            "0": 15426
+          },
+          "last_child_return_to_first_service_ms": 4455.656494140625,
+          "request_wait_ms": 4328.40461563319,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+          "context_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:context:root",
+          "join_id": "deepagents-join:b40ea21335a85982",
+          "request_id": "beliefkv:01a177b3-fea2-7801-9fc5-77a8d93b0dca",
+          "freed_device_units_before_service": {
+            "0": 20838
+          },
+          "last_child_return_to_first_service_ms": 779.30517578125,
+          "request_wait_ms": 666.8207906186581,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+          "context_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46:context:root",
+          "join_id": "deepagents-join:0c77a7903a486752",
+          "request_id": "beliefkv:01a177b1-6478-7cc1-b4f1-7eabb22d5b46",
+          "freed_device_units_before_service": {
+            "0": 16902
+          },
+          "last_child_return_to_first_service_ms": 8671.474609375,
+          "request_wait_ms": 8626.010513864458,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+          "context_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1:context:root",
+          "join_id": "deepagents-join:20a72d382c822eaf",
+          "request_id": "beliefkv:01a177b2-bc64-7f83-8e78-20c62826c122",
+          "freed_device_units_before_service": {
+            "0": 49357
+          },
+          "last_child_return_to_first_service_ms": 175.046142578125,
+          "request_wait_ms": 143.5833489522338,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+          "context_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:context:root",
+          "join_id": "deepagents-join:6eb7e296a3b7420c",
+          "request_id": "beliefkv:01a177b3-9b77-7572-91b6-0ab75e7fb23f",
+          "freed_device_units_before_service": {
+            "0": 40082
+          },
+          "last_child_return_to_first_service_ms": 2975.787109375,
+          "request_wait_ms": 2823.330466635525,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+          "context_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1:context:root",
+          "join_id": "deepagents-join:6cb274196568c7c9",
+          "request_id": "beliefkv:01a177b5-8ff5-76f1-93ac-509d621634ca",
+          "freed_device_units_before_service": {
+            "0": 16871
+          },
+          "last_child_return_to_first_service_ms": 694.560546875,
+          "request_wait_ms": 524.7111208736897,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+          "context_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709:context:root",
+          "join_id": "deepagents-join:146a1d4c1f1aaf9c",
+          "request_id": "beliefkv:01a177b5-7d4e-7103-90f2-6e5ada26df42",
+          "freed_device_units_before_service": {
+            "0": 21126
+          },
+          "last_child_return_to_first_service_ms": 1504.136962890625,
+          "request_wait_ms": 1365.571671165526,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+          "context_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e:context:root",
+          "join_id": "deepagents-join:03fa861159deaa68",
+          "request_id": "beliefkv:01a177b1-87de-7e70-9dff-aa8c5c547b35",
+          "freed_device_units_before_service": {
+            "0": 31387
+          },
+          "last_child_return_to_first_service_ms": 218580.26879882812,
+          "request_wait_ms": 218402.32098195702,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+          "context_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:context:root",
+          "join_id": "deepagents-join:71a58790a6632d09",
+          "request_id": "beliefkv:01a177b7-44fd-77d3-8b92-df1ecabe4a27",
+          "freed_device_units_before_service": {
+            "0": 14369
+          },
+          "last_child_return_to_first_service_ms": 367.20166015625,
+          "request_wait_ms": 234.04891788959503,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+          "context_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46:context:root",
+          "join_id": "deepagents-join:2f840cd95e365f86",
+          "request_id": "beliefkv:01a177b5-a07b-7530-8292-a9da301833cc",
+          "freed_device_units_before_service": {
+            "0": 20000
+          },
+          "last_child_return_to_first_service_ms": 14803.67041015625,
+          "request_wait_ms": 14716.013710945845,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa",
+          "context_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa:context:root",
+          "join_id": "deepagents-join:7ee5e1f5210c431c",
+          "request_id": "beliefkv:01a177ab-3785-70d2-bca6-8f7989cfac59",
+          "freed_device_units_before_service": {
+            "0": 14524
+          },
+          "last_child_return_to_first_service_ms": 375243.0310058594,
+          "request_wait_ms": 375085.7522673905,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+          "context_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055:context:root",
+          "join_id": "deepagents-join:69165022136f6076",
+          "request_id": "beliefkv:01a177b5-bbda-7dd2-86b3-fd36a2149be5",
+          "freed_device_units_before_service": {
+            "0": 27681
+          },
+          "last_child_return_to_first_service_ms": 934.510986328125,
+          "request_wait_ms": 805.0105841830373,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+          "context_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46:context:root",
+          "join_id": "deepagents-join:2e8864d5e818cba4",
+          "request_id": "beliefkv:01a177b8-65c0-7c23-b9bd-8a44a6b97404",
+          "freed_device_units_before_service": {
+            "0": 13902
+          },
+          "last_child_return_to_first_service_ms": 1477.881591796875,
+          "request_wait_ms": 1372.5805720314384,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+          "context_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a:context:root",
+          "join_id": "deepagents-join:2a587a848bd5d60d",
+          "request_id": "beliefkv:01a177b6-cb55-7013-b81c-9b51c37a42f4",
+          "freed_device_units_before_service": {
+            "0": 25944
+          },
+          "last_child_return_to_first_service_ms": 1520.91943359375,
+          "request_wait_ms": 1380.9399586170912,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+          "context_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70:context:root",
+          "join_id": "deepagents-join:86504e40f7c22057",
+          "request_id": "beliefkv:01a177b6-6420-72a0-a8bf-b898052a0c71",
+          "freed_device_units_before_service": {
+            "0": 17194
+          },
+          "last_child_return_to_first_service_ms": 340.744873046875,
+          "request_wait_ms": 221.95027768611908,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+          "context_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1:context:root",
+          "join_id": "deepagents-join:4ebd469013e89ebe",
+          "request_id": "beliefkv:01a177b9-a4f8-7b42-916d-b0e0babc846e",
+          "freed_device_units_before_service": {
+            "0": 35324
+          },
+          "last_child_return_to_first_service_ms": 2496.010986328125,
+          "request_wait_ms": 2405.1622580736876,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+          "context_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055:context:root",
+          "join_id": "deepagents-join:5c82cebcb0b3f531",
+          "request_id": "beliefkv:01a177b8-b3e9-7fa0-b3d6-8ad5201bc721",
+          "freed_device_units_before_service": {
+            "0": 11826
+          },
+          "last_child_return_to_first_service_ms": 12178.70849609375,
+          "request_wait_ms": 12062.596614472568,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+          "context_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:context:root",
+          "join_id": "deepagents-join:e2b8418d537d9176",
+          "request_id": "beliefkv:01a177b6-502e-7d03-bda1-9854b934ffb4",
+          "freed_device_units_before_service": {
+            "0": 39321
+          },
+          "last_child_return_to_first_service_ms": 1840.724853515625,
+          "request_wait_ms": 1649.1115549579263,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+          "context_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e:context:root",
+          "join_id": "deepagents-join:ee1761d57a1938c5",
+          "request_id": "beliefkv:01a177b7-acf9-7752-b5f9-a7cebe2db79b",
+          "freed_device_units_before_service": {
+            "0": 29158
+          },
+          "last_child_return_to_first_service_ms": 22150.86767578125,
+          "request_wait_ms": 21809.321451932192,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+          "context_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a:context:root",
+          "join_id": "deepagents-join:cde9f541b4de9529",
+          "request_id": "beliefkv:01a177b8-a018-7b91-a937-bc2398f2ca58",
+          "freed_device_units_before_service": {
+            "0": 10621
+          },
+          "last_child_return_to_first_service_ms": 14320.800048828125,
+          "request_wait_ms": 14185.65658852458,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+          "context_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:context:root",
+          "join_id": "deepagents-join:eab78751b9fc7f30",
+          "request_id": "beliefkv:01a177b4-ad37-7ee1-a52d-7ae14a5a3d20",
+          "freed_device_units_before_service": {
+            "0": 29010
+          },
+          "last_child_return_to_first_service_ms": 18861.04345703125,
+          "request_wait_ms": 18607.004100456834,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+          "context_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:context:root",
+          "join_id": "deepagents-join:14fa7230c0d3a6f0",
+          "request_id": "beliefkv:01a177ba-c220-7ba0-ac7a-725c0489a87c",
+          "freed_device_units_before_service": {
+            "0": 45910
+          },
+          "last_child_return_to_first_service_ms": 9920.033935546875,
+          "request_wait_ms": 9761.029168963432,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+          "context_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:context:root",
+          "join_id": "deepagents-join:0d9148afd60b7300",
+          "request_id": "beliefkv:01a177b8-9199-7671-8d90-61e684c70805",
+          "freed_device_units_before_service": {
+            "0": 46356
+          },
+          "last_child_return_to_first_service_ms": 21765.457763671875,
+          "request_wait_ms": 21542.41378325969,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+          "context_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1:context:root",
+          "join_id": "deepagents-join:9a8964242351c037",
+          "request_id": "beliefkv:01a177bb-af04-7583-876c-5106e5463105",
+          "freed_device_units_before_service": {
+            "0": 32182
+          },
+          "last_child_return_to_first_service_ms": 2701.53955078125,
+          "request_wait_ms": 2625.474566593766,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+          "context_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709:context:root",
+          "join_id": "deepagents-join:3c5924091e8c4294",
+          "request_id": "beliefkv:01a177be-0bb0-7cc3-bdb1-1ae3188e37a3",
+          "freed_device_units_before_service": {
+            "0": 23826
+          },
+          "last_child_return_to_first_service_ms": 10917.3271484375,
+          "request_wait_ms": 10750.72271283716,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+          "context_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:context:root",
+          "join_id": "deepagents-join:dedef10e71b04b84",
+          "request_id": "beliefkv:01a177bb-7473-7f42-b2c3-1c3c972f9c3b",
+          "freed_device_units_before_service": {
+            "0": 31532
+          },
+          "last_child_return_to_first_service_ms": 3437.167236328125,
+          "request_wait_ms": 3172.2521521151066,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+          "context_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:context:root",
+          "join_id": "deepagents-join:85ce65c62ac78d5a",
+          "request_id": "beliefkv:01a177b9-c069-7722-a684-d84172fb4d42",
+          "freed_device_units_before_service": {
+            "0": 22772
+          },
+          "last_child_return_to_first_service_ms": 9506.827392578125,
+          "request_wait_ms": 9507.646254263818,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+          "context_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:context:root",
+          "join_id": "deepagents-join:5abfb3bf3a0f1903",
+          "request_id": "beliefkv:01a177b9-2f38-7363-a526-68abb8f6e31b",
+          "freed_device_units_before_service": {
+            "0": 44168
+          },
+          "last_child_return_to_first_service_ms": 7530.9970703125,
+          "request_wait_ms": 7289.914224296808,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+          "context_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:context:root",
+          "join_id": "deepagents-join:0b6e7a2967e30b3d",
+          "request_id": "beliefkv:01a177bc-b3d5-74c0-b365-3cdfe53251d2",
+          "freed_device_units_before_service": {
+            "0": 35037
+          },
+          "last_child_return_to_first_service_ms": 711.451171875,
+          "request_wait_ms": 553.8197746500373,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+          "context_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70:context:root",
+          "join_id": "deepagents-join:3e55d3269a0bddf9",
+          "request_id": "beliefkv:01a177bc-8d72-7423-be99-8d27a481a209",
+          "freed_device_units_before_service": {
+            "0": 33134
+          },
+          "last_child_return_to_first_service_ms": 732.322265625,
+          "request_wait_ms": 590.2108680456877,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+          "context_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709:context:root",
+          "join_id": "deepagents-join:5a4a5c984c442385",
+          "request_id": "beliefkv:01a177bf-9142-7d40-a9c5-73fcf801e0d5",
+          "freed_device_units_before_service": {
+            "0": 29296
+          },
+          "last_child_return_to_first_service_ms": 3110.4765625,
+          "request_wait_ms": 2971.2769566103816,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+          "context_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e:context:root",
+          "join_id": "deepagents-join:58ea188ae47c1cb0",
+          "request_id": "beliefkv:01a177bd-57fa-7441-a676-cfb712404b73",
+          "freed_device_units_before_service": {
+            "0": 31797
+          },
+          "last_child_return_to_first_service_ms": 751.36962890625,
+          "request_wait_ms": 507.89289828389883,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa",
+          "context_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa:context:root",
+          "join_id": "deepagents-join:b7360b5c84f9a36f",
+          "request_id": "beliefkv:01a177b5-5cb1-7982-9648-fd1942b34020",
+          "freed_device_units_before_service": {
+            "0": 41603
+          },
+          "last_child_return_to_first_service_ms": 937.6591796875,
+          "request_wait_ms": 508.0824876204133,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+          "context_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:context:root",
+          "join_id": "deepagents-join:2e0cba618ce91b2b",
+          "request_id": "beliefkv:01a177be-f620-7e20-85a8-40879b7b98e6",
+          "freed_device_units_before_service": {
+            "0": 44864
+          },
+          "last_child_return_to_first_service_ms": 563.427734375,
+          "request_wait_ms": 383.0601815134287,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+          "context_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a:context:root",
+          "join_id": "deepagents-join:63dd6ccf0e5a8af3",
+          "request_id": "beliefkv:01a177bd-6047-7c32-88a4-7623684ccda2",
+          "freed_device_units_before_service": {
+            "0": 42690
+          },
+          "last_child_return_to_first_service_ms": 553.852783203125,
+          "request_wait_ms": 367.66394786536694,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+          "context_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709:context:root",
+          "join_id": "deepagents-join:410fc81f05cbdf80",
+          "request_id": "beliefkv:01a177c0-7e4b-76d0-a5a6-bd60d68f1636",
+          "freed_device_units_before_service": {
+            "0": 26383
+          },
+          "last_child_return_to_first_service_ms": 496.694091796875,
+          "request_wait_ms": 326.5532925724983,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+          "context_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46:context:root",
+          "join_id": "deepagents-join:99fb482cb7bc330d",
+          "request_id": "beliefkv:01a177bd-d0d2-7063-95d8-cbdeb79209d2",
+          "freed_device_units_before_service": {
+            "0": 51130
+          },
+          "last_child_return_to_first_service_ms": 496.988037109375,
+          "request_wait_ms": 272.5934674963355,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+          "context_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709:context:root",
+          "join_id": "deepagents-join:4443485cedc959ad",
+          "request_id": "beliefkv:01a177c1-2232-7832-8e78-6f5626f72d47",
+          "freed_device_units_before_service": {
+            "0": 23977
+          },
+          "last_child_return_to_first_service_ms": 458.402099609375,
+          "request_wait_ms": 327.33196299523115,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+          "context_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1:context:root",
+          "join_id": "deepagents-join:7467e825949570bc",
+          "request_id": "beliefkv:01a177be-ea51-74e3-8bca-df8e4d4a5e04",
+          "freed_device_units_before_service": {
+            "0": 41827
+          },
+          "last_child_return_to_first_service_ms": 337.33935546875,
+          "request_wait_ms": 218.65850500762463,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+          "context_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70:context:root",
+          "join_id": "deepagents-join:3a608ff3a40afc32",
+          "request_id": "beliefkv:01a177bf-88db-7983-85c7-e04fe4f6499c",
+          "freed_device_units_before_service": {
+            "0": 24956
+          },
+          "last_child_return_to_first_service_ms": 418.718017578125,
+          "request_wait_ms": 92.16761402785778,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+          "context_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:context:root",
+          "join_id": "deepagents-join:2bc200926d15ee44",
+          "request_id": "beliefkv:01a177bf-0dcb-7f13-87ba-2e929fe87856",
+          "freed_device_units_before_service": {
+            "0": 34636
+          },
+          "last_child_return_to_first_service_ms": 418.505859375,
+          "request_wait_ms": 225.41955951601267,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+          "context_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709:context:root",
+          "join_id": "deepagents-join:8cd62ef8b3de937a",
+          "request_id": "beliefkv:01a177c1-9fe1-7a51-be74-15596801fa32",
+          "freed_device_units_before_service": {
+            "0": 36069
+          },
+          "last_child_return_to_first_service_ms": 427.427490234375,
+          "request_wait_ms": 300.75603257864714,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+          "context_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:context:root",
+          "join_id": "deepagents-join:b3a53ebdf5251cf4",
+          "request_id": "beliefkv:01a177be-2c5c-7cf0-b496-49d6a07f608f",
+          "freed_device_units_before_service": {
+            "0": 38899
+          },
+          "last_child_return_to_first_service_ms": 721.432373046875,
+          "request_wait_ms": 412.16618847101927,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+          "context_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:context:root",
+          "join_id": "deepagents-join:d4c8dc1514238360",
+          "request_id": "beliefkv:01a177c0-74c7-78e3-93fc-e9b349d4164a",
+          "freed_device_units_before_service": {
+            "0": 47668
+          },
+          "last_child_return_to_first_service_ms": 550.8017578125,
+          "request_wait_ms": 370.68646028637886,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+          "context_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70:context:root",
+          "join_id": "deepagents-join:fde06083a43ae801",
+          "request_id": "beliefkv:01a177c0-d0e9-7361-b6a1-a22b73e545a4",
+          "freed_device_units_before_service": {
+            "0": 43909
+          },
+          "last_child_return_to_first_service_ms": 410.616455078125,
+          "request_wait_ms": 234.63383875787258,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+          "context_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:context:root",
+          "join_id": "deepagents-join:55fdd3610fd60c4b",
+          "request_id": "beliefkv:01a177c1-5d6b-7fb0-9d52-b18751655b03",
+          "freed_device_units_before_service": {
+            "0": 30079
+          },
+          "last_child_return_to_first_service_ms": 292.429931640625,
+          "request_wait_ms": 151.93299110978842,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+          "context_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:context:root",
+          "join_id": "deepagents-join:367eeae799158142",
+          "request_id": "beliefkv:01a177c0-3f73-7511-9ce0-3f9a1aeb872e",
+          "freed_device_units_before_service": {
+            "0": 37766
+          },
+          "last_child_return_to_first_service_ms": 533.3154296875,
+          "request_wait_ms": 304.6736214309931,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        }
+      ],
+      "semantics": "Actual terminal-suffix allocator release, linked to the first observed completed parent GPU batch, not kernel start; RETURN delivery observation and service observation use scheduler wall time, not client event time; not exclusive slot ownership, predictive H2D reuse, avoided D2H bytes, or a native-relative latency saving. Restore lookahead is selection evidence, not submission/ACK evidence. Aggregate releases include internal calls; scope breakdown and terminal_children use explicit invocation-create metadata or recorded runtime scope, never ID spelling. Only confirmed dynamic subagents link to JOIN parent services; absent metadata stays unknown. Missing pool byte sizes stay unknown."
+    },
+    "parent_capacity_restore_retries": {
+      "rearm_records": 0,
+      "rearmed_requests": 0,
+      "rearmed_requests_with_observed_parent_service": 0,
+      "scope": "linked child allocator release enables a demand retry; not pre-boundary H2D"
+    }
+  },
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 64724435,
+      "complete_prefix_sha256": "b4ef6b23f5667bd144796a6ed7107f14c6e199f1335162151aece405d8fb4d90",
+      "first_read_limit_bytes": 64724435
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full/server/transfer_telemetry.jsonl": {
+      "complete_prefix_bytes": 10559909,
+      "complete_prefix_sha256": "bd7d1d6596b9d2febca9935e6fb1e797e1656927c94815bc3c3eca31adb0aefc",
+      "first_read_limit_bytes": 10559909
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full/server/runtime_events.sglang.jsonl": {
+      "complete_prefix_bytes": 11302798,
+      "complete_prefix_sha256": "05c067edbb49c207ae094a6abcc289c52e70e7899af7adeb959a213b8684eafe",
+      "first_read_limit_bytes": 11302798
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full/server/physical_action_use.jsonl": {
+      "complete_prefix_bytes": 445586,
+      "complete_prefix_sha256": "7e22244760c6a47c23f1f9a34f9a7644defd931ff6a71c6f5ffc113420dc78e2",
+      "first_read_limit_bytes": 445586
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full/server/physical_action_ack.jsonl": {
+      "complete_prefix_bytes": 464461,
+      "complete_prefix_sha256": "253489d0747aa0ab61a393912fadd54f7b91c12cad467d9bf8e4a7035c65ba64",
+      "first_read_limit_bytes": 464461
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full/server/eviction_attribution.jsonl": {
+      "complete_prefix_bytes": 19665516,
+      "complete_prefix_sha256": "c356a8c0b217c102827534dc88af5ea276ae6b2a82549dae14b055c0a1fc3c1a",
+      "first_read_limit_bytes": 19665516
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full/replay/runtime_events.replay.jsonl": {
+      "complete_prefix_bytes": 20515450,
+      "complete_prefix_sha256": "5ec990e65bb4fbeef04398bc7d7b233c97553c44fb4f04ea1f5e95a631fc664a",
+      "first_read_limit_bytes": 20515450
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full/server/runtime_audit.jsonl": {
+      "complete_prefix_bytes": 364144232,
+      "complete_prefix_sha256": "ed16003bf0218b1f554ccbf33ff9b40444332daf7667127600f5ed4ddf6c7574",
+      "first_read_limit_bytes": 364144232
+    }
+  },
+  "collection_code_commit": "80a6186cdc7b1e0c4acf4152039dd83debac249f",
+  "audit_started_at_local": "2026-10-28T12:21:06.901556+08:00",
+  "audit_finished_at_local": "2026-10-28T12:21:11.816796+08:00",
+  "helper_sha256": "467c33297fdfc1358b91455bb775d58e6edb287cb11dc51dc35d219c00995b46",
+  "prefix_semantics": "Each JSONL is capped at its first-read stat size and last complete line. Repeated reads must match length and SHA256; this is not an atomic cross-file snapshot. Demand handoff remains separate from early prefetch.",
+  "analysis_source_sha256": {
+    "scripts/audit_sealed_wait_prefetch.py": "467c33297fdfc1358b91455bb775d58e6edb287cb11dc51dc35d219c00995b46",
+    "scripts/audit_prefetch_lifecycle.py": "1929fa4c56deb82074f6e4ec81a798f583a6b87b1d9a8ff0e6f83ed959a7c7f6",
+    "scripts/summarize_semantic_h2d_ab.py": "3ff8359e7e675a54bc415c472fc62cd5ecee2d1440e1ad6152937f545ea2f5f4"
+  },
+  "sealed_dispatch_funnel": {
+    "sources": {
+      "join_ticket": {
+        "event_counts": {
+          "observed_events": 64,
+          "completion_observed": 64,
+          "positive_full_plan_before_completion": 54,
+          "start_before_completion": 54,
+          "submitted_before_completion": 7,
+          "events_with_submitted_reason_before_completion": 7,
+          "events_with_submitted_partial_reason_before_completion": 0,
+          "start_without_submit_before_completion": 47
+        },
+        "events_with_observed_reason_before_completion": {
+          "start_window": 54,
+          "submitted": 7,
+          "no_restore_plan": 11
+        },
+        "events_with_observed_no_step_reason_before_completion": {
+          "prefetch_capacity_budget": 2,
+          "no_host_backed_missing_copy": 9
+        }
+      },
+      "tool_wait": {
+        "event_counts": {
+          "observed_events": 187,
+          "completion_observed": 187,
+          "positive_full_plan_before_completion": 0,
+          "start_before_completion": 0,
+          "submitted_before_completion": 0,
+          "events_with_submitted_reason_before_completion": 0,
+          "events_with_submitted_partial_reason_before_completion": 0,
+          "start_without_submit_before_completion": 0
+        },
+        "events_with_observed_reason_before_completion": {
+          "no_restore_plan": 69
+        },
+        "events_with_observed_no_step_reason_before_completion": {
+          "no_host_backed_missing_copy": 69
+        }
+      }
+    },
+    "reclaim_record_count": 1
+  },
+  "join_dispatch_gaps": {
+    "event_counts": {
+      "native_submission_unobserved": 44,
+      "native_submitted_at_or_after_completion": 3
+    },
+    "events_with_pre_completion_capacity_budget": 2,
+    "semantics": "JOIN episodes with a pre-completion start_window but no pre-completion submitted/submitted_partial plan record. Native submission timestamps are separate evidence; an unobserved timestamp is unknown, not proof of no transfer. Capacity observations can overlap submission statuses and do not establish the exclusive cause or recoverable byte budget. Submission is not DMA completion, complete restoration or reuse. Remaining native FULL Host-hit spans are not physical DMA bytes."
+  },
+  "detail_file": "complete_prefetch.json.gz",
+  "detail_uncompressed_sha256": "40c5d57569816bf6fc28e2c6adbdbad8145069e1c209fefe0d8c70cfd5ae21af"
+}

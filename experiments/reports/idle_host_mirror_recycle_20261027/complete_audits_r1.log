@@ -1,0 +1,1324 @@
+{"audit": "complete_restore_churn", "command": ["/home/longhao/miniconda3/envs/beliefkv-next/bin/python", "/home/longhao/experiment/BeliefKV/scripts/audit_agent_restore_churn.py", "--arm", "Full=/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full", "--arm", "ThunderAgent decay=/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay", "--output", "/home/longhao/experiment/BeliefKV/experiments/reports/idle_host_mirror_recycle_20261027/complete_restore_churn.json"]}
+{
+  "Full": {
+    "native_demand_h2d_bytes": 2781435592704,
+    "by_request_kind": {
+      "join": {
+        "requests": 72,
+        "host_requests": 66,
+        "host_hit_tokens": 5802725,
+        "host_hit_bytes": 570431078400
+      },
+      "other": {
+        "requests": 128,
+        "host_requests": 40,
+        "host_hit_tokens": 349296,
+        "host_hit_bytes": 34337193984
+      },
+      "tool": {
+        "requests": 3474,
+        "host_requests": 529,
+        "host_hit_tokens": 22142205,
+        "host_hit_bytes": 2176667320320
+      }
+    },
+    "tool_host_hits_by_tool_duration": {
+      "at_most_200ms": {
+        "requests": 25,
+        "host_hit_bytes": 130929328128
+      },
+      "over_200ms": {
+        "requests": 504,
+        "host_hit_bytes": 2045737992192
+      }
+    }
+  },
+  "ThunderAgent decay": {
+    "native_demand_h2d_bytes": 2809042010112,
+    "by_request_kind": {
+      "join": {
+        "requests": 72,
+        "host_requests": 63,
+        "host_hit_tokens": 6624999,
+        "host_hit_bytes": 651263901696
+      },
+      "other": {
+        "requests": 128,
+        "host_requests": 36,
+        "host_hit_tokens": 210770,
+        "host_hit_bytes": 20719534080
+      },
+      "tool": {
+        "requests": 3474,
+        "host_requests": 445,
+        "host_hit_tokens": 21739284,
+        "host_hit_bytes": 2137058574336
+      }
+    },
+    "tool_host_hits_by_tool_duration": {
+      "at_most_200ms": {
+        "requests": 30,
+        "host_hit_bytes": 158213210112
+      },
+      "over_200ms": {
+        "requests": 415,
+        "host_hit_bytes": 1978845364224
+      }
+    }
+  }
+}
+{"audit": "complete_jct_paths", "command": ["/home/longhao/miniconda3/envs/beliefkv-next/bin/python", "/home/longhao/experiment/BeliefKV/scripts/audit_causal_jct_paths.py", "--arm", "Full=/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full", "--arm", "ThunderAgent decay=/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay", "--output", "/home/longhao/experiment/BeliefKV/experiments/reports/idle_host_mirror_recycle_20261027/complete_jct_paths.json"]}
+{
+  "Full": {
+    "mean_jct_s": 1646.1910486723582,
+    "mean_components_s": {
+      "event:workflow_end": 0.0026660978529188368,
+      "event:return": 0.05758386696709527,
+      "event:llm_result": 3.2840096548398336,
+      "request_dispatch": 0.25943849664264257,
+      "request_submit_to_first_launch": 329.3272813808653,
+      "request_first_launch_to_native_complete": 890.7412480669551,
+      "event:llm_submit": 43.1065740536054,
+      "event:tool_end": 377.208394235452,
+      "event:tool_start": 1.9692904897795784,
+      "event:join_satisfied": 0.010637497901916504,
+      "event:structured_action": 0.014912393940819633,
+      "event:spawn": 0.1945553300115797,
+      "event:invocation_create": 0.014457107543945313
+    }
+  },
+  "ThunderAgent decay": {
+    "mean_jct_s": 1697.5836446114117,
+    "mean_components_s": {
+      "event:workflow_end": 0.002487103727128771,
+      "event:return": 0.07395598581102159,
+      "event:llm_result": 3.3385261946254303,
+      "request_dispatch": 0.26005340724521214,
+      "request_submit_to_first_launch": 393.9507528005176,
+      "request_first_launch_to_native_complete": 877.3261121342978,
+      "event:llm_submit": 43.206043309264714,
+      "event:tool_end": 377.2649021566179,
+      "event:tool_start": 1.976137111345927,
+      "event:join_satisfied": 0.010647569020589193,
+      "event:structured_action": 0.015381797790527344,
+      "event:spawn": 0.14332865137524076,
+      "event:invocation_create": 0.015316389772627089
+    }
+  }
+}
+{"audit": "complete_sampled_restore_waits", "command": ["/home/longhao/miniconda3/envs/beliefkv-next/bin/python", "/home/longhao/experiment/BeliefKV/scripts/audit_restore_wait_cohorts.py", "--arm", "Full=/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full", "--arm", "ThunderAgent decay=/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay", "--output", "/home/longhao/experiment/BeliefKV/experiments/reports/idle_host_mirror_recycle_20261027/complete_sampled_restore_waits.json"]}
+{'Full': {'sampled_batches': 30, 'total_wait_ms': {'count': 30, 'sum': 3226.776736086118, 'min': 0.07353599974885583, 'p50': 26.741615906357765, 'p90': 298.58410593811425, 'p99': 501.9042161750794, 'max': 522.2801909446716}, 'by_successor': {'mixed:other+post_join+post_tool': {'batches': 2, 'total_wait_ms': 735.2650873661041}, 'mixed:other+post_tool': {'batches': 1, 'total_wait_ms': 0.313727994216606}, 'other': {'batches': 1, 'total_wait_ms': 272.01836824417114}, 'post_join': {'batches': 3, 'total_wait_ms': 216.1140166891273}, 'post_tool': {'batches': 23, 'total_wait_ms': 2003.0655357924988}}}, 'ThunderAgent decay': {'sampled_batches': 18, 'total_wait_ms': {'count': 18, 'sum': 2662.834720131941, 'min': 0.09183999849483371, 'p50': 58.60209589777514, 'p90': 382.0495394706726, 'p99': 677.3782447147364, 'max': 737.4339838027954}, 'by_successor': {'mixed:other+post_tool': {'batches': 1, 'total_wait_ms': 0.11270400020293891}, 'post_join': {'batches': 1, 'total_wait_ms': 148.54364824295044}, 'post_tool': {'batches': 16, 'total_wait_ms': 2514.1783678887878}}}}
+{"audit": "complete_tool_reentries", "command": ["/home/longhao/miniconda3/envs/beliefkv-next/bin/python", "/home/longhao/experiment/BeliefKV/scripts/audit_tool_reentry_service.py", "--arm", "Full=/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full", "--arm", "ThunderAgent decay=/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay", "--output", "/home/longhao/experiment/BeliefKV/experiments/reports/idle_host_mirror_recycle_20261027/complete_tool_reentries.json"]}
+{
+  "output": "/home/longhao/experiment/BeliefKV/experiments/reports/idle_host_mirror_recycle_20261027/complete_tool_reentries.json",
+  "arms": {
+    "Full": {
+      "tool_request_rounds": 3474,
+      "status_counts": {
+        "first_service_observed": 3474
+      },
+      "submitted_successor_requests": 3474,
+      "first_service_observed_requests": 3474,
+      "tool_round_duration_ms": {
+        "count": 3474,
+        "sum": 7689893.128363609,
+        "min": 1.504532814025879,
+        "p50": 4.1283793449401855,
+        "p90": 6987.153588104248,
+        "p99": 28116.922904195784,
+        "max": 61754.39871406555
+      },
+      "client_ready_to_submit_ms": {
+        "count": 3474,
+        "sum": 128308.35984420776,
+        "min": 8.817757606506348,
+        "p50": 31.118124961853027,
+        "p90": 57.68979415893556,
+        "p99": 112.3712980175018,
+        "max": 694.8840446472168
+      },
+      "native_queue_to_service_ms": {
+        "count": 3474,
+        "sum": 3168191.300048828,
+        "min": 1.3291015625,
+        "p50": 25.06005859375,
+        "p90": 1764.743847656255,
+        "p99": 18065.246613769526,
+        "max": 137904.56079101562
+      },
+      "api_received_to_queue_ms": {
+        "count": 3474,
+        "sum": 101958.21728515625,
+        "min": 1.261962890625,
+        "p50": 14.1053466796875,
+        "p90": 35.90642089843752,
+        "p99": 383.214345703125,
+        "max": 919.7822265625
+      },
+      "api_received_to_service_ms": {
+        "count": 3474,
+        "sum": 3270149.5173339844,
+        "min": 2.6171875,
+        "p50": 41.5179443359375,
+        "p90": 1846.543212890627,
+        "p99": 18226.05791503906,
+        "max": 137932.6337890625
+      },
+      "served_request_logical_host_hit_tokens": 22142205,
+      "served_requests_with_logical_host_hit": 529,
+      "by_prompt_tokens": {
+        "32k_to_64k": {
+          "tool_request_rounds": 223,
+          "first_service_observed_requests": 223,
+          "native_queue_to_service_ms": {
+            "count": 223,
+            "sum": 148758.42529296875,
+            "min": 2.03173828125,
+            "p50": 25.706787109375,
+            "p90": 1649.3013671875035,
+            "p99": 7623.806728515625,
+            "max": 34775.249755859375
+          },
+          "api_received_to_service_ms": {
+            "count": 223,
+            "sum": 158354.95434570312,
+            "min": 5.307861328125,
+            "p50": 47.37548828125,
+            "p90": 1660.6880371093785,
+            "p99": 7647.01375,
+            "max": 34784.919921875
+          }
+        },
+        "64k_to_128k": {
+          "tool_request_rounds": 421,
+          "first_service_observed_requests": 421,
+          "native_queue_to_service_ms": {
+            "count": 421,
+            "sum": 770171.349609375,
+            "min": 2.295166015625,
+            "p50": 25.545654296875,
+            "p90": 4164.920654296875,
+            "p99": 32913.344580078236,
+            "max": 70870.19555664062
+          },
+          "api_received_to_service_ms": {
+            "count": 421,
+            "sum": 792317.7316894531,
+            "min": 9.012939453125,
+            "p50": 52.75732421875,
+            "p90": 4377.71337890625,
+            "p99": 33125.55727539073,
+            "max": 70892.74047851562
+          }
+        },
+        "8k_to_32k": {
+          "tool_request_rounds": 2203,
+          "first_service_observed_requests": 2203,
+          "native_queue_to_service_ms": {
+            "count": 2203,
+            "sum": 949921.5915527344,
+            "min": 1.464111328125,
+            "p50": 25.3134765625,
+            "p90": 1484.7710449218744,
+            "p99": 5189.160200195312,
+            "max": 21928.760498046875
+          },
+          "api_received_to_service_ms": {
+            "count": 2203,
+            "sum": 1000165.0463867188,
+            "min": 3.28515625,
+            "p50": 39.251220703125,
+            "p90": 1514.406347656249,
+            "p99": 5232.289057617188,
+            "max": 21979.27685546875
+          }
+        },
+        "ge_128k": {
+          "tool_request_rounds": 245,
+          "first_service_observed_requests": 245,
+          "native_queue_to_service_ms": {
+            "count": 245,
+            "sum": 1275111.4916992188,
+            "min": 4.246826171875,
+            "p50": 25.01513671875,
+            "p90": 16274.121972656249,
+            "p99": 85572.89171875012,
+            "max": 137904.56079101562
+          },
+          "api_received_to_service_ms": {
+            "count": 245,
+            "sum": 1286393.7194824219,
+            "min": 16.277587890625,
+            "p50": 52.785400390625,
+            "p90": 16358.059472656247,
+            "p99": 85605.31712890636,
+            "max": 137932.6337890625
+          }
+        },
+        "lt_8k": {
+          "tool_request_rounds": 382,
+          "first_service_observed_requests": 382,
+          "native_queue_to_service_ms": {
+            "count": 382,
+            "sum": 24228.44189453125,
+            "min": 1.3291015625,
+            "p50": 22.4578857421875,
+            "p90": 30.927197265625004,
+            "p99": 1142.018300781249,
+            "max": 5020.8974609375
+          },
+          "api_received_to_service_ms": {
+            "count": 382,
+            "sum": 32918.0654296875,
+            "min": 2.6171875,
+            "p50": 33.9393310546875,
+            "p90": 58.45014648437503,
+            "p99": 1250.9362963867181,
+            "max": 5023.869140625
+          }
+        }
+      }
+    },
+    "ThunderAgent decay": {
+      "tool_request_rounds": 3474,
+      "status_counts": {
+        "first_service_observed": 3474
+      },
+      "submitted_successor_requests": 3474,
+      "first_service_observed_requests": 3474,
+      "tool_round_duration_ms": {
+        "count": 3474,
+        "sum": 7691018.733593941,
+        "min": 1.4079389572143555,
+        "p50": 4.2318596839904785,
+        "p90": 6987.3798009872435,
+        "p99": 28117.371351718903,
+        "max": 61768.92531013489
+      },
+      "client_ready_to_submit_ms": {
+        "count": 3474,
+        "sum": 128863.5056180954,
+        "min": 8.90005874633789,
+        "p50": 31.08317470550537,
+        "p90": 57.555694770813005,
+        "p99": 112.14248647689818,
+        "max": 1522.104130744934
+      },
+      "native_queue_to_service_ms": {
+        "count": 3474,
+        "sum": 4518152.035888672,
+        "min": 1.17626953125,
+        "p50": 25.73193359375,
+        "p90": 3318.56384277344,
+        "p99": 22618.431074218748,
+        "max": 300332.9990234375
+      },
+      "api_received_to_queue_ms": {
+        "count": 3474,
+        "sum": 111520.92163085938,
+        "min": 1.23095703125,
+        "p50": 13.4256591796875,
+        "p90": 36.219750976562565,
+        "p99": 466.532548828125,
+        "max": 1089.169677734375
+      },
+      "api_received_to_service_ms": {
+        "count": 3474,
+        "sum": 4629672.957519531,
+        "min": 2.4072265625,
+        "p50": 42.3519287109375,
+        "p90": 3353.260888671875,
+        "p99": 22643.028627929685,
+        "max": 300353.39794921875
+      },
+      "served_request_logical_host_hit_tokens": 21739284,
+      "served_requests_with_logical_host_hit": 445,
+      "by_prompt_tokens": {
+        "32k_to_64k": {
+          "tool_request_rounds": 223,
+          "first_service_observed_requests": 223,
+          "native_queue_to_service_ms": {
+            "count": 223,
+            "sum": 315064.5441894531,
+            "min": 1.740478515625,
+            "p50": 28.3173828125,
+            "p90": 4886.0333007812515,
+            "p99": 11445.987534179689,
+            "max": 22727.732177734375
+          },
+          "api_received_to_service_ms": {
+            "count": 223,
+            "sum": 326693.20068359375,
+            "min": 5.1416015625,
+            "p50": 56.317138671875,
+            "p90": 5041.282080078126,
+            "p99": 11503.733842773438,
+            "max": 22744.444091796875
+          }
+        },
+        "64k_to_128k": {
+          "tool_request_rounds": 421,
+          "first_service_observed_requests": 421,
+          "native_queue_to_service_ms": {
+            "count": 421,
+            "sum": 984305.5305175781,
+            "min": 2.120361328125,
+            "p50": 25.666748046875,
+            "p90": 7192.672607421875,
+            "p99": 41503.6628906251,
+            "max": 62891.2666015625
+          },
+          "api_received_to_service_ms": {
+            "count": 421,
+            "sum": 1004592.4350585938,
+            "min": 8.89453125,
+            "p50": 51.072998046875,
+            "p90": 7219.23974609375,
+            "p99": 41576.19331054697,
+            "max": 62921.38623046875
+          }
+        },
+        "8k_to_32k": {
+          "tool_request_rounds": 2203,
+          "first_service_observed_requests": 2203,
+          "native_queue_to_service_ms": {
+            "count": 2203,
+            "sum": 1436487.1608886719,
+            "min": 1.267578125,
+            "p50": 26.268798828125,
+            "p90": 2824.556152343749,
+            "p99": 5184.882109375,
+            "max": 33872.895751953125
+          },
+          "api_received_to_service_ms": {
+            "count": 2203,
+            "sum": 1494456.392578125,
+            "min": 2.64794921875,
+            "p50": 40.545166015625,
+            "p90": 2842.262451171875,
+            "p99": 5420.385756835939,
+            "max": 34131.680908203125
+          }
+        },
+        "ge_128k": {
+          "tool_request_rounds": 245,
+          "first_service_observed_requests": 245,
+          "native_queue_to_service_ms": {
+            "count": 245,
+            "sum": 1728680.9736328125,
+            "min": 4.34375,
+            "p50": 24.859619140625,
+            "p90": 13444.054199218746,
+            "p99": 113273.75226562501,
+            "max": 300332.9990234375
+          },
+          "api_received_to_service_ms": {
+            "count": 245,
+            "sum": 1742409.7182617188,
+            "min": 15.3310546875,
+            "p50": 52.010986328125,
+            "p90": 13462.435156249996,
+            "p99": 113300.99342773439,
+            "max": 300353.39794921875
+          }
+        },
+        "lt_8k": {
+          "tool_request_rounds": 382,
+          "first_service_observed_requests": 382,
+          "native_queue_to_service_ms": {
+            "count": 382,
+            "sum": 53613.82666015625,
+            "min": 1.17626953125,
+            "p50": 22.56396484375,
+            "p90": 30.705493164062503,
+            "p99": 294.4028271484369,
+            "max": 34826.89111328125
+          },
+          "api_received_to_service_ms": {
+            "count": 382,
+            "sum": 61521.2109375,
+            "min": 2.4072265625,
+            "p50": 33.614990234375,
+            "p90": 56.894970703125004,
+            "p99": 469.20262695312465,
+            "max": 34874.3974609375
+          }
+        }
+      }
+    }
+  }
+}
+{"audit": "complete_tool_admission_wait", "command": ["/home/longhao/miniconda3/envs/beliefkv-next/bin/python", "/home/longhao/experiment/BeliefKV/scripts/audit_agent_admission_wait.py", "--arm", "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full", "--reentries", "/home/longhao/experiment/BeliefKV/experiments/reports/idle_host_mirror_recycle_20261027/complete_tool_reentries.json", "--label", "Full", "--minimum-wait-ms", "1000", "--output", "/home/longhao/experiment/BeliefKV/experiments/reports/idle_host_mirror_recycle_20261027/complete_tool_admission_wait.json"]}
+{
+  "summary": {
+    "selected_waits": 406,
+    "native_queue_to_service_ms": 3030568.2346191406,
+    "active_ms": 182349.57739257812,
+    "inactive_ms": 2841148.2041015625,
+    "unknown_ms": 7070.453125
+  },
+  "largest_waits": [
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+      "invocation_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:root",
+      "request_id": "beliefkv:01a177aa-9e48-7c31-96b9-c198b5eb3504",
+      "native_queue_to_service_ms": 137904.56079101562,
+      "tool_round_duration_ms": 8563.9536819458,
+      "cached_tokens_host": 136565,
+      "active_ms": 0.0,
+      "inactive_ms": 137904.56079101562,
+      "unknown_ms": 0.0
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa",
+      "invocation_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa:root",
+      "request_id": "beliefkv:01a177af-3849-7f50-a9c6-925e1c9ec300",
+      "native_queue_to_service_ms": 124083.74462890625,
+      "tool_round_duration_ms": 4027.2090167999268,
+      "cached_tokens_host": 164212,
+      "active_ms": 0.1220703125,
+      "inactive_ms": 124083.62255859375,
+      "unknown_ms": 0.0
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+      "invocation_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:root",
+      "request_id": "beliefkv:01a177af-927b-70b0-be5d-e5e11be26c61",
+      "native_queue_to_service_ms": 107663.88427734375,
+      "tool_round_duration_ms": 5464.961046218872,
+      "cached_tokens_host": 146611,
+      "active_ms": 0.0,
+      "inactive_ms": 107344.50561523438,
+      "unknown_ms": 319.378662109375
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+      "invocation_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root",
+      "request_id": "beliefkv:01a177aa-1e4c-74d2-98e3-89217f46ab2e",
+      "native_queue_to_service_ms": 70870.19555664062,
+      "tool_round_duration_ms": 16114.291533470154,
+      "cached_tokens_host": 128556,
+      "active_ms": 0.0,
+      "inactive_ms": 70870.19555664062,
+      "unknown_ms": 0.0
+    }
+  ]
+}
+{"audit": "complete_capacity_waits", "command": ["/home/longhao/miniconda3/envs/beliefkv-next/bin/python", "/home/longhao/experiment/BeliefKV/scripts/audit_reference_capacity_waits.py", "--arm", "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full", "--reentries", "/home/longhao/experiment/BeliefKV/experiments/reports/idle_host_mirror_recycle_20261027/complete_tool_reentries.json", "--label", "Full", "--minimum-wait-ms", "1000", "--output", "/home/longhao/experiment/BeliefKV/experiments/reports/idle_host_mirror_recycle_20261027/complete_capacity_waits.json"]}
+{
+  "summary": {
+    "selected_waits": 406,
+    "native_queue_to_service_ms": 3030568.2346191406,
+    "active_ms": 182349.57739257812,
+    "inactive_full_logical_fit_ms": 326459.15576171875,
+    "inactive_full_logical_shortfall_ms": 2514689.0483398438,
+    "unknown_ms": 7070.453125,
+    "waits_with_sampled_complete_logical_fit": 144
+  },
+  "snapshot_mark_counts": {
+    "snapshots": 2245,
+    "snapshots_with_marks": 90,
+    "marks_while_raw_budget_fits": 88,
+    "all_active_programs_marked": 1
+  },
+  "largest_fitting_waits": [
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+      "invocation_id": "deepagents-invocation:03dc226027d7d5ff",
+      "request_id": "beliefkv:01a177b4-8519-7ed2-ad6f-f9684e9c65fe",
+      "required_full_logical_tokens": 27861,
+      "native_queue_to_service_ms": 7812.240234375,
+      "active_ms": 0.0,
+      "inactive_full_logical_fit_ms": 6793.4521484375,
+      "inactive_full_logical_shortfall_ms": 1018.7880859375,
+      "unknown_ms": 0.0,
+      "fitting_snapshot_intervals": 7,
+      "first_sampled_fit_ts_ms": 1793159797230.8142,
+      "maximum_consecutive_sampled_fit_ms": 4055.47119140625,
+      "distinct_observed_control_ticks_during_fit": 2
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+      "invocation_id": "deepagents-invocation:774c21d38b88ade0",
+      "request_id": "beliefkv:01a177a7-0705-7a10-89e1-6b474f09e7ee",
+      "required_full_logical_tokens": 8967,
+      "native_queue_to_service_ms": 21928.760498046875,
+      "active_ms": 16543.458984375,
+      "inactive_full_logical_fit_ms": 5372.603271484375,
+      "inactive_full_logical_shortfall_ms": 0.0,
+      "unknown_ms": 12.6982421875,
+      "fitting_snapshot_intervals": 5,
+      "first_sampled_fit_ts_ms": 1793159004251.7058,
+      "maximum_consecutive_sampled_fit_ms": 5372.603271484375,
+      "distinct_observed_control_ticks_during_fit": 1
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+      "invocation_id": "deepagents-invocation:75164210ec1e071c",
+      "request_id": "beliefkv:01a177aa-1103-7a61-be2a-2b189ebb3690",
+      "required_full_logical_tokens": 14988,
+      "native_queue_to_service_ms": 4666.892822265625,
+      "active_ms": 0.0,
+      "inactive_full_logical_fit_ms": 4666.892822265625,
+      "inactive_full_logical_shortfall_ms": 0.0,
+      "unknown_ms": 0.0,
+      "fitting_snapshot_intervals": 5,
+      "first_sampled_fit_ts_ms": 1793159395236.3064,
+      "maximum_consecutive_sampled_fit_ms": 4666.892822265625,
+      "distinct_observed_control_ticks_during_fit": 2
+    }
+  ]
+}
+{"audit": "complete_prefetch", "command": ["/home/longhao/miniconda3/envs/beliefkv-next/bin/python", "/home/longhao/experiment/BeliefKV/scripts/audit_sealed_wait_prefetch.py", "--arm", "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full", "--collection-commit", "80a6186cdc7b1e0c4acf4152039dd83debac249f", "--output", "/home/longhao/experiment/BeliefKV/experiments/reports/idle_host_mirror_recycle_20261027/complete_prefetch.json.gz"]}
+{
+  "summary": "/home/longhao/experiment/BeliefKV/experiments/reports/idle_host_mirror_recycle_20261027/complete_prefetch_summary.json",
+  "funnel": {
+    "sources": {
+      "join_ticket": {
+        "event_counts": {
+          "observed_events": 64,
+          "completion_observed": 64,
+          "positive_full_plan_before_completion": 54,
+          "start_before_completion": 54,
+          "submitted_before_completion": 7,
+          "events_with_submitted_reason_before_completion": 7,
+          "events_with_submitted_partial_reason_before_completion": 0,
+          "start_without_submit_before_completion": 47
+        },
+        "events_with_observed_reason_before_completion": {
+          "start_window": 54,
+          "submitted": 7,
+          "no_restore_plan": 11
+        },
+        "events_with_observed_no_step_reason_before_completion": {
+          "prefetch_capacity_budget": 2,
+          "no_host_backed_missing_copy": 9
+        }
+      },
+      "tool_wait": {
+        "event_counts": {
+          "observed_events": 187,
+          "completion_observed": 187,
+          "positive_full_plan_before_completion": 0,
+          "start_before_completion": 0,
+          "submitted_before_completion": 0,
+          "events_with_submitted_reason_before_completion": 0,
+          "events_with_submitted_partial_reason_before_completion": 0,
+          "start_without_submit_before_completion": 0
+        },
+        "events_with_observed_reason_before_completion": {
+          "no_restore_plan": 69
+        },
+        "events_with_observed_no_step_reason_before_completion": {
+          "no_host_backed_missing_copy": 69
+        }
+      }
+    },
+    "reclaim_record_count": 1
+  },
+  "wait_events": {
+    "observed_wait_events": 251,
+    "records_without_wait_event_identity": 0,
+    "plan_timing": {
+      "by_source": {
+        "join_ticket": {
+          "observed_wait_events": 64,
+          "first_plan_relative_to_completion_ms": {
+            "count": 64,
+            "p50": -21.016357421875,
+            "p90": -13.354443359374995,
+            "max": 43.53125
+          },
+          "first_positive_full_plan_relative_to_completion_ms": {
+            "count": 55,
+            "p50": -22.217529296875,
+            "p90": -14.375634765625,
+            "max": 43.53125
+          },
+          "plan_timing_categories": {
+            "only_zero_full_plan_before_completion": {
+              "independent_events": 9,
+              "max_snapshot_pre_completion_full_bytes_known": 0,
+              "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+              "remaining_native_full_host_hit_bytes_known": 32538624,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0,
+              "early_started_and_reused_full_bytes": 0
+            },
+            "positive_full_plan_before_completion": {
+              "independent_events": 54,
+              "max_snapshot_pre_completion_full_bytes_known": 528846422016,
+              "max_snapshot_pre_completion_fitting_full_bytes_known": 31906529280,
+              "remaining_native_full_host_hit_bytes_known": 493373915136,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 7,
+              "early_started_and_reused_full_bytes": 31906529280
+            },
+            "positive_full_plan_only_at_or_after_completion": {
+              "independent_events": 1,
+              "max_snapshot_pre_completion_full_bytes_known": 0,
+              "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+              "remaining_native_full_host_hit_bytes_known": 2849144832,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0,
+              "early_started_and_reused_full_bytes": 0
+            }
+          }
+        },
+        "tool_wait": {
+          "observed_wait_events": 187,
+          "first_plan_relative_to_completion_ms": {
+            "count": 187,
+            "p50": 3.518798828125,
+            "p90": 13.342578125000001,
+            "max": 33.6328125
+          },
+          "first_positive_full_plan_relative_to_completion_ms": {
+            "count": 0
+          },
+          "plan_timing_categories": {
+            "no_plan_observation_before_completion": {
+              "independent_events": 118,
+              "max_snapshot_pre_completion_full_bytes_known": 0,
+              "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+              "remaining_native_full_host_hit_bytes_known": 0,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0,
+              "early_started_and_reused_full_bytes": 0
+            },
+            "only_zero_full_plan_before_completion": {
+              "independent_events": 69,
+              "max_snapshot_pre_completion_full_bytes_known": 0,
+              "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+              "remaining_native_full_host_hit_bytes_known": 0,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0,
+              "early_started_and_reused_full_bytes": 0
+            }
+          }
+        }
+      }
+    },
+    "by_source": {
+      "join_ticket": {
+        "observed_events": 64,
+        "events_with_observed_full_plan": 55,
+        "events_with_capacity_observation": 0,
+        "events_with_capacity_condition": {
+          "none": 0,
+          "full_only": 0,
+          "mamba_only": 0,
+          "both": 0
+        },
+        "max_snapshot_full_bytes_under_mamba_only_shortfall_known": 0,
+        "max_snapshot_planned_full_bytes_known": 542754963456,
+        "planned_full_bytes_unknown_events": 0,
+        "events_with_early_reused_full": 7,
+        "completion_boundary_unknown_events": 0,
+        "events_first_observed_after_completion": 1,
+        "events_with_tool_ids_outside_request_round": 0,
+        "early_started_and_reused_full_bytes": 31906529280,
+        "post_completion_reused_full_by_phase": {
+          "completion_to_client_submit": {
+            "events_with_reused_full": 5,
+            "full_bytes": 36325195776,
+            "unknown_or_unordered_boundary_events": 0
+          },
+          "client_submit_to_native_arrival": {
+            "events_with_reused_full": 3,
+            "full_bytes": 17158963200,
+            "unknown_or_unordered_boundary_events": 0
+          },
+          "native_arrival_to_first_service": {
+            "events_with_reused_full": 0,
+            "full_bytes": 0,
+            "unknown_or_unordered_boundary_events": 0
+          }
+        },
+        "remaining_native_full_host_hit_bytes_known": 496255598592,
+        "remaining_native_full_evidence_unknown_events": 0,
+        "plan_evidence_categories": {
+          "only_zero_full_plan": {
+            "independent_events": 9,
+            "events_with_known_completion_boundary": 9,
+            "remaining_native_full_host_hit_bytes_known": 32538624,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 0
+          },
+          "positive_full_plan": {
+            "independent_events": 55,
+            "events_with_known_completion_boundary": 55,
+            "remaining_native_full_host_hit_bytes_known": 496223059968,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 7
+          }
+        },
+        "restore_burst_size_evidence": {
+          "one_to_fifteen_nodes_observed": {
+            "independent_events": 2,
+            "events_with_known_completion_boundary": 2,
+            "remaining_native_full_host_hit_bytes_known": 16613965824,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 0
+          },
+          "only_empty_plan_observed": {
+            "independent_events": 9,
+            "events_with_known_completion_boundary": 9,
+            "remaining_native_full_host_hit_bytes_known": 32538624,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 0
+          },
+          "sixteen_or_more_nodes_observed": {
+            "independent_events": 53,
+            "events_with_known_completion_boundary": 53,
+            "remaining_native_full_host_hit_bytes_known": 479609094144,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 7
+          }
+        },
+        "residual_native_demand_by_observed_planning_evidence": {
+          "observed_plan_reasons": {
+            "enqueue_causal_changed": {
+              "independent_events": 1,
+              "events_with_known_completion_boundary": 1,
+              "remaining_native_full_host_hit_bytes_known": 3875733504,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            },
+            "no_restore_plan": {
+              "independent_events": 12,
+              "events_with_known_completion_boundary": 12,
+              "remaining_native_full_host_hit_bytes_known": 18455298048,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            },
+            "start_window": {
+              "independent_events": 54,
+              "events_with_known_completion_boundary": 54,
+              "remaining_native_full_host_hit_bytes_known": 493373915136,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 7
+            },
+            "submitted": {
+              "independent_events": 11,
+              "events_with_known_completion_boundary": 11,
+              "remaining_native_full_host_hit_bytes_known": 29866819584,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 7
+            }
+          },
+          "observed_planning_no_step_reasons": {
+            "closure_unobservable": {
+              "independent_events": 1,
+              "events_with_known_completion_boundary": 1,
+              "remaining_native_full_host_hit_bytes_known": 13658062848,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            },
+            "no_host_backed_missing_copy": {
+              "independent_events": 9,
+              "events_with_known_completion_boundary": 9,
+              "remaining_native_full_host_hit_bytes_known": 32538624,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            },
+            "prefetch_capacity_budget": {
+              "independent_events": 2,
+              "events_with_known_completion_boundary": 2,
+              "remaining_native_full_host_hit_bytes_known": 4764696576,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            }
+          },
+          "observed_planning_blocked_details": {
+            "pending_write_transfer": {
+              "independent_events": 1,
+              "events_with_known_completion_boundary": 1,
+              "remaining_native_full_host_hit_bytes_known": 13658062848,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            },
+            "prefetch_full_capacity_budget": {
+              "independent_events": 2,
+              "events_with_known_completion_boundary": 2,
+              "remaining_native_full_host_hit_bytes_known": 4764696576,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            }
+          },
+          "observed_no_live_details": {}
+        },
+        "planning_gap_semantics": "One count per independent wait per observed reason, regardless of repeated samples. Evidence categories partition waits; reason/detail groups overlap and must not be summed. Zero or missing plans do not prove zero physical demand. Residual bytes are next-request native FULL Host hits, not a proven pre-boundary opportunity, exclusive rejection cause or oracle speedup. Hybrid Host-hit spans may include resident FULL pages with Host copies and must not be converted into physical DMA bytes. Burst categories partition waits by the largest explicitly observed plan, not lifetime node commands. A sixteen-node plan is not proof of truncation or that a larger early transfer would fit capacity or the service window.",
+        "client_submit_to_native_arrival_ms": {
+          "count": 64,
+          "p50": 115.8155517578125,
+          "p90": 195.52180175781254,
+          "max": 381.520751953125
+        },
+        "client_submit_to_http_request_ms": {
+          "count": 0
+        },
+        "http_request_to_body_sent_ms": {
+          "count": 0
+        },
+        "body_sent_to_native_arrival_ms": {
+          "count": 0
+        },
+        "http_request_to_response_headers_ms": {
+          "count": 0
+        },
+        "body_sent_to_api_received_ms": {
+          "count": 0
+        },
+        "api_received_to_chat_conversion_ms": {
+          "count": 0
+        },
+        "chat_conversion_ms": {
+          "count": 0
+        },
+        "chat_conversion_to_tokenized_ms": {
+          "count": 0
+        },
+        "tokenized_to_dispatch_ms": {
+          "count": 64,
+          "p50": 0.0107421875,
+          "p90": 0.0116455078125,
+          "max": 0.012451171875
+        },
+        "dispatch_to_scheduler_received_ms": {
+          "count": 64,
+          "p50": 12.4766845703125,
+          "p90": 36.659252929687504,
+          "max": 346.82958984375
+        },
+        "scheduler_received_to_queue_registered_ms": {
+          "count": 64,
+          "p50": 0.1719970703125,
+          "p90": 0.2529296875,
+          "max": 0.480224609375
+        },
+        "client_submit_to_first_service_ms": {
+          "count": 64,
+          "p50": 1573.3974609375,
+          "p90": 16921.479223632814,
+          "max": 374756.8425292969
+        },
+        "submit_to_first_service_ms": {
+          "count": 64,
+          "p50": 1441.292236328125,
+          "p90": 16788.733569335942,
+          "max": 374604.86181640625
+        },
+        "last_ack_to_first_service_ms": {
+          "count": 11,
+          "p50": -113.9638671875,
+          "p90": 18.265869140625,
+          "max": 131.93310546875
+        },
+        "full_expiration_commands_by_stage": {},
+        "full_expiration_bytes_by_stage": {}
+      },
+      "tool_wait": {
+        "observed_events": 187,
+        "events_with_observed_full_plan": 0,
+        "events_with_capacity_observation": 0,
+        "events_with_capacity_condition": {
+          "none": 0,
+          "full_only": 0,
+          "mamba_only": 0,
+          "both": 0
+        },
+        "max_snapshot_full_bytes_under_mamba_only_shortfall_known": 0,
+        "max_snapshot_planned_full_bytes_known": 0,
+        "planned_full_bytes_unknown_events": 0,
+        "events_with_early_reused_full": 0,
+        "completion_boundary_unknown_events": 0,
+        "events_first_observed_after_completion": 118,
+        "events_with_tool_ids_outside_request_round": 0,
+        "early_started_and_reused_full_bytes": 0,
+        "post_completion_reused_full_by_phase": {
+          "completion_to_client_submit": {
+            "events_with_reused_full": 0,
+            "full_bytes": 0,
+            "unknown_or_unordered_boundary_events": 0
+          },
+          "client_submit_to_native_arrival": {
+            "events_with_reused_full": 0,
+            "full_bytes": 0,
+            "unknown_or_unordered_boundary_events": 0
+          },
+          "native_arrival_to_first_service": {
+            "events_with_reused_full": 0,
+            "full_bytes": 0,
+            "unknown_or_unordered_boundary_events": 0
+          }
+        },
+        "remaining_native_full_host_hit_bytes_known": 0,
+        "remaining_native_full_evidence_unknown_events": 0,
+        "plan_evidence_categories": {
+          "only_zero_full_plan": {
+            "independent_events": 187,
+            "events_with_known_completion_boundary": 187,
+            "remaining_native_full_host_hit_bytes_known": 0,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 0
+          }
+        },
+        "restore_burst_size_evidence": {
+          "only_empty_plan_observed": {
+            "independent_events": 187,
+            "events_with_known_completion_boundary": 187,
+            "remaining_native_full_host_hit_bytes_known": 0,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 0
+          }
+        },
+        "residual_native_demand_by_observed_planning_evidence": {
+          "observed_plan_reasons": {
+            "no_restore_plan": {
+              "independent_events": 187,
+              "events_with_known_completion_boundary": 187,
+              "remaining_native_full_host_hit_bytes_known": 0,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            }
+          },
+          "observed_planning_no_step_reasons": {
+            "no_host_backed_missing_copy": {
+              "independent_events": 187,
+              "events_with_known_completion_boundary": 187,
+              "remaining_native_full_host_hit_bytes_known": 0,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            }
+          },
+          "observed_planning_blocked_details": {},
+          "observed_no_live_details": {}
+        },
+        "planning_gap_semantics": "One count per independent wait per observed reason, regardless of repeated samples. Evidence categories partition waits; reason/detail groups overlap and must not be summed. Zero or missing plans do not prove zero physical demand. Residual bytes are next-request native FULL Host hits, not a proven pre-boundary opportunity, exclusive rejection cause or oracle speedup. Hybrid Host-hit spans may include resident FULL pages with Host copies and must not be converted into physical DMA bytes. Burst categories partition waits by the largest explicitly observed plan, not lifetime node commands. A sixteen-node plan is not proof of truncation or that a larger early transfer would fit capacity or the service window.",
+        "client_submit_to_native_arrival_ms": {
+          "count": 187,
+          "p50": 20.59619140625,
+          "p90": 32.630224609375006,
+          "max": 150.313232421875
+        },
+        "client_submit_to_http_request_ms": {
+          "count": 0
+        },
+        "http_request_to_body_sent_ms": {
+          "count": 0
+        },
+        "body_sent_to_native_arrival_ms": {
+          "count": 0
+        },
+        "http_request_to_response_headers_ms": {
+          "count": 0
+        },
+        "body_sent_to_api_received_ms": {
+          "count": 0
+        },
+        "api_received_to_chat_conversion_ms": {
+          "count": 0
+        },
+        "chat_conversion_ms": {
+          "count": 0
+        },
+        "chat_conversion_to_tokenized_ms": {
+          "count": 0
+        },
+        "tokenized_to_dispatch_ms": {
+          "count": 187,
+          "p50": 0.00927734375,
+          "p90": 0.01025390625,
+          "max": 0.052978515625
+        },
+        "dispatch_to_scheduler_received_ms": {
+          "count": 187,
+          "p50": 2.689208984375,
+          "p90": 11.87177734375001,
+          "max": 138.3359375
+        },
+        "scheduler_received_to_queue_registered_ms": {
+          "count": 187,
+          "p50": 0.141357421875,
+          "p90": 0.2283203125,
+          "max": 0.296142578125
+        },
+        "client_submit_to_first_service_ms": {
+          "count": 187,
+          "p50": 30.799072265625,
+          "p90": 55.439599609375016,
+          "max": 192.1552734375
+        },
+        "submit_to_first_service_ms": {
+          "count": 187,
+          "p50": 10.81396484375,
+          "p90": 18.36865234375,
+          "max": 153.831298828125
+        },
+        "last_ack_to_first_service_ms": {
+          "count": 0
+        },
+        "full_expiration_commands_by_stage": {},
+        "full_expiration_bytes_by_stage": {}
+      }
+    }
+  }
+}
+{"audit": "complete_grant_service", "command": ["/home/longhao/miniconda3/envs/beliefkv-next/bin/python", "/home/longhao/experiment/BeliefKV/scripts/audit_reference_join_grants.py", "--arm", "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full", "--prefetch-report", "/home/longhao/experiment/BeliefKV/experiments/reports/idle_host_mirror_recycle_20261027/complete_prefetch.json.gz", "--output", "/home/longhao/experiment/BeliefKV/experiments/reports/idle_host_mirror_recycle_20261027/complete_grant_service.json"]}
+{
+  "journal_grants": 280,
+  "journal_programs": 283,
+  "grant_events": {
+    "agent_continuation_free_capacity_admitted": 197,
+    "agent_join_siblings_coadmitted": 81,
+    "agent_join_free_capacity_admitted": 2
+  },
+  "program_statuses": {
+    "service_after_grant_verified": 283
+  },
+  "grant_refresh_declaration_snapshots": 2245,
+  "native_service_records": 94700,
+  "verified_reused_copy_bytes_after_grant": 11034918912
+}
+{"audit": "complete_guard_cases", "command": ["/home/longhao/miniconda3/envs/beliefkv-next/bin/python", "/home/longhao/experiment/BeliefKV/scripts/audit_tool_eos_guard_cases.py", "--registration", "/home/longhao/experiment/ops/idle_host_mirror_recycle_20261027_r1.registration.json", "--case-report", "/home/longhao/experiment/BeliefKV/experiments/reports/reference_join_siblings_20261027/tool_closer_trigger_audit.json", "--output", "/home/longhao/experiment/BeliefKV/experiments/reports/idle_host_mirror_recycle_20261027/complete_guard_cases.json"]}
+{
+  "exact_completed_receipts": 3674,
+  "known_cases": 4,
+  "statuses": {
+    "completed_tool_response_without_final_eos_trigger": 4
+  },
+  "all_cases_verified": true
+}
+{"audit": "complete_eos_trigger_lifecycle", "command": ["/home/longhao/miniconda3/envs/beliefkv-next/bin/python", "/home/longhao/experiment/BeliefKV/scripts/audit_eos_trigger_lifecycle.py", "--registration", "/home/longhao/experiment/ops/idle_host_mirror_recycle_20261027_r1.registration.json", "--expected-receipts", "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/replay/native_requests.jsonl", "--output", "/home/longhao/experiment/BeliefKV/experiments/reports/idle_host_mirror_recycle_20261027/complete_eos_trigger_lifecycle.json"]}
+{
+  "exact_completed_receipts": 3674,
+  "trigger_records": 54,
+  "lifecycle_statuses": {
+    "final_request_observed": 54
+  },
+  "delimiter_evidence": {
+    "no_dedicated_delimiter": 54
+  },
+  "all_triggered_requests_observed_final": true
+}
+{"audit": "complete_wait_offload", "command": ["/home/longhao/miniconda3/envs/beliefkv-next/bin/python", "/home/longhao/experiment/BeliefKV/scripts/audit_wait_offload.py", "--arm", "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full", "--output", "/home/longhao/experiment/BeliefKV/experiments/reports/idle_host_mirror_recycle_20261027/complete_wait_offload.json"]}
+{
+  "prepare_backups_by_source": {
+    "join_prepare": {
+      "node_commands": 25,
+      "acknowledged_commands": 25,
+      "burst_decisions": 25,
+      "unique_contexts": 17,
+      "context_epochs": 25,
+      "actual_pool_bytes": {
+        "kv": 393609216,
+        "mamba": 0
+      }
+    },
+    "tool_wait": {
+      "node_commands": 607,
+      "acknowledged_commands": 607,
+      "burst_decisions": 607,
+      "unique_contexts": 89,
+      "context_epochs": 607,
+      "actual_pool_bytes": {
+        "kv": 5978161152,
+        "mamba": 0
+      }
+    }
+  },
+  "hbm_demotion_by_source": {
+    "join_wait": {
+      "node_demotion_events": 604,
+      "events_releasing_positive_full": 604,
+      "unique_contexts": 18,
+      "context_epochs": 66,
+      "released_full_tokens": 1209491,
+      "released_full_bytes": 118897803264,
+      "released_mamba_slots": 0,
+      "released_mamba_bytes": 0
+    },
+    "tool_wait": {
+      "node_demotion_events": 186,
+      "events_releasing_positive_full": 186,
+      "unique_contexts": 65,
+      "context_epochs": 186,
+      "released_full_tokens": 20416,
+      "released_full_bytes": 2006974464,
+      "released_mamba_slots": 0,
+      "released_mamba_bytes": 0
+    }
+  },
+  "tool_prepare_timing": {
+    "decision_records": 607,
+    "known_tool_boundary_records": 607,
+    "unknown_tool_boundary_records": 0,
+    "decisions_after_observed_tool_end": 0,
+    "unique_known_tools": 607,
+    "tool_offload_wait_ms": [
+      1000.0
+    ],
+    "record_offload_wait_precision": 0.9637561779242174,
+    "first_decision_per_tool_offload_wait_precision": 0.9637561779242174,
+    "records_actual_remaining_ge_2000ms": 565,
+    "record_long_wait_precision": 0.9308072487644151,
+    "tools_first_decision_remaining_ge_2000ms": 565,
+    "first_decision_per_tool_long_wait_precision": 0.9308072487644151,
+    "live_same_invocation_forecast_records": 605,
+    "runtime_long_wait_predicate_true": 599,
+    "actual_remaining_ms": {
+      "count": 607,
+      "p50": 5559.8803606033325,
+      "p90": 16212.450765228272,
+      "max": 61676.29381084442
+    },
+    "remaining_p50_ms": {
+      "count": 605,
+      "p50": 5167.346007347107,
+      "p90": 9799.517764091546,
+      "max": 18181.31937599182
+    },
+    "p50_absolute_error_ms": {
+      "count": 605,
+      "p50": 2228.697669029236,
+      "p90": 10479.121972846986,
+      "max": 53528.16215133667
+    },
+    "tool_names": {
+      "execute": 607
+    },
+    "history_survival_groups": [
+      {
+        "support_detail": null,
+        "surviving_points": null,
+        "records": 2,
+        "records_actual_remaining_ge_2000ms": 2
+      },
+      {
+        "support_detail": "online_hybrid_run_command",
+        "surviving_points": 0,
+        "records": 104,
+        "records_actual_remaining_ge_2000ms": 100
+      },
+      {
+        "support_detail": "online_hybrid_workflow_command",
+        "surviving_points": 0,
+        "records": 483,
+        "records_actual_remaining_ge_2000ms": 447
+      },
+      {
+        "support_detail": "online_offline_prior_command",
+        "surviving_points": 0,
+        "records": 18,
+        "records_actual_remaining_ge_2000ms": 16
+      }
+    ],
+    "cdf_replay_on_selected_decisions": {
+      "records_selected": 599,
+      "records_selected_actual_remaining_ge_2000ms": 558,
+      "scope": "Subset of recorded decisions, not policy replay or opportunity recall."
+    }
+  },
+  "tool_demotion_timing": {
+    "decision_records": 186,
+    "known_tool_boundary_records": 186,
+    "unknown_tool_boundary_records": 0,
+    "decisions_after_observed_tool_end": 0,
+    "unique_known_tools": 186,
+    "tool_offload_wait_ms": [
+      1000.0
+    ],
+    "record_offload_wait_precision": 0.9838709677419355,
+    "first_decision_per_tool_offload_wait_precision": 0.9838709677419355,
+    "records_actual_remaining_ge_2000ms": 172,
+    "record_long_wait_precision": 0.9247311827956989,
+    "tools_first_decision_remaining_ge_2000ms": 172,
+    "first_decision_per_tool_long_wait_precision": 0.9247311827956989,
+    "live_same_invocation_forecast_records": 184,
+    "runtime_long_wait_predicate_true": 183,
+    "actual_remaining_ms": {
+      "count": 186,
+      "p50": 5255.480534076691,
+      "p90": 18952.589122772217,
+      "max": 61462.11168193817
+    },
+    "remaining_p50_ms": {
+      "count": 184,
+      "p50": 5084.533076763153,
+      "p90": 13727.448468589782,
+      "max": 18041.572465896606
+    },
+    "p50_absolute_error_ms": {
+      "count": 184,
+      "p50": 2571.915183544159,
+      "p90": 11788.8387963295,
+      "max": 53528.16215133667
+    },
+    "tool_names": {
+      "execute": 186
+    },
+    "history_survival_groups": [
+      {
+        "support_detail": null,
+        "surviving_points": null,
+        "records": 2,
+        "records_actual_remaining_ge_2000ms": 2
+      },
+      {
+        "support_detail": "online_hybrid_run_command",
+        "surviving_points": 0,
+        "records": 22,
+        "records_actual_remaining_ge_2000ms": 22
+      },
+      {
+        "support_detail": "online_hybrid_workflow_command",
+        "surviving_points": 0,
+        "records": 156,
+        "records_actual_remaining_ge_2000ms": 142
+      },
+      {
+        "support_detail": "online_offline_prior_command",
+        "surviving_points": 0,
+        "records": 6,
+        "records_actual_remaining_ge_2000ms": 6
+      }
+    ],
+    "cdf_replay_on_selected_decisions": {
+      "records_selected": 183,
+      "records_selected_actual_remaining_ge_2000ms": 169,
+      "scope": "Subset of recorded decisions, not policy replay or opportunity recall."
+    }
+  },
+  "observed_tool_starts_with_context": 3474,
+  "observed_complete_tools_with_context": 3474,
+  "observed_tools_total_duration_ge_2000ms": 866,
+  "observed_join_creates": 72,
+  "observed_tool_forecasts": 2627
+}
+{"audit": "complete_mirror_lifecycle", "command": ["/home/longhao/miniconda3/envs/beliefkv-next/bin/python", "/home/longhao/experiment/BeliefKV/experiments/reports/idle_host_mirror_recycle_20261027/mirror_lifecycle.py", "--output", "/home/longhao/experiment/BeliefKV/experiments/reports/idle_host_mirror_recycle_20261027/complete_mirror_lifecycle.json"]}
+{
+  "mirror_release_records": 5,
+  "released_host_nodes": 11,
+  "released_host_bytes": 3773595648,
+  "verified_native_cold_backup_bytes": 77463552,
+  "statuses": {
+    "same_generation_prepare_and_native_d2h_verified": 5
+  }
+}
+{
+  "requests": 3674,
+  "mean_jct_reduction_percent": 3.027396977002428,
+  "end_to_end_throughput_increase_percent": 1.739601173543015,
+  "faster_workflows": 16,
+  "slower_workflows": 2,
+  "mirror_lifecycle_summary": {
+    "mirror_release_records": 5,
+    "released_host_nodes": 11,
+    "released_host_bytes": 3773595648,
+    "verified_native_cold_backup_bytes": 77463552,
+    "statuses": {
+      "same_generation_prepare_and_native_d2h_verified": 5
+    }
+  }
+}

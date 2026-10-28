@@ -1,0 +1,132 @@
+{
+  "summary": {
+    "mirror_release_records": 5,
+    "released_host_nodes": 11,
+    "released_host_bytes": 3773595648,
+    "verified_native_cold_backup_bytes": 77463552,
+    "statuses": {
+      "same_generation_prepare_and_native_d2h_verified": 5
+    }
+  },
+  "releases": [
+    {
+      "cold_node_id": 2051,
+      "cold_creation_time": 94543.0,
+      "release_ts_ms": 1793159277491.4326,
+      "released_host_bytes": 805306368,
+      "released_host_nodes": 2,
+      "planned_backup_tokens": 274,
+      "status": "same_generation_prepare_and_native_d2h_verified",
+      "confirmed_backup_bytes": 26935296,
+      "downstream_hbm_release_or_service_verified": false,
+      "prepare_ts_ms": 1793159277492.1367,
+      "actual_prepared_tokens": 274,
+      "command_id": "native-hicache-000001315",
+      "native_submit_ts_ms": 1793159277491.7898,
+      "native_complete_ts_ms": 1793159277515.1096
+    },
+    {
+      "cold_node_id": 2737,
+      "cold_creation_time": 143679.0,
+      "release_ts_ms": 1793159447570.66,
+      "released_host_bytes": 805306368,
+      "released_host_nodes": 2,
+      "planned_backup_tokens": 110,
+      "status": "same_generation_prepare_and_native_d2h_verified",
+      "confirmed_backup_bytes": 10813440,
+      "downstream_hbm_release_or_service_verified": false,
+      "prepare_ts_ms": 1793159447571.2747,
+      "actual_prepared_tokens": 110,
+      "command_id": "native-hicache-000002044",
+      "native_submit_ts_ms": 1793159447570.995,
+      "native_complete_ts_ms": 1793159447597.3196
+    },
+    {
+      "cold_node_id": 2765,
+      "cold_creation_time": 145971.0,
+      "release_ts_ms": 1793159455453.7424,
+      "released_host_bytes": 805306368,
+      "released_host_nodes": 2,
+      "planned_backup_tokens": 127,
+      "status": "same_generation_prepare_and_native_d2h_verified",
+      "confirmed_backup_bytes": 12484608,
+      "downstream_hbm_release_or_service_verified": false,
+      "prepare_ts_ms": 1793159455454.8752,
+      "actual_prepared_tokens": 127,
+      "command_id": "native-hicache-000002073",
+      "native_submit_ts_ms": 1793159455454.4548,
+      "native_complete_ts_ms": 1793159455477.5251
+    },
+    {
+      "cold_node_id": 5043,
+      "cold_creation_time": 328417.0,
+      "release_ts_ms": 1793160075636.0317,
+      "released_host_bytes": 552370176,
+      "released_host_nodes": 3,
+      "planned_backup_tokens": 150,
+      "status": "same_generation_prepare_and_native_d2h_verified",
+      "confirmed_backup_bytes": 14745600,
+      "downstream_hbm_release_or_service_verified": false,
+      "prepare_ts_ms": 1793160075636.6772,
+      "actual_prepared_tokens": 150,
+      "command_id": "native-hicache-000008355",
+      "native_submit_ts_ms": 1793160075636.3848,
+      "native_complete_ts_ms": 1793160075665.4854
+    },
+    {
+      "cold_node_id": 5155,
+      "cold_creation_time": 343943.0,
+      "release_ts_ms": 1793160127137.2832,
+      "released_host_bytes": 805306368,
+      "released_host_nodes": 2,
+      "planned_backup_tokens": 127,
+      "status": "same_generation_prepare_and_native_d2h_verified",
+      "confirmed_backup_bytes": 12484608,
+      "downstream_hbm_release_or_service_verified": false,
+      "prepare_ts_ms": 1793160127138.2756,
+      "actual_prepared_tokens": 127,
+      "command_id": "native-hicache-000009340",
+      "native_submit_ts_ms": 1793160127137.7505,
+      "native_complete_ts_ms": 1793160127157.1997
+    }
+  ],
+  "latest_recorded_recycle_counts": {
+    "idle_host_mirror_recycle_checks": 765,
+    "idle_host_mirror_recycle_cold_checks": 24362,
+    "idle_host_mirror_recycle_no_cold_target": 757,
+    "idle_host_mirror_recycle_mirror_checks": 256,
+    "idle_host_mirror_recycle_host_nodes": 11,
+    "idle_host_mirror_recycle_host_tokens": 38387,
+    "idle_host_mirror_recycle_host_bytes": 3773595648,
+    "idle_host_mirror_recycle_without_backup": 0,
+    "idle_host_mirror_recycle_insufficient_mirrors": 3
+  },
+  "observed_at": "2026-10-28T04:21:24.006215+00:00",
+  "registration": "/home/longhao/experiment/ops/idle_host_mirror_recycle_20261027_r1.registration.json",
+  "registration_sha256": "a83a5bf0b43d0f60d67967b29b424db6e35561d532a1c2fce8c57bb80d4d2bf2",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full",
+  "code_commit": "80a6186cdc7b1e0c4acf4152039dd83debac249f",
+  "capacity_census_sha256": "fd3c35173b1716cc59b70de18e9a8e2f36f3ea500032b9059421fa5520f21007",
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 64724435,
+      "complete_prefix_sha256": "b4ef6b23f5667bd144796a6ed7107f14c6e199f1335162151aece405d8fb4d90",
+      "first_read_limit_bytes": 64724435
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full/server/transfer_telemetry.jsonl": {
+      "complete_prefix_bytes": 10559909,
+      "complete_prefix_sha256": "bd7d1d6596b9d2febca9935e6fb1e797e1656927c94815bc3c3eca31adb0aefc",
+      "first_read_limit_bytes": 10559909
+    }
+  },
+  "operator_sha256": "21dfadd76ae1821f8499fcb21c56cd46ef55735628445de88d27bff885a50c5c",
+  "performance_accepted": false,
+  "limitations": [
+    "Independent sealed file prefixes are not an atomic snapshot.",
+    "Native D2H association requires exact node, extent bytes and the submission window.",
+    "A confirmed Host backup is not evidence of later HBM release or model service.",
+    "Cumulative released/copied bytes are not unique occupancy, hidden time or JCT savings.",
+    "Normal tails and complete matched JCT/throughput require the final run audit.",
+    "Progressive layer-capacity handoff remains unimplemented."
+  ]
+}
