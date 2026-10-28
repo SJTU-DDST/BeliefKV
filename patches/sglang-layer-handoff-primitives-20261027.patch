@@ -1,0 +1,317 @@
+diff --git a/python/sglang/srt/mem_cache/l2_transfer.py b/python/sglang/srt/mem_cache/l2_transfer.py
+index 821c196..25ca896 100644
+--- a/python/sglang/srt/mem_cache/l2_transfer.py
++++ b/python/sglang/srt/mem_cache/l2_transfer.py
+@@ -46,6 +46,13 @@ class TransferCompletion(NamedTuple):
+     timing_enabled: bool
+ 
+ 
++class LayerHandoffCompletion(NamedTuple):
++    donor: TransferCompletion
++    consumer: TransferCompletion
++    donor_layer_done: tuple[Any, ...]
++    consumer_layer_ready: tuple[Any, ...]
++
++
+ class L2TransferEngine:
+     """Runs resolved device↔host transfers without owning cache state."""
+ 
+@@ -113,6 +120,87 @@ class L2TransferEngine:
+             self._record_stream(transfers, self.host_to_device_stream)
+         return TransferCompletion(ack_start, ack_finish, timing_enabled)
+ 
++    def submit_layer_handoff(
++        self,
++        donor: L2Transfer,
++        consumer: L2Transfer,
++        *,
++        layer_num: int,
++        donor_last_use_event,
++    ) -> LayerHandoffCompletion:
++        """Copy A out and B in on exclusively reserved, identical Device indices.
++
++        The caller owns cache publication, logical admission and the reservation
++        for the entire operation. No slot becomes free here. A consumer may read
++        a layer only after its consumer_layer_ready event.
++        """
++        if (
++            type(layer_num) is not int
++            or layer_num <= 0
++            or donor_last_use_event is None
++            or donor.device_pool is not consumer.device_pool
++            or donor.device_indices is not consumer.device_indices
++            or len(donor.device_indices) == 0
++            or len(donor.host_indices) != len(donor.device_indices)
++            or len(consumer.host_indices) != len(consumer.device_indices)
++            or donor.layer_mapper is not None
++            or consumer.layer_mapper is not None
++            or donor.is_draft
++            or consumer.is_draft
++        ):
++            raise ValueError("invalid exclusive layer handoff extent")
++        for transfer in (donor, consumer):
++            supported = getattr(transfer.host_pool, "supports_layer_handoff", None)
++            if (
++                not callable(supported)
++                or not supported(transfer.device_pool, self.io_backend)
++                or transfer.host_pool.layer_num != layer_num
++            ):
++                raise NotImplementedError("unsupported layer handoff pool")
++        if donor.host_pool is consumer.host_pool and donor.host_indices is consumer.host_indices:
++            raise ValueError("donor backup cannot overwrite the consumer Host source")
++        donor_done = tuple(device_module.Event() for _ in range(layer_num))
++        consumer_ready = tuple(device_module.Event() for _ in range(layer_num))
++        d_start, d_finish, d_timing = make_timing_event_pair()
++        h_start, h_finish, h_timing = make_timing_event_pair()
++        with device_module.stream(self.device_to_host_stream):
++            donor_last_use_event.wait(self.device_to_host_stream)
++            d_start.record()
++        with device_module.stream(self.host_to_device_stream):
++            h_start.record()
++        for layer in range(layer_num):
++            with device_module.stream(self.device_to_host_stream):
++                donor.host_pool.backup_from_device_per_layer(
++                    donor.device_pool,
++                    donor.host_indices,
++                    donor.device_indices,
++                    layer,
++                    self.io_backend,
++                )
++                donor_done[layer].record()
++            with device_module.stream(self.host_to_device_stream):
++                donor_done[layer].wait(self.host_to_device_stream)
++                consumer.host_pool.load_to_device_per_layer(
++                    consumer.device_pool,
++                    consumer.host_indices,
++                    consumer.device_indices,
++                    layer,
++                    self.io_backend,
++                )
++                consumer_ready[layer].record()
++        with device_module.stream(self.device_to_host_stream):
++            d_finish.record()
++            self._record_stream([donor], self.device_to_host_stream)
++        with device_module.stream(self.host_to_device_stream):
++            h_finish.record()
++            self._record_stream([consumer], self.host_to_device_stream)
++        return LayerHandoffCompletion(
++            TransferCompletion(d_start, d_finish, d_timing),
++            TransferCompletion(h_start, h_finish, h_timing),
++            donor_done,
++            consumer_ready,
++        )
++
+     @staticmethod
+     def _start_event(start_event):
+         if start_event is None:
+diff --git a/python/sglang/srt/mem_cache/pool_host/mha.py b/python/sglang/srt/mem_cache/pool_host/mha.py
+index 8a3d488..0913885 100644
+--- a/python/sglang/srt/mem_cache/pool_host/mha.py
++++ b/python/sglang/srt/mem_cache/pool_host/mha.py
+@@ -396,6 +396,34 @@ class MHATokenToKVPoolHost(HostKVCache):
+             device_pool.v_buffer,
+         )
+ 
++    def supports_layer_handoff(self, device_pool, io_backend):
++        return (
++            io_backend == "kernel"
++            and self.layout in ("layer_first", "page_first")
++            and self.can_use_jit
++            and not self.mtp_draft_device_pools
++            and self.device_pool is device_pool
++            and not device_pool.layer_shard_enabled
++            and self.layer_num == device_pool.layer_num == self.target_layer_num
++        )
++
++    def backup_from_device_per_layer(
++        self, device_pool, host_indices, device_indices, layer_id, io_backend
++    ):
++        if not self.supports_layer_handoff(device_pool, io_backend):
++            raise NotImplementedError("layer handoff requires an unsharded MHA JIT pool")
++        if type(layer_id) is not int or not 0 <= layer_id < self.layer_num:
++            raise ValueError("invalid layer handoff layer")
++        jit_transfer_hicache_one_layer(
++            k_cache_dst=self.k_data_refs[layer_id],
++            v_cache_dst=self.v_data_refs[layer_id],
++            indices_dst=host_indices,
++            k_cache_src=device_pool.k_buffer[layer_id],
++            v_cache_src=device_pool.v_buffer[layer_id],
++            indices_src=device_indices,
++            element_dim=self.element_dim,
++        )
++
+     def backup_from_device_all_layer(
+         self, device_pool, host_indices, device_indices, io_backend
+     ):
+diff --git a/test/srt/test_beliefkv_layer_handoff.py b/test/srt/test_beliefkv_layer_handoff.py
+new file mode 100644
+index 0000000..fd3c6cd
+--- /dev/null
++++ b/test/srt/test_beliefkv_layer_handoff.py
+@@ -0,0 +1,166 @@
++"""CPU data/order checks; actual GPU overlap and cache admission are separate."""
++
++from contextlib import contextmanager
++from types import SimpleNamespace as NS
++from unittest.mock import patch
++
++import pytest
++import torch
++
++from sglang.srt.mem_cache import l2_transfer as native
++
++
++@pytest.fixture
++def handoff(monkeypatch):
++    calls, current = [], [None]
++
++    class Event:
++        def __init__(self, **_kwargs):
++            self.recorded_on = None
++
++        def record(self):
++            self.recorded_on = current[0]
++            calls.append(("record", self, current[0]))
++
++        def wait(self, stream):
++            calls.append(("wait", self, stream))
++
++    @contextmanager
++    def stream(value):
++        previous, current[0] = current[0], value
++        try:
++            yield
++        finally:
++            current[0] = previous
++
++    monkeypatch.setattr(native, "device_module", NS(Event=Event, stream=stream))
++    monkeypatch.setattr(native, "make_timing_event_pair", lambda: (Event(), Event(), True))
++    pool = NS(layer_num=3, k_buffer=[torch.arange(4.) + 10 * i for i in range(3)])
++    original = [part.clone() for part in pool.k_buffer]
++    source = [part + 100 for part in original]
++    host = [torch.zeros_like(part) for part in original]
++    device_indices = torch.arange(4, dtype=torch.int64)
++    donor_host, consumer_host = torch.arange(4), torch.arange(4)
++
++    def backup(_pool, _host, _device, layer, _backend):
++        assert current[0] == "d2h"
++        host[layer].copy_(pool.k_buffer[layer])
++        calls.append(("d2h", layer))
++
++    def load(_pool, _host, _device, layer, _backend):
++        assert current[0] == "h2d"
++        pool.k_buffer[layer].copy_(source[layer])
++        calls.append(("h2d", layer))
++
++    donor_pool = NS(
++        layer_num=3, supports_layer_handoff=lambda *_: True,
++        backup_from_device_per_layer=backup,
++    )
++    consumer_pool = NS(
++        layer_num=3, supports_layer_handoff=lambda *_: True,
++        load_to_device_per_layer=load,
++    )
++    donor = native.L2Transfer(donor_pool, pool, donor_host, device_indices)
++    consumer = native.L2Transfer(consumer_pool, pool, consumer_host, device_indices)
++    engine = native.L2TransferEngine.__new__(native.L2TransferEngine)
++    engine.io_backend = "kernel"
++    engine.device_to_host_stream, engine.host_to_device_stream = "d2h", "h2d"
++    return engine, donor, consumer, Event(), calls, pool, original, source, host
++
++
++def test_shared_extent_preserves_all_donor_layers_and_restores_consumer(handoff):
++    engine, donor, consumer, last_use, calls, pool, original, source, host = handoff
++    result = engine.submit_layer_handoff(
++        donor, consumer, layer_num=3, donor_last_use_event=last_use,
++    )
++    assert all(torch.equal(a, b) for a, b in zip(host, original, strict=True))
++    assert all(torch.equal(a, b) for a, b in zip(pool.k_buffer, source, strict=True))
++    assert [item for item in calls if item[0] in ("d2h", "h2d")] == [
++        ("d2h", 0), ("h2d", 0), ("d2h", 1), ("h2d", 1), ("d2h", 2), ("h2d", 2),
++    ]
++    assert len(result.donor_layer_done) == len(result.consumer_layer_ready) == 3
++
++
++def test_first_consumer_layer_does_not_wait_for_the_last_donor_layer(handoff):
++    engine, donor, consumer, last_use, calls, *_ = handoff
++    result = engine.submit_layer_handoff(
++        donor, consumer, layer_num=3, donor_last_use_event=last_use,
++    )
++    assert calls[0] == ("wait", last_use, "d2h")
++    for event in result.donor_layer_done:
++        assert ("wait", event, "h2d") in calls
++    first_ready = calls.index(("record", result.consumer_layer_ready[0], "h2d"))
++    last_backup = calls.index(("record", result.donor_layer_done[-1], "d2h"))
++    assert first_ready < last_backup
++    assert ("wait", result.donor.finish_event, "h2d") not in calls
++
++
++@pytest.mark.parametrize("invalid", (
++    "no_writer_fence", "foreign_device", "different_indices", "empty_extent",
++    "different_host_count", "draft", "layer_mapper", "layer_count", "unsupported",
++    "same_host_source",
++))
++def test_invalid_contract_is_rejected_before_any_device_operation(handoff, invalid):
++    engine, donor, consumer, last_use, calls, *_ = handoff
++    layers = 3
++    if invalid == "no_writer_fence":
++        last_use = None
++    elif invalid == "foreign_device":
++        consumer = consumer._replace(device_pool=object())
++    elif invalid == "different_indices":
++        consumer = consumer._replace(device_indices=consumer.device_indices.clone())
++    elif invalid == "empty_extent":
++        donor = donor._replace(device_indices=torch.empty(0, dtype=torch.int64))
++    elif invalid == "different_host_count":
++        consumer = consumer._replace(host_indices=consumer.host_indices[:2])
++    elif invalid == "draft":
++        donor = donor._replace(is_draft=True)
++    elif invalid == "layer_mapper":
++        donor = donor._replace(layer_mapper=lambda layer: layer)
++    elif invalid == "layer_count":
++        layers = 2
++    elif invalid == "unsupported":
++        donor.host_pool.supports_layer_handoff = lambda *_: False
++    else:
++        consumer = consumer._replace(host_pool=donor.host_pool, host_indices=donor.host_indices)
++    with pytest.raises((ValueError, NotImplementedError)):
++        engine.submit_layer_handoff(
++            donor, consumer, layer_num=layers, donor_last_use_event=last_use,
++        )
++    assert calls == []
++
++
++@pytest.mark.parametrize("layout", ("layer_first", "page_first"))
++def test_mha_layer_backup_uses_the_selected_host_view_without_touching_other_layers(layout):
++    from sglang.srt.mem_cache.pool_host import mha
++
++    pool = NS(
++        layer_num=3, layer_shard_enabled=False,
++        k_buffer=[torch.arange(8.).reshape(4, 1, 2) + i * 10 for i in range(3)],
++        v_buffer=[torch.arange(8.).reshape(4, 1, 2) + 100 + i * 10 for i in range(3)],
++    )
++    host = object.__new__(mha.MHATokenToKVPoolHost)
++    host.layout, host.can_use_jit = layout, True
++    host.mtp_draft_device_pools = ()
++    host.device_pool = pool
++    host.layer_num = host.target_layer_num = 3
++    host.element_dim = 2
++    host.pin_memory = False
++    host.kv_buffer = None
++    storage = torch.zeros((2, 3, 4, 1, 2) if layout == "layer_first" else (2, 4, 3, 1, 2))
++    host.k_data_refs = [storage[0, i] if layout == "layer_first" else storage[0, :, i] for i in range(3)]
++    host.v_data_refs = [storage[1, i] if layout == "layer_first" else storage[1, :, i] for i in range(3)]
++    indices = torch.tensor([1, 3])
++
++    def copy(**kwargs):
++        for kind in ("k", "v"):
++            dst, src = kwargs[f"{kind}_cache_dst"], kwargs[f"{kind}_cache_src"]
++            dst.index_copy_(0, kwargs["indices_dst"], src[kwargs["indices_src"]])
++
++    with patch.object(mha, "jit_transfer_hicache_one_layer", side_effect=copy):
++        host.backup_from_device_per_layer(pool, indices, indices, 1, "kernel")
++    assert torch.equal(host.k_data_refs[1][indices], pool.k_buffer[1][indices])
++    assert torch.equal(host.v_data_refs[1][indices], pool.v_buffer[1][indices])
++    assert torch.count_nonzero(host.k_data_refs[0]) == torch.count_nonzero(host.k_data_refs[2]) == 0
++    pool.layer_shard_enabled = True
++    assert not host.supports_layer_handoff(pool, "kernel")

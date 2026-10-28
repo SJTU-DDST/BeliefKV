@@ -205,3 +205,32 @@ CPU HTTP/copy/event fixture 不建立 GPU 数值或性能结论。
 原日志有一处并发追加产生的时间倒序；直接按文件追加顺序执行的
 首次审计被旧图的时间检查拒绝，正式离线检查按每 workflow 稳定时间
 排序并保留全部事件。该观察不证明线上执行、数值或性能等价。
+
+## 专属跨层索引交接原语
+
+当前已开始一个实现路径：保留A原来的跨层token indices为专属
+handoff extent，不把它们放回普通allocator空闲集合。A、B只在这个
+受保护事务内先后使用同一组物理索引；每层先完成A的必要D2H，再
+允许B的H2D覆盖。这样第一版不需要重写全局分层分配器，但必须
+补齐cache事务对draining/warming状态及最终完整工作集的准入绑定，
+原有普通 `load()` 仍不能直接提供这一权限。
+
+独立native分支 `beliefkv-layer-handoff-20261027`提交f4e1db4c2ca，
+基于共同11b84f7c3198树，新增MHA逐层D2H和
+`L2TransferEngine.submit_layer_handoff()`。每层单独记录donor完成
+和consumer就绪事件；B第0层不依赖A最后一层D2H。只支持完整
+非sharded的MHA JIT池，拒绝不同Device池、非同一个Device索引
+extent、draft/稀疏layer mapping、缺失旧writer事件和尺寸不符。
+目前需要caller持有独占Device及互不重叠Host分配；stateless传输
+接口本身不拥有缓存发布、session/generation或agent准入权限。
+
+14项CPU检查通过，包含不同Host布局的真实CPU K/V数组、按层数据
+覆盖顺序、首层依赖及输入拒绝；GPU拷贝、cache事务和模型准入均
+未验证或接入。补丁保存在
+`patches/sglang-layer-handoff-primitives-20261027.patch`，基于d3f9f376
+而非重写共同staging补丁；当前Full和强控制仍使用原共同引擎。
+证据为 `experiments/reports/layer_handoff_20261027/native_cpu_primitives.json`。
+
+先修复工具预测解释问题，再接入该原语的cache所有权和准入事务。
+Overlap保持可关闭；若匹配完整工作量的JCT或吞吐出现负收益，关闭
+并回退到没有overlap的已验证路径，保留负结果及所有正常长尾。

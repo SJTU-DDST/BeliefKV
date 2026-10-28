@@ -1,0 +1,44 @@
+{
+  "observed_at": "2026-10-28T04:29:09.147154+00:00",
+  "source_arm": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full",
+  "counts": {
+    "forecast_records": 930,
+    "old_one_second_survival_gate_passes": 682,
+    "corrected_one_second_survival_gate_passes": 717,
+    "p10_changed_records": 929,
+    "newly_passing_forecast_records": 35
+  },
+  "forecast_sources": {
+    "online_offline_prior_command": 18,
+    "online_hybrid_run_command": 124,
+    "online_hybrid_workflow_command": 788
+  },
+  "distinct_observed_wait_revisions": 930,
+  "wait_revisions_with_a_newly_passing_forecast": 35,
+  "p10_increase_ms": {
+    "count": 930,
+    "mean": 101.67710540052023,
+    "median": 19.976480153784905,
+    "max": 1081.646293049384
+  },
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 63439977,
+      "complete_prefix_sha256": "7b9f7059c3a596171566fab9ddaad8861e4b40283f4e062c3456120fb9a5b81a",
+      "first_read_limit_bytes": 63439977
+    }
+  },
+  "operator_sha256": "f133c226c42ca03b04f3d099d8e612ee979094b3c4a18a4b0d90390f23bb3528",
+  "interpretation_sources_sha256": {
+    "beliefkv/runtime/sglang_v0520_prediction.py": "c5cc2d48c68c6a3b8f314c655cf687408c5e927ca06972945bd4456717b9f5ec",
+    "beliefkv/predictor/action_frontier.py": "e17e4778bf5d4eb19eb4e627954dc5d1aec41a889d35357984cf1815b9e12b34"
+  },
+  "performance_accepted": false,
+  "limitations": [
+    "This evaluates the one-second gate at forecast issuance, not every physical dispatch.",
+    "Forecast refreshes are correlated; wait revisions need not be independent tool calls.",
+    "No reconstructed capacity, safe donor, Host availability or consumer benefit is assumed.",
+    "Passing this probability gate alone does not authorize offload or establish performance.",
+    "No later tool completion time enters either compared forecast interpretation."
+  ]
+}

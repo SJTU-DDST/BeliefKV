@@ -2099,3 +2099,36 @@
   The90% policy, priorities, physical safety and running frozen Full are
   unchanged. Full shared/source binding, GPU and performance remain pending;
   do not claim this one bug explains every missed tool offload or clear gains.
+- The tool-curve repair now passes3387 shared cases plus4subtests in one
+  execution without skips/failures, retaining all3381 prior identities.
+  Actual Full/default-TA/decay-TA constructors and inherited reference methods
+  remain isolated. Historical930 empirical forecast records have682 original
+  versus717 corrected one-second gate passes at issuance;35 change. This is
+  not actual dispatch opportunity recall or proof of35 profitable offloads.
+  Keep the90% threshold unchanged until a separately evidenced policy change.
+- MirrorFullR1 completes all3674 exact requests,145565966 input/549671 output
+  tokens and18 normal tails with native stopping, fresh drain and actual exit.
+  Complete review and all independent audits pass; three matched figures are
+  inspected. MeanJCT1646.191049s/output237.431540token/s versus completeV345
+  1697.583645s/233.371801 improves3.0274%/1.7396%, insufficient for the gate.
+  Versus previous Full it regresses0.91935% JCT/0.44758% output. Preserve the
+  single-run limitation and leave mirrors unpromoted/default-off. Five Host
+  recycling rounds release11 nodes/3.773596GB and directly back77.463552MB;
+  these bytes are not net gain. Final predicted release76/5.004165GB includes
+  63 before-admission releases/0.525042GB with service.438 JOIN copies/
+  85.390688GB prove reuse;283 grants/programs,4 EOS countercases and54 final
+  EOS triggers verify. All normal tails and negative results remain.
+- Actual layer-handoff implementation has begun in the isolated native branch
+  beliefkv-layer-handoff-20261027, commitf4e1db4c2cab/tree2711ff946ceb, based
+  on common11b84f7c3198. It adds MHA per-layer D2H and an L2 shared-extent
+  D2H/H2D primitive: B layer0 waits only for A layer0 backup and never waits
+  for A's final-layer ACK. The shared Device indices remain caller-reserved,
+  never returned to the ordinary allocator. Fourteen CPU data/order/contract
+  cases pass. The primitive owns no native cache transaction, Host allocation
+  disjointness proof or logical eligibility; these bindings, actual GPU and
+  whole-model performance remain pending. Separate delta patch and CPU proof
+  are under patches/sglang-layer-handoff-primitives-20261027.patch and
+  experiments/reports/layer_handoff_20261027/. Keep the common staging patch
+  and controls unchanged. Continue tool prediction repair then actual pipeline
+  integration; disable/revert overlap if complete matched performance is
+  negative. Do not present this primitive as an integrated Full implementation.

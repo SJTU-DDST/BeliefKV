@@ -1,0 +1,29 @@
+{
+  "observed_at": "2026-10-28T04:27:10.698950+00:00",
+  "status": "cpu_native_layer_handoff_primitives",
+  "engine_checkout": "/home/longhao/experiment/.worktrees/sglang-layer-handoff-20261027",
+  "native_commit": "f4e1db4c2cabcd43f9b5fdb86388a05319a088b8",
+  "native_tree": "2711ff946cebe8ec55c44283a34a55bb39e8624a",
+  "common_base_commit": "d3f9f37648be64af598fb936b7631fa8e6c215ba",
+  "common_base_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+  "patch": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-layer-handoff-primitives-20261027.patch",
+    "sha256": "669b17b2bca2d4910dccdc66cbd17790cbebf39fefb5c7d46bc851b60e601064"
+  },
+  "sources_sha256": {
+    "python/sglang/srt/mem_cache/l2_transfer.py": "a00fb5dd470aafd5ea79b8643f9893ebc4feb2dd291112a7f5ebc8b5a61e132f",
+    "python/sglang/srt/mem_cache/pool_host/mha.py": "dc6064d0ad9afb048a29fe6bb3f820fd571c4b57c6aba2b7fc46225ec1132ea9",
+    "test/srt/test_beliefkv_layer_handoff.py": "31476b02a7dfefef9b1d3fcda435d8ce40298781b06db59750613016bd4828bd"
+  },
+  "cpu_report": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/layer_handoff_20261027/initial_cpu.xml",
+    "sha256": "500970c1640bf7a51450270f0bb609bcc7335412313a4b5d67885c0a4c532d59"
+  },
+  "passing_cases": 14,
+  "gpu_qualified": false,
+  "cache_transaction_binding_implemented": false,
+  "agent_admission_binding_implemented": false,
+  "whole_model_qualified": false,
+  "performance_accepted": false,
+  "scope": "Per-layer native transfer methods and their dependency/data checks. Shared Device extent remains caller-reserved; no native cache/allocator ownership handoff or model execution is claimed."
+}
