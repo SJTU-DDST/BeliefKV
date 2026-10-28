@@ -1,0 +1,99 @@
+{
+  "summary": {
+    "mirror_release_records": 3,
+    "released_host_nodes": 6,
+    "released_host_bytes": 2415919104,
+    "verified_native_cold_backup_bytes": 50233344,
+    "statuses": {
+      "same_generation_prepare_and_native_d2h_verified": 3
+    }
+  },
+  "releases": [
+    {
+      "cold_node_id": 2051,
+      "cold_creation_time": 94543.0,
+      "release_ts_ms": 1793159277491.4326,
+      "released_host_bytes": 805306368,
+      "released_host_nodes": 2,
+      "planned_backup_tokens": 274,
+      "status": "same_generation_prepare_and_native_d2h_verified",
+      "confirmed_backup_bytes": 26935296,
+      "downstream_hbm_release_or_service_verified": false,
+      "prepare_ts_ms": 1793159277492.1367,
+      "actual_prepared_tokens": 274,
+      "command_id": "native-hicache-000001315",
+      "native_submit_ts_ms": 1793159277491.7898,
+      "native_complete_ts_ms": 1793159277515.1096
+    },
+    {
+      "cold_node_id": 2737,
+      "cold_creation_time": 143679.0,
+      "release_ts_ms": 1793159447570.66,
+      "released_host_bytes": 805306368,
+      "released_host_nodes": 2,
+      "planned_backup_tokens": 110,
+      "status": "same_generation_prepare_and_native_d2h_verified",
+      "confirmed_backup_bytes": 10813440,
+      "downstream_hbm_release_or_service_verified": false,
+      "prepare_ts_ms": 1793159447571.2747,
+      "actual_prepared_tokens": 110,
+      "command_id": "native-hicache-000002044",
+      "native_submit_ts_ms": 1793159447570.995,
+      "native_complete_ts_ms": 1793159447597.3196
+    },
+    {
+      "cold_node_id": 2765,
+      "cold_creation_time": 145971.0,
+      "release_ts_ms": 1793159455453.7424,
+      "released_host_bytes": 805306368,
+      "released_host_nodes": 2,
+      "planned_backup_tokens": 127,
+      "status": "same_generation_prepare_and_native_d2h_verified",
+      "confirmed_backup_bytes": 12484608,
+      "downstream_hbm_release_or_service_verified": false,
+      "prepare_ts_ms": 1793159455454.8752,
+      "actual_prepared_tokens": 127,
+      "command_id": "native-hicache-000002073",
+      "native_submit_ts_ms": 1793159455454.4548,
+      "native_complete_ts_ms": 1793159455477.5251
+    }
+  ],
+  "latest_recorded_recycle_counts": {
+    "idle_host_mirror_recycle_checks": 172,
+    "idle_host_mirror_recycle_cold_checks": 5468,
+    "idle_host_mirror_recycle_no_cold_target": 169,
+    "idle_host_mirror_recycle_mirror_checks": 96,
+    "idle_host_mirror_recycle_host_nodes": 6,
+    "idle_host_mirror_recycle_host_tokens": 24576,
+    "idle_host_mirror_recycle_host_bytes": 2415919104,
+    "idle_host_mirror_recycle_without_backup": 0
+  },
+  "observed_at": "2026-10-28T03:53:17.801316+00:00",
+  "registration": "/home/longhao/experiment/ops/idle_host_mirror_recycle_20261027_r1.registration.json",
+  "registration_sha256": "a83a5bf0b43d0f60d67967b29b424db6e35561d532a1c2fce8c57bb80d4d2bf2",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full",
+  "code_commit": "80a6186cdc7b1e0c4acf4152039dd83debac249f",
+  "capacity_census_sha256": "fd3c35173b1716cc59b70de18e9a8e2f36f3ea500032b9059421fa5520f21007",
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 16666929,
+      "complete_prefix_sha256": "2bdc99fd895baf7dd96796492bb282a07cc8d678b8757f16db63d7b38f053fce",
+      "first_read_limit_bytes": 16666929
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full/server/transfer_telemetry.jsonl": {
+      "complete_prefix_bytes": 1902322,
+      "complete_prefix_sha256": "5c60bbc8a88f29c79cf48b8cfa39f3ebda3418707d0a90c7075022d93194571e",
+      "first_read_limit_bytes": 1902322
+    }
+  },
+  "operator_sha256": "21dfadd76ae1821f8499fcb21c56cd46ef55735628445de88d27bff885a50c5c",
+  "performance_accepted": false,
+  "limitations": [
+    "Independent sealed file prefixes are not an atomic snapshot.",
+    "Native D2H association requires exact node, extent bytes and the submission window.",
+    "A confirmed Host backup is not evidence of later HBM release or model service.",
+    "Cumulative released/copied bytes are not unique occupancy, hidden time or JCT savings.",
+    "Normal tails and complete matched JCT/throughput require the final run audit.",
+    "Progressive layer-capacity handoff remains unimplemented."
+  ]
+}

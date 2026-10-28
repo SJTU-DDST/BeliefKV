@@ -146,3 +146,15 @@ prepare、相同native拷贝范围及提交时间窗口关联D2H，保留未匹�
 覆盖外来/错误/未完成拷贝、generation、容量、重复ACK与重复归因。
 第一份 `collecting_mirror_lifecycle.json`尚无镜像回收记录，保留为零，
 不能当作整个运行没有机会的结论。完整JCT、吞吐与机制收益仍待终态。
+
+后续封存前缀 `collecting_pipeline_after_resume.json`已有2211个精确
+完成请求；`collecting_mirror_lifecycle_after_resume.json`观察到3次
+回收，共6个Host镜像节点、2.415919GB，3次原生D2H实际完成了
+50.233344MB冷备份。删除副本的容量明显大于这三次直接备份量，
+保留此差异并继续核算剩余Host空间及镜像再备份，不当作净收益。
+
+已准备 `complete_review.py`和 `run_complete_audits.py`，仅在完整
+成功、实际进程退出、两份新idle快照及匹配图均具备后运行。新增
+审计边界与多镜像计数共31项CPU检查通过，包含真实已完成Full和
+V345控制的完整工作量检查；当前仍运行的Full被终态审计正确拒绝。
+该工具准备不构成本轮完整结果，冻结80a6186cdc7b未改变。

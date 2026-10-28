@@ -67,6 +67,7 @@ def inspect(records, transfers, unit):
             "cold_creation_time": release["cold_creation_time"],
             "release_ts_ms": release["ts_ms"],
             "released_host_bytes": release["released_host_bytes"],
+            "released_host_nodes": len(release["released_host_nodes"]),
             "planned_backup_tokens": release["planned_backup_tokens"],
             "status": "no_later_same_generation_prepare_in_sealed_prefix",
             "confirmed_backup_bytes": 0,
@@ -110,6 +111,7 @@ def inspect(records, transfers, unit):
     return {
         "summary": {
             "mirror_release_records": len(result),
+            "released_host_nodes": sum(row["released_host_nodes"] for row in result),
             "released_host_bytes": sum(row["released_host_bytes"] for row in result),
             "verified_native_cold_backup_bytes": sum(
                 row["confirmed_backup_bytes"] for row in result

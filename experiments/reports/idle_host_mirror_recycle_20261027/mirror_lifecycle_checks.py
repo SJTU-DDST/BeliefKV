@@ -44,6 +44,15 @@ def test_native_copy_credits_only_the_actual_cold_checkpoint(evidence):
     assert not result["releases"][0]["downstream_hbm_release_or_service_verified"]
 
 
+def test_one_release_can_recycle_multiple_mirrors_without_inflating_its_record_count(evidence):
+    release, prepare, ack = evidence
+    release["released_host_nodes"] = [[2, 2., 4], [3, 2., 4]]
+    result = MODULE.inspect([release, prepare], [ack], 1024)
+    assert result["summary"]["mirror_release_records"] == 1
+    assert result["summary"]["released_host_nodes"] == 2
+    assert result["summary"]["released_host_bytes"] == 8192
+
+
 @pytest.mark.parametrize("field,value", (
     ("direction", "h2d"), ("status", "failed"), ("node_ids", [2]),
     ("actual_bytes", 8192), ("submit_ts_ms", 9.), ("submit_ts_ms", 13.),

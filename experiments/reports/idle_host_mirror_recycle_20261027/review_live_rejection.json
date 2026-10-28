@@ -1,0 +1,18 @@
+{
+  "status": "live_full_rejected_by_complete_review",
+  "reason": "complete review requires actual successful owned exit",
+  "registration_sha256": "a83a5bf0b43d0f60d67967b29b424db6e35561d532a1c2fce8c57bb80d4d2bf2",
+  "actual_live_pids": {
+    "watcher": 412718,
+    "server": 413169,
+    "driver": 414704
+  },
+  "source_sha256": {
+    "complete_review.py": "a312360c4f4a86920d5c77b16b748ce3c7fe413ce716ba2dac2bb4e40c894942",
+    "mirror_lifecycle.py": "21dfadd76ae1821f8499fcb21c56cd46ef55735628445de88d27bff885a50c5c",
+    "review_checks.py": "eb7a5d0829c4e57370e2c07d67a09ecb57b5f201d6ea078d7baab6a78ab32641",
+    "run_complete_audits.py": "5dcc9cfca551e3f3864d0ca123703d31756994d10d52374e99d968e8ad2e21d6"
+  },
+  "cpu_report_sha256": "9b0782b0556fb370dd70d09eb3d942d104e391aaefab6bac4c9cdd36d0844694",
+  "performance_accepted": false
+}
