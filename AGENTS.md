@@ -2478,3 +2478,17 @@
   all named evidence and negative results, run no other baselines/ablations,
   and inspect the unexercised physical plan and added migration before any
   next GPU candidate. See docs/research/sibling_service_capacity_result_20261028_zh.md.
+- Complete sibling follow-up verifies219.512537GB JOIN reuse with1.268613GB
+  still unknown;22 of63 observed prefetch JOIN episodes early-start and reuse
+  91.893105GB. Full/control restore-wait samples35/18 total2034.011/2662.835ms;
+  never expand these differing cohorts. All6 native refusals have free below
+  the actual input/growth reserve. Emitted-event reconstruction of74 logical
+  donor references finds55 tool/19 JOIN waits; it is not scheduler delivery,
+  physical occupancy or the denominator of91 physical-plan attempts.
+  Main adds bounded per-attempt reasons and opt-in nested thread-CPU/wall
+  sampling every64 root phase calls, without changing scheduling/native guards.
+  Shared current sources pass3668 unique cases plus6subtests, retaining3580;
+  new CPU manifest covers the sibling observer. Keep prior failed fixture/
+  metadata evidence, profiling off in formal config, old control cost unknown,
+  no new GPU result and the goal active. See
+  docs/research/control_and_join_diagnostics_20261028_zh.md.

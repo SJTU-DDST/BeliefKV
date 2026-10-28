@@ -122,3 +122,9 @@ CPU 算子位于 `experiments/reports/sibling_service_capacity_20261028/`：
 趋势、分布和 geometry 三张 PNG 均已实际检查。保留两侧原始引擎
 身份、60 秒分箱、末箱真实宽度、空闲及全部正常长尾，不填充结束后零值。
 CSV 生成原件另存 `.csv.gz`，可读文本仅规范化为 LF 换行，数据内容不变。
+
+后续完整预取/恢复采样与新增 CPU 诊断见
+[`control_and_join_diagnostics_20261028_zh.md`](control_and_join_diagnostics_20261028_zh.md)。
+219.512537GB 已证明复用，另有 1.268613GB 的使用状态未知；不能将
+220.781150GB 全部视为已复用或已隐藏。新增诊断未运行在本轮冻结应用中，
+不改变上面的性能结果或历史控制成本未知边界。

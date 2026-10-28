@@ -1006,7 +1006,7 @@ class NativeAdmissionRuntime:
         self._hotpath_timing = HotpathTiming(enabled=bool(
             self._opportunity_writer is not None
             and os.environ.get("BELIEFKV_PROFILE_SHARED_PATH", "0") == "1"
-        ))
+        ), sample_every=64)
         self._opportunity_next_ms = 0.0
         self._opportunity_cursor = 0
         paper_policy = os.environ.get("BELIEFKV_PAPER_BASELINE", "")

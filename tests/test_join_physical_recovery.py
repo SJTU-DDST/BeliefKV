@@ -66,6 +66,12 @@ def test_same_join_donor_advances_actual_selected_parent_without_phantom_capacit
     assert f.allocator.available_size() == (before + 32 if backed else before)
     assert f.runtime.counts["join_planned_physical_release_tokens"] == (32 if backed else 0)
     assert f.runtime.counts["join_planned_reserved_handoff_tokens"] == (0 if backed else 32)
+    outcome = "native_pages_released" if backed else "layer_handoff_submitted"
+    assert f.runtime.counts[f"join_physical_plan_outcome_{outcome}"] == 1
+    assert sum(
+        value for name, value in f.runtime.counts.items()
+        if name.startswith("join_physical_plan_outcome_")
+    ) == f.runtime.counts["join_physical_plan_attempts"] == 1
     if not backed:
         assert f.consumer.component_data[0].value is not None
         assert f.cache._beliefkv_layer_handoff is not None
@@ -102,6 +108,12 @@ def test_planned_join_physical_actions_revalidate_donor_consumer_and_actual_defi
         assert f.allocator.available_size() == 4
         assert f.donor.component_data[0].value is not None
         assert getattr(f.cache, "_beliefkv_layer_handoff", None) is None
+        assert sum(
+            value for name, value in f.runtime.counts.items()
+            if name.startswith("join_physical_plan_outcome_")
+        ) == f.runtime.counts["join_physical_plan_attempts"] == 1
+        if cause == "fits":
+            assert f.runtime.counts["join_physical_plan_outcome_no_missing_prefix"] == 1
     finally:
         f.runtime._prefetch_service_leases.clear()
 
@@ -137,6 +149,72 @@ def test_service_consumes_join_plan_without_forcing_eligibility_expiry(native_ha
     controller.serviced(NS(reqs=[f.request]))
     assert not controller.plans
     assert a.policy.programs[key.invocation_id].active is was_active
+
+
+def test_join_attempt_journal_distinguishes_release_from_capacity_already_fitting(native_handoff):
+    f = native_handoff
+    controller, key, donor = bridge(f)
+    f.runtime._opportunity_writer = writer = Mock()
+    f.runtime._read_request_reentry = Mock(return_value={"missing_full_tokens": 1})
+    f.runtime._request_restore_cost = Mock(return_value=(1, 0))
+    f.runtime._current_residency_budget = Mock(return_value=NS(
+        reserve_full_tokens=0, native_growth_full_tokens=0, native_prefill_full_tokens=0,
+    ))
+    assert not controller.advance(key, request=f.request)
+    results = [
+        call.args[0] for call in writer.record.call_args_list
+        if call.args[0]["event"] == "agent_join_physical_plan_result"
+    ]
+    assert len(results) == 1
+    assert results[0]["outcome"] == "physical_capacity_already_fits"
+    assert results[0]["missing_full_tokens"] == 1
+    assert results[0]["observed_device_free_tokens"] == 4
+    assert results[0]["required_device_tokens"] == 2
+    assert results[0]["released_device_tokens"] == results[0]["reserved_handoff_tokens"] == 0
+    assert results[0]["checks"] == {}
+    assert f.allocator.available_size() == 4
+    assert f.donor.component_data[0].value is not None
+
+
+def test_join_attempt_backoff_does_not_create_new_outcomes(native_handoff):
+    f = native_handoff
+    controller, key, donor = bridge(f)
+    f.runtime._read_request_reentry = Mock(return_value={"missing_full_tokens": 0})
+    f.runtime._request_restore_cost = Mock(return_value=(0, 1))
+    assert not controller.advance(key, request=f.request)
+    assert not controller.advance(key, request=f.request)
+    assert f.runtime.counts["join_physical_plan_attempts"] == 1
+    assert f.runtime.counts["join_physical_plan_outcome_no_missing_prefix"] == 1
+
+
+def test_join_attempt_error_restores_controller_state_and_remains_an_error(native_handoff):
+    f = native_handoff
+    controller, key, donor = bridge(f)
+    f.runtime._read_request_reentry = Mock(side_effect=ValueError("observation failure"))
+    original = controller.consumer, controller._required_tokens, controller._released
+    with pytest.raises(ValueError, match="observation failure"):
+        controller.advance(key, request=f.request)
+    assert (controller.consumer, controller._required_tokens, controller._released) == original
+    assert f.runtime.counts["join_physical_plan_outcome_error"] == 1
+    assert f.allocator.available_size() == 4
+
+
+def test_join_attempt_writer_failure_cannot_leave_the_consumer_bound(native_handoff):
+    f = native_handoff
+    controller, key, donor = bridge(f)
+    f.runtime._read_request_reentry = Mock(return_value={"missing_full_tokens": 0})
+    f.runtime._request_restore_cost = Mock(return_value=(0, 1))
+    original_writer = f.runtime._opportunity_writer
+    f.runtime._opportunity_writer = NS(record=Mock(side_effect=ValueError("writer failure")))
+    try:
+        with pytest.raises(ValueError, match="writer failure"):
+            controller.advance(key, request=f.request)
+    finally:
+        f.runtime._opportunity_writer = original_writer
+    assert controller.consumer is None
+    assert controller._required_tokens == 0
+    assert controller._released == controller._reserved == {}
+    assert f.allocator.available_size() == 4
 
 
 def test_existing_logical_eligibility_can_create_a_physical_plan_without_new_grant(native_handoff):

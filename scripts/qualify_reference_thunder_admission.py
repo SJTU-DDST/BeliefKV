@@ -69,7 +69,16 @@ def main():
         "tests/test_collecting_agent_pipeline_audit.py",
         "tests/test_audit_tool_reentry_service.py",
     ) if join_free or siblings else ()
-    extra_tests += ("tests/test_eos_join_prefetch.py",)
+    extra_tests += (
+        "tests/test_eos_join_prefetch.py",
+        "tests/test_hotpath_timing.py",
+        "tests/test_event_channel.py",
+        "tests/test_batch_completion_control_cost.py",
+    )
+    paths.update((
+        "beliefkv/runtime/hotpath_timing.py",
+        "beliefkv/runtime/event_channel.py",
+    ))
     if join_handoff:
         extra_tests += ("tests/test_join_blocked_handoff.py", "tests/test_join_physical_recovery.py")
         paths.update((
@@ -123,9 +132,11 @@ def main():
             "tests/test_reference_sibling_coadmission.py",
             "tests/test_reference_sibling_service.py",
             "tests/test_reference_join_grant_audit.py",
+            "tests/test_sibling_native_service_audit.py",
         )
         paths.update((
             "scripts/audit_reference_join_grants.py",
+            "scripts/audit_sibling_native_service.py",
             "beliefkv/runtime/join_sibling_service.py",
         ))
     paths.update(extra_tests)

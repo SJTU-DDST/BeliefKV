@@ -1,0 +1,275 @@
+{
+  "sources_sha256": {
+    "beliefkv/runtime/hotpath_timing.py": "17f3eabb8df144ab1a6c1fb5c880f032ebb5bb535bcec6cd712c75b9097644c4",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "b19f3bdce267569ecfa2b5669447e2e53b9b9b75b89f9348ec5e8b6b9e0aa6c2",
+    "beliefkv/runtime/join_sibling_service.py": "842880a62154490e396d7456acaaf03144e7b8e2b1230ba0f4fa80bcdfe37638",
+    "beliefkv/runtime/reference_thunder_admission.py": "ffdbf663a3fda1d72a9f04a2e70ece58f42acbc29e8d2464e4370ba4cd0d5848",
+    "tests/test_full_only_native_lifecycle.py": "4de52d01708fef41df881652c61b8e0623c9dec12228fb9e5f3988a201713624",
+    "tests/test_reference_sibling_service.py": "2dfc8165371c3d6a8f6d41868c01a6fcbf0cb3180afb99e2582e7d4abe8f8695",
+    "experiments/reports/sibling_service_capacity_20261028/control_diagnostics_cpu.py": "fab4099290aaa3ff627f4d7773bb84d47d64edf25e031dd75d464ece6d54aaea"
+  },
+  "fixture": {
+    "programs": 3,
+    "siblings": 2,
+    "device_token_slots": 512
+  },
+  "cases": {
+    "disabled": {
+      "samples": 1000,
+      "warmup": 50,
+      "thread_cpu_p50_us": 89.4425,
+      "thread_cpu_p99_us": 97.344,
+      "thread_cpu_max_us": 154.191,
+      "result_request_order": [
+        "child-0",
+        "child-1",
+        "peer"
+      ],
+      "profile": {
+        "schema_version": 2,
+        "enabled": false,
+        "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+        "cpu_clock": "thread_time_ns",
+        "sample_every": 64,
+        "sampling": "every Nth root call per phase, starting with the first; descendants inherit",
+        "scope": "Measured completed samples only; exclusive values subtract measured children. No expansion to whole-run cost, exposed GPU idle or removable JCT.",
+        "elapsed_ms": 96.476557,
+        "bucket_upper_ms": [
+          0.01,
+          0.025,
+          0.05,
+          0.1,
+          0.25,
+          0.5,
+          1.0,
+          2.5,
+          5.0,
+          10.0,
+          25.0,
+          50.0,
+          100.0,
+          250.0,
+          1000.0,
+          null
+        ],
+        "phases": {}
+      }
+    },
+    "sampled_64": {
+      "samples": 1000,
+      "warmup": 50,
+      "thread_cpu_p50_us": 94.76650000000001,
+      "thread_cpu_p99_us": 107.416,
+      "thread_cpu_max_us": 1036.86,
+      "result_request_order": [
+        "child-0",
+        "child-1",
+        "peer"
+      ],
+      "profile": {
+        "schema_version": 2,
+        "enabled": true,
+        "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+        "cpu_clock": "thread_time_ns",
+        "sample_every": 64,
+        "sampling": "every Nth root call per phase, starting with the first; descendants inherit",
+        "scope": "Measured completed samples only; exclusive values subtract measured children. No expansion to whole-run cost, exposed GPU idle or removable JCT.",
+        "elapsed_ms": 102.780478,
+        "bucket_upper_ms": [
+          0.01,
+          0.025,
+          0.05,
+          0.1,
+          0.25,
+          0.5,
+          1.0,
+          2.5,
+          5.0,
+          10.0,
+          25.0,
+          50.0,
+          100.0,
+          250.0,
+          1000.0,
+          null
+        ],
+        "phases": {
+          "reentry_inspection": {
+            "count": 34,
+            "observed_calls": 2100,
+            "root_calls": 0,
+            "total_ms": 0.207269,
+            "self_ms": 0.207269,
+            "mean_ms": 0.00609614705882353,
+            "max_ms": 0.009167,
+            "thread_cpu_total_ms": 0.183081,
+            "thread_cpu_self_ms": 0.183081,
+            "thread_cpu_mean_ms": 0.005384735294117647,
+            "thread_cpu_max_ms": 0.008429,
+            "histogram": [
+              34,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "admission_plan": {
+            "count": 17,
+            "observed_calls": 1050,
+            "root_calls": 1050,
+            "total_ms": 1.76321,
+            "self_ms": 1.555941,
+            "mean_ms": 0.10371823529411765,
+            "max_ms": 0.13745,
+            "thread_cpu_total_ms": 1.752564,
+            "thread_cpu_self_ms": 1.569483,
+            "thread_cpu_mean_ms": 0.103092,
+            "thread_cpu_max_ms": 0.136659,
+            "histogram": [
+              0,
+              0,
+              0,
+              6,
+              11,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    },
+    "every_call": {
+      "samples": 1000,
+      "warmup": 50,
+      "thread_cpu_p50_us": 103.52,
+      "thread_cpu_p99_us": 109.91,
+      "thread_cpu_max_us": 129.632,
+      "result_request_order": [
+        "child-0",
+        "child-1",
+        "peer"
+      ],
+      "profile": {
+        "schema_version": 2,
+        "enabled": true,
+        "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+        "cpu_clock": "thread_time_ns",
+        "sample_every": 1,
+        "sampling": "every Nth root call per phase, starting with the first; descendants inherit",
+        "scope": "Measured completed samples only; exclusive values subtract measured children. No expansion to whole-run cost, exposed GPU idle or removable JCT.",
+        "elapsed_ms": 110.601449,
+        "bucket_upper_ms": [
+          0.01,
+          0.025,
+          0.05,
+          0.1,
+          0.25,
+          0.5,
+          1.0,
+          2.5,
+          5.0,
+          10.0,
+          25.0,
+          50.0,
+          100.0,
+          250.0,
+          1000.0,
+          null
+        ],
+        "phases": {
+          "reentry_inspection": {
+            "count": 2100,
+            "observed_calls": 2100,
+            "root_calls": 0,
+            "total_ms": 12.170661,
+            "self_ms": 12.170661,
+            "mean_ms": 0.0057955528571428565,
+            "max_ms": 0.03572,
+            "thread_cpu_total_ms": 10.897691,
+            "thread_cpu_self_ms": 10.897691,
+            "thread_cpu_mean_ms": 0.005189376666666667,
+            "thread_cpu_max_ms": 0.03497,
+            "histogram": [
+              2094,
+              4,
+              2,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "admission_plan": {
+            "count": 1050,
+            "observed_calls": 1050,
+            "root_calls": 1050,
+            "total_ms": 105.205822,
+            "self_ms": 93.035161,
+            "mean_ms": 0.10019602095238095,
+            "max_ms": 0.134888,
+            "thread_cpu_total_ms": 104.629922,
+            "thread_cpu_self_ms": 93.732231,
+            "thread_cpu_mean_ms": 0.09964754476190477,
+            "thread_cpu_max_ms": 0.134347,
+            "histogram": [
+              0,
+              0,
+              0,
+              581,
+              469,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    }
+  },
+  "gpu_used": false,
+  "performance_accepted": false,
+  "limitations": [
+    "CPU native tree/allocator fixture with copy/event stand-ins and an async journal.",
+    "Small repeated plan does not measure maximum queues or whole-controller cost.",
+    "Clock sampling adds cost; no GPU stall, historical CPU or JCT attribution follows.",
+    "All sampled totals are measured samples, without expansion."
+  ]
+}
