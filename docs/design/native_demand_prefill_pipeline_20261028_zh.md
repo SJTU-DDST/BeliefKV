@@ -37,7 +37,8 @@ stream span 为 268.682068ms，两者存在重叠。所有样本和异常值保�
 `Scheduler`。原生 commit `d3da19c1` / tree `729aa0caa7a1`，独立累计补丁
 为 `patches/sglang-demand-prefill-pipeline-runtime-20261028.patch`。
 CPU-tested 文件与该 clean commit 逐字节绑定，补丁在独立 index 从
-`fa5cb52a` 重建相同 tree；尚未加入正式 engine registry。
+`fa5cb52a` 重建相同 tree；现已登记精确 engine tree 与补丁，要求独立
+完成新的 GPU component、model 和 position 验证。
 旧实验及其 engine 不变。
 
 1. 原有 agent 策略决定候选，`PrefillAdder` 执行正常容量、输入和增长
@@ -122,12 +123,34 @@ socket 与 scheduler fixture 失败均保存在本证据目录。
 修正的只是证据脚本，第三轮完整执行与构造器核对均通过，前两轮 XML
 继续保留。
 
-GPU 前仍需冻结并登记精确原生树及独立补丁；验证真实 DMA、取消/共享
+GPU 前仍需冻结当前应用；验证真实 DMA、取消/共享
 前缀、恢复期间 resident decode 的实际推进、消费者首次服务和非强制
 模型数值一致性，再完成当前树的位置/session/stop 检查。随后才可在
 完整 V230/V311 固定工作量上比较 Full，复用完整 V345 并公开 engine
 差异。工作量、停止、全部正常长尾、容量和种子不变，工具预取继续关闭。
 其他 baseline/消融继续等待明确、可重复的双指标收益。
-实际启动审计还应独立证明 helper 已安装且恢复/消费被真实执行，不能
-只依赖 enable 位。完整 H2D 与首次服务对账的集成仍是正式 FULL 前的
-必要工作。
+实际启动审计要求独立证明 helper 已安装并绑定当前 native cache，不能
+只依赖 enable 位。正式 FULL 还需证明恢复/消费被真实执行。
+
+## 完整服务审计与组件入口
+
+`service_gpu_r1_cpu` 对当前来源完整执行 4060 项及六个子测试，保留
+此前 3839 个测试身份并新增 221 个；源码在执行前后保持一致。实际
+native、Full、工具衰减 ThunderAgent 构造器同时验证安装状态及隔离。
+prefill 服务样本补齐 attempt/session/generation，decode 样本不增加
+这组逐请求字段；暂存日志记录同一单调时钟域。
+
+`scripts/audit_demand_prefill_pipeline.py` 保留旧 handoff 审计不变，
+在其完整工作量、drain 和进程退出检查之后，将 untagged H2D 分成
+原生请求 Host 命中、handoff 和精确 ACK 匹配的暂存 demand 三项。
+未知余量或重复认领直接拒绝；每个暂存成员另须匹配后续实际 prefill
+身份及完成回执，或明确取消。服务证明不等于 KV 复用或隐藏 DMA。
+
+`scripts/qualify_demand_prefill_pipeline.py` 提供四个真实 GPU 组件场景：
+resident accessor、双成员批次、无 decode 回退、取消后共享前缀。
+它使用实际 Req/PrefillAdder、128 Device/257 Host slots、两层 KV、
+原生 copy/ACK 和有限延迟的最后一层。必须证明 resident accessor
+在冷恢复 ACK 前完成、消费者 K/V 完全一致、正常回退/取消保留 fence，
+且最终容量全部归还。这是有控制延迟的组件检查，不能替代非强制模型
+并发推进、输出/logprob、position 或完整性能验证。当前仅 CPU 校验
+通过，真实 GPU 执行尚待完成。

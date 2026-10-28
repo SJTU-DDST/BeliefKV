@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import time
 
 from beliefkv.runtime.sglang_v0520_admission import _request_key
+from beliefkv.runtime.clock_evidence import local_monotonic_clock_domain
 
 
 @dataclass
@@ -59,6 +60,8 @@ class DemandPrefillPipeline:
 
             writer.record({
                 "event": event, "ts_ms": time.time() * 1000.,
+                "monotonic_ms": time.monotonic() * 1000.,
+                "monotonic_clock_domain": local_monotonic_clock_domain(),
                 **identity(pending.members[0]),
                 "native_batch_size": len(pending.members),
                 "requests": [identity(member) for member in pending.members],

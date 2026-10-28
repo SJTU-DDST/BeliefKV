@@ -100,10 +100,136 @@ def inspect(journals, transfers, *, bytes_per_token):
             "native_submit_ts_ms": submitted, "journal_ts_ms": recorded,
             "native_node_ids": list(key[1]), "native_full_tokens": tokens,
             "native_h2d_bytes": key[2],
+            "staged_monotonic_ms": journal.get("monotonic_ms"),
+            "monotonic_clock_domain": journal.get("monotonic_clock_domain"),
         })
     return {
         "counts": dict(counts), "episodes": rows,
         "exact_native_ack_matches_verified": True,
         "scope": "staged native demand only; no speculative or request cache-hit credit",
         "first_service_and_hidden_transfer_time_proven": False,
+    }
+
+
+def service_evidence(episodes, journals, workers, *, receipts=None):
+    """Bind later native service or explicit cancellation; do not infer KV reuse."""
+    fields = (
+        "request_id", "workflow_id", "invocation_id", "context_id", "context_epoch",
+        "attempt_id", "session_id", "session_generation",
+    )
+    required = {
+        member["request_id"] for episode in episodes for member in episode["requests"]
+    }
+    indexed = {request: [] for request in required}
+    seen = set()
+    for row in workers:
+        if row.get("event") != "gpu_service_sample" or row.get("phase") != "prefill":
+            continue
+        identity = row.get("monotonic_clock_domain"), row.get("forward_iter")
+        if identity in seen:
+            raise ValueError("staged service audit found duplicate native forward identity")
+        seen.add(identity)
+        for member in row.get("request_samples", ()):
+            if member.get("request_id") in indexed:
+                indexed[member["request_id"]].append((row, member))
+    cancellations = {}
+    for row in journals:
+        if row.get("event") == "native_demand_restore_cancelled":
+            key = transfer_key({
+                "submit_ts_ms": row.get("native_submit_ts_ms"),
+                "node_ids": row.get("native_node_ids"),
+                "actual_bytes": row.get("native_bytes"),
+            })
+            if key in cancellations:
+                raise ValueError("duplicate staged native cancellation identity")
+            cancellations[key] = row
+    completed = None
+    if receipts is not None:
+        completed = {}
+        for row in receipts:
+            request = row.get("request_id")
+            if request in completed:
+                raise ValueError("duplicate native completion receipt")
+            completed[request] = row["native_receipt"]
+    rows, counts = [], Counter()
+    for episode in episodes:
+        domain, staged = episode["monotonic_clock_domain"], episode["staged_monotonic_ms"]
+        if (
+            type(domain) is not str or not domain or type(staged) not in (int, float)
+            or not math.isfinite(staged)
+        ):
+            raise ValueError("staged service requires an exact monotonic clock")
+        for member in episode["requests"]:
+            matches = [
+                (worker, sample) for worker, sample in indexed[member["request_id"]]
+                if all(
+                    type(sample.get(name)) is type(member[name])
+                    and sample[name] == member[name] for name in fields
+                )
+                and worker.get("monotonic_clock_domain") == domain
+            ]
+            if not matches:
+                cancel = cancellations.get((
+                    episode["native_submit_ts_ms"], tuple(episode["native_node_ids"]),
+                    episode["native_h2d_bytes"],
+                ))
+                at = cancel.get("monotonic_ms") if cancel is not None else None
+                if (
+                    cancel is None or cancel.get("monotonic_clock_domain") != domain
+                    or type(at) not in (int, float) or not math.isfinite(at) or at < staged
+                    or not any(
+                        all(candidate.get(name) == member[name] for name in fields)
+                        for candidate in cancel.get("requests", ())
+                    )
+                ):
+                    raise ValueError("staged member lacks exact native service or cancellation")
+                counts["cancelled_members_without_service"] += 1
+                rows.append({**member, "status": "explicitly_cancelled_without_service"})
+                continue
+            if any(
+                type(worker.get("launch_monotonic_ms")) not in (int, float)
+                or not math.isfinite(worker["launch_monotonic_ms"])
+                for worker, _ in matches
+            ):
+                raise ValueError("staged service lacks a finite native launch boundary")
+            worker, _ = min(matches, key=lambda pair: pair[0]["launch_monotonic_ms"])
+            launch, done = worker["launch_monotonic_ms"], worker.get("complete_monotonic_ms")
+            if (
+                launch < staged or type(done) not in (int, float) or not math.isfinite(done)
+                or done < launch or type(worker.get("forward_iter")) is not int
+            ):
+                raise ValueError("staged native service has invalid chronology")
+            if completed is not None:
+                receipt = completed.get(member["request_id"])
+                if (
+                    receipt is None or receipt.get("request_id") != member["request_id"]
+                    or receipt.get("identity") != [
+                        member[name] for name in (
+                            "workflow_id", "invocation_id", "context_id", "context_epoch",
+                        )
+                    ]
+                    or receipt.get("clock_domain") != domain
+                    or (receipt.get("session_id"), receipt.get("session_generation")) != (
+                        member["session_id"], member["session_generation"],
+                    )
+                    or type(receipt.get("complete_monotonic_ms")) not in (int, float)
+                    or not math.isfinite(receipt["complete_monotonic_ms"])
+                    or receipt["complete_monotonic_ms"] < done
+                ):
+                    raise ValueError("staged native service lacks its exact completed receipt")
+            counts["members_with_subsequent_native_service"] += 1
+            rows.append({
+                **member, "status": "subsequent_native_service_verified",
+                "first_native_forward_iter": worker["forward_iter"],
+                "first_launch_monotonic_ms": launch,
+                "staged_to_first_native_launch_ms": launch - staged,
+                "native_completion_receipt_verified": completed is not None,
+            })
+    return {
+        "counts": dict(counts), "members": rows,
+        "all_members_have_native_service_or_explicit_cancellation": True,
+        "native_completion_receipts_required": completed is not None,
+        "native_kv_reuse_or_hidden_dma_proven": False,
+        "counting_unit": "staging episode/member association, not unique request",
+        "timing_boundary": "native run_batch entry/completed worker; not CUDA kernel time",
     }

@@ -203,13 +203,25 @@ def prepare_ack_engine_compatibility(
     changed = git("diff", "--name-only", original_tree, candidate_tree).splitlines()
     from beliefkv.experiments.native_engine_variant import (
         COMMON_TREE, LAYER_TREE, GROUPED_LAYER_TREE, SIBLING_CAPACITY_TREE,
+        DEMAND_PREFILL_PIPELINE_TREE,
     )
-    if candidate_tree in (LAYER_TREE, GROUPED_LAYER_TREE, SIBLING_CAPACITY_TREE):
+    if candidate_tree in (
+        LAYER_TREE, GROUPED_LAYER_TREE, SIBLING_CAPACITY_TREE, DEMAND_PREFILL_PIPELINE_TREE,
+    ):
         common = prepare_ack_engine_compatibility(
             engine, source, candidate_tree=COMMON_TREE,
         )
+        if candidate_tree == DEMAND_PREFILL_PIPELINE_TREE:
+            from beliefkv.experiments.demand_prefill_pipeline_engine import project_disabled_scheduler
+
+            project_disabled_scheduler(
+                git("show", SIBLING_CAPACITY_TREE + ":" + SCHEDULER_FILE),
+                git("show", candidate_tree + ":" + SCHEDULER_FILE),
+            )
         return {
             "policy": (
+                "explicit_native_demand_pipeline_engine_variant"
+                if candidate_tree == DEMAND_PREFILL_PIPELINE_TREE else
                 "explicit_sibling_capacity_engine_variant" if candidate_tree == SIBLING_CAPACITY_TREE else
                 "explicit_grouped_layer_handoff_engine_variant" if candidate_tree == GROUPED_LAYER_TREE
                 else "explicit_layer_handoff_engine_variant"
@@ -219,6 +231,10 @@ def prepare_ack_engine_compatibility(
             "changed_files": changed,
             "binding": "exact_reviewed_git_tree_not_arbitrary_native_changes",
             "layer_handoff_default_enabled": False,
+            **(
+                {"demand_prefill_pipeline_default_enabled": False}
+                if candidate_tree == DEMAND_PREFILL_PIPELINE_TREE else {}
+            ),
             "requires_fresh_gpu_components_model_and_position_smoke": True,
             "scope": "Engine identity only; GPU proofs and performance remain separate.",
         }

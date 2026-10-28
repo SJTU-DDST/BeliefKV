@@ -3,6 +3,7 @@ import ast
 import os
 from pathlib import Path
 from types import SimpleNamespace as NS
+from unittest.mock import Mock
 
 import pytest
 
@@ -76,6 +77,26 @@ def test_formal_observer_refuses_missing_or_disabled_pipeline(monkeypatch, tmp_p
         comparison.observed_configuration(plan, "full", tmp_path, final=True)
 
 
+@pytest.mark.parametrize("installed", (False, None))
+def test_enable_bit_cannot_substitute_for_actual_native_pipeline_installation(
+    monkeypatch, tmp_path, installed,
+):
+    plan = {
+        "reference_environment": {**configuration(), "DEMAND_PREFILL_PIPELINE": "1"},
+        "source_plan": {"requests": 0},
+    }
+    snapshot = {
+        "predicted_tool_offload": True, "tool_offload_before_admission": True,
+        "demand_prefill_pipeline": True,
+    }
+    if installed is not None:
+        snapshot["demand_prefill_pipeline_installed"] = installed
+    monkeypatch.setattr(comparison.comparison, "observe_arm", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(comparison.qualified, "last_runtime_state", lambda *_args: snapshot)
+    with pytest.raises(ValueError, match="pipeline installation"):
+        comparison.observed_configuration(plan, "full", tmp_path, final=True)
+
+
 @pytest.mark.parametrize("mode", ("native_matched", "full", "thunderagent_acting_decay"))
 def test_actual_native_constructor_keeps_the_pipeline_isolated(full_native, monkeypatch, tmp_path, mode):
     checkout = Path(os.environ["SGLANG_SOURCE_CHECKOUT"])
@@ -126,6 +147,14 @@ def test_actual_native_constructor_keeps_the_pipeline_isolated(full_native, monk
         else:
             assert scheduler.beliefkv_runtime._paper_baseline.policy_name == (
                 "thunderagent_public_single_backend_acting_decay"
+            )
+        if scheduler.beliefkv_runtime is not None:
+            runtime = scheduler.beliefkv_runtime
+            writer = NS(record=Mock(), close=Mock())
+            runtime._opportunity_writer = writer
+            runtime._record_runtime_state()
+            assert writer.record.call_args.args[0]["demand_prefill_pipeline_installed"] is (
+                mode == "full"
             )
     finally:
         if scheduler.beliefkv_runtime is not None:

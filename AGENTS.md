@@ -2654,3 +2654,20 @@
   acceptance is created. Preserve normal tails, cancelled tool prefetch,
   completeV345 and the global goal. See docs/design/native_demand_prefill_pipeline_20261028_zh.md
   and docs/research/native_demand_prefill_pipeline_cpu_20261028_zh.md.
+- Native demand service/engine/component-entry integration now passes4060
+  unique CPU cases plus6subtests, retaining3839 and adding221 in one complete
+  source-bound execution:prefill_pipeline_20261028/service_gpu_r1_cpu.
+  Actual native/Full/acting-decay constructors verify installed helper/cache
+  binding and baseline isolation. Exact tree729aa0caa7a1/patchc9b3ae50 is
+  registered with fresh GPU/model/position requirements. Prefill-only telemetry
+  adds attempt/session/generation; stage journals use the same monotonic domain.
+  The complete demand auditor retains the old handoff scope, reconciles native
+  Host hits/handoff/exact staged ACK bytes, and requires exact later service/
+  completed receipts or explicit cancellation. Neither accounting nor CPU tests
+  establish reuse or hidden DMA. The four-scene real GPU component entry uses
+  finite delayed copies and actual accessors, not model decode or performance;
+  its validator passes but real execution remains pending. Freeze sources and
+  check resources before it, then independently qualify unforced concurrent
+  model progress/output and current position/session/stopping before Full.
+  Tool prefetch stays off; reuseV345, retain all tails/negative results, and
+  keep the clear/repeated/all-baseline goal active.

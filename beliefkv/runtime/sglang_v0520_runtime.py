@@ -3023,6 +3023,10 @@ class NativeAdmissionRuntime:
                 "terminal_cache_diagnostics": self._terminal_cache_diagnostics,
                 "profile_shared_path": self._hotpath_timing.enabled,
                 "demand_prefill_pipeline": self.demand_prefill_pipeline_enabled,
+                "demand_prefill_pipeline_installed": (
+                    (pipeline := getattr(self, "_demand_prefill_pipeline", None)) is not None
+                    and pipeline.runtime is self and pipeline.cache is self._native_cache
+                ),
                 "h2d_seed_samples": self._h2d_seed_count,
                 "h2d_service_samples": len(self._h2d_samples),
                 "prefetch_residency_budget": vars(self._residency_budget).copy(),

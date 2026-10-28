@@ -792,6 +792,8 @@ def observed_configuration(plan, label, arm, *, final=False):
         ) == "1"
         if state.get("demand_prefill_pipeline", False) is not demand_pipeline:
             raise ValueError("effective demand prefill pipeline differs from declaration")
+        if state.get("demand_prefill_pipeline_installed", False) is not demand_pipeline:
+            raise ValueError("native demand prefill pipeline installation differs from declaration")
         host_mirror_recycle = mode == "full" and common.get(
             "BELIEFKV_IDLE_HOST_MIRROR_RECYCLE", common.get("IDLE_HOST_MIRROR_RECYCLE", "0"),
         ) == "1"

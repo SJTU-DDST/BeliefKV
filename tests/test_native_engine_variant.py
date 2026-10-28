@@ -6,7 +6,8 @@ import os
 import pytest
 
 from beliefkv.experiments.native_engine_variant import (
-    COMMON_TREE, LAYER_TREE, GROUPED_LAYER_TREE, SIBLING_CAPACITY_TREE, engine_patch,
+    COMMON_TREE, LAYER_TREE, GROUPED_LAYER_TREE, SIBLING_CAPACITY_TREE,
+    DEMAND_PREFILL_PIPELINE_TREE, engine_patch,
 )
 from beliefkv.experiments.prepare_ack_engine import prepare_ack_engine_compatibility
 
@@ -17,6 +18,9 @@ def test_explicit_layer_patch_is_immutable():
     assert engine_patch(root, COMMON_TREE).name == "sglang-v0.5.20-beliefkv-staging.patch"
     assert engine_patch(root, GROUPED_LAYER_TREE).name == "sglang-layer-handoff-groups-runtime-20261028.patch"
     assert engine_patch(root, SIBLING_CAPACITY_TREE).name == "sglang-sibling-capacity-runtime-20261028.patch"
+    assert engine_patch(root, DEMAND_PREFILL_PIPELINE_TREE).name == (
+        "sglang-demand-prefill-pipeline-runtime-20261028.patch"
+    )
 
 
 def test_layer_variant_does_not_accept_a_changed_patch(tmp_path):
@@ -65,3 +69,24 @@ def test_capacity_tree_does_not_inherit_previous_grouped_gpu_qualification():
     assert result["candidate_engine_tree"] == SIBLING_CAPACITY_TREE
     assert result["requires_fresh_gpu_components_model_and_position_smoke"]
     assert not result["layer_handoff_default_enabled"]
+
+
+def test_demand_pipeline_engine_requires_fresh_proofs_and_its_default_off_projection():
+    engine = Path(os.environ["SGLANG_SOURCE_CHECKOUT"])
+    source = {
+        "engine_tree": "6437d7deeacc533f0d795ba166dfd5256b3f44b2",
+        "environment": {"AB_MODE": "off", "NATIVE_POLICY_BASELINE": "1", "PREPARE_HOST": "0"},
+    }
+    result = prepare_ack_engine_compatibility(
+        engine, source, candidate_tree=DEMAND_PREFILL_PIPELINE_TREE,
+    )
+    assert result["policy"] == "explicit_native_demand_pipeline_engine_variant"
+    assert result["requires_fresh_gpu_components_model_and_position_smoke"]
+    assert not result["demand_prefill_pipeline_default_enabled"]
+
+
+def test_demand_pipeline_patch_cannot_be_replaced_by_arbitrary_native_edits(tmp_path):
+    (tmp_path / "patches").mkdir()
+    (tmp_path / "patches/sglang-demand-prefill-pipeline-runtime-20261028.patch").write_text("changed")
+    with pytest.raises(ValueError, match="native demand pipeline engine patch"):
+        engine_patch(tmp_path, DEMAND_PREFILL_PIPELINE_TREE)

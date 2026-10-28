@@ -1423,7 +1423,14 @@ class NativeReactiveTelemetry:
                     else "observed_output_ids_delta"
                 ),
                 **(
-                    {"prefill_geometry_source": geometry_source}
+                    {
+                        "prefill_geometry_source": geometry_source,
+                        "attempt_id": getattr(
+                            getattr(req, "cache_request_handle", None), "attempt_id", None,
+                        ),
+                        "session_id": getattr(req, "session_id", None),
+                        "session_generation": getattr(req, "session_generation", None),
+                    }
                     if phase == "prefill" else {}
                 ),
             })

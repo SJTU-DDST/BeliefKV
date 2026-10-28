@@ -111,6 +111,8 @@ def validate_state(label: str, state: dict) -> None:
         raise ValueError("agent working-set candidate leaked into the external baseline")
     if state.get("demand_prefill_pipeline", False) is not False:
         raise ValueError("native demand pipeline leaked into the external baseline")
+    if state.get("demand_prefill_pipeline_installed", False) is not False:
+        raise ValueError("native demand pipeline installation leaked into the external baseline")
     declared = state.get("paper_baseline") or {}
     if (
         declared.get("policy") != RUNTIME_ARMS[label]

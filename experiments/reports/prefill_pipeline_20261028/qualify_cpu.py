@@ -27,6 +27,9 @@ ADDED = (
     "tests/test_staged_native_restore_audit.py",
     "tests/test_paper_baseline_comparison.py",
     "tests/test_paper_baseline_runtime.py",
+    "tests/test_demand_prefill_pipeline_service_audit.py",
+    "tests/test_demand_prefill_pipeline_gpu_qualification.py",
+    "tests/test_v0520_native_telemetry.py",
 )
 
 
@@ -55,6 +58,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--engine", type=Path, required=True)
     parser.add_argument("--name", required=True)
+    parser.add_argument(
+        "--previous", type=Path, default=HERE / "shared_r3_cpu.evidence.json",
+    )
     args = parser.parse_args()
     if not args.name.replace("_", "").isalnum():
         raise ValueError("CPU evidence name must be a simple identifier")
@@ -63,7 +69,7 @@ def main():
     report = HERE / (args.name + ".xml")
     if any(path.exists() for path in (output, manifest_path, report)):
         raise FileExistsError("preserve all earlier CPU attempts")
-    prior_path = ROOT / "experiments/reports/full_only_pressure_index_20261028/shared_cpu_r1.evidence.json"
+    prior_path = args.previous.resolve()
     prior = load(prior_path)
     inherited_manifest = Path(prior["source_manifest"]["path"])
     if sha256_file(inherited_manifest) != prior["source_manifest"]["sha256"]:
@@ -72,6 +78,7 @@ def main():
         "beliefkv/runtime/demand_prefill_pipeline.py",
         "beliefkv/experiments/demand_prefill_pipeline_engine.py",
         "scripts/audit_staged_native_restore.py", str(Path(__file__).relative_to(ROOT)),
+        "scripts/audit_demand_prefill_pipeline.py", "scripts/qualify_demand_prefill_pipeline.py",
     }
     before = {name: sha256_file(ROOT / name) for name in sorted(paths)}
     engine = args.engine.resolve()

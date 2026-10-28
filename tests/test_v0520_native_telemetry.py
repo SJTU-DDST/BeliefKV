@@ -1720,6 +1720,9 @@ def test_native_request_service_and_ack_are_evidence_not_invented_dma(
     audit = NativeReactiveTelemetry(tmp_path / "server")
     request = SimpleNamespace(
         rid="req-1",
+        cache_request_handle=SimpleNamespace(attempt_id=3),
+        session_id="native-session",
+        session_generation=2,
         beliefkv_metadata={
             "root_workflow_id": "w-1",
             "invocation_id": "i-1",
@@ -1783,6 +1786,12 @@ def test_native_request_service_and_ack_are_evidence_not_invented_dma(
     assert [event["phase"] for event in service] == ["prefill", "decode"]
     assert [event["cuda_graph_replayed"] for event in service] == [False, True]
     assert service[0]["request_samples"][0]["token_delta"] == 14
+    assert service[0]["request_samples"][0]["attempt_id"] == 3
+    assert service[0]["request_samples"][0]["session_id"] == "native-session"
+    assert service[0]["request_samples"][0]["session_generation"] == 2
+    assert not {"attempt_id", "session_id", "session_generation"} & set(
+        service[1]["request_samples"][0]
+    )
     assert service[1]["request_samples"][0]["token_delta"] == 2
     assert all(row["timing_semantics_version"] == "gpu_service_interval_v1" for row in service)
     for row in service:

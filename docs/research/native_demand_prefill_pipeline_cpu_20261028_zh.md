@@ -55,9 +55,30 @@ GPU 服务、隐藏传输或数值一致性的证明。
 该分析说明总 prefill 工作接近，但关键路径覆盖不同，没有据此把
 历史 24.98 秒解释为完整控制 CPU 或可直接扣减的 JCT。
 
+## 服务身份与组件入口补充
+
+后续完整 `service_gpu_r1_cpu` 通过 4060 项及六个子测试，保留
+`shared_r3_cpu` 的全部 3839 个身份并新增 221 个。对应
+`.xml/.evidence.json/.sources.json` 保留单次执行、前后源码 hash、
+实际 launcher 环境及构造器证明；native 仍为 clean `d3da19c1`。
+此前结果继续保留，不将不同执行的测试数相加。
+
+新增观察同时检查 helper 已安装并绑定实际 native cache，防止仅开启
+配置位却未执行。精确 native tree/patch 已加入 engine registry，
+默认关闭投影及新 GPU 资格要求有独立拒绝测试。
+
+完整 demand 审计复用旧 handoff 算子，分别对账 Host 命中、handoff、
+暂存 H2D；暂存成员使用 attempt/session/generation 和单调时钟匹配
+真实 prefill 及完成回执。它不宣称已隐藏 DMA。相关命令为
+`scripts/audit_demand_prefill_pipeline.py`，正式完整运行后才能执行。
+
+真实组件入口 `scripts/qualify_demand_prefill_pipeline.py` 已通过 CPU
+证据验证器，但尚未真实执行四个 GPU 场景。该组件使用有限延迟拷贝，
+不是模型 decode 推进或性能证明。
+
 ## 下一项资格
 
-在正式 FULL 前，仍需集成完整 H2D/首次服务审计、登记新 engine，并验证
+在正式 FULL 前，仍需冻结当前应用并验证
 真实 DMA 与正常准入/取消、共享前缀消费者、恢复期间的实际 resident
 decode、非强制模型输出和当前树的位置/session/stop。实际启动必须证明
 helper 已绑定及被执行，只有 enable 位不够。
