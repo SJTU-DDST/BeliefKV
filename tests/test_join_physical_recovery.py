@@ -217,6 +217,126 @@ def test_join_attempt_writer_failure_cannot_leave_the_consumer_bound(native_hand
     assert f.allocator.available_size() == 4
 
 
+def test_join_plan_reclaims_resident_private_prefix_above_a_host_only_tail(native_handoff):
+    f = native_handoff
+    controller, key, donor = bridge(f)
+    prefix, action = f.cache.tree_core._split_node(f.donor.key, f.donor, 16)
+    assert action is None
+    for node in (prefix, f.donor):
+        data = node.component_data[0]
+        data.host_value = data.value.clone()
+        f.cache.tree_core._update_duplicate_tracking(node)
+    f.cache._demote(f.donor.id, {})
+    assert f.allocator.alloc(16) is not None
+    assert f.allocator.available_size() == 4
+    assert f.donor.component_data[0].value is None
+    assert f.cache._can_beliefkv_full_demote(prefix, full_session_ref=1)
+    hot = next(iter(f.cache.components[0]._session_leaves["hot"]))
+    hot_indices = hot.component_data[0].value.clone()
+    assert controller.advance(key, request=f.request)
+    assert prefix.component_data[0].value is None
+    assert prefix.component_data[0].host_value is not None
+    assert f.allocator.available_size() == 20
+    assert f.runtime.counts["join_planned_physical_release_tokens"] == 16
+    assert hot.component_data[0].value.equal(hot_indices)
+    restored = f.cache.prefetch_gpu_session_nodes(
+        session_id=key.session_id, session_generation=key.session_generation,
+        leaf_node_id=f.consumer.id, leaf_creation_time=float(f.consumer.creation_time),
+        nodes=((f.consumer.id, float(f.consumer.creation_time), False, "ancestor-restore"),),
+        beliefkv_before_enqueue=lambda _operation: f.runtime._agent_admission.allows(key),
+    )
+    assert any(row.issued for row in restored)
+    f.cache.loading_check(finish_count=1)
+    assert f.allocator.available_size() == 4
+    assert f.consumer.component_data[0].value is not None
+    assert f.consumer.component_data[0].host_lock_ref == 0
+    assert hot.component_data[0].value.equal(hot_indices)
+
+
+@pytest.fixture
+def host_only_tail(native_handoff):
+    f = native_handoff
+    controller, key, donor = bridge(f)
+    prefix, action = f.cache.tree_core._split_node(f.donor.key, f.donor, 16)
+    assert action is None
+    for node in (prefix, f.donor):
+        data = node.component_data[0]
+        data.host_value = data.value.clone()
+        f.cache.tree_core._update_duplicate_tracking(node)
+    f.cache._demote(f.donor.id, {})
+    assert f.allocator.alloc(16) is not None
+    assert f.allocator.available_size() == 4
+    assert f.cache._can_beliefkv_full_demote(prefix, full_session_ref=1)
+    return f, controller, key, prefix
+
+
+@pytest.mark.parametrize("target", ("tail", "prefix"))
+@pytest.mark.parametrize("cause", (
+    "device_lock", "host_lock", "shared", "foreign_session", "no_session_reference",
+    "write_pending", "load_pending", "ongoing_write", "ongoing_load",
+))
+def test_host_only_tail_traversal_preserves_native_path_guards(host_only_tail, target, cause):
+    f, controller, key, prefix = host_only_tail
+    node = f.donor if target == "tail" else prefix
+    data = node.component_data[0]
+    if cause == "device_lock":
+        data.lock_ref += 1
+    elif cause == "host_lock":
+        data.host_lock_ref += 1
+    elif cause == "shared":
+        data.session_ids = {"s", "other"}
+        data.session_ref += 1
+    elif cause == "foreign_session":
+        data.session_ids = {"other"}
+    elif cause == "no_session_reference":
+        data.session_ref = 0
+    elif cause == "write_pending":
+        node.write_through_pending_id = node.id
+    elif cause == "load_pending":
+        node.load_back_pending_id = node.id
+    elif cause == "ongoing_write":
+        f.cache.ongoing_write_through[node.id] = object()
+    else:
+        f.cache.ongoing_load_back[node.id] = object()
+    old_indices = prefix.component_data[0].value.clone()
+    assert not controller.advance(key, request=f.request)
+    assert prefix.component_data[0].value.equal(old_indices)
+    assert f.allocator.available_size() == 4
+    assert f.runtime.counts["join_planned_physical_release_tokens"] == 0
+    assert f.runtime.counts["join_planned_reserved_handoff_tokens"] == 0
+    assert getattr(f.cache, "_beliefkv_layer_handoff", None) is None
+
+
+def test_nonresident_tail_without_host_copy_cannot_authorize_ancestor_reclaim(host_only_tail):
+    f, controller, key, prefix = host_only_tail
+    f.donor.component_data[0].host_value = None
+    assert not controller.advance(key, request=f.request)
+    assert prefix.component_data[0].value is not None
+    assert f.allocator.available_size() == 4
+    assert f.runtime.counts["join_physical_plan_donor_nonresident_path_unsafe"] == 1
+
+
+def test_host_only_path_traversal_never_creates_physical_capacity(host_only_tail):
+    f, controller, key, prefix = host_only_tail
+    f.cache._demote(prefix.id, {})
+    assert f.allocator.alloc(16) is not None
+    assert f.allocator.available_size() == 4
+    assert not controller.advance(key, request=f.request)
+    assert f.allocator.available_size() == 4
+    assert f.runtime.counts["join_planned_physical_release_tokens"] == 0
+    assert f.runtime.counts["join_physical_plan_donor_host_only_extent_traversed"] == 2
+    assert f.runtime.counts["join_physical_plan_outcome_no_safe_donor"] == 1
+
+
+def test_host_only_tail_traversal_keeps_the_existing_node_limit(host_only_tail):
+    f, controller, key, prefix = host_only_tail
+    controller.max_nodes = 1
+    assert not controller.advance(key, request=f.request)
+    assert prefix.component_data[0].value is not None
+    assert f.allocator.available_size() == 4
+    assert f.runtime.counts["join_physical_plan_nodes_checked"] == 1
+
+
 def test_existing_logical_eligibility_can_create_a_physical_plan_without_new_grant(native_handoff):
     f = native_handoff
     controller, key, donor = bridge(f)

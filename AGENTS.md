@@ -2514,3 +2514,18 @@
   Keep profiling1/tool-prefetch0/frontier0, unchanged work/timers/capacity,
   frozen sources and completeV345 with explicit engine/profiling differences.
   No other baseline or follow-up GPU job is authorized by the CPU plot waiter.
+- Main's bounded JOIN recovery now traverses a settled Host-only tail to a
+  resident private ancestor. Native session labels live at the verified leaf;
+  ancestor labels may be None only with the same single path reference.
+  Preserve shared/foreign ownership, Device/Host locks, ongoing load/write,
+  pending DMA, consumer liveness, eight donors,64 nodes and200ms backoff.
+  Traversal grants no capacity; native demotion and actual free slots remain
+  authoritative. The original native CPU red case releases16 ancestor tokens
+  after repair, then proves normal consumer H2D allocation4-to20-to4 while
+  preserving a hot peer. One source-bound execution passes3705 cases plus6
+  subtests, retaining3683 and adding22; all3 constructors/reference inheritance
+  remain isolated. Preserve initial/targeted failures under the diagnostic
+  named evidence directory. This repair did not run in frozenfe0ce6b2 and
+  has no new GPU/performance proof. Its69 recorded nonresident-node checks
+  do not establish69 reclaimable ancestor opportunities. See
+  docs/design/join_host_tail_ancestor_reclaim_20261028_zh.md.

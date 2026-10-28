@@ -231,11 +231,21 @@ class JoinPhysicalRecovery:
                             outcome = "physical_capacity_now_fits"
                             return changed
                         full = node.component_data[0]
+                        # Private ancestors have a path reference but no leaf session label.
                         if (
-                            full.session_ids != {donor_key.session_id} or full.session_ref != 1
+                            full.session_ids not in (None, {donor_key.session_id})
+                            or full.session_ref != 1
                             or any(data.host_lock_ref for data in node.component_data)
                         ):
                             checks["donor_shared_or_host_locked"] += 1
+                            break
+                        if (
+                            node.id in cache.ongoing_write_through
+                            or node.id in cache.ongoing_load_back
+                            or node.write_through_pending_id is not None
+                            or node.load_back_pending_id is not None
+                        ):
+                            checks["donor_inflight_path"] += 1
                             break
                         if full.value is not None and cache._can_beliefkv_full_demote(node, full_session_ref=1):
                             freed = {}
@@ -276,11 +286,18 @@ class JoinPhysicalRecovery:
                             else:
                                 checks["backup_selection_or_authority_unavailable"] += 1
                             break
+                        elif full.value is None:
+                            checks["donor_not_device_resident"] += 1
+                            if (
+                                full.host_value is None
+                                or any(data.lock_ref for data in node.component_data)
+                            ):
+                                checks["donor_nonresident_path_unsafe"] += 1
+                                break
+                            # A Host-only tail can still have a resident private prefix.
+                            checks["donor_host_only_extent_traversed"] += 1
                         else:
-                            checks[
-                                "donor_not_device_resident"
-                                if full.value is None else "native_demotion_refused"
-                            ] += 1
+                            checks["native_demotion_refused"] += 1
                             break
                         node = node.parent
             return changed
