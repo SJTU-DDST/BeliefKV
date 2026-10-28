@@ -77,6 +77,8 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         if self._join_handoff is not None:
             self._join_handoff.next_attempt = 0.
             self._join_handoff.ready_parents(preferred=key)
+            if self.allows(key) and self.runtime._ready_join_parent(req, key):
+                self._join_handoff.recovery.ensure(key)
         if self.coadmit_join_children:
             for join_id in sorted(self.runtime._join_by_invocation.get(key.invocation_id, ())):
                 self._coadmit_join(join_id)
@@ -326,6 +328,8 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             join_id = self._handoff_join(key)
             if join_id is not None:
                 allowed = self._join_handoff.claim(key, join_id)
+        if allowed and source == "join_ticket" and self._join_handoff is not None:
+            self._join_handoff.recovery.ensure(key)
         counter = (
             "restore_existing_eligibility" if existing else
             "restore_new_join_eligibility" if allowed else "restore_outside_active_set"

@@ -146,7 +146,13 @@ def test_co_selection_is_not_counted_as_service_until_native_forward_returns(sib
     evidence = [row for row in rows if row["event"] == "agent_join_siblings_native_service"]
     assert len(evidence) == 1
     assert set(evidence[0]["request_ids"]) == {"child-0", "child-1"}
-    assert all(wait >= 0 for wait in evidence[0]["ready_wait_ms"])
+    assert all(wait >= 0 for wait in evidence[0]["ready_to_selected_ms"])
+    assert all(
+        returned >= selected
+        for selected, returned in zip(
+            evidence[0]["ready_to_selected_ms"], evidence[0]["ready_to_forward_return_ms"],
+        )
+    )
     live.on_batch_selected(batch)
     live.on_batch_completed(batch)
     assert a.counts["sibling_joint_native_service_batches"] == 1

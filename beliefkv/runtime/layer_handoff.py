@@ -1,4 +1,4 @@
-"""Bind predicted cold-tool donors to a selected native consumer's layer handoff."""
+"""Bind observed cold donors to a native consumer's exclusive layer handoff."""
 
 import time
 
@@ -32,7 +32,10 @@ def try_handoff(offloader, key, step):
         return False
     if eos:
         opportunity = offloader._opportunity
-        if opportunity is None or opportunity.anchors.key != consumer_key:
+        if (
+            opportunity is None or opportunity.anchors.key != consumer_key
+            or runtime._residency_pool_bytes is None
+        ):
             return False
         observation = {
             "component_leaves": opportunity.anchors.component_leaves,

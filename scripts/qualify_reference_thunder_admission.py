@@ -92,6 +92,11 @@ def main():
             "scripts/qualify_layer_handoff_model.py",
             "beliefkv/experiments/native_engine_variant.py",
         ))
+        declared_tree = configuration.get("comparison_contract", {}).get("native_engine_tree")
+        if declared_tree:
+            from beliefkv.experiments.native_engine_variant import engine_patch
+
+            paths.add(str(engine_patch(ROOT, declared_tree).relative_to(ROOT)))
         if any(configuration["common_environment"].get(
             "BELIEFKV_LAYER_HANDOFF_" + direction + "_LAYERS", "1",
         ) != "1" for direction in ("D2H", "H2D")):
@@ -145,6 +150,18 @@ def main():
     }
     if args.engine is not None:
         environment["SGLANG_SOURCE_CHECKOUT"] = str(args.engine.resolve())
+    native = None
+    declared_tree = configuration.get("comparison_contract", {}).get("native_engine_tree")
+    if declared_tree:
+        from beliefkv.experiments.native_engine_variant import engine_patch
+        from beliefkv.experiments.source_provenance import git_source_state
+
+        native = git_source_state(
+            Path(environment["SGLANG_SOURCE_CHECKOUT"]),
+            canonical_patch=engine_patch(ROOT, declared_tree),
+        )
+        if native["canonical_patch"]["actual_tree"] != declared_tree:
+            raise ValueError("CPU engine differs from the declared exact native tree")
     subprocess.run(command, cwd=ROOT, env=environment, check=True)
     previous, current = passed_cases(Path(prior["report"]["path"])), passed_cases(args.report)
     if not previous <= current:
@@ -193,6 +210,11 @@ def main():
         )
     if any(sha256_file(ROOT / name) != expected for name, expected in sources.items()):
         raise ValueError("qualified CPU sources changed while executing")
+    if native is not None and git_source_state(
+        Path(environment["SGLANG_SOURCE_CHECKOUT"]),
+        canonical_patch=engine_patch(ROOT, declared_tree),
+    ) != native:
+        raise ValueError("CPU native engine changed while executing")
     result = {
         "observed_at": datetime.now(timezone.utc).isoformat(),
         "scope": "source_bound_cpu_full_with_reference_thunderagent_decay",
@@ -210,6 +232,7 @@ def main():
         },
         "report": {"path": str(args.report.resolve()), "sha256": sha256_file(args.report)},
         "source_manifest": {"path": str(args.sources.resolve()), "sha256": sha256_file(args.sources)},
+        "native_engine": native,
         "previous_report": prior["report"],
         "passing_cases_including_subtests": len(current),
         "retained_previous_cases_including_subtests": len(previous),

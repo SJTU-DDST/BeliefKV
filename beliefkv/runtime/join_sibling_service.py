@@ -109,8 +109,19 @@ class JoinSiblingService:
         chunk = getattr(adder, "rem_chunk_tokens", None)
         if type(chunk) is int:
             input_limit = min(input_limit, chunk)
-        if slots < 2 or input_limit <= 0:
+        page = runtime._native_page_size
+        if slots < 2 or input_limit < 2 * page:
             return
+        # Admission remains native. These scalar lower bounds only avoid an
+        # unnecessary group/path inspection when even two input pages cannot fit.
+        allocator = getattr(runtime._native_cache, "token_to_kv_pool_allocator", None)
+        available = getattr(allocator, "available_size", None)
+        if callable(available):
+            free = available()
+            minimum_growth = page * (len(getattr(self.running, "reqs", ())) + 1)
+            if type(free) is int and free < 2 * page + minimum_growth:
+                a.counts["sibling_joint_fast_capacity_skips"] += 1
+                return
         window = ordered[:self.max_queue_checks]
         memberships = {pair[0]: self._membership(keys[pair[0]]) for pair in window}
         groups = {}
@@ -126,7 +137,7 @@ class JoinSiblingService:
         if not choices:
             return
         position, join_id, siblings = min(choices, key=lambda row: row[:2])
-        a.counts["sibling_joint_ready_opportunities"] += 1
+        a.counts["sibling_joint_ready_plan_opportunities"] += 1
         if position >= min(slots - 1, self.max_prefix_checks):
             return
         headroom = observe_static_full_mamba_headroom(runtime._native_cache)
@@ -137,7 +148,7 @@ class JoinSiblingService:
         def price(pair):
             if pair[0] not in prices:
                 key = keys[pair[0]]
-                if key is None or runtime._executable_waiting_key(pair[1], key=key) != key:
+                if key is None:
                     return None
                 observation = runtime._read_request_reentry(pair[1], key=key)
                 cost = runtime._request_restore_cost(pair[1], observation)
@@ -229,22 +240,27 @@ class JoinSiblingService:
         if not self.admitted_keys:
             return
         runtime = self.admission.runtime
+        selected_at = time.monotonic()
         for req in getattr(batch, "reqs", ()):
             key = runtime.visible.get(req.rid)
             joins = self.admitted_keys.pop(key, ())
             if joins:
-                self.awaiting_service[key] = joins
+                self.awaiting_service[key] = joins, selected_at
 
     def serviced(self, batch):
         if not self.awaiting_service:
             return
-        a, groups = self.admission, {}
+        a, groups, selections = self.admission, {}, {}
         now = time.monotonic()
         for req in getattr(batch, "reqs", ()):
             key = a.runtime.visible.get(req.rid)
-            joins = self.awaiting_service.pop(key, ())
-            if joins:
+            pending = self.awaiting_service.pop(key, None)
+            if pending is not None:
+                joins, selected_at = pending
                 self.served[key.invocation_id] = key
+                selections[key] = selected_at
+            else:
+                joins = ()
             for join_id in joins:
                 groups.setdefault(join_id, []).append(key)
         writer = getattr(a.runtime, "_opportunity_writer", None)
@@ -258,7 +274,11 @@ class JoinSiblingService:
                     "join_id": join_id,
                     "request_ids": [key.request_id for key in keys],
                     "keys": [asdict(key) for key in keys],
-                    "ready_wait_ms": [
+                    "ready_to_selected_ms": [
+                        max(0., selections[key] - a.requests.get(key.request_id, (None, now))[1]) * 1000.
+                        for key in keys
+                    ],
+                    "ready_to_forward_return_ms": [
                         max(0., now - a.requests.get(key.request_id, (None, now))[1]) * 1000.
                         for key in keys
                     ],

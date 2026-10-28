@@ -1,14 +1,18 @@
 from types import SimpleNamespace as NS
 from unittest.mock import Mock
+from array import array
 
 import pytest
 
 from beliefkv.core.events import RelationType, RuntimeEventKind as Kind
+from beliefkv.experiments.internal_comparison import arm_environment
 from beliefkv.runtime.join_blocked_handoff import JoinBlockedHandoff
+from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from tests.test_full_only_native_lifecycle import full_native
 from tests.test_layer_handoff import native_handoff
 from tests.test_tool_policy_adaptation import demand_runtime
 from tests.test_tool_predictive_transfers import event
+from tests.test_paper_baseline_runtime import request
 
 
 def observed_join_wait(runtime, invocation, child, *, start):
@@ -135,6 +139,20 @@ def test_service_consumes_join_plan_without_forcing_eligibility_expiry(native_ha
     assert a.policy.programs[key.invocation_id].active is was_active
 
 
+def test_existing_logical_eligibility_can_create_a_physical_plan_without_new_grant(native_handoff):
+    f = native_handoff
+    controller, key, donor = bridge(f)
+    controller.plans.clear()
+    a = f.runtime._agent_admission
+    remaining = a.policy.remaining_capacity()
+    controller.ensure(key)
+    assert controller.plans[key.invocation_id][1] == "join-consumer"
+    assert a.counts["join_physical_plans_without_logical_handover"] == 1
+    assert not a.counts["join_blocked_handoff_grants"]
+    assert a.policy.remaining_capacity() == remaining
+    assert f.allocator.available_size() == 4
+
+
 @pytest.mark.parametrize("queue,kind", (("ack_write_queue", "d2h"), ("ack_load_queue", "h2d")))
 def test_layer_handoff_can_coexist_with_proven_unrelated_outstanding_ack(
     native_handoff, queue, kind,
@@ -161,3 +179,70 @@ def test_related_or_unknown_ack_still_refuses_layer_transaction(native_handoff, 
     assert f.allocator.available_size() == 4
     assert f.donor.component_data[0].value is not None
     assert getattr(f.cache, "_beliefkv_layer_handoff", None) is None
+
+
+@pytest.mark.parametrize("full_native", (512,), indirect=True)
+def test_two_smaller_backed_join_donors_supply_real_combined_capacity(
+    full_native, monkeypatch, tmp_path,
+):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    cache, allocator, *_ = full_native
+    for name, value in arm_environment({
+        "AGENT_ADMISSION": "thunderagent_reference", "EXECUTION_FRONTIER_RESTORE": "0",
+    }, "full").items():
+        monkeypatch.setenv(name, value)
+    live = NativeAdmissionRuntime(event_socket_path=str(tmp_path / "multi-donor.sock"))
+    live.attach_native_cache(cache)
+    try:
+        live.on_events((event(0, Kind.WORKFLOW_START),))
+        nodes, requests = {}, {}
+        for index, (identity, size) in enumerate((("a", 32), ("b", 32), ("target", 68))):
+            live.on_events((event(
+                1 + index * 20, Kind.INVOCATION_CREATE, invocation_id=identity,
+                context_id=f"{identity}-context",
+            ),))
+            tokens = list(range(1000 * (index + 1), 1000 * (index + 1) + size))
+            node, generation = insert_session(cache, tokens, identity)
+            req = request(identity, identity, tokens=size + 1, workflow="wf")
+            req.origin_input_ids = array("q", (*tokens, 99999))
+            req.session_id, req.session_generation = identity, generation
+            req.extra_key = req.cache_salt = None
+            req.kv = NS(req_pool_idx=None, kv_allocated_len=0, kv_committed_len=0)
+            live.register_visible_request(req)
+            nodes[identity], requests[identity] = node, req
+            assert cache.prepare_beliefkv_spawn_full(
+                session_id=identity, session_generation=generation,
+            )["issued"]
+            cache.writing_check(finish_count=1)
+            if identity != "target":
+                live.on_batch_completed(NS(reqs=[req]))
+                observed_join_wait(live, identity, f"{identity}-child", start=6 + index * 20)
+        cache._demote(nodes["target"].id, {})
+        observed_join_wait(live, "target", "target-child", start=70)
+        live.on_events((event(80, Kind.RETURN, invocation_id="target-child"),))
+        a = live._agent_admission
+        target = live.visible["target"]
+        assert a.allows(target)
+        assert allocator.alloc(allocator.available_size() - 8) is not None
+        controller = JoinBlockedHandoff(a).recovery
+        controller.remember(target, "join-target", (a.policy.programs["a"], a.policy.programs["b"]))
+        assert controller.advance(target, request=requests["target"])
+        assert allocator.available_size() == 72
+        assert nodes["a"].component_data[0].value is None
+        assert nodes["b"].component_data[0].value is None
+        assert live.counts["join_planned_physical_release_tokens"] == 64
+        assert live.counts["join_planned_reserved_handoff_tokens"] == 0
+        result = cache.prefetch_gpu_session_nodes(
+            session_id="target", session_generation=target.session_generation,
+            leaf_node_id=nodes["target"].id, leaf_creation_time=float(nodes["target"].creation_time),
+            nodes=((nodes["target"].id, float(nodes["target"].creation_time), False, "combined-restored"),),
+            beliefkv_before_enqueue=lambda _operation: a.allows(target),
+        )
+        assert any(row.issued for row in result)
+        cache.loading_check(finish_count=1)
+        assert allocator.available_size() == 4
+        assert nodes["target"].component_data[0].host_lock_ref == 0
+        assert nodes["target"].component_data[0].value is not None
+    finally:
+        live.close()

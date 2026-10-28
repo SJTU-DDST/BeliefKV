@@ -37,6 +37,37 @@ class JoinPhysicalRecovery:
         while len(self.plans) > self.max_plans:
             self.plans.popitem(last=False)
 
+    def ensure(self, key):
+        """A physically cold parent may already have complete logical eligibility."""
+        plan = self.plans.get(key.invocation_id)
+        if plan is not None and self._same_context(plan[0], key):
+            return
+        a, runtime = self.handoff.admission, self.runtime
+        parent = runtime.graph.invocations.get(key.invocation_id)
+        request = a._live_requests.get(key.request_id)
+        if parent is None or not (
+            a._waiting_on_join(parent, runtime.graph.joins.get(parent.join_id))
+            or request is not None and runtime._ready_join_parent(request, key)
+        ):
+            return
+        candidates = []
+        for item in islice(a.policy.programs.values(), self.handoff.max_donors):
+            donor = runtime.graph.invocations.get(item.identity)
+            if (
+                donor is not None and donor.state is InvocationState.WAIT_JOIN
+                and self.handoff._blocked_donor(item, key)
+            ):
+                candidates.append(item)
+                if len(candidates) == self.max_donors:
+                    break
+        if candidates:
+            join_id = (
+                parent.join_id if parent.state is InvocationState.WAIT_JOIN
+                else runtime._join_priority_pending.get(key.invocation_id)
+            )
+            self.remember(key, join_id, candidates)
+            a.counts["join_physical_plans_without_logical_handover"] += 1
+
     @staticmethod
     def _same_context(left, right):
         return (
