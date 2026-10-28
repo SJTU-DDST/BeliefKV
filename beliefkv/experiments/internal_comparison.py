@@ -14,6 +14,9 @@ def arm_environment(
 ) -> dict[str, str]:
     if mode not in MODES:
         raise ValueError(f"unknown internal comparison: {mode}")
+    profiling = common.get("BELIEFKV_PROFILE_SHARED_PATH", common.get("PROFILE_SHARED_PATH", "0"))
+    if profiling not in ("0", "1"):
+        raise ValueError("shared path profiling must be 0 or 1")
     custom_kv = mode in ("full", "kv_only")
     tool_offload = common.get(
         "BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD", common.get("PREDICTED_TOOL_OFFLOAD", "0"),
@@ -380,7 +383,8 @@ def arm_environment(
         "SEMANTIC_REPORT_ARTIFACT": "",
         "H2D_OPPORTUNITY_SAMPLING": "0",
         "TERMINAL_CACHE_DIAGNOSTICS": "0",
-        "PROFILE_SHARED_PATH": "0",
+        "PROFILE_SHARED_PATH": profiling,
+        "BELIEFKV_PROFILE_SHARED_PATH": profiling,
         "PREFETCH_PREFIX_DIAGNOSTICS": "0",
         "JOIN_PREFETCH_TRIGGER": "observed_eos",
     }

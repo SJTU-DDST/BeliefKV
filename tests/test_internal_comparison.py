@@ -40,6 +40,20 @@ def request(name):
     )
 
 
+@pytest.mark.parametrize("mode", MODES)
+@pytest.mark.parametrize("value", ("0", "1"))
+def test_explicit_shared_path_profile_is_preserved_in_declared_arm(mode, value):
+    settings = arm_environment({"PROFILE_SHARED_PATH": value}, mode)
+    assert settings["PROFILE_SHARED_PATH"] == value
+    assert settings["BELIEFKV_PROFILE_SHARED_PATH"] == value
+
+
+@pytest.mark.parametrize("value", ("", "true", True, 1))
+def test_invalid_shared_path_profile_is_rejected(value):
+    with pytest.raises(ValueError, match="profiling"):
+        arm_environment({"PROFILE_SHARED_PATH": value}, "full")
+
+
 @pytest.mark.parametrize("explicit,legacy,expected", (
     (None, True, True), (None, None, None), (False, True, False), (True, False, True),
 ))

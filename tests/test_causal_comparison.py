@@ -260,6 +260,20 @@ def test_execution_restore_cpu_preflight_matches_the_effective_runtime(
     assert actual["frontier_cold_reclaim_policy"] == "waiting"
 
 
+def test_profiled_cpu_preflight_observes_actual_writer_enabled_timing(reference, tmp_path):
+    reference["arms"]["full"].update(
+        PROFILE_SHARED_PATH="1",
+        TOOL_TIMING_ARTIFACT="", H2D_SEED_ARTIFACT="", TRANSFER_SERVICE_SEED="",
+    )
+    settings, _, _ = comparison.environment(
+        reference, "full", Path(comparison.ROOT), tmp_path, tmp_path, 18554, tmp_path,
+    )
+    assert settings["BELIEFKV_PROFILE_SHARED_PATH"] == "1"
+    result = comparison.preflight_runtime(settings, "cpu-profile-check")
+    assert result["verified_configuration"]["profile_shared_path"] is True
+    assert result["verified_configuration"]["profile_shared_path_sample_every"] == 64
+
+
 def test_unified_execution_profile_preserves_the_captured_workload():
     directory = Path(comparison.ROOT) / "configs/migration"
     source = comparison.load(directory / "qwen3_coder_18project_root_phase16_20261024.json")

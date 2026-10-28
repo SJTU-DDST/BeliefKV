@@ -306,6 +306,8 @@ def preflight_runtime(settings, model_path):
     if settings["BELIEFKV_INTERNAL_COMPARISON_MODE"] == "native_matched":
         return {"native_runtime_not_enabled": True}
     expected = {
+        "profile_shared_path": settings.get("BELIEFKV_PROFILE_SHARED_PATH", "0") == "1",
+        "profile_shared_path_sample_every": 64,
         "prefill_scheduling_policy": (
             "native" if settings["BELIEFKV_NATIVE_PREFILL_ORDER"] == "1"
             else settings["PREFILL_SCHEDULING_POLICY"]
@@ -383,17 +385,20 @@ def preflight_runtime(settings, model_path):
         source = (
             "import json,sys; "
             "from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime; "
-            "runtime=NativeAdmissionRuntime(event_socket_path=sys.argv[1],model_path=sys.argv[2]); "
-            "expected=json.loads(sys.argv[3]); "
+            "runtime=NativeAdmissionRuntime(event_socket_path=sys.argv[1],model_path=sys.argv[2],"
+            "opportunity_dir=sys.argv[3]); "
+            "expected=json.loads(sys.argv[4]); "
             "actual={name:(runtime._tool_continuity is not None "
-            "if name=='tool_continuity' else getattr(runtime,name)) for name in expected}; "
+            "if name=='tool_continuity' else runtime._hotpath_timing.enabled "
+            "if name=='profile_shared_path' else runtime._hotpath_timing.sample_every "
+            "if name=='profile_shared_path_sample_every' else getattr(runtime,name)) for name in expected}; "
             "runtime.close()\n"
             "if actual != expected:\n"
             "    raise ValueError(f'CPU runtime configuration differs: {actual!r} != {expected!r}')\n"
         )
         result = subprocess.run(
             [sys.executable, "-c", source, str(Path(directory) / "events.sock"), model_path,
-             json.dumps(expected)],
+             str(Path(directory) / "opportunities"), json.dumps(expected)],
             env=env, check=True, capture_output=True, text=True, timeout=45,
         )
     return {"actual_runtime_constructor_accepted": True, "runtime_configuration_verified": True,

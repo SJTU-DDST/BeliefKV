@@ -2492,3 +2492,14 @@
   metadata evidence, profiling off in formal config, old control cost unknown,
   no new GPU result and the goal active. See
   docs/research/control_and_join_diagnostics_20261028_zh.md.
+- The separate control-plan diagnostic declaration keeps sibling-capacity
+  work/policy/native tree unchanged and adds PROFILE_SHARED_PATH=1 only.
+  A red check proves arm_environment previously forced it off; main now honors
+  validated explicit profiling and checks actual writer-enabled constructor
+  timing, preserving default0. Current source-bound CPU passes3683 unique
+  cases plus6subtests, retaining3668. Preserve initial red/seed-fixture reports.
+  Freeze clean sources before model/position/Full; reuse identical native
+  component proof only after tree/operator/group binding, and rerun the
+  current unforced model and position smoke. This is diagnosis, not isolated
+  optimization or repeated performance acceptance. Tool prefetch stays off.
+  See docs/research/control_plan_diagnostics_20261028_zh.md.
