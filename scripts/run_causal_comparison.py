@@ -225,6 +225,7 @@ def experiment_reference(reference, spec):
         "EXECUTION_FRONTIER_RESTORE": "BELIEFKV_ENABLE_FRONTIER_RESTORE",
         "JOIN_LAST_CHILD_PRIORITY": "BELIEFKV_ENABLE_JOIN_LAST_CHILD_PRIORITY",
         "TOOL_CONTINUITY": "BELIEFKV_ENABLE_TOOL_CONTINUITY",
+        "TOOL_PREFETCH": "BELIEFKV_ENABLE_TOOL_PREFETCH",
         "PREDICTED_TOOL_OFFLOAD": "BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD",
     }
     for name, value in common.items():
@@ -733,6 +734,17 @@ def observed_configuration(plan, label, arm, *, final=False):
         overrides = {
             "tool_prefetch": plan["reference_environment"].get("TOOL_PREFETCH") != "0",
         }
+    common = plan.get("reference_environment", {})
+    if not retention and mode in ("full", "kv_only") and any(
+        name in common for name in ("TOOL_PREFETCH", "BELIEFKV_ENABLE_TOOL_PREFETCH")
+    ):
+        settings = arm_environment(
+            common, mode, tool_prefetch=False if label == "no_tool_prefetch" else None,
+        )
+        overrides = {
+            **(overrides or {}),
+            "tool_prefetch": settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "1",
+        }
     observation_options = {
         "max_running_requests": plan.get("max_running_requests", 8),
         "runtime_overrides": overrides,
@@ -941,6 +953,7 @@ def observed_configuration(plan, label, arm, *, final=False):
                 requested_priority
                 if mode in ("full", "kv_only") and label != "no_tool_prefetch"
                 and plan.get("tool_restore_mode", "speculative") == "speculative"
+                and (overrides or {}).get("tool_prefetch", True)
                 else 0.
             )
             if state.get("tool_prefetch_priority_ms") != expected:
@@ -1179,6 +1192,11 @@ def register(args):
     experiment_spec = load(args.experiment_config) if args.experiment_config else None
     if experiment_spec is not None:
         reference = experiment_reference(reference, experiment_spec)
+        if (
+            experiment_spec.get("comparison_contract", {}).get("tool_prefetch_disabled_by_user")
+            is True and args.tool_prefetch_priority_ms is not None
+        ):
+            raise ValueError("tool prefetch is disabled by the declared experiment")
         if (
             experiment_spec.get("native_reference", {}).get("repeat_full_native_replay") is False
             and "native_matched" in order

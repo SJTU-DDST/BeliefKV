@@ -2241,3 +2241,22 @@
   no-GPU scope. Benefit estimates are separately documented in
   docs/research/design_benefit_ranking_20261028_zh.md; none are additive
   isolated module gains. Keep the global goal active until actual acceptance.
+- The user now cancels tool prefetch in all future Full experiments. Use the
+  explicit no-tool-prefetch profile and zero both its enable flag and priority
+  window; do not re-enable it through the tool-priority CLI override. Retain
+  tool-duration forecasting for demand-cost offload, JOIN/EOS prefetch,
+  prepare_host and agent continuity. Preserve historical configurations and
+  frozen runs. Explicit TOOL_PREFETCH/BELIEFKV_ENABLE_TOOL_PREFETCH settings
+  must reach actual runtime checks, rather than requiring an ablation label.
+- JointFullR1 completes all3674 exact requests/145565966 input/549671 output
+  tokens and18 normal tails, native stopping, two fresh idle snapshots and
+  actual owned cleanup. The independent complete_core_review.py/.json verifies
+  meanJCT1646.588432s/output235.272956token/s versusV3451697.583645s/
+  233.371801token/s:3.00399%/0.81465% improvements. Both regress against
+  online-refresh Full1639.208934s/236.448501token/s. Threshold, Host policy
+  and the native layer engine changed together; no isolated overlap cause is
+  proven. Do not promote the joint candidate. The future
+  configs/migration/predictive_no_tool_prefetch_20261028.json also disables
+  layer handoff and returns to the common engine, preserving75% and demand
+  Host management for separate evaluation. No new GPU job is queued by this
+  review; reuseV345 and keep the global goal incomplete.

@@ -85,6 +85,11 @@ def main():
     if host_demand:
         extra_tests += ("tests/test_host_demand_capacity.py",)
         paths.add("beliefkv/runtime/host_demand_capacity.py")
+    if configuration["common_environment"].get(
+        "BELIEFKV_ENABLE_TOOL_PREFETCH",
+        configuration["common_environment"].get("TOOL_PREFETCH"),
+    ) == "0":
+        extra_tests += ("tests/test_tool_prefetch_disabled.py",)
     if continuation_free:
         extra_tests += (
             "tests/test_reference_free_continuation.py",

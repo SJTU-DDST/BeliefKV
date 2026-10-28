@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="12" skipped="0" tests="12" time="0.988" timestamp="2026-10-28T01:24:11.257359-07:00" hostname="ddst-12"><testcase classname="tests.test_tool_prefetch_disabled" name="test_declared_tool_prefetch_off_is_honored_without_an_ablation_label[full-TOOL_PREFETCH]" time="0.001"><failure message="AssertionError: assert '1' == '0'&#10;  &#10;  - 0&#10;  + 1">name = 'TOOL_PREFETCH', mode = 'full'
+
+    @pytest.mark.parametrize("name", ("TOOL_PREFETCH", "BELIEFKV_ENABLE_TOOL_PREFETCH"))
+    @pytest.mark.parametrize("mode", ("full", "kv_only"))
+    def test_declared_tool_prefetch_off_is_honored_without_an_ablation_label(name, mode):
+        settings = arm_environment({
+            name: "0", "TOOL_PREFETCH_PRIORITY_MS": "1500",
+            "PREDICTED_TOOL_OFFLOAD": "1",
+        }, mode)
+&gt;       assert settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "0"
+E       AssertionError: assert '1' == '0'
+E         
+E         - 0
+E         + 1
+
+tests/test_tool_prefetch_disabled.py:21: AssertionError</failure></testcase><testcase classname="tests.test_tool_prefetch_disabled" name="test_declared_tool_prefetch_off_is_honored_without_an_ablation_label[full-BELIEFKV_ENABLE_TOOL_PREFETCH]" time="0.001"><failure message="AssertionError: assert '1' == '0'&#10;  &#10;  - 0&#10;  + 1">name = 'BELIEFKV_ENABLE_TOOL_PREFETCH', mode = 'full'
+
+    @pytest.mark.parametrize("name", ("TOOL_PREFETCH", "BELIEFKV_ENABLE_TOOL_PREFETCH"))
+    @pytest.mark.parametrize("mode", ("full", "kv_only"))
+    def test_declared_tool_prefetch_off_is_honored_without_an_ablation_label(name, mode):
+        settings = arm_environment({
+            name: "0", "TOOL_PREFETCH_PRIORITY_MS": "1500",
+            "PREDICTED_TOOL_OFFLOAD": "1",
+        }, mode)
+&gt;       assert settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "0"
+E       AssertionError: assert '1' == '0'
+E         
+E         - 0
+E         + 1
+
+tests/test_tool_prefetch_disabled.py:21: AssertionError</failure></testcase><testcase classname="tests.test_tool_prefetch_disabled" name="test_declared_tool_prefetch_off_is_honored_without_an_ablation_label[kv_only-TOOL_PREFETCH]" time="0.001"><failure message="AssertionError: assert '1' == '0'&#10;  &#10;  - 0&#10;  + 1">name = 'TOOL_PREFETCH', mode = 'kv_only'
+
+    @pytest.mark.parametrize("name", ("TOOL_PREFETCH", "BELIEFKV_ENABLE_TOOL_PREFETCH"))
+    @pytest.mark.parametrize("mode", ("full", "kv_only"))
+    def test_declared_tool_prefetch_off_is_honored_without_an_ablation_label(name, mode):
+        settings = arm_environment({
+            name: "0", "TOOL_PREFETCH_PRIORITY_MS": "1500",
+            "PREDICTED_TOOL_OFFLOAD": "1",
+        }, mode)
+&gt;       assert settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "0"
+E       AssertionError: assert '1' == '0'
+E         
+E         - 0
+E         + 1
+
+tests/test_tool_prefetch_disabled.py:21: AssertionError</failure></testcase><testcase classname="tests.test_tool_prefetch_disabled" name="test_declared_tool_prefetch_off_is_honored_without_an_ablation_label[kv_only-BELIEFKV_ENABLE_TOOL_PREFETCH]" time="0.001"><failure message="AssertionError: assert '1' == '0'&#10;  &#10;  - 0&#10;  + 1">name = 'BELIEFKV_ENABLE_TOOL_PREFETCH', mode = 'kv_only'
+
+    @pytest.mark.parametrize("name", ("TOOL_PREFETCH", "BELIEFKV_ENABLE_TOOL_PREFETCH"))
+    @pytest.mark.parametrize("mode", ("full", "kv_only"))
+    def test_declared_tool_prefetch_off_is_honored_without_an_ablation_label(name, mode):
+        settings = arm_environment({
+            name: "0", "TOOL_PREFETCH_PRIORITY_MS": "1500",
+            "PREDICTED_TOOL_OFFLOAD": "1",
+        }, mode)
+&gt;       assert settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "0"
+E       AssertionError: assert '1' == '0'
+E         
+E         - 0
+E         + 1
+
+tests/test_tool_prefetch_disabled.py:21: AssertionError</failure></testcase><testcase classname="tests.test_tool_prefetch_disabled" name="test_invalid_tool_prefetch_declaration_is_rejected[false]" time="0.001"><failure message="Failed: DID NOT RAISE ValueError">value = 'false'
+
+    @pytest.mark.parametrize("value", ("false", "", "2", 0, False))
+    def test_invalid_tool_prefetch_declaration_is_rejected(value):
+&gt;       with pytest.raises(ValueError, match="tool prefetch"):
+E       Failed: DID NOT RAISE ValueError
+
+tests/test_tool_prefetch_disabled.py:30: Failed</failure></testcase><testcase classname="tests.test_tool_prefetch_disabled" name="test_invalid_tool_prefetch_declaration_is_rejected[]" time="0.001"><failure message="Failed: DID NOT RAISE ValueError">value = ''
+
+    @pytest.mark.parametrize("value", ("false", "", "2", 0, False))
+    def test_invalid_tool_prefetch_declaration_is_rejected(value):
+&gt;       with pytest.raises(ValueError, match="tool prefetch"):
+E       Failed: DID NOT RAISE ValueError
+
+tests/test_tool_prefetch_disabled.py:30: Failed</failure></testcase><testcase classname="tests.test_tool_prefetch_disabled" name="test_invalid_tool_prefetch_declaration_is_rejected[2]" time="0.001"><failure message="Failed: DID NOT RAISE ValueError">value = '2'
+
+    @pytest.mark.parametrize("value", ("false", "", "2", 0, False))
+    def test_invalid_tool_prefetch_declaration_is_rejected(value):
+&gt;       with pytest.raises(ValueError, match="tool prefetch"):
+E       Failed: DID NOT RAISE ValueError
+
+tests/test_tool_prefetch_disabled.py:30: Failed</failure></testcase><testcase classname="tests.test_tool_prefetch_disabled" name="test_invalid_tool_prefetch_declaration_is_rejected[0]" time="0.001"><failure message="Failed: DID NOT RAISE ValueError">value = 0
+
+    @pytest.mark.parametrize("value", ("false", "", "2", 0, False))
+    def test_invalid_tool_prefetch_declaration_is_rejected(value):
+&gt;       with pytest.raises(ValueError, match="tool prefetch"):
+E       Failed: DID NOT RAISE ValueError
+
+tests/test_tool_prefetch_disabled.py:30: Failed</failure></testcase><testcase classname="tests.test_tool_prefetch_disabled" name="test_invalid_tool_prefetch_declaration_is_rejected[False]" time="0.001"><failure message="Failed: DID NOT RAISE ValueError">value = False
+
+    @pytest.mark.parametrize("value", ("false", "", "2", 0, False))
+    def test_invalid_tool_prefetch_declaration_is_rejected(value):
+&gt;       with pytest.raises(ValueError, match="tool prefetch"):
+E       Failed: DID NOT RAISE ValueError
+
+tests/test_tool_prefetch_disabled.py:30: Failed</failure></testcase><testcase classname="tests.test_tool_prefetch_disabled" name="test_canonical_tool_prefetch_setting_wins_in_a_direct_environment" time="0.001"><failure message="AssertionError: assert '1' == '0'&#10;  &#10;  - 0&#10;  + 1">def test_canonical_tool_prefetch_setting_wins_in_a_direct_environment():
+        settings = arm_environment({
+            "TOOL_PREFETCH": "1", "BELIEFKV_ENABLE_TOOL_PREFETCH": "0",
+        }, "full")
+&gt;       assert settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "0"
+E       AssertionError: assert '1' == '0'
+E         
+E         - 0
+E         + 1
+
+tests/test_tool_prefetch_disabled.py:38: AssertionError</failure></testcase><testcase classname="tests.test_tool_prefetch_disabled" name="test_fresh_experiment_clears_an_inherited_tool_prefetch_alias" time="0.001"><failure message="AssertionError: assert '1' == '0'&#10;  &#10;  - 0&#10;  + 1">def test_fresh_experiment_clears_an_inherited_tool_prefetch_alias():
+        path = comparison.ROOT / "configs/migration/predictive_host_demand_layer_handoff_20261028.json"
+        spec = json.loads(path.read_bytes())
+        spec["common_environment"]["TOOL_PREFETCH"] = "0"
+        reference = {"arms": {"full": {"BELIEFKV_ENABLE_TOOL_PREFETCH": "1"}}}
+        prepared = comparison.experiment_reference(reference, spec)
+        settings = arm_environment(prepared["arms"]["full"], "full")
+&gt;       assert settings["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "0"
+E       AssertionError: assert '1' == '0'
+E         
+E         - 0
+E         + 1
+
+tests/test_tool_prefetch_disabled.py:48: AssertionError</failure></testcase><testcase classname="tests.test_tool_prefetch_disabled" name="test_declared_off_reaches_runtime_observation_and_skips_prefetch_work" time="0.005"><failure message="AttributeError: 'object' object has no attribute 'key'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7576ab1dfa10&gt;
+tmp_path = PosixPath('/tmp/pytest-of-longhao/pytest-3200/test_declared_off_reaches_runt0')
+
+    def test_declared_off_reaches_runtime_observation_and_skips_prefetch_work(monkeypatch, tmp_path):
+        common = {"TOOL_PREFETCH": "0", "TOOL_PREFETCH_PRIORITY_MS": "1500"}
+        for name, value in arm_environment(common, "full").items():
+            monkeypatch.setenv(name, value)
+        runtime = NativeAdmissionRuntime(event_socket_path=str(tmp_path / "disabled.sock"))
+        try:
+            runtime.tool_wait_hints["not-a-live-context"] = object()
+            runtime.inspect_context_h2d_opportunity = Mock(
+                side_effect=AssertionError("disabled tool prefetch must not inspect KV"),
+            )
+&gt;           runtime.dispatch_tool_prefetch()
+
+tests/test_tool_prefetch_disabled.py:65: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+beliefkv/runtime/hotpath_timing.py:104: in measured
+    return function(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/sglang_v0520_runtime.py:9070: in dispatch_tool_prefetch
+    opportunity = self._roll_tool_prefetch()
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;beliefkv.runtime.sglang_v0520_runtime.NativeAdmissionRuntime object at 0x7576ab1ce5d0&gt;
+
+    def _roll_tool_prefetch(self) -&gt; SessionH2DOpportunity | None:
+        if not self.enable_tool_prefetch or self.physical_disabled:
+            return
+        for key, pending in tuple(self._tool_inflight_tickets.items()):
+            if self._reconcile_tool_prefetch_ticket(pending) is not None:
+                del self._tool_inflight_tickets[key]
+        ticket = self._tool_ticket
+        if ticket is not None:
+            if ticket.command_id is not None:
+                reconciled = self._reconcile_tool_prefetch_ticket(ticket)
+                if reconciled is None:
+                    if not self._parallel_wait_prefetch or not self.can_prefetch_during_overlap():
+                        return
+                    # Retain ACK reconciliation without serializing a different
+                    # context. The ledger still owns all bytes and native nodes.
+                    self._tool_inflight_tickets[ticket.key] = ticket
+                self._tool_ticket = None
+                self._tool_prefetch_next_ms = 0.
+                if reconciled is False:
+                    return
+                ticket = None
+        if ticket is not None:
+            hint = self._live_tool_hint(ticket.key)
+            if (
+                hint is None or hint.invocation_revision_ts_ms != ticket.revision
+                or not self._tool_prefetch_ready(
+                    hint, horizon_ms=ticket.start_window_ms,
+                )
+            ):
+                self._tool_ticket = None
+            else:
+                return
+        now_ms = time.monotonic() * 1000
+        if now_ms &lt; self._tool_prefetch_next_ms:
+            return
+        if self._wait_prefetch_transfer_busy():
+            return
+        self._tool_prefetch_next_ms = now_ms + SEMANTIC_FRAME_INTERVAL_MS
+        self.counts["tool_prefetch_scans"] += 1
+        budget = None
+        budget_headroom = None
+        candidates = []
+        outside_window = deferred = 0
+        next_possible_window_ms = math.inf
+        inflight_contexts = self.physical_ledger.pending_h2d_contexts
+        for hint in self.tool_wait_hints.values():
+            if self._agent_admission is not None and self._agent_admission.strategy in (
+                "thunderagent_retained", "thunderagent_workflow", "thunderagent_reference",
+            ) and not self._agent_admission.holds_restore(hint.key, source="tool_wait"):
+                self.counts["tool_prefetch_outside_retained_eligibility"] += 1
+                continue
+&gt;           if hint.key in self._tool_inflight_tickets or (
+               ^^^^^^^^
+                hint.key.context_id, hint.key.session_id, hint.key.session_generation,
+            ) in inflight_contexts:
+E           AttributeError: 'object' object has no attribute 'key'
+
+beliefkv/runtime/sglang_v0520_runtime.py:8683: AttributeError</failure></testcase></testsuite></testsuites>

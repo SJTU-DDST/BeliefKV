@@ -59,8 +59,14 @@ def arm_environment(
     )
     if tool_restore not in ("speculative", "execution"):
         raise ValueError("unsupported tool restore mode")
+    tool_setting = common.get(
+        "BELIEFKV_ENABLE_TOOL_PREFETCH", common.get("TOOL_PREFETCH", "1"),
+    )
+    if tool_setting not in ("0", "1"):
+        raise ValueError("tool prefetch setting must be 0 or 1")
     tool_prefetch_enabled = (
-        custom_kv and tool_prefetch is not False and tool_restore == "speculative"
+        custom_kv and tool_restore == "speculative"
+        and (tool_prefetch if tool_prefetch is not None else tool_setting == "1")
     )
     frontier = common.get(
         "BELIEFKV_ENABLE_FRONTIER_RESTORE",
