@@ -390,7 +390,9 @@ class DemandAwareToolOffload(PredictedToolOffload):
         # Explicit cold-start engineering bound; not measured PCIe bandwidth.
         return size_bytes / self.fallback_bytes_per_ms
 
-    def _worth_offloading(self, key, *, backup_tokens, release_tokens):
+    def _worth_offloading(
+        self, key, *, backup_tokens, release_tokens, consumer_restore_bytes=None,
+    ):
         hint = self.runtime._live_tool_hint(key)
         consumer = self._live_consumer(key)
         if hint is None or consumer is None:
@@ -398,9 +400,12 @@ class DemandAwareToolOffload(PredictedToolOffload):
         unit = self.runtime._residency_pool_bytes
         if unit is None:
             return False
+        consumer_bytes = consumer[2] if consumer_restore_bytes is None else consumer_restore_bytes
+        if type(consumer_bytes) is not int or consumer_bytes < consumer[2]:
+            return False
         restore_tokens = self.evicted_tokens.get(key, 0) + release_tokens
         restore = self.runtime._estimate_h2d_service(restore_tokens * unit[0], shape="full")
-        load_consumer = self.runtime._estimate_h2d_service(consumer[2], shape="full")
+        load_consumer = self.runtime._estimate_h2d_service(consumer_bytes, shape="full")
         backup = self.runtime._estimate_d2h_service(backup_tokens * unit[0], shape="full") if backup_tokens else None
         agents = self.runtime._agent_admission
         logical_handover_ms = (
@@ -415,7 +420,7 @@ class DemandAwareToolOffload(PredictedToolOffload):
         )
         threshold = (
             self._service_ms(backup_tokens * unit[0], "d2h")
-            + self._service_ms(consumer[2], "h2d")
+            + self._service_ms(consumer_bytes, "h2d")
             + self._service_ms(restore_tokens * unit[0], "h2d")
             + 2 * self.interval_ms
             + logical_handover_ms
@@ -435,7 +440,7 @@ class DemandAwareToolOffload(PredictedToolOffload):
             "remaining_threshold_ms": threshold, "cold_transfer_cost": cold,
             "predicted_completion_probability_within_threshold": probability,
             "backup_tokens_budgeted": backup_tokens, "restore_tokens_budgeted": restore_tokens,
-            "beneficiary_restore_bytes_budgeted": consumer[2],
+            "beneficiary_restore_bytes_budgeted": consumer_bytes,
             "logical_handover_budget_ms": logical_handover_ms,
             "beneficiary_request_id": self.consumer[1].request_id,
             "beneficiary_context_id": self.consumer[1].context_id,

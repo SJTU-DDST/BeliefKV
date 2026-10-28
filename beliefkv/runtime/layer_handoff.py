@@ -46,6 +46,33 @@ def try_handoff(offloader, key, step):
     ):
         runtime.counts["layer_handoff_geometry_refused"] += 1
         return False
+    try:
+        from sglang.srt.mem_cache.radix_cache import RadixKey
+
+        load, extras = cache.tree_core.build_load_back_spec(consumer.id)
+        restore_tokens = len(load.host_indices)
+        tail = restore_tokens - missing
+        if extras or restore_tokens <= 0:
+            return False
+        if tail:
+            # Reentry inspection stops at whole extents before the final input
+            # token. Include a cached decode tail only if this request contains
+            # that complete private extent; price every transferred token.
+            target = RadixKey(
+                request.origin_input_ids, extra_key=getattr(request, "extra_key", None),
+                cache_salt=getattr(request, "cache_salt", None),
+            )
+            if (
+                not 0 < tail == len(consumer.key) == len(b.host_value) <= cost[1]
+                or not consumer.key.is_prefix_at(
+                    target, observation["checkpoint_tokens"], page_size=runtime._native_page_size,
+                )
+            ):
+                runtime.counts["layer_handoff_unmatched_decode_tail"] += 1
+                return False
+    except (AttributeError, IndexError, KeyError, RuntimeError, TypeError, ValueError):
+        runtime.counts["layer_handoff_restore_extent_unavailable"] += 1
+        return False
     budget = runtime._current_residency_budget()
     minimum_growth = runtime._native_page_size * (
         len(getattr(runtime._native_running_batch, "reqs", ())) + 1
@@ -68,12 +95,13 @@ def try_handoff(offloader, key, step):
     reserve = cost[1] + growth
     def authorize(backup_tokens, consumer_tokens):
         return (
-            consumer_tokens == missing
+            consumer_tokens == restore_tokens
             and runtime.visible.get(getattr(request, "rid", None)) == consumer_key
             and runtime._agent_admission.allows(consumer_key)
             and offloader._eligible(key)
             and offloader._worth_offloading(
                 key, backup_tokens=backup_tokens, release_tokens=backup_tokens,
+                consumer_restore_bytes=restore_tokens * runtime._residency_pool_bytes[0],
             )
         )
 
@@ -99,6 +127,8 @@ def try_handoff(offloader, key, step):
                 "device_free_tokens": cc.mem_pool_device_allocator.available_size(),
                 "host_free_tokens": cc.mem_pool_host.available_size(),
                 "required_reserve_tokens": reserve,
+                "planned_restore_tokens": restore_tokens,
+                "checkpoint_missing_tokens": missing,
                 "donor_tokens": len(a.value) if a.value is not None else 0,
                 "donor_device_locks": a.lock_ref, "donor_host_locks": a.host_lock_ref,
                 "consumer_device_locks": b.lock_ref, "consumer_host_locks": b.host_lock_ref,
@@ -132,6 +162,7 @@ def try_handoff(offloader, key, step):
             "beneficiary_session_generation": consumer_key.session_generation,
             "capacity_effect": "reserved_extent;no_free_page_credit",
             "reserved_input_tokens": cost[1], "reserved_growth_tokens": growth,
+            "checkpoint_missing_tokens": missing, "restored_decode_tail_tokens": tail,
             "speculative_reserve_tokens": budget.reserve_full_tokens,
             "logical_admission_changed": False, **result, **offloader._action_detail(),
         })

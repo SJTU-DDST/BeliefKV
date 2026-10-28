@@ -2153,3 +2153,29 @@
   within-category sampled durations cannot be predicted from original command
   semantics. P90 coverage is not per-call accuracy; offload requires conservative
   remaining survival over actual migration cost, not a large P90 total duration.
+- Full online empirical forecasts had a separate confirmed refresh defect:
+  only `_tool_timing_only` entered periodic refresh, so Full with no legacy
+  worker lost its hints after1-2s. Four old-code counterexamples fail; bounded
+  online refresh plus deferred physical ancestry passes3433+4 shared CPU.
+  Keep the90% gate and unsupported-tail/return revocation. The independent
+  common11b84f7c3198 configuration passes3392+4, retaining3387.
+- Online-refresh FullR1 runs frozen29c58c8b678f, port18672:
+  ops/tool_online_refresh_20261027_r1.registration.json. Its actual nice0
+  watcher498770/server499268/GPU scheduler499614/driver500431 are verified;
+  startup seals942 exact receipts and2197 forecasts, including101 same-wait
+  groups with refresh. All13 common work/timing/engine/capacity fields match
+  completeV345; reuse that control. Nice19 CUDA-hidden plot waiter504790 uses
+  the dedicated plotting environment after complete success/owned exit.
+  Keep frozen execution and all tails. No final performance result is implied.
+- Layer-handoff modelR2-R4 remain failed qualification attempts, preserved
+  separately. R2 exposes speculative input reservation in actual demand; the
+  actual selected-input fix preserves all growth slots and selected chunks.
+  R3 exposes expired unrefreshed Full hints. R4 confirms fresh hints and a
+  32-token reserve with4080 free, then native refusal. The newest CPU red case
+  proves complete decode-tail load size differs from whole-extent checkpoint
+  size. Restore only an exact complete private tail matching this request,
+  price actual Host bytes and retain exact final extent authorization; partial
+  or divergent tails stay refused. Shared3436+4 retains3433 and adds3.
+  Native2a927b88939c remains unchanged; actual GPU/model and matched layer
+  performance remain pending. Keep handoff off in running Full, and do not
+  infer a performance win from these correctness repairs.

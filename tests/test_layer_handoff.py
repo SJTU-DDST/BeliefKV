@@ -343,6 +343,38 @@ def test_actual_prefill_plan_binds_and_releases_its_current_adder(native_handoff
     f.cache.sanity_check()
 
 
+@pytest.mark.parametrize("tail", ("complete", "diverged", "partial"))
+def test_handoff_accounts_for_observed_decode_tail_without_loading_a_foreign_prefix(
+    native_handoff, tail,
+):
+    from beliefkv.runtime.layer_handoff import try_handoff
+
+    f = native_handoff
+    split_prefix(f, range(101, 115))
+    tokens = list(range(101, 117))
+    if tail == "diverged":
+        tokens[-1] = -1
+    elif tail == "partial":
+        tokens.pop()
+    f.request.origin_input_ids = array("q", tokens)
+    observed = f.cache.inspect_beliefkv_reentry(f.request)
+    assert observed["checkpoint_tokens"] == observed["missing_full_tokens"] == 14
+    result = try_handoff(
+        f.offloader, f.runtime.context_sessions["ctx-tool"],
+        NS(node_id=f.donor.id, creation_time=f.donor.creation_time),
+    )
+    assert result is (tail == "complete"), dict(f.runtime.counts)
+    assert f.allocator.available_size() == 4
+    if result:
+        assert f.runtime.counts["layer_handoff_reused_tokens"] == 16
+        assert f.offloader.action_detail["beneficiary_restore_bytes_budgeted"] == (
+            16 * f.runtime._residency_pool_bytes[0]
+        )
+    else:
+        assert getattr(f.cache, "_beliefkv_layer_handoff", None) is None
+    f.cache.sanity_check()
+
+
 @pytest.mark.parametrize("cause", ("selected_chunk", "unknown_adder", "growth_space"))
 def test_selected_input_reserve_never_spends_another_batch_or_growth_budget(
     native_handoff, cause,
