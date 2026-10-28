@@ -2757,3 +2757,22 @@
   passed before the added diagnostic-option guard. Freeze then run current
   components/native current-fixture warm diagnostic/deterministic model,
   preserving ordinary-math failures, before position/Full. Tool prefetch stays0.
+- Current01510ed5 components r7 and deterministic model r2 pass exact24583
+  tokens/2416607232bytes,3 real post-stage resident decode completions and
+  A512/B8 independent cold outputs/logprobs0. Same-current-fixture native
+  ordinary continuation diagnostic also diverges(A210vs pipeline155);
+  B8 agree/maxdelta .000630020746, initial histories0, all9 bodies match
+  except sessions. Independent current_model_review binds sources/AST/ACK/
+  service/owned exit and explicitly leaves ordinary long-greedy equivalence
+  false. It permits position qualification, not performance claims.
+- Position r1 now passes24 exact token/session/native-stop checks, all24
+  native stops; running24 dispatch wall increment .009628375ms. Actual watcher
+ 967144/server cleanup precedes Full's server. Full now runs frozen01510ed5/
+  native729aa0caa7a1 at ops/demand_prefill_pipeline_20261028_r1.registration.json,
+  port18693. Independent live_start verifies nice0 watcher969993/server970533/
+  driver971947/sole GPU970873, installed pipeline1, probe/profile/tool-prefetch/
+  frontier0 and original non-deterministic FA3/flashinfer. It seals170 exact
+  receipts, not full3674/performance. Preserve initial no-receipt refusal.
+  Keep all frozen inputs/sources/tails and completeV345 with disclosed engine
+  difference. No other baseline/ablation/follow-up GPU is queued; goal active.
+  See docs/research/native_demand_pipeline_start_20261028_zh.md.

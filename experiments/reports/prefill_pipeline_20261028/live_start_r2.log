@@ -1,0 +1,16 @@
+{
+  "code_commit": "01510ed528c2247f3ce0b370151381b04fefea9e",
+  "exact_completed_receipts": 170,
+  "original_math": {
+    "enable_deterministic_inference": false,
+    "attention_backend": "fa3",
+    "sampling_backend": "flashinfer",
+    "enable_custom_logit_processor": true
+  },
+  "actual_process_pids": {
+    "watcher": 969993,
+    "server": 970533,
+    "driver": 971947,
+    "gpu_scheduler": 970873
+  }
+}

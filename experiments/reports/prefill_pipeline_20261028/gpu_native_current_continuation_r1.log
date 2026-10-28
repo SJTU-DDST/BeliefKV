@@ -1,0 +1,40 @@
+{
+  "status": "native_demand_model_diagnostic_collected",
+  "diagnostic_control_only": true,
+  "actual_numerical_parameters": {
+    "enable_deterministic_inference": false,
+    "attention_backend": "fa3",
+    "sampling_backend": "flashinfer",
+    "max_running_requests": 24,
+    "max_total_tokens": 61440,
+    "context_length": 65536,
+    "enable_session_radix_cache": true,
+    "disable_radix_cache": false,
+    "enable_custom_logit_processor": false,
+    "hicache_io_backend": "kernel"
+  },
+  "maximum_logprob_delta": null,
+  "output_diagnostics": {
+    "a_resident": {
+      "output_token_ids_equal": false,
+      "first_differing_output_ordinal": 210,
+      "maximum_logprob_delta": 2.65222867106786
+    },
+    "b_demand": {
+      "output_token_ids_equal": true,
+      "first_differing_output_ordinal": null,
+      "maximum_logprob_delta": 0.0006300207460299134
+    },
+    "a_initial": {
+      "output_token_ids_equal": true,
+      "first_differing_output_ordinal": null,
+      "maximum_logprob_delta": 0.0
+    },
+    "b_initial": {
+      "output_token_ids_equal": true,
+      "first_differing_output_ordinal": null,
+      "maximum_logprob_delta": 0.0
+    }
+  },
+  "model_qualified": false
+}

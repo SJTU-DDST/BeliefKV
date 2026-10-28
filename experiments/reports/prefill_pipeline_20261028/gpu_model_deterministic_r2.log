@@ -1,0 +1,22 @@
+{
+  "status": "unforced_demand_prefill_deterministic_model_qualified",
+  "diagnostic_control_only": false,
+  "actual_numerical_parameters": {
+    "enable_deterministic_inference": true,
+    "attention_backend": "fa3",
+    "sampling_backend": "pytorch",
+    "max_running_requests": 24,
+    "max_total_tokens": 61440,
+    "context_length": 65536,
+    "enable_session_radix_cache": true,
+    "disable_radix_cache": false,
+    "enable_custom_logit_processor": false,
+    "hicache_io_backend": "kernel"
+  },
+  "maximum_logprob_delta": {
+    "a_resident": 0.0,
+    "b_demand": 0.0
+  },
+  "output_diagnostics": null,
+  "model_qualified": null
+}

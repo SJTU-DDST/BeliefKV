@@ -1,0 +1,323 @@
+{
+  "status": "native_gpu_demand_prefill_components_qualified",
+  "performance_accepted": false,
+  "application": {
+    "commit": "01510ed528c2247f3ce0b370151381b04fefea9e",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "500238263d1c1a31b5614effede22aacac83d620829c7840b3d09166e17daf26"
+  },
+  "native_engine": {
+    "commit": "d3da19c1ca85581342a14b322fdc94cdc290654d",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "fc39cb9c2ff0b219a47539149f830c5d2bcdd5f6a45932606ba444f86668f21f"
+  },
+  "native_tree": "729aa0caa7a1ffac84463f46b3d1843d1a6a22e4",
+  "canonical_patch_sha256": "c9b3ae50490a5023e5d7fd1fb473c97b1c4c7f22923d06211bf1ea6173f86f0b",
+  "operator_sha256": "6b0fdf2b2910907b4420017824c862f596a930abdf00ce4b41bffa8ba9b35505",
+  "owned_gpu_pid": 962906,
+  "authorization": {
+    "hold_file": "/home/longhao/experiment/ops/gpu_hold_until_20261022_0600.json",
+    "hold_sha256": "57a02d25be864ec84fc1c4e6c0afba31b1282ce681e18f7c4dd6974f3f788f9d",
+    "checked_at": "2026-10-29T06:41:57.473184+08:00"
+  },
+  "cpu_evidence": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/formal_entry_r1_cpu.evidence.json",
+    "sha256": "5307ab4a1f5e0c4fd72fdf153c88d782b32374cacd686cea23b9adf67ce50097"
+  },
+  "scenarios": [
+    {
+      "scenario": "resident_access",
+      "staged_members": 1,
+      "real_native_adder_and_request_receipts": true,
+      "resident_accessor_completed_before_h2d_ack": true,
+      "all_consumer_kv_bytes_equal": true,
+      "cancelled_shared_prefix_fence_verified": false,
+      "early_fallback_fence_verified": false,
+      "staged_native_ack": {
+        "counts": {
+          "matched_staging_episodes": 1,
+          "native_selected_requests": 1,
+          "native_full_tokens": 32,
+          "native_h2d_bytes": 32768
+        },
+        "episodes": [
+          {
+            "request_id": "request-0",
+            "workflow_id": "demand-component",
+            "invocation_id": "request-0",
+            "context_id": "request-0",
+            "session_id": "cold-0",
+            "session_generation": 2,
+            "context_epoch": 0,
+            "attempt_id": 0,
+            "native_batch_size": 1,
+            "requests": [
+              {
+                "request_id": "request-0",
+                "workflow_id": "demand-component",
+                "invocation_id": "request-0",
+                "context_id": "request-0",
+                "context_epoch": 0,
+                "attempt_id": 0,
+                "session_id": "cold-0",
+                "session_generation": 2
+              }
+            ],
+            "native_submit_ts_ms": 1793227324045.9668,
+            "journal_ts_ms": 1793227324046.5203,
+            "native_node_ids": [
+              11
+            ],
+            "native_full_tokens": 32,
+            "native_h2d_bytes": 32768,
+            "staged_monotonic_ms": 7397587147.099068,
+            "monotonic_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec"
+          }
+        ],
+        "exact_native_ack_matches_verified": true,
+        "scope": "staged native demand only; no speculative or request cache-hit credit",
+        "first_service_and_hidden_transfer_time_proven": false
+      },
+      "cleanup": {
+        "final_device_free_tokens": 128,
+        "initial_host_free_tokens": 257,
+        "final_host_free_tokens": 257
+      },
+      "geometry": {
+        "device_tokens": 128,
+        "host_tokens": 257,
+        "layers": 2,
+        "bytes_per_token": 1024
+      },
+      "model_forward_qualified": false,
+      "performance_accepted": false,
+      "scope": "Finite delayed-copy component; real GPU accessors, not model decode."
+    },
+    {
+      "scenario": "selected_batch",
+      "staged_members": 2,
+      "real_native_adder_and_request_receipts": true,
+      "resident_accessor_completed_before_h2d_ack": true,
+      "all_consumer_kv_bytes_equal": true,
+      "cancelled_shared_prefix_fence_verified": false,
+      "early_fallback_fence_verified": false,
+      "staged_native_ack": {
+        "counts": {
+          "matched_staging_episodes": 1,
+          "native_selected_requests": 2,
+          "native_full_tokens": 64,
+          "native_h2d_bytes": 65536
+        },
+        "episodes": [
+          {
+            "request_id": "request-0",
+            "workflow_id": "demand-component",
+            "invocation_id": "request-0",
+            "context_id": "request-0",
+            "session_id": "cold-0",
+            "session_generation": 2,
+            "context_epoch": 0,
+            "attempt_id": 0,
+            "native_batch_size": 2,
+            "requests": [
+              {
+                "request_id": "request-0",
+                "workflow_id": "demand-component",
+                "invocation_id": "request-0",
+                "context_id": "request-0",
+                "context_epoch": 0,
+                "attempt_id": 0,
+                "session_id": "cold-0",
+                "session_generation": 2
+              },
+              {
+                "request_id": "request-1",
+                "workflow_id": "demand-component",
+                "invocation_id": "request-1",
+                "context_id": "request-1",
+                "context_epoch": 0,
+                "attempt_id": 0,
+                "session_id": "cold-1",
+                "session_generation": 3
+              }
+            ],
+            "native_submit_ts_ms": 1793227325201.3503,
+            "journal_ts_ms": 1793227325201.9072,
+            "native_node_ids": [
+              23,
+              24
+            ],
+            "native_full_tokens": 64,
+            "native_h2d_bytes": 65536,
+            "staged_monotonic_ms": 7397588302.48661,
+            "monotonic_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec"
+          }
+        ],
+        "exact_native_ack_matches_verified": true,
+        "scope": "staged native demand only; no speculative or request cache-hit credit",
+        "first_service_and_hidden_transfer_time_proven": false
+      },
+      "cleanup": {
+        "final_device_free_tokens": 128,
+        "initial_host_free_tokens": 257,
+        "final_host_free_tokens": 257
+      },
+      "geometry": {
+        "device_tokens": 128,
+        "host_tokens": 257,
+        "layers": 2,
+        "bytes_per_token": 1024
+      },
+      "model_forward_qualified": false,
+      "performance_accepted": false,
+      "scope": "Finite delayed-copy component; real GPU accessors, not model decode."
+    },
+    {
+      "scenario": "no_decode_fallback",
+      "staged_members": 1,
+      "real_native_adder_and_request_receipts": true,
+      "resident_accessor_completed_before_h2d_ack": true,
+      "all_consumer_kv_bytes_equal": true,
+      "cancelled_shared_prefix_fence_verified": false,
+      "early_fallback_fence_verified": true,
+      "staged_native_ack": {
+        "counts": {
+          "matched_staging_episodes": 1,
+          "native_selected_requests": 1,
+          "native_full_tokens": 32,
+          "native_h2d_bytes": 32768
+        },
+        "episodes": [
+          {
+            "request_id": "request-0",
+            "workflow_id": "demand-component",
+            "invocation_id": "request-0",
+            "context_id": "request-0",
+            "session_id": "cold-0",
+            "session_generation": 2,
+            "context_epoch": 0,
+            "attempt_id": 0,
+            "native_batch_size": 1,
+            "requests": [
+              {
+                "request_id": "request-0",
+                "workflow_id": "demand-component",
+                "invocation_id": "request-0",
+                "context_id": "request-0",
+                "context_epoch": 0,
+                "attempt_id": 0,
+                "session_id": "cold-0",
+                "session_generation": 2
+              }
+            ],
+            "native_submit_ts_ms": 1793227326352.3672,
+            "journal_ts_ms": 1793227326352.9421,
+            "native_node_ids": [
+              36
+            ],
+            "native_full_tokens": 32,
+            "native_h2d_bytes": 32768,
+            "staged_monotonic_ms": 7397589453.521769,
+            "monotonic_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec"
+          }
+        ],
+        "exact_native_ack_matches_verified": true,
+        "scope": "staged native demand only; no speculative or request cache-hit credit",
+        "first_service_and_hidden_transfer_time_proven": false
+      },
+      "cleanup": {
+        "final_device_free_tokens": 128,
+        "initial_host_free_tokens": 257,
+        "final_host_free_tokens": 257
+      },
+      "geometry": {
+        "device_tokens": 128,
+        "host_tokens": 257,
+        "layers": 2,
+        "bytes_per_token": 1024
+      },
+      "model_forward_qualified": false,
+      "performance_accepted": false,
+      "scope": "Finite delayed-copy component; real GPU accessors, not model decode."
+    },
+    {
+      "scenario": "abort_shared_prefix",
+      "staged_members": 1,
+      "real_native_adder_and_request_receipts": true,
+      "resident_accessor_completed_before_h2d_ack": true,
+      "all_consumer_kv_bytes_equal": true,
+      "cancelled_shared_prefix_fence_verified": true,
+      "early_fallback_fence_verified": false,
+      "staged_native_ack": {
+        "counts": {
+          "matched_staging_episodes": 1,
+          "native_selected_requests": 1,
+          "native_full_tokens": 32,
+          "native_h2d_bytes": 32768
+        },
+        "episodes": [
+          {
+            "request_id": "request-0",
+            "workflow_id": "demand-component",
+            "invocation_id": "request-0",
+            "context_id": "request-0",
+            "session_id": "cold-0",
+            "session_generation": 2,
+            "context_epoch": 0,
+            "attempt_id": 0,
+            "native_batch_size": 1,
+            "requests": [
+              {
+                "request_id": "request-0",
+                "workflow_id": "demand-component",
+                "invocation_id": "request-0",
+                "context_id": "request-0",
+                "context_epoch": 0,
+                "attempt_id": 0,
+                "session_id": "cold-0",
+                "session_generation": 2
+              }
+            ],
+            "native_submit_ts_ms": 1793227327501.1282,
+            "journal_ts_ms": 1793227327501.7305,
+            "native_node_ids": [
+              48
+            ],
+            "native_full_tokens": 32,
+            "native_h2d_bytes": 32768,
+            "staged_monotonic_ms": 7397590602.309987,
+            "monotonic_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec"
+          }
+        ],
+        "exact_native_ack_matches_verified": true,
+        "scope": "staged native demand only; no speculative or request cache-hit credit",
+        "first_service_and_hidden_transfer_time_proven": false
+      },
+      "cleanup": {
+        "final_device_free_tokens": 128,
+        "initial_host_free_tokens": 257,
+        "final_host_free_tokens": 257
+      },
+      "geometry": {
+        "device_tokens": 128,
+        "host_tokens": 257,
+        "layers": 2,
+        "bytes_per_token": 1024
+      },
+      "model_forward_qualified": false,
+      "performance_accepted": false,
+      "scope": "Finite delayed-copy component; real GPU accessors, not model decode."
+    }
+  ],
+  "model_forward_qualified": false,
+  "whole_workload_qualified": false,
+  "observed_at": "2026-10-28T22:42:08.625804+00:00"
+}

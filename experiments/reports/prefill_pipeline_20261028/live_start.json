@@ -1,0 +1,165 @@
+{
+  "observed_at": "2026-10-28T23:01:54.487207+00:00",
+  "scope": "Formal startup and receipt prefix only; not complete performance or ordinary greedy equivalence.",
+  "registration": "/home/longhao/experiment/ops/demand_prefill_pipeline_20261028_r1.registration.json",
+  "code_commit": "01510ed528c2247f3ce0b370151381b04fefea9e",
+  "native_engine_tree": "729aa0caa7a1ffac84463f46b3d1843d1a6a22e4",
+  "control_native_engine_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+  "same_work_timing_capacity_fields": [
+    "source_plan",
+    "token_source_sha256",
+    "source_capacity",
+    "source_server_parameters",
+    "workflow_ids",
+    "quality_exclusions",
+    "quality_exclusion_details",
+    "sampling_mode",
+    "stream_response_metrics",
+    "request_timeout_s",
+    "max_running_requests"
+  ],
+  "actual_nice0_processes": {
+    "watcher": {
+      "pid": 969993,
+      "state": "S",
+      "ppid": 1,
+      "start_ticks": "739842314",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-causal-01510ed528c2/scripts/run_causal_comparison.py",
+        "--watch",
+        "/home/longhao/experiment/ops/demand_prefill_pipeline_20261028_r1.registration.json"
+      ]
+    },
+    "server": {
+      "pid": 970533,
+      "state": "S",
+      "ppid": 969993,
+      "start_ticks": "739845066",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+        "--served-model-name",
+        "Qwen3-Coder-30B-A3B-Instruct",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "18693",
+        "--dtype",
+        "bfloat16",
+        "--kv-cache-dtype",
+        "bfloat16",
+        "--tensor-parallel-size",
+        "1",
+        "--context-length",
+        "262144",
+        "--mem-fraction-static",
+        "0.94",
+        "--chunked-prefill-size",
+        "4096",
+        "--max-running-requests",
+        "24",
+        "--random-seed",
+        "21",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--enable-metrics",
+        "--enable-hierarchical-cache",
+        "--hicache-size",
+        "200",
+        "--hicache-write-policy",
+        "write_back",
+        "--hicache-io-backend",
+        "kernel",
+        "--hicache-mem-layout",
+        "page_first",
+        "--enable-session-radix-cache",
+        "--enable-custom-logit-processor",
+        "--max-total-tokens",
+        "805198",
+        "--enable-beliefkv-admission",
+        "--beliefkv-event-socket-path",
+        "/tmp/bkv-causal-18693.sock"
+      ]
+    },
+    "driver": {
+      "pid": 971947,
+      "state": "S",
+      "ppid": 969993,
+      "start_ticks": "739859630",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-causal-01510ed528c2/scripts/run_causal_gpu_replay.py",
+        "--source-arm",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_parallel_retry_source_20261026_v230/native_capture",
+        "--output-dir",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_pipeline_20261028_r1/full/replay",
+        "--base-url",
+        "http://127.0.0.1:18693",
+        "--request-timeout-s",
+        "3600.0",
+        "--stream-response-metrics",
+        "--tool-duration-overlay",
+        "/home/longhao/experiment/.worktrees/beliefkv-demand-formal-01510ed5-20261028/experiments/reports/v311_v230_categorized_network_timing_cpu_20261027.json",
+        "--event-socket",
+        "/tmp/bkv-causal-18693.sock"
+      ]
+    },
+    "gpu_scheduler": {
+      "pid": 970873,
+      "state": "R",
+      "ppid": 970533,
+      "start_ticks": "739846452",
+      "argv": [
+        "sglang::scheduler"
+      ]
+    }
+  },
+  "verified_runtime_settings": {
+    "physical_disabled": false,
+    "profile_shared_path": false,
+    "demand_prefill_pipeline": true,
+    "demand_prefill_pipeline_installed": true,
+    "demand_prefill_pipeline_progress_probe": false,
+    "agent_join_blocked_handoff": true,
+    "tool_offload_min_survival": 0.75,
+    "host_demand_reserve_bytes": 2147483648,
+    "layer_handoff_enabled": true,
+    "layer_handoff_d2h_layers": 8,
+    "layer_handoff_h2d_layers": 4,
+    "tool_prefetch": false,
+    "tool_prefetch_priority_ms": 0.0,
+    "tool_offload_before_admission": true,
+    "execution_frontier_restore": false
+  },
+  "original_performance_math": {
+    "enable_deterministic_inference": false,
+    "attention_backend": "fa3",
+    "sampling_backend": "flashinfer",
+    "enable_custom_logit_processor": true
+  },
+  "ordinary_math_long_greedy_equivalence_verified": false,
+  "deterministic_model_io_qualification_disclosed": true,
+  "exact_completed_receipts": 170,
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_pipeline_20261028_r1/full/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 556294,
+      "complete_prefix_sha256": "9a8439d41f77318d145ec455d774dc6eb3552f7b66f39b3ab4e590eee70713f4",
+      "first_read_limit_bytes": 556294
+    }
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/ops/demand_prefill_pipeline_20261028_r1.registration.json": "59caf40545da12972b8affe70025fdca7790867e4c09db2359815043f8a2f74c",
+    "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.json": "66a5bac27ce8d8f70a91e5c45fcc377b7950db56bc3bd2a7588124fd5209902b",
+    "/home/longhao/experiment/ops/demand_prefill_pipeline_position_20261028_r1.registration.json": "401f3ca635a25792e18d6bfa899a0e61b78f9defb8f70d2c6c8191a0a5e3eb0b",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_pipeline_position_20261028_r1/gpu_smoke.json": "516bcabdbf281f408d28b1c987fc341179b0f779b872500e455e234ae85413dc",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/formal_entry_r1_cpu.sources.json": "89f3c70f6a29e9fc4498da7fd0fa47a1f156850674ca835ade0fa2171ffd08c6",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/current_model_review.json": "86fa74fc9e438f2396186fde0b2bdb9c2733f7127b31cd30291c9e3498255353",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_deterministic_20261028_r2/report.json": "3bb8e41732aa1d4a466171fa9b576ea8e22d89cf1eb7011d946febcd20ca0882",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/live_start.py": "1d92469ffc54e9ed4cb85f1e57c31cf2d45fac6f4e415857f16a293bc5836d0d"
+  },
+  "performance_accepted": false
+}

@@ -1,0 +1,236 @@
+{
+  "observed_at": "2026-10-28T22:49:34.017087+00:00",
+  "current_cpu_and_components_verified": true,
+  "passing_cpu_cases": 4100,
+  "deterministic_model_exact_outputs": {
+    "actual_greedy_tokens_equal": true,
+    "maximum_logprob_delta": {
+      "a_resident": 0.0,
+      "b_demand": 0.0
+    }
+  },
+  "normal_dma_model_progress": {
+    "resident_decode_completed_while_native_ack_pending": true,
+    "ordinary_native_h2d_without_artificial_delay": true,
+    "staged_native_full_tokens": 24583,
+    "completed_batches": [
+      {
+        "forward_iter": 75,
+        "request_id": "demand-model:a_resident",
+        "output_tokens": 22,
+        "batch_launch_monotonic_ms": 7397855762.043675,
+        "completion_observed_monotonic_ms": 7397855785.787582
+      },
+      {
+        "forward_iter": 76,
+        "request_id": "demand-model:a_resident",
+        "output_tokens": 23,
+        "batch_launch_monotonic_ms": 7397855763.894395,
+        "completion_observed_monotonic_ms": 7397855808.967196
+      },
+      {
+        "forward_iter": 77,
+        "request_id": "demand-model:a_resident",
+        "output_tokens": 24,
+        "batch_launch_monotonic_ms": 7397855786.41267,
+        "completion_observed_monotonic_ms": 7397855832.154233
+      }
+    ],
+    "scope": "processed actual model results while immutable ACK query was false; not kernel timing"
+  },
+  "native_ack": {
+    "counts": {
+      "matched_staging_episodes": 1,
+      "native_selected_requests": 1,
+      "native_full_tokens": 24583,
+      "native_h2d_bytes": 2416607232
+    },
+    "episodes": [
+      {
+        "request_id": "demand-model:b_demand",
+        "workflow_id": "demand-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "session_id": "beliefkv-babdd5c7db9928ada9a772aead14f3b4",
+        "session_generation": 1,
+        "context_epoch": 0,
+        "attempt_id": 0,
+        "native_batch_size": 1,
+        "requests": [
+          {
+            "request_id": "demand-model:b_demand",
+            "workflow_id": "demand-model",
+            "invocation_id": "b",
+            "context_id": "b",
+            "context_epoch": 0,
+            "attempt_id": 0,
+            "session_id": "beliefkv-babdd5c7db9928ada9a772aead14f3b4",
+            "session_generation": 1
+          }
+        ],
+        "native_submit_ts_ms": 1793227592659.633,
+        "journal_ts_ms": 1793227592661.0386,
+        "native_node_ids": [
+          36
+        ],
+        "native_full_tokens": 24583,
+        "native_h2d_bytes": 2416607232,
+        "staged_monotonic_ms": 7397855761.617396,
+        "monotonic_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec"
+      }
+    ],
+    "exact_native_ack_matches_verified": true,
+    "scope": "staged native demand only; no speculative or request cache-hit credit",
+    "first_service_and_hidden_transfer_time_proven": false
+  },
+  "subsequent_native_service": {
+    "counts": {
+      "members_with_subsequent_native_service": 1
+    },
+    "members": [
+      {
+        "request_id": "demand-model:b_demand",
+        "workflow_id": "demand-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "attempt_id": 0,
+        "session_id": "beliefkv-babdd5c7db9928ada9a772aead14f3b4",
+        "session_generation": 1,
+        "status": "subsequent_native_service_verified",
+        "first_native_forward_iter": 79,
+        "first_launch_monotonic_ms": 7397855855.068054,
+        "staged_to_first_native_launch_ms": 93.45065784454346,
+        "native_completion_receipt_verified": false
+      }
+    ],
+    "all_members_have_native_service_or_explicit_cancellation": true,
+    "native_completion_receipts_required": false,
+    "native_kv_reuse_or_hidden_dma_proven": false,
+    "counting_unit": "staging episode/member association, not unique request",
+    "timing_boundary": "native run_batch entry/completed worker; not CUDA kernel time"
+  },
+  "ordinary_math_diagnostics": {
+    "pipeline": {
+      "a_resident": {
+        "output_token_ids_equal": false,
+        "first_differing_output_ordinal": 155,
+        "maximum_logprob_delta": 2.948075294494629
+      },
+      "b_demand": {
+        "output_token_ids_equal": true,
+        "first_differing_output_ordinal": null,
+        "maximum_logprob_delta": 0.0006300207460299134
+      },
+      "a_initial": {
+        "output_token_ids_equal": true,
+        "first_differing_output_ordinal": null,
+        "maximum_logprob_delta": 0.0
+      },
+      "b_initial": {
+        "output_token_ids_equal": true,
+        "first_differing_output_ordinal": null,
+        "maximum_logprob_delta": 0.0
+      }
+    },
+    "native": {
+      "a_resident": {
+        "output_token_ids_equal": false,
+        "first_differing_output_ordinal": 210,
+        "maximum_logprob_delta": 2.65222867106786
+      },
+      "b_demand": {
+        "output_token_ids_equal": true,
+        "first_differing_output_ordinal": null,
+        "maximum_logprob_delta": 0.0006300207460299134
+      },
+      "a_initial": {
+        "output_token_ids_equal": true,
+        "first_differing_output_ordinal": null,
+        "maximum_logprob_delta": 0.0
+      },
+      "b_initial": {
+        "output_token_ids_equal": true,
+        "first_differing_output_ordinal": null,
+        "maximum_logprob_delta": 0.0
+      }
+    }
+  },
+  "ordinary_math_diagnostic_bodies_match_except_sessions": true,
+  "ordinary_math_long_greedy_equivalence_verified": false,
+  "deterministic_fixture_only": true,
+  "eligible_for_position_qualification": true,
+  "whole_workload_qualified": false,
+  "performance_accepted": false,
+  "all_model_servers_exited": true,
+  "gpu_compute_processes_absent": true,
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/formal_entry_r1_cpu.evidence.json": "5307ab4a1f5e0c4fd72fdf153c88d782b32374cacd686cea23b9adf67ce50097",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/formal_entry_r1_cpu.sources.json": "89f3c70f6a29e9fc4498da7fd0fa47a1f156850674ca835ade0fa2171ffd08c6",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/gpu_components_r7.json": "bd5b2ff6565a235254c736dd12fcfa79dbf0fadd4a51c7168f4f6f7bfb58a767",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_deterministic_20261028_r2/report.json": "3bb8e41732aa1d4a466171fa9b576ea8e22d89cf1eb7011d946febcd20ca0882",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_deterministic_20261028_r2/server_info.json": "5f3268cb78a300d3ae7554874e72dd8fb9d583e4958e3d4bad5c27355f2ba5fb",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_deterministic_20261028_r2/request_b_initial.json": "8589c6e716dd2e50b76da7e9c933c72e1b0dfb92ddf84460d42b1f8f62160aae",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_deterministic_20261028_r2/response_b_initial.json": "b89745282abb7d3e68d849dcfe67b10c42221f39787cae76db0b12f851a6f7f5",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_deterministic_20261028_r2/request_c.json": "5ed8338cef125c6af48b8aa4b0cf9b864a127a3de8d1cc7d4921e7777a3548c8",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_deterministic_20261028_r2/response_c.json": "c4a1fa72ca091b73bbd09305724e8d774a5b3596630e7445a24ce5935e4e334e",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_deterministic_20261028_r2/request_a_initial.json": "1f1811ec268e47675b91baeb1855a7b03b54ee5e952a38262e674e2fd74b4ca6",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_deterministic_20261028_r2/response_a_initial.json": "44646ea39dbbfc718867cd9ffd6ee34678aa7a8275a53b97d7d86022d9bbee8e",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_deterministic_20261028_r2/request_a_resident.json": "e78226544294f6f9ae7c9953e354650eadb4c62b384b7c7fd579f3144cdc430e",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_deterministic_20261028_r2/response_a_resident.json": "402345679fb31ab1773d3856fbd242d9b25d5f958a8d12085aa8af59cc2e1e70",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_deterministic_20261028_r2/request_b_demand.json": "83d6a682f288a469f6df09118467f1632ed9c80868180fd1e3b168d93ca798c1",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_deterministic_20261028_r2/response_b_demand.json": "dcec01a4bdd131fa19b9a8e6897ba724c536dac1589f0d9f50bf0f5e305d8287",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_deterministic_20261028_r2/request_a_reference.json": "193130a25955386894ec50c0da76973da2fc2bea0c10792a931f08123f761dee",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_deterministic_20261028_r2/response_a_reference.json": "95241bb1ab3ed2d54411263644f1b1a0858483d4bb3fd78dba78cdc9d4889469",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_deterministic_20261028_r2/request_b_reference.json": "745c79d008ea9b777fb65243b90b9cb4b256215a887058116370117fd14d7c15",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_deterministic_20261028_r2/response_b_reference.json": "c4c4249404dfb34db886604328284448a2395d7e662a2db469ecb287635e46c0",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_deterministic_20261028_r2/arm/opportunities/admission_opportunities.jsonl": "95dfe10679022c8dd52fd4f0bad505595c7e3b51df2ef38d76e84b07262938be",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_deterministic_20261028_r2/arm/server/runtime_audit.jsonl": "1a90d99bddb53228e5e768cdf85594d0fbb84c4eda922850d5df15b7490dac47",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_deterministic_20261028_r2/arm/server/transfer_telemetry.jsonl": "1b1ad218fc9a2bce73ae7623f754b4599fe757e7c65379ec0c527bed7bf74518",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_deterministic_20261028_r2/owned_process_cleanup.json": "90fdfc2b2cfcab91dbd22efd0e2a2968c5fd09543e4b2684dfe6dbfafabed367",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_continuation_20261028_r1/report.json": "a0794f889c85c2bbeb8f7f5477038bc838820f61fac7fd039092ddd3ef01eac3",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_continuation_20261028_r1/server_info.json": "445bc0b06510f6d36692499f1f9fcaa7f9edde76101c0e2e23d7dbc6ed2f218c",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_continuation_20261028_r1/request_b_initial.json": "81a6b73e88da1f77b4301de93441ac8b6ee6b9d2deae722e662b4969df4a15ae",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_continuation_20261028_r1/response_b_initial.json": "1847a474c616e6e6f7ee27b50b0f91acc268fd51f5f3a9174d9f1229ba3d1f03",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_continuation_20261028_r1/request_c.json": "3007cc7a13368b2a216e1f4618f34a4a2257714b6834cad2d78359466ded01e9",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_continuation_20261028_r1/response_c.json": "f04d2ffd64a45e5a7f3554a99cdcb0cc7e5d41cacb38acf9f80a45276cab9d36",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_continuation_20261028_r1/request_a_initial.json": "5fd5cc7c42d7398b89919b44cca2d9c53a6c0c841ac3a1bc046dab6161767bf9",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_continuation_20261028_r1/response_a_initial.json": "9476fa6a50ccb659a192a5ee93aa93c7e17e8c0010d41fa51745b6facc29d320",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_continuation_20261028_r1/request_a_resident.json": "2ecbcba100f4fd43c0dd0df58355ba1ba2b488022af50eda834968ac7e9e11aa",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_continuation_20261028_r1/response_a_resident.json": "d8ec462c7346a18cba63eda55b02c16fb97dca21dbcc3b331fa81f0f0e3818c1",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_continuation_20261028_r1/request_b_demand.json": "c8cc24ea2fcb82ece5676b6d039947cddd6fc88a7c714f13502ade34a658db26",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_continuation_20261028_r1/response_b_demand.json": "b54049c84845c97ba9ac1d47e2a3b017ba28ac0fbf7397f8530e4ab7433696af",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_continuation_20261028_r1/request_a_reference.json": "32859767d2c6c662a2682afed7303877fd3db08f98f9810bb1bdd5a3b17cc244",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_continuation_20261028_r1/response_a_reference.json": "3c6567c6473f58eb9d3dde497270e0f41ab28ad9bf51bded63ef95b8ce28f814",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_continuation_20261028_r1/request_b_reference.json": "3ba58d950da04776dfe2459b593e276b12508ac47a0d3f03e18162c196dfc6f9",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_continuation_20261028_r1/response_b_reference.json": "e3ab5a798f5d5b277bf43693924ee830455ee14b97cfb9bfc5d92479115768ae",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_continuation_20261028_r1/request_a_reference_initial.json": "b2fd658913ca8dd42104f91ccd96dbe3dd5a29f91f16d44ab3e9af5c6ff5c483",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_continuation_20261028_r1/response_a_reference_initial.json": "cc46de2772a5fc9243295a895cddd276fbd0ac737089760ec5f615033bf89af9",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_continuation_20261028_r1/request_b_reference_initial.json": "51bb5ec2e76c68a5c2912c7106d25aca0ecf73a4c25b140d3ae9b85437f4cd6b",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_continuation_20261028_r1/response_b_reference_initial.json": "f21736e40fe4e68a0bce95e8d438aa4aeb1e421032bc35d268f22c428b0aa6b2",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_continuation_20261028_r1/owned_process_cleanup.json": "222a74ba4107bd17129631f1b2bf8e473834d9e745e24e575ce3e8eaae3e87f0",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_current_continuation_20261028_r1/report.json": "1db75f9f06990e2b1e9c9e7ee55963a7a25eee8540f5dc872cb872348507cd1f",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_current_continuation_20261028_r1/server_info.json": "99d5229906f0806163e0350a1de6878ba10f3099b905d70c9f33d9b3d08e166c",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_current_continuation_20261028_r1/request_b_initial.json": "8f2625fa9f2ebdbf47676df5139e8b987422bdba4ce93dc472efd95db6991831",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_current_continuation_20261028_r1/response_b_initial.json": "26fa04853aab8129e53d31ab9c8adc80a158cb279be7f4fbd6a470f3fed4d45c",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_current_continuation_20261028_r1/request_c.json": "07ac1c43f34a2569b05683145e06f9f2dd7520ee76a8ba4f6c1b9f711502fbaf",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_current_continuation_20261028_r1/response_c.json": "bfbf9557403cee0d8a977e76857c2ad2ac466ef04f2b6cbf86c20eedd42be94f",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_current_continuation_20261028_r1/request_a_initial.json": "e7453ef0d5f24191aec96e1314fef1973688e12c8d073cb32f526063d35eeed2",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_current_continuation_20261028_r1/response_a_initial.json": "d028bfd8dfa924169567eecae7bc3a287125be6144fe359698b73e672b394440",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_current_continuation_20261028_r1/request_a_resident.json": "170ed2466f568113cfc54103505e30ed2056ff16b8d4440d607c1f0ad04aed3a",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_current_continuation_20261028_r1/response_a_resident.json": "c4b8d3c896588a9f6aca34a2d2618524ad11f25bae1116cdc71bf627109b139d",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_current_continuation_20261028_r1/request_b_demand.json": "a685efb1dd7a9d89ff0a2964adabb8b683477b3b7c0b8b43a5f8cd1505b589b9",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_current_continuation_20261028_r1/response_b_demand.json": "c8dabe323f4d411715549a7338929eba6af6ea3ff979ac15c65c843900766e77",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_current_continuation_20261028_r1/request_a_reference.json": "2eb9e8e0cbac2e5aed7a8d840be977e83e015b979428fb83fce06912b02d1cca",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_current_continuation_20261028_r1/response_a_reference.json": "3c28d49fef975a3207a9af1ba5728550f6e84a13ef043126282b6ac640d84101",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_current_continuation_20261028_r1/request_b_reference.json": "fac0f127343bfc33e0da3baa182d7cef19ae431d01ebd0ed1f88600e26a5df50",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_current_continuation_20261028_r1/response_b_reference.json": "9b31d2f63df8befe0ad61fd52eeac857ec1a19b9d312570ed61443b3c30f1528",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_current_continuation_20261028_r1/request_a_reference_initial.json": "7596c3fc5993af58aa24f46fd289d686be56f3993070f450953e80309ddcf05e",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_current_continuation_20261028_r1/response_a_reference_initial.json": "6888e2b187e5d8a94ee4047bc973c7885a138d0c748474fb1cc90cac28e85fc1",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_current_continuation_20261028_r1/request_b_reference_initial.json": "b2b1487302be709b3791df18271db1a0b8a935041f6570272e52f5159f9a50b3",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_current_continuation_20261028_r1/response_b_reference_initial.json": "89a0ca33bae0e476d5f462728032ba44324446a250422ba82260e46de7932559",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_current_continuation_20261028_r1/owned_process_cleanup.json": "cfbcf41648a267acbdc46da3e2da6365433c182c92ba710e1801f494b58dcfb1"
+  },
+  "operator_sha256": "9b06c8d7f3eb46ecb72a5c89bbff421ffdeb66c4188484aa43e5244dd6aecb2e",
+  "scope": "Current KV I/O under deterministic math and matched ordinary diagnostics; no JCT claim."
+}
