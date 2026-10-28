@@ -157,6 +157,8 @@ class NativeToolWaitHint:
         curve_type = (
             EmpiricalActionTimingCurve if self.residual_support_detail in (
                 "online_workflow_command", "online_run_command",
+                "online_offline_prior_command",
+                "online_hybrid_workflow_command", "online_hybrid_run_command",
             ) else ActionTimingCurve
         )
         return curve_type(

@@ -104,6 +104,43 @@ def test_domain_prior_bootstraps_then_recent_completions_change_the_distribution
     assert history.estimate("workflow", "new-agent", now_ms=0.) is None
 
 
+@pytest.mark.parametrize("scope", ("offline_prior", "hybrid_workflow", "hybrid_run"))
+def test_empirical_prior_hint_preserves_observed_completion_times(tmp_path, scope):
+    from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
+    from beliefkv.runtime.sglang_v0520_prediction import NativeToolWaitHint
+
+    prior, _, _, _ = prior_fixture(tmp_path)
+    history = OnlineWorkloadToolTiming(prior=prior)
+    if scope != "offline_prior":
+        for index in range(8):
+            for kind in (Kind.TOOL_START, Kind.TOOL_END):
+                history.observe(tool_event(
+                    kind, call=str(index), duration_ms=10_000.,
+                    timing_domain="network-v2", observed_timing_class="WebSearch",
+                ))
+    workflow = "unseen-workflow" if scope == "hybrid_run" else "workflow"
+    active = tool_event(
+        Kind.TOOL_START, call="active", timing_domain="network-v2",
+        observed_timing_class="WebSearch",
+    )
+    active.workflow_id = workflow
+    history.observe(active)
+    estimate = history.estimate(workflow, "agent", now_ms=0.)
+    assert estimate is not None and estimate.scope == scope
+    key = PrefillCandidateKey("request", workflow, "agent", "ctx", 0, 0)
+    issued = 50_000.
+    hint = NativeToolWaitHint(
+        key, estimate.p10_ms, estimate.p50_ms, estimate.p90_ms,
+        issued, issued + 20_000., "a" * 64, release_cdf=estimate.release_cdf,
+        residual_support_detail=f"online_{scope}_command",
+    )
+    for age in (0., 1000., 5000.):
+        for quantile in (.1, .5, .9):
+            assert hint.remaining_quantile(quantile, now_ms=issued + age) == 10_000. - age
+        assert hint.release_probability_within(1000., now_ms=issued + age) == 0.
+    assert hint.release_probability_within(10_000., now_ms=issued) == 1.
+
+
 def test_runtime_loads_domain_prior_and_keeps_legacy_artifact_exclusive(tmp_path, monkeypatch):
     prior, path, _, _ = prior_fixture(tmp_path)
     monkeypatch.setenv("BELIEFKV_ONLINE_TOOL_TIMING", "1")
@@ -316,6 +353,21 @@ def test_cost_threshold_depends_on_missing_backup_and_measured_restore(demand_ru
     assert runtime.counts["tool_offload_threshold_us_last"] == 840_000
     assert not controller._worth_offloading(key, backup_tokens=32, release_tokens=32)
     assert runtime.counts["tool_offload_threshold_us_last"] == 6_860_000
+
+
+@pytest.mark.parametrize("scope", ("offline_prior", "hybrid_workflow", "hybrid_run"))
+def test_prior_tool_curve_does_not_hide_a_real_profitable_native_offload(demand_runtime, scope):
+    runtime, controller, _cache, allocator, donor, _request, _writes = demand_runtime
+    hint = runtime.tool_wait_hints["ctx-tool"]
+    runtime.tool_wait_hints["ctx-tool"] = replace(
+        hint, wait_p10_ms=5000., wait_p50_ms=5000., wait_p90_ms=5000.,
+        issued_monotonic_ms=time.monotonic() * 1000.,
+        release_cdf=((5000., 1.),), residual_support_detail=f"online_{scope}_command",
+    )
+    controller.dispatch()
+    assert donor.component_data[0].value is None
+    assert allocator.available_size() == 36
+    assert runtime.counts["predicted_tool_offload_freed_component_0"] == 32
 
 
 @pytest.mark.parametrize("race", (None, "queue_disappears", "forecast_changes", "return_before_ack"))

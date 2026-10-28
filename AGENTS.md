@@ -2076,3 +2076,26 @@
   release, first use, hidden time or causal JCT benefit. Keep frozen sources,
   all normal tails, completeV345 and the goal incomplete; no additional GPU
   run is queued and progressive layer-capacity handoff is still unimplemented.
+- The later mirror collecting prefix seals2211 exact completions. Its separate
+  lifecycle prefix observes3 releases/6 Host nodes/2.415919GB, linked to3 real
+  native D2H completions totaling50.233344MB. Preserve this disparity; released
+  Host space is not net migration benefit. The prepared named complete_review.py
+  and run_complete_audits.py require full success, actual exit, fresh drain and
+  matched plots.31 CPU audit-boundary cases pass, including actual prior Full
+  andV345 complete work; current live Full is correctly rejected as incomplete.
+  Runtime80a6186cdc7b stays frozen. No complete current result is implied.
+- The user's newest order is to repair predicted-tool offload first, then
+  implement actual per-layer D2H/H2D capacity overlap and disable/revert it if
+  matched complete performance is negative. Long successor queue waits alone
+  do not justify preempting a ready agent or granting blanket tool priority.
+  Diagnose prediction, physical demand, Host readiness and native safety
+  separately. Five-second logical working-set selection is not physical D2H.
+- A confirmed predictor conversion bug is repaired on main: discrete offline
+  and hybrid prior CDFs now retain EmpiricalActionTimingCurve, like existing
+  pure online histories, instead of interpolating fictitious earlier completion.
+  Six new cases fail on old code;196 targeted cases pass after repair, including
+  three real-native CPU allocator profitable-offload counterexamples. Preserve
+  initial_red_cpu.xml and targeted_cpu.xml under tool_prediction_curve_repair_20261027.
+  The90% policy, priorities, physical safety and running frozen Full are
+  unchanged. Full shared/source binding, GPU and performance remain pending;
+  do not claim this one bug explains every missed tool offload or clear gains.
