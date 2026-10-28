@@ -1,0 +1,25 @@
+{
+  "status": "failed",
+  "performance_accepted": false,
+  "operator_sha256": "313012c46d980e6aa13b6d7cf8a13a328270937076e9fc538347859ac527ff46",
+  "native_engine": {
+    "commit": "1f5fac9e9f7ad1d97f89244cdda4d9f311d365c4",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "a9abbcd715f5e62ddd63ba742f3dd318fabf81a7791236a7377e219098bbaef9"
+  },
+  "owned_gpu_pid": 613553,
+  "authorization": {
+    "hold_file": "/home/longhao/experiment/ops/gpu_hold_until_20261022_0600.json",
+    "hold_sha256": "57a02d25be864ec84fc1c4e6c0afba31b1282ce681e18f7c4dd6974f3f788f9d",
+    "checked_at": "2026-10-28T18:20:31.976771+08:00"
+  },
+  "direction_groups": {
+    "d2h": 8,
+    "h2d": 4
+  },
+  "error": "ValueError('native fence qualification pool dimensions differ')"
+}

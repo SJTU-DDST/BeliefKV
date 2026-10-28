@@ -149,7 +149,8 @@ class NativeFenceFixture:
         self.initial_host_free = self.controller.mem_pool_host.available_size()
         self.sequence = 0
         if self.dimensions() != {
-            "device_tokens": 128, "host_tokens": 257, "layers": 2, "bytes_per_token": 1024,
+            "device_tokens": 128, "host_tokens": 257,
+            "layers": self.layers, "bytes_per_token": 512 * self.layers,
         }:
             raise ValueError("native fence qualification pool dimensions differ")
 

@@ -12,6 +12,7 @@ from beliefkv.runtime.layer_handoff import try_handoff
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from scripts.run_causal_comparison import preflight_runtime
 from scripts.qualify_layer_handoff_model import validate_direction_groups
+from scripts.qualify_free_page_h2d_fence import NativeFenceFixture
 from tests.test_layer_handoff import native_handoff
 from tests.test_full_only_native_lifecycle import full_native
 from tests.test_tool_policy_adaptation import demand_runtime
@@ -96,3 +97,27 @@ def test_new_profile_preserves_workload_and_tool_prefetch_cancellation():
     assert new["TOOL_PREFETCH"] == new["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "0"
     assert new["LAYER_HANDOFF"] == new["BELIEFKV_LAYER_HANDOFF"] == "1"
     assert after["gpu_execution"]["registered"] is False
+
+
+@pytest.mark.parametrize("layers,change,accepted", (
+    (2, {}, True), (17, {}, True), (17, {"layers": 2}, False),
+    (17, {"bytes_per_token": 1024}, False), (17, {"device_tokens": 127}, False),
+))
+def test_group_component_fixture_preserves_declared_layer_and_byte_geometry(layers, change, accepted):
+    geometry = {
+        "device_tokens": 128, "host_tokens": 257,
+        "layers": layers, "bytes_per_token": layers * 512, **change,
+    }
+    fixture = NS(
+        layers=layers, dimensions=lambda: geometry,
+        controller=NS(
+            beliefkv_free_page_fence_enabled=True,
+            mem_pool_host=NS(available_size=lambda: 257),
+        ),
+    )
+    if accepted:
+        NativeFenceFixture.initialize(fixture, enabled=True)
+        assert fixture.initial_host_free == 257
+    else:
+        with pytest.raises(ValueError, match="dimensions"):
+            NativeFenceFixture.initialize(fixture, enabled=True)

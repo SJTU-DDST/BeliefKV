@@ -2311,3 +2311,11 @@
   or GPU cost. Named evidence belongs to join_blocked_layer_groups_20261028.
   See docs/design/join_blocked_layer_groups_20261028_zh.md. Tool prefetch
   stays off; reuseV345 and keep the clear/repeated/all-baseline goal active.
+- Grouped GPU componentR1 from frozen0decf93f stopped before any handoff:
+  the shared fixture hardcoded its old2-layer/1024-byte geometry although
+  this declared group fixture has17 layers. Preserve gpu_components_r1.json
+  and the original frozen sources. Main now checks512bytes per declared
+  layer while retaining128 Device/257 Host slots; default2-layer checks
+  remain identical.71 targeted CPU checks pass. Actual R1 process613553
+  exited and NVML is empty. Native1f5fac9e and production policy are unchanged;
+  retry only from a newly frozen fixture and keep GPU/performance pending.
