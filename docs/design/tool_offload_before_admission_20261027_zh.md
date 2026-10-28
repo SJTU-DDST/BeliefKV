@@ -134,3 +134,47 @@ aborted及流式增长方法仍直接继承。
 源码，只运行新的完整Full并复用V345；必须观察真实GPU上是否发生
 准入前动作、是否被对应消费者使用，以及完整性能是否改善，不能
 以CPU通过宣称全局目标完成。
+
+## 实际启动
+
+源码已提交为 `716ef9a3e4adc45da086b55a14f096490ca5086b`，
+本轮登记为
+`ops/tool_offload_before_admission_20261027_r1.registration.json`。
+native树仍为11b84f7c3198，端口18665，socket为
+`/tmp/bkv-causal-18665.sock`。前一轮和V345已确认实际退出，最新
+预约、空闲资源、端口、726项native源码绑定及3331项共享CPU证据
+检查通过后，只启动本轮Full；没有重复native或ThunderAgent。
+
+同目录 `live_start.py/.json` 核对冻结源码及13项共同工作/工具时间/
+容量/引擎/服务字段与V345相同。实际nice0进程为：
+
+- watcher363193/start732042783；
+- server363623/start732045344；
+- GPU scheduler363990/start732046759，与NVML唯一GPU进程相同；
+- driver365023/start732060155。
+
+nice19、CUDA隐藏的CPU绘图等待器为364601/start732051797，
+显式使用专门的plotting Python，只在完整成功和实际退出后绘图；
+不会启动GPU。其状态为
+`ops/tool_offload_before_admission_20261027_r1.plots.state.json`。
+
+启动观察封存69个精确完成请求，新开关实际为真、独立demand-cost
+offloader启用、物理控制健康。该独立片段中，一次准入前检查及一次
+新请求重新唤醒已经执行，但额外提前释放仍为零。这不是完整工作、
+收益或可利用机会为零的证明，跨日志封存也不是原子快照。
+保留冻结源码和全部原停止/尾部；没有后续GPU实验排队。
+
+## 准入前释放与后续服务
+
+独立的 `collecting_early_service.py/.json` 封存1731个精确完成请求。
+该片段中有21次 `before_native_admission` 原生节点释放，累计
+231309312字节，关联21个不同消费者。21个消费者均能以原生
+request/context/epoch、session及clock domain绑定到释放后的实际服务
+和完成receipt。对应请求在释放前已经提交，没有观察到首次服务早于
+关联释放的矛盾。这证明新入口确实执行，而非仅开关启用。
+
+该日志没有记录释放时消费者的完整attempt/session身份，也没有把
+释放的物理索引绑定到消费者的分配，因此这两项证据仍为未知。
+累计释放字节不是同时可用容量；run-batch入口不是CUDA kernel启动，
+不能由释放到服务的间隔推算隐藏传输或可消除JCT。各文件独立封存，
+该片段不是原子快照、完整工作量或性能验收；保留全部后续普通长尾。

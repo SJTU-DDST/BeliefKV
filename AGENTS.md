@@ -1949,3 +1949,28 @@
   sources and recheck current hold/resources/actual predecessor exit before
   a Full-only comparison, reuse completeV345, and keep GPU/performance/global
   acceptance pending. Do not call this timing repair an independent novelty.
+- The pre-admission offload Full now runs frozen716ef9a3e4ad on unchanged
+  native11b84f7c3198, port18665:
+  ops/tool_offload_before_admission_20261027_r1.registration.json. Actual nice0
+  watcher363193/start732042783, server363623/start732045344, GPU scheduler
+  363990/start732046759 and driver365023/start732060155 are independently live;
+  NVML has that sole owned GPU process. Named live_start.py/.json binds the
+  qualified runtime/dispatch sources,13 common work/timing/capacity/engine/
+  serving fields equal to completeV345 and69 exact completed receipts.
+  Actual early flag and demand-cost offloader are enabled, physical control
+  healthy; its independent startup snapshot has one early check/rearm and
+  zero extra early release. This is not final correctness or performance.
+  Nice19 CUDA-hidden plotting waiter364601/start732051797 uses the dedicated
+  ops/cpu_plotting_20261027/bin/python only after complete success/actual exit.
+  State: ops/tool_offload_before_admission_20261027_r1.plots.state.json.
+  Preserve frozen sources/config/inputs and normal stopping/tails; no next
+  GPU job is queued. ReuseV345 and keep the global goal incomplete.
+- A later independently sealed collecting_early_service.py/.json prefix has
+  1731 exact completed receipts and21 actual before_native_admission releases,
+  cumulatively231309312bytes for21 consumers. All21 bind to completed native
+  request/context/epoch/session/clock service after their associated releases
+  and were submitted beforehand. The release journal omits full release-time
+  attempt/session identity and freed-index-to-allocation evidence; keep both
+  unknown. Run-batch entry is not kernel start, cumulative release bytes are
+  not simultaneous capacity, and no hidden-time/JCT gain follows. Keep frozen
+  sources and complete-work performance acceptance pending.
