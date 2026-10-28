@@ -1,0 +1,1374 @@
+{
+  "observed_at": "2026-10-28T14:30:41.673276+00:00",
+  "scope": "independently_sealed_service_evidence_not_complete_performance",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/sibling_service_capacity_20261028_r1/full",
+  "summary": {
+    "journal_records": 45,
+    "journal_request_attempts": 46,
+    "status_counts": {
+      "native_batch_join_and_completed_sessions_verified": 45
+    },
+    "verified_records": 45,
+    "verified_request_attempts": 46,
+    "verified_multi_member_batches": 1,
+    "verified_prefill_records": 45,
+    "native_worker_samples": 22010,
+    "all_journal_records_verified": true,
+    "positive_service_evidence": true
+  },
+  "records": [
+    {
+      "journal_number": 1,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177ad-51fe-7243-8a11-96d900173264"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        3.705335780978203
+      ],
+      "ready_to_forward_return_ms": [
+        142.975939437747
+      ],
+      "worker_sample_id": "native-service-000014765",
+      "forward_iter": 14776,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 2,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177ad-5202-76c0-a86c-ea53d17aef06"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        106.40915483236313
+      ],
+      "ready_to_forward_return_ms": [
+        223.57106674462557
+      ],
+      "worker_sample_id": "native-service-000014766",
+      "forward_iter": 14777,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 3,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177ad-991a-7fb2-8d02-2d496acfca56"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.3984620347619057
+      ],
+      "ready_to_forward_return_ms": [
+        39.10301998257637
+      ],
+      "worker_sample_id": "native-service-000014919",
+      "forward_iter": 14930,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 4,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177ad-cc41-7490-8915-afefdfd3a9f6"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.8315363451838493
+      ],
+      "ready_to_forward_return_ms": [
+        85.38114838302135
+      ],
+      "worker_sample_id": "native-service-000014987",
+      "forward_iter": 14998,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 5,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177ad-e865-77c1-aebd-e3681cb1dd25"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.9905373230576515
+      ],
+      "ready_to_forward_return_ms": [
+        43.40583551675081
+      ],
+      "worker_sample_id": "native-service-000015050",
+      "forward_iter": 15061,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 6,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177ad-e9f3-7da2-a714-9ea011e1b1fe"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.254042774438858
+      ],
+      "ready_to_forward_return_ms": [
+        180.43736089020967
+      ],
+      "worker_sample_id": "native-service-000015069",
+      "forward_iter": 15080,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 7,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177ae-1190-7482-9778-1c53d05d6bef"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.087104134261608
+      ],
+      "ready_to_forward_return_ms": [
+        84.08303093165159
+      ],
+      "worker_sample_id": "native-service-000015138",
+      "forward_iter": 15149,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 8,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177ae-3107-7b02-a9bf-b81accbc4b35"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.091660164296627
+      ],
+      "ready_to_forward_return_ms": [
+        40.366798639297485
+      ],
+      "worker_sample_id": "native-service-000015191",
+      "forward_iter": 15202,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 9,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177ae-4054-70b3-8f97-b8d027f74395"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        16.986947506666183
+      ],
+      "ready_to_forward_return_ms": [
+        170.13796791434288
+      ],
+      "worker_sample_id": "native-service-000015221",
+      "forward_iter": 15232,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 10,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177ae-826d-7690-8708-0796528e7aee"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        1.8224874511361122
+      ],
+      "ready_to_forward_return_ms": [
+        48.52133709937334
+      ],
+      "worker_sample_id": "native-service-000015243",
+      "forward_iter": 15254,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 11,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177ae-851c-7131-aa84-e38da1c9453d"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.7959151193499565
+      ],
+      "ready_to_forward_return_ms": [
+        127.38212663680315
+      ],
+      "worker_sample_id": "native-service-000015274",
+      "forward_iter": 15285,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 12,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177ae-d563-7461-aeba-1a77634e0d3f"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        9.535825811326504
+      ],
+      "ready_to_forward_return_ms": [
+        101.2236075475812
+      ],
+      "worker_sample_id": "native-service-000015333",
+      "forward_iter": 15344,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 13,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177ae-bd3d-7fb1-9672-105a7aff6e21"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        17.899028956890106
+      ],
+      "ready_to_forward_return_ms": [
+        199.82527662068605
+      ],
+      "worker_sample_id": "native-service-000015360",
+      "forward_iter": 15371,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 14,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177af-218c-7211-a44d-7d4378787fdf"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.2544097155332565
+      ],
+      "ready_to_forward_return_ms": [
+        84.11654736846685
+      ],
+      "worker_sample_id": "native-service-000015444",
+      "forward_iter": 15455,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 15,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177af-44dd-7b41-ab25-d530c5435b20"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.13539507240057
+      ],
+      "ready_to_forward_return_ms": [
+        105.62439449131489
+      ],
+      "worker_sample_id": "native-service-000015496",
+      "forward_iter": 15507,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 16,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177af-7859-7de1-87dc-d07000400726"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        25.116496719419956
+      ],
+      "ready_to_forward_return_ms": [
+        239.1666928306222
+      ],
+      "worker_sample_id": "native-service-000015583",
+      "forward_iter": 15594,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 17,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177af-2d10-7832-a705-46123d43c0a8"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        3095.3369233757257
+      ],
+      "ready_to_forward_return_ms": [
+        3261.013986542821
+      ],
+      "worker_sample_id": "native-service-000015679",
+      "forward_iter": 15690,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 18,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177af-c593-7261-8a29-e0bd5f5e50b3"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.292625606060028
+      ],
+      "ready_to_forward_return_ms": [
+        270.390747115016
+      ],
+      "worker_sample_id": "native-service-000015716",
+      "forward_iter": 15727,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 19,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177af-f3c9-7922-8145-87e0fb68145a"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.0752018317580223
+      ],
+      "ready_to_forward_return_ms": [
+        48.50458353757858
+      ],
+      "worker_sample_id": "native-service-000015802",
+      "forward_iter": 15813,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 20,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b0-0e6b-7d33-a332-901682b11dcc"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.243715338408947
+      ],
+      "ready_to_forward_return_ms": [
+        48.570312559604645
+      ],
+      "worker_sample_id": "native-service-000015852",
+      "forward_iter": 15863,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 21,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b0-2d18-7763-b894-d4d05734b8d4"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.292295917868614
+      ],
+      "ready_to_forward_return_ms": [
+        74.19420219957829
+      ],
+      "worker_sample_id": "native-service-000015933",
+      "forward_iter": 15944,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 22,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b0-4a51-79a2-90ee-9039ad26aae8"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        9896.492850966752
+      ],
+      "ready_to_forward_return_ms": [
+        10051.832594908774
+      ],
+      "worker_sample_id": "native-service-000016294",
+      "forward_iter": 16305,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 23,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b0-8983-7d52-a5f4-8a809df9d56f",
+        "beliefkv:01a177af-88b9-7a22-bc9c-76e0b1d1ebdf"
+      ],
+      "members": 2,
+      "recorded_attempt_ids": [
+        0,
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        11.05385646224022,
+        679.6421585604548
+      ],
+      "ready_to_forward_return_ms": [
+        85.2819662541151,
+        753.8702683523297
+      ],
+      "worker_sample_id": "native-service-000016356",
+      "forward_iter": 16367,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false,
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true,
+        true
+      ]
+    },
+    {
+      "journal_number": 24,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b0-ab6f-74d2-8b08-8567cc4dd71c"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.2282348945736885
+      ],
+      "ready_to_forward_return_ms": [
+        40.671112947165966
+      ],
+      "worker_sample_id": "native-service-000016428",
+      "forward_iter": 16439,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 25,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b0-d5be-7630-bec7-f7f9c5f40d0d"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.555888146162033
+      ],
+      "ready_to_forward_return_ms": [
+        40.774740278720856
+      ],
+      "worker_sample_id": "native-service-000016477",
+      "forward_iter": 16488,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 26,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b0-ec25-7350-b186-43fdb8e6da3c"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.23352387547493
+      ],
+      "ready_to_forward_return_ms": [
+        42.21394658088684
+      ],
+      "worker_sample_id": "native-service-000016549",
+      "forward_iter": 16560,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 27,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b1-1ab0-70d2-9d26-c2a9b8d4ecb9"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.2787898778915405
+      ],
+      "ready_to_forward_return_ms": [
+        52.90164239704609
+      ],
+      "worker_sample_id": "native-service-000016687",
+      "forward_iter": 16698,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 28,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b1-362a-7070-be14-f9cd28feb2b7"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.3012449964880943
+      ],
+      "ready_to_forward_return_ms": [
+        62.56144307553768
+      ],
+      "worker_sample_id": "native-service-000016843",
+      "forward_iter": 16854,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 29,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b1-4e9e-7b62-8eea-55c84b7f6667"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.3075630888342857
+      ],
+      "ready_to_forward_return_ms": [
+        43.487200513482094
+      ],
+      "worker_sample_id": "native-service-000016915",
+      "forward_iter": 16926,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 30,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b1-7844-7180-ac78-bda2d6a0f28b"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.438602037727833
+      ],
+      "ready_to_forward_return_ms": [
+        40.88754113763571
+      ],
+      "worker_sample_id": "native-service-000017005",
+      "forward_iter": 17016,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 31,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b1-9dc6-76b1-ab0f-e20b268f33df"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        6.598436273634434
+      ],
+      "ready_to_forward_return_ms": [
+        46.67952377349138
+      ],
+      "worker_sample_id": "native-service-000017305",
+      "forward_iter": 17316,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 32,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b1-bc56-7e61-90f1-83a93cfab296"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        255.2505861967802
+      ],
+      "ready_to_forward_return_ms": [
+        298.70010260492563
+      ],
+      "worker_sample_id": "native-service-000017493",
+      "forward_iter": 17504,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 33,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b0-84cd-7032-a31e-8cd59466014b"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.1999888122081757
+      ],
+      "ready_to_forward_return_ms": [
+        38.30644115805626
+      ],
+      "worker_sample_id": "native-service-000017724",
+      "forward_iter": 17735,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 34,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b1-cd4b-7dd0-9819-23037ef2a27c"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        46.93116620182991
+      ],
+      "ready_to_forward_return_ms": [
+        131.72423373907804
+      ],
+      "worker_sample_id": "native-service-000017726",
+      "forward_iter": 17737,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 35,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b1-ead5-7c81-9662-1f2c7df50cce"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.47087050229311
+      ],
+      "ready_to_forward_return_ms": [
+        43.48265007138252
+      ],
+      "worker_sample_id": "native-service-000017871",
+      "forward_iter": 17882,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 36,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b2-0209-70a2-8d92-960b1838176f"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        22.238162346184254
+      ],
+      "ready_to_forward_return_ms": [
+        120.63754163682461
+      ],
+      "worker_sample_id": "native-service-000018308",
+      "forward_iter": 18319,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 37,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b0-9dea-7ef2-a4ee-e093b1978135"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2829.1502986103296
+      ],
+      "ready_to_forward_return_ms": [
+        3921.076472848654
+      ],
+      "worker_sample_id": "native-service-000018452",
+      "forward_iter": 18463,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 38,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b0-c204-7c30-b43f-fa07115f2e4c"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        3502.464291639626
+      ],
+      "ready_to_forward_return_ms": [
+        4126.719197258353
+      ],
+      "worker_sample_id": "native-service-000018940",
+      "forward_iter": 18951,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 39,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b0-dfb7-7fb3-bb74-5e3bbfc9919c"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        3.143790178000927
+      ],
+      "ready_to_forward_return_ms": [
+        59.26153436303139
+      ],
+      "worker_sample_id": "native-service-000019079",
+      "forward_iter": 19090,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 40,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b1-1682-7ec0-b9e2-8ea7adc7c083"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        3.5685840994119644
+      ],
+      "ready_to_forward_return_ms": [
+        49.98272191733122
+      ],
+      "worker_sample_id": "native-service-000019442",
+      "forward_iter": 19453,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 41,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b1-59c0-7c00-96ef-e840b09c96b6"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2959.215674549341
+      ],
+      "ready_to_forward_return_ms": [
+        3013.568107970059
+      ],
+      "worker_sample_id": "native-service-000020424",
+      "forward_iter": 20435,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 42,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b2-1b1b-7b62-a3db-ce7fb1f3f96e"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        14761.829540133476
+      ],
+      "ready_to_forward_return_ms": [
+        15111.02969571948
+      ],
+      "worker_sample_id": "native-service-000020584",
+      "forward_iter": 20595,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 43,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b2-3ed6-79f1-8647-870d16cddd25"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        21.10435999929905
+      ],
+      "ready_to_forward_return_ms": [
+        74.46377258747816
+      ],
+      "worker_sample_id": "native-service-000020756",
+      "forward_iter": 20767,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 44,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b1-dd44-7b92-bcb5-7eef25a85653"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        3.238057717680931
+      ],
+      "ready_to_forward_return_ms": [
+        135.3550087660551
+      ],
+      "worker_sample_id": "native-service-000021041",
+      "forward_iter": 21052,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    },
+    {
+      "journal_number": 45,
+      "join_id": "deepagents-join:6eb7e296a3b7420c",
+      "request_ids": [
+        "beliefkv:01a177b1-f3a0-7352-9701-d76c363cfdec"
+      ],
+      "members": 1,
+      "recorded_attempt_ids": [
+        0
+      ],
+      "attempt_identity_independently_verified": false,
+      "status": "native_batch_join_and_completed_sessions_verified",
+      "ready_to_selected_ms": [
+        2.6172371581196785
+      ],
+      "ready_to_forward_return_ms": [
+        53.44931595027447
+      ],
+      "worker_sample_id": "native-service-000021353",
+      "forward_iter": 21364,
+      "phase": "prefill",
+      "same_native_batch_and_explicit_blocking_join_verified": true,
+      "request_had_earlier_native_launch": [
+        false
+      ],
+      "completed_session_bindings_verified": [
+        true
+      ]
+    }
+  ],
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/sibling_service_capacity_20261028_r1/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 42239633,
+      "complete_prefix_sha256": "f356b9a22752954fd8cc243d5bc693b2d8d9c4dadc5d8f1bf4aa3a5d06bc2683",
+      "first_read_limit_bytes": 42239633
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/sibling_service_capacity_20261028_r1/full/replay/runtime_events.replay.jsonl": {
+      "complete_prefix_bytes": 8753749,
+      "complete_prefix_sha256": "214800ec76da81055110bb5e1af03ed42f6ad7c001ae83a818627150419bc2e4",
+      "first_read_limit_bytes": 8753749
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/sibling_service_capacity_20261028_r1/full/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 5718177,
+      "complete_prefix_sha256": "934f5d3f386e0f958fbf9d96d80f3c648adf5da9a2af765dc6bc2568a9c64c49",
+      "first_read_limit_bytes": 5718177
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/sibling_service_capacity_20261028_r1/full/server/runtime_audit.jsonl": {
+      "complete_prefix_bytes": 137906323,
+      "complete_prefix_sha256": "259decf6c32fc80352e6770f96a054add0c288a6c3116c4f06bb60c35c778dc7",
+      "first_read_limit_bytes": 137906323
+    }
+  },
+  "prior_sealed_audit": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/collecting_sibling_service_r1.json",
+    "sha256": "b672f98a1d0c15f958325256328c491e71ffa9988bb93b13cc0ba14107af2b50"
+  },
+  "operator_sha256": "543b65c8d27ab0234e68d8d37d00583b00c433b31f40528ffd0bab10fee17276",
+  "helper_sources_sha256": {
+    "scripts/audit_sealed_wait_prefetch.py": "467c33297fdfc1358b91455bb775d58e6edb287cb11dc51dc35d219c00995b46",
+    "scripts/audit_join_reentry_service.py": "f6245dc999082cc225b70ca3a0e92ea0b42eaa89dfea16b345c3d97e1a0beced"
+  },
+  "gpu_experiment_started": false,
+  "performance_accepted": false,
+  "limitations": [
+    "Missing journal, worker, JOIN or completion evidence remains unknown.",
+    "Zero records are not positive evidence or a count of all service opportunities.",
+    "Journals name first forward after a request admission, not the agent's first-ever service.",
+    "Request attempt IDs are recorded but not independently present in native worker samples.",
+    "Ready-to-selected and ready-to-forward-return are distinct from kernel timing.",
+    "Shared native batch and blocking JOIN evidence do not prove a JCT benefit.",
+    "Repeated planning opportunities are not an independent denominator for service coverage."
+  ]
+}

@@ -2447,3 +2447,15 @@
   evidence seals105 exact receipts of3674; reference per-agent budget remains
   unknown. These are startup/prefix proofs, not full JCT/throughput. Preserve
   the frozen run and all normal tails, reuseV345, and keep the goal incomplete.
+- New read-only audit_sibling_native_service.py binds service journals to
+  actual native batch membership/clock, an explicit parallel blocking ALL-JOIN,
+  and completed native sessions. Missing evidence stays unproven; request
+  attempt identity remains independently unknown and old services are retained.
+  Its sealed current prefix verifies45 journals/46 request-admission attempts
+  from one JOIN, including one two-member actual prefill batch. Do not turn
+  those45 records into45 JOINs or divide repeated plans into a coverage ratio.
+  A stronger exact-prefix recheck preserves all45 proofs. Targeted96 CPU
+  checks pass; retain the earlier88-case evidence. These new observer files
+  are outside the old3580 manifest and do not change the frozen Full.
+  See docs/research/sibling_native_service_audit_20261028_zh.md. Complete
+  workload performance and the clear/repeated/all-baseline goal remain pending.
