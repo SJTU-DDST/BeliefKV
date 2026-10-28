@@ -1,0 +1,93 @@
+{
+  "observed_at": "2026-10-28T11:10:08.090268+00:00",
+  "scope": "Same sealed live prefix, audit-only correction; running runtime unchanged.",
+  "original_report": "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/grants_prefix_r1.json",
+  "original_report_sha256": "a31206276193178bac1f589f430a9e4502bbedd6216af40d83f4b1a8f6bcb3cb",
+  "blocked_join_statuses_before": {
+    "native_service_identity_unproven": 5,
+    "service_after_grant_verified": 4,
+    "completion_or_session_binding_unproven": 1
+  },
+  "blocked_join_statuses_after": {
+    "service_after_grant_verified": 9,
+    "completion_or_session_binding_unproven": 1
+  },
+  "changed_associations": [
+    {
+      "grant_number": 12,
+      "request_id": "beliefkv:01a177a8-42fb-7280-85a3-be7b3f83341d",
+      "context_epoch": 9,
+      "status_before": "native_service_identity_unproven",
+      "status_after": "service_after_grant_verified",
+      "grant_to_next_native_service_ms": 1057.293701171875
+    },
+    {
+      "grant_number": 14,
+      "request_id": "beliefkv:01a177a7-e97e-70d0-b648-5f2cd1716d8f",
+      "context_epoch": 13,
+      "status_before": "native_service_identity_unproven",
+      "status_after": "service_after_grant_verified",
+      "grant_to_next_native_service_ms": 77.95068359375
+    },
+    {
+      "grant_number": 16,
+      "request_id": "beliefkv:01a177a8-2b45-7cf0-a120-80f8e854b24a",
+      "context_epoch": 17,
+      "status_before": "native_service_identity_unproven",
+      "status_after": "service_after_grant_verified",
+      "grant_to_next_native_service_ms": 29.52294921875
+    },
+    {
+      "grant_number": 25,
+      "request_id": "beliefkv:01a177a8-e73f-7051-8c1c-e0762600a179",
+      "context_epoch": 17,
+      "status_before": "native_service_identity_unproven",
+      "status_after": "service_after_grant_verified",
+      "grant_to_next_native_service_ms": 49.279052734375
+    },
+    {
+      "grant_number": 26,
+      "request_id": "beliefkv:01a177a8-d100-7451-8c38-47bd1439df70",
+      "context_epoch": 12,
+      "status_before": "native_service_identity_unproven",
+      "status_after": "service_after_grant_verified",
+      "grant_to_next_native_service_ms": 115.2626953125
+    }
+  ],
+  "passing_audit_cpu_cases": 45,
+  "audit_cpu_report_sha256": "11f53391e2cf90d3005ddc199e5c1df6ed6365e9ad755fc98310ea0a4faba608",
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/join_blocked_layer_groups_20261028_r1/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 14939756,
+      "complete_prefix_sha256": "7b6ef206082e0a9428e9ae5ac93269c321a20b2597f93b587c3f40b62e7b7d89",
+      "first_read_limit_bytes": 14939756
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/join_blocked_layer_groups_20261028_r1/full/replay/runtime_events.replay.jsonl": {
+      "complete_prefix_bytes": 4731318,
+      "complete_prefix_sha256": "10d5a312c0bc039d9a946ce7ffbe25d5ae7c13c4bc23f28a9ab5a5b5b878b340",
+      "first_read_limit_bytes": 4731318
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/join_blocked_layer_groups_20261028_r1/full/server/runtime_events.sglang.jsonl": {
+      "complete_prefix_bytes": 2105017,
+      "complete_prefix_sha256": "62f5e8454077f93dfe0f988f0303944c61d8f1f0bc4f5ebf8931d89f20beb3e4",
+      "first_read_limit_bytes": 2105017
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/join_blocked_layer_groups_20261028_r1/full/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 2889930,
+      "complete_prefix_sha256": "af470a0acb334d52178285e7e90abbc43a309481b88698702176b0a6b77ad087",
+      "first_read_limit_bytes": 2889930
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/join_blocked_layer_groups_20261028_r1/full/server/runtime_audit.jsonl": {
+      "complete_prefix_bytes": 55894716,
+      "complete_prefix_sha256": "2a43e1253944f65f76145edebeacd9b94af7b48b4942ade114cf451e71ee0e32",
+      "first_read_limit_bytes": 55894716
+    }
+  },
+  "sources_sha256": {
+    "scripts/audit_reference_join_grants.py": "f4da59826b95e55e7ef0e781d3d481175366c573a51bcae31b2fedc3594d736d",
+    "tests/test_reference_join_grant_audit.py": "e2c4215bf50005b88f42186584bbe2fa6d74b9e04e5ce02e2310b082258dc43e"
+  },
+  "operator_sha256": "cf4fe14325928e16d92fb124bdab29efe18c64593dec8f869e04d61d7442e2df",
+  "complete_run_verified": false,
+  "performance_accepted": false
+}

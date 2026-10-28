@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="2" time="0.393" timestamp="2026-10-28T04:07:35.053949-07:00" hostname="ddst-12"><testcase classname="tests.test_reference_join_grant_audit" name="test_blocked_join_grant_binds_prior_eos_or_exact_submitted_successor[False]" time="0.001" /><testcase classname="tests.test_reference_join_grant_audit" name="test_blocked_join_grant_binds_prior_eos_or_exact_submitted_successor[True]" time="0.001"><failure message="AssertionError: assert 'native_servi...tity_unproven' == 'service_after_grant_verified'&#10;  &#10;  - service_after_grant_verified&#10;  + native_service_identity_unproven">submitted = True
+
+    @pytest.mark.parametrize("submitted", (False, True))
+    def test_blocked_join_grant_binds_prior_eos_or_exact_submitted_successor(submitted):
+        row, event, events, copy = blocked_parent_work(submitted=submitted)
+        observed = inspect(
+            [row], events, [event], [receipt(event)], [service(1, event, start=130.)], copies=[copy],
+        )
+        program = observed["programs"][0]
+&gt;       assert program["status"] == "service_after_grant_verified"
+E       AssertionError: assert 'native_servi...tity_unproven' == 'service_after_grant_verified'
+E         
+E         - service_after_grant_verified
+E         + native_service_identity_unproven
+
+tests/test_reference_join_grant_audit.py:196: AssertionError</failure></testcase></testsuite></testsuites>

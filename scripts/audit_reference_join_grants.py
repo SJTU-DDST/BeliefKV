@@ -160,6 +160,10 @@ def inspect(opportunities, replay_events, native_events, receipts, services, *, 
                 "grant_ts_ms": grant["ts_ms"], "grant_monotonic_s": grant["monotonic_s"],
                 "key": key, "complete_budget_tokens": program["complete_budget_tokens"],
                 "service_request_id": rid, "parent_successor": parent,
+                "grant_targets_submitted_join_successor": bool(
+                    parent and grant["event"] == "agent_join_blocked_capacity_admitted"
+                    and rid == key["request_id"]
+                ),
                 "status": "join_successor_not_observed" if parent and rid is None else "native_submit_not_observed",
                 "first_service_ts_ms": None, "next_service_after_grant_ts_ms": None,
                 "copy_evidence_available": copies is not None,
@@ -205,9 +209,14 @@ def inspect(opportunities, replay_events, native_events, receipts, services, *, 
                 )
                 if submit is None or identity(sample) != expected or identity(submit) != expected:
                     continue
-                if (
-                    row["parent_successor"] and expected[3] <= key["context_epoch"]
-                    or not row["parent_successor"] and expected[3] != key["context_epoch"]
+                # An EOS grant precedes the successor epoch; a grant at actual
+                # successor registration must match that exact request epoch.
+                same_epoch = (
+                    not row["parent_successor"] or row["grant_targets_submitted_join_successor"]
+                )
+                if not (
+                    expected[3] == key["context_epoch"] if same_epoch
+                    else expected[3] > key["context_epoch"]
                 ):
                     continue
                 row["service_identity"] = list(expected)
@@ -345,6 +354,7 @@ def audit(arm, *, prefetch_report=None):
         "semantics": [
             "Grant logs describe actual logical eligibility changes, not physical allocation.",
             "Service associations require workflow/invocation/context/epoch and completed native session/clock identity.",
+            "Blocked JOIN grants target either a prior EOS context or the exact already-submitted successor request.",
             "Service samples do not expose attempt identity; no per-attempt proof is claimed.",
             "Service start is the recorded native run_batch entry, not a CUDA kernel timestamp.",
             "Only server wall timestamps are subtracted; client JOIN events select identities only.",

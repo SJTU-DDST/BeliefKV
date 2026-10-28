@@ -214,3 +214,18 @@ transformed plan、种子、公开来源、分类及离线 prior 均相同并逐
 精确工作量，生成 decode 时间曲线、分布和相同 batch/context 几何对比，
 并保留相对上一轮 joint FULL 和 online-refresh FULL 的退化或改善。
 该运行尚无完整性能结果，不能据此宣称逐层分组的独立收益。
+
+### 已提交 parent 的审计边界
+
+首次运行中的 grant 前缀发现，审计器将全部 parent 授权当成 EOS 时对旧
+epoch 的授权，要求随后服务的 epoch 必须增加。新增路径还能对已经真实
+提交的 JOIN 后继请求授予额度，此时必须绑定相同 request_id 与相同 epoch。
+仅为 `agent_join_blocked_capacity_admitted` 补齐该情况，仍保留实际 JOIN、
+session/generation、完整回执、native clock 及授权后服务检查。
+
+原代码反例为 1 失败/1 通过，修复后 45 项审计检查通过。同一个已封存的
+前缀中，10 个阻塞交接的已验证服务从 4 个变为 9 个；剩下 1 个仍因当时
+缺少完成/session 回执而保留未知，不记为成功。`grant_same_prefix_review.*`
+固定原有五个 JSONL 的长度与 SHA256，确认只改变这 5 个已提交边界的关联。
+原 `grants_prefix_r1.json` 与失败 CPU 报告均保留。此修改只影响独立审计，
+正在运行的 `913e3238` 应用与原生引擎均未改动，也不改变实测 JCT。

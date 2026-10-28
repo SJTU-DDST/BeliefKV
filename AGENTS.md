@@ -2354,3 +2354,12 @@
   all frozen inputs and normal tails; do not edit the running registration.
   complete_review.py requires exact complete work, fresh drain and actual
   exit before plots/performance. No next GPU run is queued; goal stays active.
+- A collecting grant prefix exposes an audit-only epoch assumption: EOS
+  parent grants target a later epoch, but blocked-budget grants may target
+  the exact already submitted JOIN successor. Main's independent auditor
+  now accepts the latter only for the exact request/epoch and retains JOIN,
+  session/generation, receipt and clock proof. One old-code red case and45
+  passing audit checks are preserved. Same sealed-prefix review raises
+  verified blocked-grant associations4-to9 of10; one incomplete receipt
+  remains unknown. Frozen913e3238 runtime/native sources are unchanged.
+  Latest live observations are not complete JCT, GPU overlap or module gains.

@@ -171,6 +171,62 @@ def test_parent_association_uses_actual_join_successor_and_server_clock():
     assert observed["groups"][0]["newly_granted_service_start_spread_ms"] is None
 
 
+def blocked_parent_work(*, submitted):
+    row, event, events, copy = parent_work()
+    row.update(
+        event="agent_join_blocked_capacity_admitted",
+        donors=deepcopy(grant(names=("donor",))["programs"]),
+        remaining_before_tokens=0, remaining_after_tokens=0,
+        released_device_tokens=0, released_host_tokens=0,
+    )
+    if submitted:
+        row["programs"][0]["key"].update(
+            request_id=event["attributes"]["request_id"], context_epoch=event["context_epoch"],
+        )
+    return row, event, events, copy
+
+
+@pytest.mark.parametrize("submitted", (False, True))
+def test_blocked_join_grant_binds_prior_eos_or_exact_submitted_successor(submitted):
+    row, event, events, copy = blocked_parent_work(submitted=submitted)
+    observed = inspect(
+        [row], events, [event], [receipt(event)], [service(1, event, start=130.)], copies=[copy],
+    )
+    program = observed["programs"][0]
+    assert program["status"] == "service_after_grant_verified"
+    assert program["parent_successor"] is True
+    assert program["grant_targets_submitted_join_successor"] is submitted
+    assert program["service_request_id"] == event["attributes"]["request_id"]
+    assert program["grant_to_next_native_service_ms"] == 30.
+    assert program["verified_reused_copy_bytes_after_grant"] == 1234
+
+
+@pytest.mark.parametrize("change", (
+    "other_request_same_epoch", "future_epoch", "other_session", "other_generation",
+    "other_clock", "no_receipt", "other_join",
+))
+def test_submitted_blocked_join_grant_retains_exact_request_session_and_join_proof(change):
+    row, event, events, _copy = blocked_parent_work(submitted=True)
+    completed = receipt(event)
+    if change == "other_request_same_epoch":
+        row["programs"][0]["key"]["request_id"] = "unrelated"
+    elif change == "future_epoch":
+        row["programs"][0]["key"]["context_epoch"] += 1
+    elif change == "other_session":
+        completed["native_receipt"]["session_id"] = "unrelated"
+    elif change == "other_generation":
+        completed["native_receipt"]["session_generation"] += 1
+    elif change == "other_clock":
+        completed["native_receipt"]["clock_domain"] = "unrelated"
+    elif change == "other_join":
+        row["join_id"] = "unrelated"
+    observed = inspect(
+        [row], events, [event], [] if change == "no_receipt" else [completed],
+        [service(1, event, start=130.)],
+    )
+    assert "service_after_grant_verified" not in observed["summary"]["program_statuses"]
+
+
 def test_later_grant_bounds_earlier_service_and_copy_credit():
     first, event, events, copy = parent_work()
     second = deepcopy(first)
