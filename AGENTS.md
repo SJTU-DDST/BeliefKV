@@ -2045,3 +2045,15 @@
   each scenario, preserving Full switches, production constructor guards,
   qualified policy hashes and the native engine. Real GPU lifecycle/bytes and
   complete-model performance remain pending; this is not layer handoff.
+- Host-mirror componentR3 now succeeds from frozen3ef9460f on unchanged
+  native11b84f7c3198. All four real GPU/Host scenarios pass: disabled,
+  Host-locked and already-returned cold owners preserve mirrors; the positive
+  case recycles8 Host slots during an actual protected GPU read and copies
+  Cold4 into those released slots without changing Device ownership/free
+  count. Demotion is refused before D2H ACK; afterward Cold4 is released,
+  poisoned and restored with every two-layer K/V byte checked. Actual process
+  exit and empty NVML are verified. Keep R1/R2 failures and the explicit small
+  fixture, synthetic-reader and raw-controller scope; this is not model
+  consumer admission, whole-model performance or progressive layer handoff.
+  Freeze qualified production sources for a separate Full-only comparison,
+  recheck hold/resources and reuse completeV345, preserving all normal tails.

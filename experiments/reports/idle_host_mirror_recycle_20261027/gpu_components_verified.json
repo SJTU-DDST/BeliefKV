@@ -1,0 +1,17 @@
+{
+  "status": "independently_verified_native_gpu_components_and_predecessor_exit",
+  "observed_at": "2026-10-28T03:35:40.596239+00:00",
+  "gpu_report_sha256": "f33c3ec9251bd851fcf0c21570b7fd29ad9ef3b17d30a6aa9a3d1030aad17910",
+  "owned_gpu_pid_exited": true,
+  "nvml_compute_pids": [],
+  "verified_scenarios": [
+    "disabled",
+    "host_locked",
+    "tool_returned",
+    "recycle"
+  ],
+  "qualified_policy_sources": 7,
+  "prior_full_and_control_owned_exit_verified": true,
+  "performance_accepted": false,
+  "progressive_layer_handoff_implemented": false
+}

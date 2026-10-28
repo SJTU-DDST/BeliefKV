@@ -1,0 +1,146 @@
+{
+  "status": "native_gpu_host_mirror_components_qualified",
+  "observed_at": "2026-10-28T03:33:56.736468+00:00",
+  "native_engine": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-idle-host-components-3ef9460f/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "d7dfd6959fb53b998829f1ea69b89ba99234b8fa6ecb78aeaa624e2d2b28044a",
+    "expected_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+    "actual_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+    "matches_worktree": true,
+    "covered_untracked_paths": []
+  },
+  "source_sha256": {
+    "beliefkv/runtime/idle_host_mirror_recycle.py": "b63a8335edbf0b3bdee2f55cd0dc00e31e961fa11c3c8402c5b574456371055d",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "cc210569b452d8a7a356d4e2912ad3a74699df32973368894965e9b1a050dfec",
+    "beliefkv/runtime/sglang_v0520_admission.py": "1fe420007c011feb404b7afac9e807ae6e6eb74a0bff1dafe73df928fa9a8bb2",
+    "beliefkv/runtime/sglang_v0520_prediction.py": "4fe5b15a25d5248309e9f9f38ff575b8ef3e1fde60781000b7dc941b57a55528",
+    "beliefkv/experiments/internal_comparison.py": "95858985e690a3a5fb24fd31a772b8a7fba3e650bc019874fa61f83f1d31a2f3",
+    "scripts/qualify_free_page_h2d_fence.py": "1a1d50fa5f37408ee54bd13d0e50843e87296e5f6b09cdab493684f1e71fc5ad",
+    "configs/migration/predictive_idle_host_mirror_recycle_20261027.json": "01dc1e015e338d4fcad306762051ec8544a01a809e8eebbf2429be408d06a645"
+  },
+  "cpu_qualification_sha256": "f3cdf1199ec2e917ce558697d36b68d2f1320d4325e0e7cb27818d0128720fa5",
+  "cpu_source_manifest_sha256": "170f487967e6e5fb2741e4aa07b2f317fb11326d1bbf2ed287e22b8fe2287979",
+  "operator_sha256": "bdcafa4e97bdbafe43f266a9bed5afd4b9b20c38bb28849573703693014ca979",
+  "owned_gpu_pid": 410973,
+  "gpu_authorization": {
+    "hold_file": "/home/longhao/experiment/ops/gpu_hold_until_20261022_0600.json",
+    "hold_sha256": "57a02d25be864ec84fc1c4e6c0afba31b1282ce681e18f7c4dd6974f3f788f9d",
+    "checked_at": "2026-10-28T11:33:56.737355+08:00"
+  },
+  "scenarios": {
+    "disabled": {
+      "scenario": "disabled",
+      "released_host_tokens": 0,
+      "protected_device_tokens": 8,
+      "cold_backup_tokens": 0,
+      "device_tokens_released_by_mirror_recycle": 0,
+      "reader_pending_after_callback": true,
+      "protected_all_layer_read_unchanged": true,
+      "pre_ack_demote_refused": true,
+      "raw_controller_restore_after_page_poison_verified": false,
+      "cold_backup_reused_released_hot_host_slots": false,
+      "runtime_counts": {
+        "tool_wait_predictor_unavailable": 1,
+        "incremental_full_tracking_enabled": 1,
+        "idle_full_prepare_checks": 1,
+        "idle_full_prepare_dirty_nodes_last": 1,
+        "idle_full_prepare_checks_with_dirty_index": 1,
+        "idle_full_prepare_native_calls": 1,
+        "idle_full_prepare_empty_native_calls": 1
+      }
+    },
+    "host_locked": {
+      "scenario": "host_locked",
+      "released_host_tokens": 0,
+      "protected_device_tokens": 8,
+      "cold_backup_tokens": 0,
+      "device_tokens_released_by_mirror_recycle": 0,
+      "reader_pending_after_callback": true,
+      "protected_all_layer_read_unchanged": true,
+      "pre_ack_demote_refused": true,
+      "raw_controller_restore_after_page_poison_verified": false,
+      "cold_backup_reused_released_hot_host_slots": false,
+      "runtime_counts": {
+        "tool_wait_predictor_unavailable": 1,
+        "incremental_full_tracking_enabled": 1,
+        "idle_full_prepare_checks": 1,
+        "idle_full_prepare_dirty_nodes_last": 1,
+        "idle_full_prepare_checks_with_dirty_index": 1,
+        "idle_full_prepare_native_calls": 1,
+        "idle_host_mirror_recycle_checks": 1,
+        "idle_host_mirror_recycle_cold_checks": 1,
+        "cold_full_owner_index_built": 1,
+        "idle_host_mirror_recycle_mirror_checks": 1,
+        "idle_host_mirror_recycle_insufficient_mirrors": 1,
+        "idle_full_prepare_empty_native_calls": 1
+      }
+    },
+    "tool_returned": {
+      "scenario": "tool_returned",
+      "released_host_tokens": 0,
+      "protected_device_tokens": 8,
+      "cold_backup_tokens": 0,
+      "device_tokens_released_by_mirror_recycle": 0,
+      "reader_pending_after_callback": true,
+      "protected_all_layer_read_unchanged": true,
+      "pre_ack_demote_refused": true,
+      "raw_controller_restore_after_page_poison_verified": false,
+      "cold_backup_reused_released_hot_host_slots": false,
+      "runtime_counts": {
+        "tool_wait_predictor_unavailable": 2,
+        "incremental_full_tracking_enabled": 1,
+        "admission_rank_dependencies_preserved": 1,
+        "idle_full_prepare_checks": 1,
+        "idle_full_prepare_dirty_nodes_last": 1,
+        "idle_full_prepare_checks_with_dirty_index": 1,
+        "idle_full_prepare_native_calls": 1,
+        "idle_host_mirror_recycle_checks": 1,
+        "idle_host_mirror_recycle_cold_checks": 1,
+        "cold_full_owner_index_built": 1,
+        "idle_host_mirror_recycle_no_cold_target": 1,
+        "idle_full_prepare_empty_native_calls": 1
+      }
+    },
+    "recycle": {
+      "scenario": "recycle",
+      "released_host_tokens": 8,
+      "protected_device_tokens": 8,
+      "cold_backup_tokens": 4,
+      "device_tokens_released_by_mirror_recycle": 0,
+      "reader_pending_after_callback": true,
+      "protected_all_layer_read_unchanged": true,
+      "pre_ack_demote_refused": true,
+      "raw_controller_restore_after_page_poison_verified": true,
+      "cold_backup_reused_released_hot_host_slots": true,
+      "runtime_counts": {
+        "tool_wait_predictor_unavailable": 1,
+        "incremental_full_tracking_enabled": 1,
+        "idle_full_prepare_checks": 1,
+        "idle_full_prepare_dirty_nodes_last": 1,
+        "idle_full_prepare_checks_with_dirty_index": 1,
+        "idle_full_prepare_native_calls": 1,
+        "idle_host_mirror_recycle_checks": 1,
+        "idle_host_mirror_recycle_cold_checks": 1,
+        "cold_full_owner_index_built": 1,
+        "idle_host_mirror_recycle_mirror_checks": 1,
+        "idle_host_mirror_recycle_host_nodes": 1,
+        "idle_host_mirror_recycle_host_tokens": 8,
+        "idle_host_mirror_recycle_host_bytes": 8192,
+        "idle_host_mirror_recycle_without_backup": 0,
+        "idle_full_prepare_issued_batches": 1,
+        "idle_cold_full_backup_issued": 1,
+        "idle_cold_full_backup_tokens": 4
+      }
+    }
+  },
+  "whole_model_qualified": false,
+  "performance_accepted": false,
+  "scope": [
+    "Actual native GPU/Host pools, copies, locks, ACKs and per-layer K/V bytes.",
+    "Fixture idle batch is scaled to four tokens, not the formal 512MiB batch.",
+    "A finite synthetic GPU reader is not a model forward or a timing benchmark.",
+    "Controlled native session/graph keys and long-tool hints are fixture inputs.",
+    "Raw controller restoration is checked; no native model-consumer admission is claimed.",
+    "The common model, workload JCT and throughput remain unqualified here."
+  ]
+}

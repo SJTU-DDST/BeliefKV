@@ -105,3 +105,21 @@ runtime时拒绝：完整Full环境启用了final-stage prefetch，但夹具没�
 提供所需event socket。尚未执行回收或验证恢复。进程已退出，NVML
 确认没有残留GPU进程。后续夹具为每个场景建立独立临时event socket，
 保持原有Full开关和生产构造器校验，不修改候选策略或原生引擎。
+
+## 真实GPU组件验证
+
+冻结3ef9460f的第三次检查通过四个场景，原生引擎仍为11b84f7c3198。
+`gpu_components_r3.json`保留算子、七个策略/配置/原语文件、CPU报告
+与清单的精确哈希。关闭开关、Host锁保护和工具已经返回三个反例
+都没有释放Host镜像或创建冷备份。
+
+正例在Hot8槽的GPU读取仍在途时释放其8个Host镜像槽，Cold4的真实
+D2H随后使用这些被释放的Host槽。两个对象的Device索引和Device
+自由量不变，Hot的全部层读取一致。D2H ACK之前不能demote；ACK后
+实际释放Cold4，污染原GPU页，再由原生controller恢复，全部两层
+K/V数据逐项相等。原生Host池257槽、Device128槽，每token1024字节；
+4-token idle批量仍只是组件夹具，非正式512MiB参数。
+
+进程正常退出，NVML确认清理。该检查没有模型forward、原生模型
+consumer准入或完整JCT/吞吐证据，也不实现逐层容量交接。下一次
+完整Full仍需保持V345的全部work/timing/capacity/seed并独立审计。
