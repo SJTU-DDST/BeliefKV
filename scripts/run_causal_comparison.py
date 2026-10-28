@@ -339,6 +339,7 @@ def preflight_runtime(settings, model_path):
         ),
         "idle_prepare_io_backend": settings.get("BELIEFKV_IDLE_PREPARE_IO_BACKEND", "native"),
         "idle_host_mirror_recycle": settings.get("BELIEFKV_IDLE_HOST_MIRROR_RECYCLE", "0") == "1",
+        "layer_handoff_enabled": settings.get("BELIEFKV_LAYER_HANDOFF", "0") == "1",
         "tool_offload_policy": (
             settings.get("BELIEFKV_TOOL_OFFLOAD_POLICY", "fixed")
             if settings.get("BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD", "0") == "1" else "off"
@@ -765,6 +766,11 @@ def observed_configuration(plan, label, arm, *, final=False):
         ) == "1"
         if state.get("idle_host_mirror_recycle", False) is not host_mirror_recycle:
             raise ValueError("effective idle Host mirror recycling differs from declaration")
+        layer_handoff = mode == "full" and common.get(
+            "BELIEFKV_LAYER_HANDOFF", common.get("LAYER_HANDOFF", "0"),
+        ) == "1"
+        if state.get("layer_handoff_enabled", False) is not layer_handoff:
+            raise ValueError("effective layer handoff differs from declaration")
         validate_free_page_fence(plan, state)
         agent_strategy = plan.get("reference_environment", {}).get(
             "BELIEFKV_AGENT_ADMISSION",

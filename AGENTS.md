@@ -2132,3 +2132,24 @@
   and controls unchanged. Continue tool prediction repair then actual pipeline
   integration; disable/revert overlap if complete matched performance is
   negative. Do not present this primitive as an integrated Full implementation.
+- Prediction-curve FullR1 now completes all3674 exact requests and18 normal
+  tails with original stopping, fresh drain and actual owned exit. Named
+  complete_review.json verifies meanJCT1635.620442s/output236.597296token/s,
+  0.2713%/0.7974% worse than previous Full and3.6501%/1.3821% better thanV345.
+  Extra predicted release64/0.786629GB is not proof of a net performance win.
+  ReuseV345; keep the goal incomplete.
+- Native2a927b88939c/tree0d407f981c51 now binds one reserved layer handoff to
+  real split-safe FULL cache paths, native ACK locks and layer consumer events.
+  At most64 nodes per private path; donor and consumer sizes may differ.
+  Only the already selected logically eligible consumer may use the default-off
+  Full candidate; no ready peer or extra eligibility is displaced. Reserved
+  tail indices remain protected until donor ACK and early donor demand backs
+  off. Shared3421+4 CPU cases pass; source-bound GPU/model and complete matched
+  performance remain pending. Keep the common staging patch unchanged.
+- The latest question correctly distinguishes class-duration distributions from
+  per-call prediction. Current synthetic network keys use observable domain/
+  WebFetch-or-WebSearch category, then elapsed survival and workflow/run online
+  histories. Same-category cold predictions share the same prior. Independent
+  within-category sampled durations cannot be predicted from original command
+  semantics. P90 coverage is not per-call accuracy; offload requires conservative
+  remaining survival over actual migration cost, not a large P90 total duration.

@@ -226,6 +226,12 @@ class PredictedToolOffload:
             step, candidate = selection
             if not self._prepare_allowed(step, headroom):
                 continue
+            if getattr(runtime, "layer_handoff_enabled", False):
+                from beliefkv.runtime.layer_handoff import try_handoff
+
+                if try_handoff(self, key, step):
+                    self.cursor += offset + 1
+                    return
             issued = runtime.issue_shadow_backup_steps(
                 step, source="tool_wait", _selection_candidate=candidate,
                 _authorization=lambda: self._authorize_backup(key, step),

@@ -34,6 +34,7 @@ def main():
     parser.add_argument("--sources", type=Path, default=MANIFEST)
     parser.add_argument("--output", type=Path, default=OUTPUT)
     parser.add_argument("--configuration", type=Path, default=CONFIG)
+    parser.add_argument("--engine", type=Path)
     args = parser.parse_args()
     if any(path.exists() for path in (args.report, args.sources, args.output)):
         raise FileExistsError("preserve previous qualification outputs")
@@ -50,6 +51,7 @@ def main():
     host_mirror_recycle = configuration["common_environment"].get(
         "IDLE_HOST_MIRROR_RECYCLE", "0",
     ) == "1"
+    layer_handoff = configuration["common_environment"].get("LAYER_HANDOFF", "0") == "1"
     paths = set(json.loads(Path(prior["source_manifest"]["path"]).read_bytes()))
     paths.update((
         str(args.configuration.resolve().relative_to(ROOT)), str(Path(__file__).resolve().relative_to(ROOT)),
@@ -70,6 +72,12 @@ def main():
     if host_mirror_recycle:
         extra_tests += ("tests/test_idle_host_mirror_recycle.py",)
         paths.add("beliefkv/runtime/idle_host_mirror_recycle.py")
+    if layer_handoff:
+        extra_tests += ("tests/test_layer_handoff.py",)
+        paths.update((
+            "beliefkv/runtime/layer_handoff.py", "scripts/qualify_layer_handoff.py",
+            "scripts/qualify_layer_handoff_model.py",
+        ))
     if continuation_free:
         extra_tests += (
             "tests/test_reference_free_continuation.py",
@@ -105,6 +113,8 @@ def main():
             "CONTEXT_TOKENIZER_PATH", configuration["common_environment"]["MODEL_PATH"],
         ),
     }
+    if args.engine is not None:
+        environment["SGLANG_SOURCE_CHECKOUT"] = str(args.engine.resolve())
     subprocess.run(command, cwd=ROOT, env=environment, check=True)
     previous, current = passed_cases(Path(prior["report"]["path"])), passed_cases(args.report)
     if not previous <= current:
@@ -143,6 +153,8 @@ def main():
             int(host_mirror_recycle and label == "full")
         ):
             raise ValueError("idle Host mirror recycling leaked into a paper control")
+        if settings["BELIEFKV_LAYER_HANDOFF"] != str(int(layer_handoff and label == "full")):
+            raise ValueError("layer handoff leaked into a paper control")
         constructors[label] = preflight_runtime(
             {**settings, "SGLANG_SOURCE_CHECKOUT": environment["SGLANG_SOURCE_CHECKOUT"]},
             configuration["common_environment"]["MODEL_PATH"],
@@ -179,6 +191,7 @@ def main():
         "free_continuation_admission": continuation_free,
         "tool_offload_before_admission": early_tool_offload,
         "idle_host_mirror_recycle": host_mirror_recycle,
+        "layer_handoff": layer_handoff,
         "constructors": constructors,
         "preserved_development_reports": [
             str(REPORTS / name) for name in (

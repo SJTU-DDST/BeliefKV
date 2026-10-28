@@ -210,6 +210,9 @@ if [[ -n "${SGLANG_SOURCE_CHECKOUT}" ]]; then
     writeback_prepare)
       sglang_patch="${BELIEFKV_ROOT}/patches/sglang-v0.5.20-beliefkv-writeback-prepare.patch"
       ;;
+    layer_handoff)
+      sglang_patch="${BELIEFKV_ROOT}/patches/sglang-layer-handoff-runtime-20261027.patch"
+      ;;
     *)
       printf 'Unknown SGLang patch flavor: %s\n' "${SGLANG_PATCH_FLAVOR}" >&2
       exit 2

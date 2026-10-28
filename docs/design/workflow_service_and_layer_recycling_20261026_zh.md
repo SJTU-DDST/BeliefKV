@@ -234,3 +234,23 @@ extent、draft/稀疏layer mapping、缺失旧writer事件和尺寸不符。
 先修复工具预测解释问题，再接入该原语的cache所有权和准入事务。
 Overlap保持可关闭；若匹配完整工作量的JCT或吞吐出现负收益，关闭
 并回退到没有overlap的已验证路径，保留负结果及所有正常长尾。
+
+## 真实缓存事务的接入
+
+native提交2a927b88939c、树0d407f981c51新增独占路径交接。一个阻塞
+donor的最多64个私有节点可组成一个保留extent，消费者的完整缺失
+Host路径按同一extent的前部恢复。剩余extent只有在donor的D2H ACK
+后才进入空闲池；交接期间单独计入受保护容量。A、B迁移粒度可以
+不同，不要求两个agent的KV大小相同，也不把少传层数当成少占空间。
+
+Full只在真实已选消费者已经具备逻辑资格、仍有输入/decode增长
+空间、当前预测通过动态回本成本时调用。没有额外资格、工具后继
+提权或ready peer驱逐。原生树的备份/恢复pending标记、分裂更新、
+Host锁、逐层consumer事件和ACK用于约束两端生命周期。未完成的
+donor Host状态不可用于重入；无关resident prefill跳过该consumer等待。
+
+新共享回归3421项及4个子测试通过，含真实CPU原生树/分配器、
+分段路径、DMA期间分裂、索引不重复入空闲池及早返回拒绝。该报告
+尚不证明GPU字节正确或模型/性能收益。后续增加的独立GPU/模型
+operator和launch flavor需单独冻结及验证。共同staging补丁不变，
+新完整补丁为`patches/sglang-layer-handoff-runtime-20261027.patch`。

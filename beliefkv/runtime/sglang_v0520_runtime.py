@@ -649,6 +649,15 @@ class NativeAdmissionRuntime:
             or self.tool_offload_policy != "demand_cost"
         ):
             raise ValueError("tool offload before admission requires Full demand-cost offload")
+        layer_handoff = os.environ.get("BELIEFKV_LAYER_HANDOFF", "0")
+        if layer_handoff not in ("0", "1"):
+            raise ValueError("layer handoff must be 0 or 1")
+        self.layer_handoff_enabled = layer_handoff == "1"
+        if self.layer_handoff_enabled and (
+            not self.tool_offload_before_admission
+            or os.environ.get("BELIEFKV_AGENT_ADMISSION") != "thunderagent_reference"
+        ):
+            raise ValueError("layer handoff requires reference Full pre-admission tool offload")
         free_fence = os.environ.get("BELIEFKV_FREE_PAGE_H2D_FENCE", "0")
         if free_fence not in ("0", "1"):
             raise ValueError("free-page H2D fence must be 0 or 1")
@@ -1326,6 +1335,10 @@ class NativeAdmissionRuntime:
         if self._tool_residency_grace is not None:
             self._release_tool_residency_grace("cache_changed")
         self._native_cache = cache
+        if self.layer_handoff_enabled and not callable(
+            getattr(cache, "begin_beliefkv_layer_handoff", None)
+        ):
+            raise ValueError("layer handoff requires the dedicated native engine")
         supports = getattr(cache, "supports_beliefkv_restore_tiers", None)
         self._restore_tiers_supported = (
             self.restore_tiers == "dependency" and callable(supports) and supports() is True
@@ -2881,6 +2894,7 @@ class NativeAdmissionRuntime:
                 ),
                 "predicted_tool_offload": self.enable_predicted_tool_offload,
                 "tool_offload_before_admission": self.tool_offload_before_admission,
+                "layer_handoff_enabled": self.layer_handoff_enabled,
                 "tool_offload_policy": (
                     type(self._predicted_tool_offload).__name__
                     if self._predicted_tool_offload is not None else None

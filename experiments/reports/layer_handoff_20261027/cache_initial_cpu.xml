@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="31" time="9.906" timestamp="2026-10-27T21:50:30.033446-07:00" hostname="ddst-12"><testcase classname="tests.test_layer_handoff" name="test_recycled_extent_is_never_free_and_tail_frees_only_after_real_ack" time="6.519"><failure message="TypeError: 'NoneType' object is not subscriptable">native_handoff = namespace(native=&lt;module 'sglang.srt.mem_cache.beliefkv_layer_handoff' from '/home/longhao/experiment/.worktrees/sglan...kens': 2, 'authorize': &lt;function native_handoff.&lt;locals&gt;.&lt;lambda&gt; at 0x777f90d3e160&gt;}, host_owned=[], host_released=[])
+
+    def test_recycled_extent_is_never_free_and_tail_frees_only_after_real_ack(native_handoff):
+        f = native_handoff
+        before = f.allocator.available_size()
+        indices = f.donor.component_data[0].value.clone()
+        result = f.native.begin(f.cache, **f.args)
+&gt;       assert result["donor_tokens"] == 32 and result["reused_tokens"] == 16
+               ^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'NoneType' object is not subscriptable
+
+tests/test_layer_handoff.py:102: TypeError</failure></testcase><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[device_lock]" time="0.005" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[host_lock]" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[shared]" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[stale_donor]" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[stale_consumer]" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[closed_donor]" time="0.004"><failure message="AttributeError: 'collections.OrderedDict' object has no attribute 'add'">native_handoff = namespace(native=&lt;module 'sglang.srt.mem_cache.beliefkv_layer_handoff' from '/home/longhao/experiment/.worktrees/sglan...kens': 2, 'authorize': &lt;function native_handoff.&lt;locals&gt;.&lt;lambda&gt; at 0x777f907594e0&gt;}, host_owned=[], host_released=[])
+cause = 'closed_donor'
+
+    @pytest.mark.parametrize("cause", (
+        "device_lock", "host_lock", "shared", "stale_donor", "stale_consumer",
+        "closed_donor", "closed_consumer", "host_missing", "already_backed",
+        "busy_write", "busy_load", "busy_ack", "too_little_growth_space",
+        "too_large_consumer", "authorization", "unready_producer",
+    ))
+    def test_refusal_preserves_native_ownership_and_capacity(native_handoff, cause):
+        f = native_handoff
+        a, b, cc = f.donor.component_data[0], f.consumer.component_data[0], f.cache.cache_controller
+        if cause == "device_lock":
+            a.lock_ref += 1
+        elif cause == "host_lock":
+            a.host_lock_ref += 1
+        elif cause == "shared":
+            a.session_ids.add("other")
+            a.session_ref += 1
+        elif cause == "stale_donor":
+            f.args["donor_session_generation"] += 1
+        elif cause == "stale_consumer":
+            f.args["consumer_creation_time"] += 1
+        elif cause.startswith("closed_"):
+&gt;           f.cache.session_refs._closed_session_ids.add(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                "s" if cause == "closed_donor" else "consumer-session",
+E               AttributeError: 'collections.OrderedDict' object has no attribute 'add'
+
+tests/test_layer_handoff.py:151: AttributeError</failure></testcase><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[closed_consumer]" time="0.004"><failure message="AttributeError: 'collections.OrderedDict' object has no attribute 'add'">native_handoff = namespace(native=&lt;module 'sglang.srt.mem_cache.beliefkv_layer_handoff' from '/home/longhao/experiment/.worktrees/sglan...kens': 2, 'authorize': &lt;function native_handoff.&lt;locals&gt;.&lt;lambda&gt; at 0x777f90d3e160&gt;}, host_owned=[], host_released=[])
+cause = 'closed_consumer'
+
+    @pytest.mark.parametrize("cause", (
+        "device_lock", "host_lock", "shared", "stale_donor", "stale_consumer",
+        "closed_donor", "closed_consumer", "host_missing", "already_backed",
+        "busy_write", "busy_load", "busy_ack", "too_little_growth_space",
+        "too_large_consumer", "authorization", "unready_producer",
+    ))
+    def test_refusal_preserves_native_ownership_and_capacity(native_handoff, cause):
+        f = native_handoff
+        a, b, cc = f.donor.component_data[0], f.consumer.component_data[0], f.cache.cache_controller
+        if cause == "device_lock":
+            a.lock_ref += 1
+        elif cause == "host_lock":
+            a.host_lock_ref += 1
+        elif cause == "shared":
+            a.session_ids.add("other")
+            a.session_ref += 1
+        elif cause == "stale_donor":
+            f.args["donor_session_generation"] += 1
+        elif cause == "stale_consumer":
+            f.args["consumer_creation_time"] += 1
+        elif cause.startswith("closed_"):
+&gt;           f.cache.session_refs._closed_session_ids.add(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                "s" if cause == "closed_donor" else "consumer-session",
+E               AttributeError: 'collections.OrderedDict' object has no attribute 'add'
+
+tests/test_layer_handoff.py:151: AttributeError</failure></testcase><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[host_missing]" time="0.003" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[already_backed]" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[busy_write]" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[busy_load]" time="0.003" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[busy_ack]" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[too_little_growth_space]" time="0.003" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[too_large_consumer]" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[authorization]" time="0.003" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[unready_producer]" time="0.003" /><testcase classname="tests.test_layer_handoff" name="test_completed_consumer_does_not_release_donor_tail_early" time="0.004"><failure message="AssertionError: assert None is not None&#10; +  where None = &lt;function begin at 0x777f90d3d940&gt;(&lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x777f908fa1d0&gt;, **{'donor_node_id': 231, 'donor_creation_time': np.float64(516.0), 'donor_session_id': 's', 'donor_session_generation': 1, ...})&#10; +    where &lt;function begin at 0x777f90d3d940&gt; = &lt;module 'sglang.srt.mem_cache.beliefkv_layer_handoff' from '/home/longhao/experiment/.worktrees/sglang-layer-handoff-20261027/python/sglang/srt/mem_cache/beliefkv_layer_handoff.py'&gt;.begin&#10; +      where &lt;module 'sglang.srt.mem_cache.beliefkv_layer_handoff' from '/home/longhao/experiment/.worktrees/sglang-layer-handoff-20261027/python/sglang/srt/mem_cache/beliefkv_layer_handoff.py'&gt; = namespace(native=&lt;module 'sglang.srt.mem_cache.beliefkv_layer_handoff' from '/home/longhao/experiment/.worktrees/sglan...kens': 2, 'authorize': &lt;function native_handoff.&lt;locals&gt;.&lt;lambda&gt; at 0x777f907984a0&gt;}, host_owned=[], host_released=[]).native&#10; +    and   &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x777f908fa1d0&gt; = namespace(native=&lt;module 'sglang.srt.mem_cache.beliefkv_layer_handoff' from '/home/longhao/experiment/.worktrees/sglan...kens': 2, 'authorize': &lt;function native_handoff.&lt;locals&gt;.&lt;lambda&gt; at 0x777f907984a0&gt;}, host_owned=[], host_released=[]).cache&#10; +    and   {'donor_node_id': 231, 'donor_creation_time': np.float64(516.0), 'donor_session_id': 's', 'donor_session_generation': 1, ...} = namespace(native=&lt;module 'sglang.srt.mem_cache.beliefkv_layer_handoff' from '/home/longhao/experiment/.worktrees/sglan...kens': 2, 'authorize': &lt;function native_handoff.&lt;locals&gt;.&lt;lambda&gt; at 0x777f907984a0&gt;}, host_owned=[], host_released=[]).args">native_handoff = namespace(native=&lt;module 'sglang.srt.mem_cache.beliefkv_layer_handoff' from '/home/longhao/experiment/.worktrees/sglan...kens': 2, 'authorize': &lt;function native_handoff.&lt;locals&gt;.&lt;lambda&gt; at 0x777f907984a0&gt;}, host_owned=[], host_released=[])
+
+    def test_completed_consumer_does_not_release_donor_tail_early(native_handoff):
+        f = native_handoff
+&gt;       assert f.native.begin(f.cache, **f.args) is not None
+E       AssertionError: assert None is not None
+E        +  where None = &lt;function begin at 0x777f90d3d940&gt;(&lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x777f908fa1d0&gt;, **{'donor_node_id': 231, 'donor_creation_time': np.float64(516.0), 'donor_session_id': 's', 'donor_session_generation': 1, ...})
+E        +    where &lt;function begin at 0x777f90d3d940&gt; = &lt;module 'sglang.srt.mem_cache.beliefkv_layer_handoff' from '/home/longhao/experiment/.worktrees/sglang-layer-handoff-20261027/python/sglang/srt/mem_cache/beliefkv_layer_handoff.py'&gt;.begin
+E        +      where &lt;module 'sglang.srt.mem_cache.beliefkv_layer_handoff' from '/home/longhao/experiment/.worktrees/sglang-layer-handoff-20261027/python/sglang/srt/mem_cache/beliefkv_layer_handoff.py'&gt; = namespace(native=&lt;module 'sglang.srt.mem_cache.beliefkv_layer_handoff' from '/home/longhao/experiment/.worktrees/sglan...kens': 2, 'authorize': &lt;function native_handoff.&lt;locals&gt;.&lt;lambda&gt; at 0x777f907984a0&gt;}, host_owned=[], host_released=[]).native
+E        +    and   &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x777f908fa1d0&gt; = namespace(native=&lt;module 'sglang.srt.mem_cache.beliefkv_layer_handoff' from '/home/longhao/experiment/.worktrees/sglan...kens': 2, 'authorize': &lt;function native_handoff.&lt;locals&gt;.&lt;lambda&gt; at 0x777f907984a0&gt;}, host_owned=[], host_released=[]).cache
+E        +    and   {'donor_node_id': 231, 'donor_creation_time': np.float64(516.0), 'donor_session_id': 's', 'donor_session_generation': 1, ...} = namespace(native=&lt;module 'sglang.srt.mem_cache.beliefkv_layer_handoff' from '/home/longhao/experiment/.worktrees/sglan...kens': 2, 'authorize': &lt;function native_handoff.&lt;locals&gt;.&lt;lambda&gt; at 0x777f907984a0&gt;}, host_owned=[], host_released=[]).args
+
+tests/test_layer_handoff.py:183: AssertionError</failure></testcase><testcase classname="tests.test_layer_handoff" name="test_real_selected_consumer_uses_handoff_without_logical_priority_change" time="0.005"><failure message="AssertionError: assert False&#10; +  where False = &lt;function try_handoff at 0x777f90799ee0&gt;(&lt;beliefkv.runtime.predicted_tool_offload.DemandAwareToolOffload object at 0x777f9088b690&gt;, PrefillCandidateKey(request_id='tool', root_workflow_id='wf', invocation_id='tool', context_id='ctx-tool', context_epoch=0, attempt_id=0, session_id='s', session_generation=1), namespace(node_id=244, creation_time=np.float64(545.0)))&#10; +    where &lt;beliefkv.runtime.predicted_tool_offload.DemandAwareToolOffload object at 0x777f9088b690&gt; = namespace(native=&lt;module 'sglang.srt.mem_cache.beliefkv_layer_handoff' from '/home/longhao/experiment/.worktrees/sglan...kens': 2, 'authorize': &lt;function native_handoff.&lt;locals&gt;.&lt;lambda&gt; at 0x777f90799e40&gt;}, host_owned=[], host_released=[]).offloader">native_handoff = namespace(native=&lt;module 'sglang.srt.mem_cache.beliefkv_layer_handoff' from '/home/longhao/experiment/.worktrees/sglan...kens': 2, 'authorize': &lt;function native_handoff.&lt;locals&gt;.&lt;lambda&gt; at 0x777f90799e40&gt;}, host_owned=[], host_released=[])
+
+    def test_real_selected_consumer_uses_handoff_without_logical_priority_change(native_handoff):
+        from beliefkv.runtime.layer_handoff import try_handoff
+        from tests.test_reference_thunder_admission import state
+    
+        f = native_handoff
+        before = state(f.runtime._agent_admission)
+        key = f.runtime.context_sessions["ctx-tool"]
+        step = NS(node_id=f.donor.id, creation_time=f.donor.creation_time)
+&gt;       assert try_handoff(f.offloader, key, step)
+E       AssertionError: assert False
+E        +  where False = &lt;function try_handoff at 0x777f90799ee0&gt;(&lt;beliefkv.runtime.predicted_tool_offload.DemandAwareToolOffload object at 0x777f9088b690&gt;, PrefillCandidateKey(request_id='tool', root_workflow_id='wf', invocation_id='tool', context_id='ctx-tool', context_epoch=0, attempt_id=0, session_id='s', session_generation=1), namespace(node_id=244, creation_time=np.float64(545.0)))
+E        +    where &lt;beliefkv.runtime.predicted_tool_offload.DemandAwareToolOffload object at 0x777f9088b690&gt; = namespace(native=&lt;module 'sglang.srt.mem_cache.beliefkv_layer_handoff' from '/home/longhao/experiment/.worktrees/sglan...kens': 2, 'authorize': &lt;function native_handoff.&lt;locals&gt;.&lt;lambda&gt; at 0x777f90799e40&gt;}, host_owned=[], host_released=[]).offloader
+
+tests/test_layer_handoff.py:204: AssertionError</failure></testcase><testcase classname="tests.test_layer_handoff" name="test_runtime_handoff_requires_current_prediction_and_actual_admission[maintenance]" time="0.003" /><testcase classname="tests.test_layer_handoff" name="test_runtime_handoff_requires_current_prediction_and_actual_admission[disabled]" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_runtime_handoff_requires_current_prediction_and_actual_admission[short_tool]" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_runtime_handoff_requires_current_prediction_and_actual_admission[inactive_consumer]" time="0.003" /><testcase classname="tests.test_layer_handoff" name="test_internal_controls_keep_handoff_full_only[full]" time="0.001" /><testcase classname="tests.test_layer_handoff" name="test_internal_controls_keep_handoff_full_only[join_priority_only]" time="0.001" /><testcase classname="tests.test_layer_handoff" name="test_internal_controls_keep_handoff_full_only[scheduler_only]" time="0.001" /><testcase classname="tests.test_layer_handoff" name="test_internal_controls_keep_handoff_full_only[kv_only]" time="0.001" /><testcase classname="tests.test_layer_handoff" name="test_internal_controls_keep_handoff_full_only[native_matched]" time="0.001" /><testcase classname="tests.test_layer_handoff" name="test_paper_controls_never_inherit_handoff[thunderagent]" time="0.001" /><testcase classname="tests.test_layer_handoff" name="test_paper_controls_never_inherit_handoff[thunderagent_acting_decay]" time="0.001" /><testcase classname="tests.test_layer_handoff" name="test_paper_controls_never_inherit_handoff[kvflow_observed_graph]" time="0.001" /></testsuite></testsuites>

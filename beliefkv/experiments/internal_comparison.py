@@ -28,6 +28,10 @@ def arm_environment(
     if early_tool_offload not in ("0", "1"):
         raise ValueError("tool offload before admission must be 0 or 1")
     early_tool_offload = early_tool_offload if mode == "full" else "0"
+    layer_handoff = common.get("BELIEFKV_LAYER_HANDOFF", common.get("LAYER_HANDOFF", "0"))
+    if layer_handoff not in ("0", "1"):
+        raise ValueError("layer handoff must be 0 or 1")
+    layer_handoff = layer_handoff if mode == "full" else "0"
     host_mirror_recycle = common.get(
         "BELIEFKV_IDLE_HOST_MIRROR_RECYCLE", common.get("IDLE_HOST_MIRROR_RECYCLE", "0"),
     )
@@ -153,6 +157,10 @@ def arm_environment(
         or common.get("BELIEFKV_TOOL_OFFLOAD_POLICY", "fixed") != "demand_cost"
     ):
         raise ValueError("tool offload before admission requires reference Full demand-cost offload")
+    if layer_handoff == "1" and (
+        early_tool_offload != "1" or agent_admission != "thunderagent_reference"
+    ):
+        raise ValueError("layer handoff requires reference Full pre-admission tool offload")
     siblings = common.get(
         "BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN", common.get("AGENT_COADMIT_JOIN_CHILDREN", "0"),
     )
@@ -249,6 +257,8 @@ def arm_environment(
         "BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD": tool_offload,
         "TOOL_OFFLOAD_BEFORE_ADMISSION": early_tool_offload,
         "BELIEFKV_TOOL_OFFLOAD_BEFORE_ADMISSION": early_tool_offload,
+        "LAYER_HANDOFF": layer_handoff,
+        "BELIEFKV_LAYER_HANDOFF": layer_handoff,
         "IDLE_HOST_MIRROR_RECYCLE": host_mirror_recycle,
         "BELIEFKV_IDLE_HOST_MIRROR_RECYCLE": host_mirror_recycle,
         "BELIEFKV_TOOL_OFFLOAD_POLICY": common.get("BELIEFKV_TOOL_OFFLOAD_POLICY", "fixed") if custom_kv else "fixed",
