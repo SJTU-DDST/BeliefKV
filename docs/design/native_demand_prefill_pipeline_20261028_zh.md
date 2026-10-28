@@ -166,7 +166,7 @@ compute process。r1/r2 的导入及包装参数失败继续保留。
 ## 真实模型并发资格入口
 
 `scripts/qualify_demand_prefill_model.py` 使用三个不同 source workflow
-的 24576-token 前缀，Device57344/Host8GB、running/decode24。
+的 24576/24576/32768-token 前缀，Device61440/Host8GB、running/decode24。
 先经正常容量压力使 B 的旧前缀转为 Host，再让 A 以驻留前缀生成
 512 个 greedy token，实际 decode 已开始后提交 B 的需求续接。整个
 模型场景不插入人工 copy 延迟、不使用重放 sampler 或预定输出 token。
@@ -191,3 +191,23 @@ native commit 和对应累计补丁的 reverse-check。模型入口先检查实�
 当前模型入口的 51 项定向 CPU 检查通过；完整 `model_entry_r2_cpu`
 单次执行通过 4085 项及六个子测试，保留原有 4060 个身份并新增 25 个。
 前后源码及实际构造器均完成绑定。真实模型执行仍待冻结后完成。
+
+第一次模型尝试 `demand_prefill_model_20261028_r1` 使用三个 24576-token
+前缀和 Device57344；七个模型请求均完成，但预设近完整冷前缀检查拒绝：
+真实 native H2D 为 20487 token/2013954048 bytes，B 仍有 4096 token
+驻留。因此保留 failed，不把它重新标为资格通过。记录确实包含恢复期间
+的 decode 进展，但尚未完成其余独立验收。
+
+修正只调整数值 fixture：第三个前缀增至 32768、Device 增至 61440，
+要求选取输入足够长的三个独立 source workflow。三前缀总量超过池容量，
+但 A+B 加 512-token 输出仍有空间；目标是让 B 完整转为 Host，同时
+允许实际并发。原有至少 24575 token、精确 ACK、结果及进展门槛保持
+不变。正式 workload、容量和历史比较均未改变。
+
+随后独立读取 r1 原始响应发现数值检查同样未通过：A 首个 token 分歧
+在第 125 个输出，首个超过 0.05 的 logprob 差在第 50 个输出；B 的
+八个输出 token 相同，但最大 logprob 差为 0.1041944623。A 前 48 个
+输出的 logprob 相同，变化开始于 B 已恢复并加入服务的阶段。这只能
+定位时间，不能证明是 batch 数值差异或 KV 损坏。r1 仍为 failed，
+不得跳过数值门槛进入 FULL；下一步需要关闭新 pipeline 的同场景诊断，
+同时核对独立参考的前缀构建与 batch 形态。

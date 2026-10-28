@@ -1,0 +1,1 @@
+sgl_kernel.kvcacheio.get_device_accessible_ptr is missing from the installed sglang-kernel; using raw host addresses for kernel pointer tables. Build sglang-kernel from python/sglang/kernels/aot to enable it.

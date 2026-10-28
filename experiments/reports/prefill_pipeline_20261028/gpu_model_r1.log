@@ -1,0 +1,21 @@
+Traceback (most recent call last):
+  File "/home/longhao/experiment/.worktrees/beliefkv-demand-model-55e54416-20261028/scripts/qualify_demand_prefill_model.py", line 385, in <module>
+    main()
+  File "/home/longhao/experiment/.worktrees/beliefkv-demand-model-55e54416-20261028/scripts/qualify_demand_prefill_model.py", line 356, in main
+    report["model"] = asyncio.run(probe(directory, args.port, prompts, pulse))
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/longhao/experiment/.worktrees/beliefkv-demand-model-55e54416-20261028/scripts/qualify_demand_prefill_model.py", line 233, in probe
+    progress = verify_progress(journals, workers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/longhao/experiment/.worktrees/beliefkv-demand-model-55e54416-20261028/scripts/qualify_demand_prefill_model.py", line 68, in verify_progress
+    raise ValueError("model demand must stage its actual long native Host prefix exactly once")
+ValueError: model demand must stage its actual long native Host prefix exactly once

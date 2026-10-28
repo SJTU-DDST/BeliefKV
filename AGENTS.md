@@ -2700,3 +2700,12 @@
   plus6subtests, retains4060 and adds25, with sources/constructors rebound.
   Freeze and rerun current component scenes, then run the current model entry
   before position/Full. Actual concurrent model and performance remain pending.
+- Preserve model r1 at clean55e54416 as failed, despite7 completed requests,
+  actual20487-token/2013954048-byte H2D and11 post-stage completed resident
+  decode batches while ACK pending. It misses the unchanged24575-token cold
+  fixture gate. Raw output follow-up also finds A first token difference at
+  ordinal125 and first >.05 logprob delta at50; B8 tokens agree but maxdelta
+  .1041944623. Do not call this model qualified or enter Full. The proposed
+ 24576/24576/32768-token Device61440 fixture retains the original cold gate
+  and passes4085+6 CPU again(model_fixture_r1), but numerical cause requires
+  a pipeline-off same-original-fixture diagnostic before the next qualifier.

@@ -35,7 +35,8 @@ from scripts.run_causal_gpu_replay import source_plan
 
 
 PREFIX_TOKENS = 24576
-DEVICE_TOKENS = 57344
+PREFIX_SIZES = (PREFIX_TOKENS, PREFIX_TOKENS, 32768)
+DEVICE_TOKENS = 61440
 RESIDENT_OUTPUT = 512
 DOCUMENT = {"generated_tokens": 8, "sampling_seed": 21}
 LABELS = ("b_initial", "c", "a_initial", "a_resident", "b_demand", "a_reference", "b_reference")
@@ -281,7 +282,7 @@ def main():
         ((rid, value["llm_submit"]) for rid, value in expected.items()),
         key=lambda pair: (pair[1][1], pair[0]),
     ):
-        if count >= PREFIX_TOKENS and identity[0] not in seen:
+        if count >= max(PREFIX_SIZES) and identity[0] not in seen:
             selected.append(request)
             seen.add(identity[0])
         if len(selected) == 3:
@@ -289,7 +290,10 @@ def main():
     if len(selected) != 3:
         raise ValueError("three independent long source prefixes are unavailable")
     with CapturedTokenCorpus(Path(prior["source_arm"]) / "server/request_tokens.jsonl", expected) as corpus:
-        prompts = [list(corpus.get(request).prompt_tokens[:PREFIX_TOKENS]) for request in selected]
+        prompts = [
+            list(corpus.get(request).prompt_tokens[:size])
+            for request, size in zip(selected, PREFIX_SIZES, strict=True)
+        ]
     directory.mkdir(parents=True)
     arm = directory / "arm"
     (arm / "server").mkdir(parents=True)
@@ -321,7 +325,7 @@ def main():
         "native_engine": state, "native_tree": tree, "component_sha256": sha256_file(args.components),
         "source_requests": selected, "configuration_sha256": sha256_file(args.configuration),
         "operator_sha256": sha256_file(Path(__file__)), "fixture": {
-            "device_tokens": DEVICE_TOKENS, "host_gb": 8, "prefix_tokens": PREFIX_TOKENS,
+            "device_tokens": DEVICE_TOKENS, "host_gb": 8, "prefix_tokens": list(PREFIX_SIZES),
             "resident_output": RESIDENT_OUTPUT, "other_output": 8, "artificial_copy_delay": False,
             "progress_probe": True, "model_outputs_forced": False, "max_logprob_delta": .05,
         },
