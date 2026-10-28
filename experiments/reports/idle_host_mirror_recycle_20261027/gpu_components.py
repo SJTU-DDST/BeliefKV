@@ -105,10 +105,11 @@ def scenario(engine, name):
         torch.cuda.synchronize()
         cold_expected, hot_expected = save(cold_indices), save(hot_indices)
         torch.cuda.synchronize()
-        if not cache.prepare_beliefkv_spawn_full(
-            session_id="hot",
-            session_generation=cache.session_refs._session_generations["hot"],
-        )["issued"]:
+        # The production SPAWN wrapper reserves 64MiB, larger than this fixture.
+        if not cache._prepare_beliefkv_cold_full_nodes(
+            ((hot.id, hot.creation_time, 8),), read_only_backup=True,
+            max_batch_bytes=8 * unit,
+        ):
             raise ValueError("native Hot checkpoint did not enqueue")
         deadline = time.monotonic() + 15.
         while cache.ongoing_write_through:

@@ -2029,3 +2029,11 @@
   engine11b84f7c3198 is unchanged. Complete actual GPU bytes/lifecycle before
   freezing a Full-only comparison; reuseV345 and retain all prior negative
   results. No new GPU experiment is registered and the global goal is active.
+- The frozenfc57f6c0 Host-mirror GPU component attempt stopped in disabled
+  setup before exercising recycling: its257KiB Host fixture cannot satisfy
+  the production SPAWN wrapper's64MiB reserve. Preserve gpu_components_r1.json
+  and its failed operator snapshot; actual child exit and empty NVML are
+  verified. A distinct fixture retry uses the existing bounded read-only
+  backup primitive for the initial8-slot mirror, without changing production
+  reserves, qualified policy sources or the native engine. GPU qualification
+  and any complete Full comparison remain pending.

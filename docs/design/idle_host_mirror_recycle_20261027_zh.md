@@ -88,3 +88,14 @@ duplicate/dirty索引。只在实际Host自由量达到原来的reserve与目标
 核算JCT、全程吞吐、Host副本再备份、D2H/H2D、真正提前释放和首次
 使用，以及没有复制收益的镜像回收。没有新GPU实验登记，整体目标
 仍未达到。
+
+## GPU组件准备失败
+
+冻结fc57f6c0的第一次组件检查保留为 `gpu_components_r1.json`，在
+disabled场景建立初始Hot镜像时停止，尚未执行新回收机制。夹具Host
+池只有257个1024字节槽，而生产SPAWN包装器保留64MiB，因此合法
+拒绝该准备动作。失败后进程退出，NVML确认没有残留GPU进程。
+
+后续夹具使用原生有界read-only备份原语建立8槽Hot镜像，不改变生产
+SPAWN保留量、候选实现、共享CPU资格或正式200GB Host配置。
+必须使用新的冻结operator及新的输出路径，保留原始失败。
