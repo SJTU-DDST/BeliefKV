@@ -72,9 +72,9 @@ GPU 服务、隐藏传输或数值一致性的证明。
 真实 prefill 及完成回执。它不宣称已隐藏 DMA。相关命令为
 `scripts/audit_demand_prefill_pipeline.py`，正式完整运行后才能执行。
 
-真实组件入口 `scripts/qualify_demand_prefill_pipeline.py` 已通过 CPU
-证据验证器，但尚未真实执行四个 GPU 场景。该组件使用有限延迟拷贝，
-不是模型 decode 推进或性能证明。
+该 CPU 阶段的真实组件入口 `scripts/qualify_demand_prefill_pipeline.py`
+只通过证据验证器，尚未真实执行四个 GPU 场景。组件使用有限延迟拷贝，
+不是模型 decode 推进或性能证明；后续实际执行结果单列如下。
 
 组件入口冻结在应用 `7e7e79e9` 后有两次未通过尝试，保存在同目录
 `gpu_components_r1/r2.json/.log`。r1 在 native 导入时未指定现有
@@ -86,11 +86,31 @@ native H2D，但延迟拷贝包装函数未接收 `is_draft` 关键字参数，�
 全部通过，保留 r1 的全部 4060 个测试身份，构造器及前后源码 hash
 再次核对成功。r2 报告属于新的源码绑定，不与 r1 相加。
 
+## 真实 GPU 组件结果
+
+冻结应用 `165a331e`、clean native `d3da19c1` 在 nice0 完成
+`gpu_components_r3.json/.log` 的四个场景，退出零，之后 GPU 无 compute
+process。工具链与历史完整实验一致：
+`/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13`。
+
+| 场景 | 成员数 | 精确匹配原生 H2D 字节 | 额外边界 |
+| --- | ---: | ---: | --- |
+| resident_access | 1 | 32768 | 驻留访问早于冷恢复 ACK |
+| selected_batch | 2 | 65536 | 两个成员正常共同恢复 |
+| no_decode_fallback | 1 | 32768 | 正常准入保留实际层依赖 |
+| abort_shared_prefix | 1 | 32768 | 取消不丢失共享消费者依赖 |
+
+四场景均逐 K/V 张量相等，resident accessor 都在冷传输 ACK 前完成，
+最终 Device/Host 可用容量分别回到 128/257。此结果使用实际原生
+Req、PrefillAdder、锁、allocator、copy/ACK 和 GPU 访问器，但人为
+延迟最后一层，且只有两层合成 K/V。它不能证明真实模型 decode 的
+并发推进、模型数值一致性、隐藏了多少正常 DMA 或完整 JCT 收益。
+
 ## 下一项资格
 
 在正式 FULL 前，仍需冻结当前应用并验证
-真实 DMA 与正常准入/取消、共享前缀消费者、恢复期间的实际 resident
-decode、非强制模型输出和当前树的位置/session/stop。实际启动必须证明
+恢复期间的实际 resident decode、非强制模型输出和当前树的位置/session/stop。
+实际启动必须证明
 helper 已绑定及被执行，只有 enable 位不够。
 
 暂存时间继续计入原始提交等待及完整 JCT。后续复用完整 V230/V311 工作、

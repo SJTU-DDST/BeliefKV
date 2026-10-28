@@ -1,8 +1,8 @@
 # 原生需求恢复与驻留 decode 流水线
 
 2026-10-28。此候选继续处理完整 FULL 中关键请求被其他 prefill 区间覆盖
-的问题。默认关闭 `BELIEFKV_DEMAND_PREFILL_PIPELINE`；CPU 实现与来源绑定
-已完成，不是新 GPU 结果或已成立的 JCT 收益。
+的问题。默认关闭 `BELIEFKV_DEMAND_PREFILL_PIPELINE`；CPU 实现、来源绑定
+及真实 GPU 组件验证已完成，尚未建立模型并发推进或 JCT 收益。
 
 ## 实验依据
 
@@ -123,8 +123,8 @@ socket 与 scheduler fixture 失败均保存在本证据目录。
 修正的只是证据脚本，第三轮完整执行与构造器核对均通过，前两轮 XML
 继续保留。
 
-GPU 前仍需冻结当前应用；验证真实 DMA、取消/共享
-前缀、恢复期间 resident decode 的实际推进、消费者首次服务和非强制
+真实 DMA 组件通过后，仍需冻结当前应用，验证
+恢复期间 resident decode 的实际推进、消费者首次服务和非强制
 模型数值一致性，再完成当前树的位置/session/stop 检查。随后才可在
 完整 V230/V311 固定工作量上比较 Full，复用完整 V345 并公开 engine
 差异。工作量、停止、全部正常长尾、容量和种子不变，工具预取继续关闭。
@@ -152,5 +152,13 @@ resident accessor、双成员批次、无 decode 回退、取消后共享前缀�
 原生 copy/ACK 和有限延迟的最后一层。必须证明 resident accessor
 在冷恢复 ACK 前完成、消费者 K/V 完全一致、正常回退/取消保留 fence，
 且最终容量全部归还。这是有控制延迟的组件检查，不能替代非强制模型
-并发推进、输出/logprob、position 或完整性能验证。当前仅 CPU 校验
-通过，真实 GPU 执行尚待完成。
+并发推进、输出/logprob、position 或完整性能验证。
+
+冻结应用 `165a331e`、clean native `d3da19c1` 的
+`gpu_components_r3.json/.log` 已完成四个场景，原始进程退出零。
+每场景的 resident accessor 都在真实 H2D ACK 前完成，所有消费者
+K/V 完全一致；双成员共恢复 64 token，其余各 32 token，均精确匹配
+untagged ACK。每场景最终恢复全部 128 Device/257 Host slots，
+无 decode 回退及取消共享前缀 fence 通过。实际进程结束后 GPU 无
+compute process。r1/r2 的导入及包装参数失败继续保留。
+该有限延迟两层组件不代表真实模型 forward 或整轮性能已通过。

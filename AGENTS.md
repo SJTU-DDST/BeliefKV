@@ -2677,3 +2677,15 @@
   service_gpu_r2 passes4060 plus6subtests with all4060 prior identities and
   actual constructors/source hashes rebound. Freeze that repair before the
   next component attempt; no completed GPU/model/performance proof yet.
+- The clean165a331e/native d3da19c1 demand component r3 now actually passes
+  all4 GPU scenes atnice0 with historical CUDA13, process exit0 and no GPU
+  compute process afterward. Real accessors finish before delayed cold H2D
+  ACK; every consumer K/V matches and each scene returns128/257 slots.
+  Double-member32-token prefixes reconcile65536bytes, other scenes32768.
+  Native fallback and cancellation/shared-prefix layer fences verify.
+  Preserve both failed attempts. This is a finite delayed-copy two-layer
+  component, not actual model decode, normal-transfer timing, position or
+  whole-workload performance. Qualify unforced concurrent resident model
+  progress and independent output/logprobs before current position/Full.
+  No new complete Full comparison or other baseline was run; the goal remains
+  active with tool prefetch off and completeV345 retained.
