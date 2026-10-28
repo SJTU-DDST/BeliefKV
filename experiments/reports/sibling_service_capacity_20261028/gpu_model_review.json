@@ -1,0 +1,69 @@
+{
+  "observed_at": "2026-10-28T14:01:35.895911+00:00",
+  "scope": "Current native GPU bytes and unforced model correctness; performance pending.",
+  "frozen_application": {
+    "commit": "100ec17e07ce0d6381df460d4784fbcb98b59019",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "f7bd3c45196f38c195e30781ec73af7e38fe64d083473d4fe0ef154c4b4e12e7"
+  },
+  "native_gpu_engine": {
+    "commit": "873970a45a250045e823dcc1134a48d70de49ec2",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "926c5eba624ef4370ce27562706a8af2c94c8cba1a9fbe62f67b35e55f8ffbce"
+  },
+  "native_replay_cpu_evidence": {
+    "report": "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/native_targeted_r1.xml",
+    "report_sha256": "9c5acbc043e1803f817393b2349b33d411ba8b63b719a85943cfacf2f0c4b4ff",
+    "sources": "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/native_registration_sources.json",
+    "sources_sha256": "85eecea0d9a1c40b73956b345b31c69056ac62948db783cc307fe30f07e5c323",
+    "tree": "cdd58a4acbb5038207d3a5020c54d7cbcef983b9",
+    "passing_cases": 92,
+    "gpu_validation_pending": true
+  },
+  "maximum_logprob_delta": {
+    "b_handoff": 0.0,
+    "a_recovered": 0.0
+  },
+  "actual_grouped_handoff_count": 1,
+  "actual_grouped_components_and_model_qualified": true,
+  "logical_join_and_sibling_gpu_service_qualified": false,
+  "whole_workload_qualified": false,
+  "performance_accepted": false,
+  "model_server_and_component_exited": true,
+  "gpu_compute_processes_absent": true,
+  "native_patch_path_rebound_to_identical_frozen_bytes": true,
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/gpu_components_r1.json": "53b13d06f4f3ddc3cdbdffd5dc3b536d1c869cca63735d85e108bc10116c39ba",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/model_r1/report.json": "94d2e267a38741300acdc1ba39a10a514187c2462a760e987b86712325923107",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/model_r1/owned_process_cleanup.json": "5f3413ca1ae40e10944ee80e5b0b4f0062b2cbee6ea06463ded89232e02fcde5",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/qualified_shared_cpu_r2.evidence.json": "cf70348cfd82b4affd03934fa8656d7e18541e03d3e2e3f46438f180547567a2",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/qualified_shared_cpu_r2.sources.json": "f0701e79f8e5492a23c6bd6430e367b60edb539d5847e3aa7297e7627a65fa17",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/qualified_shared_cpu_r2.xml": "e0de72445306fdbf6b42da733e4ca7393dcac97a688f3688c0ef6a46567fe7d8",
+    "/home/longhao/experiment/.worktrees/beliefkv-sibling-capacity-gpu-100ec17e/configs/migration/predictive_sibling_service_capacity_20261028.json": "aa9905724498f9e5db7f7ef8e437e7a92248fa6a179bbf6fe6ef022486794422",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/native_registration_sources.json": "85eecea0d9a1c40b73956b345b31c69056ac62948db783cc307fe30f07e5c323",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/native_targeted_r1.xml": "9c5acbc043e1803f817393b2349b33d411ba8b63b719a85943cfacf2f0c4b4ff",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/model_r1/request_a_reference.json": "d133534cabceb6b2f9083d7859bbad350619ee24e71b911edf8cb2813ba6cc28",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/model_r1/request_a_initial.json": "c5bba4092c481ec96fdcb095d3577a34af64e45cafe8a55cc7d37833b26a73a9",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/model_r1/request_b_initial.json": "db708dc7214a84ae468e26c35269fe81d3d7d44cbe4782e5eaaf9ec969adb0c4",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/model_r1/request_b_handoff.json": "420e5c7786289d3b377b72530a1e8f324b26b42d36c7937753158a9d00727bac",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/model_r1/request_b_reference.json": "c80b760441c4e01a82b8a593ab9f472da329368cbbd463d27fa7d20dfc007721",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/model_r1/request_c.json": "42222627c79502eb43a0063dd4ba05bb949c7fe7ed0e23bccb731355f57e5d85",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/model_r1/request_a_recovered.json": "3c62220b8863e929d63610b4585cdfcc69f698dfcb06a1f29a02055e695ef73d",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/model_r1/response_a_initial.json": "8b610300f6301c1422ba3d11b5f5e5397416046a6978ec9d136f2309664736f4",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/model_r1/response_a_recovered.json": "f8887e58cbf8510b84fb249bf02d75e0decd73b7beb6d77a1bee179a272fdca1",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/model_r1/response_b_initial.json": "21d5fbd4274282d019e05b1703bbbacacf9d985437ccd4ae3f7660646ebbc230",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/model_r1/response_b_handoff.json": "e0200949292582198c9a0adc6f8ac1ce70dc899b5d3a893e4b4178563d8117ec",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/model_r1/response_a_reference.json": "a6041b70b17b335843450fcd12c9490c14076baf6d4187ecf502124c12446910",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/model_r1/response_c.json": "a9709b99b73bf349e9cdeea58dff06842603e881bb908f361909fc9fe6b587e9",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/model_r1/response_b_reference.json": "7160a2d130109834fe296d889633f0d3213c4c4a68c07c9ff4a28579361db6a6"
+  },
+  "operator_sha256": "9c34b19a00feb3070e1cb1fce0b3ae09f2e29927f47e00d4dc0e621a20f44807"
+}

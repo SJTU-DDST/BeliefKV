@@ -2424,3 +2424,15 @@
   position and full GPU performance remain pending for this new exact tree.
   No new GPU job is registered; reuseV345, preserve all normal tails and
   negative results, and keep the global goal active.
+- Current sibling-capacity native GPU components and unforced model now pass
+  from clean application100ec17e and native873970a45a25/treecdd58a4acbb5.
+  Components verify all donor/consumer/resident K/V, old donor reads, delayed
+  first-layer progress and ACK-gated4-to20 free slots with actual8/4 groups.
+  Seven unforced model calls verify the real12296-token handoff and later
+  Host-backed donor recovery against independent outputs with zero logprob
+  deltas. Both owned processes exited. gpu_model_review.json independently
+  binds CPU3580/92, current1795 application files, native patch/tree, actual
+  cleanup and output evidence. These fixtures do not qualify workload-level
+  sibling service, JOIN-plan behavior or performance. The separately named
+  sibling_service_capacity_position_20261028_r1 qualifier precedes FullR1;
+  retain exactV230/V311 work, normal tails, tool-prefetch off and completeV345.

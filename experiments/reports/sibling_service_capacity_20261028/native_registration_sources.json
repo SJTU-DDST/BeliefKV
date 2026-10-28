@@ -1,0 +1,35 @@
+{
+  "commit": "fa5cb52afaeaad1f59f6d3eb2c5cf124f72bb491",
+  "dirty": true,
+  "excluded_provenance_paths": [],
+  "tracked_change_paths": [
+    "python/sglang/srt/managers/cache_controller.py",
+    "python/sglang/srt/managers/scheduler.py",
+    "python/sglang/srt/mem_cache/allocator/token.py",
+    "python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py",
+    "python/sglang/srt/mem_cache/l2_transfer.py",
+    "python/sglang/srt/mem_cache/pool_host/mha.py",
+    "python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py",
+    "python/sglang/srt/mem_cache/unified_radix_cache.py",
+    "test/srt/test_beliefkv_transfer_receipts.py"
+  ],
+  "untracked_paths": [
+    "python/sglang/srt/mem_cache/beliefkv_layer_handoff.py",
+    "test/srt/test_beliefkv_layer_groups.py",
+    "test/srt/test_beliefkv_layer_handoff.py"
+  ],
+  "tracked_change_tree_sha256": "a9dd829b66d9bcd45ce73ce690d51e7d4d1b5ebdafbe819c21acf85ee88ea929",
+  "canonical_patch": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-sibling-capacity-gpu-100ec17e/patches/sglang-sibling-capacity-runtime-20261028.patch",
+    "sha256": "5e4038068f793a46b5bdabbbc83d0d4ccf6f854fc0d7be00ea51a72a827bc997",
+    "expected_tree": "cdd58a4acbb5038207d3a5020c54d7cbcef983b9",
+    "actual_tree": "cdd58a4acbb5038207d3a5020c54d7cbcef983b9",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "python/sglang/srt/mem_cache/beliefkv_layer_handoff.py",
+      "test/srt/test_beliefkv_layer_groups.py",
+      "test/srt/test_beliefkv_layer_handoff.py"
+    ]
+  },
+  "state_sha256": "8aba5a7003597575cd3e1af6b97cf42d66602b8377d5b1c267e21f0771fb1669"
+}
