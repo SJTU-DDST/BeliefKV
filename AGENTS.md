@@ -2608,3 +2608,25 @@
   causal module effects. They are not currenta5164fe3 performance. See
   docs/research/critical_service_phase_geometry_20261028_zh.md and the two
   named review operators/results under full_only_pressure_index_20261028.
+- Pressure-indexFull now completes3674 exact requests/145565966 input/
+  549671 output tokens and18 normal tails, native stopping, two fresh idle
+  snapshots and actual owned exit. MeanJCT1651.727199s/output235.457746
+  improves2.70128%/0.89383% versusV345, insufficient for the clear/repeated
+  gate. Against preadmission, JCT grows20.532555s with identical critical
+  chains: first-service waiting-9.361696s/service-to-completion+29.911890s.
+  Critical-tool other-prefill coverage grows16.683404s, other-decode falls
+  0.115054s. These worker spans do not attribute control CPU or pure kernels.
+  H2D2735.615312GB/D2H1281.826849GB exceed preadmission20.927840/
+  149.461598GB. Two actual8/4 handoffs restore2.776302GB;88 physical plans
+  reconcile with2 releases/226652tokens. All708 JOIN copies prove154.898792GB
+  reuse;18 of63 observed JOIN events early-reuse62.677844GB. All1062 sibling
+  journals/1075 attempts across20 parallel JOINs verify, including13 actual
+  multi-member prefill batches;252 of255 grant/session identities verify,
+  3 remain unknown. All54 final EOS and4 known guard cases verify. Preserve
+  the original same-engine guard-auditor refusal and explicit reviewed-pair
+  adaptation; production guard/classifier unchanged.34/27/18 restore samples
+  are never expanded. Complete final_index and all3 inspected figures are
+  under the named directory; raw CSV bytes are archived before LF formatting.
+  GPU/plot processes exited. ReuseV345, preserve all tails/negative results,
+  leave other baselines/ablations deferred and the goal active; no next GPU
+  run is queued. See docs/research/full_only_pressure_index_result_20261028_zh.md.

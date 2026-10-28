@@ -1,0 +1,135 @@
+{
+  "observed_at": "2026-10-28T18:42:16.972988+00:00",
+  "scope": "Original four-case classifier on complete current work with a reviewed engine pair.",
+  "summary": {
+    "known_cases": 4,
+    "statuses": {
+      "completed_tool_response_without_final_eos_trigger": 4
+    },
+    "all_cases_verified": true
+  },
+  "cases": [
+    {
+      "request_id": "beliefkv:01a177a9-1efb-7f53-9ae7-178ef8416a6a",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+        "deepagents-invocation:75164210ec1e071c",
+        "deepagents-context:75164210ec1e071c",
+        0
+      ],
+      "status": "completed_tool_response_without_final_eos_trigger",
+      "observed_final_eos_trigger_count": 0,
+      "trigger_records": [],
+      "native_complete_monotonic_ms": 7381071759.337365,
+      "runtime_frontier_monotonic_ms": 7382892003.807592,
+      "eos_evidence_window_ms": 1000.0,
+      "native_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec",
+      "output_sha256": "dbe0d499cd4c509227a0ac451e1c73f7923433681a5e8777a3deef2cdf218193",
+      "following_request_id": "beliefkv:01a177a9-3a8f-70e2-82d7-631fb7065566",
+      "following_native_complete_monotonic_ms": 7381072436.462706
+    },
+    {
+      "request_id": "beliefkv:01a177ae-dea7-7210-9cf1-3d13cd977e88",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:03dc226027d7d5ff",
+        "deepagents-context:03dc226027d7d5ff",
+        0
+      ],
+      "status": "completed_tool_response_without_final_eos_trigger",
+      "observed_final_eos_trigger_count": 0,
+      "trigger_records": [],
+      "native_complete_monotonic_ms": 7381373309.166834,
+      "runtime_frontier_monotonic_ms": 7382892003.807592,
+      "eos_evidence_window_ms": 1000.0,
+      "native_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec",
+      "output_sha256": "5b3738e57631f4297533079db87059a40cd68a8e6aa12704fde3e40a86f93cd8",
+      "following_request_id": "beliefkv:01a177af-2abf-7180-9ac4-5f83669ba063",
+      "following_native_complete_monotonic_ms": 7381374928.526596
+    },
+    {
+      "request_id": "beliefkv:01a177b6-33f9-7332-82f6-9be1be9caa70",
+      "identity": [
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+        "deepagents-invocation:14473377ff0e0097",
+        "deepagents-context:14473377ff0e0097",
+        0
+      ],
+      "status": "completed_tool_response_without_final_eos_trigger",
+      "observed_final_eos_trigger_count": 0,
+      "trigger_records": [],
+      "native_complete_monotonic_ms": 7381584297.27742,
+      "runtime_frontier_monotonic_ms": 7382892003.807592,
+      "eos_evidence_window_ms": 1000.0,
+      "native_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec",
+      "output_sha256": "01db77b903f24a69e5e01cfc977ebc4150df1556026c7b04b7df14df60d96963",
+      "following_request_id": "beliefkv:01a177b6-494f-7dd3-ad79-7dd362f99bac",
+      "following_native_complete_monotonic_ms": 7381585561.577358
+    },
+    {
+      "request_id": "beliefkv:01a177b5-ec36-7fc0-b79c-cd9ed3ea8b84",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+        "deepagents-invocation:219c6e67f120f6d7",
+        "deepagents-context:219c6e67f120f6d7",
+        0
+      ],
+      "status": "completed_tool_response_without_final_eos_trigger",
+      "observed_final_eos_trigger_count": 0,
+      "trigger_records": [],
+      "native_complete_monotonic_ms": 7381619256.482813,
+      "runtime_frontier_monotonic_ms": 7382892003.807592,
+      "eos_evidence_window_ms": 1000.0,
+      "native_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec",
+      "output_sha256": "c62f5ea81b32a6d5a36a026085f6058063f67109fcd7e4d47d0a1e82a88a6696",
+      "following_request_id": "beliefkv:01a177b6-198b-7990-b9b6-3ef4665fc2ca",
+      "following_native_complete_monotonic_ms": 7381620111.754933
+    }
+  ],
+  "exact_completed_receipts": 3674,
+  "original_same_engine_auditor_refusal_preserved": {
+    "exception": "ValueError('guard audit changed common work, timing or serving parameters')",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/known_guard_review.py\", line 39, in main\n    guard.audit(registration, case_path)\n  File \"/home/longhao/experiment/BeliefKV/scripts/audit_tool_eos_guard_cases.py\", line 147, in audit\n    raise ValueError(\"guard audit changed common work, timing or serving parameters\")\nValueError: guard audit changed common work, timing or serving parameters\n"
+  },
+  "reviewed_engine_pair": {
+    "previous": "11b84f7c31986782be3fbe699bae2574ef092389",
+    "current": "cdd58a4acbb5038207d3a5020c54d7cbcef983b9"
+  },
+  "tool_overlay_path_only_difference_allowed": true,
+  "all_other_common_fields_verified": [
+    "source_plan",
+    "token_source_sha256",
+    "source_capacity",
+    "source_server_parameters",
+    "workflow_ids",
+    "quality_exclusions",
+    "quality_exclusion_details",
+    "sampling_mode",
+    "stream_response_metrics",
+    "request_timeout_s",
+    "max_running_requests"
+  ],
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/full_only_pressure_index_20261028_r1/full/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 13687380,
+      "complete_prefix_sha256": "98cc41e58d4f4da703225eafc9a47a769b39e1547342dd1cbe713d7ff3c839da",
+      "first_read_limit_bytes": 13687380
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/full_only_pressure_index_20261028_r1/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 136892316,
+      "complete_prefix_sha256": "38e028c09d09c2007efad7f814d73d6a5de7bb1d7fcf032b0340993742f7c447",
+      "first_read_limit_bytes": 136892316
+    }
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/known_guard_review.py": "513138b2dcf38bbe934c8dcac054b38b73141b88a878da41421dbaae8dc545c0",
+    "/home/longhao/experiment/BeliefKV/scripts/audit_tool_eos_guard_cases.py": "dd3768bf0874beacecc161927dbfd05c1ddd8d15b830a1e43bd657b7a2f8c945",
+    "/home/longhao/experiment/ops/full_only_pressure_index_20261028_r1.registration.json": "46f92011623a286a349d0b658972237f9c7c3799d83f93c357dc8961b8101b2c",
+    "/home/longhao/experiment/ops/reference_join_siblings_20261027_r1.registration.json": "484fb32a2ada20769c3406d5c84973bfc3d7ffca5eb9ae9d8299adbfea26b938",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/reference_join_siblings_20261027/tool_closer_trigger_audit.json": "0f99121db27e17db5846945e50e7c4560856cdadecb909543ec78b4eaf50e576",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/complete_review.json": "405140f8abaa4fa18f137c1c31ac53120447e3da59a9da02e72481e972ac3f67",
+    "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct/tokenizer_config.json": "60f6e8cb15c98dd07300a3cc465ea662de245d2095e4245616af21b2324db3fc"
+  },
+  "production_guard_or_classifier_changed": false,
+  "performance_accepted": false
+}

@@ -1,0 +1,535 @@
+{
+  "observed_at": "2026-10-28T18:47:37.158370+00:00",
+  "scope": "Complete same-work Full and historical service diagnostics, not isolated module effects.",
+  "requests": 3674,
+  "all_normal_tails_retained": true,
+  "same_exact_work_and_original_stopping_verified": true,
+  "same_critical_request_chains_by_workflow": {
+    "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c": true,
+    "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055": true,
+    "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70": true,
+    "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1": true,
+    "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709": true,
+    "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00": true,
+    "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9": true,
+    "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9": true,
+    "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99": true,
+    "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67": true,
+    "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d": true,
+    "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46": true,
+    "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa": true,
+    "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a": true,
+    "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612": true,
+    "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35": true,
+    "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1": true,
+    "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e": true
+  },
+  "all_critical_request_chains_match_preadmission": true,
+  "metrics": {
+    "Full (pressure index)": {
+      "mean_jct_s": 1651.727198568927,
+      "makespan_s": 2334.478303079605,
+      "end_to_end_output_tokens_per_s": 235.4577462874181,
+      "decode": {
+        "batches": 92936,
+        "request_steps": 549459,
+        "worker_ms": 1566373.2530046254,
+        "request_step_ms": 13349662.051129155,
+        "output_tokens": 545997,
+        "context_tokens": 30622615656,
+        "graph_batches": 92936,
+        "graph_request_steps": 549459,
+        "configured_bucket_rows": 632889,
+        "batches_needing_padding": 42949,
+        "worker_ms_in_batches_needing_padding": 1011635.7540655881,
+        "mean_batch": 5.9122299216665235,
+        "worker_weighted_mean_batch": 8.52265705222032,
+        "worker_interval_sum_s": 1566.3732530046254,
+        "mean_worker_interval_ms": 16.854321823670325,
+        "output_tokens_per_worker_interval_second": 348.57400619722387,
+        "mean_observed_request_context_tokens": 55732.303331094765,
+        "graph_batch_fraction": 1.0,
+        "configured_padding_rows_per_real_graph_row": 0.15184026469672895
+      },
+      "streaming_response_metrics": {
+        "workflow_ttft_ms": {
+          "count": 18,
+          "mean": 136817.2998738289,
+          "p50": 101524.0956659317,
+          "p75": 182283.78611969948,
+          "p90": 253707.13067359925,
+          "p95": 273952.15392184246,
+          "p99": 320556.6209317683,
+          "max": 332207.7376842499
+        },
+        "workflow_max_post_first_ready_output_gap_ms": {
+          "count": 18,
+          "mean": 79022.49093225267,
+          "p50": 60526.93400001526,
+          "p75": 76802.67606711388,
+          "p90": 141872.40236043933,
+          "p95": 200211.66937065095,
+          "p99": 339722.3882778164,
+          "max": 374600.06800460815
+        }
+      }
+    },
+    "ThunderAgent decay": {
+      "mean_jct_s": 1697.5836446114117,
+      "makespan_s": 2355.3445512609483,
+      "end_to_end_output_tokens_per_s": 233.37180104105374,
+      "decode": {
+        "batches": 95635,
+        "request_steps": 549478,
+        "worker_ms": 1605126.1432459578,
+        "request_step_ms": 13014821.739329025,
+        "output_tokens": 545997,
+        "context_tokens": 30622786652,
+        "graph_batches": 95635,
+        "graph_request_steps": 549478,
+        "configured_bucket_rows": 635038,
+        "batches_needing_padding": 44660,
+        "worker_ms_in_batches_needing_padding": 1034827.5028280914,
+        "mean_batch": 5.745574319025462,
+        "worker_weighted_mean_batch": 8.108285940075632,
+        "worker_interval_sum_s": 1605.1261432459578,
+        "mean_worker_interval_ms": 16.78387769379367,
+        "output_tokens_per_worker_interval_second": 340.15831235286,
+        "mean_observed_request_context_tokens": 55730.687401497424,
+        "graph_batch_fraction": 1.0,
+        "configured_padding_rows_per_real_graph_row": 0.15571142065742394
+      },
+      "streaming_response_metrics": {
+        "workflow_ttft_ms": {
+          "count": 18,
+          "mean": 139028.4033548037,
+          "p50": 101804.63458967209,
+          "p75": 206657.0104496479,
+          "p90": 255089.30521106723,
+          "p95": 290016.01505255693,
+          "p99": 318113.38459239,
+          "max": 325137.7269773483
+        },
+        "workflow_max_post_first_ready_output_gap_ms": {
+          "count": 18,
+          "mean": 73449.10657278697,
+          "p50": 47096.99371767044,
+          "p75": 91929.44760537148,
+          "p90": 122965.2473207474,
+          "p95": 163231.7360606668,
+          "p99": 273821.28838873835,
+          "max": 301468.67647075653
+        }
+      }
+    }
+  },
+  "mean_jct_delta_vs_preadmission_s": 20.53255507145991,
+  "critical_component_delta_vs_preadmission_s": {
+    "event:return": -0.00787020333607992,
+    "event:tool_start": 0.03243214109208847,
+    "event:llm_submit": -0.004672218322752997,
+    "event:workflow_end": -0.00023943445417616126,
+    "request_dispatch": -0.05086870055728493,
+    "event:spawn": -0.021966650856865777,
+    "request_submit_to_first_launch": -9.361696194383853,
+    "event:structured_action": -0.000300223774380156,
+    "request_first_launch_to_native_complete": 29.911890269756327,
+    "event:join_satisfied": -0.0018982494142320422,
+    "event:llm_result": 0.019096439255608555,
+    "event:invocation_create": 0.00097197585635715,
+    "event:tool_end": 0.017676120599105616
+  },
+  "current_outside_member_phase_review": {
+    "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/full_only_pressure_index_20261028_r1/full",
+    "native_worker_samples": 96740,
+    "critical_partitions": {
+      "all_critical_requests": {
+        "requests": 3153,
+        "workflow_equal_weight_s": {
+          "other_prefill_only_s": 185.82747035853066,
+          "other_decode_only_s": 2.849112028704749,
+          "other_cross_phase_s": 0.0,
+          "outside_all_workers_s": 0.0
+        }
+      },
+      "critical_tool_successors": {
+        "requests": 2973,
+        "workflow_equal_weight_s": {
+          "other_prefill_only_s": 158.19396412473253,
+          "other_decode_only_s": 2.7273877960311044,
+          "other_cross_phase_s": 0.0,
+          "outside_all_workers_s": 0.0
+        }
+      }
+    }
+  },
+  "critical_tool_other_phase_delta_vs_preadmission_s": {
+    "other_prefill_only_s": 16.683403567314144,
+    "other_decode_only_s": -0.11505427736706153,
+    "other_cross_phase_s": 0.0,
+    "outside_all_workers_s": 0.0
+  },
+  "current_critical_tool_decode_shape": {
+    "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/full_only_pressure_index_20261028_r1/full",
+    "critical_tool_requests": 2973,
+    "critical_decode_member_s_per_workflow": 640.2024656488101,
+    "critical_member_time_weighted_actual_batch": 10.471510870777314,
+    "critical_member_time_weighted_batch_mean_context": 59513.97062194239,
+    "positive_lifetime_member_observations": 464588,
+    "no_same_request_decode_interval_overlap_verified": true
+  },
+  "native_transfers": {
+    "d2h_bytes": 1281826848768,
+    "d2h_tagged_bytes": 6855524352,
+    "d2h_operations": 14052,
+    "d2h_stream_ms_not_exposed_wait": 30569.962960883975,
+    "h2d_bytes": 2735615311872,
+    "h2d_tagged_bytes": 154898792448,
+    "h2d_operations": 595,
+    "h2d_stream_ms_not_exposed_wait": 87573.21450784802
+  },
+  "transfer_delta_vs_preadmission_gb_decimal": {
+    "h2d": 20.927840255999854,
+    "d2h": 149.46159820799994
+  },
+  "layer_handoffs": 2,
+  "handoff_consumer_h2d_bytes": 2776301568,
+  "join_prefetch": {
+    "commands": 708,
+    "verified_reused_bytes": 154898792448,
+    "observed_events": 63,
+    "events_with_early_reused_full": 18,
+    "early_started_and_reused_full_bytes": 62677843968
+  },
+  "sibling_service_summary": {
+    "journal_records": 1062,
+    "journal_request_attempts": 1075,
+    "status_counts": {
+      "native_batch_join_and_completed_sessions_verified": 1062
+    },
+    "verified_records": 1062,
+    "verified_request_attempts": 1075,
+    "verified_multi_member_batches": 13,
+    "verified_prefill_records": 1062,
+    "native_worker_samples": 96740,
+    "all_journal_records_verified": true,
+    "positive_service_evidence": true
+  },
+  "grant_service_summary": {
+    "journal_grants": 250,
+    "journal_programs": 255,
+    "grant_events": {
+      "agent_continuation_free_capacity_admitted": 126,
+      "agent_join_blocked_capacity_admitted": 54,
+      "agent_join_siblings_coadmitted": 61,
+      "agent_join_free_capacity_admitted": 9
+    },
+    "program_statuses": {
+      "service_after_grant_verified": 252,
+      "native_service_identity_unproven": 3
+    },
+    "grant_refresh_declaration_snapshots": 2268,
+    "native_service_records": 96740,
+    "verified_reused_copy_bytes_after_grant": 154898792448
+  },
+  "sampled_wait_summary": {
+    "Full": {
+      "sampled_batches": 34,
+      "distinct_sampled_requests": 49,
+      "sampling_intervals": {
+        "16": 34
+      },
+      "batches_with_layer_offsets": 34,
+      "batches_with_later_full_wait_over_50ms": 14,
+      "total_wait_ms": {
+        "count": 34,
+        "sum": 4090.8371894089505,
+        "min": 0.07455999962985516,
+        "p50": 14.42564811691409,
+        "p90": 382.6942152796779,
+        "p99": 617.0526470088962,
+        "max": 672.2959041595459
+      },
+      "state_wait_ms": {
+        "count": 34,
+        "sum": 0,
+        "min": 0,
+        "p50": 0.0,
+        "p90": 0.0,
+        "p99": 0.0,
+        "max": 0
+      },
+      "first_observed_full_wait_ms": {
+        "count": 34,
+        "sum": 167.6061784547055,
+        "min": 0.0015999999595806003,
+        "p50": 0.030511999502778053,
+        "p90": 12.156800174713133,
+        "p99": 36.47981685638429,
+        "max": 38.41408157348633
+      },
+      "later_observed_full_wait_ms": {
+        "count": 34,
+        "sum": 3923.231010954245,
+        "min": 0.07075199962127954,
+        "p50": 8.690511977125425,
+        "p90": 375.2276772499084,
+        "p99": 608.3961741542819,
+        "max": 663.2969284057617
+      },
+      "observed_gpu_span_ms": {
+        "count": 34,
+        "sum": 6462.241840362549,
+        "min": 16.45382308959961,
+        "p50": 101.0096321105957,
+        "p90": 421.13706970214844,
+        "p99": 714.653873291016,
+        "max": 785.8628540039062
+      },
+      "between_recorded_waits_ms": {
+        "count": 34,
+        "sum": 2371.4046509535983,
+        "min": 13.938400067389011,
+        "p50": 44.67357428959804,
+        "p90": 140.99972536972487,
+        "p99": 301.05551595495444,
+        "max": 320.3148122484563
+      }
+    },
+    "Preadmission": {
+      "sampled_batches": 27,
+      "distinct_sampled_requests": 44,
+      "sampling_intervals": {
+        "16": 27
+      },
+      "batches_with_layer_offsets": 27,
+      "batches_with_later_full_wait_over_50ms": 15,
+      "total_wait_ms": {
+        "count": 27,
+        "sum": 4272.784669865505,
+        "min": 0.07455999974627048,
+        "p50": 55.117024421691895,
+        "p90": 423.727282190323,
+        "p99": 689.7556558036802,
+        "max": 733.1654720306396
+      },
+      "state_wait_ms": {
+        "count": 27,
+        "sum": 0,
+        "min": 0,
+        "p50": 0,
+        "p90": 0.0,
+        "p99": 0.0,
+        "max": 0
+      },
+      "first_observed_full_wait_ms": {
+        "count": 27,
+        "sum": 60.12841586745344,
+        "min": 0.0016639999812468886,
+        "p50": 0.944159984588623,
+        "p90": 5.073062324523926,
+        "p99": 13.626057167053219,
+        "max": 14.34217643737793
+      },
+      "later_observed_full_wait_ms": {
+        "count": 27,
+        "sum": 4212.656253998051,
+        "min": 0.0728319997433573,
+        "p50": 53.45392036437988,
+        "p90": 419.48026142120375,
+        "p99": 677.4516649818418,
+        "max": 721.577600479126
+      },
+      "observed_gpu_span_ms": {
+        "count": 27,
+        "sum": 6499.646559715271,
+        "min": 15.42841625213623,
+        "p50": 89.961181640625,
+        "p90": 451.62097167968767,
+        "p99": 876.2941943359374,
+        "max": 885.5545043945312
+      },
+      "between_recorded_waits_ms": {
+        "count": 27,
+        "sum": 2226.861889849766,
+        "min": 15.24508825247176,
+        "p50": 41.669760674238205,
+        "p90": 213.27421543598211,
+        "p99": 373.1855701365182,
+        "max": 376.0888222012436
+      }
+    },
+    "ThunderAgent decay": {
+      "sampled_batches": 18,
+      "distinct_sampled_requests": 34,
+      "sampling_intervals": {
+        "16": 18
+      },
+      "batches_with_layer_offsets": 18,
+      "batches_with_later_full_wait_over_50ms": 10,
+      "total_wait_ms": {
+        "count": 18,
+        "sum": 2662.834720131941,
+        "min": 0.09183999849483371,
+        "p50": 58.60209589777514,
+        "p90": 382.0495394706726,
+        "p99": 677.3782447147364,
+        "max": 737.4339838027954
+      },
+      "state_wait_ms": {
+        "count": 18,
+        "sum": 0,
+        "min": 0,
+        "p50": 0.0,
+        "p90": 0.0,
+        "p99": 0.0,
+        "max": 0
+      },
+      "first_observed_full_wait_ms": {
+        "count": 18,
+        "sum": 31.906687894603238,
+        "min": 0.003456000005826354,
+        "p50": 0.03259200043976307,
+        "p90": 5.129657649993899,
+        "p99": 10.22589836597442,
+        "max": 10.929023742675781
+      },
+      "later_observed_full_wait_ms": {
+        "count": 18,
+        "sum": 2630.928032237338,
+        "min": 0.07286399928852916,
+        "p50": 58.575823897030205,
+        "p90": 376.9198818206787,
+        "p99": 667.152346348762,
+        "max": 726.5049600601196
+      },
+      "observed_gpu_span_ms": {
+        "count": 18,
+        "sum": 4711.455265045166,
+        "min": 23.015840530395508,
+        "p50": 150.3406982421875,
+        "p90": 513.5395874023437,
+        "p99": 983.5886376953115,
+        "max": 1079.42041015625
+      },
+      "between_recorded_waits_ms": {
+        "count": 18,
+        "sum": 2048.620544913225,
+        "min": 17.967869359999895,
+        "p50": 61.229508340358734,
+        "p90": 348.61098551750183,
+        "p99": 435.5179601265721,
+        "max": 450.1522298636846
+      }
+    }
+  },
+  "known_guard_summary": {
+    "known_cases": 4,
+    "statuses": {
+      "completed_tool_response_without_final_eos_trigger": 4
+    },
+    "all_cases_verified": true
+  },
+  "final_eos_summary": {
+    "trigger_records": 54,
+    "lifecycle_statuses": {
+      "final_request_observed": 54
+    },
+    "delimiter_evidence": {
+      "no_dedicated_delimiter": 54
+    },
+    "all_triggered_requests_observed_final": true
+  },
+  "archives": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/complete_jct_paths.json.gz": {
+      "original_sha256": "3d11d0cb6670f53b00ffc05d8140ce54e7db31f016669da80072f25ba961a2c9",
+      "archive_sha256": "2a5ce947cb3eaff27f42ec2af904e75765034eb60e8f451be73447f27826d18f"
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/complete_service_interleaving.json.gz": {
+      "original_sha256": "4d4b5e8bbca59985637c17ec785a20e406225c129fb7675f7b708fcbd1596f33",
+      "archive_sha256": "7004e7add80d13e5b50406845f955ecd72a7daa98ee2c536ffe1e7685039e538"
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/mechanism_review.json.gz": {
+      "original_sha256": "c0affb59561f3185c994d50f893c48237a6aaee8bf913b4b09ace6093dd08f49",
+      "archive_sha256": "4854f6dc8389ae78d1245a053588e216b9df80622731b2073da1c4d2999759a0"
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/complete_sampled_restore_waits.json.gz": {
+      "original_sha256": "6aafccbbb37474b1ac203fd326b9378f215165a9c216dae112c2876543788b95",
+      "archive_sha256": "98f6dd15177871bf84bdbb5fa9bc444b4b3f486ce7615b1e075e2e7934328c66"
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/figures/full_only_pressure_index_20261028_r1/time_bins.csv.gz": {
+      "raw_csv_sha256": "6e86485459d525efb2866ec58a124d11f02c761a0ea68569052cc1da376f2644",
+      "archive_sha256": "ace637852bb232cad1c1700a48c9a26b43ca5ae03a16b9702adbb5c912b5d0f5",
+      "normalized_csv_sha256": "37733944863f0406805b479d48a8c999ca79560ffce88615ab4c874b4329c496"
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/figures/full_only_pressure_index_20261028_r1/geometry.csv.gz": {
+      "raw_csv_sha256": "f46f7fe5fd8a074c2130138a6292ee6b6e51fa367fa1a24ed58ff8afb6eb62b5",
+      "archive_sha256": "967035eae2dbc2ac69a7053280b0c94ce1ab97923eb522923b921bc56b4393c5",
+      "normalized_csv_sha256": "b5c31dacd61052309d03eba4691382f4009108c5c40f8611bb8700478fb75088"
+    }
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/complete_review.json": "405140f8abaa4fa18f137c1c31ac53120447e3da59a9da02e72481e972ac3f67",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/mechanism_review.json": "c0affb59561f3185c994d50f893c48237a6aaee8bf913b4b09ace6093dd08f49",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/complete_jct_paths.json": "3d11d0cb6670f53b00ffc05d8140ce54e7db31f016669da80072f25ba961a2c9",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/complete_service_interleaving.json": "4d4b5e8bbca59985637c17ec785a20e406225c129fb7675f7b708fcbd1596f33",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/complete_wait_prefetch_summary.json": "67065caf5ad1f6bcc26443303faece1705cd22e07640721c2946a2bd75f9eef2",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/complete_sampled_restore_waits.json": "6aafccbbb37474b1ac203fd326b9378f215165a9c216dae112c2876543788b95",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/complete_guard_cases.json": "2376a80c830860f3e6cf284c3365cca8ca5fff794fa146e1bc320c1f8a1a4cef",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/complete_eos_trigger_lifecycle.json": "2311962bd25a378bfb4841f3b73ca1f47339119b8f770db5b9d231f450c013d7",
+    "/home/longhao/experiment/BeliefKV/experiments/figures/full_only_pressure_index_20261028_r1/evidence.json.gz": "fac25b6cb11ec04145ff125b3d3895e885527d94c0297e4906e5894bba1ddbaf",
+    "/home/longhao/experiment/ops/full_only_pressure_index_20261028_r1.registration.json": "46f92011623a286a349d0b658972237f9c7c3799d83f93c357dc8961b8101b2c",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/full_only_pressure_index_20261028_r1/full/replay/summary.json": "71c3872586f9fada35d0a04df1bcf2d8597bca2c00178ee7a10f301441131256",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/full_only_pressure_index_20261028_r1/full/server/server_info.json": "5b9c8b06e0ab66332acd93f764bb66d7c57659b5c6cbe6a8e41e4f547e0432dc",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/full_only_pressure_index_20261028_r1/full/server/native_telemetry_status.json": "249bc6a468c15a2de35ef5eb82fa60685a91257bd123e34679f4b0925121d1e0",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/full_only_pressure_index_20261028_r1/full/server/native_capacity_census.json": "73e663c94569ca490ac91f4ebc18cb8adbcbec7044519368693cdec1d0651de5",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/full_only_pressure_index_20261028_r1/full/opportunities/admission_opportunities.jsonl": "38e028c09d09c2007efad7f814d73d6a5de7bb1d7fcf032b0340993742f7c447",
+    "/home/longhao/experiment/ops/full_only_pressure_index_20261028_r1.registration.state.json": "c7e78938c9eaca279f70b4330caba92c1eb7f9402cda0f9fa5adfe5491474ced",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/full_only_pressure_index_20261028_r1/full/telemetry_drain.json": "33b7a35db62818c5174e3c46d0f30e85a29dfc09adbc94e8b988a362bcd42a09",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/full_only_pressure_index_20261028_r1/full/owned_process_cleanup.json": "947a70a0219125732d2e39eacf6c41bd0ebabe9a7de5d1ee2d6006d9b5fa3f51",
+    "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.json": "66a5bac27ce8d8f70a91e5c45fcc377b7950db56bc3bd2a7588124fd5209902b",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/replay/summary.json": "3b9cdf028d27c6c5b5ed7004e401f18192bc518a4811e50103505cbfe39174a6",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/server_info.json": "d2fa80cb9272916c97f053d113fecb546840171b14c3aa2e5eacaa66aba50a42",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/native_telemetry_status.json": "a2c597cf6d745ad728c7661bc961b39dc2256f2bbd3cbc3e88c6688cc7ee8a47",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/native_capacity_census.json": "c68ac3494755caf07860b503b60d00f733d8263298218c59caaceb2dd9a6578e",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/opportunities/admission_opportunities.jsonl": "053a1db66e1508b968aef559bd7a155672829836ef2a00a2ae9030791892d24e",
+    "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.state.json": "3160dca6a649c72ad6e4172c1b96d6f9d66d637af16425cf6e93c34d557c1e49",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/telemetry_drain.json": "c943425208f021f403bd392ae6c4a0476254d739d4e32e511abb7b6ae5645fa2",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/owned_process_cleanup.json": "4e7c0bd7050a4ecacc70819785bd7492cc5d12794b58cc3127dae0b1d7162ad5",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/model_review.json": "e831395907912735800d63150a229f9eefb4d70edefd71135e13bb59f3ee9c1a",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/live_start.json": "fcc0c9aa4895d156adc2296d316843b8efce0ad90a51623c2a4472d8be856e1a",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/mechanism_review.py": "ab26129c1799768c3d0097942de16bbf1f9eb372b065263525a268ee9568231d",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/handoff_ack_review.py": "fe506452f12ed87b059a7054822dbe0697c7cae6c7d6517e476b41d2ac69d97f",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/complete_wait_prefetch.json.gz": "8da08235cb52f228153931c01faf8dfde169d2d39277e8212cd281d1fe29ae9c",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/full_only_pressure_index_20261028_r1/full/server/transfer_telemetry.jsonl": "889773076446d03605fd849f310f9e7f8a62cfb14e8122ed1694d8d039d2e1bd",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/full_only_pressure_index_20261028_r1/full/server/runtime_events.sglang.jsonl": "352fc970ec49874d418b0e2c742b82806cdbc3d45b3a267502b52ab1d99e4a98",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/full_only_pressure_index_20261028_r1/full/replay/native_requests.jsonl": "98cc41e58d4f4da703225eafc9a47a769b39e1547342dd1cbe713d7ff3c839da",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/full_only_pressure_index_20261028_r1/full/server/runtime_audit.jsonl": "a0b822dda2195cd1996b3e27ed595f56bf4b6ba1affc97e75dfe6c5d5ba8abe1",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/full_only_pressure_index_20261028_r1/full/replay/runtime_events.replay.jsonl": "866d96892514973dbbd9159d3614831d03e79b1c41618dfaea91acc65427d857",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/known_guard_review.py": "513138b2dcf38bbe934c8dcac054b38b73141b88a878da41421dbaae8dc545c0",
+    "/home/longhao/experiment/BeliefKV/scripts/audit_tool_eos_guard_cases.py": "dd3768bf0874beacecc161927dbfd05c1ddd8d15b830a1e43bd657b7a2f8c945",
+    "/home/longhao/experiment/ops/reference_join_siblings_20261027_r1.registration.json": "484fb32a2ada20769c3406d5c84973bfc3d7ffca5eb9ae9d8299adbfea26b938",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/reference_join_siblings_20261027/tool_closer_trigger_audit.json": "0f99121db27e17db5846945e50e7c4560856cdadecb909543ec78b4eaf50e576",
+    "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct/tokenizer_config.json": "60f6e8cb15c98dd07300a3cc465ea662de245d2095e4245616af21b2324db3fc",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/phase_gap_review.py": "6eabbbd5121e45188c5882f0dd93bc312eb1e9fbe8dce34c921610513150c4c8",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/critical_decode_shape_review.py": "ae436779207abcfc37b74e2e5eff7abbef35363fe6ef2a3382a0aa678925acac",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/full_only_pressure_index_20261028/phase_gap_review.json": "84df4539e87cc5892a605509e272bb951c7ef41fdb10e0b6798fcfe492e453c6",
+    "/home/longhao/experiment/BeliefKV/experiments/figures/full_only_pressure_index_20261028_r1/decode_timeline.png": "892a1f6317b7e75678dece210b92804ca0e7737ad30506bf5e4349c63f51a9bf",
+    "/home/longhao/experiment/BeliefKV/experiments/figures/full_only_pressure_index_20261028_r1/decode_distributions.png": "60e04d1fb05926c3ebb375ba5a6f5950f7aa16c547e671a22fc21804ea368a38",
+    "/home/longhao/experiment/BeliefKV/experiments/figures/full_only_pressure_index_20261028_r1/decode_geometry.png": "c978bdad3f3bf2ede39efd1abcda81a7a59844481493f5ec2de02a6de3702686",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tool_offload_before_admission_20261027/control_regression_audit.json": "a689e22297789a8551fa19798906118966ccdd87af9796fd5c6d0ec27cbedc96"
+  },
+  "operator_sha256": "6e5412ba7d9862039d4d9742c02c18790ae96d1049c08fa052e13a6e0edd6935",
+  "local_cpu_speedup_establishes_jct_benefit": false,
+  "historical_incremental_control_cpu_known": false,
+  "performance_accepted": false,
+  "next_gpu_job_registered": false,
+  "limitations": [
+    "The reused control has a different reviewed native engine.",
+    "Both implementation fixes changed together; this is not a publication or ancestor ablation.",
+    "Worker-phase and shape partitions include runtime and waits, not pure kernels or exposed CPU.",
+    "Sampled restore cohorts differ and are never expanded to whole-run waits.",
+    "Unproven grant/session identities remain unknown; cumulative releases are not saved JCT.",
+    "One modest combined-system result does not satisfy clear, repeatable, all-baseline gains."
+  ]
+}

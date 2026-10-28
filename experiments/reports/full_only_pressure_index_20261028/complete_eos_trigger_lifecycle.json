@@ -1,0 +1,1139 @@
+{
+  "observed_at": "2026-10-28T18:38:45.137995+00:00",
+  "scope": "offline observed trigger lifecycle classification on sealed prefixes",
+  "registration": "/home/longhao/experiment/ops/full_only_pressure_index_20261028_r1.registration.json",
+  "registration_sha256": "46f92011623a286a349d0b658972237f9c7c3799d83f93c357dc8961b8101b2c",
+  "code_commit": "a5164fe30cf880a072069d1d9414a28286d72afd",
+  "exact_completed_receipts": 3674,
+  "expected_receipts": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/replay/native_requests.jsonl",
+    "sha256": "971780ae36bbc6dd99de53bcc5bb26a0d909baeba4dcd9ce4e28dc22f05bab73"
+  },
+  "tokenizer_config_sha256": "60f6e8cb15c98dd07300a3cc465ea662de245d2095e4245616af21b2324db3fc",
+  "opener_token_ids": [
+    151657
+  ],
+  "closer_token_ids": [
+    151658
+  ],
+  "summary": {
+    "trigger_records": 54,
+    "lifecycle_statuses": {
+      "final_request_observed": 54
+    },
+    "delimiter_evidence": {
+      "no_dedicated_delimiter": 54
+    },
+    "all_triggered_requests_observed_final": true
+  },
+  "rows": [
+    {
+      "child_request_id": "beliefkv:01a177a8-0210-7152-b4c0-7466d3020d0c",
+      "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+      "child_invocation_id": "deepagents-invocation:649818db6a48d692",
+      "join_id": "deepagents-join:12a95088f11a9c30",
+      "trigger_ts_ms": 1793210620456.5251,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+        "deepagents-invocation:649818db6a48d692",
+        "deepagents-context:649818db6a48d692",
+        28
+      ],
+      "output_sha256": "76f7bee0f72fdd1aad1a1a981a6c5e4bbb0f610e6cf5093a5a0c68ebadcc3fbc",
+      "output_tokens": 495,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177a8-0210-7152-b4c0-7466d3020d0c"
+    },
+    {
+      "child_request_id": "beliefkv:01a177a7-af05-7661-8d42-a34440ecdc39",
+      "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+      "child_invocation_id": "deepagents-invocation:c7ce1237385a8aa5",
+      "join_id": "deepagents-join:427c82735502216b",
+      "trigger_ts_ms": 1793210637359.73,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents-invocation:c7ce1237385a8aa5",
+        "deepagents-context:c7ce1237385a8aa5",
+        15
+      ],
+      "output_sha256": "e0defb9df06b89fb6150cff9df0ae75cfd73a8b787b6dd2c46d3a648de0ae2a8",
+      "output_tokens": 442,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177a7-af05-7661-8d42-a34440ecdc39"
+    },
+    {
+      "child_request_id": "beliefkv:01a177a7-f6a5-74c1-ab78-8a2030f90b77",
+      "workflow_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+      "child_invocation_id": "deepagents-invocation:94cdd6e0338ac17a",
+      "join_id": "deepagents-join:4aab6b22f87e1997",
+      "trigger_ts_ms": 1793210667293.7295,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+        "deepagents-invocation:94cdd6e0338ac17a",
+        "deepagents-context:94cdd6e0338ac17a",
+        21
+      ],
+      "output_sha256": "ff148a363dfb8fd857b6dc0d9480ba6218ac3bdd5592c6f9b64a0f600efb438c",
+      "output_tokens": 589,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177a7-f6a5-74c1-ab78-8a2030f90b77"
+    },
+    {
+      "child_request_id": "beliefkv:01a177a8-0e81-79b3-983b-0837a7888727",
+      "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+      "child_invocation_id": "deepagents-invocation:5055fd56f6f9d254",
+      "join_id": "deepagents-join:bc9943ab3a196599",
+      "trigger_ts_ms": 1793210691129.794,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+        "deepagents-invocation:5055fd56f6f9d254",
+        "deepagents-context:5055fd56f6f9d254",
+        17
+      ],
+      "output_sha256": "8f55a6f9eec5a3b1b913576fe2195f333f64fc69e8a144b75cae4adc90e998f4",
+      "output_tokens": 365,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177a8-0e81-79b3-983b-0837a7888727"
+    },
+    {
+      "child_request_id": "beliefkv:01a177a8-9e38-71a2-a838-7e7dd2a1cd5a",
+      "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+      "child_invocation_id": "deepagents-invocation:2907efdaa9adfa07",
+      "join_id": "deepagents-join:8dd587ba4aeaa3bc",
+      "trigger_ts_ms": 1793210693499.9434,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+        "deepagents-invocation:2907efdaa9adfa07",
+        "deepagents-context:2907efdaa9adfa07",
+        41
+      ],
+      "output_sha256": "c022c5e2a960a48116f956d6d109d56c7975bc34217201338cdcb158c89e48d3",
+      "output_tokens": 545,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177a8-9e38-71a2-a838-7e7dd2a1cd5a"
+    },
+    {
+      "child_request_id": "beliefkv:01a177a8-d3ee-7423-a6cb-bccc1e52b165",
+      "workflow_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+      "child_invocation_id": "deepagents-invocation:91d928451415b917",
+      "join_id": "deepagents-join:498dcc6d8a54c4a0",
+      "trigger_ts_ms": 1793210710392.6138,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:91d928451415b917",
+        "deepagents-context:91d928451415b917",
+        9
+      ],
+      "output_sha256": "139c0659897919dc46d2c42508ddc82a96de1a3015e879879e28ba7de1b7868e",
+      "output_tokens": 308,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177a8-d3ee-7423-a6cb-bccc1e52b165"
+    },
+    {
+      "child_request_id": "beliefkv:01a177a8-a17f-7410-bf63-061f07dd25db",
+      "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+      "child_invocation_id": "deepagents-invocation:3584b8fc30f4d76f",
+      "join_id": "deepagents-join:591dcd4088da049b",
+      "trigger_ts_ms": 1793210713177.1855,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+        "deepagents-invocation:3584b8fc30f4d76f",
+        "deepagents-context:3584b8fc30f4d76f",
+        13
+      ],
+      "output_sha256": "edbe3872f90d25d1953f074eb5e5956b16c95038a54601c3bdf4118eb59d9fa4",
+      "output_tokens": 364,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177a8-a17f-7410-bf63-061f07dd25db"
+    },
+    {
+      "child_request_id": "beliefkv:01a177a8-fadc-7ac3-8a02-59679786bbc8",
+      "workflow_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+      "child_invocation_id": "deepagents-invocation:964a7e37cf0c3327",
+      "join_id": "deepagents-join:e7303c7832f748b2",
+      "trigger_ts_ms": 1793210727256.806,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+        "deepagents-invocation:964a7e37cf0c3327",
+        "deepagents-context:964a7e37cf0c3327",
+        14
+      ],
+      "output_sha256": "14d95fa602f251e3b3ecac094edacac936f79c8acf8d97ed3edd4eb00be862bb",
+      "output_tokens": 435,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177a8-fadc-7ac3-8a02-59679786bbc8"
+    },
+    {
+      "child_request_id": "beliefkv:01a177a8-9b63-7000-a217-912cc3e9beaf",
+      "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+      "child_invocation_id": "deepagents-invocation:b1a5f9de38603272",
+      "join_id": "deepagents-join:8693725b71cbc497",
+      "trigger_ts_ms": 1793210730047.4158,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents-invocation:b1a5f9de38603272",
+        "deepagents-context:b1a5f9de38603272",
+        18
+      ],
+      "output_sha256": "70704183f1781b0f3f6444de724a7d56b34a405007413ab889bf49b9a2c52b3f",
+      "output_tokens": 661,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177a8-9b63-7000-a217-912cc3e9beaf"
+    },
+    {
+      "child_request_id": "beliefkv:01a177a8-876f-7b53-8606-ce9c3ea27c4c",
+      "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+      "child_invocation_id": "deepagents-invocation:774c21d38b88ade0",
+      "join_id": "deepagents-join:92022145e7daf594",
+      "trigger_ts_ms": 1793210763365.032,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:774c21d38b88ade0",
+        "deepagents-context:774c21d38b88ade0",
+        25
+      ],
+      "output_sha256": "ddf1daa98288e60c819830633a79708e6f3b98c9cfb8ef201ce217d70e03f35b",
+      "output_tokens": 291,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177a8-876f-7b53-8606-ce9c3ea27c4c"
+    },
+    {
+      "child_request_id": "beliefkv:01a177a8-fa1e-7a12-8da5-13639e8a1235",
+      "workflow_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+      "child_invocation_id": "deepagents-invocation:af08dcf882b2e452",
+      "join_id": "deepagents-join:47010a59a8b61bb6",
+      "trigger_ts_ms": 1793210777053.9963,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+        "deepagents-invocation:af08dcf882b2e452",
+        "deepagents-context:af08dcf882b2e452",
+        22
+      ],
+      "output_sha256": "8ee2b361d65aa5c145f619e1440e15e0d362a8148e0b7b147900fd9a14816fc2",
+      "output_tokens": 685,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177a8-fa1e-7a12-8da5-13639e8a1235"
+    },
+    {
+      "child_request_id": "beliefkv:01a177a8-ceac-7aa0-8140-f45726308382",
+      "workflow_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+      "child_invocation_id": "deepagents-invocation:fdb9d30c44b09665",
+      "join_id": "deepagents-join:aa77a71fb76af369",
+      "trigger_ts_ms": 1793210778484.5437,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+        "deepagents-invocation:fdb9d30c44b09665",
+        "deepagents-context:fdb9d30c44b09665",
+        30
+      ],
+      "output_sha256": "6af12b958aa89f2ee85d89033dac0b3f360a803575bd44a14699c07acac72026",
+      "output_tokens": 404,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177a8-ceac-7aa0-8140-f45726308382"
+    },
+    {
+      "child_request_id": "beliefkv:01a177a8-d2ae-7c10-9fce-f7feb21654df",
+      "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+      "child_invocation_id": "deepagents-invocation:a9fdd146083bc610",
+      "join_id": "deepagents-join:fd37987bc55fc65d",
+      "trigger_ts_ms": 1793210802048.4277,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+        "deepagents-invocation:a9fdd146083bc610",
+        "deepagents-context:a9fdd146083bc610",
+        36
+      ],
+      "output_sha256": "7ffe609a324ede48f1ef0e66d1f463190d88a7fed5aec4d8a199650aae091cd1",
+      "output_tokens": 320,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177a8-d2ae-7c10-9fce-f7feb21654df"
+    },
+    {
+      "child_request_id": "beliefkv:01a177ac-d0a0-7a30-9244-3ca7b198f37e",
+      "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+      "child_invocation_id": "deepagents-invocation:3f853992cbb7a61f",
+      "join_id": "deepagents-join:5c76fa3be676cb64",
+      "trigger_ts_ms": 1793210821961.655,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+        "deepagents-invocation:3f853992cbb7a61f",
+        "deepagents-context:3f853992cbb7a61f",
+        24
+      ],
+      "output_sha256": "4279aa7ef22737fc05a485cd98b4f2997dae7dee317e57a2fabb7aef15606d8f",
+      "output_tokens": 665,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177ac-d0a0-7a30-9244-3ca7b198f37e"
+    },
+    {
+      "child_request_id": "beliefkv:01a177aa-9e35-7e02-a2d5-dd49fa297a11",
+      "workflow_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+      "child_invocation_id": "deepagents-invocation:f35d6ad2e40f2a2c",
+      "join_id": "deepagents-join:b9a166e34a5b4c96",
+      "trigger_ts_ms": 1793210835363.1042,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+        "deepagents-invocation:f35d6ad2e40f2a2c",
+        "deepagents-context:f35d6ad2e40f2a2c",
+        19
+      ],
+      "output_sha256": "9b0226e77f0af0c10c4c7f671321032d4c2168d4f03990a9c19efea200d60c67",
+      "output_tokens": 633,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177aa-9e35-7e02-a2d5-dd49fa297a11"
+    },
+    {
+      "child_request_id": "beliefkv:01a177a8-b66f-7ef1-9398-030b4305400d",
+      "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+      "child_invocation_id": "deepagents-invocation:5f1238807b639c1a",
+      "join_id": "deepagents-join:ffeb8b898319a598",
+      "trigger_ts_ms": 1793210842948.5989,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+        "deepagents-invocation:5f1238807b639c1a",
+        "deepagents-context:5f1238807b639c1a",
+        30
+      ],
+      "output_sha256": "baeeffb8ca226b8e5c7a4e95599a7c393ab92e3dc1b83dac5824e448bd5aed6a",
+      "output_tokens": 505,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177a8-b66f-7ef1-9398-030b4305400d"
+    },
+    {
+      "child_request_id": "beliefkv:01a177aa-6078-7c71-b99f-13e5bea5556b",
+      "workflow_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+      "child_invocation_id": "deepagents-invocation:05a6601183c65949",
+      "join_id": "deepagents-join:db13bfb292e386d4",
+      "trigger_ts_ms": 1793210846632.9036,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+        "deepagents-invocation:05a6601183c65949",
+        "deepagents-context:05a6601183c65949",
+        13
+      ],
+      "output_sha256": "ee72a8da375787fd4ec53e764ac732984e5017018e2e436935b7fd44aa2427ba",
+      "output_tokens": 488,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177aa-6078-7c71-b99f-13e5bea5556b"
+    },
+    {
+      "child_request_id": "beliefkv:01a177aa-4d38-7cd1-9e58-eebd24e71c6b",
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+      "child_invocation_id": "deepagents-invocation:15415946e8089cac",
+      "join_id": "deepagents-join:5bc17416c2a790f1",
+      "trigger_ts_ms": 1793210899963.886,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+        "deepagents-invocation:15415946e8089cac",
+        "deepagents-context:15415946e8089cac",
+        30
+      ],
+      "output_sha256": "8e4350505bdc1adc41ff11383d5d69fad5e3826324e4666a33f3f6727409d6a8",
+      "output_tokens": 298,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177aa-4d38-7cd1-9e58-eebd24e71c6b"
+    },
+    {
+      "child_request_id": "beliefkv:01a177ad-01c4-70d2-ae37-8cc6dc6cb287",
+      "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+      "child_invocation_id": "deepagents-invocation:8cf141e8950b45dd",
+      "join_id": "deepagents-join:e5a5d5b8c20f856f",
+      "trigger_ts_ms": 1793210911666.3274,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+        "deepagents-invocation:8cf141e8950b45dd",
+        "deepagents-context:8cf141e8950b45dd",
+        19
+      ],
+      "output_sha256": "2d585436d3440beba2df7d8ed71e2dc055eecf4620c3138e404cde9560465c56",
+      "output_tokens": 552,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177ad-01c4-70d2-ae37-8cc6dc6cb287"
+    },
+    {
+      "child_request_id": "beliefkv:01a177ac-8b43-7962-831f-5cdd5f9279e6",
+      "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+      "child_invocation_id": "deepagents-invocation:61c6413bdc63294c",
+      "join_id": "deepagents-join:c708d1778ba10cd1",
+      "trigger_ts_ms": 1793210935838.0942,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+        "deepagents-invocation:61c6413bdc63294c",
+        "deepagents-context:61c6413bdc63294c",
+        38
+      ],
+      "output_sha256": "6e71f1cb133de27c8e0ecbf1d169a85413d1e60753b5fc7addc932ed9efc6cff",
+      "output_tokens": 367,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177ac-8b43-7962-831f-5cdd5f9279e6"
+    },
+    {
+      "child_request_id": "beliefkv:01a177ab-25a8-79a3-a9f7-df8b2acb7820",
+      "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+      "child_invocation_id": "deepagents-invocation:75164210ec1e071c",
+      "join_id": "deepagents-join:a7288873c144009b",
+      "trigger_ts_ms": 1793210939566.7776,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+        "deepagents-invocation:75164210ec1e071c",
+        "deepagents-context:75164210ec1e071c",
+        20
+      ],
+      "output_sha256": "25167fc6bb275c168881c568b387ecb227abd56ce7b3300189ff0944a7bc4d4b",
+      "output_tokens": 465,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177ab-25a8-79a3-a9f7-df8b2acb7820"
+    },
+    {
+      "child_request_id": "beliefkv:01a177aa-c106-7a40-b97e-5b98329d5039",
+      "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa",
+      "child_invocation_id": "deepagents-invocation:d467f49894387cc0",
+      "join_id": "deepagents-join:7ee5e1f5210c431c",
+      "trigger_ts_ms": 1793210952594.1157,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa",
+        "deepagents-invocation:d467f49894387cc0",
+        "deepagents-context:d467f49894387cc0",
+        23
+      ],
+      "output_sha256": "1f03512805c46675b5f65ba717e94761719a7bcaacae1c9c5e645b21786438e3",
+      "output_tokens": 652,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177aa-c106-7a40-b97e-5b98329d5039"
+    },
+    {
+      "child_request_id": "beliefkv:01a177ac-5552-7c03-870b-ab3e4cbfb3df",
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "child_invocation_id": "deepagents-invocation:ed7c58e8e023e49d",
+      "join_id": "deepagents-join:627ef3b7221fa6c4",
+      "trigger_ts_ms": 1793211015262.9243,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+        "deepagents-invocation:ed7c58e8e023e49d",
+        "deepagents-context:ed7c58e8e023e49d",
+        51
+      ],
+      "output_sha256": "6dcb8b8f5b65566fe7aa5caa4ac849c3daf316d36de97528ec83f05d3abdc047",
+      "output_tokens": 351,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177ac-5552-7c03-870b-ab3e4cbfb3df"
+    },
+    {
+      "child_request_id": "beliefkv:01a177af-e033-7e93-9a48-66c0db065d09",
+      "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+      "child_invocation_id": "deepagents-invocation:a8a70d2f62f88b04",
+      "join_id": "deepagents-join:23fa947a8903c2ef",
+      "trigger_ts_ms": 1793211029456.6306,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+        "deepagents-invocation:a8a70d2f62f88b04",
+        "deepagents-context:a8a70d2f62f88b04",
+        22
+      ],
+      "output_sha256": "19ecc6b6ba3c33612247636043a1e797ab20d952dfa979580837be006bba2259",
+      "output_tokens": 610,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177af-e033-7e93-9a48-66c0db065d09"
+    },
+    {
+      "child_request_id": "beliefkv:01a177ae-226b-74b1-8208-245f7cee95f9",
+      "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+      "child_invocation_id": "deepagents-invocation:82a3d7252ab98e78",
+      "join_id": "deepagents-join:fd4fa16f52b36cd0",
+      "trigger_ts_ms": 1793211100182.4602,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "deepagents-context:82a3d7252ab98e78",
+        32
+      ],
+      "output_sha256": "53cc66aa47753d7d4ea46ac6e334bb2856a50fa3aa7c85bc767f7a8d642519f3",
+      "output_tokens": 375,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177ae-226b-74b1-8208-245f7cee95f9"
+    },
+    {
+      "child_request_id": "beliefkv:01a177b3-9efc-79b0-b2d7-a7e91e36d7a8",
+      "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+      "child_invocation_id": "deepagents-invocation:893664b32c440622",
+      "join_id": "deepagents-join:b40ea21335a85982",
+      "trigger_ts_ms": 1793211181839.8518,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+        "deepagents-invocation:893664b32c440622",
+        "deepagents-context:893664b32c440622",
+        32
+      ],
+      "output_sha256": "33ca3a46551404d605ddf49d931bf6a64f2df65375d3a1f80d3d2edb33f65d63",
+      "output_tokens": 472,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177b3-9efc-79b0-b2d7-a7e91e36d7a8"
+    },
+    {
+      "child_request_id": "beliefkv:01a177b5-323a-76a3-9d98-83a80bc61e33",
+      "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+      "child_invocation_id": "deepagents-invocation:aba53624f7821978",
+      "join_id": "deepagents-join:6cb274196568c7c9",
+      "trigger_ts_ms": 1793211206640.7615,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+        "deepagents-invocation:aba53624f7821978",
+        "deepagents-context:aba53624f7821978",
+        29
+      ],
+      "output_sha256": "3d8b19bd7d1eb80a084de0f8e9eee81cb201e578bc3302d4f8b1ab4e2cfb1f9a",
+      "output_tokens": 375,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177b5-323a-76a3-9d98-83a80bc61e33"
+    },
+    {
+      "child_request_id": "beliefkv:01a177b2-5602-7dc2-8b66-ffa121d6a675",
+      "workflow_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+      "child_invocation_id": "deepagents-invocation:76aeaea63220d752",
+      "join_id": "deepagents-join:20a72d382c822eaf",
+      "trigger_ts_ms": 1793211211192.6006,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+        "deepagents-invocation:76aeaea63220d752",
+        "deepagents-context:76aeaea63220d752",
+        47
+      ],
+      "output_sha256": "adedb5bc1fe9667589922f5734ce67d0fe79548bbfa1c983fd5601dae81d2b00",
+      "output_tokens": 387,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177b2-5602-7dc2-8b66-ffa121d6a675"
+    },
+    {
+      "child_request_id": "beliefkv:01a177b7-564a-7411-9aeb-acea763e0f84",
+      "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+      "child_invocation_id": "deepagents-invocation:b3251e1297c937d9",
+      "join_id": "deepagents-join:ee1761d57a1938c5",
+      "trigger_ts_ms": 1793211243234.137,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+        "deepagents-invocation:b3251e1297c937d9",
+        "deepagents-context:b3251e1297c937d9",
+        42
+      ],
+      "output_sha256": "3acc158b338bf6b33d40b0034544c0bc8183a54f198d0470a22b933084b3bf19",
+      "output_tokens": 541,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177b7-564a-7411-9aeb-acea763e0f84"
+    },
+    {
+      "child_request_id": "beliefkv:01a177b5-4450-7020-832d-87e98fa0603c",
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+      "child_invocation_id": "deepagents-invocation:46e4ed5303d25a26",
+      "join_id": "deepagents-join:2f840cd95e365f86",
+      "trigger_ts_ms": 1793211306467.5898,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+        "deepagents-invocation:46e4ed5303d25a26",
+        "deepagents-context:46e4ed5303d25a26",
+        24
+      ],
+      "output_sha256": "3d5cb7d7f3eccadcd9d23ba1c6240c4a3dfa9d53ffbb9511058f832b468cba50",
+      "output_tokens": 331,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177b5-4450-7020-832d-87e98fa0603c"
+    },
+    {
+      "child_request_id": "beliefkv:01a177b7-0e71-7c63-b25e-458517c5212d",
+      "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+      "child_invocation_id": "deepagents-invocation:ac13c35bc1f04732",
+      "join_id": "deepagents-join:71a58790a6632d09",
+      "trigger_ts_ms": 1793211306552.068,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+        "deepagents-invocation:ac13c35bc1f04732",
+        "deepagents-context:ac13c35bc1f04732",
+        19
+      ],
+      "output_sha256": "ee7c4380323e28d4ad28bc7d3652e4f192bd6b0f26d5a4a6bf4b10c52f103e67",
+      "output_tokens": 364,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177b7-0e71-7c63-b25e-458517c5212d"
+    },
+    {
+      "child_request_id": "beliefkv:01a177b5-4211-7f80-9641-8b51e889518d",
+      "workflow_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+      "child_invocation_id": "deepagents-invocation:d03da39ef0461137",
+      "join_id": "deepagents-join:69165022136f6076",
+      "trigger_ts_ms": 1793211350850.5007,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+        "deepagents-invocation:d03da39ef0461137",
+        "deepagents-context:d03da39ef0461137",
+        18
+      ],
+      "output_sha256": "3ff66ea5225516741981a85f4e70fbcec5889f24525c50c1fae3908738920f4b",
+      "output_tokens": 499,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177b5-4211-7f80-9641-8b51e889518d"
+    },
+    {
+      "child_request_id": "beliefkv:01a177b8-2d87-7552-9d1d-1a35a49f782e",
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+      "child_invocation_id": "deepagents-invocation:14473377ff0e0097",
+      "join_id": "deepagents-join:2e8864d5e818cba4",
+      "trigger_ts_ms": 1793211408575.598,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+        "deepagents-invocation:14473377ff0e0097",
+        "deepagents-context:14473377ff0e0097",
+        25
+      ],
+      "output_sha256": "6df8c9b2560b8864d82aabd725c648d9f4441f7f52624175bcdd5116056dbd1e",
+      "output_tokens": 343,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177b8-2d87-7552-9d1d-1a35a49f782e"
+    },
+    {
+      "child_request_id": "beliefkv:01a177b6-51e3-7e93-a0d3-8992aea2d128",
+      "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+      "child_invocation_id": "deepagents-invocation:03dc226027d7d5ff",
+      "join_id": "deepagents-join:2a587a848bd5d60d",
+      "trigger_ts_ms": 1793211435850.3767,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:03dc226027d7d5ff",
+        "deepagents-context:03dc226027d7d5ff",
+        43
+      ],
+      "output_sha256": "32cb94200b028eca5bc634b11b46c66c3d6b480412d4be510ce4fa3f829d36a7",
+      "output_tokens": 522,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177b6-51e3-7e93-a0d3-8992aea2d128"
+    },
+    {
+      "child_request_id": "beliefkv:01a177b6-1ea5-7e30-a38c-fa9a9ae986a7",
+      "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+      "child_invocation_id": "deepagents-invocation:a2cfb5f0bc8f46b4",
+      "join_id": "deepagents-join:86504e40f7c22057",
+      "trigger_ts_ms": 1793211465415.672,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:a2cfb5f0bc8f46b4",
+        "deepagents-context:a2cfb5f0bc8f46b4",
+        49
+      ],
+      "output_sha256": "4fd497f3c88ac91953afb6fb65914780b23fefb73ca728dbd539c1359f352115",
+      "output_tokens": 292,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177b6-1ea5-7e30-a38c-fa9a9ae986a7"
+    },
+    {
+      "child_request_id": "beliefkv:01a177b8-60bf-77e3-af7c-b13385686a8d",
+      "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+      "child_invocation_id": "deepagents-invocation:ba8b9044ec066c89",
+      "join_id": "deepagents-join:cde9f541b4de9529",
+      "trigger_ts_ms": 1793211545092.576,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:ba8b9044ec066c89",
+        "deepagents-context:ba8b9044ec066c89",
+        23
+      ],
+      "output_sha256": "b84ae6333d0317755c42dbe296c9c6f1d19afba21dda0d624898bc94021e68ca",
+      "output_tokens": 301,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177b8-60bf-77e3-af7c-b13385686a8d"
+    },
+    {
+      "child_request_id": "beliefkv:01a177b4-5077-7c91-86a6-210fae1b3e7d",
+      "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+      "child_invocation_id": "deepagents-invocation:8f93a662a24419a6",
+      "join_id": "deepagents-join:eab78751b9fc7f30",
+      "trigger_ts_ms": 1793211596894.5613,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+        "deepagents-invocation:8f93a662a24419a6",
+        "deepagents-context:8f93a662a24419a6",
+        37
+      ],
+      "output_sha256": "0ca917588a4513bee6c7b3d70554e1405fefb69580fb8559639abe6490ed1da5",
+      "output_tokens": 321,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177b4-5077-7c91-86a6-210fae1b3e7d"
+    },
+    {
+      "child_request_id": "beliefkv:01a177ba-79e0-7de3-b58b-9fbe0688702c",
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "child_invocation_id": "deepagents-invocation:db0dca7d9441ce9e",
+      "join_id": "deepagents-join:14fa7230c0d3a6f0",
+      "trigger_ts_ms": 1793211629251.0962,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+        "deepagents-invocation:db0dca7d9441ce9e",
+        "deepagents-context:db0dca7d9441ce9e",
+        65
+      ],
+      "output_sha256": "873e46cb944d0504e51b42631e7bcd85879478f95a074de5873e299061ea7d49",
+      "output_tokens": 393,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177ba-79e0-7de3-b58b-9fbe0688702c"
+    },
+    {
+      "child_request_id": "beliefkv:01a177b9-596b-7e21-988b-fde171feebf5",
+      "workflow_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+      "child_invocation_id": "deepagents-invocation:8155941c08e44845",
+      "join_id": "deepagents-join:85ce65c62ac78d5a",
+      "trigger_ts_ms": 1793211639723.7485,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+        "deepagents-invocation:8155941c08e44845",
+        "deepagents-context:8155941c08e44845",
+        15
+      ],
+      "output_sha256": "57d64710670fd13da93bac6ff5a175313927711a3926eb0e492c9af975314350",
+      "output_tokens": 496,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177b9-596b-7e21-988b-fde171feebf5"
+    },
+    {
+      "child_request_id": "beliefkv:01a177b5-c900-73e1-8f22-91c227d353c3",
+      "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+      "child_invocation_id": "deepagents-invocation:8498e39022e89ead",
+      "join_id": "deepagents-join:e2b8418d537d9176",
+      "trigger_ts_ms": 1793211656880.4888,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents-invocation:8498e39022e89ead",
+        "deepagents-context:8498e39022e89ead",
+        38
+      ],
+      "output_sha256": "1d7eeaf65cd3e175f29065ebd2d670d07d6b6808efcc56f16340843ef8c8e9dc",
+      "output_tokens": 454,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177b5-c900-73e1-8f22-91c227d353c3"
+    },
+    {
+      "child_request_id": "beliefkv:01a177bb-860f-70d0-bd14-c6ccdaea5e8c",
+      "workflow_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+      "child_invocation_id": "deepagents-invocation:c839861ee808681b",
+      "join_id": "deepagents-join:9a8964242351c037",
+      "trigger_ts_ms": 1793211727462.222,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+        "deepagents-invocation:c839861ee808681b",
+        "deepagents-context:c839861ee808681b",
+        44
+      ],
+      "output_sha256": "fd92eda0870fb5a3d6682bd6ecd27dd3395a8740aa013b880f9f8d0331ad5ad4",
+      "output_tokens": 367,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177bb-860f-70d0-bd14-c6ccdaea5e8c"
+    },
+    {
+      "child_request_id": "beliefkv:01a177bd-f091-7293-8764-59e3b4fe863f",
+      "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+      "child_invocation_id": "deepagents-invocation:2a0b00f980f8d848",
+      "join_id": "deepagents-join:3c5924091e8c4294",
+      "trigger_ts_ms": 1793211743088.399,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+        "deepagents-invocation:2a0b00f980f8d848",
+        "deepagents-context:2a0b00f980f8d848",
+        45
+      ],
+      "output_sha256": "1f6129fc57c2b33a116b69ae50dc6bdefcad9f1d6c58d2a3fadb2b0f968526cf",
+      "output_tokens": 393,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177bd-f091-7293-8764-59e3b4fe863f"
+    },
+    {
+      "child_request_id": "beliefkv:01a177b8-42cb-7152-9340-c9472e1fc4c3",
+      "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+      "child_invocation_id": "deepagents-invocation:cadb0ed3e131cb3a",
+      "join_id": "deepagents-join:0d9148afd60b7300",
+      "trigger_ts_ms": 1793211745432.0137,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+        "deepagents-invocation:cadb0ed3e131cb3a",
+        "deepagents-context:cadb0ed3e131cb3a",
+        33
+      ],
+      "output_sha256": "6c407348cfe18ecb52aad1a6d97b13a1f899c29d7e4ac2eaa20f8f0e68a44d60",
+      "output_tokens": 496,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177b8-42cb-7152-9340-c9472e1fc4c3"
+    },
+    {
+      "child_request_id": "beliefkv:01a177b8-d766-7cc3-8b0a-b0b462f1ed95",
+      "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+      "child_invocation_id": "deepagents-invocation:c4a833d951f86bc1",
+      "join_id": "deepagents-join:5abfb3bf3a0f1903",
+      "trigger_ts_ms": 1793211803200.9712,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+        "deepagents-invocation:c4a833d951f86bc1",
+        "deepagents-context:c4a833d951f86bc1",
+        36
+      ],
+      "output_sha256": "cc20c3677ea930f0d117f1eb66f9024d01e4e945da890931b06b4742261857d4",
+      "output_tokens": 374,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177b8-d766-7cc3-8b0a-b0b462f1ed95"
+    },
+    {
+      "child_request_id": "beliefkv:01a177bd-4156-7263-a184-f382ea527b60",
+      "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+      "child_invocation_id": "deepagents-invocation:4b846b77ba34a99b",
+      "join_id": "deepagents-join:58ea188ae47c1cb0",
+      "trigger_ts_ms": 1793211813102.7017,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+        "deepagents-invocation:4b846b77ba34a99b",
+        "deepagents-context:4b846b77ba34a99b",
+        30
+      ],
+      "output_sha256": "8da479026da3dd7f33f83c50b51df2c832a195626d754e17944b8ccb257675b5",
+      "output_tokens": 303,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177bd-4156-7263-a184-f382ea527b60"
+    },
+    {
+      "child_request_id": "beliefkv:01a177bc-967e-7100-bb54-f81c3cba3ae3",
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "child_invocation_id": "deepagents-invocation:7d1cdfa261e93fa5",
+      "join_id": "deepagents-join:0b6e7a2967e30b3d",
+      "trigger_ts_ms": 1793211819289.034,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+        "deepagents-invocation:7d1cdfa261e93fa5",
+        "deepagents-context:7d1cdfa261e93fa5",
+        41
+      ],
+      "output_sha256": "fffd171286564426aff547d2113f995d01adb7482c692a5f19983c76068e0ab0",
+      "output_tokens": 376,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177bc-967e-7100-bb54-f81c3cba3ae3"
+    },
+    {
+      "child_request_id": "beliefkv:01a177bb-4236-7771-8192-bb3b5ea78620",
+      "workflow_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+      "child_invocation_id": "deepagents-invocation:eaf659de23e93ad3",
+      "join_id": "deepagents-join:dedef10e71b04b84",
+      "trigger_ts_ms": 1793211851789.7744,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+        "deepagents-invocation:eaf659de23e93ad3",
+        "deepagents-context:eaf659de23e93ad3",
+        30
+      ],
+      "output_sha256": "2193c040c752b4d5f14175945a808bcc94e88cbc900b644313e6ff912b48c850",
+      "output_tokens": 495,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177bb-4236-7771-8192-bb3b5ea78620"
+    },
+    {
+      "child_request_id": "beliefkv:01a177bc-6a85-7be1-a7ca-36785e66d7fe",
+      "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+      "child_invocation_id": "deepagents-invocation:e11d2f741ca17045",
+      "join_id": "deepagents-join:3e55d3269a0bddf9",
+      "trigger_ts_ms": 1793211869502.5015,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:e11d2f741ca17045",
+        "deepagents-context:e11d2f741ca17045",
+        55
+      ],
+      "output_sha256": "205a4ab5b8e294bc677bcd168b0a6ba1921615bedecc3a98ec58ccbbe0f5862d",
+      "output_tokens": 435,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177bc-6a85-7be1-a7ca-36785e66d7fe"
+    },
+    {
+      "child_request_id": "beliefkv:01a177bf-7f5e-7370-a7a8-67b9e036fc89",
+      "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+      "child_invocation_id": "deepagents-invocation:f0cf842ea0905191",
+      "join_id": "deepagents-join:5a4a5c984c442385",
+      "trigger_ts_ms": 1793211922307.1042,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+        "deepagents-invocation:f0cf842ea0905191",
+        "deepagents-context:f0cf842ea0905191",
+        45
+      ],
+      "output_sha256": "872381a459a33b613c5c6122da922dcd6fbe47869e2242a8d9383d4323d864cd",
+      "output_tokens": 322,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177bf-7f5e-7370-a7a8-67b9e036fc89"
+    },
+    {
+      "child_request_id": "beliefkv:01a177bd-2b0c-7f81-88c8-9ce2be47ba16",
+      "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+      "child_invocation_id": "deepagents-invocation:087c0e65585d53b6",
+      "join_id": "deepagents-join:63dd6ccf0e5a8af3",
+      "trigger_ts_ms": 1793211967984.5579,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:087c0e65585d53b6",
+        "deepagents-context:087c0e65585d53b6",
+        34
+      ],
+      "output_sha256": "a5651a033805e30da0b869b8b367c34360cd40ca1e4ccf6a77f1a1bedf1d6782",
+      "output_tokens": 688,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177bd-2b0c-7f81-88c8-9ce2be47ba16"
+    },
+    {
+      "child_request_id": "beliefkv:01a177be-d62e-7620-858a-5010a372e746",
+      "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+      "child_invocation_id": "deepagents-invocation:70f2c6f7162c447b",
+      "join_id": "deepagents-join:2e0cba618ce91b2b",
+      "trigger_ts_ms": 1793211992881.2302,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+        "deepagents-invocation:70f2c6f7162c447b",
+        "deepagents-context:70f2c6f7162c447b",
+        39
+      ],
+      "output_sha256": "984acc29044750d2e011e63459b3fd153a40e3e2ba146ec2e0593055d543716a",
+      "output_tokens": 505,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177be-d62e-7620-858a-5010a372e746"
+    },
+    {
+      "child_request_id": "beliefkv:01a177bd-9807-7653-9d66-5102df452288",
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+      "child_invocation_id": "deepagents-invocation:5691d8592b9fe807",
+      "join_id": "deepagents-join:99fb482cb7bc330d",
+      "trigger_ts_ms": 1793212012862.0393,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+        "deepagents-invocation:5691d8592b9fe807",
+        "deepagents-context:5691d8592b9fe807",
+        41
+      ],
+      "output_sha256": "5b02c570b77379b3c353bedea0215b55c130cf0e4b756097e84be54f11cd3070",
+      "output_tokens": 597,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177bd-9807-7653-9d66-5102df452288"
+    },
+    {
+      "child_request_id": "beliefkv:01a177be-e697-7a32-987d-c9d36d577e82",
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "child_invocation_id": "deepagents-invocation:82faa37fe521a52b",
+      "join_id": "deepagents-join:2bc200926d15ee44",
+      "trigger_ts_ms": 1793212057167.9395,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+        "deepagents-invocation:82faa37fe521a52b",
+        "deepagents-context:82faa37fe521a52b",
+        40
+      ],
+      "output_sha256": "eef60d9e08a16a78ff6edc810bfb01bd3ec108be021e218e0b47d7ab5f64d6f2",
+      "output_tokens": 522,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177be-e697-7a32-987d-c9d36d577e82"
+    },
+    {
+      "child_request_id": "beliefkv:01a177bf-7555-75a1-901c-4dfcf6718ad4",
+      "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+      "child_invocation_id": "deepagents-invocation:663ee01513e5e7f8",
+      "join_id": "deepagents-join:3a608ff3a40afc32",
+      "trigger_ts_ms": 1793212091059.546,
+      "status": "final_request_observed",
+      "native_tool_delimiter_evidence": "no_dedicated_delimiter",
+      "identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:663ee01513e5e7f8",
+        "deepagents-context:663ee01513e5e7f8",
+        30
+      ],
+      "output_sha256": "fef82dfd82bb7749a408c5252c0225fa5625a6177198e6b0e9ccd54915b28c2c",
+      "output_tokens": 389,
+      "subsequent_model_requests": 0,
+      "next_observed_request_id": null,
+      "actual_final_request_id": "beliefkv:01a177bf-7555-75a1-901c-4dfcf6718ad4"
+    }
+  ],
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/full_only_pressure_index_20261028_r1/full/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 13687380,
+      "complete_prefix_sha256": "98cc41e58d4f4da703225eafc9a47a769b39e1547342dd1cbe713d7ff3c839da",
+      "first_read_limit_bytes": 13687380
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/full_only_pressure_index_20261028_r1/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 136892316,
+      "complete_prefix_sha256": "38e028c09d09c2007efad7f814d73d6a5de7bb1d7fcf032b0340993742f7c447",
+      "first_read_limit_bytes": 136892316
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/full_only_pressure_index_20261028_r1/full/replay/runtime_events.replay.jsonl": {
+      "complete_prefix_bytes": 20515505,
+      "complete_prefix_sha256": "866d96892514973dbbd9159d3614831d03e79b1c41618dfaea91acc65427d857",
+      "first_read_limit_bytes": 20515505
+    }
+  },
+  "auditor_sha256": "e7c206cb836dcd0073cb13ee11adcd609eee6ee37eb4718f2e52b3aee94d5d4b",
+  "future_trace_information_used_online": false,
+  "complete_work_verified": false,
+  "performance_accepted": false,
+  "limitations": [
+    "Unobserved successors do not prove finality; an actual completed RETURN is required.",
+    "Subsequent requests and RETURN only label recorded triggers offline.",
+    "A tool delimiter is conservative negative evidence, not full parser equivalence.",
+    "The audit does not establish missed prefetches, hidden transfer time or performance gains.",
+    "Independently sealed prefixes are not an atomic cross-file snapshot."
+  ]
+}

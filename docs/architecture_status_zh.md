@@ -2,13 +2,19 @@
 
 更新日期：2026-10-28（北京时间）。
 
-## 最新完整诊断
+## 最新完整结果
 
 随后实现的 FULL-only 发布索引修复已通过 3718 项 CPU、非强制模型恢复
-及 24 请求位置/session/stop 资格，目前从冻结应用 `a5164fe3` 运行完整
-FULL，profiling 和工具预取均关闭。启动及后续状态见
-[当前候选记录](research/full_only_pressure_index_start_20261028_zh.md)；
-尚无完整性能结论，下文诊断结果仍是已完成的最近完整证据。
+及 24 请求位置/session/stop 资格，并从冻结应用 `a5164fe3` 完成全部
+3674 请求和 18 workflow，profiling 和工具预取均关闭。平均 JCT
+1651.727199s、全程输出 235.457746token/s，相对 V345 改善
+2.70128%/0.89383%，未达到明确、可重复的目标，且比准入前卸载多
+20.532555s。实际 owned 退出、完整审计和三幅图核对均完成，见
+[当前完整结果](research/full_only_pressure_index_result_20261028_zh.md)。
+其他 prefill 交错和额外迁移仍需优先检查；不能把局部索引加速转为
+整轮 CPU 或 JCT 收益。没有下一项 GPU 实验排队。
+
+以下保留上一轮诊断及早期实现声明。
 
 共享控制 CPU 诊断 FULL 已完成全部 3674 个请求和 18 条 workflow：
 平均 JCT 1642.310207s、全程输出 235.033300token/s，仍不足以满足明确、
@@ -17,9 +23,9 @@ FULL，profiling 和工具预取均关闭。启动及后续状态见
 [诊断完整结果](research/control_plan_diagnostics_result_20261028_zh.md)。
 本轮原生组件、非强制模型和位置验证已经完成；下文保留早期实现声明。
 
-main 另已修复 Host-only 叶节点阻止回收私有 Device 祖先的问题，
+main 已修复 Host-only 叶节点阻止回收私有 Device 祖先的问题，
 保留原生锁、共享、DMA 和真实 free-list 权限，完整 CPU 3705 项及六个
-子测试通过。修复未进入本次冻结 GPU 轮，详见
+子测试通过。该修复未进入上述诊断，已经进入最新索引修复 FULL，详见
 [祖先回收设计](design/join_host_tail_ancestor_reclaim_20261028_zh.md)。
 
 ## 2026-10-28 新实现：共同服务与实际容量
