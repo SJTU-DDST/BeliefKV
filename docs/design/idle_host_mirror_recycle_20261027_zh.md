@@ -99,3 +99,9 @@ disabled场景建立初始Hot镜像时停止，尚未执行新回收机制。夹
 后续夹具使用原生有界read-only备份原语建立8槽Hot镜像，不改变生产
 SPAWN保留量、候选实现、共享CPU资格或正式200GB Host配置。
 必须使用新的冻结operator及新的输出路径，保留原始失败。
+
+第二次组件检查保留为 `gpu_components_r2.json`，在disabled场景构造
+runtime时拒绝：完整Full环境启用了final-stage prefetch，但夹具没有
+提供所需event socket。尚未执行回收或验证恢复。进程已退出，NVML
+确认没有残留GPU进程。后续夹具为每个场景建立独立临时event socket，
+保持原有Full开关和生产构造器校验，不修改候选策略或原生引擎。

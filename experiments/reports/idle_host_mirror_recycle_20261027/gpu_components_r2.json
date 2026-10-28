@@ -1,0 +1,17 @@
+{
+  "status": "failed",
+  "performance_accepted": false,
+  "error_type": "ValueError",
+  "error": "final stage prefetch requires an event socket and no canary",
+  "failed_scenario": "disabled",
+  "source_sha256": {
+    "beliefkv/runtime/idle_host_mirror_recycle.py": "b63a8335edbf0b3bdee2f55cd0dc00e31e961fa11c3c8402c5b574456371055d",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "cc210569b452d8a7a356d4e2912ad3a74699df32973368894965e9b1a050dfec",
+    "beliefkv/runtime/sglang_v0520_admission.py": "1fe420007c011feb404b7afac9e807ae6e6eb74a0bff1dafe73df928fa9a8bb2",
+    "beliefkv/runtime/sglang_v0520_prediction.py": "4fe5b15a25d5248309e9f9f38ff575b8ef3e1fde60781000b7dc941b57a55528",
+    "beliefkv/experiments/internal_comparison.py": "95858985e690a3a5fb24fd31a772b8a7fba3e650bc019874fa61f83f1d31a2f3",
+    "scripts/qualify_free_page_h2d_fence.py": "1a1d50fa5f37408ee54bd13d0e50843e87296e5f6b09cdab493684f1e71fc5ad",
+    "configs/migration/predictive_idle_host_mirror_recycle_20261027.json": "01dc1e015e338d4fcad306762051ec8544a01a809e8eebbf2429be408d06a645"
+  },
+  "operator_sha256": "2d49331537dfc17941c951b876875e93372ed536fe21061aceab4497fd062026"
+}

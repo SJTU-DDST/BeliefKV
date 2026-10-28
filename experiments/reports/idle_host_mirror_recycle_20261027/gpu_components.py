@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import sys
+from tempfile import TemporaryDirectory
 import time
 from types import SimpleNamespace as NS
 
@@ -60,6 +61,7 @@ def scenario(engine, name):
     module = sys.modules[type(cache).__module__]
     batch_before = module.BELIEFKV_IDLE_FULL_PREPARE_MAX_BYTES
     runtime, blocker, host_lock, device_lock = None, None, None, None
+    socket_dir = TemporaryDirectory(prefix="bkv-mirror-gpu-")
     unit = f.dimensions()["bytes_per_token"]
 
     def insert(tokens, session):
@@ -136,7 +138,9 @@ def scenario(engine, name):
             raise ValueError("native Device pool is not actually full")
         module.BELIEFKV_IDLE_FULL_PREPARE_MAX_BYTES = 4 * unit
         with settings(name != "disabled"):
-            runtime = NativeAdmissionRuntime()
+            runtime = NativeAdmissionRuntime(
+                event_socket_path=str(Path(socket_dir.name) / "events.sock"),
+            )
         runtime.on_events((
             RuntimeEvent("0", 0., Kind.WORKFLOW_START, "fixture"),
             RuntimeEvent(
@@ -248,6 +252,7 @@ def scenario(engine, name):
         f.cuda.synchronize()
         if runtime is not None:
             runtime.close()
+        socket_dir.cleanup()
         if host_lock is not None:
             cache.tree_core.dec_host_lock_ref(hot.id, host_lock)
         if device_lock is not None:

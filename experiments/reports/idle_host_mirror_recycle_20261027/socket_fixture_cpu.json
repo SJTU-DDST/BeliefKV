@@ -1,0 +1,18 @@
+{
+  "status": "fixture_constructor_preflight_passed",
+  "operator_sha256": "bdcafa4e97bdbafe43f266a9bed5afd4b9b20c38bb28849573703693014ca979",
+  "qualified_sources_rechecked": 1772,
+  "gpu_used": false,
+  "scenarios": [
+    {
+      "enabled": false,
+      "event_socket_bound": true,
+      "final_stage_prefetch_enabled": true
+    },
+    {
+      "enabled": true,
+      "event_socket_bound": true,
+      "final_stage_prefetch_enabled": true
+    }
+  ]
+}

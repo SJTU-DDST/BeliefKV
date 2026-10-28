@@ -2037,3 +2037,11 @@
   backup primitive for the initial8-slot mirror, without changing production
   reserves, qualified policy sources or the native engine. GPU qualification
   and any complete Full comparison remain pending.
+- The frozena2e1b235 Host-mirror GPU component retry also stopped before
+  recycling, at runtime construction: its Full environment enables final-stage
+  prefetch but supplied no required event socket. Preserve
+  gpu_components_r2.json and the frozen operator. Actual exit and empty NVML
+  are verified. The next fixture uses a separate temporary event socket for
+  each scenario, preserving Full switches, production constructor guards,
+  qualified policy hashes and the native engine. Real GPU lifecycle/bytes and
+  complete-model performance remain pending; this is not layer handoff.
