@@ -2529,3 +2529,26 @@
   has no new GPU/performance proof. Its69 recorded nonresident-node checks
   do not establish69 reclaimable ancestor opportunities. See
   docs/design/join_host_tail_ancestor_reclaim_20261028_zh.md.
+- DiagnosticFullR1 completes3674 exact requests/145565966 input/549671 output
+  tokens and18 normal tails with native stopping, two fresh idle snapshots
+  and actual owned exit. Complete named review verifies meanJCT1642.310207s/
+  output235.033300token/s versusV3451697.583645s/233.371801token/s:
+  3.25601%/0.71195% improvements, insufficient for the shared gate.
+  Against preadmission Full, JCT grows11.115563s: critical-chain first-service
+  waiting falls14.363240s while service-to-completion grows25.483385s.
+  The historical24.981494s tool-successor delta belongs to grouped913e3238,
+  not this diagnostic run. Keep both decompositions and all tails distinct.
+  Sample64 thread CPU means maintenance0.018531/postphysical0.017721/
+  admission0.293551/event0.195873ms; admission max26.846221ms. Last snapshot
+  final=false and idle polling contributes. Never expand these measured
+  samples to whole-run CPU, exposed GPU idle or historical incremental cost.
+  All89 JOIN physical attempts reconcile;69 of73 node checks stop nonresident,
+  not69 proven reclaim opportunities. Actual2 handoffs restore3.272245GB;
+  all1037 JOIN commands prove227.702637GB reuse,26 of63 observed JOIN events
+  early-reuse126.322606GB. All1045 sibling journals/1058 attempts verify;
+  258 of260 grant/service identities verify,2 remain unknown. Restore samples
+  36/18 total3055.029/2662.835ms are different cohorts. Complete plots are
+  opened/checked; GPU and CPU plotting processes have exited. Native engine
+  and profiling differ fromV345. Preserve reports/negative results, reuseV345,
+  queue no next GPU job by this audit, and keep the goal active. See
+  docs/research/control_plan_diagnostics_result_20261028_zh.md.
