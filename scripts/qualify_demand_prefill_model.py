@@ -290,6 +290,7 @@ async def probe(
                 and row.get("monotonic_ms", 0) >= ended
                 and row.get("agent_admission", {}).get("programs") == 0
                 and row.get("demand_prefill_pipeline_installed") is (not diagnostic_native_demand)
+                and row.get("demand_prefill_pipeline_progress_probe") is (not diagnostic_native_demand)
                 for row in evidence
             ))
     journals, workers = model_common.records(observations), model_common.records(audit)
@@ -333,11 +334,17 @@ def main():
         help="Repeat the original 3x24576/Device57344 fixture without the new pipeline; never qualifies it.",
     )
     parser.add_argument(
+        "--diagnostic-fixture", choices=("original", "current"), default="original",
+        help="Choose the original or current capacity only for the pipeline-off diagnostic.",
+    )
+    parser.add_argument(
         "--deterministic-numerics", action="store_true",
         help="Use the native deterministic FA3/math mode only for this numerical fixture.",
     )
     parser.add_argument("--reference-build", choices=("cold", "continuation"), default="cold")
     args = parser.parse_args()
+    if not args.diagnostic_native_demand and args.diagnostic_fixture != "original":
+        parser.error("--diagnostic-fixture requires --diagnostic-native-demand")
     directory = args.output_dir.resolve()
     if directory.exists():
         raise FileExistsError("preserve previous demand model qualification")
@@ -358,8 +365,9 @@ def main():
     if os.getpriority(os.PRIO_PROCESS, os.getpid()) != 0:
         raise ValueError("model GPU supervisor requires nice0")
     _, expected, _ = source_plan(Path(prior["source_arm"]))
-    sizes = (PREFIX_TOKENS,) * 3 if args.diagnostic_native_demand else PREFIX_SIZES
-    capacity = 57344 if args.diagnostic_native_demand else DEVICE_TOKENS
+    original_fixture = args.diagnostic_native_demand and args.diagnostic_fixture == "original"
+    sizes = (PREFIX_TOKENS,) * 3 if original_fixture else PREFIX_SIZES
+    capacity = 57344 if original_fixture else DEVICE_TOKENS
     selected, seen = [], set()
     for request, (identity, count) in sorted(
         ((rid, value["llm_submit"]) for rid, value in expected.items()),

@@ -1,0 +1,66 @@
+{
+  "observed_at": "2026-10-28T22:24:27.325615+00:00",
+  "clean_native": {
+    "commit": "d3da19c1ca85581342a14b322fdc94cdc290654d",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "fc39cb9c2ff0b219a47539149f830c5d2bcdd5f6a45932606ba444f86668f21f"
+  },
+  "prepared_native": {
+    "commit": "fa5cb52afaeaad1f59f6d3eb2c5cf124f72bb491",
+    "dirty": true,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [
+      "python/sglang/srt/managers/cache_controller.py",
+      "python/sglang/srt/managers/scheduler.py",
+      "python/sglang/srt/mem_cache/allocator/token.py",
+      "python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py",
+      "python/sglang/srt/mem_cache/l2_transfer.py",
+      "python/sglang/srt/mem_cache/pool_host/mha.py",
+      "python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py",
+      "python/sglang/srt/mem_cache/unified_radix_cache.py",
+      "test/srt/test_beliefkv_transfer_receipts.py"
+    ],
+    "untracked_paths": [
+      "python/sglang/srt/mem_cache/beliefkv_layer_handoff.py",
+      "test/srt/test_beliefkv_layer_groups.py",
+      "test/srt/test_beliefkv_layer_handoff.py"
+    ],
+    "tracked_change_tree_sha256": "e4d4701ca1fb52d5e604d469363bc26887f727733bb0e0e79823f5e692556eff",
+    "canonical_patch": {
+      "path": "/home/longhao/experiment/BeliefKV/patches/sglang-demand-prefill-pipeline-runtime-20261028.patch",
+      "sha256": "c9b3ae50490a5023e5d7fd1fb473c97b1c4c7f22923d06211bf1ea6173f86f0b",
+      "expected_tree": "729aa0caa7a1ffac84463f46b3d1843d1a6a22e4",
+      "actual_tree": "729aa0caa7a1ffac84463f46b3d1843d1a6a22e4",
+      "matches_worktree": true,
+      "covered_untracked_paths": [
+        "python/sglang/srt/mem_cache/beliefkv_layer_handoff.py",
+        "test/srt/test_beliefkv_layer_groups.py",
+        "test/srt/test_beliefkv_layer_handoff.py"
+      ]
+    },
+    "state_sha256": "2d9ad98826751139f1577d36240f10033fd0328fa002d070719acbdfd12d7c80"
+  },
+  "native_registration_evidence": {
+    "report": "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/native_registration_r1_cpu.xml",
+    "report_sha256": "8a1d059c9c7baee1900f0e50b3627a8a7982e95ae4fc3136cf999a6da911e6c9",
+    "sources": "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/native_registration_sources.json",
+    "sources_sha256": "18143210769c518c117efd902b841c154702aca3129cb9968961e8ce60b196f9",
+    "tree": "729aa0caa7a1ffac84463f46b3d1843d1a6a22e4",
+    "passing_cases": 92,
+    "gpu_validation_pending": true
+  },
+  "same_native_source_tree": true,
+  "scope": "Source packaging and native CPU evidence only; not new GPU/model/performance.",
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/deterministic_entry_r1_cpu.evidence.json": "d14be3720c3236b6e75dd83c92ea4cf6ac021f6bbbd82400b72c8cf1633cfdec",
+    "/home/longhao/experiment/BeliefKV/patches/sglang-demand-prefill-pipeline-runtime-20261028.patch": "c9b3ae50490a5023e5d7fd1fb473c97b1c4c7f22923d06211bf1ea6173f86f0b",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/native_registration_r1_cpu.xml": "8a1d059c9c7baee1900f0e50b3627a8a7982e95ae4fc3136cf999a6da911e6c9",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/native_registration_sources.json": "18143210769c518c117efd902b841c154702aca3129cb9968961e8ce60b196f9"
+  },
+  "operator_sha256": "4767535034dbc77ae7fe94b75dd4dcb71ac344c7b7a901f1dd1ad80ba1beb6b3",
+  "performance_accepted": false
+}

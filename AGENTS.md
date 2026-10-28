@@ -2744,3 +2744,16 @@
   Freeze/rerun current components before actual deterministic model. Do not
   silently use its math flags for formal performance or claim ordinary math
   qualified from it. Goal remains active with tool prefetch off.
+- Clean0c5bee90 deterministic model now actually qualifies full24583-token/
+ 2416607232-byte normal H2D and2 post-stage completed resident decode batches;
+  A512/B8 unforced outputs and independent cold references agree with0 maxdelta.
+  Actual FA3 deterministic/pytorch flags observed, controlled -9 cleanup/no
+  survivors. Same-source ordinary continuation-reference run remains failed:
+  A first token difference155; B8 agree/maxdelta .000630020746. Keep both.
+  Current-fixture native diagnostic option is explicit/diagnostic-only.
+  Formal JSON preserves old config except patch/pipeline/probe0. Runtime now
+  observes actual probe bit; formal rejects missing/true and model expects
+  actual true. formal_entry_r1_cpu passes4100+6, retains4096/adds4; focused63
+  passed before the added diagnostic-option guard. Freeze then run current
+  components/native current-fixture warm diagnostic/deterministic model,
+  preserving ordinary-math failures, before position/Full. Tool prefetch stays0.

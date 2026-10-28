@@ -1,6 +1,7 @@
 from copy import deepcopy
 from pathlib import Path
 import subprocess
+import sys
 
 import pytest
 
@@ -125,6 +126,18 @@ def test_reference_initial_calls_keep_eight_tokens_and_long_continuations_keep_5
     assert qualifier.generation_document("b_reference_initial")["generated_tokens"] == 8
     for label in ("a_resident", "a_reference"):
         assert qualifier.generation_document(label)["generated_tokens"] == 512
+
+
+def test_current_diagnostic_fixture_cannot_silently_change_normal_model_qualification(monkeypatch, tmp_path):
+    monkeypatch.setattr(sys, "argv", [
+        "qualify_demand_prefill_model.py", "--output-dir", str(tmp_path / "fresh"),
+        "--predecessor", "unused", "--components", "unused",
+        "--diagnostic-fixture", "current",
+    ])
+    with pytest.raises(SystemExit) as error:
+        qualifier.main()
+    assert error.value.code == 2
+    assert not (tmp_path / "fresh").exists()
 
 
 @pytest.mark.parametrize("deterministic", (False, True))

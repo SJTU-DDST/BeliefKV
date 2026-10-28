@@ -1,5 +1,6 @@
 import __future__
 import ast
+import json
 import os
 from pathlib import Path
 from types import SimpleNamespace as NS
@@ -15,6 +16,25 @@ from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from scripts import run_causal_comparison as comparison
 from tests.test_full_only_native_lifecycle import full_native
 from tests.test_tool_offload_before_admission import configuration
+
+
+def test_formal_pipeline_configuration_preserves_shared_work_and_ordinary_math():
+    root = Path(__file__).resolve().parents[1]
+    old = json.loads((root / "configs/migration/predictive_sibling_service_capacity_20261028.json").read_bytes())
+    new = json.loads((root / "configs/migration/predictive_demand_prefill_pipeline_20261028.json").read_bytes())
+    before, after = old["common_environment"], new["common_environment"]
+    differences = {key: after.get(key) for key in before.keys() | after.keys()
+                   if before.get(key) != after.get(key)}
+    assert differences == {
+        "SGLANG_PATCH_FLAVOR": "demand_prefill_pipeline",
+        "DEMAND_PREFILL_PIPELINE": "1",
+        "BELIEFKV_DEMAND_PREFILL_PIPELINE_PROGRESS_PROBE": "0",
+    }
+    for field in ("source_profile", "source_registration", "order", "tool_timing_overlay", "native_reference"):
+        assert new[field] == old[field]
+    assert not any("DETERMINISTIC" in name for name in after)
+    assert new["comparison_contract"]["formal_progress_probe"] is False
+    assert new["comparison_contract"]["tool_prefetch_disabled_by_user"] is True
 
 
 @pytest.mark.parametrize("mode", MODES)
@@ -97,6 +117,24 @@ def test_enable_bit_cannot_substitute_for_actual_native_pipeline_installation(
         comparison.observed_configuration(plan, "full", tmp_path, final=True)
 
 
+@pytest.mark.parametrize("probe", (True, None))
+def test_formal_observer_refuses_enabled_or_unobserved_per_decode_probe(monkeypatch, tmp_path, probe):
+    plan = {
+        "reference_environment": {**configuration(), "DEMAND_PREFILL_PIPELINE": "1"},
+        "source_plan": {"requests": 0},
+    }
+    snapshot = {
+        "predicted_tool_offload": True, "tool_offload_before_admission": True,
+        "demand_prefill_pipeline": True, "demand_prefill_pipeline_installed": True,
+    }
+    if probe is not None:
+        snapshot["demand_prefill_pipeline_progress_probe"] = probe
+    monkeypatch.setattr(comparison.comparison, "observe_arm", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(comparison.qualified, "last_runtime_state", lambda *_args: snapshot)
+    with pytest.raises(ValueError, match="per-decode progress probe disabled"):
+        comparison.observed_configuration(plan, "full", tmp_path, final=True)
+
+
 @pytest.mark.parametrize("mode", ("native_matched", "full", "thunderagent_acting_decay"))
 def test_actual_native_constructor_keeps_the_pipeline_isolated(full_native, monkeypatch, tmp_path, mode):
     checkout = Path(os.environ["SGLANG_SOURCE_CHECKOUT"])
@@ -156,6 +194,7 @@ def test_actual_native_constructor_keeps_the_pipeline_isolated(full_native, monk
             assert writer.record.call_args.args[0]["demand_prefill_pipeline_installed"] is (
                 mode == "full"
             )
+            assert writer.record.call_args.args[0]["demand_prefill_pipeline_progress_probe"] is False
     finally:
         if scheduler.beliefkv_runtime is not None:
             scheduler.beliefkv_runtime.close()

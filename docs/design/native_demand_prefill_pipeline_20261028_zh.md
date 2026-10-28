@@ -232,3 +232,16 @@ session radix、缓存开关、容量及 running24，不能只相信 CLI。
 保留此前 4086 个身份并新增十个；定向数值入口 34 项通过。准备给
 重放的 base-plus-patch native checkout 重建 tree `729aa0caa7a1`，
 另有 92 项 native 检查通过。它们尚不建立新的真实模型或性能资格。
+
+冻结 `0c5bee90` 的确定性模型已通过：24583 token/2416607232 bytes
+恢复、精确 ACK/后续服务、两个实际 resident decode batch 在 ACK 前
+完成，512/8 个模型输出与独立冷参考相同、logprob 差为零。普通后端的
+独立续接参考仍使 A 在第155个 token 分歧，B 则相同且最大差0.00063002；
+两者的原始结果分别保留，不把确定性通过当作普通后端的通过。
+
+正式配置与实际 progress-probe 状态门槛补齐后，
+`formal_entry_r1_cpu` 通过 4100 项及六个子测试，保留全部 4096 个
+身份并新增四个。其 source manifest 包含新的正式 JSON 配置。
+正式完成检查要求 probe 明确 false，模型资格则要求实际观测到其
+开启；配置不改变数学后端或完整 source 工作。当前场景的原生续接
+对照、当前冻结模型及 position 仍待执行。

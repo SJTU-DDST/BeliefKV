@@ -3027,6 +3027,9 @@ class NativeAdmissionRuntime:
                     (pipeline := getattr(self, "_demand_prefill_pipeline", None)) is not None
                     and pipeline.runtime is self and pipeline.cache is self._native_cache
                 ),
+                "demand_prefill_pipeline_progress_probe": (
+                    pipeline is not None and pipeline.progress_probe
+                ),
                 "h2d_seed_samples": self._h2d_seed_count,
                 "h2d_service_samples": len(self._h2d_samples),
                 "prefetch_residency_budget": vars(self._residency_budget).copy(),

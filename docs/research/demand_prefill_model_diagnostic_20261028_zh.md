@@ -97,3 +97,32 @@ A 分歧后的 sampled-token logprob 对应不同 token，不能将其最大差
 归档与本地原始目录逐文件比较通过。实际 GPU 任务已结束，本轮没有
 启动新的完整 FULL、其他 baseline 或消融。工具预取保持关闭，整个
 相对所有 baseline 的明确、可重复 JCT/吞吐目标仍未完成。
+
+## 确定性与独立续接参考的后续实测
+
+冻结应用 `0c5bee90` 的 `demand_prefill_model_deterministic_20261028_r1`
+通过了严格检查：七个请求均完成，A 的 512 token 和 B 的八个 token
+与各自独立冷参考相同，最大 logprob 差均为零。实际 server 确认为
+确定性 FA3、pytorch sampling、session radix 开启，缓存未禁用。
+B 恢复 24583 token/2416607232 bytes，精确 ACK 与后续 prefill 对账
+通过，正常 DMA 未完成时有两个在暂存后启动的真实 decode batch 完成。
+状态为 `unforced_demand_prefill_deterministic_model_qualified`，不是
+普通数学配置的数值或性能资格。server 受控清理 -9，owned 清理完成。
+
+同一应用的 `demand_prefill_model_continuation_20261028_r1` 保留普通
+FA3/flashinfer，独立参考先生成相同的八个历史 token 再续接，总计九个
+请求。初始历史 token 相同；B 八个恢复输出也相同，最大 logprob 差
+降至 0.000630020746。A 则在第 155 个输出发生分歧，严格模型检查
+仍拒绝该运行。它不被重标为普通模型通过。
+
+这两个结果支持继续区分参考构建与普通后端 batch 数值变化，不能把
+确定性检查的成功当作普通后端所有误差的因果解释。补充的
+`--diagnostic-fixture current` 仅供 pipeline-off 对照选择同样的
+24576/24576/32768、Device61440 场景；默认仍是原场景，正式模型入口
+拒绝在未指定 diagnostic 模式时改变这个选项。
+
+正式候选配置 `predictive_demand_prefill_pipeline_20261028.json` 保持原
+工作、工具时间、容量、调度及数学后端，仅切换准确 native 补丁、
+启用 demand pipeline，并显式关闭逐 decode 的 progress probe。
+runtime 状态新增这个 probe 的实际值，正式完成审计要求明确为 false，
+缺失或为 true 都拒绝。尚未完成当前对照和 position，不据此启动 FULL。

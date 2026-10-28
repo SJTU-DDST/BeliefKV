@@ -82,6 +82,7 @@ def main():
         "scripts/audit_demand_prefill_pipeline.py", "scripts/qualify_demand_prefill_pipeline.py",
         "scripts/qualify_demand_prefill_model.py", "scripts/qualify_layer_handoff_model.py",
         "scripts/launch_qwen35_native_v0520.sh",
+        "configs/migration/predictive_demand_prefill_pipeline_20261028.json",
     }
     before = {name: sha256_file(ROOT / name) for name in sorted(paths)}
     engine = args.engine.resolve()
