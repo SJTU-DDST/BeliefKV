@@ -1,0 +1,119 @@
+{
+  "fixtures": {
+    "disabled": {
+      "samples": 500,
+      "warmup": 50,
+      "cold_probe_rounds_including_warmup": 0,
+      "whole_idle_callback_thread_cpu_us": {
+        "median": 21.613,
+        "p99": 26.294020000000003,
+        "max": 36.312
+      },
+      "journal_enqueued": {},
+      "journal_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "journal_status_sha256": "cf25d8981482548b9ab2133d4a0427b4c85c1c9ffacde5d5cadc901e7b0c366f"
+    },
+    "existing_host_free": {
+      "samples": 500,
+      "warmup": 50,
+      "cold_probe_rounds_including_warmup": 0,
+      "whole_idle_callback_thread_cpu_us": {
+        "median": 230.504,
+        "p99": 337.11283000000003,
+        "max": 346.183
+      },
+      "journal_enqueued": {
+        "idle_cold_full_prepare": 550
+      },
+      "journal_sha256": "5ff27fd385e2c478c827e2fcbcbcbc3c1e8392bebbfe468afd1a40dc44e6c863",
+      "journal_status_sha256": "3f7e092b80ea06a5dae0faf283b37a3cbdaabacce708d0fae7c3dedbe1060acf"
+    },
+    "backoff": {
+      "samples": 500,
+      "warmup": 50,
+      "cold_probe_rounds_including_warmup": 0,
+      "whole_idle_callback_thread_cpu_us": {
+        "median": 22.9645,
+        "p99": 29.1267,
+        "max": 49.614
+      },
+      "journal_enqueued": {},
+      "journal_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "journal_status_sha256": "314b3257a104e9b2afd5986e438aaa492f28b111789b13bb2b5ad342d98edd3a"
+    },
+    "no_cold": {
+      "samples": 500,
+      "warmup": 50,
+      "cold_probe_rounds_including_warmup": 550,
+      "whole_idle_callback_thread_cpu_us": {
+        "median": 70.037,
+        "p99": 174.36057999999997,
+        "max": 1557.917
+      },
+      "journal_enqueued": {},
+      "journal_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "journal_status_sha256": "03316fc1c825605f8899c7b48ea32616fcb2f735c92865276c673c22c9083af6"
+    },
+    "bounded_no_cold": {
+      "samples": 500,
+      "warmup": 50,
+      "cold_probe_rounds_including_warmup": 550,
+      "whole_idle_callback_thread_cpu_us": {
+        "median": 84.653,
+        "p99": 165.19413,
+        "max": 171.804
+      },
+      "journal_enqueued": {},
+      "journal_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "journal_status_sha256": "6725c372d5eb06279f0d341b139dc3f2504c138218ae1b68d9bd42a4b5cf4969"
+    },
+    "locked_mirror": {
+      "samples": 500,
+      "warmup": 50,
+      "cold_probe_rounds_including_warmup": 550,
+      "whole_idle_callback_thread_cpu_us": {
+        "median": 94.1825,
+        "p99": 206.39696999999995,
+        "max": 1529.731
+      },
+      "journal_enqueued": {},
+      "journal_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "journal_status_sha256": "aec5b3ea59d780b03886c15ca89ec265f186f9ebedb7732306a32ac36c972001"
+    },
+    "successful_prepare": {
+      "samples": 500,
+      "warmup": 50,
+      "cold_probe_rounds_including_warmup": 550,
+      "whole_idle_callback_thread_cpu_us": {
+        "median": 365.1165,
+        "p99": 1907.7727300000001,
+        "max": 1970.552
+      },
+      "journal_enqueued": {
+        "idle_cold_full_prepare": 550,
+        "idle_host_mirror_recycled": 550
+      },
+      "journal_sha256": "556b82ea3788cb593432dbdcd4458c70b663f59cf954064cb01de3e71871716a",
+      "journal_status_sha256": "74bd2716d47a3eb9e4bb637f246a18209591471a9292f12abd06e767b7f24ad7"
+    }
+  },
+  "sources_sha256": {
+    "beliefkv/runtime/idle_host_mirror_recycle.py": "b63a8335edbf0b3bdee2f55cd0dc00e31e961fa11c3c8402c5b574456371055d",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "cc210569b452d8a7a356d4e2912ad3a74699df32973368894965e9b1a050dfec",
+    "beliefkv/runtime/v0520_opportunity_telemetry.py": "2c455f2bb00a999be762745309ece02158016ccef0cc861ff3b2ede493a1d8a0",
+    "tests/test_idle_host_mirror_recycle.py": "8fb1fe10a743df39dfa39221b30a6c96bf5316828416ba18024aeb356efb474b",
+    "tests/test_full_only_native_lifecycle.py": "4de52d01708fef41df881652c61b8e0623c9dec12228fb9e5f3988a201713624"
+  },
+  "qualified_manifest_sha256": "170f487967e6e5fb2741e4aa07b2f317fb11326d1bbf2ed287e22b8fe2287979",
+  "operator_sha256": "dbc0088bf0e69b8b2fe4272b09d01e0c18780e5518171dfa56dd221dbb90fda9",
+  "scope": "Whole dispatch_idle_prepare callback thread CPU with real native CPU tree/Device allocator.",
+  "limitations": [
+    "Fixture construction, mutation and destruction occur outside timing.",
+    "Host slots, copies and GPU events are CPU stand-ins; the idle batch is scaled to four tokens.",
+    "The successful fixture has one cold target and one mirror; it is not the maximum mirror window.",
+    "The bounded rejection fixture checks 32 stale dirty nodes, not a worst-case shared ownership subtree.",
+    "A real async journal is enabled; its background thread CPU is excluded.",
+    "No GPU interference, numerical model check, complete JCT or throughput gain is measured."
+  ],
+  "performance_accepted": false
+}

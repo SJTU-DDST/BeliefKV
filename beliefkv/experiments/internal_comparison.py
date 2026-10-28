@@ -28,6 +28,12 @@ def arm_environment(
     if early_tool_offload not in ("0", "1"):
         raise ValueError("tool offload before admission must be 0 or 1")
     early_tool_offload = early_tool_offload if mode == "full" else "0"
+    host_mirror_recycle = common.get(
+        "BELIEFKV_IDLE_HOST_MIRROR_RECYCLE", common.get("IDLE_HOST_MIRROR_RECYCLE", "0"),
+    )
+    if host_mirror_recycle not in ("0", "1"):
+        raise ValueError("idle Host mirror recycling must be 0 or 1")
+    host_mirror_recycle = host_mirror_recycle if mode == "full" else "0"
     if tool_prefetch is not None and type(tool_prefetch) is not bool:
         raise ValueError("tool prefetch override must be a boolean")
     if tool_prefetch is True and not custom_kv:
@@ -243,6 +249,8 @@ def arm_environment(
         "BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD": tool_offload,
         "TOOL_OFFLOAD_BEFORE_ADMISSION": early_tool_offload,
         "BELIEFKV_TOOL_OFFLOAD_BEFORE_ADMISSION": early_tool_offload,
+        "IDLE_HOST_MIRROR_RECYCLE": host_mirror_recycle,
+        "BELIEFKV_IDLE_HOST_MIRROR_RECYCLE": host_mirror_recycle,
         "BELIEFKV_TOOL_OFFLOAD_POLICY": common.get("BELIEFKV_TOOL_OFFLOAD_POLICY", "fixed") if custom_kv else "fixed",
         "BELIEFKV_TOOL_TIMING_PRIOR": common.get("BELIEFKV_TOOL_TIMING_PRIOR", "") if custom_kv else "",
         "BELIEFKV_TOOL_TIMING_PRIOR_SHA256": common.get("BELIEFKV_TOOL_TIMING_PRIOR_SHA256", "") if custom_kv else "",

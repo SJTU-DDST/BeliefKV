@@ -47,6 +47,9 @@ def main():
     early_tool_offload = configuration["common_environment"].get(
         "TOOL_OFFLOAD_BEFORE_ADMISSION", "0",
     ) == "1"
+    host_mirror_recycle = configuration["common_environment"].get(
+        "IDLE_HOST_MIRROR_RECYCLE", "0",
+    ) == "1"
     paths = set(json.loads(Path(prior["source_manifest"]["path"]).read_bytes()))
     paths.update((
         str(args.configuration.resolve().relative_to(ROOT)), str(Path(__file__).resolve().relative_to(ROOT)),
@@ -64,6 +67,9 @@ def main():
     if early_tool_offload:
         extra_tests += ("tests/test_tool_offload_before_admission.py",)
         paths.add("beliefkv/runtime/predicted_tool_offload.py")
+    if host_mirror_recycle:
+        extra_tests += ("tests/test_idle_host_mirror_recycle.py",)
+        paths.add("beliefkv/runtime/idle_host_mirror_recycle.py")
     if continuation_free:
         extra_tests += (
             "tests/test_reference_free_continuation.py",
@@ -133,6 +139,10 @@ def main():
             int(early_tool_offload and label == "full")
         ):
             raise ValueError("tool offload before admission leaked into a paper control")
+        if settings["BELIEFKV_IDLE_HOST_MIRROR_RECYCLE"] != str(
+            int(host_mirror_recycle and label == "full")
+        ):
+            raise ValueError("idle Host mirror recycling leaked into a paper control")
         constructors[label] = preflight_runtime(
             {**settings, "SGLANG_SOURCE_CHECKOUT": environment["SGLANG_SOURCE_CHECKOUT"]},
             configuration["common_environment"]["MODEL_PATH"],
@@ -168,6 +178,7 @@ def main():
         "coadmit_join_children": siblings,
         "free_continuation_admission": continuation_free,
         "tool_offload_before_admission": early_tool_offload,
+        "idle_host_mirror_recycle": host_mirror_recycle,
         "constructors": constructors,
         "preserved_development_reports": [
             str(REPORTS / name) for name in (

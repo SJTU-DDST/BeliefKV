@@ -2005,3 +2005,27 @@
   keep other baselines deferred and the goal active; no next GPU job queued.
   Progressive layer handoff remains unimplemented and unevaluated. See
   docs/research/tool_offload_before_admission_complete_20261027_zh.md.
+- The default-off Full-only IDLE_HOST_MIRROR_RECYCLE candidate reuses native
+  Host-only duplicate release to back a current unbacked cold FULL owner under
+  actual HBM pressure and idle transfer queues. Check at most32 dirty and32
+  mirror candidates per existing maintenance callback with1s backoff. Mirrors
+  require a current Device lock, complete Device/Host values, native Host/DMA
+  guards and no prefetch-service protection. No Host-only checkpoint, Device
+  page, logical eligibility or ready-agent execution is evicted. Require the
+  complete actual Host budget before cold backup; a dropped mirror without a
+  copy stays explicit. Rotate only the inspected dirty window. This is an
+  engineering integration, not a new working-set algorithm or layer handoff.
+  Config: configs/migration/predictive_idle_host_mirror_recycle_20261027.json.
+  Shared CPU passes3381 cases plus4subtests in one execution, no failures/skips,
+  retaining3331 identities and adding50; three actual constructors verify Full
+  enabled and both ThunderAgent controls disabled, with inherited core methods.
+  Preserve initial2-pass/one-red and first3-pass reports. A true native CPU
+  8-mirror/4-cold-slot case preserves both agents' Device indices and free count.
+  The whole idle callback CPU benchmark includes a real async journal and500
+  measured samples per path: disabled21.613us median, backoff22.965us,
+  32-stale rejection84.653us, success365.117us/P991907.773us. Setup/destruction,
+  writer-thread CPU, GPU, maximum mirror window and worst ownership subtree
+  are excluded. Evidence is under idle_host_mirror_recycle_20261027/. Native
+  engine11b84f7c3198 is unchanged. Complete actual GPU bytes/lifecycle before
+  freezing a Full-only comparison; reuseV345 and retain all prior negative
+  results. No new GPU experiment is registered and the global goal is active.

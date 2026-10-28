@@ -117,6 +117,7 @@ from beliefkv.runtime.tool_residency_grace import ToolResidencyGrace
 from beliefkv.runtime.subagent_retention import DormantSubagentRetention
 from beliefkv.runtime.predicted_tool_offload import PredictedToolOffload
 from beliefkv.runtime.idle_prepare_backend import idle_prepare_backend
+from beliefkv.runtime.idle_host_mirror_recycle import IdleHostMirrorRecycle
 
 if TYPE_CHECKING:
     from beliefkv.core.events import RuntimeEvent
@@ -665,6 +666,18 @@ class NativeAdmissionRuntime:
         self.idle_prepare_policy = os.environ.get("BELIEFKV_IDLE_PREPARE_POLICY", "cold")
         if self.idle_prepare_policy not in ("cold", "all"):
             raise ValueError("idle prepare policy must be cold or all")
+        mirror_recycle = os.environ.get("BELIEFKV_IDLE_HOST_MIRROR_RECYCLE", "0")
+        if mirror_recycle not in ("0", "1"):
+            raise ValueError("idle Host mirror recycling must be 0 or 1")
+        self.idle_host_mirror_recycle = mirror_recycle == "1"
+        if self.idle_host_mirror_recycle and (
+            self.internal_comparison_mode != "full"
+            or not self.enable_background_prepare or self.idle_prepare_policy != "cold"
+        ):
+            raise ValueError("idle Host mirror recycling requires Full cold background prepare")
+        self._idle_host_mirror_recycler = (
+            IdleHostMirrorRecycle(self) if self.idle_host_mirror_recycle else None
+        )
         self._idle_backup_queue_scope = False
         self._idle_prepare_direct_nodes = set()
         self.idle_prepare_io_backend = os.environ.get(
@@ -2808,6 +2821,7 @@ class NativeAdmissionRuntime:
                 ),
                 "prepare_host": self.enable_prepare_host,
                 "background_prepare": self.enable_background_prepare,
+                "idle_host_mirror_recycle": self.idle_host_mirror_recycle,
                 "terminal_child_reclaim": self.enable_terminal_child_reclaim,
                 "subagent_retention": (
                     self._subagent_retention.describe()
@@ -8288,7 +8302,12 @@ class NativeAdmissionRuntime:
             with idle_prepare_backend(
                 cache, self.idle_prepare_io_backend, self.counts,
             ) as direct:
-                issued = prepare()
+                issued = (
+                    self._idle_host_mirror_recycler.prepare()
+                    if self._idle_host_mirror_recycler is not None else None
+                )
+                if issued is None:
+                    issued = prepare()
         finally:
             self._idle_backup_queue_scope, self._idle_backup_queued_requests = (
                 previous_scope, previous_requests,
