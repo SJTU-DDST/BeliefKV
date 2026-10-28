@@ -93,6 +93,18 @@ def test_both_resident_and_restored_models_require_independent_reference_outputs
     assert qualifier.compare_outputs(outputs())["actual_greedy_tokens_equal"]
 
 
+def test_native_diagnostic_reports_output_differences_without_qualifying_the_model():
+    rows = outputs()
+    rows["a_resident"]["output_token_ids"][1] += 1
+    rows["b_demand"]["output_logprobs"][0] -= .1
+    diagnostics = qualifier.output_diagnostics(rows)
+    assert diagnostics["a_resident"]["first_differing_output_ordinal"] == 2
+    assert not diagnostics["a_resident"]["output_token_ids_equal"]
+    assert diagnostics["b_demand"]["maximum_logprob_delta"] > .05
+    with pytest.raises(ValueError, match="greedy"):
+        qualifier.compare_outputs(rows)
+
+
 @pytest.mark.parametrize("fault", ("missing", "resident_token", "restored_token", "logprob", "nan"))
 def test_correct_usage_cannot_hide_wrong_model_tokens_or_logprobs(fault):
     rows = outputs()

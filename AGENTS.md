@@ -2709,3 +2709,10 @@
  24576/24576/32768-token Device61440 fixture retains the original cold gate
   and passes4085+6 CPU again(model_fixture_r1), but numerical cause requires
   a pipeline-off same-original-fixture diagnostic before the next qualifier.
+- New --diagnostic-native-demand restores the exact original3x24576/
+  Device57344 fixture and disables only the new pipeline. It requires helper
+  absent/no staged journal, reports output differences and never qualifies
+  the model or performance. The original strict numerical checks remain.
+  native_diagnostic_r1_cpu passes4086+6, retains4085 and adds1, with exact
+  sources/constructors bound. Freeze and run its same-source components
+  before the bounded diagnostic; no complete Full is authorized by CPU alone.

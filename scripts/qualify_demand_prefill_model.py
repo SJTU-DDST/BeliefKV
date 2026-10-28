@@ -42,21 +42,40 @@ DOCUMENT = {"generated_tokens": 8, "sampling_seed": 21}
 LABELS = ("b_initial", "c", "a_initial", "a_resident", "b_demand", "a_reference", "b_reference")
 
 
-def compare_outputs(rows):
+def output_diagnostics(rows):
     if set(rows) != set(LABELS):
         raise ValueError("demand model qualifier requires every unforced call")
-    deltas = {}
+    pairs = {}
     for name, reference in (("a_resident", "a_reference"), ("b_demand", "b_reference")):
         actual, expected = rows[name], rows[reference]
-        if actual["output_token_ids"] != expected["output_token_ids"]:
-            raise ValueError("demand pipeline changed greedy output: " + name)
+        first = next((
+            index for index, (left, right) in enumerate(zip(
+                actual["output_token_ids"], expected["output_token_ids"], strict=True,
+            )) if left != right
+        ), None)
         delta = max(abs(a - b) for a, b in zip(
             actual["output_logprobs"], expected["output_logprobs"], strict=True,
         ))
+        pairs[name] = {
+            "output_token_ids_equal": first is None,
+            "first_differing_output_ordinal": None if first is None else first + 1,
+            "maximum_logprob_delta": delta,
+        }
+    return pairs
+
+
+def compare_outputs(rows):
+    pairs = output_diagnostics(rows)
+    for name, pair in pairs.items():
+        if not pair["output_token_ids_equal"]:
+            raise ValueError("demand pipeline changed greedy output: " + name)
+        delta = pair["maximum_logprob_delta"]
         if not math.isfinite(delta) or delta > .05:
             raise ValueError("demand pipeline logprob delta exceeds 0.05: " + name)
-        deltas[name] = delta
-    return {"actual_greedy_tokens_equal": True, "maximum_logprob_delta": deltas}
+    return {
+        "actual_greedy_tokens_equal": True,
+        "maximum_logprob_delta": {name: pair["maximum_logprob_delta"] for name, pair in pairs.items()},
+    }
 
 
 def verify_progress(journals, workers):
@@ -120,7 +139,7 @@ def verify_progress(journals, workers):
     }
 
 
-async def probe(directory, port, prompts, pulse):
+async def probe(directory, port, prompts, pulse, *, diagnostic_native_demand=False):
     socket = Path(f"/tmp/bkv-demand-model-{port}.sock")
     observations = directory / "arm/opportunities/admission_opportunities.jsonl"
     audit = directory / "arm/server/runtime_audit.jsonl"
@@ -227,10 +246,18 @@ async def probe(directory, port, prompts, pulse):
                 row.get("event") == "admission_runtime_state"
                 and row.get("monotonic_ms", 0) >= ended
                 and row.get("agent_admission", {}).get("programs") == 0
-                and row.get("demand_prefill_pipeline_installed") is True
+                and row.get("demand_prefill_pipeline_installed") is (not diagnostic_native_demand)
                 for row in evidence
             ))
     journals, workers = model_common.records(observations), model_common.records(audit)
+    if diagnostic_native_demand:
+        if any(row.get("event") == "native_demand_restore_staged" for row in journals):
+            raise ValueError("pipeline-off diagnostic executed staged demand")
+        return {
+            "requests": rows, "output_diagnostics": output_diagnostics(rows),
+            "diagnostic_control_only": True, "model_qualified": False,
+            "pipeline_installed": False, "model_outputs_forced": False,
+        }
     progress = verify_progress(journals, workers)
     transfers = model_common.records(directory / "arm/server/transfer_telemetry.jsonl")
     unit, remainder = divmod(
@@ -256,6 +283,10 @@ def main():
     parser.add_argument("--predecessor", type=Path, required=True)
     parser.add_argument("--components", type=Path, required=True)
     parser.add_argument("--port", type=int, default=18687)
+    parser.add_argument(
+        "--diagnostic-native-demand", action="store_true",
+        help="Repeat the original 3x24576/Device57344 fixture without the new pipeline; never qualifies it.",
+    )
     args = parser.parse_args()
     directory = args.output_dir.resolve()
     if directory.exists():
@@ -277,12 +308,14 @@ def main():
     if os.getpriority(os.PRIO_PROCESS, os.getpid()) != 0:
         raise ValueError("model GPU supervisor requires nice0")
     _, expected, _ = source_plan(Path(prior["source_arm"]))
+    sizes = (PREFIX_TOKENS,) * 3 if args.diagnostic_native_demand else PREFIX_SIZES
+    capacity = 57344 if args.diagnostic_native_demand else DEVICE_TOKENS
     selected, seen = [], set()
     for request, (identity, count) in sorted(
         ((rid, value["llm_submit"]) for rid, value in expected.items()),
         key=lambda pair: (pair[1][1], pair[0]),
     ):
-        if count >= max(PREFIX_SIZES) and identity[0] not in seen:
+        if count >= max(sizes) and identity[0] not in seen:
             selected.append(request)
             seen.add(identity[0])
         if len(selected) == 3:
@@ -292,7 +325,7 @@ def main():
     with CapturedTokenCorpus(Path(prior["source_arm"]) / "server/request_tokens.jsonl", expected) as corpus:
         prompts = [
             list(corpus.get(request).prompt_tokens[:size])
-            for request, size in zip(selected, PREFIX_SIZES, strict=True)
+            for request, size in zip(selected, sizes, strict=True)
         ]
     directory.mkdir(parents=True)
     arm = directory / "arm"
@@ -300,7 +333,10 @@ def main():
     (arm / "opportunities").mkdir()
     spec = controls.load(args.configuration)
     env, flags, socket = controls.environment(
-        {"arms": {"full": {**spec["common_environment"], "DEMAND_PREFILL_PIPELINE": "1"}}},
+        {"arms": {"full": {
+            **spec["common_environment"],
+            "DEMAND_PREFILL_PIPELINE": "0" if args.diagnostic_native_demand else "1",
+        }}},
         "full", ROOT, engine, arm, args.port, arm / "unused_plugin",
         sampling_mode="position", max_running_requests=24,
     )
@@ -316,7 +352,7 @@ def main():
         BELIEFKV_TOOL_TIMING_PRIOR="", BELIEFKV_TOOL_TIMING_PRIOR_SHA256="",
     )
     flags.remove("--enable-custom-logit-processor")
-    flags += ["--max-total-tokens", str(DEVICE_TOKENS)]
+    flags += ["--max-total-tokens", str(capacity)]
     flags[flags.index("--beliefkv-event-socket-path") + 1] = str(model_socket)
     inherited = prefix_qualification_environment({"reference_environment": env}, os.environ)
     env = {**inherited, **env}
@@ -325,10 +361,11 @@ def main():
         "native_engine": state, "native_tree": tree, "component_sha256": sha256_file(args.components),
         "source_requests": selected, "configuration_sha256": sha256_file(args.configuration),
         "operator_sha256": sha256_file(Path(__file__)), "fixture": {
-            "device_tokens": DEVICE_TOKENS, "host_gb": 8, "prefix_tokens": list(PREFIX_SIZES),
+            "device_tokens": capacity, "host_gb": 8, "prefix_tokens": list(sizes),
             "resident_output": RESIDENT_OUTPUT, "other_output": 8, "artificial_copy_delay": False,
             "progress_probe": True, "model_outputs_forced": False, "max_logprob_delta": .05,
         },
+        "diagnostic_control_only": args.diagnostic_native_demand,
     }
     controls.reservation.write_json(directory / "environment.json", env)
     server, owned, started = None, [], time.monotonic()
@@ -357,9 +394,15 @@ def main():
                 except httpx.HTTPError:
                     pass
                 time.sleep(.5)
-            report["model"] = asyncio.run(probe(directory, args.port, prompts, pulse))
+            report["model"] = asyncio.run(probe(
+                directory, args.port, prompts, pulse,
+                diagnostic_native_demand=args.diagnostic_native_demand,
+            ))
             report.update(
-                status="unforced_demand_prefill_model_qualified",
+                status=(
+                    "native_demand_model_diagnostic_collected" if args.diagnostic_native_demand
+                    else "unforced_demand_prefill_model_qualified"
+                ),
                 observed_at=datetime.now(timezone.utc).isoformat(), whole_workload_qualified=False,
             )
     except BaseException as error:

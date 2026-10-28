@@ -211,3 +211,10 @@ native commit 和对应累计补丁的 reverse-check。模型入口先检查实�
 定位时间，不能证明是 batch 数值差异或 KV 损坏。r1 仍为 failed，
 不得跳过数值门槛进入 FULL；下一步需要关闭新 pipeline 的同场景诊断，
 同时核对独立参考的前缀构建与 batch 形态。
+
+`--diagnostic-native-demand` 是单独的有界数值诊断入口：恢复第一次
+三个 24576-token、Device57344 的固定场景，仅关闭新 pipeline，
+执行相同七个请求并保留数值差异。它必须确认 helper 未安装且没有
+staged journal，状态只能为 `native_demand_model_diagnostic_collected`，
+明确 `model_qualified=false`，不沿用正式模型资格标签。原有正式
+`compare_outputs` 的 token 相同和 0.05 门槛保持不变。
