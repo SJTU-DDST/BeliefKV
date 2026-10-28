@@ -219,6 +219,9 @@ if [[ -n "${SGLANG_SOURCE_CHECKOUT}" ]]; then
     sibling_capacity)
       sglang_patch="${BELIEFKV_ROOT}/patches/sglang-sibling-capacity-runtime-20261028.patch"
       ;;
+    demand_prefill_pipeline)
+      sglang_patch="${BELIEFKV_ROOT}/patches/sglang-demand-prefill-pipeline-runtime-20261028.patch"
+      ;;
     *)
       printf 'Unknown SGLang patch flavor: %s\n' "${SGLANG_PATCH_FLAVOR}" >&2
       exit 2

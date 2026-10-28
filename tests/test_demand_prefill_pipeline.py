@@ -253,3 +253,44 @@ def test_disabled_and_paper_paths_are_isolated():
     f.runtime._paper_baseline = object()
     with pytest.raises(ValueError, match="Full agent"):
         create_pipeline(f.runtime, f.cache)
+
+
+def test_progress_probe_is_disabled_without_querying_or_logging_per_decode(monkeypatch):
+    monkeypatch.delenv("BELIEFKV_DEMAND_PREFILL_PIPELINE_PROGRESS_PROBE", raising=False)
+    f = fixture()
+    assert stage(f)
+    before = f.finish.queries
+    f.pipeline.observe_completed(object())
+    assert f.finish.queries == before
+
+
+def test_progress_probe_requires_actual_decode_completion_while_immutable_ack_is_pending(monkeypatch):
+    monkeypatch.setenv("BELIEFKV_DEMAND_PREFILL_PIPELINE_PROGRESS_PROBE", "1")
+    f = fixture()
+    rows = []
+    f.runtime._opportunity_writer = NS(record=rows.append)
+    assert stage(f)
+    other = replace(f.key, request_id="resident", invocation_id="resident", context_id="resident")
+    f.runtime.visible[other.request_id] = other
+    req = NS(**{
+        **vars(f.request), "rid": "resident", "output_ids": [17, 18],
+        "beliefkv_metadata": {
+            **f.request.beliefkv_metadata, "invocation_id": "resident", "context_id": "resident",
+        },
+    })
+    batch = NS(
+        reqs=[req], forward_iter=12, launch_ts=1.,
+        forward_mode=NS(is_decode=lambda: False),
+    )
+    f.pipeline.observe_completed(batch)
+    assert len(rows) == 1
+    batch.forward_mode.is_decode = lambda: True
+    f.pipeline.observe_completed(batch)
+    assert rows[-1]["event"] == "native_demand_restore_decode_completed_pending"
+    assert rows[-1]["completed_decode_requests"][0]["output_tokens"] == 2
+    assert rows[-1]["completed_decode_requests"][0]["request_id"] == "resident"
+    assert rows[-1]["forward_iter"] == 12
+    count = len(rows)
+    f.finish.ready = True
+    f.pipeline.observe_completed(batch)
+    assert len(rows) == count

@@ -1,6 +1,7 @@
 """Let resident decode progress during one native prefill batch's Host restore."""
 
 from dataclasses import dataclass
+import os
 import time
 
 from beliefkv.runtime.sglang_v0520_admission import _request_key
@@ -34,6 +35,9 @@ class DemandPrefillPipeline:
     def __init__(self, runtime, cache):
         self.runtime, self.cache = runtime, cache
         self.pending: _Pending | None = None
+        self.progress_probe = os.environ.get(
+            "BELIEFKV_DEMAND_PREFILL_PIPELINE_PROGRESS_PROBE", "0",
+        ) == "1"
 
     @staticmethod
     def has_decode_work(running_batch):
@@ -235,6 +239,35 @@ class DemandPrefillPipeline:
             batch_consumer_index=batch.hicache_consumer_index,
             waiting_checks=pending.waiting_checks,
         )
+
+    def observe_completed(self, batch):
+        pending = self.pending
+        if not self.progress_probe or pending is None or not batch.forward_mode.is_decode():
+            return
+        observed = time.monotonic() * 1000.
+        if pending.finish_event.query():
+            return
+        selected = {member.key.request_id for member in pending.members}
+        completed = []
+        for request in batch.reqs:
+            key = _request_key(request, known_keys=self.runtime.visible)
+            if key is not None and key.request_id not in selected:
+                completed.append({
+                    "request_id": key.request_id, "workflow_id": key.root_workflow_id,
+                    "invocation_id": key.invocation_id, "context_id": key.context_id,
+                    "context_epoch": key.context_epoch, "attempt_id": key.attempt_id,
+                    "session_id": key.session_id, "session_generation": key.session_generation,
+                    "output_tokens": len(request.output_ids),
+                })
+        if completed:
+            self._record(
+                "native_demand_restore_decode_completed_pending", pending,
+                forward_iter=batch.forward_iter, batch_launch_monotonic_ms=batch.launch_ts * 1000.,
+                completion_observed_monotonic_ms=observed,
+                ack_pending_at_completed_batch_observation=True,
+                completed_decode_requests=completed,
+                scope="processed_native_decode_result_before_immutable_h2d_ack;not_kernel_timing",
+            )
 
     def on_abort(self, recv_req, *, exact=False):
         pending = self.pending

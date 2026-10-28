@@ -162,3 +162,32 @@ untagged ACK。每场景最终恢复全部 128 Device/257 Host slots，
 无 decode 回退及取消共享前缀 fence 通过。实际进程结束后 GPU 无
 compute process。r1/r2 的导入及包装参数失败继续保留。
 该有限延迟两层组件不代表真实模型 forward 或整轮性能已通过。
+
+## 真实模型并发资格入口
+
+`scripts/qualify_demand_prefill_model.py` 使用三个不同 source workflow
+的 24576-token 前缀，Device57344/Host8GB、running/decode24。
+先经正常容量压力使 B 的旧前缀转为 Host，再让 A 以驻留前缀生成
+512 个 greedy token，实际 decode 已开始后提交 B 的需求续接。整个
+模型场景不插入人工 copy 延迟、不使用重放 sampler 或预定输出 token。
+固定生成长度属于数值 fixture，不改变正式 workload 的停止方式。
+
+验收要求 B 恰好一次暂存至少 24575 token 的原生 Host 恢复，并匹配
+精确 ACK、原生 prefill 服务身份；A 和 B 分别与独立 namespace 下的
+相同输入 greedy 输出比较，token 完全一致，logprob 最大绝对差不超过
+0.05。只有 usage、选批记录或 `waiting_checks` 不能证明并发。
+
+默认关闭的 `BELIEFKV_DEMAND_PREFILL_PIPELINE_PROGRESS_PROBE` 仅用于
+这个资格。在实际 batch 结果已处理后，非阻塞查询 pending 恢复自己的
+不可复用 ACK，记录 forward_iter、完整请求身份及已产生的 output 数。
+资格还核对同一原生 decode worker 的正 token 增量、相同时钟域，并
+要求其 batch launch 晚于暂存开始。这证明正常模型结果在 ACK 尚未完成
+时得到处理，不提供纯 kernel 起止时间或可扣除的 JCT。
+默认关闭时不查询 CUDA 事件，也不生成这些逐 decode 日志。
+
+启动脚本新增 `demand_prefill_pipeline` 补丁选项，仍要求 exact clean
+native commit 和对应累计补丁的 reverse-check。模型入口先检查实际
+前任退出、相同冻结 application/native 组件来源、GPU 预约及资源。
+当前模型入口的 51 项定向 CPU 检查通过；完整 `model_entry_r2_cpu`
+单次执行通过 4085 项及六个子测试，保留原有 4060 个身份并新增 25 个。
+前后源码及实际构造器均完成绑定。真实模型执行仍待冻结后完成。

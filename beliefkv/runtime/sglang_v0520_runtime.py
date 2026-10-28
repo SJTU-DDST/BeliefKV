@@ -13294,6 +13294,8 @@ class NativeAdmissionRuntime:
     @timed_runtime("batch_completed")
     def on_batch_completed(self, batch: object) -> tuple[str, ...]:
         """Observe the original batch and share its completed request IDs."""
+        if (pipeline := getattr(self, "_demand_prefill_pipeline", None)) is not None:
+            pipeline.observe_completed(batch)
         if (
             self._report_prediction_enabled
             and self._final_request_stages

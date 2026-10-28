@@ -30,6 +30,7 @@ ADDED = (
     "tests/test_demand_prefill_pipeline_service_audit.py",
     "tests/test_demand_prefill_pipeline_gpu_qualification.py",
     "tests/test_v0520_native_telemetry.py",
+    "tests/test_demand_prefill_model_qualification.py",
 )
 
 
@@ -79,6 +80,8 @@ def main():
         "beliefkv/experiments/demand_prefill_pipeline_engine.py",
         "scripts/audit_staged_native_restore.py", str(Path(__file__).relative_to(ROOT)),
         "scripts/audit_demand_prefill_pipeline.py", "scripts/qualify_demand_prefill_pipeline.py",
+        "scripts/qualify_demand_prefill_model.py", "scripts/qualify_layer_handoff_model.py",
+        "scripts/launch_qwen35_native_v0520.sh",
     }
     before = {name: sha256_file(ROOT / name) for name in sorted(paths)}
     engine = args.engine.resolve()

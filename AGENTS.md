@@ -2689,3 +2689,14 @@
   progress and independent output/logprobs before current position/Full.
   No new complete Full comparison or other baseline was run; the goal remains
   active with tool prefetch off and completeV345 retained.
+- The unforced demand-model entry now has normal-copy concurrent resident/
+  cold requests with independent references. It declares24576-token prefixes,
+  Device57344/Host8GB, running24 and512 resident greedy tokens; no artificial
+  DMA delay or replay sampler. The default-off progress probe checks immutable
+  ACK only after real native result processing, binds forward/request/clock,
+  and requires post-stage batch launch plus positive actual worker output.
+  Default off makes no extra CUDA query/log. Launcher now accepts the exact
+  demand_prefill_pipeline cumulative patch. model_entry_r2_cpu passes4085
+  plus6subtests, retains4060 and adds25, with sources/constructors rebound.
+  Freeze and rerun current component scenes, then run the current model entry
+  before position/Full. Actual concurrent model and performance remain pending.
