@@ -1,0 +1,66 @@
+{
+  "observed_at": "2026-10-28T10:45:02.207550+00:00",
+  "scope": "Actual grouped transfer and unforced output correctness, not workload performance.",
+  "frozen_application": {
+    "commit": "4675f4ad9eea6a3674ec33f30b48473b00ca3507",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "6806a63963aef89d5070a254256d48d07a876ff8f7e42a686e736149d533b963"
+  },
+  "native_engine": {
+    "commit": "1f5fac9e9f7ad1d97f89244cdda4d9f311d365c4",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "a9abbcd715f5e62ddd63ba742f3dd318fabf81a7791236a7377e219098bbaef9"
+  },
+  "native_replay_evidence": {
+    "report": "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/native_final_cpu.xml",
+    "report_sha256": "07729f3a5ed6875063115bca5721507d9a34cbb972fd9c119c2e776a2eb7a869",
+    "sources": "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/native_sources.json",
+    "sources_sha256": "2e76f5d9288b5de7e4bbde9ad41b522c5ec3356566c7a0e8f8ea59d1e4bc1f66",
+    "tree": "2ce5e5389979a718c19f80abb9cc9b381b8cff0e",
+    "passing_cases": 53,
+    "gpu_validation_pending": true
+  },
+  "maximum_logprob_delta": {
+    "b_handoff": 0.0,
+    "a_recovered": 0.0
+  },
+  "actual_grouped_handoff_count": 1,
+  "actual_grouped_model_qualified": true,
+  "join_budget_handoff_gpu_service_qualified": false,
+  "whole_workload_qualified": false,
+  "performance_accepted": false,
+  "model_server_exited": true,
+  "gpu_compute_processes_absent": true,
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/model_r1/report.json": "e1933254b48029207989609906184f2fb3010e29677fab50abcf6fe35ae57194",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/gpu_components_r2.json": "b48b6144bf280dfef5c442bdc6c55a9b8908f7011c5fd3a11b902de3c35170da",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/model_r1/owned_process_cleanup.json": "fa857365fdb944034945c14436075743eed46a96c57315d22a0a86ab735391f5",
+    "/home/longhao/experiment/BeliefKV/configs/migration/predictive_join_blocked_layer_groups_20261028.json": "2d24101cf9b4f207e0103900199ffa3aba24a3a844abea05f72cb3cc704146b8",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/fixture_qualified_shared_cpu.evidence.json": "d8cfb2ba0f700eb7e10af3468207339ab106a227c141e24da9c693771227749d",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/fixture_qualified_shared_cpu.sources.json": "e24a33b5e238d0cdd168921df6fd4da7e146abb31ab44d96e6dbe91062eb4aa4",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/native_sources.json": "2e76f5d9288b5de7e4bbde9ad41b522c5ec3356566c7a0e8f8ea59d1e4bc1f66",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/model_r1/request_a_reference.json": "ea8ea6cac80c99181f03b0318b7a35c2feb43794ce0678a53c2d3bb0c268e830",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/model_r1/request_a_initial.json": "cfeb81d5ff0f86c1133f0b6c9f22d7758076210ea739f88492b7d17952b4da71",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/model_r1/request_b_initial.json": "5c66acffa524d52c95d582655040d85b8ff9bf4ecd16e46b193cc17e72830bab",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/model_r1/request_b_handoff.json": "132927e44b560347be39b723f57212170c63ac53e1a8777d321803e3f4ae2379",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/model_r1/request_b_reference.json": "8943ded5c51ca0e19574263a73154608520ec08825c6ddfe7c4bfc6dc35b500c",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/model_r1/request_c.json": "1a69859ce7d90584fa5f1ad52ebb8b6dfea47aeb51933cbdf5222bfbbe0704b8",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/model_r1/request_a_recovered.json": "3e2157426070e1f6222296ffdcf80a8b5c915f4c850115817b260f7af72c63d5",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/model_r1/response_a_initial.json": "3e60dbcddb52e969e084f54f0440eb1ed14d90ba45693e7ab6f20097bfde4001",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/model_r1/response_a_recovered.json": "be78bdeac8f5b9cf5edfcd7b6761bbe726879bfdb91c238a7e30fb17c6e78001",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/model_r1/response_b_initial.json": "b8acd4aa7c11a18ecdd731d73e3ff2c38338981d3d5317d0dcb31f44f37061f4",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/model_r1/response_b_handoff.json": "0419b0c83387986c0b1525cc5295dd32a78674f7dec33797d3d5a6cb0b970866",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/model_r1/response_a_reference.json": "5fb7015901607ff3b95286ab98db047a2b622ea02e71dfc9681305c983d45878",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/model_r1/response_c.json": "43eb0ab4f01dafc144b5fd786ae2062ae095125d305afdb911e8bbe133553efb",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/model_r1/response_b_reference.json": "7167307a70f1480960e8188e91a1e2f2b01374d7ee21d24d9f106b5459a7183c"
+  },
+  "operator_sha256": "1c4cd703c54ec3c5f038cfaee4353d725bff4b269569a0c842ba5947bca34615"
+}

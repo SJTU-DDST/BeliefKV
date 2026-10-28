@@ -1,0 +1,35 @@
+{
+  "commit": "fa5cb52afaeaad1f59f6d3eb2c5cf124f72bb491",
+  "dirty": true,
+  "excluded_provenance_paths": [],
+  "tracked_change_paths": [
+    "python/sglang/srt/managers/cache_controller.py",
+    "python/sglang/srt/managers/scheduler.py",
+    "python/sglang/srt/mem_cache/allocator/token.py",
+    "python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py",
+    "python/sglang/srt/mem_cache/l2_transfer.py",
+    "python/sglang/srt/mem_cache/pool_host/mha.py",
+    "python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py",
+    "python/sglang/srt/mem_cache/unified_radix_cache.py",
+    "test/srt/test_beliefkv_transfer_receipts.py"
+  ],
+  "untracked_paths": [
+    "python/sglang/srt/mem_cache/beliefkv_layer_handoff.py",
+    "test/srt/test_beliefkv_layer_groups.py",
+    "test/srt/test_beliefkv_layer_handoff.py"
+  ],
+  "tracked_change_tree_sha256": "3a0427a0d4433d544ea4c75caa5f1e6a85b76a695b9b8aa1bbcde669749a28ef",
+  "canonical_patch": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-layer-handoff-groups-runtime-20261028.patch",
+    "sha256": "8b8a8d35404d9f1c035a57645684c6758f15c3e48ee6ef83551b3e5815754612",
+    "expected_tree": "2ce5e5389979a718c19f80abb9cc9b381b8cff0e",
+    "actual_tree": "2ce5e5389979a718c19f80abb9cc9b381b8cff0e",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "python/sglang/srt/mem_cache/beliefkv_layer_handoff.py",
+      "test/srt/test_beliefkv_layer_groups.py",
+      "test/srt/test_beliefkv_layer_handoff.py"
+    ]
+  },
+  "state_sha256": "30ac92e2c652824489e40bae999c8b044200f399e2529a2d0f4a8438d51e3a70"
+}

@@ -2331,3 +2331,13 @@
   Preserve R1 and every prior failure. No model or FULL run is started or
   queued here; unforced-model, position and matched complete performance
   remain pending. Keep tool prefetch off and the global goal incomplete.
+- Grouped modelR1 now passes from frozen4675f4ad with clean native1f5fac9e.
+  Actual8/4 handoff, unforced consumer and later donor recovery preserve all
+  generated tokens with zero maximum logprob delta against independent
+  references. Its49152-token/8GB fixture is not full workload or JOIN-budget
+  GPU-service evidence. Model server623498 exits, cleanup has no owned
+  remainder and NVML is empty. Named model_review.py/.json binds components,
+  current CPU sources and the prepared cumulative native patch; native_sources
+  supplies replay registration. Fresh grouped24-request position/session/stop
+  and running24 sampler checks still precede a Full-only complete comparison.
+  Keep tool prefetch off, all failures/tails, reuseV345 and the goal incomplete.

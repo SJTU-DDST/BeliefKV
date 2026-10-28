@@ -176,3 +176,18 @@ donor ACK；不因此推算真实工作量中的隐藏时间，也没有将该�
 保留前次 3519 项身份并新增 5 个 geometry 案例；报告为
 `fixture_qualified_shared_cpu.*`。`gpu_review.py/.json` 绑定实际冻结应用、
 原生引擎、组件源码与报告、最新 CPU 来源以及进程退出。原 R1 失败保持不变。
+
+## 非强制模型验证
+
+`model_r1/report.json` 使用同一冻结应用 `4675f4ad` 与原生 `1f5fac9e`，
+实际发生 D2H 8 层、H2D 4 层的完整模型交接。consumer 恢复与 donor 再次
+恢复的自然 greedy 输出均与独立参考完全一致，最大 logprob 差都为 0。
+每个请求生成 8 个 token，seed21；没有强制输出录制 token。
+
+该验证使用 49,152-token Device / 8GB Host 的正确性夹具、16K/16K/24K
+三个源前缀和受控工具等待，不能替代完整 workload 或证明 JOIN 逻辑额度
+交接已经带来 GPU/JCT 收益。server 623498 已退出、GPU 无 compute context，
+清理记录无剩余 owned process。`model_review.py/.json` 复核实际报告、
+分组组件、冻结来源、当前 CPU 绑定及退出，生成用于后续重放注册的
+`native_sources.json`。正式 FULL 前仍需新 grouped 引擎的 24 请求
+position/session/native-stop 检查及 running24 的 sampling 开销检查。
