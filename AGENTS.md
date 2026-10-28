@@ -1883,3 +1883,14 @@
   verify;2 continuations still lack completion/session proof. These are
   independently sealed live prefixes, not final performance. Keep frozen
   1f1678b266e1 and V345 unchanged.
+- The continuation named evidence directory now contains complete_review.py,
+  pending actual full completion and matched plots. It requires original
+  stopping/all tails, actual owned exit, two fresh idle snapshots, complete
+  immutable audit inputs, exact grant consumption and separate event counts.
+  Existing same-session prefix probes reconcile against final native counters;
+  completeV345 has3564 matched requests/140952652 common tokens and zero
+  observed missing old input. This does not measure all kernel recomputation.
+  Real-control prechecks reject truncated and foreign-arm seals. One helper
+  execution passes300 CPU cases without failures/skips; preserve its XML.
+  No frozen runtime/config/engine changed, no final Full result is implied,
+  and progressive layer-capacity handoff remains unimplemented.
