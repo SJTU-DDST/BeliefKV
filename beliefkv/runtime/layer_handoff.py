@@ -87,6 +87,30 @@ def try_handoff(offloader, key, step):
     )
     if result is None:
         runtime.counts["layer_handoff_native_refused"] += 1
+        if runtime._opportunity_writer is not None:
+            from sglang.srt.mem_cache.beliefkv_layer_handoff import supported
+
+            cc, component = cache.cache_controller, cache.components[0]
+            runtime._opportunity_writer.record({
+                "event": "layer_kv_handoff_refused", "ts_ms": time.time() * 1000.,
+                "beneficiary_request_id": consumer_key.request_id,
+                "donor_node_id": donor.id, "consumer_node_id": consumer.id,
+                "supported_cache": supported(cache),
+                "device_free_tokens": cc.mem_pool_device_allocator.available_size(),
+                "host_free_tokens": cc.mem_pool_host.available_size(),
+                "required_reserve_tokens": reserve,
+                "donor_tokens": len(a.value) if a.value is not None else 0,
+                "donor_device_locks": a.lock_ref, "donor_host_locks": a.host_lock_ref,
+                "consumer_device_locks": b.lock_ref, "consumer_host_locks": b.host_lock_ref,
+                "donor_is_session_leaf": donor in component._session_leaves.get(key.session_id, ()),
+                "consumer_is_session_leaf": consumer in component._session_leaves.get(
+                    consumer_key.session_id, (),
+                ),
+                "donor_is_evictable_leaf": donor in cache.tree_core.evictable_device_leaves,
+                "queued_writes": len(cc.write_queue), "queued_loads": len(cc.load_queue),
+                "pending_write_acks": len(cc.ack_write_queue),
+                "pending_load_acks": len(cc.ack_load_queue),
+            })
         return False
     offloader._after_eviction(key, {0: result["donor_tokens"]})
     runtime._invalidate_wait_transfer_observation(key)

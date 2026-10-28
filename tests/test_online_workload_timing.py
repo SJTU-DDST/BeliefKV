@@ -1,4 +1,5 @@
 from collections import deque
+from dataclasses import replace
 from types import SimpleNamespace as NS
 from unittest.mock import Mock, patch
 import math
@@ -204,6 +205,92 @@ def test_online_tool_hints_do_not_build_unused_legacy_features():
             runtime.on_events((event(20, RuntimeEventKind.WORKFLOW_END),))
         assert not runtime._online_tool_timing.open
         assert not runtime.tool_wait_hints
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("tool_prefetch", (False, True))
+@pytest.mark.parametrize("finish", ("returned", "unsupported_tail"))
+def test_full_online_timing_refreshes_expired_waits_without_a_legacy_worker(
+    monkeypatch, tool_prefetch, finish,
+):
+    clock = [100.]
+    monkeypatch.setattr(time, "monotonic", lambda: clock[0])
+    runtime = NativeAdmissionRuntime()
+    runtime._online_tool_timing = OnlineWorkloadToolTiming()
+    runtime.enable_tool_prefetch = tool_prefetch
+    runtime.predictor_sha256 = "a" * 64
+    request = req("agent")
+    request.session_id, request.session_generation = "session", 1
+    sequence = 0
+
+    def send(kind, **attributes):
+        nonlocal sequence
+        sequence += 1
+        runtime.on_events((replace(
+            event(sequence, kind, invocation_id="agent", context_id="ctx-agent",
+                  attributes=attributes),
+            ts_ms=clock[0] * 1000.,
+        ),))
+
+    try:
+        send(RuntimeEventKind.WORKFLOW_START)
+        send(RuntimeEventKind.INVOCATION_CREATE)
+        assert runtime.register_visible_request(request)
+        for number in range(4):
+            send(RuntimeEventKind.TOOL_START, tool_run_id=str(number), tool_name="execute")
+            clock[0] += 10.
+            send(RuntimeEventKind.TOOL_END, tool_run_id=str(number), duration_ms=10_000.)
+        send(RuntimeEventKind.TOOL_START, tool_run_id="active", tool_name="execute")
+        key = runtime.context_sessions["ctx-agent"]
+        original = runtime._live_tool_hint(key)
+        assert original is not None
+        assert not runtime._tool_timing_only and runtime._model_worker is None
+        clock[0] += 2.1
+        assert runtime._live_tool_hint(key) is None
+        runtime._native_cache = NS()
+        runtime.capture_shadow_candidate = Mock(
+            side_effect=AssertionError("online refresh must defer physical ancestry"),
+        )
+        runtime._maintain_wait_predictions(clock[0] * 1000.)
+        refreshed = runtime._live_tool_hint(key)
+        assert refreshed is not None and refreshed is not original
+        assert refreshed.wait_p50_ms == pytest.approx(7900.)
+        forecasts = runtime.counts["online_tool_supported"]
+        clock[0] += .02
+        runtime._maintain_wait_predictions(clock[0] * 1000.)
+        assert runtime._live_tool_hint(key) is refreshed
+        assert runtime.counts["online_tool_supported"] == forecasts
+        if finish == "returned":
+            send(RuntimeEventKind.TOOL_END, tool_run_id="active", duration_ms=2120.)
+        else:
+            clock[0] += 20.
+        runtime._maintain_wait_predictions(clock[0] * 1000.)
+        assert runtime._live_tool_hint(key) is None
+        assert "ctx-agent" not in runtime.tool_wait_hints
+        runtime.capture_shadow_candidate.assert_not_called()
+    finally:
+        runtime.close()
+
+
+def test_online_wait_maintenance_bounds_and_rotates_refresh_work():
+    runtime = NativeAdmissionRuntime()
+    runtime._online_tool_timing = OnlineWorkloadToolTiming()
+    runtime._waiting_context_keys = Mock(return_value=tuple(
+        NS(context_id=str(index)) for index in range(16)
+    ))
+    runtime._submit_tool_wait = Mock()
+    try:
+        runtime._maintain_wait_predictions(1000.)
+        assert [call.args[0] for call in runtime._submit_tool_wait.call_args_list] == [
+            str(index) for index in range(8)
+        ]
+        runtime._maintain_wait_predictions(1050.)
+        assert runtime._submit_tool_wait.call_count == 8
+        runtime._maintain_wait_predictions(1100.)
+        assert [call.args[0] for call in runtime._submit_tool_wait.call_args_list] == [
+            str(index) for index in range(16)
+        ]
     finally:
         runtime.close()
 

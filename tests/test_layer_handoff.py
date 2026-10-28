@@ -358,12 +358,17 @@ def test_selected_input_reserve_never_spends_another_batch_or_growth_budget(
         None if cause == "unknown_adder"
         else NS(can_run_list=[object()] if cause == "selected_chunk" else [], dllm_config=None)
     )
+    f.runtime._opportunity_writer = Mock()
     assert not try_handoff(
         f.offloader, f.runtime.context_sessions["ctx-tool"],
         NS(node_id=f.donor.id, creation_time=f.donor.creation_time),
     )
     assert f.allocator.available_size() == 4
     assert getattr(f.cache, "_beliefkv_layer_handoff", None) is None
+    refusal = f.runtime._opportunity_writer.record.call_args.args[0]
+    assert refusal["event"] == "layer_kv_handoff_refused"
+    assert refusal["device_free_tokens"] == 4
+    assert refusal["required_reserve_tokens"] > 4
     f.cache.sanity_check()
 
 

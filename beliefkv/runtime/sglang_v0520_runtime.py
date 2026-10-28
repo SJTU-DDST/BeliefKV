@@ -2678,7 +2678,9 @@ class NativeAdmissionRuntime:
             if self._model_worker.disabled:
                 self.counts["model_worker_disabled"] = 1
             self._refresh_live_wait_hint()
-        if self._tool_timing_only and now_ms >= self._tool_refresh_next_ms:
+        if (
+            self._tool_timing_only or self._online_tool_timing is not None
+        ) and now_ms >= self._tool_refresh_next_ms:
             self._tool_refresh_next_ms = now_ms + 100.
             contexts = [
                 key.context_id for key in self._waiting_context_keys(InvocationState.WAIT_TOOL)
@@ -5190,7 +5192,10 @@ class NativeAdmissionRuntime:
         self.tool_wait_hints[key.context_id] = hint
         self._refresh_prefetch_service_leases(context_id=key.context_id)
         self.counts["tool_wait_accepted"] += 1
-        if self._tool_timing_only or self.tool_restore_mode == "execution":
+        if (
+            self._tool_timing_only or self._online_tool_timing is not None
+            or self.tool_restore_mode == "execution"
+        ):
             # Physical ancestry is read at an action safe point, not for every
             # advisory refresh of the same external wait.
             self.counts["tool_hint_physical_inspection_deferred"] += 1
@@ -5211,6 +5216,7 @@ class NativeAdmissionRuntime:
             self._opportunity_writer.record({
                 "event": "tool_wait_forecast", "ts_ms": time.time() * 1000,
                 "observed_monotonic_ms": hint.issued_monotonic_ms,
+                "expires_monotonic_ms": hint.expires_monotonic_ms,
                 "workflow_id": key.root_workflow_id, "invocation_id": key.invocation_id,
                 "context_id": key.context_id, "context_epoch": key.context_epoch,
                 "invocation_revision_ts_ms": hint.invocation_revision_ts_ms,
