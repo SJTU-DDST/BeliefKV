@@ -334,6 +334,9 @@ def preflight_runtime(settings, model_path):
         "enable_predicted_tool_offload": (
             settings.get("BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD", "0") == "1"
         ),
+        "tool_offload_before_admission": (
+            settings.get("BELIEFKV_TOOL_OFFLOAD_BEFORE_ADMISSION", "0") == "1"
+        ),
         "idle_prepare_io_backend": settings.get("BELIEFKV_IDLE_PREPARE_IO_BACKEND", "native"),
         "tool_offload_policy": (
             settings.get("BELIEFKV_TOOL_OFFLOAD_POLICY", "fixed")
@@ -750,6 +753,12 @@ def observed_configuration(plan, label, arm, *, final=False):
         ) == "1"
         if state.get("predicted_tool_offload", False) is not expected_tool_offload:
             raise ValueError("effective predicted tool offload differs from declared control")
+        early_tool_offload = mode == "full" and common.get(
+            "BELIEFKV_TOOL_OFFLOAD_BEFORE_ADMISSION",
+            common.get("TOOL_OFFLOAD_BEFORE_ADMISSION", "0"),
+        ) == "1"
+        if state.get("tool_offload_before_admission", False) is not early_tool_offload:
+            raise ValueError("effective tool offload before admission differs from declaration")
         validate_free_page_fence(plan, state)
         agent_strategy = plan.get("reference_environment", {}).get(
             "BELIEFKV_AGENT_ADMISSION",

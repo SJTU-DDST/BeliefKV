@@ -262,9 +262,49 @@ class DemandAwareToolOffload(PredictedToolOffload):
         self.consumer_cursor = 0
         self.evicted_tokens = OrderedDict()
         self.action_detail = {}
+        self._admission_seen = OrderedDict()
+        self._dispatch_stage = "maintenance"
 
     def _action_detail(self):
-        return self.action_detail
+        return {**self.action_detail, "dispatch_stage": self._dispatch_stage}
+
+    def before_admission(self, candidates, *, running_batch):
+        """Inspect the actual selected queue before native demand removes it."""
+        runtime = self.runtime
+        fresh = False
+        for request in islice(candidates, self.max_consumers):
+            key = runtime.visible.get(getattr(request, "rid", None))
+            if (
+                key is not None and runtime._agent_admission.allows(key)
+                and runtime._unallocated_waiting_full_request(key, request)
+                and key not in self._admission_seen
+            ):
+                self._admission_seen[key] = None
+                fresh = True
+        while len(self._admission_seen) > 512:
+            self._admission_seen.popitem(last=False)
+        if fresh:
+            # One extra attempt per current request, not per decode step.
+            self.next_ms = 0.
+            runtime.counts["tool_offload_admission_new_request_rearms"] += 1
+        if time.monotonic() * 1000. < self.next_ms:
+            return
+        saved = (
+            runtime._capacity_waiting_queue, runtime._native_running_batch,
+            self.consumer_cursor, self._dispatch_stage,
+        )
+        runtime._capacity_waiting_queue = candidates
+        runtime._native_running_batch = running_batch
+        self.consumer_cursor = 0
+        self._dispatch_stage = "before_native_admission"
+        try:
+            runtime.counts["tool_offload_before_admission_checks"] += 1
+            self.dispatch()
+        finally:
+            (
+                runtime._capacity_waiting_queue, runtime._native_running_batch,
+                self.consumer_cursor, self._dispatch_stage,
+            ) = saved
 
     def _prediction_allows(self, key):
         hint = self.runtime._live_tool_hint(key)

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="9.107" timestamp="2026-10-27T18:03:09.783998-07:00" hostname="ddst-12"><testcase classname="tests.test_tool_offload_before_admission" name="test_unavailable_tool_source_skips_additional_candidate_inspection[no_hints]" time="7.100"><failure message="AssertionError: unnecessary candidate inspection">demand_runtime = (&lt;beliefkv.runtime.sglang_v0520_runtime.NativeAdmissionRuntime object at 0x759a93b78390&gt;, &lt;beliefkv.runtime.predicted_...=namespace(req_pool_idx=None, kv_allocated_len=0, kv_committed_len=0), is_retracted=False, retracted_stain=False), ...)
+reason = 'no_hints'
+
+    @pytest.mark.parametrize("reason", ("no_hints", "disabled"))
+    def test_unavailable_tool_source_skips_additional_candidate_inspection(demand_runtime, reason):
+        runtime, controller, _cache, _allocator, _donor, consumer, _writes = demand_runtime
+        enable_early(demand_runtime)
+        if reason == "no_hints":
+            runtime.tool_wait_hints.clear()
+        else:
+            runtime.physical_disabled = True
+        controller.before_admission = Mock(side_effect=AssertionError("unnecessary candidate inspection"))
+&gt;       runtime.plan_native_prefill([consumer], running_batch=NS(reqs=[]), adder=None)
+
+tests/test_tool_offload_before_admission.py:270: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+beliefkv/runtime/hotpath_timing.py:104: in measured
+    return function(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/sglang_v0520_runtime.py:12115: in plan_native_prefill
+    self._predicted_tool_offload.before_admission(
+../../miniconda3/envs/beliefkv-next/lib/python3.11/unittest/mock.py:1124: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/unittest/mock.py:1128: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;Mock id='129306763705424'&gt;
+args = ((namespace(rid='consumer', beliefkv_metadata={'root_workflow_id': 'wf', 'invocation_id': 'consumer', 'context_id': 'c...kv=namespace(req_pool_idx=None, kv_allocated_len=0, kv_committed_len=0), is_retracted=False, retracted_stain=False),),)
+kwargs = {'running_batch': namespace(reqs=[])}
+
+    def _execute_mock_call(self, /, *args, **kwargs):
+        # separate from _increment_mock_call so that awaited functions are
+        # executed separately from their call, also AsyncMock overrides this method
+    
+        effect = self.side_effect
+        if effect is not None:
+            if _is_exception(effect):
+&gt;               raise effect
+E               AssertionError: unnecessary candidate inspection
+
+../../miniconda3/envs/beliefkv-next/lib/python3.11/unittest/mock.py:1183: AssertionError</failure></testcase><testcase classname="tests.test_tool_offload_before_admission" name="test_unavailable_tool_source_skips_additional_candidate_inspection[disabled]" time="0.005"><failure message="AssertionError: unnecessary candidate inspection">demand_runtime = (&lt;beliefkv.runtime.sglang_v0520_runtime.NativeAdmissionRuntime object at 0x759a93a3af90&gt;, &lt;beliefkv.runtime.predicted_...=namespace(req_pool_idx=None, kv_allocated_len=0, kv_committed_len=0), is_retracted=False, retracted_stain=False), ...)
+reason = 'disabled'
+
+    @pytest.mark.parametrize("reason", ("no_hints", "disabled"))
+    def test_unavailable_tool_source_skips_additional_candidate_inspection(demand_runtime, reason):
+        runtime, controller, _cache, _allocator, _donor, consumer, _writes = demand_runtime
+        enable_early(demand_runtime)
+        if reason == "no_hints":
+            runtime.tool_wait_hints.clear()
+        else:
+            runtime.physical_disabled = True
+        controller.before_admission = Mock(side_effect=AssertionError("unnecessary candidate inspection"))
+&gt;       runtime.plan_native_prefill([consumer], running_batch=NS(reqs=[]), adder=None)
+
+tests/test_tool_offload_before_admission.py:270: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+beliefkv/runtime/hotpath_timing.py:104: in measured
+    return function(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/sglang_v0520_runtime.py:12115: in plan_native_prefill
+    self._predicted_tool_offload.before_admission(
+../../miniconda3/envs/beliefkv-next/lib/python3.11/unittest/mock.py:1124: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/unittest/mock.py:1128: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;Mock id='129306761756560'&gt;
+args = ((namespace(rid='consumer', beliefkv_metadata={'root_workflow_id': 'wf', 'invocation_id': 'consumer', 'context_id': 'c...kv=namespace(req_pool_idx=None, kv_allocated_len=0, kv_committed_len=0), is_retracted=False, retracted_stain=False),),)
+kwargs = {'running_batch': namespace(reqs=[])}
+
+    def _execute_mock_call(self, /, *args, **kwargs):
+        # separate from _increment_mock_call so that awaited functions are
+        # executed separately from their call, also AsyncMock overrides this method
+    
+        effect = self.side_effect
+        if effect is not None:
+            if _is_exception(effect):
+&gt;               raise effect
+E               AssertionError: unnecessary candidate inspection
+
+../../miniconda3/envs/beliefkv-next/lib/python3.11/unittest/mock.py:1183: AssertionError</failure></testcase></testsuite></testsuites>

@@ -44,6 +44,9 @@ def main():
     continuation_free = configuration["common_environment"].get(
         "AGENT_FREE_CONTINUATION_ADMISSION", "0",
     ) == "1"
+    early_tool_offload = configuration["common_environment"].get(
+        "TOOL_OFFLOAD_BEFORE_ADMISSION", "0",
+    ) == "1"
     paths = set(json.loads(Path(prior["source_manifest"]["path"]).read_bytes()))
     paths.update((
         str(args.configuration.resolve().relative_to(ROOT)), str(Path(__file__).resolve().relative_to(ROOT)),
@@ -58,6 +61,9 @@ def main():
         "tests/test_audit_tool_reentry_service.py",
     ) if join_free or siblings else ()
     extra_tests += ("tests/test_eos_join_prefetch.py",)
+    if early_tool_offload:
+        extra_tests += ("tests/test_tool_offload_before_admission.py",)
+        paths.add("beliefkv/runtime/predicted_tool_offload.py")
     if continuation_free:
         extra_tests += (
             "tests/test_reference_free_continuation.py",
@@ -123,6 +129,10 @@ def main():
             int(continuation_free and label == "full")
         ):
             raise ValueError("free continuation admission leaked into a paper control")
+        if settings["BELIEFKV_TOOL_OFFLOAD_BEFORE_ADMISSION"] != str(
+            int(early_tool_offload and label == "full")
+        ):
+            raise ValueError("tool offload before admission leaked into a paper control")
         constructors[label] = preflight_runtime(
             {**settings, "SGLANG_SOURCE_CHECKOUT": environment["SGLANG_SOURCE_CHECKOUT"]},
             configuration["common_environment"]["MODEL_PATH"],
@@ -157,6 +167,7 @@ def main():
         "join_free_admission": join_free,
         "coadmit_join_children": siblings,
         "free_continuation_admission": continuation_free,
+        "tool_offload_before_admission": early_tool_offload,
         "constructors": constructors,
         "preserved_development_reports": [
             str(REPORTS / name) for name in (

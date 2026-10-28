@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="35" time="8.560" timestamp="2026-10-27T17:51:49.000087-07:00" hostname="ddst-12"><testcase classname="tests.test_tool_offload_before_admission" name="test_eligible_host_waiter_is_seen_before_native_allocation_and_queue_removal[False]" time="6.871" /><testcase classname="tests.test_tool_offload_before_admission" name="test_eligible_host_waiter_is_seen_before_native_allocation_and_queue_removal[True]" time="0.006" /><testcase classname="tests.test_tool_offload_before_admission" name="test_controls_strip_early_offload[full]" time="0.001" /><testcase classname="tests.test_tool_offload_before_admission" name="test_controls_strip_early_offload[join_priority_only]" time="0.001" /><testcase classname="tests.test_tool_offload_before_admission" name="test_controls_strip_early_offload[scheduler_only]" time="0.001" /><testcase classname="tests.test_tool_offload_before_admission" name="test_controls_strip_early_offload[kv_only]" time="0.001" /><testcase classname="tests.test_tool_offload_before_admission" name="test_controls_strip_early_offload[native_matched]" time="0.001" /><testcase classname="tests.test_tool_offload_before_admission" name="test_paper_methods_do_not_inherit_early_offload[thunderagent]" time="0.001" /><testcase classname="tests.test_tool_offload_before_admission" name="test_paper_methods_do_not_inherit_early_offload[thunderagent_acting_decay]" time="0.001" /><testcase classname="tests.test_tool_offload_before_admission" name="test_paper_methods_do_not_inherit_early_offload[kvflow_observed_graph]" time="0.001" /><testcase classname="tests.test_tool_offload_before_admission" name="test_actual_runtime_constructor_binds_explicit_reference_candidate" time="0.001"><failure message="ValueError: final stage prefetch requires an event socket and no canary">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7c1ddc113dd0&gt;
+
+    def test_actual_runtime_constructor_binds_explicit_reference_candidate(monkeypatch):
+        for key, value in arm_environment(configuration(), "full").items():
+            monkeypatch.setenv(key, value)
+&gt;       runtime = NativeAdmissionRuntime()
+                  ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_tool_offload_before_admission.py:109: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;beliefkv.runtime.sglang_v0520_runtime.NativeAdmissionRuntime object at 0x7c1ddc124610&gt;
+event_socket_path = None, predictor_sha256 = None
+predictor_artifact_path = None, model_path = None
+enable_local_predictor = False, enable_admission_prefetch = False
+enable_confirmed_join_canary = False, enable_final_stage_prefetch = True
+completion_lead = None, opportunity_dir = None, tool_timing_artifact_path = None
+tool_timing_sha256 = None, enable_tool_prefetch = False
+
+    def __init__(
+        self,
+        *,
+        event_socket_path: str | None = None,
+        predictor_sha256: str | None = None,
+        predictor_artifact_path: str | None = None,
+        model_path: str | None = None,
+        enable_local_predictor: bool = False,
+        enable_admission_prefetch: bool = False,
+        enable_confirmed_join_canary: bool = False,
+        enable_final_stage_prefetch: bool = False,
+        completion_lead: CompletionLead | None = None,
+        opportunity_dir: str | None = None,
+        tool_timing_artifact_path: str | None = None,
+        tool_timing_sha256: str | None = None,
+        enable_tool_prefetch: bool = False,
+    ) -&gt; None:
+        self.internal_comparison_mode = os.environ.get(
+            "BELIEFKV_INTERNAL_COMPARISON_MODE", "full",
+        )
+        if self.internal_comparison_mode not in (
+            "full", "join_priority_only", "scheduler_only", "kv_only",
+        ):
+            raise ValueError("unsupported internal runtime comparison mode")
+        self._custom_kv_management = self.internal_comparison_mode not in (
+            "join_priority_only", "scheduler_only",
+        )
+        self._join_priority_pending: dict[str, str] = {}
+        self._join_priority_promoted: str | None = None
+        self._join_priority_normal_admissions = 4
+        stage_setting = os.environ.get("BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH", "0")
+        if stage_setting not in ("0", "1"):
+            raise ValueError("final stage prefetch setting must be 0 or 1")
+        enable_final_stage_prefetch = (
+            enable_final_stage_prefetch or stage_setting == "1"
+        )
+        if enable_final_stage_prefetch and (
+            not event_socket_path or enable_confirmed_join_canary
+        ):
+&gt;           raise ValueError("final stage prefetch requires an event socket and no canary")
+E           ValueError: final stage prefetch requires an event socket and no canary
+
+beliefkv/runtime/sglang_v0520_runtime.py:379: ValueError</failure></testcase><testcase classname="tests.test_tool_offload_before_admission" name="test_candidate_rejects_incompatible_settings[change0]" time="0.001" /><testcase classname="tests.test_tool_offload_before_admission" name="test_candidate_rejects_incompatible_settings[change1]" time="0.001" /><testcase classname="tests.test_tool_offload_before_admission" name="test_candidate_rejects_incompatible_settings[change2]" time="0.001" /><testcase classname="tests.test_tool_offload_before_admission" name="test_candidate_rejects_incompatible_settings[change3]" time="0.001" /><testcase classname="tests.test_tool_offload_before_admission" name="test_early_hook_preserves_demand_prediction_identity_and_native_guards[returned]" time="0.004" /><testcase classname="tests.test_tool_offload_before_admission" name="test_early_hook_preserves_demand_prediction_identity_and_native_guards[ready_donor]" time="0.004" /><testcase classname="tests.test_tool_offload_before_admission" name="test_early_hook_preserves_demand_prediction_identity_and_native_guards[pending_donor]" time="0.004" /><testcase classname="tests.test_tool_offload_before_admission" name="test_early_hook_preserves_demand_prediction_identity_and_native_guards[inactive_consumer]" time="0.003" /><testcase classname="tests.test_tool_offload_before_admission" name="test_early_hook_preserves_demand_prediction_identity_and_native_guards[stale_consumer]" time="0.003" /><testcase classname="tests.test_tool_offload_before_admission" name="test_early_hook_preserves_demand_prediction_identity_and_native_guards[missing_host]" time="0.004" /><testcase classname="tests.test_tool_offload_before_admission" name="test_early_hook_preserves_demand_prediction_identity_and_native_guards[locked]" time="0.004" /><testcase classname="tests.test_tool_offload_before_admission" name="test_early_hook_preserves_demand_prediction_identity_and_native_guards[short_prediction]" time="0.003" /><testcase classname="tests.test_tool_offload_before_admission" name="test_early_hook_preserves_demand_prediction_identity_and_native_guards[no_pressure]" time="0.003" /><testcase classname="tests.test_tool_offload_before_admission" name="test_early_hook_preserves_demand_prediction_identity_and_native_guards[disabled]" time="0.003" /><testcase classname="tests.test_tool_offload_before_admission" name="test_no_early_release_when_current_native_pass_cannot_admit[blocked_adder0]" time="0.003" /><testcase classname="tests.test_tool_offload_before_admission" name="test_no_early_release_when_current_native_pass_cannot_admit[blocked_adder1]" time="0.003" /><testcase classname="tests.test_tool_offload_before_admission" name="test_no_early_release_when_current_native_pass_cannot_admit[blocked_adder2]" time="0.003" /><testcase classname="tests.test_tool_offload_before_admission" name="test_no_early_release_when_current_native_pass_cannot_admit[blocked_adder3]" time="0.003" /><testcase classname="tests.test_tool_offload_before_admission" name="test_no_early_release_when_current_native_pass_cannot_admit[blocked_adder4]" time="0.003" /><testcase classname="tests.test_tool_offload_before_admission" name="test_event_drain_revalidates_release_and_rebuilds_changed_plan[tool_end]" time="0.004" /><testcase classname="tests.test_tool_offload_before_admission" name="test_event_drain_revalidates_release_and_rebuilds_changed_plan[invocation_cancel]" time="0.004" /><testcase classname="tests.test_tool_offload_before_admission" name="test_same_pending_request_retains_maintenance_backoff" time="0.004" /><testcase classname="tests.test_tool_offload_before_admission" name="test_early_dispatch_restores_maintenance_scope_after_failure" time="0.003" /><testcase classname="tests.test_tool_offload_before_admission" name="test_existing_native_adder_and_load_see_only_actually_freed_capacity" time="0.021" /></testsuite></testsuites>

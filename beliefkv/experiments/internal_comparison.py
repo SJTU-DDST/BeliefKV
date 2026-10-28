@@ -21,6 +21,13 @@ def arm_environment(
     if tool_offload not in ("0", "1"):
         raise ValueError("predicted tool offload must be 0 or 1")
     tool_offload = tool_offload if custom_kv else "0"
+    early_tool_offload = common.get(
+        "BELIEFKV_TOOL_OFFLOAD_BEFORE_ADMISSION",
+        common.get("TOOL_OFFLOAD_BEFORE_ADMISSION", "0"),
+    )
+    if early_tool_offload not in ("0", "1"):
+        raise ValueError("tool offload before admission must be 0 or 1")
+    early_tool_offload = early_tool_offload if mode == "full" else "0"
     if tool_prefetch is not None and type(tool_prefetch) is not bool:
         raise ValueError("tool prefetch override must be a boolean")
     if tool_prefetch is True and not custom_kv:
@@ -135,6 +142,11 @@ def arm_environment(
     ):
         raise ValueError("free continuation admission requires the reference Full core")
     continuation_free = continuation_free if agent_admission == "thunderagent_reference" else "0"
+    if early_tool_offload == "1" and (
+        agent_admission != "thunderagent_reference" or tool_offload != "1"
+        or common.get("BELIEFKV_TOOL_OFFLOAD_POLICY", "fixed") != "demand_cost"
+    ):
+        raise ValueError("tool offload before admission requires reference Full demand-cost offload")
     siblings = common.get(
         "BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN", common.get("AGENT_COADMIT_JOIN_CHILDREN", "0"),
     )
@@ -229,6 +241,8 @@ def arm_environment(
         "BELIEFKV_INTERNAL_COMPARISON_MODE": mode,
         "PREDICTED_TOOL_OFFLOAD": tool_offload,
         "BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD": tool_offload,
+        "TOOL_OFFLOAD_BEFORE_ADMISSION": early_tool_offload,
+        "BELIEFKV_TOOL_OFFLOAD_BEFORE_ADMISSION": early_tool_offload,
         "BELIEFKV_TOOL_OFFLOAD_POLICY": common.get("BELIEFKV_TOOL_OFFLOAD_POLICY", "fixed") if custom_kv else "fixed",
         "BELIEFKV_TOOL_TIMING_PRIOR": common.get("BELIEFKV_TOOL_TIMING_PRIOR", "") if custom_kv else "",
         "BELIEFKV_TOOL_TIMING_PRIOR_SHA256": common.get("BELIEFKV_TOOL_TIMING_PRIOR_SHA256", "") if custom_kv else "",

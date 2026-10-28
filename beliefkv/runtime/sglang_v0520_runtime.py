@@ -638,6 +638,16 @@ class NativeAdmissionRuntime:
             os.environ.get("BELIEFKV_TOOL_OFFLOAD_POLICY", "fixed")
             if self.enable_predicted_tool_offload else "off"
         )
+        before_admission = os.environ.get("BELIEFKV_TOOL_OFFLOAD_BEFORE_ADMISSION", "0")
+        if before_admission not in ("0", "1"):
+            raise ValueError("tool offload before admission must be 0 or 1")
+        self.tool_offload_before_admission = before_admission == "1"
+        if self.tool_offload_before_admission and (
+            self.internal_comparison_mode != "full"
+            or not self.enable_predicted_tool_offload
+            or self.tool_offload_policy != "demand_cost"
+        ):
+            raise ValueError("tool offload before admission requires Full demand-cost offload")
         free_fence = os.environ.get("BELIEFKV_FREE_PAGE_H2D_FENCE", "0")
         if free_fence not in ("0", "1"):
             raise ValueError("free-page H2D fence must be 0 or 1")
@@ -1091,6 +1101,10 @@ class NativeAdmissionRuntime:
             from beliefkv.runtime.full_prefix_migration import FullPrefixMigration
 
             self._full_prefix_migration = FullPrefixMigration(self)
+        if self.tool_offload_before_admission and (
+            getattr(self._agent_admission, "strategy", None) != "thunderagent_reference"
+        ):
+            raise ValueError("tool offload before admission requires reference agent eligibility")
         self.event_server = (
             RuntimeEventDatagramServer(
                 event_socket_path, self.on_events, timing=self._hotpath_timing,
@@ -2852,6 +2866,7 @@ class NativeAdmissionRuntime:
                     and self._online_tool_timing.prior is not None else None
                 ),
                 "predicted_tool_offload": self.enable_predicted_tool_offload,
+                "tool_offload_before_admission": self.tool_offload_before_admission,
                 "tool_offload_policy": (
                     type(self._predicted_tool_offload).__name__
                     if self._predicted_tool_offload is not None else None
@@ -12066,6 +12081,52 @@ class NativeAdmissionRuntime:
 
     @timed_runtime("admission_plan")
     def plan_native_prefill(
+        self, native_order: Sequence[object], *, running_batch: object, adder: object,
+        _queue_inspection: _NativePrefillQueueInspection | None = None,
+    ) -> NativePrefillPlan:
+        plan = self._build_native_prefill_plan(
+            native_order, running_batch=running_batch, adder=adder,
+            _queue_inspection=_queue_inspection,
+        )
+        if (
+            not self.tool_offload_before_admission or not plan.prioritized
+            or not self.tool_wait_hints or self.physical_disabled
+        ):
+            return plan
+        if (
+            getattr(adder, "rem_chunk_tokens", None) == 0
+            or type(remaining := getattr(adder, "rem_input_tokens", None)) is int
+            and remaining <= 0
+            or type(maximum := getattr(adder, "max_running_requests", None)) is int
+            and len(getattr(running_batch, "reqs", ())) + len(
+                getattr(adder, "can_run_list", ())
+            ) >= maximum
+        ):
+            return plan
+        selected = len(getattr(adder, "can_run_list", ()))
+        if any(
+            type(limit := getattr(adder, name, None)) is int and limit > 0
+            and selected >= limit
+            for name in ("max_prefill_bs", "prefill_max_requests")
+        ):
+            return plan
+        from beliefkv.runtime.sglang_v0520_admission import select_native_prefill_candidates
+
+        selection = select_native_prefill_candidates(
+            native_order, plan=plan, current_semantic_revision=self.semantic_revision,
+        )
+        self._predicted_tool_offload.before_admission(
+            selection.candidates, running_batch=running_batch,
+        )
+        if self.semantic_revision != plan.semantic_revision:
+            # Tool return/cancellation may arrive while the donor is rechecked.
+            self.counts["tool_offload_admission_event_replans"] += 1
+            plan = self._build_native_prefill_plan(
+                native_order, running_batch=running_batch, adder=adder,
+            )
+        return plan
+
+    def _build_native_prefill_plan(
         self, native_order: Sequence[object], *, running_batch: object, adder: object,
         _queue_inspection: _NativePrefillQueueInspection | None = None,
     ) -> NativePrefillPlan:

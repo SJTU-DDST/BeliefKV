@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="2" time="8.199" timestamp="2026-10-27T17:43:57.940348-07:00" hostname="ddst-12"><testcase classname="tests.test_tool_offload_before_admission" name="test_eligible_host_waiter_is_seen_before_native_allocation_and_queue_removal[False]" time="6.795" /><testcase classname="tests.test_tool_offload_before_admission" name="test_eligible_host_waiter_is_seen_before_native_allocation_and_queue_removal[True]" time="0.005"><failure message="assert 4 == 36&#10; +  where 4 = available_size()&#10; +    where available_size = &lt;sglang.srt.mem_cache.allocator.token.TokenToKVPoolAllocator object at 0x739727108110&gt;.available_size">demand_runtime = (&lt;beliefkv.runtime.sglang_v0520_runtime.NativeAdmissionRuntime object at 0x73958e7a9b90&gt;, &lt;beliefkv.runtime.predicted_...=namespace(req_pool_idx=None, kv_allocated_len=0, kv_committed_len=0), is_retracted=False, retracted_stain=False), ...)
+enabled = True
+
+    @pytest.mark.parametrize("enabled", (False, True))
+    def test_eligible_host_waiter_is_seen_before_native_allocation_and_queue_removal(
+        demand_runtime, enabled,
+    ):
+        runtime, controller, cache, allocator, donor, consumer, _writes = demand_runtime
+        adapter = install_reference(runtime, cache, consumer)
+        runtime.enable_predicted_tool_offload = True
+        runtime.tool_offload_before_admission = enabled
+        runtime._predicted_tool_offload = controller
+        # The earlier post-forward pass cannot see this newly submitted consumer.
+        runtime._capacity_waiting_queue = ()
+        controller.dispatch()
+        assert runtime.counts["tool_offload_no_host_waiting_consumer"] == 1
+        assert allocator.available_size() == 4
+        previous = state(adapter)
+    
+        plan = runtime.plan_native_prefill(
+            [consumer], running_batch=NS(reqs=[]), adder=None,
+        )
+    
+        assert plan.prioritized == (runtime.visible["consumer"],)
+&gt;       assert allocator.available_size() == (36 if enabled else 4)
+E       assert 4 == 36
+E        +  where 4 = available_size()
+E        +    where available_size = &lt;sglang.srt.mem_cache.allocator.token.TokenToKVPoolAllocator object at 0x739727108110&gt;.available_size
+
+tests/test_tool_offload_before_admission.py:52: AssertionError</failure></testcase></testsuite></testsuites>

@@ -1921,3 +1921,31 @@
   docs/research/reference_free_continuation_complete_20261027_zh.md. ReuseV345,
   queue no extra GPU run by this audit, and keep the global goal incomplete.
   Progressive layer-capacity handoff remains unimplemented and unevaluated.
+- The separately declared tool_offload_before_admission candidate now observes
+  the actual selected native queue after the existing plan and before physical
+  demand allocation. Keep Full/reference/demand_cost-only, default off and
+  stripped from controls. It preserves complete eligibility, actual Host-miss/
+  deficit, prediction costs, locked/private/settled-copy and lifecycle guards;
+  grants no logical budget and evicts no ready peer. One first-seen current
+  request may rearm a check; a512-entry identity cache bounds memory and the
+  same pending request keeps200ms backoff. Empty/no-tool-source/disabled and
+  budget-exhausted passes skip the added inspection. Event-drain revision
+  changes rebuild the plan once; maintenance scope restores on exceptions.
+  Positive actions record dispatch_stage before_native_admission versus
+  maintenance. Actual native adder capacity properties remain authoritative;
+  no engine/allocator/kernel changed and no progressive layer handoff exists.
+  Real CPU native64-slot red case preserves4 free pages on old code and frees
+  32 settled blocked-donor pages before the16-page native load after repair,
+  keeping a ready peer's indices. The first shared3328-pass/one-fixture-fail
+  report and constructor/empty-source red reports remain preserved.
+  qualified_shared_cpu.xml passes3331 cases plus4subtests in one execution,
+  retaining3291 identities and adding40; all three actual constructors and
+  current source/tokenizer hashes verify. The single-consumer guarded CPU
+  measurement has plan medians7.037us disabled,7.149us no hints,20.051us
+  backoff,226.538us due/227.266us rearmed; due max3835.282us. This excludes
+  successful release/journal/GPU/full-controller costs and the maximum window.
+  Evidence is under experiments/reports/tool_offload_before_admission_20261027/
+  and docs/design/tool_offload_before_admission_20261027_zh.md. Freeze qualified
+  sources and recheck current hold/resources/actual predecessor exit before
+  a Full-only comparison, reuse completeV345, and keep GPU/performance/global
+  acceptance pending. Do not call this timing repair an independent novelty.

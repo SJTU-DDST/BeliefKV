@@ -1,0 +1,66 @@
+{
+  "scope": "Full plan callback thread CPU with one pending consumer and real 64-slot native CPU cache.",
+  "scenarios": {
+    "disabled": {
+      "samples": 500,
+      "guarded_dispatches_including_warmup": 0,
+      "whole_plan_thread_cpu_us": {
+        "median": 7.01,
+        "p99": 8.86004,
+        "max": 12.201
+      }
+    },
+    "pending_not_due": {
+      "samples": 500,
+      "guarded_dispatches_including_warmup": 0,
+      "whole_plan_thread_cpu_us": {
+        "median": 19.987000000000002,
+        "p99": 23.253330000000002,
+        "max": 26.586
+      }
+    },
+    "due_guarded_attempt": {
+      "samples": 500,
+      "guarded_dispatches_including_warmup": 600,
+      "whole_plan_thread_cpu_us": {
+        "median": 230.2425,
+        "p99": 242.80192,
+        "max": 870.541
+      }
+    },
+    "new_request_attempt": {
+      "samples": 500,
+      "guarded_dispatches_including_warmup": 600,
+      "whole_plan_thread_cpu_us": {
+        "median": 231.393,
+        "p99": 243.36863000000005,
+        "max": 249.824
+      }
+    },
+    "empty_plan": {
+      "samples": 500,
+      "guarded_dispatches_including_warmup": 0,
+      "whole_plan_thread_cpu_us": {
+        "median": 4.2795000000000005,
+        "p99": 5.803489999999999,
+        "max": 6.149
+      }
+    }
+  },
+  "sources_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "0d52ae229b001cc59a626c7cd490c9efc17f84152738de0f3e5385fd656fc735",
+    "beliefkv/runtime/predicted_tool_offload.py": "4176473bdb1604d820c713c0ffdfb19b28c44b972c3125ecd5d0a81f04fbcdfa",
+    "tests/test_tool_offload_before_admission.py": "6aad7ced52c7cca82c432a437591f2fb251a687c62806675e140d02d4ce9772d",
+    "tests/test_tool_policy_adaptation.py": "184f0d66f55818a3d00badd4f20369bba4493a2cca344d78d6f394483bf2e6fa",
+    "tests/test_full_only_native_lifecycle.py": "4de52d01708fef41df881652c61b8e0623c9dec12228fb9e5f3988a201713624"
+  },
+  "operator_sha256": "62fe09429c0aa786be9c9c36e67f8a4f506a772276c645ead1d3254c07962c97",
+  "gpu_or_jct_performance_verified": false,
+  "limitations": [
+    "Native tree/allocator are real CPU objects; copy, Host indices and GPU events are stand-ins.",
+    "The donor remains locked, so successful backup/release, journal writer and GPU interference are not measured.",
+    "The fixture resets maintenance deadlines or first-seen state outside timed calls; this is not an online replay.",
+    "Monotonic policy time is frozen while thread CPU time runs.",
+    "The eight-consumer/eight-donor bound is not benchmarked by this one-consumer fixture."
+  ]
+}
