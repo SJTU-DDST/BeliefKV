@@ -2341,3 +2341,16 @@
   supplies replay registration. Fresh grouped24-request position/session/stop
   and running24 sampler checks still precede a Full-only complete comparison.
   Keep tool prefetch off, all failures/tails, reuseV345 and the goal incomplete.
+- Grouped positionR1 passes24 exact request/session/native-stop checks; all24
+  stop natively, and running24 position dispatch overhead averages0.01036ms.
+  After its actual cleanup, FullR1 runs frozen913e3238/native2ce5e5389979
+  on port18677: ops/join_blocked_layer_groups_20261028_r1.registration.json.
+  Named live_start.py/.json verifies actual nice0 serving identities, sole
+  owned GPU scheduler, blocked JOIN handoff and8/4 groups, tool prefetch and
+  priority both off,75% predicted offload and2GiB Host demand reserve.
+  Reuse completeV345 with the explicit grouped/common engine difference.
+  Timing-artifact locations differ across isolated checkouts; actual content
+  hashes and every other overlay/provenance field match. Preserve both paths,
+  all frozen inputs and normal tails; do not edit the running registration.
+  complete_review.py requires exact complete work, fresh drain and actual
+  exit before plots/performance. No next GPU run is queued; goal stays active.

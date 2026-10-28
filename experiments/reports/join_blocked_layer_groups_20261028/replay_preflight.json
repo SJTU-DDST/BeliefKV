@@ -1,0 +1,28 @@
+{
+  "scope": "Registration source binding; no new GPU work or performance result.",
+  "clean_application": {
+    "commit": "913e3238b84b138e0747158082db14bc40a15141",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "3a25374d6910663d462565c214bece9fade4521f5174afd004d519ec722f4d33"
+  },
+  "native_evidence": {
+    "report": "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/native_final_cpu.xml",
+    "report_sha256": "07729f3a5ed6875063115bca5721507d9a34cbb972fd9c119c2e776a2eb7a869",
+    "sources": "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/native_registration_sources.json",
+    "sources_sha256": "71ae0b76aeb41f4e715e880314a7b049c2ff5e7a1f335496ee69cfa29863188b",
+    "tree": "2ce5e5389979a718c19f80abb9cc9b381b8cff0e",
+    "passing_cases": 53,
+    "gpu_validation_pending": true
+  },
+  "same_native_tree_and_patch_as_model": true,
+  "cpu_manifest": "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/fixture_qualified_shared_cpu.sources.json",
+  "cpu_manifest_sha256": "e24a33b5e238d0cdd168921df6fd4da7e146abb31ab44d96e6dbe91062eb4aa4",
+  "model_review_sha256": "51c8c2072d3309772e7eae938ab5d407c74eed74f4b96889104d002ab88cf141",
+  "predecessor": "/home/longhao/experiment/ops/host_demand_layer_handoff_20261028_r1.registration.json",
+  "predecessor_complete_and_exited": true,
+  "operator_sha256": "605692efe8fa56813d6a5c33749a11987eec5d0bb075a1495b0cd3e821613069"
+}

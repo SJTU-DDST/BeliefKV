@@ -8,7 +8,9 @@ prepare_host 与 agent 连续性。它是调度与迁移整合，不将额度交
 
 配置：`configs/migration/predictive_join_blocked_layer_groups_20261028.json`。
 保留 V230 的完整工作量、V311 工具时长、18 个不同项目、running/decode24、
-容量、seed21、流式指标和全部正常长尾；没有启动新的 FULL 性能实验。
+容量、seed21、流式指标和全部正常长尾。现已通过 grouped 组件、非强制模型
+与 24 请求 position/session/停止边界检查，正式 FULL 已启动，详见文末；
+完整性能结果仍待审计。
 
 ## JOIN 的交接链路
 
@@ -191,3 +193,24 @@ donor ACK；不因此推算真实工作量中的隐藏时间，也没有将该�
 分组组件、冻结来源、当前 CPU 绑定及退出，生成用于后续重放注册的
 `native_sources.json`。正式 FULL 前仍需新 grouped 引擎的 24 请求
 position/session/native-stop 检查及 running24 的 sampling 开销检查。
+
+## 正式完整对比
+
+`join_blocked_layer_position_20261028_r1` 已通过 24 个请求的精确 token、
+session 及 native 停止边界检查；24 个请求均观察到原生 stop。
+running24 的 position 采样额外派发开销均值约 0.01036ms。
+检查用进程退出后启动 `join_blocked_layer_groups_20261028_r1`，port18677，
+冻结应用 `913e3238`、grouped native tree `2ce5e5389979`。
+
+`live_start.py/.json` 独立确认实际 nice0 watcher/server/driver、唯一 owned
+GPU scheduler、实际新开关和 8/4 粒度生效、工具预取及优先窗口为零。
+复用 V345 工具衰减对照，保留明确的 grouped/common 引擎差异。
+两边工具时长 artifact 的存放路径不同，但文件 SHA256、entries、
+transformed plan、种子、公开来源、分类及离线 prior 均相同并逐项核对；
+不修改已冻结的注册记录。
+
+完整评价前仍须全部 3674 请求、18 个正常长尾完成，原停止条件一致，
+两条新鲜 idle telemetry 与实际退出通过。`complete_review.py` 同时核对
+精确工作量，生成 decode 时间曲线、分布和相同 batch/context 几何对比，
+并保留相对上一轮 joint FULL 和 online-refresh FULL 的退化或改善。
+该运行尚无完整性能结果，不能据此宣称逐层分组的独立收益。
