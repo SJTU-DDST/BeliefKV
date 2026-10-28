@@ -22,7 +22,17 @@ def sources():
         name: subprocess.check_output(["git", "-C", str(checkout), "show", reference + ":" + name], text=True)
         for name in FILES
     }
-    return before, {name: (checkout / name).read_text() for name in FILES}
+    candidate = {name: (checkout / name).read_text() for name in FILES}
+    if "_beliefkv_demand_pipeline" in candidate[SCHEDULER]:
+        from beliefkv.experiments.demand_prefill_pipeline_engine import project_disabled_scheduler
+        from beliefkv.experiments.native_engine_variant import SIBLING_CAPACITY_TREE
+
+        reviewed = subprocess.check_output(
+            ["git", "-C", str(checkout), "show", SIBLING_CAPACITY_TREE + ":" + SCHEDULER],
+            text=True,
+        )
+        candidate[SCHEDULER] = project_disabled_scheduler(reviewed, candidate[SCHEDULER])
+    return before, candidate
 
 
 def test_reviewed_default_off_changes_project_exactly_to_the_captured_engine(sources):

@@ -1,0 +1,32 @@
+{
+  "observed_at": "2026-10-28T20:36:08.882619+00:00",
+  "scope": "CPU content identity and reproducible native packaging only.",
+  "native_engine": {
+    "commit": "d3da19c1ca85581342a14b322fdc94cdc290654d",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "fc39cb9c2ff0b219a47539149f830c5d2bcdd5f6a45932606ba444f86668f21f"
+  },
+  "native_scheduler_sha256": "1845ecdb0e97fd863ccacc2ff812f44e58cc93b6c84a4d690f1e6644f8b61407",
+  "cpu_evidence": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/shared_r3_cpu.evidence.json",
+    "sha256": "86b7313b844539efb311ba9dc1518fd39f64c25460eadf2e3e97f2cc525db156"
+  },
+  "canonical_patch": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-demand-prefill-pipeline-runtime-20261028.patch",
+    "sha256": "c9b3ae50490a5023e5d7fd1fb473c97b1c4c7f22923d06211bf1ea6173f86f0b",
+    "base_commit": "fa5cb52afaeaad1f59f6d3eb2c5cf124f72bb491",
+    "expected_tree": "729aa0caa7a1ffac84463f46b3d1843d1a6a22e4",
+    "actual_tree": "729aa0caa7a1ffac84463f46b3d1843d1a6a22e4",
+    "reproduces_clean_cpu_tested_commit": true
+  },
+  "default_off_projects_to_qualified_parent": true,
+  "only_commit_metadata_changed_after_cpu_tests": true,
+  "operator_sha256": "409f0e1726dfab6ed1a408aa0e0089ce7921b14849e4794f24f0e9ed21cf42fd",
+  "gpu_correctness_verified": false,
+  "performance_accepted": false,
+  "formal_engine_registration_created": false
+}

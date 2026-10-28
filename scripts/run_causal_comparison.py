@@ -69,6 +69,7 @@ SERVER_FIELDS = (
     "AGENT_JOIN_FREE_ADMISSION",
     "AGENT_JOIN_BLOCKED_HANDOFF",
     "AGENT_FREE_CONTINUATION_ADMISSION",
+    "DEMAND_PREFILL_PIPELINE",
     "FREE_PAGE_H2D_FENCE",
 )
 
@@ -343,6 +344,7 @@ def preflight_runtime(settings, model_path):
         "tool_offload_before_admission": (
             settings.get("BELIEFKV_TOOL_OFFLOAD_BEFORE_ADMISSION", "0") == "1"
         ),
+        "demand_prefill_pipeline_enabled": settings.get("BELIEFKV_DEMAND_PREFILL_PIPELINE", "0") == "1",
         "idle_prepare_io_backend": settings.get("BELIEFKV_IDLE_PREPARE_IO_BACKEND", "native"),
         "idle_host_mirror_recycle": settings.get("BELIEFKV_IDLE_HOST_MIRROR_RECYCLE", "0") == "1",
         "tool_offload_min_survival": float(settings.get("BELIEFKV_TOOL_OFFLOAD_MIN_SURVIVAL", ".9")),
@@ -785,6 +787,11 @@ def observed_configuration(plan, label, arm, *, final=False):
         ) == "1"
         if state.get("tool_offload_before_admission", False) is not early_tool_offload:
             raise ValueError("effective tool offload before admission differs from declaration")
+        demand_pipeline = mode == "full" and common.get(
+            "BELIEFKV_DEMAND_PREFILL_PIPELINE", common.get("DEMAND_PREFILL_PIPELINE", "0"),
+        ) == "1"
+        if state.get("demand_prefill_pipeline", False) is not demand_pipeline:
+            raise ValueError("effective demand prefill pipeline differs from declaration")
         host_mirror_recycle = mode == "full" and common.get(
             "BELIEFKV_IDLE_HOST_MIRROR_RECYCLE", common.get("IDLE_HOST_MIRROR_RECYCLE", "0"),
         ) == "1"

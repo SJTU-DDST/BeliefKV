@@ -31,6 +31,12 @@ def arm_environment(
     if early_tool_offload not in ("0", "1"):
         raise ValueError("tool offload before admission must be 0 or 1")
     early_tool_offload = early_tool_offload if mode == "full" else "0"
+    demand_pipeline = common.get(
+        "BELIEFKV_DEMAND_PREFILL_PIPELINE", common.get("DEMAND_PREFILL_PIPELINE", "0"),
+    )
+    if demand_pipeline not in ("0", "1"):
+        raise ValueError("demand prefill pipeline must be 0 or 1")
+    demand_pipeline = demand_pipeline if mode == "full" else "0"
     layer_handoff = common.get("BELIEFKV_LAYER_HANDOFF", common.get("LAYER_HANDOFF", "0"))
     if layer_handoff not in ("0", "1"):
         raise ValueError("layer handoff must be 0 or 1")
@@ -142,6 +148,8 @@ def arm_environment(
     ):
         raise ValueError("unsupported agent working-set admission")
     agent_admission = agent_admission if mode == "full" else "off"
+    if demand_pipeline == "1" and agent_admission == "off":
+        raise ValueError("demand prefill pipeline requires Full agent admission")
     if agent_admission == "thunderagent_reference" and sessionless_prefix == "1":
         raise ValueError("reference ThunderAgent admission requires session-bound migration")
     join_free = common.get(
@@ -275,6 +283,8 @@ def arm_environment(
         "BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD": tool_offload,
         "TOOL_OFFLOAD_BEFORE_ADMISSION": early_tool_offload,
         "BELIEFKV_TOOL_OFFLOAD_BEFORE_ADMISSION": early_tool_offload,
+        "DEMAND_PREFILL_PIPELINE": demand_pipeline,
+        "BELIEFKV_DEMAND_PREFILL_PIPELINE": demand_pipeline,
         "LAYER_HANDOFF": layer_handoff,
         "BELIEFKV_LAYER_HANDOFF": layer_handoff,
         **{

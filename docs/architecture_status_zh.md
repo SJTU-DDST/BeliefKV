@@ -16,6 +16,17 @@
 
 以下保留上一轮诊断及早期实现声明。
 
+针对其他 prefill 区间打断关键请求的新候选为
+`BELIEFKV_DEMAND_PREFILL_PIPELINE`，默认关闭。实际 `PrefillAdder`
+通过容量检查并排入需求 H2D 后，保留本轮真实选批成员在 native waiting
+queue，先推进已驻留 decode；ACK 后重走正常准入。单/多成员、共享前缀
+取消、逐层依赖和 request receipt 均有 CPU 生命周期检查。完整共享
+CPU 3839 项及六个子测试通过，保留原有 3718 个测试身份并新增 121 个。
+原生 `d3da19c1` / tree `729aa0caa7a1` 已提交并与实际测试字节、独立
+累计补丁绑定，尚未登记正式 engine。没有新
+agent 资格、普通预取优先权或工具预取，GPU/模型及完整性能仍待验证，
+见[原生需求恢复流水线](design/native_demand_prefill_pipeline_20261028_zh.md)。
+
 共享控制 CPU 诊断 FULL 已完成全部 3674 个请求和 18 条 workflow：
 平均 JCT 1642.310207s、全程输出 235.033300token/s，仍不足以满足明确、
 可重复的双指标收益目标。历史 24.98s 服务后增量没有完整控制计时，

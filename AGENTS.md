@@ -2630,3 +2630,27 @@
   GPU/plot processes exited. ReuseV345, preserve all tails/negative results,
   leave other baselines/ablations deferred and the goal active; no next GPU
   run is queued. See docs/research/full_only_pressure_index_result_20261028_zh.md.
+- New default-off BELIEFKV_DEMAND_PREFILL_PIPELINE stages one actual native
+  prefill batch after its normal PrefillAdder capacity/materialization pass,
+  retains all selected members in the native waiting queue, and lets resident
+  decode progress during untagged demand H2D. Multiple members/siblings remain
+  together; no new agent permit, queue priority, TTL or tool prefetch. Release
+  each old request receipt exactly once before native rematch/readmission;
+  retain DMA locks/ACKs and publish the native shared-prefix consumer even on
+  cancellation. Clear unrelated decode fences only with the existing bounded
+  native path proof. Initial cache/pure/scheduler fixture failures are retained.
+  shared_r3_cpu passes3839 unique identities plus6subtests, retaining3718 and
+  adding121; actual native/Full/acting-decay constructors and control masking
+  verify. The old free-page checker stays unchanged and correctly refuses the
+  unprojected new tree; an independently tested exact default-off projection
+  restores the reviewed parent before applying it. shared_r2 checks passed
+  but its assembler missed the launcher online-timing alias; finalr3 uses the
+  real launcher environment and binds sources before/after one complete run.
+  Native clean commitd3da19c1/tree729aa0caa7a1 and the independent cumulative
+  patch are content-bound to those CPU-tested bytes by native_seal.json.
+  Native registration, actual installed/executed-state audit, complete staged
+  demand/first-service integration, real GPU/cancellation/shared-prefix and
+  model/position qualification remain pending. No GPU run or performance
+  acceptance is created. Preserve normal tails, cancelled tool prefetch,
+  completeV345 and the global goal. See docs/design/native_demand_prefill_pipeline_20261028_zh.md
+  and docs/research/native_demand_prefill_pipeline_cpu_20261028_zh.md.

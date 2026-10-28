@@ -363,6 +363,12 @@ class NativeAdmissionRuntime:
             "full", "join_priority_only", "scheduler_only", "kv_only",
         ):
             raise ValueError("unsupported internal runtime comparison mode")
+        demand_pipeline = os.environ.get("BELIEFKV_DEMAND_PREFILL_PIPELINE", "0")
+        if demand_pipeline not in ("0", "1") or (
+            demand_pipeline == "1" and self.internal_comparison_mode != "full"
+        ):
+            raise ValueError("demand prefill pipeline requires explicit Full mode")
+        self.demand_prefill_pipeline_enabled = demand_pipeline == "1"
         self._custom_kv_management = self.internal_comparison_mode not in (
             "join_priority_only", "scheduler_only",
         )
@@ -1141,6 +1147,8 @@ class NativeAdmissionRuntime:
                     pressure_pause_policy=self.agent_pressure_pause_policy,
                     lending_selection=self.agent_lending_selection,
                 )
+        if self.demand_prefill_pipeline_enabled and self._agent_admission is None:
+            raise ValueError("demand prefill pipeline requires Full agent admission")
         if paper_policy:
             from beliefkv.runtime.paper_baseline import create_adapter
 
@@ -1214,6 +1222,8 @@ class NativeAdmissionRuntime:
             self.join_wait_hints[hint.join_id] = hint
 
     def close(self) -> None:
+        if (pipeline := getattr(self, "_demand_prefill_pipeline", None)) is not None:
+            pipeline.close()
         if self._full_prefix_migration is not None:
             self._full_prefix_migration.close()
         if (agents := getattr(self, "_agent_admission", None)) is not None:
@@ -3012,6 +3022,7 @@ class NativeAdmissionRuntime:
                 "eos_prefetch_evidence_window_ms": self.eos_prefetch_evidence_window_ms,
                 "terminal_cache_diagnostics": self._terminal_cache_diagnostics,
                 "profile_shared_path": self._hotpath_timing.enabled,
+                "demand_prefill_pipeline": self.demand_prefill_pipeline_enabled,
                 "h2d_seed_samples": self._h2d_seed_count,
                 "h2d_service_samples": len(self._h2d_samples),
                 "prefetch_residency_budget": vars(self._residency_budget).copy(),

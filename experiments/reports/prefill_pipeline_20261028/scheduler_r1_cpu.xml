@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="7.301" timestamp="2026-10-28T13:13:08.131972-07:00" hostname="ddst-12"><testcase classname="tests.test_demand_prefill_pipeline_scheduler" name="test_native_batch_restore_defers_callbacks_without_splitting_selected_members[False-staged_native0]" time="6.582"><failure message="ValueError: config namespace 'schedule' not published">tests/test_demand_prefill_pipeline_scheduler.py:82: in test_native_batch_restore_defers_callbacks_without_splitting_selected_members
+    invoke()
+tests/test_demand_prefill_pipeline_scheduler.py:79: in &lt;lambda&gt;
+    invoke = lambda: scope["_get_new_batch_prefill_raw"](scheduler, None, running)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../.worktrees/sglang-demand-prefill-pipeline-20261028/python/sglang/srt/managers/scheduler.py:4275: in _get_new_batch_prefill_raw
+    prefill_max_requests=get_schedule().prefill_max_requests,
+                         ^^^^^^^^^^^^^^
+../.worktrees/sglang-demand-prefill-pipeline-20261028/python/sglang/srt/runtime_context.py:1393: in get_schedule
+    return _CONTEXT.config_bag("schedule")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../.worktrees/sglang-demand-prefill-pipeline-20261028/python/sglang/srt/runtime_context.py:1086: in config_bag
+    raise ValueError(f"config namespace {name!r} not published")
+E   ValueError: config namespace 'schedule' not published</failure></testcase><testcase classname="tests.test_demand_prefill_pipeline_scheduler" name="test_native_batch_restore_defers_callbacks_without_splitting_selected_members[True-staged_native0]" time="0.036"><failure message="ValueError: config namespace 'schedule' not published">tests/test_demand_prefill_pipeline_scheduler.py:90: in test_native_batch_restore_defers_callbacks_without_splitting_selected_members
+    assert invoke() == (None, running)
+           ^^^^^^^^
+tests/test_demand_prefill_pipeline_scheduler.py:79: in &lt;lambda&gt;
+    invoke = lambda: scope["_get_new_batch_prefill_raw"](scheduler, None, running)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../.worktrees/sglang-demand-prefill-pipeline-20261028/python/sglang/srt/managers/scheduler.py:4275: in _get_new_batch_prefill_raw
+    prefill_max_requests=get_schedule().prefill_max_requests,
+                         ^^^^^^^^^^^^^^
+../.worktrees/sglang-demand-prefill-pipeline-20261028/python/sglang/srt/runtime_context.py:1393: in get_schedule
+    return _CONTEXT.config_bag("schedule")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../.worktrees/sglang-demand-prefill-pipeline-20261028/python/sglang/srt/runtime_context.py:1086: in config_bag
+    raise ValueError(f"config namespace {name!r} not published")
+E   ValueError: config namespace 'schedule' not published</failure></testcase></testsuite></testsuites>
