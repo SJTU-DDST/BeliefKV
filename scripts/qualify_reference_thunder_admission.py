@@ -52,6 +52,7 @@ def main():
         "IDLE_HOST_MIRROR_RECYCLE", "0",
     ) == "1"
     layer_handoff = configuration["common_environment"].get("LAYER_HANDOFF", "0") == "1"
+    join_handoff = configuration["common_environment"].get("AGENT_JOIN_BLOCKED_HANDOFF", "0") == "1"
     host_demand = int(configuration["common_environment"].get(
         "BELIEFKV_HOST_DEMAND_RESERVE_BYTES", "0",
     )) > 0
@@ -69,6 +70,9 @@ def main():
         "tests/test_audit_tool_reentry_service.py",
     ) if join_free or siblings else ()
     extra_tests += ("tests/test_eos_join_prefetch.py",)
+    if join_handoff:
+        extra_tests += ("tests/test_join_blocked_handoff.py",)
+        paths.add("beliefkv/runtime/join_blocked_handoff.py")
     if early_tool_offload:
         extra_tests += ("tests/test_tool_offload_before_admission.py",)
         paths.add("beliefkv/runtime/predicted_tool_offload.py")
@@ -82,6 +86,10 @@ def main():
             "scripts/qualify_layer_handoff_model.py",
             "beliefkv/experiments/native_engine_variant.py",
         ))
+        if any(configuration["common_environment"].get(
+            "BELIEFKV_LAYER_HANDOFF_" + direction + "_LAYERS", "1",
+        ) != "1" for direction in ("D2H", "H2D")):
+            extra_tests += ("tests/test_layer_handoff_groups.py",)
     if host_demand:
         extra_tests += ("tests/test_host_demand_capacity.py",)
         paths.add("beliefkv/runtime/host_demand_capacity.py")
@@ -151,6 +159,8 @@ def main():
             raise ValueError("Full composition leaked into a paper control")
         if settings["BELIEFKV_AGENT_JOIN_FREE_ADMISSION"] != str(int(join_free and label == "full")):
             raise ValueError("free-capacity JOIN admission leaked into a paper control")
+        if settings["BELIEFKV_AGENT_JOIN_BLOCKED_HANDOFF"] != str(int(join_handoff and label == "full")):
+            raise ValueError("JOIN blocked handoff leaked into a paper control")
         if settings["BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN"] != str(int(siblings and label == "full")):
             raise ValueError("sibling admission leaked into a paper control")
         if settings["BELIEFKV_AGENT_FREE_CONTINUATION_ADMISSION"] != str(
@@ -204,6 +214,7 @@ def main():
         "tool_offload_before_admission": early_tool_offload,
         "idle_host_mirror_recycle": host_mirror_recycle,
         "layer_handoff": layer_handoff,
+        "join_blocked_handoff": join_handoff,
         "constructors": constructors,
         "preserved_development_reports": [
             str(REPORTS / name) for name in (

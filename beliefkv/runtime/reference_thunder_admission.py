@@ -46,6 +46,16 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         self.latest = {}
         self.join_free_admission = getattr(runtime, "agent_join_free_admission", False)
         self.coadmit_join_children = getattr(runtime, "coadmit_join_children", False)
+        self.join_blocked_handoff = getattr(runtime, "agent_join_blocked_handoff", False)
+        self._join_handoff = None
+        if self.join_blocked_handoff:
+            from beliefkv.runtime.join_blocked_handoff import JoinBlockedHandoff
+
+            self._join_handoff = JoinBlockedHandoff(self)
+            constructor = self.working_set_type
+            self.working_set_type = lambda capacity: constructor(
+                capacity, resume_eligible=self._join_handoff.can_resume,
+            )
         self.policy_name = self.composition_name(
             join_free_admission=self.join_free_admission,
             coadmit_join_children=self.coadmit_join_children,
@@ -59,12 +69,23 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             raise ValueError("an agent cannot change workflow or context identity")
         super().registered(req, key)
         self.latest[key.invocation_id] = key
+        if self._join_handoff is not None:
+            self._join_handoff.next_attempt = 0.
+            self._join_handoff.ready_parents(preferred=key)
         if self.coadmit_join_children:
             for join_id in sorted(self.runtime._join_by_invocation.get(key.invocation_id, ())):
                 self._coadmit_join(join_id)
 
     def events(self, events):
+        if self._join_handoff is not None:
+            events = tuple(events)
         super().events(events)
+        if self._join_handoff is not None and any(event.kind in (
+            Kind.TOOL_START, Kind.TOOL_END, Kind.JOIN_WAIT, Kind.JOIN_SATISFIED,
+            Kind.RETURN, Kind.INVOCATION_CANCEL, Kind.LLM_SUBMIT,
+        ) for event in events):
+            self._join_handoff.next_attempt = 0.
+            self._join_handoff.ready_parents()
         if self.coadmit_join_children and self.policy is not None:
             joins = set()
             for event in events:
@@ -205,6 +226,31 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         item = self._restore_owner(key, source=source)
         return bool(item is not None and item.active)
 
+    def _handoff_join(self, key):
+        if self.policy is None or key is None or self.latest.get(key.invocation_id) != key:
+            return None
+        item = self.policy.programs.get(key.invocation_id)
+        invocation = self.runtime.graph.invocations.get(key.invocation_id)
+        if (
+            item is None or invocation is None or item.active or item.marked_for_pause
+            or self.runtime._terminal(key)
+            or self.runtime.context_sessions.get(key.context_id) != key
+            or self._restore_owner(key, source="join_ticket") is None
+        ):
+            return None
+        if not item.pending:
+            join = self.runtime.graph.joins.get(invocation.join_id)
+            if self._waiting_on_join(invocation, join):
+                return join.join_id
+        record = self.requests.get(key.request_id)
+        request = self._live_requests.get(key.request_id)
+        if (
+            item.pending and record is not None and record[0] == key and request is not None
+            and self.runtime._ready_join_parent(request, key)
+        ):
+            return self.runtime._join_priority_pending[key.invocation_id]
+        return None
+
     def claim_restore(self, key, *, source):
         allowed = self.holds_restore(key, source=source)
         existing = allowed
@@ -226,6 +272,10 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
                     self.counts["join_free_capacity_admitted"] += 1
                 else:
                     self.counts["join_free_capacity_insufficient"] += 1
+        if not allowed and source == "join_ticket" and self._join_handoff is not None:
+            join_id = self._handoff_join(key)
+            if join_id is not None:
+                allowed = self._join_handoff.claim(key, join_id)
         counter = (
             "restore_existing_eligibility" if existing else
             "restore_new_join_eligibility" if allowed else "restore_outside_active_set"
@@ -265,6 +315,10 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             "logical_borrowing_enabled": False,
             "restore_changes_eligibility": self.join_free_admission,
             "join_free_admission": self.join_free_admission,
+            "join_blocked_handoff": self.join_blocked_handoff,
+            "join_blocked_handoff_authority": "observed_join_parent_complete_blocked_agent_budgets",
+            "join_blocked_handoff_max_donors": 64,
+            "join_blocked_resume_filter": self.join_blocked_handoff,
             "join_free_admission_authority": "complete_undiscounted_unused_logical_budget_only",
             "restore_reservation_ms": 0,
             "ordinary_restore_reservation_ms": 0,
@@ -293,9 +347,11 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
 def validate_reference_admission(
     state, *, join_free_admission=False, coadmit_join_children=False,
     free_continuation_admission=False,
+    join_blocked_handoff=False,
 ):
     if any(type(value) is not bool for value in (
         join_free_admission, coadmit_join_children, free_continuation_admission,
+        join_blocked_handoff,
     )):
         raise ValueError("JOIN admission declarations must be booleans")
     admission_type = ReferenceThunderAdmission
@@ -346,9 +402,16 @@ def validate_reference_admission(
             "sibling_admission_max_members": ReferenceThunderAdmission.max_sibling_members,
             "sibling_admission_update_scope": "request_registration_and_join_or_member_terminal_event",
         })
+    if join_blocked_handoff:
+        expected.update({
+            "join_blocked_handoff_authority": "observed_join_parent_complete_blocked_agent_budgets",
+            "join_blocked_handoff_max_donors": 64,
+            "join_blocked_resume_filter": True,
+        })
     if not isinstance(state, dict) or (
         state.get("join_free_admission", False) is not join_free_admission
         or state.get("free_continuation_admission", False) is not free_continuation_admission
+        or state.get("join_blocked_handoff", False) is not join_blocked_handoff
     ) or any(
         type(state.get(name)) is not type(value) or state[name] != value
         for name, value in expected.items()

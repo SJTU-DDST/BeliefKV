@@ -2287,3 +2287,27 @@
   stays off as requested. Preserve complete named audits and figures; see
   docs/research/layer_overlap_regression_and_siblings_20261028_zh.md.
   No new GPU experiment is registered; retain V345 and the incomplete goal.
+- The new explicit candidate is
+  configs/migration/predictive_join_blocked_layer_groups_20261028.json.
+  AGENT_JOIN_BLOCKED_HANDOFF bridges observed EOS/actual submitted JOIN
+  parents to complete logical budget from active nonpending unprotected
+  genuinely blocked agents. Tool donors retain the existing long prediction.
+  Check at most64 donors and24 ready parents, commit only an adequate whole
+  plan, keep200ms failure backoff, and grant no physical page credit. Existing
+  native reclaim/ACK/H2D/admission remains mandatory. Its optional resume
+  eligibility filter prevents still-blocked paused owners from immediately
+  undoing a JOIN handover; paper/default behavior is unchanged. This is
+  working-set integration, not a new loan/recall contribution.
+- Native1f5fac9e9f7a/tree2ce5e5389979 adds independent fused layer groups using
+  the existing HiCache all-layer JIT and pointer-table views. Explicit8/4
+  groups reduce48-layer copy calls/completion events from96 to18; default1/1
+  remains. Preserve old engines and the new immutable canonical patch.
+  Exact group-matched GPU component, unforced-model and position proofs are
+  required before new complete performance claims. CPU53 native cases and
+  one3519-case shared execution plus4subtests pass, retaining3481 identities.
+  Preserve the first shared nested-event-time failure and successful exact/
+  complete retries. Callback success measures121.328us median in a33-program/
+  31-pending synthetic fixture with real async logging; it is not whole-path
+  or GPU cost. Named evidence belongs to join_blocked_layer_groups_20261028.
+  See docs/design/join_blocked_layer_groups_20261028_zh.md. Tool prefetch
+  stays off; reuseV345 and keep the clear/repeated/all-baseline goal active.

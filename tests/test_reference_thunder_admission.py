@@ -28,6 +28,7 @@ from tests.test_tool_predictive_transfers import event
 def full_runtime(
     monkeypatch, tmp_path, *, capacity=1000, join_free_admission=False,
     coadmit_join_children=False, free_continuation_admission=False,
+    join_blocked_handoff=False,
 ):
     settings = arm_environment({
         "AGENT_ADMISSION": "thunderagent_reference",
@@ -35,6 +36,7 @@ def full_runtime(
         "EXECUTION_FRONTIER_RESTORE": "0",
         "TOOL_CONTINUITY": "1",
         "AGENT_JOIN_FREE_ADMISSION": str(int(join_free_admission)),
+        "AGENT_JOIN_BLOCKED_HANDOFF": str(int(join_blocked_handoff)),
         "AGENT_COADMIT_JOIN_CHILDREN": str(int(coadmit_join_children)),
         "AGENT_FREE_CONTINUATION_ADMISSION": str(int(free_continuation_admission)),
     }, "full")

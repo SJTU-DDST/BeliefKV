@@ -654,6 +654,13 @@ class NativeAdmissionRuntime:
         if layer_handoff not in ("0", "1"):
             raise ValueError("layer handoff must be 0 or 1")
         self.layer_handoff_enabled = layer_handoff == "1"
+        groups = []
+        for direction in ("D2H", "H2D"):
+            value = os.environ.get("BELIEFKV_LAYER_HANDOFF_" + direction + "_LAYERS", "1")
+            if not value.isascii() or not value.isdecimal() or not 1 <= int(value) <= 64:
+                raise ValueError("layer handoff groups must be integers in [1, 64]")
+            groups.append(int(value) if self.layer_handoff_enabled else 1)
+        self.layer_handoff_d2h_layers, self.layer_handoff_h2d_layers = groups
         if self.layer_handoff_enabled and (
             not self.tool_offload_before_admission
             or os.environ.get("BELIEFKV_AGENT_ADMISSION") != "thunderagent_reference"
@@ -1030,6 +1037,13 @@ class NativeAdmissionRuntime:
         ):
             raise ValueError("free-capacity JOIN admission requires the reference Full core")
         self.agent_join_free_admission = join_free == "1"
+        join_handoff = os.environ.get("BELIEFKV_AGENT_JOIN_BLOCKED_HANDOFF", "0")
+        if join_handoff not in ("0", "1") or (
+            join_handoff == "1"
+            and (agent_policy != "thunderagent_reference" or not self.agent_join_free_admission)
+        ):
+            raise ValueError("JOIN blocked handoff requires reference Full free-JOIN admission")
+        self.agent_join_blocked_handoff = join_handoff == "1"
         continuation_free = os.environ.get("BELIEFKV_AGENT_FREE_CONTINUATION_ADMISSION", "0")
         if continuation_free not in ("0", "1") or (
             continuation_free == "1" and agent_policy != "thunderagent_reference"
@@ -1359,6 +1373,10 @@ class NativeAdmissionRuntime:
             getattr(cache, "begin_beliefkv_layer_handoff", None)
         ):
             raise ValueError("layer handoff requires the dedicated native engine")
+        if self.layer_handoff_enabled and max(
+            self.layer_handoff_d2h_layers, self.layer_handoff_h2d_layers,
+        ) > getattr(cache, "beliefkv_layer_handoff_max_group_layers", 1):
+            raise ValueError("grouped layer handoff requires the dedicated grouped native engine")
         supports = getattr(cache, "supports_beliefkv_restore_tiers", None)
         self._restore_tiers_supported = (
             self.restore_tiers == "dependency" and callable(supports) and supports() is True
@@ -2806,6 +2824,7 @@ class NativeAdmissionRuntime:
                 ),
                 "agent_admission_enabled": self.enable_agent_working_set,
                 "agent_join_free_admission": self.agent_join_free_admission,
+                "agent_join_blocked_handoff": self.agent_join_blocked_handoff,
                 "agent_free_continuation_admission": self.agent_free_continuation_admission,
                 "full_prefix_migration": (
                     self._full_prefix_migration.status()
@@ -2917,6 +2936,8 @@ class NativeAdmissionRuntime:
                 "predicted_tool_offload": self.enable_predicted_tool_offload,
                 "tool_offload_before_admission": self.tool_offload_before_admission,
                 "layer_handoff_enabled": self.layer_handoff_enabled,
+                "layer_handoff_d2h_layers": self.layer_handoff_d2h_layers,
+                "layer_handoff_h2d_layers": self.layer_handoff_h2d_layers,
                 "tool_offload_policy": (
                     type(self._predicted_tool_offload).__name__
                     if self._predicted_tool_offload is not None else None

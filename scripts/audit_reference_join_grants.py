@@ -21,6 +21,7 @@ from scripts.audit_sealed_wait_prefetch import SealedRecords
 GRANTS = {
     "agent_join_free_capacity_admitted", "agent_join_siblings_coadmitted",
     "agent_continuation_free_capacity_admitted",
+    "agent_join_blocked_capacity_admitted",
 }
 
 
@@ -30,6 +31,7 @@ def nonnegative_integer(value):
 
 def validate_grant(row):
     programs = row.get("programs")
+    handoff = row.get("event") == "agent_join_blocked_capacity_admitted"
     continuation = row.get("event") == "agent_continuation_free_capacity_admitted"
     join_id = row.get("join_id")
     if (
@@ -43,11 +45,14 @@ def validate_grant(row):
         or type(programs) is not list or not 1 <= len(programs) <= 24
         or row["event"] in (
             "agent_join_free_capacity_admitted", "agent_continuation_free_capacity_admitted",
+            "agent_join_blocked_capacity_admitted",
         ) and len(programs) != 1
         or row.get("native_capacity_authority_preserved") is not True
         or any(not nonnegative_integer(row.get(name)) for name in (
-            "required_tokens", "remaining_before_tokens", "remaining_after_tokens",
+            "required_tokens", "remaining_after_tokens",
         ))
+        or type(row.get("remaining_before_tokens")) is not int
+        or not handoff and row["remaining_before_tokens"] < 0
     ):
         raise ValueError("invalid complete-budget JOIN grant")
     owners = set()
@@ -76,10 +81,35 @@ def validate_grant(row):
             raise ValueError("JOIN grant repeats an owner")
         owners.add(owner)
         workflows.add(owner[0])
+    released = 0
+    if handoff:
+        donors = row.get("donors")
+        if (
+            type(donors) is not list or not 1 <= len(donors) <= 64
+            or row.get("released_device_tokens") != 0 or row.get("released_host_tokens") != 0
+        ):
+            raise ValueError("invalid JOIN blocked-budget donor evidence")
+        seen = set(owners)
+        for donor in donors:
+            donor_key = donor.get("key", {})
+            owner = tuple(donor_key.get(name) for name in (
+                "root_workflow_id", "invocation_id", "context_id",
+            ))
+            if (
+                any(type(value) is not str or not value for value in owner)
+                or owner in seen
+                or not nonnegative_integer(donor.get("observed_context_tokens"))
+                or donor["observed_context_tokens"] <= 0
+                or donor.get("complete_budget_tokens") != donor["observed_context_tokens"] + 100
+            ):
+                raise ValueError("invalid JOIN blocked-budget donor identity")
+            seen.add(owner)
+            released += donor["complete_budget_tokens"]
     if (
         len(workflows) != 1
         or sum(item["complete_budget_tokens"] for item in programs) != row["required_tokens"]
-        or row["remaining_before_tokens"] - row["required_tokens"] != row["remaining_after_tokens"]
+        or row["remaining_before_tokens"] + released - row["required_tokens"]
+        != row["remaining_after_tokens"]
     ):
         raise ValueError("JOIN grant complete budgets do not reconcile")
 
@@ -118,7 +148,9 @@ def inspect(opportunities, replay_events, native_events, receipts, services, *, 
         for program in grant["programs"]:
             key = program["key"]
             owner = key["root_workflow_id"], key["invocation_id"], key["context_id"]
-            parent = grant["event"] == "agent_join_free_capacity_admitted"
+            parent = grant["event"] in (
+                "agent_join_free_capacity_admitted", "agent_join_blocked_capacity_admitted",
+            )
             episode = join_requests.get((owner[0], grant["join_id"], owner[1])) if parent else None
             rid = key["request_id"]
             if parent:

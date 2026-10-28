@@ -1,0 +1,66 @@
+{
+  "scope": "Callback thread CPU with 33 synthetic programs, 31 pending records and an async journal.",
+  "fixtures": {
+    "disabled": {
+      "programs": 33,
+      "pending_native_records": 31,
+      "samples": 500,
+      "thread_cpu_us": {
+        "median": 29.243499999999997,
+        "p99": 32.526,
+        "max": 34.254
+      },
+      "journal_records": 0,
+      "journal_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "new_handoff": {
+      "programs": 33,
+      "pending_native_records": 31,
+      "samples": 500,
+      "thread_cpu_us": {
+        "median": 121.32849999999999,
+        "p99": 141.781,
+        "max": 418.729
+      },
+      "journal_records": 550,
+      "journal_sha256": "7b184ed005b79a75a07113ed8284638e39c9de9701227bc6555cdb06121bf77a"
+    },
+    "no_blocked_donor": {
+      "programs": 33,
+      "pending_native_records": 31,
+      "samples": 500,
+      "thread_cpu_us": {
+        "median": 73.52799999999999,
+        "p99": 78.802,
+        "max": 83.431
+      },
+      "journal_records": 0,
+      "journal_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "backoff": {
+      "programs": 33,
+      "pending_native_records": 31,
+      "samples": 500,
+      "thread_cpu_us": {
+        "median": 34.116,
+        "p99": 38.468,
+        "max": 43.78
+      },
+      "journal_records": 0,
+      "journal_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "sources": {
+    "experiments/reports/join_blocked_layer_groups_20261028/control_cost_cpu.py": "8437f57c472209e5fd8af8c0c13c16ffd864d62751096f9c392ca8da3dff94d1",
+    "beliefkv/runtime/join_blocked_handoff.py": "e5fcf68399b039ee4bb92d65edddd164871532f3d739b99b6dead15c0ca60e38",
+    "beliefkv/runtime/reference_thunder_admission.py": "40bcca52795893dd63052c3ce9fc753edbc51965d5eb6351f49864a5e09ebd69",
+    "beliefkv/runtime/paper_baseline.py": "bcb6466df233996710a8cb84bada8a4f1e81945580e4fee597016b1db3254ee4",
+    "beliefkv/policy/paper_baselines.py": "9e269186e287b556ba1b07d22b51e04b902189a396017369119a0c50a6de8cf3",
+    "tests/test_join_blocked_handoff.py": "185af0ebfe4621bf1f47ea0e342091c20c2a135a69d7c373e0807eb01fc0c3ab"
+  },
+  "eligibility_and_retry_reset_for_timing_only": true,
+  "writer_thread_cpu_included": false,
+  "maximum_64_donor_window_measured": false,
+  "whole_controller_cpu_measured": false,
+  "gpu_or_jct_gain_measured": false
+}

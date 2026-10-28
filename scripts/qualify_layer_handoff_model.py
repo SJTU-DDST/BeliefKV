@@ -207,6 +207,17 @@ async def probe(directory, port, prompts, pulse):
     return {"requests": rows, "handoffs": handoffs, "maximum_logprob_delta": deltas}
 
 
+def validate_direction_groups(configuration, component):
+    environment = configuration["common_environment"]
+    expected = {
+        direction.lower(): int(environment.get(
+            "BELIEFKV_LAYER_HANDOFF_" + direction + "_LAYERS", "1",
+        )) for direction in ("D2H", "H2D")
+    }
+    if component.get("direction_groups", {"d2h": 1, "h2d": 1}) != expected:
+        raise ValueError("model qualifier requires the actual component-qualified direction groups")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -228,6 +239,8 @@ def main():
     state, component = git_source_state(engine), controls.load(args.components)
     if state["dirty"] or component.get("status") != "native_gpu_layer_handoff_components_qualified" or component["native_engine"] != state:
         raise ValueError("model qualifier requires identical clean component-qualified engine")
+    spec = controls.load(args.configuration)
+    validate_direction_groups(spec, component)
     common.guard_gpu()
     if os.getpriority(os.PRIO_PROCESS, os.getpid()) != 0:
         raise ValueError("model GPU supervisor requires nice0")
@@ -251,7 +264,6 @@ def main():
     arm = directory / "arm"
     (arm / "server").mkdir(parents=True)
     (arm / "opportunities").mkdir()
-    spec = controls.load(args.configuration)
     env, flags, socket = controls.environment(
         {"arms": {"full": spec["common_environment"]}}, "full", ROOT, engine,
         arm, args.port, arm / "unused_plugin", sampling_mode="position",
@@ -260,7 +272,8 @@ def main():
     if socket.exists() or Path(f"/tmp/bkv-layer-model-{args.port}.sock").exists():
         raise ValueError("preserve existing model event socket and use a fresh port")
     env.update(
-        SGLANG_SOURCE_BASE_COMMIT=state["commit"], SGLANG_PATCH_FLAVOR="layer_handoff",
+        SGLANG_SOURCE_BASE_COMMIT=state["commit"],
+        SGLANG_PATCH_FLAVOR=spec["common_environment"].get("SGLANG_PATCH_FLAVOR", "layer_handoff"),
         CONTEXT_LENGTH="49152", HICACHE_SIZE_GB="8", SGLANG_PLUGINS="",
         BELIEFKV_CAUSAL_REPLAY_BRIDGE="0", BELIEFKV_REPLAY_TOKEN_CAPTURE="1",
         BELIEFKV_ENABLE_BACKGROUND_PREPARE="0",

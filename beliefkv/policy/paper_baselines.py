@@ -259,12 +259,16 @@ class ThunderWorkingSet:
     outside this declared single-backend projection.
     """
 
-    def __init__(self, capacity_tokens: int, *, acting_weight: float = 1., buffer_tokens: int = 100):
+    def __init__(
+        self, capacity_tokens: int, *, acting_weight: float = 1.,
+        buffer_tokens: int = 100, resume_eligible=None,
+    ):
         self.capacity_tokens = _integer(capacity_tokens, "KV capacity", minimum=1)
         self.acting_weight = _number(acting_weight, "acting-token weight")
         self.buffer_tokens = _integer(buffer_tokens, "per-program buffer")
         self.programs: dict[str, ThunderProgram] = {}
         self._queue_sequence = 0
+        self.resume_eligible = resume_eligible
 
     def _pause(self, item: ThunderProgram, now: float) -> None:
         self._queue_sequence += 1
@@ -317,7 +321,10 @@ class ThunderWorkingSet:
         capacity = self.remaining_capacity()
         if capacity <= self.buffer_tokens:
             return ()
-        paused = [item for item in self.programs.values() if not item.active]
+        paused = [
+            item for item in self.programs.values() if not item.active
+            and (self.resume_eligible is None or self.resume_eligible(item))
+        ]
         paused.sort(key=lambda item: (
             1 if item.steps == 1 else 0 if not item.acting else 2,
             item.tokens, item.queue_sequence,
@@ -364,8 +371,14 @@ class ThunderWorkingSet:
 class ThunderActingDecayWorkingSet(ThunderWorkingSet):
     """Public opt-in acting decay for resume; pressure still uses full tokens."""
 
-    def __init__(self, capacity_tokens: int, *, acting_weight: float = 1., buffer_tokens: int = 100):
-        super().__init__(capacity_tokens, acting_weight=acting_weight, buffer_tokens=buffer_tokens)
+    def __init__(
+        self, capacity_tokens: int, *, acting_weight: float = 1.,
+        buffer_tokens: int = 100, resume_eligible=None,
+    ):
+        super().__init__(
+            capacity_tokens, acting_weight=acting_weight, buffer_tokens=buffer_tokens,
+            resume_eligible=resume_eligible,
+        )
         self.acting_since: dict[str, float] = {}
         self._resume_now: float | None = None
         self.last_resume_capacity_tokens: int | None = None
@@ -403,7 +416,10 @@ class ThunderActingDecayWorkingSet(ThunderWorkingSet):
         if capacity <= self.buffer_tokens:
             return ()
         paused = sorted(
-            (item for item in self.programs.values() if not item.active),
+            (
+                item for item in self.programs.values() if not item.active
+                and (self.resume_eligible is None or self.resume_eligible(item))
+            ),
             key=lambda item: (
                 1 if item.steps == 1 else 0 if not item.acting else 2,
                 item.tokens, item.queue_sequence,

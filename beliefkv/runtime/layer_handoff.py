@@ -132,6 +132,10 @@ def try_handoff(offloader, key, step):
         consumer_session_id=consumer_key.session_id,
         consumer_session_generation=consumer_key.session_generation,
         reserve_tokens=reserve, authorize=authorize,
+        **({
+            "donor_group_layers": runtime.layer_handoff_d2h_layers,
+            "consumer_group_layers": runtime.layer_handoff_h2d_layers,
+        } if (runtime.layer_handoff_d2h_layers, runtime.layer_handoff_h2d_layers) != (1, 1) else {}),
     )
     if result is None:
         runtime.counts["layer_handoff_native_refused"] += 1

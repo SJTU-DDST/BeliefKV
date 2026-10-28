@@ -1,0 +1,12 @@
+{
+  "scope": "CPU benchmark observer failure before recording performance evidence",
+  "operator_sha256_before_fix": "a4c94f7019c5d72b2bae8faa570e038bf9d844ad1a066af1cb6794d909ac390c",
+  "error": "ValueError: CPU journal count differs from successful handovers",
+  "cause": "The observer compared the event-count dictionary enqueued with an integer.",
+  "preserved_status": "experiments/reports/join_blocked_layer_groups_20261028/cpu_journal/disabled/admission_opportunities_status.json",
+  "preserved_status_sha256": "81d93b21935f7f554fb93d8a8aa58559feb74eeec64ec2efcd1cccb0ce906d49",
+  "actual_enqueued": {},
+  "complete": true,
+  "writer_error": null,
+  "gpu_or_jct_gain_measured": false
+}

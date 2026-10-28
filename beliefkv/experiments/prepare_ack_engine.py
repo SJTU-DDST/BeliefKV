@@ -201,13 +201,16 @@ def prepare_ack_engine_compatibility(
         )
 
     changed = git("diff", "--name-only", original_tree, candidate_tree).splitlines()
-    from beliefkv.experiments.native_engine_variant import COMMON_TREE, LAYER_TREE
-    if candidate_tree == LAYER_TREE:
+    from beliefkv.experiments.native_engine_variant import COMMON_TREE, LAYER_TREE, GROUPED_LAYER_TREE
+    if candidate_tree in (LAYER_TREE, GROUPED_LAYER_TREE):
         common = prepare_ack_engine_compatibility(
             engine, source, candidate_tree=COMMON_TREE,
         )
         return {
-            "policy": "explicit_layer_handoff_engine_variant",
+            "policy": (
+                "explicit_grouped_layer_handoff_engine_variant" if candidate_tree == GROUPED_LAYER_TREE
+                else "explicit_layer_handoff_engine_variant"
+            ),
             "source_engine_tree": original_tree, "candidate_engine_tree": candidate_tree,
             "common_engine_tree": COMMON_TREE, "common_engine_compatibility": common,
             "changed_files": changed,

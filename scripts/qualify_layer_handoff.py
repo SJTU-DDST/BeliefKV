@@ -17,7 +17,7 @@ from beliefkv.experiments.source_provenance import git_source_state, sha256_file
 from scripts import qualify_free_page_h2d_fence as common
 
 
-def scenario(engine, *, delayed):
+def scenario(engine, *, delayed, donor_group_layers=1, consumer_group_layers=1):
     import torch
     from sglang.srt.mem_cache.base_prefix_cache import InsertParams
     from sglang.srt.mem_cache.radix_cache import RadixKey
@@ -25,10 +25,21 @@ def scenario(engine, *, delayed):
     from sglang.srt.mem_cache.l2_transfer import L2Transfer
     from types import SimpleNamespace as NS
 
-    f = common.NativeFenceFixture(engine, enabled=True)
+    class Fixture(common.NativeFenceFixture):
+        layers = (
+            2 if (donor_group_layers, consumer_group_layers) == (1, 1)
+            else 2 * max(donor_group_layers, consumer_group_layers) + 1
+        )
+
+    groups = ({
+        "donor_group_layers": donor_group_layers,
+        "consumer_group_layers": consumer_group_layers,
+    } if (donor_group_layers, consumer_group_layers) != (1, 1) else {})
+    f = Fixture(engine, enabled=True)
     cache, cc, pool = f.cache, f.controller, f.pool
     host = cc.mem_pool_host.anchor_entry.host_pool
     original_backup = host.backup_from_device_per_layer
+    original_groups = getattr(host, "transfer_handoff_layers", None)
 
     def save(indices):
         return tuple((k[indices].clone(), v[indices].clone()) for k, v in zip(
@@ -66,7 +77,7 @@ def scenario(engine, *, delayed):
         completion = cc.l2_transfer_engine.submit_layer_handoff(
             L2Transfer(host, pool, d_host, d_device),
             L2Transfer(host, pool, h_host, d_device[:32]),
-            layer_num=2, donor_last_use_event=boundary,
+            layer_num=f.layers, donor_last_use_event=boundary, **groups,
         )
         completion.donor.finish_event.synchronize()
         completion.consumer.finish_event.synchronize()
@@ -106,17 +117,25 @@ def scenario(engine, *, delayed):
             reader_done.record()
 
         def backup(device, host_indices, device_indices, layer, backend):
-            if delayed and layer == 1:
+            if delayed and layer == f.layers - 1:
                 torch.cuda._sleep(1_000_000_000)
             return original_backup(device, host_indices, device_indices, layer, backend)
 
         host.backup_from_device_per_layer = backup
+        if groups:
+            def group_copy(device, host_indices, device_indices, start, end, backend, *, load):
+                if delayed and not load and end == f.layers:
+                    torch.cuda._sleep(1_000_000_000)
+                return original_groups(
+                    device, host_indices, device_indices, start, end, backend, load=load,
+                )
+            host.transfer_handoff_layers = group_copy
         result = cache.begin_beliefkv_layer_handoff(
             donor_node_id=a.id, donor_creation_time=a.creation_time,
             donor_session_id="donor", donor_session_generation=a_generation,
             consumer_node_id=b.id, consumer_creation_time=b.creation_time,
             consumer_session_id="consumer", consumer_session_generation=b_generation,
-            reserve_tokens=4, authorize=lambda *_: True,
+            reserve_tokens=4, authorize=lambda *_: True, **groups,
         )
         if result is None or f.allocator.available_size() != 4:
             raise ValueError("real handoff failed or gave early free capacity")
@@ -184,12 +203,16 @@ def scenario(engine, *, delayed):
         }
     finally:
         host.backup_from_device_per_layer = original_backup
+        if original_groups is not None:
+            host.transfer_handoff_layers = original_groups
         f.close()
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--donor-group-layers", type=int, choices=range(1, 65), default=1)
+    parser.add_argument("--consumer-group-layers", type=int, choices=range(1, 65), default=1)
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError("preserve prior component results")
@@ -205,10 +228,16 @@ def main():
         report.update(
             operator_sha256=sha256_file(Path(__file__)), native_engine=state,
             owned_gpu_pid=os.getpid(), authorization=common.check_reservation(),
+            direction_groups={
+                "d2h": args.donor_group_layers, "h2d": args.consumer_group_layers,
+            },
         )
         sys.path.insert(0, str(engine / "python"))
         report["scenarios"] = [
-            scenario(engine, delayed=False), scenario(engine, delayed=True),
+            scenario(
+                engine, delayed=delayed, donor_group_layers=args.donor_group_layers,
+                consumer_group_layers=args.consumer_group_layers,
+            ) for delayed in (False, True)
         ]
         report.update(
             status="native_gpu_layer_handoff_components_qualified",

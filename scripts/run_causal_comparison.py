@@ -67,6 +67,7 @@ SERVER_FIELDS = (
     "AGENT_PRESSURE_PAUSE_POLICY",
     "AGENT_LENDING_SELECTION",
     "AGENT_JOIN_FREE_ADMISSION",
+    "AGENT_JOIN_BLOCKED_HANDOFF",
     "AGENT_FREE_CONTINUATION_ADMISSION",
     "FREE_PAGE_H2D_FENCE",
 )
@@ -319,6 +320,7 @@ def preflight_runtime(settings, model_path):
         ),
         "agent_blocked_lending": settings.get("BELIEFKV_AGENT_BLOCKED_LENDING", "idle"),
         "agent_join_free_admission": settings.get("BELIEFKV_AGENT_JOIN_FREE_ADMISSION", "0") == "1",
+        "agent_join_blocked_handoff": settings.get("BELIEFKV_AGENT_JOIN_BLOCKED_HANDOFF", "0") == "1",
         "agent_free_continuation_admission": settings.get(
             "BELIEFKV_AGENT_FREE_CONTINUATION_ADMISSION", "0",
         ) == "1",
@@ -344,6 +346,8 @@ def preflight_runtime(settings, model_path):
         "tool_offload_min_survival": float(settings.get("BELIEFKV_TOOL_OFFLOAD_MIN_SURVIVAL", ".9")),
         "host_demand_reserve_bytes": int(settings.get("BELIEFKV_HOST_DEMAND_RESERVE_BYTES", "0")),
         "layer_handoff_enabled": settings.get("BELIEFKV_LAYER_HANDOFF", "0") == "1",
+        "layer_handoff_d2h_layers": int(settings.get("BELIEFKV_LAYER_HANDOFF_D2H_LAYERS", "1")),
+        "layer_handoff_h2d_layers": int(settings.get("BELIEFKV_LAYER_HANDOFF_H2D_LAYERS", "1")),
         "tool_offload_policy": (
             settings.get("BELIEFKV_TOOL_OFFLOAD_POLICY", "fixed")
             if settings.get("BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD", "0") == "1" else "off"
@@ -786,6 +790,12 @@ def observed_configuration(plan, label, arm, *, final=False):
         ) == "1"
         if state.get("layer_handoff_enabled", False) is not layer_handoff:
             raise ValueError("effective layer handoff differs from declaration")
+        for direction in ("d2h", "h2d"):
+            expected_group = int(common.get(
+                "BELIEFKV_LAYER_HANDOFF_" + direction.upper() + "_LAYERS", "1",
+            )) if layer_handoff else 1
+            if state.get("layer_handoff_" + direction + "_layers", 1) != expected_group:
+                raise ValueError("effective layer handoff group differs from declaration")
         validate_free_page_fence(plan, state)
         agent_strategy = plan.get("reference_environment", {}).get(
             "BELIEFKV_AGENT_ADMISSION",
@@ -853,9 +863,18 @@ def observed_configuration(plan, label, arm, *, final=False):
                         "BELIEFKV_AGENT_FREE_CONTINUATION_ADMISSION",
                         common.get("AGENT_FREE_CONTINUATION_ADMISSION", "0"),
                     ) == "1",
+                    join_blocked_handoff=common.get(
+                        "BELIEFKV_AGENT_JOIN_BLOCKED_HANDOFF",
+                        common.get("AGENT_JOIN_BLOCKED_HANDOFF", "0"),
+                    ) == "1",
                 )
             if state.get("agent_join_free_admission", False) is not join_free:
                 raise ValueError("effective free-capacity JOIN admission differs from declaration")
+            if state.get("agent_join_blocked_handoff", False) is not (
+                common.get("BELIEFKV_AGENT_JOIN_BLOCKED_HANDOFF",
+                           common.get("AGENT_JOIN_BLOCKED_HANDOFF", "0")) == "1"
+            ):
+                raise ValueError("effective JOIN blocked handoff differs from declaration")
             if agent_strategy in ("thunderagent_retained", "thunderagent_workflow") and (
                 actual_agents.get("blocked_agents_retain_eligibility") is not True
                 or actual_agents.get("control_interval_ms") != 5000.

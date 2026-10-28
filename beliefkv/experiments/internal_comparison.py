@@ -149,6 +149,15 @@ def arm_environment(
     ):
         raise ValueError("free-capacity JOIN admission requires the reference Full core")
     join_free = join_free if agent_admission == "thunderagent_reference" else "0"
+    join_handoff = common.get(
+        "BELIEFKV_AGENT_JOIN_BLOCKED_HANDOFF", common.get("AGENT_JOIN_BLOCKED_HANDOFF", "0"),
+    )
+    if join_handoff not in ("0", "1") or (
+        mode == "full" and join_handoff == "1"
+        and (agent_admission != "thunderagent_reference" or join_free != "1")
+    ):
+        raise ValueError("JOIN blocked handoff requires reference Full free-JOIN admission")
+    join_handoff = join_handoff if agent_admission == "thunderagent_reference" else "0"
     continuation_free = common.get(
         "BELIEFKV_AGENT_FREE_CONTINUATION_ADMISSION",
         common.get("AGENT_FREE_CONTINUATION_ADMISSION", "0"),
@@ -265,6 +274,12 @@ def arm_environment(
         "BELIEFKV_TOOL_OFFLOAD_BEFORE_ADMISSION": early_tool_offload,
         "LAYER_HANDOFF": layer_handoff,
         "BELIEFKV_LAYER_HANDOFF": layer_handoff,
+        **{
+            "BELIEFKV_LAYER_HANDOFF_" + direction + "_LAYERS": (
+                common.get("BELIEFKV_LAYER_HANDOFF_" + direction + "_LAYERS", "1")
+                if layer_handoff == "1" else "1"
+            ) for direction in ("D2H", "H2D")
+        },
         "BELIEFKV_TOOL_OFFLOAD_MIN_SURVIVAL": (
             common.get("BELIEFKV_TOOL_OFFLOAD_MIN_SURVIVAL", ".9") if custom_kv else ".9"
         ),
@@ -285,6 +300,8 @@ def arm_environment(
         "BELIEFKV_AGENT_ADMISSION": agent_admission,
         "AGENT_JOIN_FREE_ADMISSION": join_free,
         "BELIEFKV_AGENT_JOIN_FREE_ADMISSION": join_free,
+        "AGENT_JOIN_BLOCKED_HANDOFF": join_handoff,
+        "BELIEFKV_AGENT_JOIN_BLOCKED_HANDOFF": join_handoff,
         "AGENT_FREE_CONTINUATION_ADMISSION": continuation_free,
         "BELIEFKV_AGENT_FREE_CONTINUATION_ADMISSION": continuation_free,
         "AGENT_COADMIT_JOIN_CHILDREN": siblings,

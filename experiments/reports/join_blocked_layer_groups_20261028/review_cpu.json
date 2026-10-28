@@ -1,0 +1,195 @@
+{
+  "observed_at": "2026-10-28T10:14:04.994812+00:00",
+  "scope": "Source-bound CPU candidate, not new GPU or performance qualification.",
+  "shared_passed": 3519,
+  "shared_new_cases": 38,
+  "native_cpu_passed": 53,
+  "native_clean": {
+    "commit": "1f5fac9e9f7ad1d97f89244cdda4d9f311d365c4",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "a9abbcd715f5e62ddd63ba742f3dd318fabf81a7791236a7377e219098bbaef9"
+  },
+  "native_prepared": {
+    "commit": "fa5cb52afaeaad1f59f6d3eb2c5cf124f72bb491",
+    "dirty": true,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [
+      "python/sglang/srt/managers/cache_controller.py",
+      "python/sglang/srt/managers/scheduler.py",
+      "python/sglang/srt/mem_cache/allocator/token.py",
+      "python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py",
+      "python/sglang/srt/mem_cache/l2_transfer.py",
+      "python/sglang/srt/mem_cache/pool_host/mha.py",
+      "python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py",
+      "python/sglang/srt/mem_cache/unified_radix_cache.py",
+      "test/srt/test_beliefkv_transfer_receipts.py"
+    ],
+    "untracked_paths": [
+      "python/sglang/srt/mem_cache/beliefkv_layer_handoff.py",
+      "test/srt/test_beliefkv_layer_groups.py",
+      "test/srt/test_beliefkv_layer_handoff.py"
+    ],
+    "tracked_change_tree_sha256": "3a0427a0d4433d544ea4c75caa5f1e6a85b76a695b9b8aa1bbcde669749a28ef",
+    "canonical_patch": {
+      "path": "/home/longhao/experiment/BeliefKV/patches/sglang-layer-handoff-groups-runtime-20261028.patch",
+      "sha256": "8b8a8d35404d9f1c035a57645684c6758f15c3e48ee6ef83551b3e5815754612",
+      "expected_tree": "2ce5e5389979a718c19f80abb9cc9b381b8cff0e",
+      "actual_tree": "2ce5e5389979a718c19f80abb9cc9b381b8cff0e",
+      "matches_worktree": true,
+      "covered_untracked_paths": [
+        "python/sglang/srt/mem_cache/beliefkv_layer_handoff.py",
+        "test/srt/test_beliefkv_layer_groups.py",
+        "test/srt/test_beliefkv_layer_handoff.py"
+      ]
+    },
+    "state_sha256": "30ac92e2c652824489e40bae999c8b044200f399e2529a2d0f4a8438d51e3a70"
+  },
+  "native_group_tree": "2ce5e5389979a718c19f80abb9cc9b381b8cff0e",
+  "native_group_delta_paths": [
+    "python/sglang/srt/mem_cache/beliefkv_layer_handoff.py",
+    "python/sglang/srt/mem_cache/l2_transfer.py",
+    "python/sglang/srt/mem_cache/pool_host/mha.py",
+    "python/sglang/srt/mem_cache/unified_radix_cache.py",
+    "test/srt/test_beliefkv_layer_groups.py"
+  ],
+  "full_constructor": {
+    "prefill_scheduling_policy": "workflow",
+    "idle_prepare_policy": "cold",
+    "tool_restore_mode": "speculative",
+    "enable_agent_working_set": true,
+    "agent_blocked_lending": "idle",
+    "agent_join_free_admission": true,
+    "agent_join_blocked_handoff": true,
+    "agent_free_continuation_admission": true,
+    "coadmit_join_children": true,
+    "agent_join_dependency_admission": false,
+    "agent_blocked_budget_proof": "predicted_pressure",
+    "agent_lending_selection": "largest",
+    "agent_pressure_pause_policy": "reference",
+    "agent_recall_selection": "largest",
+    "agent_tool_loan_return": false,
+    "free_page_h2d_fence_requested": true,
+    "agent_workflow_entry_min_ready": 0,
+    "restore_tiers": "complete",
+    "enable_tool_prefetch": false,
+    "enable_predicted_tool_offload": true,
+    "tool_offload_before_admission": true,
+    "idle_prepare_io_backend": "native",
+    "idle_host_mirror_recycle": false,
+    "tool_offload_min_survival": 0.75,
+    "host_demand_reserve_bytes": 2147483648,
+    "layer_handoff_enabled": true,
+    "layer_handoff_d2h_layers": 8,
+    "layer_handoff_h2d_layers": 4,
+    "tool_offload_policy": "demand_cost",
+    "tool_timing_prior_sha256": "949e2b45b7f6c31c39ac4ff497a2a8bd9bcc6c1fdd055a3a94cc847bbc0835da",
+    "enable_frontier_restore": false,
+    "frontier_restore_ordinary_quota": 4,
+    "enable_frontier_cold_reclaim": false,
+    "frontier_cold_reclaim_policy": "waiting",
+    "tool_continuity": true,
+    "tool_continuity_grace_ms": 0.0,
+    "tool_prefetch_priority_ms": 0.0,
+    "join_prefetch_trigger": "observed_eos",
+    "enable_prefetch_residency_protection": true
+  },
+  "callback_cost": {
+    "scope": "Callback thread CPU with 33 synthetic programs, 31 pending records and an async journal.",
+    "fixtures": {
+      "disabled": {
+        "programs": 33,
+        "pending_native_records": 31,
+        "samples": 500,
+        "thread_cpu_us": {
+          "median": 29.243499999999997,
+          "p99": 32.526,
+          "max": 34.254
+        },
+        "journal_records": 0,
+        "journal_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "new_handoff": {
+        "programs": 33,
+        "pending_native_records": 31,
+        "samples": 500,
+        "thread_cpu_us": {
+          "median": 121.32849999999999,
+          "p99": 141.781,
+          "max": 418.729
+        },
+        "journal_records": 550,
+        "journal_sha256": "7b184ed005b79a75a07113ed8284638e39c9de9701227bc6555cdb06121bf77a"
+      },
+      "no_blocked_donor": {
+        "programs": 33,
+        "pending_native_records": 31,
+        "samples": 500,
+        "thread_cpu_us": {
+          "median": 73.52799999999999,
+          "p99": 78.802,
+          "max": 83.431
+        },
+        "journal_records": 0,
+        "journal_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "backoff": {
+        "programs": 33,
+        "pending_native_records": 31,
+        "samples": 500,
+        "thread_cpu_us": {
+          "median": 34.116,
+          "p99": 38.468,
+          "max": 43.78
+        },
+        "journal_records": 0,
+        "journal_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "sources": {
+      "experiments/reports/join_blocked_layer_groups_20261028/control_cost_cpu.py": "8437f57c472209e5fd8af8c0c13c16ffd864d62751096f9c392ca8da3dff94d1",
+      "beliefkv/runtime/join_blocked_handoff.py": "e5fcf68399b039ee4bb92d65edddd164871532f3d739b99b6dead15c0ca60e38",
+      "beliefkv/runtime/reference_thunder_admission.py": "40bcca52795893dd63052c3ce9fc753edbc51965d5eb6351f49864a5e09ebd69",
+      "beliefkv/runtime/paper_baseline.py": "bcb6466df233996710a8cb84bada8a4f1e81945580e4fee597016b1db3254ee4",
+      "beliefkv/policy/paper_baselines.py": "9e269186e287b556ba1b07d22b51e04b902189a396017369119a0c50a6de8cf3",
+      "tests/test_join_blocked_handoff.py": "185af0ebfe4621bf1f47ea0e342091c20c2a135a69d7c373e0807eb01fc0c3ab"
+    },
+    "eligibility_and_retry_reset_for_timing_only": true,
+    "writer_thread_cpu_included": false,
+    "maximum_64_donor_window_measured": false,
+    "whole_controller_cpu_measured": false,
+    "gpu_or_jct_gain_measured": false
+  },
+  "48_layer_groups": {
+    "d2h_layers": 8,
+    "h2d_layers": 4,
+    "d2h_jit_calls": 6,
+    "h2d_jit_calls": 12,
+    "layer_completion_events": 18,
+    "previous_copy_calls_and_layer_completion_events_each": 96,
+    "call_count_reduction_percent": 81.25,
+    "gpu_submission_time_gain_measured": false
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/qualified_shared_cpu.evidence.json": "bb7549a623f7c0b63515bf5b39d0698801a0ea3c5e1771d598f957d7de5d8bdd",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/qualified_shared_cpu.sources.json": "10c21a038066a55498438906da85788606414ea89e5aafb78110faaad2865de5",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/qualified_shared_cpu.xml": "d3f86c3d5f1689a47d09179729a6b40284a16c9b44e3e7de4330abdccc704fae",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/native_final_cpu.xml": "07729f3a5ed6875063115bca5721507d9a34cbb972fd9c119c2e776a2eb7a869",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/control_cost_cpu.json": "16da647ed3d4ead6f4690dd467ac370edbf451a072a45dadcd7665b321427c1e",
+    "/home/longhao/experiment/BeliefKV/patches/sglang-layer-handoff-groups-runtime-20261028.patch": "8b8a8d35404d9f1c035a57645684c6758f15c3e48ee6ef83551b3e5815754612",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/shared_cpu.xml": "9bd9f4ea611ea6b2305ab931584b1811c7f23df9a1b935bea4051b2bbc33690e",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/nested_order_and_resume_filter_cpu.xml": "fbc5271555db9390cb2fa1596cbef000fe666f448668effb984e720ce40f4ab7"
+  },
+  "operator_sha256": "607fd4f445e6ae1fa9f2437356318c118163b754fe7a187aaaf5187cc2e31f99",
+  "preserved_failures": [
+    "initial_targeted_cpu.xml: two test-fixture defects; corrected without weakening production guards.",
+    "shared_cpu.xml: one nested-harness event-time order failure; exact retry and final full execution pass.",
+    "control_cost_initial_failure.json: observer interpreted event-count dictionary as an integer."
+  ],
+  "actual_gpu_component_qualified": false,
+  "actual_model_qualified": false,
+  "performance_accepted": false
+}
