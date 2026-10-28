@@ -2255,8 +2255,35 @@
   233.371801token/s:3.00399%/0.81465% improvements. Both regress against
   online-refresh Full1639.208934s/236.448501token/s. Threshold, Host policy
   and the native layer engine changed together; no isolated overlap cause is
-  proven. Do not promote the joint candidate. The future
-  configs/migration/predictive_no_tool_prefetch_20261028.json also disables
-  layer handoff and returns to the common engine, preserving75% and demand
-  Host management for separate evaluation. No new GPU job is queued by this
-  review; reuseV345 and keep the global goal incomplete.
+  proven. Do not promote the joint candidate. The user's newest correction
+  retains layer overlap for an implementation audit while cancelling tool
+  prefetch. configs/migration/predictive_no_tool_prefetch_20261028.json keeps
+  layer_handoff and the0d407f981c51 engine,75% and demand Host management.
+  Preserve54e04b8c and its3477-case CPU evidence for the earlier layer-off
+  proposal; rebind current sources/configuration before future execution.
+  Explain sibling admission from actual code and service evidence; logical
+  eligibility is not simultaneous physical service or an isolated JCT gain.
+  No new GPU job is queued by this review; reuseV345 and keep the goal active.
+- The implementation audit confirms a Host-budget alignment bug: the512MiB
+  idle-backup limit is not divisible by the observed98304-byte KV unit.
+  Comparing the rounded optional budget to the raw limit falsely rejects
+  all10114 checked JointFull idle dispatches, including ample-capacity cases.
+  Main now compares whole-page budgets while preserving demand reserve.
+  Keep the initial geometry-fixture failure, the corrected two-red/two-pass
+  report and176 passing targeted cases. One source-bound shared execution
+  passes3481 cases plus4subtests without failures/skips, retaining3477
+  identities. Actual constructors verify overlap on/tool prefetch off and
+  predicted offload retained. This is not new GPU performance evidence.
+- Complete JointFull regression is+7.379498s versus online-refresh Full,
+  including+6.750427s first-launch-to-complete and+6.368014s in critical
+  decode-member worker intervals; worker intervals are not pure kernels.
+  Actual13 handoffs restore107151360bytes,0.004% of totalH2D, mostly tiny
+  private tails. Synchronous48-layer submission is a measured limitation,
+  not proof of the entire regression. D2H/H2D increase149.526/27.935GB.
+  The95 sibling grants add one member93 times and two members twice; all97
+  child service associations verify, without an isolated JCT benefit claim.
+  JointFull tool prefetch actually copies8.718GB with3.161GB version2 reuse;
+  do not carry earlier zero-copy claims into this run. Future tool warming
+  stays off as requested. Preserve complete named audits and figures; see
+  docs/research/layer_overlap_regression_and_siblings_20261028_zh.md.
+  No new GPU experiment is registered; retain V345 and the incomplete goal.

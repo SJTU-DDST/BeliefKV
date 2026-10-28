@@ -8345,7 +8345,15 @@ class NativeAdmissionRuntime:
             maximum = getattr(type(cache).prepare_beliefkv_idle_full, "__globals__", {}).get(
                 "BELIEFKV_IDLE_FULL_PREPARE_MAX_BYTES", 512 * 1024**2,
             )
-            if self._host_demand_capacity.optional_batch(maximum) < maximum:
+            available = self._host_demand_capacity.optional_batch(maximum)
+            if available:
+                # Native backup batches and Host budgets both use whole KV pages.
+                page_bytes = (
+                    cache.cache_controller.mem_pool_host.size_per_token
+                    * self._native_page_size
+                )
+                maximum = maximum // page_bytes * page_bytes
+            if not available or available < maximum:
                 self.counts["idle_prepare_host_demand_reserve_skips"] += 1
                 return
         previous_scope, previous_requests = (

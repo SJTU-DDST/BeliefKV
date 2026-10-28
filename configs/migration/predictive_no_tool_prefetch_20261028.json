@@ -16,6 +16,7 @@
     "SAMPLING_PROFILE": "qwen3_coder",
     "CUDA_HOME": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13",
     "SGLANG_SOURCE_BASE_COMMIT": "fa5cb52afaeaad1f59f6d3eb2c5cf124f72bb491",
+    "SGLANG_PATCH_FLAVOR": "layer_handoff",
     "FANOUT_PROFILE": "native_in_graph_short_workstreams",
     "WORKLOAD_MANIFEST": "configs/workloads/locobench_tools18_20261026.json",
     "CHILD_WORK_BUDGET_WARNING_CALLS": "4",
@@ -86,8 +87,8 @@
     "BELIEFKV_IDLE_PREPARE_IO_BACKEND": "native",
     "BELIEFKV_TOOL_OFFLOAD_MIN_SURVIVAL": ".75",
     "BELIEFKV_HOST_DEMAND_RESERVE_BYTES": "2147483648",
-    "LAYER_HANDOFF": "0",
-    "BELIEFKV_LAYER_HANDOFF": "0"
+    "LAYER_HANDOFF": "1",
+    "BELIEFKV_LAYER_HANDOFF": "1"
   },
   "order": ["full"],
   "stream_response_metrics": true,
@@ -96,8 +97,8 @@
     "tool_prefetch_priority_disabled": true,
     "tool_forecasting_remains_available_for_offload": true,
     "join_eos_prefetch_retained": true,
-    "layer_handoff_disabled_after_joint_regression": true,
-    "native_engine_returns_to_common_control_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+    "layer_handoff_enabled_for_implementation_audit": true,
+    "native_engine": "0d407f981c5179b20859e82e7088d85589cd08b3",
     "negative_complete_matched_performance_action": "disable_layer_handoff"
   },
   "tool_timing_overlay": {

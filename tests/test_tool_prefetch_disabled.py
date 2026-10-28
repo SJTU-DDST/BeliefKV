@@ -98,7 +98,7 @@ def test_disabling_tool_prefetch_preserves_native_predicted_tool_release(demand_
     assert not runtime.counts["tool_prefetch_issued"]
 
 
-def test_followup_configuration_disables_tool_prefetch_and_unpromoted_layer_handoff():
+def test_followup_configuration_keeps_overlap_and_cancels_only_tool_prefetch():
     directory = comparison.ROOT / "configs/migration"
     previous = comparison.load(directory / "predictive_host_demand_layer_handoff_20261028.json")
     updated = comparison.load(directory / "predictive_no_tool_prefetch_20261028.json")
@@ -108,14 +108,13 @@ def test_followup_configuration_disables_tool_prefetch_and_unpromoted_layer_hand
     } == {
         "TOOL_PREFETCH", "BELIEFKV_ENABLE_TOOL_PREFETCH",
         "TOOL_PREFETCH_PRIORITY_MS", "BELIEFKV_TOOL_PREFETCH_PRIORITY_MS",
-        "LAYER_HANDOFF", "BELIEFKV_LAYER_HANDOFF", "SGLANG_PATCH_FLAVOR",
     }
     assert all(new[name] == "0" for name in (
         "TOOL_PREFETCH", "BELIEFKV_ENABLE_TOOL_PREFETCH",
         "TOOL_PREFETCH_PRIORITY_MS", "BELIEFKV_TOOL_PREFETCH_PRIORITY_MS",
-        "LAYER_HANDOFF", "BELIEFKV_LAYER_HANDOFF",
     ))
-    assert updated["comparison_contract"]["layer_handoff_disabled_after_joint_regression"] is True
+    assert new["LAYER_HANDOFF"] == new["BELIEFKV_LAYER_HANDOFF"] == "1"
+    assert updated["comparison_contract"]["layer_handoff_enabled_for_implementation_audit"] is True
     assert updated["gpu_execution"]["registered"] is False
     assert updated["performance_accepted"] is False
 

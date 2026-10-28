@@ -1,0 +1,215 @@
+{
+  "observed_at": "2026-10-28T09:13:32.274953+00:00",
+  "complete_requests": 3674,
+  "complete_output_tokens": 549671,
+  "all_normal_tails_retained": true,
+  "previous_to_joint_mean_jct_delta_s": 7.379497811317606,
+  "critical_path_means_s": {
+    "JointFull": {
+      "jct_s": 1646.5884318288167,
+      "submit_to_first_launch_s": 342.07942901876237,
+      "first_launch_to_complete_s": 878.4523623108335,
+      "member_worker_interval_union_s": 700.556432700581,
+      "outside_member_worker_intervals_s": 177.89592961025238,
+      "prefill_member_interval_union_s": 28.44604830323325,
+      "decode_member_interval_union_s": 672.1103843973478,
+      "cross_phase_member_overlap_s": 0.0
+    },
+    "PreviousFull": {
+      "jct_s": 1639.2089340174991,
+      "submit_to_first_launch_s": 341.45983985699553,
+      "first_launch_to_complete_s": 871.701935649395,
+      "member_worker_interval_union_s": 693.75087710815,
+      "outside_member_worker_intervals_s": 177.95105854124495,
+      "prefill_member_interval_union_s": 28.008506772412193,
+      "decode_member_interval_union_s": 665.7423703357379,
+      "cross_phase_member_overlap_s": 0.0
+    },
+    "ThunderAgent": {
+      "jct_s": 1697.5836446114117,
+      "submit_to_first_launch_s": 393.9507528005176,
+      "first_launch_to_complete_s": 877.3261121342978,
+      "member_worker_interval_union_s": 698.2767479420238,
+      "outside_member_worker_intervals_s": 179.04936419227388,
+      "prefill_member_interval_union_s": 33.257523098892634,
+      "decode_member_interval_union_s": 665.0192248431312,
+      "cross_phase_member_overlap_s": 0.0
+    }
+  },
+  "previous_to_joint_critical_path_delta_s": {
+    "jct_s": 7.379497811317606,
+    "submit_to_first_launch_s": 0.6195891617668394,
+    "first_launch_to_complete_s": 6.750426661438496,
+    "member_worker_interval_union_s": 6.805555592431006,
+    "outside_member_worker_intervals_s": -0.05512893099256644,
+    "prefill_member_interval_union_s": 0.43754153082105773,
+    "decode_member_interval_union_s": 6.368014061609983,
+    "cross_phase_member_overlap_s": 0.0
+  },
+  "previous_to_joint_transfer_byte_delta": {
+    "d2h": 149525594112,
+    "h2d": 27935047680
+  },
+  "handoff": {
+    "operations": 13,
+    "consumer_bytes": 107151360,
+    "consumer_h2d_fraction": 4.003760449355626e-05,
+    "consumer_tokens": {
+      "count": 13,
+      "sum": 1090,
+      "min": 40,
+      "p50": 67,
+      "p90": 101.6,
+      "p99": 262.15999999999985,
+      "max": 284
+    },
+    "host_submit_to_journal_ms": {
+      "count": 13,
+      "sum": 62.426513671875,
+      "min": 3.324462890625,
+      "p50": 4.820068359375,
+      "p90": 5.99658203125,
+      "p99": 6.779130859374999,
+      "max": 6.8828125
+    },
+    "host_submit_to_journal_sum_ms": 62.426513671875,
+    "h2d_stream_span_sum_ms_including_dependencies": 119.25315260887146
+  },
+  "idle_prepare_alignment": {
+    "full_bytes_per_token": 98304,
+    "maximum_batch_bytes": 536870912,
+    "aligned_batch_bytes": 536838144,
+    "false_shortfall_bytes": 32768,
+    "joint_checked_dispatches_all_rejected": 10114,
+    "joint_issued_batches": 0,
+    "previous_native_idle_stats": {
+      "checks": 9952,
+      "max_batch_bytes": 536870912,
+      "dirty_nodes_last": 424,
+      "dirty_nodes_high_water": 852,
+      "scanned_nodes": 85093,
+      "hot_or_unknown_owner_nodes": 80917,
+      "uninspected_nodes_last": 424,
+      "scan_limited_rounds": 2646,
+      "dirty_nodes_after_last": 424,
+      "rounds_without_eligible_nodes": 2607,
+      "issued_rounds": 65,
+      "empty_rounds": 9470,
+      "eligible_nodes": 76,
+      "eligible_full_tokens": 17882,
+      "host_free_tokens_last": 683,
+      "host_reserved_tokens": 5461,
+      "full_bytes_per_token": 98304,
+      "max_scanned_nodes": 32,
+      "max_merged_nodes": 32,
+      "host_budget_tokens_last": 0,
+      "host_budget_limited_rounds": 6866,
+      "issued_tokens": 16951,
+      "issued_nodes": 76,
+      "byte_budget_reached_rounds": 1,
+      "host_budget_reached_rounds": 0,
+      "extent_limit_reached_rounds": 0,
+      "blocked_d2h_ack": 92,
+      "blocked_native_queues": 417,
+      "blocked_h2d_ack": 355,
+      "stale_nodes": 4100,
+      "blocked_host_capacity_rounds": 6863,
+      "host_budget_pre_scan_skips": 6863
+    }
+  },
+  "sibling_grants": {
+    "summary": {
+      "journal_grants": 276,
+      "journal_programs": 278,
+      "grant_events": {
+        "agent_continuation_free_capacity_admitted": 179,
+        "agent_join_siblings_coadmitted": 95,
+        "agent_join_free_capacity_admitted": 2
+      },
+      "program_statuses": {
+        "service_after_grant_verified": 278
+      },
+      "grant_refresh_declaration_snapshots": 2266,
+      "native_service_records": 96950,
+      "verified_reused_copy_bytes_after_grant": null
+    },
+    "newly_granted_programs_per_sibling_event": {
+      "1": 93,
+      "2": 2
+    },
+    "multi_member_service_entry_spread_ms": [
+      0.0,
+      0.0
+    ]
+  },
+  "tool_prefetch": {
+    "JointFull": {
+      "issued_node_commands": 106,
+      "completed_h2d_node_commands": 106,
+      "completed_h2d_bytes": 8717991936,
+      "first_service_reuse_verified_commands": 74,
+      "first_service_reuse_verified_bytes": 3161456640,
+      "first_service_reuse_negative_commands": 32,
+      "first_service_reuse_unknown_commands": 0,
+      "semantics": "Actual tagged H2D and version-2 first-use records; no isolated JCT effect."
+    },
+    "PreviousFull": {
+      "issued_node_commands": 130,
+      "completed_h2d_node_commands": 130,
+      "completed_h2d_bytes": 5956239360,
+      "first_service_reuse_verified_commands": 0,
+      "first_service_reuse_verified_bytes": 0,
+      "first_service_reuse_negative_commands": 130,
+      "first_service_reuse_unknown_commands": 0,
+      "semantics": "Actual tagged H2D and version-2 first-use records; no isolated JCT effect."
+    }
+  },
+  "input_reports_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/host_demand_layer_handoff_20261028/complete_core_review.json": "140144ec43e1be95f6bc5857460255a31dd91d7b99ae9bb431417df589f4a218",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/host_demand_layer_handoff_20261028/joint_regression_audit.json": "6f487a630e64cf0f93579a4e64688ab504f6e9278286c471ecd24cb94e94aaa5",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/host_demand_layer_handoff_20261028/complete_jct_paths.json": "9ec6014da35267cc5761407ea9b7c46f59cd0c3450088154ba34bb1bf748aa8b",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/host_demand_layer_handoff_20261028/complete_service_interleaving.json": "7c8a72e09a645caa73ff9a139695c216c2bb509c5981ea1ca814d09d92e03096",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/host_demand_layer_handoff_20261028/complete_grant_service.json": "4bd5bf45358f039d5edd16c70263b2987508ca1c083f89137cca448d30dc5d66"
+  },
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_host_demand_layer_handoff_20261028_r1/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 128040239,
+      "complete_prefix_sha256": "f6335a8fb9618f6566186057a43b598f6167674397076c98bf08c0379917520f",
+      "first_read_limit_bytes": 128040239
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_host_demand_layer_handoff_20261028_r1/full/server/transfer_telemetry.jsonl": {
+      "complete_prefix_bytes": 10317870,
+      "complete_prefix_sha256": "7e34a0389372982e0fdbf02261d5fd89606880a0d3d684e8019e907754b629b2",
+      "first_read_limit_bytes": 10317870
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_host_demand_layer_handoff_20261028_r1/full/server/physical_action_use.jsonl": {
+      "complete_prefix_bytes": 495474,
+      "complete_prefix_sha256": "782b1dc4a31d1915e740fef194f1eb5db40d92693a52849b4131ac25c2c4d8eb",
+      "first_read_limit_bytes": 495474
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_online_refresh_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 128137558,
+      "complete_prefix_sha256": "30043d7724232cfdaafab05aa6789b980435892e814cabe3064f4390a8bfc740",
+      "first_read_limit_bytes": 128137558
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_online_refresh_20261027_r1/full/server/transfer_telemetry.jsonl": {
+      "complete_prefix_bytes": 9484333,
+      "complete_prefix_sha256": "62328467402a695bfaf64d624b76b54dbc2a86442a567cdb3165468f0eb2be75",
+      "first_read_limit_bytes": 9484333
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_online_refresh_20261027_r1/full/server/physical_action_use.jsonl": {
+      "complete_prefix_bytes": 522964,
+      "complete_prefix_sha256": "e2b9e6d17e84ae09be0f96e832941c49790bbb15dd210cc3f90286bd95409e6c",
+      "first_read_limit_bytes": 522964
+    }
+  },
+  "operator_sha256": "8c14527e97da13a80ea18ad82b525c88b310f293b4f99741a99d8fd390bca842",
+  "limitations": [
+    "Threshold, Host policy and engine changed together; isolated attribution is unavailable.",
+    "Worker intervals include waits and runtime; they are not pure GPU kernel durations.",
+    "Host submission and stream spans cannot be subtracted directly from workflow JCT.",
+    "Sibling grants do not count every concurrent JOIN or guarantee simultaneous completion.",
+    "The alignment repair has CPU regression evidence, not a new GPU performance result."
+  ],
+  "performance_accepted": false
+}

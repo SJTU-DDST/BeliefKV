@@ -78,6 +78,32 @@ def test_idle_dispatch_cannot_consume_demand_reserve_to_recycle_a_mirror(mirror_
     assert runtime.counts["idle_prepare_host_demand_reserve_skips"] == 1
 
 
+@pytest.mark.parametrize("free,byte_remainder,allowed", (
+    (8, 0, True), (8, 1, True), (8, 32768, True), (7, 32768, False),
+))
+def test_idle_host_reserve_compares_whole_kv_units_without_false_byte_shortfall(
+    mirror_runtime, monkeypatch, free, byte_remainder, allowed,
+):
+    from sglang.srt.mem_cache import unified_radix_cache as native
+
+    runtime, cache, allocator, cold, hot, writes, slots = mirror_runtime
+    unit = 98304
+    monkeypatch.setattr(cache.host_pool_group.anchor_entry.host_pool, "size_per_token", unit)
+    monkeypatch.setattr(cache.host_pool_group, "size_per_token", unit)
+    monkeypatch.setattr(native, "BELIEFKV_IDLE_FULL_PREPARE_MAX_BYTES", 4 * unit + byte_remainder)
+    runtime._host_demand_capacity = HostDemandCapacity(runtime, 4 * unit)
+    slots["free"] = free
+    device = cold.component_data[0].value
+    runtime.dispatch_idle_prepare()
+    assert len(writes) == int(allowed)
+    assert (cold.component_data[0].host_value is not None) is allowed
+    assert cold.component_data[0].value is device and allocator.available_size() == 0
+    assert hot.component_data[0].host_value is not None
+    assert slots["free"] == (free - 4 if allowed else free)
+    if allowed:
+        assert slots["free"] * unit >= runtime._host_demand_capacity.reserve()
+
+
 def test_spawn_backup_batch_cannot_consume_demand_reserve(mirror_runtime):
     runtime, cache, _, _, _, _, slots = mirror_runtime
     runtime._host_demand_capacity = HostDemandCapacity(runtime, 4 * 64)
