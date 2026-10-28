@@ -1,0 +1,31 @@
+{
+  "scope": "Preserved first CPU review failures after the complete GPU run; no serving changes.",
+  "complete_review": {
+    "exit_code": 1,
+    "error": "ValueError: reference ThunderAgent admission differs from declared Full composition",
+    "diagnosis": "The current observer accepted current Full and V345. It rejected the historical preadmission Full because it expects newer sibling preference/subset/retry fields that the old frozen method did not implement.",
+    "old_sibling_admission_update_scope": "request_registration_and_join_or_member_terminal_event",
+    "new_sibling_admission_update_scope": "registration_join_events_and_bounded_release_retry",
+    "old_has_sibling_native_batch_preference": false,
+    "repair": "Verify each arm with its own content-bound frozen configuration observer in a fresh CPU process; retain exact current-pipeline gates and explicit reviewed engine identities."
+  },
+  "wrong_control_path_commands": {
+    "count": 3,
+    "commands": [
+      "audit_causal_jct_paths.py",
+      "audit_restore_wait_cohorts.py",
+      "audit_eos_trigger_lifecycle.py"
+    ],
+    "exit_codes": [1, 1, 1],
+    "incorrect_run_root": "experiments/raw/v345_locobench_categorized_thunder_decay_20261027",
+    "registered_run_root": "experiments/raw/locobench_categorized_thunder_decay_20261027_v345",
+    "errors": [
+      "FileNotFoundError: missing replay/summary.json",
+      "ValueError: missing workflow events",
+      "FileNotFoundError: missing replay/native_requests.jsonl"
+    ],
+    "repair": "Use the actual run_root from V345's unchanged registration. These attempts wrote no completed reports."
+  },
+  "gpu_experiment_changed": false,
+  "performance_accepted": false
+}

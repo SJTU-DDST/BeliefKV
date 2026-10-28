@@ -1,0 +1,371 @@
+{
+  "observed_at": "2026-10-28T23:51:18.333686+00:00",
+  "scope": "Complete raw worker shapes and actual sparse prefill turnover CPU samples.",
+  "raw_worker_review": {
+    "Full": {
+      "worker_batches": {
+        "prefill": 3607,
+        "decode": 94730
+      },
+      "turnover_samples": 225,
+      "non_workload_turnover_samples_excluded": 1,
+      "turnover_phases_ms": {
+        "launch_telemetry": {
+          "thread_cpu_ms": {
+            "count": 225,
+            "sum": 17.307638,
+            "mean": 0.07692283555555555
+          },
+          "wall_ms": {
+            "count": 225,
+            "sum": 17.318055,
+            "mean": 0.07696913333333334
+          }
+        },
+        "post_launch_physical": {
+          "thread_cpu_ms": {
+            "count": 225,
+            "sum": 65.975093,
+            "mean": 0.29322263555555556
+          },
+          "wall_ms": {
+            "count": 225,
+            "sum": 66.661167,
+            "mean": 0.29627185333333333
+          }
+        },
+        "result_processing": {
+          "thread_cpu_ms": {
+            "count": 225,
+            "sum": 11508.166764,
+            "mean": 51.14740784
+          },
+          "wall_ms": {
+            "count": 225,
+            "sum": 11509.745218,
+            "mean": 51.154423191111114
+          }
+        },
+        "run_batch": {
+          "thread_cpu_ms": {
+            "count": 225,
+            "sum": 2039.8517650000001,
+            "mean": 9.066007844444444
+          },
+          "wall_ms": {
+            "count": 225,
+            "sum": 2194.841123,
+            "mean": 9.754849435555556
+          }
+        },
+        "selection": {
+          "thread_cpu_ms": {
+            "count": 225,
+            "sum": 12898.848007,
+            "mean": 57.328213364444444
+          },
+          "wall_ms": {
+            "count": 225,
+            "sum": 12947.871464,
+            "mean": 57.546095395555554
+          }
+        },
+        "war_barrier_and_queue_publish": {
+          "thread_cpu_ms": {
+            "count": 225,
+            "sum": 7.411837,
+            "mean": 0.03294149777777778
+          },
+          "wall_ms": {
+            "count": 225,
+            "sum": 7.398883,
+            "mean": 0.03288392444444444
+          }
+        }
+      }
+    },
+    "Preadmission": {
+      "worker_batches": {
+        "prefill": 3774,
+        "decode": 96402
+      },
+      "turnover_samples": 235,
+      "non_workload_turnover_samples_excluded": 1,
+      "turnover_phases_ms": {
+        "launch_telemetry": {
+          "thread_cpu_ms": {
+            "count": 235,
+            "sum": 26.011349,
+            "mean": 0.1106865914893617
+          },
+          "wall_ms": {
+            "count": 235,
+            "sum": 26.738154,
+            "mean": 0.11377937872340427
+          }
+        },
+        "post_launch_physical": {
+          "thread_cpu_ms": {
+            "count": 235,
+            "sum": 103.556823,
+            "mean": 0.4406673319148936
+          },
+          "wall_ms": {
+            "count": 235,
+            "sum": 104.596785,
+            "mean": 0.44509270212765956
+          }
+        },
+        "result_processing": {
+          "thread_cpu_ms": {
+            "count": 235,
+            "sum": 14918.632632,
+            "mean": 63.48354311489362
+          },
+          "wall_ms": {
+            "count": 235,
+            "sum": 14920.994545,
+            "mean": 63.49359380851064
+          }
+        },
+        "run_batch": {
+          "thread_cpu_ms": {
+            "count": 235,
+            "sum": 2944.584176,
+            "mean": 12.530145429787233
+          },
+          "wall_ms": {
+            "count": 235,
+            "sum": 3233.663372,
+            "mean": 13.760269668085106
+          }
+        },
+        "selection": {
+          "thread_cpu_ms": {
+            "count": 235,
+            "sum": 12565.920848,
+            "mean": 53.47200360851064
+          },
+          "wall_ms": {
+            "count": 235,
+            "sum": 12804.012150999999,
+            "mean": 54.4851580893617
+          }
+        },
+        "war_barrier_and_queue_publish": {
+          "thread_cpu_ms": {
+            "count": 235,
+            "sum": 10.384794,
+            "mean": 0.04419061276595745
+          },
+          "wall_ms": {
+            "count": 235,
+            "sum": 10.51623,
+            "mean": 0.04474991489361702
+          }
+        }
+      }
+    },
+    "ThunderAgent": {
+      "worker_batches": {
+        "prefill": 3561,
+        "decode": 95635
+      },
+      "turnover_samples": 222,
+      "non_workload_turnover_samples_excluded": 1,
+      "turnover_phases_ms": {
+        "launch_telemetry": {
+          "thread_cpu_ms": {
+            "count": 222,
+            "sum": 23.719142,
+            "mean": 0.10684298198198199
+          },
+          "wall_ms": {
+            "count": 222,
+            "sum": 23.724353999999998,
+            "mean": 0.10686645945945945
+          }
+        },
+        "post_launch_physical": {
+          "thread_cpu_ms": {
+            "count": 222,
+            "sum": 3.430585,
+            "mean": 0.015453085585585587
+          },
+          "wall_ms": {
+            "count": 222,
+            "sum": 3.540764,
+            "mean": 0.015949387387387385
+          }
+        },
+        "result_processing": {
+          "thread_cpu_ms": {
+            "count": 222,
+            "sum": 13554.909925,
+            "mean": 61.05815281531532
+          },
+          "wall_ms": {
+            "count": 222,
+            "sum": 13557.638848,
+            "mean": 61.07044526126126
+          }
+        },
+        "run_batch": {
+          "thread_cpu_ms": {
+            "count": 222,
+            "sum": 2710.088498,
+            "mean": 12.207605846846848
+          },
+          "wall_ms": {
+            "count": 222,
+            "sum": 3049.43027,
+            "mean": 13.736172387387386
+          }
+        },
+        "selection": {
+          "thread_cpu_ms": {
+            "count": 222,
+            "sum": 16538.716594999998,
+            "mean": 74.49872340090089
+          },
+          "wall_ms": {
+            "count": 222,
+            "sum": 16986.458338,
+            "mean": 76.5155780990991
+          }
+        },
+        "war_barrier_and_queue_publish": {
+          "thread_cpu_ms": {
+            "count": 222,
+            "sum": 9.237472,
+            "mean": 0.04161023423423424
+          },
+          "wall_ms": {
+            "count": 222,
+            "sum": 9.236041,
+            "mean": 0.04160378828828829
+          }
+        }
+      }
+    }
+  },
+  "balanced_decode_worker_intervals": {
+    "Preadmission": [
+      {
+        "minimum_batches_per_arm_per_bin": 1,
+        "common_bins": 384,
+        "common_batch_weight": 66632,
+        "before_worker_mean_ms": 16.78459793628082,
+        "latest_worker_mean_ms": 16.93673633866972,
+        "latest_mean_increase_percent": 0.9064167218449937
+      },
+      {
+        "minimum_batches_per_arm_per_bin": 16,
+        "common_bins": 307,
+        "common_batch_weight": 66052,
+        "before_worker_mean_ms": 16.771749904141387,
+        "latest_worker_mean_ms": 16.92148576806236,
+        "latest_mean_increase_percent": 0.8927861718472263
+      },
+      {
+        "minimum_batches_per_arm_per_bin": 32,
+        "common_bins": 260,
+        "common_batch_weight": 64940,
+        "before_worker_mean_ms": 16.734877981127887,
+        "latest_worker_mean_ms": 16.8770079923051,
+        "latest_mean_increase_percent": 0.8493041379656008
+      },
+      {
+        "minimum_batches_per_arm_per_bin": 64,
+        "common_bins": 206,
+        "common_batch_weight": 62511,
+        "before_worker_mean_ms": 16.706961808281875,
+        "latest_worker_mean_ms": 16.83872521785641,
+        "latest_mean_increase_percent": 0.7886736744033174
+      },
+      {
+        "minimum_batches_per_arm_per_bin": 128,
+        "common_bins": 137,
+        "common_batch_weight": 56080,
+        "before_worker_mean_ms": 16.264881646958134,
+        "latest_worker_mean_ms": 16.384608815803766,
+        "latest_mean_increase_percent": 0.7361084540570495
+      }
+    ],
+    "ThunderAgent": [
+      {
+        "minimum_batches_per_arm_per_bin": 1,
+        "common_bins": 403,
+        "common_batch_weight": 67126,
+        "before_worker_mean_ms": 17.04145723656234,
+        "latest_worker_mean_ms": 17.00316230152111,
+        "latest_mean_increase_percent": -0.22471631685972993
+      },
+      {
+        "minimum_batches_per_arm_per_bin": 16,
+        "common_bins": 311,
+        "common_batch_weight": 66510,
+        "before_worker_mean_ms": 17.008012460004757,
+        "latest_worker_mean_ms": 16.992610160952474,
+        "latest_mean_increase_percent": -0.09055907672047558
+      },
+      {
+        "minimum_batches_per_arm_per_bin": 32,
+        "common_bins": 277,
+        "common_batch_weight": 65721,
+        "before_worker_mean_ms": 17.00609710541901,
+        "latest_worker_mean_ms": 16.976384630004095,
+        "latest_mean_increase_percent": -0.17471660446679582
+      },
+      {
+        "minimum_batches_per_arm_per_bin": 64,
+        "common_bins": 214,
+        "common_batch_weight": 62789,
+        "before_worker_mean_ms": 16.906146000819938,
+        "latest_worker_mean_ms": 16.882902072853703,
+        "latest_mean_increase_percent": -0.13748803520984287
+      },
+      {
+        "minimum_batches_per_arm_per_bin": 128,
+        "common_bins": 148,
+        "common_batch_weight": 56644,
+        "before_worker_mean_ms": 16.35895876410191,
+        "latest_worker_mean_ms": 16.391402520562274,
+        "latest_mean_increase_percent": 0.1983240921882956
+      }
+    ]
+  },
+  "current_worker_totals": {
+    "prefill_batches": 3607,
+    "prefill_worker_ms": 373421.01338971406,
+    "decode_batches": 94730,
+    "decode_worker_ms": 1587560.1742351428
+  },
+  "current_staging_counts": {
+    "matched_staging_episodes": 466,
+    "native_selected_requests": 749,
+    "native_full_tokens": 24191769,
+    "native_h2d_bytes": 2378147659776
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/batch_cost_review.py": "ea530e9f5875b31e5443f115b08da5a950af3902344cd307c935b37e22659292",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tool_offload_before_admission_20261027/control_regression_audit.py": "9705e743a488aba2fd54882e5b8aa6a36b4866397665dc9c0fceefff6276321e",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/complete_review.json": "d23965aa3ad6b80c7162d232a0495c2aca5dddc59a8a10bcdb23b9c1c6352e3a",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/complete_service_interleaving.json": "3ead224c3d1507876c19f79d649e436d006eef8cbc5492b503fd9222a3634a86",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/complete_demand_h2d_service.json": "90b191f00c24e8627295a624853144faac629b4bc217a32a43f362d5a6603884",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_pipeline_20261028_r1/full/server/runtime_audit.jsonl": "7ffdb2e3b3f0e2218e3fc07f6777a75819954cf19c67050b98510e1736819e08",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/server/runtime_audit.jsonl": "2c613efd35d77820c8b53c74c005c8c61ea1825f6259fdac6136b6c02000997e",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/runtime_audit.jsonl": "045aac8a0a9a04c06b8bae10386995838b8374f27f7f3c45c25ef685c7bbab89"
+  },
+  "historical_incremental_control_cpu_known": false,
+  "exposed_control_delay_measured": false,
+  "performance_accepted": false,
+  "limitations": [
+    "Bins match batch size, 2048-token mean context and graph mode; they are not identical batches.",
+    "Each common bin has equal min-support weights on both arms; unmatched data remain in full metrics.",
+    "Worker intervals include runtime and transfer interference, not pure CUDA kernels.",
+    "Prefill CPU samples have different populations and phases may nest; no whole-run extrapolation.",
+    "Staging can move selection and restoration outside an eventual prefill sample.",
+    "No wall/thread measurement here establishes incremental exposed control CPU or causal saved JCT."
+  ]
+}

@@ -2788,3 +2788,47 @@
   relabel it as speculative prefetch or cache hits. No complete performance
   result or extra GPU job is created by these CPU checks. See
   docs/research/demand_pipeline_complete_review_plan_20261028_zh.md.
+- Demand-pipeline FullR1 now completes3674 exact requests/145565966 input/
+  549671 output tokens and18 normal tails with native stopping, two fresh
+  idle snapshots and actual owned exit. MeanJCT1613.659476s/output239.544631
+  improves4.94374%/2.64506% versusV345; against preadmission1631.194643/
+  238.499008 the gains are1.07499%/.43842%. Keep modest/single-run and
+  native-engine/policy differences explicit; no clear/repeated/all-baseline
+  acceptance. All18 beatV345, but game_simulation only .015756s;13 beat
+  preadmission and5 regress, including fintech+86.989850/ml+83.186084/
+  game_simulation+76.244366s. Full worker output343.922082 is below
+  preadmission346.325953 despite better end-to-end results.
+- Complete demand audit reconciles2541578747904 untagged bytes into
+  161633304576 request Host-hit +1797783552 handoff +2378147659776 staged
+  demand bytes, remainder0. All466 stages/749 member associations verify
+  native ACK and subsequent exact service. Do not call them speculative
+  prefetch or infer hidden DMA. All1050 sibling journals/1071 attempts
+  verify, with21 multi-member journals/20 distinct native forwards;250/253 grant-service associations
+  verify and3 remain unknown/unobserved. All57 final EOS/4 known guards
+  pass. Only3 restore samples remain; never compare their26.645600ms as
+  a whole-run reduction against different old cohorts.
+- Current web_blog critical chain changes107-to117 requests; other17 match.
+  Keep the current2983 critical-tool cohort distinct from the original2973.
+  Fixed_cohort_review binds the exact old2973/467561 output tokens: service
+  delta versus preadmission is+2.166674s(prefill-2.968272/decode+9.017642/
+  outside-3.882696), compared with old grouped+24.981494s. Actual full-chain
+  waiting-12.007540/service-6.152920/event+.625293 givesJCT-17.535167s.
+  None measures exposed historical control CPU. Original failed CPU paths
+  and newer-validator refusal remain in initial_review_failures.json.
+  Each complete arm now validates its own exact frozen observer; five actual
+  compatibility checks pass without weakening the new sibling validator.
+  All complete reports, original-byte archives and3 inspected figures live
+  under prefill_pipeline_20261028/demand_prefill_pipeline_20261028_r1.
+  No next GPU job is registered by this audit. Keep other baselines/ablations
+  deferred and the global goal active. See
+  docs/research/demand_pipeline_complete_result_20261028_zh.md.
+- Complete batch_cost_review retains all raw workers and matched decode
+  geometry: against preadmission, min32-support equal-bin means grow
+  16.734878-to16.877008ms(+.84930%); versusV345 they fall .17472%.
+  Prefill workers425.946088-to373.421013s/decode1576.540814-to1587.560174s.
+  Sparse prefill CPU selection57.328213vs53.472004ms and result processing
+  51.147408vs63.483543ms are different populations; staging moves work outside
+  eventual prefill samples. No full/exposed incremental CPU is measured.
+  Sibling_unique_review preserves the old mislabeled21-journal summary while
+  independently binding20 distinct native forward/sample IDs. Do not call21
+  journals21 independent batches or change old reports.

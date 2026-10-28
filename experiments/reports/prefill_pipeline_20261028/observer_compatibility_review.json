@@ -1,0 +1,65 @@
+{
+  "observed_at": "2026-10-28T23:41:34.266945+00:00",
+  "scope": "Actual completed arms and exact content-bound configuration observers.",
+  "passing_cases": 5,
+  "cases": [
+    {
+      "case": "exact_frozen_observer_Full (demand pipeline)",
+      "passed": true,
+      "native_engine": "729aa0caa7a1ffac84463f46b3d1843d1a6a22e4"
+    },
+    {
+      "case": "exact_frozen_observer_ThunderAgent decay",
+      "passed": true,
+      "native_engine": "11b84f7c31986782be3fbe699bae2574ef092389"
+    },
+    {
+      "case": "exact_frozen_observer_Preadmission Full",
+      "passed": true,
+      "native_engine": "11b84f7c31986782be3fbe699bae2574ef092389"
+    },
+    {
+      "case": "new_sibling_validator_still_rejects_old_policy",
+      "passed": true,
+      "original_rejection": "reference ThunderAgent admission differs from declared Full composition"
+    },
+    {
+      "case": "current_pipeline_settings_still_required",
+      "passed": true
+    }
+  ],
+  "observations": {
+    "Full (demand pipeline)": {
+      "registration": "/home/longhao/experiment/ops/demand_prefill_pipeline_20261028_r1.registration.json",
+      "code_commit": "01510ed528c2247f3ce0b370151381b04fefea9e",
+      "observer": "/home/longhao/experiment/.worktrees/beliefkv-causal-01510ed528c2/scripts/run_causal_comparison.py",
+      "observer_sha256": "c5a405c08f3d5731b4d25d1d470f9ac79f36f300c77af158b957632d67f49cd6",
+      "actual_registered_configuration_verified": true
+    },
+    "ThunderAgent decay": {
+      "registration": "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.json",
+      "code_commit": "0b1ca5de0933ddc5ba20328fccbf013c998ef361",
+      "observer": "/home/longhao/experiment/.worktrees/beliefkv-causal-0b1ca5de0933/scripts/run_causal_comparison.py",
+      "observer_sha256": "d2673767bd6ed92d363ebeb3062b4a67889742bc11abc6d6d848827dcb4909c2",
+      "actual_registered_configuration_verified": true
+    },
+    "Preadmission Full": {
+      "registration": "/home/longhao/experiment/ops/tool_offload_before_admission_20261027_r1.registration.json",
+      "code_commit": "716ef9a3e4adc45da086b55a14f096490ca5086b",
+      "observer": "/home/longhao/experiment/.worktrees/beliefkv-causal-716ef9a3e4ad/scripts/run_causal_comparison.py",
+      "observer_sha256": "47ecfc42bfe88fbdc72bcfde123be6da36f1c0ecf7bb7efe38a1677f862cdacf",
+      "actual_registered_configuration_verified": true
+    }
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/observer_compatibility_review.py": "8c572837de25583a9d64809def59b87a252e0076ded527e21d43b62480740ca5",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/complete_review.py": "33368bdc003ea15908582a0cd598e1853114ad5646ed2877980b52b9aa84f81a",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/initial_review_failures.json": "928165cf242c3f11bf48558415bb2ebf376cf8826c3f5171600bf15aa3f260f7",
+    "/home/longhao/experiment/ops/demand_prefill_pipeline_20261028_r1.registration.json": "59caf40545da12972b8affe70025fdca7790867e4c09db2359815043f8a2f74c",
+    "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.json": "66a5bac27ce8d8f70a91e5c45fcc377b7950db56bc3bd2a7588124fd5209902b",
+    "/home/longhao/experiment/ops/tool_offload_before_admission_20261027_r1.registration.json": "c3e820493fe5eabdb0884d52a1f1e06529507b38b472b23ba56f6a0f941535d6"
+  },
+  "current_validator_changed": false,
+  "gpu_experiment_changed": false,
+  "performance_accepted": false
+}

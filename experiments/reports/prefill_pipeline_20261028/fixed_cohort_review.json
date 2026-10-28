@@ -1,0 +1,158 @@
+{
+  "observed_at": "2026-10-28T23:48:26.389236+00:00",
+  "scope": "The exact original 2973 historical critical tool successors, not new critical paths.",
+  "fixed_historical_cohort": {
+    "Full": {
+      "request_count": 2973,
+      "output_tokens": 467561,
+      "workflow_equal_weight_s": {
+        "submit_to_first_launch_s": 212.5183057235082,
+        "first_launch_to_complete_s": 786.9656500489447,
+        "prefill_member_interval_union_s": 13.150313054084778,
+        "decode_member_interval_union_s": 633.3450302723778,
+        "outside_member_worker_intervals_s": 140.47030672248204
+      }
+    },
+    "Preadmission": {
+      "request_count": 2973,
+      "output_tokens": 467561,
+      "workflow_equal_weight_s": {
+        "submit_to_first_launch_s": 164.81493306795755,
+        "first_launch_to_complete_s": 784.7989761103524,
+        "prefill_member_interval_union_s": 16.118585442966886,
+        "decode_member_interval_union_s": 624.327388036569,
+        "outside_member_worker_intervals_s": 144.35300263081658
+      }
+    },
+    "ThunderAgent": {
+      "request_count": 2973,
+      "output_tokens": 467561,
+      "workflow_equal_weight_s": {
+        "submit_to_first_launch_s": 247.71245279900234,
+        "first_launch_to_complete_s": 799.4772065387302,
+        "prefill_member_interval_union_s": 20.270224911424847,
+        "decode_member_interval_union_s": 623.5861587219239,
+        "outside_member_worker_intervals_s": 155.62082290538152
+      }
+    }
+  },
+  "fixed_historical_cohort_delta_s": {
+    "Preadmission": {
+      "submit_to_first_launch_s": 47.70337265555065,
+      "first_launch_to_complete_s": 2.1666739385922256,
+      "prefill_member_interval_union_s": -2.9682723888821076,
+      "decode_member_interval_union_s": 9.017642235808808,
+      "outside_member_worker_intervals_s": -3.88269590833454
+    },
+    "ThunderAgent": {
+      "submit_to_first_launch_s": -35.19414707549413,
+      "first_launch_to_complete_s": -12.511556489785562,
+      "prefill_member_interval_union_s": -7.119911857340069,
+      "decode_member_interval_union_s": 9.758871550453932,
+      "outside_member_worker_intervals_s": -15.15051618289948
+    }
+  },
+  "actual_changed_workflow_paths": [
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+      "old_path_requests": 107,
+      "new_path_requests": 117,
+      "only_old_path_requests": [
+        "beliefkv:01a177ad-51fe-7243-8a11-96d900173264",
+        "beliefkv:01a177ad-6d96-7903-b4dc-8d968add2407",
+        "beliefkv:01a177ad-7d8e-7031-a793-aa89b4e76b66",
+        "beliefkv:01a177ad-99b2-7f11-9744-9c390e479f59",
+        "beliefkv:01a177ad-cc41-7490-8915-afefdfd3a9f6",
+        "beliefkv:01a177ad-e9f3-7da2-a714-9ea011e1b1fe",
+        "beliefkv:01a177ae-0c26-7ec1-b567-77d7560e310f",
+        "beliefkv:01a177ae-3107-7b02-a9bf-b81accbc4b35",
+        "beliefkv:01a177ae-826d-7690-8708-0796528e7aee",
+        "beliefkv:01a177ae-aff6-7b20-a1df-b3ec8fb6ed2d",
+        "beliefkv:01a177ae-d563-7461-aeba-1a77634e0d3f",
+        "beliefkv:01a177af-2d10-7832-a705-46123d43c0a8",
+        "beliefkv:01a177af-5c55-7683-938e-a17e748a920b",
+        "beliefkv:01a177af-88b9-7a22-bc9c-76e0b1d1ebdf",
+        "beliefkv:01a177b0-84cd-7032-a31e-8cd59466014b",
+        "beliefkv:01a177b0-9dea-7ef2-a4ee-e093b1978135",
+        "beliefkv:01a177b0-c204-7c30-b43f-fa07115f2e4c",
+        "beliefkv:01a177b0-dfb7-7fb3-bb74-5e3bbfc9919c",
+        "beliefkv:01a177b1-1682-7ec0-b9e2-8ea7adc7c083",
+        "beliefkv:01a177b1-59c0-7c00-96ef-e840b09c96b6",
+        "beliefkv:01a177b1-dd44-7b92-bcb5-7eef25a85653",
+        "beliefkv:01a177b1-f3a0-7352-9701-d76c363cfdec",
+        "beliefkv:01a177b2-40f0-71e3-a007-5429b631b8cb",
+        "beliefkv:01a177b2-8cc4-75d2-963d-fc9bcecf9007",
+        "beliefkv:01a177b2-aa87-7273-b34b-8729a7363c39",
+        "beliefkv:01a177b3-09dc-7252-a1c4-1d80a7a0ed23",
+        "beliefkv:01a177b3-18ff-70c2-ba6c-46da0a6f956f",
+        "beliefkv:01a177b3-241a-7e72-9476-39859249bfbe"
+      ],
+      "only_new_path_requests": [
+        "beliefkv:01a177ad-5202-76c0-a86c-ea53d17aef06",
+        "beliefkv:01a177ad-6d6c-7493-8be0-41ebf09060ad",
+        "beliefkv:01a177ad-7c0f-7481-a4e5-bb846c6eafdb",
+        "beliefkv:01a177ad-991a-7fb2-8d02-2d496acfca56",
+        "beliefkv:01a177ad-cc64-7a00-910f-eca46eabdb88",
+        "beliefkv:01a177ad-e865-77c1-aebd-e3681cb1dd25",
+        "beliefkv:01a177ae-1190-7482-9778-1c53d05d6bef",
+        "beliefkv:01a177ae-4054-70b3-8f97-b8d027f74395",
+        "beliefkv:01a177ae-851c-7131-aa84-e38da1c9453d",
+        "beliefkv:01a177ae-bd3d-7fb1-9672-105a7aff6e21",
+        "beliefkv:01a177af-218c-7211-a44d-7d4378787fdf",
+        "beliefkv:01a177af-44dd-7b41-ab25-d530c5435b20",
+        "beliefkv:01a177af-7859-7de1-87dc-d07000400726",
+        "beliefkv:01a177af-a04d-7c03-91fa-f0cea33c6f09",
+        "beliefkv:01a177af-c593-7261-8a29-e0bd5f5e50b3",
+        "beliefkv:01a177af-f3c9-7922-8145-87e0fb68145a",
+        "beliefkv:01a177b0-0e6b-7d33-a332-901682b11dcc",
+        "beliefkv:01a177b0-2d18-7763-b894-d4d05734b8d4",
+        "beliefkv:01a177b0-4a51-79a2-90ee-9039ad26aae8",
+        "beliefkv:01a177b0-8983-7d52-a5f4-8a809df9d56f",
+        "beliefkv:01a177b0-ab6f-74d2-8b08-8567cc4dd71c",
+        "beliefkv:01a177b0-d5be-7630-bec7-f7f9c5f40d0d",
+        "beliefkv:01a177b0-ec25-7350-b186-43fdb8e6da3c",
+        "beliefkv:01a177b1-02b4-74c3-bffa-f70ed7b8fba1",
+        "beliefkv:01a177b1-1ab0-70d2-9d26-c2a9b8d4ecb9",
+        "beliefkv:01a177b1-362a-7070-be14-f9cd28feb2b7",
+        "beliefkv:01a177b1-4e9e-7b62-8eea-55c84b7f6667",
+        "beliefkv:01a177b1-7844-7180-ac78-bda2d6a0f28b",
+        "beliefkv:01a177b1-9dc6-76b1-ab0f-e20b268f33df",
+        "beliefkv:01a177b1-bc56-7e61-90f1-83a93cfab296",
+        "beliefkv:01a177b1-cd4b-7dd0-9819-23037ef2a27c",
+        "beliefkv:01a177b1-ead5-7c81-9662-1f2c7df50cce",
+        "beliefkv:01a177b2-0209-70a2-8d92-960b1838176f",
+        "beliefkv:01a177b2-1b1b-7b62-a3db-ce7fb1f3f96e",
+        "beliefkv:01a177b2-3ed6-79f1-8647-870d16cddd25",
+        "beliefkv:01a177b2-9d25-79f0-a683-da00aaf43440",
+        "beliefkv:01a177b2-d9eb-7882-85e8-5467ec90b8c8",
+        "beliefkv:01a177b3-3bb1-78f1-a6b0-41010e64695f"
+      ]
+    }
+  ],
+  "current_actual_critical_tool_successors": 2983,
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/fixed_cohort_review.py": "601a59ab24e9776a1b90da97e069aa9053aca7bb1758ba56cbc20eb9bfe75802",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tool_offload_before_admission_20261027/control_regression_audit.py": "9705e743a488aba2fd54882e5b8aa6a36b4866397665dc9c0fceefff6276321e",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tool_offload_before_admission_20261027/control_regression_audit.json": "a689e22297789a8551fa19798906118966ccdd87af9796fd5c6d0ec27cbedc96",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/complete_review.json": "d23965aa3ad6b80c7162d232a0495c2aca5dddc59a8a10bcdb23b9c1c6352e3a",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/complete_jct_paths.json": "2092fc0cd0e6226950f7d846d838b243bd71fa2c9a0264412ab4d74d83d1bf40",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/complete_service_interleaving.json": "3ead224c3d1507876c19f79d649e436d006eef8cbc5492b503fd9222a3634a86",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_pipeline_20261028_r1/full/replay/native_requests.jsonl": "6a0352d9095f94a32acc24a7b80dc9bf768624772964203a95dea668ad1eaa21",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_pipeline_20261028_r1/full/server/runtime_audit.jsonl": "7ffdb2e3b3f0e2218e3fc07f6777a75819954cf19c67050b98510e1736819e08",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_pipeline_20261028_r1/full/replay/runtime_events.replay.jsonl": "e7933120d55280a15ab64b8923085d4480b57f932de64655998db7aea9fb76fc",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/replay/native_requests.jsonl": "2a6ac180d5f7cecd7ae63917c599d10b7e8f98c84b66de1fb54e1dcdfb3f7345",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/server/runtime_audit.jsonl": "2c613efd35d77820c8b53c74c005c8c61ea1825f6259fdac6136b6c02000997e",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/replay/runtime_events.replay.jsonl": "95567f85a9ea32f03376fca4af9050e27f8e9ad8992f7c7b52b134288ffaaf86",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/replay/native_requests.jsonl": "971780ae36bbc6dd99de53bcc5bb26a0d909baeba4dcd9ce4e28dc22f05bab73",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/runtime_audit.jsonl": "045aac8a0a9a04c06b8bae10386995838b8374f27f7f3c45c25ef685c7bbab89",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/replay/runtime_events.replay.jsonl": "b895eb2915903d99c1a4389fd4f862dc05a5105a602eb958d0d14c3c77a5817f"
+  },
+  "performance_accepted": false,
+  "incremental_control_cpu_measured": false,
+  "limitations": [
+    "Each original request and all ordinary tails remain; actual changed paths are disclosed.",
+    "Historical-cohort sums are no longer the current workflow JCT critical-path decomposition.",
+    "Worker intervals include runtime and dependency waits; they are not pure kernel time.",
+    "This descriptive check does not identify isolated module effects or exposed control CPU."
+  ]
+}

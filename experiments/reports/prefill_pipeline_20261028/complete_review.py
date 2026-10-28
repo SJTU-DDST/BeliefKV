@@ -6,6 +6,7 @@ import gzip
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
 import sys
 
 
@@ -83,6 +84,41 @@ def pipeline_state(state):
         raise ValueError("actual demand pipeline, probe, profile or transfer settings differ")
 
 
+def observe_registered(plan, registration, label, arm):
+    code = """
+import json
+from pathlib import Path
+import sys
+registration, label, arm = Path(sys.argv[1]), sys.argv[2], Path(sys.argv[3])
+plan = json.loads(registration.read_bytes())
+sys.path.insert(0, plan["execution_checkout"])
+from scripts import run_causal_comparison as causal
+causal.comparison.verify_sources(plan)
+causal.observed_configuration(plan, label, arm, final=True)
+observer = Path(causal.__file__).resolve()
+print(json.dumps({
+    "registration": str(registration.resolve()), "code_commit": plan["code_commit"],
+    "observer": str(observer), "observer_sha256": causal.sha256_file(observer),
+    "actual_registered_configuration_verified": True,
+}))
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code, str(registration), label, str(arm)],
+        check=True, capture_output=True, text=True,
+    )
+    observed = json.loads(result.stdout)
+    path = Path(plan["execution_checkout"]) / "scripts/run_causal_comparison.py"
+    if (
+        observed["registration"] != str(registration.resolve())
+        or observed["code_commit"] != plan["code_commit"]
+        or Path(observed["observer"]) != path.resolve()
+        or observed["observer_sha256"] != plan["source_sha256"]["scripts/run_causal_comparison.py"]
+        or observed["actual_registered_configuration_verified"] is not True
+    ):
+        raise ValueError("configuration observer is not the exact frozen registered source")
+    return observed
+
+
 def drain_and_exit(arm):
     drain = causal.load(arm / "telemetry_drain.json")
     cleanup = causal.load(arm / "owned_process_cleanup.json")
@@ -112,7 +148,7 @@ def main():
     if output.exists() or FIGURES.exists():
         raise FileExistsError("preserve prior complete evidence and figures")
     plans = {name: causal.load(path) for name, path, _, _ in SPECS}
-    contract, work, clocks, proofs, inputs = None, None, {}, {}, {}
+    contract, work, clocks, proofs, inputs, observers = None, None, {}, {}, {}, {}
     for name, registration, label, tree in SPECS:
         plan = plans[name]
         completed(plan, registration, label, tree)
@@ -127,7 +163,7 @@ def main():
         if work is not None and actual != work:
             raise ValueError("exact request work or original stopping differs")
         work = actual
-        causal.observed_configuration(plan, label, arm, final=True)
+        observers[name] = observe_registered(plan, registration, label, arm)
         drain_and_exit(arm)
         info_path = arm / "server/server_info.json"
         info = causal.load(info_path)
@@ -264,6 +300,7 @@ def main():
         "all_normal_tails_retained": True, "exact_work_and_original_stopping_verified": True,
         "two_fresh_idle_snapshots_and_actual_owned_exit_verified": True,
         "metrics": metrics, "proofs": proofs, "comparisons": comparisons,
+        "registered_configuration_observers": observers,
         "physical_plan_review": physical, "physical_input_jsonl_prefixes": reader.prefixes,
         "actual_pipeline_settings": PIPELINE_STATE, "figures": figures,
         "inputs_sha256": inputs, "operator_sha256": sha256_file(Path(__file__)),

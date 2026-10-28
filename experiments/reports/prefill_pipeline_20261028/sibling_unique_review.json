@@ -1,0 +1,302 @@
+{
+  "observed_at": "2026-10-28T23:57:37.265290+00:00",
+  "scope": "Unique native forward counting after complete sibling/session verification.",
+  "verified_multi_member_journal_records": 21,
+  "verified_distinct_multi_member_native_forwards": 20,
+  "forwards": [
+    {
+      "forward_iter": 16142,
+      "worker_sample_id": "native-service-000016131",
+      "join_records": [
+        {
+          "join_id": "deepagents-join:6eb7e296a3b7420c",
+          "request_ids": [
+            "beliefkv:01a177af-88b9-7a22-bc9c-76e0b1d1ebdf",
+            "beliefkv:01a177b0-4a51-79a2-90ee-9039ad26aae8"
+          ],
+          "journal_number": 28
+        }
+      ]
+    },
+    {
+      "forward_iter": 21638,
+      "worker_sample_id": "native-service-000021627",
+      "join_records": [
+        {
+          "join_id": "deepagents-join:6eb7e296a3b7420c",
+          "request_ids": [
+            "beliefkv:01a177b2-40f0-71e3-a007-5429b631b8cb",
+            "beliefkv:01a177b2-1b1b-7b62-a3db-ce7fb1f3f96e"
+          ],
+          "journal_number": 50
+        }
+      ]
+    },
+    {
+      "forward_iter": 28076,
+      "worker_sample_id": "native-service-000028065",
+      "join_records": [
+        {
+          "join_id": "deepagents-join:e2b8418d537d9176",
+          "request_ids": [
+            "beliefkv:01a177b1-2c64-7e80-a344-70db02722f56",
+            "beliefkv:01a177b1-2dd2-7ff1-921e-78219044d78a"
+          ],
+          "journal_number": 88
+        }
+      ]
+    },
+    {
+      "forward_iter": 28147,
+      "worker_sample_id": "native-service-000028136",
+      "join_records": [
+        {
+          "join_id": "deepagents-join:e2b8418d537d9176",
+          "request_ids": [
+            "beliefkv:01a177b1-3a74-7f01-8751-c4bebc1c0af9",
+            "beliefkv:01a177b1-5108-79c3-ba39-437659d981b0"
+          ],
+          "journal_number": 89
+        }
+      ]
+    },
+    {
+      "forward_iter": 30120,
+      "worker_sample_id": "native-service-000030109",
+      "join_records": [
+        {
+          "join_id": "deepagents-join:e2b8418d537d9176",
+          "request_ids": [
+            "beliefkv:01a177b3-564f-75a2-a740-7e8bec75238e",
+            "beliefkv:01a177b4-44dd-7751-aef2-b7ebbfae74a4"
+          ],
+          "journal_number": 161
+        }
+      ]
+    },
+    {
+      "forward_iter": 30231,
+      "worker_sample_id": "native-service-000030220",
+      "join_records": [
+        {
+          "join_id": "deepagents-join:5abfb3bf3a0f1903",
+          "request_ids": [
+            "beliefkv:01a177b6-a6ff-7690-a85d-4b57d206e4b5",
+            "beliefkv:01a177b6-a711-7ab2-9bd6-e93ea3cdee1a"
+          ],
+          "journal_number": 164
+        }
+      ]
+    },
+    {
+      "forward_iter": 37233,
+      "worker_sample_id": "native-service-000037222",
+      "join_records": [
+        {
+          "join_id": "deepagents-join:99fb482cb7bc330d",
+          "request_ids": [
+            "beliefkv:01a177ba-fac2-7dc3-820a-bd0ea5023aa4",
+            "beliefkv:01a177ba-fbe1-7533-87ac-8fd547104c73"
+          ],
+          "journal_number": 253
+        }
+      ]
+    },
+    {
+      "forward_iter": 37323,
+      "worker_sample_id": "native-service-000037312",
+      "join_records": [
+        {
+          "join_id": "deepagents-join:58ea188ae47c1cb0",
+          "request_ids": [
+            "beliefkv:01a177bc-62b3-7130-993f-9443e79990c5",
+            "beliefkv:01a177bc-62c3-7710-82f2-5567b2a74b2e"
+          ],
+          "journal_number": 256
+        }
+      ]
+    },
+    {
+      "forward_iter": 37525,
+      "worker_sample_id": "native-service-000037514",
+      "join_records": [
+        {
+          "join_id": "deepagents-join:58ea188ae47c1cb0",
+          "request_ids": [
+            "beliefkv:01a177bc-6acb-7700-8c4a-1ed38ab2b9ed",
+            "beliefkv:01a177bc-6b40-78a3-bb8c-e03b101484ae"
+          ],
+          "journal_number": 262
+        }
+      ]
+    },
+    {
+      "forward_iter": 38021,
+      "worker_sample_id": "native-service-000038010",
+      "join_records": [
+        {
+          "join_id": "deepagents-join:99fb482cb7bc330d",
+          "request_ids": [
+            "beliefkv:01a177bb-4709-7141-a50f-8819d9fda3c4",
+            "beliefkv:01a177bb-319d-7052-915e-42cf8ded7cd9"
+          ],
+          "journal_number": 281
+        }
+      ]
+    },
+    {
+      "forward_iter": 38106,
+      "worker_sample_id": "native-service-000038095",
+      "join_records": [
+        {
+          "join_id": "deepagents-join:58ea188ae47c1cb0",
+          "request_ids": [
+            "beliefkv:01a177bc-99d1-78b0-8fd3-5711dd81f104",
+            "beliefkv:01a177bc-9bd6-7ec0-9cd5-dc38b2461397"
+          ],
+          "journal_number": 282
+        }
+      ]
+    },
+    {
+      "forward_iter": 38327,
+      "worker_sample_id": "native-service-000038316",
+      "join_records": [
+        {
+          "join_id": "deepagents-join:58ea188ae47c1cb0",
+          "request_ids": [
+            "beliefkv:01a177bc-aaad-73b1-ad0f-6d5cc5bd13f9",
+            "beliefkv:01a177bc-a990-7f80-97a0-21ae9ca67ea6"
+          ],
+          "journal_number": 287
+        }
+      ]
+    },
+    {
+      "forward_iter": 38532,
+      "worker_sample_id": "native-service-000038521",
+      "join_records": [
+        {
+          "join_id": "deepagents-join:85ce65c62ac78d5a",
+          "request_ids": [
+            "beliefkv:01a177b8-480c-7140-ac12-d1f57688e998",
+            "beliefkv:01a177b8-2350-78c1-bba2-e4e9ab1c2c92"
+          ],
+          "journal_number": 296
+        }
+      ]
+    },
+    {
+      "forward_iter": 39800,
+      "worker_sample_id": "native-service-000039789",
+      "join_records": [
+        {
+          "join_id": "deepagents-join:0d9148afd60b7300",
+          "request_ids": [
+            "beliefkv:01a177b6-9900-7bc1-be96-cc274d099d68",
+            "beliefkv:01a177b6-96fc-74e1-981e-260692d35eb8"
+          ],
+          "journal_number": 344
+        }
+      ]
+    },
+    {
+      "forward_iter": 41581,
+      "worker_sample_id": "native-service-000041570",
+      "join_records": [
+        {
+          "join_id": "deepagents-join:b7360b5c84f9a36f",
+          "request_ids": [
+            "beliefkv:01a177b1-328c-7232-813e-16d7d5427d4d",
+            "beliefkv:01a177b1-3600-7d32-9448-32b3f7fda2af"
+          ],
+          "journal_number": 401
+        }
+      ]
+    },
+    {
+      "forward_iter": 42070,
+      "worker_sample_id": "native-service-000042059",
+      "join_records": [
+        {
+          "join_id": "deepagents-join:dedef10e71b04b84",
+          "request_ids": [
+            "beliefkv:01a177b8-7667-78e0-b2c8-85aeaf4fa498",
+            "beliefkv:01a177b8-7677-7da0-9d3a-18a3732df57d"
+          ],
+          "journal_number": 420
+        }
+      ]
+    },
+    {
+      "forward_iter": 42198,
+      "worker_sample_id": "native-service-000042187",
+      "join_records": [
+        {
+          "join_id": "deepagents-join:63dd6ccf0e5a8af3",
+          "request_ids": [
+            "beliefkv:01a177bb-1ad8-7490-b940-63498c48c008",
+            "beliefkv:01a177bb-1cef-78e0-840c-b4b694a9ee0c"
+          ],
+          "journal_number": 429
+        },
+        {
+          "join_id": "deepagents-join:dedef10e71b04b84",
+          "request_ids": [
+            "beliefkv:01a177b8-8901-7c23-9f44-2cbf5bf76c70",
+            "beliefkv:01a177b8-892e-7030-b4da-78d45410f29b"
+          ],
+          "journal_number": 430
+        }
+      ]
+    },
+    {
+      "forward_iter": 42283,
+      "worker_sample_id": "native-service-000042272",
+      "join_records": [
+        {
+          "join_id": "deepagents-join:b7360b5c84f9a36f",
+          "request_ids": [
+            "beliefkv:01a177b2-5cce-7f42-b7eb-1551878c54c1",
+            "beliefkv:01a177b2-512e-7071-b569-ad1110b2d3a3"
+          ],
+          "journal_number": 434
+        }
+      ]
+    },
+    {
+      "forward_iter": 43507,
+      "worker_sample_id": "native-service-000043496",
+      "join_records": [
+        {
+          "join_id": "deepagents-join:0d9148afd60b7300",
+          "request_ids": [
+            "beliefkv:01a177b7-dd1f-7c10-8f67-86411418d55b",
+            "beliefkv:01a177b7-a3af-77d0-ac7f-70869edb2a27"
+          ],
+          "journal_number": 501
+        }
+      ]
+    },
+    {
+      "forward_iter": 52512,
+      "worker_sample_id": "native-service-000052501",
+      "join_records": [
+        {
+          "join_id": "deepagents-join:7467e825949570bc",
+          "request_ids": [
+            "beliefkv:01a177bd-d700-72a2-9536-37aafbff043c",
+            "beliefkv:01a177bd-d70e-7862-8b08-977d57a9f2e8"
+          ],
+          "journal_number": 597
+        }
+      ]
+    }
+  ],
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/sibling_unique_review.py": "93a99a781d69c16e6a9cb880e4e9efd745f735c8800ab619f39c02e6f3a403c0",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/mechanism_review.json": "215911589febcc247f50d9906f1cea15f6ae8713b9f208fd33549f2e79732433"
+  },
+  "legacy_auditor_or_report_changed": false,
+  "performance_accepted": false
+}
