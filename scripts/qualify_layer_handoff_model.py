@@ -209,6 +209,10 @@ async def probe(directory, port, prompts, pulse):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--configuration", type=Path,
+        default=ROOT / "configs/migration/predictive_layer_handoff_20261027.json",
+    )
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--predecessor", type=Path, required=True)
     parser.add_argument("--components", type=Path, required=True)
@@ -247,7 +251,7 @@ def main():
     arm = directory / "arm"
     (arm / "server").mkdir(parents=True)
     (arm / "opportunities").mkdir()
-    spec = controls.load(ROOT / "configs/migration/predictive_layer_handoff_20261027.json")
+    spec = controls.load(args.configuration)
     env, flags, socket = controls.environment(
         {"arms": {"full": spec["common_environment"]}}, "full", ROOT, engine,
         arm, args.port, arm / "unused_plugin", sampling_mode="position",
@@ -280,6 +284,8 @@ def main():
             "sampling": DOCUMENT, "max_logprob_delta": .05,
         },
         "operator_sha256": sha256_file(Path(__file__)),
+        "configuration": str(args.configuration.resolve()),
+        "configuration_sha256": sha256_file(args.configuration),
     }
     server = None
     owned = []

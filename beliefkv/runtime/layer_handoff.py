@@ -105,6 +105,26 @@ def try_handoff(offloader, key, step):
             )
         )
 
+    manager = getattr(runtime, "_host_demand_capacity", None)
+    if manager is not None:
+        node, donors, donor_tokens = donor, [], 0
+        for _ in range(64):
+            if node is cache.tree_core.root_node:
+                break
+            full = node.component_data[0]
+            if full.value is None or full.host_value is not None:
+                break
+            donors.append(node.id)
+            donor_tokens += len(full.value)
+            if donor_tokens >= restore_tokens:
+                break
+            node = node.parent
+        if (
+            donor_tokens < restore_tokens
+            or not authorize(donor_tokens, restore_tokens)
+            or not manager.ensure(donor_tokens, protected=(*donors, consumer.id))
+        ):
+            return False
     result = begin(
         donor_node_id=donor.id, donor_creation_time=donor.creation_time,
         donor_session_id=key.session_id, donor_session_generation=key.session_generation,

@@ -259,6 +259,12 @@ def arm_environment(
         "BELIEFKV_TOOL_OFFLOAD_BEFORE_ADMISSION": early_tool_offload,
         "LAYER_HANDOFF": layer_handoff,
         "BELIEFKV_LAYER_HANDOFF": layer_handoff,
+        "BELIEFKV_TOOL_OFFLOAD_MIN_SURVIVAL": (
+            common.get("BELIEFKV_TOOL_OFFLOAD_MIN_SURVIVAL", ".9") if custom_kv else ".9"
+        ),
+        "BELIEFKV_HOST_DEMAND_RESERVE_BYTES": (
+            common.get("BELIEFKV_HOST_DEMAND_RESERVE_BYTES", "0") if mode == "full" else "0"
+        ),
         "IDLE_HOST_MIRROR_RECYCLE": host_mirror_recycle,
         "BELIEFKV_IDLE_HOST_MIRROR_RECYCLE": host_mirror_recycle,
         "BELIEFKV_TOOL_OFFLOAD_POLICY": common.get("BELIEFKV_TOOL_OFFLOAD_POLICY", "fixed") if custom_kv else "fixed",

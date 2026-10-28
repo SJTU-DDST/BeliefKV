@@ -28,6 +28,7 @@ from beliefkv.experiments.delegation_policy import (
 )
 from beliefkv.core.events import RuntimeEventKind as Kind
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
+from beliefkv.experiments.native_engine_variant import engine_patch
 from scripts import run_eos_pair_after_modules as pair
 from scripts.audit_causal_replay import audit as audit_graph
 from scripts.audit_replay_token_capture import audit as audit_tokens
@@ -330,7 +331,7 @@ def environment(
 def engine_evidence(engine: Path, report: Path, sources: Path) -> dict:
     proof = load(sources)
     observed = git_source_state(
-        engine, canonical_patch=ROOT / "patches/sglang-v0.5.20-beliefkv-staging.patch",
+        engine, canonical_patch=engine_patch(ROOT, proof["canonical_patch"]["actual_tree"]),
     )
     cases = list(ET.parse(report).getroot().iter("testcase"))
     xml = ET.parse(report).getroot()

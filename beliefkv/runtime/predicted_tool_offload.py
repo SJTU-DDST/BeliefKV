@@ -320,7 +320,7 @@ class DemandAwareToolOffload(PredictedToolOffload):
         online = self.runtime._online_tool_timing
         return (
             hint is not None
-            and hint.remaining_quantile(.1, now_ms=now_ms) is not None
+            and self.runtime._tool_offload_remaining(hint, now_ms=now_ms) is not None
             and (online is None or online.prefetch_supported(
                 key.root_workflow_id, key.invocation_id, now_ms=now_ms,
                 scope=hint.residual_support_detail.removeprefix("online_").removesuffix("_command"),
@@ -429,15 +429,17 @@ class DemandAwareToolOffload(PredictedToolOffload):
             threshold = max(1000., threshold)
         now_ms = time.monotonic() * 1000.
         probability = hint.release_probability_within(threshold, now_ms=now_ms)
-        remaining = hint.remaining_quantile(.1, now_ms=now_ms)
+        min_survival = self.runtime.tool_offload_min_survival
+        remaining = self.runtime._tool_offload_remaining(hint, now_ms=now_ms)
         allowed = (
-            probability <= .1 if probability is not None
+            probability <= 1. - min_survival + 1e-12 if probability is not None
             else remaining is not None and remaining >= threshold
         )
         self.runtime.counts["tool_offload_threshold_us_last"] = int(threshold * 1000)
         self.runtime.counts["tool_offload_cost_rejected"] += not allowed
         self.action_detail = {
             "remaining_threshold_ms": threshold, "cold_transfer_cost": cold,
+            "minimum_remaining_survival": min_survival,
             "predicted_completion_probability_within_threshold": probability,
             "backup_tokens_budgeted": backup_tokens, "restore_tokens_budgeted": restore_tokens,
             "beneficiary_restore_bytes_budgeted": consumer_bytes,
@@ -465,12 +467,14 @@ class DemandAwareToolOffload(PredictedToolOffload):
             step.missing_full_prefix_tokens,
             len(full.value) if full.value is not None and full.host_value is None else 0,
         )
-        return (
-            missing <= headroom.host_full_free_tokens
-            and self._worth_offloading(
-                step.key, backup_tokens=missing, release_tokens=missing,
-            )
-        )
+        if not self._worth_offloading(
+            step.key, backup_tokens=missing, release_tokens=missing,
+        ):
+            return False
+        if missing <= headroom.host_full_free_tokens:
+            return True
+        manager = getattr(self.runtime, "_host_demand_capacity", None)
+        return manager is not None and manager.ensure(missing, protected=(step.node_id,))
 
     def _authorize_backup(self, key, step):
         return self._eligible(key) and self._prepare_allowed(

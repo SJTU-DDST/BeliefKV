@@ -118,6 +118,7 @@ from beliefkv.runtime.subagent_retention import DormantSubagentRetention
 from beliefkv.runtime.predicted_tool_offload import PredictedToolOffload
 from beliefkv.runtime.idle_prepare_backend import idle_prepare_backend
 from beliefkv.runtime.idle_host_mirror_recycle import IdleHostMirrorRecycle
+from beliefkv.runtime.host_demand_capacity import HostDemandCapacity
 
 if TYPE_CHECKING:
     from beliefkv.core.events import RuntimeEvent
@@ -686,6 +687,25 @@ class NativeAdmissionRuntime:
             raise ValueError("idle Host mirror recycling requires Full cold background prepare")
         self._idle_host_mirror_recycler = (
             IdleHostMirrorRecycle(self) if self.idle_host_mirror_recycle else None
+        )
+        self.tool_offload_min_survival = float(os.environ.get(
+            "BELIEFKV_TOOL_OFFLOAD_MIN_SURVIVAL", ".9",
+        ))
+        if not 0. < self.tool_offload_min_survival < 1.:
+            raise ValueError("tool offload minimum survival must be in (0, 1)")
+        self.host_demand_reserve_bytes = int(os.environ.get(
+            "BELIEFKV_HOST_DEMAND_RESERVE_BYTES", "0",
+        ))
+        if not 0 <= self.host_demand_reserve_bytes <= 64 * 1024**3:
+            raise ValueError("Host demand reserve must be between zero and 64 GiB")
+        if self.host_demand_reserve_bytes and (
+            self.internal_comparison_mode != "full"
+            or not self.enable_prepare_host or self.idle_host_mirror_recycle
+        ):
+            raise ValueError("Host demand capacity requires Full prepare without idle recycling")
+        self._host_demand_capacity = (
+            HostDemandCapacity(self, self.host_demand_reserve_bytes)
+            if self.host_demand_reserve_bytes else None
         )
         self._idle_backup_queue_scope = False
         self._idle_prepare_direct_nodes = set()
@@ -2902,6 +2922,8 @@ class NativeAdmissionRuntime:
                     if self._predicted_tool_offload is not None else None
                 ),
                 "idle_prepare_io_backend": self.idle_prepare_io_backend,
+                "tool_offload_min_survival": self.tool_offload_min_survival,
+                "host_demand_reserve_bytes": self.host_demand_reserve_bytes,
                 "online_tool_timing_revision": (
                     self._online_tool_timing.revision if self._online_tool_timing else None
                 ),
@@ -8236,9 +8258,15 @@ class NativeAdmissionRuntime:
             if current != key:
                 key = current
                 self._spawn_full_prepares[context_id] = key
+            batch_bytes = SPAWN_FULL_PREPARE_MAX_BYTES
+            if self._host_demand_capacity is not None:
+                batch_bytes = self._host_demand_capacity.optional_batch(batch_bytes)
+                if not batch_bytes:
+                    self.counts["spawn_prepare_host_demand_reserve_skips"] += 1
+                    break
             result = prepare(
                 session_id=key.session_id, session_generation=key.session_generation,
-                max_batch_bytes=SPAWN_FULL_PREPARE_MAX_BYTES,
+                max_batch_bytes=batch_bytes,
             )
             issued = result["issued"]
             if result["complete"]:
@@ -8313,6 +8341,13 @@ class NativeAdmissionRuntime:
                 self.counts["idle_full_prepare_blocked_prefetch_transaction"] += 1
             return
         self.counts["idle_full_prepare_native_calls"] += 1
+        if self._host_demand_capacity is not None:
+            maximum = getattr(type(cache).prepare_beliefkv_idle_full, "__globals__", {}).get(
+                "BELIEFKV_IDLE_FULL_PREPARE_MAX_BYTES", 512 * 1024**2,
+            )
+            if self._host_demand_capacity.optional_batch(maximum) < maximum:
+                self.counts["idle_prepare_host_demand_reserve_skips"] += 1
+                return
         previous_scope, previous_requests = (
             self._idle_backup_queue_scope, self._idle_backup_queued_requests,
         )
@@ -8484,9 +8519,20 @@ class NativeAdmissionRuntime:
         now_ms = time.monotonic() * 1000.
         if hint.release_cdf:
             probability = hint.release_probability_within(TOOL_OFFLOAD_WAIT_MS, now_ms=now_ms)
-            return probability is not None and probability <= .1
-        remaining = hint.remaining_quantile(.1, now_ms=now_ms)
+            return probability is not None and probability <= 1. - self.tool_offload_min_survival + 1e-12
+        remaining = self._tool_offload_remaining(hint, now_ms=now_ms)
         return remaining is not None and remaining >= TOOL_OFFLOAD_WAIT_MS
+
+    def _tool_offload_remaining(self, hint, *, now_ms):
+        quantile = round(1. - self.tool_offload_min_survival, 12)
+        if not hint.release_cdf:
+            # Legacy hints contain only three quantiles. Do not invent P25 or
+            # turn a requested 95% survival into a weaker P10 guarantee.
+            supported = [q for q in (.1, .5, .9) if q <= quantile]
+            if not supported:
+                return None
+            quantile = max(supported)
+        return hint.remaining_quantile(quantile, now_ms=now_ms)
 
     @timed_runtime("tool_prepare")
     def dispatch_tool_prepare(

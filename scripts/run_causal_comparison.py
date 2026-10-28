@@ -35,6 +35,7 @@ from beliefkv.experiments.subagent_retention import (
     ORDER as RETENTION_ORDER, environment as retention_environment,
 )
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
+from beliefkv.experiments.native_engine_variant import engine_patch
 from scripts.run_causal_gpu_replay import source_plan
 from scripts.run_causal_source_capture import (
     comparison, engine_evidence, fresh, load, qualified, reservation, reusable_source,
@@ -339,6 +340,8 @@ def preflight_runtime(settings, model_path):
         ),
         "idle_prepare_io_backend": settings.get("BELIEFKV_IDLE_PREPARE_IO_BACKEND", "native"),
         "idle_host_mirror_recycle": settings.get("BELIEFKV_IDLE_HOST_MIRROR_RECYCLE", "0") == "1",
+        "tool_offload_min_survival": float(settings.get("BELIEFKV_TOOL_OFFLOAD_MIN_SURVIVAL", ".9")),
+        "host_demand_reserve_bytes": int(settings.get("BELIEFKV_HOST_DEMAND_RESERVE_BYTES", "0")),
         "layer_handoff_enabled": settings.get("BELIEFKV_LAYER_HANDOFF", "0") == "1",
         "tool_offload_policy": (
             settings.get("BELIEFKV_TOOL_OFFLOAD_POLICY", "fixed")
@@ -1311,7 +1314,7 @@ def register(args):
         ["git", "-C", str(args.engine), "worktree", "add", "--detach", str(frozen_engine), base],
         check=True, capture_output=True,
     )
-    patch = checkout / "patches/sglang-v0.5.20-beliefkv-staging.patch"
+    patch = engine_patch(checkout, engine["tree"])
     subprocess.run(
         ["git", "-C", str(frozen_engine), "apply", str(patch)],
         check=True, capture_output=True,

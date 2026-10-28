@@ -21,6 +21,7 @@ from beliefkv.experiments.internal_comparison import (
     ORDER, SCHEDULING_ONLY, arm_environment, validate_runtime,
 )
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
+from beliefkv.experiments.native_engine_variant import engine_patch
 from scripts import launch_qualified_after_hold as qualified
 from scripts.launch_semantic_h2d_after_pair import _require_clean, validate_completed_pair
 
@@ -69,7 +70,7 @@ def verify_sources(plan: dict) -> None:
             raise ValueError(f"frozen input changed: {row['path']}")
     engine = git_source_state(
         Path(plan["engine_checkout"]),
-        canonical_patch=checkout / "patches/sglang-v0.5.20-beliefkv-staging.patch",
+        canonical_patch=engine_patch(checkout, plan["engine_tree"]),
     )["canonical_patch"]
     if not engine["matches_worktree"] or engine["actual_tree"] != plan["engine_tree"]:
         raise ValueError("frozen native engine changed")

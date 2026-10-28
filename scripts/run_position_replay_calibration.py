@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
+from beliefkv.experiments.native_engine_variant import engine_patch
 from beliefkv.experiments.prepare_ack_engine import prepare_ack_engine_compatibility
 from scripts import run_causal_comparison as controls
 from scripts import run_causal_source_capture as capture
@@ -182,7 +183,15 @@ def comparison_command(plan, run, arm, development):
     ]
     if plan.get("experiment_config"):
         command += ["--experiment-config", plan["experiment_config"]]
-        common = load(Path(plan["experiment_config"]))["common_environment"]
+        spec = load(Path(plan["experiment_config"]))
+        common = spec["common_environment"]
+        if spec.get("stream_response_metrics") is True:
+            command.append("--stream-response-metrics")
+        if spec.get("tool_timing_overlay"):
+            command += [
+                "--tool-duration-overlay",
+                str((development / spec["tool_timing_overlay"]["path"]).resolve()),
+            ]
         if common.get("TOOL_PREFETCH") == "1" and float(common.get("TOOL_PREFETCH_PRIORITY_MS", "0")) > 0:
             command += ["--tool-prefetch-priority-ms", common["TOOL_PREFETCH_PRIORITY_MS"]]
     else:
@@ -281,7 +290,7 @@ def register(args):
             ["git", "-C", str(args.engine), "worktree", "add", "--detach", str(frozen_engine), base],
             check=True, capture_output=True,
         )
-        patch = checkout / "patches/sglang-v0.5.20-beliefkv-staging.patch"
+        patch = engine_patch(checkout, evidence["tree"])
         subprocess.run(
             ["git", "-C", str(frozen_engine), "apply", str(patch)],
             check=True, capture_output=True,

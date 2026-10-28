@@ -52,6 +52,9 @@ def main():
         "IDLE_HOST_MIRROR_RECYCLE", "0",
     ) == "1"
     layer_handoff = configuration["common_environment"].get("LAYER_HANDOFF", "0") == "1"
+    host_demand = int(configuration["common_environment"].get(
+        "BELIEFKV_HOST_DEMAND_RESERVE_BYTES", "0",
+    )) > 0
     paths = set(json.loads(Path(prior["source_manifest"]["path"]).read_bytes()))
     paths.update((
         str(args.configuration.resolve().relative_to(ROOT)), str(Path(__file__).resolve().relative_to(ROOT)),
@@ -73,11 +76,15 @@ def main():
         extra_tests += ("tests/test_idle_host_mirror_recycle.py",)
         paths.add("beliefkv/runtime/idle_host_mirror_recycle.py")
     if layer_handoff:
-        extra_tests += ("tests/test_layer_handoff.py",)
+        extra_tests += ("tests/test_layer_handoff.py", "tests/test_native_engine_variant.py")
         paths.update((
             "beliefkv/runtime/layer_handoff.py", "scripts/qualify_layer_handoff.py",
             "scripts/qualify_layer_handoff_model.py",
+            "beliefkv/experiments/native_engine_variant.py",
         ))
+    if host_demand:
+        extra_tests += ("tests/test_host_demand_capacity.py",)
+        paths.add("beliefkv/runtime/host_demand_capacity.py")
     if continuation_free:
         extra_tests += (
             "tests/test_reference_free_continuation.py",
