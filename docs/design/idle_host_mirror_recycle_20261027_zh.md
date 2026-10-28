@@ -123,3 +123,26 @@ K/V数据逐项相等。原生Host池257槽、Device128槽，每token1024字节�
 进程正常退出，NVML确认清理。该检查没有模型forward、原生模型
 consumer准入或完整JCT/吞吐证据，也不实现逐层容量交接。下一次
 完整Full仍需保持V345的全部work/timing/capacity/seed并独立审计。
+
+## 完整Full运行
+
+独立完整比较已从冻结80a6186cdc7b启动：
+`ops/idle_host_mirror_recycle_20261027_r1.registration.json`，端口18666。
+只有Full，复用完整V345工具衰减版ThunderAgent。13个共同work/timing/
+capacity/engine/serving字段完全相等；相对上一轮Full的common环境
+只增加两种Host镜像回收开关。未修改原生引擎或启用逐层交接。
+
+`live_start.py/.json`验证实际nice0 watcher412718、server413169、
+GPU scheduler413499与driver414704，NVML只有该调度器。所有运行
+源均绑定3381项共享CPU与四场景GPU组件证据，物理控制健康。
+nice19、CUDA隐藏的CPU绘图等待进程414294只在完整成功和实际
+进程退出后绘制匹配图，使用独立plotting环境，不启动GPU任务。
+
+随后 `collecting_pipeline_after_start.json`封存425个精确完成请求。
+reference只提供聚合预算，逐agent预算时间仍未知，不能用前缀吞吐
+与完整V345比较。`mirror_lifecycle.py`按同节点/generation的实际
+prepare、相同native拷贝范围及提交时间窗口关联D2H，保留未匹配项，
+明确不据此推断HBM释放或consumer首次使用。15项独立CPU检查
+覆盖外来/错误/未完成拷贝、generation、容量、重复ACK与重复归因。
+第一份 `collecting_mirror_lifecycle.json`尚无镜像回收记录，保留为零，
+不能当作整个运行没有机会的结论。完整JCT、吞吐与机制收益仍待终态。

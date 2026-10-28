@@ -2057,3 +2057,22 @@
   consumer admission, whole-model performance or progressive layer handoff.
   Freeze qualified production sources for a separate Full-only comparison,
   recheck hold/resources and reuse completeV345, preserving all normal tails.
+- Host-mirror FullR1 now runs frozen80a6186cdc7b on unchanged native11b84f7c3198,
+  port18666: ops/idle_host_mirror_recycle_20261027_r1.registration.json.
+  Actual nice0 watcher412718/server413169/GPU scheduler413499/driver414704
+  are independently live and NVML matches the sole scheduler. Named
+  live_start.py/.json binds all qualified sources, actual mirror/offload flags
+  and13 common work/timing/capacity/engine/serving fields equal to completeV345.
+  Relative to previous Full, only the two mirror flags change. A subsequent
+  sealed pipeline has425 exact completions, not full performance; keep
+  reference per-agent aggregate-only budgets unknown. The nice19 CUDA-hidden
+  plotting waiter414294 uses the dedicated plotting environment and waits for
+  complete success and actual exit. Its state is
+  ops/idle_host_mirror_recycle_20261027_r1.plots.state.json.
+  The independent mirror_lifecycle.py operator has15 passing CPU checks and
+  credits only exact-node/generation prepare plus actual native D2H extent/
+  submission-window evidence. Its first sealed prefix haszero mirror releases,
+  preserved without inferring whole-run opportunity. Backup ACK is not HBM
+  release, first use, hidden time or causal JCT benefit. Keep frozen sources,
+  all normal tails, completeV345 and the goal incomplete; no additional GPU
+  run is queued and progressive layer-capacity handoff is still unimplemented.

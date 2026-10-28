@@ -1,0 +1,38 @@
+{
+  "summary": {
+    "mirror_release_records": 0,
+    "released_host_bytes": 0,
+    "verified_native_cold_backup_bytes": 0,
+    "statuses": {}
+  },
+  "releases": [],
+  "latest_recorded_recycle_counts": {},
+  "observed_at": "2026-10-28T03:45:43.675229+00:00",
+  "registration": "/home/longhao/experiment/ops/idle_host_mirror_recycle_20261027_r1.registration.json",
+  "registration_sha256": "a83a5bf0b43d0f60d67967b29b424db6e35561d532a1c2fce8c57bb80d4d2bf2",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full",
+  "code_commit": "80a6186cdc7b1e0c4acf4152039dd83debac249f",
+  "capacity_census_sha256": "fd3c35173b1716cc59b70de18e9a8e2f36f3ea500032b9059421fa5520f21007",
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 4826296,
+      "complete_prefix_sha256": "432cb546fc88703d75861af1d5ffbf59547c60d7460170c50f327303c0531508",
+      "first_read_limit_bytes": 4826296
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1/full/server/transfer_telemetry.jsonl": {
+      "complete_prefix_bytes": 352636,
+      "complete_prefix_sha256": "a1a1d6fc04aced491bf6c56e2200e2013a917ff0ffd106a9edbc93be570990df",
+      "first_read_limit_bytes": 352636
+    }
+  },
+  "operator_sha256": "4a2702ac2294cf9dbc3eb6076df9af27a3f97b39ccc945ac81007fe672df50d7",
+  "performance_accepted": false,
+  "limitations": [
+    "Independent sealed file prefixes are not an atomic snapshot.",
+    "Native D2H association requires exact node, extent bytes and the submission window.",
+    "A confirmed Host backup is not evidence of later HBM release or model service.",
+    "Cumulative released/copied bytes are not unique occupancy, hidden time or JCT savings.",
+    "Normal tails and complete matched JCT/throughput require the final run audit.",
+    "Progressive layer-capacity handoff remains unimplemented."
+  ]
+}
