@@ -1974,3 +1974,12 @@
   unknown. Run-batch entry is not kernel start, cumulative release bytes are
   not simultaneous capacity, and no hidden-time/JCT gain follows. Keep frozen
   sources and complete-work performance acceptance pending.
+- The named pre-admission complete_review.py and complete_offload_paths.py
+  now require actual terminal work, common complete figures, immutable seals,
+  native stopping/drain/cleanup and independent migration/JCT/wait/grant/EOS
+  audits before comparison. The registered original source graph receives
+  separate path authority; unrelated arm seals remain rejected. Fourteen
+  review_precheck.py/.json CPU cases pass, covering actual zero-release input,
+  missing/contradictory service identity and invalid complete seals. These
+  operators have not yet reviewed a completed current Full and supply no new
+  runtime/GPU/performance qualification. Preserve716ef9a3 and reuseV345.

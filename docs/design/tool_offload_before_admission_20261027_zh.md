@@ -178,3 +178,21 @@ request/context/epoch、session及clock domain绑定到释放后的实际服务
 累计释放字节不是同时可用容量；run-batch入口不是CUDA kernel启动，
 不能由释放到服务的间隔推算隐藏传输或可消除JCT。各文件独立封存，
 该片段不是原子快照、完整工作量或性能验收；保留全部后续普通长尾。
+
+## 完整审计准备
+
+同目录 `complete_review.py` 要求本轮和V345实际退出、原始停止与完整
+请求/token一致、两次新鲜空闲telemetry、共同配置的完整图表，以及
+迁移/JCT路径/采样层等待/工具重入/准入等待/容量/资格消费/EOS反例
+和触发生命周期的独立审计。原始source graph只在其登记路径单独授权；
+运行arm的完整封存仍不能引用其他arm。
+
+新增提前释放审计保留完整消费者状态和未知身份字段；
+`complete_offload_paths.py` 再将准入前、维护阶段的预测释放，与原生
+分配压力释放及Host备份分开核对。两个operator尚未获得本轮完整输入，
+准备好不代表已通过完整审计。
+
+`review_precheck.py/.json` 已实际通过14项CPU边界检查，覆盖真实已完成
+零释放arm、正常消费、缺服务/epoch/clock/session证据、服务早于释放、
+提交晚于释放、错误字节/单位/上下文、重复submit和截断/跨arm封存。
+这些检查只约束离线审计，不是新的运行时、GPU或性能资格。

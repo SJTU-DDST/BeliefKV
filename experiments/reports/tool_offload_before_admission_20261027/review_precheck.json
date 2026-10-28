@@ -1,0 +1,28 @@
+{
+  "cases": {
+    "complete_service_identity": "verified",
+    "missing_service": "unknown",
+    "wrong_service_epoch": "unknown",
+    "wrong_receipt_clock": "unknown",
+    "missing_receipt_session": "unknown",
+    "service_before_release": "rejected",
+    "submit_after_release": "rejected",
+    "corrupt_release_bytes": "rejected",
+    "corrupt_release_units": "rejected",
+    "wrong_beneficiary_context": "rejected",
+    "ambiguous_native_submit": "rejected",
+    "complete_zero_release_real_arm": "verified",
+    "truncated_complete_seal": "rejected",
+    "foreign_complete_seal": "rejected"
+  },
+  "passed_cases": 14,
+  "operator_sha256": "2d803b4a26b4364e8f98556ea4131aa5cb82f0ae80336d7dc9ff185e009dcf3c",
+  "complete_review_operator_sha256": "4ce261bb9e72ea3d8bcf35e83362c66f2a96967f84a75575b25f5023cfa41dd1",
+  "complete_control_inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_free_continuation_20261027_r1/full/opportunities/admission_opportunities.jsonl": "a3e254ac4989da296e0ffbc1658a033992e871cacb8471e80400a474cd35ac1e",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_free_continuation_20261027_r1/full/replay/native_requests.jsonl": "cb1b8ea1d8bc4d193c1ec83a6eb0067dd2d86695b1c6602122caa176f43543e5",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_free_continuation_20261027_r1/full/server/runtime_events.sglang.jsonl": "6081f2e4729de09fa13eefeb8d1eb3f43eb39cfd1abf91f756cefbe3a21033f6",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_free_continuation_20261027_r1/full/server/runtime_audit.jsonl": "c72528e92f8ba0a28840ed5e00ff16a8aaf9b95862358abba3811856663133a1"
+  },
+  "scope": "CPU audit evidence boundaries; no runtime/GPU/performance qualification"
+}
