@@ -1,0 +1,61 @@
+{
+  "scope": "prefill_planning_thread_cpu_with_real_native_cpu_tree_and_copy_standins",
+  "fixture": {
+    "programs": 3,
+    "siblings": 2,
+    "device_token_slots": 512
+  },
+  "candidate_sources": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "0f0fe293082332fc51f39076354babcd756822f0fc2ab8639a0983d6dc5eeedf",
+    "beliefkv/runtime/reference_thunder_admission.py": "ffdbf663a3fda1d72a9f04a2e70ece58f42acbc29e8d2464e4370ba4cd0d5848",
+    "beliefkv/runtime/join_sibling_service.py": "656442044c3ff70c14258a3e3a2567ae609b3a75c6888ff480b8bf8b00a61f69",
+    "beliefkv/runtime/native_transfer_policy.py": "c4e7803486373e8f4f86b75d367a3a79dde3e53a6b557163638acc0bcec9b7fb",
+    "tests/test_reference_sibling_service.py": "c97cfce0ba3fd48f9acc4238f99132b579bad28a398ee17a90a2b4702b7b4e8e",
+    "tests/test_full_only_native_lifecycle.py": "4de52d01708fef41df881652c61b8e0623c9dec12228fb9e5f3988a201713624",
+    "experiments/reports/sibling_service_capacity_20261028/control_cost_cpu.py": "f53b0b5b395665923960f11a5bea49ab1b7ee17e4352dbf380e25a4c77dcec5b"
+  },
+  "cases": {
+    "disabled": {
+      "samples": 500,
+      "warmup": 50,
+      "thread_cpu_p50_us": 13.471,
+      "thread_cpu_p99_us": 15.896,
+      "thread_cpu_max_us": 24.74,
+      "result_request_order": [
+        "child-0",
+        "peer",
+        "child-1"
+      ]
+    },
+    "joint_fit": {
+      "samples": 500,
+      "warmup": 50,
+      "thread_cpu_p50_us": 88.03550000000001,
+      "thread_cpu_p99_us": 94.098,
+      "thread_cpu_max_us": 95.999,
+      "result_request_order": [
+        "child-0",
+        "child-1",
+        "peer"
+      ]
+    },
+    "input_limited": {
+      "samples": 500,
+      "warmup": 50,
+      "thread_cpu_p50_us": 16.0985,
+      "thread_cpu_p99_us": 19.621,
+      "thread_cpu_max_us": 23.436,
+      "result_request_order": [
+        "child-0",
+        "peer",
+        "child-1"
+      ]
+    }
+  },
+  "gpu_execution": false,
+  "limits": [
+    "Small repeatable CPU fixture, not the maximum 64-candidate or 24-member path.",
+    "No GPU inference, DMA, writer-thread cost, whole-controller or JCT attribution.",
+    "The 50ms advisory observation cache participates as it does in repeated native plans."
+  ]
+}

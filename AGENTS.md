@@ -2386,3 +2386,41 @@
   See docs/research/join_blocked_layer_groups_result_20261028_zh.md and named
   final_index.*. Keep overlap experimental per user, reuseV345, no further
   GPU job queued, all normal tails and negative results, goal active.
+- The separate sibling-service/capacity candidate now admits fitting observed
+  ALL-JOIN subsets, prefers at most four actually ready members in native
+  prefill while preserving the existing head/dependency/locality/aging guards,
+  and retries eight waiting groups per capacity-event pass. Do not introduce
+  global aging or divide repeated plan observations by native service counts.
+  Record ready-to-selected and ready-to-forward-return separately. Requeue
+  discards the old attempt's service identity; native first forward consumes
+  the plan without expiring normal agent eligibility.
+- Demand tool offload and handoff now share consumer_input_reserve: replace
+  only a known empty adder's unselected whole-batch input allowance; retain
+  growth, existing chunks, DLLM and unknown-state conservatism. JOIN recovery
+  records blocked donor keys and advances actual native demotion, backup/ACK
+  or private handoff for submitted parents and verified native-EOS targets.
+  An already eligible parent can establish a physical plan without a new
+  logical grant. Keep logical budgets, real free pages and reserved extents
+  distinct; this is still not atomic physical reservation before the grant.
+- Native873970a45a25/treecdd58a4acbb5 adds explicit small idle byte budgets
+  with independent Host demand reserve, and permits only bounded proven
+  unrelated outstanding ACKs. Keep unsubmitted queue, source, lock, producer
+  and one-transaction guards. Multiple small donors use ordinary ACK-gated
+  backup/reclaim; a combined multi-donor layer transaction and asynchronous
+  group submission remain unimplemented. Preserve all earlier native trees.
+  Canonical patch is patches/sglang-sibling-capacity-runtime-20261028.patch,
+  sha5e4038068f793a46b5bdabbbc83d0d4ccf6f854fc0d7be00ea51a72a827bc997.
+- configs/migration/predictive_sibling_service_capacity_20261028.json keeps
+  exact V230/V311 work/timing,18 projects,running/decode24,capacity/seed21,
+  overlap8/4,75% offload survival and2GiB Host reserve. Tool prefetch and
+  ordinary recovery binding remain off. Appd3b45368/0c24dd85 implements the
+  candidate. One final source-bound shared CPU run passes3580 cases plus4
+  subtests, retaining3524 identities and adding56; native92 checks and all3
+  constructors pass. final_cpu_review.json independently reconciles sources,
+  native tree, comparison settings and preserved failures under the named
+  sibling_service_capacity_20261028 evidence directory. Small3-program CPU
+  prefill P50s are13.0385us disabled,88.143us fitting,15.8435us input-limited;
+  these exclude writer/GPU/whole-controller costs. Native component/model/
+  position and full GPU performance remain pending for this new exact tree.
+  No new GPU job is registered; reuseV345, preserve all normal tails and
+  negative results, and keep the global goal active.

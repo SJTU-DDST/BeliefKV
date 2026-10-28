@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="2" failures="1" skipped="0" tests="126" time="10.280" timestamp="2026-10-28T05:36:42.020207-07:00" hostname="ddst-12"><testcase classname="tests.test_join_physical_recovery" name="test_same_join_donor_advances_actual_selected_parent_without_phantom_capacity[False]" time="5.472" /><testcase classname="tests.test_join_physical_recovery" name="test_same_join_donor_advances_actual_selected_parent_without_phantom_capacity[True]" time="0.005" /><testcase classname="tests.test_join_physical_recovery" name="test_planned_join_physical_actions_revalidate_donor_consumer_and_actual_deficit[returned]" time="0.004" /><testcase classname="tests.test_join_physical_recovery" name="test_planned_join_physical_actions_revalidate_donor_consumer_and_actual_deficit[pending]" time="0.004" /><testcase classname="tests.test_join_physical_recovery" name="test_planned_join_physical_actions_revalidate_donor_consumer_and_actual_deficit[protected]" time="0.004" /><testcase classname="tests.test_join_physical_recovery" name="test_planned_join_physical_actions_revalidate_donor_consumer_and_actual_deficit[stale]" time="0.004" /><testcase classname="tests.test_join_physical_recovery" name="test_planned_join_physical_actions_revalidate_donor_consumer_and_actual_deficit[fits]" time="0.004" /><testcase classname="tests.test_join_physical_recovery" name="test_planned_join_physical_actions_revalidate_donor_consumer_and_actual_deficit[non_join_consumer]" time="0.004" /><testcase classname="tests.test_join_physical_recovery" name="test_unsubmitted_parent_uses_only_actual_eos_authority_without_inventing_input[False]" time="0.004"><error message="failed on teardown with &quot;AttributeError: 'types.SimpleNamespace' object has no attribute 'phase'&quot;">full_native = (&lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x7b7dfa82bed0&gt;, &lt;sglang.srt.mem_cache.allocator.token.TokenToKVPoolAllocator object at 0x7b7dfa82bdd0&gt;, [], [], [])
+
+    @pytest.fixture
+    def demand_runtime(full_native):
+        from test_beliefkv_terminal_capacity import insert_session
+    
+        cache, allocator, writes, _, _ = full_native
+        donor, _ = insert_session(cache, list(range(1, 33)), "s")
+        consumer, generation = insert_session(cache, list(range(101, 117)), "consumer-session")
+        insert_session(cache, list(range(201, 213)), "hot")
+        for node in (donor, consumer):
+            node.component_data[0].host_value = node.component_data[0].value.clone()
+            cache.tree_core._update_duplicate_tracking(node)
+        cache._demote(consumer.id, {})
+        # Occupy capacity independently of the replay's future workload.
+        extra = allocator.alloc(16)
+        assert extra is not None and allocator.available_size() == 4
+        runtime, hint = tool_runtime()
+        runtime.enable_prepare_host = True
+        runtime.tool_wait_hints[hint.key.context_id] = replace(
+            hint, wait_p10_ms=5000., wait_p50_ms=10_000., wait_p90_ms=20_000.,
+        )
+        runtime._context_tokens[hint.key.context_id] = (0, 32)
+        runtime.attach_native_cache(cache)
+        request = req("consumer")
+        request.origin_input_ids = array("q", range(101, 118))
+        request.output_ids = array("q")
+        request.session_id, request.session_generation = "consumer-session", generation
+        request.extra_key = request.cache_salt = None
+        request.kv = NS(req_pool_idx=None, kv_allocated_len=0, kv_committed_len=0)
+        request.is_retracted = request.retracted_stain = False
+        runtime.on_events((
+            event(3, Kind.INVOCATION_CREATE, invocation_id="consumer", context_id="ctx-consumer"),
+            event(4, Kind.LLM_SUBMIT, invocation_id="consumer", context_id="ctx-consumer",
+                  attributes={"request_id": "consumer"}),
+        ))
+        runtime.register_visible_request(request)
+        runtime._capacity_waiting_queue = [request]
+        controller = DemandAwareToolOffload(runtime)
+        runtime._register_backed_pressure_nodes(hint.key)
+        try:
+            yield runtime, controller, cache, allocator, donor, request, writes
+        finally:
+&gt;           runtime.close()
+
+tests/test_tool_policy_adaptation.py:277: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+beliefkv/runtime/sglang_v0520_runtime.py:1239: in close
+    self._discard_join_ticket("shutdown")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;beliefkv.runtime.sglang_v0520_runtime.NativeAdmissionRuntime object at 0x7b7dfa825110&gt;
+reason = 'shutdown'
+ticket = namespace(key=PrefillCandidateKey(request_id='consumer', root_workflow_id='wf', invocation_id='consumer', context_id='ctx-consumer', context_epoch=0, attempt_id=0, session_id='consumer-session', session_generation=2))
+
+    def _discard_join_ticket(
+        self, reason: str, *, ticket: _JoinPrefetchTicket | None = None,
+    ) -&gt; None:
+        ticket = ticket if ticket is not None else self._join_ticket
+        if (
+            ticket is not None
+&gt;           and ticket.phase == "confirmed"
+                ^^^^^^^^^^^^
+            and self._opportunity_writer is not None
+        ):
+E       AttributeError: 'types.SimpleNamespace' object has no attribute 'phase'
+
+beliefkv/runtime/sglang_v0520_runtime.py:1286: AttributeError</error></testcase><testcase classname="tests.test_join_physical_recovery" name="test_unsubmitted_parent_uses_only_actual_eos_authority_without_inventing_input[True]" time="0.005"><error message="failed on teardown with &quot;AttributeError: 'types.SimpleNamespace' object has no attribute 'phase'&quot;">full_native = (&lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x7b7dfa829510&gt;, &lt;sglang.srt.mem_cache.allocator.token.TokenToKVPoolAllocator object at 0x7b7dfa82b6d0&gt;, [], [], [])
+
+    @pytest.fixture
+    def demand_runtime(full_native):
+        from test_beliefkv_terminal_capacity import insert_session
+    
+        cache, allocator, writes, _, _ = full_native
+        donor, _ = insert_session(cache, list(range(1, 33)), "s")
+        consumer, generation = insert_session(cache, list(range(101, 117)), "consumer-session")
+        insert_session(cache, list(range(201, 213)), "hot")
+        for node in (donor, consumer):
+            node.component_data[0].host_value = node.component_data[0].value.clone()
+            cache.tree_core._update_duplicate_tracking(node)
+        cache._demote(consumer.id, {})
+        # Occupy capacity independently of the replay's future workload.
+        extra = allocator.alloc(16)
+        assert extra is not None and allocator.available_size() == 4
+        runtime, hint = tool_runtime()
+        runtime.enable_prepare_host = True
+        runtime.tool_wait_hints[hint.key.context_id] = replace(
+            hint, wait_p10_ms=5000., wait_p50_ms=10_000., wait_p90_ms=20_000.,
+        )
+        runtime._context_tokens[hint.key.context_id] = (0, 32)
+        runtime.attach_native_cache(cache)
+        request = req("consumer")
+        request.origin_input_ids = array("q", range(101, 118))
+        request.output_ids = array("q")
+        request.session_id, request.session_generation = "consumer-session", generation
+        request.extra_key = request.cache_salt = None
+        request.kv = NS(req_pool_idx=None, kv_allocated_len=0, kv_committed_len=0)
+        request.is_retracted = request.retracted_stain = False
+        runtime.on_events((
+            event(3, Kind.INVOCATION_CREATE, invocation_id="consumer", context_id="ctx-consumer"),
+            event(4, Kind.LLM_SUBMIT, invocation_id="consumer", context_id="ctx-consumer",
+                  attributes={"request_id": "consumer"}),
+        ))
+        runtime.register_visible_request(request)
+        runtime._capacity_waiting_queue = [request]
+        controller = DemandAwareToolOffload(runtime)
+        runtime._register_backed_pressure_nodes(hint.key)
+        try:
+            yield runtime, controller, cache, allocator, donor, request, writes
+        finally:
+&gt;           runtime.close()
+
+tests/test_tool_policy_adaptation.py:277: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+beliefkv/runtime/sglang_v0520_runtime.py:1239: in close
+    self._discard_join_ticket("shutdown")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;beliefkv.runtime.sglang_v0520_runtime.NativeAdmissionRuntime object at 0x7b7dfa829450&gt;
+reason = 'shutdown'
+ticket = namespace(key=PrefillCandidateKey(request_id='consumer', root_workflow_id='wf', invocation_id='consumer', context_id='ctx-consumer', context_epoch=0, attempt_id=0, session_id='consumer-session', session_generation=2))
+
+    def _discard_join_ticket(
+        self, reason: str, *, ticket: _JoinPrefetchTicket | None = None,
+    ) -&gt; None:
+        ticket = ticket if ticket is not None else self._join_ticket
+        if (
+            ticket is not None
+&gt;           and ticket.phase == "confirmed"
+                ^^^^^^^^^^^^
+            and self._opportunity_writer is not None
+        ):
+E       AttributeError: 'types.SimpleNamespace' object has no attribute 'phase'
+
+beliefkv/runtime/sglang_v0520_runtime.py:1286: AttributeError</error></testcase><testcase classname="tests.test_join_physical_recovery" name="test_service_consumes_join_plan_without_forcing_eligibility_expiry" time="0.005" /><testcase classname="tests.test_join_physical_recovery" name="test_layer_handoff_can_coexist_with_proven_unrelated_outstanding_ack[ack_write_queue-d2h]" time="0.004" /><testcase classname="tests.test_join_physical_recovery" name="test_layer_handoff_can_coexist_with_proven_unrelated_outstanding_ack[ack_load_queue-h2d]" time="0.004" /><testcase classname="tests.test_join_physical_recovery" name="test_related_or_unknown_ack_still_refuses_layer_transaction[donor]" time="0.003" /><testcase classname="tests.test_join_physical_recovery" name="test_related_or_unknown_ack_still_refuses_layer_transaction[consumer]" time="0.004" /><testcase classname="tests.test_join_physical_recovery" name="test_related_or_unknown_ack_still_refuses_layer_transaction[unknown]" time="0.004" /><testcase classname="tests.test_join_blocked_handoff" name="test_join_restoration_can_trade_only_blocked_complete_budget" time="0.003" /><testcase classname="tests.test_join_blocked_handoff" name="test_handoff_refusal_never_pauses_a_ready_or_unproven_owner[disabled]" time="0.003" /><testcase classname="tests.test_join_blocked_handoff" name="test_handoff_refusal_never_pauses_a_ready_or_unproven_owner[ready]" time="0.003" /><testcase classname="tests.test_join_blocked_handoff" name="test_handoff_refusal_never_pauses_a_ready_or_unproven_owner[pending]" time="0.003" /><testcase classname="tests.test_join_blocked_handoff" name="test_handoff_refusal_never_pauses_a_ready_or_unproven_owner[marked]" time="0.003" /><testcase classname="tests.test_join_blocked_handoff" name="test_handoff_refusal_never_pauses_a_ready_or_unproven_owner[protected]" time="0.003" /><testcase classname="tests.test_join_blocked_handoff" name="test_handoff_refusal_never_pauses_a_ready_or_unproven_owner[stale]" time="0.003" /><testcase classname="tests.test_join_blocked_handoff" name="test_handoff_refusal_never_pauses_a_ready_or_unproven_owner[short_tool]" time="0.003" /><testcase classname="tests.test_join_blocked_handoff" name="test_handoff_refusal_never_pauses_a_ready_or_unproven_owner[tool_source]" time="0.003" /><testcase classname="tests.test_join_blocked_handoff" name="test_handoff_refusal_never_pauses_a_ready_or_unproven_owner[insufficient]" time="0.003" /><testcase classname="tests.test_join_blocked_handoff" name="test_multiple_donors_are_committed_only_when_the_whole_parent_fits" time="0.003" /><testcase classname="tests.test_join_blocked_handoff" name="test_a_return_during_revalidation_cancels_the_entire_handoff" time="0.002" /><testcase classname="tests.test_join_blocked_handoff" name="test_repeated_capacity_refusal_uses_the_bounded_backoff" time="0.002" /><testcase classname="tests.test_join_blocked_handoff" name="test_periodic_control_cannot_readmit_a_still_blocked_donor_and_undo_the_join" time="0.003" /><testcase classname="tests.test_join_blocked_handoff" name="test_waiting_parent_does_not_claim_budget_before_an_eos_or_ready_request" time="0.003" /><testcase classname="tests.test_join_blocked_handoff" name="test_actual_submitted_join_successor_gets_budget_on_registration" time="0.003" /><testcase classname="tests.test_join_blocked_handoff" name="test_success_journal_reconciles_full_budgets_without_claiming_physical_free_pages" time="0.002" /><testcase classname="tests.test_join_blocked_handoff" name="test_join_budget_handoff_requires_real_native_reclaim_and_restore[512]" time="0.007"><failure message="AssertionError: (&lt;class 'array.array'&gt;, &lt;class 'list'&gt;)">full_native = (&lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x7b7dfa9fd5d0&gt;, &lt;sglang.srt.mem_cache.allocato...='join-restored', anchor_node_id=218, published_node_ids=(218,), num_tokens_by_pool=(('kv', 80),), num_bytes=5120),))])
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7b7dfa8a78d0&gt;
+tmp_path = PosixPath('/tmp/pytest-of-longhao/pytest-3220/test_join_budget_handoff_requi0')
+
+    @pytest.mark.parametrize("full_native", (512,), indirect=True)
+    def test_join_budget_handoff_requires_real_native_reclaim_and_restore(
+        full_native, monkeypatch, tmp_path,
+    ):
+        from test_beliefkv_terminal_capacity import insert_session
+    
+        cache, allocator, writes, loads, _ = full_native
+        for name, value in arm_environment({
+            "AGENT_ADMISSION": "thunderagent_reference", "AGENT_JOIN_FREE_ADMISSION": "1",
+            "AGENT_JOIN_BLOCKED_HANDOFF": "1", "EXECUTION_FRONTIER_RESTORE": "0",
+        }, "full").items():
+            monkeypatch.setenv(name, value)
+        monkeypatch.setenv("BELIEFKV_PAPER_BASELINE", "")
+        live = NativeAdmissionRuntime(event_socket_path=str(tmp_path / "native-handoff.sock"))
+        live.attach_native_cache(cache)
+        try:
+            adapter, _ = join_wait(live, tokens=80)
+            parent, generation = insert_session(cache, list(range(80)), "parent")
+            key = bind(live, "parent", generation=generation)
+            assert cache.prepare_beliefkv_spawn_full(
+                session_id="parent", session_generation=generation,
+            )["issued"]
+            cache.writing_check(finish_count=1)
+            cache.beliefkv_cold_full_owner_validator = lambda _owners: True
+            assert cache.reclaim_beliefkv_handoff_capacity(
+                full_tokens=allocator.available_size() + 80, mamba_slots=0,
+            ) == {0: 80}
+            cache.beliefkv_cold_full_owner_validator = live._live_cold_full_owners
+            donor = blocked(live)
+            donor_node, donor_generation = insert_session(cache, list(range(1000, 1400)), "donor")
+            bind(live, "donor", generation=donor_generation)
+            assert cache.prepare_beliefkv_spawn_full(
+                session_id="donor", session_generation=donor_generation,
+            )["issued"]
+            cache.writing_check(finish_count=1)
+            held = allocator.alloc(allocator.available_size() - 16)
+            before = allocator.available_size()
+            assert adapter.claim_restore(key, source="join_ticket")
+            assert not donor.active and allocator.available_size() == before == 16
+            arguments = dict(
+                session_id="parent", session_generation=generation,
+                leaf_node_id=parent.id, leaf_creation_time=float(parent.creation_time),
+                nodes=((parent.id, float(parent.creation_time), False, "join-restored"),),
+                beliefkv_before_enqueue=lambda _operation: adapter.holds_restore(key),
+            )
+            assert not any(row.issued for row in cache.prefetch_gpu_session_nodes(**arguments))
+            assert not loads and donor_node.component_data[0].value is not None
+            freed = cache.reclaim_beliefkv_handoff_capacity(
+                full_tokens=80, mamba_slots=0, exclude_node_ids=(parent.id,),
+            )
+            assert freed == {0: 400}
+            assert any(row.issued for row in cache.prefetch_gpu_session_nodes(**arguments))
+            cache.loading_check(finish_count=1)
+            assert parent.component_data[0].value is not None
+            assert parent.component_data[0].host_lock_ref == 0
+            assert donor_node.component_data[0].value is None
+            assert donor_node.component_data[0].host_value is not None
+            live.on_events((observed(1000, Kind.RETURN, invocation_id="child"),))
+            following = request("parent-next", "parent", tokens=80, workflow="wf")
+            following.session_id, following.session_generation = "parent", generation
+            following.finished = lambda: False
+            live.register_visible_request(following)
+&gt;           plan = live.plan_native_prefill([following], running_batch=NS(reqs=[]), adder=None)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_join_blocked_handoff.py:295: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+beliefkv/runtime/hotpath_timing.py:104: in measured
+    return function(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/sglang_v0520_runtime.py:12256: in plan_native_prefill
+    self._agent_admission.before_native_admission(
+beliefkv/runtime/reference_thunder_admission.py:234: in before_native_admission
+    self._join_handoff.recovery.before_admission(
+beliefkv/runtime/join_physical_recovery.py:100: in before_admission
+    self.advance(key, request=request, adder=adder, running_batch=running_batch)
+beliefkv/runtime/join_physical_recovery.py:130: in advance
+    observation = runtime._read_request_reentry(request, key=key, refresh=True)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/hotpath_timing.py:104: in measured
+    return function(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/sglang_v0520_runtime.py:10691: in _read_request_reentry
+    observation = inspect(req)
+                  ^^^^^^^^^^^^
+../.worktrees/sglang-sibling-capacity-20261028/python/sglang/srt/mem_cache/unified_radix_cache.py:3416: in inspect_beliefkv_reentry
+    if not node_key.is_prefix_at(key, prefix, page_size=page_size):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = RadixKey(extra_key=None, cache_salt=None, token_ids=array('q', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])..., is_bigram=False)
+other = RadixKey(extra_key=None, cache_salt=None, token_ids=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]..., is_bigram=False)
+offset = 0, page_size = 1
+
+    def is_prefix_at(self, other: RadixKey, offset: int, page_size: int = 1) -&gt; bool:
+        """Check a complete segment without computing the longest common prefix."""
+        if self.extra_key != other.extra_key or self.cache_salt != other.cache_salt:
+            self._check_compatible(other)
+        if self.is_bigram != other.is_bigram:
+            raise ValueError("RadixKey operations require matching bigram modes")
+        other_len = len(other)
+        if offset &lt; 0 or offset &gt; other_len:
+            raise IndexError(f"RadixKey offset out of range: {offset}")
+        t0, t1 = self.token_ids, other.token_ids
+&gt;       assert type(t0) is type(t1), (type(t0), type(t1))
+               ^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: (&lt;class 'array.array'&gt;, &lt;class 'list'&gt;)
+
+../.worktrees/sglang-sibling-capacity-20261028/python/sglang/srt/mem_cache/radix_cache.py:240: AssertionError</failure></testcase><testcase classname="tests.test_join_blocked_handoff" name="test_internal_controls_strip_join_handoff_and_group_sizes[scheduler_only]" time="0.001" /><testcase classname="tests.test_join_blocked_handoff" name="test_internal_controls_strip_join_handoff_and_group_sizes[kv_only]" time="0.001" /><testcase classname="tests.test_join_blocked_handoff" name="test_internal_controls_strip_join_handoff_and_group_sizes[native_matched]" time="0.001" /><testcase classname="tests.test_join_blocked_handoff" name="test_thunderagent_decay_does_not_inherit_join_handoff" time="0.001" /><testcase classname="tests.test_layer_handoff" name="test_model_probe_reader_waits_for_complete_jsonl_records" time="0.018" /><testcase classname="tests.test_layer_handoff" name="test_model_probe_requires_actual_matching_delivered_evidence" time="0.002" /><testcase classname="tests.test_layer_handoff" name="test_recycled_extent_is_never_free_and_tail_frees_only_after_real_ack" time="0.005" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[device_lock]" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[host_lock]" time="0.003" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[shared]" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[stale_donor]" time="0.003" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[stale_consumer]" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[closed_donor]" time="0.003" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[closed_consumer]" time="0.003" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[host_missing]" time="0.003" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[already_backed]" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[busy_write]" time="0.003" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[busy_load]" time="0.003" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[busy_ack]" time="0.003" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[too_little_growth_space]" time="0.003" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[too_large_consumer]" time="0.003" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[authorization]" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_refusal_preserves_native_ownership_and_capacity[unready_producer]" time="0.003" /><testcase classname="tests.test_layer_handoff" name="test_unrelated_resident_prefill_does_not_wait_for_the_handoff" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_completed_consumer_does_not_release_donor_tail_early" time="0.005" /><testcase classname="tests.test_layer_handoff" name="test_segmented_paths_are_one_transaction_with_no_duplicate_capacity" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_split_during_dma_keeps_source_blocked_and_native_ack_ownership" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_real_selected_consumer_uses_handoff_without_logical_priority_change" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_selected_handoff_reserves_actual_input_and_preserves_growth" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_actual_prefill_plan_binds_and_releases_its_current_adder" time="0.005" /><testcase classname="tests.test_layer_handoff" name="test_handoff_accounts_for_observed_decode_tail_without_loading_a_foreign_prefix[complete]" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_handoff_accounts_for_observed_decode_tail_without_loading_a_foreign_prefix[diverged]" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_handoff_accounts_for_observed_decode_tail_without_loading_a_foreign_prefix[partial]" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_selected_input_reserve_never_spends_another_batch_or_growth_budget[selected_chunk]" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_selected_input_reserve_never_spends_another_batch_or_growth_budget[unknown_adder]" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_selected_input_reserve_never_spends_another_batch_or_growth_budget[growth_space]" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_runtime_handoff_requires_current_prediction_and_actual_admission[maintenance]" time="0.004" /><testcase classname="tests.test_layer_handoff" name="test_runtime_handoff_requires_current_prediction_and_actual_admission[disabled]" time="0.003" /><testcase classname="tests.test_layer_handoff" name="test_runtime_handoff_requires_current_prediction_and_actual_admission[short_tool]" time="0.005" /><testcase classname="tests.test_layer_handoff" name="test_runtime_handoff_requires_current_prediction_and_actual_admission[inactive_consumer]" time="0.003" /><testcase classname="tests.test_layer_handoff" name="test_internal_controls_keep_handoff_full_only[full]" time="0.001" /><testcase classname="tests.test_layer_handoff" name="test_internal_controls_keep_handoff_full_only[join_priority_only]" time="0.001" /><testcase classname="tests.test_layer_handoff" name="test_internal_controls_keep_handoff_full_only[scheduler_only]" time="0.001" /><testcase classname="tests.test_layer_handoff" name="test_internal_controls_keep_handoff_full_only[kv_only]" time="0.001" /><testcase classname="tests.test_layer_handoff" name="test_internal_controls_keep_handoff_full_only[native_matched]" time="0.001" /><testcase classname="tests.test_layer_handoff" name="test_paper_controls_never_inherit_handoff[thunderagent]" time="0.001" /><testcase classname="tests.test_layer_handoff" name="test_paper_controls_never_inherit_handoff[thunderagent_acting_decay]" time="0.001" /><testcase classname="tests.test_layer_handoff" name="test_paper_controls_never_inherit_handoff[kvflow_observed_graph]" time="0.001" /><testcase classname="tests.test_reference_sibling_service" name="test_unrelated_retirement_retries_previously_capacity_blocked_group" time="0.004" /><testcase classname="tests.test_reference_sibling_service" name="test_actual_native_completion_marks_release_and_retries_only_once" time="0.002" /><testcase classname="tests.test_reference_sibling_service" name="test_sibling_actual_selection_preserves_head_and_native_resource_limits[fits-512]" time="0.004" /><testcase classname="tests.test_reference_sibling_service" name="test_sibling_actual_selection_preserves_head_and_native_resource_limits[rows-512]" time="0.004" /><testcase classname="tests.test_reference_sibling_service" name="test_sibling_actual_selection_preserves_head_and_native_resource_limits[input-512]" time="0.004" /><testcase classname="tests.test_reference_sibling_service" name="test_sibling_actual_selection_preserves_head_and_native_resource_limits[physical-512]" time="0.004" /><testcase classname="tests.test_reference_sibling_service" name="test_sibling_actual_selection_preserves_head_and_native_resource_limits[already_selected-512]" time="0.004" /><testcase classname="tests.test_reference_sibling_service" name="test_co_selection_is_not_counted_as_service_until_native_forward_returns[512]" time="0.004" /><testcase classname="tests.test_reference_sibling_service" name="test_bounded_release_retry_does_not_loop_over_failed_groups_each_prefill" time="0.002" /><testcase classname="tests.test_consumer_input_reserve" name="test_actual_input_replaces_only_known_unselected_batch_bound[empty]" time="0.001" /><testcase classname="tests.test_consumer_input_reserve" name="test_actual_input_replaces_only_known_unselected_batch_bound[selected]" time="0.001" /><testcase classname="tests.test_consumer_input_reserve" name="test_actual_input_replaces_only_known_unselected_batch_bound[unknown]" time="0.001" /><testcase classname="tests.test_consumer_input_reserve" name="test_actual_input_replaces_only_known_unselected_batch_bound[dllm]" time="0.001" /><testcase classname="tests.test_consumer_input_reserve" name="test_actual_input_replaces_only_known_unselected_batch_bound[legacy]" time="0.001" /><testcase classname="tests.test_consumer_input_reserve" name="test_actual_input_replaces_only_known_unselected_batch_bound[bad_bound]" time="0.001" /><testcase classname="tests.test_consumer_input_reserve" name="test_fitting_consumer_does_not_trigger_tool_eviction_from_speculative_input_budget[False]" time="0.003" /><testcase classname="tests.test_consumer_input_reserve" name="test_fitting_consumer_does_not_trigger_tool_eviction_from_speculative_input_budget[True]" time="0.003" /><testcase classname="tests.test_host_demand_capacity" name="test_real_native_host_demand_reclaims_a_pinned_duplicate_without_freeing_device" time="0.003" /><testcase classname="tests.test_host_demand_capacity" name="test_actual_host_reclaim_preserves_unique_and_inflight_copies[host_only]" time="0.003" /><testcase classname="tests.test_host_demand_capacity" name="test_actual_host_reclaim_preserves_unique_and_inflight_copies[host_lock]" time="0.003" /><testcase classname="tests.test_host_demand_capacity" name="test_actual_host_reclaim_preserves_unique_and_inflight_copies[d2h]" time="0.003" /><testcase classname="tests.test_host_demand_capacity" name="test_actual_host_reclaim_preserves_unique_and_inflight_copies[h2d]" time="0.004" /><testcase classname="tests.test_host_demand_capacity" name="test_actual_host_reclaim_preserves_unique_and_inflight_copies[unpinned]" time="0.003" /><testcase classname="tests.test_host_demand_capacity" name="test_actual_host_reclaim_preserves_unique_and_inflight_copies[partial]" time="0.003" /><testcase classname="tests.test_host_demand_capacity" name="test_actual_host_reclaim_preserves_unique_and_inflight_copies[protected]" time="0.003" /><testcase classname="tests.test_host_demand_capacity" name="test_optional_backup_preserves_reserve_without_reclaiming_mirrors" time="0.003" /><testcase classname="tests.test_host_demand_capacity" name="test_idle_dispatch_cannot_consume_demand_reserve_to_recycle_a_mirror" time="0.003" /><testcase classname="tests.test_host_demand_capacity" name="test_idle_host_reserve_compares_whole_kv_units_without_false_byte_shortfall[8-0-True]" time="0.004" /><testcase classname="tests.test_host_demand_capacity" name="test_idle_host_reserve_compares_whole_kv_units_without_false_byte_shortfall[8-1-True]" time="0.003" /><testcase classname="tests.test_host_demand_capacity" name="test_idle_host_reserve_compares_whole_kv_units_without_false_byte_shortfall[8-32768-True]" time="0.004" /><testcase classname="tests.test_host_demand_capacity" name="test_idle_host_reserve_compares_whole_kv_units_without_false_byte_shortfall[7-32768-False]" time="0.004" /><testcase classname="tests.test_host_demand_capacity" name="test_spawn_backup_batch_cannot_consume_demand_reserve" time="0.003" /><testcase classname="tests.test_host_demand_capacity" name="test_baselines_do_not_inherit_host_management_or_relaxed_threshold[scheduler_only]" time="0.001" /><testcase classname="tests.test_host_demand_capacity" name="test_baselines_do_not_inherit_host_management_or_relaxed_threshold[native_matched]" time="0.001" /><testcase classname="tests.test_host_demand_capacity" name="test_baselines_do_not_inherit_host_management_or_relaxed_threshold[thunderagent_acting_decay]" time="0.001" /><testcase classname="tests.test_host_demand_capacity" name="test_invalid_survival_threshold_is_rejected[0]" time="0.001" /><testcase classname="tests.test_host_demand_capacity" name="test_invalid_survival_threshold_is_rejected[1]" time="0.001" /><testcase classname="tests.test_host_demand_capacity" name="test_invalid_survival_threshold_is_rejected[nan]" time="0.001" /><testcase classname="tests.test_host_demand_capacity" name="test_invalid_survival_threshold_is_rejected[inf]" time="0.001" /><testcase classname="tests.test_host_demand_capacity" name="test_invalid_survival_threshold_is_rejected[-.1]" time="0.001" /><testcase classname="tests.test_host_demand_capacity" name="test_invalid_survival_threshold_is_rejected[bogus]" time="0.001" /><testcase classname="tests.test_host_demand_capacity" name="test_same_real_capacity_demand_obeys_declared_survival[0.9-False]" time="0.004" /><testcase classname="tests.test_host_demand_capacity" name="test_same_real_capacity_demand_obeys_declared_survival[0.75-True]" time="0.004" /><testcase classname="tests.test_host_demand_capacity" name="test_rejected_cost_never_reclaims_host_mirrors" time="0.004" /></testsuite></testsuites>

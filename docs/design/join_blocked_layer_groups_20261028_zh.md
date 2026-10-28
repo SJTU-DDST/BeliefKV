@@ -8,9 +8,48 @@ prepare_host 与 agent 连续性。它是调度与迁移整合，不将额度交
 
 配置：`configs/migration/predictive_join_blocked_layer_groups_20261028.json`。
 保留 V230 的完整工作量、V311 工具时长、18 个不同项目、running/decode24、
-容量、seed21、流式指标和全部正常长尾。现已通过 grouped 组件、非强制模型
-与 24 请求 position/session/停止边界检查，正式 FULL 已启动，详见文末；
-完整性能结果仍待审计。
+容量、seed21、流式指标和全部正常长尾。原 grouped FULL 已完成，
+结果见 `../research/join_blocked_layer_groups_result_20261028_zh.md`。
+本页后续启动记录保留原时点含义。最新实现另使用
+`predictive_sibling_service_capacity_20261028.json`，没有新 GPU 性能结果。
+
+## 2026-10-28 后续实现
+
+普通工具卸载和逐层 handoff 已共用实际消费者输入预算。
+JOIN 逻辑 grant 现在记录对应 donor，并由 `JoinPhysicalRecovery` 在实际
+原生准入或可验证 EOS 的恢复入口推进：核对完整身份、实际缺失、增长、
+Host 空间和 native 锁，先回收已有备份页，再尝试未备份私有路径的 handoff，
+否则使用原生备份与 ACK 后回收。已具有完整逻辑资格的 parent 也可建立此
+物理计划。工具 donor 不绕过原动态预测成本检查。
+
+计划最多保存 24 个 parent；每次最多推进八名 donor、64 个物理节点，
+失败有 200ms 退避。真实 parent 首个 native forward 消费计划，不因计划结束
+撤销正常 agent 资格。`join_planned_physical_release_tokens` 只记录实际释放，
+`join_planned_reserved_handoff_tokens` 单独记录共享预留，不能提前计入 free。
+它仍是分阶段、重新验证的计划，不是在逻辑授权时一次性锁住所有物理容量。
+
+新原生 `873970a45a250045e823dcc1134a48d70de49ec2` /
+tree `cdd58a4acbb5038207d3a5020c54d7cbcef983b9` 增加两项接口修正：
+
+- idle 接收 `max_batch_bytes` 与独立 `reserve_host_bytes`，在需求余量外按实际
+  整页预算备份，不再要求先凑足 512MiB；旧引擎缺少接口时继续保守回退。
+- handoff 可与路径独立的已发起 ACK 共存，检查最多 64 个 ACK、256 个祖先
+  节点。未知或相关路径继续拒绝，原生 Host/Device 锁、生产者事件、
+  未提交队列限制和单事务保护继续保留。
+
+补丁 `patches/sglang-sibling-capacity-runtime-20261028.patch`，
+SHA256 `5e4038068f793a46b5bdabbbc83d0d4ccf6f854fc0d7be00ea51a72a827bc997`。
+这棵树的 GPU/模型验证仍待完成，不能使用旧 grouped 数值证明替代。
+多 donor 可以组合普通 native 回收及 ACK 后备份；尚不支持将多个 donor
+组成一个逐层事务。全部 8/4 层组仍同步提交，未引入后台异步提交线程。
+
+最终 CPU 资格为 3580 项及四个子测试通过，保留旧 3524 项并新增 56 项，
+原生相关检查为 92 项。实际 FULL、默认及 acting-decay ThunderAgent
+构造器隔离通过。`experiments/reports/sibling_service_capacity_20261028/`
+的 `final_cpu_review.json` 复核源码、精确 native 树与补丁、开发失败、
+工作量配置和局部成本。两名小 donor 的真实分配器释放与 H2D/ACK 链路、
+JOIN donor/有原生 EOS 权限的入口及独立 ACK 共存均有 CPU 替身检查，
+不替代新树的实际 GPU、非强制模型或完整性能验证。
 
 ## JOIN 的交接链路
 
@@ -112,6 +151,107 @@ SHA256 `8b8a8d35404d9f1c035a57645684c6758f15c3e48ee6ef83551b3e5815754612`。
 应用包装器、启动器及 replay 引擎白名单绑定该精确树，旧引擎不能冒充
 支持分组。新的模型 qualifier 还要求 GPU component 的两方向分组与配置一致，
 不能用旧 1/1 的 component 证据验证 8/4。
+
+## 实现前审计与尚存边界（2026-10-28）
+
+以下五项保留本轮修改前的源码审计，当前处理范围及剩余限制见前节。
+它们分别属于预算口径、
+模块衔接和机制覆盖限制，不能全部解释为正确性错误，也尚不能精确
+归因各自造成的 workflow JCT 损失。本节仅记录问题和后续验收方向，
+没有修改运行中的冻结应用、原生引擎、配置或实验。
+
+### 1. 普通工具卸载仍使用整批输入预留判定需求
+
+[`DemandAwareToolOffload._demand()`](../../beliefkv/runtime/predicted_tool_offload.py)
+计算 `needed = missing_full_tokens + cost[1] + reserve`；
+而 [`native_residency_budget()`](../../beliefkv/runtime/native_transfer_policy.py)
+的 `reserve_full_tokens` 已包含尚未选定的下一批输入上限及增长预算。
+因此在当前消费者已经明确、尚未选入其他 chunk 的场景中，需求判断仍
+可能同时保留整批输入上限和该消费者的实际输入增量。
+
+例如缺失历史 KV 1024 token、输入增量 1、增长预留 32、未选输入上限
+4096、实际空闲 2048：单独执行该消费者所需为 1057，当前公式得到
+5153，进而判定还缺 3105。这个算例说明可能高估压力，尚不是实际
+多卸载了 3105 token 的运行证据，也不能忽略已经选入的其他 chunk。
+
+`try_handoff()` 已在已知空选批状态下修正其内部预留，但普通 offloader
+的前置需求判断没有统一采用该口径。后续应共用实际消费者预算，保留
+未知批次和已有选入成员时的保守余量，并统计由预算差异改变的决策、
+实际额外 D2H/H2D、batch 形状与服务等待。
+
+### 2. 逻辑 donor 与物理恢复计划尚未绑定
+
+[`JoinBlockedHandoff.claim()`](../../beliefkv/runtime/join_blocked_handoff.py)
+按完整上下文加 buffer 选择逻辑 donor、暂停 donor 并激活 parent，
+不在同一计划中证明所选 donor 有多少可回收的独占 Device 页、
+Host 目的空间或已完成副本，以及这些资源是否足以恢复 parent。
+大量上下文已在 Host 或仍有共享依赖时，交出逻辑额度不等于交出同量 HBM。
+
+当前后续原生恢复仍可安全拒绝，因此不能将逻辑授权记为物理错误；
+限制在于 parent 获资格后仍可能等待，实际回收还可能选择其他对象。
+后续应联合规划逻辑额度、可回收物理范围、备份/恢复依赖和首次服务，
+逐项记录实际消费。计划中的容量不能提前记入 allocator 空闲页，
+不能为了履行计划越过原生锁、Host 源保护或在途 DMA。
+
+### 3. 逐层事务覆盖小于原定容量交接场景
+
+[`try_handoff()`](../../beliefkv/runtime/layer_handoff.py) 只在原生准入前，
+对已有逻辑资格的实际已提交消费者尝试；donor 来自工具预测卸载路径，
+且一条合格私有路径必须能承接消费者的完整缺失路径。真实 JOIN 阻塞
+parent 作为 donor、parent 尚未提交时的 EOS 提前恢复，以及多个冷对象
+共同供给容量，尚未直接纳入此逐层事务。这不表示原有 JOIN/EOS 预取不存在。
+
+旧 JointFullR1 只有 13 次交接、107151360 字节，约占全部 H2D 的 0.004%，
+消费者长度中位数为 67 token；这是旧 1/1 引擎的完整覆盖证据，不能
+当作新 8/4 配置的结果。已有 Host 副本的 donor 直接 demote 本来更便宜，
+不应为提高交接次数重复 D2H。后续需评估将已有备份页直接回收、未备份
+范围的流水卸载及真实空闲容量组成同一计划，并审计尚未覆盖需求的
+实际可用机会；不放宽共享、身份、锁和 DMA 条件来制造机会。
+
+### 4. idle 备份仍以整批上限作为最低预算
+
+[`dispatch_idle_prepare()`](../../beliefkv/runtime/sglang_v0520_runtime.py)
+已经修复字节数与完整页取整不一致的问题，但仍要求扣除需求预留后的
+`available` 至少达到约 512MiB 的完整批次上限，随后无参数调用原生
+`prepare_beliefkv_idle_full()`。因此即使剩余 128MiB、候选只需 4MiB，
+当前入口也会整轮跳过；SPAWN 路径则已经可以传递缩小后的批次预算。
+
+这是固定批次接口的保守覆盖限制，与旧 JointFullR1 中造成 10114 次
+检查拒绝的取整错误不同。后续应让原生 idle 备份接受实际字节上限，
+并检验完整 extent 的适配、需求余量及 ACK 生命周期。应单独统计
+满足小节点备份却不足整批上限的机会，不能拿旧 10114 次作为此限制
+的频率或 JCT 损失，也不能通过取消必要 Host 需求预留来规避。
+
+### 5. 全部层组仍同步提交，入口仍要求传输排空
+
+当前 grouped 原生
+[`submit_layer_handoff()`](../../patches/sglang-layer-handoff-groups-runtime-20261028.patch)
+在一次 CPU 调用中提交全部 D2H/H2D 层组后返回，调度器才继续推进
+消费者。8/4 将 96 次拷贝调用减至 18 次，但没有将整个提交循环移出
+同步路径。`begin()` 同时要求 write/load 及对应 ACK 队列为空，并且
+只允许一个交接事务在途；高迁移压力下可能缺少可进入该路径的安全点。
+
+这是提交成本与事务并发覆盖限制，不代表 GPU 必须等待全部拷贝完成。
+现有队列排空条件承担正确性保护，后续若改为更细的事务依赖管理，
+必须保留页所有权、源引用及完成事件；不能直接删除条件。
+旧完整运行 13 次交接的提交相关时间合计约 62.43ms，不能据此解释
+整轮平均 JCT 回退约 7.38s；新分组还需完整运行的提前量和暴露等待证据。
+
+### 已修复问题与验收顺序
+
+经验 CDF 被错误插值、Full 工具预测在 1--2s 后失效却不续发、idle
+字节预算取整误拒绝，均已有修复，不能继续列作当前未修问题。前两项
+修复后已有完整运行，动作增加没有建立明显净收益；取整修复也不能
+单凭 CPU 反例宣称已经改善 JCT。详情见
+[工具预测修复](tool_prediction_curve_repair_20261027_zh.md)及
+[旧联合实验审计](../research/layer_overlap_regression_and_siblings_20261028_zh.md)。
+
+后续优先统一实际消费者容量口径，再绑定逻辑资格、物理恢复及首次服务，
+随后扩大逐层交接的有效覆盖并降低同步提交成本。验收同时保留实际
+机会数、缺口与回收量、额外迁移、首次服务等待、GPU 恢复暴露等待、
+完整 workflow JCT/吞吐及控制成本，不将动作量或模型正确性等同净收益。
+另有 sibling 共同选批、可容纳子集准入和释放后重试的独立缺口，见
+[ALL-JOIN 共同准入设计](reference_join_siblings_20261027_zh.md)。
 
 ## CPU 验证
 

@@ -1,0 +1,141 @@
+{
+  "scope": "current_source_bound_cpu_implementation_not_gpu_or_performance_acceptance",
+  "application_commit": "0c24dd851a9fd09985400cd5d7f52d4b94064039",
+  "qualification": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/qualified_shared_cpu_r2.evidence.json",
+    "sha256": "cf70348cfd82b4affd03934fa8656d7e18541e03d3e2e3f46438f180547567a2"
+  },
+  "source_manifest": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/qualified_shared_cpu_r2.sources.json",
+    "sha256": "f0701e79f8e5492a23c6bd6430e367b60edb539d5847e3aa7297e7627a65fa17"
+  },
+  "bound_application_files": 1795,
+  "shared_unique_testcases": 3580,
+  "prior_unique_testcases_retained": 3524,
+  "new_unique_testcases": 56,
+  "shared_passing_subtests": 4,
+  "legacy_evidence_passing_cases_field": 3580,
+  "native_checks": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/native_targeted_r1.xml",
+    "sha256": "9c5acbc043e1803f817393b2349b33d411ba8b63b719a85943cfacf2f0c4b4ff",
+    "unique_testcases": 92
+  },
+  "native_engine": {
+    "commit": "fa5cb52afaeaad1f59f6d3eb2c5cf124f72bb491",
+    "dirty": true,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [
+      "python/sglang/srt/managers/cache_controller.py",
+      "python/sglang/srt/managers/scheduler.py",
+      "python/sglang/srt/mem_cache/allocator/token.py",
+      "python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py",
+      "python/sglang/srt/mem_cache/l2_transfer.py",
+      "python/sglang/srt/mem_cache/pool_host/mha.py",
+      "python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py",
+      "python/sglang/srt/mem_cache/unified_radix_cache.py",
+      "test/srt/test_beliefkv_transfer_receipts.py"
+    ],
+    "untracked_paths": [
+      "python/sglang/srt/mem_cache/beliefkv_layer_handoff.py",
+      "test/srt/test_beliefkv_layer_groups.py",
+      "test/srt/test_beliefkv_layer_handoff.py"
+    ],
+    "tracked_change_tree_sha256": "a9dd829b66d9bcd45ce73ce690d51e7d4d1b5ebdafbe819c21acf85ee88ea929",
+    "canonical_patch": {
+      "path": "/home/longhao/experiment/BeliefKV/patches/sglang-sibling-capacity-runtime-20261028.patch",
+      "sha256": "5e4038068f793a46b5bdabbbc83d0d4ccf6f854fc0d7be00ea51a72a827bc997",
+      "expected_tree": "cdd58a4acbb5038207d3a5020c54d7cbcef983b9",
+      "actual_tree": "cdd58a4acbb5038207d3a5020c54d7cbcef983b9",
+      "matches_worktree": true,
+      "covered_untracked_paths": [
+        "python/sglang/srt/mem_cache/beliefkv_layer_handoff.py",
+        "test/srt/test_beliefkv_layer_groups.py",
+        "test/srt/test_beliefkv_layer_handoff.py"
+      ]
+    },
+    "state_sha256": "7701d55c87c0d13d5055f95b2311f77cdf8f1a18dee33775f9615a0bd5378430"
+  },
+  "control_cost": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/control_cost_cpu_r4.json",
+    "sha256": "2f85e6a6adeba9fe87395b2d8198d7dc1fe4c22d15962ec113197def02c9d36e",
+    "cases": {
+      "disabled": {
+        "samples": 500,
+        "warmup": 50,
+        "thread_cpu_p50_us": 13.038499999999999,
+        "thread_cpu_p99_us": 15.088,
+        "thread_cpu_max_us": 20.482,
+        "result_request_order": [
+          "child-0",
+          "peer",
+          "child-1"
+        ]
+      },
+      "joint_fit": {
+        "samples": 500,
+        "warmup": 50,
+        "thread_cpu_p50_us": 88.143,
+        "thread_cpu_p99_us": 95.949,
+        "thread_cpu_max_us": 106.204,
+        "result_request_order": [
+          "child-0",
+          "child-1",
+          "peer"
+        ]
+      },
+      "input_limited": {
+        "samples": 500,
+        "warmup": 50,
+        "thread_cpu_p50_us": 15.843499999999999,
+        "thread_cpu_p99_us": 18.262,
+        "thread_cpu_max_us": 19.607,
+        "result_request_order": [
+          "child-0",
+          "peer",
+          "child-1"
+        ]
+      }
+    }
+  },
+  "comparison_environment_changes": [
+    "SGLANG_PATCH_FLAVOR"
+  ],
+  "three_effective_constructors_verified": true,
+  "preserved_development_failures": {
+    "initial_targeted.xml": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/initial_targeted.xml",
+      "sha256": "e8cb3f660f0f2bd016ce434a238d2f8c2e29d42df530bf31d9dd55dc4f7f14a4",
+      "nonpassing_cases": 4
+    },
+    "implementation_targeted_r1.xml": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/implementation_targeted_r1.xml",
+      "sha256": "4aead222acca226d43eb435a976584b11f6459df273fafbfdd488333d2a683fa",
+      "nonpassing_cases": 4
+    },
+    "physical_targeted_r1.xml": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/physical_targeted_r1.xml",
+      "sha256": "55b2cf0c84b3bae6a39a3e64f6aa93549bab8295698b61755317b801633411b5",
+      "nonpassing_cases": 3
+    },
+    "qualified_shared_cpu_r1.xml": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/qualified_shared_cpu_r1.xml",
+      "sha256": "4f18d5628e3118104b9b458d8095dd23982de9668f4f744524a8c55c9ec11a59",
+      "nonpassing_cases": 1
+    },
+    "multi_donor_fixture_retry.xml": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/multi_donor_fixture_retry.xml",
+      "sha256": "c825cac46709bc75f469a151774275593ff30165286d2a2cb20546d632e5f19c",
+      "nonpassing_cases": 1
+    }
+  },
+  "gpu_execution_registered": false,
+  "gpu_numerical_correctness_verified": false,
+  "performance_accepted": false,
+  "remaining_limits": [
+    "Logical eligibility is not atomic reservation of physical HBM and Host capacity.",
+    "Multiple small donors use native ACK-gated backup/reclaim, not a combined layer transaction.",
+    "All 8/4 layer groups are still submitted synchronously; only proven independent ACKs bypass drain.",
+    "One layer transaction remains in flight; unsubmitted queues and unknown dependencies still refuse.",
+    "Small-fixture thread CPU timings exclude writer thread, DMA, GPU and whole-workload effects."
+  ]
+}

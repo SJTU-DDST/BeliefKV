@@ -1,0 +1,60 @@
+{
+  "scope": "prefill_planning_thread_cpu_with_real_native_cpu_tree_and_copy_standins",
+  "fixture": {
+    "programs": 3,
+    "siblings": 2,
+    "device_token_slots": 512
+  },
+  "candidate_sources": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "0f0fe293082332fc51f39076354babcd756822f0fc2ab8639a0983d6dc5eeedf",
+    "beliefkv/runtime/reference_thunder_admission.py": "f197d72dbcd27efb063a747bac9c30077a257cdccd0b34faed3cc0b5aca9c6e5",
+    "beliefkv/runtime/join_sibling_service.py": "d2c0ddedac40279a5e31501638124ab669c66777a769cc692ef1136fc68f7df4",
+    "beliefkv/runtime/native_transfer_policy.py": "c4e7803486373e8f4f86b75d367a3a79dde3e53a6b557163638acc0bcec9b7fb",
+    "tests/test_reference_sibling_service.py": "e725a70c2e8b69985ef6058b451671a7c41992ccf855d1eda6a39f2f4176657c",
+    "tests/test_full_only_native_lifecycle.py": "4de52d01708fef41df881652c61b8e0623c9dec12228fb9e5f3988a201713624"
+  },
+  "cases": {
+    "disabled": {
+      "samples": 500,
+      "warmup": 50,
+      "thread_cpu_p50_us": 13.719000000000001,
+      "thread_cpu_p99_us": 16.423,
+      "thread_cpu_max_us": 18.994,
+      "result_request_order": [
+        "child-0",
+        "peer",
+        "child-1"
+      ]
+    },
+    "joint_fit": {
+      "samples": 500,
+      "warmup": 50,
+      "thread_cpu_p50_us": 90.747,
+      "thread_cpu_p99_us": 97.7,
+      "thread_cpu_max_us": 153.986,
+      "result_request_order": [
+        "child-0",
+        "child-1",
+        "peer"
+      ]
+    },
+    "input_limited": {
+      "samples": 500,
+      "warmup": 50,
+      "thread_cpu_p50_us": 89.1545,
+      "thread_cpu_p99_us": 94.545,
+      "thread_cpu_max_us": 129.939,
+      "result_request_order": [
+        "child-0",
+        "peer",
+        "child-1"
+      ]
+    }
+  },
+  "gpu_execution": false,
+  "limits": [
+    "Small repeatable CPU fixture, not the maximum 64-candidate or 24-member path.",
+    "No GPU inference, DMA, writer-thread cost, whole-controller or JCT attribution.",
+    "The 50ms advisory observation cache participates as it does in repeated native plans."
+  ]
+}

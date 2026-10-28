@@ -1,6 +1,61 @@
 # BeliefKV 当前架构与实现状态
 
-更新日期：2026-10-23（北京时间）。
+更新日期：2026-10-28（北京时间）。
+
+## 2026-10-28 新实现：共同服务与实际容量
+
+sibling 共同准入已补齐可容纳子集、native 选批偏好及释放后的有界重试。
+实际选批最多偏好四名同一阻塞 ALL-JOIN 的 ready 成员，保留既有队首、
+JOIN parent、驻留和老化保护；每次释放通知最多每入口重试八组，
+不新增逐 token 全局扫描。首个 native forward 返回才记录服务，
+逻辑资格本身不计为服务或 JCT 收益。
+
+JointFullR1 的 95 次授权新增 97 个 child 请求，均已验证后续服务，
+其中两次双成员授权在同一 native batch 入口服务。它们不能证明全组
+持续并行或独立 JCT 收益，也不能解释为只有两次 child 并行。
+ALL-JOIN 的解锁取决于最后一个成员完成；后续目标是在资源允许时让
+两个或更多 ready sibling 及时共同推进，减少关键分支排队并重叠工具
+等待。保留原生 KV/槽位/增长检查、单成员立即推进和跨 workflow 服务机会。
+
+详细限制、改进方向和验收指标见
+[共同准入设计](design/reference_join_siblings_20261027_zh.md)，完整实验
+证据及收益边界见
+[逐层交接与 sibling 审计](research/layer_overlap_regression_and_siblings_20261028_zh.md)。
+本轮已修改实现及单独的候选配置，未启动新 GPU 实验。
+共享 CPU 来源和控制成本见
+`experiments/reports/sibling_service_capacity_20261028/`。
+
+## 容量、恢复与原生接口
+
+2026-10-28 对先前五项审计的处理如下，完整说明、源码入口和验收要求见
+[JOIN 额度交接与传输分组设计](design/join_blocked_layer_groups_20261028_zh.md)。
+这些实现变化尚无新的 GPU/JCT 收益证据。
+
+| 局限 | 当前实现及可能影响 |
+| --- | --- |
+| 实际消费者输入 | 工具卸载与 handoff 共用 `consumer_input_reserve()`。仅在已知空选批中替换未选输入上限，已有 chunk、未知批次和增长预留保持保守。 |
+| JOIN 逻辑与物理衔接 | `JoinPhysicalRecovery` 绑定 parent 的实际 session/epoch 和阻塞 donor，在 EOS 或真实请求入口推进同一恢复；先回收已有备份，再做私有 handoff 或 ACK 后回收。实际释放与预留 extent 分开计数。逻辑授权前仍不是物理原子预留。 |
+| 逐层覆盖 | 已接入真正 WAIT_JOIN donor 及观察到原生 EOS 的未提交 parent。多个较小 donor 可组合安全的普通回收/备份；尚无多 donor 的单次逐层事务。工具 donor 继续使用原动态预测成本门槛。 |
+| 小预算 idle 备份 | 新原生接口接受实际字节上限及独立 Host 需求预留；512MiB 是上限，不再是最低启动量。旧引擎保守回退。 |
+| 事务及提交 | 已发起且路径可证明独立的 ACK 不再要求全局排空。未知/相关 ACK、未提交读写队列、单事务保护仍生效；8/4 的全部组仍同步提交。 |
+
+旧 JointFullR1 的 13 次交接仅恢复约 107MB，占总 H2D 约 0.004%，
+不能当作新分组配置的覆盖率。已修复的经验 CDF 插值、预测失效不刷新
+和 idle 字节取整错误与上述仍存在的限制分别记录；不把正确性通过、
+授权或迁移次数增加直接当作吞吐收益。
+
+最新候选为 `predictive_sibling_service_capacity_20261028.json`，
+原生 commit `873970a45a25` / tree `cdd58a4acbb5`，独立补丁
+`sglang-sibling-capacity-runtime-20261028.patch`。保留全部历史冻结树与完整
+结果、工具预取关闭、75% 预测门槛和 2GiB Host 需求预留。新原生接口仍需
+本树的 GPU 组件、非强制模型和停止边界验证，不能继承旧 grouped 的证明。
+最终共享 CPU 通过 3580 项及四个子测试，保留此前 3524 项并新增 56 项，
+另有 92 项原生相关检查通过。独立 `final_cpu_review.json` 绑定源码、
+构造器隔离与比较口径；没有新 GPU 实验或性能结论。
+
+## 历史策略与实验记录（截至 2026-10-23）
+
+以下保留该时期的策略选择、实验及部署记录，不作为当前配置声明。
 
 用户最新选择以 V108 策略为主，开启工具期预取、resident-first 和阶段
 优先，JOIN 只接受EOS；不恢复child剩余工作预测。新实验策略显式使用

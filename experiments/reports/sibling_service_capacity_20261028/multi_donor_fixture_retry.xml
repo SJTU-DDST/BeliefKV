@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="8.184" timestamp="2026-10-28T06:12:22.938351-07:00" hostname="ddst-12"><testcase classname="tests.test_join_physical_recovery" name="test_two_smaller_backed_join_donors_supply_real_combined_capacity[512]" time="5.526"><failure message="assert False&#10; +  where False = any(&lt;generator object test_two_smaller_backed_join_donors_supply_real_combined_capacity.&lt;locals&gt;.&lt;genexpr&gt; at 0x7b8b7554e330&gt;)">full_native = (&lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x7b8b75580a10&gt;, &lt;sglang.srt.mem_cache.allocato..._ack_ms=None, enqueue_to_submit_ms=None, transfer_stream_elapsed_ms=None, unacked_bytes_at_submit=0, node_commits=())])
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7b8cd238f5d0&gt;
+tmp_path = PosixPath('/tmp/pytest-of-longhao/pytest-3224/test_two_smaller_backed_join_d0')
+
+    @pytest.mark.parametrize("full_native", (512,), indirect=True)
+    def test_two_smaller_backed_join_donors_supply_real_combined_capacity(
+        full_native, monkeypatch, tmp_path,
+    ):
+        from test_beliefkv_terminal_capacity import insert_session
+    
+        cache, allocator, *_ = full_native
+        for name, value in arm_environment({
+            "AGENT_ADMISSION": "thunderagent_reference", "EXECUTION_FRONTIER_RESTORE": "0",
+        }, "full").items():
+            monkeypatch.setenv(name, value)
+        live = NativeAdmissionRuntime(event_socket_path=str(tmp_path / "multi-donor.sock"))
+        live.attach_native_cache(cache)
+        try:
+            live.on_events((event(0, Kind.WORKFLOW_START),))
+            nodes, requests = {}, {}
+            for index, (identity, size) in enumerate((("a", 32), ("b", 32), ("target", 68))):
+                live.on_events((event(
+                    1 + index * 20, Kind.INVOCATION_CREATE, invocation_id=identity,
+                    context_id=f"{identity}-context",
+                ),))
+                tokens = list(range(1000 * (index + 1), 1000 * (index + 1) + size))
+                node, generation = insert_session(cache, tokens, identity)
+                req = request(identity, identity, tokens=size + 1, workflow="wf")
+                req.origin_input_ids = array("q", (*tokens, 99999))
+                req.session_id, req.session_generation = identity, generation
+                req.extra_key = req.cache_salt = None
+                req.kv = NS(req_pool_idx=None, kv_allocated_len=0, kv_committed_len=0)
+                live.register_visible_request(req)
+                nodes[identity], requests[identity] = node, req
+                assert cache.prepare_beliefkv_spawn_full(
+                    session_id=identity, session_generation=generation,
+                )["issued"]
+                cache.writing_check(finish_count=1)
+                if identity != "target":
+                    live.on_batch_completed(NS(reqs=[req]))
+                    observed_join_wait(live, identity, f"{identity}-child", start=6 + index * 20)
+            cache._demote(nodes["target"].id, {})
+            observed_join_wait(live, "target", "target-child", start=70)
+            live.on_events((event(80, Kind.RETURN, invocation_id="target-child"),))
+            a = live._agent_admission
+            target = live.visible["target"]
+            assert a.allows(target)
+            assert allocator.alloc(allocator.available_size() - 8) is not None
+            controller = JoinBlockedHandoff(a).recovery
+            controller.remember(target, "join-target", (a.policy.programs["a"], a.policy.programs["b"]))
+            assert controller.advance(target, request=requests["target"])
+            assert allocator.available_size() == 72
+            assert nodes["a"].component_data[0].value is None
+            assert nodes["b"].component_data[0].value is None
+            assert live.counts["join_planned_physical_release_tokens"] == 64
+            assert live.counts["join_planned_reserved_handoff_tokens"] == 0
+            result = cache.prefetch_gpu_session_nodes(
+                session_id="target", session_generation=target.session_generation,
+                leaf_node_id=nodes["target"].id, leaf_creation_time=nodes["target"].creation_time,
+                nodes=((nodes["target"].id, nodes["target"].creation_time, False, "combined-restored"),),
+                beliefkv_before_enqueue=lambda _operation: a.allows(target),
+            )
+&gt;           assert any(row.issued for row in result)
+E           assert False
+E            +  where False = any(&lt;generator object test_two_smaller_backed_join_donors_supply_real_combined_capacity.&lt;locals&gt;.&lt;genexpr&gt; at 0x7b8b7554e330&gt;)
+
+tests/test_join_physical_recovery.py:242: AssertionError</failure></testcase></testsuite></testsuites>
