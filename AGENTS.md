@@ -2776,3 +2776,15 @@
   Keep all frozen inputs/sources/tails and completeV345 with disclosed engine
   difference. No other baseline/ablation/follow-up GPU is queued; goal active.
   See docs/research/native_demand_pipeline_start_20261028_zh.md.
+- Demand-pipeline complete_review/mechanism/known_guard/final_index helpers now
+  live only in its named evidence directory. Actual CPU precheck passes13
+  boundaries: live Full rejected, completeV345/preadmission accepted, common
+  work/timing/seeds match, and wrong engine/helper/probe/profile/prefetch/group
+  rejected. These observer additions do not change frozen01510ed5 or its
+  prior4100-case manifest. Complete review requires actual owned exit/fresh
+  drain before plots, exact registered native pair, original FA3/flashinfer,
+  staged-demand ACK/bytes/member-service and known EOS guards. Retain legacy
+  unexplained-byte scope and reconcile it explicitly as staged demand; do not
+  relabel it as speculative prefetch or cache hits. No complete performance
+  result or extra GPU job is created by these CPU checks. See
+  docs/research/demand_pipeline_complete_review_plan_20261028_zh.md.

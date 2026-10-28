@@ -1,0 +1,77 @@
+{
+  "observed_at": "2026-10-28T23:17:05.452368+00:00",
+  "scope": "CPU review boundaries, actual live rejection and historical complete controls.",
+  "passing_cases": 13,
+  "cases": [
+    {
+      "case": "actual_live_full_is_not_complete",
+      "passed": true,
+      "rejection": "require complete successful work and actual owned process exit"
+    },
+    {
+      "case": "actual_complete_owned_exit_thunderagent_acting_decay",
+      "passed": true
+    },
+    {
+      "case": "actual_complete_owned_exit_full",
+      "passed": true
+    },
+    {
+      "case": "all_three_registered_common_work_contracts_match",
+      "passed": true
+    },
+    {
+      "case": "control_cannot_be_relabelled_pipeline",
+      "passed": true,
+      "rejection": "arm order, reviewed native engine or complete population differs"
+    },
+    {
+      "case": "actual_installed_pipeline_and_disabled_probe",
+      "passed": true
+    },
+    {
+      "case": "missing_installed_helper",
+      "passed": true,
+      "rejection": "actual demand pipeline, probe, profile or transfer settings differ"
+    },
+    {
+      "case": "progress_probe_enabled",
+      "passed": true,
+      "rejection": "actual demand pipeline, probe, profile or transfer settings differ"
+    },
+    {
+      "case": "tool_prefetch_enabled",
+      "passed": true,
+      "rejection": "actual demand pipeline, probe, profile or transfer settings differ"
+    },
+    {
+      "case": "frontier_restore_enabled",
+      "passed": true,
+      "rejection": "actual demand pipeline, probe, profile or transfer settings differ"
+    },
+    {
+      "case": "profile_enabled",
+      "passed": true,
+      "rejection": "actual demand pipeline, probe, profile or transfer settings differ"
+    },
+    {
+      "case": "changed_layer_group",
+      "passed": true,
+      "rejection": "actual demand pipeline, probe, profile or transfer settings differ"
+    },
+    {
+      "case": "missing_progress_probe_observation",
+      "passed": true,
+      "rejection": "actual demand pipeline, probe, profile or transfer settings differ"
+    }
+  ],
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/review_precheck.py": "6043cfdab097dba84e0809b9c33826f0fda2dd9c0887db2aaeed67d1d340ff31",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/complete_review.py": "fdea4e3eb330426665f25737ce876617c7d03f1cecc3293a85832b11d66e6e1a",
+    "/home/longhao/experiment/ops/demand_prefill_pipeline_20261028_r1.registration.json": "59caf40545da12972b8affe70025fdca7790867e4c09db2359815043f8a2f74c",
+    "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.json": "66a5bac27ce8d8f70a91e5c45fcc377b7950db56bc3bd2a7588124fd5209902b",
+    "/home/longhao/experiment/ops/tool_offload_before_admission_20261027_r1.registration.json": "c3e820493fe5eabdb0884d52a1f1e06529507b38b472b23ba56f6a0f941535d6"
+  },
+  "complete_performance_result_written": false,
+  "performance_accepted": false
+}
