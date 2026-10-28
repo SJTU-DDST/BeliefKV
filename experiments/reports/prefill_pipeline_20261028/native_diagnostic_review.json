@@ -1,0 +1,159 @@
+{
+  "observed_at": "2026-10-28T22:03:19.328574+00:00",
+  "scope": "Bounded unforced numerical diagnosis, not model or performance qualification.",
+  "source_requests": [
+    "beliefkv:01a177b9-c215-7ea0-ba14-0de09c4f8a9c",
+    "beliefkv:01a177bb-6df3-7023-8614-561913e62059",
+    "beliefkv:01a177be-76cd-70b0-b0e6-d3f300c18ba6"
+  ],
+  "native_tree": "729aa0caa7a1ffac84463f46b3d1843d1a6a22e4",
+  "same_actual_request_bodies_except_sessions": [
+    {
+      "request_id": "demand-model:b_initial",
+      "prompt_tokens": 24576,
+      "output_budget": 8,
+      "same_body_except_real_session_namespace": true
+    },
+    {
+      "request_id": "demand-model:c",
+      "prompt_tokens": 24576,
+      "output_budget": 8,
+      "same_body_except_real_session_namespace": true
+    },
+    {
+      "request_id": "demand-model:a_initial",
+      "prompt_tokens": 24576,
+      "output_budget": 8,
+      "same_body_except_real_session_namespace": true
+    },
+    {
+      "request_id": "demand-model:a_resident",
+      "prompt_tokens": 24584,
+      "output_budget": 512,
+      "same_body_except_real_session_namespace": true
+    },
+    {
+      "request_id": "demand-model:b_demand",
+      "prompt_tokens": 24584,
+      "output_budget": 8,
+      "same_body_except_real_session_namespace": true
+    },
+    {
+      "request_id": "demand-model:a_reference",
+      "prompt_tokens": 24584,
+      "output_budget": 512,
+      "same_body_except_real_session_namespace": true
+    },
+    {
+      "request_id": "demand-model:b_reference",
+      "prompt_tokens": 24584,
+      "output_budget": 8,
+      "same_body_except_real_session_namespace": true
+    }
+  ],
+  "application_commits": {
+    "pipeline": "55e544162c02490d62087bc72afae8de047140c2",
+    "native": "d8837321920f84df297ccdbdec1e890b47199c02"
+  },
+  "changed_application_paths": [
+    "AGENTS.md",
+    "docs/design/native_demand_prefill_pipeline_20261028_zh.md",
+    "experiments/reports/prefill_pipeline_20261028/gpu_components_r4.json",
+    "experiments/reports/prefill_pipeline_20261028/gpu_components_r4.log",
+    "experiments/reports/prefill_pipeline_20261028/gpu_model_r1.log",
+    "experiments/reports/prefill_pipeline_20261028/gpu_model_r1_raw.tar.gz",
+    "experiments/reports/prefill_pipeline_20261028/model_fixture_r1_cpu.evidence.json",
+    "experiments/reports/prefill_pipeline_20261028/model_fixture_r1_cpu.sources.json",
+    "experiments/reports/prefill_pipeline_20261028/model_fixture_r1_cpu.xml",
+    "experiments/reports/prefill_pipeline_20261028/native_diagnostic_r1_cpu.evidence.json",
+    "experiments/reports/prefill_pipeline_20261028/native_diagnostic_r1_cpu.sources.json",
+    "experiments/reports/prefill_pipeline_20261028/native_diagnostic_r1_cpu.xml",
+    "scripts/qualify_demand_prefill_model.py",
+    "tests/test_demand_prefill_model_qualification.py"
+  ],
+  "runtime_and_native_patch_unchanged": true,
+  "output_diagnostics": {
+    "pipeline": {
+      "a_resident": {
+        "output_token_ids_equal": false,
+        "first_differing_output_ordinal": 125,
+        "maximum_logprob_delta": 2.18248593833232
+      },
+      "b_demand": {
+        "output_token_ids_equal": true,
+        "first_differing_output_ordinal": null,
+        "maximum_logprob_delta": 0.10419446229934692
+      }
+    },
+    "native": {
+      "a_resident": {
+        "output_token_ids_equal": false,
+        "first_differing_output_ordinal": 81,
+        "maximum_logprob_delta": 2.1041518449786736
+      },
+      "b_demand": {
+        "output_token_ids_equal": true,
+        "first_differing_output_ordinal": null,
+        "maximum_logprob_delta": 0.10419446229934692
+      }
+    }
+  },
+  "numerical_violations": {
+    "pipeline": [
+      "a_resident",
+      "b_demand"
+    ],
+    "native": [
+      "a_resident",
+      "b_demand"
+    ]
+  },
+  "native_without_pipeline_also_violates_numerical_gate": true,
+  "all_seven_calls_completed_per_arm": true,
+  "both_owned_servers_exited": true,
+  "original_failure_preserved": true,
+  "model_qualified": false,
+  "performance_accepted": false,
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_20261028_r1/report.json": "84fcc1eca7134ee3b46fd032d71b9f35bc343b51405f20578bd8d22371b11d6c",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_20261028_r1/owned_process_cleanup.json": "f6a73c44a6c48883142e943f305c1823e8fa360f4f3dc554d1bdab4abc7f7b89",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_20261028_r1/request_b_initial.json": "19d7a4be659b0074aedd33b06d88163a5bf8e25517c17ba97f0b151143387673",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_20261028_r1/response_b_initial.json": "a14d23956acfa2931cf941f8537468cc825113922ca9a678ef42e810610820ce",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_20261028_r1/request_c.json": "b3255e5ca9535e3435f221867569216459539c902126d5e979d7c856afbc81eb",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_20261028_r1/response_c.json": "e1a5ace10b47dfb492ae26500a3b8d397c31252bb8718a4b7056d97f8bbf5d8f",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_20261028_r1/request_a_initial.json": "27756d3683cafc59d83999fd93c8f8ac722f1d51cb05027d9e3c9c41db0993eb",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_20261028_r1/response_a_initial.json": "7b70f13107935acec26669cf703905e0849e441ad4b8b5eaa89ab466374df06f",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_20261028_r1/request_a_resident.json": "2f9128399e823cf415d86aa973bd4c15f31fc0b5ad83fedb38b59c687d5fe848",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_20261028_r1/response_a_resident.json": "a288c417868f2bd8337fa41e95d99e28248d61e6f03b77303ce61fc02c459e42",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_20261028_r1/request_b_demand.json": "17fa4b69059589f13feb1a63fa3656b4705c63ef17a9696f9c5fb15cdabf35bb",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_20261028_r1/response_b_demand.json": "8c1169836a8c3f3177e99985d77e6b93d0c192d231b4ae42a4b39a4a39155868",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_20261028_r1/request_a_reference.json": "f3f58bef49a3f8e0f77ef712ade4924b20b3d68797caecb10bea7fd5c43fe61c",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_20261028_r1/response_a_reference.json": "f9962688fc46bde207adca1bc6c9508ac4532f2f187bcea8fea6c785c823caef",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_20261028_r1/request_b_reference.json": "2d79406ef7633ed33e2abc95eba217b9178f3d0977f54b7b8388eac7455f6809",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_20261028_r1/response_b_reference.json": "e56d480ddd20ca8c2e4704e11e1674d85e2c7913e7849913dd9addc77bb576ca",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_diagnostic_20261028_r1/report.json": "bc56180afe8eb1bd81bfe281f9381af59117da4c01b10d803910427bf23a2b83",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_diagnostic_20261028_r1/owned_process_cleanup.json": "eeb6aa80e39650d27ea43a7295c228f7218c27cabb3064cf61982a7666c9f03c",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_diagnostic_20261028_r1/request_b_initial.json": "6cc96000c802224589fb2ef2c436da5a6a5dd9a0cfebf110a896b6f3ed0b8ea5",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_diagnostic_20261028_r1/response_b_initial.json": "ebde61fa09abd35758b74fd5f4540c1869d21e086fca2b1e5a579620e3a8b5f9",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_diagnostic_20261028_r1/request_c.json": "8fcaca53e49ed15ca86bd45ea8868f59844f808383e7653231d93b8d3258603a",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_diagnostic_20261028_r1/response_c.json": "0ceb25f1f01a76540aba5f4bbd699fd1ce2d7ca3f134166126e8e354e562edb7",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_diagnostic_20261028_r1/request_a_initial.json": "3f2e9b6ec91893bfec0a23bfccedc3dcefeaddfddaa0e20606a77cf7ae3c382e",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_diagnostic_20261028_r1/response_a_initial.json": "aff362e7cb78bd135a0ba8fa5c8ae2c9900bdf6fbe94f604fe10027ab44674a9",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_diagnostic_20261028_r1/request_a_resident.json": "ceeaff38383fdd42dbb40c16e691644862a48873137082da86881243c819318c",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_diagnostic_20261028_r1/response_a_resident.json": "5717c618fa06a5363b3e5b5ed7fe0a4a7b1fbc2d82e3d6d1dbd1efbeb878bbbc",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_diagnostic_20261028_r1/request_b_demand.json": "acac56b3a48f23c781d5c3192880085b54db2897395286dbae2dded3914f1b9f",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_diagnostic_20261028_r1/response_b_demand.json": "76c2cc7296a3c94f28caae3cfa69f48f8ec9f630904d6d320aeb4191b454066a",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_diagnostic_20261028_r1/request_a_reference.json": "671ee80f60cd09b242516e814dc1448311b25669a78d95163d3f7ea8022d2efd",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_diagnostic_20261028_r1/response_a_reference.json": "f74d298719a97f1c132892d2b097d82e1e1479250de98da2c13fb29e622d0598",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_diagnostic_20261028_r1/request_b_reference.json": "8951fbe29f2d41a1228d1b914225ffee6560bd5de76f5eb09b5c3bfe61f7cd05",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_native_diagnostic_20261028_r1/response_b_reference.json": "1f4829a15acb7a45eda01219c87e7fc12d64a78d9768e2fa165c9583065564a9"
+  },
+  "operator_sha256": "6763ca1b6734bbbd2a81a6e64d07c9454b8099ba2fb229e2495761c71253f72d",
+  "limitations": [
+    "One execution per condition; no isolated performance or JCT estimate.",
+    "Same requests do not imply identical actual batch membership or floating-point kernels.",
+    "After token divergence, sampled-token logprob deltas are not same-token logit errors.",
+    "A numerical violation without the pipeline cannot alone exclude additional pipeline defects.",
+    "Independent references currently build full continuation input by chunked prefill."
+  ]
+}

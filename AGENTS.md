@@ -2716,3 +2716,20 @@
   native_diagnostic_r1_cpu passes4086+6, retains4085 and adds1, with exact
   sources/constructors bound. Freeze and run its same-source components
   before the bounded diagnostic; no complete Full is authorized by CPU alone.
+- Native diagnostic at cleand8837321 completes all7 calls with helper absent,
+  no staged demand and B4096Device/20487Host. It also violates strict numerical
+  checks: A first token difference81(vs125 in pipeline run), B8 equal tokens
+  with identical .1041944623 maxlogprobdelta. The read-only native_diagnostic
+  review verifies every actual body except real sessions, same source IDs/
+  native tree and no beliefkv/patch changes; both owned servers cleaned with
+  controlled -9 and no GPU process. Do not qualify either model or infer JCT.
+  Components r5 pass on current frozen sources. Next audit prefix-building
+  geometry and bounded deterministic math, preserving gates and all failures;
+  do not silently enable deterministic math in formal performance settings.
+  See docs/research/demand_prefill_model_diagnostic_20261028_zh.md. The overall
+  goal remains active; no full/baseline/ablation was started.
+- The independent read-only model_progress_review now reconciles original
+ 20487-token ACK and exact subsequent prefill identity/clock, plus11 distinct
+  post-stage forward IDs with actual positive native decode worker deltas.
+  The pre-stage launched result is excluded. This confirms model progress
+  during normal DMA without requalifying the failed cold/numerical fixture.

@@ -1,0 +1,153 @@
+{
+  "observed_at": "2026-10-28T22:07:09.868491+00:00",
+  "staged_native_ack": {
+    "counts": {
+      "matched_staging_episodes": 1,
+      "native_selected_requests": 1,
+      "native_full_tokens": 20487,
+      "native_h2d_bytes": 2013954048
+    },
+    "episodes": [
+      {
+        "request_id": "demand-model:b_demand",
+        "workflow_id": "demand-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "session_id": "beliefkv-ef00245b927912931af673f5579c335d",
+        "session_generation": 1,
+        "context_epoch": 0,
+        "attempt_id": 0,
+        "native_batch_size": 1,
+        "requests": [
+          {
+            "request_id": "demand-model:b_demand",
+            "workflow_id": "demand-model",
+            "invocation_id": "b",
+            "context_id": "b",
+            "context_epoch": 0,
+            "attempt_id": 0,
+            "session_id": "beliefkv-ef00245b927912931af673f5579c335d",
+            "session_generation": 1
+          }
+        ],
+        "native_submit_ts_ms": 1793223952796.6562,
+        "journal_ts_ms": 1793223952798.061,
+        "native_node_ids": [
+          34
+        ],
+        "native_full_tokens": 20487,
+        "native_h2d_bytes": 2013954048,
+        "staged_monotonic_ms": 7394215898.639953,
+        "monotonic_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec"
+      }
+    ],
+    "exact_native_ack_matches_verified": true,
+    "scope": "staged native demand only; no speculative or request cache-hit credit",
+    "first_service_and_hidden_transfer_time_proven": false
+  },
+  "subsequent_native_prefill": {
+    "counts": {
+      "members_with_subsequent_native_service": 1
+    },
+    "members": [
+      {
+        "request_id": "demand-model:b_demand",
+        "workflow_id": "demand-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "attempt_id": 0,
+        "session_id": "beliefkv-ef00245b927912931af673f5579c335d",
+        "session_generation": 1,
+        "status": "subsequent_native_service_verified",
+        "first_native_forward_iter": 100,
+        "first_launch_monotonic_ms": 7394215966.153243,
+        "staged_to_first_native_launch_ms": 67.51329040527344,
+        "native_completion_receipt_verified": false
+      }
+    ],
+    "all_members_have_native_service_or_explicit_cancellation": true,
+    "native_completion_receipts_required": false,
+    "native_kv_reuse_or_hidden_dma_proven": false,
+    "counting_unit": "staging episode/member association, not unique request",
+    "timing_boundary": "native run_batch entry/completed worker; not CUDA kernel time"
+  },
+  "resident_completed_batches_while_ack_pending": [
+    {
+      "forward_iter": 87,
+      "output_tokens": 36,
+      "launch_monotonic_ms": 7394215899.080203,
+      "result_processed_monotonic_ms": 7394215905.099604
+    },
+    {
+      "forward_iter": 88,
+      "output_tokens": 37,
+      "launch_monotonic_ms": 7394215900.886508,
+      "result_processed_monotonic_ms": 7394215910.459758
+    },
+    {
+      "forward_iter": 89,
+      "output_tokens": 38,
+      "launch_monotonic_ms": 7394215905.682048,
+      "result_processed_monotonic_ms": 7394215915.846101
+    },
+    {
+      "forward_iter": 90,
+      "output_tokens": 39,
+      "launch_monotonic_ms": 7394215911.053616,
+      "result_processed_monotonic_ms": 7394215921.1791725
+    },
+    {
+      "forward_iter": 91,
+      "output_tokens": 40,
+      "launch_monotonic_ms": 7394215916.425102,
+      "result_processed_monotonic_ms": 7394215926.532287
+    },
+    {
+      "forward_iter": 92,
+      "output_tokens": 41,
+      "launch_monotonic_ms": 7394215921.75577,
+      "result_processed_monotonic_ms": 7394215931.918125
+    },
+    {
+      "forward_iter": 93,
+      "output_tokens": 42,
+      "launch_monotonic_ms": 7394215927.113978,
+      "result_processed_monotonic_ms": 7394215937.282542
+    },
+    {
+      "forward_iter": 94,
+      "output_tokens": 43,
+      "launch_monotonic_ms": 7394215932.485882,
+      "result_processed_monotonic_ms": 7394215942.641778
+    },
+    {
+      "forward_iter": 95,
+      "output_tokens": 44,
+      "launch_monotonic_ms": 7394215937.929941,
+      "result_processed_monotonic_ms": 7394215947.960213
+    },
+    {
+      "forward_iter": 96,
+      "output_tokens": 45,
+      "launch_monotonic_ms": 7394215943.6153345,
+      "result_processed_monotonic_ms": 7394215953.302574
+    },
+    {
+      "forward_iter": 97,
+      "output_tokens": 46,
+      "launch_monotonic_ms": 7394215948.569338,
+      "result_processed_monotonic_ms": 7394215958.631038
+    }
+  ],
+  "input_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_20261028_r1/arm/opportunities/admission_opportunities.jsonl": "2fb5f20f055dfdfb7d0c1d92b7cef47be33fa248779b7f379c9a6a2ee1ab7388",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_20261028_r1/arm/server/runtime_audit.jsonl": "ea164c887ca32a2d18f0e49610a4355402ec6f99a47d5174a704c7703cfba929",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_model_20261028_r1/arm/server/transfer_telemetry.jsonl": "1c16044892c217157dd6d6951dda3e0b18f9db7459cfcf6aa151811f25b5028a"
+  },
+  "operator_sha256": "719bcb9d4dbecf34a34b97b926156afa324438411e0c9c74b91634aaf6dd53c9",
+  "original_model_remains_failed": true,
+  "model_qualified": false,
+  "performance_accepted": false,
+  "scope": "Actual normal H2D and processed model results; no JCT gain or pure kernel time."
+}
