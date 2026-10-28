@@ -3,6 +3,7 @@
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 import json
+import math
 from pathlib import Path
 import sys
 
@@ -77,6 +78,16 @@ def main():
         raise ValueError("independent early-service and release-stage audits disagree")
     wait_path = directory / "complete_wait_offload.json"
     wait = json.loads(wait_path.read_bytes())
+    if Path(wait["arm"]).resolve() != arm or wait["units"]["full_bytes_per_token"] != unit:
+        raise ValueError("independent wait audit changed the arm or native geometry")
+    for seal in wait["source_seals"]:
+        path = Path(seal["path"]).resolve()
+        if (
+            not path.is_relative_to(arm) or path.stat().st_size != seal["bytes"]
+            or sha256_file(path) != seal["sha256"]
+            or review["inputs_sha256"].get(str(path), seal["sha256"]) != seal["sha256"]
+        ):
+            raise ValueError("independent wait audit input is not complete and immutable")
     for source, values in wait["summary"]["hbm_demotion_by_source"].items():
         pressure = groups["allocation_pressure_" + source]
         if (
@@ -85,18 +96,59 @@ def main():
             or values["node_demotion_events"] != pressure["events"]
         ):
             raise ValueError("independent waiting-agent release audit disagrees")
+    transfer_intervals = {}
+    for method, proof in review["proofs"].items():
+        method_plan = json.loads(Path(proof["registration"]).read_bytes())
+        method_arm = (Path(method_plan["run_root"]) / method).resolve()
+        directions = defaultdict(Counter)
+        transfer_path = method_arm / "server/transfer_telemetry.jsonl"
+        for row in reader(transfer_path):
+            direction, size = row.get("direction"), row.get("actual_bytes")
+            if (
+                row.get("status") != "completed" or direction not in ("h2d", "d2h")
+                or type(size) is not int or size < 0
+            ):
+                raise ValueError("transfer interval audit requires completed valid operations")
+            values = directions[direction]
+            values.update(completed_operations=1, actual_bytes=size)
+            elapsed = row.get("transfer_stream_elapsed_ms")
+            if elapsed is None:
+                values["missing_stream_timing_operations"] += 1
+            elif type(elapsed) not in (int, float) or not math.isfinite(elapsed) or elapsed < 0:
+                raise ValueError("invalid CUDA transfer-stream interval")
+            else:
+                values["stream_timed_operations"] += 1
+                values["transfer_stream_elapsed_ms_sum"] += elapsed
+        for key in ("h2d", "d2h"):
+            observed_bytes = review["transfers"][
+                "Full" if method == "full" else "ThunderAgent decay"
+            ][f"{key}_bytes"]
+            if directions[key]["actual_bytes"] != observed_bytes:
+                raise ValueError("independent complete transfer-byte totals disagree")
+        transfer_intervals[method] = {
+            direction: dict(values) for direction, values in directions.items()
+        }
+    for path, prefix in reader.prefixes.items():
+        if (
+            Path(path).stat().st_size != prefix["complete_prefix_bytes"]
+            or sha256_file(Path(path)) != prefix["complete_prefix_sha256"]
+            or review["inputs_sha256"].get(path) != prefix["complete_prefix_sha256"]
+        ):
+            raise ValueError("transfer interval audit used a different complete input")
     state = review["final_runtime_snapshots"]["full"]
     result = {
         "observed_at": datetime.now(timezone.utc).isoformat(),
         "arm": str(arm), "code_commit": plan["code_commit"],
         "complete_review_sha256": sha256_file(review_path),
         "independent_wait_offload_audit_sha256": sha256_file(wait_path),
+        "independent_wait_offload_source_seals": wait["source_seals"],
         "full_bytes_per_token": unit,
         "release_paths": {name: dict(values) for name, values in sorted(groups.items())},
         "predicted_release_dispatch_stages": {
             name: dict(values) for name, values in sorted(stages.items())
         },
         "complete_early_consumer_service": early,
+        "complete_transfer_stream_intervals": transfer_intervals,
         "final_recorded_counts": {
             name: value for name, value in state["counts"].items()
             if name.startswith(("predicted_tool_offload_", "tool_offload_"))
@@ -119,6 +171,9 @@ def main():
             "Gate counts are not continuous opportunity recall or a unique performance cause.",
             "No future tool-end labels enter the online policy.",
             "The mechanism is not progressive layer-capacity handoff.",
+            "Transfer-stream interval sums are not exposed GPU waits or JCT critical-path time.",
+            "Directions may overlap; their interval sums must not be added as end-to-end loss.",
+            "Host submission/ACK times do not anchor the CUDA event intervals on a wall timeline.",
         ],
     }
     with output.open("x") as stream:

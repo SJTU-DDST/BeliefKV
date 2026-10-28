@@ -1983,3 +1983,25 @@
   missing/contradictory service identity and invalid complete seals. These
   operators have not yet reviewed a completed current Full and supply no new
   runtime/GPU/performance qualification. Preserve716ef9a3 and reuseV345.
+- Pre-admissionR1 completes all3674 exact requests,145565966 input/549671
+  output tokens and18 normal tails, original stopping, two fresh idle snapshots
+  and actual owned exit. The complete operators succeed and all three matched
+  figures are inspected. MeanJCT1631.194643s versusV3451697.583645s improves
+  3.91079%; output238.499008 versus233.371801token/s improves2.19701%.
+  Seventeen workflows improve; web_social regresses78.679925s and mean max
+  post-first ready gap90.642600s is worse than73.449107s. Versus priorFull,
+  JCT worsens0.06986% and output improves1.04168%; no repeated/clear gate passes.
+  Actual41 before-admission releases total392724480bytes for41 completed
+  consumers; full release-time attempt and freed-index assignment stay unknown.
+  Native pressure releases are separate: JOIN108.957303GB/tool6.181945GB.
+  All455 JOIN copies83.901383GB prove reuse; five early-reuse22.711566GB;
+  tools copy zero. All277 grant/service associations and four EOS countercases/
+  55 final triggers verify. Both arms'140952652 common old input tokens have
+  zero missing-prefix probes, not a claim about every kernel recomputation.
+  ActualFull H2D2714.687472GB/D2H1132.365251GB have complete transfer-stream
+  interval sums85.968206s/27.797246s; control88.825712s/51.947387s. They are
+  not exposed GPU waits or additive critical-path loss. Preserve normal tails,
+  CPU/report evidence, frozen execution and all negative results. ReuseV345,
+  keep other baselines deferred and the goal active; no next GPU job queued.
+  Progressive layer handoff remains unimplemented and unevaluated. See
+  docs/research/tool_offload_before_admission_complete_20261027_zh.md.

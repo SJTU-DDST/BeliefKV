@@ -1,0 +1,182 @@
+{
+  "observed_at": "2026-10-28T02:02:57.275520+00:00",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full",
+  "code_commit": "716ef9a3e4adc45da086b55a14f096490ca5086b",
+  "complete_review_sha256": "a99cdbcb058fe092d0b09a613f24091075eb69aae8c18dbfd7fc77e4ac14953f",
+  "independent_wait_offload_audit_sha256": "1ca5a4893182bd433444931a91c04b808676c734bad1fa2ee4799a86d6fff27c",
+  "independent_wait_offload_source_seals": [
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/replay/runtime_events.replay.jsonl",
+      "bytes": 20515641,
+      "records": 14966,
+      "sha256": "95567f85a9ea32f03376fca4af9050e27f8e9ad8992f7c7b52b134288ffaaf86"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/opportunities/admission_opportunities.jsonl",
+      "bytes": 63439977,
+      "records": 9717,
+      "sha256": "7b9f7059c3a596171566fab9ddaad8861e4b40283f4e062c3456120fb9a5b81a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/server/physical_action_ack.jsonl",
+      "bytes": 454297,
+      "records": 1043,
+      "sha256": "10ae3b7aeba3ce6d687a1d241724d2ffefb899743844f171f558d2cda551fb35"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/server/native_capacity_census.json",
+      "bytes": 524,
+      "sha256": "33c5ddfbd097b1db1144659e3e13cb34ac220c02af5be49954baad110d1274de"
+    }
+  ],
+  "full_bytes_per_token": 98304,
+  "release_paths": {
+    "additional_predicted_tool_offload": {
+      "events": 41,
+      "full_tokens": 3995,
+      "full_bytes": 392724480
+    },
+    "allocation_pressure_join_wait": {
+      "events": 548,
+      "full_tokens": 1108371,
+      "full_bytes": 108957302784
+    },
+    "allocation_pressure_tool_wait": {
+      "events": 191,
+      "full_tokens": 62886,
+      "full_bytes": 6181945344
+    }
+  },
+  "predicted_release_dispatch_stages": {
+    "before_native_admission": {
+      "events": 41,
+      "full_tokens": 3995,
+      "full_bytes": 392724480
+    }
+  },
+  "complete_early_consumer_service": {
+    "early_node_release_events": 41,
+    "early_node_released_bytes": 392724480,
+    "distinct_consumer_requests": 41,
+    "consumer_statuses": {
+      "completed_request_native_service_after_early_release": 41
+    }
+  },
+  "complete_transfer_stream_intervals": {
+    "full": {
+      "d2h": {
+        "completed_operations": 12870,
+        "actual_bytes": 1132365250560,
+        "stream_timed_operations": 12870,
+        "transfer_stream_elapsed_ms_sum": 27797.24567087926
+      },
+      "h2d": {
+        "completed_operations": 444,
+        "actual_bytes": 2714687471616,
+        "stream_timed_operations": 444,
+        "transfer_stream_elapsed_ms_sum": 85968.20566499233
+      }
+    },
+    "thunderagent_acting_decay": {
+      "d2h": {
+        "completed_operations": 27591,
+        "actual_bytes": 2255862595584,
+        "stream_timed_operations": 27591,
+        "transfer_stream_elapsed_ms_sum": 51947.38712139055
+      },
+      "h2d": {
+        "completed_operations": 281,
+        "actual_bytes": 2809042010112,
+        "stream_timed_operations": 281,
+        "transfer_stream_elapsed_ms_sum": 88825.71187973022
+      }
+    }
+  },
+  "final_recorded_counts": {
+    "tool_offload_no_host_waiting_consumer": 4348,
+    "tool_offload_admission_new_request_rearms": 1194,
+    "tool_offload_before_admission_checks": 1209,
+    "predicted_tool_offload_context_checks": 166,
+    "tool_offload_cost_cold_service_estimate": 66,
+    "tool_offload_threshold_us_last": 907747,
+    "tool_offload_cost_rejected": 1,
+    "predicted_tool_offload_evicted_nodes": 41,
+    "predicted_tool_offload_freed_component_0": 3995,
+    "predicted_tool_offload_freed_bytes": 392724480,
+    "tool_offload_admission_event_replans": 15,
+    "predicted_tool_offload_backup_issued": 12
+  },
+  "final_recorded_idle_prepare": {
+    "interval_ms": 200.0,
+    "queued_owner_backup": true,
+    "native": {
+      "checks": 9841,
+      "max_batch_bytes": 536870912,
+      "dirty_nodes_last": 223,
+      "dirty_nodes_high_water": 692,
+      "scanned_nodes": 71877,
+      "hot_or_unknown_owner_nodes": 67007,
+      "uninspected_nodes_last": 223,
+      "scan_limited_rounds": 2233,
+      "dirty_nodes_after_last": 223,
+      "rounds_without_eligible_nodes": 2193,
+      "issued_rounds": 66,
+      "empty_rounds": 9360,
+      "eligible_nodes": 80,
+      "eligible_full_tokens": 17544,
+      "host_free_tokens_last": 683,
+      "host_reserved_tokens": 5461,
+      "full_bytes_per_token": 98304,
+      "max_scanned_nodes": 32,
+      "max_merged_nodes": 32,
+      "host_budget_tokens_last": 0,
+      "host_budget_limited_rounds": 7172,
+      "issued_tokens": 17516,
+      "issued_nodes": 80,
+      "byte_budget_reached_rounds": 0,
+      "host_budget_reached_rounds": 1,
+      "extent_limit_reached_rounds": 0,
+      "blocked_d2h_ack": 73,
+      "blocked_native_queues": 415,
+      "stale_nodes": 4790,
+      "blocked_h2d_ack": 371,
+      "blocked_host_capacity_rounds": 7167,
+      "host_budget_pre_scan_skips": 7167
+    }
+  },
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 63439977,
+      "complete_prefix_sha256": "7b9f7059c3a596171566fab9ddaad8861e4b40283f4e062c3456120fb9a5b81a",
+      "first_read_limit_bytes": 63439977
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/server/transfer_telemetry.jsonl": {
+      "complete_prefix_bytes": 9544945,
+      "complete_prefix_sha256": "ba0246aabb25d160c0f1500b840acc831824056ae75ed0a1eb60d4804170cffe",
+      "first_read_limit_bytes": 9544945
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/transfer_telemetry.jsonl": {
+      "complete_prefix_bytes": 19201908,
+      "complete_prefix_sha256": "53c2892f84a2c9528d0b9fcc52a42b0713390512b03d2086b838da561657ff46",
+      "first_read_limit_bytes": 19201908
+    }
+  },
+  "capacity_census_sha256": "33c5ddfbd097b1db1144659e3e13cb34ac220c02af5be49954baad110d1274de",
+  "operator_sha256": "ec1505e909b46119fb635a523714325e282e3fb92755df1fd523e98cdfb37fb5",
+  "runtime_sources_sha256": {
+    "beliefkv/runtime/predicted_tool_offload.py": "4176473bdb1604d820c713c0ffdfb19b28c44b972c3125ecd5d0a81f04fbcdfa",
+    "scripts/audit_wait_offload.py": "b567b6173eba349861e0d309ede687c76dc7cdf68c3cfdfe0454137d56b711ab"
+  },
+  "performance_accepted": false,
+  "limitations": [
+    "Release totals are cumulative, not simultaneous capacity or globally unique bytes.",
+    "Host backup ACKs are not physical HBM release.",
+    "Native untagged eviction and terminal child discard remain separate.",
+    "Gate counts are not continuous opportunity recall or a unique performance cause.",
+    "No future tool-end labels enter the online policy.",
+    "The mechanism is not progressive layer-capacity handoff.",
+    "Transfer-stream interval sums are not exposed GPU waits or JCT critical-path time.",
+    "Directions may overlap; their interval sums must not be added as end-to-end loss.",
+    "Host submission/ACK times do not anchor the CUDA event intervals on a wall timeline."
+  ]
+}
