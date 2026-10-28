@@ -14,6 +14,9 @@ class JoinBlockedHandoff:
     def __init__(self, admission):
         self.admission = admission
         self.next_attempt = 0.
+        from beliefkv.runtime.join_physical_recovery import JoinPhysicalRecovery
+
+        self.recovery = JoinPhysicalRecovery(self)
 
     def can_resume(self, item):
         if item.pending:
@@ -22,10 +25,13 @@ class JoinBlockedHandoff:
         return key is None or not self.admission.runtime._agent_observed_blocked_budget_key(key)
 
     def _donor(self, item, target):
+        return item.active and self._blocked_donor(item, target)
+
+    def _blocked_donor(self, item, target):
         admission, runtime = self.admission, self.admission.runtime
         key = admission.latest.get(item.identity)
         if (
-            item.identity == target.invocation_id or not item.active
+            item.identity == target.invocation_id
             or item.pending or not item.acting or item.marked_for_pause or key is None
             or not runtime._agent_observed_blocked_budget_key(key)
             or any(lease.key.context_id == key.context_id
@@ -106,6 +112,7 @@ class JoinBlockedHandoff:
         for item in selected:
             policy._pause(item, now)
         parent.active = True
+        self.recovery.remember(key, join_id, selected)
         assert policy.remaining_capacity() >= 0
         admission.counts["join_blocked_handoff_grants"] += 1
         admission.counts["join_blocked_handoff_paused_agents"] += len(selected)

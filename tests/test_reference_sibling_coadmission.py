@@ -136,11 +136,12 @@ def test_join_event_admits_the_complete_submitted_group_atomically(monkeypatch, 
         live.on_events((observed(10, Kind.JOIN_WAIT, invocation_id="parent", join_id="join"),))
         assert adapter.policy.programs[members[0]] == before
         assert [adapter.policy.programs[name].active for name in members] == (
-            [True, True, True] if capacity == 1202 else [True, False, False]
+            [True, True, True] if capacity == 1202 else [True, True, False]
         )
-        assert adapter.counts["sibling_free_programs_admitted"] == (2 if capacity == 1202 else 0)
+        assert adapter.counts["sibling_free_programs_admitted"] == (2 if capacity == 1202 else 1)
         live.on_events((observed(11, Kind.JOIN_WAIT, invocation_id="parent", join_id="join"),))
-        assert adapter.counts["sibling_free_programs_admitted"] == (2 if capacity == 1202 else 0)
+        assert adapter.counts["sibling_free_programs_admitted"] == (2 if capacity == 1202 else 1)
+        assert adapter.policy.remaining_capacity() >= 0
     finally:
         live.close()
 
@@ -159,10 +160,10 @@ def test_group_budget_is_refreshed_from_already_generated_native_outputs(monkeyp
         assert adapter.policy.remaining_capacity() == 800
         first.output_ids.extend([1] * 18)
         live.on_events((observed(10, Kind.JOIN_WAIT, invocation_id="parent", join_id="join"),))
-        assert not adapter.policy.programs[members[1]].active
+        assert adapter.policy.programs[members[1]].active
         assert not adapter.policy.programs[members[2]].active
         assert adapter.policy.programs[members[0]].tokens == 320
-        assert adapter.policy.remaining_capacity() == 782
+        assert adapter.policy.remaining_capacity() == 382
     finally:
         live.close()
 
@@ -186,19 +187,19 @@ def test_group_journal_records_actual_atomic_grant_once_with_each_current_identi
             live.on_events((observed(10, Kind.JOIN_WAIT, invocation_id="parent", join_id="join"),))
             live._agent_admission._coadmit_join("join")
         grants = [row for row in records if row["event"] == "agent_join_siblings_coadmitted"]
-        if capacity == 1000:
-            assert not grants
-        else:
-            assert len(grants) == 1
-            row = grants[0]
-            assert row["join_id"] == "join"
-            assert row["required_tokens"] == 800
-            assert row["remaining_before_tokens"] == 800
-            assert row["remaining_after_tokens"] == 0
-            assert {item["key"]["invocation_id"] for item in row["programs"]} == set(members[1:])
-            assert {item["key"]["request_id"] for item in row["programs"]} == {"1", "2"}
-            assert {item["complete_budget_tokens"] for item in row["programs"]} == {400}
-            assert row["native_capacity_authority_preserved"]
+        assert len(grants) == 1
+        row = grants[0]
+        added = 1 if capacity == 1000 else 2
+        assert row["join_id"] == "join"
+        assert row["required_tokens"] == 400 * added
+        assert row["remaining_before_tokens"] == capacity - 402
+        assert row["remaining_after_tokens"] == capacity - 402 - 400 * added
+        assert {item["key"]["invocation_id"] for item in row["programs"]} == set(members[1:1 + added])
+        assert {item["key"]["request_id"] for item in row["programs"]} == {
+            str(index) for index in range(1, 1 + added)
+        }
+        assert {item["complete_budget_tokens"] for item in row["programs"]} == {400}
+        assert row["native_capacity_authority_preserved"]
     finally:
         live.close()
 

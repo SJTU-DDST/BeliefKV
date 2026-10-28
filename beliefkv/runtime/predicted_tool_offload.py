@@ -6,6 +6,7 @@ import os
 import time
 
 from beliefkv.runtime.sglang_v0520_observer import observe_static_full_mamba_headroom
+from beliefkv.runtime.native_transfer_policy import consumer_input_reserve
 
 
 class PredictedToolOffload:
@@ -354,14 +355,18 @@ class DemandAwareToolOffload(PredictedToolOffload):
         if not headroom.observable:
             return None
         budget = runtime._current_residency_budget()
-        reserve = max(
-            budget.reserve_full_tokens,
-            runtime._native_page_size * (
-                len(getattr(runtime._native_running_batch, "reqs", ())) + 1
-            ),
+        actual = consumer_input_reserve(
+            runtime, budget, cost[1], adder=self._admission_adder,
         )
-        needed = observation["missing_full_tokens"] + cost[1] + reserve
+        needed = observation["missing_full_tokens"] + actual.total_tokens
         deficit = needed - headroom.device_full_free_tokens
+        if actual.replaced_batch_input:
+            runtime.counts["tool_offload_selected_input_reserve_checks"] += 1
+            old_needed = observation["missing_full_tokens"] + cost[1] + max(
+                budget.reserve_full_tokens, actual.growth_tokens,
+            )
+            if deficit <= 0 < old_needed - headroom.device_full_free_tokens:
+                runtime.counts["tool_offload_unnecessary_deficit_avoided"] += 1
         return (key, deficit, cost[0]) if deficit > 0 else None
 
     def _live_consumer(self, donor):

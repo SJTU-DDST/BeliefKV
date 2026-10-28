@@ -1,0 +1,1250 @@
+diff --git a/python/sglang/srt/managers/cache_controller.py b/python/sglang/srt/managers/cache_controller.py
+index 92ae767..565a947 100644
+--- a/python/sglang/srt/managers/cache_controller.py
++++ b/python/sglang/srt/managers/cache_controller.py
+@@ -15,6 +15,7 @@ limitations under the License.
+ 
+ 
+ import logging
++import os
+ import threading
+ import time
+ from dataclasses import dataclass
+@@ -408,6 +409,14 @@ class HiCacheController:
+         # Set by the scheduler to the forward stream; gates load-back H2D
+         # behind in-flight forwards (see start_loading).
+         self.load_fence_stream = None
++        from sglang.srt.mem_cache.allocator.token import TokenToKVPoolAllocator
++
++        self.beliefkv_free_page_fence_enabled = (
++            os.environ.get("BELIEFKV_FREE_PAGE_H2D_FENCE", "0") == "1"
++            and type(token_to_kv_pool_allocator) is TokenToKVPoolAllocator
++        )
++        self._beliefkv_free_page_boundary = None
++        self.beliefkv_h2d_fence_counts = {}
+         self.ack_write_queue: List[HiCacheAck] = []
+ 
+         self.l2_transfer_engine = L2TransferEngine(io_backend)
+@@ -922,6 +931,54 @@ class HiCacheController:
+     def _num_tokens_by_pool(self, op: CacheOperation) -> dict[str, int]:
+         return {PoolName.KV.value: len(op.device_indices)}
+ 
++    def beliefkv_record_free_page_boundary(self) -> bool:
++        """Fence past writers before a forward can start using other allocated pages."""
++        if not self.beliefkv_free_page_fence_enabled or self.load_fence_stream is None:
++            return False
++        allocator = self.mem_pool_device_allocator
++        generation = allocator.beliefkv_free_generation
++        previous = self._beliefkv_free_page_boundary
++        if previous is not None and previous[:2] == (allocator, generation):
++            return False
++        event = device_module.Event()
++        event.record(stream=self.load_fence_stream)
++        self._beliefkv_free_page_boundary = (allocator, generation, event)
++        counts = self.beliefkv_h2d_fence_counts
++        counts["free_boundary_events"] = counts.get("free_boundary_events", 0) + 1
++        return True
++
++    def _beliefkv_wait_load_fence(self, op) -> None:
++        if self.load_fence_stream is None:
++            return
++        children = getattr(op, "_receipt_ops", (op,))
++        event = getattr(children[0], "_beliefkv_free_page_event", None)
++        if getattr(self, "beliefkv_free_page_fence_enabled", False) and event is not None and all(
++            not child.pool_transfers
++            and getattr(child, "_beliefkv_free_page_event", None) is event
++            for child in children
++        ):
++            self.l2_transfer_engine.host_to_device_stream.wait_event(event)
++            counts = self.beliefkv_h2d_fence_counts
++            counts["free_event_batches"] = counts.get("free_event_batches", 0) + 1
++            return
++        # Newly reclaimed pages may still be written by an in-flight forward.
++        self.l2_transfer_engine.host_to_device_stream.wait_stream(self.load_fence_stream)
++        if getattr(self, "beliefkv_free_page_fence_enabled", False):
++            counts = self.beliefkv_h2d_fence_counts
++            counts["forward_stream_batches"] = counts.get("forward_stream_batches", 0) + 1
++
++    def _beliefkv_bind_free_page_fence(self, op) -> None:
++        boundary = getattr(self, "_beliefkv_free_page_boundary", None)
++        if (
++            getattr(self, "beliefkv_free_page_fence_enabled", False)
++            and not op.pool_transfers
++            and boundary is not None
++            and boundary[0] is self.mem_pool_device_allocator
++            and boundary[1] == self.mem_pool_device_allocator.beliefkv_free_generation
++        ):
++            # Allocations only shrink this free set; any release invalidates its proof.
++            op._beliefkv_free_page_event = boundary[2]
++
+     def load(
+         self,
+         host_indices: torch.Tensor,
+@@ -942,6 +999,7 @@ class HiCacheController:
+             priority,
+             beliefkv_command_id=beliefkv_command_id,
+         )
++        self._beliefkv_bind_free_page_fence(op)
+         self.load_queue.append(op)
+         return device_indices
+ 
+@@ -1058,13 +1116,7 @@ class HiCacheController:
+         producer_event.state_ready_event = None
+         producer_event.start_event.record()
+ 
+-        if self.load_fence_stream is not None:
+-            # in overlap scheduling, reclaimed pages might still be written by the forward thread
+-            # therefore a fence is needed for loading thread to prevent memory corruption
+-            # todo: it's possible to use a finer-grained fence
+-            self.l2_transfer_engine.host_to_device_stream.wait_stream(
+-                self.load_fence_stream
+-            )
++        self._beliefkv_wait_load_fence(op)
+ 
+         unacked_bytes = sum(
+             ack.num_bytes for ack in (*self.ack_write_queue, *self.ack_load_queue)
+diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
+index 160a33f..a265298 100644
+--- a/python/sglang/srt/managers/scheduler.py
++++ b/python/sglang/srt/managers/scheduler.py
+@@ -620,6 +620,14 @@ class Scheduler(
+                 cache_controller.load_fence_stream = (
+                     self.tp_worker.model_runner.forward_stream
+                 )
++                if (
++                    cache_controller.beliefkv_free_page_fence_enabled
++                    and self.enable_overlap and self.spec_algorithm.is_none()
++                    and self.is_generation
++                ):
++                    self._beliefkv_load_free_boundary = (
++                        cache_controller.beliefkv_record_free_page_boundary
++                    )
+         self.emit_metrics_constants()
+         self.maybe_init_hccl_dp_prewarm()
+ 
+@@ -4703,6 +4711,8 @@ class Scheduler(
+         pp_proxy_tensors: Optional[PPProxyTensors] = None,
+     ) -> Union[GenerationBatchResult, EmbeddingBatchResult]:
+         """Run a batch."""
++        if (boundary := getattr(self, "_beliefkv_load_free_boundary", None)) is not None:
++            boundary()
+         self.metrics_reporter.record_scheduler_active()
+         self.forward_ct += 1
+         batch.forward_iter = self.forward_ct
+diff --git a/python/sglang/srt/mem_cache/allocator/token.py b/python/sglang/srt/mem_cache/allocator/token.py
+index 4782a1d..de1a556 100644
+--- a/python/sglang/srt/mem_cache/allocator/token.py
++++ b/python/sglang/srt/mem_cache/allocator/token.py
+@@ -40,6 +40,7 @@ class TokenToKVPoolAllocator(BaseTokenToKVPoolAllocator):
+         self.clear()
+ 
+     def clear(self):
++        self.beliefkv_free_generation = getattr(self, "beliefkv_free_generation", -1) + 1
+         # The padded slot 0 is used for writing dummy outputs from padded tokens.
+         self.free_pages = torch.arange(
+             1, self.size + 1, dtype=torch.int64, device=self.device
+@@ -65,6 +66,7 @@ class TokenToKVPoolAllocator(BaseTokenToKVPoolAllocator):
+     def free(self, free_index: torch.Tensor):
+         if free_index.numel() == 0:
+             return
++        self.beliefkv_free_generation += 1
+ 
+         if self.free_group is None:
+             if self.need_sort:
+diff --git a/python/sglang/srt/mem_cache/beliefkv_layer_handoff.py b/python/sglang/srt/mem_cache/beliefkv_layer_handoff.py
+new file mode 100644
+index 0000000..26954b6
+--- /dev/null
++++ b/python/sglang/srt/mem_cache/beliefkv_layer_handoff.py
+@@ -0,0 +1,352 @@
++"""Exclusive FULL-only cache handoff; the caller supplies scheduling authority."""
++
++from dataclasses import dataclass
++import time
++
++import torch
++
++from sglang.srt.managers.cache_controller import HiCacheAck, device_module
++from sglang.srt.mem_cache.hicache_storage import PoolName, PoolTransfer
++from sglang.srt.mem_cache.l2_transfer import L2Transfer
++from sglang.srt.mem_cache.unified_cache.component_type import ComponentType
++
++
++@dataclass
++class LayerHandoff:
++    donor_id: int
++    consumer_id: int
++    donor_host_lock: object
++    reserved_tail: torch.Tensor
++    producer: int
++    completion: object = None
++    donor_finished: bool = False
++
++
++def supported(cache):
++    controller = cache.cache_controller
++    group = getattr(controller, "mem_pool_host", None)
++    anchor = getattr(group, "anchor_entry", None)
++    pool = getattr(anchor, "host_pool", None)
++    supports = getattr(pool, "supports_layer_handoff", None)
++    return bool(
++        cache.enable_session_radix_cache
++        and cache.is_write_back
++        and cache.host_memory_mode == "cache"
++        and cache.buffer_pipeline is None
++        and cache.linker is None
++        and cache.tree_components == (ComponentType.FULL,)
++        and not cache.enable_storage
++        and not getattr(cache, "sidecar_pool_specs", ())
++        and controller is not None
++        and controller.io_backend == "kernel"
++        and controller.load_fence_stream is not None
++        and callable(supports)
++        and supports(anchor.device_pool, controller.io_backend)
++        and controller.layer_num == pool.layer_num
++        and tuple(group.entry_map) == (PoolName.KV,)
++    )
++
++
++def _identity(cache, node_id, created, session_id, generation):
++    if (
++        cache.session_refs._session_generations.get(session_id) != generation
++        or session_id in cache.session_refs._closed_session_ids
++    ):
++        return None
++    try:
++        node = cache.tree_core.node_by_id(node_id)
++    except (KeyError, RuntimeError, ValueError):
++        return None
++    full = node.component_data[ComponentType.FULL]
++    if (
++        node is cache.tree_core.root_node
++        or node.creation_time != created
++        or full.session_ref != 1
++        or full.session_ids not in (None, {session_id})
++        or full.lock_ref
++        or full.host_lock_ref
++        or node.write_through_pending_id is not None
++        or node.load_back_pending_id is not None
++        or node.id in cache.ongoing_write_through
++        or node.id in cache.ongoing_load_back
++    ):
++        return None
++    return node
++
++
++def _paths(cache, donor, consumer, donor_session, donor_generation, consumer_session, consumer_generation):
++    root, tree = cache.tree_core.root_node, cache.tree_core
++    loads, node = [], consumer
++    for _ in range(64):
++        if node is root or node.component_data[ComponentType.FULL].value is not None:
++            break
++        if _identity(cache, node.id, node.creation_time, consumer_session, consumer_generation) is None:
++            return None
++        if node.component_data[ComponentType.FULL].host_value is None:
++            return None
++        loads.append(node)
++        node = node.parent
++    else:
++        return None
++    if not loads:
++        return None
++    needed = sum(len(item.component_data[ComponentType.FULL].host_value) for item in loads)
++    donors, size, node = [], 0, donor
++    for _ in range(64):
++        if node is root:
++            return None
++        if _identity(cache, node.id, node.creation_time, donor_session, donor_generation) is None:
++            return None
++        data = node.component_data[ComponentType.FULL]
++        if (
++            data.value is None or data.host_value is not None
++            or len(node.children) > 64
++            or any(
++                child.component_data[ComponentType.FULL].value is not None
++                and child not in donors
++                for child in node.children.values()
++            )
++        ):
++            return None
++        donors.append(node)
++        size += len(data.value)
++        if size >= needed:
++            return donors, list(reversed(loads)), size, needed
++        node = node.parent
++    return None
++
++
++def _acks_disjoint(cache, touched):
++    """Keep outstanding sources leased; admit only bounded unrelated ACKs."""
++    cc, tree = cache.cache_controller, cache.tree_core
++    acks = (*cc.ack_write_queue, *cc.ack_load_queue)
++    if len(acks) > 64:
++        return False
++    checks = 0
++    for ack in acks:
++        ids = getattr(ack, "node_ids", None)
++        if type(ids) not in (list, tuple) or not ids:
++            return False
++        for node_id in ids:
++            if type(node_id) is not int:
++                return False
++            try:
++                node = tree.node_by_id(node_id)
++            except (KeyError, RuntimeError, ValueError):
++                return False
++            while node is not tree.root_node:
++                checks += 1
++                if checks > 256 or node.id in touched:
++                    return False
++                node = node.parent
++    return True
++
++
++def begin(
++    cache, *,
++    donor_node_id, donor_creation_time, donor_session_id, donor_session_generation,
++    consumer_node_id, consumer_creation_time, consumer_session_id,
++    consumer_session_generation, reserve_tokens, authorize,
++    donor_group_layers=1, consumer_group_layers=1,
++):
++    """Replace a private donor path with a complete Host-only missing path.
++
++    All logical eligibility is established by the caller before this operation.
++    Refusals allocate no Device slots, evict no peer and launch no transfer.
++    A launch exception is fatal: reservations must not be freed under live DMA.
++    """
++    reap(cache)
++    if (
++        not supported(cache)
++        or getattr(cache, "_beliefkv_layer_handoff", None) is not None
++        or donor_session_id == consumer_session_id
++        or type(reserve_tokens) is not int or reserve_tokens < 0
++        or not callable(authorize)
++    ):
++        return None
++    if any(type(size) is not int or not 1 <= size <= 64 for size in (
++        donor_group_layers, consumer_group_layers,
++    )):
++        raise ValueError("layer handoff groups must be integers in [1, 64]")
++    cc, tree = cache.cache_controller, cache.tree_core
++    if max(donor_group_layers, consumer_group_layers) > 1 and not callable(
++        getattr(cc.mem_pool_host.anchor_entry.host_pool, "transfer_handoff_layers", None)
++    ):
++        return None
++    if any((
++        cc.write_queue, cc.load_queue,
++        getattr(cc, "_beliefkv_load_continuation", None),
++    )):
++        return None
++    producer = (cc.layer_done_counter.producer_index + 1) % cc.layer_done_counter.num_counters
++    if not cc.layer_done_counter.events[producer].finish_event.query():
++        return None
++    donor = _identity(
++        cache, donor_node_id, donor_creation_time,
++        donor_session_id, donor_session_generation,
++    )
++    consumer = _identity(
++        cache, consumer_node_id, consumer_creation_time,
++        consumer_session_id, consumer_session_generation,
++    )
++    if donor is None or consumer is None or donor is consumer:
++        return None
++    component = cache.components[ComponentType.FULL]
++    if (
++        donor not in component._session_leaves.get(donor_session_id, ())
++        or consumer not in component._session_leaves.get(consumer_session_id, ())
++    ):
++        return None
++    if donor not in tree.evictable_device_leaves:
++        return None
++    paths = _paths(
++        cache, donor, consumer, donor_session_id, donor_session_generation,
++        consumer_session_id, consumer_session_generation,
++    )
++    if paths is None:
++        return None
++    donors, loads, donor_tokens, consumer_tokens = paths
++    # The path identity checks above retain native Device/Host locks and
++    # pending-DMA ownership. Unrelated issued copies need not drain globally.
++    if not _acks_disjoint(cache, {node.id for node in (*donors, *loads)}):
++        return None
++    if (
++        cc.mem_pool_device_allocator.available_size() < reserve_tokens
++        or cc.mem_pool_host.available_size() < donor_tokens
++    ):
++        return None
++    kv_xfer, extra = tree.build_load_back_spec(consumer.id)
++    if (
++        extra or kv_xfer.nodes_to_load != [item.id for item in loads]
++        or len(kv_xfer.host_indices) != consumer_tokens
++    ):
++        return None
++    host = cc.mem_pool_host.alloc(donor_tokens)
++    if host is None:
++        return None
++    if not authorize(donor_tokens, consumer_tokens):
++        cc.mem_pool_host.free(host)
++        return None
++    # The new Host allocation is disjoint from every live Host source by the
++    # native allocator contract. Its lease remains held through the final ACK.
++    extent = torch.cat([
++        item.component_data[ComponentType.FULL].value for item in reversed(donors)
++    ])
++    consumer_extent = extent[:consumer_tokens]
++    tail = extent[consumer_tokens:]
++    anchor = cc.mem_pool_host.anchor_entry
++    donor_indices, extent = cc.move_indices(host, extent)
++    consumer_indices, _ = cc.move_indices(kv_xfer.host_indices, consumer_extent)
++    # Index uploads and the last submitted writer must both precede D2H.
++    writer = device_module.Event()
++    writer.record(cc.load_fence_stream)
++    device_module.current_stream().wait_event(writer)
++    indices_ready = device_module.Event()
++    indices_ready.record()
++
++    offset = 0
++    for item in reversed(donors):
++        size = len(item.component_data[ComponentType.FULL].value)
++        tree.commit_backup(item.id, host[offset:offset + size], {})
++        offset += size
++    donor_host_lock = cache.inc_host_lock_ref(donor.id).to_dec_params()
++    cache._track_write_through_node(donor.id, None, [item.id for item in reversed(donors)])
++    detached_tokens = 0
++    for item in donors:
++        detached = tree.demote(item.id)
++        assert not detached.host_frees
++        # Demotion transfers ownership here, never to the ordinary free pool.
++        detached_tokens += sum(
++            len(part) for parts in detached.device_frees.values() for part in parts
++        )
++        detached.device_frees.clear()
++        detached.host_frees.clear()
++    assert detached_tokens == len(extent)
++    tree.component_protected_size_[ComponentType.FULL] += len(tail)
++    assert tree.beliefkv_handoff_reserved_full_tokens == 0
++    assert tree.beliefkv_handoff_donor_anchor is None
++    tree.beliefkv_handoff_reserved_full_tokens = len(tail)
++    tree.beliefkv_handoff_donor_anchor = donor.id
++    consumer_host_lock = cache.inc_host_lock_ref(consumer.id).to_dec_params()
++    consumer_lock = cache.inc_lock_ref(consumer.id).to_dec_params()
++    cache._apply_cache_actions(tree.commit_load_back(
++        consumer.id, consumer_extent, kv_xfer, {},
++    ))
++    from sglang.srt.mem_cache.unified_radix_cache import _OngoingLoadBack
++
++    cache.ongoing_load_back[consumer.id] = _OngoingLoadBack(
++        consumer.id, consumer_lock, consumer_host_lock,
++    )
++    transaction = LayerHandoff(
++        donor.id, consumer.id, donor_host_lock, tail, producer,
++    )
++    cache._beliefkv_layer_handoff = transaction
++    actual_producer = cc.layer_done_counter.update_producer()
++    assert actual_producer == producer
++    cc.layer_done_counter.events[producer].start_event.record()
++    start_ms, start_mono = time.time() * 1000., time.monotonic()
++    completion = cc.l2_transfer_engine.submit_layer_handoff(
++        L2Transfer(anchor.host_pool, anchor.device_pool, donor_indices, extent),
++        L2Transfer(anchor.host_pool, anchor.device_pool, consumer_indices, consumer_extent),
++        layer_num=cc.layer_num, donor_last_use_event=indices_ready,
++        **({
++            "donor_group_layers": donor_group_layers,
++            "consumer_group_layers": consumer_group_layers,
++        } if (donor_group_layers, consumer_group_layers) != (1, 1) else {}),
++    )
++    transaction.completion = completion
++    event = cc.layer_done_counter.events[producer]
++    event.load_events = list(completion.consumer_layer_ready)
++    event.state_ready_event = None
++    cache._beliefkv_prefetch_consumer_index = producer
++    unit = anchor.host_pool.size_per_token
++    for queue, side, node_id, size in (
++        (cc.ack_write_queue, completion.donor, donor.id, len(extent)),
++        (cc.ack_load_queue, completion.consumer, consumer.id, len(consumer_extent)),
++    ):
++        queue.append(HiCacheAck(
++            start_event=side.start_event, finish_event=side.finish_event,
++            node_ids=[node_id], num_tokens=size, timing_enabled=side.timing_enabled,
++            num_tokens_by_pool={"kv": size}, num_bytes=size * unit,
++            submit_ts_ms=start_ms, submit_mono=start_mono,
++            unacked_bytes_at_submit=0, enqueue_to_submit_ms=0.,
++        ))
++    return {
++        "donor_node_id": donor.id, "consumer_node_id": consumer.id,
++        "donor_tokens": len(extent), "reused_tokens": len(consumer_extent),
++        "reserved_tail_tokens": len(tail), "consumer_index": producer,
++        "donor_nodes": len(donors), "consumer_nodes": len(loads),
++        "donor_group_layers": donor_group_layers, "consumer_group_layers": consumer_group_layers,
++    }
++
++
++def blocks_load(cache, node_id):
++    transaction = getattr(cache, "_beliefkv_layer_handoff", None)
++    if transaction is None or transaction.donor_finished:
++        return False
++    node = cache.tree_core.node_by_id(node_id)
++    while node is not None and node is not cache.tree_core.root_node:
++        if node.write_through_pending_id == transaction.donor_id:
++            return True
++        node = node.parent
++    return False
++
++
++def reap(cache):
++    transaction = getattr(cache, "_beliefkv_layer_handoff", None)
++    if transaction is None:
++        return
++    if not transaction.donor_finished and transaction.donor_id not in cache.ongoing_write_through:
++        cache.dec_host_lock_ref(transaction.donor_id, transaction.donor_host_lock)
++        assert cache.tree_core.beliefkv_handoff_reserved_full_tokens == len(transaction.reserved_tail)
++        cache.tree_core.beliefkv_handoff_reserved_full_tokens = 0
++        cache.tree_core.beliefkv_handoff_donor_anchor = None
++        if len(transaction.reserved_tail):
++            cache.tree_core.component_protected_size_[ComponentType.FULL] -= len(transaction.reserved_tail)
++            cache.cache_controller.evict_device(transaction.reserved_tail)
++        transaction.donor_finished = True
++    if (
++        transaction.donor_finished
++        and transaction.consumer_id not in cache.ongoing_load_back
++    ):
++        cache._beliefkv_layer_handoff = None
+diff --git a/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py b/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
+index cf9273c..acb4980 100644
+--- a/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
++++ b/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
+@@ -638,6 +638,7 @@ class HybridCacheController(BaseHiCacheController):
+                 if need_load_kv:
+                     full_allocator.free(device_indices)
+                 return None
++        self._beliefkv_bind_free_page_fence(op)
+         self.load_queue.append(op)
+         return device_indices
+ 
+diff --git a/python/sglang/srt/mem_cache/l2_transfer.py b/python/sglang/srt/mem_cache/l2_transfer.py
+index 821c196..560d9f2 100644
+--- a/python/sglang/srt/mem_cache/l2_transfer.py
++++ b/python/sglang/srt/mem_cache/l2_transfer.py
+@@ -46,6 +46,13 @@ class TransferCompletion(NamedTuple):
+     timing_enabled: bool
+ 
+ 
++class LayerHandoffCompletion(NamedTuple):
++    donor: TransferCompletion
++    consumer: TransferCompletion
++    donor_layer_done: tuple[Any, ...]
++    consumer_layer_ready: tuple[Any, ...]
++
++
+ class L2TransferEngine:
+     """Runs resolved device↔host transfers without owning cache state."""
+ 
+@@ -113,6 +120,122 @@ class L2TransferEngine:
+             self._record_stream(transfers, self.host_to_device_stream)
+         return TransferCompletion(ack_start, ack_finish, timing_enabled)
+ 
++    def submit_layer_handoff(
++        self,
++        donor: L2Transfer,
++        consumer: L2Transfer,
++        *,
++        layer_num: int,
++        donor_last_use_event,
++        donor_group_layers: int = 1,
++        consumer_group_layers: int = 1,
++    ) -> LayerHandoffCompletion:
++        """Copy A out and B into the same reserved Device extent or its prefix.
++
++        The caller owns cache publication, logical admission and the reservation
++        for the entire operation. No slot becomes free here. A consumer may read
++        a layer only after its consumer_layer_ready event.
++        """
++        if (
++            type(layer_num) is not int
++            or layer_num <= 0
++            or donor_last_use_event is None
++            or donor.device_pool is not consumer.device_pool
++            or len(donor.device_indices) == 0
++            or len(consumer.device_indices) == 0
++            or len(consumer.device_indices) > len(donor.device_indices)
++            or len(donor.host_indices) != len(donor.device_indices)
++            or len(consumer.host_indices) != len(consumer.device_indices)
++            or donor.layer_mapper is not None
++            or consumer.layer_mapper is not None
++            or donor.is_draft
++            or consumer.is_draft
++        ):
++            raise ValueError("invalid exclusive layer handoff extent")
++        if any(type(size) is not int or not 1 <= size <= 64 for size in (
++            donor_group_layers, consumer_group_layers,
++        )):
++            raise ValueError("layer handoff groups must be integers in [1, 64]")
++        if donor.device_indices is not consumer.device_indices and not (
++            donor.device_indices.ndim == consumer.device_indices.ndim == 1
++            and donor.device_indices.is_contiguous()
++            and consumer.device_indices.is_contiguous()
++            and donor.device_indices.dtype == consumer.device_indices.dtype
++            and donor.device_indices.device == consumer.device_indices.device
++            and donor.device_indices.data_ptr() == consumer.device_indices.data_ptr()
++        ):
++            raise ValueError("consumer indices must be a view of the donor extent")
++        for transfer in (donor, consumer):
++            supported = getattr(transfer.host_pool, "supports_layer_handoff", None)
++            if (
++                not callable(supported)
++                or not supported(transfer.device_pool, self.io_backend)
++                or transfer.host_pool.layer_num != layer_num
++            ):
++                raise NotImplementedError("unsupported layer handoff pool")
++        if donor.host_pool is consumer.host_pool and donor.host_indices is consumer.host_indices:
++            raise ValueError("donor backup cannot overwrite the consumer Host source")
++        for transfer, size in ((donor, donor_group_layers), (consumer, consumer_group_layers)):
++            if size > 1 and not callable(getattr(transfer.host_pool, "transfer_handoff_layers", None)):
++                raise NotImplementedError("pool does not support fused layer groups")
++        donor_done, consumer_ready = [], []
++        d_start, d_finish, d_timing = make_timing_event_pair()
++        h_start, h_finish, h_timing = make_timing_event_pair()
++        with device_module.stream(self.device_to_host_stream):
++            donor_last_use_event.wait(self.device_to_host_stream)
++            d_start.record()
++        with device_module.stream(self.host_to_device_stream):
++            h_start.record()
++        backed = 0
++        for start in range(0, layer_num, consumer_group_layers):
++            end = min(start + consumer_group_layers, layer_num)
++            while backed < end:
++                backup_end = min(backed + donor_group_layers, layer_num)
++                event = device_module.Event()
++                with device_module.stream(self.device_to_host_stream):
++                    if donor_group_layers == 1:
++                        donor.host_pool.backup_from_device_per_layer(
++                            donor.device_pool, donor.host_indices, donor.device_indices,
++                            backed, self.io_backend,
++                        )
++                    else:
++                        donor.host_pool.transfer_handoff_layers(
++                            donor.device_pool, donor.host_indices, donor.device_indices,
++                            backed, backup_end, self.io_backend, load=False,
++                        )
++                    event.record()
++                donor_done.extend([event] * (backup_end - backed))
++                backed = backup_end
++            event = device_module.Event()
++            with device_module.stream(self.host_to_device_stream):
++                # D2H is ordered, so its last intersecting group protects the
++                # whole H2D range even when the two group sizes do not divide.
++                donor_done[end - 1].wait(self.host_to_device_stream)
++                if consumer_group_layers == 1:
++                    consumer.host_pool.load_to_device_per_layer(
++                        consumer.device_pool, consumer.host_indices, consumer.device_indices,
++                        start, self.io_backend,
++                    )
++                else:
++                    consumer.host_pool.transfer_handoff_layers(
++                        consumer.device_pool, consumer.host_indices, consumer.device_indices,
++                        start, end, self.io_backend, load=True,
++                    )
++                event.record()
++            consumer_ready.extend([event] * (end - start))
++        with device_module.stream(self.device_to_host_stream):
++            d_finish.record()
++            self._record_stream([donor], self.device_to_host_stream)
++        with device_module.stream(self.host_to_device_stream):
++            h_finish.record()
++            self._record_stream([consumer], self.host_to_device_stream)
++        return LayerHandoffCompletion(
++            TransferCompletion(d_start, d_finish, d_timing),
++            TransferCompletion(h_start, h_finish, h_timing),
++            tuple(donor_done),
++            tuple(consumer_ready),
++        )
++
+     @staticmethod
+     def _start_event(start_event):
+         if start_event is None:
+diff --git a/python/sglang/srt/mem_cache/pool_host/mha.py b/python/sglang/srt/mem_cache/pool_host/mha.py
+index 8a3d488..809051e 100644
+--- a/python/sglang/srt/mem_cache/pool_host/mha.py
++++ b/python/sglang/srt/mem_cache/pool_host/mha.py
+@@ -396,6 +396,62 @@ class MHATokenToKVPoolHost(HostKVCache):
+             device_pool.v_buffer,
+         )
+ 
++    def supports_layer_handoff(self, device_pool, io_backend):
++        return (
++            io_backend == "kernel"
++            and self.layout in ("layer_first", "page_first")
++            and self.can_use_jit
++            and not self.mtp_draft_device_pools
++            and self.device_pool is device_pool
++            and not device_pool.layer_shard_enabled
++            and self.layer_num == device_pool.layer_num == self.target_layer_num
++        )
++
++    def backup_from_device_per_layer(
++        self, device_pool, host_indices, device_indices, layer_id, io_backend
++    ):
++        if not self.supports_layer_handoff(device_pool, io_backend):
++            raise NotImplementedError("layer handoff requires an unsharded MHA JIT pool")
++        if type(layer_id) is not int or not 0 <= layer_id < self.layer_num:
++            raise ValueError("invalid layer handoff layer")
++        jit_transfer_hicache_one_layer(
++            k_cache_dst=self.k_data_refs[layer_id],
++            v_cache_dst=self.v_data_refs[layer_id],
++            indices_dst=host_indices,
++            k_cache_src=device_pool.k_buffer[layer_id],
++            v_cache_src=device_pool.v_buffer[layer_id],
++            indices_src=device_indices,
++            element_dim=self.element_dim,
++        )
++
++    def transfer_handoff_layers(
++        self, device_pool, host_indices, device_indices, start_layer, end_layer,
++        io_backend, *, load,
++    ):
++        if not self.supports_layer_handoff(device_pool, io_backend):
++            raise NotImplementedError("layer groups require an unsharded MHA JIT pool")
++        if (
++            type(start_layer) is not int or type(end_layer) is not int
++            or not 0 <= start_layer < end_layer <= self.layer_num
++            or type(load) is not bool
++        ):
++            raise ValueError("invalid layer handoff range")
++        layers = slice(start_layer, end_layer)
++        host_stride = self.layout_dim if self.layout == "page_first" else self.token_stride_size
++        host_k, host_v = self.k_data_ptrs[layers], self.v_data_ptrs[layers]
++        device_k, device_v = device_pool.k_data_ptrs[layers], device_pool.v_data_ptrs[layers]
++        jit_transfer_hicache_all_layer(
++            k_ptr_dst=device_k if load else host_k,
++            v_ptr_dst=device_v if load else host_v,
++            indices_dst=device_indices if load else host_indices,
++            k_ptr_src=host_k if load else device_k,
++            v_ptr_src=host_v if load else device_v,
++            indices_src=host_indices if load else device_indices,
++            kv_cache_src_stride_bytes=host_stride if load else self.token_stride_size,
++            kv_cache_dst_stride_bytes=self.token_stride_size if load else host_stride,
++            element_size=self.element_dim * self.dtype.itemsize,
++        )
++
+     def backup_from_device_all_layer(
+         self, device_pool, host_indices, device_indices, io_backend
+     ):
+diff --git a/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py b/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py
+index 56221e0..ff1d40e 100644
+--- a/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py
++++ b/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py
+@@ -487,6 +487,8 @@ class UnifiedTreeCore(UnifiedTreeCoreInterface):
+ 
+         self.component_evictable_size_ = {ct: 0 for ct in self.component_types}
+         self.component_protected_size_ = {ct: 0 for ct in self.component_types}
++        self.beliefkv_handoff_reserved_full_tokens = 0
++        self.beliefkv_handoff_donor_anchor = None
+ 
+         self.lru_lists = {
+             ct: UnifiedLRUList(
+@@ -3029,6 +3031,8 @@ class UnifiedTreeCore(UnifiedTreeCoreInterface):
+                     f"[Size] {ct} evictable={self.component_evictable_size_[ct]} "
+                     f"!= recomputed={evictable}"
+                 )
++            if ct == FCT:
++                protected += self.beliefkv_handoff_reserved_full_tokens
+             if self.component_protected_size_[ct] != protected:
+                 E(
+                     f"[Size] {ct} protected={self.component_protected_size_[ct]} "
+@@ -3040,7 +3044,12 @@ class UnifiedTreeCore(UnifiedTreeCoreInterface):
+             n = self._node_arena.get(node_id)
+             if n is None or n not in all_node_set:
+                 E(f"[Ongoing] write_through node {nid} not in tree")
+-            elif n.component_data[FCT].lock_ref <= 0:
++            elif n.component_data[FCT].lock_ref <= 0 and not (
++                node_id == self.beliefkv_handoff_donor_anchor
++                and n.component_data[FCT].value is None
++                and n.component_data[FCT].host_lock_ref > 0
++                and n.write_through_pending_id == nid
++            ):
+                 E(
+                     f"[Ongoing] write_through node {nid} lock_ref={n.component_data[FCT].lock_ref}"
+                 )
+diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
+index 7681591..3ef499d 100644
+--- a/python/sglang/srt/mem_cache/unified_radix_cache.py
++++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
+@@ -424,6 +424,8 @@ class UnifiedRadixCache(BasePrefixCache):
+         self.linker = UnifiedCacheLinkerWrapper(self, cache_linker)
+ 
+     def reset(self) -> None:
++        if getattr(self, "_beliefkv_layer_handoff", None) is not None:
++            raise RuntimeError("cache reset requires the layer handoff to drain")
+         if self.linker is not None:
+             self.linker.reset()
+         self._reset_full()
+@@ -1779,15 +1781,30 @@ class UnifiedRadixCache(BasePrefixCache):
+         else:
+             pending.pop(node.id, None)
+ 
++    beliefkv_idle_full_budget_version = 1
++
+     def prepare_beliefkv_idle_full(
+         self, *, exclude_node_ids: tuple[NodeId, ...] = (),
++        max_batch_bytes: int | None = None, reserve_host_bytes: int | None = None,
+     ) -> tuple[tuple[NodeId, int | float, int], ...]:
+         """Use idle transfer queues for one bounded, non-evicting FULL backup."""
+         stats = getattr(self, "beliefkv_idle_full_prepare_stats", None)
+         if stats is None:
+             stats = self.beliefkv_idle_full_prepare_stats = Counter()
+         stats["checks"] += 1
+-        stats["max_batch_bytes"] = BELIEFKV_IDLE_FULL_PREPARE_MAX_BYTES
++        maximum = BELIEFKV_IDLE_FULL_PREPARE_MAX_BYTES
++        if max_batch_bytes is not None:
++            if type(max_batch_bytes) is not int or max_batch_bytes < 0:
++                raise ValueError("idle backup byte limit must be a nonnegative integer")
++            maximum = min(maximum, max_batch_bytes)
++        if reserve_host_bytes is not None and (
++            type(reserve_host_bytes) is not int or reserve_host_bytes < 0
++        ):
++            raise ValueError("idle Host reserve must be a nonnegative integer")
++        stats["max_batch_bytes"] = maximum
++        if maximum == 0:
++            stats["blocked_host_capacity_rounds"] += 1
++            return ()
+         selective = getattr(self, "beliefkv_idle_prepare_policy", "all") == "cold"
+         dirty = getattr(self, "_beliefkv_unbacked_full", None)
+         if dirty is not None:
+@@ -1820,9 +1837,13 @@ class UnifiedRadixCache(BasePrefixCache):
+                 pool = controller.mem_pool_host
+                 unit, page = pool.size_per_token, self.tree_core.page_size
+                 if type(unit) is int and unit > 0:
+-                    reserved = max(page, BELIEFKV_IDLE_FULL_PREPARE_MAX_BYTES // unit // page * page)
++                    reserved = (
++                        max(page, maximum // unit // page * page)
++                        if reserve_host_bytes is None
++                        else ceil_align((reserve_host_bytes + unit - 1) // unit, page)
++                    )
+                     free = pool.available_size()
+-                    if type(free) is int and free - reserved < page:
++                    if maximum < unit * page or type(free) is int and free - reserved < page:
+                         self._beliefkv_cold_full_prepare_pending = ()
+                         self._beliefkv_cold_full_prepare_scan_ref = None
+                         stats["host_free_tokens_last"] = free
+@@ -1876,6 +1897,7 @@ class UnifiedRadixCache(BasePrefixCache):
+             issued = self._prepare_beliefkv_cold_full_nodes(
+                 tuple(candidates), exclude_node_ids=exclude_node_ids,
+                 idle=True, read_only_backup=True,
++                max_batch_bytes=maximum, reserve_host_bytes=reserve_host_bytes,
+             ) if candidates else ()
+             for node in inspected:
+                 self._remember_beliefkv_unbacked_full(node)
+@@ -1916,6 +1938,7 @@ class UnifiedRadixCache(BasePrefixCache):
+                     break
+         issued = self._prepare_beliefkv_cold_full_nodes(
+             tuple(candidates), exclude_node_ids=exclude_node_ids, idle=True,
++            max_batch_bytes=maximum, reserve_host_bytes=reserve_host_bytes,
+         ) if candidates else ()
+         stats["compatibility_leaf_scan_rounds"] += 1
+         stats["rounds_without_eligible_nodes"] += not candidates
+@@ -2058,7 +2081,7 @@ class UnifiedRadixCache(BasePrefixCache):
+         require_device_leaf: bool = False, idle: bool = False,
+         read_only_backup: bool = False, require_cold_owners: bool = False,
+         max_batch_bytes: int | None = None, max_batch_nodes: int | None = None,
+-        reserve_host_bytes: int = 0,
++        reserve_host_bytes: int | None = None,
+     ) -> tuple[tuple[NodeId, int | float, int], ...]:
+         controller = getattr(self, "cache_controller", None)
+         stats = getattr(self, "beliefkv_idle_full_prepare_stats", None) if idle else None
+@@ -2086,6 +2109,8 @@ class UnifiedRadixCache(BasePrefixCache):
+             max_batch_bytes if max_batch_bytes is not None
+             else BELIEFKV_IDLE_FULL_PREPARE_MAX_BYTES if idle else 64 * 1024 * 1024
+         )
++        if max_batch_bytes is not None and max_bytes < unit * page:
++            return ()
+         node_limit = max_batch_nodes if max_batch_nodes is not None else 32 if idle else 1
+         chunk_tokens = max(page, (max_bytes // unit // page) * page)
+         host_free = host_pool.available_size()
+@@ -2096,7 +2121,7 @@ class UnifiedRadixCache(BasePrefixCache):
+             stats["full_bytes_per_token"] = unit
+             stats["max_scanned_nodes"] = 32
+             stats["max_merged_nodes"] = 32
+-        if idle:
++        if idle and reserve_host_bytes is None:
+             host_free -= chunk_tokens
+         elif reserve_host_bytes:
+             host_free -= ceil_align((reserve_host_bytes + unit - 1) // unit, page)
+@@ -3907,6 +3932,10 @@ class UnifiedRadixCache(BasePrefixCache):
+             # suffix; the prefix fragment must be persisted as well.
+             for node_id in publish_node_ids:
+                 self.write_backup_storage(node_id)
++        if getattr(self, "_beliefkv_layer_handoff", None) is not None:
++            from sglang.srt.mem_cache.beliefkv_layer_handoff import reap
++
++            reap(self)
+         return publish_node_ids
+ 
+     def load_back(
+@@ -3921,6 +3950,11 @@ class UnifiedRadixCache(BasePrefixCache):
+         beliefkv_include_mamba: bool = True,
+     ) -> bool:
+         """Load evicted KV data from host back to device (H→D)."""
++        if getattr(self, "_beliefkv_layer_handoff", None) is not None:
++            from sglang.srt.mem_cache.beliefkv_layer_handoff import blocks_load
++
++            if blocks_load(self, node_id):
++                return False
+         if (
+             self.cache_controller is None
+             or node_id in self.ongoing_load_back
+@@ -5499,6 +5533,10 @@ class UnifiedRadixCache(BasePrefixCache):
+                 committed_by_anchor=committed_by_anchor,
+             )
+             finish_count -= 1
++        if getattr(self, "_beliefkv_layer_handoff", None) is not None:
++            from sglang.srt.mem_cache.beliefkv_layer_handoff import reap
++
++            reap(self)
+ 
+     @staticmethod
+     def _beliefkv_ack_stream_elapsed_ms(ack) -> float:
+@@ -5689,6 +5727,10 @@ class UnifiedRadixCache(BasePrefixCache):
+                 committed_by_anchor=committed_by_anchor,
+             )
+             finish_count -= 1
++        if getattr(self, "_beliefkv_layer_handoff", None) is not None:
++            from sglang.srt.mem_cache.beliefkv_layer_handoff import reap
++
++            reap(self)
+ 
+     # ---- HiCache: Scheduler Entry Points ----
+ 
+@@ -5779,6 +5821,10 @@ class UnifiedRadixCache(BasePrefixCache):
+         ) = self._sync_hicache_ready_counts()
+         self.writing_check(finish_count=write_finish_count)
+         self.loading_check(finish_count=load_finish_count)
++        if getattr(self, "_beliefkv_layer_handoff", None) is not None:
++            from sglang.srt.mem_cache.beliefkv_layer_handoff import reap
++
++            reap(self)
+ 
+         if self.enable_storage and storage_queue_sizes:
+             n_storage_hit, n_ack_prefetch, n_backup, n_release = storage_queue_sizes[:4]
+@@ -5879,6 +5925,13 @@ class UnifiedRadixCache(BasePrefixCache):
+             and self.cache_controller.load_fence_stream is not None
+         )
+ 
++    beliefkv_layer_handoff_max_group_layers = 64
++
++    def begin_beliefkv_layer_handoff(self, **kwargs):
++        from sglang.srt.mem_cache.beliefkv_layer_handoff import begin
++
++        return begin(self, **kwargs)
++
+     def is_load_back_event_done(self, consumer_index: int) -> bool:
+         """Return True after the local load-back event is complete.
+ 
+diff --git a/test/srt/test_beliefkv_layer_groups.py b/test/srt/test_beliefkv_layer_groups.py
+new file mode 100644
+index 0000000..fb925b9
+--- /dev/null
++++ b/test/srt/test_beliefkv_layer_groups.py
+@@ -0,0 +1,100 @@
++"""Fused range and independent direction-group dependencies, using CPU copies."""
++
++from types import SimpleNamespace as NS
++from unittest.mock import patch
++
++import pytest
++import torch
++
++from test_beliefkv_layer_handoff import handoff
++
++
++@pytest.mark.parametrize("donor_size,consumer_size", (
++    (1, 1), (8, 4), (4, 8), (5, 3), (3, 5), (64, 2),
++))
++def test_independent_groups_copy_all_layers_and_wait_for_every_overwritten_range(
++    handoff, donor_size, consumer_size,
++):
++    engine, donor, consumer, last_use, calls, pool, *_ = handoff
++    layers = 17
++    pool.k_buffer = [torch.arange(4.) + 10 * i for i in range(layers)]
++    original = [row.clone() for row in pool.k_buffer]
++    source = [row + 1000 for row in original]
++    host = [torch.zeros_like(row) for row in original]
++    donor.host_pool.layer_num = consumer.host_pool.layer_num = layers
++
++    def copy(_pool, _host, _device, start, end, _backend, *, load):
++        calls.append(("range_h2d" if load else "range_d2h", start, end))
++        for layer in range(start, end):
++            if load:
++                assert torch.equal(host[layer], original[layer])
++                pool.k_buffer[layer].copy_(source[layer])
++            else:
++                host[layer].copy_(pool.k_buffer[layer])
++
++    donor.host_pool.transfer_handoff_layers = consumer.host_pool.transfer_handoff_layers = copy
++    donor.host_pool.backup_from_device_per_layer = lambda a, b, c, d, e: copy(
++        a, b, c, d, d + 1, e, load=False,
++    )
++    consumer.host_pool.load_to_device_per_layer = lambda a, b, c, d, e: copy(
++        a, b, c, d, d + 1, e, load=True,
++    )
++    result = engine.submit_layer_handoff(
++        donor, consumer, layer_num=layers, donor_last_use_event=last_use,
++        donor_group_layers=donor_size, consumer_group_layers=consumer_size,
++    )
++    assert all(torch.equal(a, b) for a, b in zip(host, original))
++    assert all(torch.equal(a, b) for a, b in zip(pool.k_buffer, source))
++    assert len(set(result.donor_layer_done)) == (layers + donor_size - 1) // donor_size
++    assert len(set(result.consumer_layer_ready)) == (layers + consumer_size - 1) // consumer_size
++    for start in range(0, layers, consumer_size):
++        end = min(start + consumer_size, layers)
++        load_index = calls.index(("range_h2d", start, end))
++        wait_index = calls.index(("wait", result.donor_layer_done[end - 1], "h2d"))
++        assert wait_index < load_index
++        for layer in range(start, end):
++            assert calls.index(("record", result.donor_layer_done[layer], "d2h")) < wait_index
++
++
++@pytest.mark.parametrize("value", (0, -1, 65, True, 1.5))
++@pytest.mark.parametrize("direction", ("donor_group_layers", "consumer_group_layers"))
++def test_invalid_group_is_refused_before_streams_or_copies(handoff, direction, value):
++    engine, donor, consumer, last_use, calls, *_ = handoff
++    with pytest.raises(ValueError, match="groups"):
++        engine.submit_layer_handoff(
++            donor, consumer, layer_num=3, donor_last_use_event=last_use,
++            **{direction: value},
++        )
++    assert calls == []
++
++
++@pytest.mark.parametrize("layout", ("layer_first", "page_first"))
++@pytest.mark.parametrize("load", (False, True))
++def test_mha_range_uses_one_existing_jit_launch_and_correct_pointer_views_and_strides(layout, load):
++    from sglang.srt.mem_cache.pool_host import mha
++
++    device = NS(
++        layer_num=6, layer_shard_enabled=False,
++        k_data_ptrs=torch.arange(6) + 100, v_data_ptrs=torch.arange(6) + 200,
++    )
++    host = object.__new__(mha.MHATokenToKVPoolHost)
++    host.layout, host.can_use_jit, host.mtp_draft_device_pools = layout, True, ()
++    host.device_pool = device
++    host.layer_num = host.target_layer_num = 6
++    host.dtype, host.element_dim = torch.float32, 8
++    host.token_stride_size, host.layout_dim = 32, 192
++    host.k_data_ptrs, host.v_data_ptrs = torch.arange(6) + 300, torch.arange(6) + 400
++    host_indices, device_indices = torch.tensor([7, 9]), torch.tensor([1, 3])
++    with patch.object(mha, "jit_transfer_hicache_all_layer") as fused:
++        host.transfer_handoff_layers(
++            device, host_indices, device_indices, 1, 5, "kernel", load=load,
++        )
++    fused.assert_called_once()
++    args = fused.call_args.kwargs
++    assert torch.equal(args["k_ptr_dst"], (device if load else host).k_data_ptrs[1:5])
++    assert torch.equal(args["v_ptr_src"], (host if load else device).v_data_ptrs[1:5])
++    assert args["indices_dst"] is (device_indices if load else host_indices)
++    assert args["indices_src"] is (host_indices if load else device_indices)
++    assert args["kv_cache_src_stride_bytes"] == (192 if load and layout == "page_first" else 32)
++    assert args["kv_cache_dst_stride_bytes"] == (192 if not load and layout == "page_first" else 32)
++    assert args["element_size"] == 32
+diff --git a/test/srt/test_beliefkv_layer_handoff.py b/test/srt/test_beliefkv_layer_handoff.py
+new file mode 100644
+index 0000000..5402075
+--- /dev/null
++++ b/test/srt/test_beliefkv_layer_handoff.py
+@@ -0,0 +1,183 @@
++"""CPU data/order checks; actual GPU overlap and cache admission are separate."""
++
++from contextlib import contextmanager
++from types import SimpleNamespace as NS
++from unittest.mock import patch
++
++import pytest
++import torch
++
++from sglang.srt.mem_cache import l2_transfer as native
++
++
++@pytest.fixture
++def handoff(monkeypatch):
++    calls, current = [], [None]
++
++    class Event:
++        def __init__(self, **_kwargs):
++            self.recorded_on = None
++
++        def record(self):
++            self.recorded_on = current[0]
++            calls.append(("record", self, current[0]))
++
++        def wait(self, stream):
++            calls.append(("wait", self, stream))
++
++    @contextmanager
++    def stream(value):
++        previous, current[0] = current[0], value
++        try:
++            yield
++        finally:
++            current[0] = previous
++
++    monkeypatch.setattr(native, "device_module", NS(Event=Event, stream=stream))
++    monkeypatch.setattr(native, "make_timing_event_pair", lambda: (Event(), Event(), True))
++    pool = NS(layer_num=3, k_buffer=[torch.arange(4.) + 10 * i for i in range(3)])
++    original = [part.clone() for part in pool.k_buffer]
++    source = [part + 100 for part in original]
++    host = [torch.zeros_like(part) for part in original]
++    device_indices = torch.arange(4, dtype=torch.int64)
++    donor_host, consumer_host = torch.arange(4), torch.arange(4)
++
++    def backup(_pool, _host, _device, layer, _backend):
++        assert current[0] == "d2h"
++        host[layer].copy_(pool.k_buffer[layer])
++        calls.append(("d2h", layer))
++
++    def load(_pool, _host, _device, layer, _backend):
++        assert current[0] == "h2d"
++        pool.k_buffer[layer].copy_(source[layer])
++        calls.append(("h2d", layer))
++
++    donor_pool = NS(
++        layer_num=3, supports_layer_handoff=lambda *_: True,
++        backup_from_device_per_layer=backup,
++    )
++    consumer_pool = NS(
++        layer_num=3, supports_layer_handoff=lambda *_: True,
++        load_to_device_per_layer=load,
++    )
++    donor = native.L2Transfer(donor_pool, pool, donor_host, device_indices)
++    consumer = native.L2Transfer(consumer_pool, pool, consumer_host, device_indices)
++    engine = native.L2TransferEngine.__new__(native.L2TransferEngine)
++    engine.io_backend = "kernel"
++    engine.device_to_host_stream, engine.host_to_device_stream = "d2h", "h2d"
++    return engine, donor, consumer, Event(), calls, pool, original, source, host
++
++
++def test_shared_extent_preserves_all_donor_layers_and_restores_consumer(handoff):
++    engine, donor, consumer, last_use, calls, pool, original, source, host = handoff
++    result = engine.submit_layer_handoff(
++        donor, consumer, layer_num=3, donor_last_use_event=last_use,
++    )
++    assert all(torch.equal(a, b) for a, b in zip(host, original, strict=True))
++    assert all(torch.equal(a, b) for a, b in zip(pool.k_buffer, source, strict=True))
++    assert [item for item in calls if item[0] in ("d2h", "h2d")] == [
++        ("d2h", 0), ("h2d", 0), ("d2h", 1), ("h2d", 1), ("d2h", 2), ("h2d", 2),
++    ]
++    assert len(result.donor_layer_done) == len(result.consumer_layer_ready) == 3
++
++
++def test_first_consumer_layer_does_not_wait_for_the_last_donor_layer(handoff):
++    engine, donor, consumer, last_use, calls, *_ = handoff
++    result = engine.submit_layer_handoff(
++        donor, consumer, layer_num=3, donor_last_use_event=last_use,
++    )
++    assert calls[0] == ("wait", last_use, "d2h")
++    for event in result.donor_layer_done:
++        assert ("wait", event, "h2d") in calls
++    first_ready = calls.index(("record", result.consumer_layer_ready[0], "h2d"))
++    last_backup = calls.index(("record", result.donor_layer_done[-1], "d2h"))
++    assert first_ready < last_backup
++    assert ("wait", result.donor.finish_event, "h2d") not in calls
++
++
++def test_consumer_can_reuse_a_prefix_without_losing_the_donor_tail(handoff):
++    engine, donor, consumer, last_use, _calls, pool, original, source, host = handoff
++    consumer = consumer._replace(
++        device_indices=donor.device_indices[:2], host_indices=consumer.host_indices[:2],
++    )
++
++    def load(_pool, _host, indices, layer, _backend):
++        pool.k_buffer[layer][indices] = source[layer][:len(indices)]
++
++    consumer.host_pool.load_to_device_per_layer = load
++    engine.submit_layer_handoff(donor, consumer, layer_num=3, donor_last_use_event=last_use)
++    assert all(torch.equal(a, b) for a, b in zip(host, original, strict=True))
++    for layer in range(3):
++        assert torch.equal(pool.k_buffer[layer][:2], source[layer][:2])
++        assert torch.equal(pool.k_buffer[layer][2:], original[layer][2:])
++
++
++@pytest.mark.parametrize("invalid", (
++    "no_writer_fence", "foreign_device", "different_indices", "empty_extent",
++    "different_host_count", "draft", "layer_mapper", "layer_count", "unsupported",
++    "same_host_source",
++))
++def test_invalid_contract_is_rejected_before_any_device_operation(handoff, invalid):
++    engine, donor, consumer, last_use, calls, *_ = handoff
++    layers = 3
++    if invalid == "no_writer_fence":
++        last_use = None
++    elif invalid == "foreign_device":
++        consumer = consumer._replace(device_pool=object())
++    elif invalid == "different_indices":
++        consumer = consumer._replace(device_indices=consumer.device_indices.clone())
++    elif invalid == "empty_extent":
++        donor = donor._replace(device_indices=torch.empty(0, dtype=torch.int64))
++    elif invalid == "different_host_count":
++        consumer = consumer._replace(host_indices=consumer.host_indices[:2])
++    elif invalid == "draft":
++        donor = donor._replace(is_draft=True)
++    elif invalid == "layer_mapper":
++        donor = donor._replace(layer_mapper=lambda layer: layer)
++    elif invalid == "layer_count":
++        layers = 2
++    elif invalid == "unsupported":
++        donor.host_pool.supports_layer_handoff = lambda *_: False
++    else:
++        consumer = consumer._replace(host_pool=donor.host_pool, host_indices=donor.host_indices)
++    with pytest.raises((ValueError, NotImplementedError)):
++        engine.submit_layer_handoff(
++            donor, consumer, layer_num=layers, donor_last_use_event=last_use,
++        )
++    assert calls == []
++
++
++@pytest.mark.parametrize("layout", ("layer_first", "page_first"))
++def test_mha_layer_backup_uses_the_selected_host_view_without_touching_other_layers(layout):
++    from sglang.srt.mem_cache.pool_host import mha
++
++    pool = NS(
++        layer_num=3, layer_shard_enabled=False,
++        k_buffer=[torch.arange(8.).reshape(4, 1, 2) + i * 10 for i in range(3)],
++        v_buffer=[torch.arange(8.).reshape(4, 1, 2) + 100 + i * 10 for i in range(3)],
++    )
++    host = object.__new__(mha.MHATokenToKVPoolHost)
++    host.layout, host.can_use_jit = layout, True
++    host.mtp_draft_device_pools = ()
++    host.device_pool = pool
++    host.layer_num = host.target_layer_num = 3
++    host.element_dim = 2
++    host.pin_memory = False
++    host.kv_buffer = None
++    storage = torch.zeros((2, 3, 4, 1, 2) if layout == "layer_first" else (2, 4, 3, 1, 2))
++    host.k_data_refs = [storage[0, i] if layout == "layer_first" else storage[0, :, i] for i in range(3)]
++    host.v_data_refs = [storage[1, i] if layout == "layer_first" else storage[1, :, i] for i in range(3)]
++    indices = torch.tensor([1, 3])
++
++    def copy(**kwargs):
++        for kind in ("k", "v"):
++            dst, src = kwargs[f"{kind}_cache_dst"], kwargs[f"{kind}_cache_src"]
++            dst.index_copy_(0, kwargs["indices_dst"], src[kwargs["indices_src"]])
++
++    with patch.object(mha, "jit_transfer_hicache_one_layer", side_effect=copy):
++        host.backup_from_device_per_layer(pool, indices, indices, 1, "kernel")
++    assert torch.equal(host.k_data_refs[1][indices], pool.k_buffer[1][indices])
++    assert torch.equal(host.v_data_refs[1][indices], pool.v_buffer[1][indices])
++    assert torch.count_nonzero(host.k_data_refs[0]) == torch.count_nonzero(host.k_data_refs[2]) == 0
++    pool.layer_shard_enabled = True
++    assert not host.supports_layer_handoff(pool, "kernel")
+diff --git a/test/srt/test_beliefkv_transfer_receipts.py b/test/srt/test_beliefkv_transfer_receipts.py
+index 909001c..6f6dcc0 100644
+--- a/test/srt/test_beliefkv_transfer_receipts.py
++++ b/test/srt/test_beliefkv_transfer_receipts.py
+@@ -65,6 +65,9 @@ def controller_classes():
+                 "start_loading",
+                 "resume_beliefkv_loading",
+                 "_beliefkv_split_prefetch_transfers",
++                "_beliefkv_bind_free_page_fence",
++                "_beliefkv_wait_load_fence",
++                "beliefkv_record_free_page_boundary",
+             },
+         )
+     )

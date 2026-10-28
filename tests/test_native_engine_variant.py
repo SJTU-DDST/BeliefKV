@@ -5,7 +5,9 @@ import os
 
 import pytest
 
-from beliefkv.experiments.native_engine_variant import COMMON_TREE, LAYER_TREE, GROUPED_LAYER_TREE, engine_patch
+from beliefkv.experiments.native_engine_variant import (
+    COMMON_TREE, LAYER_TREE, GROUPED_LAYER_TREE, SIBLING_CAPACITY_TREE, engine_patch,
+)
 from beliefkv.experiments.prepare_ack_engine import prepare_ack_engine_compatibility
 
 
@@ -14,6 +16,7 @@ def test_explicit_layer_patch_is_immutable():
     assert engine_patch(root, LAYER_TREE).name == "sglang-layer-handoff-runtime-20261027.patch"
     assert engine_patch(root, COMMON_TREE).name == "sglang-v0.5.20-beliefkv-staging.patch"
     assert engine_patch(root, GROUPED_LAYER_TREE).name == "sglang-layer-handoff-groups-runtime-20261028.patch"
+    assert engine_patch(root, SIBLING_CAPACITY_TREE).name == "sglang-sibling-capacity-runtime-20261028.patch"
 
 
 def test_layer_variant_does_not_accept_a_changed_patch(tmp_path):
@@ -49,3 +52,16 @@ def test_grouped_tree_is_explicit_and_still_requires_real_gpu_and_model_proofs()
     assert result["policy"] == "explicit_grouped_layer_handoff_engine_variant"
     assert result["requires_fresh_gpu_components_model_and_position_smoke"] is True
     assert result["layer_handoff_default_enabled"] is False
+
+
+def test_capacity_tree_does_not_inherit_previous_grouped_gpu_qualification():
+    engine = Path(os.environ["SGLANG_SOURCE_CHECKOUT"])
+    source = {
+        "engine_tree": "6437d7deeacc533f0d795ba166dfd5256b3f44b2",
+        "environment": {"AB_MODE": "off", "NATIVE_POLICY_BASELINE": "1", "PREPARE_HOST": "0"},
+    }
+    result = prepare_ack_engine_compatibility(engine, source, candidate_tree=SIBLING_CAPACITY_TREE)
+    assert result["policy"] == "explicit_sibling_capacity_engine_variant"
+    assert result["candidate_engine_tree"] == SIBLING_CAPACITY_TREE
+    assert result["requires_fresh_gpu_components_model_and_position_smoke"]
+    assert not result["layer_handoff_default_enabled"]

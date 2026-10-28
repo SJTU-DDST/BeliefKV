@@ -1,6 +1,7 @@
 """Observed JOIN budget handover preserves ready peers and native KV authority."""
 
 from dataclasses import replace
+from array import array
 import time
 from types import SimpleNamespace as NS
 
@@ -289,6 +290,7 @@ def test_join_budget_handoff_requires_real_native_reclaim_and_restore(
         assert donor_node.component_data[0].host_value is not None
         live.on_events((observed(1000, Kind.RETURN, invocation_id="child"),))
         following = request("parent-next", "parent", tokens=80, workflow="wf")
+        following.origin_input_ids = array("q", following.origin_input_ids)
         following.session_id, following.session_generation = "parent", generation
         following.finished = lambda: False
         live.register_visible_request(following)

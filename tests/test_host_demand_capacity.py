@@ -95,12 +95,19 @@ def test_idle_host_reserve_compares_whole_kv_units_without_false_byte_shortfall(
     slots["free"] = free
     device = cold.component_data[0].value
     runtime.dispatch_idle_prepare()
-    assert len(writes) == int(allowed)
-    assert (cold.component_data[0].host_value is not None) is allowed
-    assert cold.component_data[0].value is device and allocator.available_size() == 0
+    bounded = getattr(cache, "beliefkv_idle_full_budget_version", 0) == 1
+    can_copy = allowed or bounded
+    assert len(writes) == int(can_copy)
+    copied = min(4, free - 4) if can_copy else 0
+    assert sum(len(op.device_indices) for op in writes) == copied
+    # The native bounded helper may safely split a small backup. All original
+    # Device pages remain owned; no allocator capacity has been released.
+    assert allocator.available_size() == 0
+    if copied == 4:
+        assert cold.component_data[0].value is device
     assert hot.component_data[0].host_value is not None
-    assert slots["free"] == (free - 4 if allowed else free)
-    if allowed:
+    assert slots["free"] == free - copied
+    if can_copy:
         assert slots["free"] * unit >= runtime._host_demand_capacity.reserve()
 
 
@@ -159,3 +166,27 @@ def test_rejected_cost_never_reclaims_host_mirrors(demand_runtime):
     step, _ = runtime._refreshed_shadow_backup_selection(context_id="ctx-tool")
     assert not controller._prepare_allowed(step, Mock(host_full_free_tokens=0))
     runtime._host_demand_capacity.ensure.assert_not_called()
+
+
+@pytest.mark.parametrize("budget", (0, 1, 63))
+def test_explicit_subpage_idle_budget_never_allocates_a_minimum_page(mirror_runtime, budget):
+    runtime, cache, _, _, _, writes, slots = mirror_runtime
+    slots["free"] = 8
+    assert cache.prepare_beliefkv_idle_full(max_batch_bytes=budget, reserve_host_bytes=0) == ()
+    assert not writes
+    assert slots["free"] == 8
+
+
+def test_small_idle_batch_keeps_actual_demand_reserve_and_native_ack_ownership(mirror_runtime):
+    runtime, cache, allocator, cold, hot, writes, slots = mirror_runtime
+    runtime._host_demand_capacity = HostDemandCapacity(runtime, 4 * 64)
+    slots["free"] = 5
+    before = allocator.available_size()
+    runtime.dispatch_idle_prepare()
+    assert len(writes) == 1 and len(writes[0].device_indices) == 1
+    assert slots["free"] == 4 and allocator.available_size() == before
+    assert cache.ongoing_write_through
+    assert runtime.counts["idle_prepare_reduced_budget_calls"] == 1
+    cache.writing_check(finish_count=1)
+    assert not cache.ongoing_write_through and slots["free"] == 4
+    assert allocator.available_size() == before

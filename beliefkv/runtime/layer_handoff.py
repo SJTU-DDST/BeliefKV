@@ -2,12 +2,14 @@
 
 import time
 
+from beliefkv.runtime.native_transfer_policy import consumer_input_reserve
+
 
 def try_handoff(offloader, key, step):
     runtime = offloader.runtime
     if (
         not getattr(runtime, "layer_handoff_enabled", False)
-        or offloader._dispatch_stage != "before_native_admission"
+        or offloader._dispatch_stage not in ("before_native_admission", "observed_eos_restore")
         or offloader.consumer is None
     ):
         return False
@@ -19,10 +21,27 @@ def try_handoff(offloader, key, step):
         runtime.counts["layer_handoff_busy"] += 1
         return False
     request, consumer_key = offloader.consumer
-    if not runtime._agent_admission.allows(consumer_key):
+    eos = request is None
+    # Keep EOS's observed-session proof in the recovery adapter; no synthetic
+    # request or future input is constructed for an unsubmitted parent.
+    if eos:
+        allowed = lambda: runtime._agent_admission.holds_restore(consumer_key)
+    else:
+        allowed = lambda: runtime._agent_admission.allows(consumer_key)
+    if not allowed():
         return False
-    observation = runtime._read_request_reentry(request, key=consumer_key, refresh=True)
-    cost = runtime._request_restore_cost(request, observation)
+    if eos:
+        opportunity = offloader._opportunity
+        if opportunity is None or opportunity.anchors.key != consumer_key:
+            return False
+        observation = {
+            "component_leaves": opportunity.anchors.component_leaves,
+            "missing_full_tokens": opportunity.required_full_tokens,
+        }
+        cost = (opportunity.required_full_tokens * runtime._residency_pool_bytes[0], 0)
+    else:
+        observation = runtime._read_request_reentry(request, key=consumer_key, refresh=True)
+        cost = runtime._request_restore_cost(request, observation)
     leaves = dict(observation.get("component_leaves", ())).get(0, ()) if observation else ()
     if cost is None or len(leaves) != 1 or not offloader._eligible(key):
         return False
@@ -58,6 +77,8 @@ def try_handoff(offloader, key, step):
             # Reentry inspection stops at whole extents before the final input
             # token. Include a cached decode tail only if this request contains
             # that complete private extent; price every transferred token.
+            if eos:
+                return False
             target = RadixKey(
                 request.origin_input_ids, extra_key=getattr(request, "extra_key", None),
                 cache_salt=getattr(request, "cache_salt", None),
@@ -74,30 +95,18 @@ def try_handoff(offloader, key, step):
         runtime.counts["layer_handoff_restore_extent_unavailable"] += 1
         return False
     budget = runtime._current_residency_budget()
-    minimum_growth = runtime._native_page_size * (
-        len(getattr(runtime._native_running_batch, "reqs", ())) + 1
+    actual = consumer_input_reserve(
+        runtime, budget, cost[1],
+        adder=None if eos else getattr(offloader, "_admission_adder", None),
     )
-    growth = max(budget.reserve_full_tokens, minimum_growth)
-    adder = getattr(offloader, "_admission_adder", None)
-    selected = getattr(adder, "can_run_list", None)
-    input_bound = getattr(runtime, "_native_input_reserve", None)
-    if (
-        getattr(budget, "source", None) == "native_next_prefill"
-        and type(selected) in (list, tuple) and not selected
-        and getattr(adder, "dllm_config", None) is None
-        and type(input_bound) is int
-        and cost[1] <= input_bound <= budget.reserve_full_tokens
-    ):
-        # This demand consumer replaces the unselected prefill input bound.
-        # Keep every growth slot; an already selected chunk keeps the old bound.
-        growth = max(minimum_growth, budget.reserve_full_tokens - input_bound)
+    growth, reserve = actual.growth_tokens, actual.total_tokens
+    if actual.replaced_batch_input:
         runtime.counts["layer_handoff_selected_input_reserve"] += 1
-    reserve = cost[1] + growth
     def authorize(backup_tokens, consumer_tokens):
         return (
             consumer_tokens == restore_tokens
-            and runtime.visible.get(getattr(request, "rid", None)) == consumer_key
-            and runtime._agent_admission.allows(consumer_key)
+            and (eos or runtime.visible.get(getattr(request, "rid", None)) == consumer_key)
+            and allowed()
             and offloader._eligible(key)
             and offloader._worth_offloading(
                 key, backup_tokens=backup_tokens, release_tokens=backup_tokens,
@@ -166,7 +175,8 @@ def try_handoff(offloader, key, step):
                 "pending_load_acks": len(cc.ack_load_queue),
             })
         return False
-    offloader._after_eviction(key, {0: result["donor_tokens"]})
+    after = getattr(offloader, "_after_handoff", offloader._after_eviction)
+    after(key, {0: result["donor_tokens"]})
     runtime._invalidate_wait_transfer_observation(key)
     runtime._invalidate_wait_transfer_observation(consumer_key)
     runtime.counts["layer_handoff_submitted"] += 1

@@ -216,6 +216,9 @@ if [[ -n "${SGLANG_SOURCE_CHECKOUT}" ]]; then
     layer_handoff_groups)
       sglang_patch="${BELIEFKV_ROOT}/patches/sglang-layer-handoff-groups-runtime-20261028.patch"
       ;;
+    sibling_capacity)
+      sglang_patch="${BELIEFKV_ROOT}/patches/sglang-sibling-capacity-runtime-20261028.patch"
+      ;;
     *)
       printf 'Unknown SGLang patch flavor: %s\n' "${SGLANG_PATCH_FLAVOR}" >&2
       exit 2

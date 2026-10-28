@@ -71,11 +71,17 @@ def main():
     ) if join_free or siblings else ()
     extra_tests += ("tests/test_eos_join_prefetch.py",)
     if join_handoff:
-        extra_tests += ("tests/test_join_blocked_handoff.py",)
-        paths.add("beliefkv/runtime/join_blocked_handoff.py")
+        extra_tests += ("tests/test_join_blocked_handoff.py", "tests/test_join_physical_recovery.py")
+        paths.update((
+            "beliefkv/runtime/join_blocked_handoff.py",
+            "beliefkv/runtime/join_physical_recovery.py",
+        ))
     if early_tool_offload:
-        extra_tests += ("tests/test_tool_offload_before_admission.py",)
-        paths.add("beliefkv/runtime/predicted_tool_offload.py")
+        extra_tests += ("tests/test_tool_offload_before_admission.py", "tests/test_consumer_input_reserve.py")
+        paths.update((
+            "beliefkv/runtime/predicted_tool_offload.py",
+            "beliefkv/runtime/native_transfer_policy.py",
+        ))
     if host_mirror_recycle:
         extra_tests += ("tests/test_idle_host_mirror_recycle.py",)
         paths.add("beliefkv/runtime/idle_host_mirror_recycle.py")
@@ -110,9 +116,13 @@ def main():
     if siblings:
         extra_tests += (
             "tests/test_reference_sibling_coadmission.py",
+            "tests/test_reference_sibling_service.py",
             "tests/test_reference_join_grant_audit.py",
         )
-        paths.add("scripts/audit_reference_join_grants.py")
+        paths.update((
+            "scripts/audit_reference_join_grants.py",
+            "beliefkv/runtime/join_sibling_service.py",
+        ))
     paths.update(extra_tests)
     if join_free or siblings:
         paths.update((

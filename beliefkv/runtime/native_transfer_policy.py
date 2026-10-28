@@ -75,6 +75,37 @@ class PrefetchResidencyBudget:
     evictable_mamba_slots: int = 0
 
 
+@dataclass(frozen=True)
+class ConsumerInputReserve:
+    input_tokens: int
+    growth_tokens: int
+    replaced_batch_input: bool
+
+    @property
+    def total_tokens(self) -> int:
+        return self.input_tokens + self.growth_tokens
+
+
+def consumer_input_reserve(runtime, budget, input_tokens, *, adder=None):
+    """Replace only an explicitly empty adder's unselected input allowance."""
+    minimum_growth = runtime._native_page_size * (
+        len(getattr(runtime._native_running_batch, "reqs", ())) + 1
+    )
+    growth = max(budget.reserve_full_tokens, minimum_growth)
+    selected = getattr(adder, "can_run_list", None)
+    input_bound = getattr(runtime, "_native_input_reserve", None)
+    replace = (
+        getattr(budget, "source", None) == "native_next_prefill"
+        and type(selected) in (list, tuple) and not selected
+        and getattr(adder, "dllm_config", None) is None
+        and type(input_bound) is int
+        and 0 <= input_tokens <= input_bound <= budget.reserve_full_tokens
+    )
+    if replace:
+        growth = max(minimum_growth, budget.reserve_full_tokens - input_bound)
+    return ConsumerInputReserve(input_tokens, growth, replace)
+
+
 def native_residency_budget(
     *,
     running_requests: int,

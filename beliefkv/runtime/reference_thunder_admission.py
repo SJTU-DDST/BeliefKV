@@ -4,7 +4,7 @@ from collections import Counter
 from dataclasses import asdict
 import time
 
-from beliefkv.control.causal_graph import InvocationState, JoinMode
+from beliefkv.control.causal_graph import InvocationState
 from beliefkv.core.events import RuntimeEventKind as Kind
 from beliefkv.runtime.paper_baseline import ThunderAgentDecayAdapter
 
@@ -46,6 +46,11 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         self.latest = {}
         self.join_free_admission = getattr(runtime, "agent_join_free_admission", False)
         self.coadmit_join_children = getattr(runtime, "coadmit_join_children", False)
+        self._siblings = None
+        if self.coadmit_join_children:
+            from beliefkv.runtime.join_sibling_service import JoinSiblingService
+
+            self._siblings = JoinSiblingService(self)
         self.join_blocked_handoff = getattr(runtime, "agent_join_blocked_handoff", False)
         self._join_handoff = None
         if self.join_blocked_handoff:
@@ -77,7 +82,7 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
                 self._coadmit_join(join_id)
 
     def events(self, events):
-        if self._join_handoff is not None:
+        if self._join_handoff is not None or self._siblings is not None:
             events = tuple(events)
         super().events(events)
         if self._join_handoff is not None and any(event.kind in (
@@ -95,6 +100,12 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
                     joins.update(self.runtime._join_by_invocation.get(event.invocation_id, ()))
             for join_id in sorted(joins - {None}):
                 self._coadmit_join(join_id)
+            if any(event.kind in (
+                Kind.TOOL_END, Kind.JOIN_SATISFIED, Kind.JOIN_TIMEOUT,
+                Kind.RETURN, Kind.INVOCATION_CANCEL, Kind.WORKFLOW_END,
+            ) for event in events):
+                self._siblings.capacity_changed()
+                self._siblings.retry()
 
     def _waiting_on_join(self, invocation, join):
         return bool(
@@ -136,46 +147,64 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         return True
 
     def _coadmit_join(self, join_id):
-        join = self.runtime.graph.joins.get(join_id)
-        if (
-            join is None or join.mode is not JoinMode.ALL
-            or not 2 <= len(join.member_invocation_ids) <= self.max_sibling_members
-            or not any(
-                self._waiting_on_join(self.runtime.graph.invocations.get(identity), join)
-                for identity in join.waiter_invocation_ids
-            )
-        ):
+        join = self._siblings.join(join_id) if self._siblings is not None else None
+        if join is None:
+            if self._siblings is not None:
+                self._siblings.waiting.pop(join_id, None)
             return
-        pending = []
-        for identity in sorted(join.member_invocation_ids - join.completed_member_ids):
-            item = self.policy.programs.get(identity)
-            key = self.latest.get(identity)
-            child = self.runtime.graph.invocations.get(identity)
-            context = self.runtime.graph.contexts.get(key.context_id) if key is not None else None
-            record = self.requests.get(key.request_id) if key is not None else None
-            if (
-                item is None or not item.pending or item.active or item.marked_for_pause
-                or key is None or key.root_workflow_id != join.workflow_id
-                or record is None or record[0] != key
-                or self.runtime.visible.get(key.request_id) != key
-                or child is None or child.workflow_id != join.workflow_id
-                or child.state not in (InvocationState.READY, InvocationState.RUNNING_LLM)
-                or child.context_id != key.context_id
-                or child.active_tool_calls or child.blocking_child_ids
-                or context is None or context.workflow_id != join.workflow_id
-                or context.epoch != key.context_epoch
-            ):
-                continue
-            pending.append(item)
+        pending = [
+            item for identity in join.member_invocation_ids - join.completed_member_ids
+            if (item := self._ready_sibling(identity, join)) is not None and not item.active
+        ]
         if not pending:
+            self._siblings.waiting.pop(join_id, None)
+            return
+        self._refresh_streaming_progress()
+        remaining, fitting = self.policy.remaining_capacity(), []
+        for item in sorted(pending, key=lambda item: (
+            self.requests[self.latest[item.identity].request_id][1], item.identity,
+        )):
+            required = item.tokens + self.policy.buffer_tokens
+            if required <= remaining:
+                fitting.append(item)
+                remaining -= required
+        if len(fitting) < len(pending):
+            self._siblings.waiting.setdefault(join_id, None)
+        else:
+            self._siblings.waiting.pop(join_id, None)
+        if not fitting:
+            self.counts["sibling_free_capacity_insufficient"] += 1
             return
         if self._admit_from_free_capacity(
-            pending, event="agent_join_siblings_coadmitted", join_id=join_id,
+            fitting, event="agent_join_siblings_coadmitted", join_id=join_id,
         ):
             self.counts["sibling_free_groups_admitted"] += 1
-            self.counts["sibling_free_programs_admitted"] += len(pending)
+            self.counts["sibling_free_programs_admitted"] += len(fitting)
+            self.counts["sibling_fitting_subset_grants"] += len(fitting) < len(pending)
         else:
+            self._siblings.waiting.setdefault(join_id, None)
             self.counts["sibling_free_capacity_insufficient"] += 1
+
+    def _ready_sibling(self, identity, join):
+        key = self.latest.get(identity)
+        item = self.policy.programs.get(identity) if self.policy is not None else None
+        child = self.runtime.graph.invocations.get(identity)
+        context = self.runtime.graph.contexts.get(key.context_id) if key is not None else None
+        record = self.requests.get(key.request_id) if key is not None else None
+        if (
+            item is None or not item.pending or item.marked_for_pause
+            or key is None or key.root_workflow_id != join.workflow_id
+            or record is None or record[0] != key
+            or self.runtime.visible.get(key.request_id) != key
+            or child is None or child.workflow_id != join.workflow_id
+            or child.state not in (InvocationState.READY, InvocationState.RUNNING_LLM)
+            or child.context_id != key.context_id
+            or child.active_tool_calls or child.blocking_child_ids
+            or context is None or context.workflow_id != join.workflow_id
+            or context.epoch != key.context_epoch
+        ):
+            return None
+        return item
 
     def allows(self, key):
         if self.policy is None or key is None:
@@ -185,13 +214,34 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         return bool(record is not None and record[0] == key and item is not None and item.active)
 
     def admitted(self, req):
-        pass
+        if self._siblings is not None:
+            self._siblings.admitted(req)
 
     def selected(self, batch):
-        pass
+        if self._siblings is not None:
+            self._siblings.selected(batch)
 
     def order_ready(self, ordered, keys, *, now, protected_head=False):
-        pass
+        if self._siblings is not None:
+            self._siblings.order(ordered, keys, now=now)
+
+    def prepare_prefill(self, *, running_batch, adder):
+        if self._siblings is not None:
+            self._siblings.prepare(running_batch, adder)
+
+    def before_native_admission(self, candidates, *, running_batch, adder):
+        if self._join_handoff is not None:
+            self._join_handoff.recovery.before_admission(
+                candidates, running_batch=running_batch, adder=adder,
+            )
+
+    def native_service(self, batch, completed_ids):
+        if self._join_handoff is not None:
+            self._join_handoff.recovery.serviced(batch)
+        if self._siblings is not None:
+            self._siblings.serviced(batch)
+            if completed_ids:
+                self._siblings.capacity_changed()
 
     def _restore_owner(self, key, *, source):
         if self.policy is None or key is None or source not in ("join_ticket", "tool_wait"):
@@ -293,10 +343,16 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             record = self.requests.get(req.rid)
             if record is not None:
                 self.latest[record[0].invocation_id] = record[0]
+                if self._siblings is not None:
+                    self._siblings.forget(record[0].invocation_id)
 
     def forget(self, invocation, *, now=None):
         super().forget(invocation)
         self.latest.pop(invocation, None)
+        if self._siblings is not None:
+            self._siblings.forget(invocation)
+        if self._join_handoff is not None:
+            self._join_handoff.recovery.forget(invocation)
 
     def status(self):
         programs = tuple(self.policy.programs.values()) if self.policy is not None else ()
@@ -311,7 +367,10 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             "coadmit_join_children": self.coadmit_join_children,
             "sibling_admission_authority": "observed_blocking_all_join_complete_unused_budget",
             "sibling_admission_max_members": self.max_sibling_members,
-            "sibling_admission_update_scope": "request_registration_and_join_or_member_terminal_event",
+            "sibling_admission_update_scope": "registration_join_events_and_bounded_release_retry",
+            "sibling_native_batch_preference": self.coadmit_join_children,
+            "sibling_native_batch_max_members": 4,
+            "sibling_admission_fitting_subset": self.coadmit_join_children,
             "logical_borrowing_enabled": False,
             "restore_changes_eligibility": self.join_free_admission,
             "join_free_admission": self.join_free_admission,
@@ -342,6 +401,10 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
     def close(self):
         super().close()
         self.latest.clear()
+        if self._siblings is not None:
+            self._siblings.close()
+        if self._join_handoff is not None:
+            self._join_handoff.recovery.plans.clear()
 
 
 def validate_reference_admission(
@@ -400,7 +463,10 @@ def validate_reference_admission(
         expected.update({
             "sibling_admission_authority": "observed_blocking_all_join_complete_unused_budget",
             "sibling_admission_max_members": ReferenceThunderAdmission.max_sibling_members,
-            "sibling_admission_update_scope": "request_registration_and_join_or_member_terminal_event",
+            "sibling_admission_update_scope": "registration_join_events_and_bounded_release_retry",
+            "sibling_native_batch_preference": True,
+            "sibling_native_batch_max_members": 4,
+            "sibling_admission_fitting_subset": True,
         })
     if join_blocked_handoff:
         expected.update({

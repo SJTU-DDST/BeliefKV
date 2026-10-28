@@ -6478,6 +6478,15 @@ class NativeAdmissionRuntime:
         allow_reclaim: bool = True, max_reclaim_nodes: int | None = None,
         minimum_full_free_tokens: int = 0,
     ) -> SessionH2DOpportunity | None:
+        handoff = getattr(self._agent_admission, "_join_handoff", None)
+        if (
+            source == "join_ticket" and allow_reclaim and handoff is not None
+            and not opportunity.fits_current_free_lists
+            and handoff.recovery.advance(key, opportunity=opportunity)
+        ):
+            refreshed = self._wait_prefetch_opportunity(key, fit_current_capacity=True)
+            if refreshed is not None:
+                opportunity = refreshed
         if (
             opportunity.fits_current_free_lists is True
             and (
@@ -8362,6 +8371,7 @@ class NativeAdmissionRuntime:
                 self.counts["idle_full_prepare_blocked_prefetch_transaction"] += 1
             return
         self.counts["idle_full_prepare_native_calls"] += 1
+        prepare_budget = {}
         if self._host_demand_capacity is not None:
             maximum = getattr(type(cache).prepare_beliefkv_idle_full, "__globals__", {}).get(
                 "BELIEFKV_IDLE_FULL_PREPARE_MAX_BYTES", 512 * 1024**2,
@@ -8374,8 +8384,18 @@ class NativeAdmissionRuntime:
                     * self._native_page_size
                 )
                 maximum = maximum // page_bytes * page_bytes
-            if not available or available < maximum:
+            if not available:
                 self.counts["idle_prepare_host_demand_reserve_skips"] += 1
+                return
+            if getattr(cache, "beliefkv_idle_full_budget_version", 0) == 1:
+                prepare_budget = {
+                    "max_batch_bytes": available,
+                    "reserve_host_bytes": self._host_demand_capacity.reserve(),
+                }
+                if available < maximum:
+                    self.counts["idle_prepare_reduced_budget_calls"] += 1
+            elif available < maximum:
+                self.counts["idle_prepare_legacy_budget_skips"] += 1
                 return
         previous_scope, previous_requests = (
             self._idle_backup_queue_scope, self._idle_backup_queued_requests,
@@ -8391,7 +8411,7 @@ class NativeAdmissionRuntime:
                     if self._idle_host_mirror_recycler is not None else None
                 )
                 if issued is None:
-                    issued = prepare()
+                    issued = prepare(**prepare_budget)
         finally:
             self._idle_backup_queue_scope, self._idle_backup_queued_requests = (
                 previous_scope, previous_requests,
@@ -12202,9 +12222,12 @@ class NativeAdmissionRuntime:
             native_order, running_batch=running_batch, adder=adder,
             _queue_inspection=_queue_inspection,
         )
-        if (
-            not self.tool_offload_before_admission or not plan.prioritized
-            or not self.tool_wait_hints or self.physical_disabled
+        if not plan.prioritized or self.physical_disabled:
+            return plan
+        handoff = getattr(self._agent_admission, "_join_handoff", None)
+        has_join_plan = handoff is not None and bool(handoff.recovery.plans)
+        if not has_join_plan and (
+            not self.tool_offload_before_admission or not self.tool_wait_hints
         ):
             return plan
         if (
@@ -12229,6 +12252,19 @@ class NativeAdmissionRuntime:
         selection = select_native_prefill_candidates(
             native_order, plan=plan, current_semantic_revision=self.semantic_revision,
         )
+        if has_join_plan:
+            self._agent_admission.before_native_admission(
+                selection.candidates, running_batch=running_batch, adder=adder,
+            )
+            if plan.semantic_revision != self.semantic_revision:
+                plan = self._build_native_prefill_plan(
+                    native_order, running_batch=running_batch, adder=adder,
+                )
+                selection = select_native_prefill_candidates(
+                    native_order, plan=plan, current_semantic_revision=self.semantic_revision,
+                )
+        if not self.tool_offload_before_admission or not self.tool_wait_hints or not plan.prioritized:
+            return plan
         self._predicted_tool_offload.before_admission(
             selection.candidates, running_batch=running_batch, adder=adder,
         )
@@ -12248,6 +12284,9 @@ class NativeAdmissionRuntime:
             return paper.plan(native_order, running_batch=running_batch, adder=adder)
         if self._agent_admission is not None:
             self._agent_admission.tick()
+            prepare = getattr(self._agent_admission, "prepare_prefill", None)
+            if prepare is not None:
+                prepare(running_batch=running_batch, adder=adder)
             permitted = [
                 request for request in native_order
                 if getattr(request, "beliefkv_metadata", None) is None
@@ -12411,6 +12450,10 @@ class NativeAdmissionRuntime:
                 else "drained_chunk_prefill_plans" if drained_chunk
                 else "noncompeting_prefill_plans"
             ] += 1
+            if getattr(self._agent_admission, "_siblings", None) is not None:
+                self._agent_admission.order_ready(
+                    tagged, keys, now=time.monotonic(),
+                )
             return compile_native_prefill_plan(
                 [
                     key for index, _ in tagged
@@ -12829,6 +12872,15 @@ class NativeAdmissionRuntime:
                     self._resident_priority_promoted,
                 )),
                 causal_ranks=ranks, residency_observations=residency_observations,
+            )
+        if getattr(self._agent_admission, "_siblings", None) is not None:
+            self._agent_admission.order_ready(
+                ordered, keys, now=now_ms / 1000.,
+                protected_head=any((
+                    self._prefetch_priority_promoted, self._parent_handoff_priority_promoted,
+                    self._join_priority_promoted, self._final_priority_promoted,
+                    self._resident_priority_promoted,
+                )),
             )
         plan = compile_native_prefill_plan(
             [
@@ -13428,6 +13480,9 @@ class NativeAdmissionRuntime:
         if (paper := getattr(self, "_paper_baseline", None)) is not None:
             paper.completed(batch, completed_ids or ())
         if self._agent_admission is not None:
+            native_service = getattr(self._agent_admission, "native_service", None)
+            if native_service is not None:
+                native_service(batch, completed_ids or ())
             self._agent_admission.completed(batch, completed_ids or ())
         if self._full_prefix_migration is not None:
             self._full_prefix_migration.completed(batch, completed_ids or ())
