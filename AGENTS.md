@@ -2363,3 +2363,26 @@
   verified blocked-grant associations4-to9 of10; one incomplete receipt
   remains unknown. Frozen913e3238 runtime/native sources are unchanged.
   Latest live observations are not complete JCT, GPU overlap or module gains.
+- GroupedFullR1 now completes all3674 exact requests/145565966 input/549671
+  output tokens,72 JOINs and18 normal tails, original stopping, fresh idle
+  drain and actual owned exit. Complete meanJCT1647.484437s/output237.608725
+  token/s improves2.9512%/1.8155% versusV345, but JCT is0.0544% worse than
+  previous joint Full; do not promote or call the all-baseline goal complete.
+  Three full figures are visually inspected; retain actual partial bins.
+  All53 blocked-budget grants verify later same-parent service;25 bind later
+  verified copies totaling128.240714GB. All23 actual8/4 handoffs bind paired
+  ACKs and service,4.384555GB/0.1573% of allH2D. Submission-related wall median
+  falls4.8201-to0.9253ms, but H2D/D2H grow111.801/23.907GB and prefill worker
+  intervals grow3.618s; no isolated module/JCT causality is established.
+  Tool prefetch commands arezero.24 of63 observed JOIN waits verify98.563GB
+  early reuse; all190.789GB tagged H2D has use evidence, so extra migration
+  is not simply unused warming. Current logical donor and native physical
+  reclaim still lack one physical plan; preserve native allocation authority.
+  Independent ACK review now respects expanded D2H paths and anchor-only H2D
+  publication, with12 passing checks; preserve initial audit failures and the
+  earlier45-case submitted-grant repair. Frozen913e3238 remains unchanged.
+  New audits change main source hashes: renew its CPU manifest before a future
+  main freeze, rather than claiming the old manifest covers these audit edits.
+  See docs/research/join_blocked_layer_groups_result_20261028_zh.md and named
+  final_index.*. Keep overlap experimental per user, reuseV345, no further
+  GPU job queued, all normal tails and negative results, goal active.

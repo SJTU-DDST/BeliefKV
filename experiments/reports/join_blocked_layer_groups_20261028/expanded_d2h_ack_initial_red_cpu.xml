@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="3" time="0.570" timestamp="2026-10-28T04:47:30.065100-07:00" hostname="ddst-12"><testcase classname="experiments.reports.join_blocked_layer_groups_20261028.test_handoff_ack_review" name="test_d2h_ack_expands_the_backup_path_with_unique_exact_node_count[path0]" time="0.001"><failure message="ValueError: handoff lacks one exact anchor/bytes/time native ACK">path = (16, 17, 18)
+
+    @pytest.mark.parametrize("path", ((16, 17, 18), (17, 18), (18, 18, 18)))
+    def test_d2h_ack_expands_the_backup_path_with_unique_exact_node_count(path):
+        handoff = {
+            "ts_ms": 120., "donor_node_id": 18, "donor_nodes": 3, "donor_tokens": 12000,
+        }
+        _consumer, ack = fixture()
+        ack.update(
+            direction="d2h", node_ids=list(path), actual_bytes=12000 * 98304,
+            num_tokens_by_pool={"kv": 12000},
+        )
+        if path == (16, 17, 18):
+&gt;           assert MODULE.match_side(
+                handoff, [ack], direction="d2h", unit=98304, previous=100.,
+            ) is ack
+
+experiments/reports/join_blocked_layer_groups_20261028/test_handoff_ack_review.py:70: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+handoff = {'ts_ms': 120.0, 'donor_node_id': 18, 'donor_nodes': 3, 'donor_tokens': 12000}
+transfers = [{'direction': 'd2h', 'status': 'completed', 'node_ids': [16, 17, 18], 'submit_ts_ms': 110.0, ...}]
+direction = 'd2h', unit = 98304, previous = 100.0
+
+    def match_side(handoff, transfers, *, direction, unit, previous):
+        donor = direction == "d2h"
+        node = handoff["donor_node_id" if donor else "consumer_node_id"]
+        tokens = handoff["donor_tokens" if donor else "reused_tokens"]
+        matches = [
+            row for row in transfers
+            if row["direction"] == direction and row["status"] == "completed"
+            and row["node_ids"] == [node]
+            and previous &lt; row["submit_ts_ms"] &lt;= handoff["ts_ms"]
+            and row["actual_bytes"] == tokens * unit
+            and row.get("num_tokens_by_pool") == {"kv": tokens}
+            and not row.get("tagged_child_commits") and not row.get("node_commits")
+            and row.get("enqueue_to_submit_ms") == 0.
+        ]
+        if len(matches) != 1:
+&gt;           raise ValueError("handoff lacks one exact anchor/bytes/time native ACK")
+E           ValueError: handoff lacks one exact anchor/bytes/time native ACK
+
+experiments/reports/join_blocked_layer_groups_20261028/handoff_ack_review.py:32: ValueError</failure></testcase><testcase classname="experiments.reports.join_blocked_layer_groups_20261028.test_handoff_ack_review" name="test_d2h_ack_expands_the_backup_path_with_unique_exact_node_count[path1]" time="0.000" /><testcase classname="experiments.reports.join_blocked_layer_groups_20261028.test_handoff_ack_review" name="test_d2h_ack_expands_the_backup_path_with_unique_exact_node_count[path2]" time="0.000" /></testsuite></testsuites>

@@ -9,11 +9,12 @@ import sys
 ROOT = Path(__file__).resolve().parents[3]
 REPORTS = Path(__file__).parent
 sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT / "experiments/reports/host_demand_layer_handoff_20261028"))
+sys.path.insert(0, str(REPORTS))
 
-from joint_regression_audit import inspect
+from handoff_ack_review import inspect
 from beliefkv.experiments.source_provenance import sha256_file
 from scripts.audit_reference_join_grants import audit as audit_grants
+from scripts.audit_native_system_costs import distribution
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts import run_causal_comparison as causal
 
@@ -57,11 +58,18 @@ def main():
         "native_transfer_and_worker_review": transfers,
         "join_grants": grants,
         "actual_handoff_direction_groups": dict(groups),
+        "post_submit_to_journal_wall_ms_not_exclusive_cpu": distribution(
+            row["journal_ts_ms"] - row["native_pair_submit_ts_ms"]
+            for row in transfers["handoffs"]
+        ),
+        "native_run_batch_before_final_donor_ack_count": sum(
+            row["native_run_batch_before_d2h_ack"] for row in transfers["handoffs"]
+        ),
         "new_budget_handoff_events": event_counts["agent_join_blocked_capacity_admitted"],
         "tool_prefetch_command_count": transfers["prefetch_journal_commands_by_source"].get("tool_wait", 0),
         "operator_sha256": sha256_file(Path(__file__)),
         "native_review_helper_sha256": sha256_file(
-            ROOT / "experiments/reports/host_demand_layer_handoff_20261028/joint_regression_audit.py"
+            REPORTS / "handoff_ack_review.py"
         ),
         "input_jsonl_prefixes": reader.prefixes,
         "isolated_performance_attribution": False,
@@ -70,6 +78,7 @@ def main():
             "Logical budget release does not prove physical HBM release.",
             "Native run_batch service start does not expose a CUDA kernel read or hidden DMA time.",
             "Stream durations include dependencies and are not exclusive DMA or JCT delay.",
+            "D2H ACKs publish backup paths; H2D publishes its anchor and aggregate bytes, not node generations.",
             "Grouping, admission, idle prepare and tool-prefetch cancellation changed together.",
         ],
     }
@@ -81,6 +90,9 @@ def main():
         "new_budget_handoff_events": result["new_budget_handoff_events"],
         "workers": transfers["workers"], "transfers": transfers["transfers"],
         "tool_prefetch_command_count": result["tool_prefetch_command_count"],
+        "post_submit_to_journal_wall_ms_not_exclusive_cpu": result[
+            "post_submit_to_journal_wall_ms_not_exclusive_cpu"
+        ],
     }, indent=2))
 
 
