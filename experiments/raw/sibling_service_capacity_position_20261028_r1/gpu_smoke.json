@@ -1,0 +1,16 @@
+{
+  "gpu_process_verified": true,
+  "native_data_plane_sample_verified": true,
+  "native_position_sampling_verified": true,
+  "sampling_mode": "position",
+  "requests": 24,
+  "native_stop_requests": 24,
+  "native_requests": "/home/longhao/experiment/BeliefKV/experiments/raw/sibling_service_capacity_position_20261028_r1/smoke/native_requests.jsonl",
+  "native_requests_sha256": "80c7335bc88892343c703635174e50c5dff8227b56750ac42758deb80a346bef",
+  "server_registration": "/home/longhao/experiment/BeliefKV/experiments/raw/sibling_service_capacity_position_20261028_r1/server_registration.json",
+  "server_registration_sha256": "ad335a25a1127366a00d0751e318b9477fe5e8c108f2d4e8d153e514062115e2",
+  "client_registration": "/home/longhao/experiment/BeliefKV/experiments/raw/sibling_service_capacity_position_20261028_r1/client_registration.json",
+  "client_registration_sha256": "9de345463c5d27898e8df0b9814d8b661e75c4550bfe77275a1a55543a8c3200",
+  "performance_accepted": false,
+  "scope": "Bounded exact token/stop/session GPU check, not a complete JCT result."
+}

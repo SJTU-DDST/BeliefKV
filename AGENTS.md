@@ -2436,3 +2436,14 @@
   sibling service, JOIN-plan behavior or performance. The separately named
   sibling_service_capacity_position_20261028_r1 qualifier precedes FullR1;
   retain exactV230/V311 work, normal tails, tool-prefetch off and completeV345.
+- Sibling-capacity positionR1 now passes24 exact token/session/stop checks,
+  all24 native stops, with running24 sampling-dispatch increment0.009877ms.
+  Its actual cleanup precedes FullR1 at frozen100ec17e/nativecdd58a4acbb5:
+  ops/sibling_service_capacity_20261028_r1.registration.json, port18679.
+  live_start.py/.json independently verifies nice0 watcher706513/server707041/
+  driver708343/sole GPU scheduler707378, exact work/timing/capacity/control
+  contract, new fitting subset and native sibling preference, physical control
+  healthy and tool prefetch/priority/frontier restore off. Separate collecting
+  evidence seals105 exact receipts of3674; reference per-agent budget remains
+  unknown. These are startup/prefix proofs, not full JCT/throughput. Preserve
+  the frozen run and all normal tails, reuseV345, and keep the goal incomplete.

@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "samples": 11,
+  "cycles": 64,
+  "position_dispatch_included": true,
+  "sampling_profile": "qwen3_coder",
+  "native_sampler_preserved": true,
+  "forcing_boundary": "after_native_sampling",
+  "gpu_name": "NVIDIA H200 NVL",
+  "torch_version": "2.13.0+cu130",
+  "model_config_sha256": "e2c8d8eea39471785cd93379d8b48241ad7dcda299013155dd02526e34a0de62",
+  "native_sampler": "/home/longhao/experiment/.worktrees/sglang-r1-position-cdd58a4acbb5-100ec17e07ce/python/sglang/srt/layers/sampler.py",
+  "native_sampler_sha256": "7fbd8ee623b472d0b11a31854e123229fb984fd11ffdd87a7724c44a57178d92",
+  "benchmark_sha256": "6f93118e0566251c635d013f1b5182adfecd607e55c93f95704ca614cb52a55b",
+  "forcing_sha256": "02cb882f75e9637304055542b8e84e7719af0af19981c54292fee712886f43ab",
+  "seed": 21,
+  "cases": [
+    {
+      "batch_size": 1,
+      "vocabulary": 151936,
+      "logits_dtype": "float32",
+      "cost_per_step": {
+        "native_coding": {
+          "wall_ms": {
+            "samples": 11,
+            "mean_ms": 0.23572112073863635,
+            "median_ms": 0.23881196875,
+            "min_ms": 0.223579078125,
+            "max_ms": 0.24561959375
+          },
+          "device_stream_ms": {
+            "samples": 11,
+            "mean_ms": 0.2354493195360357,
+            "median_ms": 0.23854850232601166,
+            "min_ms": 0.22331750392913818,
+            "max_ms": 0.24534650146961212
+          }
+        },
+        "position_native_sampling": {
+          "wall_ms": {
+            "samples": 11,
+            "mean_ms": 0.2452079502840909,
+            "median_ms": 0.24481253125,
+            "min_ms": 0.21649528125,
+            "max_ms": 0.269766953125
+          },
+          "device_stream_ms": {
+            "samples": 11,
+            "mean_ms": 0.24493759057738565,
+            "median_ms": 0.24455450475215912,
+            "min_ms": 0.2162255048751831,
+            "max_ms": 0.2694990038871765
+          }
+        }
+      },
+      "native_dispatch_increment_mean_wall_ms": 0.009486829545454545
+    },
+    {
+      "batch_size": 8,
+      "vocabulary": 151936,
+      "logits_dtype": "float32",
+      "cost_per_step": {
+        "native_coding": {
+          "wall_ms": {
+            "samples": 11,
+            "mean_ms": 0.35241015198863634,
+            "median_ms": 0.352596,
+            "min_ms": 0.335196828125,
+            "max_ms": 0.365715625
+          },
+          "device_stream_ms": {
+            "samples": 11,
+            "mean_ms": 0.35214436596090143,
+            "median_ms": 0.3523314893245697,
+            "min_ms": 0.33493900299072266,
+            "max_ms": 0.36544498801231384
+          }
+        },
+        "position_native_sampling": {
+          "wall_ms": {
+            "samples": 11,
+            "mean_ms": 0.35573632954545453,
+            "median_ms": 0.355387890625,
+            "min_ms": 0.350843671875,
+            "max_ms": 0.36086984375
+          },
+          "device_stream_ms": {
+            "samples": 11,
+            "mean_ms": 0.35546495426784863,
+            "median_ms": 0.35510700941085815,
+            "min_ms": 0.3505764901638031,
+            "max_ms": 0.3606035113334656
+          }
+        }
+      },
+      "native_dispatch_increment_mean_wall_ms": 0.0033261775568181884
+    },
+    {
+      "batch_size": 24,
+      "vocabulary": 151936,
+      "logits_dtype": "float32",
+      "cost_per_step": {
+        "native_coding": {
+          "wall_ms": {
+            "samples": 11,
+            "mean_ms": 0.4171347315340909,
+            "median_ms": 0.418563625,
+            "min_ms": 0.403553078125,
+            "max_ms": 0.427521453125
+          },
+          "device_stream_ms": {
+            "samples": 11,
+            "mean_ms": 0.4168667739087885,
+            "median_ms": 0.4182805120944977,
+            "min_ms": 0.4032934904098511,
+            "max_ms": 0.42725950479507446
+          }
+        },
+        "position_native_sampling": {
+          "wall_ms": {
+            "samples": 11,
+            "mean_ms": 0.4270119928977273,
+            "median_ms": 0.42789728125,
+            "min_ms": 0.41091540625,
+            "max_ms": 0.445223390625
+          },
+          "device_stream_ms": {
+            "samples": 11,
+            "mean_ms": 0.42673886635086755,
+            "median_ms": 0.42760950326919556,
+            "min_ms": 0.41064050793647766,
+            "max_ms": 0.44494348764419556
+          }
+        }
+      },
+      "native_dispatch_increment_mean_wall_ms": 0.00987726136363637
+    }
+  ],
+  "performance_accepted": false,
+  "scope": "Actual native softmax/top-k/top-p sampling, followed by recorded-ID override in the replay variant, on synthetic batch sizes [1, 8, 24] logits. All variants include the same logits reset. No model forward, delayed-sampling comparison, token transport, KV migration or workflow JCT is measured. The increment is a component cost, not a correction to subtract from end-to-end measurements."
+}

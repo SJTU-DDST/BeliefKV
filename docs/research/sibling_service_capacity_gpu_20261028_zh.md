@@ -74,3 +74,25 @@ Host200GB、running/decode24 和 seed21。工具预取及其优先级窗口、
 `model_r1/owned_process_cleanup.json`、`gpu_model_review.py/.json`、
 `native_registration_sources.json`。完整 position/FULL 结果单独审计，
 不由这些小夹具推断。
+
+## Position 完成与 FULL 实际启动
+
+Position R1 已完成 24 个精确 token/session/停止检查，24 个请求均
+保持原生停止。running24 的 position dispatch 增量 wall 均值为
+0.009877ms；这是采样器夹具，不是整个控制器的成本。
+其 supervisor 在清理真实 GPU 子进程后于 2026-10-28 22:08:23
+Asia/Shanghai 登记单臂 FULL，未重复完整 native 或 ThunderAgent。
+
+`live_start.py/.json` 验证 FULL 实际处于 `running_full`：
+watcher706513、server707041、driver708343、唯一 GPU scheduler707378，
+均保持 nice0；同时核对 PID/start ticks、冻结源码、完整对照合同、
+工具时间 SHA 及实际 runtime 状态。新 sibling fitting subset、
+最多 4 个成员共同选批和容量释放重试均生效，工具预取及其优先级
+窗口、普通 frontier 恢复仍关闭，物理控制健康。
+
+后续独立 `collecting_pipeline_after_start.json` 封存 105/3674 个
+完成回执，全部与完整 V345 的身份、prompt/output 摘要、token 数及
+原始停止一致。Reference 状态仅提供 aggregate budget，逐 agent
+budget token-time 仍未知，不推断其 blocked HBM 比例。
+这一前缀的上下文构成和启动阶段不同，不用于宣称完整吞吐或 JCT 收益。
+FULL 尚在执行，保留原停止条件与全部正常长尾。
