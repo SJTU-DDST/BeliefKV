@@ -2319,3 +2319,15 @@
   remain identical.71 targeted CPU checks pass. Actual R1 process613553
   exited and NVML is empty. Native1f5fac9e and production policy are unchanged;
   retry only from a newly frozen fixture and keep GPU/performance pending.
+- Grouped componentR2 now passes from frozen4675f4ad with the unchanged
+  clean native1f5fac9e. The actual17-layer8/4 scenes preserve all donor Host/
+  consumer Device K/V, outstanding donor reads, resident protection and
+  ACK-gated4-to20 free-slot accounting. The delayed-final-group scene proves
+  first consumer access before final donor ACK; the normal tiny scene does
+  not. These finite-delay fixtures are not workload timing or performance.
+  Actual process616670 exits and its NVML context is absent. Latest full
+  fixture-bound CPU execution passes3524 cases plus4subtests, retaining3519.
+  gpu_review.py/.json binds actual frozen/component/CPU sources and exit.
+  Preserve R1 and every prior failure. No model or FULL run is started or
+  queued here; unforced-model, position and matched complete performance
+  remain pending. Keep tool prefetch off and the global goal incomplete.

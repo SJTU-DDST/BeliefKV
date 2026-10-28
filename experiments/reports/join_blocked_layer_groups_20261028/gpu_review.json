@@ -1,0 +1,44 @@
+{
+  "observed_at": "2026-10-28T10:30:47.166327+00:00",
+  "scope": "Actual native grouped copies and lifecycle, not a model or performance result.",
+  "frozen_application": {
+    "commit": "4675f4ad9eea6a3674ec33f30b48473b00ca3507",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "6806a63963aef89d5070a254256d48d07a876ff8f7e42a686e736149d533b963"
+  },
+  "native_engine": {
+    "commit": "1f5fac9e9f7ad1d97f89244cdda4d9f311d365c4",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "a9abbcd715f5e62ddd63ba742f3dd318fabf81a7791236a7377e219098bbaef9"
+  },
+  "component": "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/gpu_components_r2.json",
+  "component_sha256": "b48b6144bf280dfef5c442bdc6c55a9b8908f7011c5fd3a11b902de3c35170da",
+  "frozen_component_sources": {
+    "/home/longhao/experiment/.worktrees/beliefkv-join-groups-component-retry-20261028/scripts/qualify_layer_handoff.py": "313012c46d980e6aa13b6d7cf8a13a328270937076e9fc538347859ac527ff46",
+    "/home/longhao/experiment/.worktrees/beliefkv-join-groups-component-retry-20261028/scripts/qualify_free_page_h2d_fence.py": "e11547657829c50171af125dd652eef674e5e70c187506419fbef712b3f9f3f7",
+    "/home/longhao/experiment/.worktrees/beliefkv-join-groups-component-retry-20261028/configs/migration/predictive_join_blocked_layer_groups_20261028.json": "2d24101cf9b4f207e0103900199ffa3aba24a3a844abea05f72cb3cc704146b8"
+  },
+  "shared_cpu": {
+    "passed": 3524,
+    "new_cases": 5
+  },
+  "shared_evidence": "/home/longhao/experiment/BeliefKV/experiments/reports/join_blocked_layer_groups_20261028/fixture_qualified_shared_cpu.evidence.json",
+  "shared_evidence_sha256": "d8cfb2ba0f700eb7e10af3468207339ab106a227c141e24da9c693771227749d",
+  "owned_pid": 616670,
+  "owned_process_exited": true,
+  "owned_nvml_context_absent": true,
+  "remaining_gpu_pids": [],
+  "actual_grouped_gpu_component_qualified": true,
+  "unforced_model_qualified": false,
+  "whole_workload_qualified": false,
+  "performance_accepted": false,
+  "operator_sha256": "cf31a9bcf42a0f3ea01ffe803fa6ada92d66582ebbcf6c8a718c010b3ad35296"
+}

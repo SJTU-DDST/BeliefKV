@@ -144,7 +144,7 @@ parent 后续候选选择。原生测试覆盖不同方向组、非整除组、�
 精确复查、完整重跑以及最初 CPU benchmark 统计字段错误。
 没有为通过测试改写 workload、排序实际源事件或丢弃失败证据。
 
-实际 grouped GPU 拷贝、非强制模型输出一致性及完整性能仍需分别验证。
+实际 grouped GPU 拷贝已通过下述组件验证，非强制模型输出一致性及完整性能仍需分别验证。
 后续 FULL 继续复用 V345，显式披露引擎差异，评价完整 JCT、全程输出、
 decode 随时间曲线、迁移量和计算干扰；当前没有新的性能优势结论。
 
@@ -154,3 +154,25 @@ decode 随时间曲线、迁移量和计算干扰；当前没有新的性能优�
 已退出、NVML 已为空。只修复夹具按声明层数检查每层 512 字节，仍保留
 128 Device / 257 Host slots 校验；71 项定向 CPU 检查通过。迁移与调度
 代码和原生引擎不变，下一次实际 GPU 验证使用新的冻结应用。
+
+## 实际 GPU 组件完成
+
+R2 使用冻结应用 `4675f4ad` 和同一 clean 原生 `1f5fac9e`，
+`gpu_components_r2.json` 的正常/延迟尾组两个场景均通过：
+
+- 实际 D2H 8 层、H2D 4 层，17 层原生 K/V 池；
+- donor 48 token、consumer 32 token，预留尾部 16 token；
+- donor 原有 GPU reader 在覆盖前完成，受保护 resident 的全部 K/V 不变；
+- Host donor 与 HBM consumer 的全部层 K/V 与参考逐项一致；
+- 延迟最后一组 D2H 时，consumer 第一层读取在最终 donor ACK 前完成；
+- 发起后原生 free count 仍为 4，尾部只在真实 ACK 后释放，最后为 20；
+- donor 早返回不能读取未完成的 Host checkpoint。
+
+这是带有限延迟的正确性夹具，正常小拷贝场景没有观察到第一层提前于最终
+donor ACK；不因此推算真实工作量中的隐藏时间，也没有将该延迟注入 workload。
+进程 616670 已实际退出、NVML context 消失，未启动 FULL 或 LLM 模型服务。
+
+夹具修复后的最新单次共享检查为 3524 项及 4 个子测试全部通过，
+保留前次 3519 项身份并新增 5 个 geometry 案例；报告为
+`fixture_qualified_shared_cpu.*`。`gpu_review.py/.json` 绑定实际冻结应用、
+原生引擎、组件源码与报告、最新 CPU 来源以及进程退出。原 R1 失败保持不变。
