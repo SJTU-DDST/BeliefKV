@@ -12149,7 +12149,7 @@ class NativeAdmissionRuntime:
             native_order, plan=plan, current_semantic_revision=self.semantic_revision,
         )
         self._predicted_tool_offload.before_admission(
-            selection.candidates, running_batch=running_batch,
+            selection.candidates, running_batch=running_batch, adder=adder,
         )
         if self.semantic_revision != plan.semantic_revision:
             # Tool return/cancellation may arrive while the donor is rechecked.

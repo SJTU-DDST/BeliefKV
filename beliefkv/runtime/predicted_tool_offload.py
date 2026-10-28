@@ -270,11 +270,12 @@ class DemandAwareToolOffload(PredictedToolOffload):
         self.action_detail = {}
         self._admission_seen = OrderedDict()
         self._dispatch_stage = "maintenance"
+        self._admission_adder = None
 
     def _action_detail(self):
         return {**self.action_detail, "dispatch_stage": self._dispatch_stage}
 
-    def before_admission(self, candidates, *, running_batch):
+    def before_admission(self, candidates, *, running_batch, adder=None):
         """Inspect the actual selected queue before native demand removes it."""
         runtime = self.runtime
         fresh = False
@@ -297,19 +298,20 @@ class DemandAwareToolOffload(PredictedToolOffload):
             return
         saved = (
             runtime._capacity_waiting_queue, runtime._native_running_batch,
-            self.consumer_cursor, self._dispatch_stage,
+            self.consumer_cursor, self._dispatch_stage, self._admission_adder,
         )
         runtime._capacity_waiting_queue = candidates
         runtime._native_running_batch = running_batch
         self.consumer_cursor = 0
         self._dispatch_stage = "before_native_admission"
+        self._admission_adder = adder
         try:
             runtime.counts["tool_offload_before_admission_checks"] += 1
             self.dispatch()
         finally:
             (
                 runtime._capacity_waiting_queue, runtime._native_running_batch,
-                self.consumer_cursor, self._dispatch_stage,
+                self.consumer_cursor, self._dispatch_stage, self._admission_adder,
             ) = saved
 
     def _prediction_allows(self, key):

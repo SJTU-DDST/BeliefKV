@@ -310,6 +310,63 @@ def test_real_selected_consumer_uses_handoff_without_logical_priority_change(nat
     assert f.allocator.available_size() == 4
 
 
+def test_selected_handoff_reserves_actual_input_and_preserves_growth(native_handoff):
+    from beliefkv.runtime.layer_handoff import try_handoff
+
+    f = native_handoff
+    f.runtime._native_input_reserve = 10
+    f.runtime._current_residency_budget = lambda: NS(
+        source="native_next_prefill", reserve_full_tokens=12,
+    )
+    f.offloader._admission_adder = NS(can_run_list=[], dllm_config=None)
+    assert try_handoff(
+        f.offloader, f.runtime.context_sessions["ctx-tool"],
+        NS(node_id=f.donor.id, creation_time=f.donor.creation_time),
+    ), dict(f.runtime.counts)
+    assert f.runtime.counts["layer_handoff_selected_input_reserve"] == 1
+    assert f.allocator.available_size() == 4
+    assert f.cache._beliefkv_layer_handoff is not None
+    f.cache.sanity_check()
+
+
+def test_actual_prefill_plan_binds_and_releases_its_current_adder(native_handoff):
+    f = native_handoff
+    f.runtime._native_input_reserve = 10
+    f.runtime._current_residency_budget = lambda: NS(
+        source="native_next_prefill", reserve_full_tokens=12,
+    )
+    adder = NS(can_run_list=[], dllm_config=None, rem_input_tokens=10, rem_chunk_tokens=10)
+    f.runtime.plan_native_prefill([f.request], running_batch=NS(reqs=[]), adder=adder)
+    assert f.runtime.counts["layer_handoff_submitted"] == 1, dict(f.runtime.counts)
+    assert f.offloader._admission_adder is None
+    assert f.allocator.available_size() == 4
+    f.cache.sanity_check()
+
+
+@pytest.mark.parametrize("cause", ("selected_chunk", "unknown_adder", "growth_space"))
+def test_selected_input_reserve_never_spends_another_batch_or_growth_budget(
+    native_handoff, cause,
+):
+    from beliefkv.runtime.layer_handoff import try_handoff
+
+    f = native_handoff
+    f.runtime._native_input_reserve = 10
+    f.runtime._current_residency_budget = lambda: NS(
+        source="native_next_prefill", reserve_full_tokens=15 if cause == "growth_space" else 12,
+    )
+    f.offloader._admission_adder = (
+        None if cause == "unknown_adder"
+        else NS(can_run_list=[object()] if cause == "selected_chunk" else [], dllm_config=None)
+    )
+    assert not try_handoff(
+        f.offloader, f.runtime.context_sessions["ctx-tool"],
+        NS(node_id=f.donor.id, creation_time=f.donor.creation_time),
+    )
+    assert f.allocator.available_size() == 4
+    assert getattr(f.cache, "_beliefkv_layer_handoff", None) is None
+    f.cache.sanity_check()
+
+
 @pytest.mark.parametrize("cause", ("maintenance", "disabled", "short_tool", "inactive_consumer"))
 def test_runtime_handoff_requires_current_prediction_and_actual_admission(native_handoff, cause):
     from beliefkv.runtime.layer_handoff import try_handoff

@@ -275,6 +275,7 @@ def main():
             "device_tokens": 49152, "host_gb": 8, "warm_tools": 8,
             "warm_tool_seconds": WARM_TOOL_SECONDS, "donor_tool_seconds": 20,
             "speculative_tool_prefetch": False,
+            "readiness_endpoint": "/ready",
             "model_inputs": [len(tokens) for tokens in prompts],
             "sampling": DOCUMENT, "max_logprob_delta": .05,
         },
@@ -303,7 +304,7 @@ def main():
             while True:
                 pulse()
                 try:
-                    response = httpx.get(f"http://127.0.0.1:{args.port}/health", timeout=1.)
+                    response = httpx.get(f"http://127.0.0.1:{args.port}/ready", timeout=5.)
                     if response.status_code == 200:
                         break
                 except httpx.HTTPError:

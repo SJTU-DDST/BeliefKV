@@ -46,12 +46,26 @@ def try_handoff(offloader, key, step):
     ):
         runtime.counts["layer_handoff_geometry_refused"] += 1
         return False
-    reserve = cost[1] + max(
-        runtime._current_residency_budget().reserve_full_tokens,
-        runtime._native_page_size * (
-            len(getattr(runtime._native_running_batch, "reqs", ())) + 1
-        ),
+    budget = runtime._current_residency_budget()
+    minimum_growth = runtime._native_page_size * (
+        len(getattr(runtime._native_running_batch, "reqs", ())) + 1
     )
+    growth = max(budget.reserve_full_tokens, minimum_growth)
+    adder = getattr(offloader, "_admission_adder", None)
+    selected = getattr(adder, "can_run_list", None)
+    input_bound = getattr(runtime, "_native_input_reserve", None)
+    if (
+        getattr(budget, "source", None) == "native_next_prefill"
+        and type(selected) in (list, tuple) and not selected
+        and getattr(adder, "dllm_config", None) is None
+        and type(input_bound) is int
+        and cost[1] <= input_bound <= budget.reserve_full_tokens
+    ):
+        # This demand consumer replaces the unselected prefill input bound.
+        # Keep every growth slot; an already selected chunk keeps the old bound.
+        growth = max(minimum_growth, budget.reserve_full_tokens - input_bound)
+        runtime.counts["layer_handoff_selected_input_reserve"] += 1
+    reserve = cost[1] + growth
     def authorize(backup_tokens, consumer_tokens):
         return (
             consumer_tokens == missing
@@ -93,6 +107,8 @@ def try_handoff(offloader, key, step):
             "beneficiary_session_id": consumer_key.session_id,
             "beneficiary_session_generation": consumer_key.session_generation,
             "capacity_effect": "reserved_extent;no_free_page_credit",
+            "reserved_input_tokens": cost[1], "reserved_growth_tokens": growth,
+            "speculative_reserve_tokens": budget.reserve_full_tokens,
             "logical_admission_changed": False, **result, **offloader._action_detail(),
         })
     return True

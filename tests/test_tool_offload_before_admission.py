@@ -242,6 +242,7 @@ def test_same_pending_request_retains_maintenance_backoff(demand_runtime, monkey
     assert runtime.counts["tool_offload_admission_new_request_rearms"] == 1
     assert allocator.available_size() == 4
     assert controller._dispatch_stage == "maintenance"
+    assert controller._admission_adder is None
 
 
 def test_early_dispatch_restores_maintenance_scope_after_failure(demand_runtime):
@@ -256,6 +257,7 @@ def test_early_dispatch_restores_maintenance_scope_after_failure(demand_runtime)
     assert runtime._native_running_batch is before
     assert controller.consumer_cursor == 13
     assert controller._dispatch_stage == "maintenance"
+    assert controller._admission_adder is None
 
 
 @pytest.mark.parametrize("reason", ("no_hints", "disabled"))
