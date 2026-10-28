@@ -2586,3 +2586,14 @@
   difference, retain all normal tails, keep other baselines/ablations
   deferred and the goal active. See
   docs/research/full_only_pressure_index_start_20261028_zh.md.
+- The pressure-index sealed collecting observation now verifies1435 exact
+  completions, not complete performance. Its same-prefix physical audit
+  reconciles30 attempts/2 native release journals/226652 cumulative tokens.
+  The223 Host-only extent traversals are checks, not opportunities or proof
+  those releases were caused by the repair. Reference per-agent occupancy
+  and budgets remain unknown. Named complete_review/mechanism_review helpers
+  require full work, fresh drain, actual exit and completed figures; they
+  have not run as a complete comparison. Ten review_precheck CPU boundaries
+  pass, including actual live-Full rejection and complete-control acceptance.
+  No complete result or additional GPU job is created. Keepa5164fe3 frozen,
+  all normal tails, completeV345 and the global goal active.

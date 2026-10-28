@@ -60,3 +60,29 @@ nice19、CUDA 隐藏的 CPU 绘图观察器817706/start ticks738051857
 和终止后不补零。状态为
 `ops/full_only_pressure_index_20261028_r1.plots.state.json`；
 该观察器没有后续 GPU 启动权限。
+
+## 已封存的运行中核对
+
+`collecting_after_index_fix.json` 在 2026-10-28 18:11:41 UTC 独立封存
+1435 个精确完成回执，仍是 3674 请求的前缀。实际 watcher、server、
+driver 存活，引用的完整 V345 回执与注册工作量一致；物理控制健康。
+不同文件分别封存，不宣称它们组成原子快照。reference 仅提供聚合预算，
+逐 agent 的物理占用和预算构成继续保持未知。
+
+新增 `complete_review.py` 的物理核对在同一机会日志前缀逐项检查：
+30 次尝试为 27 次无安全 donor、1 次已无缺失、2 次实际释放；
+两条释放日志与结果、状态计数一致，累计 226652 token。223 次 Host-only
+extent 遍历不是 223 个机会，也不能直接归因于这两次释放。累计释放量
+不表示同时空闲容量、具体消费者获得的页或净 JCT 收益。
+
+`review_precheck.py/.json` 的十项只读 CPU 检查通过：实际运行中 FULL
+被拒绝作为完整结果，已完成对照及实际退出被接受，错误重命名、缺失
+尝试、超出 donor 检查上限、重新开启工具预取/普通恢复/profiling 及
+缺失状态快照均被拒绝。没有生成 `complete_review.json`。这些是完成
+边界和证据一致性检查，不替代 GPU、模型或完整性能资格。
+
+完整轮结束后，`complete_review.py` 还要求两次新鲜 idle 快照、实际
+owned 退出、完整精确工作、原生停止及已完成的三幅匹配图；
+`mechanism_review.py` 复用原生 ACK 审计及 sibling/grant 服务关联，并
+要求单独的 `complete_wait_prefetch.json.gz`。这些完成算子尚未执行。
+冻结应用、native、配置和 GPU 工作量均未修改，没有新增 GPU 排队项。
