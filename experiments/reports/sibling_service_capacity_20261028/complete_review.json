@@ -1,0 +1,343 @@
+{
+  "observed_at": "2026-10-28T14:51:35.826550+00:00",
+  "scope": "Complete same-work system comparison, with explicitly different reviewed native engines.",
+  "requests": 3674,
+  "prompt_tokens": 145565966,
+  "output_tokens": 549671,
+  "all_normal_tails_retained": true,
+  "exact_work_and_original_stopping_verified": true,
+  "two_fresh_idle_snapshots_and_actual_owned_exit_verified": true,
+  "proofs": {
+    "Full": {
+      "registration": "/home/longhao/experiment/ops/sibling_service_capacity_20261028_r1.registration.json",
+      "code_commit": "100ec17e07ce0d6381df460d4784fbcb98b59019",
+      "engine_tree": "cdd58a4acbb5038207d3a5020c54d7cbcef983b9",
+      "exact_requests": 3674
+    },
+    "ThunderAgent decay": {
+      "registration": "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.json",
+      "code_commit": "0b1ca5de0933ddc5ba20328fccbf013c998ef361",
+      "engine_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+      "exact_requests": 3674
+    }
+  },
+  "metrics": {
+    "Full": {
+      "mean_jct_s": 1649.8760548389223,
+      "makespan_s": 2310.4315388679506,
+      "end_to_end_output_tokens_per_s": 237.90836939030189,
+      "decode": {
+        "batches": 90898,
+        "request_steps": 549445,
+        "worker_ms": 1563443.463766016,
+        "request_step_ms": 13382432.10141547,
+        "output_tokens": 545997,
+        "context_tokens": 30621946130,
+        "graph_batches": 90898,
+        "graph_request_steps": 549445,
+        "configured_bucket_rows": 633900,
+        "batches_needing_padding": 42885,
+        "worker_ms_in_batches_needing_padding": 1014744.4241018966,
+        "mean_batch": 6.044632445158309,
+        "worker_weighted_mean_batch": 8.559588121709194,
+        "worker_interval_sum_s": 1563.443463766016,
+        "mean_worker_interval_ms": 17.199976498559,
+        "output_tokens_per_worker_interval_second": 349.22721073955864,
+        "mean_observed_request_context_tokens": 55732.50485489904,
+        "graph_batch_fraction": 1.0,
+        "configured_padding_rows_per_real_graph_row": 0.1537096524674899
+      },
+      "capacity_pressure": {
+        "same_session_common_input": {
+          "matched_requests": 3564,
+          "common_tokens": 140952652,
+          "missing_from_cache_tokens": 0,
+          "missing_fraction": 0.0,
+          "requests_with_missing_prefix": 0,
+          "semantics": "Previously served same-session common input absent from first-service cache-hit counters; excludes new input. Not proof of capacity eviction or per-layer FULL/Mamba recomputation."
+        },
+        "evicted_host_full_reaccess": {
+          "identity_available": true,
+          "reused_units": 10348708,
+          "recomputed_units": 11738,
+          "recomputed_fraction_of_matched_units": 0.0011329628087439478,
+          "pending_blocks_by_pool": {
+            "full": 2799
+          },
+          "probe_prefix_length_overflow": 0,
+          "semantics": "Exact evicted Host-prefix reaccess attribution; overlapping eviction episodes are not unique lost bytes. Unmatched blocks remain unknown."
+        },
+        "native_session_close_reclaim": null,
+        "scope": "Offline summary of existing counters. Terminal private-state reclamation and Host-backed HBM eviction are not useful-KV loss. The two loss views overlap and must not be added. Missing/zero-denominator evidence is unknown; this does not count every irreversible device drop or decode retraction."
+      },
+      "streaming_response_metrics": {
+        "workflow_ttft_ms": {
+          "count": 18,
+          "mean": 133502.6031961441,
+          "p50": 101397.09875774384,
+          "p75": 185023.3612678051,
+          "p90": 237987.49498205187,
+          "p95": 259629.19140415182,
+          "p99": 312847.1053897475,
+          "max": 326151.58388614655
+        },
+        "workflow_max_post_first_ready_output_gap_ms": {
+          "count": 18,
+          "mean": 86648.96778980891,
+          "p50": 43781.96766614914,
+          "p75": 87442.57955098152,
+          "p90": 146821.05341482165,
+          "p95": 227673.99841656646,
+          "p99": 416303.6014304443,
+          "max": 463461.0021839142
+        }
+      }
+    },
+    "ThunderAgent decay": {
+      "mean_jct_s": 1697.5836446114117,
+      "makespan_s": 2355.3445512609483,
+      "end_to_end_output_tokens_per_s": 233.37180104105374,
+      "decode": {
+        "batches": 95635,
+        "request_steps": 549478,
+        "worker_ms": 1605126.1432459578,
+        "request_step_ms": 13014821.739329025,
+        "output_tokens": 545997,
+        "context_tokens": 30622786652,
+        "graph_batches": 95635,
+        "graph_request_steps": 549478,
+        "configured_bucket_rows": 635038,
+        "batches_needing_padding": 44660,
+        "worker_ms_in_batches_needing_padding": 1034827.5028280914,
+        "mean_batch": 5.745574319025462,
+        "worker_weighted_mean_batch": 8.108285940075632,
+        "worker_interval_sum_s": 1605.1261432459578,
+        "mean_worker_interval_ms": 16.78387769379367,
+        "output_tokens_per_worker_interval_second": 340.15831235286,
+        "mean_observed_request_context_tokens": 55730.687401497424,
+        "graph_batch_fraction": 1.0,
+        "configured_padding_rows_per_real_graph_row": 0.15571142065742394
+      },
+      "capacity_pressure": {
+        "same_session_common_input": {
+          "matched_requests": 3564,
+          "common_tokens": 140952652,
+          "missing_from_cache_tokens": 0,
+          "missing_fraction": 0.0,
+          "requests_with_missing_prefix": 0,
+          "semantics": "Previously served same-session common input absent from first-service cache-hit counters; excludes new input. Not proof of capacity eviction or per-layer FULL/Mamba recomputation."
+        },
+        "evicted_host_full_reaccess": {
+          "identity_available": true,
+          "reused_units": 18197939,
+          "recomputed_units": 38657,
+          "recomputed_fraction_of_matched_units": 0.002119748663621215,
+          "pending_blocks_by_pool": {
+            "full": 4238
+          },
+          "probe_prefix_length_overflow": 0,
+          "semantics": "Exact evicted Host-prefix reaccess attribution; overlapping eviction episodes are not unique lost bytes. Unmatched blocks remain unknown."
+        },
+        "native_session_close_reclaim": null,
+        "scope": "Offline summary of existing counters. Terminal private-state reclamation and Host-backed HBM eviction are not useful-KV loss. The two loss views overlap and must not be added. Missing/zero-denominator evidence is unknown; this does not count every irreversible device drop or decode retraction."
+      },
+      "streaming_response_metrics": {
+        "workflow_ttft_ms": {
+          "count": 18,
+          "mean": 139028.4033548037,
+          "p50": 101804.63458967209,
+          "p75": 206657.0104496479,
+          "p90": 255089.30521106723,
+          "p95": 290016.01505255693,
+          "p99": 318113.38459239,
+          "max": 325137.7269773483
+        },
+        "workflow_max_post_first_ready_output_gap_ms": {
+          "count": 18,
+          "mean": 73449.10657278697,
+          "p50": 47096.99371767044,
+          "p75": 91929.44760537148,
+          "p90": 122965.2473207474,
+          "p95": 163231.7360606668,
+          "p99": 273821.28838873835,
+          "max": 301468.67647075653
+        }
+      }
+    }
+  },
+  "paired_workflow_jct": [
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "full_jct_s": 2051.9048994379045,
+      "control_jct_s": 2143.0720389862063,
+      "difference_s": -91.16713954830169
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+      "full_jct_s": 1240.7510181455611,
+      "control_jct_s": 1310.3102204837799,
+      "difference_s": -69.55920233821868
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+      "full_jct_s": 2163.1266664428713,
+      "control_jct_s": 2210.663888081551,
+      "difference_s": -47.537221638679505
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+      "full_jct_s": 1813.8711895961762,
+      "control_jct_s": 1863.2544221143723,
+      "difference_s": -49.3832325181961
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+      "full_jct_s": 1872.8487597875594,
+      "control_jct_s": 1951.0916595363617,
+      "difference_s": -78.24289974880219
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+      "full_jct_s": 1728.1613120107652,
+      "control_jct_s": 1763.6024745235443,
+      "difference_s": -35.441162512779236
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+      "full_jct_s": 1472.5815471286774,
+      "control_jct_s": 1488.004803372383,
+      "difference_s": -15.42325624370575
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+      "full_jct_s": 1269.9113911457061,
+      "control_jct_s": 1303.070973467827,
+      "difference_s": -33.15958232212067
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+      "full_jct_s": 1683.0703264808656,
+      "control_jct_s": 1675.2771588926316,
+      "difference_s": 7.793167588233948
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+      "full_jct_s": 1615.5938333473205,
+      "control_jct_s": 1678.834104347229,
+      "difference_s": -63.24027099990845
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+      "full_jct_s": 2310.3068977136613,
+      "control_jct_s": 2355.220275929451,
+      "difference_s": -44.9133782157898
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+      "full_jct_s": 1722.5276721305847,
+      "control_jct_s": 1772.083014930725,
+      "difference_s": -49.55534280014038
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa",
+      "full_jct_s": 1732.614476460457,
+      "control_jct_s": 1741.8561432914735,
+      "difference_s": -9.241666831016541
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+      "full_jct_s": 1750.1316132917405,
+      "control_jct_s": 1801.1945013303757,
+      "difference_s": -51.06288803863525
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+      "full_jct_s": 1035.937625442505,
+      "control_jct_s": 1057.949221226692,
+      "difference_s": -22.011595784187318
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+      "full_jct_s": 1545.3516073226929,
+      "control_jct_s": 1540.0990009698867,
+      "difference_s": 5.252606352806091
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+      "full_jct_s": 1238.0179643554688,
+      "control_jct_s": 1309.2981366748809,
+      "difference_s": -71.28017231941223
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+      "full_jct_s": 1451.0601868600845,
+      "control_jct_s": 1591.6235648460388,
+      "difference_s": -140.56337798595428
+    }
+  ],
+  "faster_workflows": 16,
+  "slower_workflows": 2,
+  "mean_jct_reduction_percent": 2.810323363088829,
+  "end_to_end_output_increase_percent": 1.9439230999678925,
+  "sibling_native_service_summary": {
+    "journal_records": 1034,
+    "journal_request_attempts": 1047,
+    "status_counts": {
+      "native_batch_join_and_completed_sessions_verified": 1034
+    },
+    "verified_records": 1034,
+    "verified_request_attempts": 1047,
+    "verified_multi_member_batches": 13,
+    "verified_prefill_records": 1034,
+    "native_worker_samples": 94714,
+    "all_journal_records_verified": true,
+    "positive_service_evidence": true
+  },
+  "join_physical_plan_summary": {
+    "journal_events": 0,
+    "native_free_list_released_tokens": 0,
+    "handoff_reserved_tokens": 0,
+    "not_additive_free_capacity": true,
+    "not_verified_consumer_allocation": true
+  },
+  "figures": [
+    "decode_timeline",
+    "decode_distributions",
+    "decode_geometry"
+  ],
+  "figure_directory": "/home/longhao/experiment/BeliefKV/experiments/figures/sibling_service_capacity_20261028_r1",
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/figures/sibling_service_capacity_20261028_r1/evidence.json.gz": "fcfed2a128bdc5325085bf0e6401c5f4b2795e1f0e76fb4ab91c666e02150a0c",
+    "/home/longhao/experiment/ops/sibling_service_capacity_20261028_r1.registration.json": "7f9fa465df18f4005b644d7d92a456d76f44f4630053d7b98b828ff1ea56116a",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/sibling_service_capacity_20261028_r1/full/replay/summary.json": "bc820b16ec7ae20d3f4647442ed524740de9a88a9379c5989b19cd5d3837de11",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/sibling_service_capacity_20261028_r1/full/server/server_info.json": "55bdee50daa20659525d6fe94feac7db3fce3ee6d4e7c420976696de31efb0a4",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/sibling_service_capacity_20261028_r1/full/server/native_telemetry_status.json": "90c75d432b9f40f26368da0d9125082ccff3f90bfbb9f62ae7560d4230480c62",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/sibling_service_capacity_20261028_r1/full/server/native_capacity_census.json": "da5ad9201182c96c8bae0191964722b22ad5881f95661b87c2c557bc0f49ed07",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/sibling_service_capacity_20261028_r1/full/opportunities/admission_opportunities.jsonl": "02489331aa56e68d572bbd288b2711e365e1cc8ce4a010e33fbe72fc97ef60ce",
+    "/home/longhao/experiment/ops/sibling_service_capacity_20261028_r1.registration.state.json": "d5edd7fbf94b733464f9a3c2ae216f8f27e89036bab685e8bdcb798408991741",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/sibling_service_capacity_20261028_r1/full/telemetry_drain.json": "39ccaf13e69f73584d8ed374a9ce4e065263a9a37be25740926ad5a0c52cb991",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/sibling_service_capacity_20261028_r1/full/owned_process_cleanup.json": "70ab3797890bf992564454e83bc1dc4317f0f4c13f6be543bab5af1837b27bdf",
+    "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.json": "66a5bac27ce8d8f70a91e5c45fcc377b7950db56bc3bd2a7588124fd5209902b",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/replay/summary.json": "3b9cdf028d27c6c5b5ed7004e401f18192bc518a4811e50103505cbfe39174a6",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/server_info.json": "d2fa80cb9272916c97f053d113fecb546840171b14c3aa2e5eacaa66aba50a42",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/native_telemetry_status.json": "a2c597cf6d745ad728c7661bc961b39dc2256f2bbd3cbc3e88c6688cc7ee8a47",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/native_capacity_census.json": "c68ac3494755caf07860b503b60d00f733d8263298218c59caaceb2dd9a6578e",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/opportunities/admission_opportunities.jsonl": "053a1db66e1508b968aef559bd7a155672829836ef2a00a2ae9030791892d24e",
+    "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.state.json": "3160dca6a649c72ad6e4172c1b96d6f9d66d637af16425cf6e93c34d557c1e49",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/telemetry_drain.json": "c943425208f021f403bd392ae6c4a0476254d739d4e32e511abb7b6ae5645fa2",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/owned_process_cleanup.json": "4e7c0bd7050a4ecacc70819785bd7492cc5d12794b58cc3127dae0b1d7162ad5",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/sibling_service_capacity_20261028_r1/full/replay/runtime_events.replay.jsonl": "b443ddb1604d6deedac8f6b1157bc3dfe9b641d9d27296c1a909ab80bd829561",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/sibling_service_capacity_20261028_r1/full/replay/native_requests.jsonl": "0d707c1ca4931df4c798a72fb111e781ddf231b35826a1dfd5fbbe0e4a3b0f22",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/sibling_service_capacity_20261028_r1/full/server/runtime_audit.jsonl": "bfb2a645cda9f66b0c2f0eef7467fd2e2840f4d5b7abdae57232fdb0b9737b78",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/sibling_service_capacity_20261028/complete_sibling_service.json": "b65abf0a54cd791d0b97bb032bf989aa469c18a9392c1c318d8930a0234fec99"
+  },
+  "operator_sha256": "f1776ce9d4f9bd10119d173b69bf8a6c2f5e90f84ec47be424146303bbdaa3b7",
+  "isolated_module_attribution": false,
+  "performance_accepted": false,
+  "limitations": [
+    "A single combined-system run does not establish repeatability or all-baseline superiority.",
+    "Logical JOIN grants and later service are not proof of physical free capacity or hidden DMA.",
+    "Sibling request-admission records are not independent JOINs or service-opportunity denominators.",
+    "Worker intervals include runtime and dependencies; complete control CPU remains unmeasured."
+  ]
+}

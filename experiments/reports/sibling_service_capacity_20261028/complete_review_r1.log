@@ -1,0 +1,23 @@
+{
+  "journal_records": 1034,
+  "journal_request_attempts": 1047,
+  "status_counts": {
+    "native_batch_join_and_completed_sessions_verified": 1034
+  },
+  "verified_records": 1034,
+  "verified_request_attempts": 1047,
+  "verified_multi_member_batches": 13,
+  "verified_prefill_records": 1034,
+  "native_worker_samples": 94714,
+  "all_journal_records_verified": true,
+  "positive_service_evidence": true
+}
+{
+  "requests": 3674,
+  "prompt_tokens": 145565966,
+  "output_tokens": 549671,
+  "mean_jct_reduction_percent": 2.810323363088829,
+  "end_to_end_output_increase_percent": 1.9439230999678925,
+  "faster_workflows": 16,
+  "slower_workflows": 2
+}

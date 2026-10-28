@@ -2459,3 +2459,22 @@
   are outside the old3580 manifest and do not change the frozen Full.
   See docs/research/sibling_native_service_audit_20261028_zh.md. Complete
   workload performance and the clear/repeated/all-baseline goal remain pending.
+- Sibling-capacity FullR1 now completes all3674 exact requests/145565966
+  input/549671 output tokens and18 workflows with original stopping/tails,
+  two fresh idle snapshots and actual owned cleanup. Independent complete
+  review verifies meanJCT1649.876055s/output237.908369token/s versusV345
+  1697.583645s/233.371801token/s:2.81032%/1.94392% gains, insufficient for
+  the clear/repeated gate. Versus previous grouped Full, JCT is0.14517%
+  worse and output0.12611% better. Retain16 improved workflows, game_simulation
+  +7.793168s/web_cms+5.252606s and worse mean maximum ready gap86.649s/73.449s.
+  All1034 sibling journals/1047 request attempts across20 parallel JOINs
+  verify, including13 real multi-member prefill batches; only2 explicit
+  reorder plans are recorded, so do not attribute all13 to the new preference.
+  New JOIN physical release journals and workload layer handoffs arezero,
+  despite91 plan attempts/71 later parent services. H2D2848.215663GB/
+  D2H1333.847261GB exceed previous grouped Full by60.146516/59.320959GB;
+  all1153 issued prefetch journals are JOIN and tool prefetch remainszero.
+  Complete figures are inspected; the nice19 plot waiter exited. Preserve
+  all named evidence and negative results, run no other baselines/ablations,
+  and inspect the unexercised physical plan and added migration before any
+  next GPU candidate. See docs/research/sibling_service_capacity_result_20261028_zh.md.

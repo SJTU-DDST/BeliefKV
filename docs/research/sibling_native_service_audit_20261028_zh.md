@@ -58,3 +58,27 @@ generation 的布尔伪值、推断 JOIN、重复 forward、重试和封存前�
 当前 FULL 尚未完成，不能用前缀吞吐替代完整 JCT 或吞吐结论。
 新增材料均归属 `experiments/reports/sibling_service_capacity_20261028/`，
 没有分配新的主实验版本。
+
+## 后续收集与完整结果算子
+
+更晚的独立前缀 `collecting_pipeline_after_sibling_service.json` 验证
+3088/3674 个精确完成回执。`collecting_sibling_service_r2.json` 收集
+603 条 journal：602 条及 615 个请求准入尝试得到完整 batch/JOIN/
+session 证明，其中 13 条为多成员共同 batch；一条仍缺少该封存前缀
+内的完成回执，不能计入已验证服务。回执后来到达也不改变旧 seal。
+
+当时 runtime 累积快照记录 2 个 fitting-subset grant、容量释放重试，
+以及 72 次 JOIN 物理计划尝试，但没有
+`agent_join_planned_physical_release` 记录。这个零值只属于新增物理
+计划，不能解释为整个系统没有 SPAWN/工具备份、原生压力卸载或恢复。
+逻辑计划之后的 parent 服务仍不等于该计划实际释放了物理页。
+
+CPU 绘图等待进程 PID717165/start736849025 已验证存活、nice19、
+CUDA 隐藏，状态为 `waiting_complete_full`。它只在完整成功和 owned
+退出后生成图，不授权下一轮 GPU 工作。
+
+`complete_review.py` 准备核对完整同工作量、原始停止、全部 workflow
+事件时钟、两次新鲜 idle 快照、实际 owned cleanup、图表输入与
+独立 sibling 服务证据，并分别统计物理 free-list release 与 reserved
+handoff token。已验证它拒绝在运行中生成完整结果；它尚未审计完成
+本轮 FULL，因此当前没有完整性能验收结论。
