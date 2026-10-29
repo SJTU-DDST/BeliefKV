@@ -72,10 +72,11 @@ def register(args):
         causal.reservation.write_json(native_path, native)
         evidence = causal.engine_evidence(engine, Path(old["engine_evidence"]["report"]), native_path)
         short = "thunder" if ordinal == 0 else "full"
-        position = OPS / f"mixed_chunk_position_20261029_r1_{short}.registration.json"
-        position_run = MAIN / f"experiments/raw/mixed_chunk_position_20261029_r1_{short}"
-        formal = OPS / f"mixed_chunk_{short}_20261029_r1.registration.json"
-        formal_run = MAIN / f"experiments/raw/mixed_chunk_20261029_r1_{short}"
+        attempt = f"r{args.attempt}"
+        position = OPS / f"mixed_chunk_position_20261029_{attempt}_{short}.registration.json"
+        position_run = MAIN / f"experiments/raw/mixed_chunk_position_20261029_{attempt}_{short}"
+        formal = OPS / f"mixed_chunk_{short}_20261029_{attempt}.registration.json"
+        formal_run = MAIN / f"experiments/raw/mixed_chunk_20261029_{attempt}_{short}"
         port = args.port + ordinal
         if any(path.exists() for path in (
             position, position.with_suffix(".state.json"), position.with_suffix(".log"),
@@ -106,6 +107,7 @@ def register(args):
         ))
     plan = {
         "registered_at": datetime.now(timezone.utc).isoformat(),
+        "attempt": args.attempt,
         "application": application, "authorization": authorization, "order": list(ORDER),
         "entries": entries, "commands": commands,
         "inputs_sha256": {str(path.resolve()): sha256_file(path) for path in inputs},
@@ -132,11 +134,12 @@ def main():
     parser.add_argument("--cpu-evidence", type=Path)
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--port", type=int, default=18895)
+    parser.add_argument("--attempt", type=int, default=1)
     parser.add_argument("--watch", type=Path)
     args = parser.parse_args()
     if args.watch:
         watch(args.watch)
-    elif args.cpu_evidence and args.output_dir and 1 <= args.port <= 65534:
+    elif args.cpu_evidence and args.output_dir and 1 <= args.port <= 65534 and 1 <= args.attempt <= 99:
         register(args)
     else:
         parser.error("require source-bound CPU evidence and a fresh queue directory, or --watch")

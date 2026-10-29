@@ -1,0 +1,200 @@
+{
+  "status": "failed_gpu_mixed_accounting_preserved",
+  "registration": "/home/longhao/experiment/ops/mixed_chunk_position_20261029_r1_thunder.registration.json",
+  "error": "ValueError('native output ordinals are missing, duplicated or discontinuous')",
+  "exact_requests": 24,
+  "raw_mixed_prefill_batches": 286,
+  "raw_positive_decode_output_inside_prefill": 422,
+  "all_counted_outputs_match_receipts": true,
+  "incomplete_completed_overlap_residues": 24,
+  "by_forward_phase": {
+    "prefill": 8,
+    "decode": 16
+  },
+  "residues": [
+    {
+      "request_id": "beliefkv:01a177a2-2668-73f1-83d8-fa48dae273f3",
+      "sample_id": "native-service-000000119",
+      "phase": "prefill",
+      "completed_output_tokens": 56,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a2-22cd-7bc0-857c-0e7977a15376",
+      "sample_id": "native-service-000000150",
+      "phase": "prefill",
+      "completed_output_tokens": 60,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a2-22c8-76b2-a435-33c2ad27b92d",
+      "sample_id": "native-service-000000180",
+      "phase": "prefill",
+      "completed_output_tokens": 56,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a2-2c61-75f0-8a4d-ce3a5a8a11a3",
+      "sample_id": "native-service-000000239",
+      "phase": "prefill",
+      "completed_output_tokens": 67,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a2-35af-7762-a2b2-1ca5a4dec3fb",
+      "sample_id": "native-service-000000266",
+      "phase": "prefill",
+      "completed_output_tokens": 58,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a2-4016-7671-9778-c2b3aee96baf",
+      "sample_id": "native-service-000000331",
+      "phase": "prefill",
+      "completed_output_tokens": 52,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a3-bf39-7ef1-9702-282c6263e404",
+      "sample_id": "native-service-000000384",
+      "phase": "decode",
+      "completed_output_tokens": 25,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a3-becb-7ba2-8cbb-4308d5eb853e",
+      "sample_id": "native-service-000000384",
+      "phase": "decode",
+      "completed_output_tokens": 25,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a4-cd5c-7fa1-9a4f-0226a1dcaa5e",
+      "sample_id": "native-service-000000384",
+      "phase": "decode",
+      "completed_output_tokens": 25,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a2-402a-72b2-b01b-e7c3feaa2df6",
+      "sample_id": "native-service-000000391",
+      "phase": "prefill",
+      "completed_output_tokens": 53,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a3-5e22-7de1-9783-0193cca15a38",
+      "sample_id": "native-service-000000398",
+      "phase": "decode",
+      "completed_output_tokens": 39,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a3-5de1-71e1-be45-2be52e5ba737",
+      "sample_id": "native-service-000000404",
+      "phase": "decode",
+      "completed_output_tokens": 45,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a4-2cab-78c1-bc64-951d4dfb56d7",
+      "sample_id": "native-service-000000407",
+      "phase": "decode",
+      "completed_output_tokens": 48,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a2-2c7a-7150-ac0f-d7832d230fd0",
+      "sample_id": "native-service-000000412",
+      "phase": "decode",
+      "completed_output_tokens": 53,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a4-c917-7441-9f4d-c83254567c5d",
+      "sample_id": "native-service-000000419",
+      "phase": "decode",
+      "completed_output_tokens": 28,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a4-cd19-7882-88de-1230474e9ff2",
+      "sample_id": "native-service-000000430",
+      "phase": "decode",
+      "completed_output_tokens": 40,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a4-e80b-7b80-96cc-bc5ecd5bc871",
+      "sample_id": "native-service-000000434",
+      "phase": "decode",
+      "completed_output_tokens": 45,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a4-6a5f-7d83-aa92-43cc856951e8",
+      "sample_id": "native-service-000000437",
+      "phase": "decode",
+      "completed_output_tokens": 43,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a3-5d61-7722-9e5e-2aee4f8fc3fe",
+      "sample_id": "native-service-000000442",
+      "phase": "prefill",
+      "completed_output_tokens": 27,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a4-d608-7db1-a573-745d093e8c51",
+      "sample_id": "native-service-000000445",
+      "phase": "decode",
+      "completed_output_tokens": 35,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a4-cdab-7c83-9a9c-ef659b4c7b38",
+      "sample_id": "native-service-000000453",
+      "phase": "decode",
+      "completed_output_tokens": 45,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a4-cadd-72a2-8bb4-51143b673895",
+      "sample_id": "native-service-000000464",
+      "phase": "decode",
+      "completed_output_tokens": 63,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a4-db25-7113-be68-0a1297141cde",
+      "sample_id": "native-service-000000469",
+      "phase": "decode",
+      "completed_output_tokens": 27,
+      "reported_delta": 0
+    },
+    {
+      "request_id": "beliefkv:01a177a4-c4f4-7e03-843b-904603dca9ee",
+      "sample_id": "native-service-000000472",
+      "phase": "decode",
+      "completed_output_tokens": 28,
+      "reported_delta": 0
+    }
+  ],
+  "all_owned_processes_exited": true,
+  "formal_comparison_started": false,
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_position_20261029_r1_thunder/server/runtime_events.sglang.jsonl": {
+      "complete_prefix_bytes": 53838,
+      "complete_prefix_sha256": "d0f2d0f27e66607b0aa33fa81cc81852087040597c6b455771d6e76e51560677",
+      "first_read_limit_bytes": 53838
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_position_20261029_r1_thunder/server/runtime_audit.jsonl": {
+      "complete_prefix_bytes": 1801380,
+      "complete_prefix_sha256": "b9405c52af4eaee1ca06f413bdd132c26c315a167a110561c656f3d80e132ec5",
+      "first_read_limit_bytes": 1801380
+    }
+  },
+  "scope": "Read-only diagnosis; missing ordinal fields remain failures. Original GPU logs and registration are unchanged.",
+  "performance_accepted": false
+}

@@ -83,6 +83,57 @@ def test_mixed_old_metrics_are_refused_instead_of_silently_losing_decode():
         decode_view({"phase": "prefill", "request_samples": []}, mixed_enabled=True)
 
 
+@pytest.mark.parametrize("residue_phase", ("prefill", "decode"))
+def test_already_completed_overlap_member_keeps_zero_output_ordinals(tmp_path, residue_phase):
+    telemetry = NativeReactiveTelemetry(tmp_path / "server")
+    finished = False
+    request = NS(
+        rid="done", cache_request_handle=NS(attempt_id=0),
+        session_id="session", session_generation=1,
+        beliefkv_metadata={
+            "root_workflow_id": "workflow", "invocation_id": "agent",
+            "context_id": "context", "context_epoch": 0,
+        },
+        origin_input_ids=list(range(100)), output_ids=[],
+        cached_tokens_device=0, cached_tokens_host=0, mamba_host_hit_length=0,
+        extend_input_len=100, sampling_params=NS(max_new_tokens=1),
+        finished=lambda: finished,
+    )
+    telemetry.on_enqueue(request)
+    first = NS(
+        forward_mode=_Mode("prefill"), launch_ts=time.monotonic(), forward_iter=1,
+        reqs=[request], decoding_reqs=(), prefix_lens=[0], extend_lens=[100],
+    )
+    residue = NS(
+        forward_mode=_Mode(residue_phase), launch_ts=time.monotonic(), forward_iter=2,
+        reqs=[request], decoding_reqs=[request] if residue_phase == "prefill" else (),
+        prefix_lens=[100], extend_lens=[1],
+    )
+    telemetry.on_launch(first)
+    telemetry.on_launch(residue)
+    request.output_ids.append(7)
+    finished = True
+    telemetry.on_completed(first, NS(can_run_cuda_graph=False))
+    telemetry.on_completed(residue, NS(can_run_cuda_graph=False))
+    telemetry.close()
+    rows = [
+        row for row in _read(tmp_path / "server/runtime_audit.jsonl")
+        if row.get("event") == "gpu_service_sample"
+    ]
+    output = OutputConservation()
+    for row in rows:
+        output.observe(row)
+    assert output.verify({"done": {"output_tokens": 1}})["total_output_tokens"] == 1
+    member = rows[-1]["request_samples"][0]
+    assert member["output_tokens_reported_before"] == member["output_tokens_after"] == 1
+    assert member["output_token_delta"] == member["token_delta"] == 0
+    results = [
+        row for row in _read(tmp_path / "server/runtime_events.sglang.jsonl")
+        if row.get("kind") == "llm_result"
+    ]
+    assert len(results) == 1
+
+
 @pytest.mark.parametrize("cause", ("missing", "duplicate", "gap", "input_as_output", "receipt"))
 def test_output_conservation_refuses_incomplete_or_double_counted_evidence(cause):
     row = {

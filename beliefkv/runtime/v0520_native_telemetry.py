@@ -1691,8 +1691,6 @@ class NativeReactiveTelemetry:
             req = requests_by_id.get(rid)
             if req is None:
                 continue
-            if rid in self._completed:
-                continue
             reported_before = self._reported_output_tokens.get(
                 rid, sample["output_tokens_before"]
             )
@@ -1705,6 +1703,9 @@ class NativeReactiveTelemetry:
             self._reported_output_tokens[rid] = max(
                 reported_before, output_after
             )
+            # Overlap residues still need output ordinals without a second completion.
+            if rid in self._completed:
+                continue
             self._observe_targeted_pair(
                 req, sample, complete_wall, descriptor["sample_id"]
             )

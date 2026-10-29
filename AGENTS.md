@@ -3827,3 +3827,19 @@
   retained methods and latest failed-gain candidate,with actual owned exit.
   Freeze committed sources before fresh mixed GPU qualification;these checks
   are not GPU/performance evidence or completion of the global goal.
+- Mixed R1 froze db974231 and actually passed24exact/session/native-stop
+  requests,but failed strict output ordinals before sampler/formal startup.
+  Actual286mixed-prefill batches/422decode outputs include24zero-output
+  completed overlap residues(8prefill/16decode)whose old early-completed guard
+  omitted ordinal fields. Independent failure_review_r1 binds prior native
+  completion/receipt counts,fresh drain and actual queue/position/owned exit.
+  Preserve the failed raw logs;do not repair them into qualification.
+  Main now observes actual output counts before the completed guard,retaining
+  one terminal event and exact zero residues. Two old-code red cases and265
+  fixed related passes are preserved. New full CPU and distinct attempt2 GPU
+  qualification remain pending;no formal arm has started.
+- Completed-residue repair now actually passes5066+6 full CPU,retains all5064
+  prior identities,no failures/errors/skips,2016inputs/native unchanged.
+  Freeze/recheck resources before separate attempt2 on fresh18897/18898 paths.
+  Both methods use the same repaired telemetry;keep failedR1 and the global
+  goal incomplete. Current GPU and complete mixed performance remain pending.
