@@ -1,0 +1,131 @@
+{
+  "status": "verified_live_mixed_thunder_prefix",
+  "observed_at": "2026-10-30T07:48:41.114835+08:00",
+  "registration": "/home/longhao/experiment/ops/mixed_chunk_thunder_20261029_r2.registration.json",
+  "application_commit": "e3a7e5f16d7dcd9576e2e79869d8ed9d8dfc7a7b",
+  "identities": {
+    "watcher": {
+      "pid": 1752934,
+      "state": "S",
+      "ppid": 1,
+      "start_ticks": "748768484",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-causal-e3a7e5f16d7d-1b1f352a2c58/scripts/run_causal_comparison.py",
+        "--watch",
+        "/home/longhao/experiment/ops/mixed_chunk_thunder_20261029_r2.registration.json"
+      ]
+    },
+    "server": {
+      "pid": 1753433,
+      "state": "R",
+      "ppid": 1752934,
+      "start_ticks": "748771089",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+        "--served-model-name",
+        "Qwen3-Coder-30B-A3B-Instruct",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "18897",
+        "--dtype",
+        "bfloat16",
+        "--kv-cache-dtype",
+        "bfloat16",
+        "--tensor-parallel-size",
+        "1",
+        "--context-length",
+        "262144",
+        "--mem-fraction-static",
+        "0.94",
+        "--chunked-prefill-size",
+        "2048",
+        "--max-running-requests",
+        "24",
+        "--random-seed",
+        "21",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--enable-metrics",
+        "--enable-hierarchical-cache",
+        "--hicache-size",
+        "200",
+        "--hicache-write-policy",
+        "write_back",
+        "--hicache-io-backend",
+        "kernel",
+        "--hicache-mem-layout",
+        "page_first",
+        "--enable-session-radix-cache",
+        "--enable-custom-logit-processor",
+        "--enable-mixed-chunk",
+        "--max-total-tokens",
+        "805198",
+        "--enable-beliefkv-admission",
+        "--beliefkv-event-socket-path",
+        "/tmp/bkv-causal-18897.sock"
+      ]
+    },
+    "driver": {
+      "pid": 1755241,
+      "state": "S",
+      "ppid": 1752934,
+      "start_ticks": "748786407",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-causal-e3a7e5f16d7d-1b1f352a2c58/scripts/run_causal_gpu_replay.py",
+        "--source-arm",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_parallel_retry_source_20261026_v230/native_capture",
+        "--output-dir",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_20261029_r2_thunder/thunderagent_acting_decay/replay",
+        "--base-url",
+        "http://127.0.0.1:18897",
+        "--request-timeout-s",
+        "3600.0",
+        "--stream-response-metrics",
+        "--tool-duration-overlay",
+        "/home/longhao/experiment/beliefkv-mixed-chunk-20261029-e3a7e5f1/experiments/reports/v311_v230_categorized_network_timing_cpu_20261027.json",
+        "--workflow-arrivals",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/arrival_mean120_20261029/arrivals.json",
+        "--event-socket",
+        "/tmp/bkv-causal-18897.sock"
+      ]
+    }
+  },
+  "scheduler": {
+    "pid": 1753786,
+    "state": "R",
+    "ppid": 1753433,
+    "start_ticks": "748772488",
+    "argv": [
+      "sglang::scheduler"
+    ]
+  },
+  "nice": 0,
+  "sole_owned_GPU_context": true,
+  "actual_serving": {
+    "model_path": "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+    "max_running_requests": 24,
+    "chunked_prefill_size": 2048,
+    "enable_mixed_chunk": true,
+    "random_seed": 21,
+    "enable_beliefkv_admission": true
+  },
+  "observed_configuration": null,
+  "exact_completed_prefix_requests": 51,
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_20261029_r2_thunder/thunderagent_acting_decay/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 164634,
+      "complete_prefix_sha256": "e97e72e1cf33a291ad79d584fc4fb94cffdbd4853897037e03f6adcdc50cc361",
+      "first_read_limit_bytes": 164634
+    }
+  },
+  "all_complete_work_verified": false,
+  "Full_started": false,
+  "performance_accepted": false
+}

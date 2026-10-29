@@ -1,0 +1,222 @@
+{
+  "status": "mixed_position_and_sampler_verified_formal_registered",
+  "observed_at": "2026-10-30T07:46:17.579138+08:00",
+  "position_registration": "/home/longhao/experiment/ops/mixed_chunk_position_20261029_r2_thunder.registration.json",
+  "position_status": "calibrated_comparison_registered",
+  "exact_token_session_requests": 24,
+  "native_stop_requests": 24,
+  "mixed_output_conservation": {
+    "forwards": 473,
+    "output_tokens_by_service_role": {
+      "prefill": 24,
+      "decode": 1019
+    },
+    "total_output_tokens": 1043,
+    "exact_request_output_conserved": true,
+    "mixed_prefill_batches": 285,
+    "decode_members_inside_prefill": 422,
+    "decode_output_tokens_inside_prefill": 415,
+    "input_jsonl_prefixes": {
+      "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_position_20261029_r2_thunder/smoke/native_requests.jsonl": {
+        "complete_prefix_bytes": 62314,
+        "complete_prefix_sha256": "364ae97b5824503da8c589cabe9a274888adea9e1fce14da49a46b7bb82a7191",
+        "first_read_limit_bytes": 62314
+      },
+      "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_position_20261029_r2_thunder/server/runtime_audit.jsonl": {
+        "complete_prefix_bytes": 1801515,
+        "complete_prefix_sha256": "69aad0deb1fb43114d5616f6d55ae1b46a727c4ae2fc3b85855996cb3529d3f3",
+        "first_read_limit_bytes": 1801515
+      }
+    },
+    "scope": "Actual sampled mixed-batch output conservation after owned cleanup; not workflow performance."
+  },
+  "native_sampler_cases": [
+    {
+      "batch_size": 1,
+      "vocabulary": 151936,
+      "logits_dtype": "float32",
+      "cost_per_step": {
+        "native_coding": {
+          "wall_ms": {
+            "samples": 11,
+            "mean_ms": 0.2356821846590909,
+            "median_ms": 0.238923828125,
+            "min_ms": 0.223268046875,
+            "max_ms": 0.245428625
+          },
+          "device_stream_ms": {
+            "samples": 11,
+            "mean_ms": 0.23542836173014206,
+            "median_ms": 0.23867249488830566,
+            "min_ms": 0.22302499413490295,
+            "max_ms": 0.24517850577831268
+          }
+        },
+        "position_native_sampling": {
+          "wall_ms": {
+            "samples": 11,
+            "mean_ms": 0.2447702997159091,
+            "median_ms": 0.244769640625,
+            "min_ms": 0.21629015625,
+            "max_ms": 0.264604859375
+          },
+          "device_stream_ms": {
+            "samples": 11,
+            "mean_ms": 0.24450663680380041,
+            "median_ms": 0.24451099336147308,
+            "min_ms": 0.2160400003194809,
+            "max_ms": 0.2643490135669708
+          }
+        }
+      },
+      "native_dispatch_increment_mean_wall_ms": 0.009088115056818197
+    },
+    {
+      "batch_size": 8,
+      "vocabulary": 151936,
+      "logits_dtype": "float32",
+      "cost_per_step": {
+        "native_coding": {
+          "wall_ms": {
+            "samples": 11,
+            "mean_ms": 0.35241149857954546,
+            "median_ms": 0.352709203125,
+            "min_ms": 0.335099140625,
+            "max_ms": 0.365127859375
+          },
+          "device_stream_ms": {
+            "samples": 11,
+            "mean_ms": 0.352152634750713,
+            "median_ms": 0.3524569869041443,
+            "min_ms": 0.3348419964313507,
+            "max_ms": 0.3648729920387268
+          }
+        },
+        "position_native_sampling": {
+          "wall_ms": {
+            "samples": 11,
+            "mean_ms": 0.3561374928977273,
+            "median_ms": 0.355348125,
+            "min_ms": 0.353604015625,
+            "max_ms": 0.36075625
+          },
+          "device_stream_ms": {
+            "samples": 11,
+            "mean_ms": 0.3558719076893546,
+            "median_ms": 0.35506799817085266,
+            "min_ms": 0.35334450006484985,
+            "max_ms": 0.360495001077652
+          }
+        }
+      },
+      "native_dispatch_increment_mean_wall_ms": 0.0037259943181818245
+    },
+    {
+      "batch_size": 24,
+      "vocabulary": 151936,
+      "logits_dtype": "float32",
+      "cost_per_step": {
+        "native_coding": {
+          "wall_ms": {
+            "samples": 11,
+            "mean_ms": 0.41725280681818183,
+            "median_ms": 0.418378390625,
+            "min_ms": 0.404278296875,
+            "max_ms": 0.427052578125
+          },
+          "device_stream_ms": {
+            "samples": 11,
+            "mean_ms": 0.41699731620875274,
+            "median_ms": 0.41812750697135925,
+            "min_ms": 0.4040204882621765,
+            "max_ms": 0.42680248618125916
+          }
+        },
+        "position_native_sampling": {
+          "wall_ms": {
+            "samples": 11,
+            "mean_ms": 0.42723913494318183,
+            "median_ms": 0.42805115625,
+            "min_ms": 0.41071309375,
+            "max_ms": 0.444825671875
+          },
+          "device_stream_ms": {
+            "samples": 11,
+            "mean_ms": 0.426976588639346,
+            "median_ms": 0.42778798937797546,
+            "min_ms": 0.4104614853858948,
+            "max_ms": 0.44455450773239136
+          }
+        }
+      },
+      "native_dispatch_increment_mean_wall_ms": 0.009986328124999999
+    }
+  ],
+  "fresh_idle_drain_and_actual_position_owned_exit": true,
+  "formal_registration": "/home/longhao/experiment/ops/mixed_chunk_thunder_20261029_r2.registration.json",
+  "formal_status": "starting_thunderagent_acting_decay",
+  "formal_watcher": {
+    "pid": 1752934,
+    "state": "S",
+    "ppid": 1,
+    "start_ticks": "748768484",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-causal-e3a7e5f16d7d-1b1f352a2c58/scripts/run_causal_comparison.py",
+      "--watch",
+      "/home/longhao/experiment/ops/mixed_chunk_thunder_20261029_r2.registration.json"
+    ]
+  },
+  "queue_watcher": {
+    "pid": 1749034,
+    "state": "S",
+    "ppid": 1,
+    "start_ticks": "748737748",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/beliefkv-mixed-chunk-20261029-e3a7e5f1/scripts/run_mixed_chunk_comparison.py",
+      "--watch",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/mixed_chunk_20261029/queue_r2/registration.json"
+    ]
+  },
+  "serving_parameters": {
+    "model_path": "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+    "dtype": "bfloat16",
+    "kv_cache_dtype": "bfloat16",
+    "mem_fraction_static": 0.94,
+    "context_length": 262144,
+    "max_running_requests": 24,
+    "chunked_prefill_size": 2048,
+    "page_size": 1,
+    "mamba_ssm_dtype": null,
+    "mamba_full_memory_ratio": 0.9,
+    "mamba_radix_cache_strategy": "auto",
+    "mamba_track_interval": 256,
+    "mamba_max_states_per_path": -1,
+    "hicache_size": 200,
+    "hicache_mem_layout": "page_first",
+    "hicache_io_backend": "kernel",
+    "hicache_host_memory_mode": "cache",
+    "hicache_write_policy": "write_back",
+    "disable_overlap_schedule": false,
+    "enable_mixed_chunk": true,
+    "radix_cache_backend": null,
+    "radix_eviction_policy": "lru",
+    "schedule_policy": "fcfs",
+    "enable_beliefkv_admission": false
+  },
+  "application_commit": "e3a7e5f16d7dcd9576e2e79869d8ed9d8dfc7a7b",
+  "full_arm_completed": false,
+  "performance_accepted": false,
+  "scope": "Real mixed-position and sampler qualification; complete workflow JCT/throughput remain pending.",
+  "observer_initial_error": "The first read-only report used absent source_commit; retried with actual code_commit. No GPU run or input was changed.",
+  "inputs_sha256": {
+    "/home/longhao/experiment/ops/mixed_chunk_position_20261029_r2_thunder.registration.json": "da602525d5f174bbb54bd2f250e0f7c6d6f242a660009fe93ab19eea898af623",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_position_20261029_r2_thunder/gpu_smoke.json": "2f02586f208cdce8039611ec3e7273a9d31aad01b7eeb9eec369c9692e0aac2c",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_position_20261029_r2_thunder/sampling_calibration.json": "23f83893412185286b241fa125f83b30dcbd55b4f47c393d2fbaad647d8c3966",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_position_20261029_r2_thunder/owned_process_cleanup.json": "e3954fd7e74dde3177c87824073999056ffda5f7565ed50c5a4cfec480b82952",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_position_20261029_r2_thunder/telemetry_drain.json": "06e984190d8ef01685c1a510fe128b828676b2bb9828f6d5a19c0f84431ff2c4",
+    "/home/longhao/experiment/ops/mixed_chunk_thunder_20261029_r2.registration.json": "9b01d55f97b256a54943bcfc77252f6665ac949bff6cbe6de76efb6baa4fcfad",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/mixed_chunk_20261029/queue_r2/registration.json": "f8a3b44be3c0d2352c40a833ed66a9d3f1266f476a86ddc685ab2027ebd8b27a"
+  }
+}

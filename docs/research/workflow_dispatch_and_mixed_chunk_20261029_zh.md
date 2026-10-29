@@ -82,7 +82,7 @@ Mixed 小样本先等待两次新鲜 idle telemetry，再清理 owned 进程。
 新的排队入口复用已验证的顺序控制及完整比较 reader，失败即停止，
 不自动重跑或继续下一臂。每次 GPU 启动重查预约、实际资源和前驱退出；
 不重采 native 性能基线，不改变工作量、工具时间或正常尾部。
-本文件记录验证计划，尚无 mixed GPU 或性能通过结论。
+完整 mixed 性能仍待验证；最新 GPU 资格状态见后文。
 
 ## 当前 CPU 验证
 
@@ -116,3 +116,23 @@ GPU 检查仍然失败：24 条已完成请求的在途重叠描述缺少输出�
 保留 R1 全部 5,064 个测试身份，无失败、错误、跳过；2,016 个源绑定输入及
 原生源码在执行期间未变化。双方采用相同修复后的 telemetry；该次 CPU
 通过仍不等于 R2 GPU、完整性能或总体目标通过。
+
+## R2 GPU 资格与正式执行
+
+修复提交 `e3a7e5f1` 的 R2 实际通过 24 条 exact token/session/native-stop
+请求，全部原生停止。473 个真实 forward 的 1,043 个输出 token 守恒；
+285 个 prefill 批次含 422 个 decode 成员观察，产生 415 个真实 decode
+输出。正式注册入口重新读取原始 journal 并通过守恒检查，未放松门槛。
+当前原生 1/8/24 sampler 测量通过，小样本 fresh drain、模型/position
+进程实际退出已独立核对。完整证据是 `position_complete_review_r2.json`。
+
+`ops/mixed_chunk_thunder_20261029_r2.registration.json` 已实际启动完整
+ThunderAgent acting-decay，使用同一冻结提交和 common 原生树；queue_r2
+在其完整成功、fresh drain 和实际 owned exit 后才启动 Full 的新资格检查
+及完整执行。当前 Full 尚未开始，完整 JCT、吞吐及总体目标均未通过。
+R1 的失败和独立诊断保留，不与 R2 合并为一次成功执行。
+
+`live_start_r2.json` 独立核对实际 mixed=true/chunk2048/running24/seed21、
+paper 运行配置、nice0 的 watcher/server/driver/scheduler、唯一 owned GPU
+上下文和最初 51 条 exact 完成回执。这些是启动前缀，不能当作完整工作量、
+JCT 或吞吐结论。

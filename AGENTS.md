@@ -3843,3 +3843,18 @@
   Freeze/recheck resources before separate attempt2 on fresh18897/18898 paths.
   Both methods use the same repaired telemetry;keep failedR1 and the global
   goal incomplete. Current GPU and complete mixed performance remain pending.
+- Mixed R2 from e3a7e5f1 actually passes24exact/session/native-stop(24stops),
+  473forwards/1043all-mode outputs conserved,285mixed-prefill batches with
+  415actual decode outputs and sampler1/8/24. Independent position_complete_
+  review_r2 verifies raw journals/fresh drain/actual position/model owned exit.
+  Formal ops/mixed_chunk_thunder_20261029_r2.registration.json now actually
+  runs on18897,nice0 watcher1752934/server1753433/driver1755241/sole GPU1753786.
+  Queue1749034 uses frozen sources and waits exact complete control/drain/
+  actual exit before new Full qualification/execution. Keep Full unstarted,
+  original2s policy,tool/frontier prefetch/handoff0,normal tails and failedR1;
+  full performance and clear/repeated/all-baseline goal remain pending.
+- Independent mixed live_start_r2 now seals51exact completed receipts,actual
+  mixed1/chunk2048/running24/seed21/paper configuration,and verifies all four
+  serving processes nice0 with sole owned GPU context. This is a prefix,not
+  complete performance. Preserve frozen e3a7e5f1 and sequential queue_r2;
+  no extra native source/performance arm or deferred baseline is queued.
