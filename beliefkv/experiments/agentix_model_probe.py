@@ -23,7 +23,7 @@ class ModelFixture:
 
 
 FIXTURES = {
-    "roomy": ModelFixture(24576, 64, 262144, 805198, 200),
+    "roomy": ModelFixture(24576, 64, 262144, 805198, 64),
     "pressure": ModelFixture(24000, 512, 32768, 32768, 8, True),
 }
 

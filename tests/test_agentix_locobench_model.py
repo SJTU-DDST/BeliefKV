@@ -100,9 +100,8 @@ def test_user_skip_requires_failed_tokencake_and_actual_owned_exit(tmp_path, mon
 
 
 def test_model_environment_isolates_full_and_uses_actual_agentix_engine(tmp_path, monkeypatch):
-    previous = qualifier.controls.load(
-        qualifier.ROOT.parent / "ops/tokencake_fragmented_capacity_20261029_r1.registration.json",
-    )
+    config = qualifier.ROOT / "configs/baselines/kvflow_locobench_v230_v311_20261028.json"
+    previous = {"reference_environment": json.loads(config.read_bytes())["common_environment"]}
     monkeypatch.setattr(qualifier.controls, "load", lambda _: previous)
     monkeypatch.setattr(qualifier, "git_source_state", lambda _: {"commit": "agentix-base"})
     monkeypatch.setattr(qualifier, "prefix_qualification_environment", lambda *_: {})

@@ -28,6 +28,10 @@ roomy_r2 在 GPU 启动前因 r1 遗留 event socket 拒绝，没有覆盖旧 so
 不放宽对象、采样器、namespace、session generation 或 attempt 检查；新的
 冻结来源重新经过 CPU 与实际 GPU 组件，再继续真实模型定位。
 
+后续 roomy 数值夹具的 Host 明确使用 64GB，仍满足两个 262144-token
+最大上下文的 backing 下界，避免每次验证分配 200GB。输入、Device 池、
+模型与输出检查不变；这是验证夹具的内存预算，正式比较仍用共同的 200GB。
+
 ## 为什么 0.5 接近突发
 
 当前完整可比工作量是 18 个原项目、3674 请求、549671 个输出 token。
