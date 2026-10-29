@@ -4,6 +4,23 @@
 
 ## 最新完整结果
 
+需求恢复流水线已完成同源码 FULL R1/R2，平均 JCT 分别为
+1613.659476/1625.203855s，全程输出为239.544631/238.306858token/s；
+单独冻结的 ACK 准入修复版为1617.896789s/238.405436token/s。
+相对复用的 V345 工具衰减 ThunderAgent，三轮 JCT 改善4.26%--4.94%、
+全程输出改善2.11%--2.65%。收益有限；V345只有一次完整运行且原生引擎
+不同，不能声称统计显著或全部 baseline 优越。ACK 重试本轮未触发，
+不能归因于该修复。完整来源和机制证据见
+[最新完整结果](research/demand_restore_readmission_result_20261028_zh.md)。
+
+当前继续剩余 baseline 的 CPU 适配与资格：KVFlow 原来拒绝本负载的
+原生 radix session，新完整输入入口已通过379项来源绑定 CPU 回归，
+GPU session 字节场景及整轮比较仍待执行，见
+[KVFlow session 适配](research/kvflow_radix_session_port_20261028_zh.md)。
+工具预取继续关闭，原始完整工作与所有正常长尾保持不变。
+
+## 历史诊断与实现进度
+
 随后实现的 FULL-only 发布索引修复已通过 3718 项 CPU、非强制模型恢复
 及 24 请求位置/session/stop 资格，并从冻结应用 `a5164fe3` 完成全部
 3674 请求和 18 workflow，profiling 和工具预取均关闭。平均 JCT

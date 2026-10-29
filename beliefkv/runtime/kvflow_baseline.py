@@ -88,16 +88,36 @@ class KVFlowObservedAdapter:
     def _owner(key):
         return key.root_workflow_id, key.context_id, key.context_epoch
 
-    @staticmethod
-    def _input_key(req):
+    def _input_key(self, req):
         from sglang.srt.mem_cache.radix_cache import RadixKey
 
         if (
             getattr(req, "input_embeds", None) is not None
             or getattr(req, "positional_embed_overrides", None) is not None
-            or getattr(req, "session_id", None) is not None
+            or getattr(req, "session", None) is not None
+            or getattr(req, "session_params", None) is not None
         ):
             raise ValueError("KVFlow requires plain token requests without session overrides")
+        session_id = getattr(req, "session_id", None)
+        if session_id is not None:
+            metadata = getattr(req, "beliefkv_metadata", None)
+            if (
+                type(metadata) is not dict
+                or metadata.get("full_prompt_replay_guaranteed") is not True
+            ):
+                raise ValueError("KVFlow radix sessions require an explicit full-prompt contract")
+            generation = getattr(req, "session_generation", None)
+            refs = getattr(self.cache, "session_refs", None)
+            if (
+                getattr(self.cache, "enable_session_radix_cache", False) is not True
+                or type(session_id) is not str or not session_id
+                or type(generation) is not int or generation < 0
+                or getattr(refs, "_session_generations", {}).get(session_id) != generation
+                or session_id in getattr(refs, "_closed_session_ids", ())
+            ):
+                raise ValueError("KVFlow requires a live native radix session generation")
+            # Native radix identity does not reconstruct or namespace the prompt.
+            # Match exactly the complete tokens and namespace provided by ingress.
         return RadixKey(
             req.origin_input_ids, req.extra_key, cache_salt=req.cache_salt,
         )
@@ -105,6 +125,7 @@ class KVFlowObservedAdapter:
     def registered(self, req, key):
         if self.cache is None or key.request_id in self.requests:
             raise ValueError("KVFlow requires a native cache and unique request")
+        input_key = self._input_key(req)
         owner = self._owner(key)
         with self._authority():
             context = self.contexts.get(key.context_id)
@@ -117,7 +138,6 @@ class KVFlowObservedAdapter:
                 if len(self.contexts) >= self.context_limit:
                     raise ValueError("KVFlow observed context bound reached")
                 context = self.contexts[key.context_id] = _Context(owner)
-            input_key = self._input_key(req)
             prior = context.prior_input
             if prior is not None and (prior.extra_key, prior.cache_salt) != (
                 input_key.extra_key, input_key.cache_salt,
@@ -150,6 +170,7 @@ class KVFlowObservedAdapter:
             self.requests[key.request_id] = _Request(req, key, input_key)
             self._graph_dirty = True
             self.counts["registered"] += 1
+            self.counts["native_radix_session_requests"] += key.session_id is not None
 
     def _capture(self, radix_key, owner):
         from sglang.srt.mem_cache.base_prefix_cache import MatchPrefixParams
@@ -535,6 +556,8 @@ class KVFlowObservedAdapter:
         return {
             "policy": self.policy_name, "program_identity": "invocation_id",
             "cache_identity": "workflow_context_epoch", "future_information_used": False,
+            "request_transport": "plain_tokens_or_full_prompt_native_radix_session",
+            "conversation_session_reconstruction_supported": False,
             "native_capacity_authority_preserved": True,
             "graph_information_source": "observed_events",
             "fixed_prefix_source": "completed_same_context_input_lcp",

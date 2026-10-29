@@ -51,6 +51,9 @@ REQUIRED_EVIDENCE = (
     "busy_native_producer_defers_speculative_restore_without_allocation",
     "multiple_restore_owners_share_one_native_producer",
     "speculation_preserves_unallocated_native_chunk_capacity",
+    "full_prompt_native_radix_requests_use_observed_prefix_history",
+    "native_radix_session_provenance_survives_poisoned_page_restore",
+    "session_prefix_split_preserves_live_peer_and_unique_capacity",
 )
 
 
@@ -72,6 +75,7 @@ def poll_until(predicate, advance):
 
 
 def validate_report(report, *, engine_tree, patch_sha256, root=ROOT):
+    session = report.get("native_radix_session") or {}
     if (
         report.get("status") != "native_prefix_transfers_qualified"
         or report.get("native_engine", {}).get("actual_tree") != engine_tree
@@ -82,8 +86,164 @@ def validate_report(report, *, engine_tree, patch_sha256, root=ROOT):
         or report.get("source_sha256") != {
             name: sha256_file(root / name) for name in QUALIFIED_SOURCES
         }
+        or session.get("history_prefix_tokens") != 8
+        or session.get("shared_prefix_tokens") != 4
+        or session.get("final_device_free_tokens") != 128
+        or session.get("native_ack_tokens") != {"d2h": 12, "h2d": 12}
+        or any(
+            type(session.get(name)) is not int or session[name] <= 0
+            for name in ("session_generation", "peer_generation")
+        )
+        or session.get("session_generation") == session.get("peer_generation")
+        or any(session.get(name) is not True for name in (
+            "source_and_successor_requests_registered",
+            "poisoned_pages_restored_with_exact_all_layer_bytes",
+            "native_session_provenance_preserved", "shared_peer_preserved",
+        ))
     ):
         raise ValueError("native prefix GPU evidence or qualified source differs")
+
+
+def qualify_radix_sessions(runtime, cache, allocator, commits, *, fill, saved, equal, synchronize):
+    """Exercise the actual full-prompt ingress on session-labelled native nodes."""
+    import torch
+    from sglang.srt.managers.schedule_batch import FINISH_LENGTH, Req
+    from sglang.srt.mem_cache.base_prefix_cache import InsertParams, MatchPrefixParams
+    from sglang.srt.mem_cache.radix_cache import RadixKey
+    from sglang.srt.sampling.sampling_params import SamplingParams
+    from beliefkv.runtime.sglang_v0520_admission import select_native_prefill_candidates
+
+    adapter, actor = runtime._paper_baseline, runtime._paper_baseline.transfers
+    tokens, session = list(range(71, 79)), "paper-native-session"
+    context_id, peer_session = "native-session-context", "paper-native-peer"
+    owner, peer_owner = ("workflow", context_id, 0), ("workflow", "native-session-peer", 0)
+    before = allocator.available_size()
+    prior_commits = len(commits)
+    if before != 128:
+        raise ValueError("native session scene requires the fully returned Device pool")
+
+    def request(identity, source, session_id, context):
+        req = Req(
+            rid=identity, origin_input_text="", origin_input_ids=array("q", source),
+            sampling_params=SamplingParams(temperature=1., top_k=1, max_new_tokens=1),
+            session_id=session_id, extra_key=None, cache_salt=None,
+            beliefkv_metadata={
+                "root_workflow_id": "workflow", "invocation_id": context,
+                "context_id": context, "context_epoch": 0,
+                "full_prompt_replay_guaranteed": True,
+            },
+        )
+        req.session_generation = cache.ensure_session_generation(session_id)
+        return req
+
+    def candidates(req):
+        plan = runtime.plan_native_prefill([req], running_batch=None, adder=None)
+        return select_native_prefill_candidates(
+            [req], plan=plan, current_semantic_revision=runtime.semantic_revision,
+        ).candidates
+
+    indices = allocator.alloc(len(tokens))
+    fill(indices, tokens)
+    expected = saved(indices)
+    leaf_id = cache.insert(InsertParams(key=RadixKey(array("q", tokens)), value=indices)).last_device_node
+    leaf = cache.tree_core.node_by_id(leaf_id)
+    source = request("native-session-history", tokens, session, context_id)
+    source.last_node = leaf.id
+    cache.session_refs.register_session_ref(source)
+    if not runtime.register_visible_request(source):
+        raise ValueError("actual radix session request was rejected before prefix learning")
+    source.finished_reason = FINISH_LENGTH(0)
+    runtime.on_batch_completed(SimpleNamespace(reqs=[source]))
+    waiting = request("native-session-waiting", tokens + [79, 80], session, context_id)
+    if not runtime.register_visible_request(waiting):
+        raise ValueError("actual radix session successor was rejected")
+    context = adapter.contexts[context_id]
+    if context.snapshot is None or context.snapshot.prefix_tokens != len(tokens) or (
+        adapter.history.boundaries[context_id] != len(tokens)
+        or context.snapshot.namespace != (None, None)
+    ):
+        raise ValueError("radix identity replaced or reconstructed the observed token prefix")
+    generation = source.session_generation
+    anchors = cache.session_refs.snapshot_session_leaf_anchors(session, generation)
+    synchronize()
+    if not actor.backup(context.snapshot, owner=owner):
+        raise ValueError("session-labelled native prefix was not backed")
+    if actor.demote(context.snapshot, owner=owner, max_tokens=8):
+        raise ValueError("session-labelled prefix was released before its native D2H ACK")
+    poll_until(lambda: not cache.ongoing_write_through, cache.writing_check)
+    if actor.demote(context.snapshot, owner=owner, max_tokens=8) != 8:
+        raise ValueError("native session prefix did not return eight unique Device slots")
+    poison = allocator.alloc(before)
+    fill(poison, range(5001, 5001 + before))
+    synchronize()
+    allocator.free(poison)
+    if not actor.restore(context.snapshot, owner=owner, available_tokens=before):
+        raise ValueError("native session prefix did not restore from its Host source")
+    adapter._next_tick = float("inf")
+    if candidates(waiting):
+        raise ValueError("native session request was selected before its H2D ACK")
+    poll_until(lambda: not cache.ongoing_load_back, cache.loading_check)
+    restored = cache.match_prefix(MatchPrefixParams(key=RadixKey(array("q", tokens))))
+    if not equal(restored.device_indices, expected) or candidates(waiting) != (waiting,):
+        raise ValueError("native session restored bytes or subsequent admission differ")
+    if cache.session_refs.snapshot_session_leaf_anchors(session, generation) != anchors:
+        raise ValueError("prefix transfers changed native session provenance")
+
+    peer_tokens = tokens[:4] + list(range(91, 95))
+    peer_match = cache.match_prefix(MatchPrefixParams(key=RadixKey(array("q", peer_tokens))))
+    peer_indices = allocator.alloc(4)
+    fill(peer_indices, peer_tokens[4:])
+    peer_leaf_id = cache.insert(InsertParams(
+        key=RadixKey(array("q", peer_tokens)),
+        value=torch.cat((peer_match.device_indices, peer_indices)), prev_prefix_len=4,
+    )).last_device_node
+    peer = request("native-session-peer", peer_tokens, peer_session, "native-session-peer")
+    peer.last_node = peer_leaf_id
+    cache.session_refs.register_session_ref(peer)
+    peer_snapshot = actor.capture(peer_leaf_id, owner=peer_owner)
+    peer_expected = saved(torch.cat((peer_match.device_indices, peer_indices)))
+    synchronize()
+    if allocator.available_size() != before - 12 or not actor.backup(peer_snapshot, owner=peer_owner):
+        raise ValueError("shared session prefix was charged twice or could not be backed")
+    poll_until(lambda: not cache.ongoing_write_through, cache.writing_check)
+    if actor.demote(context.snapshot, owner=owner, max_tokens=8) != 4:
+        raise ValueError("session demotion displaced the live peer's shared prefix")
+    peer_match = cache.match_prefix(MatchPrefixParams(key=RadixKey(array("q", peer_tokens))))
+    if not equal(peer_match.device_indices, peer_expected):
+        raise ValueError("session-prefix split or demotion corrupted the peer")
+    if not actor.restore(context.snapshot, owner=owner, available_tokens=4):
+        raise ValueError("split native session tail did not restore")
+    poll_until(lambda: not cache.ongoing_load_back, cache.loading_check)
+    restored = cache.match_prefix(MatchPrefixParams(key=RadixKey(array("q", tokens))))
+    if not equal(restored.device_indices, expected) or candidates(waiting) != (waiting,):
+        raise ValueError("split native session did not resume with its original bytes")
+    if actor.demote(context.snapshot, owner=owner, max_tokens=8) != 4 or (
+        actor.demote(peer_snapshot, owner=peer_owner, max_tokens=8) != 8
+    ) or allocator.available_size() != before:
+        raise ValueError("split native session lifecycle leaked Device capacity")
+    if (
+        cache.session_refs.snapshot_session_leaf_anchors(session, generation) != anchors
+        or not cache.session_refs.snapshot_session_leaf_anchors(peer_session, peer.session_generation)
+    ):
+        raise ValueError("split native session lifecycle changed native ownership")
+    ack_tokens = {
+        direction: sum(
+            dict(commit.num_tokens_by_pool).get("kv", 0)
+            for commit in commits[prior_commits:] if commit.direction == direction
+        ) for direction in ("d2h", "h2d")
+    }
+    if ack_tokens != {"d2h": 12, "h2d": 12}:
+        raise ValueError("session-prefix ACK tokens disagree with actual unique extents")
+    return {
+        "session_generation": generation, "peer_generation": peer.session_generation,
+        "history_prefix_tokens": len(tokens), "shared_prefix_tokens": 4,
+        "final_device_free_tokens": allocator.available_size(),
+        "native_ack_tokens": ack_tokens,
+        "source_and_successor_requests_registered": True,
+        "poisoned_pages_restored_with_exact_all_layer_bytes": True,
+        "native_session_provenance_preserved": True,
+        "shared_peer_preserved": True,
+    }
 
 
 def qualify(engine, canonical_patch):
@@ -576,13 +736,20 @@ def qualify(engine, canonical_patch):
             raise ValueError("native growth qualification leaked speculative device capacity")
         if allocator.available_size() != 128:
             raise ValueError("native growth qualification left private device allocations")
+        session_evidence = qualify_radix_sessions(
+            runtime, cache, allocator, commits, fill=fill, saved=saved, equal=equal,
+            synchronize=torch.cuda.current_stream().synchronize,
+        )
         totals = {
             direction: sum(
                 dict(commit.num_tokens_by_pool).get("kv", 0)
                 for commit in commits if commit.direction == direction
             ) for direction in ("d2h", "h2d")
         }
-        if totals != {"d2h": 50 + extra_d2h + cleanup_d2h, "h2d": 42}:
+        if totals != {
+            "d2h": 50 + extra_d2h + cleanup_d2h + session_evidence["native_ack_tokens"]["d2h"],
+            "h2d": 42 + session_evidence["native_ack_tokens"]["h2d"],
+        }:
             raise ValueError("progressive native ACK totals disagree with physical grants")
         if (
             runtime.physical_disabled or actor.receipts.pending_count
@@ -605,6 +772,7 @@ def qualify(engine, canonical_patch):
             "runtime_counts": dict(runtime.counts),
             "native_growth_guard_counts": dict(adapter.counts),
             "native_growth_cleanup_backup_tokens": cleanup_d2h,
+            "native_radix_session": session_evidence,
             "whole_llm_scheduler_or_baseline_qualified": False, "performance_accepted": False,
         }
     finally:

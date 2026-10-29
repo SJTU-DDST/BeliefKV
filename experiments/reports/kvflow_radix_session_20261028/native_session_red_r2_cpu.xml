@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="7.498" timestamp="2026-10-28T20:11:49.448114-07:00" hostname="ddst-12"><testcase classname="tests.test_kvflow_native_sessions" name="test_actual_native_request_with_full_prompt_radix_identity_registers" time="6.511"><failure message="ValueError: KVFlow requires plain token requests without session overrides">tests/test_kvflow_native_sessions.py:51: in test_actual_native_request_with_full_prompt_radix_identity_registers
+    adapter = register(runtime, req)
+              ^^^^^^^^^^^^^^^^^^^^^^
+tests/test_kvflow_runtime.py:55: in register
+    assert runtime.register_visible_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/sglang_v0520_runtime.py:11757: in register_visible_request
+    paper.registered(req, key)
+beliefkv/runtime/kvflow_baseline.py:120: in registered
+    input_key = self._input_key(req)
+                ^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/kvflow_baseline.py:100: in _input_key
+    raise ValueError("KVFlow requires plain token requests without session overrides")
+E   ValueError: KVFlow requires plain token requests without session overrides</failure></testcase><testcase classname="tests.test_kvflow_native_sessions" name="test_session_backup_demote_restore_preserves_native_provenance_and_capacity" time="0.005"><failure message="ValueError: KVFlow requires plain token requests without session overrides">tests/test_kvflow_native_sessions.py:78: in test_session_backup_demote_restore_preserves_native_provenance_and_capacity
+    adapter, second, leaf, generation = learned_session(live)
+                                        ^^^^^^^^^^^^^^^^^^^^^
+tests/test_kvflow_native_sessions.py:27: in learned_session
+    adapter = register(runtime, first)
+              ^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_kvflow_runtime.py:55: in register
+    assert runtime.register_visible_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/sglang_v0520_runtime.py:11757: in register_visible_request
+    paper.registered(req, key)
+beliefkv/runtime/kvflow_baseline.py:120: in registered
+    input_key = self._input_key(req)
+                ^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/kvflow_baseline.py:100: in _input_key
+    raise ValueError("KVFlow requires plain token requests without session overrides")
+E   ValueError: KVFlow requires plain token requests without session overrides</failure></testcase></testsuite></testsuites>

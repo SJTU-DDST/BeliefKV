@@ -1,7 +1,8 @@
-"""Native FULL prefix transfers for paper policies without session identifiers.
+"""Native FULL radix-prefix transfers for paper policies.
 
 Anchors refer only to observed cached state. These primitives grant no scheduling
 priority or permanent Host/HBM protection and leave all DMA fences native-owned.
+Session-labelled nodes use the same immutable token keys and native ownership.
 """
 
 from __future__ import annotations

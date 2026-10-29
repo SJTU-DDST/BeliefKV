@@ -2976,3 +2976,16 @@
   Agentix remains qualification-only, not a formal enabled arm. Keep the
   overall goal active and all-baseline acceptance unproven. See
   docs/research/demand_restore_readmission_result_20261028_zh.md.
+- KVFlow now accepts only full-prompt native radix identities with explicit
+  full_prompt_replay_guaranteed=true and a current open native generation.
+  Conversation reconstruction, embeddings and positional overrides remain
+  rejected before context mutation. Token keys/namespaces, observed graph,
+  completed-input prefix learning and native/paper policies remain unchanged.
+  New22 session cases and source-bound379 paper CPU cases pass on clean
+  native11b84f7c3198; all1868 sources match before/after. Preserve fixture/red
+  and prepared-HEAD binding failures. The generic prefix GPU qualifier adds
+  exact session ingress/history, poisoned-page restore, split-peer and capacity
+  proofs; its new scene has not run. Freeze/qualify it before a formal baseline.
+  No new Full/V345/native run or performance result follows from this port.
+  Keep tool prefetch off, same completeV230/V311 and the goal active. See
+  docs/research/kvflow_radix_session_port_20261028_zh.md.
