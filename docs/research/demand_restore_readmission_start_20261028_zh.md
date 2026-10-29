@@ -4,6 +4,9 @@
 修复版FULL已进入正式重放，不重复native或ThunderAgent。
 本记录尚不提供修复后的完整JCT或吞吐结论。
 
+本记录保持启动时点的证据范围；现已完成的结果见
+[完整结果](demand_restore_readmission_result_20261028_zh.md)。
+
 ## 源码与资格
 
 `readmission_position_entry.py/.json`已重新核对全部1815个CPU-manifest

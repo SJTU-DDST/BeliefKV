@@ -2952,3 +2952,27 @@
   completion/cleanup run complete review, then sealed prefetch, then mechanism
   review sequentially so independent readers never race to create the same
   result directory. It does not alter frozen5cf3bb8b or qualify new performance.
+- Repaired Full now completes3674 exact requests/145565966 input/549671 output,
+  18 normal tails,two fresh idle and actual owned exit. MeanJCT1617.896789/
+  output238.405436 improves4.69413%/2.15692% versus the same single V345.
+  R1/R2 gains remain4.94374%/2.64506% and4.26370%/2.11468%; preserve modest
+  repeated positive directions and different-engine/single-control limits.
+  Preadmission JCT improves13.297855s but output regresses.03923%. Workflow
+  max ready-output gap mean83.807889s exceeds control73.449107s; keep it.
+  All445 ACK-ready journals have retry=false/counter0; do not credit this
+  inactive repair. All447 stages/716 associations prove exact ACK/service,
+  2274984198144bytes and native untagged remainder0. Eight8/4 handoffs restore
+  4787699712bytes; one physical JOIN release44467tokens reconciles. All1056
+  sibling journals/1090 attempts verify;34 multi-member journals=33 native
+  forwards.235/237 grant associations verify,two remain unknown. All54 final
+  EOS/four known guards pass. Fixed old2973 tool service delta-9.853128s;
+  actual full waiting+1.350547/service-15.237101/other+.588699s stays separate.
+  Complete reports and three inspected figures belong to the named repair.
+  No further identical Full is queued for the inactive branch. Move next to
+  remaining-baseline CPU adaptation/qualification on the same complete work,
+  without recapturing native or rerunning V345. KVFlow's current plain-request
+  guard rejects nonempty sessions actually present in this LoCoBench source;
+  qualify a real session-compatible port, never just disable the contract.
+  Agentix remains qualification-only, not a formal enabled arm. Keep the
+  overall goal active and all-baseline acceptance unproven. See
+  docs/research/demand_restore_readmission_result_20261028_zh.md.
