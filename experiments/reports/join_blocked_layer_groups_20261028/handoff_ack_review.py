@@ -14,10 +14,30 @@ from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts import run_causal_comparison as causal
 
 
+def geometry(handoff):
+    donor = handoff["donor_tokens"]
+    reused = handoff["reused_tokens"]
+    restored = handoff.get("restored_tokens", reused)
+    additional = handoff.get("free_extent_tokens", 0)
+    tail = handoff["reserved_tail_tokens"]
+    missing = handoff["checkpoint_missing_tokens"]
+    decode_tail = handoff["restored_decode_tail_tokens"]
+    if (
+        any(type(value) is not int or value < 0 for value in (
+            donor, reused, restored, additional, tail, missing, decode_tail,
+        ))
+        or min(donor, reused, restored) <= 0
+        or donor != reused + tail or restored != reused + additional
+        or reused != min(donor, restored) or restored != missing + decode_tail
+    ):
+        raise ValueError("handoff reserved-extent accounting differs")
+    return restored
+
+
 def match_side(handoff, transfers, *, direction, unit, previous):
     donor = direction == "d2h"
     node = handoff["donor_node_id" if donor else "consumer_node_id"]
-    tokens = handoff["donor_tokens" if donor else "reused_tokens"]
+    tokens = handoff["donor_tokens"] if donor else geometry(handoff)
     matches = [
         row for row in transfers
         if row["direction"] == direction and row["status"] == "completed"
@@ -109,11 +129,10 @@ def inspect(name, registration, label):
     observations, used, previous = [], set(), float("-inf")
     for handoff in sorted(handoffs, key=lambda row: row["ts_ms"]):
         rid = handoff["beneficiary_request_id"]
+        restored = geometry(handoff)
         if (
             handoff["capacity_effect"] != "reserved_extent;no_free_page_credit"
             or handoff["logical_admission_changed"] is not False
-            or handoff["donor_tokens"] != handoff["reused_tokens"] + handoff["reserved_tail_tokens"]
-            or handoff["reused_tokens"] != handoff["checkpoint_missing_tokens"] + handoff["restored_decode_tail_tokens"]
         ):
             raise ValueError("handoff reserved-extent accounting differs")
         sides = {
@@ -141,7 +160,9 @@ def inspect(name, registration, label):
             raise ValueError("handoff lacks subsequent same-session consumer service")
         observations.append({
             "request_id": rid, "donor_tokens": handoff["donor_tokens"],
-            "consumer_tokens": handoff["reused_tokens"],
+            "consumer_tokens": restored,
+            "reused_donor_tokens": handoff["reused_tokens"],
+            "free_extent_tokens": handoff.get("free_extent_tokens", 0),
             "donor_bytes": sides["d2h"]["actual_bytes"],
             "consumer_bytes": sides["h2d"]["actual_bytes"],
             "published_donor_anchor": sides["d2h"]["node_ids"],

@@ -1,0 +1,22 @@
+{
+  "observed_at": "2026-10-29T15:17:58.677631+00:00",
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/test_free_dispatch_service_audit.py",
+    "--tb=short",
+    "--junitxml=experiments/reports/hbm_dispatch_20261029/grant_service_cpu_r3.xml"
+  ],
+  "source_sha256": {
+    "scripts/audit_free_dispatch_service.py": "be74cf164b5daa8ee5566128802f81be1be6693f4bbe42981d46af1846e109b3",
+    "tests/test_free_dispatch_service_audit.py": "755753455443bcf9c9466cbd9a3d3992139fb654e7d2c262ca9b484fad15c107",
+    "scripts/audit_collecting_agent_pipeline.py": "c1c14eff358fe325f9aab997988451077cf65ed0648ceb5f7b467f59bc48201f",
+    "scripts/audit_sealed_wait_prefetch.py": "467c33297fdfc1358b91455bb775d58e6edb287cb11dc51dc35d219c00995b46"
+  },
+  "sources_unchanged_during_execution": true,
+  "returncode": 0,
+  "report_sha256": "65ece1ea1c8a990eec51a523fa0db074c258936979514bea00f64bba40cad704",
+  "GPU_experiment_started": false
+}

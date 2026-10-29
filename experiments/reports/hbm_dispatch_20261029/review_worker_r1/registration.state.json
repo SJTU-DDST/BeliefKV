@@ -1,0 +1,20 @@
+{
+  "status": "complete_candidate_reviewed",
+  "watcher": {
+    "pid": 1388964,
+    "state": "R",
+    "ppid": 1,
+    "start_ticks": "745509838",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-hbm-queue-11c14d6f/experiments/reports/hbm_dispatch_20261029/review_after_candidate.py",
+      "--watch",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/hbm_dispatch_20261029/review_worker_r1/registration.json"
+    ]
+  },
+  "GPU_experiment_registered": false,
+  "performance_accepted": false,
+  "checked_at": "2026-10-29T23:20:54.520932+08:00",
+  "output": "/home/longhao/experiment/BeliefKV/experiments/reports/hbm_dispatch_20261029/review_worker_r1/complete_review",
+  "finished_at": "2026-10-29T23:21:59.286384+08:00"
+}

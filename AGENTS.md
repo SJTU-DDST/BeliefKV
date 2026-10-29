@@ -3405,3 +3405,25 @@
   healthy500ms free dispatch with5s pressure ticks, tool/frontier prefetch off.
   This is a startup prefix, not completed performance. Preserve frozen candidate
   and its CPU-only review_worker_r1; global optimization goal stays active.
+- The500ms dispatch Full now completes all3674 exact requests/18 normal tails,
+  fresh idle drain and actual owned exit. JCT1437.922687/output246.572144
+  versus original Full1448.784951/248.040269 gives only.74975% JCT gain and
+  .59189% throughput loss; versus matched Thunder1494.242817/239.595502,
+  gains3.76914%/2.91184% remain modest, not clear/repeated acceptance.
+  All133 unique grants prove exact native input/attempt/session first service
+  and completed receipts, no unknowns; serviceP50=85.765ms/P90=806.241ms.
+  New complete capacity review observes99.49648% middle physical residency,
+  100% coverage/66.39025% non-evictable; raw-fitting inactive requests fall
+  133-to56 without wider mean decode.1656 backed releases,64 new D2H commands/
+  63 beneficiaries and3 explicit backup-release-restore-service chains use
+  different units; none enumerates mandatory-D2H events. Handoff75attempts/
+  3submits restores24478 tokens incl2027 real free extent. Offline handoff
+  auditor now correctly includes free-extent consumer bytes; native unchanged,
+  55 related cases pass and both complete Full untagged balances reconcile0.
+  Keep failures/plots/negative result. Do not promote500ms; next candidate uses
+  original dispatch0 and2048-token prefill,mixed off on the same complete
+  mean120V230/V311 work. Qualify the changed serving profile afresh with24
+  token/session/native-stop and sampler1/8/24 checks for each method-specific
+  engine, then match acting-decay Thunder and Full sequentially. This shared
+  tuning is not an agent-policy novelty. No native recapture, arrival sweep,
+  extra baseline or tail truncation; global goal remains active.

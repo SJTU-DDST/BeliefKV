@@ -145,3 +145,67 @@ acting-decay 对照，不额外重跑 native 或 ThunderAgent。
 watcher/server/driver 存活且 nice0、500ms 补位和五秒压力重评同时生效，
 工具/frontier 预取关闭。该时刻为启动前缀，不能据此报告完成性能。
 CPU reviewer 已排队等待完整工作后生成相对 ThunderAgent 和原 FULL 的结果。
+
+## 500ms 补位完整结果与取舍
+
+候选随后完成全部 3,674 个请求、18 个正常 workflow、两份新鲜空闲快照
+及实际 owned 进程退出。输入 145,565,966 token、输出 549,671 token、
+逐请求停止方式与原 FULL 完全一致。三张 decode 趋势、分布及相同形态图
+已查看，原始报告保留在本目录的 `review_worker_r1/complete_review/`。
+
+| 指标 | ThunderAgent 工具衰减 | 原 FULL | 500ms 补位 FULL |
+|---|---:|---:|---:|
+| 完整平均 JCT / s | 1494.242817 | 1448.784951 | 1437.922687 |
+| 全程输出 / token/s | 239.595502 | 248.040269 | 246.572144 |
+| makespan / s | 2294.162430 | 2216.055493 | 2229.250194 |
+| 按 worker 区间加权的 decode batch | 7.739336 | 8.107580 | 8.057113 |
+| prefill worker 累计 / s | 417.070184 | 373.242645 | 372.940402 |
+| decode worker 累计 / s | 1608.449115 | 1578.538277 | 1577.521522 |
+
+补位相对原 FULL 的 JCT 改善仅 0.74975%，全程输出反降 0.59189%。
+相对 ThunderAgent 为 JCT 降低 3.76914%、输出提高 2.91184%，仍不足以
+验收为明确且可重复的提升。单次小差异也不能据此认定新增控制 CPU 是
+主因：正式运行没有开启完整 shared-path profiling。
+
+准入不是只停留在逻辑计数：133 次 grant 对应 133 个不同的 request
+attempt，全部验证了同 context/epoch/attempt/session 的原生输入、首次
+prefill 服务和完成 receipt，没有重复或未知对象。grant 到首次服务
+P50 为 85.765ms、P90 为 806.241ms、最大 15.905s。compact decode
+记录没有 attempt/session 字段，22,752 份相关采样不用于该身份证明。
+这证明 grant 被实际消费，不证明 133 次都产生独立加速。
+
+相同两秒封顶审计的完整候选结果为：
+
+- 300–1800s 覆盖 100%，物理驻留 99.49648%，不可驱逐 66.39025%、
+  可驱逐 33.10623%、空闲 0.50352%。物理 HBM 没有明显低利用。
+- 有完整逻辑 fit 的 inactive 请求从 133 降至 56；对应采样区间并集
+  从约 244.86s 降至 134.70s，逐请求重叠和不是可扣除的 JCT。
+- 短缺时释放已备份节点 1,656 次，约 208.325GB；另有预测式已备份
+  释放 280 次、41.829GB。两者不可相加为独立交换事务。
+- 新工具 D2H 为 64 个命令、63 个受益请求、0.60585GB，全部 ACK；
+  可逐条核对的备份→释放→恢复→服务链为三条，仍非强制串行次数普查。
+- 最后 handoff 计数为 75 次尝试、三次提交，恢复 24,478 token：
+  donor 复用 22,451、实际空闲 extent 2,027。45 次 donor 小于目标、
+  12 次原生拒绝、9 次私有几何拒绝等条件仍需保留。
+
+新 auditor 修复了离线 H2D 记账：consumer 恢复量必须包含 donor
+复用页和实际 free extent，旧逻辑只计了前者。它没有修改任何 native
+传输路径。55 项相关 CPU 检查通过；候选 411 个 staged-demand
+episode / 669 个成员关联和原 FULL 436 / 675 均有后续同身份原生服务，
+两臂 untagged H2D 未解释字节都为零。不能把这项审计修复当成 GPU
+正确性故障或性能修复。
+
+下一轮不推广 500ms 参数，使用原 FULL 的分发间隔 0，保留默认关闭的
+实现及验证过的安全检查。先尝试 2048-token prefill、mixed 关闭；
+因为这是共享 serving 参数，ThunderAgent 工具衰减也使用相同配置、
+相同 mean120 到达、原始完整工作和容量。新 profile 需要新鲜
+position/token/session/native-stop 与 sampler1/8/24 检查，再进入
+正式比较；不重采 native，不扫描其他到达率，不删除正常尾部。
+
+新增证据：
+
+- `complete_candidate_capacity_r1.json`
+- `complete_grant_service_r1.json`
+- `complete_native_demand_r2.json`、`original_native_demand_r1.json`
+- `complete_accounting_cpu_r1.xml`
+- `review_worker_r1/candidate_vs_original.json`
