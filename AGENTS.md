@@ -3708,3 +3708,19 @@
   commit,reusing complete Thunder and original2s Full;no further GPU action.
   Keep all frozen sources/model inputs/work/arrivals/tails and the global
   goal active;new full JCT/throughput and repeatable superiority remain pending.
+- New read-only scripts/audit_workflow_size_selection.py replays logged local
+  resume order/budget/selected sets against the exact frozen policy sources,
+  compares original ordering on the same candidates/remaining capacity and
+  associates only following exact request/attempt/context/session GPU service.
+  It excludes earlier/wrong-attempt service and post-pressure revoked grants,
+  separates episodes from unique attempts,and claims neither longitudinal
+  pressure/physical feasibility nor exclusive causal/JCT attribution.
+  Actual41 related audit/policy/runtime tests pass;running11e1 Full unchanged.
+  live_selection_capacity_r1 seals517 controls:359 nonempty/263multi,78 order
+  changes/8 local selected-set changes.301 candidate-budget excesses include
+  only52 same-category cross-workflow capacity competitions,24 with different
+  effective ranks.244 unique selections/237 following services,8 local-new
+  selections served. Whole-control CPU83.48ms/P99 .28726ms and newer background
+  workerCPU3.139s are prefix observations,not incremental overhead or complete
+  performance. Keep open coverage/normal tails and wait the existing Full/
+  CPU reviewer;do not start baselines or change workload from these prefixes.
