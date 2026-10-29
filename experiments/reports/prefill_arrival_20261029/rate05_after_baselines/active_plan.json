@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "waiting_for_baseline_completion",
+  "status": "superseded_by_agentix_first_and_arrival_resizing_20261029",
   "arrival_rate_per_second": 0.5,
   "arrival_seed": 21,
   "workflow_arrivals": {
@@ -13,7 +13,6 @@
   ],
   "execution_prerequisites": {
     "complete_before_gpu_execution": [
-      "TokenCake",
       "Agentix"
     ],
     "completion_boundary": "complete_formal_workload_and_actual_owned_exit",
@@ -30,5 +29,9 @@
     "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_arrival_20261029/chunk1024.json": "866b0ac38a50b7592eef772b4b25cefb45da13ce42f3dc4ab3acd08055e1b0f2",
     "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_arrival_20261029/chunk2048_mixed.json": "c5d5e4a03942d5c3298d552ad6aea5047e8979087a5f8c661a76363dc4443e78"
   },
-  "fresh_gpu_parameter_and_model_checks_required": true
+  "fresh_gpu_parameter_and_model_checks_required": true,
+  "historical_arrival_rate_only": true,
+  "automatic_gpu_launch_authorized": false,
+  "superseding_user_instruction": "Skip TokenCake; run Agentix first; reconsider arrival rate and total distinct projects for sustained pressure.",
+  "sizing_evidence": "/home/longhao/experiment/BeliefKV/experiments/reports/arrival_capacity_20261029/summary.json"
 }

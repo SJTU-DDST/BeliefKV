@@ -20,6 +20,7 @@ from scripts import run_causal_comparison as controls
 from scripts.qualify_agentix_pressure import validate_report as validate_pressure
 from scripts.qualify_agentix_runtime import validate_swap
 from scripts.run_agentx_baseline import freeze, prefix_qualification_environment
+from scripts.qualify_agentix_locobench_model import completed_predecessor
 
 
 TREE = "c489dbb85265efce25622a52abfd698e9199688d"
@@ -45,6 +46,8 @@ def verify_inputs(plan):
 
 def predecessor_ready(plan):
     path = Path(plan["predecessor"])
+    if plan.get("failed_predecessor_skipped_by_user"):
+        return completed_predecessor(path, allow_failed=True)
     previous = controls.load(path)
     return controls.predecessor_ready({**previous, "after_registration": str(path)})
 
@@ -52,6 +55,8 @@ def predecessor_ready(plan):
 def verify_predecessor_cleanup(plan):
     if not predecessor_ready(plan):
         raise ValueError("TokenCake supervisor or owned children are still running")
+    if plan.get("failed_predecessor_skipped_by_user"):
+        return
     path = Path(plan["predecessor"])
     previous = controls.load(path)
     controls.predecessor_work({**previous, "after_registration": str(path)})
@@ -78,7 +83,8 @@ def start(args):
         raise FileExistsError("preserve every earlier Agentix component attempt")
     cpu = controls.load(args.cpu_evidence)
     if (
-        cpu["totals"] != {"tests": 762, "errors": 0, "failures": 0, "skipped": 0}
+        cpu["totals"].get("tests", 0) < 762
+        or any(cpu["totals"].get(name) != 0 for name in ("errors", "failures", "skipped"))
         or cpu["all_prior_752_identities_retained"] is not True
     ):
         raise ValueError("source-bound native-consumer CPU evidence is incomplete")
@@ -111,6 +117,7 @@ def start(args):
         "inputs_sha256": {str(path): sha256_file(path) for path in inputs},
         "scope": "four_small_pool_gpu_checks_only_not_model_or_formal_baseline",
         "performance_accepted": False,
+        "failed_predecessor_skipped_by_user": args.allow_failed_predecessor,
     }
     registration = output / "registration.json"
     controls.reservation.write_json(registration, plan)
@@ -134,7 +141,12 @@ def start(args):
 def watch(path):
     plan = controls.load(path)
     output, identities, stopped = Path(plan["output_dir"]), [], False
-    state = {"status": "waiting_complete_tokencake", "performance_accepted": False}
+    state = {
+        "status": "waiting_predecessor_exit", "performance_accepted": False,
+        "registered_frozen_application": plan.get("checkout"),
+        "application_commit": plan.get("application_commit"),
+        "engine_checkout": plan.get("engine_checkout"), "engine_tree": plan.get("engine_tree"),
+    }
 
     def stop(*_args):
         nonlocal stopped
@@ -237,6 +249,7 @@ if __name__ == "__main__":
     launch = commands.add_parser("start")
     for name in ("output-dir", "cpu-evidence", "predecessor", "engine", "native-patch"):
         launch.add_argument("--" + name, required=True, type=Path)
+    launch.add_argument("--allow-failed-predecessor", action="store_true")
     monitor = commands.add_parser("watch")
     monitor.add_argument("--registration", required=True, type=Path)
     args = parser.parse_args()

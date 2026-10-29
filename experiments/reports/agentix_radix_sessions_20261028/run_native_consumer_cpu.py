@@ -1,6 +1,7 @@
 """Source-bind actual native prefill consumers and finite-session pressure."""
 
 from datetime import datetime, timezone
+import argparse
 import json
 import os
 from pathlib import Path
@@ -19,17 +20,23 @@ from experiments.reports.tokencake_radix_session_20261028.run_bound_cpu import c
 
 
 def main():
-    output, xml, manifest = (HERE / ("native_consumer_cpu" + suffix) for suffix in (
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output-dir", type=Path, default=HERE)
+    parser.add_argument("--prior", type=Path, default=HERE / "bound_cpu.xml")
+    parser.add_argument("--native-patch", type=Path, default=ROOT.parent / "ops/sglang-agentix-runtime-20261025.patch")
+    args = parser.parse_args()
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    output, xml, manifest = (args.output_dir / ("native_consumer_cpu" + suffix) for suffix in (
         ".json", ".xml", ".sources.json",
     ))
     if any(path.exists() for path in (output, xml, manifest)):
         raise FileExistsError("preserve earlier actual-native-consumer CPU evidence")
-    prior_path = HERE / "bound_cpu.xml"
+    prior_path = args.prior
     previous = case_ids(prior_path)
     if len(previous) != 752:
         raise ValueError("prior native-session CPU population changed")
     native_path = Path(os.environ["SGLANG_SOURCE_CHECKOUT"])
-    patch = ROOT.parent / "ops/sglang-agentix-runtime-20261025.patch"
+    patch = args.native_patch
     native = git_source_state(native_path, canonical_patch=patch)
     if (
         not native["canonical_patch"]["matches_worktree"]

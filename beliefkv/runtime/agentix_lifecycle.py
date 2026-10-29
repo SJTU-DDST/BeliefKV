@@ -55,7 +55,20 @@ class AgentixCallLifecycle:
             )
             or key.attempt_id < call.key.attempt_id
         ):
-            raise ValueError("Agentix native request changed call, sampler or program ownership")
+            details = {"request_id": req.rid, "registered": call is not None, "key": key}
+            if call is not None:
+                details.update(
+                    same_request=req is call.request,
+                    same_input=req.origin_input_ids is call.input_ids,
+                    same_output=req.output_ids is call.output_ids,
+                    same_sampler=req.sampling_params is call.parameters,
+                    namespace=self._namespace(req), expected_namespace=call.namespace,
+                    expected_key=call.key,
+                )
+            raise ValueError(
+                "Agentix native request changed call, sampler or program ownership: "
+                + repr(details)
+            )
         return call, key
 
     def registered(self, req, key):

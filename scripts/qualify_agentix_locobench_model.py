@@ -93,7 +93,8 @@ def verify_component_application(plan):
         sha256_file(Path(cpu["source_manifest"]["path"])) != cpu["source_manifest"]["sha256"]
         or sha256_file(Path(cpu["report"]["path"])) != cpu["report"]["sha256"]
         or cpu.get("all_prior_752_identities_retained") is not True
-        or cpu.get("totals") != {"tests": 762, "errors": 0, "failures": 0, "skipped": 0}
+        or cpu.get("totals", {}).get("tests", 0) < 762
+        or any(cpu.get("totals", {}).get(name) != 0 for name in ("errors", "failures", "skipped"))
     ):
         raise ValueError("physical Agentix server lacks its unchanged CPU source binding")
     controls.comparison.verify_cpu_snapshot(

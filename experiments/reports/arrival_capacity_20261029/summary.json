@@ -1,0 +1,332 @@
+{
+  "observed_at": "2026-10-29T08:40:43.342263+00:00",
+  "scope": "Offline sizing, no GPU job and no predicted JCT/performance claim.",
+  "arms": {
+    "ACK repair Full": {
+      "workflows": 18,
+      "requests": 3674,
+      "output_tokens": 549671,
+      "makespan_s": 2305.614371310234,
+      "mean_jct_s": 1617.8967887447145,
+      "finite_burst_completion_rate_per_s": 0.00780702975483752,
+      "output_tokens_per_workflow": 30537.277777777777,
+      "device_full_capacity_bytes": 79154282496,
+      "by_unfinished_workflows_after_300_s": {
+        "18": {
+          "duration_s": 670.2389368305205,
+          "resident_fraction": 0.996124418600039,
+          "non_evictable_fraction": 0.8120423928381656,
+          "evictable_fraction": 0.18408202576187344
+        },
+        "17": {
+          "duration_s": 223.4063670082092,
+          "resident_fraction": 0.9953285787170718,
+          "non_evictable_fraction": 0.7857522765736472,
+          "evictable_fraction": 0.20957630214342465
+        },
+        "16": {
+          "duration_s": 20.044931486129762,
+          "resident_fraction": 0.9936350809435848,
+          "non_evictable_fraction": 0.8260160767308486,
+          "evictable_fraction": 0.16761900421273593
+        },
+        "15": {
+          "duration_s": 95.08711878967283,
+          "resident_fraction": 0.9935983806279638,
+          "non_evictable_fraction": 0.7449157166883678,
+          "evictable_fraction": 0.24868266393959618
+        },
+        "14": {
+          "duration_s": 128.2505199337006,
+          "resident_fraction": 0.9956925297460287,
+          "non_evictable_fraction": 0.7754194463510731,
+          "evictable_fraction": 0.22027308339495552
+        },
+        "13": {
+          "duration_s": 7.1364325866699225,
+          "resident_fraction": 0.9992675473716314,
+          "non_evictable_fraction": 0.752562172481004,
+          "evictable_fraction": 0.24670537489062738
+        },
+        "12": {
+          "duration_s": 66.22402775478363,
+          "resident_fraction": 0.990595332941528,
+          "non_evictable_fraction": 0.5057998254990966,
+          "evictable_fraction": 0.48479550744243166
+        },
+        "11": {
+          "duration_s": 77.23303992080687,
+          "resident_fraction": 0.9965869640984639,
+          "non_evictable_fraction": 0.43769659009041584,
+          "evictable_fraction": 0.5588903740080484
+        },
+        "10": {
+          "duration_s": 22.743448998451232,
+          "resident_fraction": 0.9946698864748666,
+          "non_evictable_fraction": 0.28638677488102104,
+          "evictable_fraction": 0.7082831115938457
+        },
+        "9": {
+          "duration_s": 49.44784496974945,
+          "resident_fraction": 0.9962744187438669,
+          "non_evictable_fraction": 0.2883943975327865,
+          "evictable_fraction": 0.7078800212110805
+        },
+        "8": {
+          "duration_s": 21.58373408412933,
+          "resident_fraction": 0.9945070370238357,
+          "non_evictable_fraction": 0.3203142232481631,
+          "evictable_fraction": 0.6741928137756726
+        },
+        "7": {
+          "duration_s": 18.490488523483275,
+          "resident_fraction": 0.9667879016771252,
+          "non_evictable_fraction": 0.3146293624925313,
+          "evictable_fraction": 0.6521585391845939
+        },
+        "6": {
+          "duration_s": 11.243072456359862,
+          "resident_fraction": 0.9674668473693372,
+          "non_evictable_fraction": 0.4234134356618202,
+          "evictable_fraction": 0.544053411707517
+        },
+        "5": {
+          "duration_s": 78.35177547454835,
+          "resident_fraction": 0.9902255832728363,
+          "non_evictable_fraction": 0.12601250026263713,
+          "evictable_fraction": 0.8642130830101995
+        },
+        "4": {
+          "duration_s": 51.92230397510529,
+          "resident_fraction": 0.9754205881305977,
+          "non_evictable_fraction": 0.10360444093957788,
+          "evictable_fraction": 0.8718161471910197
+        },
+        "3": {
+          "duration_s": 179.54575866413123,
+          "resident_fraction": 0.923055534219042,
+          "non_evictable_fraction": 0.04952109011766229,
+          "evictable_fraction": 0.8735344441013801
+        },
+        "2": {
+          "duration_s": 117.62507264709474,
+          "resident_fraction": 0.8868313650201574,
+          "non_evictable_fraction": 0.08589376432551421,
+          "evictable_fraction": 0.8009376006946434
+        },
+        "1": {
+          "duration_s": 166.47113494300845,
+          "resident_fraction": 0.8796663888603976,
+          "non_evictable_fraction": 0.04473754150699766,
+          "evictable_fraction": 0.8349288473534002
+        }
+      }
+    },
+    "ThunderAgent decay": {
+      "workflows": 18,
+      "requests": 3674,
+      "output_tokens": 549671,
+      "makespan_s": 2355.3445512609483,
+      "mean_jct_s": 1697.5836446114117,
+      "finite_burst_completion_rate_per_s": 0.007642194001027828,
+      "output_tokens_per_workflow": 30537.277777777777,
+      "device_full_capacity_bytes": 79154282496,
+      "by_unfinished_workflows_after_300_s": {
+        "18": {
+          "duration_s": 758.069409017563,
+          "resident_fraction": 0.996425508276029,
+          "non_evictable_fraction": 0.776043461172451,
+          "evictable_fraction": 0.2203820471035792
+        },
+        "17": {
+          "duration_s": 245.10398868942255,
+          "resident_fraction": 0.9938076450710631,
+          "non_evictable_fraction": 0.7535889287313321,
+          "evictable_fraction": 0.24021871633973044
+        },
+        "16": {
+          "duration_s": 6.194431564331055,
+          "resident_fraction": 0.9945709874369227,
+          "non_evictable_fraction": 0.7198173823749214,
+          "evictable_fraction": 0.2747536050620014
+        },
+        "15": {
+          "duration_s": 1.0384952449798583,
+          "resident_fraction": 0.9993297813103632,
+          "non_evictable_fraction": 0.6777173610237728,
+          "evictable_fraction": 0.32161242028659043
+        },
+        "14": {
+          "duration_s": 177.70082733631128,
+          "resident_fraction": 0.9920160473850486,
+          "non_evictable_fraction": 0.7346291066696022,
+          "evictable_fraction": 0.2573869407154461
+        },
+        "13": {
+          "duration_s": 52.08799602031709,
+          "resident_fraction": 0.9965450426941346,
+          "non_evictable_fraction": 0.5818005622343967,
+          "evictable_fraction": 0.41474448045973755
+        },
+        "12": {
+          "duration_s": 51.428416973114025,
+          "resident_fraction": 0.9958304399430975,
+          "non_evictable_fraction": 0.47046290505551586,
+          "evictable_fraction": 0.5253675348875817
+        },
+        "11": {
+          "duration_s": 83.77371703720092,
+          "resident_fraction": 0.9978729945815713,
+          "non_evictable_fraction": 0.3540934787723138,
+          "evictable_fraction": 0.6437795158092576
+        },
+        "10": {
+          "duration_s": 3.9621989364624017,
+          "resident_fraction": 0.9927788548338436,
+          "non_evictable_fraction": 0.541950890960195,
+          "evictable_fraction": 0.45082796387364854
+        },
+        "9": {
+          "duration_s": 62.58791162014009,
+          "resident_fraction": 0.9970087976250922,
+          "non_evictable_fraction": 0.33235081743268435,
+          "evictable_fraction": 0.6646579801924077
+        },
+        "8": {
+          "duration_s": 21.77512977218628,
+          "resident_fraction": 0.9977786248857633,
+          "non_evictable_fraction": 0.2287857752201458,
+          "evictable_fraction": 0.7689928496656175
+        },
+        "7": {
+          "duration_s": 8.463684774398804,
+          "resident_fraction": 0.9978841576393775,
+          "non_evictable_fraction": 0.19017965138612508,
+          "evictable_fraction": 0.8077045062532525
+        },
+        "6": {
+          "duration_s": 29.112345666885368,
+          "resident_fraction": 0.9985408528678217,
+          "non_evictable_fraction": 0.11755977928848771,
+          "evictable_fraction": 0.8809810735793342
+        },
+        "5": {
+          "duration_s": 62.05811929607391,
+          "resident_fraction": 0.998871713011451,
+          "non_evictable_fraction": 0.15310428240034268,
+          "evictable_fraction": 0.8457674306111083
+        },
+        "4": {
+          "duration_s": 87.74593362426758,
+          "resident_fraction": 0.9987167781013371,
+          "non_evictable_fraction": 0.09853840854001049,
+          "evictable_fraction": 0.9001783695613267
+        },
+        "3": {
+          "duration_s": 192.09840813255317,
+          "resident_fraction": 0.9990100118670738,
+          "non_evictable_fraction": 0.056106171582697054,
+          "evictable_fraction": 0.9429038402843776
+        },
+        "2": {
+          "duration_s": 67.47261125183107,
+          "resident_fraction": 0.9993264014981948,
+          "non_evictable_fraction": 0.08566631001906184,
+          "evictable_fraction": 0.9136600914791324
+        },
+        "1": {
+          "duration_s": 144.08436643600467,
+          "resident_fraction": 0.998116033239187,
+          "non_evictable_fraction": 0.04633508247122002,
+          "evictable_fraction": 0.9517809507679672
+        }
+      }
+    }
+  },
+  "hypothetical_arrivals": [
+    {
+      "rate_per_s": 0.5,
+      "count": 18,
+      "seed": 21,
+      "expected_interarrival_s": 2.0,
+      "expected_first_to_last_s": 34.0,
+      "seeded_first_s": 0.3605261055355022,
+      "seeded_last_s": 23.475993005691876,
+      "seeded_first_to_last_s": 23.115466900156374,
+      "little_law_population_proxy_using_burst_jct": 808.9483943723573,
+      "bound_to_actual_workload": false
+    },
+    {
+      "rate_per_s": 0.008,
+      "count": 18,
+      "seed": 21,
+      "expected_interarrival_s": 125.0,
+      "expected_first_to_last_s": 2125.0,
+      "seeded_first_s": 22.532881595968885,
+      "seeded_last_s": 1467.2495628557422,
+      "seeded_first_to_last_s": 1444.7166812597734,
+      "little_law_population_proxy_using_burst_jct": 12.943174309957717,
+      "bound_to_actual_workload": false
+    },
+    {
+      "rate_per_s": 0.008,
+      "count": 36,
+      "seed": 21,
+      "expected_interarrival_s": 125.0,
+      "expected_first_to_last_s": 4375.0,
+      "seeded_first_s": 22.532881595968885,
+      "seeded_last_s": 4249.446544327756,
+      "seeded_first_to_last_s": 4226.913662731787,
+      "little_law_population_proxy_using_burst_jct": 12.943174309957717,
+      "bound_to_actual_workload": false
+    },
+    {
+      "rate_per_s": 0.008,
+      "count": 48,
+      "seed": 21,
+      "expected_interarrival_s": 125.0,
+      "expected_first_to_last_s": 5875.0,
+      "seeded_first_s": 22.532881595968885,
+      "seeded_last_s": 6124.859763140725,
+      "seeded_first_to_last_s": 6102.326881544755,
+      "little_law_population_proxy_using_burst_jct": 12.943174309957717,
+      "bound_to_actual_workload": false
+    },
+    {
+      "rate_per_s": 0.01,
+      "count": 48,
+      "seed": 21,
+      "expected_interarrival_s": 100.0,
+      "expected_first_to_last_s": 4700.0,
+      "seeded_first_s": 18.02630527677511,
+      "seeded_last_s": 4899.88781051258,
+      "seeded_first_to_last_s": 4881.8615052358045,
+      "little_law_population_proxy_using_burst_jct": 16.178967887447147,
+      "bound_to_actual_workload": false
+    }
+  ],
+  "recommended_initial_rate_per_s": 0.008,
+  "recommended_total_distinct_projects": 48,
+  "smaller_calibration_distinct_projects": 36,
+  "target_unfinished_workflows_observation_only": [
+    12,
+    18
+  ],
+  "limitations": [
+    "Burst completion rate is an initial operating-point estimate, not measured stationary capacity.",
+    "Burst JCT changes under Poisson arrivals; lambda*burst_JCT is only a sizing proxy.",
+    "Unfinished workflows include external blocking; non-evictable is not pure compute-active KV.",
+    "Allocator occupancy includes retired cache; neither resident nor evictable proves useful cold migration.",
+    "Existing matched capture has only 18 original projects; 36/48 need a new project-disjoint population and natural source.",
+    "Arrival realization is fixed seed21; do not select a favorable seed or silently repeat projects.",
+    "All arms need identical scheduled arrivals and JCT including external and local admission waiting.",
+    "Full JCT retains every workflow including warmup and drain; a separately declared central window can describe throughput."
+  ],
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tool_offload_before_admission_20261027/recent_memory_comparison_20261029.json": "8aadaffa022bd8114b0d733bb745905ba0aec2c977a2cfb1079d78fec9ac2953",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_20261028_r1/full/replay/runtime_events.replay.jsonl": "e6c751cfd6ffc5632f23291dc57e436db8344815e1c8a8f57f9cfed22bedc309",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/replay/runtime_events.replay.jsonl": "b895eb2915903d99c1a4389fd4f862dc05a5105a602eb958d0d14c3c77a5817f"
+  },
+  "operator_sha256": "bbf40a8333f339447ea5141deb3c40c0f18abb7f61cb68e50a8460faa5d777de",
+  "performance_accepted": false
+}
