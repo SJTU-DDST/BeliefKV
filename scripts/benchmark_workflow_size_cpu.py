@@ -1,11 +1,13 @@
 """CPU microbenchmarks of cached resume selection and background prediction."""
 
 import argparse
+from collections import Counter
 from dataclasses import replace
 import json
 from pathlib import Path
 import sys
 import time
+from types import SimpleNamespace as NS
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -14,6 +16,10 @@ from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.policy.paper_baselines import ThunderActingDecayWorkingSet, ThunderProgram
 from beliefkv.policy.workflow_size_resume import WorkflowSizeWorkingSet
 from beliefkv.predictor.workflow_work import FEATURES, WorkflowProgress, WorkflowWorkModel
+from beliefkv.runtime.reference_free_continuation import ReferenceFreeContinuationAdmission
+from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
+from beliefkv.runtime.workflow_size_admission import WorkflowSizeAdmission
+from beliefkv.runtime.workflow_work_worker import WorkPrediction
 
 
 def measure(operation, repeats=200):
@@ -84,6 +90,32 @@ def main():
     result["background_100k_same_context_prefix_accounting"] = measure(completed_prefix, 40)
     result["history_representation"] = "owned_contiguous_numpy_int64"
     result["task_input_kind"] = model.task_input_kind
+    dispatch = WorkflowSizeAdmission.__new__(WorkflowSizeAdmission)
+    keys = [PrefillCandidateKey(
+        f"request-{i}", f"workflow-{i // 2}", str(i), f"context-{i}", 0, 0,
+    ) for i in range(8)]
+    dispatch.policy = NS(programs={
+        key.invocation_id: ThunderProgram(
+            key.invocation_id, 1000 + 10 * i, steps=2, queue_sequence=i,
+        ) for i, key in enumerate(keys)
+    })
+    cached = {
+        key.root_workflow_id: WorkPrediction(
+            tuple(.9 if value == (i // 2) % 3 else .05 for value in range(3)),
+            (i // 2) % 3, 1, time.monotonic(), "model",
+        ) for i, key in enumerate(keys)
+    }
+    dispatch._work = NS(prediction=cached.get)
+    dispatch._live_requests = {}
+    dispatch.runtime = NS(_opportunity_writer=None)
+    dispatch.counts = Counter()
+    result["bounded_eight_candidate_dispatch_order_only"] = {
+        "original": measure(lambda: ReferenceFreeContinuationAdmission._order_dispatch_keys(
+            dispatch, keys, {},
+        )),
+        "ranked": measure(lambda: dispatch._order_dispatch_keys(keys, {})),
+        "scope": "cached metadata ordering only; excludes event queue, full dispatcher and logging",
+    }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("x") as handle:
         json.dump(result, handle, indent=2)

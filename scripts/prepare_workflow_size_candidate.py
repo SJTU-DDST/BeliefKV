@@ -13,7 +13,7 @@ from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.predictor.workflow_work import WorkflowWorkModel
 
 
-def prepare(base, model, evaluation):
+def prepare(base, model, evaluation, *, free_dispatch_interval_ms=None):
     declaration = json.loads(base.read_bytes())
     digest = sha256_file(model)
     predictor = WorkflowWorkModel.load(model, digest)
@@ -65,7 +65,15 @@ def prepare(base, model, evaluation):
         "WORKFLOW_WORK_MODEL_SHA256": digest,
         "BELIEFKV_WORKFLOW_WORK_MODEL_SHA256": digest,
     })
-    arm_environment(env, "full")
+    if free_dispatch_interval_ms is not None:
+        if type(free_dispatch_interval_ms) is not int:
+            raise ValueError("workflow free dispatch period must be an integer")
+        env.update({
+            "AGENT_FREE_DISPATCH_INTERVAL_MS": str(free_dispatch_interval_ms),
+            "BELIEFKV_AGENT_FREE_DISPATCH_INTERVAL_MS": str(free_dispatch_interval_ms),
+        })
+    effective = arm_environment(env, "full")
+    dispatch = int(effective["BELIEFKV_AGENT_FREE_DISPATCH_INTERVAL_MS"])
     declaration.update({
         "status": (
             "cpu_candidate_waiting_for_gpu_qualification" if predictor.metadata.get("decision_eligible")
@@ -89,7 +97,10 @@ def prepare(base, model, evaluation):
         },
         "candidate_provenance": {
             "base": str(base.resolve()), "base_sha256": sha256_file(base),
-            "new_policy_scope": "paused_recovery_within_reference_categories",
+            "new_policy_scope": (
+                "paused_periodic_and_bounded_free_dispatch"
+                if dispatch else "paused_recovery_within_reference_categories"
+            ),
             "base_control_interval_ms": int(env["AGENT_CONTROL_INTERVAL_MS"]),
             "base_full_complete_review_required_before_gpu": True,
             "running_frozen_experiments_changed": False,
@@ -110,7 +121,13 @@ def prepare(base, model, evaluation):
         "workflow_additional_full_raw_budget_gate": False,
         "reference_decay_and_pressure_preserved": True,
         "workflow_ready_join_sibling_preference": "within_category_and_bucket_fitting_subsets",
-        "unchanged_event_grant_paths": True,
+        "unchanged_event_grant_paths": not bool(dispatch),
+        "workflow_free_dispatch_interval_ms": dispatch,
+        "workflow_free_dispatch_join_priority_preserved": True,
+        "workflow_free_dispatch_uses_complete_undiscounted_free_budget": True,
+        "workflow_free_dispatch_max_candidate_checks": 8,
+        "workflow_free_dispatch_max_grants": 4,
+        "workflow_free_dispatch_unknown_model_fallback": "original_rotating_window_order",
     })
     return declaration
 
@@ -120,9 +137,13 @@ def main():
     parser.add_argument("--base", type=Path, required=True)
     parser.add_argument("--model", type=Path, required=True)
     parser.add_argument("--evaluation", type=Path, required=True)
+    parser.add_argument("--free-dispatch-interval-ms", type=int)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    declaration = prepare(args.base, args.model, args.evaluation)
+    declaration = prepare(
+        args.base, args.model, args.evaluation,
+        free_dispatch_interval_ms=args.free_dispatch_interval_ms,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("x") as handle:
         json.dump(declaration, handle, indent=2)

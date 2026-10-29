@@ -3748,3 +3748,17 @@
   and failed attempts. No new GPU registration or deferred baseline;global
   performance goal remains active. Relax project/task overlap only across
   independent whole executions,not copied captures or future online labels.
+- New explicit workflow_dispatch candidate extends cached workflow classes to
+  the existing bounded500ms free-capacity dispatcher,while full control remains
+  2s and acting half-life1s. Preserve actual ready JOIN precedence,original
+  resume categories,complete undiscounted raw budgets,8rotating ordinary checks/
+  4grants,identity/executability/native authority,and active continuity.
+  Unknown-all windows keep original rotation;event lookup must not replace
+  periodic rank snapshots. No new eviction,prefetch,global aging or oracle input.
+  Actual115 related tests pass. Original middle-run allocator occupancy99.67%
+  contradicts blanket unused-HBM claims.78/2217 sampled necessary logical-fit
+  opportunities span81.01s;this is not removable JCT. See
+  docs/design/workflow_size_free_dispatch_20261029_zh.md. Complete fresh
+  source-bound CPU and GPU position/sampling qualification before matched Full;
+  reuse existing complete controls,normal tails and exact work. No promotion
+  or baseline expansion follows from the implementation alone.

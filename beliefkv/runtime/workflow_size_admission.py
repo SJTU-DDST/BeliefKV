@@ -5,7 +5,7 @@ import os
 import time
 
 from beliefkv.core.events import RelationType
-from beliefkv.policy.workflow_size_resume import WorkflowSizeWorkingSet
+from beliefkv.policy.workflow_size_resume import WorkflowSizeWorkingSet, resume_category
 from beliefkv.runtime.reference_free_continuation import ReferenceFreeContinuationAdmission
 from beliefkv.runtime.workflow_work_worker import WorkflowWorkWorker
 
@@ -40,6 +40,56 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
     def _rank(self, invocation, now):
         prediction = self._prediction(invocation)
         return 1 if prediction is None else prediction.bucket
+
+    def _order_dispatch_keys(self, keys, joins):
+        if len(keys) < 2:
+            return keys
+        started = time.thread_time()
+        predictions, priorities = {}, {}
+        for index, key in enumerate(keys):
+            item = self.policy.programs.get(key.invocation_id)
+            if item is None:
+                continue
+            workflow = key.root_workflow_id
+            if workflow not in predictions:
+                predictions[workflow] = self._work.prediction(workflow)
+            prediction = predictions[workflow]
+            bucket = 1 if prediction is None else prediction.bucket
+            req = self._live_requests.get(key.request_id)
+            join = (
+                key.invocation_id in joins and req is not None
+                and self.runtime._ready_join_parent(req, key)
+            )
+            priorities[key] = (
+                0 if join else 1, resume_category(item), bucket,
+                item.tokens, item.queue_sequence, index,
+            )
+        supported = any(
+            prediction is not None and prediction.evidence == "model"
+            for prediction in predictions.values()
+        )
+        ordered = (
+            sorted(keys, key=lambda key: priorities.get(
+                key, (2, 0, 1, 0, 0, len(keys)),
+            )) if supported else keys
+        )
+        changed = ordered != keys
+        self.counts["workflow_size_dispatch_passes"] += 1
+        self.counts["workflow_size_dispatch_order_changes"] += changed
+        self.counts["workflow_size_dispatch_cpu_us"] += (time.thread_time() - started) * 1e6
+        writer = getattr(self.runtime, "_opportunity_writer", None)
+        if changed and writer is not None:
+            writer.record({
+                "event": "workflow_size_free_dispatch_order",
+                "ts_ms": time.time() * 1000., "monotonic_s": time.monotonic(),
+                "ordered": [
+                    {"key": asdict(key), "priority": priorities.get(key)}
+                    for key in ordered
+                ],
+                "scope": "bounded_pending_window_order_only; actual_grants_logged_separately",
+                "physical_capacity_credit": False,
+            })
+        return ordered
 
     def registered(self, req, key):
         super().registered(req, key)
@@ -165,12 +215,19 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         self._resume_groups.pop(invocation, None)
 
     def status(self):
+        dispatch = bool(self.dispatch_interval_ms)
         return {
             **super().status(),
             "workflow_size_resume": True,
-            "workflow_size_resume_scope": "paused_within_original_category",
+            "workflow_size_resume_scope": (
+                "paused_periodic_and_bounded_free_dispatch"
+                if dispatch else "paused_within_original_category"
+            ),
             "workflow_work_predictor": self._work.status(),
-            "workflow_size_other_admission_paths": "unchanged_join_and_free_continuation",
+            "workflow_size_other_admission_paths": (
+                "join_unchanged;bounded_free_dispatch_uses_cached_workflow_classes"
+                if dispatch else "unchanged_join_and_free_continuation"
+            ),
             "workflow_size_new_preemption": False,
         }
 

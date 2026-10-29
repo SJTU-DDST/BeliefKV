@@ -104,6 +104,9 @@ class ReferenceFreeContinuationAdmission(ReferenceThunderAdmission):
         else:
             self._dispatch_pending.pop(key.invocation_id, None)
 
+    def _order_dispatch_keys(self, keys, joins):
+        return keys
+
     def _dispatch_free_capacity(self, *, preferred=None):
         if self.policy is None:
             return False
@@ -134,7 +137,7 @@ class ReferenceFreeContinuationAdmission(ReferenceThunderAdmission):
                 keys.append(key)
                 checked.add(invocation)
         granted = 0
-        for key in keys:
+        for key in self._order_dispatch_keys(keys, joins):
             self.counts["free_dispatch_candidate_checks"] += 1
             found = self._candidate(key.request_id, key)
             if found is None:

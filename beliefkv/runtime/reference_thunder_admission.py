@@ -478,7 +478,10 @@ def validate_reference_admission(
     if workflow_size_resume:
         expected.update({
             "workflow_size_resume": True,
-            "workflow_size_resume_scope": "paused_within_original_category",
+            "workflow_size_resume_scope": (
+                "paused_periodic_and_bounded_free_dispatch"
+                if free_dispatch_interval_ms else "paused_within_original_category"
+            ),
             "workflow_size_new_preemption": False,
         })
         model = state.get("workflow_work_predictor", {}) if isinstance(state, dict) else {}
