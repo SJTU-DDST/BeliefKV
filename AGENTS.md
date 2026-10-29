@@ -3762,3 +3762,14 @@
   source-bound CPU and GPU position/sampling qualification before matched Full;
   reuse existing complete controls,normal tails and exact work. No promotion
   or baseline expansion follows from the implementation alone.
+- Workflow-dispatch implementation is frozenaedfe19b. Current source-bound CPU
+  actually passes5008+6,retains all4946 prior identities,no failures/errors/skips,
+  binds2007inputs/native unchanged. Cached8-candidate sort median12.79us/
+  P99 16.46us excludes complete dispatch/logging/background/end-to-end cost.
+  Preflight rechecks exact3674/145565966/549671 complete controls,normal tails,
+  drain/actual exits and current reservation/resources. Position qualification
+  ops/workflow_dispatch_position_20261029.registration.json now actually runs
+  watcher1688208 on18894,real token/session checks from frozenaedfe19b.
+  It precedes ops/workflow_dispatch_20261029_r1.registration.json;do not
+  confuse qualification with a completed Full or claim superiority.
+  Keep user worktree edits and all earlier negative results;no deferred baseline.

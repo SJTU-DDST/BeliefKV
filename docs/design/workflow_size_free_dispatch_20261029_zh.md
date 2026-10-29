@@ -69,3 +69,28 @@ KV 遍历或新模型推断。不改变旋转窗口的候选上限及推进方�
 Full；复用完整 ThunderAgent decay 与原 2s Full 对照，不再采集 native。
 保留全部正常尾部和负结果。验收包括完整平均/P95 JCT、全程吞吐、decode
 趋势/分布、补位后实际服务、重算/迁移及后台与控制线程成本。
+
+## 本轮资格与启动
+
+运行时和候选声明已提交为 `aedfe19b`。相关 115 项检查先通过，随后
+`workflow_work_training_20261029/workflow_dispatch_r1/cpu_r1/evidence.json`
+实际通过 5,008 项测试及 6 个子测试，完整保留此前 4,946 个测试身份，
+无失败、错误或跳过，绑定 2,007 个源码/声明输入，原生引擎源码保持不变。
+
+`eligibility_frontier_r1/dispatch_micro.json` 的 8 候选排序微基准：
+候选线程 CPU 中位 12.79µs、P99 16.46µs，原空操作中位 0.54µs。
+只测缓存元数据排序，不包含完整事件处理、日志、后台预测或 GPU 干扰；
+不能外推为整轮新增 CPU 开销或 JCT 改善。
+
+`workflow_dispatch_r1/preflight.json` 从干净 worktree 再次验证完整 ThunderAgent、
+原 2s Full 和前一版 workflow-size Full 的工作完全一致，并确认正常尾部、
+新鲜遥测排空、实际 owned exit、模型和当前 CPU 源码绑定。GPU 独占资源检查
+通过，沿用原生树 `434c35dd66211d0a230717c88bf1452056769a40`。
+
+`ops/workflow_dispatch_position_20261029.registration.json` 已实际启动资格检查，
+watcher 1688208，执行源码冻结在 `aedfe19b`，端口 18894。
+实际服务参数为 2048/mixed-off/running24/seed21、805198-token device pool、
+200GB Host。当前进入真实 token/session/停止条件检查，尚未报告通过；
+通过后才会注册 `ops/workflow_dispatch_20261029_r1.registration.json` 并启动
+`experiments/raw/workflow_dispatch_20261029_r1/full`。本段不表示新 Full 已完成、
+性能改善或已满足全局目标。
