@@ -209,3 +209,26 @@ position/token/session/native-stop 与 sampler1/8/24 检查，再进入
 - `complete_native_demand_r2.json`、`original_native_demand_r1.json`
 - `complete_accounting_cpu_r1.xml`
 - `review_worker_r1/candidate_vs_original.json`
+
+## 新增容量缺口日志的完整普查
+
+`complete_selected_shortfalls_r1.json` 由单独的
+`scripts/audit_selected_capacity_shortfalls.py` 读取已封存日志生成。
+8 项针对性检查以及包含该审计器的 120 项源码绑定检查均通过。
+
+共 307 条 `selected_consumer_capacity_shortfall`，对应 307 个不同请求和
+attempt，没有重复；其中 273 条来自实际准入前、34 条来自维护入口。
+缺口严格核对为 missing prefix + 本轮输入 + 增长预留 - 当时空闲页：
+P50 为 23,272 token，P90 为 124,769.6，最大 161,037。它们需要容量释放
+或等待，不能解释成 HBM 长期未填满，也不能全部解释成必须新做 D2H。
+已有 Host 副本的释放、终态释放以及其他 donor 仍可能满足需求。
+
+45 次私有 donor 几何不足对应 45 个不同消费者；所检查的单条未备份
+私有路径相对最小必需复用页的覆盖率 P50 只有 1.45843%，P90 为
+21.32869%。这解释了当前单路径 handoff 的一部分低覆盖，并不能证明
+系统所有安全 donor 的总量不足。12 次 native 拒绝和三次提交单独保留。
+这些记录仍不覆盖全部 native LRU write-back，不构成强制新 D2H 的总数。
+
+整轮原生 D2H 为 999.837GB、H2D 为 2443.981GB；其中前文 0.60585GB
+只是面向已选消费者的预测式新备份，不能拿它代替整轮 D2H。copy stream
+累计区间包含依赖，不能直接从 JCT 中扣除。

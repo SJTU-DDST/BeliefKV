@@ -1,0 +1,21 @@
+{
+  "status": "stopped_no_next_gpu_action",
+  "watcher": {
+    "pid": 1437287,
+    "state": "R",
+    "ppid": 1,
+    "start_ticks": "745950581",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-prefill2048-f502f87d/experiments/reports/prefill2048_mean120_20261029/queue_pair.py",
+      "--watch",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/queue_r1/registration.json"
+    ]
+  },
+  "completed_arms": [],
+  "performance_accepted": false,
+  "current_arm": "thunderagent_acting_decay",
+  "checked_at": "2026-10-29T23:59:06.256204+08:00",
+  "error": "ValueError('position supervisor exited without registering its full comparison')",
+  "finished_at": "2026-10-29T23:59:06.257104+08:00"
+}

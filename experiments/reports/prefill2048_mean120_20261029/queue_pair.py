@@ -52,6 +52,13 @@ def method_complete(entry):
     if position["status"] == "stopped_for_investigation":
         raise ValueError("position qualification failed; retain this attempt")
     if not comparison_path.exists():
+        if position["status"] == "calibrated_comparison_registered":
+            if (
+                position.get("comparison_registration") != entry["comparison_registration"]
+                or not Path(entry["comparison_registration"]).exists()
+            ):
+                raise ValueError("position completion lacks its exact registered comparison")
+            return None
         if not causal.reservation.alive(position.get("watcher")):
             raise ValueError("position supervisor exited without registering its full comparison")
         return None
@@ -184,28 +191,37 @@ def watch(path):
         for label in plan["order"]:
             entry = plan["entries"][label]
             state.update(status="waiting_resources", current_arm=label)
-            while not causal.qualified.resources(entry["port"])["ready"]:
+            if label not in plan.get("adopt_existing_comparisons", ()):
+                while not causal.qualified.resources(entry["port"])["ready"]:
+                    pulse()
+                    time.sleep(10.)
                 pulse()
-                time.sleep(10.)
-            pulse()
-            completed = subprocess.run(
-                plan["commands"][label], cwd=ROOT, capture_output=True, text=True, timeout=180.,
-                env={**os.environ, "CUDA_VISIBLE_DEVICES": "99999", "PYTHONHASHSEED": "21"},
-            )
-            causal.reservation.write_json(path.parent / (label + ".entry.json"), {
-                "command": plan["commands"][label], "returncode": completed.returncode,
-                "stdout": completed.stdout, "stderr": completed.stderr,
-            })
-            if completed.returncode:
-                raise RuntimeError("position registration refused; do not start another arm")
+                completed = subprocess.run(
+                    plan["commands"][label], cwd=ROOT, capture_output=True, text=True, timeout=180.,
+                    env={**os.environ, "CUDA_VISIBLE_DEVICES": "99999", "PYTHONHASHSEED": "21"},
+                )
+                causal.reservation.write_json(path.parent / (label + ".entry.json"), {
+                    "command": plan["commands"][label], "returncode": completed.returncode,
+                    "stdout": completed.stdout, "stderr": completed.stderr,
+                })
+                if completed.returncode:
+                    raise RuntimeError("position registration refused; do not start another arm")
             state["status"] = "waiting_position_then_complete_formal_work"
             missing_state_checks = 0
+            missing_comparison_since = None
             while True:
                 pulse()
-                if not Path(entry["position_registration"]).with_suffix(".state.json").exists():
+                position_state = Path(entry["position_registration"]).with_suffix(".state.json")
+                comparison_state = Path(entry["comparison_registration"]).with_suffix(".state.json")
+                if not position_state.exists():
                     missing_state_checks += 1
                     if missing_state_checks > 3:
                         raise ValueError("position supervisor did not publish its initial state")
+                if Path(entry["comparison_registration"]).exists() and not comparison_state.exists():
+                    if missing_comparison_since is None:
+                        missing_comparison_since = time.monotonic()
+                    elif time.monotonic() - missing_comparison_since > 180.:
+                        raise ValueError("registered comparison did not publish state within 180 seconds")
                 work = method_complete(entry)
                 if work is not None:
                     if reference_work is not None and work != reference_work:

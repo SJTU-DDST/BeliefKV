@@ -1,0 +1,39 @@
+{
+  "observed_at": "2026-10-30T00:04:00.745495+08:00",
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/test_prefill2048_mean120_experiment.py",
+    "tests/test_selected_capacity_shortfall_audit.py",
+    "tests/test_position_replay_calibration.py",
+    "tests/test_mean120_arrival_experiment.py",
+    "--tb=short",
+    "--junitxml=/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/monitor_cpu_r1.xml"
+  ],
+  "returncode": 0,
+  "unique_test_identities": 120,
+  "failed_error_skipped_cases": [],
+  "source_sha256": {
+    "experiments/reports/prefill2048_mean120_20261029/queue_pair.py": "e2bc76f16f8d14a1e7b4f098891dc4aff672026056e2b2feeb5a25341764b346",
+    "experiments/reports/prefill2048_mean120_20261029/continue_queue.py": "dbb7455158422fdb3c5c5a07213740ad773256dc632d0a2672c393d5cdddba47",
+    "experiments/reports/prefill2048_mean120_20261029/prepare.py": "f9eeb54db69bfe94b7fa6bf4b1c7e197314c81486d92088b6a9a907aa0b5e8de",
+    "experiments/reports/arrival_mean120_20261029/queue_pair.py": "5197733d25eb7ab2ad2fd3462ee7fef27fe97e1f7d5229e8dc55afc395b19f78",
+    "scripts/audit_selected_capacity_shortfalls.py": "6a7c589dba19e2e9e33979df27d16bd8f9044b467a73fed0732432c36819fbe4",
+    "tests/test_selected_capacity_shortfall_audit.py": "575f72ba73b9e1c62af95cc3018afdd6329192633e883ac68135ecda85652e3b",
+    "tests/test_prefill2048_mean120_experiment.py": "1a7575ce61c306361036c7bb419b75981e90262b424aa78c6e433bc20b5e86c2",
+    "tests/test_position_replay_calibration.py": "d10654f71b6f7aaf23ebde692025c9ce0e0a8a9612ae0e45fbc3cc713e7093b1",
+    "scripts/run_position_replay_calibration.py": "2724f915131e6c0e655098c39d5fc3106ed8d7512868322e3e57f747442498f8",
+    "tests/test_mean120_arrival_experiment.py": "6d4856a12217777105f29ae59c6e42ec23d0636d237cc4a083be36beceb71841",
+    "scripts/run_causal_comparison.py": "bc83c01771b1dfc9c709d4362a4d3031984ce7df314364c2f7ba41fb1010c53b"
+  },
+  "sources_unchanged_during_execution": true,
+  "report": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/monitor_cpu_r1.xml",
+    "sha256": "7b4887143b96672d3119aeea8abeb4e373814b9848af03cd544ff55ef0e65bdd"
+  },
+  "scope": "CPU monitor startup and observation; original frozen GPU sources and qualification unchanged",
+  "GPU_experiment_started": false,
+  "performance_accepted": false
+}

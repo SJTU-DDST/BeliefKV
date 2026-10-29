@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from experiments.reports.prefill2048_mean120_20261029 import prepare, queue_pair
+from experiments.reports.prefill2048_mean120_20261029.continue_queue import validate_original
 from scripts import run_causal_comparison as causal
 
 
@@ -93,6 +94,7 @@ def test_next_method_waits_for_actual_complete_formal_work_and_owned_exit(tmp_pa
             "stopped_for_investigation" if stage == "position_failed" else
             "calibrated_comparison_registered",
             "watcher": {"pid": "position"},
+            "comparison_registration": str(comparison),
         },
         comparison_state: {
             "status": "collected_performance_review_pending" if stage in ("formal_live_tail", "formal_complete")
@@ -119,3 +121,57 @@ def test_next_method_waits_for_actual_complete_formal_work_and_owned_exit(tmp_pa
         result = queue_pair.method_complete(entry)
         assert result == ({"all_requests": "exact"} if stage == "formal_complete" else None)
     assert bool(checked) == (stage in ("formal_live_tail", "formal_complete"))
+
+
+def test_registered_formal_startup_can_outlive_its_position_supervisor(tmp_path, monkeypatch):
+    position = tmp_path / "position.registration.json"
+    comparison = tmp_path / "formal.registration.json"
+    position.with_suffix(".state.json").touch()
+    comparison.touch()
+    monkeypatch.setattr(causal, "load", lambda _: {
+        "status": "calibrated_comparison_registered",
+        "comparison_registration": str(comparison), "watcher": {"pid": 1},
+    })
+    monkeypatch.setattr(causal.reservation, "alive", lambda _: False)
+    monkeypatch.setattr(queue_pair, "complete_work", lambda _: pytest.fail("formal work is not complete"))
+    assert queue_pair.method_complete({
+        "position_registration": str(position), "comparison_registration": str(comparison),
+    }) is None
+
+
+@pytest.mark.parametrize("change", (
+    None, "wrong_failure", "live_old_monitor", "already_started_full", "wrong_chunk",
+    "wrong_arm", "failed_control", "mixed",
+))
+def test_replacement_monitor_adopts_only_the_original_registered_control(change):
+    label = prepare.ORDER[0]
+    plan = {"order": list(prepare.ORDER)}
+    state = {
+        "status": "stopped_no_next_gpu_action",
+        "error": "ValueError('position supervisor exited without registering its full comparison')",
+        "current_arm": label, "completed_arms": [],
+    }
+    control = {
+        "order": [label],
+        "source_server_parameters": {"chunked_prefill_size": 2048, "enable_mixed_chunk": False},
+    }
+    live = {"status": "running_" + label}
+    if change == "wrong_failure":
+        state["error"] = "another failure"
+    elif change == "wrong_chunk":
+        control["source_server_parameters"]["chunked_prefill_size"] = 4096
+    elif change == "mixed":
+        control["source_server_parameters"]["enable_mixed_chunk"] = True
+    elif change == "wrong_arm":
+        control["order"] = ["full"]
+    elif change == "failed_control":
+        live["status"] = "stopped_for_investigation"
+    options = {
+        "full_registered": change == "already_started_full",
+        "old_watcher_alive": change == "live_old_monitor",
+    }
+    if change is None:
+        validate_original(plan, state, control, live, **options)
+    else:
+        with pytest.raises(ValueError, match="monitor failure"):
+            validate_original(plan, state, control, live, **options)

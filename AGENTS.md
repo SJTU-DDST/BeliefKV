@@ -3442,3 +3442,25 @@
   registration; no2048 GPU or performance claim exists from these CPU checks.
   Keep tool/frontier prefetch0,mean120 table/work/capacities/seeds/tails fixed
   and Agentix/TokenCake deferred.
+- Common2048 position on frozenf502f87d now actually passes all24 exact token/
+  session/native-stop calls (24 native stops) and sampler1/8/24; actual2048/
+  mixed-false/running24/capacities match. Thunder formal is independently
+  registered on18881 at ops/prefill2048_mean120_thunder_20261029_r1.registration.json.
+  Preserve queue_r1's CPU startup-monitor failure: it mistook the interval
+  between successful formal registration and first state publication for an
+  absent comparison. The GPU control was not interrupted. Monitor now permits
+  a bounded180s initial-state window only with exact successful registration.
+  Separate continue_queue adopts only that failure/live control,requires old
+  monitor exit and unregistered Full,and preserves original pending f502
+  command/4810-case qualification.120 source-bound monitor/auditor checks pass;
+  do not rerun the control or change its frozen inputs.
+- Complete new consumer-shortfall audit finds307 unique request attempts,
+  no repeats:273 before native admission/34maintenance,deficitP50=23272/
+  P90=124769.6/max161037 tokens.45 private-path geometry refusals correspond
+  to45 consumers,donor coverage of required recycled slotsP50=1.45843%.
+  These require release or waiting,not necessarily new D2H; do not interpret
+  them as an exhaustive mandatory-writeback census. Actual whole-run D2H
+  999.837GB/H2D2443.981GB includes native transfers beyond the.60585GB of new
+  prediction-targeted backups. Current single-private-path handoff coverage
+  and high physical residency are separate concerns. Preserve its report,
+ 8 focused and120 source-bound checks; global optimization remains incomplete.
