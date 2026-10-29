@@ -226,6 +226,8 @@ class TokenCakePaperLifecycle(TokenCakeNativeLifecycle):
                 continue
             scores[identity] = request_score(checkpoint.metadata, checkpoint.created_at, now)
             ready[identity] = missing, lead
+        if not ready:
+            return
         maximum = max(scores.values(), default=1)
         candidates = [
             UploadCandidate(

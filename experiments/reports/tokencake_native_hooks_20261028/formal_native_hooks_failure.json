@@ -1,0 +1,131 @@
+{
+  "observed_at": "2026-10-29T06:54:16.682596+00:00",
+  "status": "failed_partial_native_hook_tokencake_not_a_performance_result",
+  "actual_owned_exit_and_cleanup_verified": true,
+  "expected_requests": 3674,
+  "exact_completed_receipts": 2922,
+  "native_scheduler_failure_traceback": "Scheduler hit an exception: Traceback (most recent call last):\n  File \"/home/longhao/experiment/.worktrees/sglang-causal-131d175450fe-22caa011719e/python/sglang/srt/managers/scheduler.py\", line 6393, in run_scheduler_process\n    scheduler.run_event_loop()\n  File \"/home/longhao/experiment/.worktrees/sglang-causal-131d175450fe-22caa011719e/python/sglang/srt/managers/scheduler.py\", line 2044, in run_event_loop\n    dispatch_event_loop(self)\n  File \"/home/longhao/experiment/.worktrees/sglang-causal-131d175450fe-22caa011719e/python/sglang/srt/managers/scheduler.py\", line 6239, in dispatch_event_loop\n    scheduler.event_loop_overlap()\n  File \"/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/utils/_contextlib.py\", line 124, in decorate_context\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/longhao/experiment/.worktrees/sglang-causal-131d175450fe-22caa011719e/python/sglang/srt/managers/scheduler.py\", line 2143, in event_loop_overlap\n    plan = self.get_next_batch_to_run(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/longhao/experiment/.worktrees/sglang-causal-131d175450fe-22caa011719e/python/sglang/srt/observability/scheduler_stage_metrics.py\", line 155, in wrapper\n    return profiled_func(self, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/longhao/experiment/.worktrees/sglang-causal-131d175450fe-22caa011719e/python/sglang/srt/utils/nvtx_utils.py\", line 109, in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/longhao/experiment/.worktrees/sglang-causal-131d175450fe-22caa011719e/python/sglang/srt/managers/scheduler.py\", line 3873, in get_next_batch_to_run\n    beliefkv_runtime.scheduler_step(\n  File \"/home/longhao/experiment/.worktrees/beliefkv-causal-22caa011719e/beliefkv/runtime/hotpath_timing.py\", line 145, in measured\n    return function(self, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/longhao/experiment/.worktrees/beliefkv-causal-22caa011719e/beliefkv/runtime/sglang_v0520_runtime.py\", line 2687, in scheduler_step\n    paper.tick(now=now_ms / 1000.)\n  File \"/home/longhao/experiment/.worktrees/beliefkv-causal-22caa011719e/beliefkv/runtime/tokencake_baseline.py\", line 657, in tick\n    self.temporal.tick()\n  File \"/home/longhao/experiment/.worktrees/beliefkv-causal-22caa011719e/beliefkv/runtime/tokencake_paper.py\", line 317, in tick\n    super().tick()\n  File \"/home/longhao/experiment/.worktrees/beliefkv-causal-22caa011719e/beliefkv/runtime/tokencake_lifecycle.py\", line 444, in tick\n    pressure = self.waiting_pressure() if pressure is None else pressure\n               ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/longhao/experiment/.worktrees/beliefkv-causal-22caa011719e/beliefkv/runtime/tokencake_lifecycle.py\", line 250, in waiting_pressure\n    probe = ledger.probe(req)\n            ^^^^^^^^^^^^^^^^^\n  File \"/home/longhao/experiment/.worktrees/beliefkv-causal-22caa011719e/beliefkv/runtime/tokencake_capacity.py\", line 191, in probe\n    extents = self._path_extents(match.last_device_node, key, namespace)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/longhao/experiment/.worktrees/beliefkv-causal-22caa011719e/beliefkv/runtime/tokencake_capacity.py\", line 163, in _path_extents\n    raise ValueError(\"TokenCake could not prove its native prefix path\")\nValueError: TokenCake could not prove its native prefix path\n",
+  "driver_disconnect_is_secondary": true,
+  "last_paper_state": {
+    "scope": "paper_strategy_observed_metadata_native_adaptation",
+    "author_commit": "1901ebf31fdf63590148e61d5c2f65e9fb7ec010",
+    "program_identity": "invocation_id",
+    "future_information_used": false,
+    "native_capacity_authority_preserved": true,
+    "complete_baseline": true,
+    "generation_budget_source": "separately_declared_serving_budget",
+    "generation_budget": 16384,
+    "context_limit": 262144,
+    "scheduler_steps": 45060,
+    "partition_adjustment_steps": 500,
+    "partition_clock": "native_scheduler_step",
+    "pending_requests": 8,
+    "counts": {
+      "preservation_wall_ns": 1613532879366,
+      "preservation_max_wall_ns": 189406843,
+      "partition_updates": 93,
+      "queue_plans": 43043,
+      "plan_wall_ns": 509408486644,
+      "plan_max_wall_ns": 72678771,
+      "registered": 2930,
+      "control_steps": 45058,
+      "control_wall_ns": 6940724292,
+      "control_max_wall_ns": 1319189,
+      "guard_wall_ns": 526401265852,
+      "guard_max_wall_ns": 21093616,
+      "admitted": 2929,
+      "capacity_candidates_deferred": 219780,
+      "completed": 2922
+    },
+    "capacity_counts": {
+      "admission_probes": 1082122,
+      "admission_stages": 2929,
+      "private_admission_slots_staged": 1694024,
+      "private_admission_slots_materialized": 1694024,
+      "physical_commits": 447201,
+      "split_extents": 53,
+      "requests_released": 2922
+    },
+    "remaining": [
+      "matched_full_population_comparison",
+      "paired_repetitions"
+    ],
+    "policy": "tokencake_paper_observed_metadata",
+    "runtime_implementation_complete": true,
+    "graph_information_source": "observed_events_or_explicit_application_metadata",
+    "original_application_declared_graph_available": false,
+    "temporal_policy": "paper_first_fit_and_deadline_progressive_upload",
+    "predictive_upload_enabled": true,
+    "temporal_parameters": {
+      "running_limit": 24,
+      "prefill_token_budget": 16384,
+      "chunked_prefill_tokens": 4096,
+      "policy_block_tokens": 1,
+      "eviction_window_tokens": 128
+    },
+    "transfer_observer_error": null,
+    "preservation_counts": {
+      "decode_throughput_samples": 41919,
+      "generation_completions": 5640,
+      "stall_start_conflict": 1595,
+      "stall_finish_late_finish": 1900,
+      "d2h_bandwidth_samples": 99551,
+      "stall_start_applied": 1182,
+      "stall_finish_applied": 872,
+      "h2d_bandwidth_samples": 1349,
+      "empty_or_unprofitable_prefix": 44016,
+      "paper_first_fit_rejected": 37552,
+      "no_waiting_demand": 37552,
+      "low_pressure": 1949
+    },
+    "lifecycle_counts": {
+      "associated": 2930,
+      "completed": 5712,
+      "reset": 1910,
+      "conflict": 1595,
+      "late_finish": 1900,
+      "started": 1182,
+      "finished": 872,
+      "expired": 63
+    },
+    "transfer_counts": {
+      "native_commands_completed": 0,
+      "path_depth_declined": 197
+    },
+    "upload_priority": "normalized_current_request_score_plus_normalized_deadline_urgency",
+    "upload_capacity": "paper_equations_3_4_and_native_fixed_generation_commitments",
+    "upload_reservations": 0,
+    "observed_decode_tokens_per_second": 232.18722990578408,
+    "serving_generation_budget_source": "separately_declared_not_recorded_output_length",
+    "pressure_release": "optional_upload_reservation_before_native_request_preemption"
+  },
+  "native_path_depth_refusals": 197,
+  "exact_failed_node_identity_unrecorded": true,
+  "no_complete_jct_or_throughput_claim": true,
+  "dependent_agentix_waiter_stopped_without_gpu_children": true,
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_locobench_native_hooks_20261028_r1/tokencake_paper_observed/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 10905978,
+      "complete_prefix_sha256": "9aa5d3ac21b896bebcd1ccb6fb2a9e605a597453135e4bea7b3297fc010af9c2",
+      "first_read_limit_bytes": 10905978
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_locobench_native_hooks_20261028_r1/tokencake_paper_observed/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 30202864,
+      "complete_prefix_sha256": "6072dfad0916f1237d462f476d576b02a280e6b8b7a28c4f3a3f221a948b189c",
+      "first_read_limit_bytes": 30202864
+    }
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/failure_review.py": "2f0234926e3a48593fbad811a49264238d971328c2c761b6a7130a8a5e31d745",
+    "/home/longhao/experiment/ops/tokencake_locobench_native_hooks_20261028_r1.registration.json": "1e4485bb351afcf0796eda7882464eb7f84cc6070565d56a11558f3b3ea92d4c",
+    "/home/longhao/experiment/ops/tokencake_locobench_native_hooks_20261028_r1.registration.state.json": "4f948eb0bac7c584989746c8182d154e2378ace410fc6f67fa172e4265b7426b",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_locobench_native_hooks_20261028_r1/tokencake_paper_observed/owned_process_cleanup.json": "5ffd80475df570a9c312c793702432ac4727afac21136967a7c8eb5f9b95a604",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_locobench_native_hooks_20261028_r1/tokencake_paper_observed/server.log": "1b1ef3d0f2379b5470a355650db3cd0e1460656e3706dd570948bde4b0e48dcf",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_locobench_native_hooks_20261028_r1/tokencake_paper_observed/replay/execution_failure.json": "ff655f610068e5ec1de0d41dde59b215cf0d8e9b2b233b4e3b856cfc704edf2a",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/replay/native_requests.jsonl": "971780ae36bbc6dd99de53bcc5bb26a0d909baeba4dcd9ce4e28dc22f05bab73",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_locobench_native_hooks_20261028_r1/tokencake_paper_observed/replay/cleanup_failure.json": "91cf7a6b4f37708807ba04a20f42817e3d88a91617c82c4263b500daad682b74",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_locobench_native_hooks_20261028_r1/tokencake_paper_observed/replay.log": "e70d430151dabc25b6456f7ef3bc52e9a14a22e7cc6158398a79174a9856fe2b",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/gpu_native_consumers_r2/summary.json": "685268fc6f3cb92d5417458136314a698a492748c83873e838a5a03e464b4512"
+  },
+  "performance_accepted": false
+}

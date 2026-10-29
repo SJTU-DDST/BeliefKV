@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="5" time="7.943" timestamp="2026-10-28T23:54:15.517435-07:00" hostname="ddst-12"><testcase classname="tests.test_tokencake_native_capacity" name="test_fragmented_native_prefix_is_accounted_beyond_optional_transfer_scan_limit[512]" time="6.815"><failure message="ValueError: TokenCake could not prove its native prefix path">tests/test_tokencake_native_capacity.py:281: in test_fragmented_native_prefix_is_accounted_beyond_optional_transfer_scan_limit
+    probe = ledger.probe(item)
+            ^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/tokencake_capacity.py:191: in probe
+    extents = self._path_extents(match.last_device_node, key, namespace)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/tokencake_capacity.py:163: in _path_extents
+    raise ValueError("TokenCake could not prove its native prefix path")
+E   ValueError: TokenCake could not prove its native prefix path</failure></testcase><testcase classname="tests.test_tokencake_native_capacity" name="test_spatial_prefix_walk_rejects_invalid_native_paths[foreign_namespace]" time="0.003"><failure message="KeyError: None">tests/test_tokencake_native_capacity.py:309: in test_spatial_prefix_walk_rejects_invalid_native_paths
+    finish(accounting, item)
+tests/test_tokencake_native_capacity.py:52: in finish
+    cache.dec_lock_ref(item.last_node, item.lock)
+../.worktrees/sglang-tokencake-scheduler-hooks-20261028/python/sglang/srt/mem_cache/unified_radix_cache.py:2450: in dec_lock_ref
+    return self.tree_core.dec_lock_ref(node_id, params, skip_swa)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../.worktrees/sglang-tokencake-scheduler-hooks-20261028/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py:715: in dec_lock_ref
+    node = self.node_by_id(node_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+../.worktrees/sglang-tokencake-scheduler-hooks-20261028/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py:533: in node_by_id
+    return self._node_arena[node_id]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: None</failure></testcase><testcase classname="tests.test_tokencake_native_capacity" name="test_spatial_prefix_walk_rejects_invalid_native_paths[cycle]" time="0.003"><failure message="KeyError: None">tests/test_tokencake_native_capacity.py:309: in test_spatial_prefix_walk_rejects_invalid_native_paths
+    finish(accounting, item)
+tests/test_tokencake_native_capacity.py:52: in finish
+    cache.dec_lock_ref(item.last_node, item.lock)
+../.worktrees/sglang-tokencake-scheduler-hooks-20261028/python/sglang/srt/mem_cache/unified_radix_cache.py:2450: in dec_lock_ref
+    return self.tree_core.dec_lock_ref(node_id, params, skip_swa)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../.worktrees/sglang-tokencake-scheduler-hooks-20261028/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py:715: in dec_lock_ref
+    node = self.node_by_id(node_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+../.worktrees/sglang-tokencake-scheduler-hooks-20261028/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py:533: in node_by_id
+    return self._node_arena[node_id]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: None</failure></testcase><testcase classname="tests.test_tokencake_native_capacity" name="test_spatial_prefix_walk_rejects_invalid_native_paths[stale_node]" time="0.003"><failure message="KeyError: None">tests/test_tokencake_native_capacity.py:309: in test_spatial_prefix_walk_rejects_invalid_native_paths
+    finish(accounting, item)
+tests/test_tokencake_native_capacity.py:52: in finish
+    cache.dec_lock_ref(item.last_node, item.lock)
+../.worktrees/sglang-tokencake-scheduler-hooks-20261028/python/sglang/srt/mem_cache/unified_radix_cache.py:2450: in dec_lock_ref
+    return self.tree_core.dec_lock_ref(node_id, params, skip_swa)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../.worktrees/sglang-tokencake-scheduler-hooks-20261028/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py:715: in dec_lock_ref
+    node = self.node_by_id(node_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+../.worktrees/sglang-tokencake-scheduler-hooks-20261028/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py:533: in node_by_id
+    return self._node_arena[node_id]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: None</failure></testcase><testcase classname="tests.test_tokencake_native_capacity" name="test_spatial_prefix_walk_rejects_invalid_native_paths[context_limit]" time="0.003"><failure message="Failed: DID NOT RAISE ValueError">tests/test_tokencake_native_capacity.py:306: in test_spatial_prefix_walk_rejects_invalid_native_paths
+    with pytest.raises(ValueError, match="prefix|path"):
+E   Failed: DID NOT RAISE ValueError</failure></testcase></testsuite></testsuites>

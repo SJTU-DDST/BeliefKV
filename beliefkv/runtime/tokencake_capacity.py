@@ -158,18 +158,29 @@ class TokenCakeNativeCapacity:
     def _path_extents(self, node_id, key, namespace, *, allow_loading=False):
         if node_id is None or self.cache.is_root(node_id):
             return ()
-        snapshot = self.transfers.capture(node_id, owner=self._owner(key))
-        if snapshot is None or snapshot.namespace != namespace:
-            raise ValueError("TokenCake could not prove its native prefix path")
-        path = self.transfers.resolve(snapshot, owner=self._owner(key))
-        if path is None:
-            raise ValueError("TokenCake could not resolve its native prefix path")
-        if any(
-            node.component_data[0].value is None
-            or not allow_loading and node.load_back_pending_id is not None for node in path
-        ):
-            raise NativeCapacityNotReady("TokenCake prefix is not ready for native admission")
-        return tuple((self._identity(node), len(node.key)) for node in path)
+        # Capacity must cover valid fragmented prefixes beyond the optional DMA
+        # scan limit. Positive native extent lengths bound this walk by context.
+        root, node = self.cache.tree_core.root_node, self.transfers._node(node_id)
+        extents, visited, tokens = [], set(), 0
+        while node is not root:
+            if (
+                node is None or node.id in visited
+                or self.transfers._node(node.id) is not node
+                or (node.key.extra_key, node.key.cache_salt) != namespace
+                or not len(node.key)
+            ):
+                raise ValueError("TokenCake could not prove its native prefix path")
+            visited.add(node.id)
+            tokens += len(node.key)
+            if tokens > self.context_limit:
+                raise ValueError("TokenCake native prefix path exceeds the context limit")
+            if node.component_data[0].value is None or (
+                not allow_loading and node.load_back_pending_id is not None
+            ):
+                raise NativeCapacityNotReady("TokenCake prefix is not ready for native admission")
+            extents.append((self._identity(node), len(node.key)))
+            node = node.parent
+        return tuple(reversed(extents))
 
     def probe(self, req):
         from sglang.srt.mem_cache.base_prefix_cache import MatchPrefixParams

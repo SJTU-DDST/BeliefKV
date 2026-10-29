@@ -3102,3 +3102,20 @@
   The new TokenCake complete reader's actual precheck accepts the three
   completed controls and rejects its live2089-receipt prefix. Keep frozen
   TokenCake22caa011/131d unchanged and do not overlap GPU work.
+- Native-hook TokenCake failed after2922 exact receipts, with a scheduler
+  capacity-path ValueError and197 final path-depth refusals; socket failure
+  is secondary. Actual owned cleanup/exit is verified. Preserve all raw work,
+  forbid complete performance claims, and retain the dependent Agentix
+  waiter's stop without GPU children. Its first nested-path import failure
+  and the verified replacement8192b16e CPU waiter are separately preserved.
+- Main TokenCake now avoids critical waiting probes when no upload is ready
+  and accounts fragmented native prefixes with one context-bounded spatial
+  walk, keeping original identity/loading/namespace guards and optional DMA
+  bounds. One821-case CPU execution retains all812 prior identities with
+ 1879 unchanged sources; preserve initial red/fixture failures. No current
+  GPU/model or complete performance is established for these fixes.
+  The separately committed run_components_after_cleanup entry may execute
+  only the four already-frozen762-source Agentix byte/pressure scenes after
+  independently checking actual failed-predecessor exit, cleanup, hold and
+  resources. It does not release the failed full comparison as successful
+  or enable formal Agentix. Keep the global goal active.

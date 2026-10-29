@@ -1,0 +1,87 @@
+{
+  "observed_at": "2026-10-29T06:46:56.094494+00:00",
+  "scope": "Real native scheduler/Req/cache/allocator; CPU copy/executor stand-ins.",
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/test_kvflow_native_sessions.py",
+    "tests/test_kvflow_runtime.py",
+    "tests/test_kvflow_native_cache.py",
+    "tests/test_kvflow.py",
+    "tests/test_paper_prefix_transfers.py",
+    "tests/test_progressive_native_restore.py",
+    "tests/test_paper_baseline_runtime.py",
+    "tests/test_paper_baseline_comparison.py",
+    "tests/test_paper_prefix_gpu_qualification.py",
+    "tests/test_tokencake_runtime.py",
+    "tests/test_tokencake_native_capacity.py",
+    "tests/test_tokencake_public_runtime.py",
+    "tests/test_tokencake_paper_runtime.py",
+    "tests/test_tokencake_gpu_qualification.py",
+    "tests/test_tokencake_capacity.py",
+    "tests/test_tokencake_lifecycle.py",
+    "tests/test_paper_baselines.py",
+    "tests/test_tokencake.py",
+    "tests/test_causal_paper_qualification.py",
+    "tests/test_causal_comparison.py",
+    "tests/test_agentx_baseline_operator.py",
+    "tests/test_position_replay_calibration.py",
+    "tests/test_tokencake_native_sessions.py",
+    "tests/test_tokencake_component_queue.py",
+    "tests/test_tokencake_locobench_config.py",
+    "tests/test_tokencake_scheduler_hooks.py",
+    "tests/test_prepare_ack_engine.py",
+    "tests/test_native_engine_variant.py",
+    "--tb=short",
+    "--junitxml=/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/no_ready_upload_cpu.xml"
+  ],
+  "returncode": 1,
+  "totals": {
+    "tests": 816,
+    "errors": 0,
+    "failures": 4,
+    "skipped": 0
+  },
+  "unique_test_identities": 816,
+  "all_prior_812_identities_retained": true,
+  "retained_prior_identities": 812,
+  "native_tree": "131d175450fe2b74d31a0508c2e13c55a3750a56",
+  "native_engine": {
+    "commit": "7424373427c48a0bc363e8f13f6682dd3178246d",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "db0dcaeb4db63014282343a4a65b6f650e19a1dc76d77cc8c90de91e53620dd7"
+  },
+  "native_scheduler_bindings": {
+    "common_engine_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+    "exact_optional_hooks_projection_verified": true,
+    "prefill_guard_before_native_input": true,
+    "decode_victim_and_before_release_bound": true,
+    "native_compute_or_copy_implementation_changed": false,
+    "source_sha256": {
+      "python/sglang/srt/managers/scheduler.py": "0ceab8b945d0ea3163de13bc949404ab5a4fb61e412e1ac4fd10b276e467aefe",
+      "python/sglang/srt/managers/schedule_batch.py": "38790e4f56d95c84f2d070ab5073bc6fe163d187c711f65c1e818e1bb3c6fd5c"
+    }
+  },
+  "sources_unchanged_during_execution": true,
+  "source_manifest": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/no_ready_upload_cpu.sources.json",
+    "sha256": "0315092efece49a28e3f5dc64e04772a33d22446c284ec053c90d289cec866c6"
+  },
+  "report": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/no_ready_upload_cpu.xml",
+    "sha256": "a72ad991a47038dc2709c1a46d2c0ab510e52eb4d3f05a24e2cbe386ef9f82e4"
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/bound_cpu.json": "a4d21b91dd322bd3774073de6e2ce12a3cd01e55cd9a28f793eddee51dcbdb50",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/bound_cpu.xml": "7d36b81d6588e4ecd9a7d8bb508406c7e1aab6b45f5ab920056b082ce5e46f09"
+  },
+  "current_running_tokencake_changed": false,
+  "gpu_experiment_started": false,
+  "performance_accepted": false
+}

@@ -261,6 +261,54 @@ def test_native_decode_growth_consumes_observed_allocation_without_recorded_leng
     finish(accounting, item)
 
 
+@pytest.mark.parametrize("full_native", (512,), indirect=True)
+def test_fragmented_native_prefix_is_accounted_beyond_optional_transfer_scan_limit(accounting):
+    from sglang.srt.mem_cache.base_prefix_cache import MatchPrefixParams
+    from sglang.srt.mem_cache.radix_cache import RadixKey
+
+    ledger, (actor, cache, allocator, *_) = accounting
+    ledger.context_limit = 512
+    tokens = array("q", range(actor.max_nodes + 1))
+    leaf = insert(cache, tokens)
+    for end in range(1, len(tokens)):
+        cache.match_prefix(MatchPrefixParams(key=RadixKey(
+            tokens, "workflow", cache_salt="workflow", limit=end,
+        )))
+    owner = ("workflow", "fragmented", 0)
+    assert actor.capture(leaf.id, owner=owner) is None
+    assert actor.counts["path_depth_declined"]
+    item = req("fragmented", [*tokens, 999], context=owner[1])
+    before = allocator.available_size()
+    probe = ledger.probe(item)
+    assert len(probe.extents) == len(tokens)
+    assert sum(units for _, units in probe.extents) == len(tokens)
+    assert allocator.available_size() == before
+    activate(accounting, item)
+    assert len(ledger.requests[item.rid].prefix) == len(tokens)
+    finish(accounting, item)
+    assert not ledger.extents and not ledger.window.used
+
+
+@pytest.mark.parametrize("fault", ("foreign_namespace", "cycle", "stale_node", "context_limit"))
+def test_spatial_prefix_walk_rejects_invalid_native_paths(accounting, monkeypatch, fault):
+    from beliefkv.runtime.sglang_v0520_admission import _request_key
+
+    ledger, (actor, cache, *_rest) = accounting
+    leaf = insert(cache, [1, 2, 3, 4])
+    item = req("invalid", [1, 2, 3, 4, 5])
+    if fault == "foreign_namespace":
+        monkeypatch.setattr(leaf.key, "cache_salt", "foreign")
+    elif fault == "cycle":
+        monkeypatch.setattr(leaf, "parent", leaf)
+    elif fault == "stale_node":
+        monkeypatch.setattr(actor, "_node", lambda _identity: None)
+    else:
+        ledger.context_limit = 3
+    with pytest.raises(ValueError, match="prefix|path"):
+        ledger._path_extents(leaf.id, _request_key(item), ("workflow", "workflow"))
+    assert not ledger.requests and not ledger.extents
+
+
 def test_new_cached_checkpoint_reclassifies_private_allocation_without_double_charging(accounting):
     from sglang.srt.mem_cache.base_prefix_cache import InsertParams
     from sglang.srt.mem_cache.radix_cache import RadixKey

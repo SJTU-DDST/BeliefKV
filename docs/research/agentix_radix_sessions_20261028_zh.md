@@ -87,3 +87,14 @@ queue_components.py为四场景顺序入口：plain/session各自执行swap和
 子进程，cleanup文件不能替代实际退出，来源变化会拒绝运行。
 该4项报告不与762项相加。冻结并登记后仍只是待执行的小池GPU资格，
 没有自动启用Agentix正式baseline或整模型性能实验。
+
+首次入口因嵌套worktree无法导入机器server_reservation而在import阶段
+退出；原registration/log/process身份保留，未启动组件。正常目录重试
+冻结8192b16e后，waiter1145337确实等待完整TokenCake，无owned child，
+component_queue_observed.json独立核验来源及进程。随后TokenCake失败，
+该waiter按合同退出，没有把不完整前序放行。
+
+run_components_after_cleanup.py是新独立的小池资格入口，先核验失败的
+TokenCake及旧waiter实际退出和cleanup，再重查hold/资源与原762项
+冻结来源。它不修改或恢复原失败队列、不启动整模型/正式baseline；
+本轮main的TokenCake修复不进入该8192b16e应用。实际GPU结果仍待产生。

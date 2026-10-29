@@ -204,3 +204,30 @@ def test_registered_paper_policy_is_distinct_from_public_and_spatial_components(
     state["generation_budget"] = 9
     with pytest.raises(ValueError, match="effective serving parameters"):
         validate_tokencake_parameters(state, parameters)
+
+
+@pytest.mark.parametrize("state", ("empty", "not_due", "in_flight", "resident"))
+def test_no_ready_upload_never_probes_the_waiting_queue(live, full_native, monkeypatch, state):
+    _, adapter, cache, _, clock = live
+    if state != "empty":
+        cold_checkpoint(live)
+        checkpoint = adapter.temporal.checkpoints["first"]
+        clock.now = checkpoint.finish_at - (1. if state == "not_due" else .05)
+        if state in ("in_flight", "resident"):
+            adapter.tick()
+        if state == "resident":
+            cache.loading_check(finish_count=1)
+            while len(full_native[3]) < 4:
+                adapter.tick()
+                cache.loading_check(finish_count=1)
+
+    def unexpected():
+        raise AssertionError("no upload target needs a waiting-request prefix probe")
+
+    monkeypatch.setattr(adapter.temporal, "_critical_waiting_demand", unexpected)
+    probes = adapter.capacity.counts["admission_probes"]
+    loads = len(full_native[3])
+    with adapter._authority():
+        adapter.temporal._advance_uploads()
+    assert adapter.capacity.counts["admission_probes"] == probes
+    assert len(full_native[3]) == loads

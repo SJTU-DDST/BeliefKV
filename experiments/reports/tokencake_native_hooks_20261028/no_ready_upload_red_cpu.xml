@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="4" time="7.179" timestamp="2026-10-28T23:43:27.857092-07:00" hostname="ddst-12"><testcase classname="tests.test_tokencake_paper_runtime" name="test_no_ready_upload_never_probes_the_waiting_queue[empty]" time="6.654"><failure message="AssertionError: no upload target needs a waiting-request prefix probe">tests/test_tokencake_paper_runtime.py:215: in test_no_ready_upload_never_probes_the_waiting_queue
+    adapter.temporal._advance_uploads()
+beliefkv/runtime/tokencake_paper.py:245: in _advance_uploads
+    critical_waiting_demand=math.ceil(self._critical_waiting_demand() / block),
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_tokencake_paper_runtime.py:209: in unexpected
+    raise AssertionError("no upload target needs a waiting-request prefix probe")
+E   AssertionError: no upload target needs a waiting-request prefix probe</failure></testcase><testcase classname="tests.test_tokencake_paper_runtime" name="test_no_ready_upload_never_probes_the_waiting_queue[not_due]" time="0.007"><failure message="AssertionError: no upload target needs a waiting-request prefix probe">tests/test_tokencake_paper_runtime.py:215: in test_no_ready_upload_never_probes_the_waiting_queue
+    adapter.temporal._advance_uploads()
+beliefkv/runtime/tokencake_paper.py:245: in _advance_uploads
+    critical_waiting_demand=math.ceil(self._critical_waiting_demand() / block),
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_tokencake_paper_runtime.py:209: in unexpected
+    raise AssertionError("no upload target needs a waiting-request prefix probe")
+E   AssertionError: no upload target needs a waiting-request prefix probe</failure></testcase><testcase classname="tests.test_tokencake_paper_runtime" name="test_no_ready_upload_never_probes_the_waiting_queue[in_flight]" time="0.007"><failure message="AssertionError: no upload target needs a waiting-request prefix probe">tests/test_tokencake_paper_runtime.py:215: in test_no_ready_upload_never_probes_the_waiting_queue
+    adapter.temporal._advance_uploads()
+beliefkv/runtime/tokencake_paper.py:245: in _advance_uploads
+    critical_waiting_demand=math.ceil(self._critical_waiting_demand() / block),
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_tokencake_paper_runtime.py:209: in unexpected
+    raise AssertionError("no upload target needs a waiting-request prefix probe")
+E   AssertionError: no upload target needs a waiting-request prefix probe</failure></testcase><testcase classname="tests.test_tokencake_paper_runtime" name="test_no_ready_upload_never_probes_the_waiting_queue[resident]" time="0.010"><failure message="AssertionError: no upload target needs a waiting-request prefix probe">tests/test_tokencake_paper_runtime.py:215: in test_no_ready_upload_never_probes_the_waiting_queue
+    adapter.temporal._advance_uploads()
+beliefkv/runtime/tokencake_paper.py:245: in _advance_uploads
+    critical_waiting_demand=math.ceil(self._critical_waiting_demand() / block),
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_tokencake_paper_runtime.py:209: in unexpected
+    raise AssertionError("no upload target needs a waiting-request prefix probe")
+E   AssertionError: no upload target needs a waiting-request prefix probe</failure></testcase></testsuite></testsuites>

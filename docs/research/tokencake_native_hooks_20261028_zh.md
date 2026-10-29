@@ -99,3 +99,39 @@ Full/KVFlow/V345作JCT或吞吐优劣结论。运行及原始失败均保留。
 完成后要求3674请求/精确token/原生停止、所有18个正常尾部、两次
 新鲜idle快照及实际进程退出，再生成Full/TokenCake/V345曲线；
 KVFlow的既有完整指标与独立图保留。尚未生成当前完整比较或性能结论。
+
+## 完整重试失败与控制路径修复
+
+该运行随后在2922/3674个精确完成回执后失败，不生成完整JCT/吞吐
+结果。formal_native_hooks_failure.json核验冻结来源、原生异常、
+精确回执、实际进程退出及owned cleanup。原生异常先发生在
+TokenCakeNativeLifecycle.waiting_pressure -> capacity.probe ->
+_path_extents；回放事件socket的ConnectionError是其后的断连。
+最后实际快照有197次path_depth_declined、1082122次容量probe，
+preservation/plan/guard累计wall为1613.533/509.408/526.401秒。
+这些区间可能嵌套，不能相加成暴露GPU等待或可消除JCT。
+失败时的具体节点没有记录，不能伪造其身份或精确深度。
+
+CPU真实原生树复现一个独立的实现缺口：合法前缀分裂得超过可选
+NativePrefixTransfers的扫描上限后，空间记账也调用同一capture，
+因而抛出不可恢复ValueError。修复只将空间记账改为一次原生祖先
+遍历，以完整上下文token上限约束正长度extent总和，仍检查当前节点
+对象、命名空间、循环、缺页与加载依赖。可选传输的扫描边界不变，
+不通过忽略异常、漏记共享页或授权多占Device容量来绕开问题。
+
+另一个明确冗余是没有任何ready upload时仍计算critical waiting
+demand，触发无用途的长前缀probe。四个旧代码用例分别在无checkpoint、
+尚未到期、传输在途和已驻留时复现。现保持原有capacity refresh及
+deadline检查，仅在ready为空后返回；存在上传目标时保留原公式。
+
+no_ready_upload_r2_cpu先通过816项；加入原生碎片路径及错误路径检查后，
+fragmented_capacity_cpu一次通过821项，无失败/跳过，保留原812个
+字面ID，1879份来源前后一致；93项定向检查单独保存，不与821相加。
+此前测试插入位置造成的fixture失败和原红测试均保留。原生仍为
+7424373/131d，未改变KV kernel、allocator或论文调度参数。这是CPU
+资格，不证明新GPU安全性、整模型或完整性能。新完整TokenCake必须
+重新执行当前来源的组件及模型/position检查，不能续跑失败的2922前缀。
+
+依赖TokenCake完整成功的Agentix CPU waiter按原合同停止且无GPU child。
+可在核验失败运行实际清理、当前hold与空闲资源后单独执行其已经冻结
+的四组小池字节检查；这是独立资格，不将失败的TokenCake当作成功前序。

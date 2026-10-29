@@ -1,0 +1,103 @@
+{
+  "observed_at": "2026-10-29T06:42:57.530419+00:00",
+  "failed_entry": {
+    "scope": "pre_gpu_import_failure",
+    "original_process": {
+      "pid": 1143997,
+      "state": "R",
+      "ppid": 1143752,
+      "start_ticks": "742616795",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/.worktrees/beliefkv-agentx-baseline-3efa93426937/experiments/reports/agentix_radix_sessions_20261028/queue_components.py",
+        "watch",
+        "--registration",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/gpu_native_consumers_r1/registration.json"
+      ]
+    },
+    "actual_exit_verified": true,
+    "no_component_started": true,
+    "cause": "nested worktree could not locate machine reservation helper"
+  },
+  "queued_registration": "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/gpu_native_consumers_r2/registration.json",
+  "actual_waiter": {
+    "pid": 1145337,
+    "state": "S",
+    "ppid": 1,
+    "start_ticks": "742637495",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-8192b16e9cca/experiments/reports/agentix_radix_sessions_20261028/queue_components.py",
+      "watch",
+      "--registration",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/gpu_native_consumers_r2/registration.json"
+    ]
+  },
+  "state": {
+    "status": "waiting_complete_tokencake",
+    "performance_accepted": false,
+    "checked_at": "2026-10-29T14:42:54.791411+08:00",
+    "owned": []
+  },
+  "predecessor_watcher_live": true,
+  "native_engine": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-8192b16e9cca/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "15fe59ebe16721e5ee07244d0d25381b0187b91b1afa57f8fd06281fe051cd09",
+    "expected_tree": "c489dbb85265efce25622a52abfd698e9199688d",
+    "actual_tree": "c489dbb85265efce25622a52abfd698e9199688d",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_backed_full_scan.py",
+      "test/srt/test_beliefkv_causal_full_donor.py",
+      "test/srt/test_beliefkv_cold_ack_priority.py",
+      "test/srt/test_beliefkv_cold_full_prepare.py",
+      "test/srt/test_beliefkv_contiguous_host_copy.py",
+      "test/srt/test_beliefkv_demand_driven_full_scan.py",
+      "test/srt/test_beliefkv_execution_handoff.py",
+      "test/srt/test_beliefkv_full_host_eviction.py",
+      "test/srt/test_beliefkv_full_only.py",
+      "test/srt/test_beliefkv_gdn_prefill_mask.py",
+      "test/srt/test_beliefkv_host_eviction_observer.py",
+      "test/srt/test_beliefkv_inherited_full_owners.py",
+      "test/srt/test_beliefkv_latest_anchor_recede.py",
+      "test/srt/test_beliefkv_latest_mamba_state.py",
+      "test/srt/test_beliefkv_layer_wait_probe.py",
+      "test/srt/test_beliefkv_lifecycle.py",
+      "test/srt/test_beliefkv_mamba_request_mapping.py",
+      "test/srt/test_beliefkv_metadata.py",
+      "test/srt/test_beliefkv_paper_capacity_hooks.py",
+      "test/srt/test_beliefkv_paper_decode_pressure.py",
+      "test/srt/test_beliefkv_prefetch_batch_dependency.py",
+      "test/srt/test_beliefkv_prefill_track_metadata.py",
+      "test/srt/test_beliefkv_prefill_track_slots.py",
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_resident_parent_prepare.py",
+      "test/srt/test_beliefkv_restore_tiers.py",
+      "test/srt/test_beliefkv_scheduler_hook.py",
+      "test/srt/test_beliefkv_selective_backup.py",
+      "test/srt/test_beliefkv_session_anchors.py",
+      "test/srt/test_beliefkv_shadow_dispatch.py",
+      "test/srt/test_beliefkv_spawn_full_prepare.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py",
+      "test/srt/test_beliefkv_tool_host_retention.py",
+      "test/srt/test_beliefkv_transfer_receipts.py",
+      "test/srt/test_beliefkv_unified_ack.py",
+      "test/srt/test_beliefkv_write_back_batch.py",
+      "test/srt/test_beliefkv_write_back_batch_integration.py",
+      "test/srt/test_infercept_host_move.py"
+    ]
+  },
+  "all_762_case_sources_match_frozen_application": true,
+  "GPU_experiment_started": false,
+  "whole_model_or_formal_baseline_qualified": false,
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/observe_queue.py": "17f37442c912aa0752db1a6132c561fa65a1ec25d95a9af05e4f77ea04ab1a1e",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/gpu_native_consumers_r1/supervisor.log": "2270e19c6a306b3843d871261d3b666528fd53586db7d52c6a1d661b9d83f2ec",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/gpu_native_consumers_r1/registration.json": "8638b6b5f6df47b1ca8c6f717466ea9138ee81652cb367ef19837bbd091689d3",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/gpu_native_consumers_r1/supervisor.json": "25b93bb78ff24aa3411eb213a83d9971b4a310b4a69b4628ea7533bbf1577101",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/gpu_native_consumers_r2/registration.json": "42fb82a3d42f35bd1e3171ccfc557146632e1397e542f789303cd05b9b73a93d",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/gpu_native_consumers_r2/supervisor.json": "2764df01644fe036ab0e05273ac128465774cf3a701c82fe04195fcf81ecd3fd"
+  },
+  "performance_accepted": false
+}
