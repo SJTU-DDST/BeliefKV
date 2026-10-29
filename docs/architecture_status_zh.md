@@ -20,6 +20,12 @@
 [KVFlow session 适配](research/kvflow_radix_session_port_20261028_zh.md)。
 工具预取继续关闭，原始完整工作与所有正常长尾保持不变。
 
+随后的正式启动接线通过726项来源绑定CPU；KVFlow现从冻结6dc4b892
+在common11b84f7c3198上运行同一完整V230/V311。实际nice0进程、唯一
+GPU scheduler、27次session注册及首批9个精确完成回执已独立核对。
+仍属运行前缀，完整性能待结束审计，见
+[KVFlow当前启动](research/kvflow_locobench_start_20261028_zh.md)。
+
 ## 历史诊断与实现进度
 
 随后实现的 FULL-only 发布索引修复已通过 3718 项 CPU、非强制模型恢复

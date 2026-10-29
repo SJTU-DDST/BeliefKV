@@ -3018,3 +3018,20 @@
   Reuse unchanged common-engine sampling proof only after exact module/native
   source checks; its fresh paper components still run before the model.
   No formal result is implied yet and the all-baseline goal remains active.
+- KVFlow now actually runs frozen6dc4b892/common11b84f7c3198 on port18701:
+  ops/kvflow_locobench_v230_v311_20261028_r1.registration.json.
+  Actual current-source prefix GPU qualification passes before model startup.
+  Independent observe_live.py/live_start.json verifies nice0 watcher1083607,
+  server1084292,driver1085740 and sole owned GPU scheduler1084624 by live
+  PID/start ticks/argv/ownership. The sealed9 completed receipts are exact
+  and actual27 native session registrations prove ingress; common9 work/
+  capacity/native fields and full timing metadata matchV345. These are early
+  prefixes, not complete work, universal model equivalence or performance.
+  Formal CPU726/1871 files and older unchanged native726 source reuse stay
+  distinct; original24 position/sampler proof is reused only with exact
+  unchanged modules/native sampler. No Full/native/V345 rerun or next GPU
+  job is queued. Preserve this frozen run and wait for its actual exit/owned
+  cleanup before other GPU work; continue TokenCake session qualification and
+  remaining Agentix CPU adaptation meanwhile. All normal tails and global
+  all-baseline acceptance remain pending. See
+  docs/research/kvflow_locobench_start_20261028_zh.md.
