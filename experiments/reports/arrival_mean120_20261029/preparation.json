@@ -1,0 +1,15 @@
+{
+  "reference": "/home/longhao/experiment/ops/warm_start_thunder_20261029_r1.registration.json",
+  "reference_sha256": "6c939970b66ad2559200658cd5b0c173b8e8231d22f1e08d31182639b50040c8",
+  "previous_configurations_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/warm_start_thunder_20261029/thunderagent.json": "ed848d71aab07a9e48be8de4012d72054f403c45775880d406f2553177a5aeee",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/full_warm_start.json": "7527f1c2e56d3e84d9201f65f9ee7d7a0f0bdb75b4154f109190395a5829ef90"
+  },
+  "arrival_schedule_sha256": "0b50fa0a0c0ea9871b9e6805a29f22be50a4439e8c407fd0a4a697db374846e4",
+  "last_arrival_seconds": 863.4309955437795,
+  "maximum_interarrival_seconds": 197.94016208859819,
+  "same_requests_tokens_dependencies_tools_native_stops_and_normal_tails": true,
+  "method_specific_policy_and_native_engine_unchanged": true,
+  "GPU_experiment_started": false,
+  "performance_accepted": false
+}

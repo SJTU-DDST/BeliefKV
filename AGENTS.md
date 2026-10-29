@@ -3326,3 +3326,15 @@
   running frozen e5f77eff and its prepared native source. Do not queue other
   GPU work or claim complete Full JCT/throughput until all3674 normal requests,
   fresh drain and actual owned exit have been independently reviewed.
+- The latest user now explicitly requests mean120-second workflow arrivals.
+  Keep the eighteen-project population, ten initial roots and eight subsequent
+  Poisson arrivals with seed21; retain the current mean60 Full and its control.
+  New matched acting-decay ThunderAgent then Full may queue behind its actual
+  complete work, fresh idle drain and owned exit. Change only the external
+  arrival table; preserve each method's qualified native tree, policy, work,
+  tool timing, capacity and serving controls. Both methods must use the same
+  frozen mean120 table, count JCT from scheduled arrival and preserve normal
+  gaps/tails. Do not claim reduced JCT or sufficient useful KV pressure before
+  measurement. Named evidence is arrival_mean120_20261029. Independent
+  registrations sharing a qualified commit use separate registration-bound
+  application/native worktree paths. Agentix/TokenCake remain deferred.

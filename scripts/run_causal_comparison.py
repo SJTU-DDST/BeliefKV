@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import fcntl
+import hashlib
 import json
 import math
 import os
@@ -1275,6 +1276,16 @@ def wait_for_telemetry_drain(arm, *, server, pulse, timeout=30.):
         time.sleep(.25)
 
 
+def frozen_execution_paths(revision, engine_tree, registration):
+    """Give each registration its own frozen application and native worktrees."""
+    identity = hashlib.sha256(str(registration.resolve()).encode()).hexdigest()[:12]
+    root = comparison.EXPERIMENTS / ".worktrees"
+    return (
+        root / f"beliefkv-causal-{revision[:12]}-{identity}",
+        root / f"sglang-causal-{engine_tree[:12]}-{revision[:12]}-{identity}",
+    )
+
+
 def register(args):
     order = list(args.arms)
     if not order or len(order) != len(set(order)) or any(label not in ALL_CONTROLS for label in order):
@@ -1448,15 +1459,12 @@ def register(args):
         raise ValueError("GPU check and controlled engine compatibility differ")
     fresh._require_clean(ROOT)
     revision = qualified.command(["git", "-C", str(ROOT), "rev-parse", "HEAD"])
-    checkout = comparison.EXPERIMENTS / ".worktrees" / f"beliefkv-causal-{revision[:12]}"
+    checkout, frozen_engine = frozen_execution_paths(revision, engine["tree"], args.registration)
     subprocess.run(
         ["git", "-C", str(ROOT), "worktree", "add", "--detach", str(checkout), revision],
         check=True, capture_output=True,
     )
     comparison.verify_cpu_snapshot(checkout, sources)
-    frozen_engine = comparison.EXPERIMENTS / ".worktrees" / (
-        f"sglang-causal-{engine['tree'][:12]}-{revision[:12]}"
-    )
     base = qualified.command(["git", "-C", str(args.engine), "rev-parse", "HEAD"])
     subprocess.run(
         ["git", "-C", str(args.engine), "worktree", "add", "--detach", str(frozen_engine), base],
