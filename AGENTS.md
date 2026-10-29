@@ -2852,3 +2852,18 @@
   CPU checks and actual complete-source/owned-exit entry check pass; no
   repeated performance result yet. See
   docs/research/demand_restore_readmission_retry_20261028_zh.md.
+- Source-identical demand-pipeline R2 now actually runs through the original
+  frozen01510ed5 supervisor/app and729aa0caa7a1 native, port18696:
+  ops/demand_prefill_pipeline_20261028_r2.registration.json. Only six
+  registration metadata fields change; all qualified work/timing/capacity/
+  seeds/config/stopping and original external inputs remain identical.
+  It excludes main5cf3bb8b's ACK retry repair; never call R2 proof for that
+  repair or treat changed configs as repetition. Independent repeat_live_start
+  verifies nice0 watcher1008187/server1008803/driver1010120/sole GPU1009132,
+  actual installed pipeline1/probe/profile/tool-prefetch/frontier0 and
+  original non-deterministic FA3/flashinfer. It seals171 exact completed
+  receipts, not full3674/performance. Preserve this frozen repeat and
+  current-main4102+6 CPU repair evidence separately. No other baseline/
+  ablation/new-policy GPU is queued. Keep the full goal active and wait
+  for actual completion/cleanup before complete repeated-metric review.
+  See docs/research/demand_pipeline_repeat_start_20261028_zh.md.
