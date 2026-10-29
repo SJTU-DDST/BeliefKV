@@ -2912,3 +2912,27 @@
   figures are inspected; the generic matcher and original results stay intact.
   The repaired model archive preserves20 source-bound inputs byte-for-byte
   and excludes environment; no new Full performance run is implied.
+- The ACK repair's fresh position entry now verifies all1815 manifest files,
+  CPU4102/current GPU-model proof and completed R2 exit before registration.
+  Prepared native sources are rebound only to the frozen5cf3bb8b patch path;
+  exact729aa0caa7a1/92-case native source reuse is not a new CPU execution.
+  Fresh position watcher1035591/server1035866/sole GPU1036196 are verified
+  nice0 at ops/demand_prefill_ack_retry_position_20261028_r1.registration.json,
+  port18698. It must finish24 exact token/session/stop checks and1/8/24
+  calibration before registering only Full at demand_prefill_ack_retry_20261028_r1.
+  Same formal config/work/tools/capacities/seeds/stopping/tails as R1/R2;
+  ordinary non-deterministic FA3/flashinfer stays unchanged. Actual Full
+  launch/ACK retry activation and complete performance remain pending.
+  See docs/research/demand_restore_readmission_start_20261028_zh.md.
+- Fresh repaired-source position now passes24 exact token/session/native-stop
+  calls, all24 native stops;1/8/24 wall dispatch increments are
+  .009288121/.003773884/.010093582ms. Position watcher/server actual exit is
+  independently verified. Full runs frozen5cf3bb8b/native729aa0caa7a1
+  at ops/demand_prefill_ack_retry_20261028_r1.registration.json,port18698.
+  Independent readmission_live_start verifies nice0 watcher1038516/server1039033/
+  driver1040363/sole GPU1039393 and230 exact completed receipts, actual
+  pipeline1/probe/profile/tool-prefetch/priority/frontier0 and8/4 handoff.
+  Ordinary FA3/flashinfer stays unchanged. Last observed retry counter0 is
+  an early snapshot, not a complete opportunity or performance result.
+  Preserve R1/R2 and the running frozen repair; no competing GPU job or
+  other baseline/ablation is queued. Goal remains active.
