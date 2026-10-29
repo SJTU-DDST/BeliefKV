@@ -1,0 +1,212 @@
+{
+  "status": "agentix_native_pressure_components_qualified",
+  "scope": "Actual small native GPU/Host pools, explicit fixture drains and synthetic KV; no LLM execution.",
+  "native_engine": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-8192b16e9cca/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "15fe59ebe16721e5ee07244d0d25381b0187b91b1afa57f8fd06281fe051cd09",
+    "expected_tree": "c489dbb85265efce25622a52abfd698e9199688d",
+    "actual_tree": "c489dbb85265efce25622a52abfd698e9199688d",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_backed_full_scan.py",
+      "test/srt/test_beliefkv_causal_full_donor.py",
+      "test/srt/test_beliefkv_cold_ack_priority.py",
+      "test/srt/test_beliefkv_cold_full_prepare.py",
+      "test/srt/test_beliefkv_contiguous_host_copy.py",
+      "test/srt/test_beliefkv_demand_driven_full_scan.py",
+      "test/srt/test_beliefkv_execution_handoff.py",
+      "test/srt/test_beliefkv_full_host_eviction.py",
+      "test/srt/test_beliefkv_full_only.py",
+      "test/srt/test_beliefkv_gdn_prefill_mask.py",
+      "test/srt/test_beliefkv_host_eviction_observer.py",
+      "test/srt/test_beliefkv_inherited_full_owners.py",
+      "test/srt/test_beliefkv_latest_anchor_recede.py",
+      "test/srt/test_beliefkv_latest_mamba_state.py",
+      "test/srt/test_beliefkv_layer_wait_probe.py",
+      "test/srt/test_beliefkv_lifecycle.py",
+      "test/srt/test_beliefkv_mamba_request_mapping.py",
+      "test/srt/test_beliefkv_metadata.py",
+      "test/srt/test_beliefkv_paper_capacity_hooks.py",
+      "test/srt/test_beliefkv_paper_decode_pressure.py",
+      "test/srt/test_beliefkv_prefetch_batch_dependency.py",
+      "test/srt/test_beliefkv_prefill_track_metadata.py",
+      "test/srt/test_beliefkv_prefill_track_slots.py",
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_resident_parent_prepare.py",
+      "test/srt/test_beliefkv_restore_tiers.py",
+      "test/srt/test_beliefkv_scheduler_hook.py",
+      "test/srt/test_beliefkv_selective_backup.py",
+      "test/srt/test_beliefkv_session_anchors.py",
+      "test/srt/test_beliefkv_shadow_dispatch.py",
+      "test/srt/test_beliefkv_spawn_full_prepare.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py",
+      "test/srt/test_beliefkv_tool_host_retention.py",
+      "test/srt/test_beliefkv_transfer_receipts.py",
+      "test/srt/test_beliefkv_unified_ack.py",
+      "test/srt/test_beliefkv_write_back_batch.py",
+      "test/srt/test_beliefkv_write_back_batch_integration.py",
+      "test/srt/test_infercept_host_move.py"
+    ]
+  },
+  "gpu": "NVIDIA H200 NVL",
+  "device_tokens": 128,
+  "host_tokens": 257,
+  "layers": 2,
+  "backing_growth": {
+    "initial": {
+      "host_capacity_tokens": 257,
+      "normal_live_budget_tokens": 193,
+      "emergency_context_tokens": 64,
+      "draining": false,
+      "drain_call_id": null,
+      "live_calls": 6,
+      "counts": {
+        "prepared_rounds": 1,
+        "drain_rounds": 0
+      },
+      "priority_source": "paper_queue_order_with_finite_backing_eligibility",
+      "future_output_length_used": false,
+      "host_references_released_to_fake_capacity": false
+    },
+    "after_completion": {
+      "host_capacity_tokens": 257,
+      "normal_live_budget_tokens": 193,
+      "emergency_context_tokens": 64,
+      "draining": false,
+      "drain_call_id": null,
+      "live_calls": 5,
+      "counts": {
+        "prepared_rounds": 4,
+        "drain_rounds": 2,
+        "selected_drain_rounds": 1
+      },
+      "priority_source": "paper_queue_order_with_finite_backing_eligibility",
+      "future_output_length_used": false,
+      "host_references_released_to_fake_capacity": false
+    },
+    "selected_growth_tokens_after_drain": 34,
+    "restored_after_drain": "backing-0",
+    "remaining_paused": 4
+  },
+  "host_refusal": {
+    "refused": {
+      "status": "backup_declined",
+      "requests": [],
+      "allocator_available_increase": 0,
+      "host_available_tokens": 27,
+      "missing_host_tokens": 40,
+      "host_capacity_refused": true
+    },
+    "actual_host_blocker_slots_released": 122,
+    "retry_and_consumer_handoff_verified": true
+  },
+  "remaining_paused_requests_restored": [
+    "backing-1",
+    "backing-3",
+    "backing-4",
+    "backing-5"
+  ],
+  "native_prefill_consumers": [
+    {
+      "native_prefill_admitted": true,
+      "native_extend_allocation_tokens": 1,
+      "checkpoint_tokens": 27,
+      "uncomputed_fixture_tail_returned": true
+    },
+    {
+      "native_prefill_admitted": true,
+      "native_extend_allocation_tokens": 1,
+      "checkpoint_tokens": 40,
+      "uncomputed_fixture_tail_returned": true
+    },
+    {
+      "native_prefill_admitted": true,
+      "native_extend_allocation_tokens": 1,
+      "checkpoint_tokens": 27,
+      "uncomputed_fixture_tail_returned": true
+    },
+    {
+      "native_prefill_admitted": true,
+      "native_extend_allocation_tokens": 1,
+      "checkpoint_tokens": 27,
+      "uncomputed_fixture_tail_returned": true
+    },
+    {
+      "native_prefill_admitted": true,
+      "native_extend_allocation_tokens": 1,
+      "checkpoint_tokens": 27,
+      "uncomputed_fixture_tail_returned": true
+    },
+    {
+      "native_prefill_admitted": true,
+      "native_extend_allocation_tokens": 1,
+      "checkpoint_tokens": 27,
+      "uncomputed_fixture_tail_returned": true
+    }
+  ],
+  "request_transport": "full_prompt_native_radix",
+  "native_session_generations_preserved": true,
+  "actual_finite_host_and_device_pools": true,
+  "backing_gate_deferred_unstarted_work": true,
+  "observed_decode_growth_triggered_backing_drain": true,
+  "selected_live_call_kept_progress_until_completion": true,
+  "completion_reopened_backing_admission": true,
+  "real_host_exhaustion_refused_backup_without_device_release": true,
+  "paused_host_ownership_survived_real_reclaim": true,
+  "backup_retried_after_real_host_capacity_release": true,
+  "all_restored_key_and_value_bytes_preserved": true,
+  "all_request_inputs_outputs_and_samplers_preserved": true,
+  "all_paused_requests_restored_and_host_ownership_released": true,
+  "swap": {
+    "pending_requests": 0,
+    "paused_host_pins": 0,
+    "counts": {
+      "prepared_requests": 7,
+      "unique_checkpoint_nodes": 7,
+      "missing_backup_nodes": 7,
+      "waiting_native_ack": 4,
+      "paused_requests": 6,
+      "demoted_full_tokens": 175,
+      "allocator_available_increase": 175,
+      "resumed_requests": 6,
+      "backup_declined": 1,
+      "cancelled_preparations": 1
+    },
+    "victim_selection_policy": "external_paper_scheduler",
+    "request_ids_outputs_and_sampling_preserved": true,
+    "host_ownership": "split_safe_complete_prefix_until_native_resumption_or_cancellation",
+    "native_capacity_authority_preserved": true,
+    "runtime_scheduler_hook_installed": false
+  },
+  "backing": {
+    "host_capacity_tokens": 257,
+    "normal_live_budget_tokens": 193,
+    "emergency_context_tokens": 64,
+    "draining": false,
+    "drain_call_id": null,
+    "live_calls": 5,
+    "counts": {
+      "prepared_rounds": 4,
+      "drain_rounds": 2,
+      "selected_drain_rounds": 1
+    },
+    "priority_source": "paper_queue_order_with_finite_backing_eligibility",
+    "future_output_length_used": false,
+    "host_references_released_to_fake_capacity": false
+  },
+  "whole_llm_pressure_progress_qualified": false,
+  "model_numerical_equivalence_verified": false,
+  "complete_baseline_qualified": false,
+  "performance_accepted": false,
+  "elapsed_seconds": 8.202077249065042,
+  "source_sha256": {
+    "scripts/qualify_agentix_pressure.py": "a61565cbbadf4251bef07b6c5b539fbfbb4029716aeff13d8d9c0d66550b552e",
+    "scripts/qualify_agentix_swap.py": "28dc58465c67cfa5fd6c60b592ce877feb062f8a330ee502362d3534f38e3ecf",
+    "scripts/run_agentx_baseline.py": "2874ac4970fe622cd3ef63e6a3be1b2403e9a518d7b85af1400fae1e56d8d2bd",
+    "scripts/run_causal_comparison.py": "40a5d22361a235cd07f3ed4f866a598579e7402ecc80c539b048fd8e96f53639",
+    "beliefkv/runtime/agentix_capacity.py": "c5aba0b10e54d4c29b5fca4314e505a8b16e01a05407ea9ed425af3edce0ca39",
+    "beliefkv/runtime/agentix_swap.py": "e977c168c4c7ce355f3814c1b073b24e30eb25ea4782d437e46c574074b8f7f6",
+    "beliefkv/runtime/paper_prefix_transfers.py": "c1fdc96be2abf96d40d8fc90a509c17ea837e9cb77ad7f8cb4d7e7a4ded468c3"
+  }
+}

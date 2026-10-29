@@ -1,0 +1,112 @@
+{
+  "observed_at": "2026-10-29T07:02:41.863171+00:00",
+  "scope": "independent_small_gpu_byte_checks_after_failed_predecessor_cleanup_not_formal_baseline",
+  "registered_frozen_application": "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-8192b16e9cca",
+  "application_commit": "8192b16e9ccaf682afd8bb60ca9a08a468cfa5cb",
+  "engine_tree": "c489dbb85265efce25622a52abfd698e9199688d",
+  "engine_checkout": "/home/longhao/experiment/.worktrees/sglang-agentx-baseline-c489dbb85265-8192b16e9cca",
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/run_components_after_cleanup.py": "f01d7df9aded8176670cfbe65222744ec78913ab88e15d9bcd6369aba03bb4a5",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/gpu_native_consumers_r2/registration.json": "42fb82a3d42f35bd1e3171ccfc557146632e1397e542f789303cd05b9b73a93d",
+    "/home/longhao/experiment/ops/tokencake_locobench_native_hooks_20261028_r1.registration.json": "1e4485bb351afcf0796eda7882464eb7f84cc6070565d56a11558f3b3ea92d4c",
+    "/home/longhao/experiment/ops/tokencake_locobench_native_hooks_20261028_r1.registration.state.json": "4f948eb0bac7c584989746c8182d154e2378ace410fc6f67fa172e4265b7426b",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_locobench_native_hooks_20261028_r1/tokencake_paper_observed/owned_process_cleanup.json": "5ffd80475df570a9c312c793702432ac4727afac21136967a7c8eb5f9b95a604",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/gpu_native_consumers_r2/summary.json": "685268fc6f3cb92d5417458136314a698a492748c83873e838a5a03e464b4512",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/formal_native_hooks_failure.json": "556ad16a506416417dc7db024911e75851490da626b61ac282dd604bb2407b1d"
+  },
+  "original_failed_queue_preserved": true,
+  "performance_accepted": false,
+  "reports": {
+    "swap_plain": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/gpu_native_consumers_r3/swap_plain/summary.json",
+      "sha256": "57b98102122440f059bcd38e3d8e8dedf9d4a683c7556874e55883f69761fb35",
+      "spawned_process": {
+        "pid": 1152675,
+        "state": "R",
+        "ppid": 1152400,
+        "start_ticks": "742762612",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-8192b16e9cca/scripts/qualify_agentix_swap.py",
+          "--engine-checkout",
+          "/home/longhao/experiment/.worktrees/sglang-agentx-baseline-c489dbb85265-8192b16e9cca",
+          "--canonical-patch",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-8192b16e9cca/patches/sglang-v0.5.20-beliefkv-staging.patch",
+          "--output-dir",
+          "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/gpu_native_consumers_r3/swap_plain"
+        ]
+      },
+      "actual_exit_verified": true
+    },
+    "swap_native_sessions": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/gpu_native_consumers_r3/swap_native_sessions/summary.json",
+      "sha256": "5a55c11cd8ab17e90c8fe8424a555c1acf015e1e8b857e6eaccd3347207c0a2f",
+      "spawned_process": {
+        "pid": 1152916,
+        "state": "R",
+        "ppid": 1152400,
+        "start_ticks": "742763831",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-8192b16e9cca/scripts/qualify_agentix_swap.py",
+          "--engine-checkout",
+          "/home/longhao/experiment/.worktrees/sglang-agentx-baseline-c489dbb85265-8192b16e9cca",
+          "--canonical-patch",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-8192b16e9cca/patches/sglang-v0.5.20-beliefkv-staging.patch",
+          "--output-dir",
+          "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/gpu_native_consumers_r3/swap_native_sessions",
+          "--native-radix-sessions"
+        ]
+      },
+      "actual_exit_verified": true
+    },
+    "pressure_plain": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/gpu_native_consumers_r3/pressure_plain/summary.json",
+      "sha256": "7e0f572d758fc065542ad2a06dd85059501562f46ed136f078f4234a5eeaac2d",
+      "spawned_process": {
+        "pid": 1153107,
+        "state": "R",
+        "ppid": 1152400,
+        "start_ticks": "742764948",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-8192b16e9cca/scripts/qualify_agentix_pressure.py",
+          "run",
+          "--engine-checkout",
+          "/home/longhao/experiment/.worktrees/sglang-agentx-baseline-c489dbb85265-8192b16e9cca",
+          "--canonical-patch",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-8192b16e9cca/patches/sglang-v0.5.20-beliefkv-staging.patch",
+          "--output-dir",
+          "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/gpu_native_consumers_r3/pressure_plain"
+        ]
+      },
+      "actual_exit_verified": true
+    },
+    "pressure_native_sessions": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/gpu_native_consumers_r3/pressure_native_sessions/summary.json",
+      "sha256": "64f8e72091a795089d9efda9cca6987d1469fdb5edd6fff99fa9a1312157ef21",
+      "spawned_process": {
+        "pid": 1153311,
+        "state": "R",
+        "ppid": 1152400,
+        "start_ticks": "742766042",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-8192b16e9cca/scripts/qualify_agentix_pressure.py",
+          "run",
+          "--engine-checkout",
+          "/home/longhao/experiment/.worktrees/sglang-agentx-baseline-c489dbb85265-8192b16e9cca",
+          "--canonical-patch",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-8192b16e9cca/patches/sglang-v0.5.20-beliefkv-staging.patch",
+          "--output-dir",
+          "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/gpu_native_consumers_r3/pressure_native_sessions",
+          "--native-radix-sessions"
+        ]
+      },
+      "actual_exit_verified": true
+    }
+  },
+  "whole_model_or_formal_baseline_qualified": false,
+  "status": "four_native_consumer_gpu_checks_qualified",
+  "finished_at": "2026-10-29T15:03:28.193259+08:00"
+}

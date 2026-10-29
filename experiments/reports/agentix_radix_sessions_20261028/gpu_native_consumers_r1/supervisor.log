@@ -1,0 +1,25 @@
+Traceback (most recent call last):
+  File "/home/longhao/experiment/.worktrees/.worktrees/beliefkv-agentx-baseline-3efa93426937/experiments/reports/agentix_radix_sessions_20261028/queue_components.py", line 19, in <module>
+    from scripts import run_causal_comparison as controls
+  File "/home/longhao/experiment/.worktrees/.worktrees/beliefkv-agentx-baseline-3efa93426937/scripts/run_causal_comparison.py", line 40, in <module>
+    from scripts.run_causal_source_capture import (
+  File "/home/longhao/experiment/.worktrees/.worktrees/beliefkv-agentx-baseline-3efa93426937/scripts/run_causal_source_capture.py", line 32, in <module>
+    from scripts import run_eos_pair_after_modules as pair
+  File "/home/longhao/experiment/.worktrees/.worktrees/beliefkv-agentx-baseline-3efa93426937/scripts/run_eos_pair_after_modules.py", line 21, in <module>
+    from scripts import run_module_ablations_after_full as modules
+  File "/home/longhao/experiment/.worktrees/.worktrees/beliefkv-agentx-baseline-3efa93426937/scripts/run_module_ablations_after_full.py", line 20, in <module>
+    from scripts import run_frontier_ablation_after_campaign as full
+  File "/home/longhao/experiment/.worktrees/.worktrees/beliefkv-agentx-baseline-3efa93426937/scripts/run_frontier_ablation_after_campaign.py", line 20, in <module>
+    from scripts import run_fresh_internal_comparison as fresh
+  File "/home/longhao/experiment/.worktrees/.worktrees/beliefkv-agentx-baseline-3efa93426937/scripts/run_fresh_internal_comparison.py", line 23, in <module>
+    from scripts import run_internal_comparison as comparison
+  File "/home/longhao/experiment/.worktrees/.worktrees/beliefkv-agentx-baseline-3efa93426937/scripts/run_internal_comparison.py", line 31, in <module>
+    reservation = qualified.machine_helper("server_reservation")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/longhao/experiment/.worktrees/.worktrees/beliefkv-agentx-baseline-3efa93426937/scripts/launch_qualified_after_hold.py", line 47, in machine_helper
+    return importlib.import_module(name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'server_reservation'

@@ -135,3 +135,14 @@ fragmented_capacity_cpu一次通过821项，无失败/跳过，保留原812个
 依赖TokenCake完整成功的Agentix CPU waiter按原合同停止且无GPU child。
 可在核验失败运行实际清理、当前hold与空闲资源后单独执行其已经冻结
 的四组小池字节检查；这是独立资格，不将失败的TokenCake当作成功前序。
+
+## 修复后的独立完整重试入口
+
+retry_fragmented_capacity.py先绑定当前821项CPU/1879份来源、独立Agentix
+四组GPU检查实际退出及失败TokenCake清理，重新运行当前来源的十二个
+原生scheduler/生命周期GPU场景。通过后再登记新的24请求model/position
+与running1/8/24采样校准，最后仅运行新的完整TokenCake。
+入口使用18707和20261029独立路径；保留旧失败registration和socket。
+仍使用原七项参数、V230全部3674请求、V311工具时间、18项目、
+Device805198/Host200GB、running/decode24及seed21；不重采native、
+不重跑V345或KVFlow，不做消融。实际重试结果尚待执行。

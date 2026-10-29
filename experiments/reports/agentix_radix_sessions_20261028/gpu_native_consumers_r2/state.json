@@ -1,0 +1,8 @@
+{
+  "status": "failed",
+  "performance_accepted": false,
+  "checked_at": "2026-10-29T14:45:26.355048+08:00",
+  "owned": [],
+  "error": "ValueError('predecessor causal comparison failed: stopped_for_investigation')",
+  "finished_at": "2026-10-29T14:45:31.413578+08:00"
+}

@@ -1,0 +1,116 @@
+{
+  "status": "native_kv_swap_interface_qualified",
+  "scope": "Actual small native FULL GPU/Host pools and kernels; no model forward or policy performance experiment.",
+  "gpu": "NVIDIA H200 NVL",
+  "owned_gpu_pid": 1152916,
+  "native_engine": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-8192b16e9cca/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "15fe59ebe16721e5ee07244d0d25381b0187b91b1afa57f8fd06281fe051cd09",
+    "expected_tree": "c489dbb85265efce25622a52abfd698e9199688d",
+    "actual_tree": "c489dbb85265efce25622a52abfd698e9199688d",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_backed_full_scan.py",
+      "test/srt/test_beliefkv_causal_full_donor.py",
+      "test/srt/test_beliefkv_cold_ack_priority.py",
+      "test/srt/test_beliefkv_cold_full_prepare.py",
+      "test/srt/test_beliefkv_contiguous_host_copy.py",
+      "test/srt/test_beliefkv_demand_driven_full_scan.py",
+      "test/srt/test_beliefkv_execution_handoff.py",
+      "test/srt/test_beliefkv_full_host_eviction.py",
+      "test/srt/test_beliefkv_full_only.py",
+      "test/srt/test_beliefkv_gdn_prefill_mask.py",
+      "test/srt/test_beliefkv_host_eviction_observer.py",
+      "test/srt/test_beliefkv_inherited_full_owners.py",
+      "test/srt/test_beliefkv_latest_anchor_recede.py",
+      "test/srt/test_beliefkv_latest_mamba_state.py",
+      "test/srt/test_beliefkv_layer_wait_probe.py",
+      "test/srt/test_beliefkv_lifecycle.py",
+      "test/srt/test_beliefkv_mamba_request_mapping.py",
+      "test/srt/test_beliefkv_metadata.py",
+      "test/srt/test_beliefkv_paper_capacity_hooks.py",
+      "test/srt/test_beliefkv_paper_decode_pressure.py",
+      "test/srt/test_beliefkv_prefetch_batch_dependency.py",
+      "test/srt/test_beliefkv_prefill_track_metadata.py",
+      "test/srt/test_beliefkv_prefill_track_slots.py",
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_resident_parent_prepare.py",
+      "test/srt/test_beliefkv_restore_tiers.py",
+      "test/srt/test_beliefkv_scheduler_hook.py",
+      "test/srt/test_beliefkv_selective_backup.py",
+      "test/srt/test_beliefkv_session_anchors.py",
+      "test/srt/test_beliefkv_shadow_dispatch.py",
+      "test/srt/test_beliefkv_spawn_full_prepare.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py",
+      "test/srt/test_beliefkv_tool_host_retention.py",
+      "test/srt/test_beliefkv_transfer_receipts.py",
+      "test/srt/test_beliefkv_unified_ack.py",
+      "test/srt/test_beliefkv_write_back_batch.py",
+      "test/srt/test_beliefkv_write_back_batch_integration.py",
+      "test/srt/test_infercept_host_move.py"
+    ]
+  },
+  "checkpoint_tokens": 18,
+  "shared_live_peer_tokens": 16,
+  "exclusive_tokens_released_and_restored": 2,
+  "layers": 2,
+  "key_and_value_bytes_preserved_all_layers": true,
+  "live_peer_kv_preserved": true,
+  "released_tail_poisoned_before_restore": true,
+  "no_device_capacity_release_before_d2h_ack": true,
+  "host_pin_protected_until_actual_resumption": true,
+  "split_complete_host_prefix_protected_under_pressure": true,
+  "native_h2d_lock_survived_pin_handoff": true,
+  "input_output_and_sampler_preserved": true,
+  "native_transfer_acknowledgements": [
+    {
+      "direction": "d2h",
+      "tokens": {
+        "kv": 18
+      }
+    },
+    {
+      "direction": "h2d",
+      "tokens": {
+        "kv": 2
+      }
+    }
+  ],
+  "actor": {
+    "pending_requests": 0,
+    "paused_host_pins": 0,
+    "counts": {
+      "prepared_requests": 1,
+      "unique_checkpoint_nodes": 2,
+      "missing_backup_nodes": 2,
+      "waiting_native_ack": 1,
+      "paused_requests": 1,
+      "demoted_full_tokens": 2,
+      "allocator_available_increase": 2,
+      "resumed_requests": 1
+    },
+    "victim_selection_policy": "external_paper_scheduler",
+    "request_ids_outputs_and_sampling_preserved": true,
+    "host_ownership": "split_safe_complete_prefix_until_native_resumption_or_cancellation",
+    "native_capacity_authority_preserved": true,
+    "runtime_scheduler_hook_installed": false
+  },
+  "native_prefill_consumer": {
+    "native_prefill_admitted": true,
+    "native_extend_allocation_tokens": 1,
+    "checkpoint_tokens": 18,
+    "uncomputed_fixture_tail_returned": true
+  },
+  "request_transport": "full_prompt_native_radix",
+  "native_session_generation_preserved": true,
+  "native_session_anchors_preserved": true,
+  "whole_llm_scheduler_or_baseline_qualified": false,
+  "performance_accepted": false,
+  "elapsed_seconds": 8.3905097739771,
+  "source_sha256": {
+    "scripts/qualify_agentix_swap.py": "28dc58465c67cfa5fd6c60b592ce877feb062f8a330ee502362d3534f38e3ecf",
+    "beliefkv/runtime/agentix_swap.py": "e977c168c4c7ce355f3814c1b073b24e30eb25ea4782d437e46c574074b8f7f6",
+    "beliefkv/runtime/paper_prefix_transfers.py": "c1fdc96be2abf96d40d8fc90a509c17ea837e9cb77ad7f8cb4d7e7a4ded468c3"
+  }
+}

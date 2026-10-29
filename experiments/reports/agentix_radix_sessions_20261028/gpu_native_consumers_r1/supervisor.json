@@ -1,0 +1,13 @@
+{
+  "pid": 1143997,
+  "state": "R",
+  "ppid": 1143752,
+  "start_ticks": "742616795",
+  "argv": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/.worktrees/.worktrees/beliefkv-agentx-baseline-3efa93426937/experiments/reports/agentix_radix_sessions_20261028/queue_components.py",
+    "watch",
+    "--registration",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/gpu_native_consumers_r1/registration.json"
+  ]
+}

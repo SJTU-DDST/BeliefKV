@@ -3112,10 +3112,18 @@
   and accounts fragmented native prefixes with one context-bounded spatial
   walk, keeping original identity/loading/namespace guards and optional DMA
   bounds. One821-case CPU execution retains all812 prior identities with
- 1879 unchanged sources; preserve initial red/fixture failures. No current
+  1879 unchanged sources; preserve initial red/fixture failures. No current
   GPU/model or complete performance is established for these fixes.
   The separately committed run_components_after_cleanup entry may execute
   only the four already-frozen762-source Agentix byte/pressure scenes after
   independently checking actual failed-predecessor exit, cleanup, hold and
   resources. It does not release the failed full comparison as successful
   or enable formal Agentix. Keep the global goal active.
+- The independent Agentix r3 actually passes all four native GPU byte/pressure
+  scenes from8192b16e/c489, with observed child argv, exit0, complete cleanup
+  and no GPU context afterward. Both transports use real native admission;
+  model preemption/resumption, full-model pressure and formal Agentix remain
+  unqualified. The current821-source TokenCake retry entry reruns twelve
+  physical scenes, then fresh24-request model/position and1/8/24 sampling
+  before its distinct complete18707 arm. Preserve the failed2922 prefix,
+  parameters/work/timing/tails and completed Full/KVFlow/V345 controls.

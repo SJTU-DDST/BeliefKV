@@ -98,3 +98,18 @@ run_components_after_cleanup.py是新独立的小池资格入口，先核验失�
 TokenCake及旧waiter实际退出和cleanup，再重查hold/资源与原762项
 冻结来源。它不修改或恢复原失败队列、不启动整模型/正式baseline；
 本轮main的TokenCake修复不进入该8192b16e应用。实际GPU结果仍待产生。
+
+## 四组真实GPU字节检查完成
+
+2026-10-29，独立gpu_native_consumers_r3实际通过swap_plain、
+swap_native_sessions、pressure_plain和pressure_native_sessions。
+四个实际子进程PID1152675/1152916/1153107/1153311及argv均有回执，
+退出码全部0；最后owned cleanup无剩余，NVML也已核对为空。
+应用仍为8192b16e，原生仍为c489，762项冻结来源逐阶段重查一致。
+
+两种transport都经真实PrefillAdder和alloc_for_extend消费恢复锁，
+128 Device/257 Host slots、两层K/V全部逐值保持。压力组分别验证
+真实Host耗尽不释放Device、释放后重试、六个暂停消费者全部恢复，
+原生session generation保持。最初失败队列和TokenCake2922前缀没有
+被续跑或计为成功。这仍不提供真实LLM抢占/恢复、整模型Host压力进展、
+数值或正式性能结果；Agentix正式入口继续关闭。
