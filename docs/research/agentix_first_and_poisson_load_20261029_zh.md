@@ -55,6 +55,18 @@ consumer ancestor，继续核验完整旧输入/输出/sampler、对应原生 FU
 额外重算后缀单独累计，不宣称整段 checkpoint 都被复用；无 logprob 的
 正式 token 重放仍要求原来的完整 checkpoint。新的实际模型数值验证待完成。
 
+logprob_prefix_cycle_r1 的冻结 98a19139380c/c489 现已通过 782 项 CPU、
+四组真实 GPU 组件和全部六个真实模型请求。实际完成 45 次 checkpoint
+抢占、45 次原生恢复、414 个完整执行区间；三个并发调用与三个独立串行
+参照的全部生成 token 相同，最大 logprob 差异均为 0.0。Host pin、pending
+launch 和 native call 全部清零，两次新鲜 idle 和真实 owned cleanup 完成。
+独立原始请求/响应复核保存在该目录的 model_review.json。
+
+这仍是 running=1、固定长度贪心的数值夹具，不是 3674 请求正式性能。
+pressure_model_r1 已单独启动，用完整模型验证 Device32768-token/Host8GB
+的有限 backing 进展，正式参数、普通 sampler/batch24 与完整 JCT 仍待完成。
+TokenCake 不重试，新到达率 GPU 实验继续等待 Agentix。
+
 ## 为什么 0.5 接近突发
 
 当前完整可比工作量是 18 个原项目、3674 请求、549671 个输出 token。

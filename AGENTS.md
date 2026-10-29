@@ -3176,3 +3176,20 @@
   launch instruction. Choose rate/population from observed capacity and useful
   memory pressure; total workflows and simultaneous workflows are distinct.
   Keep every future naturally captured root from a different original project.
+- Agentix 98a19139380c/c489 now passes782 source-bound CPU cases, four actual
+  GPU byte/pressure scenes and all six unforced real-model calls. Preserve the
+  earlier startup/session/socket/untagged-warmup failures. The warmup override
+  avoids unregistered native startup calls; the logprob fix validates the actual
+  protected prompt ancestor while retaining native suffix replay, locks and
+  sampler/token identity. Real45 pauses/resumptions and414 executor intervals
+  settle; all three token vectors and logprobs match serial references exactly.
+  Raw review, fresh idle and actual owned exit are under
+  experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/.
+  pressure_model_r1 is the next actual-model finite-backing check, not a full
+  baseline. Agentix formal parameters, ordinary sampler/batch24 and complete
+  V230/V311 still require qualification; never promote the tiny fixture quanta.
+  No TokenCake retry, extra native/V345 run or arrival-rate sweep is authorized
+  by these component/model results. Offline sizing recommends initial Poisson
+  .008 workflow/s with48 distinct original projects (36 for shorter calibration);
+  only18 currently have the matched complete source. This recommendation is
+  not verified stationary capacity or a GPU arrival launch registration.

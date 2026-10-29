@@ -1,0 +1,211 @@
+{
+  "status": "four_native_consumer_gpu_checks_qualified",
+  "performance_accepted": false,
+  "registered_frozen_application": "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-98a19139380c",
+  "application_commit": "98a19139380c109b7772e3277e57a45858523ab5",
+  "engine_checkout": "/home/longhao/experiment/.worktrees/sglang-agentx-baseline-c489dbb85265-98a19139380c",
+  "engine_tree": "c489dbb85265efce25622a52abfd698e9199688d",
+  "checked_at": "2026-10-29T17:34:50.129962+08:00",
+  "owned": [
+    {
+      "pid": 1235268,
+      "state": "R",
+      "ppid": 1233878,
+      "start_ticks": "743674444",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-98a19139380c/scripts/qualify_agentix_pressure.py",
+        "run",
+        "--engine-checkout",
+        "/home/longhao/experiment/.worktrees/sglang-agentx-baseline-c489dbb85265-98a19139380c",
+        "--canonical-patch",
+        "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-98a19139380c/patches/sglang-v0.5.20-beliefkv-staging.patch",
+        "--output-dir",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/components/pressure_native_sessions",
+        "--native-radix-sessions"
+      ]
+    }
+  ],
+  "completed_scenes": {
+    "swap_plain": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/components/swap_plain/summary.json",
+      "sha256": "0752170d4e396b50dd543bedb5ae725328aa1dbcca49649cd0a0e2a5c0b0bf20",
+      "spawned_process": {
+        "pid": 1234698,
+        "state": "R",
+        "ppid": 1233878,
+        "start_ticks": "743671474",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-98a19139380c/scripts/qualify_agentix_swap.py",
+          "--engine-checkout",
+          "/home/longhao/experiment/.worktrees/sglang-agentx-baseline-c489dbb85265-98a19139380c",
+          "--canonical-patch",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-98a19139380c/patches/sglang-v0.5.20-beliefkv-staging.patch",
+          "--output-dir",
+          "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/components/swap_plain"
+        ]
+      },
+      "actual_exit_verified": true
+    },
+    "swap_native_sessions": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/components/swap_native_sessions/summary.json",
+      "sha256": "0f708d915fb2743c6d97d826484abb359cdd76ff7cc23c3d14f0a0733353c5fb",
+      "spawned_process": {
+        "pid": 1234885,
+        "state": "R",
+        "ppid": 1233878,
+        "start_ticks": "743672443",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-98a19139380c/scripts/qualify_agentix_swap.py",
+          "--engine-checkout",
+          "/home/longhao/experiment/.worktrees/sglang-agentx-baseline-c489dbb85265-98a19139380c",
+          "--canonical-patch",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-98a19139380c/patches/sglang-v0.5.20-beliefkv-staging.patch",
+          "--output-dir",
+          "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/components/swap_native_sessions",
+          "--native-radix-sessions"
+        ]
+      },
+      "actual_exit_verified": true
+    },
+    "pressure_plain": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/components/pressure_plain/summary.json",
+      "sha256": "a66396d35b2398aad121c884e660fa8c5bab71a10add9578550afb1e8da8182f",
+      "spawned_process": {
+        "pid": 1235076,
+        "state": "R",
+        "ppid": 1233878,
+        "start_ticks": "743673415",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-98a19139380c/scripts/qualify_agentix_pressure.py",
+          "run",
+          "--engine-checkout",
+          "/home/longhao/experiment/.worktrees/sglang-agentx-baseline-c489dbb85265-98a19139380c",
+          "--canonical-patch",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-98a19139380c/patches/sglang-v0.5.20-beliefkv-staging.patch",
+          "--output-dir",
+          "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/components/pressure_plain"
+        ]
+      },
+      "actual_exit_verified": true
+    },
+    "pressure_native_sessions": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/components/pressure_native_sessions/summary.json",
+      "sha256": "678b3785c7af2fe2969a743ace932dbd757962994b2e7e01f5b78fae3f049e7b",
+      "spawned_process": {
+        "pid": 1235268,
+        "state": "R",
+        "ppid": 1233878,
+        "start_ticks": "743674444",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-98a19139380c/scripts/qualify_agentix_pressure.py",
+          "run",
+          "--engine-checkout",
+          "/home/longhao/experiment/.worktrees/sglang-agentx-baseline-c489dbb85265-98a19139380c",
+          "--canonical-patch",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-98a19139380c/patches/sglang-v0.5.20-beliefkv-staging.patch",
+          "--output-dir",
+          "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/components/pressure_native_sessions",
+          "--native-radix-sessions"
+        ]
+      },
+      "actual_exit_verified": true
+    }
+  },
+  "reports": {
+    "swap_plain": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/components/swap_plain/summary.json",
+      "sha256": "0752170d4e396b50dd543bedb5ae725328aa1dbcca49649cd0a0e2a5c0b0bf20",
+      "spawned_process": {
+        "pid": 1234698,
+        "state": "R",
+        "ppid": 1233878,
+        "start_ticks": "743671474",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-98a19139380c/scripts/qualify_agentix_swap.py",
+          "--engine-checkout",
+          "/home/longhao/experiment/.worktrees/sglang-agentx-baseline-c489dbb85265-98a19139380c",
+          "--canonical-patch",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-98a19139380c/patches/sglang-v0.5.20-beliefkv-staging.patch",
+          "--output-dir",
+          "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/components/swap_plain"
+        ]
+      },
+      "actual_exit_verified": true
+    },
+    "swap_native_sessions": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/components/swap_native_sessions/summary.json",
+      "sha256": "0f708d915fb2743c6d97d826484abb359cdd76ff7cc23c3d14f0a0733353c5fb",
+      "spawned_process": {
+        "pid": 1234885,
+        "state": "R",
+        "ppid": 1233878,
+        "start_ticks": "743672443",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-98a19139380c/scripts/qualify_agentix_swap.py",
+          "--engine-checkout",
+          "/home/longhao/experiment/.worktrees/sglang-agentx-baseline-c489dbb85265-98a19139380c",
+          "--canonical-patch",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-98a19139380c/patches/sglang-v0.5.20-beliefkv-staging.patch",
+          "--output-dir",
+          "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/components/swap_native_sessions",
+          "--native-radix-sessions"
+        ]
+      },
+      "actual_exit_verified": true
+    },
+    "pressure_plain": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/components/pressure_plain/summary.json",
+      "sha256": "a66396d35b2398aad121c884e660fa8c5bab71a10add9578550afb1e8da8182f",
+      "spawned_process": {
+        "pid": 1235076,
+        "state": "R",
+        "ppid": 1233878,
+        "start_ticks": "743673415",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-98a19139380c/scripts/qualify_agentix_pressure.py",
+          "run",
+          "--engine-checkout",
+          "/home/longhao/experiment/.worktrees/sglang-agentx-baseline-c489dbb85265-98a19139380c",
+          "--canonical-patch",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-98a19139380c/patches/sglang-v0.5.20-beliefkv-staging.patch",
+          "--output-dir",
+          "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/components/pressure_plain"
+        ]
+      },
+      "actual_exit_verified": true
+    },
+    "pressure_native_sessions": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/components/pressure_native_sessions/summary.json",
+      "sha256": "678b3785c7af2fe2969a743ace932dbd757962994b2e7e01f5b78fae3f049e7b",
+      "spawned_process": {
+        "pid": 1235268,
+        "state": "R",
+        "ppid": 1233878,
+        "start_ticks": "743674444",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-98a19139380c/scripts/qualify_agentix_pressure.py",
+          "run",
+          "--engine-checkout",
+          "/home/longhao/experiment/.worktrees/sglang-agentx-baseline-c489dbb85265-98a19139380c",
+          "--canonical-patch",
+          "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-98a19139380c/patches/sglang-v0.5.20-beliefkv-staging.patch",
+          "--output-dir",
+          "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/components/pressure_native_sessions",
+          "--native-radix-sessions"
+        ]
+      },
+      "actual_exit_verified": true
+    }
+  },
+  "whole_model_or_formal_baseline_qualified": false,
+  "finished_at": "2026-10-29T17:34:51.025586+08:00"
+}

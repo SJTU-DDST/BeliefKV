@@ -1,0 +1,39 @@
+{
+  "status": "six_actual_unforced_model_calls_qualified",
+  "fixture": "roomy_24576_input_64_output_device805198_host64GB_running1",
+  "numerical_stopping_only_not_formal_stopping": true,
+  "requests": 6,
+  "actual_greedy_tokens_equal": true,
+  "maximum_logprob_absolute_delta": {
+    "0": 0.0,
+    "1": 0.0,
+    "2": 0.0
+  },
+  "checkpoint_pauses": 45,
+  "actual_native_resumptions": 45,
+  "executor_intervals_accounted": 414,
+  "all_model_children_exited": true,
+  "finite_model_pressure_qualified": false,
+  "full_formal_workload_qualified": false,
+  "performance_accepted": false,
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/model/summary.json": "269dec29ecc71dd364055b4585fff72b4c0c954a4b8304bd221e51e81c46aee0",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/model/qualification_policy.json": "8e4ae3dcabe0d69da9eeabe4d02a16e3dc2dca7a078150bd0a3291cadd8f81f6",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/model/owned_process_cleanup.json": "1f9003c6e8ec838733698cefaa2c7ab7db74aef7ca93bfe38da3c8055586d3a2",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/model/telemetry_drain.json": "a908363a4ee997d76a6ed5094e8aa3af39b856e54e78525d2035d8673255cc61",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/components/summary.json": "57302fe32b803e27316bffbb65b45c2d5b52667f09991c6161179bd96eb54bcc",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/cpu/native_consumer_cpu.json": "1cc25cccd0da5957d5ae8c26b73296cf19b15fbc8de05ea4f0fdc60ab7cf23d2",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/model/request_actual-0.json": "b5753bc5030866ac6332c87e0013698be78eeac37f0ecd7bd2ef3547192d870e",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/model/response_actual-0.json": "f9a5bcfee69b971564fa428b0f47f10459dba2c11ecefd8f7dbc2fc68e6f4699",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/model/request_actual-1.json": "f9ff7ec179c0bd95e3978a3ebbc92f3e9ee75c83a66d3138b4511b972f6e7d6a",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/model/response_actual-1.json": "22722aecdd63f23e311984f1caf57bb94b684ac32119686651d5163a3d0eb08f",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/model/request_actual-2.json": "342f67cc8cc620f5edfbd02806df9f598640c5c7bcc6379fe4653c31844f89f3",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/model/response_actual-2.json": "259bf758e6f69f2fade159355d5332356604843136bc901dbf2a7ba4d2c94775",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/model/request_reference-0.json": "13f474073eccff85556f3eff04783b05f77dab917eaa6d13593ada2416a92e9d",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/model/response_reference-0.json": "fec8010b9ad7567d80fa8cc0aca8299525222212c91b6a64776d882fcad6acf5",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/model/request_reference-1.json": "d0454a35b0bae6d7c6729b050bba1ec01aef6fc3497dd9c77bea47de71153e43",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/model/response_reference-1.json": "b2da277b348504b7384ef1a88b9ca6a73a009fcd53dcadf91e8a8cb1ff28cc61",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/model/request_reference-2.json": "a52e085ced3f212dfd3a7053a84fb09b04cb39f2ce7c0579e4389fa854cbe701",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/model/response_reference-2.json": "d32a9507b08fa191e2ecfa99e91bbc78c5a20d21fd8388074ad9c1d72a40cc3e"
+  }
+}
