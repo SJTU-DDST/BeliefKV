@@ -1,0 +1,14 @@
+{
+  "status": "first_independent_review_refused_allocation_equality",
+  "command": "review_archive.py",
+  "error": "ValueError: reclaimed allocation accounting differs",
+  "source_allocated_bytes": 136720576512,
+  "receipt_net_reclaimed_bytes": 133015199744,
+  "later_archive_allocated_bytes": 3705380864,
+  "later_net_reclaimed_bytes": 133015195648,
+  "later_allocation_difference_bytes": 4096,
+  "archive_sizes_and_sha256_checks_completed_before_refusal": true,
+  "all_source_inventory_and_restore_marker_checks_completed_before_refusal": true,
+  "allocation_difference_cause": "not established; block-allocation observations were taken at different times",
+  "original_receipt_preserved": true
+}
