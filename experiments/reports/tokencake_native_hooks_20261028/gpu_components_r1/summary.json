@@ -1,0 +1,781 @@
+{
+  "status": "tokencake_native_lifecycle_qualified",
+  "scope": "Real two-layer native GPU/Host pools, requests and prefill admission; synthetic values and policy clock. No whole-model or performance claim.",
+  "engine_tree": "131d175450fe2b74d31a0508c2e13c55a3750a56",
+  "native_patch_sha256": "56d7fdefec0beb0fb5277aaa1704c1bcc0e380d49ee2240ee96905c2977557a6",
+  "native_engine": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-tokencake-hooks-components-20261028/patches/sglang-tokencake-scheduler-runtime-20261028.patch",
+    "sha256": "56d7fdefec0beb0fb5277aaa1704c1bcc0e380d49ee2240ee96905c2977557a6",
+    "expected_tree": "131d175450fe2b74d31a0508c2e13c55a3750a56",
+    "actual_tree": "131d175450fe2b74d31a0508c2e13c55a3750a56",
+    "matches_worktree": true,
+    "covered_untracked_paths": []
+  },
+  "native_scheduler_bindings": {
+    "common_engine_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+    "exact_optional_hooks_projection_verified": true,
+    "prefill_guard_before_native_input": true,
+    "decode_victim_and_before_release_bound": true,
+    "native_compute_or_copy_implementation_changed": false,
+    "source_sha256": {
+      "python/sglang/srt/managers/scheduler.py": "0ceab8b945d0ea3163de13bc949404ab5a4fb61e412e1ac4fd10b276e467aefe",
+      "python/sglang/srt/managers/schedule_batch.py": "38790e4f56d95c84f2d070ab5073bc6fe163d187c711f65c1e818e1bb3c6fd5c"
+    }
+  },
+  "gpu": "NVIDIA H200 NVL",
+  "owned_gpu_pid": 1118109,
+  "fixture_only_parameters": {
+    "generation_budget": 8,
+    "context_limit": 64,
+    "running_limit": 4,
+    "prefill_token_budget": 32,
+    "chunked_prefill_tokens": 8,
+    "policy_block_tokens": 1,
+    "eviction_window_tokens": 16
+  },
+  "scenarios": {
+    "full_upload": {
+      "status": "complete",
+      "native_scheduler_loop_executions": 3,
+      "grants": [
+        4,
+        2,
+        1,
+        1
+      ],
+      "native_demand_h2d_tokens": 0,
+      "temporal_counts": {
+        "generation_completions": 3,
+        "stall_start_applied": 1,
+        "paper_first_fit_rejected": 1,
+        "no_waiting_demand": 1,
+        "decode_throughput_samples": 1,
+        "paper_first_fit_selected": 1,
+        "selected": 1,
+        "preservation_batches": 1,
+        "d2h_bandwidth_samples": 1,
+        "preservation_acks_settled": 1,
+        "paper_offload_demoted_tokens": 8,
+        "paper_upload_grants": 4,
+        "paper_upload_tokens": 8,
+        "h2d_bandwidth_samples": 4,
+        "stall_finish_applied": 1,
+        "paper_checkpoints_released": 1,
+        "paper_upload_consumers": 1
+      },
+      "capacity_counts": {
+        "admission_probes": 17,
+        "admission_stages": 3,
+        "private_admission_slots_staged": 47,
+        "private_admission_slots_materialized": 47,
+        "physical_commits": 4,
+        "requests_released": 3,
+        "upload_reservation_updates": 4,
+        "upload_reservation_new_tokens": 8,
+        "upload_reservations_released": 1,
+        "upload_reservations_consumed": 1
+      },
+      "transfer_counts": {
+        "d2h_enqueued_tokens": 8,
+        "native_commands_completed": 5,
+        "host_leases_acquired": 1,
+        "complete_host_leases_acquired": 1,
+        "demoted_tokens": 8,
+        "split_host_prefix_pins": 3,
+        "h2d_enqueued_tokens": 8,
+        "progressive_h2d_enqueued_tokens": 8,
+        "host_leases_released": 1
+      },
+      "native_ack_tokens": {
+        "d2h": 8,
+        "h2d": 8
+      },
+      "final_uncommitted_tokens": 64,
+      "request_transport": "plain_tokens",
+      "native_session_request_count": 0,
+      "native_session_generations": {},
+      "native_session_source_anchors": 0,
+      "native_session_ownership_preserved": false
+    },
+    "early_d2h": {
+      "status": "complete",
+      "native_scheduler_loop_executions": 3,
+      "grants": [],
+      "native_demand_h2d_tokens": 0,
+      "temporal_counts": {
+        "generation_completions": 3,
+        "stall_start_applied": 1,
+        "paper_first_fit_rejected": 1,
+        "no_waiting_demand": 1,
+        "decode_throughput_samples": 1,
+        "paper_first_fit_selected": 1,
+        "selected": 1,
+        "preservation_batches": 1,
+        "paper_checkpoints_released": 1,
+        "stall_finish_applied": 1,
+        "d2h_bandwidth_samples": 1
+      },
+      "capacity_counts": {
+        "admission_probes": 12,
+        "admission_stages": 3,
+        "private_admission_slots_staged": 47,
+        "private_admission_slots_materialized": 47,
+        "physical_commits": 4,
+        "requests_released": 3,
+        "external_prefix_tokens_adopted": 8
+      },
+      "transfer_counts": {
+        "d2h_enqueued_tokens": 8,
+        "native_commands_completed": 1
+      },
+      "native_ack_tokens": {
+        "d2h": 8,
+        "h2d": 0
+      },
+      "final_uncommitted_tokens": 64,
+      "request_transport": "plain_tokens",
+      "native_session_request_count": 0,
+      "native_session_generations": {},
+      "native_session_source_anchors": 0,
+      "native_session_ownership_preserved": false
+    },
+    "early_h2d": {
+      "status": "complete",
+      "native_scheduler_loop_executions": 4,
+      "grants": [
+        4
+      ],
+      "native_demand_h2d_tokens": 4,
+      "temporal_counts": {
+        "generation_completions": 3,
+        "stall_start_applied": 1,
+        "paper_first_fit_rejected": 1,
+        "no_waiting_demand": 1,
+        "decode_throughput_samples": 1,
+        "paper_first_fit_selected": 1,
+        "selected": 1,
+        "preservation_batches": 1,
+        "d2h_bandwidth_samples": 1,
+        "preservation_acks_settled": 1,
+        "paper_offload_demoted_tokens": 8,
+        "paper_upload_grants": 1,
+        "paper_upload_tokens": 4,
+        "stall_finish_applied": 1,
+        "h2d_bandwidth_samples": 2,
+        "paper_checkpoints_released": 1,
+        "paper_upload_consumers": 1
+      },
+      "capacity_counts": {
+        "admission_probes": 14,
+        "admission_stages": 3,
+        "private_admission_slots_staged": 47,
+        "private_admission_slots_materialized": 47,
+        "physical_commits": 4,
+        "requests_released": 3,
+        "upload_reservation_updates": 1,
+        "upload_reservation_new_tokens": 4,
+        "upload_reservations_released": 1,
+        "upload_reservations_consumed": 1
+      },
+      "transfer_counts": {
+        "d2h_enqueued_tokens": 8,
+        "native_commands_completed": 2,
+        "host_leases_acquired": 1,
+        "complete_host_leases_acquired": 1,
+        "demoted_tokens": 8,
+        "split_host_prefix_pins": 1,
+        "h2d_enqueued_tokens": 4,
+        "progressive_h2d_enqueued_tokens": 4,
+        "host_leases_released": 1
+      },
+      "native_ack_tokens": {
+        "d2h": 8,
+        "h2d": 8
+      },
+      "final_uncommitted_tokens": 64,
+      "request_transport": "plain_tokens",
+      "native_session_request_count": 0,
+      "native_session_generations": {},
+      "native_session_source_anchors": 0,
+      "native_session_ownership_preserved": false
+    },
+    "expiry": {
+      "status": "complete",
+      "native_scheduler_loop_executions": 2,
+      "grants": [
+        4
+      ],
+      "native_demand_h2d_tokens": 0,
+      "temporal_counts": {
+        "generation_completions": 2,
+        "stall_start_applied": 1,
+        "paper_first_fit_rejected": 1,
+        "no_waiting_demand": 1,
+        "decode_throughput_samples": 1,
+        "paper_first_fit_selected": 1,
+        "selected": 1,
+        "preservation_batches": 1,
+        "d2h_bandwidth_samples": 1,
+        "preservation_acks_settled": 1,
+        "paper_offload_demoted_tokens": 8,
+        "paper_upload_grants": 1,
+        "paper_upload_tokens": 4,
+        "h2d_bandwidth_samples": 1,
+        "paper_checkpoints_released": 1,
+        "stall_finish_late_finish": 1
+      },
+      "capacity_counts": {
+        "admission_probes": 13,
+        "admission_stages": 2,
+        "private_admission_slots_staged": 46,
+        "private_admission_slots_materialized": 46,
+        "physical_commits": 3,
+        "requests_released": 2,
+        "upload_reservation_updates": 1,
+        "upload_reservation_new_tokens": 4,
+        "upload_reservations_released": 1
+      },
+      "transfer_counts": {
+        "d2h_enqueued_tokens": 8,
+        "native_commands_completed": 2,
+        "host_leases_acquired": 1,
+        "complete_host_leases_acquired": 1,
+        "demoted_tokens": 8,
+        "split_host_prefix_pins": 1,
+        "h2d_enqueued_tokens": 4,
+        "progressive_h2d_enqueued_tokens": 4,
+        "host_leases_released": 1
+      },
+      "native_ack_tokens": {
+        "d2h": 8,
+        "h2d": 4
+      },
+      "final_uncommitted_tokens": 64,
+      "request_transport": "plain_tokens",
+      "native_session_request_count": 0,
+      "native_session_generations": {},
+      "native_session_source_anchors": 0,
+      "native_session_ownership_preserved": false
+    },
+    "retirement": {
+      "status": "complete",
+      "native_scheduler_loop_executions": 2,
+      "grants": [
+        4
+      ],
+      "native_demand_h2d_tokens": 0,
+      "temporal_counts": {
+        "generation_completions": 2,
+        "stall_start_applied": 1,
+        "paper_first_fit_rejected": 1,
+        "no_waiting_demand": 1,
+        "decode_throughput_samples": 1,
+        "paper_first_fit_selected": 1,
+        "selected": 1,
+        "preservation_batches": 1,
+        "d2h_bandwidth_samples": 1,
+        "preservation_acks_settled": 1,
+        "paper_offload_demoted_tokens": 8,
+        "paper_upload_grants": 1,
+        "paper_upload_tokens": 4,
+        "h2d_bandwidth_samples": 1,
+        "paper_checkpoints_released": 1
+      },
+      "capacity_counts": {
+        "admission_probes": 12,
+        "admission_stages": 2,
+        "private_admission_slots_staged": 46,
+        "private_admission_slots_materialized": 46,
+        "physical_commits": 3,
+        "requests_released": 2,
+        "upload_reservation_updates": 1,
+        "upload_reservation_new_tokens": 4,
+        "upload_reservations_released": 1
+      },
+      "transfer_counts": {
+        "d2h_enqueued_tokens": 8,
+        "native_commands_completed": 2,
+        "host_leases_acquired": 1,
+        "complete_host_leases_acquired": 1,
+        "demoted_tokens": 8,
+        "split_host_prefix_pins": 1,
+        "h2d_enqueued_tokens": 4,
+        "progressive_h2d_enqueued_tokens": 4,
+        "host_leases_released": 1
+      },
+      "native_ack_tokens": {
+        "d2h": 8,
+        "h2d": 4
+      },
+      "final_uncommitted_tokens": 64,
+      "request_transport": "plain_tokens",
+      "native_session_request_count": 0,
+      "native_session_generations": {},
+      "native_session_source_anchors": 0,
+      "native_session_ownership_preserved": false
+    },
+    "pressure": {
+      "status": "complete",
+      "native_scheduler_loop_executions": 2,
+      "grants": [
+        4
+      ],
+      "native_demand_h2d_tokens": 0,
+      "temporal_counts": {
+        "generation_completions": 2,
+        "stall_start_applied": 1,
+        "paper_first_fit_rejected": 1,
+        "no_waiting_demand": 1,
+        "decode_throughput_samples": 1,
+        "paper_first_fit_selected": 1,
+        "selected": 1,
+        "preservation_batches": 1,
+        "d2h_bandwidth_samples": 1,
+        "preservation_acks_settled": 1,
+        "paper_offload_demoted_tokens": 8,
+        "paper_upload_grants": 1,
+        "paper_upload_tokens": 4,
+        "h2d_bandwidth_samples": 1,
+        "paper_upload_pressure_releases": 1,
+        "stall_finish_applied": 1,
+        "paper_checkpoints_released": 1
+      },
+      "capacity_counts": {
+        "admission_probes": 12,
+        "admission_stages": 2,
+        "private_admission_slots_staged": 46,
+        "private_admission_slots_materialized": 46,
+        "physical_commits": 3,
+        "requests_released": 2,
+        "upload_reservation_updates": 1,
+        "upload_reservation_new_tokens": 4,
+        "upload_reservations_released": 1
+      },
+      "transfer_counts": {
+        "d2h_enqueued_tokens": 8,
+        "native_commands_completed": 2,
+        "host_leases_acquired": 1,
+        "complete_host_leases_acquired": 1,
+        "demoted_tokens": 8,
+        "split_host_prefix_pins": 1,
+        "h2d_enqueued_tokens": 4,
+        "progressive_h2d_enqueued_tokens": 4,
+        "host_leases_released": 1
+      },
+      "native_ack_tokens": {
+        "d2h": 8,
+        "h2d": 4
+      },
+      "final_uncommitted_tokens": 64,
+      "request_transport": "plain_tokens",
+      "native_session_request_count": 0,
+      "native_session_generations": {},
+      "native_session_source_anchors": 0,
+      "native_session_ownership_preserved": false
+    }
+  },
+  "native_session_scenarios": {
+    "full_upload": {
+      "status": "complete",
+      "native_scheduler_loop_executions": 3,
+      "grants": [
+        4,
+        2,
+        1,
+        1
+      ],
+      "native_demand_h2d_tokens": 0,
+      "temporal_counts": {
+        "generation_completions": 3,
+        "stall_start_applied": 1,
+        "paper_first_fit_rejected": 1,
+        "no_waiting_demand": 1,
+        "decode_throughput_samples": 1,
+        "paper_first_fit_selected": 1,
+        "selected": 1,
+        "preservation_batches": 1,
+        "d2h_bandwidth_samples": 1,
+        "preservation_acks_settled": 1,
+        "paper_offload_demoted_tokens": 8,
+        "paper_upload_grants": 4,
+        "paper_upload_tokens": 8,
+        "h2d_bandwidth_samples": 4,
+        "stall_finish_applied": 1,
+        "paper_checkpoints_released": 1,
+        "paper_upload_consumers": 1
+      },
+      "capacity_counts": {
+        "admission_probes": 17,
+        "admission_stages": 3,
+        "private_admission_slots_staged": 47,
+        "private_admission_slots_materialized": 47,
+        "physical_commits": 4,
+        "requests_released": 3,
+        "upload_reservation_updates": 4,
+        "upload_reservation_new_tokens": 8,
+        "upload_reservations_released": 1,
+        "upload_reservations_consumed": 1
+      },
+      "transfer_counts": {
+        "d2h_enqueued_tokens": 8,
+        "native_commands_completed": 5,
+        "host_leases_acquired": 1,
+        "complete_host_leases_acquired": 1,
+        "demoted_tokens": 8,
+        "split_host_prefix_pins": 3,
+        "h2d_enqueued_tokens": 8,
+        "progressive_h2d_enqueued_tokens": 8,
+        "host_leases_released": 1
+      },
+      "native_ack_tokens": {
+        "d2h": 8,
+        "h2d": 8
+      },
+      "final_uncommitted_tokens": 64,
+      "request_transport": "full_prompt_native_radix_session",
+      "native_session_request_count": 4,
+      "native_session_generations": {
+        "tokencake-session-agent": 1,
+        "tokencake-session-peer": 2,
+        "tokencake-session-queued": 3
+      },
+      "native_session_source_anchors": 1,
+      "native_session_ownership_preserved": true
+    },
+    "early_d2h": {
+      "status": "complete",
+      "native_scheduler_loop_executions": 3,
+      "grants": [],
+      "native_demand_h2d_tokens": 0,
+      "temporal_counts": {
+        "generation_completions": 3,
+        "stall_start_applied": 1,
+        "paper_first_fit_rejected": 1,
+        "no_waiting_demand": 1,
+        "decode_throughput_samples": 1,
+        "paper_first_fit_selected": 1,
+        "selected": 1,
+        "preservation_batches": 1,
+        "paper_checkpoints_released": 1,
+        "stall_finish_applied": 1,
+        "d2h_bandwidth_samples": 1
+      },
+      "capacity_counts": {
+        "admission_probes": 12,
+        "admission_stages": 3,
+        "private_admission_slots_staged": 47,
+        "private_admission_slots_materialized": 47,
+        "physical_commits": 4,
+        "requests_released": 3,
+        "external_prefix_tokens_adopted": 8
+      },
+      "transfer_counts": {
+        "d2h_enqueued_tokens": 8,
+        "native_commands_completed": 1
+      },
+      "native_ack_tokens": {
+        "d2h": 8,
+        "h2d": 0
+      },
+      "final_uncommitted_tokens": 64,
+      "request_transport": "full_prompt_native_radix_session",
+      "native_session_request_count": 4,
+      "native_session_generations": {
+        "tokencake-session-agent": 1,
+        "tokencake-session-peer": 2,
+        "tokencake-session-queued": 3
+      },
+      "native_session_source_anchors": 1,
+      "native_session_ownership_preserved": true
+    },
+    "early_h2d": {
+      "status": "complete",
+      "native_scheduler_loop_executions": 4,
+      "grants": [
+        4
+      ],
+      "native_demand_h2d_tokens": 4,
+      "temporal_counts": {
+        "generation_completions": 3,
+        "stall_start_applied": 1,
+        "paper_first_fit_rejected": 1,
+        "no_waiting_demand": 1,
+        "decode_throughput_samples": 1,
+        "paper_first_fit_selected": 1,
+        "selected": 1,
+        "preservation_batches": 1,
+        "d2h_bandwidth_samples": 1,
+        "preservation_acks_settled": 1,
+        "paper_offload_demoted_tokens": 8,
+        "paper_upload_grants": 1,
+        "paper_upload_tokens": 4,
+        "stall_finish_applied": 1,
+        "h2d_bandwidth_samples": 2,
+        "paper_checkpoints_released": 1,
+        "paper_upload_consumers": 1
+      },
+      "capacity_counts": {
+        "admission_probes": 14,
+        "admission_stages": 3,
+        "private_admission_slots_staged": 47,
+        "private_admission_slots_materialized": 47,
+        "physical_commits": 4,
+        "requests_released": 3,
+        "upload_reservation_updates": 1,
+        "upload_reservation_new_tokens": 4,
+        "upload_reservations_released": 1,
+        "upload_reservations_consumed": 1
+      },
+      "transfer_counts": {
+        "d2h_enqueued_tokens": 8,
+        "native_commands_completed": 2,
+        "host_leases_acquired": 1,
+        "complete_host_leases_acquired": 1,
+        "demoted_tokens": 8,
+        "split_host_prefix_pins": 1,
+        "h2d_enqueued_tokens": 4,
+        "progressive_h2d_enqueued_tokens": 4,
+        "host_leases_released": 1
+      },
+      "native_ack_tokens": {
+        "d2h": 8,
+        "h2d": 8
+      },
+      "final_uncommitted_tokens": 64,
+      "request_transport": "full_prompt_native_radix_session",
+      "native_session_request_count": 4,
+      "native_session_generations": {
+        "tokencake-session-agent": 1,
+        "tokencake-session-peer": 2,
+        "tokencake-session-queued": 3
+      },
+      "native_session_source_anchors": 1,
+      "native_session_ownership_preserved": true
+    },
+    "expiry": {
+      "status": "complete",
+      "native_scheduler_loop_executions": 2,
+      "grants": [
+        4
+      ],
+      "native_demand_h2d_tokens": 0,
+      "temporal_counts": {
+        "generation_completions": 2,
+        "stall_start_applied": 1,
+        "paper_first_fit_rejected": 1,
+        "no_waiting_demand": 1,
+        "decode_throughput_samples": 1,
+        "paper_first_fit_selected": 1,
+        "selected": 1,
+        "preservation_batches": 1,
+        "d2h_bandwidth_samples": 1,
+        "preservation_acks_settled": 1,
+        "paper_offload_demoted_tokens": 8,
+        "paper_upload_grants": 1,
+        "paper_upload_tokens": 4,
+        "h2d_bandwidth_samples": 1,
+        "paper_checkpoints_released": 1,
+        "stall_finish_late_finish": 1
+      },
+      "capacity_counts": {
+        "admission_probes": 13,
+        "admission_stages": 2,
+        "private_admission_slots_staged": 46,
+        "private_admission_slots_materialized": 46,
+        "physical_commits": 3,
+        "requests_released": 2,
+        "upload_reservation_updates": 1,
+        "upload_reservation_new_tokens": 4,
+        "upload_reservations_released": 1
+      },
+      "transfer_counts": {
+        "d2h_enqueued_tokens": 8,
+        "native_commands_completed": 2,
+        "host_leases_acquired": 1,
+        "complete_host_leases_acquired": 1,
+        "demoted_tokens": 8,
+        "split_host_prefix_pins": 1,
+        "h2d_enqueued_tokens": 4,
+        "progressive_h2d_enqueued_tokens": 4,
+        "host_leases_released": 1
+      },
+      "native_ack_tokens": {
+        "d2h": 8,
+        "h2d": 4
+      },
+      "final_uncommitted_tokens": 64,
+      "request_transport": "full_prompt_native_radix_session",
+      "native_session_request_count": 3,
+      "native_session_generations": {
+        "tokencake-session-agent": 1,
+        "tokencake-session-peer": 2,
+        "tokencake-session-queued": 3
+      },
+      "native_session_source_anchors": 1,
+      "native_session_ownership_preserved": true
+    },
+    "retirement": {
+      "status": "complete",
+      "native_scheduler_loop_executions": 2,
+      "grants": [
+        4
+      ],
+      "native_demand_h2d_tokens": 0,
+      "temporal_counts": {
+        "generation_completions": 2,
+        "stall_start_applied": 1,
+        "paper_first_fit_rejected": 1,
+        "no_waiting_demand": 1,
+        "decode_throughput_samples": 1,
+        "paper_first_fit_selected": 1,
+        "selected": 1,
+        "preservation_batches": 1,
+        "d2h_bandwidth_samples": 1,
+        "preservation_acks_settled": 1,
+        "paper_offload_demoted_tokens": 8,
+        "paper_upload_grants": 1,
+        "paper_upload_tokens": 4,
+        "h2d_bandwidth_samples": 1,
+        "paper_checkpoints_released": 1
+      },
+      "capacity_counts": {
+        "admission_probes": 12,
+        "admission_stages": 2,
+        "private_admission_slots_staged": 46,
+        "private_admission_slots_materialized": 46,
+        "physical_commits": 3,
+        "requests_released": 2,
+        "upload_reservation_updates": 1,
+        "upload_reservation_new_tokens": 4,
+        "upload_reservations_released": 1
+      },
+      "transfer_counts": {
+        "d2h_enqueued_tokens": 8,
+        "native_commands_completed": 2,
+        "host_leases_acquired": 1,
+        "complete_host_leases_acquired": 1,
+        "demoted_tokens": 8,
+        "split_host_prefix_pins": 1,
+        "h2d_enqueued_tokens": 4,
+        "progressive_h2d_enqueued_tokens": 4,
+        "host_leases_released": 1
+      },
+      "native_ack_tokens": {
+        "d2h": 8,
+        "h2d": 4
+      },
+      "final_uncommitted_tokens": 64,
+      "request_transport": "full_prompt_native_radix_session",
+      "native_session_request_count": 3,
+      "native_session_generations": {
+        "tokencake-session-agent": 1,
+        "tokencake-session-peer": 2,
+        "tokencake-session-queued": 3
+      },
+      "native_session_source_anchors": 1,
+      "native_session_ownership_preserved": true
+    },
+    "pressure": {
+      "status": "complete",
+      "native_scheduler_loop_executions": 2,
+      "grants": [
+        4
+      ],
+      "native_demand_h2d_tokens": 0,
+      "temporal_counts": {
+        "generation_completions": 2,
+        "stall_start_applied": 1,
+        "paper_first_fit_rejected": 1,
+        "no_waiting_demand": 1,
+        "decode_throughput_samples": 1,
+        "paper_first_fit_selected": 1,
+        "selected": 1,
+        "preservation_batches": 1,
+        "d2h_bandwidth_samples": 1,
+        "preservation_acks_settled": 1,
+        "paper_offload_demoted_tokens": 8,
+        "paper_upload_grants": 1,
+        "paper_upload_tokens": 4,
+        "h2d_bandwidth_samples": 1,
+        "paper_upload_pressure_releases": 1,
+        "stall_finish_applied": 1,
+        "paper_checkpoints_released": 1
+      },
+      "capacity_counts": {
+        "admission_probes": 12,
+        "admission_stages": 2,
+        "private_admission_slots_staged": 46,
+        "private_admission_slots_materialized": 46,
+        "physical_commits": 3,
+        "requests_released": 2,
+        "upload_reservation_updates": 1,
+        "upload_reservation_new_tokens": 4,
+        "upload_reservations_released": 1
+      },
+      "transfer_counts": {
+        "d2h_enqueued_tokens": 8,
+        "native_commands_completed": 2,
+        "host_leases_acquired": 1,
+        "complete_host_leases_acquired": 1,
+        "demoted_tokens": 8,
+        "split_host_prefix_pins": 1,
+        "h2d_enqueued_tokens": 4,
+        "progressive_h2d_enqueued_tokens": 4,
+        "host_leases_released": 1
+      },
+      "native_ack_tokens": {
+        "d2h": 8,
+        "h2d": 4
+      },
+      "final_uncommitted_tokens": 64,
+      "request_transport": "full_prompt_native_radix_session",
+      "native_session_request_count": 3,
+      "native_session_generations": {
+        "tokencake-session-agent": 1,
+        "tokencake-session-peer": 2,
+        "tokencake-session-queued": 3
+      },
+      "native_session_source_anchors": 1,
+      "native_session_ownership_preserved": true
+    }
+  },
+  "real_native_requests_and_prefill_adder": true,
+  "first_fit_uses_only_observed_decode_rate": true,
+  "recorded_generation_limit_does_not_change_policy_capacity": true,
+  "no_device_release_before_d2h_ack": true,
+  "deadline_controls_predictive_upload": true,
+  "progressive_grants_bind_actual_device_allocations": true,
+  "all_restored_layer_key_and_value_bytes_match": true,
+  "split_host_and_capacity_ownership_preserved": true,
+  "real_consumer_lock_receipt_consumes_reservation_once": true,
+  "early_return_during_d2h_keeps_resident_source": true,
+  "early_return_during_h2d_preserves_native_source_ownership": true,
+  "native_demand_recovers_unuploaded_prefix": true,
+  "expiry_and_explicit_retirement_release_optional_ownership": true,
+  "pressure_revokes_optional_upload_before_request_preemption": true,
+  "persistent_return_retains_ordinary_evictable_cache": true,
+  "paper_receipts_reconciled_and_runtime_not_disabled": true,
+  "all_native_capacity_and_host_pins_released": true,
+  "full_prompt_native_radix_sessions_follow_the_same_paper_lifecycle": true,
+  "native_session_generation_and_cached_source_ownership_preserved": true,
+  "actual_native_scheduler_loop_calls_the_capacity_guard": true,
+  "native_decode_victim_and_release_hooks_are_bound": true,
+  "whole_model_or_performance_qualified": false,
+  "performance_accepted": false,
+  "elapsed_seconds": 9.376588092185557,
+  "source_sha256": {
+    "scripts/qualify_tokencake_runtime.py": "09db5daf34ed120a502b0f0e06dc2e16b34b7a23904baf0535d901494e1ba483",
+    "beliefkv/runtime/tokencake_baseline.py": "ec26c73769245d00f8d81ed5460d613ea78fb464cb189a939b5316460685e9b2",
+    "beliefkv/runtime/tokencake_lifecycle.py": "6bf5e2b2496ffea842032c8d1596f2b4a9d975cf672e6dd75fc897561546e650",
+    "beliefkv/runtime/tokencake_paper.py": "26cfda9bac4015c0d1ebaac4b5e2451b4e4640298b2d49b56c62cbfba3b56937",
+    "beliefkv/runtime/tokencake_capacity.py": "adcd54d8e88c08591ef677e7b7b3312578784d090da9b4c682db6f0a3dca22ab",
+    "beliefkv/runtime/paper_prefix_transfers.py": "c1fdc96be2abf96d40d8fc90a509c17ea837e9cb77ad7f8cb4d7e7a4ded468c3",
+    "beliefkv/runtime/paper_baseline.py": "bcb6466df233996710a8cb84bada8a4f1e81945580e4fee597016b1db3254ee4",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "fe248087cbb2f3b17848d07da3bcac49cf7a37f8f3c3f6dceda6a73a913845ab",
+    "beliefkv/runtime/sglang_v0520_physical.py": "a67dac914a96901e946439a4783a593307bcb54b259cff4d88ec058f83c3d13f",
+    "beliefkv/policy/tokencake.py": "b5891695da987bbb8157ade79466990760e992a514afad3d07f5c765171c073a",
+    "beliefkv/policy/tokencake_capacity.py": "78b0312ca68bed96467df8c5d02de80838bb41e0acd92351e2b4bf724df5a583",
+    "beliefkv/policy/tokencake_lifecycle.py": "5cba806f4d0119b63d7ffa7a91a709df37ec7a54893f5b5a528e92376a85e412",
+    "beliefkv/experiments/tokencake_engine.py": "64a33a1869144b5e81bac929db3349a4f20f3714949a6e43e2e5e6096741c4c9"
+  }
+}

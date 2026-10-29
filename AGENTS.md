@@ -3069,3 +3069,10 @@
   before GPU startup. Preserve old configurations/failures and qualify the new
   exact tree before a distinct complete retry; never bypass the capacity guard.
   See docs/research/tokencake_native_hooks_20261028_zh.md.
+- Frozen8808c1ac now passes all twelve actual native-loop GPU TokenCake scenes
+  on exact131d tree, exit0 and completed owned cleanup. Each plain/session
+  group retains original bytes/ACK/consumer/capacity proofs and actual2/3/4
+  loop counts. Initial proc argv is empty; only spawned PID/report ownership
+  and actual exit are proved. Fresh24-request model/position and sampler
+  qualification still precede a distinct complete TokenCake retry. Preserve
+  the failed common-engine formalR1 and reuse completeV345/KVFlow unchanged.

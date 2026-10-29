@@ -1,0 +1,130 @@
+{
+  "observed_at": "2026-10-29T05:31:45.259594+00:00",
+  "application": {
+    "commit": "8808c1acd5b1d0e00b15b01602c8cb70fb401cf2",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "346db61e9748c9fceba7dfb8899eb670ea225be347e26352b22f53da955924f6"
+  },
+  "native_engine": {
+    "commit": "fa5cb52afaeaad1f59f6d3eb2c5cf124f72bb491",
+    "dirty": true,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [
+      "python/sglang/srt/managers/cache_controller.py",
+      "python/sglang/srt/managers/schedule_batch.py",
+      "python/sglang/srt/managers/scheduler.py",
+      "python/sglang/srt/mem_cache/allocator/token.py",
+      "python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py",
+      "test/srt/test_beliefkv_transfer_receipts.py"
+    ],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e877ab6dce9be575d29fd3710de729c381a0fc0fc86397ec5136a6996b80a5da",
+    "canonical_patch": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-tokencake-hooks-components-20261028/patches/sglang-tokencake-scheduler-runtime-20261028.patch",
+      "sha256": "56d7fdefec0beb0fb5277aaa1704c1bcc0e380d49ee2240ee96905c2977557a6",
+      "expected_tree": "131d175450fe2b74d31a0508c2e13c55a3750a56",
+      "actual_tree": "131d175450fe2b74d31a0508c2e13c55a3750a56",
+      "matches_worktree": true,
+      "covered_untracked_paths": []
+    },
+    "state_sha256": "b62c72f2f69fda36cdf755fcf2688422f79edf9d332b3874e4fdd9d0d9e840de"
+  },
+  "engine_checkout": "/home/longhao/experiment/.worktrees/sglang-tokencake-hooks-prepared-20261028",
+  "native_patch": "/home/longhao/experiment/.worktrees/beliefkv-tokencake-hooks-components-20261028/patches/sglang-tokencake-scheduler-runtime-20261028.patch",
+  "engine_tree": "131d175450fe2b74d31a0508c2e13c55a3750a56",
+  "engine_compatibility": {
+    "policy": "explicit_tokencake_native_scheduler_hook_variant",
+    "source_engine_tree": "6437d7deeacc533f0d795ba166dfd5256b3f44b2",
+    "candidate_engine_tree": "131d175450fe2b74d31a0508c2e13c55a3750a56",
+    "common_engine_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+    "common_engine_compatibility": {
+      "native_method_projection_matches": true,
+      "gate": "BELIEFKV_FREE_PAGE_H2D_FENCE",
+      "default_enabled": false,
+      "required_allocator": "exact TokenToKVPoolAllocator; page_size=1",
+      "requires_recorded_boundary_before_current_forward": true,
+      "requires_no_free_since_boundary_at_allocation": true,
+      "unproven_or_different_boundary_batch_uses_original_fence": true,
+      "same_proof_applies_to_native_demand": true,
+      "reviewed_method_ast_sha256": {
+        "beliefkv_record_free_page_boundary": "4b149e63f9384c1bf9f650f9040fd2034b0daf8201e999c7ba9d53299c1d3cad",
+        "_beliefkv_wait_load_fence": "7c9bd93663f4185c4026c096e91da561c2af703e956f7436ce71dd0fcb18699b",
+        "_beliefkv_bind_free_page_fence": "894e7b4fdc32cfb2b6fcbf4d248240adb9498ace6b0d6749e704c2a9e5244ce8"
+      },
+      "policy": "opt_in_preexisting_free_page_h2d_fence",
+      "source_engine_tree": "6437d7deeacc533f0d795ba166dfd5256b3f44b2",
+      "candidate_engine_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+      "changed_files": [
+        "python/sglang/srt/managers/cache_controller.py",
+        "python/sglang/srt/managers/scheduler.py",
+        "python/sglang/srt/mem_cache/allocator/token.py",
+        "python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py",
+        "test/srt/test_beliefkv_transfer_receipts.py"
+      ],
+      "scope": "Exact reviewed AST projection, including original default-off load fences. Native and controlled loads use the same proof when enabled. Added allocator generations grant no capacity or eviction authority. CPU projection is not GPU copy safety or numerical equivalence."
+    },
+    "changed_files": [
+      "python/sglang/srt/managers/cache_controller.py",
+      "python/sglang/srt/managers/schedule_batch.py",
+      "python/sglang/srt/managers/scheduler.py",
+      "python/sglang/srt/mem_cache/allocator/token.py",
+      "python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py",
+      "test/srt/test_beliefkv_transfer_receipts.py"
+    ],
+    "native_scheduler_bindings": {
+      "common_engine_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+      "exact_optional_hooks_projection_verified": true,
+      "prefill_guard_before_native_input": true,
+      "decode_victim_and_before_release_bound": true,
+      "native_compute_or_copy_implementation_changed": false,
+      "source_sha256": {
+        "python/sglang/srt/managers/scheduler.py": "0ceab8b945d0ea3163de13bc949404ab5a4fb61e412e1ac4fd10b276e467aefe",
+        "python/sglang/srt/managers/schedule_batch.py": "38790e4f56d95c84f2d070ab5073bc6fe163d187c711f65c1e818e1bb3c6fd5c"
+      }
+    },
+    "requires_fresh_gpu_components_model_and_position_smoke": true,
+    "scope": "Optional policy callbacks only; compute and transfer code equal common native."
+  },
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/.worktrees/beliefkv-tokencake-hooks-components-20261028/scripts/qualify_tokencake_runtime.py",
+    "run",
+    "--engine",
+    "/home/longhao/experiment/.worktrees/sglang-tokencake-hooks-prepared-20261028",
+    "--native-patch",
+    "/home/longhao/experiment/.worktrees/beliefkv-tokencake-hooks-components-20261028/patches/sglang-tokencake-scheduler-runtime-20261028.patch",
+    "--output-dir",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/gpu_components_r1"
+  ],
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/run_components.py": "59fbf2cecc44b43099866b5c7f9c20b9aba9bfe665436f97c6812b25454b1358",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/bound_cpu.json": "a4d21b91dd322bd3774073de6e2ce12a3cd01e55cd9a28f793eddee51dcbdb50",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/bound_cpu.xml": "7d36b81d6588e4ecd9a7d8bb508406c7e1aab6b45f5ab920056b082ce5e46f09",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/bound_cpu.sources.json": "8d49d17c59bf2127a4f094f57d488bf056df5c028027958c525c1675c304f5b0",
+    "/home/longhao/experiment/ops/tokencake_locobench_v230_v311_20261028_r1.registration.json": "748fb02f3903df67343f35444bbadd6221204348cfda861fdf0a8c0baf3f991e",
+    "/home/longhao/experiment/ops/tokencake_locobench_v230_v311_20261028_r1.registration.state.json": "cee252f15ffcd1ec56c343e8600b3cb41dad70841ce5585d805451651b0f9243",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_locobench_v230_v311_20261028_r1/tokencake_paper_observed/owned_process_cleanup.json": "64abc7625adf0ed1bd10b7c218a3a0f2fb78d8782b2d9e6371d4bf9157e20ce8",
+    "/home/longhao/experiment/.worktrees/beliefkv-tokencake-hooks-components-20261028/patches/sglang-tokencake-scheduler-runtime-20261028.patch": "56d7fdefec0beb0fb5277aaa1704c1bcc0e380d49ee2240ee96905c2977557a6",
+    "/home/longhao/experiment/ops/v230_locobench_parallel_retry_source_20261026.registration.json": "c7ad77caaf5fbe679d16c95028135be3d6ac1361241bc4c3eba7b50e59c3d783"
+  },
+  "performance_accepted": false,
+  "component_process": {
+    "pid": 1118109,
+    "state": "R",
+    "ppid": 1117891,
+    "start_ticks": "742216836",
+    "argv": []
+  },
+  "returncode": 0,
+  "status": "native_scheduler_loop_components_qualified",
+  "actual_component_exit_verified": true,
+  "owned_gpu_process_absent": true,
+  "summary": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/gpu_components_r1/summary.json",
+    "sha256": "cf488ccb5751a5b3dcb990ae0839bcf72a6f76274afcb3107966f0d11866d843"
+  }
+}

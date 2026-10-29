@@ -50,3 +50,21 @@ stand-in。CPU入口首次把累计patch错误应用到已包含该patch的HEAD�
 后续先冻结run_components.py并验证当前GPU/hold、失败轮实际退出及
 两次新鲜资源状态。新树还需实际GPU与model/position检查，再单独
 登记完整重试。尚无该修复的GPU或性能结论，整体目标保持active。
+
+## 实际GPU组件完成
+
+冻结8808c1ac随后通过新的十二项真实GPU场景，退出码0并完成owned清理。
+full-upload/early-D2H各执行3次原生候选循环，early-H2D执行4次，
+expiry/retirement/pressure各执行2次；plain与native-session两组分别
+完整。原先各层K/V字节、D2H/H2D ACK、早返回、容量和Host pin门槛
+均保留。实际GPU报告PID1118109与Popen子进程一致且已退出；初始
+`/proc`回执的argv为空，不能将其当作独立argv观测证明。
+
+gpu_components_r1.entry.json绑定原始报告及完整输入，静态native
+compatibility也通过精确投影。准备checkout从fa5cb52应用规范patch，
+实际tree仍为131d；canonical path绑定不改变代码。
+
+start_position.py为独立后续入口：核验812项CPU、实际组件及失败轮
+清理后，冻结新应用并启动24请求token/session/native-stop检查与
+running1/8/24 sampler校准。其后只登记TokenCake完整重试，不采native、
+不重跑ThunderAgent。实际模型/position结果和完整性能仍待产生。
