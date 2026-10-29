@@ -1,0 +1,71 @@
+{
+  "status": "native_gpu_layer_handoff_components_qualified",
+  "stage": "components",
+  "application": {
+    "commit": "1fe85898046df6fa07bbb47a3e81538ab9cf7e32",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "267f00a7d3b9241d1c744e8d5f17ae442ff1a7dd278884c488cea6b66fbfa4d3"
+  },
+  "native_source": {
+    "commit": "c5ad39a1e1285532335139fa3bc33d49c7eabcf6",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "03e7a9feb460455fe1a214d4f15a9444e66512002360ce05b37a5ad7ccefc2d6"
+  },
+  "authorization": {
+    "hold_file": "/home/longhao/experiment/ops/gpu_hold_until_20261022_0600.json",
+    "hold_sha256": "57a02d25be864ec84fc1c4e6c0afba31b1282ce681e18f7c4dd6974f3f788f9d",
+    "checked_at": "2026-10-29T19:53:35.307058+08:00"
+  },
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/.worktrees/beliefkv-free-extent-1fe85898/scripts/qualify_layer_handoff.py",
+    "--output",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_components_r1/report.json",
+    "--donor-group-layers",
+    "8",
+    "--consumer-group-layers",
+    "4",
+    "--include-free-extent"
+  ],
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/complete_r3/evidence.json": "7c410fd968d8691af6b82438bae98eadca43fabd4b47c1886172a718904567cf",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/complete_r3/sources.json": "51b060d661dad5eecbf4298f1083ff509bd6a425a9997360aec794dde801d865",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/complete_r3/bound_cpu.xml": "4023710921126f59129ec078b7b1c3e36ef00e733288386f764f188b898c8651",
+    "/home/longhao/experiment/ops/warm_start_thunder_20261029_r1.registration.json": "6c939970b66ad2559200658cd5b0c173b8e8231d22f1e08d31182639b50040c8",
+    "/home/longhao/experiment/.worktrees/beliefkv-free-extent-1fe85898/experiments/reports/layer_free_extent_20261029/full_warm_start.json": "7527f1c2e56d3e84d9201f65f9ee7d7a0f0bdb75b4154f109190395a5829ef90",
+    "/home/longhao/experiment/.worktrees/beliefkv-free-extent-1fe85898/experiments/reports/layer_free_extent_20261029/run_gpu.py": "3e1c33389699d8cd1b5252ac4b3e2b694ebd95bf7f05390eb5a7b037fb47a7e6"
+  },
+  "performance_accepted": false,
+  "child": {
+    "pid": 1300860,
+    "state": "R",
+    "ppid": 1300610,
+    "start_ticks": "744507854",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-free-extent-1fe85898/scripts/qualify_layer_handoff.py",
+      "--output",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_components_r1/report.json",
+      "--donor-group-layers",
+      "8",
+      "--consumer-group-layers",
+      "4",
+      "--include-free-extent"
+    ]
+  },
+  "report": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_components_r1/report.json",
+    "sha256": "563e41100f86707eb9b423aa4a9ddaa2808cb98dbc73fb3963f26309871b90a3"
+  },
+  "observed_at": "2026-10-29T11:53:46.360576+00:00",
+  "returncode": 0,
+  "actual_child_exited": true
+}

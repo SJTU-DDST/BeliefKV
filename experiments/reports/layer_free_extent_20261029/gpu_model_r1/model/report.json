@@ -1,0 +1,59 @@
+{
+  "status": "failed",
+  "performance_accepted": false,
+  "native_engine": {
+    "commit": "c5ad39a1e1285532335139fa3bc33d49c7eabcf6",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "03e7a9feb460455fe1a214d4f15a9444e66512002360ce05b37a5ad7ccefc2d6"
+  },
+  "component_sha256": "563e41100f86707eb9b423aa4a9ddaa2808cb98dbc73fb3963f26309871b90a3",
+  "source_requests": [
+    "beliefkv:01a177b9-c215-7ea0-ba14-0de09c4f8a9c",
+    "beliefkv:01a177bb-6df3-7023-8614-561913e62059",
+    "beliefkv:01a177be-76cd-70b0-b0e6-d3f300c18ba6"
+  ],
+  "fixture": {
+    "device_tokens": 49152,
+    "host_gb": 8,
+    "warm_tools": 8,
+    "warm_tool_seconds": 4.0,
+    "donor_tool_seconds": 20,
+    "speculative_tool_prefetch": false,
+    "readiness_endpoint": "/ready",
+    "model_inputs": [
+      24576,
+      16384,
+      16384
+    ],
+    "sampling": {
+      "generated_tokens": 8,
+      "sampling_seed": 21
+    },
+    "max_logprob_delta": 0.05,
+    "free_extent_restore_required": true
+  },
+  "operator_sha256": "044a2f5ad269beed5f7f9cec2df8da5e2fd7e5c9aff905544b3fd73dd238c5db",
+  "configuration": "/home/longhao/experiment/.worktrees/beliefkv-free-extent-1fe85898/experiments/reports/layer_free_extent_20261029/full_warm_start.json",
+  "configuration_sha256": "7527f1c2e56d3e84d9201f65f9ee7d7a0f0bdb75b4154f109190395a5829ef90",
+  "server": {
+    "pid": 1301545,
+    "state": "R",
+    "ppid": 1301506,
+    "start_ticks": "744515617",
+    "argv": [
+      "bash",
+      "/home/longhao/experiment/.worktrees/beliefkv-free-extent-1fe85898/scripts/launch_qwen35_native_v0520.sh",
+      "--enable-beliefkv-admission",
+      "--beliefkv-event-socket-path",
+      "/tmp/bkv-layer-model-18855.sock",
+      "--max-total-tokens",
+      "49152"
+    ]
+  },
+  "error": "ValueError('actual model did not consume a complete donor-plus-free-extent restore')",
+  "server_exit_code": -9
+}

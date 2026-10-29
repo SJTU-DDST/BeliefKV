@@ -153,6 +153,8 @@ async def probe(directory, port, prompts, pulse, *, require_free_extent=False):
             await call("c", "c", prompts[1])
             await send(Kind.RETURN, "c", attributes={"context_retired": False})
             await create("a")
+            if require_free_extent:
+                await call("a_seed", "a", prompts[2][:6144])
             a_output = await call("a_initial", "a", prompts[2])
             a_started = await tool(Kind.TOOL_START, "a", "a_wait")
             a_timer = asyncio.create_task(asyncio.sleep(20.))
@@ -351,6 +353,7 @@ def main():
             "model_inputs": [len(tokens) for tokens in prompts],
             "sampling": DOCUMENT, "max_logprob_delta": .05,
             "free_extent_restore_required": free_extent,
+            "donor_initial_checkpoint_tokens": 6144 if free_extent else 0,
         },
         "operator_sha256": sha256_file(Path(__file__)),
         "configuration": str(args.configuration.resolve()),

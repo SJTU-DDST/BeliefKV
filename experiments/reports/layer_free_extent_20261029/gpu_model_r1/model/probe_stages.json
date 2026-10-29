@@ -1,0 +1,6128 @@
+{
+  "a_prediction": {
+    "status": "observed",
+    "last_runtime_state": {
+      "event": "admission_runtime_state",
+      "ts_ms": 1793274997674.7263,
+      "monotonic_ms": 7445260775.304384,
+      "clock_sample_span_ms": 0.00037384033203125,
+      "final": false,
+      "counts": {
+        "incremental_full_tracking_enabled": 1,
+        "wait_context_groups_built": 11,
+        "wait_context_groups_invalidated": 9,
+        "wait_context_cache_retained": 16,
+        "admission_rank_dependencies_preserved": 20,
+        "admission_residency_scan_targets": 2,
+        "native_admitted": 2,
+        "admission_causal_cache_hits": 6,
+        "online_tool_cold_or_tail_unsupported": 16,
+        "online_tool_supported": 57,
+        "online_tool_workflow_samples": 8,
+        "tool_wait_accepted": 57,
+        "tool_hint_physical_inspection_deferred": 57,
+        "prediction_maintenance_sweeps": 110839,
+        "tool_offload_no_host_waiting_consumer": 82,
+        "prepare_no_service_demand": 164,
+        "tool_offload_admission_new_request_rearms": 1,
+        "tool_offload_before_admission_checks": 1
+      },
+      "physical_disabled": false,
+      "internal_comparison_mode": "full",
+      "custom_kv_management": true,
+      "paper_baseline": null,
+      "agent_admission": {
+        "policy": "full_with_reference_thunderagent_join_and_sibling_admission_free_continuation",
+        "author_commit": "7ddc8610270e56d3b109eed8796b3a4360fc67c9",
+        "program_identity": "invocation_id",
+        "future_information_used": false,
+        "native_capacity_authority_preserved": true,
+        "scope": "single_backend_exact_token_ingress_policy_adaptation",
+        "streaming_context_accounting": "observed_native_outputs_at_arrival_and_five_second_control",
+        "control_capacity_snapshot": {
+          "remaining_capacity_tokens": 7984,
+          "active_acting_programs": 1,
+          "active_reasoning_programs": 1,
+          "paused_pending_programs": 0,
+          "capacity_blocked_pending_programs": 0,
+          "oldest_pending_seconds": 0.3944300962612033
+        },
+        "capacity_tokens": 49152,
+        "programs": 2,
+        "active_programs": 2,
+        "pending_requests": 1,
+        "counts": {
+          "control_ticks": 8,
+          "resumed": 0,
+          "registered": 2,
+          "free_continuation_event_checks": 2,
+          "completed": 1,
+          "streaming_progress_checks": 1
+        },
+        "acting_token_decay": true,
+        "decay_half_life_s": 1.0,
+        "decay_scope": "periodic_resume_only",
+        "decay_age_source": "observed_native_completion_monotonic",
+        "undiscounted_capacity_enforced": true,
+        "resume_capacity_tokens_at_last_control": 32568,
+        "physical_capacity_credit": false,
+        "strategy": "thunderagent_reference",
+        "identity": "invocation_id",
+        "control_interval_ms": 5000.0,
+        "blocked_lending": "disabled",
+        "join_loan_recall": false,
+        "tool_loan_return": false,
+        "coadmit_join_children": true,
+        "sibling_admission_authority": "observed_blocking_all_join_complete_unused_budget",
+        "sibling_admission_max_members": 24,
+        "sibling_admission_update_scope": "registration_join_events_and_bounded_release_retry",
+        "sibling_native_batch_preference": true,
+        "sibling_native_batch_max_members": 4,
+        "sibling_admission_fitting_subset": true,
+        "logical_borrowing_enabled": false,
+        "restore_changes_eligibility": true,
+        "join_free_admission": true,
+        "join_blocked_handoff": true,
+        "join_blocked_handoff_authority": "observed_join_parent_complete_blocked_agent_budgets",
+        "join_blocked_handoff_max_donors": 64,
+        "join_blocked_resume_filter": true,
+        "join_free_admission_authority": "complete_undiscounted_unused_logical_budget_only",
+        "restore_reservation_ms": 0,
+        "ordinary_restore_reservation_ms": 0,
+        "tool_warming_eligibility": "existing_active_tool_wait_only_no_new_reservation",
+        "active_invocation_ids": [
+          "b",
+          "c"
+        ],
+        "paused_pending_invocation_ids": [],
+        "marked_for_pause_invocation_ids": [],
+        "logical_active_tokens": 41168,
+        "logical_capacity_semantics": "reference_undiscounted_contexts_plus_buffers",
+        "extra_join_grant_accounting": "refresh_observed_native_outputs_before_each_capacity_check",
+        "snapshot_changes_policy": false,
+        "free_continuation_admission": true,
+        "free_continuation_authority": "complete_undiscounted_unused_logical_budget",
+        "free_continuation_updates": "registration_native_completion_runtime_events",
+        "free_continuation_candidate_limit": 8,
+        "free_continuation_join_limit": 24,
+        "free_continuation_max_grants_per_event": 1,
+        "free_continuation_new_programs": false,
+        "free_continuation_physical_prefetch": false
+      },
+      "agent_admission_enabled": true,
+      "agent_join_free_admission": true,
+      "agent_join_blocked_handoff": true,
+      "agent_free_continuation_admission": true,
+      "full_prefix_migration": null,
+      "join_parent_priority": true,
+      "join_last_child_priority": false,
+      "prefill_scheduling_policy": "workflow",
+      "tool_continuity": true,
+      "tool_continuity_grace_ms": 0.0,
+      "tool_residency_grace": null,
+      "tool_continuity_policy": {
+        "short_gap_seconds": 1.0,
+        "max_segment_requests": 4,
+        "max_completed_segment_output_tokens": 1024,
+        "resident_only": true,
+        "aged_bypass_ordinary_quota": 4,
+        "ordinary_admissions_since_priority": 4,
+        "credit_scope": "root_workflow;earned_once_per_request",
+        "counts": {
+          "ordinary_admissions": 2,
+          "priority_admissions": 0,
+          "native_completions": 1,
+          "completed_output_tokens": 8,
+          "long_tool_yields": 1
+        },
+        "segments": 1,
+        "ready_segments": 0
+      },
+      "join_priority_order": "aged_fifo_then_native;independent_four_admission_quota",
+      "restore_priority_scope": "same_causal_class;no_aged_head_bypass",
+      "prefetch_residency_protection": true,
+      "prefetch_protection_revocable_on_pressure": true,
+      "join_priority_ordinary_quota": 4,
+      "join_priority_pending_parents": 0,
+      "join_only_priority_ordinary_quota": 4,
+      "join_only_priority_allows_aged_head_after_quota": true,
+      "join_only_pending_parents": 0,
+      "final_stage_prefetch": true,
+      "final_stage_priority": true,
+      "prepare_host": true,
+      "background_prepare": false,
+      "idle_host_mirror_recycle": false,
+      "terminal_child_reclaim": true,
+      "subagent_retention": null,
+      "h2d_opportunity_sampling": false,
+      "prepare_pool_scope": "missing_full_session_path",
+      "spawn_full_prepare": {
+        "pending_contexts": 0,
+        "max_batch_bytes": 4294967296,
+        "max_merged_nodes": 64
+      },
+      "idle_full_prepare": {
+        "interval_ms": 200.0,
+        "queued_owner_backup": false,
+        "native": null
+      },
+      "latest_full_session_branches_retired": 0,
+      "resident_first": true,
+      "prefill_ordering_mode": "workflow",
+      "workflow_attained_work": false,
+      "workflow_work_metric": "completed_request_output_tokens",
+      "workflow_work_accounts": 0,
+      "workflow_completion_focus": null,
+      "workflow_completion_quantum": null,
+      "execution_handoff": false,
+      "overlap_prefetch_supported": true,
+      "execution_handoff_request_id": null,
+      "tool_timing_only": false,
+      "tool_predictor_configured": false,
+      "online_tool_timing": true,
+      "tool_timing_prior_sha256": null,
+      "predicted_tool_offload": true,
+      "tool_offload_before_admission": true,
+      "layer_handoff_enabled": true,
+      "layer_handoff_free_extent": true,
+      "layer_handoff_d2h_layers": 8,
+      "layer_handoff_h2d_layers": 4,
+      "tool_offload_policy": "DemandAwareToolOffload",
+      "idle_prepare_io_backend": "native",
+      "tool_offload_min_survival": 0.75,
+      "host_demand_reserve_bytes": 2147483648,
+      "online_tool_timing_revision": 8,
+      "report_length_calibration_samples": 0,
+      "selective_join_prefetch": {
+        "min_full_bytes": 536870912,
+        "interval_ms": 200.0,
+        "max_candidates": 4,
+        "enabled": false,
+        "max_advance_ms": 1000.0,
+        "eos_to_native_arrival_window_ms": 50.0,
+        "eos_to_native_arrival_samples": 0,
+        "window_statistic": "max(configured_protocol_floor, online_p10_after_4_samples)",
+        "service_semantics": "controller_submit_to_ack_plus_enqueue; not exposed GPU wait"
+      },
+      "borrowable_parent_headroom": true,
+      "tool_predictor_disabled": false,
+      "tool_prefetch": false,
+      "tool_restore_mode": "speculative",
+      "execution_frontier_restore": false,
+      "frontier_restore_ordinary_quota": 4,
+      "frontier_cold_reclaim": false,
+      "frontier_cold_reclaim_policy": "waiting",
+      "frontier_cold_reclaim_max_nodes": 16,
+      "restore_tiers": "complete",
+      "restore_tiers_supported": false,
+      "restore_tiers_native": {},
+      "native_free_page_h2d_fence": {
+        "requested": true,
+        "enabled": true,
+        "supported": true,
+        "counts": {
+          "free_boundary_events": 1
+        }
+      },
+      "native_prefetch_batch_dependencies": {
+        "checks": 0,
+        "unrelated_waits_skipped": 0
+      },
+      "idle_prepare_policy": "cold",
+      "tool_prefetch_planning_slack_ms": 250.0,
+      "prefetch_lead_ms": 1000.0,
+      "tool_prefetch_priority_ms": 0.0,
+      "join_prefetch_min_advance_ms": 0.0,
+      "tool_prefetch_min_advance_ms": 0.0,
+      "parallel_wait_prefetch": false,
+      "wait_prefetch_contexts": 1,
+      "tool_inflight_contexts": 0,
+      "join_inflight_contexts": 0,
+      "prediction_maintenance_interval_ms": 0.0,
+      "semantic_work_statistic": "upper",
+      "final_admission_policy": "remaining_report_work",
+      "eos_protocol_window_ms": 50.0,
+      "eos_prefetch_evidence_window_ms": 1000.0,
+      "terminal_cache_diagnostics": false,
+      "profile_shared_path": false,
+      "demand_prefill_pipeline": true,
+      "demand_prefill_pipeline_installed": true,
+      "demand_prefill_pipeline_progress_probe": false,
+      "h2d_seed_samples": 0,
+      "h2d_service_samples": 0,
+      "prefetch_residency_budget": {
+        "request_slots": 24,
+        "byte_limit": 2008743936,
+        "reserve_full_tokens": 4120,
+        "reserve_mamba_slots": 0,
+        "source": "native_next_prefill",
+        "evictable_full_tokens": 0,
+        "evictable_mamba_slots": 0
+      },
+      "prefetch_request_counts_at_budget": {
+        "running_requests": 0,
+        "free_request_rows": 24,
+        "request_row_capacity": 24
+      },
+      "prefetch_residency_headroom": {
+        "observable": true,
+        "device_full_free_tokens": 24554,
+        "device_mamba_free_slots": 0,
+        "host_full_free_tokens": 81381,
+        "host_mamba_free_slots": 0,
+        "physical_actions_supported": false,
+        "reason": null,
+        "full_frees_deferred": false,
+        "mamba_batch_reserved": false
+      },
+      "prefetch_locked_count": 0,
+      "prefetch_locked_contexts_by_role": {
+        "demand": 0,
+        "speculative": 0
+      },
+      "prefetch_protected_bytes": 0,
+      "semantic_worker_configured": false,
+      "join_prefetch_trigger": "observed_eos",
+      "semantic_worker_error": "",
+      "shared_path_timing": {
+        "schema_version": 2,
+        "enabled": false,
+        "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+        "cpu_clock": "thread_time_ns",
+        "sample_every": 64,
+        "sampling": "every Nth root call per phase, starting with the first; descendants inherit",
+        "scope": "Measured completed samples only; exclusive values subtract measured children. No expansion to whole-run cost, exposed GPU idle or removable JCT.",
+        "elapsed_ms": 35278.234505,
+        "bucket_upper_ms": [
+          0.01,
+          0.025,
+          0.05,
+          0.1,
+          0.25,
+          0.5,
+          1.0,
+          2.5,
+          5.0,
+          10.0,
+          25.0,
+          50.0,
+          100.0,
+          250.0,
+          1000.0,
+          null
+        ],
+        "phases": {}
+      },
+      "control_timing_sample_every": null,
+      "opportunity_writer_timing": {
+        "schema_version": 1,
+        "sample_every": 64,
+        "snapshot_ts_ms": 1793274997674.911,
+        "cpu_clock": "thread_time_ns",
+        "wall_clock": "perf_counter_ns",
+        "scope": "Every 64th record per category, starting with its first record. Measured processing samples only; queue waiting and status publication are excluded. Wall includes scheduling and GIL waiting; thread CPU excludes waiting. No full-run cost, GPU stall, GIL attribution or JCT saving is inferred.",
+        "categories": {
+          "admission_runtime_state": {
+            "records_seen": 35,
+            "samples": 1,
+            "sampled_cpu_ms": 0.128606,
+            "sampled_wall_ms": 0.132381,
+            "mean_sample_cpu_ms": 0.128606,
+            "mean_sample_wall_ms": 0.132381,
+            "max_sample_cpu_ms": 0.128606,
+            "max_sample_wall_ms": 0.132381
+          },
+          "tool_wait_forecast": {
+            "records_seen": 57,
+            "samples": 1,
+            "sampled_cpu_ms": 0.043269,
+            "sampled_wall_ms": 0.04202,
+            "mean_sample_cpu_ms": 0.043269,
+            "mean_sample_wall_ms": 0.04202,
+            "max_sample_cpu_ms": 0.043269,
+            "max_sample_wall_ms": 0.04202
+          }
+        }
+      }
+    },
+    "non_state_events": [
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274981052.7869,
+        "observed_monotonic_ms": 7445244153.281602,
+        "expires_monotonic_ms": 7445245153.281602,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 4004.5229387283325,
+        "p50_ms": 4004.6288890838623,
+        "p90_ms": 4004.8654069900513,
+        "release_cdf": [
+          [
+            4004.5229387283325,
+            0.25
+          ],
+          [
+            4004.6288890838623,
+            0.5
+          ],
+          [
+            4004.8071365356445,
+            0.75
+          ],
+          [
+            4004.8654069900513,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 4004.542901992798,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274981597.8179,
+        "observed_monotonic_ms": 7445244698.333745,
+        "expires_monotonic_ms": 7445245698.333745,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 3459.4707956314087,
+        "p50_ms": 3459.5767459869385,
+        "p90_ms": 3459.8132638931274,
+        "release_cdf": [
+          [
+            3459.4707956314087,
+            0.25
+          ],
+          [
+            3459.5767459869385,
+            0.5
+          ],
+          [
+            3459.7549934387207,
+            0.75
+          ],
+          [
+            3459.8132638931274,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 3459.511866569519,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274982098.1694,
+        "observed_monotonic_ms": 7445245198.696521,
+        "expires_monotonic_ms": 7445246198.696521,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 2959.1080198287964,
+        "p50_ms": 2959.213970184326,
+        "p90_ms": 2959.450488090515,
+        "release_cdf": [
+          [
+            2959.1080198287964,
+            0.25
+          ],
+          [
+            2959.213970184326,
+            0.5
+          ],
+          [
+            2959.3922176361084,
+            0.75
+          ],
+          [
+            2959.450488090515,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 2959.160674095154,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274982598.5625,
+        "observed_monotonic_ms": 7445245699.090163,
+        "expires_monotonic_ms": 7445246699.090163,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 2458.7143774032593,
+        "p50_ms": 2458.820327758789,
+        "p90_ms": 2459.056845664978,
+        "release_cdf": [
+          [
+            2458.7143774032593,
+            0.25
+          ],
+          [
+            2458.820327758789,
+            0.5
+          ],
+          [
+            2458.9985752105713,
+            0.75
+          ],
+          [
+            2459.056845664978,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 2458.767550468445,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274983098.8616,
+        "observed_monotonic_ms": 7445246199.390661,
+        "expires_monotonic_ms": 7445247199.390661,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 1958.4138793945312,
+        "p50_ms": 1958.519829750061,
+        "p90_ms": 1958.75634765625,
+        "release_cdf": [
+          [
+            1958.4138793945312,
+            0.25
+          ],
+          [
+            1958.519829750061,
+            0.5
+          ],
+          [
+            1958.6980772018433,
+            0.75
+          ],
+          [
+            1958.75634765625,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1958.468150138855,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274983298.944,
+        "observed_monotonic_ms": 7445246399.473555,
+        "expires_monotonic_ms": 7445247399.473555,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 1758.3309860229492,
+        "p50_ms": 1758.436936378479,
+        "p90_ms": 1758.673454284668,
+        "release_cdf": [
+          [
+            1758.3309860229492,
+            0.25
+          ],
+          [
+            1758.436936378479,
+            0.5
+          ],
+          [
+            1758.6151838302612,
+            0.75
+          ],
+          [
+            1758.673454284668,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1758.3859252929688,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274983499.1394,
+        "observed_monotonic_ms": 7445246599.669871,
+        "expires_monotonic_ms": 7445247599.669871,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 1558.134669303894,
+        "p50_ms": 1558.2406196594238,
+        "p90_ms": 1558.4771375656128,
+        "release_cdf": [
+          [
+            1558.134669303894,
+            0.25
+          ],
+          [
+            1558.2406196594238,
+            0.5
+          ],
+          [
+            1558.418867111206,
+            0.75
+          ],
+          [
+            1558.4771375656128,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1558.1906433105469,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274983699.2903,
+        "observed_monotonic_ms": 7445246799.811533,
+        "expires_monotonic_ms": 7445247799.811533,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 1357.993007659912,
+        "p50_ms": 1358.098958015442,
+        "p90_ms": 1358.3354759216309,
+        "release_cdf": [
+          [
+            1357.993007659912,
+            0.25
+          ],
+          [
+            1358.098958015442,
+            0.5
+          ],
+          [
+            1358.2772054672241,
+            0.75
+          ],
+          [
+            1358.3354759216309,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1358.0391874313354,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274983899.4917,
+        "observed_monotonic_ms": 7445247000.026117,
+        "expires_monotonic_ms": 7445248000.026117,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 1157.7784233093262,
+        "p50_ms": 1157.884373664856,
+        "p90_ms": 1158.120891571045,
+        "release_cdf": [
+          [
+            1157.7784233093262,
+            0.25
+          ],
+          [
+            1157.884373664856,
+            0.5
+          ],
+          [
+            1158.0626211166382,
+            0.75
+          ],
+          [
+            1158.120891571045,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1157.8387489318848,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274984099.5576,
+        "observed_monotonic_ms": 7445247200.09094,
+        "expires_monotonic_ms": 7445248200.09094,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 957.7136001586914,
+        "p50_ms": 957.8195505142212,
+        "p90_ms": 958.0560684204102,
+        "release_cdf": [
+          [
+            957.7136001586914,
+            0.25
+          ],
+          [
+            957.8195505142212,
+            0.5
+          ],
+          [
+            957.9977979660034,
+            0.75
+          ],
+          [
+            958.0560684204102,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 957.7731113433838,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274984299.7405,
+        "observed_monotonic_ms": 7445247400.27358,
+        "expires_monotonic_ms": 7445248400.27358,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 757.5309610366821,
+        "p50_ms": 757.6369113922119,
+        "p90_ms": 757.8734292984009,
+        "release_cdf": [
+          [
+            757.5309610366821,
+            0.25
+          ],
+          [
+            757.6369113922119,
+            0.5
+          ],
+          [
+            757.8151588439941,
+            0.75
+          ],
+          [
+            757.8734292984009,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 757.5899810791016,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274984499.799,
+        "observed_monotonic_ms": 7445247600.331859,
+        "expires_monotonic_ms": 7445248600.331859,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 557.4726819992065,
+        "p50_ms": 557.5786323547363,
+        "p90_ms": 557.8151502609253,
+        "release_cdf": [
+          [
+            557.4726819992065,
+            0.25
+          ],
+          [
+            557.5786323547363,
+            0.5
+          ],
+          [
+            557.7568798065186,
+            0.75
+          ],
+          [
+            557.8151502609253,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 557.531548500061,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274984700.024,
+        "observed_monotonic_ms": 7445247800.554563,
+        "expires_monotonic_ms": 7445248800.554563,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 357.2499780654907,
+        "p50_ms": 357.3559284210205,
+        "p90_ms": 357.5924463272095,
+        "release_cdf": [
+          [
+            357.2499780654907,
+            0.25
+          ],
+          [
+            357.3559284210205,
+            0.5
+          ],
+          [
+            357.53417587280273,
+            0.75
+          ],
+          [
+            357.5924463272095,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 357.3064241409302,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274984900.104,
+        "observed_monotonic_ms": 7445248000.637797,
+        "expires_monotonic_ms": 7445249000.637797,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 157.16674327850342,
+        "p50_ms": 157.2726936340332,
+        "p90_ms": 157.50921154022217,
+        "release_cdf": [
+          [
+            157.16674327850342,
+            0.25
+          ],
+          [
+            157.2726936340332,
+            0.5
+          ],
+          [
+            157.45094108581543,
+            0.75
+          ],
+          [
+            157.50921154022217,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 157.22668647766113,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274985059.7651,
+        "observed_monotonic_ms": 7445248160.28922,
+        "expires_monotonic_ms": 7445249160.28922,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 4004.5234031677246,
+        "p50_ms": 4004.8076009750366,
+        "p90_ms": 4005.069938659668,
+        "release_cdf": [
+          [
+            4004.5234031677246,
+            0.19999999999999996
+          ],
+          [
+            4004.6293535232544,
+            0.3999999999999999
+          ],
+          [
+            4004.8076009750366,
+            0.5999999999999999
+          ],
+          [
+            4004.8658714294434,
+            0.7999999999999999
+          ],
+          [
+            4005.069938659668,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 4004.7521467208862,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274985600.735,
+        "observed_monotonic_ms": 7445248701.265784,
+        "expires_monotonic_ms": 7445249701.265784,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 3463.546838760376,
+        "p50_ms": 3463.831036567688,
+        "p90_ms": 3464.0933742523193,
+        "release_cdf": [
+          [
+            3463.546838760376,
+            0.19999999999999996
+          ],
+          [
+            3463.6527891159058,
+            0.3999999999999999
+          ],
+          [
+            3463.831036567688,
+            0.5999999999999999
+          ],
+          [
+            3463.8893070220947,
+            0.7999999999999999
+          ],
+          [
+            3464.0933742523193,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 3463.7817001342773,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274986100.9524,
+        "observed_monotonic_ms": 7445249201.483948,
+        "expires_monotonic_ms": 7445250201.483948,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 2963.3286752700806,
+        "p50_ms": 2963.6128730773926,
+        "p90_ms": 2963.875210762024,
+        "release_cdf": [
+          [
+            2963.3286752700806,
+            0.19999999999999996
+          ],
+          [
+            2963.4346256256104,
+            0.3999999999999999
+          ],
+          [
+            2963.6128730773926,
+            0.5999999999999999
+          ],
+          [
+            2963.6711435317993,
+            0.7999999999999999
+          ],
+          [
+            2963.875210762024,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 2963.56440448761,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274986601.262,
+        "observed_monotonic_ms": 7445249701.792953,
+        "expires_monotonic_ms": 7445250701.792953,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 2463.01967048645,
+        "p50_ms": 2463.303868293762,
+        "p90_ms": 2463.5662059783936,
+        "release_cdf": [
+          [
+            2463.01967048645,
+            0.19999999999999996
+          ],
+          [
+            2463.12562084198,
+            0.3999999999999999
+          ],
+          [
+            2463.303868293762,
+            0.5999999999999999
+          ],
+          [
+            2463.362138748169,
+            0.7999999999999999
+          ],
+          [
+            2463.5662059783936,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 2463.2551679611206,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274987101.5884,
+        "observed_monotonic_ms": 7445250202.119551,
+        "expires_monotonic_ms": 7445251202.119551,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 1962.6930723190308,
+        "p50_ms": 1962.9772701263428,
+        "p90_ms": 1963.2396078109741,
+        "release_cdf": [
+          [
+            1962.6930723190308,
+            0.19999999999999996
+          ],
+          [
+            1962.7990226745605,
+            0.3999999999999999
+          ],
+          [
+            1962.9772701263428,
+            0.5999999999999999
+          ],
+          [
+            1963.0355405807495,
+            0.7999999999999999
+          ],
+          [
+            1963.2396078109741,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1962.9285926818848,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274987301.6482,
+        "observed_monotonic_ms": 7445250402.1809635,
+        "expires_monotonic_ms": 7445251402.1809635,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 1762.6316595077515,
+        "p50_ms": 1762.9158573150635,
+        "p90_ms": 1763.1781949996948,
+        "release_cdf": [
+          [
+            1762.6316595077515,
+            0.19999999999999996
+          ],
+          [
+            1762.7376098632812,
+            0.3999999999999999
+          ],
+          [
+            1762.9158573150635,
+            0.5999999999999999
+          ],
+          [
+            1762.9741277694702,
+            0.7999999999999999
+          ],
+          [
+            1763.1781949996948,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1762.8687734603882,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274987501.797,
+        "observed_monotonic_ms": 7445250602.32953,
+        "expires_monotonic_ms": 7445251602.32953,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 1562.4830932617188,
+        "p50_ms": 1562.7672910690308,
+        "p90_ms": 1563.029628753662,
+        "release_cdf": [
+          [
+            1562.4830932617188,
+            0.19999999999999996
+          ],
+          [
+            1562.5890436172485,
+            0.3999999999999999
+          ],
+          [
+            1562.7672910690308,
+            0.5999999999999999
+          ],
+          [
+            1562.8255615234375,
+            0.7999999999999999
+          ],
+          [
+            1563.029628753662,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1562.7198495864868,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274987701.9797,
+        "observed_monotonic_ms": 7445250802.509511,
+        "expires_monotonic_ms": 7445251802.509511,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 1362.3031120300293,
+        "p50_ms": 1362.5873098373413,
+        "p90_ms": 1362.8496475219727,
+        "release_cdf": [
+          [
+            1362.3031120300293,
+            0.19999999999999996
+          ],
+          [
+            1362.409062385559,
+            0.3999999999999999
+          ],
+          [
+            1362.5873098373413,
+            0.5999999999999999
+          ],
+          [
+            1362.645580291748,
+            0.7999999999999999
+          ],
+          [
+            1362.8496475219727,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1362.5373106002808,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274987902.1143,
+        "observed_monotonic_ms": 7445251002.646245,
+        "expires_monotonic_ms": 7445252002.646245,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 1162.1663780212402,
+        "p50_ms": 1162.4505758285522,
+        "p90_ms": 1162.7129135131836,
+        "release_cdf": [
+          [
+            1162.1663780212402,
+            0.19999999999999996
+          ],
+          [
+            1162.27232837677,
+            0.3999999999999999
+          ],
+          [
+            1162.4505758285522,
+            0.5999999999999999
+          ],
+          [
+            1162.508846282959,
+            0.7999999999999999
+          ],
+          [
+            1162.7129135131836,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1162.4030895233154,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274988102.2922,
+        "observed_monotonic_ms": 7445251202.824703,
+        "expires_monotonic_ms": 7445252202.824703,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 961.9879198074341,
+        "p50_ms": 962.2721176147461,
+        "p90_ms": 962.5344552993774,
+        "release_cdf": [
+          [
+            961.9879198074341,
+            0.19999999999999996
+          ],
+          [
+            962.0938701629639,
+            0.3999999999999999
+          ],
+          [
+            962.2721176147461,
+            0.5999999999999999
+          ],
+          [
+            962.3303880691528,
+            0.7999999999999999
+          ],
+          [
+            962.5344552993774,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 962.2249412536621,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274988302.371,
+        "observed_monotonic_ms": 7445251402.903336,
+        "expires_monotonic_ms": 7445252402.903336,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 761.9092874526978,
+        "p50_ms": 762.1934852600098,
+        "p90_ms": 762.4558229446411,
+        "release_cdf": [
+          [
+            761.9092874526978,
+            0.19999999999999996
+          ],
+          [
+            762.0152378082275,
+            0.3999999999999999
+          ],
+          [
+            762.1934852600098,
+            0.5999999999999999
+          ],
+          [
+            762.2517557144165,
+            0.7999999999999999
+          ],
+          [
+            762.4558229446411,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 762.1458787918091,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274988502.4575,
+        "observed_monotonic_ms": 7445251602.987878,
+        "expires_monotonic_ms": 7445252602.987878,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 561.8247451782227,
+        "p50_ms": 562.1089429855347,
+        "p90_ms": 562.371280670166,
+        "release_cdf": [
+          [
+            561.8247451782227,
+            0.19999999999999996
+          ],
+          [
+            561.9306955337524,
+            0.3999999999999999
+          ],
+          [
+            562.1089429855347,
+            0.5999999999999999
+          ],
+          [
+            562.1672134399414,
+            0.7999999999999999
+          ],
+          [
+            562.371280670166,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 562.0596008300781,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274988702.5845,
+        "observed_monotonic_ms": 7445251803.114215,
+        "expires_monotonic_ms": 7445252803.114215,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 361.69840812683105,
+        "p50_ms": 361.98260593414307,
+        "p90_ms": 362.2449436187744,
+        "release_cdf": [
+          [
+            361.69840812683105,
+            0.19999999999999996
+          ],
+          [
+            361.80435848236084,
+            0.3999999999999999
+          ],
+          [
+            361.98260593414307,
+            0.5999999999999999
+          ],
+          [
+            362.0408763885498,
+            0.7999999999999999
+          ],
+          [
+            362.2449436187744,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 361.9323139190674,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274988902.7722,
+        "observed_monotonic_ms": 7445252003.303742,
+        "expires_monotonic_ms": 7445253003.303742,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 161.50888061523438,
+        "p50_ms": 161.7930784225464,
+        "p90_ms": 162.05541610717773,
+        "release_cdf": [
+          [
+            161.50888061523438,
+            0.19999999999999996
+          ],
+          [
+            161.61483097076416,
+            0.3999999999999999
+          ],
+          [
+            161.7930784225464,
+            0.5999999999999999
+          ],
+          [
+            161.85134887695312,
+            0.7999999999999999
+          ],
+          [
+            162.05541610717773,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 161.74472427368164,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274989066.2234,
+        "observed_monotonic_ms": 7445252166.747058,
+        "expires_monotonic_ms": 7445253166.747058,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 4004.661477088928,
+        "p50_ms": 4004.9456748962402,
+        "p90_ms": 4005.2080125808716,
+        "release_cdf": [
+          [
+            4004.661477088928,
+            0.16666666666666663
+          ],
+          [
+            4004.767427444458,
+            0.33333333333333326
+          ],
+          [
+            4004.9456748962402,
+            0.5
+          ],
+          [
+            4005.003562927246,
+            0.6666666666666666
+          ],
+          [
+            4005.003945350647,
+            0.8333333333333333
+          ],
+          [
+            4005.2080125808716,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 4004.889546394348,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274989603.2554,
+        "observed_monotonic_ms": 7445252703.784638,
+        "expires_monotonic_ms": 7445253703.784638,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 3467.623896598816,
+        "p50_ms": 3467.908094406128,
+        "p90_ms": 3468.1704320907593,
+        "release_cdf": [
+          [
+            3467.623896598816,
+            0.16666666666666663
+          ],
+          [
+            3467.7298469543457,
+            0.33333333333333326
+          ],
+          [
+            3467.908094406128,
+            0.5
+          ],
+          [
+            3467.965982437134,
+            0.6666666666666666
+          ],
+          [
+            3467.9663648605347,
+            0.8333333333333333
+          ],
+          [
+            3468.1704320907593,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 3467.857675552368,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274990103.6619,
+        "observed_monotonic_ms": 7445253204.192612,
+        "expires_monotonic_ms": 7445254204.192612,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 2967.215923309326,
+        "p50_ms": 2967.500121116638,
+        "p90_ms": 2967.7624588012695,
+        "release_cdf": [
+          [
+            2967.215923309326,
+            0.16666666666666663
+          ],
+          [
+            2967.321873664856,
+            0.33333333333333326
+          ],
+          [
+            2967.500121116638,
+            0.5
+          ],
+          [
+            2967.558009147644,
+            0.6666666666666666
+          ],
+          [
+            2967.558391571045,
+            0.8333333333333333
+          ],
+          [
+            2967.7624588012695,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 2967.450903892517,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274990604.005,
+        "observed_monotonic_ms": 7445253704.5352745,
+        "expires_monotonic_ms": 7445254704.5352745,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 2466.873260498047,
+        "p50_ms": 2467.157458305359,
+        "p90_ms": 2467.4197959899902,
+        "release_cdf": [
+          [
+            2466.873260498047,
+            0.16666666666666663
+          ],
+          [
+            2466.9792108535767,
+            0.33333333333333326
+          ],
+          [
+            2467.157458305359,
+            0.5
+          ],
+          [
+            2467.2153463363647,
+            0.6666666666666666
+          ],
+          [
+            2467.2157287597656,
+            0.8333333333333333
+          ],
+          [
+            2467.4197959899902,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 2467.1078062057495,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274991104.4568,
+        "observed_monotonic_ms": 7445254204.984794,
+        "expires_monotonic_ms": 7445255204.984794,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 1966.4237413406372,
+        "p50_ms": 1966.7079391479492,
+        "p90_ms": 1966.9702768325806,
+        "release_cdf": [
+          [
+            1966.4237413406372,
+            0.16666666666666663
+          ],
+          [
+            1966.529691696167,
+            0.33333333333333326
+          ],
+          [
+            1966.7079391479492,
+            0.5
+          ],
+          [
+            1966.765827178955,
+            0.6666666666666666
+          ],
+          [
+            1966.766209602356,
+            0.8333333333333333
+          ],
+          [
+            1966.9702768325806,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1966.6559371948242,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274991304.5366,
+        "observed_monotonic_ms": 7445254405.066039,
+        "expires_monotonic_ms": 7445255405.066039,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 1766.342495918274,
+        "p50_ms": 1766.626693725586,
+        "p90_ms": 1766.8890314102173,
+        "release_cdf": [
+          [
+            1766.342495918274,
+            0.16666666666666663
+          ],
+          [
+            1766.4484462738037,
+            0.33333333333333326
+          ],
+          [
+            1766.626693725586,
+            0.5
+          ],
+          [
+            1766.6845817565918,
+            0.6666666666666666
+          ],
+          [
+            1766.6849641799927,
+            0.8333333333333333
+          ],
+          [
+            1766.8890314102173,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1766.5763416290283,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274991504.5684,
+        "observed_monotonic_ms": 7445254605.100452,
+        "expires_monotonic_ms": 7445255605.100452,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 1566.3080825805664,
+        "p50_ms": 1566.5922803878784,
+        "p90_ms": 1566.8546180725098,
+        "release_cdf": [
+          [
+            1566.3080825805664,
+            0.16666666666666663
+          ],
+          [
+            1566.4140329360962,
+            0.33333333333333326
+          ],
+          [
+            1566.5922803878784,
+            0.5
+          ],
+          [
+            1566.6501684188843,
+            0.6666666666666666
+          ],
+          [
+            1566.6505508422852,
+            0.8333333333333333
+          ],
+          [
+            1566.8546180725098,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1566.5445384979248,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274991704.7368,
+        "observed_monotonic_ms": 7445254805.266267,
+        "expires_monotonic_ms": 7445255805.266267,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 1366.1422681808472,
+        "p50_ms": 1366.4264659881592,
+        "p90_ms": 1366.6888036727905,
+        "release_cdf": [
+          [
+            1366.1422681808472,
+            0.16666666666666663
+          ],
+          [
+            1366.248218536377,
+            0.33333333333333326
+          ],
+          [
+            1366.4264659881592,
+            0.5
+          ],
+          [
+            1366.484354019165,
+            0.6666666666666666
+          ],
+          [
+            1366.484736442566,
+            0.8333333333333333
+          ],
+          [
+            1366.6888036727905,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1366.3759546279907,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274991904.7908,
+        "observed_monotonic_ms": 7445255005.323561,
+        "expires_monotonic_ms": 7445256005.323561,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 1166.0849742889404,
+        "p50_ms": 1166.3691720962524,
+        "p90_ms": 1166.6315097808838,
+        "release_cdf": [
+          [
+            1166.0849742889404,
+            0.16666666666666663
+          ],
+          [
+            1166.1909246444702,
+            0.33333333333333326
+          ],
+          [
+            1166.3691720962524,
+            0.5
+          ],
+          [
+            1166.4270601272583,
+            0.6666666666666666
+          ],
+          [
+            1166.4274425506592,
+            0.8333333333333333
+          ],
+          [
+            1166.6315097808838,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1166.3221893310547,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274992105.0535,
+        "observed_monotonic_ms": 7445255205.585304,
+        "expires_monotonic_ms": 7445256205.585304,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 965.8232307434082,
+        "p50_ms": 966.1074285507202,
+        "p90_ms": 966.3697662353516,
+        "release_cdf": [
+          [
+            965.8232307434082,
+            0.16666666666666663
+          ],
+          [
+            965.929181098938,
+            0.33333333333333326
+          ],
+          [
+            966.1074285507202,
+            0.5
+          ],
+          [
+            966.1653165817261,
+            0.6666666666666666
+          ],
+          [
+            966.165699005127,
+            0.8333333333333333
+          ],
+          [
+            966.3697662353516,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 966.059362411499,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274992305.1133,
+        "observed_monotonic_ms": 7445255405.645802,
+        "expires_monotonic_ms": 7445256405.645802,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 765.7627334594727,
+        "p50_ms": 766.0469312667847,
+        "p90_ms": 766.309268951416,
+        "release_cdf": [
+          [
+            765.7627334594727,
+            0.16666666666666663
+          ],
+          [
+            765.8686838150024,
+            0.33333333333333326
+          ],
+          [
+            766.0469312667847,
+            0.5
+          ],
+          [
+            766.1048192977905,
+            0.6666666666666666
+          ],
+          [
+            766.1052017211914,
+            0.8333333333333333
+          ],
+          [
+            766.309268951416,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 765.9996738433838,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274992505.2495,
+        "observed_monotonic_ms": 7445255605.781867,
+        "expires_monotonic_ms": 7445256605.781867,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 565.6266679763794,
+        "p50_ms": 565.9108657836914,
+        "p90_ms": 566.1732034683228,
+        "release_cdf": [
+          [
+            565.6266679763794,
+            0.16666666666666663
+          ],
+          [
+            565.7326183319092,
+            0.33333333333333326
+          ],
+          [
+            565.9108657836914,
+            0.5
+          ],
+          [
+            565.9687538146973,
+            0.6666666666666666
+          ],
+          [
+            565.9691362380981,
+            0.8333333333333333
+          ],
+          [
+            566.1732034683228,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 565.863447189331,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274992705.3555,
+        "observed_monotonic_ms": 7445255805.884986,
+        "expires_monotonic_ms": 7445256805.884986,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 365.523549079895,
+        "p50_ms": 365.80774688720703,
+        "p90_ms": 366.0700845718384,
+        "release_cdf": [
+          [
+            365.523549079895,
+            0.16666666666666663
+          ],
+          [
+            365.6294994354248,
+            0.33333333333333326
+          ],
+          [
+            365.80774688720703,
+            0.5
+          ],
+          [
+            365.8656349182129,
+            0.6666666666666666
+          ],
+          [
+            365.86601734161377,
+            0.8333333333333333
+          ],
+          [
+            366.0700845718384,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 365.75716495513916,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274992905.389,
+        "observed_monotonic_ms": 7445256005.919932,
+        "expires_monotonic_ms": 7445257005.919932,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 165.48860263824463,
+        "p50_ms": 165.77280044555664,
+        "p90_ms": 166.035138130188,
+        "release_cdf": [
+          [
+            165.48860263824463,
+            0.16666666666666663
+          ],
+          [
+            165.5945529937744,
+            0.33333333333333326
+          ],
+          [
+            165.77280044555664,
+            0.5
+          ],
+          [
+            165.8306884765625,
+            0.6666666666666666
+          ],
+          [
+            165.83107089996338,
+            0.8333333333333333
+          ],
+          [
+            166.035138130188,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 165.72395420074463,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274993072.5454,
+        "observed_monotonic_ms": 7445256173.069369,
+        "expires_monotonic_ms": 7445257173.069369,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 4004.6754360198975,
+        "p50_ms": 4004.9596338272095,
+        "p90_ms": 4005.221971511841,
+        "release_cdf": [
+          [
+            4004.6754360198975,
+            0.1428571428571428
+          ],
+          [
+            4004.7813863754272,
+            0.2857142857142856
+          ],
+          [
+            4004.8460760116577,
+            0.4285714285714285
+          ],
+          [
+            4004.9596338272095,
+            0.5714285714285714
+          ],
+          [
+            4005.0175218582153,
+            0.7142857142857142
+          ],
+          [
+            4005.017904281616,
+            0.8571428571428571
+          ],
+          [
+            4005.221971511841,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 4004.9038457870483,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274993605.8142,
+        "observed_monotonic_ms": 7445256706.344719,
+        "expires_monotonic_ms": 7445257706.344719,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 3471.400086402893,
+        "p50_ms": 3471.684284210205,
+        "p90_ms": 3471.9466218948364,
+        "release_cdf": [
+          [
+            3471.400086402893,
+            0.1428571428571428
+          ],
+          [
+            3471.506036758423,
+            0.2857142857142856
+          ],
+          [
+            3471.5707263946533,
+            0.4285714285714285
+          ],
+          [
+            3471.684284210205,
+            0.5714285714285714
+          ],
+          [
+            3471.742172241211,
+            0.7142857142857142
+          ],
+          [
+            3471.742554664612,
+            0.8571428571428571
+          ],
+          [
+            3471.9466218948364,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 3471.6348457336426,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274994106.3176,
+        "observed_monotonic_ms": 7445257206.847646,
+        "expires_monotonic_ms": 7445258206.847646,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 2970.897159576416,
+        "p50_ms": 2971.181357383728,
+        "p90_ms": 2971.4436950683594,
+        "release_cdf": [
+          [
+            2970.897159576416,
+            0.1428571428571428
+          ],
+          [
+            2971.003109931946,
+            0.2857142857142856
+          ],
+          [
+            2971.0677995681763,
+            0.4285714285714285
+          ],
+          [
+            2971.181357383728,
+            0.5714285714285714
+          ],
+          [
+            2971.239245414734,
+            0.7142857142857142
+          ],
+          [
+            2971.2396278381348,
+            0.8571428571428571
+          ],
+          [
+            2971.4436950683594,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 2971.1315031051636,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274994606.761,
+        "observed_monotonic_ms": 7445257707.29063,
+        "expires_monotonic_ms": 7445258707.29063,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 2470.4541749954224,
+        "p50_ms": 2470.7383728027344,
+        "p90_ms": 2471.0007104873657,
+        "release_cdf": [
+          [
+            2470.4541749954224,
+            0.1428571428571428
+          ],
+          [
+            2470.560125350952,
+            0.2857142857142856
+          ],
+          [
+            2470.6248149871826,
+            0.4285714285714285
+          ],
+          [
+            2470.7383728027344,
+            0.5714285714285714
+          ],
+          [
+            2470.7962608337402,
+            0.7142857142857142
+          ],
+          [
+            2470.796643257141,
+            0.8571428571428571
+          ],
+          [
+            2471.0007104873657,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 2470.688091278076,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274995106.8408,
+        "observed_monotonic_ms": 7445258207.372308,
+        "expires_monotonic_ms": 7445259207.372308,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 1970.3724975585938,
+        "p50_ms": 1970.6566953659058,
+        "p90_ms": 1970.919033050537,
+        "release_cdf": [
+          [
+            1970.3724975585938,
+            0.1428571428571428
+          ],
+          [
+            1970.4784479141235,
+            0.2857142857142856
+          ],
+          [
+            1970.543137550354,
+            0.4285714285714285
+          ],
+          [
+            1970.6566953659058,
+            0.5714285714285714
+          ],
+          [
+            1970.7145833969116,
+            0.7142857142857142
+          ],
+          [
+            1970.7149658203125,
+            0.8571428571428571
+          ],
+          [
+            1970.919033050537,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1970.6083269119263,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274995306.9565,
+        "observed_monotonic_ms": 7445258407.486322,
+        "expires_monotonic_ms": 7445259407.486322,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 1770.2584829330444,
+        "p50_ms": 1770.5426807403564,
+        "p90_ms": 1770.8050184249878,
+        "release_cdf": [
+          [
+            1770.2584829330444,
+            0.1428571428571428
+          ],
+          [
+            1770.3644332885742,
+            0.2857142857142856
+          ],
+          [
+            1770.4291229248047,
+            0.4285714285714285
+          ],
+          [
+            1770.5426807403564,
+            0.5714285714285714
+          ],
+          [
+            1770.6005687713623,
+            0.7142857142857142
+          ],
+          [
+            1770.6009511947632,
+            0.8571428571428571
+          ],
+          [
+            1770.8050184249878,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1770.492733001709,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274995507.0295,
+        "observed_monotonic_ms": 7445258607.560699,
+        "expires_monotonic_ms": 7445259607.560699,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 1570.184105873108,
+        "p50_ms": 1570.46830368042,
+        "p90_ms": 1570.7306413650513,
+        "release_cdf": [
+          [
+            1570.184105873108,
+            0.1428571428571428
+          ],
+          [
+            1570.2900562286377,
+            0.2857142857142856
+          ],
+          [
+            1570.3547458648682,
+            0.4285714285714285
+          ],
+          [
+            1570.46830368042,
+            0.5714285714285714
+          ],
+          [
+            1570.5261917114258,
+            0.7142857142857142
+          ],
+          [
+            1570.5265741348267,
+            0.8571428571428571
+          ],
+          [
+            1570.7306413650513,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1570.4198179244995,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274995707.1694,
+        "observed_monotonic_ms": 7445258807.698303,
+        "expires_monotonic_ms": 7445259807.698303,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 1370.0465021133423,
+        "p50_ms": 1370.3306999206543,
+        "p90_ms": 1370.5930376052856,
+        "release_cdf": [
+          [
+            1370.0465021133423,
+            0.1428571428571428
+          ],
+          [
+            1370.152452468872,
+            0.2857142857142856
+          ],
+          [
+            1370.2171421051025,
+            0.4285714285714285
+          ],
+          [
+            1370.3306999206543,
+            0.5714285714285714
+          ],
+          [
+            1370.3885879516602,
+            0.7142857142857142
+          ],
+          [
+            1370.388970375061,
+            0.8571428571428571
+          ],
+          [
+            1370.5930376052856,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1370.2794675827026,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274995907.1777,
+        "observed_monotonic_ms": 7445259007.708536,
+        "expires_monotonic_ms": 7445260007.708536,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 1170.0362691879272,
+        "p50_ms": 1170.3204669952393,
+        "p90_ms": 1170.5828046798706,
+        "release_cdf": [
+          [
+            1170.0362691879272,
+            0.1428571428571428
+          ],
+          [
+            1170.142219543457,
+            0.2857142857142856
+          ],
+          [
+            1170.2069091796875,
+            0.4285714285714285
+          ],
+          [
+            1170.3204669952393,
+            0.5714285714285714
+          ],
+          [
+            1170.3783550262451,
+            0.7142857142857142
+          ],
+          [
+            1170.378737449646,
+            0.8571428571428571
+          ],
+          [
+            1170.5828046798706,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1170.2714500427246,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274996107.3772,
+        "observed_monotonic_ms": 7445259207.908917,
+        "expires_monotonic_ms": 7445260207.908917,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 969.8358879089355,
+        "p50_ms": 970.1200857162476,
+        "p90_ms": 970.3824234008789,
+        "release_cdf": [
+          [
+            969.8358879089355,
+            0.1428571428571428
+          ],
+          [
+            969.9418382644653,
+            0.2857142857142856
+          ],
+          [
+            970.0065279006958,
+            0.4285714285714285
+          ],
+          [
+            970.1200857162476,
+            0.5714285714285714
+          ],
+          [
+            970.1779737472534,
+            0.7142857142857142
+          ],
+          [
+            970.1783561706543,
+            0.8571428571428571
+          ],
+          [
+            970.3824234008789,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 970.0718717575073,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274996307.5964,
+        "observed_monotonic_ms": 7445259408.126571,
+        "expires_monotonic_ms": 7445260408.126571,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 769.6182346343994,
+        "p50_ms": 769.9024324417114,
+        "p90_ms": 770.1647701263428,
+        "release_cdf": [
+          [
+            769.6182346343994,
+            0.1428571428571428
+          ],
+          [
+            769.7241849899292,
+            0.2857142857142856
+          ],
+          [
+            769.7888746261597,
+            0.4285714285714285
+          ],
+          [
+            769.9024324417114,
+            0.5714285714285714
+          ],
+          [
+            769.9603204727173,
+            0.7142857142857142
+          ],
+          [
+            769.9607028961182,
+            0.8571428571428571
+          ],
+          [
+            770.1647701263428,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 769.8526906967163,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274996507.7375,
+        "observed_monotonic_ms": 7445259608.268301,
+        "expires_monotonic_ms": 7445260608.268301,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 569.4765043258667,
+        "p50_ms": 569.7607021331787,
+        "p90_ms": 570.0230398178101,
+        "release_cdf": [
+          [
+            569.4765043258667,
+            0.1428571428571428
+          ],
+          [
+            569.5824546813965,
+            0.2857142857142856
+          ],
+          [
+            569.647144317627,
+            0.4285714285714285
+          ],
+          [
+            569.7607021331787,
+            0.5714285714285714
+          ],
+          [
+            569.8185901641846,
+            0.7142857142857142
+          ],
+          [
+            569.8189725875854,
+            0.8571428571428571
+          ],
+          [
+            570.0230398178101,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 569.7115497589111,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274996707.9382,
+        "observed_monotonic_ms": 7445259808.466563,
+        "expires_monotonic_ms": 7445260808.466563,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 369.27824211120605,
+        "p50_ms": 369.56243991851807,
+        "p90_ms": 369.8247776031494,
+        "release_cdf": [
+          [
+            369.27824211120605,
+            0.1428571428571428
+          ],
+          [
+            369.38419246673584,
+            0.2857142857142856
+          ],
+          [
+            369.4488821029663,
+            0.4285714285714285
+          ],
+          [
+            369.56243991851807,
+            0.5714285714285714
+          ],
+          [
+            369.6203279495239,
+            0.7142857142857142
+          ],
+          [
+            369.6207103729248,
+            0.8571428571428571
+          ],
+          [
+            369.8247776031494,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 369.5108232498169,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274996908.0603,
+        "observed_monotonic_ms": 7445260008.591239,
+        "expires_monotonic_ms": 7445261008.591239,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 169.15356636047363,
+        "p50_ms": 169.43776416778564,
+        "p90_ms": 169.700101852417,
+        "release_cdf": [
+          [
+            169.15356636047363,
+            0.1428571428571428
+          ],
+          [
+            169.25951671600342,
+            0.2857142857142856
+          ],
+          [
+            169.3242063522339,
+            0.4285714285714285
+          ],
+          [
+            169.43776416778564,
+            0.5714285714285714
+          ],
+          [
+            169.4956521987915,
+            0.7142857142857142
+          ],
+          [
+            169.49603462219238,
+            0.8571428571428571
+          ],
+          [
+            169.700101852417,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 169.3887357711792,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274997079.2515,
+        "observed_monotonic_ms": 7445260179.766533,
+        "expires_monotonic_ms": 7445261179.766533,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445260179.356422,
+        "p10_ms": 4004.681589126587,
+        "p50_ms": 4004.965786933899,
+        "p90_ms": 4005.2281246185303,
+        "release_cdf": [
+          [
+            4004.681589126587,
+            0.125
+          ],
+          [
+            4004.7875394821167,
+            0.25
+          ],
+          [
+            4004.852229118347,
+            0.375
+          ],
+          [
+            4004.965786933899,
+            0.5
+          ],
+          [
+            4005.023674964905,
+            0.625
+          ],
+          [
+            4005.0240573883057,
+            0.75
+          ],
+          [
+            4005.042260169983,
+            0.875
+          ],
+          [
+            4005.2281246185303,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 4004.901156425476,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274997675.244,
+        "observed_monotonic_ms": 7445260775.764447,
+        "expires_monotonic_ms": 7445261775.764447,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445260179.356422,
+        "p10_ms": 3408.683674812317,
+        "p50_ms": 3408.967872619629,
+        "p90_ms": 3409.2302103042603,
+        "release_cdf": [
+          [
+            3408.683674812317,
+            0.125
+          ],
+          [
+            3408.7896251678467,
+            0.25
+          ],
+          [
+            3408.854314804077,
+            0.375
+          ],
+          [
+            3408.967872619629,
+            0.5
+          ],
+          [
+            3409.0257606506348,
+            0.625
+          ],
+          [
+            3409.0261430740356,
+            0.75
+          ],
+          [
+            3409.044345855713,
+            0.875
+          ],
+          [
+            3409.2302103042603,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 3408.907552719116,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274998335.1436,
+        "observed_monotonic_ms": 7445261435.665051,
+        "expires_monotonic_ms": 7445262435.665051,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445260179.356422,
+        "p10_ms": 2748.78307056427,
+        "p50_ms": 2749.067268371582,
+        "p90_ms": 2749.3296060562134,
+        "release_cdf": [
+          [
+            2748.78307056427,
+            0.125
+          ],
+          [
+            2748.8890209198,
+            0.25
+          ],
+          [
+            2748.9537105560303,
+            0.375
+          ],
+          [
+            2749.067268371582,
+            0.5
+          ],
+          [
+            2749.125156402588,
+            0.625
+          ],
+          [
+            2749.1255388259888,
+            0.75
+          ],
+          [
+            2749.143741607666,
+            0.875
+          ],
+          [
+            2749.3296060562134,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 2749.00789642334,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274998376.971,
+        "observed_monotonic_ms": 7445261477.504242,
+        "expires_monotonic_ms": 7445262477.504242,
+        "workflow_id": "layer-model",
+        "invocation_id": "a",
+        "context_id": "a",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445261476.9436455,
+        "p10_ms": 4004.5311031341553,
+        "p50_ms": 4004.8153009414673,
+        "p90_ms": 4005.0776386260986,
+        "release_cdf": [
+          [
+            4004.5311031341553,
+            0.125
+          ],
+          [
+            4004.637053489685,
+            0.25
+          ],
+          [
+            4004.7017431259155,
+            0.375
+          ],
+          [
+            4004.8153009414673,
+            0.5
+          ],
+          [
+            4004.873188972473,
+            0.625
+          ],
+          [
+            4004.873571395874,
+            0.75
+          ],
+          [
+            4004.8917741775513,
+            0.875
+          ],
+          [
+            4005.0776386260986,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 4004.76869392395,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      }
+    ]
+  },
+  "b_handoff": {
+    "status": "observed",
+    "last_runtime_state": {
+      "event": "admission_runtime_state",
+      "ts_ms": 1793274999674.847,
+      "monotonic_ms": 7445262775.425169,
+      "clock_sample_span_ms": 0.0002841949462890625,
+      "final": false,
+      "counts": {
+        "incremental_full_tracking_enabled": 1,
+        "wait_context_groups_built": 13,
+        "wait_context_groups_invalidated": 11,
+        "wait_context_cache_retained": 26,
+        "admission_rank_dependencies_preserved": 27,
+        "admission_residency_scan_targets": 4,
+        "native_admitted": 4,
+        "admission_causal_cache_hits": 8,
+        "online_tool_cold_or_tail_unsupported": 16,
+        "online_tool_supported": 62,
+        "online_tool_workflow_samples": 9,
+        "tool_wait_accepted": 62,
+        "tool_hint_physical_inspection_deferred": 62,
+        "prediction_maintenance_sweeps": 118903,
+        "tool_offload_no_host_waiting_consumer": 91,
+        "prepare_no_service_demand": 179,
+        "tool_offload_admission_new_request_rearms": 3,
+        "tool_offload_before_admission_checks": 3,
+        "native_physical_completed": 0,
+        "tool_offload_selected_input_reserve_checks": 9,
+        "predicted_tool_offload_context_checks": 1,
+        "h2d_service_estimate_computed": 3,
+        "d2h_service_estimate_computed": 2,
+        "d2h_service_estimate_reused": 4,
+        "h2d_service_estimate_reused": 9,
+        "tool_offload_cost_cold_service_estimate": 6,
+        "tool_offload_threshold_us_last": 1000000,
+        "tool_offload_cost_rejected": 0,
+        "layer_handoff_attempts": 1,
+        "layer_handoff_selected_input_reserve": 1,
+        "layer_handoff_submitted": 1,
+        "layer_handoff_reused_tokens": 12296,
+        "layer_handoff_restored_tokens": 12296,
+        "layer_handoff_free_extent_tokens": 0,
+        "layer_handoff_reserved_tail_tokens": 0,
+        "h2d_service_cache_retained_after_d2h": 1,
+        "h2d_service_sample": 1
+      },
+      "physical_disabled": false,
+      "internal_comparison_mode": "full",
+      "custom_kv_management": true,
+      "paper_baseline": null,
+      "agent_admission": {
+        "policy": "full_with_reference_thunderagent_join_and_sibling_admission_free_continuation",
+        "author_commit": "7ddc8610270e56d3b109eed8796b3a4360fc67c9",
+        "program_identity": "invocation_id",
+        "future_information_used": false,
+        "native_capacity_authority_preserved": true,
+        "scope": "single_backend_exact_token_ingress_policy_adaptation",
+        "streaming_context_accounting": "observed_native_outputs_at_arrival_and_five_second_control",
+        "control_capacity_snapshot": {
+          "remaining_capacity_tokens": 7984,
+          "active_acting_programs": 1,
+          "active_reasoning_programs": 1,
+          "paused_pending_programs": 0,
+          "capacity_blocked_pending_programs": 0,
+          "oldest_pending_seconds": 0.3944300962612033
+        },
+        "capacity_tokens": 49152,
+        "programs": 2,
+        "active_programs": 2,
+        "pending_requests": 0,
+        "counts": {
+          "control_ticks": 8,
+          "resumed": 0,
+          "registered": 4,
+          "free_continuation_event_checks": 4,
+          "completed": 4,
+          "streaming_progress_checks": 1,
+          "programs_retired": 1
+        },
+        "acting_token_decay": true,
+        "decay_half_life_s": 1.0,
+        "decay_scope": "periodic_resume_only",
+        "decay_age_source": "observed_native_completion_monotonic",
+        "undiscounted_capacity_enforced": true,
+        "resume_capacity_tokens_at_last_control": 32568,
+        "physical_capacity_credit": false,
+        "strategy": "thunderagent_reference",
+        "identity": "invocation_id",
+        "control_interval_ms": 5000.0,
+        "blocked_lending": "disabled",
+        "join_loan_recall": false,
+        "tool_loan_return": false,
+        "coadmit_join_children": true,
+        "sibling_admission_authority": "observed_blocking_all_join_complete_unused_budget",
+        "sibling_admission_max_members": 24,
+        "sibling_admission_update_scope": "registration_join_events_and_bounded_release_retry",
+        "sibling_native_batch_preference": true,
+        "sibling_native_batch_max_members": 4,
+        "sibling_admission_fitting_subset": true,
+        "logical_borrowing_enabled": false,
+        "restore_changes_eligibility": true,
+        "join_free_admission": true,
+        "join_blocked_handoff": true,
+        "join_blocked_handoff_authority": "observed_join_parent_complete_blocked_agent_budgets",
+        "join_blocked_handoff_max_donors": 64,
+        "join_blocked_resume_filter": true,
+        "join_free_admission_authority": "complete_undiscounted_unused_logical_budget_only",
+        "restore_reservation_ms": 0,
+        "ordinary_restore_reservation_ms": 0,
+        "tool_warming_eligibility": "existing_active_tool_wait_only_no_new_reservation",
+        "active_invocation_ids": [
+          "b",
+          "a"
+        ],
+        "paused_pending_invocation_ids": [],
+        "marked_for_pause_invocation_ids": [],
+        "logical_active_tokens": 41184,
+        "logical_capacity_semantics": "reference_undiscounted_contexts_plus_buffers",
+        "extra_join_grant_accounting": "refresh_observed_native_outputs_before_each_capacity_check",
+        "snapshot_changes_policy": false,
+        "free_continuation_admission": true,
+        "free_continuation_authority": "complete_undiscounted_unused_logical_budget",
+        "free_continuation_updates": "registration_native_completion_runtime_events",
+        "free_continuation_candidate_limit": 8,
+        "free_continuation_join_limit": 24,
+        "free_continuation_max_grants_per_event": 1,
+        "free_continuation_new_programs": false,
+        "free_continuation_physical_prefetch": false
+      },
+      "agent_admission_enabled": true,
+      "agent_join_free_admission": true,
+      "agent_join_blocked_handoff": true,
+      "agent_free_continuation_admission": true,
+      "full_prefix_migration": null,
+      "join_parent_priority": true,
+      "join_last_child_priority": false,
+      "prefill_scheduling_policy": "workflow",
+      "tool_continuity": true,
+      "tool_continuity_grace_ms": 0.0,
+      "tool_residency_grace": null,
+      "tool_continuity_policy": {
+        "short_gap_seconds": 1.0,
+        "max_segment_requests": 4,
+        "max_completed_segment_output_tokens": 1024,
+        "resident_only": true,
+        "aged_bypass_ordinary_quota": 4,
+        "ordinary_admissions_since_priority": 4,
+        "credit_scope": "root_workflow;earned_once_per_request",
+        "counts": {
+          "ordinary_admissions": 4,
+          "priority_admissions": 0,
+          "native_completions": 4,
+          "completed_output_tokens": 32,
+          "long_tool_yields": 1
+        },
+        "segments": 2,
+        "ready_segments": 0
+      },
+      "join_priority_order": "aged_fifo_then_native;independent_four_admission_quota",
+      "restore_priority_scope": "same_causal_class;no_aged_head_bypass",
+      "prefetch_residency_protection": true,
+      "prefetch_protection_revocable_on_pressure": true,
+      "join_priority_ordinary_quota": 4,
+      "join_priority_pending_parents": 0,
+      "join_only_priority_ordinary_quota": 4,
+      "join_only_priority_allows_aged_head_after_quota": true,
+      "join_only_pending_parents": 0,
+      "final_stage_prefetch": true,
+      "final_stage_priority": true,
+      "prepare_host": true,
+      "background_prepare": false,
+      "idle_host_mirror_recycle": false,
+      "terminal_child_reclaim": true,
+      "subagent_retention": null,
+      "h2d_opportunity_sampling": false,
+      "prepare_pool_scope": "missing_full_session_path",
+      "spawn_full_prepare": {
+        "pending_contexts": 0,
+        "max_batch_bytes": 4294967296,
+        "max_merged_nodes": 64
+      },
+      "idle_full_prepare": {
+        "interval_ms": 200.0,
+        "queued_owner_backup": false,
+        "native": null
+      },
+      "latest_full_session_branches_retired": 0,
+      "resident_first": true,
+      "prefill_ordering_mode": "workflow",
+      "workflow_attained_work": false,
+      "workflow_work_metric": "completed_request_output_tokens",
+      "workflow_work_accounts": 0,
+      "workflow_completion_focus": null,
+      "workflow_completion_quantum": null,
+      "execution_handoff": false,
+      "overlap_prefetch_supported": true,
+      "execution_handoff_request_id": null,
+      "tool_timing_only": false,
+      "tool_predictor_configured": false,
+      "online_tool_timing": true,
+      "tool_timing_prior_sha256": null,
+      "predicted_tool_offload": true,
+      "tool_offload_before_admission": true,
+      "layer_handoff_enabled": true,
+      "layer_handoff_free_extent": true,
+      "layer_handoff_d2h_layers": 8,
+      "layer_handoff_h2d_layers": 4,
+      "tool_offload_policy": "DemandAwareToolOffload",
+      "idle_prepare_io_backend": "native",
+      "tool_offload_min_survival": 0.75,
+      "host_demand_reserve_bytes": 2147483648,
+      "online_tool_timing_revision": 9,
+      "report_length_calibration_samples": 0,
+      "selective_join_prefetch": {
+        "min_full_bytes": 536870912,
+        "interval_ms": 200.0,
+        "max_candidates": 4,
+        "enabled": false,
+        "max_advance_ms": 1000.0,
+        "eos_to_native_arrival_window_ms": 50.0,
+        "eos_to_native_arrival_samples": 0,
+        "window_statistic": "max(configured_protocol_floor, online_p10_after_4_samples)",
+        "service_semantics": "controller_submit_to_ack_plus_enqueue; not exposed GPU wait"
+      },
+      "borrowable_parent_headroom": true,
+      "tool_predictor_disabled": false,
+      "tool_prefetch": false,
+      "tool_restore_mode": "speculative",
+      "execution_frontier_restore": false,
+      "frontier_restore_ordinary_quota": 4,
+      "frontier_cold_reclaim": false,
+      "frontier_cold_reclaim_policy": "waiting",
+      "frontier_cold_reclaim_max_nodes": 16,
+      "restore_tiers": "complete",
+      "restore_tiers_supported": false,
+      "restore_tiers_native": {},
+      "native_free_page_h2d_fence": {
+        "requested": true,
+        "enabled": true,
+        "supported": true,
+        "counts": {
+          "free_boundary_events": 5
+        }
+      },
+      "native_prefetch_batch_dependencies": {
+        "checks": 1,
+        "unrelated_waits_skipped": 0
+      },
+      "idle_prepare_policy": "cold",
+      "tool_prefetch_planning_slack_ms": 250.0,
+      "prefetch_lead_ms": 1000.0,
+      "tool_prefetch_priority_ms": 0.0,
+      "join_prefetch_min_advance_ms": 0.0,
+      "tool_prefetch_min_advance_ms": 0.0,
+      "parallel_wait_prefetch": false,
+      "wait_prefetch_contexts": 1,
+      "tool_inflight_contexts": 0,
+      "join_inflight_contexts": 0,
+      "prediction_maintenance_interval_ms": 0.0,
+      "semantic_work_statistic": "upper",
+      "final_admission_policy": "remaining_report_work",
+      "eos_protocol_window_ms": 50.0,
+      "eos_prefetch_evidence_window_ms": 1000.0,
+      "terminal_cache_diagnostics": false,
+      "profile_shared_path": false,
+      "demand_prefill_pipeline": true,
+      "demand_prefill_pipeline_installed": true,
+      "demand_prefill_pipeline_progress_probe": false,
+      "h2d_seed_samples": 0,
+      "h2d_service_samples": 1,
+      "prefetch_residency_budget": {
+        "request_slots": 24,
+        "byte_limit": 0,
+        "reserve_full_tokens": 4120,
+        "reserve_mamba_slots": 0,
+        "source": "native_next_prefill",
+        "evictable_full_tokens": 0,
+        "evictable_mamba_slots": 0
+      },
+      "prefetch_request_counts_at_budget": {
+        "running_requests": 0,
+        "free_request_rows": 24,
+        "request_row_capacity": 24
+      },
+      "prefetch_residency_headroom": {
+        "observable": true,
+        "device_full_free_tokens": 4080,
+        "device_mamba_free_slots": 0,
+        "host_full_free_tokens": 56775,
+        "host_mamba_free_slots": 0,
+        "physical_actions_supported": false,
+        "reason": null,
+        "full_frees_deferred": false,
+        "mamba_batch_reserved": false
+      },
+      "prefetch_locked_count": 0,
+      "prefetch_locked_contexts_by_role": {
+        "demand": 0,
+        "speculative": 0
+      },
+      "prefetch_protected_bytes": 0,
+      "semantic_worker_configured": false,
+      "join_prefetch_trigger": "observed_eos",
+      "semantic_worker_error": "",
+      "shared_path_timing": {
+        "schema_version": 2,
+        "enabled": false,
+        "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+        "cpu_clock": "thread_time_ns",
+        "sample_every": 64,
+        "sampling": "every Nth root call per phase, starting with the first; descendants inherit",
+        "scope": "Measured completed samples only; exclusive values subtract measured children. No expansion to whole-run cost, exposed GPU idle or removable JCT.",
+        "elapsed_ms": 37278.350185,
+        "bucket_upper_ms": [
+          0.01,
+          0.025,
+          0.05,
+          0.1,
+          0.25,
+          0.5,
+          1.0,
+          2.5,
+          5.0,
+          10.0,
+          25.0,
+          50.0,
+          100.0,
+          250.0,
+          1000.0,
+          null
+        ],
+        "phases": {}
+      },
+      "control_timing_sample_every": null,
+      "opportunity_writer_timing": {
+        "schema_version": 1,
+        "sample_every": 64,
+        "snapshot_ts_ms": 1793274999675.6238,
+        "cpu_clock": "thread_time_ns",
+        "wall_clock": "perf_counter_ns",
+        "scope": "Every 64th record per category, starting with its first record. Measured processing samples only; queue waiting and status publication are excluded. Wall includes scheduling and GIL waiting; thread CPU excludes waiting. No full-run cost, GPU stall, GIL attribution or JCT saving is inferred.",
+        "categories": {
+          "admission_runtime_state": {
+            "records_seen": 37,
+            "samples": 1,
+            "sampled_cpu_ms": 0.128606,
+            "sampled_wall_ms": 0.132381,
+            "mean_sample_cpu_ms": 0.128606,
+            "mean_sample_wall_ms": 0.132381,
+            "max_sample_cpu_ms": 0.128606,
+            "max_sample_wall_ms": 0.132381
+          },
+          "tool_wait_forecast": {
+            "records_seen": 62,
+            "samples": 1,
+            "sampled_cpu_ms": 0.043269,
+            "sampled_wall_ms": 0.04202,
+            "mean_sample_cpu_ms": 0.043269,
+            "mean_sample_wall_ms": 0.04202,
+            "max_sample_cpu_ms": 0.043269,
+            "max_sample_wall_ms": 0.04202
+          },
+          "layer_kv_handoff_submitted": {
+            "records_seen": 1,
+            "samples": 1,
+            "sampled_cpu_ms": 0.026694,
+            "sampled_wall_ms": 0.025904,
+            "mean_sample_cpu_ms": 0.026694,
+            "mean_sample_wall_ms": 0.025904,
+            "max_sample_cpu_ms": 0.026694,
+            "max_sample_wall_ms": 0.025904
+          }
+        }
+      }
+    },
+    "non_state_events": [
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274981052.7869,
+        "observed_monotonic_ms": 7445244153.281602,
+        "expires_monotonic_ms": 7445245153.281602,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 4004.5229387283325,
+        "p50_ms": 4004.6288890838623,
+        "p90_ms": 4004.8654069900513,
+        "release_cdf": [
+          [
+            4004.5229387283325,
+            0.25
+          ],
+          [
+            4004.6288890838623,
+            0.5
+          ],
+          [
+            4004.8071365356445,
+            0.75
+          ],
+          [
+            4004.8654069900513,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 4004.542901992798,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274981597.8179,
+        "observed_monotonic_ms": 7445244698.333745,
+        "expires_monotonic_ms": 7445245698.333745,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 3459.4707956314087,
+        "p50_ms": 3459.5767459869385,
+        "p90_ms": 3459.8132638931274,
+        "release_cdf": [
+          [
+            3459.4707956314087,
+            0.25
+          ],
+          [
+            3459.5767459869385,
+            0.5
+          ],
+          [
+            3459.7549934387207,
+            0.75
+          ],
+          [
+            3459.8132638931274,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 3459.511866569519,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274982098.1694,
+        "observed_monotonic_ms": 7445245198.696521,
+        "expires_monotonic_ms": 7445246198.696521,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 2959.1080198287964,
+        "p50_ms": 2959.213970184326,
+        "p90_ms": 2959.450488090515,
+        "release_cdf": [
+          [
+            2959.1080198287964,
+            0.25
+          ],
+          [
+            2959.213970184326,
+            0.5
+          ],
+          [
+            2959.3922176361084,
+            0.75
+          ],
+          [
+            2959.450488090515,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 2959.160674095154,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274982598.5625,
+        "observed_monotonic_ms": 7445245699.090163,
+        "expires_monotonic_ms": 7445246699.090163,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 2458.7143774032593,
+        "p50_ms": 2458.820327758789,
+        "p90_ms": 2459.056845664978,
+        "release_cdf": [
+          [
+            2458.7143774032593,
+            0.25
+          ],
+          [
+            2458.820327758789,
+            0.5
+          ],
+          [
+            2458.9985752105713,
+            0.75
+          ],
+          [
+            2459.056845664978,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 2458.767550468445,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274983098.8616,
+        "observed_monotonic_ms": 7445246199.390661,
+        "expires_monotonic_ms": 7445247199.390661,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 1958.4138793945312,
+        "p50_ms": 1958.519829750061,
+        "p90_ms": 1958.75634765625,
+        "release_cdf": [
+          [
+            1958.4138793945312,
+            0.25
+          ],
+          [
+            1958.519829750061,
+            0.5
+          ],
+          [
+            1958.6980772018433,
+            0.75
+          ],
+          [
+            1958.75634765625,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1958.468150138855,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274983298.944,
+        "observed_monotonic_ms": 7445246399.473555,
+        "expires_monotonic_ms": 7445247399.473555,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 1758.3309860229492,
+        "p50_ms": 1758.436936378479,
+        "p90_ms": 1758.673454284668,
+        "release_cdf": [
+          [
+            1758.3309860229492,
+            0.25
+          ],
+          [
+            1758.436936378479,
+            0.5
+          ],
+          [
+            1758.6151838302612,
+            0.75
+          ],
+          [
+            1758.673454284668,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1758.3859252929688,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274983499.1394,
+        "observed_monotonic_ms": 7445246599.669871,
+        "expires_monotonic_ms": 7445247599.669871,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 1558.134669303894,
+        "p50_ms": 1558.2406196594238,
+        "p90_ms": 1558.4771375656128,
+        "release_cdf": [
+          [
+            1558.134669303894,
+            0.25
+          ],
+          [
+            1558.2406196594238,
+            0.5
+          ],
+          [
+            1558.418867111206,
+            0.75
+          ],
+          [
+            1558.4771375656128,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1558.1906433105469,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274983699.2903,
+        "observed_monotonic_ms": 7445246799.811533,
+        "expires_monotonic_ms": 7445247799.811533,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 1357.993007659912,
+        "p50_ms": 1358.098958015442,
+        "p90_ms": 1358.3354759216309,
+        "release_cdf": [
+          [
+            1357.993007659912,
+            0.25
+          ],
+          [
+            1358.098958015442,
+            0.5
+          ],
+          [
+            1358.2772054672241,
+            0.75
+          ],
+          [
+            1358.3354759216309,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1358.0391874313354,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274983899.4917,
+        "observed_monotonic_ms": 7445247000.026117,
+        "expires_monotonic_ms": 7445248000.026117,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 1157.7784233093262,
+        "p50_ms": 1157.884373664856,
+        "p90_ms": 1158.120891571045,
+        "release_cdf": [
+          [
+            1157.7784233093262,
+            0.25
+          ],
+          [
+            1157.884373664856,
+            0.5
+          ],
+          [
+            1158.0626211166382,
+            0.75
+          ],
+          [
+            1158.120891571045,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1157.8387489318848,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274984099.5576,
+        "observed_monotonic_ms": 7445247200.09094,
+        "expires_monotonic_ms": 7445248200.09094,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 957.7136001586914,
+        "p50_ms": 957.8195505142212,
+        "p90_ms": 958.0560684204102,
+        "release_cdf": [
+          [
+            957.7136001586914,
+            0.25
+          ],
+          [
+            957.8195505142212,
+            0.5
+          ],
+          [
+            957.9977979660034,
+            0.75
+          ],
+          [
+            958.0560684204102,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 957.7731113433838,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274984299.7405,
+        "observed_monotonic_ms": 7445247400.27358,
+        "expires_monotonic_ms": 7445248400.27358,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 757.5309610366821,
+        "p50_ms": 757.6369113922119,
+        "p90_ms": 757.8734292984009,
+        "release_cdf": [
+          [
+            757.5309610366821,
+            0.25
+          ],
+          [
+            757.6369113922119,
+            0.5
+          ],
+          [
+            757.8151588439941,
+            0.75
+          ],
+          [
+            757.8734292984009,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 757.5899810791016,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274984499.799,
+        "observed_monotonic_ms": 7445247600.331859,
+        "expires_monotonic_ms": 7445248600.331859,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 557.4726819992065,
+        "p50_ms": 557.5786323547363,
+        "p90_ms": 557.8151502609253,
+        "release_cdf": [
+          [
+            557.4726819992065,
+            0.25
+          ],
+          [
+            557.5786323547363,
+            0.5
+          ],
+          [
+            557.7568798065186,
+            0.75
+          ],
+          [
+            557.8151502609253,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 557.531548500061,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274984700.024,
+        "observed_monotonic_ms": 7445247800.554563,
+        "expires_monotonic_ms": 7445248800.554563,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 357.2499780654907,
+        "p50_ms": 357.3559284210205,
+        "p90_ms": 357.5924463272095,
+        "release_cdf": [
+          [
+            357.2499780654907,
+            0.25
+          ],
+          [
+            357.3559284210205,
+            0.5
+          ],
+          [
+            357.53417587280273,
+            0.75
+          ],
+          [
+            357.5924463272095,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 357.3064241409302,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274984900.104,
+        "observed_monotonic_ms": 7445248000.637797,
+        "expires_monotonic_ms": 7445249000.637797,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445244152.712841,
+        "p10_ms": 157.16674327850342,
+        "p50_ms": 157.2726936340332,
+        "p90_ms": 157.50921154022217,
+        "release_cdf": [
+          [
+            157.16674327850342,
+            0.25
+          ],
+          [
+            157.2726936340332,
+            0.5
+          ],
+          [
+            157.45094108581543,
+            0.75
+          ],
+          [
+            157.50921154022217,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 157.22668647766113,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274985059.7651,
+        "observed_monotonic_ms": 7445248160.28922,
+        "expires_monotonic_ms": 7445249160.28922,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 4004.5234031677246,
+        "p50_ms": 4004.8076009750366,
+        "p90_ms": 4005.069938659668,
+        "release_cdf": [
+          [
+            4004.5234031677246,
+            0.19999999999999996
+          ],
+          [
+            4004.6293535232544,
+            0.3999999999999999
+          ],
+          [
+            4004.8076009750366,
+            0.5999999999999999
+          ],
+          [
+            4004.8658714294434,
+            0.7999999999999999
+          ],
+          [
+            4005.069938659668,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 4004.7521467208862,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274985600.735,
+        "observed_monotonic_ms": 7445248701.265784,
+        "expires_monotonic_ms": 7445249701.265784,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 3463.546838760376,
+        "p50_ms": 3463.831036567688,
+        "p90_ms": 3464.0933742523193,
+        "release_cdf": [
+          [
+            3463.546838760376,
+            0.19999999999999996
+          ],
+          [
+            3463.6527891159058,
+            0.3999999999999999
+          ],
+          [
+            3463.831036567688,
+            0.5999999999999999
+          ],
+          [
+            3463.8893070220947,
+            0.7999999999999999
+          ],
+          [
+            3464.0933742523193,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 3463.7817001342773,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274986100.9524,
+        "observed_monotonic_ms": 7445249201.483948,
+        "expires_monotonic_ms": 7445250201.483948,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 2963.3286752700806,
+        "p50_ms": 2963.6128730773926,
+        "p90_ms": 2963.875210762024,
+        "release_cdf": [
+          [
+            2963.3286752700806,
+            0.19999999999999996
+          ],
+          [
+            2963.4346256256104,
+            0.3999999999999999
+          ],
+          [
+            2963.6128730773926,
+            0.5999999999999999
+          ],
+          [
+            2963.6711435317993,
+            0.7999999999999999
+          ],
+          [
+            2963.875210762024,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 2963.56440448761,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274986601.262,
+        "observed_monotonic_ms": 7445249701.792953,
+        "expires_monotonic_ms": 7445250701.792953,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 2463.01967048645,
+        "p50_ms": 2463.303868293762,
+        "p90_ms": 2463.5662059783936,
+        "release_cdf": [
+          [
+            2463.01967048645,
+            0.19999999999999996
+          ],
+          [
+            2463.12562084198,
+            0.3999999999999999
+          ],
+          [
+            2463.303868293762,
+            0.5999999999999999
+          ],
+          [
+            2463.362138748169,
+            0.7999999999999999
+          ],
+          [
+            2463.5662059783936,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 2463.2551679611206,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274987101.5884,
+        "observed_monotonic_ms": 7445250202.119551,
+        "expires_monotonic_ms": 7445251202.119551,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 1962.6930723190308,
+        "p50_ms": 1962.9772701263428,
+        "p90_ms": 1963.2396078109741,
+        "release_cdf": [
+          [
+            1962.6930723190308,
+            0.19999999999999996
+          ],
+          [
+            1962.7990226745605,
+            0.3999999999999999
+          ],
+          [
+            1962.9772701263428,
+            0.5999999999999999
+          ],
+          [
+            1963.0355405807495,
+            0.7999999999999999
+          ],
+          [
+            1963.2396078109741,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1962.9285926818848,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274987301.6482,
+        "observed_monotonic_ms": 7445250402.1809635,
+        "expires_monotonic_ms": 7445251402.1809635,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 1762.6316595077515,
+        "p50_ms": 1762.9158573150635,
+        "p90_ms": 1763.1781949996948,
+        "release_cdf": [
+          [
+            1762.6316595077515,
+            0.19999999999999996
+          ],
+          [
+            1762.7376098632812,
+            0.3999999999999999
+          ],
+          [
+            1762.9158573150635,
+            0.5999999999999999
+          ],
+          [
+            1762.9741277694702,
+            0.7999999999999999
+          ],
+          [
+            1763.1781949996948,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1762.8687734603882,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274987501.797,
+        "observed_monotonic_ms": 7445250602.32953,
+        "expires_monotonic_ms": 7445251602.32953,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 1562.4830932617188,
+        "p50_ms": 1562.7672910690308,
+        "p90_ms": 1563.029628753662,
+        "release_cdf": [
+          [
+            1562.4830932617188,
+            0.19999999999999996
+          ],
+          [
+            1562.5890436172485,
+            0.3999999999999999
+          ],
+          [
+            1562.7672910690308,
+            0.5999999999999999
+          ],
+          [
+            1562.8255615234375,
+            0.7999999999999999
+          ],
+          [
+            1563.029628753662,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1562.7198495864868,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274987701.9797,
+        "observed_monotonic_ms": 7445250802.509511,
+        "expires_monotonic_ms": 7445251802.509511,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 1362.3031120300293,
+        "p50_ms": 1362.5873098373413,
+        "p90_ms": 1362.8496475219727,
+        "release_cdf": [
+          [
+            1362.3031120300293,
+            0.19999999999999996
+          ],
+          [
+            1362.409062385559,
+            0.3999999999999999
+          ],
+          [
+            1362.5873098373413,
+            0.5999999999999999
+          ],
+          [
+            1362.645580291748,
+            0.7999999999999999
+          ],
+          [
+            1362.8496475219727,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1362.5373106002808,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274987902.1143,
+        "observed_monotonic_ms": 7445251002.646245,
+        "expires_monotonic_ms": 7445252002.646245,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 1162.1663780212402,
+        "p50_ms": 1162.4505758285522,
+        "p90_ms": 1162.7129135131836,
+        "release_cdf": [
+          [
+            1162.1663780212402,
+            0.19999999999999996
+          ],
+          [
+            1162.27232837677,
+            0.3999999999999999
+          ],
+          [
+            1162.4505758285522,
+            0.5999999999999999
+          ],
+          [
+            1162.508846282959,
+            0.7999999999999999
+          ],
+          [
+            1162.7129135131836,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1162.4030895233154,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274988102.2922,
+        "observed_monotonic_ms": 7445251202.824703,
+        "expires_monotonic_ms": 7445252202.824703,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 961.9879198074341,
+        "p50_ms": 962.2721176147461,
+        "p90_ms": 962.5344552993774,
+        "release_cdf": [
+          [
+            961.9879198074341,
+            0.19999999999999996
+          ],
+          [
+            962.0938701629639,
+            0.3999999999999999
+          ],
+          [
+            962.2721176147461,
+            0.5999999999999999
+          ],
+          [
+            962.3303880691528,
+            0.7999999999999999
+          ],
+          [
+            962.5344552993774,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 962.2249412536621,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274988302.371,
+        "observed_monotonic_ms": 7445251402.903336,
+        "expires_monotonic_ms": 7445252402.903336,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 761.9092874526978,
+        "p50_ms": 762.1934852600098,
+        "p90_ms": 762.4558229446411,
+        "release_cdf": [
+          [
+            761.9092874526978,
+            0.19999999999999996
+          ],
+          [
+            762.0152378082275,
+            0.3999999999999999
+          ],
+          [
+            762.1934852600098,
+            0.5999999999999999
+          ],
+          [
+            762.2517557144165,
+            0.7999999999999999
+          ],
+          [
+            762.4558229446411,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 762.1458787918091,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274988502.4575,
+        "observed_monotonic_ms": 7445251602.987878,
+        "expires_monotonic_ms": 7445252602.987878,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 561.8247451782227,
+        "p50_ms": 562.1089429855347,
+        "p90_ms": 562.371280670166,
+        "release_cdf": [
+          [
+            561.8247451782227,
+            0.19999999999999996
+          ],
+          [
+            561.9306955337524,
+            0.3999999999999999
+          ],
+          [
+            562.1089429855347,
+            0.5999999999999999
+          ],
+          [
+            562.1672134399414,
+            0.7999999999999999
+          ],
+          [
+            562.371280670166,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 562.0596008300781,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274988702.5845,
+        "observed_monotonic_ms": 7445251803.114215,
+        "expires_monotonic_ms": 7445252803.114215,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 361.69840812683105,
+        "p50_ms": 361.98260593414307,
+        "p90_ms": 362.2449436187744,
+        "release_cdf": [
+          [
+            361.69840812683105,
+            0.19999999999999996
+          ],
+          [
+            361.80435848236084,
+            0.3999999999999999
+          ],
+          [
+            361.98260593414307,
+            0.5999999999999999
+          ],
+          [
+            362.0408763885498,
+            0.7999999999999999
+          ],
+          [
+            362.2449436187744,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 361.9323139190674,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274988902.7722,
+        "observed_monotonic_ms": 7445252003.303742,
+        "expires_monotonic_ms": 7445253003.303742,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445248159.720923,
+        "p10_ms": 161.50888061523438,
+        "p50_ms": 161.7930784225464,
+        "p90_ms": 162.05541610717773,
+        "release_cdf": [
+          [
+            161.50888061523438,
+            0.19999999999999996
+          ],
+          [
+            161.61483097076416,
+            0.3999999999999999
+          ],
+          [
+            161.7930784225464,
+            0.5999999999999999
+          ],
+          [
+            161.85134887695312,
+            0.7999999999999999
+          ],
+          [
+            162.05541610717773,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 161.74472427368164,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274989066.2234,
+        "observed_monotonic_ms": 7445252166.747058,
+        "expires_monotonic_ms": 7445253166.747058,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 4004.661477088928,
+        "p50_ms": 4004.9456748962402,
+        "p90_ms": 4005.2080125808716,
+        "release_cdf": [
+          [
+            4004.661477088928,
+            0.16666666666666663
+          ],
+          [
+            4004.767427444458,
+            0.33333333333333326
+          ],
+          [
+            4004.9456748962402,
+            0.5
+          ],
+          [
+            4005.003562927246,
+            0.6666666666666666
+          ],
+          [
+            4005.003945350647,
+            0.8333333333333333
+          ],
+          [
+            4005.2080125808716,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 4004.889546394348,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274989603.2554,
+        "observed_monotonic_ms": 7445252703.784638,
+        "expires_monotonic_ms": 7445253703.784638,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 3467.623896598816,
+        "p50_ms": 3467.908094406128,
+        "p90_ms": 3468.1704320907593,
+        "release_cdf": [
+          [
+            3467.623896598816,
+            0.16666666666666663
+          ],
+          [
+            3467.7298469543457,
+            0.33333333333333326
+          ],
+          [
+            3467.908094406128,
+            0.5
+          ],
+          [
+            3467.965982437134,
+            0.6666666666666666
+          ],
+          [
+            3467.9663648605347,
+            0.8333333333333333
+          ],
+          [
+            3468.1704320907593,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 3467.857675552368,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274990103.6619,
+        "observed_monotonic_ms": 7445253204.192612,
+        "expires_monotonic_ms": 7445254204.192612,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 2967.215923309326,
+        "p50_ms": 2967.500121116638,
+        "p90_ms": 2967.7624588012695,
+        "release_cdf": [
+          [
+            2967.215923309326,
+            0.16666666666666663
+          ],
+          [
+            2967.321873664856,
+            0.33333333333333326
+          ],
+          [
+            2967.500121116638,
+            0.5
+          ],
+          [
+            2967.558009147644,
+            0.6666666666666666
+          ],
+          [
+            2967.558391571045,
+            0.8333333333333333
+          ],
+          [
+            2967.7624588012695,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 2967.450903892517,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274990604.005,
+        "observed_monotonic_ms": 7445253704.5352745,
+        "expires_monotonic_ms": 7445254704.5352745,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 2466.873260498047,
+        "p50_ms": 2467.157458305359,
+        "p90_ms": 2467.4197959899902,
+        "release_cdf": [
+          [
+            2466.873260498047,
+            0.16666666666666663
+          ],
+          [
+            2466.9792108535767,
+            0.33333333333333326
+          ],
+          [
+            2467.157458305359,
+            0.5
+          ],
+          [
+            2467.2153463363647,
+            0.6666666666666666
+          ],
+          [
+            2467.2157287597656,
+            0.8333333333333333
+          ],
+          [
+            2467.4197959899902,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 2467.1078062057495,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274991104.4568,
+        "observed_monotonic_ms": 7445254204.984794,
+        "expires_monotonic_ms": 7445255204.984794,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 1966.4237413406372,
+        "p50_ms": 1966.7079391479492,
+        "p90_ms": 1966.9702768325806,
+        "release_cdf": [
+          [
+            1966.4237413406372,
+            0.16666666666666663
+          ],
+          [
+            1966.529691696167,
+            0.33333333333333326
+          ],
+          [
+            1966.7079391479492,
+            0.5
+          ],
+          [
+            1966.765827178955,
+            0.6666666666666666
+          ],
+          [
+            1966.766209602356,
+            0.8333333333333333
+          ],
+          [
+            1966.9702768325806,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1966.6559371948242,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274991304.5366,
+        "observed_monotonic_ms": 7445254405.066039,
+        "expires_monotonic_ms": 7445255405.066039,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 1766.342495918274,
+        "p50_ms": 1766.626693725586,
+        "p90_ms": 1766.8890314102173,
+        "release_cdf": [
+          [
+            1766.342495918274,
+            0.16666666666666663
+          ],
+          [
+            1766.4484462738037,
+            0.33333333333333326
+          ],
+          [
+            1766.626693725586,
+            0.5
+          ],
+          [
+            1766.6845817565918,
+            0.6666666666666666
+          ],
+          [
+            1766.6849641799927,
+            0.8333333333333333
+          ],
+          [
+            1766.8890314102173,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1766.5763416290283,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274991504.5684,
+        "observed_monotonic_ms": 7445254605.100452,
+        "expires_monotonic_ms": 7445255605.100452,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 1566.3080825805664,
+        "p50_ms": 1566.5922803878784,
+        "p90_ms": 1566.8546180725098,
+        "release_cdf": [
+          [
+            1566.3080825805664,
+            0.16666666666666663
+          ],
+          [
+            1566.4140329360962,
+            0.33333333333333326
+          ],
+          [
+            1566.5922803878784,
+            0.5
+          ],
+          [
+            1566.6501684188843,
+            0.6666666666666666
+          ],
+          [
+            1566.6505508422852,
+            0.8333333333333333
+          ],
+          [
+            1566.8546180725098,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1566.5445384979248,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274991704.7368,
+        "observed_monotonic_ms": 7445254805.266267,
+        "expires_monotonic_ms": 7445255805.266267,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 1366.1422681808472,
+        "p50_ms": 1366.4264659881592,
+        "p90_ms": 1366.6888036727905,
+        "release_cdf": [
+          [
+            1366.1422681808472,
+            0.16666666666666663
+          ],
+          [
+            1366.248218536377,
+            0.33333333333333326
+          ],
+          [
+            1366.4264659881592,
+            0.5
+          ],
+          [
+            1366.484354019165,
+            0.6666666666666666
+          ],
+          [
+            1366.484736442566,
+            0.8333333333333333
+          ],
+          [
+            1366.6888036727905,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1366.3759546279907,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274991904.7908,
+        "observed_monotonic_ms": 7445255005.323561,
+        "expires_monotonic_ms": 7445256005.323561,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 1166.0849742889404,
+        "p50_ms": 1166.3691720962524,
+        "p90_ms": 1166.6315097808838,
+        "release_cdf": [
+          [
+            1166.0849742889404,
+            0.16666666666666663
+          ],
+          [
+            1166.1909246444702,
+            0.33333333333333326
+          ],
+          [
+            1166.3691720962524,
+            0.5
+          ],
+          [
+            1166.4270601272583,
+            0.6666666666666666
+          ],
+          [
+            1166.4274425506592,
+            0.8333333333333333
+          ],
+          [
+            1166.6315097808838,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1166.3221893310547,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274992105.0535,
+        "observed_monotonic_ms": 7445255205.585304,
+        "expires_monotonic_ms": 7445256205.585304,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 965.8232307434082,
+        "p50_ms": 966.1074285507202,
+        "p90_ms": 966.3697662353516,
+        "release_cdf": [
+          [
+            965.8232307434082,
+            0.16666666666666663
+          ],
+          [
+            965.929181098938,
+            0.33333333333333326
+          ],
+          [
+            966.1074285507202,
+            0.5
+          ],
+          [
+            966.1653165817261,
+            0.6666666666666666
+          ],
+          [
+            966.165699005127,
+            0.8333333333333333
+          ],
+          [
+            966.3697662353516,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 966.059362411499,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274992305.1133,
+        "observed_monotonic_ms": 7445255405.645802,
+        "expires_monotonic_ms": 7445256405.645802,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 765.7627334594727,
+        "p50_ms": 766.0469312667847,
+        "p90_ms": 766.309268951416,
+        "release_cdf": [
+          [
+            765.7627334594727,
+            0.16666666666666663
+          ],
+          [
+            765.8686838150024,
+            0.33333333333333326
+          ],
+          [
+            766.0469312667847,
+            0.5
+          ],
+          [
+            766.1048192977905,
+            0.6666666666666666
+          ],
+          [
+            766.1052017211914,
+            0.8333333333333333
+          ],
+          [
+            766.309268951416,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 765.9996738433838,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274992505.2495,
+        "observed_monotonic_ms": 7445255605.781867,
+        "expires_monotonic_ms": 7445256605.781867,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 565.6266679763794,
+        "p50_ms": 565.9108657836914,
+        "p90_ms": 566.1732034683228,
+        "release_cdf": [
+          [
+            565.6266679763794,
+            0.16666666666666663
+          ],
+          [
+            565.7326183319092,
+            0.33333333333333326
+          ],
+          [
+            565.9108657836914,
+            0.5
+          ],
+          [
+            565.9687538146973,
+            0.6666666666666666
+          ],
+          [
+            565.9691362380981,
+            0.8333333333333333
+          ],
+          [
+            566.1732034683228,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 565.863447189331,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274992705.3555,
+        "observed_monotonic_ms": 7445255805.884986,
+        "expires_monotonic_ms": 7445256805.884986,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 365.523549079895,
+        "p50_ms": 365.80774688720703,
+        "p90_ms": 366.0700845718384,
+        "release_cdf": [
+          [
+            365.523549079895,
+            0.16666666666666663
+          ],
+          [
+            365.6294994354248,
+            0.33333333333333326
+          ],
+          [
+            365.80774688720703,
+            0.5
+          ],
+          [
+            365.8656349182129,
+            0.6666666666666666
+          ],
+          [
+            365.86601734161377,
+            0.8333333333333333
+          ],
+          [
+            366.0700845718384,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 365.75716495513916,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274992905.389,
+        "observed_monotonic_ms": 7445256005.919932,
+        "expires_monotonic_ms": 7445257005.919932,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445252166.316835,
+        "p10_ms": 165.48860263824463,
+        "p50_ms": 165.77280044555664,
+        "p90_ms": 166.035138130188,
+        "release_cdf": [
+          [
+            165.48860263824463,
+            0.16666666666666663
+          ],
+          [
+            165.5945529937744,
+            0.33333333333333326
+          ],
+          [
+            165.77280044555664,
+            0.5
+          ],
+          [
+            165.8306884765625,
+            0.6666666666666666
+          ],
+          [
+            165.83107089996338,
+            0.8333333333333333
+          ],
+          [
+            166.035138130188,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 165.72395420074463,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274993072.5454,
+        "observed_monotonic_ms": 7445256173.069369,
+        "expires_monotonic_ms": 7445257173.069369,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 4004.6754360198975,
+        "p50_ms": 4004.9596338272095,
+        "p90_ms": 4005.221971511841,
+        "release_cdf": [
+          [
+            4004.6754360198975,
+            0.1428571428571428
+          ],
+          [
+            4004.7813863754272,
+            0.2857142857142856
+          ],
+          [
+            4004.8460760116577,
+            0.4285714285714285
+          ],
+          [
+            4004.9596338272095,
+            0.5714285714285714
+          ],
+          [
+            4005.0175218582153,
+            0.7142857142857142
+          ],
+          [
+            4005.017904281616,
+            0.8571428571428571
+          ],
+          [
+            4005.221971511841,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 4004.9038457870483,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274993605.8142,
+        "observed_monotonic_ms": 7445256706.344719,
+        "expires_monotonic_ms": 7445257706.344719,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 3471.400086402893,
+        "p50_ms": 3471.684284210205,
+        "p90_ms": 3471.9466218948364,
+        "release_cdf": [
+          [
+            3471.400086402893,
+            0.1428571428571428
+          ],
+          [
+            3471.506036758423,
+            0.2857142857142856
+          ],
+          [
+            3471.5707263946533,
+            0.4285714285714285
+          ],
+          [
+            3471.684284210205,
+            0.5714285714285714
+          ],
+          [
+            3471.742172241211,
+            0.7142857142857142
+          ],
+          [
+            3471.742554664612,
+            0.8571428571428571
+          ],
+          [
+            3471.9466218948364,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 3471.6348457336426,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274994106.3176,
+        "observed_monotonic_ms": 7445257206.847646,
+        "expires_monotonic_ms": 7445258206.847646,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 2970.897159576416,
+        "p50_ms": 2971.181357383728,
+        "p90_ms": 2971.4436950683594,
+        "release_cdf": [
+          [
+            2970.897159576416,
+            0.1428571428571428
+          ],
+          [
+            2971.003109931946,
+            0.2857142857142856
+          ],
+          [
+            2971.0677995681763,
+            0.4285714285714285
+          ],
+          [
+            2971.181357383728,
+            0.5714285714285714
+          ],
+          [
+            2971.239245414734,
+            0.7142857142857142
+          ],
+          [
+            2971.2396278381348,
+            0.8571428571428571
+          ],
+          [
+            2971.4436950683594,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 2971.1315031051636,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274994606.761,
+        "observed_monotonic_ms": 7445257707.29063,
+        "expires_monotonic_ms": 7445258707.29063,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 2470.4541749954224,
+        "p50_ms": 2470.7383728027344,
+        "p90_ms": 2471.0007104873657,
+        "release_cdf": [
+          [
+            2470.4541749954224,
+            0.1428571428571428
+          ],
+          [
+            2470.560125350952,
+            0.2857142857142856
+          ],
+          [
+            2470.6248149871826,
+            0.4285714285714285
+          ],
+          [
+            2470.7383728027344,
+            0.5714285714285714
+          ],
+          [
+            2470.7962608337402,
+            0.7142857142857142
+          ],
+          [
+            2470.796643257141,
+            0.8571428571428571
+          ],
+          [
+            2471.0007104873657,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 2470.688091278076,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274995106.8408,
+        "observed_monotonic_ms": 7445258207.372308,
+        "expires_monotonic_ms": 7445259207.372308,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 1970.3724975585938,
+        "p50_ms": 1970.6566953659058,
+        "p90_ms": 1970.919033050537,
+        "release_cdf": [
+          [
+            1970.3724975585938,
+            0.1428571428571428
+          ],
+          [
+            1970.4784479141235,
+            0.2857142857142856
+          ],
+          [
+            1970.543137550354,
+            0.4285714285714285
+          ],
+          [
+            1970.6566953659058,
+            0.5714285714285714
+          ],
+          [
+            1970.7145833969116,
+            0.7142857142857142
+          ],
+          [
+            1970.7149658203125,
+            0.8571428571428571
+          ],
+          [
+            1970.919033050537,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1970.6083269119263,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274995306.9565,
+        "observed_monotonic_ms": 7445258407.486322,
+        "expires_monotonic_ms": 7445259407.486322,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 1770.2584829330444,
+        "p50_ms": 1770.5426807403564,
+        "p90_ms": 1770.8050184249878,
+        "release_cdf": [
+          [
+            1770.2584829330444,
+            0.1428571428571428
+          ],
+          [
+            1770.3644332885742,
+            0.2857142857142856
+          ],
+          [
+            1770.4291229248047,
+            0.4285714285714285
+          ],
+          [
+            1770.5426807403564,
+            0.5714285714285714
+          ],
+          [
+            1770.6005687713623,
+            0.7142857142857142
+          ],
+          [
+            1770.6009511947632,
+            0.8571428571428571
+          ],
+          [
+            1770.8050184249878,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1770.492733001709,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274995507.0295,
+        "observed_monotonic_ms": 7445258607.560699,
+        "expires_monotonic_ms": 7445259607.560699,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 1570.184105873108,
+        "p50_ms": 1570.46830368042,
+        "p90_ms": 1570.7306413650513,
+        "release_cdf": [
+          [
+            1570.184105873108,
+            0.1428571428571428
+          ],
+          [
+            1570.2900562286377,
+            0.2857142857142856
+          ],
+          [
+            1570.3547458648682,
+            0.4285714285714285
+          ],
+          [
+            1570.46830368042,
+            0.5714285714285714
+          ],
+          [
+            1570.5261917114258,
+            0.7142857142857142
+          ],
+          [
+            1570.5265741348267,
+            0.8571428571428571
+          ],
+          [
+            1570.7306413650513,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1570.4198179244995,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274995707.1694,
+        "observed_monotonic_ms": 7445258807.698303,
+        "expires_monotonic_ms": 7445259807.698303,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 1370.0465021133423,
+        "p50_ms": 1370.3306999206543,
+        "p90_ms": 1370.5930376052856,
+        "release_cdf": [
+          [
+            1370.0465021133423,
+            0.1428571428571428
+          ],
+          [
+            1370.152452468872,
+            0.2857142857142856
+          ],
+          [
+            1370.2171421051025,
+            0.4285714285714285
+          ],
+          [
+            1370.3306999206543,
+            0.5714285714285714
+          ],
+          [
+            1370.3885879516602,
+            0.7142857142857142
+          ],
+          [
+            1370.388970375061,
+            0.8571428571428571
+          ],
+          [
+            1370.5930376052856,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1370.2794675827026,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274995907.1777,
+        "observed_monotonic_ms": 7445259007.708536,
+        "expires_monotonic_ms": 7445260007.708536,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 1170.0362691879272,
+        "p50_ms": 1170.3204669952393,
+        "p90_ms": 1170.5828046798706,
+        "release_cdf": [
+          [
+            1170.0362691879272,
+            0.1428571428571428
+          ],
+          [
+            1170.142219543457,
+            0.2857142857142856
+          ],
+          [
+            1170.2069091796875,
+            0.4285714285714285
+          ],
+          [
+            1170.3204669952393,
+            0.5714285714285714
+          ],
+          [
+            1170.3783550262451,
+            0.7142857142857142
+          ],
+          [
+            1170.378737449646,
+            0.8571428571428571
+          ],
+          [
+            1170.5828046798706,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 1170.2714500427246,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274996107.3772,
+        "observed_monotonic_ms": 7445259207.908917,
+        "expires_monotonic_ms": 7445260207.908917,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 969.8358879089355,
+        "p50_ms": 970.1200857162476,
+        "p90_ms": 970.3824234008789,
+        "release_cdf": [
+          [
+            969.8358879089355,
+            0.1428571428571428
+          ],
+          [
+            969.9418382644653,
+            0.2857142857142856
+          ],
+          [
+            970.0065279006958,
+            0.4285714285714285
+          ],
+          [
+            970.1200857162476,
+            0.5714285714285714
+          ],
+          [
+            970.1779737472534,
+            0.7142857142857142
+          ],
+          [
+            970.1783561706543,
+            0.8571428571428571
+          ],
+          [
+            970.3824234008789,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 970.0718717575073,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274996307.5964,
+        "observed_monotonic_ms": 7445259408.126571,
+        "expires_monotonic_ms": 7445260408.126571,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 769.6182346343994,
+        "p50_ms": 769.9024324417114,
+        "p90_ms": 770.1647701263428,
+        "release_cdf": [
+          [
+            769.6182346343994,
+            0.1428571428571428
+          ],
+          [
+            769.7241849899292,
+            0.2857142857142856
+          ],
+          [
+            769.7888746261597,
+            0.4285714285714285
+          ],
+          [
+            769.9024324417114,
+            0.5714285714285714
+          ],
+          [
+            769.9603204727173,
+            0.7142857142857142
+          ],
+          [
+            769.9607028961182,
+            0.8571428571428571
+          ],
+          [
+            770.1647701263428,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 769.8526906967163,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274996507.7375,
+        "observed_monotonic_ms": 7445259608.268301,
+        "expires_monotonic_ms": 7445260608.268301,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 569.4765043258667,
+        "p50_ms": 569.7607021331787,
+        "p90_ms": 570.0230398178101,
+        "release_cdf": [
+          [
+            569.4765043258667,
+            0.1428571428571428
+          ],
+          [
+            569.5824546813965,
+            0.2857142857142856
+          ],
+          [
+            569.647144317627,
+            0.4285714285714285
+          ],
+          [
+            569.7607021331787,
+            0.5714285714285714
+          ],
+          [
+            569.8185901641846,
+            0.7142857142857142
+          ],
+          [
+            569.8189725875854,
+            0.8571428571428571
+          ],
+          [
+            570.0230398178101,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 569.7115497589111,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274996707.9382,
+        "observed_monotonic_ms": 7445259808.466563,
+        "expires_monotonic_ms": 7445260808.466563,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 369.27824211120605,
+        "p50_ms": 369.56243991851807,
+        "p90_ms": 369.8247776031494,
+        "release_cdf": [
+          [
+            369.27824211120605,
+            0.1428571428571428
+          ],
+          [
+            369.38419246673584,
+            0.2857142857142856
+          ],
+          [
+            369.4488821029663,
+            0.4285714285714285
+          ],
+          [
+            369.56243991851807,
+            0.5714285714285714
+          ],
+          [
+            369.6203279495239,
+            0.7142857142857142
+          ],
+          [
+            369.6207103729248,
+            0.8571428571428571
+          ],
+          [
+            369.8247776031494,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 369.5108232498169,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274996908.0603,
+        "observed_monotonic_ms": 7445260008.591239,
+        "expires_monotonic_ms": 7445261008.591239,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445256172.653106,
+        "p10_ms": 169.15356636047363,
+        "p50_ms": 169.43776416778564,
+        "p90_ms": 169.700101852417,
+        "release_cdf": [
+          [
+            169.15356636047363,
+            0.1428571428571428
+          ],
+          [
+            169.25951671600342,
+            0.2857142857142856
+          ],
+          [
+            169.3242063522339,
+            0.4285714285714285
+          ],
+          [
+            169.43776416778564,
+            0.5714285714285714
+          ],
+          [
+            169.4956521987915,
+            0.7142857142857142
+          ],
+          [
+            169.49603462219238,
+            0.8571428571428571
+          ],
+          [
+            169.700101852417,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 169.3887357711792,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274997079.2515,
+        "observed_monotonic_ms": 7445260179.766533,
+        "expires_monotonic_ms": 7445261179.766533,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445260179.356422,
+        "p10_ms": 4004.681589126587,
+        "p50_ms": 4004.965786933899,
+        "p90_ms": 4005.2281246185303,
+        "release_cdf": [
+          [
+            4004.681589126587,
+            0.125
+          ],
+          [
+            4004.7875394821167,
+            0.25
+          ],
+          [
+            4004.852229118347,
+            0.375
+          ],
+          [
+            4004.965786933899,
+            0.5
+          ],
+          [
+            4005.023674964905,
+            0.625
+          ],
+          [
+            4005.0240573883057,
+            0.75
+          ],
+          [
+            4005.042260169983,
+            0.875
+          ],
+          [
+            4005.2281246185303,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 4004.901156425476,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274997675.244,
+        "observed_monotonic_ms": 7445260775.764447,
+        "expires_monotonic_ms": 7445261775.764447,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445260179.356422,
+        "p10_ms": 3408.683674812317,
+        "p50_ms": 3408.967872619629,
+        "p90_ms": 3409.2302103042603,
+        "release_cdf": [
+          [
+            3408.683674812317,
+            0.125
+          ],
+          [
+            3408.7896251678467,
+            0.25
+          ],
+          [
+            3408.854314804077,
+            0.375
+          ],
+          [
+            3408.967872619629,
+            0.5
+          ],
+          [
+            3409.0257606506348,
+            0.625
+          ],
+          [
+            3409.0261430740356,
+            0.75
+          ],
+          [
+            3409.044345855713,
+            0.875
+          ],
+          [
+            3409.2302103042603,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 3408.907552719116,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274998335.1436,
+        "observed_monotonic_ms": 7445261435.665051,
+        "expires_monotonic_ms": 7445262435.665051,
+        "workflow_id": "layer-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445260179.356422,
+        "p10_ms": 2748.78307056427,
+        "p50_ms": 2749.067268371582,
+        "p90_ms": 2749.3296060562134,
+        "release_cdf": [
+          [
+            2748.78307056427,
+            0.125
+          ],
+          [
+            2748.8890209198,
+            0.25
+          ],
+          [
+            2748.9537105560303,
+            0.375
+          ],
+          [
+            2749.067268371582,
+            0.5
+          ],
+          [
+            2749.125156402588,
+            0.625
+          ],
+          [
+            2749.1255388259888,
+            0.75
+          ],
+          [
+            2749.143741607666,
+            0.875
+          ],
+          [
+            2749.3296060562134,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 2749.00789642334,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274998376.971,
+        "observed_monotonic_ms": 7445261477.504242,
+        "expires_monotonic_ms": 7445262477.504242,
+        "workflow_id": "layer-model",
+        "invocation_id": "a",
+        "context_id": "a",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445261476.9436455,
+        "p10_ms": 4004.5311031341553,
+        "p50_ms": 4004.8153009414673,
+        "p90_ms": 4005.0776386260986,
+        "release_cdf": [
+          [
+            4004.5311031341553,
+            0.125
+          ],
+          [
+            4004.637053489685,
+            0.25
+          ],
+          [
+            4004.7017431259155,
+            0.375
+          ],
+          [
+            4004.8153009414673,
+            0.5
+          ],
+          [
+            4004.873188972473,
+            0.625
+          ],
+          [
+            4004.873571395874,
+            0.75
+          ],
+          [
+            4004.8917741775513,
+            0.875
+          ],
+          [
+            4005.0776386260986,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 4004.76869392395,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "layer_kv_handoff_submitted",
+        "ts_ms": 1793274998737.3013,
+        "workflow_id": "layer-model",
+        "invocation_id": "a",
+        "context_id": "a",
+        "context_epoch": 0,
+        "session_id": "beliefkv-ae66dd03d4fcea97542b214d688d016d",
+        "session_generation": 3,
+        "beneficiary_request_id": "layer-model:b_handoff",
+        "beneficiary_invocation_id": "b",
+        "beneficiary_context_id": "b",
+        "beneficiary_context_epoch": 0,
+        "beneficiary_session_id": "beliefkv-455a11e1ec2b5bf9dd866e1cc02fb377",
+        "beneficiary_session_generation": 1,
+        "capacity_effect": "reserved_extent;no_free_page_credit",
+        "reserved_input_tokens": 8,
+        "reserved_growth_tokens": 24,
+        "checkpoint_missing_tokens": 12288,
+        "restored_decode_tail_tokens": 8,
+        "speculative_reserve_tokens": 4120,
+        "logical_admission_changed": false,
+        "donor_node_id": 28,
+        "consumer_node_id": 18,
+        "donor_tokens": 12296,
+        "reused_tokens": 12296,
+        "restored_tokens": 12296,
+        "free_extent_tokens": 0,
+        "reserved_tail_tokens": 0,
+        "consumer_index": 0,
+        "donor_nodes": 4,
+        "consumer_nodes": 4,
+        "donor_group_layers": 8,
+        "consumer_group_layers": 4,
+        "remaining_threshold_ms": 1000.0,
+        "cold_transfer_cost": true,
+        "minimum_remaining_survival": 0.75,
+        "predicted_completion_probability_within_threshold": 0.0,
+        "backup_tokens_budgeted": 12296,
+        "restore_tokens_budgeted": 12296,
+        "beneficiary_restore_bytes_budgeted": 1208745984,
+        "logical_handover_budget_ms": 0.0,
+        "dispatch_stage": "before_native_admission"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274998841.159,
+        "observed_monotonic_ms": 7445261941.668146,
+        "expires_monotonic_ms": 7445262941.668146,
+        "workflow_id": "layer-model",
+        "invocation_id": "a",
+        "context_id": "a",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445261476.9436455,
+        "p10_ms": 1155.9999694824219,
+        "p50_ms": 3540.651396751404,
+        "p90_ms": 3540.913734436035,
+        "release_cdf": [
+          [
+            1155.9999694824219,
+            0.11111111111111116
+          ],
+          [
+            3540.367198944092,
+            0.22222222222222232
+          ],
+          [
+            3540.4731492996216,
+            0.33333333333333337
+          ],
+          [
+            3540.537838935852,
+            0.4444444444444444
+          ],
+          [
+            3540.651396751404,
+            0.5555555555555556
+          ],
+          [
+            3540.7092847824097,
+            0.6666666666666666
+          ],
+          [
+            3540.7096672058105,
+            0.7777777777777777
+          ],
+          [
+            3540.727869987488,
+            0.8888888888888888
+          ],
+          [
+            3540.913734436035,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 3540.5805826187134,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1793274999341.4563,
+        "observed_monotonic_ms": 7445262441.97867,
+        "expires_monotonic_ms": 7445263441.97867,
+        "workflow_id": "layer-model",
+        "invocation_id": "a",
+        "context_id": "a",
+        "context_epoch": 0,
+        "invocation_revision_ts_ms": 7445261476.9436455,
+        "p10_ms": 655.6894454956055,
+        "p50_ms": 3040.3408727645874,
+        "p90_ms": 3040.6032104492188,
+        "release_cdf": [
+          [
+            655.6894454956055,
+            0.11111111111111116
+          ],
+          [
+            3040.0566749572754,
+            0.22222222222222232
+          ],
+          [
+            3040.162625312805,
+            0.33333333333333337
+          ],
+          [
+            3040.2273149490356,
+            0.4444444444444444
+          ],
+          [
+            3040.3408727645874,
+            0.5555555555555556
+          ],
+          [
+            3040.3987607955933,
+            0.6666666666666666
+          ],
+          [
+            3040.399143218994,
+            0.7777777777777777
+          ],
+          [
+            3040.4173460006714,
+            0.8888888888888888
+          ],
+          [
+            3040.6032104492188,
+            1.0
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": "online_workflow_command",
+        "conditional_p50_ms": 3040.2832441329956,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      }
+    ]
+  }
+}

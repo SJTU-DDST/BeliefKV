@@ -3278,3 +3278,19 @@
   warm_start_thunder_20261029/live_after_cpu.json independently rechecks the
   frozen control with1776 exact receipts/all18 arrivals and sole owned GPU.
   Keep the global optimization goal active and all complete-work results pending.
+- Warm-start ThunderAgent now completes3674 exact requests, original exit0 and
+  actual owned cleanup/fresh idle drain verified. MeanJCT1599.890513s,
+  makespan2323.047855s,output236.616305token/s. Its standalone complete reader
+  and decode evidence remain in warm_start_thunder_20261029; never use burst
+  Full as a matched JCT control. Frozen1fe85898 CPU4712+6 passes after supplying
+  the two legacy AST tests' ignored third_party dependency from the same clean
+  C5 native tree; retain the missing-dependency failures and unchanged tests.
+  Native103 and all four real17-layer8/4 GPU components pass. New24+8-to32
+  scenes preserve4 growth slots and every byte/reader/ACK dependency.
+  ModelR1 remains failed: it actually handed off12296-to12296 withzero new
+  slots, correctly failing coverage. Preserve report/cleanup and only change
+  the numerical fixture to add a normal6144-token A prefix before its16K
+  continuation. Require positive actual additional slots and independent
+  output/logprob equivalence. The exact C5 cumulative patch is now explicitly
+  selectable for qualification; model/position/sampling and complete Full
+  remain unqualified. No new full GPU comparison is registered yet.

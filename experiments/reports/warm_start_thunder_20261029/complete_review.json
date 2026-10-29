@@ -1,0 +1,209 @@
+{
+  "status": "completed_new_arrival_control_verified",
+  "observed_at": "2026-10-29T11:46:55.169419+00:00",
+  "registration": "/home/longhao/experiment/ops/warm_start_thunder_20261029_r1.registration.json",
+  "code_commit": "33a34b61c4b6dd77df8830e15df0917854a7955a",
+  "engine_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+  "requests": 3674,
+  "prompt_tokens": 145565966,
+  "output_tokens": 549671,
+  "exact_complete_work_and_stopping_verified": true,
+  "all_workflows_and_normal_tails_retained": true,
+  "two_fresh_idle_snapshots_and_actual_owned_exit_verified": true,
+  "actual_registered_configuration_observer": {
+    "source": "/home/longhao/experiment/.worktrees/beliefkv-causal-33a34b61c4b6/scripts/run_causal_comparison.py",
+    "sha256": "7d6ca4cd2445887d3e81095abd133e7ebe4407c771d57ba5521c7591d2b649e3"
+  },
+  "workflow_arrivals": {
+    "schema_version": 2,
+    "mode": "warm_start_poisson",
+    "initial_workflows": 10,
+    "rate_per_second": 0.016666666666666666,
+    "seed": 21,
+    "arrival_schedule": [
+      {
+        "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+        "offset_seconds": 0.0
+      },
+      {
+        "workflow_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+        "offset_seconds": 0.0
+      },
+      {
+        "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "offset_seconds": 0.0
+      },
+      {
+        "workflow_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+        "offset_seconds": 0.0
+      },
+      {
+        "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+        "offset_seconds": 0.0
+      },
+      {
+        "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+        "offset_seconds": 0.0
+      },
+      {
+        "workflow_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+        "offset_seconds": 0.0
+      },
+      {
+        "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "offset_seconds": 0.0
+      },
+      {
+        "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+        "offset_seconds": 0.0
+      },
+      {
+        "workflow_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+        "offset_seconds": 0.0
+      },
+      {
+        "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+        "offset_seconds": 10.815783166065065
+      },
+      {
+        "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+        "offset_seconds": 81.04166756466988
+      },
+      {
+        "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa",
+        "offset_seconds": 141.51313329216515
+      },
+      {
+        "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "offset_seconds": 180.64501932010776
+      },
+      {
+        "workflow_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "offset_seconds": 195.24689290116413
+      },
+      {
+        "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+        "offset_seconds": 289.642903063977
+      },
+      {
+        "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+        "offset_seconds": 388.61298410827607
+      },
+      {
+        "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+        "offset_seconds": 431.7154977718898
+      }
+    ],
+    "arrival_schedule_sha256": "e6d70ce97d4fa02893579140f913c51a7685a18252b35a2de373e18c8b48f72a",
+    "jct_boundary": "scheduled_workflow_arrival_to_workflow_end"
+  },
+  "metrics": {
+    "mean_jct_s": 1599.890513215065,
+    "makespan_s": 2323.0478552246095,
+    "end_to_end_output_tokens_per_s": 236.61630506826288,
+    "decode": {
+      "batches": 97205,
+      "request_steps": 549531,
+      "worker_ms": 1604526.9781025127,
+      "request_step_ms": 12997238.973415457,
+      "output_tokens": 545997,
+      "context_tokens": 30624152825,
+      "graph_batches": 97205,
+      "graph_request_steps": 549531,
+      "configured_bucket_rows": 634914,
+      "batches_needing_padding": 44623,
+      "worker_ms_in_batches_needing_padding": 1039336.1466722563,
+      "mean_batch": 5.653320302453578,
+      "worker_weighted_mean_batch": 8.100355525829661,
+      "worker_interval_sum_s": 1604.5269781025127,
+      "mean_worker_interval_ms": 16.506630092099304,
+      "output_tokens_per_worker_interval_second": 340.28533483786424,
+      "mean_observed_request_context_tokens": 55727.798477246964,
+      "graph_batch_fraction": 1.0,
+      "configured_padding_rows_per_real_graph_row": 0.1553743100935161
+    }
+  },
+  "streaming_response_metrics": {
+    "workflow_ttft_ms": {
+      "count": 18,
+      "mean": 75363.38010438283,
+      "p50": 62799.01570940018,
+      "p75": 85605.36189389229,
+      "p90": 121209.28523330693,
+      "p95": 167059.7267683506,
+      "p99": 167315.2847228718,
+      "max": 167379.17421150208
+    },
+    "workflow_max_post_first_ready_output_gap_ms": {
+      "count": 18,
+      "mean": 67508.7176844279,
+      "p50": 59370.316345214844,
+      "p75": 77939.70924139023,
+      "p90": 112970.27636060715,
+      "p95": 147162.12918152788,
+      "p99": 244266.88802273726,
+      "max": 268543.07773303986
+    }
+  },
+  "paper_state": {
+    "policy": "thunderagent_public_single_backend_acting_decay",
+    "author_commit": "7ddc8610270e56d3b109eed8796b3a4360fc67c9",
+    "program_identity": "invocation_id",
+    "future_information_used": false,
+    "native_capacity_authority_preserved": true,
+    "scope": "single_backend_exact_token_ingress_policy_adaptation",
+    "streaming_context_accounting": "observed_native_outputs_at_arrival_and_five_second_control",
+    "control_capacity_snapshot": {
+      "remaining_capacity_tokens": 805198,
+      "active_acting_programs": 0,
+      "active_reasoning_programs": 0,
+      "paused_pending_programs": 0,
+      "capacity_blocked_pending_programs": 0,
+      "oldest_pending_seconds": 0.0
+    },
+    "capacity_tokens": 805198,
+    "programs": 0,
+    "active_programs": 0,
+    "pending_requests": 0,
+    "counts": {
+      "control_ticks": 465,
+      "resumed": 1373,
+      "registered": 3674,
+      "streaming_progress_checks": 3923,
+      "streaming_progress_updates": 3557,
+      "deferred_selections": 405889,
+      "completed": 3674,
+      "programs_retired": 110
+    },
+    "acting_token_decay": true,
+    "decay_half_life_s": 1.0,
+    "decay_scope": "periodic_resume_only",
+    "decay_age_source": "observed_native_completion_monotonic",
+    "undiscounted_capacity_enforced": true,
+    "resume_capacity_tokens_at_last_control": 805198,
+    "physical_capacity_credit": false
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/ops/warm_start_thunder_20261029_r1.registration.json": "6c939970b66ad2559200658cd5b0c173b8e8231d22f1e08d31182639b50040c8",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_thunder_20261029_r1/thunderagent_acting_decay/replay/summary.json": "571044c0ec4e5227b6748e6aca562d54a1e18738ff18d92e48fcdb284af2f2ef",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_thunder_20261029_r1/thunderagent_acting_decay/server/server_info.json": "53be7ca36a649582fc0a4c01f97ef8f85ae6728aaea5b353d851997ba2ee2243",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_thunder_20261029_r1/thunderagent_acting_decay/server/native_telemetry_status.json": "68f4917c05e2b7521075b414748aa36d5cedb2646aba5282c135a9f1a2350a99",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_thunder_20261029_r1/thunderagent_acting_decay/server/native_capacity_census.json": "085386cd3901d6c2a3d5440c670ffe699c4fbd383cef55fb1daf9f4349873418",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_thunder_20261029_r1/thunderagent_acting_decay/opportunities/admission_opportunities.jsonl": "a8751385323af52da2a2bb80a94b574ad75683432b860bdb7486075642153cdf",
+    "/home/longhao/experiment/ops/warm_start_thunder_20261029_r1.registration.state.json": "39557c55199cf7217d6522f4d6c7e102bfaa2d6d38ddf40c96f42cca1107c5bd",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_thunder_20261029_r1/thunderagent_acting_decay/telemetry_drain.json": "82e87e404d6d29b55f587ab4130abd388a3309f37849782bda1b799f2b7b3c53",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_thunder_20261029_r1/thunderagent_acting_decay/owned_process_cleanup.json": "5b4c6d6b14a37fe86f4f691b2bb11f5f658e4b0ea2265cfcaa9266310f9b23af",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/warm_start_thunder_20261029/arrivals.json": "a20ccd553d2c81dc9f51b0f75b154a854936ab700c5412eedd9cd347a7ada2f9",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/warm_start_thunder_20261029/complete_review.py": "6bb970deecd94c5cc063db3e1399d12a24397c9512a7e3b7ce23136e19e84c21",
+    "/home/longhao/experiment/BeliefKV/scripts/plot_causal_decode_diagnostics.py": "9615e342e992e1a6b6da796e5133c00cf754eaff04e51248add1a705b12fb68e",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/warm_start_thunder_20261029/complete_decode_evidence.json.gz": "0fa0479a31b964be21825aba752ad5735eca6ea38daa2593004022046ca9462b"
+  },
+  "matched_predictive_result_available": false,
+  "performance_accepted": false,
+  "limitations": [
+    "Warm start is finite and does not establish stationary system capacity.",
+    "Historical burst results do not share the arrival/JCT contract.",
+    "V311 tool timing is the declared synthetic observable-category overlay.",
+    "Worker intervals include runtime and waits, not exclusive GPU kernels."
+  ]
+}
