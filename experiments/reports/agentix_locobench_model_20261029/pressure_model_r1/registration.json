@@ -1,0 +1,11 @@
+{
+  "predecessor": "/home/longhao/experiment/ops/tokencake_fragmented_capacity_20261029_r1.registration.json",
+  "application": "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-98a19139380c",
+  "engine": "/home/longhao/experiment/.worktrees/sglang-agentx-baseline-c489dbb85265-98a19139380c",
+  "components": "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/components/summary.json",
+  "cpu_evidence": "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/cpu/native_consumer_cpu.json",
+  "port": 18713,
+  "fixture": "pressure",
+  "operator_commit": "dd8ee5276e65968b6f2285d36f00ccae82e90b39",
+  "failed_tokencake_skipped_by_user": true
+}

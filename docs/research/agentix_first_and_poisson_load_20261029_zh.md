@@ -67,6 +67,13 @@ pressure_model_r1 已单独启动，用完整模型验证 Device32768-token/Host
 的有限 backing 进展，正式参数、普通 sampler/batch24 与完整 JCT 仍待完成。
 TokenCake 不重试，新到达率 GPU 实验继续等待 Agentix。
 
+pressure_model_r1 随后也已完成六个真实模型调用，227 次实际暂停/恢复，
+三对生成 token 与 logprob 全部相同，差异均为 0.0。backing 的
+drain_rounds=91 是控制轮次数，不是 91 次独立物理 Host 耗尽。
+原始响应独立复核、两次新鲜 idle 和 actual owned cleanup 全部通过，
+没有遗留 GPU 进程。其 model_review.json 明确保留完整正式 workload
+尚未验证、performance_accepted=false 的边界。
+
 ## 为什么 0.5 接近突发
 
 当前完整可比工作量是 18 个原项目、3674 请求、549671 个输出 token。

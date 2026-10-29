@@ -3185,8 +3185,10 @@
   settle; all three token vectors and logprobs match serial references exactly.
   Raw review, fresh idle and actual owned exit are under
   experiments/reports/agentix_locobench_model_20261029/logprob_prefix_cycle_r1/.
-  pressure_model_r1 is the next actual-model finite-backing check, not a full
-  baseline. Agentix formal parameters, ordinary sampler/batch24 and complete
+  pressure_model_r1 also passes all six real calls with227 native pauses/resumes,
+  identical token/logprob vectors and actual owned exit. Its91 backing drain
+  rounds are control observations, not independent physical Host exhaustions.
+  Neither fixture is a full baseline. Formal parameters, ordinary sampler/batch24 and complete
   V230/V311 still require qualification; never promote the tiny fixture quanta.
   No TokenCake retry, extra native/V345 run or arrival-rate sweep is authorized
   by these component/model results. Offline sizing recommends initial Poisson
