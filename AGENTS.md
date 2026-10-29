@@ -3251,3 +3251,14 @@
   mixed off,running/decode24. Frozen baseline GPU work and local CPU changes
   may overlap; never overlap another GPU experiment or modify frozen sources.
   Use experiments/reports/warm_start_thunder_20261029/ for named evidence.
+- The authorized warm-start acting-decay ThunderAgent control now runs from
+  frozen33a34b61/common11b84 on18851, registration
+  ops/warm_start_thunder_20261029_r1.registration.json. Actual bound CPU883
+  retains every prior726 identity, no failures/skips. Independent19:08:17
+  Asia/Shanghai live_start verifies nice0 watcher1270225/server1270700/
+  sole GPU1271085 and172 exact completed receipts, plus15 delivered arrivals
+  including the10 initial roots. These are live prefixes, not complete JCT,
+  throughput or pressure qualification. Preserve its frozen sources and sole
+  GPU ownership while developing predictive on CPU; Agentix and TokenCake
+  remain deferred, no competing GPU job is queued. All comparison methods must
+  use the same warm-start manifest; burst controls are historical only.

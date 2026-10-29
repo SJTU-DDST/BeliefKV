@@ -44,3 +44,28 @@ CPU 首轮 58 项到达相关检查通过；完整共同 causal/paper 回归仍�
 冻结对照源码后，predictive 的 CPU 优化可以继续；新增 GPU 验证顺序执行，
 不能修改运行中的冻结源码或与该对照争用 GPU。
 当前只有已生成配置，尚未宣称正式运行、完整结果或性能收益。
+
+## 实际启动
+
+上述最后一段保留准备时点的含义。现已从干净 `33a34b61c4b6` 冻结副本
+启动正式 `thunderagent_acting_decay`，端口 18851。
+完整 CPU 检查通过 883 项，无失败、跳过或丢失旧 726 项身份；原生树
+和源码在检查前后不变。保留第一次 live 读取尚无完整回执的等待状态，
+没有将空前缀作为开始服务的证明。
+
+2026-10-29 19:08:17（Asia/Shanghai）的独立 `live_start.json` 核验
+watcher1270225、server1270700、driver1272091、GPU scheduler1271085
+的实际身份、所有权、nice0 和唯一 GPU 进程。前 172 个完成请求的输入、
+输出、摘要及原生停止条件与完整源相同，已实际投递 15 个 workflow，
+其中 10 个 offset 为零，其余时刻与冻结表一致。运行中的前缀不计算
+完整 JCT 或全程吞吐。
+
+注册入口：
+`/home/longhao/experiment/ops/warm_start_thunder_20261029_r1.registration.json`。
+运行目录：
+`experiments/raw/warm_start_thunder_20261029_r1/thunderagent_acting_decay/`。
+CPU、注册与 live 证据保存在本页同名报告目录。后续 live 观测使用新名字，
+不覆盖原始启动证据、不增加主实验版本号。
+
+predictive 开发使用主应用和独立 native 工作树；冻结对照不包含这些改动。
+下一步对比仍需相同到达表和完整工作，旧突发实验只作历史参考。

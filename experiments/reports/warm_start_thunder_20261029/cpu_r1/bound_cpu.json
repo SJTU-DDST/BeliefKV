@@ -1,0 +1,84 @@
+{
+  "observed_at": "2026-10-29T10:59:16.857059+00:00",
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/test_agentx_baseline_operator.py",
+    "tests/test_arrival_schedule.py",
+    "tests/test_causal_comparison.py",
+    "tests/test_causal_paper_qualification.py",
+    "tests/test_causal_replay_arrivals.py",
+    "tests/test_causal_replay_delivery.py",
+    "tests/test_causal_sampling_benchmark.py",
+    "tests/test_kvflow.py",
+    "tests/test_kvflow_native_cache.py",
+    "tests/test_kvflow_native_sessions.py",
+    "tests/test_kvflow_runtime.py",
+    "tests/test_paper_baseline_comparison.py",
+    "tests/test_paper_baseline_runtime.py",
+    "tests/test_paper_baselines.py",
+    "tests/test_paper_prefix_gpu_qualification.py",
+    "tests/test_paper_prefix_transfers.py",
+    "tests/test_position_replay_calibration.py",
+    "tests/test_progressive_native_restore.py",
+    "tests/test_tokencake.py",
+    "tests/test_tokencake_capacity.py",
+    "tests/test_tokencake_gpu_qualification.py",
+    "tests/test_tokencake_lifecycle.py",
+    "tests/test_tokencake_native_capacity.py",
+    "tests/test_tokencake_paper_runtime.py",
+    "tests/test_tokencake_public_runtime.py",
+    "tests/test_tokencake_runtime.py",
+    "tests/test_tool_timing_overlay.py",
+    "--tb=short",
+    "--junitxml=/home/longhao/experiment/BeliefKV/experiments/reports/warm_start_thunder_20261029/cpu_r1/bound_cpu.xml"
+  ],
+  "returncode": 0,
+  "totals": {
+    "tests": 883,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0
+  },
+  "unique_test_identities": 883,
+  "all_prior_726_identities_retained": true,
+  "native_engine": {
+    "commit": "fa5cb52afaeaad1f59f6d3eb2c5cf124f72bb491",
+    "dirty": true,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [
+      "python/sglang/srt/managers/cache_controller.py",
+      "python/sglang/srt/managers/scheduler.py",
+      "python/sglang/srt/mem_cache/allocator/token.py",
+      "python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py",
+      "test/srt/test_beliefkv_transfer_receipts.py"
+    ],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "c6852b16ec683ee2b683ce7f2bab9823d140cf0a2d39d459af9266d2e2770b00",
+    "canonical_patch": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-warm-start-thunder-33a34b61/patches/sglang-v0.5.20-beliefkv-staging.patch",
+      "sha256": "d7dfd6959fb53b998829f1ea69b89ba99234b8fa6ecb78aeaa624e2d2b28044a",
+      "expected_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+      "actual_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+      "matches_worktree": true,
+      "covered_untracked_paths": []
+    },
+    "state_sha256": "68d19c0823eddfd81f2f89eaf18de6748326d150dba8a1412ec6d2d1d0e6de4c"
+  },
+  "sources_unchanged_during_execution": true,
+  "source_manifest": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/warm_start_thunder_20261029/cpu_r1/bound_cpu.sources.json",
+    "sha256": "917e7ac3b291512645e61c5d7aeaac2ef6923dbdd7ebc20da27095a6ca220a73"
+  },
+  "report": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/warm_start_thunder_20261029/cpu_r1/bound_cpu.xml",
+    "sha256": "ed231f8fa0eed659fd67f9238c073e354c7600fe53eb4377975841104a461112"
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/kvflow_radix_session_20261028/causal_entry_bound_cpu.xml": "f94f3ec90c9b85a42847c683ab5acce346ae474d300b17bbb987f887a960a075"
+  },
+  "GPU_experiment_started": false,
+  "performance_accepted": false
+}
