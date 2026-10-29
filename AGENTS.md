@@ -2880,3 +2880,35 @@
   It separately counts native forwards and preserves unknown associations;
   syntax checks alone are not complete mechanism evidence. Run sealed
   prefetch accounting first and retain all original classifiers and reports.
+- Source-identical Full R2 now completes3674 requests/145565966 input/
+  549671 output and18 normal tails with two fresh idle snapshots and actual
+  owned exit. MeanJCT1625.203855/output238.306858 improves4.26370%/2.11468%
+  versus the same single V345; R1 was4.94374%/2.64506%. Keep modest repeat
+  gains and the single-control/engine limitation explicit. Against preadmission,
+  R2 JCT improves5.990789s but output regresses.08057%; do not discard it.
+  All18 actual critical chains match preadmission; full waiting-7.479293s/
+  service+1.543954s. Fixed old2973 tool successors retain service+7.109160s,
+  versus R1+2.166674/old grouped+24.981494s; do not mix these populations.
+  All465 demand stages/720 member associations prove exact ACK/later service,
+  2375979270144bytes and untagged byte remainder0. Handoff0 despite8/4 enabled.
+  All1049 sibling journals/1080 attempts verify;31 multi-member journals
+  represent30 native forwards.239/241 grant associations verify,2 remain
+  unknown. All54 final EOS/four known guards pass. Keep tool prefetch0,
+  all normal tails and negative results, other baselines/ablations deferred,
+  and the overall goal active. See demand_pipeline_repeat_result_20261028_zh.md.
+- Separate clean5cf3bb8b ACK repair now passes all4 current real GPU components
+  and deterministic unforced model:24583tokens/2416607232bytes normal H2D,
+  exact ACK/later prefill,two post-stage resident decode completions before
+  ACK,A512/B8 independent cold outputs/logprobs0. Independent readmission_gpu_review
+  rechecks raw bodies,source/CPU4102,native bytes/progress and actual server
+  exit/no GPU process. Actual retry_native_capacity_check=false in this model;
+  its stale-full branch remains real-native CPU evidence, not observed GPU
+  activation or a measured performance gain. Preserve ordinary-math failures.
+  New repair position/full performance remains pending; R2 excludes the repair.
+- The generic three-arm plot CLI correctly refuses engine_tree differences.
+  repeat_control_plots reproduces that refusal, then permits only the exact
+  already-reviewed729aa0caa7a1/11b84f7c3198 pair with every other contract
+  equal and explicit different-engine titles. Both complete trend/distribution
+  figures are inspected; the generic matcher and original results stay intact.
+  The repaired model archive preserves20 source-bound inputs byte-for-byte
+  and excludes environment; no new Full performance run is implied.

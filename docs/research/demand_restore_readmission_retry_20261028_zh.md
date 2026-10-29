@@ -2,7 +2,8 @@
 
 2026-10-28。当前 main 修复需求恢复路径的一处原生满批状态遗留。
 该改动通过4102项CPU及六个子测试，保留原有4100个测试身份并增加两个。
-尚未进行该新改动的GPU或完整性能验证；已完成R1仍冻结为01510ed5。
+独立冻结5cf3bb8b现已完成GPU组件和确定性真实模型I/O验证，尚无本修复
+的完整性能结果；已完成R1/R2仍冻结为01510ed5。
 
 ## 残余 decode 回退的范围
 
@@ -96,3 +97,28 @@ ACK重试修复另冻结为
 已有完整CPU执行的相同字节，不重新运行同一套测试，也不提供GPU证明。
 后续仍须等R2实际退出，并完成新源码的component、model和position
 验证后，才可登记修复后的正式FULL。
+
+## 新源码GPU与模型I/O
+
+R2完整退出且GPU无compute进程后，5cf3bb8b的四项实际GPU组件全部通过：
+驻留访问、多成员选择、无decode回退和取消后共享前缀；恢复K/V逐项相同，
+Device/Host最终空闲量分别回到128/257。证据为
+`gpu_components_ack_retry_r1.json`，不是全模型性能。
+
+同源码确定性模型随后通过七个未强制输出的请求：24583token、
+2416607232bytes正常H2D，精确原生ACK与后续prefill均验证；两个暂存后
+提交的resident decode批次在ACK尚未完成时实际完成。A的512个token、
+B的八个token及logprob与独立冷参考相同，最大差均为零。
+
+`readmission_gpu_review.py/.json`独立重读实际请求/响应、原生传输、
+服务与清理，核对4102项CPU来源、四项组件及当前冻结源码。
+模型server及组件进程已实际退出，核对时GPU无compute进程。
+实际使用FA3 deterministic/pytorch，限于I/O数值fixture；旧普通
+FA3/flashinfer长greedy等价性失败仍保留，正式性能数学未改变。
+
+本fixture的`retry_native_capacity_check=false`：它验证新源码的正常
+KV恢复和模型进展，没有进入旧满批标志重试分支。该分支继续由真实native
+CPU调度用例证明，不冒称为GPU中实际触发或已测JCT收益。
+新的position与完整修复方案性能仍待验证。
+原始模型证据另外保存为`gpu_model_ack_retry_r1_raw.tar.gz`；已逐字节
+核对归档中的20个source-bound模型输入，未归档environment文件。

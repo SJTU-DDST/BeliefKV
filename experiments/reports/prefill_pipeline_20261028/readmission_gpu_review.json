@@ -1,0 +1,159 @@
+{
+  "observed_at": "2026-10-29T01:21:05.866871+00:00",
+  "scope": "Actual repaired-source deterministic KV I/O and normal DMA progress; no JCT claim.",
+  "application": {
+    "commit": "5cf3bb8bf40daf48ee001988e60f46e517bdd345",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "44c75965395343d024972f038441f343c1b6cc8980180ab6057f8072f7e2018e"
+  },
+  "native_tree": "729aa0caa7a1ffac84463f46b3d1843d1a6a22e4",
+  "cpu_cases": 4102,
+  "component_scenarios": 4,
+  "independent_exact_outputs": {
+    "actual_greedy_tokens_equal": true,
+    "maximum_logprob_delta": {
+      "a_resident": 0.0,
+      "b_demand": 0.0
+    }
+  },
+  "normal_dma_model_progress": {
+    "resident_decode_completed_while_native_ack_pending": true,
+    "ordinary_native_h2d_without_artificial_delay": true,
+    "staged_native_full_tokens": 24583,
+    "completed_batches": [
+      {
+        "forward_iter": 75,
+        "request_id": "demand-model:a_resident",
+        "output_tokens": 22,
+        "batch_launch_monotonic_ms": 7406724483.042022,
+        "completion_observed_monotonic_ms": 7406724506.853241
+      },
+      {
+        "forward_iter": 76,
+        "request_id": "demand-model:a_resident",
+        "output_tokens": 23,
+        "batch_launch_monotonic_ms": 7406724484.902727,
+        "completion_observed_monotonic_ms": 7406724529.985369
+      }
+    ],
+    "scope": "processed actual model results while immutable ACK query was false; not kernel timing"
+  },
+  "native_ack": {
+    "counts": {
+      "matched_staging_episodes": 1,
+      "native_selected_requests": 1,
+      "native_full_tokens": 24583,
+      "native_h2d_bytes": 2416607232
+    },
+    "episodes": [
+      {
+        "request_id": "demand-model:b_demand",
+        "workflow_id": "demand-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "session_id": "beliefkv-599b478284befe1a712d9b0d9a607e34",
+        "session_generation": 1,
+        "context_epoch": 0,
+        "attempt_id": 0,
+        "native_batch_size": 1,
+        "requests": [
+          {
+            "request_id": "demand-model:b_demand",
+            "workflow_id": "demand-model",
+            "invocation_id": "b",
+            "context_id": "b",
+            "context_epoch": 0,
+            "attempt_id": 0,
+            "session_id": "beliefkv-599b478284befe1a712d9b0d9a607e34",
+            "session_generation": 1
+          }
+        ],
+        "native_submit_ts_ms": 1793236461380.6714,
+        "journal_ts_ms": 1793236461382.0388,
+        "native_node_ids": [
+          36
+        ],
+        "native_full_tokens": 24583,
+        "native_h2d_bytes": 2416607232,
+        "staged_monotonic_ms": 7406724482.617537,
+        "monotonic_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec"
+      }
+    ],
+    "exact_native_ack_matches_verified": true,
+    "scope": "staged native demand only; no speculative or request cache-hit credit",
+    "first_service_and_hidden_transfer_time_proven": false
+  },
+  "subsequent_native_service": {
+    "counts": {
+      "members_with_subsequent_native_service": 1
+    },
+    "members": [
+      {
+        "request_id": "demand-model:b_demand",
+        "workflow_id": "demand-model",
+        "invocation_id": "b",
+        "context_id": "b",
+        "context_epoch": 0,
+        "attempt_id": 0,
+        "session_id": "beliefkv-599b478284befe1a712d9b0d9a607e34",
+        "session_generation": 1,
+        "status": "subsequent_native_service_verified",
+        "first_native_forward_iter": 79,
+        "first_launch_monotonic_ms": 7406724575.947549,
+        "staged_to_first_native_launch_ms": 93.33001232147217,
+        "native_completion_receipt_verified": false
+      }
+    ],
+    "all_members_have_native_service_or_explicit_cancellation": true,
+    "native_completion_receipts_required": false,
+    "native_kv_reuse_or_hidden_dma_proven": false,
+    "counting_unit": "staging episode/member association, not unique request",
+    "timing_boundary": "native run_batch entry/completed worker; not CUDA kernel time"
+  },
+  "actual_ack_native_capacity_retry_observed": false,
+  "all_recorded_model_servers_exited": true,
+  "gpu_compute_processes_absent": true,
+  "ordinary_math_long_greedy_equivalence_verified": false,
+  "deterministic_fixture_only": true,
+  "eligible_for_position_qualification": true,
+  "whole_workload_qualified": false,
+  "performance_accepted": false,
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/readmission_source_check.json": "cd5b8e105b23127a7e4a7d67c68b358b5c4bbb7b393664c5c81cdcb1cefd74bc",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/admission_retry_shared_r1_cpu.evidence.json": "ea183927894d7aa0750315eb63d4f8525a568e52917dc504b394b7748af16b18",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/admission_retry_shared_r1_cpu.sources.json": "cedbf1ece2663533b6cbbd0da6e3222772a655a47466ea030f12d3c29f5b69b8",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/gpu_components_ack_retry_r1.json": "d0a0068adcff731b8063642f4c46621bb615eb45c3f23abacc09cd6fafd874d0",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_model_20261028_r1/report.json": "9269fe9903f63713bd9bf2f96fd4db3fda264a44ed177b8a24f37456781cdec0",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_model_20261028_r1/server_info.json": "9ed8dc40ff8227f6022f9c7250ddfb675398ac888b97ad84beb4ac7fe88203b6",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_model_20261028_r1/request_b_initial.json": "ff7628d6a58e7d6e68e899694dcb89277d5e182c6805f57ed9ccebab91413a01",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_model_20261028_r1/response_b_initial.json": "89c1519b805c9635b17c92377774c5e0f444fe97d897fd5710396faa2c5ebdfb",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_model_20261028_r1/request_c.json": "47cba1ccd0aa60565f499022b2b3c1f3307101c531985c1ff63578060319e586",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_model_20261028_r1/response_c.json": "4008fc38c6afa4f40e0db5268510e1fef155e0c414acc59937ba2adcf2abf8f4",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_model_20261028_r1/request_a_initial.json": "16d878e93b8b2fc740ff61f556ec05b5c409a6b9a747bbd759d7a3e0b59fb679",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_model_20261028_r1/response_a_initial.json": "217b17358e74cee54adabd53dc516976fcb566a1cadf1bdd76376f859bda474b",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_model_20261028_r1/request_a_resident.json": "a8c48961661b1bff23bb978cec557ba26331762b60e4c038e282d7fb157c7671",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_model_20261028_r1/response_a_resident.json": "db188c28e8523ea22a2c3d40946c609452ab00a165d31ddddcdef0e30740f43b",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_model_20261028_r1/request_b_demand.json": "984eb9e17549f8739a5f4cf060e8e4ead9761671fee5a9a3c4f46fff6f2e5193",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_model_20261028_r1/response_b_demand.json": "62253a8fcfaa28162d35f245424be5b01fe6ba0e4a9c65fca0e688be6caa9d3d",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_model_20261028_r1/request_a_reference.json": "a90a3685ed3da1f532c2ae78182e6027253ee0eac9f3f319d88cfc06ad612883",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_model_20261028_r1/response_a_reference.json": "b9c5b87c8529da416c61c1f7967cfeb35fc6b7a843b114bb8c800170ad32c9e0",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_model_20261028_r1/request_b_reference.json": "d47bccb85482f31df9e4b56038d50181ce455241e679bf1f856495f8fb0a880a",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_model_20261028_r1/response_b_reference.json": "46cc42ed9ef726ca9c068a8c0992cd168f4c402b4556209b3732a9db9fb523d2",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_model_20261028_r1/arm/opportunities/admission_opportunities.jsonl": "fd34ff955b73eb43d1c5a54f717bac377d787fd955ae2de60a22908a8cc35b64",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_model_20261028_r1/arm/server/runtime_audit.jsonl": "ef119dec6d4f1b7b78aa886c7462c8446d9bffdc16ef94fad3c0ecedbd171cf2",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_model_20261028_r1/arm/server/transfer_telemetry.jsonl": "179a14a9a782d24c4e0eaeeb180c3d0d055d644a89799a20649ca2999ef97979",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_model_20261028_r1/owned_process_cleanup.json": "41a0c1275e7b00f5dd50e5cce2902729ebaabf461c0df43a8062ec92b0563d5b",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/review_current_models.py": "9b06c8d7f3eb46ecb72a5c89bbff421ffdeb66c4188484aa43e5244dd6aecb2e"
+  },
+  "operator_sha256": "4856dbe6b3ce91e7f0da987821656b8c08ce1d91e80acdd7126090e78737b6be",
+  "limitations": [
+    "The model fixture did not exercise the stale-full retry branch; its real-native CPU proof remains separate.",
+    "Deterministic fixture math is not the formal non-deterministic FA3/flashinfer benchmark mode.",
+    "Prior ordinary-math long-greedy diagnostic failures remain unchanged and unqualified.",
+    "Current position and complete workload performance remain unverified for this new repair."
+  ]
+}

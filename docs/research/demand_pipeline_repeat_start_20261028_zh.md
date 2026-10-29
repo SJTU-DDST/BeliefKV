@@ -4,6 +4,9 @@
 它重复原R1的冻结方案，用于检验4.94374% JCT、2.64506%全程吞吐
 收益是否稳定。当前main的ACK准入重试修复不包含在本轮。
 
+本启动记录保持原时点范围；现已完成的结果见
+[R2完整重复结果](demand_pipeline_repeat_result_20261028_zh.md)。
+
 ## 相同的执行对象
 
 注册为 `ops/demand_prefill_pipeline_20261028_r2.registration.json`，
