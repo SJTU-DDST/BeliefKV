@@ -23,10 +23,31 @@ def prepare(base, model, evaluation):
     training = set(predictor.metadata.get("training_projects", ()))
     calibration = set(predictor.metadata.get("calibration_projects", ()))
     held_out = set(report.get("test_projects", ()))
-    if not training or not calibration or not held_out or (
-        training & calibration or (training | calibration) & held_out
-    ):
-        raise ValueError("workflow ranking requires separate training/calibration/evaluation projects")
+    split = predictor.metadata.get("split_contract", {})
+    if split.get("mode", "project") == "project":
+        if not training or not calibration or not held_out or (
+            training & calibration or (training | calibration) & held_out
+        ):
+            raise ValueError("workflow ranking requires separate training/calibration/evaluation projects")
+    elif split.get("mode") == "capture":
+        if split != report.get("split_contract") or (
+            split.get("complete_captures_disjoint") is not True
+            or split.get("complete_workflows_disjoint") is not True
+            or split.get("unseen_project_generalization_claimed") is not False
+        ):
+            raise ValueError("workflow ranking capture holdout contract changed")
+        for suffix in ("capture_paths", "execution_sha256"):
+            populations = [
+                set(split.get(prefix + suffix, ())) for prefix in (
+                    "training_", "calibration_", "evaluation_",
+                )
+            ]
+            if not all(populations) or any(
+                populations[i] & populations[j] for i in range(3) for j in range(i)
+            ):
+                raise ValueError("workflow ranking requires separate complete captures and executions")
+    else:
+        raise ValueError("unknown workflow ranking split contract")
     env = declaration["common_environment"]
     for name in (
         "LAYER_HANDOFF", "BELIEFKV_LAYER_HANDOFF", "BELIEFKV_LAYER_HANDOFF_FREE_EXTENT",
@@ -58,6 +79,8 @@ def prepare(base, model, evaluation):
                 "kind": "logical_token_work_proxy_not_GPU_seconds",
             },
             "remaining_gpu_seconds_claimed": False,
+            "validation_scope": predictor.metadata.get("validation_scope", "unseen_projects"),
+            "split_contract": split,
         },
         "candidate_provenance": {
             "base": str(base.resolve()), "base_sha256": sha256_file(base),

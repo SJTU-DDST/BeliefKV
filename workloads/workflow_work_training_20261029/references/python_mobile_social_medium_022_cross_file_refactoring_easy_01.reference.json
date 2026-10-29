@@ -1,0 +1,38 @@
+{
+  "id": "python_mobile_social_medium_022_cross_file_refactoring_easy_01",
+  "task_category": "cross_file_refactoring",
+  "difficulty": "easy",
+  "title": "Centralize Geolocation Validation Logic into a Shared Service",
+  "description": "The GatherProof application backend has multiple handlers that process geo-tagged data. The 'incidents' handler contains a helper function to validate and format geographic coordinates. A new 'proof_rooms' feature also requires this same validation logic. To adhere to the DRY (Don't Repeat Yourself) principle and improve maintainability, this common logic needs to be extracted into a shared service file.",
+  "context_files": [
+    "gatherproof_backend//tests//unit//test_incidents_handler.py",
+    "gatherproof_backend//src//core//services.py",
+    "gatherproof_backend//src//handlers//proof_rooms.py",
+    "gatherproof_backend//src//handlers//users.py",
+    "gatherproof_backend//src//handlers//incidents.py",
+    "gatherproof_backend//src//handlers//notifications.py"
+  ],
+  "context_length": 88069,
+  "task_prompt": "Your task is to refactor the geolocation validation logic. \n1. Locate the private helper function `_validate_and_format_coordinates` within `gatherproof_backend/src/handlers/incidents.py`. \n2. Move this function to the shared services module: `gatherproof_backend/src/core/services.py`. \n3. In its new location, rename the function to `validate_and_format_coordinates` (making it a public, standalone function) and ensure it has a clear docstring explaining what it does. \n4. Update the `create_incident` function in `gatherproof_backend/src/handlers/incidents.py` to import and use this new shared function, removing the old private helper. \n5. In `gatherproof_backend/src/handlers/proof_rooms.py`, find the `create_proof_room` function. It currently performs a naive check on 'latitude' and 'longitude' from the event body. Replace this naive check by importing and using the new `validate_and_format_coordinates` function. \n6. Ensure that all existing unit tests in `gatherproof_backend/tests/unit/test_incidents_handler.py` continue to pass after your changes.",
+  "expected_approach": "An expert developer would first locate the `_validate_and_format_coordinates` function in `incidents.py` and analyze its implementation to ensure it has no class-specific dependencies (i.e., it doesn't use `self`). Assuming it's a pure function, they would cut the function definition.\n\nNext, they would open `core/services.py`, paste the function, rename it to `validate_and_format_coordinates`, remove the leading underscore, and add or improve its docstring.\n\nThen, they would navigate back to `incidents.py`. At the top of the file, they would add the import: `from ..core.services import validate_and_format_coordinates`. They would then find where `_validate_and_format_coordinates` was called inside `create_incident` and replace it with a call to the newly imported `validate_and_format_coordinates`.\n\nAfter that, they would open `proof_rooms.py`, add the same import statement, and modify the `create_proof_room` function to use `validate_and_format_coordinates` for processing the location data from the request body.\n\nFinally, they would run the entire test suite, paying close attention to `test_incidents_handler.py`, to confirm that the refactoring did not introduce any regressions.",
+  "ground_truth": "The solution requires modifications to three specific files.\n\n1.  **`gatherproof_backend/src/core/services.py`:**\n    - A new function `validate_and_format_coordinates` should be added. It likely takes `latitude` and `longitude` as arguments, validates they are within the correct range (-90 to 90 and -180 to 180), and returns a structured dictionary (e.g., GeoJSON Point format `{'type': 'Point', 'coordinates': [longitude, latitude]}`). It should raise a `ValueError` or a custom exception on invalid input.\n\n2.  **`gatherproof_backend/src/handlers/incidents.py`:**\n    - The private function `_validate_and_format_coordinates` must be removed.\n    - An import statement must be added at the top: `from ..core.services import validate_and_format_coordinates`.\n    - The call within `create_incident` should be changed from `location_data = _validate_and_format_coordinates(...)` to `location_data = validate_and_format_coordinates(...)`.\n\n3.  **`gatherproof_backend/src/handlers/proof_rooms.py`:**\n    - An import statement must be added at the top: `from ..core.services import validate_and_format_coordinates`.\n    - Inside `create_proof_room`, the existing location handling logic should be replaced with a call to the new service function, e.g., `location = validate_and_format_coordinates(data.get('latitude'), data.get('longitude'))` within a try/except block to handle potential validation errors.",
+  "evaluation_criteria": [
+    "**Function Relocation:** The agent must successfully move the function from `incidents.py` to `services.py`.",
+    "**Function Renaming and Signature:** The function must be correctly renamed to `validate_and_format_coordinates` in `services.py`, making it public.",
+    "**Dependency Update (incidents.py):** The agent must correctly update `incidents.py` to import and call the new shared function.",
+    "**New Functionality Implementation (proof_rooms.py):** The agent must correctly import and use the new shared function within `proof_rooms.py`.",
+    "**Correctness and No Regressions:** The refactored code must be functionally equivalent to the original, and all tests in `test_incidents_handler.py` must pass.",
+    "**Code Sanity:** The modifications should not introduce any syntax errors, linting issues, or antipatterns. Imports must be correctly resolved.",
+    "**File Scoping:** The agent must only modify the required files (`incidents.py`, `proof_rooms.py`, `services.py`) and not make unnecessary changes elsewhere."
+  ],
+  "metadata": {
+    "context_length": 88069,
+    "files_count": 6,
+    "information_coverage": 0.35549536603481124,
+    "coverage_range": [
+      0.2,
+      0.4
+    ],
+    "generation_timestamp": "2025-08-05T20:15:59.516420"
+  }
+}

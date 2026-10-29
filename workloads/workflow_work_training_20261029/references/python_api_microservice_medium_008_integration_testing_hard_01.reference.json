@@ -1,0 +1,50 @@
+{
+  "id": "python_api_microservice_medium_008_integration_testing_hard_01",
+  "task_category": "integration_testing",
+  "difficulty": "hard",
+  "title": "Integration Test for Invoice Payment, Reconciliation, and Audit Trail Workflow",
+  "description": "The LedgerLink Gateway has a critical business workflow for processing invoice payments. When a payment is made against an invoice, a series of operations must occur atomically across different services: the payment is recorded, the invoice status is updated, an audit event is logged for compliance, and any cached representations of the invoice are invalidated. A failure in any part of this chain could lead to inconsistent financial data. Currently, there are no integration tests that verify this entire end-to-end process, posing a significant risk.",
+  "context_files": [
+    "ledgerlink_gateway//ledgerlink//services//invoice_service.py",
+    "ledgerlink_gateway//ledgerlink//services//payment_service.py",
+    "ledgerlink_gateway//ledgerlink//services//audit_service.py",
+    "ledgerlink_gateway//docs//api//v1_rest_api.md",
+    "ledgerlink_gateway//ledgerlink//api//v1//graphql//schema.py",
+    "ledgerlink_gateway//ledgerlink//api//v1//graphql//types.py",
+    "ledgerlink_gateway//ledgerlink//api//v1//dependencies.py",
+    "ledgerlink_gateway//ledgerlink//api//v1//rest//__init__.py",
+    "ledgerlink_gateway//ledgerlink//api//v1//graphql//__init__.py",
+    "ledgerlink_gateway//ledgerlink//api//v1//graphql//resolvers.py",
+    "ledgerlink_gateway//ledgerlink//api//v1//rest//invoices.py",
+    "ledgerlink_gateway//ledgerlink//api//v1//rest//payments.py",
+    "ledgerlink_gateway//ledgerlink//services//__init__.py",
+    "ledgerlink_gateway//ledgerlink//core//caching.py",
+    "ledgerlink_gateway//ledgerlink//schemas//invoice_schemas.py",
+    "ledgerlink_gateway//ledgerlink//core//db.py",
+    "ledgerlink_gateway//ledgerlink//main.py",
+    "ledgerlink_gateway//ledgerlink//core//__init__.py",
+    "ledgerlink_gateway//ledgerlink//schemas//payment_schemas.py"
+  ],
+  "context_length": 225120,
+  "task_prompt": "Your task is to write a comprehensive integration test for the full invoice payment lifecycle. Create a new test file at `tests/integration/test_payment_workflow.py`. \n\nThe test must verify the following sequence of events:\n\n1.  **Invoice Creation:** Programmatically create a new invoice with a status of 'PENDING' by making a `POST` request to the `/api/v1/invoices/` endpoint.\n2.  **Payment Processing:** Using the ID of the newly created invoice, make a `POST` request to the `/api/v1/payments/` endpoint to pay the invoice in full.\n3.  **Invoice Status Validation:** After the payment is processed, make a `GET` request to the `/api/v1/invoices/{invoice_id}` endpoint. Assert that the invoice's `status` field has been updated from 'PENDING' to 'PAID'. This also implicitly tests the cache invalidation, as a stale cache would return the old status.\n4.  **Audit Trail Verification:** Directly query the database to confirm that a new record was created in the `audit_events` table. This audit event must:\n    - Be linked to the correct `invoice_id`.\n    - Have an event type indicating a status change (e.g., 'INVOICE_PAID' or 'STATUS_UPDATED').\n    - Contain details in its payload that reference the payment, confirming the link between the two operations.\n\nUse the `fastapi.testclient.TestClient` for API interactions and assume a `pytest` fixture named `db_session` is available for direct database access for verification purposes.",
+  "expected_approach": "An expert developer would approach this task by first understanding the chain of interactions. They would inspect `ledgerlink/api/v1/rest/payments.py` to see how it calls `ledgerlink/services/payment_service.py`. They would then analyze `payment_service.py` to discover that it orchestrates calls to both `invoice_service.py` (to update the invoice status) and `audit_service.py` (to log the event). The `invoice_service.py` would be responsible for handling the database update and triggering the cache invalidation defined in `ledgerlink/core/caching.py`.\n\nThe developer would then implement the test as follows:\n1.  **Setup:** Create a new test file `tests/integration/test_payment_workflow.py`. Import `TestClient` from `fastapi.testclient` and other necessary modules.\n2.  **Test Fixtures:** Rely on existing `pytest` fixtures for the application `client` and a `db_session` to ensure tests are isolated and have access to the necessary tools.\n3.  **Test Logic (The 4 Steps):**\n    - **Step 1:** Use `client.post()` to create the invoice, storing the response and extracting the `invoice_id`.\n    - **Step 2:** Use `client.post()` again to create the payment, passing the `invoice_id` in the payload.\n    - **Step 3:** Use `client.get()` to fetch the invoice by its ID and assert that `response.json()['status'] == 'PAID'`.\n    - **Step 4:** Use the `db_session` fixture to perform a SQLAlchemy query on the `AuditEvent` model. The query would filter by the `invoice_id` and the expected event type. Assertions would be made on the retrieved event object to ensure its details are correct, thus verifying the side-effect that is not exposed via the primary API response.\n4.  **Assertions:** Place specific and clear assertions at each step to validate status codes, response bodies, and the final database state.",
+  "ground_truth": "The ideal solution is a new Python file `tests/integration/test_payment_workflow.py` containing a test function that executes the required workflow. The code would look similar to this:\n\n```python\n# tests/integration/test_payment_workflow.py\nimport pytest\nfrom fastapi.testclient import TestClient\nfrom sqlalchemy.orm import Session\n\n# Assuming these models exist and can be imported for DB verification\nfrom ledgerlink.models import AuditEvent\nfrom ledgerlink.main import app # To initialize the TestClient\n\n# It's common practice to have fixtures for client and db_session in conftest.py\n# For this example, we assume they are passed to the test function.\n\ndef test_full_invoice_payment_and_audit_workflow(client: TestClient, db_session: Session):\n    \"\"\"\n    Tests the end-to-end workflow of creating an invoice, paying it,\n    and verifying the status update and audit trail.\n    \"\"\"\n    # 1. Create a new invoice\n    invoice_payload = {\n        \"customer_id\": \"cust_integration_test\",\n        \"amount\": 1500.50,\n        \"currency\": \"USD\",\n        \"due_date\": \"2025-12-31T00:00:00Z\"\n    }\n    response = client.post(\"/api/v1/invoices/\", json=invoice_payload)\n    assert response.status_code == 201\n    invoice = response.json()\n    invoice_id = invoice['id']\n    assert invoice['status'] == 'PENDING'\n\n    # 2. Process a full payment for the invoice\n    payment_payload = {\n        \"invoice_id\": invoice_id,\n        \"amount\": 1500.50,\n        \"method\": \"bank_transfer\"\n    }\n    response = client.post(\"/api/v1/payments/\", json=payment_payload)\n    assert response.status_code == 201\n    payment = response.json()\n    payment_id = payment['id']\n\n    # 3. Verify the invoice status is updated to 'PAID'\n    response = client.get(f\"/api/v1/invoices/{invoice_id}\")\n    assert response.status_code == 200\n    updated_invoice = response.json()\n    assert updated_invoice['status'] == 'PAID'\n\n    # 4. Verify the audit event was created in the database\n    # This is the crucial integration check beyond the API surface\n    audit_event = db_session.query(AuditEvent).filter(\n        AuditEvent.entity_id == invoice_id,\n        AuditEvent.event_type == 'INVOICE_PAID'\n    ).one_or_none()\n\n    assert audit_event is not None, \"Audit event was not created.\"\n    assert audit_event.details['new_status'] == 'PAID'\n    assert audit_event.details['old_status'] == 'PENDING'\n    assert str(audit_event.related_entity_id) == str(payment_id)\n\n```",
+  "evaluation_criteria": [
+    "**Correctness of Test Logic:** Does the test accurately reflect the required workflow and make the correct assertions?",
+    "**Completeness:** Does the agent implement all four required validation steps (Invoice Creation, Payment, Status Validation, Audit Verification)?",
+    "**Integration Scope:** Does the test successfully validate the interaction between the `payments` and `invoices` REST endpoints, their underlying services (`payment_service`, `invoice_service`, `audit_service`), and the database persistence layer?",
+    "**Code Quality and Best Practices:** Is the test written in the specified file (`tests/integration/test_payment_workflow.py`)? Is the code clean, readable, and does it use standard `pytest` and `TestClient` conventions?",
+    "**Resource Analysis:** Did the agent correctly identify the interacting components by analyzing the provided file list (e.g., understanding that `payment_service` calls `invoice_service` and `audit_service`)?",
+    "**Verification of Side-Effects:** How effectively does the agent test the database side-effect (the audit log entry) which is not directly returned by the API call that triggers it?"
+  ],
+  "metadata": {
+    "context_length": 225120,
+    "files_count": 19,
+    "information_coverage": 0.7091555152339911,
+    "coverage_range": [
+      0.6,
+      0.8
+    ],
+    "generation_timestamp": "2025-08-05T17:42:00.991502"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "id": "python_blockchain_nft_medium_035_cross_file_refactoring_expert_01",
+  "task_category": "cross_file_refactoring",
+  "difficulty": "expert",
+  "title": "Refactor Blockchain Interaction Logic into a Dedicated Repository Layer",
+  "description": "The 'ShowTime Stash' application currently mixes application logic with data access logic. Specifically, the application services in `services.py` directly call the `BlockchainConnector` for fetching data from and interacting with the smart contracts. This tight coupling makes the services difficult to test in isolation and harder to maintain as the number of blockchain interactions grows. This task involves introducing a Repository design pattern to create a dedicated data access layer for blockchain interactions, decoupling the application services from the low-level infrastructure details.",
+  "context_files": [
+    "showtime-stash//src/showtime_stash//infrastructure//database.py",
+    "showtime-stash//src/showtime_stash//application//services.py",
+    "showtime-stash//contracts//ShowTimeNFT.sol",
+    "showtime-stash//src/showtime_stash//domain//governance.py",
+    "showtime-stash//contracts//Governance.sol",
+    "showtime-stash//tests//test_nft_state_machine.py",
+    "showtime-stash//src/showtime_stash//application//rewards.py",
+    "showtime-stash//src/showtime_stash//infrastructure//blockchain_connector.py",
+    "showtime-stash//src/showtime_stash//application//factories.py",
+    "showtime-stash//src/showtime_stash//main.py",
+    "showtime-stash//src/showtime_stash//interfaces//api.py",
+    "showtime-stash//src/showtime_stash//domain//nft.py",
+    "showtime-stash//contracts//StakingPool.sol",
+    "showtime-stash//tests//contract_tests//test_staking_pool.py",
+    "showtime-stash//README.md"
+  ],
+  "context_length": 210595,
+  "task_prompt": "Your task is to refactor the 'ShowTime Stash' backend by introducing a repository layer for blockchain interactions. You must centralize the logic for interacting with NFT and Governance smart contracts into dedicated repository classes.\n\n**Detailed Requirements:**\n\n1.  **Create a new Repository File:** Create a new file at `showtime-stash/src/showtime_stash/infrastructure/repositories.py`.\n\n2.  **Implement Repository Classes:**\n    *   Inside the new file, define an `NFTRepository` class. This class will be responsible for all interactions with the `ShowTimeNFT.sol` and `StakingPool.sol` contracts.\n    *   Define a `GovernanceRepository` class. This class will be responsible for all interactions with the `Governance.sol` contract.\n    *   These repository classes should take the `BlockchainConnector` as a dependency in their constructors.\n\n3.  **Migrate Logic:**\n    *   Identify all methods and logic within `showtime_stash/application/services.py` that directly use the `BlockchainConnector` for NFT, staking, or governance operations.\n    *   Move this logic into the appropriate methods within the new `NFTRepository` and `GovernanceRepository` classes. For example, logic for fetching an NFT's metadata should be moved to a method like `NFTRepository.get_nft_details(token_id)`.\n\n4.  **Refactor Application Services:**\n    *   Modify the service classes in `showtime_stash/application/services.py` (e.g., `NFTService`, `GovernanceService`, `StakingService`).\n    *   Change their constructors to accept the new `NFTRepository` and/or `GovernanceRepository` as dependencies instead of the `BlockchainConnector`.\n    *   Update the service methods to call the new high-level repository methods instead of the low-level `BlockchainConnector` methods.\n\n5.  **Update Dependency Injection:**\n    *   Modify the factory functions in `showtime_stash/application/factories.py` to correctly instantiate and inject the new repositories into the services. The dependency chain should now be: `BlockchainConnector` -> `Repositories` -> `Services`.\n\n6.  **Ensure Functionality and Test Coverage:**\n    *   The final code must pass all existing tests. You will likely need to update test files like `tests/test_nft_state_machine.py` and `tests/contract_tests/test_staking_pool.py` to mock the new repository classes instead of the `BlockchainConnector` directly. This is a critical part of the task.",
+  "expected_approach": "An expert developer would approach this task systematically:\n\n1.  **Analysis:** First, they would thoroughly read `services.py` and `blockchain_connector.py` to understand the current interaction patterns. They would map out which service methods call which connector functions and for what purpose (e.g., NFT, Governance, Staking).\n\n2.  **Design Repository Interface:** They would define the public methods for the new `NFTRepository` and `GovernanceRepository`. These methods should represent logical data operations (e.g., `find_nft_by_id`, `get_owner_of`, `fetch_active_proposals`) rather than raw contract calls.\n\n3.  **Implementation (Bottom-up):**\n    *   Create the `infrastructure/repositories.py` file and skeleton classes.\n    *   Implement the repository methods one by one, moving logic from `services.py` and wrapping calls to the `BlockchainConnector`.\n\n4.  **Refactoring (Top-down):**\n    *   Modify the service constructors in `services.py` to accept the new repositories.\n    *   Replace the body of the service methods with calls to the new repository methods. This should simplify the services significantly.\n\n5.  **Update Wiring:** Modify `factories.py` to create the repositories and pass them to the service constructors. This ensures the application starts up correctly with the new structure.\n\n6.  **Test Adaptation:** Run the tests and expect them to fail. Systematically go through the failing tests, identify where `BlockchainConnector` was being mocked for a service test, and replace it with a mock of the appropriate repository. This aligns the tests with the new, improved architecture.",
+  "ground_truth": "The solution is successful if the following changes are correctly implemented:\n\n*   **New File Created:** `showtime-stash/src/showtime_stash/infrastructure/repositories.py` exists and contains the `NFTRepository` and `GovernanceRepository` classes.\n*   **Repository Implementation:** The repository classes correctly use the `BlockchainConnector` instance passed via their constructors to make contract calls. Methods are well-defined, e.g., `NFTRepository.get_owner(token_id)` or `GovernanceRepository.get_proposal(proposal_id)`.\n*   **Service Decoupling:** The service classes in `services.py` no longer import or directly reference `BlockchainConnector`. Their constructors are updated to take `nft_repository: NFTRepository` and/or `governance_repository: GovernanceRepository` as arguments.\n*   **Factory Configuration:** The factory functions in `factories.py` are updated to instantiate the repositories and pass them to the service constructors during application setup.\n*   **Test Refactoring:** Unit tests for services in files like `test_nft_state_machine.py` now use `unittest.mock.MagicMock` or a similar utility to mock the repository layer (e.g., `mock_nft_repo = MagicMock(spec=NFTRepository)`), not the `BlockchainConnector`.\n*   **Functionality Preservation:** All existing tests in the `tests/` directory must pass after the refactoring is complete, proving that no functionality has been broken.",
+  "evaluation_criteria": [
+    "**Correctness:** Does the refactored application pass all existing unit and integration tests?",
+    "**Code Structure & Modularity:** Was the `infrastructure/repositories.py` file created, and does it contain well-defined `NFTRepository` and `GovernanceRepository` classes?",
+    "**Separation of Concerns:** Has the responsibility for direct blockchain interaction been fully moved from `services.py` to the new repository layer?",
+    "**Dependency Injection:** Were the constructors in `services.py` and the wiring in `factories.py` correctly updated to reflect the new dependency graph?",
+    "**Testability Improvement:** Were the test files updated to mock the new, higher-level repository abstractions instead of the low-level `BlockchainConnector`? This demonstrates an understanding of the refactoring's purpose.",
+    "**Code Removal:** Was the now-redundant logic cleanly removed from the service layer without leaving commented-out code?",
+    "**Atomicity:** Did the agent perform the refactoring as a single, logical change without introducing unrelated modifications?"
+  ],
+  "metadata": {
+    "context_length": 210595,
+    "files_count": 15,
+    "information_coverage": 0.9218226784268236,
+    "coverage_range": [
+      0.8,
+      1.0
+    ],
+    "generation_timestamp": "2025-08-05T16:18:23.640519"
+  }
+}

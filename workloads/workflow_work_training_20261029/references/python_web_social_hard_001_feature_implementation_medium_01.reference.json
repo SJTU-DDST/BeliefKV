@@ -1,0 +1,54 @@
+{
+  "id": "python_web_social_hard_001_feature_implementation_medium_01",
+  "task_category": "feature_implementation",
+  "difficulty": "medium",
+  "title": "Implement Content Flagging System for Courses",
+  "description": "CampusConnect 360 is scaling, and with more user and instructor-generated content, maintaining quality is crucial. To address this, we need a system for students to flag course content (initially, course modules) that they find incorrect, outdated, or inappropriate. This report should be saved and should trigger a notification to be sent to the course instructor or an administrator.",
+  "context_files": [
+    "CampusConnect360/services/auth_service/app/services/jwt_service.py",
+    "CampusConnect360/services/course_service/app/db/repository.py",
+    "CampusConnect360/services/course_service/tests/test_courses_api.py",
+    "CampusConnect360/services/payment_service/app/services/stripe_webhook_handler.py",
+    "CampusConnect360/services/course_service/app/api/v1/modules.py",
+    "CampusConnect360/services/auth_service/app/api/v1/auth.py",
+    "CampusConnect360/services/social_timeline_service/app/api/v1/posts.py",
+    "CampusConnect360/infra/api_gateway/nginx.conf",
+    "CampusConnect360/docs/api_conventions.md",
+    "CampusConnect360/services/course_service/app/api/v1/courses.py",
+    "CampusConnect360/infra/api_gateway/Dockerfile",
+    "CampusConnect360/services/course_service/tests/test_course_logic.py",
+    "src/config.py",
+    "src/utils.py",
+    "CampusConnect360/services/auth_service/app/main.py",
+    "CampusConnect360/services/course_service/app/__init__.py",
+    "CampusConnect360/docs/architecture.md",
+    "CampusConnect360/services/course_service/app/schemas/course_schema.py",
+    "CampusConnect360/services/payment_service/app/main.py",
+    "CampusConnect360/services/notification_service/app/worker.py",
+    "CampusConnect360/services/notification_service/app/consumer.py",
+    "CampusConnect360/services/social_timeline_service/app/main.py"
+  ],
+  "context_length": 277777,
+  "task_prompt": "Your task is to implement the backend functionality for a content flagging system within the `course_service`. This involves creating a new data model, a new API endpoint, and integrating with the existing notification service.\n\n**Detailed Requirements:**\n\n1.  **Schema Definition:**\n    -   In the `course_service`, create a new Pydantic schema for a flag report. Let's name it `FlagReportCreate` in a new file `CampusConnect360/services/course_service/app/schemas/flag_schema.py`.\n    -   The schema must include:\n        -   `reporter_user_id`: `str`\n        -   `reason`: An `Enum` with values `INCORRECT`, `OUTDATED`, `INAPPROPRIATE`, `OTHER`.\n        -   `comment`: `str` (optional, max 500 characters).\n\n2.  **Database Integration:**\n    -   In `CampusConnect360/services/course_service/app/db/repository.py`, add a new database model (or update the document structure if using NoSQL) to store these flag reports. It should be associated with a specific course module.\n    -   Add a new method `create_flag_report(module_id: str, report_data: FlagReportCreate) -> FlagReport` to the repository class to persist the new flag report.\n\n3.  **API Endpoint:**\n    -   In `CampusConnect360/services/course_service/app/api/v1/modules.py`, create a new API endpoint:\n        -   **Path:** `POST /courses/{course_id}/modules/{module_id}/flag`\n        -   **Functionality:** This endpoint should accept a `FlagReportCreate` payload. It must be protected, requiring an authenticated user (you can reuse the authentication dependency from other endpoints in the file).\n        -   The `reporter_user_id` should be extracted from the authenticated user's token, not taken from the request body.\n        -   Upon successful creation, it should return an HTTP `202` Accepted status code and the created report object.\n\n4.  **Notification Integration:**\n    -   After successfully saving the flag report to the database, the new endpoint's logic must publish an event to the message queue for the `notification_service` to consume.\n    -   The event payload should be a JSON object with the keys: `event_type`, `course_id`, `module_id`, `reporter_id`, `reason`, and `comment`.\n    -   Assume a utility for publishing to the message queue already exists and is used elsewhere in the project. You need to find it and use it correctly.\n\n5.  **Testing:**\n    -   In `CampusConnect360/services/course_service/tests/test_courses_api.py`, add a new test case `test_flag_module_as_student`.\n    -   This test should simulate an authenticated student making a `POST` request to the new endpoint.\n    -   It should assert that the response status code is `202` and that the response body contains the details of the created flag.",
+  "expected_approach": "An expert developer would approach this task systematically:\n\n1.  **Exploration & Analysis:**\n    -   Review `CampusConnect360/services/course_service/app/api/v1/modules.py` and `courses.py` to understand the existing API structure, authentication dependencies (e.g., `get_current_user`), and response models.\n    -   Examine `CampusConnect360/services/course_service/app/db/repository.py` to understand the current database interaction patterns (e.g., how data is created, what ORM/ODM is used).\n    -   Inspect `CampusConnect360/services/course_service/app/schemas/course_schema.py` to see how Pydantic schemas are defined and organized.\n    -   Look for how other services publish messages. This might involve searching for keywords like `rabbit`, `pika`, `publish`, or `event` across the codebase, likely leading to a utility in `src/utils.py` or a dedicated client.\n    -   Read `CampusConnect360/docs/api_conventions.md` to ensure the new endpoint conforms to project standards.\n\n2.  **Implementation (Bottom-up):**\n    -   Start by creating the new schema file `flag_schema.py` with the `FlagReportCreate` model and the `Reason` enum.\n    -   Modify `repository.py` to add the new data model for the flag report and the corresponding `create_flag_report` function.\n    -   Implement the new endpoint in `modules.py`. This includes adding the route, injecting the auth dependency, processing the request, calling the new repository method, and then calling the message publishing utility.\n    -   Ensure proper error handling (e.g., what if the module doesn't exist?).\n\n3.  **Testing:**\n    -   Navigate to `test_courses_api.py` and add a new test function.\n    -   Use the existing test patterns (like using `TestClient` and mocking authentication/dependencies) to write a comprehensive test for the new `/flag` endpoint. The test should verify both the success path and potentially an unauthenticated attempt.",
+  "ground_truth": "The solution requires modifications to several files in the `course_service`.\n\n1.  **New File: `CampusConnect360/services/course_service/app/schemas/flag_schema.py`**\n    -   Should contain an `Enum` for `FlagReason` and a Pydantic `BaseModel` for `FlagReportCreate` and `FlagReport` (response model).\n\n2.  **Modified File: `CampusConnect360/services/course_service/app/db/repository.py`**\n    -   A new database model/schema for `FlagReport` should be added.\n    -   A new async function `create_flag_report` should be added to the main repository class. It takes `module_id` and report data, creates a new report instance, and saves it.\n\n3.  **Modified File: `CampusConnect3-60/services/course_service/app/api/v1/modules.py`**\n    -   A new route decorator `@router.post(\"/{course_id}/modules/{module_id}/flag\", response_model=FlagReport, status_code=status.HTTP_202_ACCEPTED)` should be added.\n    -   The endpoint function will take `module_id`, the request body, and the `current_user` from a dependency.\n    -   Inside the function, it will call `repository.create_flag_report`.\n    -   After the database call, it will call the message queue publisher with a payload like: `{\"event_type\": \"content.flagged\", \"module_id\": ..., ...}`.\n\n4.  **Modified File: `CampusConnect360/services/course_service/tests/test_courses_api.py`**\n    -   A new test method `def test_flag_module_as_student(self, client, ...):` is added.\n    -   It will use `client.post(...)` to call the new endpoint with a valid payload and authentication headers.\n    -   It will include `assert response.status_code == 202` and assertions on the response JSON data.",
+  "evaluation_criteria": [
+    "**Correctness of Implementation:** The feature works end-to-end as specified in the prompt; a flag can be submitted, is saved to the database, and returns a 202 status.",
+    "**API Design Adherence:** The new endpoint (`POST /.../flag`) follows the RESTful conventions established in the existing API and documented in `api_conventions.md`.",
+    "**Code Quality and Reusability:** The new code is clean, well-documented, and correctly reuses existing patterns, such as the repository pattern for database access and the dependency injection system for authentication.",
+    "**Schema and Model Definition:** The Pydantic and database models are correctly defined with the specified fields and types.",
+    "**Asynchronous Integration:** The endpoint correctly publishes a well-structured event to the message queue for the notification service without blocking the API response.",
+    "**Testing:** A meaningful, non-trivial test case is added in the correct test suite, verifying the happy path of the new endpoint's functionality.",
+    "**Security:** The endpoint is correctly protected and retrieves the `reporter_user_id` from the secure authentication token rather than an untrusted request body field."
+  ],
+  "metadata": {
+    "context_length": 277777,
+    "files_count": 22,
+    "information_coverage": 0.5139098307731301,
+    "coverage_range": [
+      0.4,
+      0.6
+    ],
+    "generation_timestamp": "2025-08-05T18:07:21.309273"
+  }
+}

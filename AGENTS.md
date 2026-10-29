@@ -3545,3 +3545,28 @@
   20261029 config waits a qualified predictor and actual paused-competition/
   cost evidence. No new GPU run or global-goal completion follows from this CPU
   implementation. Keep tool/frontier prefetch and physical layer handoff off.
+- The user now authorizes a relaxed development split and extra native training
+  collection. Project/task overlap across independent complete captures is
+  permitted; it is not unseen-project generalization. Keep project holdout as
+  the default and declare capture mode explicitly. Do not split snapshots from
+  the same execution or relabel copied captures as independent. Historical
+  workflow IDs are stable across reruns; bind complete event-file hashes.
+  V174 trains24 workflows, V171 calibrates18 natural workflows, and V230
+  evaluates18 complete workflows. Initial expanded fitting passes calibration
+  macroF1.5830 but development macroF1.4650/long-to-short.4892 is inadequate:
+  no workflow-size performance run is registered. Preserve all artifacts.
+  The separately declared eight-task native source uses the first eight
+  tool-qualified distinct projects and different original task categories,
+  current4/8 child and8/16 root budgets, real tool durations, unchanged project
+  sources/tests/environments and native policy. This is training collection,
+  not a repeat of the old native performance baseline. Recheck sources, actual
+  CUDA sampler, GPU ownership and reservation before launch; freeze committed
+  application sources and retain normal tails. Keep handoff/tool/frontier
+  prefetch off. Global performance goal remains incomplete.
+- Expanded-data source-bound CPU qualification now actually passes4913 tests
+  plus6 subtests,retains all4903 prior identities,no skips/failures and1987
+  source inputs/native bytes unchanged. Capture registration must use the
+  current common11b84 native base/patch and its726-case evidence; old V230
+  pre-rebase6437 cannot accept the current incremental canonical patch. That
+  precheck started no GPU. Preserve the failed one-workflow fixture and its
+  passing three-workflow correction. Commit/freeze before native collection.

@@ -28,6 +28,8 @@ def main():
         "--prior-evidence", type=Path,
         default=ROOT / "experiments/reports/decay_tick2s_no_handoff_20261030/cpu_r1/evidence.json",
     )
+    parser.add_argument("--additional-source", action="append", default=[])
+    parser.add_argument("--additional-test", action="append", default=[])
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=False)
     previous = args.prior_evidence.resolve()
@@ -41,6 +43,8 @@ def main():
             raise ValueError("previous CPU qualification changed")
     names = set(json.loads(Path(prior["source_manifest"]["path"]).read_bytes()))
     names.update(ADDED)
+    names.update(args.additional_source)
+    names.update(args.additional_test)
     names.update((
         "beliefkv/policy/workflow_size_resume.py",
         "beliefkv/predictor/workflow_work.py",
@@ -59,7 +63,7 @@ def main():
     sources = args.output_dir.resolve() / "sources.json"
     command = [arg for arg in prior["command"] if not arg.startswith("--junitxml=")]
     command[0] = sys.executable
-    command.extend(name for name in ADDED if name not in command)
+    command.extend(name for name in (*ADDED, *args.additional_test) if name not in command)
     command.append("--junitxml=" + str(report))
     env = {
         **os.environ, **prior["environment"], "CUDA_VISIBLE_DEVICES": "99999",

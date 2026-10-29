@@ -1,4 +1,4 @@
-"""Export causal progress snapshots and train a project-disjoint CPU work MLP."""
+"""Export causal snapshots and train with declared project or capture holdouts."""
 
 from __future__ import annotations
 
@@ -67,7 +67,7 @@ def export_capture(capture, *, prefill_weight):
         if len(starts) != 1 or len(ends) != 1:
             continue
         workflow = starts[0].workflow_id
-        workflows[workflow] = (project, task_requirements(first), rows)
+        workflows[workflow] = (project, task_requirements(first), rows, sha256_file(events))
         evidence[str(events.resolve())] = sha256_file(events)
         evidence[str(trajectory.resolve())] = sha256_file(trajectory)
     # The token capture is ordered and delta-compressed. Only its recorded base
@@ -84,7 +84,7 @@ def export_capture(capture, *, prefill_weight):
             outputs[row["request_id"]] = decode_tokens(row)
     evidence[str(token_path.resolve())] = sha256_file(token_path)
     result = []
-    for workflow, (project, text, events) in workflows.items():
+    for workflow, (project, text, events, execution_digest) in workflows.items():
         progress, snapshots, completed = WorkflowProgress(), [], set()
         progress.text = text
         task_hash = hashlib.sha256(text.encode()).hexdigest()
@@ -121,6 +121,8 @@ def export_capture(capture, *, prefill_weight):
         for index, snapshot in enumerate(snapshots):
             result.append({
                 "workflow": str(capture.resolve()) + ":" + workflow,
+                "source_capture": str(capture.resolve()), "logical_workflow_id": workflow,
+                "source_workflow_sha256": execution_digest,
                 "project": project, "task_template": task_hash, "text": text,
                 "snapshot": index, **snapshot, "total_work": total,
                 "remaining_work": max(0., total - snapshot["attained_work"]),
@@ -128,7 +130,7 @@ def export_capture(capture, *, prefill_weight):
     return result, evidence, rejected
 
 
-def fit(rows, calibration, *, epochs=300, seed=21):
+def fit(rows, calibration, *, epochs=300, seed=21, split_mode="project"):
     import numpy as np
     import torch
 
@@ -139,10 +141,16 @@ def fit(rows, calibration, *, epochs=300, seed=21):
     random.seed(seed)
     if not rows or not calibration:
         raise ValueError("training and calibration workflows are required")
-    if {row["project"] for row in rows} & {row["project"] for row in calibration}:
+    if split_mode not in ("project", "capture"):
+        raise ValueError("unknown workflow work split mode")
+    if split_mode == "project" and {row["project"] for row in rows} & {row["project"] for row in calibration}:
         raise ValueError("training/calibration projects overlap")
-    if {row["task_template"] for row in rows} & {row["task_template"] for row in calibration}:
+    if split_mode == "project" and {row["task_template"] for row in rows} & {row["task_template"] for row in calibration}:
         raise ValueError("training/calibration task templates overlap")
+    if {row["workflow"] for row in rows} & {row["workflow"] for row in calibration}:
+        raise ValueError("training/calibration workflows overlap")
+    if split_mode == "capture":
+        capture_split(rows, calibration, ())
     texts = {row["workflow"]: row["text"] for row in rows}
     df = Counter()
     for text in texts.values():
@@ -223,6 +231,13 @@ def fit(rows, calibration, *, epochs=300, seed=21):
             "training_projects": sorted({row["project"] for row in rows}),
             "calibration_projects": sorted({row["project"] for row in calibration}),
             "training_workflows": len(totals), "seed": seed, "epochs": epochs,
+            "split_mode": split_mode,
+            "validation_scope": (
+                "unseen_projects" if split_mode == "project"
+                else "known_projects_independent_captures_development"
+            ),
+            "training_capture_paths": sorted({row.get("source_capture", "") for row in rows} - {""}),
+            "calibration_capture_paths": sorted({row.get("source_capture", "") for row in calibration} - {""}),
             "loss_weighting": "class_balanced_with_equal_workflow_totals",
             "target": "same_context_logical_new_prefill_times_weight_plus_decode_tokens",
             "online_inputs": "task_instructions_and_observed_progress_only",
@@ -247,7 +262,9 @@ def fit(rows, calibration, *, epochs=300, seed=21):
 
     fitted = minimize_scalar(nll, bounds=(-1.6, 3.), method="bounded")
     raw["temperature"] = math.exp(float(fitted.x))
-    raw["metadata"]["calibration_status"] = "project_heldout_temperature"
+    raw["metadata"]["calibration_status"] = (
+        "project_heldout_temperature" if split_mode == "project" else "capture_heldout_temperature"
+    )
     raw["metadata"]["calibration_class_workflows"] = [
         len({row["workflow"] for row, label in zip(calibration, labels) if label == i})
         for i in range(3)
@@ -306,6 +323,39 @@ def evaluate(model, rows):
     }
 
 
+def capture_split(training, calibration, test):
+    """Permit shared projects/tasks; reject the same execution on either side."""
+    groups = (training, calibration, test)
+    captures, executions = [], []
+    for rows in groups:
+        if any(
+            not row.get("source_capture") or not row.get("logical_workflow_id")
+            or len(row.get("source_workflow_sha256", "")) != 64
+            or any(c not in "0123456789abcdef" for c in row["source_workflow_sha256"])
+            for row in rows
+        ):
+            raise ValueError("capture holdout requires source captures and complete execution fingerprints")
+        captures.append({row["source_capture"] for row in rows})
+        executions.append({row["source_workflow_sha256"] for row in rows})
+    for i in range(3):
+        for j in range(i):
+            if captures[i] & captures[j]:
+                raise ValueError("training/calibration/evaluation captures overlap")
+            if executions[i] & executions[j]:
+                raise ValueError("training/calibration/evaluation workflow executions overlap")
+    return {
+        "mode": "capture", "validation_scope": "known_projects_independent_captures_development",
+        "training_capture_paths": sorted(captures[0]),
+        "calibration_capture_paths": sorted(captures[1]),
+        "evaluation_capture_paths": sorted(captures[2]),
+        "training_execution_sha256": sorted(executions[0]),
+        "calibration_execution_sha256": sorted(executions[1]),
+        "evaluation_execution_sha256": sorted(executions[2]),
+        "complete_captures_disjoint": True, "complete_workflows_disjoint": True,
+        "project_disjoint_required": False, "unseen_project_generalization_claimed": False,
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="mode", required=True)
@@ -318,6 +368,8 @@ def main():
     train.add_argument("--evaluation-dataset", type=Path, required=True)
     train.add_argument("--output-dir", type=Path, required=True)
     train.add_argument("--epochs", type=int, default=300)
+    train.add_argument("--split-mode", choices=("project", "capture"), default="project")
+    train.add_argument("--calibration-dataset", type=Path)
     args = parser.parse_args()
     if args.mode == "export":
         if not math.isfinite(args.prefill_token_weight) or args.prefill_token_weight <= 0:
@@ -344,33 +396,52 @@ def main():
     test = evaluation["rows"]
     excluded_projects = {row["project"] for row in test}
     excluded_templates = {row["task_template"] for row in test}
-    eligible = [
-        row for row in dataset["rows"]
-        if row["project"] not in excluded_projects and row["task_template"] not in excluded_templates
-    ]
-    projects = sorted({row["project"] for row in eligible}, key=lambda value: hashlib.sha256(value.encode()).digest())
-    if len(projects) < 4:
-        raise ValueError("fewer than four eligible projects after full evaluation exclusion")
-    project_work = {
-        project: sorted({
-            row["workflow"]: row["total_work"] for row in eligible if row["project"] == project
-        }.values())
-        for project in projects
-    }
-    ordered_projects = sorted(
-        projects, key=lambda project: (project_work[project][len(project_work[project]) // 2], project),
-    )
-    calibration_projects = {ordered_projects[0], ordered_projects[-1]}
-    training = [row for row in eligible if row["project"] not in calibration_projects]
-    calibration = [row for row in eligible if row["project"] in calibration_projects]
-    raw = fit(training, calibration, epochs=args.epochs)
+    if args.split_mode == "capture":
+        if args.calibration_dataset is None:
+            raise ValueError("capture mode requires a separate calibration dataset")
+        calibrated = json.loads(args.calibration_dataset.read_bytes())
+        if calibrated["prefill_token_weight"] != dataset["prefill_token_weight"]:
+            raise ValueError("calibration work units differ")
+        training, calibration = dataset["rows"], calibrated["rows"]
+        split_contract = capture_split(training, calibration, test)
+    else:
+        if args.calibration_dataset is not None:
+            raise ValueError("separate capture calibration requires explicit capture mode")
+        eligible = [
+            row for row in dataset["rows"]
+            if row["project"] not in excluded_projects and row["task_template"] not in excluded_templates
+        ]
+        projects = sorted({row["project"] for row in eligible}, key=lambda value: hashlib.sha256(value.encode()).digest())
+        if len(projects) < 4:
+            raise ValueError("fewer than four eligible projects after full evaluation exclusion")
+        project_work = {
+            project: sorted({
+                row["workflow"]: row["total_work"] for row in eligible if row["project"] == project
+            }.values())
+            for project in projects
+        }
+        ordered_projects = sorted(
+            projects, key=lambda project: (project_work[project][len(project_work[project]) // 2], project),
+        )
+        calibration_projects = {ordered_projects[0], ordered_projects[-1]}
+        training = [row for row in eligible if row["project"] not in calibration_projects]
+        calibration = [row for row in eligible if row["project"] in calibration_projects]
+        split_contract = {
+            "mode": "project", "validation_scope": "unseen_projects",
+            "project_and_task_template_disjoint": True,
+        }
+    raw = fit(training, calibration, epochs=args.epochs, split_mode=args.split_mode)
     raw["metadata"].update({
         "prefill_token_weight": dataset["prefill_token_weight"],
         "training_dataset_sha256": sha256_file(args.dataset),
-        "evaluation_excluded_projects": sorted(excluded_projects),
-        "evaluation_excluded_task_templates": sorted(excluded_templates),
+        "evaluation_excluded_projects": sorted(excluded_projects) if args.split_mode == "project" else [],
+        "evaluation_excluded_task_templates": sorted(excluded_templates) if args.split_mode == "project" else [],
+        "split_contract": split_contract,
+        "calibration_dataset_sha256": (
+            sha256_file(args.calibration_dataset) if args.calibration_dataset else None
+        ),
     })
-    # Deployment checks use calibration projects only. Evaluation labels
+    # Deployment checks use calibration executions only. Evaluation labels
     # cannot turn ranking on or select a checkpoint.
     calibration_model = WorkflowWorkModel(raw)
     calibration_metrics = evaluate(calibration_model, calibration)
@@ -389,10 +460,11 @@ def main():
     write(args.output_dir / "model.json", raw)
     write(args.output_dir / "evaluation.json", {
         "training_workflows": len({row["workflow"] for row in training}),
-        "training_projects": sorted(set(projects) - calibration_projects),
-        "calibration_projects": sorted(calibration_projects),
+        "training_projects": sorted({row["project"] for row in training}),
+        "calibration_projects": sorted({row["project"] for row in calibration}),
         "test_projects": sorted(excluded_projects),
-        "project_and_task_template_disjoint": True,
+        "project_and_task_template_disjoint": args.split_mode == "project",
+        "split_contract": split_contract,
         "all_snapshots_of_a_workflow_kept_together": True,
         "train": evaluate(model, training), "calibration": evaluate(model, calibration),
         "test": evaluate(model, test),

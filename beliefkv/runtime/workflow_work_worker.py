@@ -149,7 +149,9 @@ class WorkflowWorkWorker:
             best = max(range(3), key=lambda index: probabilities[index])
             supported = (
                 max(probabilities) >= .6
-                and self.model.metadata.get("calibration_status") == "project_heldout_temperature"
+                and self.model.metadata.get("calibration_status") in (
+                    "project_heldout_temperature", "capture_heldout_temperature",
+                )
                 and self.model.metadata.get("decision_eligible") is True
                 and len(self.model.metadata.get("calibration_class_projects", ())) == 3
                 and min(self.model.metadata["calibration_class_projects"]) > 0
@@ -194,6 +196,7 @@ class WorkflowWorkWorker:
             "artifact_sha256": self.digest, "error": self.error,
             "calibration_status": self.model.metadata.get("calibration_status"),
             "decision_eligible": self.model.metadata.get("decision_eligible", False),
+            "validation_scope": self.model.metadata.get("validation_scope", "unseen_projects"),
             "refresh_interval_ms": 200, "counts": dict(self.counts),
             "cached_workflows": len(self._predictions), "queue_depth": len(self._queue),
             "future_trace_used_online": False, "scheduler_waits_for_inference": False,
