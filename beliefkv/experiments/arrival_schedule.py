@@ -19,6 +19,7 @@ class WorkflowArrival:
 
 def build_poisson_workflow_arrivals(
     workflow_count: int, *, rate_per_second: float, seed: int,
+    initial_workflows: int = 0,
 ) -> tuple[WorkflowArrival, ...]:
     if workflow_count <= 0:
         raise ValueError("workflow_count must be positive")
@@ -26,11 +27,14 @@ def build_poisson_workflow_arrivals(
         raise ValueError("Poisson arrival rate must be finite and positive")
     if type(seed) is not int or seed < 0:
         raise ValueError("arrival seed must be a non-negative integer")
+    if type(initial_workflows) is not int or not 0 <= initial_workflows <= workflow_count:
+        raise ValueError("initial workflows must be an integer within the population")
     generator = random.Random(seed)
     offset = 0.0
     arrivals = []
     for index in range(workflow_count):
-        offset += generator.expovariate(rate_per_second)
+        if index >= initial_workflows:
+            offset += generator.expovariate(rate_per_second)
         arrivals.append(WorkflowArrival(index, index, 0, offset))
     return tuple(arrivals)
 

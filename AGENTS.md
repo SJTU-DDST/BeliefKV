@@ -3227,3 +3227,27 @@
   accounting and fresh batch24/position checks before complete3674 comparison.
   No GPU job remains after these two owned model exits; do not restart
   TokenCake or launch arrival/prefill work before complete formal Agentix.
+- The latest user questions120s interarrivals for useful KV pressure. Actual
+  complete Full/Thunder events show childP25=90.72/93.87s,P50=159.34/163.50s
+  and29/27 of92 children return within120s. Child return does not end its root;
+  burst first root ends970.24/1058.07s, which is not a new-arrival prediction.
+  Supersede the prior warm-start advice with a finite short trial: same18
+  different-project workflows,10 initially,8 subsequent Poisson arrivals at
+  mean60s,seed21,running/decode24. Seeded last arrival431.72s/max gap98.97s,
+  versus863.43s/197.94s for120s. No new workflow admission gate or larger
+  population is introduced. This is offline advice, not an implemented mixed
+  arrival contract or GPU registration; Agentix formal remains first. Do not
+  call the1/min finite load stationary or its7.2min injection long-term steady
+  pressure. Source-bound CPU evidence is arrival_capacity_20261029/
+  warm_start_reconsideration.json; retain older arrival analyses and all tails.
+- Latest user cancels Agentix reproduction without verified author source and
+  explicitly authorizes the new-workload ThunderAgent control in parallel
+  with our optimization. This supersedes all Agentix-first GPU prerequisites.
+  Preserve Agentix/TokenCake code, qualifications, failures and raw evidence;
+  neither formal baseline is now queued. Implement and qualify the18-project
+  warm start (10 at0,8 Poisson arrivals mean60s,seed21); original requests,
+  dependencies,931 categorized execute timers, capacities and normal tails stay
+  unchanged. Run only acting-decay ThunderAgent on common11b84,4096 prefill,
+  mixed off,running/decode24. Frozen baseline GPU work and local CPU changes
+  may overlap; never overlap another GPU experiment or modify frozen sources.
+  Use experiments/reports/warm_start_thunder_20261029/ for named evidence.

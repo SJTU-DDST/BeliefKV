@@ -1,0 +1,12 @@
+{
+  "source_registration": "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.json",
+  "source_sha256": "66a5bac27ce8d8f70a91e5c45fcc377b7950db56bc3bd2a7588124fd5209902b",
+  "configuration_source": "/home/longhao/experiment/BeliefKV/configs/baselines/kvflow_locobench_v230_v311_20261028.json",
+  "configuration_source_sha256": "7629dbccc37317f1094d0dd66752259764b77421a0bcbe03a0095295a506a297",
+  "arrival_schedule_sha256": "e6d70ce97d4fa02893579140f913c51a7685a18252b35a2de373e18c8b48f72a",
+  "last_arrival_seconds": 431.7154977718898,
+  "all_original_workflows_and_tails_retained": true,
+  "native_capture_repeated": false,
+  "GPU_experiment_started": false,
+  "performance_accepted": false
+}

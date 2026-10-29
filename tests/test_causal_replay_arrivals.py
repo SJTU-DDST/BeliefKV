@@ -58,6 +58,78 @@ def test_common_poisson_plan_is_independent_of_policy_and_model_randomness(tmp_p
         validate_arrival_plan(expected, ["b", "w"])
 
 
+def test_warm_start_uses_zero_time_initial_roots_without_consuming_random_intervals(tmp_path):
+    identities = [f"workflow-{index}" for index in range(18)]
+    plan = poisson_arrival_plan(
+        identities, rate_per_second=1 / 60, seed=21, initial_workflows=10,
+    )
+    rows = plan["arrival_schedule"]
+    assert plan["mode"] == "warm_start_poisson" and plan["schema_version"] == 2
+    assert [row["offset_seconds"] for row in rows[:10]] == [0.] * 10
+    generator, offset = random.Random(21), 0.
+    for row in rows[10:]:
+        offset += generator.expovariate(1 / 60)
+        assert row["offset_seconds"] == offset
+    assert offset == pytest.approx(431.7154977718898)
+    path = tmp_path / "warm.json"
+    path.write_text(json.dumps(plan))
+    assert load_arrival_plan(path, identities) == plan
+    assert poisson_arrival_plan(identities, rate_per_second=1 / 60, seed=21) == (
+        poisson_arrival_plan(identities, rate_per_second=1 / 60, seed=21, initial_workflows=0)
+    )
+
+
+@pytest.mark.parametrize("initial", (True, -1, 3, 1.5, None))
+def test_invalid_initial_population_cannot_release_any_root(initial):
+    with pytest.raises(ValueError, match="initial workflows"):
+        poisson_arrival_plan(["b", "w"], rate_per_second=.2, seed=21, initial_workflows=initial)
+
+
+@pytest.mark.parametrize("fault", ("initial", "version", "zero_time", "seed", "mode"))
+def test_modified_warm_start_manifest_cannot_change_comparison_work(fault):
+    identities = ["a", "b", "c"]
+    plan = poisson_arrival_plan(identities, rate_per_second=.2, seed=21, initial_workflows=2)
+    if fault == "initial":
+        plan["initial_workflows"] = 1
+    elif fault == "version":
+        plan["schema_version"] = 1
+    elif fault == "zero_time":
+        plan["arrival_schedule"][0]["offset_seconds"] = .1
+    elif fault == "seed":
+        plan["seed"] = 22
+    else:
+        plan["mode"] = "poisson"
+    with pytest.raises(ValueError):
+        validate_arrival_plan(plan, identities)
+
+
+def test_simultaneous_warm_roots_keep_all_jct_and_dependency_boundaries():
+    plan = two_workflows()
+    arrivals = poisson_arrival_plan(["b", "w"], rate_per_second=1., seed=21, initial_workflows=2)
+    observed = []
+
+    async def emit(event):
+        observed.append(event)
+
+    async def serve(request, _submit):
+        prompt, output = plan.request_usage[request]
+        return NativeReplayCompletion(
+            request, time.monotonic() * 1000., local_monotonic_clock_domain(), prompt, output,
+        )
+
+    result = asyncio.run(execute_causal_replay(
+        plan, serve, emit, workflow_arrival_offsets_ms=arrival_offsets_ms(arrivals),
+    ))
+    starts = {event.workflow_id: event for event in observed if event.kind is Kind.WORKFLOW_START}
+    ends = {event.workflow_id: event for event in observed if event.kind is Kind.WORKFLOW_END}
+    assert starts["b"].ts_ms == starts["w"].ts_ms
+    for workflow in starts:
+        assert result["workflow_elapsed_ms"][workflow] == pytest.approx(
+            ends[workflow].ts_ms - starts[workflow].ts_ms,
+        )
+    assert result["replay_timing"]["shifts"] == []
+
+
 @pytest.mark.parametrize("rate", (True, None, 0, -1, float("inf"), float("nan")))
 def test_invalid_arrivals_fail_before_delivery(rate):
     with pytest.raises(ValueError):

@@ -1,6 +1,15 @@
 {
   "schema_version": 1,
   "status": "implementation_and_qualification_in_progress",
+  "latest_user_steering_20261029": {
+    "agentix_formal_reproduction": "cancelled_without_verified_author_source_artifact",
+    "agentix_existing_code_and_negative_evidence": "preserved",
+    "tokencake_formal_reproduction": "cancelled_by_user",
+    "next_gpu_baseline": "thunderagent_acting_decay",
+    "new_workload": "same_18_projects_initial_10_then_poisson_mean_60s_seed21",
+    "predictive_cpu_optimization_parallel_with_baseline_gpu": true,
+    "new_gpu_baseline_waits_for_agentix": false
+  },
   "evaluation": {
     "model": "Qwen3-Coder-30B-A3B-Instruct",
     "source_registration": "agentx_whole18_lifetime_20261025",
@@ -425,7 +434,7 @@
       "paper": "NSDI2026-Agentix",
       "primary_paper": "https://www.usenix.org/system/files/nsdi26-luo.pdf",
       "scope": "formal_paper_strategy_reimplementation",
-      "status": "common_native_core_gpu_and_models_qualified_formal_entry_pending",
+      "status": "formal_reproduction_cancelled_by_user_without_verified_author_artifact",
       "current_common_native_qualification": {
         "native_tree": "25155f0701c4c3707add0901437833281590016b",
         "common_tree": "11b84f7c31986782be3fbe699bae2574ef092389",

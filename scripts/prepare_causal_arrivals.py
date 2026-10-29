@@ -17,11 +17,13 @@ def main():
     parser.add_argument("--registration", type=Path, required=True)
     parser.add_argument("--rate-per-second", type=float, required=True)
     parser.add_argument("--seed", type=int, default=21)
+    parser.add_argument("--initial-workflows", type=int, default=0)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     registration = json.loads(args.registration.read_bytes())
     plan = poisson_arrival_plan(
         registration["workflow_ids"], rate_per_second=args.rate_per_second, seed=args.seed,
+        initial_workflows=args.initial_workflows,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("x") as stream:
@@ -30,6 +32,7 @@ def main():
     print(json.dumps({
         "output": str(args.output.resolve()), "workflows": len(plan["arrival_schedule"]),
         "rate_per_second": plan["rate_per_second"],
+        "initial_workflows": plan.get("initial_workflows", 0),
         "last_arrival_seconds": plan["arrival_schedule"][-1]["offset_seconds"],
         "arrival_schedule_sha256": plan["arrival_schedule_sha256"],
     }))

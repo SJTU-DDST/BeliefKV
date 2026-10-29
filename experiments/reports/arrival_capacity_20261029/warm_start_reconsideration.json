@@ -1,0 +1,80 @@
+{
+  "scope": "Offline observed evidence and finite-trial advice, not GPU or queue simulation.",
+  "observations": {
+    "ACK repair Full": {
+      "child_create_to_return_seconds": {
+        "count": 92,
+        "mean": 190.08270546781498,
+        "p25": 90.7215738105774,
+        "p50": 159.33757153511047,
+        "p75": 242.1016706123352,
+        "p95": 428.2378611984253,
+        "maximum": 728.0416744823456
+      },
+      "children_returning_within_120_seconds": 29,
+      "first_workflow_completion_seconds": 970.2389368305206,
+      "finite_burst_completions_per_minute": 0.4684217852902512
+    },
+    "ThunderAgent decay": {
+      "child_create_to_return_seconds": {
+        "count": 92,
+        "mean": 197.43627362714642,
+        "p25": 93.87239128875733,
+        "p50": 163.49991229438783,
+        "p75": 254.79812772941588,
+        "p95": 422.9245808773041,
+        "maximum": 775.478745267868
+      },
+      "children_returning_within_120_seconds": 27,
+      "first_workflow_completion_seconds": 1058.069409017563,
+      "finite_burst_completions_per_minute": 0.4585316400616697
+    }
+  },
+  "arrival_sizing": [
+    {
+      "total_workflows": 18,
+      "initial_workflows": 10,
+      "subsequent_workflows": 8,
+      "seed": 21,
+      "mean_interarrival_seconds": 120,
+      "expected_last_arrival_seconds": 960,
+      "seeded_last_arrival_seconds": 863.4309955437795,
+      "seeded_longest_gap_seconds": 197.94016208859816
+    },
+    {
+      "total_workflows": 18,
+      "initial_workflows": 10,
+      "subsequent_workflows": 8,
+      "seed": 21,
+      "mean_interarrival_seconds": 60,
+      "expected_last_arrival_seconds": 480,
+      "seeded_last_arrival_seconds": 431.7154977718898,
+      "seeded_longest_gap_seconds": 98.97008104429908
+    }
+  ],
+  "recommended_short_trial": {
+    "total_workflows": 18,
+    "initial_workflows": 10,
+    "subsequent_mean_interarrival_seconds": 60,
+    "arrival_seed": 21,
+    "running_decode_limit": 24,
+    "requires_mixed_arrival_contract_implementation": true,
+    "not_a_registered_gpu_experiment": true
+  },
+  "limitations": [
+    "Observed lifetimes include scheduler waiting and change with arrivals.",
+    "Finishing a child does not finish its workflow or prove useful KV pressure disappeared.",
+    "The finite burst completion rate is not stationary capacity.",
+    "All 18 arrivals finish within about 7.2 minutes; this does not establish steady load.",
+    "Assess useful Host hits, actual transfers, old-input recomputation and ready work jointly.",
+    "Do not resize the workload or fabricate additional distinct-project traces here."
+  ],
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tool_offload_before_admission_20261027/recent_memory_comparison_20261029.json": "8aadaffa022bd8114b0d733bb745905ba0aec2c977a2cfb1079d78fec9ac2953",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_20261028_r1/full/replay/runtime_events.replay.jsonl": "e6c751cfd6ffc5632f23291dc57e436db8344815e1c8a8f57f9cfed22bedc309",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/replay/runtime_events.replay.jsonl": "b895eb2915903d99c1a4389fd4f862dc05a5105a602eb958d0d14c3c77a5817f"
+  },
+  "operator_sha256": "caf30be97b042646c94b0dc8628c56b4a5ef124a3e21e804d538ebc22b89de18",
+  "GPU_experiment_started": false,
+  "performance_accepted": false
+}

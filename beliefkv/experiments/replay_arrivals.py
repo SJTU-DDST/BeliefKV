@@ -9,7 +9,7 @@ from beliefkv.experiments.arrival_schedule import (
 )
 
 
-def poisson_arrival_plan(workflow_ids, *, rate_per_second, seed):
+def poisson_arrival_plan(workflow_ids, *, rate_per_second, seed, initial_workflows=0):
     identities = list(workflow_ids)
     if (
         not identities or len(set(identities)) != len(identities)
@@ -19,13 +19,16 @@ def poisson_arrival_plan(workflow_ids, *, rate_per_second, seed):
         raise ValueError("arrival plan requires unique workflow identities and a numeric rate")
     arrivals = build_poisson_workflow_arrivals(
         len(identities), rate_per_second=rate_per_second, seed=seed,
+        initial_workflows=initial_workflows,
     )
     rows = [
         {"workflow_id": identity, "offset_seconds": arrival.scheduled_offset_seconds}
         for identity, arrival in zip(identities, arrivals)
     ]
     return {
-        "schema_version": 1, "mode": "poisson",
+        "schema_version": 2 if initial_workflows else 1,
+        "mode": "warm_start_poisson" if initial_workflows else "poisson",
+        **({"initial_workflows": initial_workflows} if initial_workflows else {}),
         "rate_per_second": rate_per_second, "seed": seed,
         "arrival_schedule": rows, "arrival_schedule_sha256": arrival_schedule_digest(rows),
         "jct_boundary": "scheduled_workflow_arrival_to_workflow_end",
@@ -35,12 +38,20 @@ def poisson_arrival_plan(workflow_ids, *, rate_per_second, seed):
 def validate_arrival_plan(plan, workflow_ids):
     identities = list(workflow_ids)
     if (
-        plan.get("schema_version") != 1 or plan.get("mode") != "poisson"
+        (plan.get("schema_version"), plan.get("mode")) not in (
+            (1, "poisson"), (2, "warm_start_poisson"),
+        )
         or plan.get("jct_boundary") != "scheduled_workflow_arrival_to_workflow_end"
     ):
         raise ValueError("unsupported replay arrival contract")
+    initial = plan.get("initial_workflows", 0)
+    if plan["mode"] == "warm_start_poisson" and (
+        type(initial) is not int or initial <= 0
+    ):
+        raise ValueError("warm-start arrivals require a positive initial population")
     expected = poisson_arrival_plan(
         identities, rate_per_second=plan.get("rate_per_second"), seed=plan.get("seed"),
+        initial_workflows=initial,
     )
     if plan != expected:
         raise ValueError("arrival identities, seeded times or digest differ from the frozen plan")
