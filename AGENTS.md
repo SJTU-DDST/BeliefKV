@@ -3694,3 +3694,17 @@
   Fresh position/session/native-stop/sampler qualification precedes Full.
   Reuse complete2048 Thunder and2s Full;no extra native or baseline. Freeze
   committed sources and recheck exact current CPU binding before registration.
+- Workflow-size Full now actually serves from frozen11e1c2ad on18893 at
+  ops/workflow_size_resume_20261029_r1.registration.json. Current4946-case CPU
+  binding/2001 inputs and exact complete3674/145565966/549671 predecessor work
+  reverified. Separate position registration passes24 exact token/session/
+  native-stop calls(all24 native stops),plus sampler1/8/24. Independent
+  workflow_size_gpu_r1/live_start_r1 observes21 native receipts/11 actual
+  arrivals,sole GPU ownership/nice0 processes,actual2048/mixed-off/running24/
+  seed21/native capacity,enabled workflow-size policy and2000ms control.
+  Live predictor SHA e010a8c12968cedaafed0ed15d8a873b02528f44999d0a53a04d1ebb0b5ca951
+  has real cached predictions/no error. This prefix is not complete performance.
+  CPU-only review_worker_r1 actually waits at nice19 from the same clean
+  commit,reusing complete Thunder and original2s Full;no further GPU action.
+  Keep all frozen sources/model inputs/work/arrivals/tails and the global
+  goal active;new full JCT/throughput and repeatable superiority remain pending.

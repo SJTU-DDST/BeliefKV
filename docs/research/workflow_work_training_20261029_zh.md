@@ -296,3 +296,27 @@ JCT、吞吐或调度最优收益的反事实估计。去重后的集合也不�
 先做新鲜的 position/session/native-stop 和 sampler 检查，再执行 Full；复用已完成
 的相同 ThunderAgent decay 控制及原 2s Full，不重复 native、ThunderAgent 或其他
 baseline。离线排序改善只支持进行验证，尚未证明性能提升。
+
+## 正式 Full 已启动
+
+`workflow_size_gpu_r1/preflight.json` 从干净提交 `11e1c2ad` 重新核对全部 4,946 项
+CPU 资格绑定，确认对应的 2,001 个输入未变，并独立验证已完成 ThunderAgent 和
+原 2s Full 的 3,674 次请求、145,565,966 个输入 token、549,671 个输出 token
+完全相同。新候选的模型、报告、数据审计、到达表及原生引擎输入另有指纹记录；
+没有为这次模型权重变化修改已验证的运行时实现。
+
+`ops/workflow_size_resume_position_20261029.registration.json` 实际通过 24 次
+token/session/原生停止检查（24 次原生停止）及 batch 1/8/24 的采样校验。
+随后注册 `ops/workflow_size_resume_20261029_r1.registration.json`，端口 18893，
+运行目录为 `experiments/raw/workflow_size_resume_20261029_r1/full`。
+
+`workflow_size_gpu_r1/live_start_r1.json` 在 2026-10-29 20:33:27 UTC 独立核对冻结
+源码和模型输入、GPU 唯一所有者、nice 0 的服务进程、实际 2048/mixed-off/
+running24/seed21、原生容量及已启用的 workflow-size 策略。在线模型指纹为上述
+`e010…a951`，预测缓存与推断已产生，error 为空；实际控制周期 2000ms。
+此时有 21 份原生回执、11 个已到达 workflow。它是独立文件的运行前缀，
+不是原子快照、完整工作量或性能证明。
+
+CPU-only `workflow_size_gpu_r1/review_worker_r1` 已独立注册并运行在 nice 19，
+等待新 Full 完成、遥测排空及实际进程退出后，复用现有控制与原 Full 生成完整
+JCT/吞吐及 decode 趋势、分布对比。该评审进程不注册任何进一步 GPU 实验。
