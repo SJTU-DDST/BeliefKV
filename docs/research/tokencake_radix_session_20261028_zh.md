@@ -56,3 +56,21 @@ common11b84f7c3198；当前 KVFlow 的 frozen tree 不受影响。
 和新鲜资源检查后执行十二个组件。组件通过后才继续正式 TokenCake
 配置及入口检查；Agentix正式臂仍未启用。保持同一 V230/V311 完整
 工作量、不重跑 native/V345、不启动消融，整体目标仍 active。
+
+## 顺序执行入口
+
+`defer_gpu_components.py` 单独登记这十二个小组件，不启动完整模型。
+除了前驱正常完成、watcher/server/driver实际退出，还检查每个前驱
+arm 的 owned cleanup 边界及进程身份；之后才做两次新鲜资源检查。
+CPU waiter 隐藏 CUDA，并在等待和运行时检查共享 reservation/pause。
+来源、742项原始XML/manifest及之前证据均做内容校验；组件的实际
+PID必须等于报告中的GPU PID，失败和停止都保留结果并清理子进程。
+
+独立 `component_queue_cpu.xml` 的71项检查全部通过、无跳过，
+包含顺序门槛、失败前驱拒绝、篡改/重复/失败CPU证据拒绝以及现有
+paper启动和TokenCake验证器。这是启动入口的CPU证据，与742项
+策略/原生session回归分开，不能相加为一次合并执行。
+
+新增只读前缀 `kvflow_collecting_before_component_queue.json` 封存
+3664/3674个完全一致的完成回执；它仍不是完整实验结果。当前GPU
+组件尚未执行，任何后续资格或性能结论必须依据实际完整报告。

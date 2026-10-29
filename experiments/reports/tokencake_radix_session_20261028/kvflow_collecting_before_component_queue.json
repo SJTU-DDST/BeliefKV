@@ -1,0 +1,743 @@
+{
+  "observed_at": "2026-10-29T04:36:15.112512+00:00",
+  "scope": "sealed_collecting_prefix_not_complete_performance",
+  "registration": "/home/longhao/experiment/ops/kvflow_locobench_v230_v311_20261028_r1.registration.json",
+  "registration_sha256": "7ddd3e75e6a63366ea29f2ef244084a166a9ada65ca4277c1af85c9260525d48",
+  "collection_code_commit": "6dc4b89223cddea44841aa1b7ae56d656fc0a20b",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/kvflow_locobench_v230_v311_20261028_r1/kvflow_observed_graph",
+  "actual_live_processes": {
+    "watcher": {
+      "pid": 1083607,
+      "state": "S",
+      "ppid": 1,
+      "start_ticks": "741636484",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-causal-6dc4b89223cd/scripts/run_causal_comparison.py",
+        "--watch",
+        "/home/longhao/experiment/ops/kvflow_locobench_v230_v311_20261028_r1.registration.json"
+      ]
+    },
+    "server": {
+      "pid": 1084292,
+      "state": "S",
+      "ppid": 1083607,
+      "start_ticks": "741641108",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+        "--served-model-name",
+        "Qwen3-Coder-30B-A3B-Instruct",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "18701",
+        "--dtype",
+        "bfloat16",
+        "--kv-cache-dtype",
+        "bfloat16",
+        "--tensor-parallel-size",
+        "1",
+        "--context-length",
+        "262144",
+        "--mem-fraction-static",
+        "0.94",
+        "--chunked-prefill-size",
+        "4096",
+        "--max-running-requests",
+        "24",
+        "--random-seed",
+        "21",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--enable-metrics",
+        "--enable-hierarchical-cache",
+        "--hicache-size",
+        "200",
+        "--hicache-write-policy",
+        "write_back",
+        "--hicache-io-backend",
+        "kernel",
+        "--hicache-mem-layout",
+        "page_first",
+        "--enable-session-radix-cache",
+        "--enable-custom-logit-processor",
+        "--max-total-tokens",
+        "805198",
+        "--enable-beliefkv-admission",
+        "--beliefkv-event-socket-path",
+        "/tmp/bkv-causal-18701.sock"
+      ]
+    },
+    "driver": {
+      "pid": 1085740,
+      "state": "S",
+      "ppid": 1083607,
+      "start_ticks": "741655851",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-causal-6dc4b89223cd/scripts/run_causal_gpu_replay.py",
+        "--source-arm",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_parallel_retry_source_20261026_v230/native_capture",
+        "--output-dir",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/kvflow_locobench_v230_v311_20261028_r1/kvflow_observed_graph/replay",
+        "--base-url",
+        "http://127.0.0.1:18701",
+        "--request-timeout-s",
+        "3600.0",
+        "--stream-response-metrics",
+        "--tool-duration-overlay",
+        "/home/longhao/experiment/.worktrees/beliefkv-kvflow-causal-entry-20261028/experiments/reports/v311_v230_categorized_network_timing_cpu_20261027.json",
+        "--event-socket",
+        "/tmp/bkv-causal-18701.sock"
+      ]
+    }
+  },
+  "expected_requests": 3674,
+  "exact_completed_receipts": 3664,
+  "expected_receipts": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/replay/native_requests.jsonl",
+    "sha256": "971780ae36bbc6dd99de53bcc5bb26a0d909baeba4dcd9ce4e28dc22f05bab73"
+  },
+  "sampled_logical_budgets": null,
+  "sampled_block_reasons": null,
+  "decode_prefix": {
+    "batches": 86784,
+    "request_steps": 545637,
+    "worker_ms": 1586784.8005956039,
+    "request_step_ms": 14017065.551662818,
+    "output_tokens": 542159,
+    "context_tokens": 30317263733,
+    "graph_batches": 86784,
+    "graph_request_steps": 545637,
+    "configured_bucket_rows": 628345,
+    "batches_needing_padding": 43519,
+    "worker_ms_in_batches_needing_padding": 1058997.3083594814,
+    "mean_batch": 6.287299502212389,
+    "worker_weighted_mean_batch": 8.833627311278425,
+    "worker_interval_sum_s": 1586.7848005956039,
+    "mean_worker_interval_ms": 18.284301260550375,
+    "output_tokens_per_worker_interval_second": 341.6714098827385,
+    "mean_observed_request_context_tokens": 55563.064332147565,
+    "graph_batch_fraction": 1.0,
+    "configured_padding_rows_per_real_graph_row": 0.15158062961272778
+  },
+  "worker_interval_sum_ms_by_phase": {
+    "prefill": 484998.841480352,
+    "decode": 1586784.8005956039
+  },
+  "latest_runtime_snapshot": {
+    "event": "admission_runtime_state",
+    "ts_ms": 1793248569166.7256,
+    "monotonic_ms": 7418832267.303938,
+    "clock_sample_span_ms": 0.00030422210693359375,
+    "final": false,
+    "counts": {
+      "admission_rank_dependencies_preserved": 14365,
+      "native_physical_completed": 0,
+      "h2d_service_sample": 786,
+      "child_report_notice_observed": 90,
+      "final_stage_accepted": 71,
+      "prediction_maintenance_sweeps": 8701,
+      "final_request_bound": 70,
+      "final_stage_tool_invalidated": 12,
+      "join_intent_stale": 20,
+      "no_authorization": 1,
+      "final_stage_resumed_after_sibling_return": 1
+    },
+    "physical_disabled": false,
+    "internal_comparison_mode": "scheduler_only",
+    "custom_kv_management": false,
+    "paper_baseline": {
+      "policy": "kvflow_paper_observed_graph",
+      "program_identity": "invocation_id",
+      "cache_identity": "workflow_context_epoch",
+      "future_information_used": false,
+      "request_transport": "plain_tokens_or_full_prompt_native_radix_session",
+      "conversation_session_reconstruction_supported": false,
+      "native_capacity_authority_preserved": true,
+      "graph_information_source": "observed_events",
+      "fixed_prefix_source": "completed_same_context_input_lcp",
+      "application_declared_graph_equivalence_claimed": false,
+      "control_interval_ms": 200,
+      "prefetch_concurrency_limit": 4,
+      "path_checks_per_interval": 16,
+      "native_eviction_checks_per_interval": 16,
+      "path_node_limit": 1024,
+      "speculative_native_capacity_reserve": "unallocated_observed_admitted_input_plus_one_decode_step",
+      "contexts": 3,
+      "pending_requests": 0,
+      "inflight_prefetches": 0,
+      "counts": {
+        "graph_updates": 13317,
+        "graph_update_wall_ns": 3838510466,
+        "graph_update_max_wall_ns": 3561227,
+        "maintenance_ticks": 9546,
+        "native_growth_reserve_tokens": 0,
+        "native_growth_reserve_max_tokens": 141925,
+        "maintenance_path_checks": 0,
+        "maintenance_wall_ns": 431382280,
+        "maintenance_max_wall_ns": 228991,
+        "queue_plans": 4107,
+        "queue_plan_wall_ns": 7940217111,
+        "queue_plan_max_wall_ns": 12460256,
+        "registered": 3664,
+        "native_radix_session_requests": 3664,
+        "native_prefix_matches": 14094,
+        "maintenance_deferred_after_native_selection": 470,
+        "completed": 3664,
+        "contexts_retired": 3661,
+        "loading_requests_deferred": 1
+      },
+      "cache_counts": {
+        "step_updates": 13317,
+        "step_update_nodes": 0,
+        "priority_lookups": 118859
+      },
+      "transfer_counts": {
+        "native_commands_completed": 0
+      }
+    },
+    "agent_admission": null,
+    "agent_admission_enabled": false,
+    "agent_join_free_admission": false,
+    "agent_join_blocked_handoff": false,
+    "agent_free_continuation_admission": false,
+    "full_prefix_migration": null,
+    "join_parent_priority": false,
+    "join_last_child_priority": false,
+    "prefill_scheduling_policy": "workflow",
+    "tool_continuity": false,
+    "tool_continuity_grace_ms": 0.0,
+    "tool_residency_grace": null,
+    "tool_continuity_policy": null,
+    "join_priority_order": "aged_fifo_then_native;independent_four_admission_quota",
+    "restore_priority_scope": "same_causal_class;no_aged_head_bypass",
+    "prefetch_residency_protection": false,
+    "prefetch_protection_revocable_on_pressure": true,
+    "join_priority_ordinary_quota": 4,
+    "join_priority_pending_parents": 0,
+    "join_only_priority_ordinary_quota": 4,
+    "join_only_priority_allows_aged_head_after_quota": true,
+    "join_only_pending_parents": 0,
+    "final_stage_prefetch": false,
+    "final_stage_priority": false,
+    "prepare_host": false,
+    "background_prepare": false,
+    "idle_host_mirror_recycle": false,
+    "terminal_child_reclaim": false,
+    "subagent_retention": null,
+    "h2d_opportunity_sampling": false,
+    "prepare_pool_scope": "missing_full_session_path",
+    "spawn_full_prepare": {
+      "pending_contexts": 0,
+      "max_batch_bytes": 4294967296,
+      "max_merged_nodes": 64
+    },
+    "idle_full_prepare": {
+      "interval_ms": 200.0,
+      "queued_owner_backup": false,
+      "native": null
+    },
+    "latest_full_session_branches_retired": 100,
+    "resident_first": false,
+    "prefill_ordering_mode": "workflow",
+    "workflow_attained_work": false,
+    "workflow_work_metric": "completed_request_output_tokens",
+    "workflow_work_accounts": 0,
+    "workflow_completion_focus": null,
+    "workflow_completion_quantum": null,
+    "execution_handoff": false,
+    "overlap_prefetch_supported": true,
+    "execution_handoff_request_id": null,
+    "tool_timing_only": false,
+    "tool_predictor_configured": false,
+    "online_tool_timing": false,
+    "tool_timing_prior_sha256": null,
+    "predicted_tool_offload": false,
+    "tool_offload_before_admission": false,
+    "layer_handoff_enabled": false,
+    "layer_handoff_d2h_layers": 1,
+    "layer_handoff_h2d_layers": 1,
+    "tool_offload_policy": null,
+    "idle_prepare_io_backend": "native",
+    "tool_offload_min_survival": 0.9,
+    "host_demand_reserve_bytes": 0,
+    "online_tool_timing_revision": null,
+    "report_length_calibration_samples": 0,
+    "selective_join_prefetch": {
+      "min_full_bytes": 536870912,
+      "interval_ms": 200.0,
+      "max_candidates": 4,
+      "enabled": false,
+      "max_advance_ms": 1000.0,
+      "eos_to_native_arrival_window_ms": 50.0,
+      "eos_to_native_arrival_samples": 0,
+      "window_statistic": "max(configured_protocol_floor, online_p10_after_4_samples)",
+      "service_semantics": "controller_submit_to_ack_plus_enqueue; not exposed GPU wait"
+    },
+    "borrowable_parent_headroom": false,
+    "tool_predictor_disabled": false,
+    "tool_prefetch": false,
+    "tool_restore_mode": "speculative",
+    "execution_frontier_restore": false,
+    "frontier_restore_ordinary_quota": 4,
+    "frontier_cold_reclaim": false,
+    "frontier_cold_reclaim_policy": "waiting",
+    "frontier_cold_reclaim_max_nodes": 16,
+    "restore_tiers": "complete",
+    "restore_tiers_supported": false,
+    "restore_tiers_native": {},
+    "native_free_page_h2d_fence": {
+      "requested": true,
+      "enabled": true,
+      "supported": true,
+      "counts": {
+        "free_boundary_events": 2289,
+        "forward_stream_batches": 781,
+        "free_event_batches": 5
+      }
+    },
+    "native_prefetch_batch_dependencies": {
+      "checks": 0,
+      "unrelated_waits_skipped": 0
+    },
+    "idle_prepare_policy": "cold",
+    "tool_prefetch_planning_slack_ms": 250.0,
+    "prefetch_lead_ms": 1000.0,
+    "tool_prefetch_priority_ms": 0.0,
+    "join_prefetch_min_advance_ms": 0.0,
+    "tool_prefetch_min_advance_ms": 0.0,
+    "parallel_wait_prefetch": true,
+    "wait_prefetch_contexts": 2,
+    "tool_inflight_contexts": 0,
+    "join_inflight_contexts": 0,
+    "prediction_maintenance_interval_ms": 100.0,
+    "semantic_work_statistic": "center",
+    "final_admission_policy": "remaining_report_work",
+    "eos_protocol_window_ms": 50.0,
+    "eos_prefetch_evidence_window_ms": 1000.0,
+    "terminal_cache_diagnostics": false,
+    "profile_shared_path": false,
+    "demand_prefill_pipeline": false,
+    "demand_prefill_pipeline_installed": false,
+    "demand_prefill_pipeline_progress_probe": false,
+    "h2d_seed_samples": 0,
+    "h2d_service_samples": 64,
+    "prefetch_residency_budget": {
+      "request_slots": 4,
+      "byte_limit": 1073741824,
+      "reserve_full_tokens": 0,
+      "reserve_mamba_slots": 0,
+      "source": "legacy_capacity_unavailable",
+      "evictable_full_tokens": 0,
+      "evictable_mamba_slots": 0
+    },
+    "prefetch_request_counts_at_budget": null,
+    "prefetch_residency_headroom": null,
+    "prefetch_locked_count": 0,
+    "prefetch_locked_contexts_by_role": {
+      "demand": 0,
+      "speculative": 0
+    },
+    "prefetch_protected_bytes": 0,
+    "semantic_worker_configured": false,
+    "join_prefetch_trigger": "observed_eos",
+    "semantic_worker_error": "",
+    "shared_path_timing": {
+      "schema_version": 2,
+      "enabled": false,
+      "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+      "cpu_clock": "thread_time_ns",
+      "sample_every": 64,
+      "sampling": "every Nth root call per phase, starting with the first; descendants inherit",
+      "scope": "Measured completed samples only; exclusive values subtract measured children. No expansion to whole-run cost, exposed GPU idle or removable JCT.",
+      "elapsed_ms": 2276237.216352,
+      "bucket_upper_ms": [
+        0.01,
+        0.025,
+        0.05,
+        0.1,
+        0.25,
+        0.5,
+        1.0,
+        2.5,
+        5.0,
+        10.0,
+        25.0,
+        50.0,
+        100.0,
+        250.0,
+        1000.0,
+        null
+      ],
+      "phases": {}
+    },
+    "control_timing_sample_every": null,
+    "opportunity_writer_timing": {
+      "schema_version": 1,
+      "sample_every": 64,
+      "snapshot_ts_ms": 1793248569166.9326,
+      "cpu_clock": "thread_time_ns",
+      "wall_clock": "perf_counter_ns",
+      "scope": "Every 64th record per category, starting with its first record. Measured processing samples only; queue waiting and status publication are excluded. Wall includes scheduling and GIL waiting; thread CPU excludes waiting. No full-run cost, GPU stall, GIL attribution or JCT saving is inferred.",
+      "categories": {
+        "admission_runtime_state": {
+          "records_seen": 2171,
+          "samples": 34,
+          "sampled_cpu_ms": 8.013983,
+          "sampled_wall_ms": 13.293828,
+          "mean_sample_cpu_ms": 0.23570538235294117,
+          "mean_sample_wall_ms": 0.3909949411764706,
+          "max_sample_cpu_ms": 0.727966,
+          "max_sample_wall_ms": 1.462451
+        },
+        "child_final_stage_accepted": {
+          "records_seen": 71,
+          "samples": 2,
+          "sampled_cpu_ms": 0.050137,
+          "sampled_wall_ms": 0.0486,
+          "mean_sample_cpu_ms": 0.0250685,
+          "mean_sample_wall_ms": 0.0243,
+          "max_sample_cpu_ms": 0.025765,
+          "max_sample_wall_ms": 0.025068
+        }
+      }
+    }
+  },
+  "native_status_observation": {
+    "background_writer_timing": {
+      "categories": {
+        "audit:gpu_restore_dependency_wait": {
+          "max_sample_cpu_ms": 0.400939,
+          "max_sample_wall_ms": 0.505773,
+          "mean_sample_cpu_ms": 0.400939,
+          "mean_sample_wall_ms": 0.505773,
+          "records_seen": 50,
+          "sampled_cpu_ms": 0.400939,
+          "sampled_wall_ms": 0.505773,
+          "samples": 1
+        },
+        "audit:gpu_service_sample": {
+          "max_sample_cpu_ms": 0.566705,
+          "max_sample_wall_ms": 1.929077,
+          "mean_sample_cpu_ms": 0.0842946176056338,
+          "mean_sample_wall_ms": 0.14659150070422536,
+          "records_seen": 90831,
+          "sampled_cpu_ms": 119.698357,
+          "sampled_wall_ms": 208.159931,
+          "samples": 1420
+        },
+        "audit:prefill_turnover_sample": {
+          "max_sample_cpu_ms": 0.216793,
+          "max_sample_wall_ms": 0.433227,
+          "mean_sample_cpu_ms": 0.140805,
+          "mean_sample_wall_ms": 0.194489,
+          "records_seen": 222,
+          "sampled_cpu_ms": 0.56322,
+          "sampled_wall_ms": 0.777956,
+          "samples": 4
+        },
+        "events:record": {
+          "max_sample_cpu_ms": 0.248453,
+          "max_sample_wall_ms": 0.273178,
+          "mean_sample_cpu_ms": 0.053800139130434785,
+          "mean_sample_wall_ms": 0.055328547826086955,
+          "records_seen": 7329,
+          "sampled_cpu_ms": 6.187016,
+          "sampled_wall_ms": 6.362783,
+          "samples": 115
+        },
+        "eviction_attribution:context_prefix_probe": {
+          "max_sample_cpu_ms": 0.634584,
+          "max_sample_wall_ms": 0.635397,
+          "mean_sample_cpu_ms": 0.21328458620689655,
+          "mean_sample_wall_ms": 0.2137265172413793,
+          "records_seen": 3665,
+          "sampled_cpu_ms": 12.370506,
+          "sampled_wall_ms": 12.396138,
+          "samples": 58
+        },
+        "eviction_attribution:host_block_eviction": {
+          "max_sample_cpu_ms": 11.969579,
+          "max_sample_wall_ms": 12.026332,
+          "mean_sample_cpu_ms": 1.8622968408710219,
+          "mean_sample_wall_ms": 1.893796,
+          "records_seen": 38166,
+          "sampled_cpu_ms": 1111.791214,
+          "sampled_wall_ms": 1130.596212,
+          "samples": 597
+        },
+        "eviction_attribution:request_probe": {
+          "max_sample_cpu_ms": 29.530699,
+          "max_sample_wall_ms": 35.305273,
+          "mean_sample_cpu_ms": 1.476756,
+          "mean_sample_wall_ms": 1.68643396,
+          "records_seen": 3175,
+          "sampled_cpu_ms": 73.8378,
+          "sampled_wall_ms": 84.321698,
+          "samples": 50
+        },
+        "eviction_attribution:served_context_prefix": {
+          "max_sample_cpu_ms": 0.774613,
+          "max_sample_wall_ms": 0.779088,
+          "mean_sample_cpu_ms": 0.1447926724137931,
+          "mean_sample_wall_ms": 0.1451534655172414,
+          "records_seen": 3664,
+          "sampled_cpu_ms": 8.397975,
+          "sampled_wall_ms": 8.418901,
+          "samples": 58
+        },
+        "host_pool:host_pool_eviction": {
+          "max_sample_cpu_ms": 0.049872,
+          "max_sample_wall_ms": 0.050374,
+          "mean_sample_cpu_ms": 0.012554691860465116,
+          "mean_sample_wall_ms": 0.01276207558139535,
+          "records_seen": 10960,
+          "sampled_cpu_ms": 2.159407,
+          "sampled_wall_ms": 2.195077,
+          "samples": 172
+        },
+        "host_pool:host_pool_transfer_ack": {
+          "max_sample_cpu_ms": 0.071454,
+          "max_sample_wall_ms": 0.194843,
+          "mean_sample_cpu_ms": 0.010573196048632218,
+          "mean_sample_wall_ms": 0.011558480243161095,
+          "records_seen": 42074,
+          "sampled_cpu_ms": 6.957163,
+          "sampled_wall_ms": 7.60548,
+          "samples": 658
+        },
+        "host_pool:host_pool_usage": {
+          "max_sample_cpu_ms": 0.157867,
+          "max_sample_wall_ms": 0.157986,
+          "mean_sample_cpu_ms": 0.0466339375,
+          "mean_sample_wall_ms": 0.04676925,
+          "records_seen": 2019,
+          "sampled_cpu_ms": 1.492286,
+          "sampled_wall_ms": 1.496616,
+          "samples": 32
+        },
+        "transfer:transfer_telemetry": {
+          "max_sample_cpu_ms": 0.108231,
+          "max_sample_wall_ms": 0.598862,
+          "mean_sample_cpu_ms": 0.023223756838905773,
+          "mean_sample_wall_ms": 0.02679516565349544,
+          "records_seen": 42074,
+          "sampled_cpu_ms": 15.281232,
+          "sampled_wall_ms": 17.631219,
+          "samples": 658
+        }
+      },
+      "cpu_clock": "thread_time_ns",
+      "sample_every": 64,
+      "schema_version": 1,
+      "scope": "Every 64th record per category, starting with its first record. Measured processing samples only; queue waiting and status publication are excluded. Wall includes scheduling and GIL waiting; thread CPU excludes waiting. No full-run cost, GPU stall, GIL attribution or JCT saving is inferred.",
+      "snapshot_ts_ms": 1793248574821.3247,
+      "wall_clock": "perf_counter_ns"
+    },
+    "checkpoint_path_shadow": false,
+    "collection_mode": "admission_observation",
+    "context_prefix_reuse_evidence": {
+      "counts": {
+        "new_or_changed_prompt_tokens": 2326841,
+        "previously_served_common_prefix_tokens": 140375753,
+        "previously_served_prefix_recompute_proxy_tokens": 0,
+        "request_probes": 3665,
+        "requests_with_prefix_recompute_proxy": 0,
+        "with_prior_served_prompt": 3555,
+        "without_prior_served_prompt": 110
+      },
+      "semantics": "Previously served same-session input-prefix loss, not newly appended input or a per-layer FULL/Mamba recomputation count.",
+      "tracked_context_count": 110,
+      "tracking_limit": 1024
+    },
+    "dropped_records": 0,
+    "failed_records": 0,
+    "gpu_restore_wait_probe": {
+      "counts": {
+        "completed_samples": 50,
+        "duplicate_or_captured_wait": 2400,
+        "eligible_batches": 786,
+        "sampled_batches": 50
+      },
+      "pending_samples": 0,
+      "queue_limit": 32,
+      "sampling_interval": 16
+    },
+    "host_block_eviction_attribution": {
+      "available": true,
+      "counts": {
+        "full_device_hit": 10718,
+        "full_evictions": 38166,
+        "full_host_hit": 21441,
+        "full_mixed_tier_hit": 1,
+        "full_recompute": 8,
+        "request_probes": 3175
+      },
+      "evicted_units_by_pool": {
+        "full": 33223916
+      },
+      "full_reaccess_semantics": "exact prefix match plus request device/host cached-token intervals; remaining evicted FULL interval is attributed to recomputation",
+      "identity_semantics": "run-keyed HMAC over exact cache namespace and radix token prefix; raw token IDs are not written",
+      "mamba_reaccess_semantics": "exact prefix revisit is observable, but native telemetry does not expose the Mamba hit location per node",
+      "pending_blocks_by_pool": {
+        "full": 4521
+      },
+      "pending_latest_evicted_units_by_pool": {
+        "full": 2398060
+      },
+      "probe_prefix_length_overflow": 0,
+      "recomputed_full_units": 27169,
+      "reused_full_units": 29999397
+    },
+    "host_pool_evidence": {
+      "full": {
+        "bytes_per_unit": 98304,
+        "capacity_units": 2034506,
+        "d2h_ack_units": 35258040,
+        "evicted_bytes": 3266043838464,
+        "evicted_units": 33223916,
+        "eviction_calls": 10960,
+        "h2d_ack_units": 65106555,
+        "h2d_units_after_first_host_eviction": 65106555,
+        "high_water": {
+          "used_bytes": 200000077824,
+          "used_units": 2034506
+        }
+      },
+      "mamba": {
+        "bytes_per_unit": null,
+        "capacity_units": null,
+        "d2h_ack_units": 0,
+        "evicted_bytes": 0,
+        "evicted_units": 0,
+        "eviction_calls": 0,
+        "h2d_ack_units": 0,
+        "h2d_units_after_first_host_eviction": 0,
+        "high_water": {}
+      }
+    },
+    "host_tier_enabled": true,
+    "pending_batch_count": 1,
+    "pending_request_count": 1,
+    "prefill_turnover_probe": {
+      "counts": {
+        "completed_samples": 222,
+        "eligible_prefills": 3547,
+        "selected_samples": 222
+      },
+      "pending_samples": 0,
+      "queue_limit": 32,
+      "sampling_interval": 16
+    },
+    "record_counts": {
+      "audit": 93284,
+      "events": 7329,
+      "eviction_attribution": 48670,
+      "host_pool": 55053,
+      "transfer": 42074
+    },
+    "record_output_token_ids": true,
+    "replay_token_capture": false,
+    "request_cache_evidence": {
+      "after_first_full_host_eviction": {
+        "cached_tokens_device": 68779561,
+        "cached_tokens_host": 44636544,
+        "mamba_host_hit_slots": 0,
+        "prompt_tokens": 115129329,
+        "request_count": 3175,
+        "requests_with_full_host_hit": 809,
+        "requests_with_mamba_host_hit": 0,
+        "uncached_prompt_tokens": 1713224
+      },
+      "after_first_host_eviction": {
+        "cached_tokens_device": 68779561,
+        "cached_tokens_host": 44636544,
+        "mamba_host_hit_slots": 0,
+        "prompt_tokens": 115129329,
+        "request_count": 3175,
+        "requests_with_full_host_hit": 809,
+        "requests_with_mamba_host_hit": 0,
+        "uncached_prompt_tokens": 1713224
+      },
+      "after_first_mamba_host_eviction": {},
+      "all": {
+        "cached_tokens_device": 76100613,
+        "cached_tokens_host": 65106555,
+        "mamba_host_hit_slots": 0,
+        "prompt_tokens": 144984376,
+        "request_count": 3665,
+        "requests_with_full_host_hit": 1071,
+        "requests_with_mamba_host_hit": 0,
+        "uncached_prompt_tokens": 3777208
+      }
+    },
+    "request_cache_evidence_semantics": {
+      "after_eviction": "pool-level request hits and uncached prompt tokens after the first eviction; use eviction_attribution.jsonl for node-level FULL reaccess attribution",
+      "full_host_hit": "cached_tokens_host input-token count",
+      "mamba_host_hit": "mamba_host_hit_length checkpoint-slot count; not tokens"
+    },
+    "schema_version": 1,
+    "snapshot_ts_ms": 1793248574821.3196,
+    "source": "native_sglang_v0520",
+    "write_back_batch": {
+      "counts": {
+        "attempts": 0,
+        "batches": 0,
+        "enqueue_failed": 0,
+        "full_tokens": 0,
+        "no_chain": 0,
+        "no_planner": 0,
+        "nodes": 0,
+        "partial_batches": 0,
+        "planned_nodes": 0,
+        "unsupported_or_queued": 0
+      },
+      "max_nodes": 1
+    },
+    "writer_error": null,
+    "writer_queue_depth": 0
+  },
+  "native_status_sha256": "e92e18f1111f7fdba78d411a40fee22adeb18e9f5e472e35d3ebb9e95603a297",
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/kvflow_locobench_v230_v311_20261028_r1/kvflow_observed_graph/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 13635574,
+      "complete_prefix_sha256": "9d50d7610baebf6a0b74c0616cd799d3f80fb0acbe4ffde273e6e3f2ebdc4803",
+      "first_read_limit_bytes": 13635574
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/kvflow_locobench_v230_v311_20261028_r1/kvflow_observed_graph/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 17171172,
+      "complete_prefix_sha256": "5d092f468fb86a57dedae2d3f6e2cdf15fc06153d5eb524edc16766094752a8c",
+      "first_read_limit_bytes": 17171172
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/kvflow_locobench_v230_v311_20261028_r1/kvflow_observed_graph/server/runtime_events.sglang.jsonl": {
+      "complete_prefix_bytes": 12290076,
+      "complete_prefix_sha256": "268384a0b15e0a51f68c636ce943cb8c910e49f16b0776d02ab85271821476cd",
+      "first_read_limit_bytes": 12290076
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/kvflow_locobench_v230_v311_20261028_r1/kvflow_observed_graph/server/runtime_audit.jsonl": {
+      "complete_prefix_bytes": 358123740,
+      "complete_prefix_sha256": "b2fc8bef389bc30086c4b4117bc2b33c954c158110bc443ac3f78db003a7ab92",
+      "first_read_limit_bytes": 358123740
+    }
+  },
+  "analysis_source_sha256": {
+    "scripts/audit_collecting_agent_pipeline.py": "c1c14eff358fe325f9aab997988451077cf65ed0648ceb5f7b467f59bc48201f",
+    "scripts/audit_agent_budget_composition.py": "99f8dac99620337c53189f19b07b9d03d85fd818dcdd3c425af5cabbed43c71e",
+    "scripts/audit_decode_batch_efficiency.py": "ff56129a6fa56c01612240bde92f11bbc441a79cf13756d7ccb69796dd760fc7",
+    "scripts/audit_sealed_wait_prefetch.py": "467c33297fdfc1358b91455bb775d58e6edb287cb11dc51dc35d219c00995b46",
+    "scripts/run_causal_comparison.py": "b3554f3cf538df67cbd77e7bd190c34d1472d5580049db146135d0ddf3bc2046"
+  },
+  "limitations": [
+    "Independent first-read complete JSONL prefixes are not an atomic cross-file snapshot.",
+    "Logical budget, decode and receipt prefixes can cover different end times.",
+    "Decode worker intervals include runtime and waiting; they are not pure GPU kernel durations.",
+    "No completed-only subset JCT or whole-run throughput is calculated.",
+    "This observation does not establish final correctness, performance or prediction quality."
+  ],
+  "performance_accepted": false
+}
