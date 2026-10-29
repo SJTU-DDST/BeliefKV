@@ -3662,3 +3662,13 @@
   opportunity,not physical feasibility,actual admission or JCT counterfactual.
   Candidate sets are not independent workflows. Keep matched6 capture/CPU
   finisher running unchanged;no new performance or baseline run follows.
+- Continuous paused reference fixes the changing-class-threshold comparison:
+  same1803 sampled comparisons/440 distinct request pairs give context1075,
+  old task-only1063,declared-execution1080 correct. These are repeated
+  observations,not independent tasks or feasible/JCT counterfactuals.
+  Profile error decomposition finds after-completed-JOIN effective accuracy
+  .77305 but long-to-short .66371 versus .28887 before the first completed
+  JOIN. All14458 development attained-work values remain within training's
+  maximum total65088.18;simple beyond-maximum extrapolation is insufficient.
+  These read-only artifacts change no predictor weights,thresholds or live
+  capture. Wait complete matched6 before inspecting its fixed fit/ranking.
