@@ -32,3 +32,20 @@ H2D/D2H 和旧输入重算。
 
 配置、固定到达表和 CPU/排队记录保存在
 `experiments/reports/arrival_mean120_20261029/`。
+
+## 登记状态
+
+代码与配置已提交为 `622c5feb5280e6031cf72633aa424835aa509bdf`。
+在该提交的独立干净工作树上，单次 CPU 回归通过 4,734 个用例和
+6 个子测试，保留之前全部 4,713 个用例；1,925 份源输入在执行前后
+保持一致。证据为该目录的 `cpu_r1/evidence.json`。
+
+2026-10-29 21:11:16 Asia/Shanghai，CPU 等待进程
+PID 1341226 / start ticks 744960744 已独立核验为真实存活、
+命令行与登记一致、nice0，状态为 `waiting_predecessor`。
+队列登记位于 `queue_r1/registration.json`。新 ThunderAgent 与 FULL
+分别使用 18871、18872；当时两侧尚未登记 GPU 比较进程，唯一 GPU
+使用者仍为原 60 秒 FULL 的 scheduler PID 1326025。
+
+上述状态只证明后继任务已排队，不是新 120 秒实验已经启动或获得性能
+收益。实际执行状态由队列与两侧各自的状态文件继续记录。

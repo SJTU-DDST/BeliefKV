@@ -1,0 +1,20 @@
+{
+  "observed_at_shanghai": "2026-10-29T21:11:16.813492+08:00",
+  "status": "waiting_predecessor",
+  "application_commit": "622c5feb5280e6031cf72633aa424835aa509bdf",
+  "watcher_pid": 1341226,
+  "watcher_start_ticks": "744960744",
+  "actual_proc_identity_argv_and_nice_zero_verified": true,
+  "waiting_for": "/home/longhao/experiment/ops/warm_start_free_extent_20261029_r1.registration.json",
+  "sole_gpu_compute_pid": 1326025,
+  "new_gpu_comparisons_registered_at_observation": false,
+  "order": [
+    "thunderagent_acting_decay",
+    "full"
+  ],
+  "cpu_passing_identities": 4734,
+  "cpu_subtests_passed": 6,
+  "retained_prior_identities": 4713,
+  "source_files_unchanged": 1925,
+  "performance_accepted": false
+}
