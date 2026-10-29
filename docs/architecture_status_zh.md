@@ -15,7 +15,8 @@
 
 当前继续剩余 baseline 的 CPU 适配与资格：KVFlow 原来拒绝本负载的
 原生 radix session，新完整输入入口已通过379项来源绑定 CPU 回归，
-GPU session 字节场景及整轮比较仍待执行，见
+冻结f9f105bd的GPU session字节、共享peer及容量场景也已通过；正式
+模型/重放入口与整轮比较仍待完成，见
 [KVFlow session 适配](research/kvflow_radix_session_port_20261028_zh.md)。
 工具预取继续关闭，原始完整工作与所有正常长尾保持不变。
 

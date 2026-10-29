@@ -1,0 +1,102 @@
+{
+  "observed_at": "2026-10-29T03:31:19.703843+00:00",
+  "status": "native_session_prefix_components_qualified",
+  "scope": "Frozen real GPU/Host prefix components including full-prompt radix sessions; no model or performance claim.",
+  "application": {
+    "commit": "f9f105bd05ba7bcca56df04de9116833cecf48bf",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "f99500f1b19aab46310bc9ecfaa93f5429de64272a31f3633cf3481564151a9d"
+  },
+  "native_engine": {
+    "commit": "fa5cb52afaeaad1f59f6d3eb2c5cf124f72bb491",
+    "dirty": true,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [
+      "python/sglang/srt/managers/cache_controller.py",
+      "python/sglang/srt/managers/scheduler.py",
+      "python/sglang/srt/mem_cache/allocator/token.py",
+      "python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py",
+      "test/srt/test_beliefkv_transfer_receipts.py"
+    ],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "c6852b16ec683ee2b683ce7f2bab9823d140cf0a2d39d459af9266d2e2770b00",
+    "canonical_patch": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-kvflow-radix-session-f9f105bd-20261028/patches/sglang-v0.5.20-beliefkv-staging.patch",
+      "sha256": "d7dfd6959fb53b998829f1ea69b89ba99234b8fa6ecb78aeaa624e2d2b28044a",
+      "expected_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+      "actual_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+      "matches_worktree": true,
+      "covered_untracked_paths": []
+    },
+    "state_sha256": "4dc3ac1ea672cb93142456e41d73584d677687e59b9228807ea2ca558abc74c7"
+  },
+  "cpu_cases": 379,
+  "matched_cpu_source_files": 1868,
+  "authorization": {
+    "hold_file": "/home/longhao/experiment/ops/gpu_hold_until_20261022_0600.json",
+    "hold_sha256": "57a02d25be864ec84fc1c4e6c0afba31b1282ce681e18f7c4dd6974f3f788f9d",
+    "checked_at": "2026-10-29T11:31:19.426414+08:00"
+  },
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/.worktrees/beliefkv-kvflow-radix-session-f9f105bd-20261028/scripts/qualify_paper_prefix_transfers.py",
+    "--engine-checkout",
+    "/home/longhao/experiment/.worktrees/sglang-causal-11b84f7c3198-0b1ca5de0933",
+    "--canonical-patch",
+    "/home/longhao/experiment/.worktrees/beliefkv-kvflow-radix-session-f9f105bd-20261028/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "--output-dir",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/kvflow_radix_session_20261028/gpu_components_r1"
+  ],
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/kvflow_radix_session_20261028/run_bound_gpu.py": "b58d5e3f6f7ef731fbdc3676d6e187bd3fbda19ed2488fef2d5d62222d223c57",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/kvflow_radix_session_20261028/bound_paper_cpu.json": "9fea67b89c90ed015b2dd37396e6a3d9ad0f08ea2c1b0838bb4712545c627cb1",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/kvflow_radix_session_20261028/bound_paper_cpu.sources.json": "2cc28ab0d19c78e92d8e53586ed8029ff49aa66175f482b60669035b41d8d428",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/kvflow_radix_session_20261028/bound_paper_cpu.xml": "cdb22538c960afeb8a442eaea66aecb5c09a96feb2753bd30af5819e122c1351",
+    "/home/longhao/experiment/ops/demand_prefill_ack_retry_20261028_r1.registration.json": "fbfe3a62408e7d717a620f62ca609df795f3057a264bf47a4e294d375e8f70f7"
+  },
+  "whole_llm_scheduler_or_baseline_qualified": false,
+  "performance_accepted": false,
+  "component_process": {
+    "pid": 1074474,
+    "state": "R",
+    "ppid": 1074256,
+    "start_ticks": "741494280",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-kvflow-radix-session-f9f105bd-20261028/scripts/qualify_paper_prefix_transfers.py",
+      "--engine-checkout",
+      "/home/longhao/experiment/.worktrees/sglang-causal-11b84f7c3198-0b1ca5de0933",
+      "--canonical-patch",
+      "/home/longhao/experiment/.worktrees/beliefkv-kvflow-radix-session-f9f105bd-20261028/patches/sglang-v0.5.20-beliefkv-staging.patch",
+      "--output-dir",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/kvflow_radix_session_20261028/gpu_components_r1"
+    ]
+  },
+  "returncode": 0,
+  "summary": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/kvflow_radix_session_20261028/gpu_components_r1/summary.json",
+    "sha256": "37ffbd650f3020950365ae0687fe8293eed13378c4a96d884b2b00396fbf30e1"
+  },
+  "native_radix_session": {
+    "session_generation": 1,
+    "peer_generation": 2,
+    "history_prefix_tokens": 8,
+    "shared_prefix_tokens": 4,
+    "final_device_free_tokens": 128,
+    "native_ack_tokens": {
+      "d2h": 12,
+      "h2d": 12
+    },
+    "source_and_successor_requests_registered": true,
+    "poisoned_pages_restored_with_exact_all_layer_bytes": true,
+    "native_session_provenance_preserved": true,
+    "shared_peer_preserved": true
+  },
+  "component_returncode": 0,
+  "actual_process_exited": true,
+  "owned_gpu_process_absent": true
+}

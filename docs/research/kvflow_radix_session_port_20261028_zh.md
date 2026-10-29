@@ -53,9 +53,22 @@ prepared 引擎的旧 HEAD tree；最终使用相同内容的 clean checkout，
 新增三个必需证明字段，并校验 session 场景自己的 generation、ACK
 数量、共享长度、字节及容量结果，旧的 sessionless 证明不能直接替代。
 
-当前只完成 CPU 和资格入口实现，尚未执行新 GPU 场景、模型对照或整轮
-KVFlow，因此没有新的 JCT/吞吐结论。下一步冻结这些来源并检查预约和
-GPU 资源，执行当前组件，再完成正式 baseline 的入口与停止资格。
+冻结应用 `f9f105bd` 已在原生 `11b84f7c3198` 上完成真实 GPU 组件：
+原有各项物理证明和新 session 场景均通过。完整组件 ACK 为 D2H78/
+H2D54 token，其中独立 session 场景分别为12/12；25份 paper 原生
+回执由真实 runtime 对账。新场景在覆盖全部释放页后验证各层 K/V，
+并保持原生 session 引用、共享 peer 和最终128-slot容量。它是两层小池
+组件，不是 LLM 执行、整轮 baseline 或性能证据。
+
+`run_bound_gpu.py` 校验当前预约、上一轮实际 owned 退出、完整 CPU
+清单和精确 native patch 后执行。组件耗时约7.25秒，退出码0；
+调用方确认实际进程结束、其 GPU context 消失，并再次检查来源未变。
+`gpu_components_r1.entry.json`、原始 log 和 `gpu_components_r1/summary.json`
+分别保存入口检查与原始组件结果；冻结工作区没有修改。
+
+正式模型/重放入口和整轮 KVFlow 仍未执行，因此没有新的 JCT/吞吐结论。
+现有 LoCoBench causal supervisor 还没有像 AgentX supervisor 那样绑定
+paper prefix 资格，下一步补齐这一启动衔接，并验证正常停止及完整对照。
 新实验继续保持同一完整 V230/V311、18 个不同项目、3674 请求、
 145565966 输入与 549671 输出 token、原始停止和全部正常长尾。
 其他 baseline 及全体优越性目标仍未完成。

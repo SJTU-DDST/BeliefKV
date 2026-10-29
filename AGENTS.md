@@ -2989,3 +2989,16 @@
   No new Full/V345/native run or performance result follows from this port.
   Keep tool prefetch off, same completeV230/V311 and the goal active. See
   docs/research/kvflow_radix_session_port_20261028_zh.md.
+- Frozenf9f105bd now actually passes the session-aware paper prefix GPU
+  qualifier on exact common11b84f7c3198. All23 physical proof fields pass;
+  total native ACKs areD2H78/H2D54 tokens, including12/12 in the distinct
+  session scene, with25 runtime-reconciled paper commits. Poisoned-page
+  all-layer bytes, native session ownership, split peer and128-slot return
+  verify. The source-bound entry checks379 CPU/1868 files, current hold,
+  previous owned exit and exact prepared native patch before/after. Actual
+  child exits0 and its GPU context is absent; frozen checkout stays clean.
+  This small two-layer component is not LLM, complete baseline or performance
+  evidence. Next bind this paper-prefix prerequisite into the LoCoBench causal
+  supervisor, whose existing path lacks the AgentX supervisor's qualification
+  hook, then qualify/execute formal KVFlow. No new Full/native/V345 run is
+  implied; keep same complete work, all tails and the overall goal active.
