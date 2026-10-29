@@ -69,3 +69,10 @@ CPU、注册与 live 证据保存在本页同名报告目录。后续 live 观�
 
 predictive 开发使用主应用和独立 native 工作树；冻结对照不包含这些改动。
 下一步对比仍需相同到达表和完整工作，旧突发实验只作历史参考。
+
+`live_all_arrived.json` 后续核验 18 个实际到达、1014 个精确完成回执；
+`live_after_cpu.json` 在并行 CPU 回归结束后再次核验同一冻结来源和唯一
+GPU 所有权，完成回执增至 1776/3674。原始 live_start 不覆盖。
+这是同一次实验的进度证据，不是三次 GPU 实验，也不构成完整结果。
+并行 CPU 候选见 `../design/layer_handoff_free_extent_20261029_zh.md`，
+GPU/模型验证和性能验收仍待进行。

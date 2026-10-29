@@ -364,6 +364,7 @@ def preflight_runtime(settings, model_path):
         "tool_offload_min_survival": float(settings.get("BELIEFKV_TOOL_OFFLOAD_MIN_SURVIVAL", ".9")),
         "host_demand_reserve_bytes": int(settings.get("BELIEFKV_HOST_DEMAND_RESERVE_BYTES", "0")),
         "layer_handoff_enabled": settings.get("BELIEFKV_LAYER_HANDOFF", "0") == "1",
+        "layer_handoff_free_extent": settings.get("BELIEFKV_LAYER_HANDOFF_FREE_EXTENT", "0") == "1",
         "layer_handoff_d2h_layers": int(settings.get("BELIEFKV_LAYER_HANDOFF_D2H_LAYERS", "1")),
         "layer_handoff_h2d_layers": int(settings.get("BELIEFKV_LAYER_HANDOFF_H2D_LAYERS", "1")),
         "tool_offload_policy": (
@@ -868,6 +869,11 @@ def observed_configuration(plan, label, arm, *, final=False):
         ) == "1"
         if state.get("layer_handoff_enabled", False) is not layer_handoff:
             raise ValueError("effective layer handoff differs from declaration")
+        free_extent = layer_handoff and common.get(
+            "BELIEFKV_LAYER_HANDOFF_FREE_EXTENT", "0",
+        ) == "1"
+        if state.get("layer_handoff_free_extent", False) is not free_extent:
+            raise ValueError("effective layer handoff free extent differs from declaration")
         for direction in ("d2h", "h2d"):
             expected_group = int(common.get(
                 "BELIEFKV_LAYER_HANDOFF_" + direction.upper() + "_LAYERS", "1",

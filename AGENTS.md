@@ -3262,3 +3262,19 @@
   GPU ownership while developing predictive on CPU; Agentix and TokenCake
   remain deferred, no competing GPU job is queued. All comparison methods must
   use the same warm-start manifest; burst controls are historical only.
+- Parallel predictive CPU work adds default-off
+  BELIEFKV_LAYER_HANDOFF_FREE_EXTENT on nativec5ad39a1/tree434c35dd,
+  based ond3da19c1/tree729aa0. Combine one private donor with slots actually
+  allocated from free capacity after the full input/growth reserve; never
+  credit future D2H release, shared pages or ready peers. Keep8/4 grouping,
+  writer/Host/Device/ACK guards and the original path when off. Paper controls
+  clear the flag and attach rejects old native capability. CPU4694+6subtests
+  retains all4627 Full/control union IDs with1910 unchanged sources; preserve
+  the initial fixture allocation failure. Exact five-file native delta and
+  reverse-apply seal are in layer_free_extent_20261029. This is CPU ownership/
+  event-stand-in evidence, not GPU/model/performance; formal native whitelist
+  is deliberately unchanged. Qualify real bytes/model after actual Thunder
+  exit/owned cleanup before any complete candidate. No second GPU job queued.
+  warm_start_thunder_20261029/live_after_cpu.json independently rechecks the
+  frozen control with1776 exact receipts/all18 arrivals and sole owned GPU.
+  Keep the global optimization goal active and all complete-work results pending.

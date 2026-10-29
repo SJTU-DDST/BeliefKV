@@ -1,0 +1,263 @@
+diff --git a/python/sglang/srt/mem_cache/beliefkv_layer_handoff.py b/python/sglang/srt/mem_cache/beliefkv_layer_handoff.py
+index 26954b6..654426b 100644
+--- a/python/sglang/srt/mem_cache/beliefkv_layer_handoff.py
++++ b/python/sglang/srt/mem_cache/beliefkv_layer_handoff.py
+@@ -74,7 +74,10 @@ def _identity(cache, node_id, created, session_id, generation):
+     return node
+ 
+ 
+-def _paths(cache, donor, consumer, donor_session, donor_generation, consumer_session, consumer_generation):
++def _paths(
++    cache, donor, consumer, donor_session, donor_generation,
++    consumer_session, consumer_generation, free_tokens=0,
++):
+     root, tree = cache.tree_core.root_node, cache.tree_core
+     loads, node = [], consumer
+     for _ in range(64):
+@@ -91,6 +94,9 @@ def _paths(cache, donor, consumer, donor_session, donor_generation, consumer_ses
+     if not loads:
+         return None
+     needed = sum(len(item.component_data[ComponentType.FULL].host_value) for item in loads)
++    if needed <= free_tokens:
++        return None
++    required_donor = needed - free_tokens
+     donors, size, node = [], 0, donor
+     for _ in range(64):
+         if node is root:
+@@ -110,7 +116,7 @@ def _paths(cache, donor, consumer, donor_session, donor_generation, consumer_ses
+             return None
+         donors.append(node)
+         size += len(data.value)
+-        if size >= needed:
++        if size >= required_donor:
+             return donors, list(reversed(loads)), size, needed
+         node = node.parent
+     return None
+@@ -148,6 +154,7 @@ def begin(
+     consumer_node_id, consumer_creation_time, consumer_session_id,
+     consumer_session_generation, reserve_tokens, authorize,
+     donor_group_layers=1, consumer_group_layers=1,
++    allow_free_extent=False,
+ ):
+     """Replace a private donor path with a complete Host-only missing path.
+ 
+@@ -161,6 +168,7 @@ def begin(
+         or getattr(cache, "_beliefkv_layer_handoff", None) is not None
+         or donor_session_id == consumer_session_id
+         or type(reserve_tokens) is not int or reserve_tokens < 0
++        or type(allow_free_extent) is not bool
+         or not callable(authorize)
+     ):
+         return None
+@@ -202,16 +210,19 @@ def begin(
+     paths = _paths(
+         cache, donor, consumer, donor_session_id, donor_session_generation,
+         consumer_session_id, consumer_session_generation,
++        max(0, cc.mem_pool_device_allocator.available_size() - reserve_tokens)
++        if allow_free_extent else 0,
+     )
+     if paths is None:
+         return None
+     donors, loads, donor_tokens, consumer_tokens = paths
++    additional_tokens = max(0, consumer_tokens - donor_tokens)
+     # The path identity checks above retain native Device/Host locks and
+     # pending-DMA ownership. Unrelated issued copies need not drain globally.
+     if not _acks_disjoint(cache, {node.id for node in (*donors, *loads)}):
+         return None
+     if (
+-        cc.mem_pool_device_allocator.available_size() < reserve_tokens
++        cc.mem_pool_device_allocator.available_size() < reserve_tokens + additional_tokens
+         or cc.mem_pool_host.available_size() < donor_tokens
+     ):
+         return None
+@@ -227,13 +238,28 @@ def begin(
+     if not authorize(donor_tokens, consumer_tokens):
+         cc.mem_pool_host.free(host)
+         return None
++    allocator = cc.mem_pool_device_allocator
++    if allocator.available_size() < reserve_tokens + additional_tokens:
++        cc.mem_pool_host.free(host)
++        return None
++    additional = allocator.alloc(additional_tokens) if additional_tokens else None
++    if additional_tokens and additional is None:
++        cc.mem_pool_host.free(host)
++        return None
+     # The new Host allocation is disjoint from every live Host source by the
+     # native allocator contract. Its lease remains held through the final ACK.
+-    extent = torch.cat([
++    donor_extent = torch.cat([
+         item.component_data[ComponentType.FULL].value for item in reversed(donors)
+     ])
+-    consumer_extent = extent[:consumer_tokens]
+-    tail = extent[consumer_tokens:]
++    # Both directions share one index tensor. Its suffix consists exclusively
++    # of slots just allocated here, never future D2H capacity or input reserve.
++    combined = (
++        torch.cat((donor_extent, additional))
++        if additional is not None else donor_extent
++    )
++    extent = combined[:donor_tokens]
++    consumer_extent = combined[:consumer_tokens]
++    tail = combined[consumer_tokens:]
+     anchor = cc.mem_pool_host.anchor_entry
+     donor_indices, extent = cc.move_indices(host, extent)
+     consumer_indices, _ = cc.move_indices(kv_xfer.host_indices, consumer_extent)
+@@ -289,6 +315,7 @@ def begin(
+         L2Transfer(anchor.host_pool, anchor.device_pool, donor_indices, extent),
+         L2Transfer(anchor.host_pool, anchor.device_pool, consumer_indices, consumer_extent),
+         layer_num=cc.layer_num, donor_last_use_event=indices_ready,
++        **({"additional_consumer_tokens": additional_tokens} if additional_tokens else {}),
+         **({
+             "donor_group_layers": donor_group_layers,
+             "consumer_group_layers": consumer_group_layers,
+@@ -313,7 +340,8 @@ def begin(
+         ))
+     return {
+         "donor_node_id": donor.id, "consumer_node_id": consumer.id,
+-        "donor_tokens": len(extent), "reused_tokens": len(consumer_extent),
++        "donor_tokens": len(extent), "reused_tokens": min(len(extent), len(consumer_extent)),
++        "restored_tokens": len(consumer_extent), "free_extent_tokens": additional_tokens,
+         "reserved_tail_tokens": len(tail), "consumer_index": producer,
+         "donor_nodes": len(donors), "consumer_nodes": len(loads),
+         "donor_group_layers": donor_group_layers, "consumer_group_layers": consumer_group_layers,
+diff --git a/python/sglang/srt/mem_cache/l2_transfer.py b/python/sglang/srt/mem_cache/l2_transfer.py
+index 560d9f2..bf91b23 100644
+--- a/python/sglang/srt/mem_cache/l2_transfer.py
++++ b/python/sglang/srt/mem_cache/l2_transfer.py
+@@ -129,8 +129,9 @@ class L2TransferEngine:
+         donor_last_use_event,
+         donor_group_layers: int = 1,
+         consumer_group_layers: int = 1,
++        additional_consumer_tokens: int = 0,
+     ) -> LayerHandoffCompletion:
+-        """Copy A out and B into the same reserved Device extent or its prefix.
++        """Copy A out and B into its reserved extent plus owned free slots.
+ 
+         The caller owns cache publication, logical admission and the reservation
+         for the entire operation. No slot becomes free here. A consumer may read
+@@ -143,7 +144,10 @@ class L2TransferEngine:
+             or donor.device_pool is not consumer.device_pool
+             or len(donor.device_indices) == 0
+             or len(consumer.device_indices) == 0
+-            or len(consumer.device_indices) > len(donor.device_indices)
++            or type(additional_consumer_tokens) is not int
++            or additional_consumer_tokens != max(
++                0, len(consumer.device_indices) - len(donor.device_indices),
++            )
+             or len(donor.host_indices) != len(donor.device_indices)
+             or len(consumer.host_indices) != len(consumer.device_indices)
+             or donor.layer_mapper is not None
+diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
+index 3ef499d..f5986f6 100644
+--- a/python/sglang/srt/mem_cache/unified_radix_cache.py
++++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
+@@ -5926,6 +5926,7 @@ class UnifiedRadixCache(BasePrefixCache):
+         )
+ 
+     beliefkv_layer_handoff_max_group_layers = 64
++    beliefkv_layer_handoff_free_extent_supported = True
+ 
+     def begin_beliefkv_layer_handoff(self, **kwargs):
+         from sglang.srt.mem_cache.beliefkv_layer_handoff import begin
+diff --git a/test/srt/test_beliefkv_layer_groups.py b/test/srt/test_beliefkv_layer_groups.py
+index fb925b9..ecb6401 100644
+--- a/test/srt/test_beliefkv_layer_groups.py
++++ b/test/srt/test_beliefkv_layer_groups.py
+@@ -56,6 +56,48 @@ def test_independent_groups_copy_all_layers_and_wait_for_every_overwritten_range
+             assert calls.index(("record", result.donor_layer_done[layer], "d2h")) < wait_index
+ 
+ 
++@pytest.mark.parametrize("donor_size,consumer_size", ((8, 4), (4, 8), (5, 3), (3, 5)))
++def test_independent_groups_restore_a_free_suffix_without_backing_it_up(
++    handoff, donor_size, consumer_size,
++):
++    engine, donor, consumer, last_use, calls, pool, *_ = handoff
++    layers = 17
++    donor = donor._replace(
++        device_indices=consumer.device_indices[:2], host_indices=donor.host_indices[:2],
++    )
++    pool.k_buffer = [torch.arange(4.) + 10 * i for i in range(layers)]
++    original = [row.clone() for row in pool.k_buffer]
++    source = [row + 1000 for row in original]
++    host = [torch.zeros(2) for _ in range(layers)]
++    donor.host_pool.layer_num = consumer.host_pool.layer_num = layers
++
++    def copy(_pool, _host, indices, start, end, _backend, *, load):
++        calls.append(("range_h2d" if load else "range_d2h", start, end))
++        for layer in range(start, end):
++            if load:
++                assert torch.equal(host[layer], original[layer][:2])
++                pool.k_buffer[layer][indices] = source[layer][indices]
++            else:
++                host[layer].copy_(pool.k_buffer[layer][indices])
++
++    donor.host_pool.transfer_handoff_layers = consumer.host_pool.transfer_handoff_layers = copy
++    result = engine.submit_layer_handoff(
++        donor, consumer, layer_num=layers, donor_last_use_event=last_use,
++        donor_group_layers=donor_size, consumer_group_layers=consumer_size,
++        additional_consumer_tokens=2,
++    )
++    assert all(torch.equal(a, b[:2]) for a, b in zip(host, original))
++    assert all(torch.equal(a, b) for a, b in zip(pool.k_buffer, source))
++    assert len(set(result.donor_layer_done)) == (layers + donor_size - 1) // donor_size
++    assert len(set(result.consumer_layer_ready)) == (layers + consumer_size - 1) // consumer_size
++    for start in range(0, layers, consumer_size):
++        end = min(start + consumer_size, layers)
++        wait_index = calls.index(("wait", result.donor_layer_done[end - 1], "h2d"))
++        assert wait_index < calls.index(("range_h2d", start, end))
++        for layer in range(start, end):
++            assert calls.index(("record", result.donor_layer_done[layer], "d2h")) < wait_index
++
++
+ @pytest.mark.parametrize("value", (0, -1, 65, True, 1.5))
+ @pytest.mark.parametrize("direction", ("donor_group_layers", "consumer_group_layers"))
+ def test_invalid_group_is_refused_before_streams_or_copies(handoff, direction, value):
+diff --git a/test/srt/test_beliefkv_layer_handoff.py b/test/srt/test_beliefkv_layer_handoff.py
+index 5402075..3f12497 100644
+--- a/test/srt/test_beliefkv_layer_handoff.py
++++ b/test/srt/test_beliefkv_layer_handoff.py
+@@ -112,6 +112,44 @@ def test_consumer_can_reuse_a_prefix_without_losing_the_donor_tail(handoff):
+         assert torch.equal(pool.k_buffer[layer][2:], original[layer][2:])
+ 
+ 
++def test_larger_consumer_combines_donor_prefix_with_explicitly_owned_free_slots(handoff):
++    engine, donor, consumer, last_use, calls, pool, original, source, host = handoff
++    donor = donor._replace(
++        device_indices=consumer.device_indices[:2], host_indices=donor.host_indices[:2],
++    )
++
++    def backup(_pool, _host, indices, layer, _backend):
++        host[layer][:len(indices)].copy_(pool.k_buffer[layer][indices])
++        calls.append(("d2h", layer))
++
++    donor.host_pool.backup_from_device_per_layer = backup
++    result = engine.submit_layer_handoff(
++        donor, consumer, layer_num=3, donor_last_use_event=last_use,
++        additional_consumer_tokens=2,
++    )
++    for layer in range(3):
++        assert torch.equal(host[layer][:2], original[layer][:2])
++        assert torch.count_nonzero(host[layer][2:]) == 0
++        assert torch.equal(pool.k_buffer[layer], source[layer])
++    assert calls.index(("record", result.consumer_layer_ready[0], "h2d")) < calls.index(
++        ("record", result.donor_layer_done[-1], "d2h"),
++    )
++
++
++@pytest.mark.parametrize("extra", (0, 1, 3, -1, True, 2.))
++def test_free_extent_requires_exact_explicit_integer_ownership(handoff, extra):
++    engine, donor, consumer, last_use, calls, *_ = handoff
++    donor = donor._replace(
++        device_indices=consumer.device_indices[:2], host_indices=donor.host_indices[:2],
++    )
++    with pytest.raises(ValueError):
++        engine.submit_layer_handoff(
++            donor, consumer, layer_num=3, donor_last_use_event=last_use,
++            additional_consumer_tokens=extra,
++        )
++    assert calls == []
++
++
+ @pytest.mark.parametrize("invalid", (
+     "no_writer_fence", "foreign_device", "different_indices", "empty_extent",
+     "different_host_count", "draft", "layer_mapper", "layer_count", "unsupported",

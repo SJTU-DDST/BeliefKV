@@ -128,7 +128,12 @@ def try_handoff(offloader, key, step):
         )
 
     manager = getattr(runtime, "_host_demand_capacity", None)
+    free_extent = getattr(runtime, "layer_handoff_free_extent", False)
     if manager is not None:
+        minimum_donor = restore_tokens
+        if free_extent:
+            available = cache.cache_controller.mem_pool_device_allocator.available_size()
+            minimum_donor = max(1, restore_tokens - max(0, available - reserve))
         node, donors, donor_tokens = donor, [], 0
         for _ in range(64):
             if node is cache.tree_core.root_node:
@@ -138,10 +143,10 @@ def try_handoff(offloader, key, step):
                 break
             donors.append(node.id)
             donor_tokens += len(full.value)
-            if donor_tokens >= restore_tokens:
+            if donor_tokens >= minimum_donor:
                 break
             node = node.parent
-        if donor_tokens < restore_tokens:
+        if donor_tokens < minimum_donor:
             return refused("donor_smaller_than_restore")
         if not authorize(donor_tokens, restore_tokens):
             return refused("cost_or_authorization")
@@ -154,6 +159,7 @@ def try_handoff(offloader, key, step):
         consumer_session_id=consumer_key.session_id,
         consumer_session_generation=consumer_key.session_generation,
         reserve_tokens=reserve, authorize=authorize,
+        **({"allow_free_extent": True} if free_extent else {}),
         **({
             "donor_group_layers": runtime.layer_handoff_d2h_layers,
             "consumer_group_layers": runtime.layer_handoff_h2d_layers,
@@ -194,6 +200,10 @@ def try_handoff(offloader, key, step):
     runtime._invalidate_wait_transfer_observation(consumer_key)
     runtime.counts["layer_handoff_submitted"] += 1
     runtime.counts["layer_handoff_reused_tokens"] += result["reused_tokens"]
+    runtime.counts["layer_handoff_restored_tokens"] += result.get(
+        "restored_tokens", result["reused_tokens"],
+    )
+    runtime.counts["layer_handoff_free_extent_tokens"] += result.get("free_extent_tokens", 0)
     runtime.counts["layer_handoff_reserved_tail_tokens"] += result["reserved_tail_tokens"]
     if runtime._opportunity_writer is not None:
         runtime._opportunity_writer.record({

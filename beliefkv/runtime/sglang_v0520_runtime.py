@@ -660,6 +660,12 @@ class NativeAdmissionRuntime:
         if layer_handoff not in ("0", "1"):
             raise ValueError("layer handoff must be 0 or 1")
         self.layer_handoff_enabled = layer_handoff == "1"
+        free_extent = os.environ.get("BELIEFKV_LAYER_HANDOFF_FREE_EXTENT", "0")
+        if free_extent not in ("0", "1"):
+            raise ValueError("layer handoff free extent must be 0 or 1")
+        self.layer_handoff_free_extent = free_extent == "1"
+        if self.layer_handoff_free_extent and not self.layer_handoff_enabled:
+            raise ValueError("layer handoff free extent requires layer handoff")
         groups = []
         for direction in ("D2H", "H2D"):
             value = os.environ.get("BELIEFKV_LAYER_HANDOFF_" + direction + "_LAYERS", "1")
@@ -1387,6 +1393,10 @@ class NativeAdmissionRuntime:
             self.layer_handoff_d2h_layers, self.layer_handoff_h2d_layers,
         ) > getattr(cache, "beliefkv_layer_handoff_max_group_layers", 1):
             raise ValueError("grouped layer handoff requires the dedicated grouped native engine")
+        if self.layer_handoff_free_extent and getattr(
+            cache, "beliefkv_layer_handoff_free_extent_supported", False,
+        ) is not True:
+            raise ValueError("layer handoff free extent requires its dedicated native engine")
         supports = getattr(cache, "supports_beliefkv_restore_tiers", None)
         self._restore_tiers_supported = (
             self.restore_tiers == "dependency" and callable(supports) and supports() is True
@@ -2946,6 +2956,7 @@ class NativeAdmissionRuntime:
                 "predicted_tool_offload": self.enable_predicted_tool_offload,
                 "tool_offload_before_admission": self.tool_offload_before_admission,
                 "layer_handoff_enabled": self.layer_handoff_enabled,
+                "layer_handoff_free_extent": self.layer_handoff_free_extent,
                 "layer_handoff_d2h_layers": self.layer_handoff_d2h_layers,
                 "layer_handoff_h2d_layers": self.layer_handoff_h2d_layers,
                 "tool_offload_policy": (

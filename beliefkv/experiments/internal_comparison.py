@@ -41,6 +41,10 @@ def arm_environment(
     if layer_handoff not in ("0", "1"):
         raise ValueError("layer handoff must be 0 or 1")
     layer_handoff = layer_handoff if mode == "full" else "0"
+    free_extent = common.get("BELIEFKV_LAYER_HANDOFF_FREE_EXTENT", "0")
+    if free_extent not in ("0", "1"):
+        raise ValueError("layer handoff free extent must be 0 or 1")
+    free_extent = free_extent if layer_handoff == "1" else "0"
     host_mirror_recycle = common.get(
         "BELIEFKV_IDLE_HOST_MIRROR_RECYCLE", common.get("IDLE_HOST_MIRROR_RECYCLE", "0"),
     )
@@ -287,6 +291,7 @@ def arm_environment(
         "BELIEFKV_DEMAND_PREFILL_PIPELINE": demand_pipeline,
         "LAYER_HANDOFF": layer_handoff,
         "BELIEFKV_LAYER_HANDOFF": layer_handoff,
+        "BELIEFKV_LAYER_HANDOFF_FREE_EXTENT": free_extent,
         **{
             "BELIEFKV_LAYER_HANDOFF_" + direction + "_LAYERS": (
                 common.get("BELIEFKV_LAYER_HANDOFF_" + direction + "_LAYERS", "1")

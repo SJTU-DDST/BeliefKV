@@ -1,0 +1,36 @@
+{
+  "observed_at": "2026-10-29T11:22:31.553297+00:00",
+  "native": {
+    "commit": "c5ad39a1e1285532335139fa3bc33d49c7eabcf6",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "03e7a9feb460455fe1a214d4f15a9444e66512002360ce05b37a5ad7ccefc2d6"
+  },
+  "base_commit": "d3da19c1ca85581342a14b322fdc94cdc290654d",
+  "base_tree": "729aa0caa7a1ffac84463f46b3d1843d1a6a22e4",
+  "target_tree": "434c35dd66211d0a230717c88bf1452056769a40",
+  "changed_files": [
+    "python/sglang/srt/mem_cache/beliefkv_layer_handoff.py",
+    "python/sglang/srt/mem_cache/l2_transfer.py",
+    "python/sglang/srt/mem_cache/unified_radix_cache.py",
+    "test/srt/test_beliefkv_layer_groups.py",
+    "test/srt/test_beliefkv_layer_handoff.py"
+  ],
+  "delta_patch": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-layer-free-extent-delta-20261029.patch",
+    "sha256": "824840aad89be8612d598a7dc71bd5bf432e235665bbff73449db1189c5a8293"
+  },
+  "exact_committed_diff_and_reverse_apply_check": true,
+  "cpu_evidence": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/complete_r1/evidence.json",
+    "sha256": "0bcfcac2c4cfba6183d6d94bad21f46d317a3e8986b4ac2a208b495b8e1c33a7"
+  },
+  "operator_sha256": "e098dab384139e89543b0d87f5a4815318dc76a881a6590b1209f4a7b2a8505d",
+  "GPU_qualification_pending": true,
+  "formal_launch_enabled": false,
+  "performance_accepted": false,
+  "running_baseline_sources_changed": false
+}
