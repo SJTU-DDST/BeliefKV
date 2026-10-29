@@ -3427,3 +3427,18 @@
   engine, then match acting-decay Thunder and Full sequentially. This shared
   tuning is not an agent-policy novelty. No native recapture, arrival sweep,
   extra baseline or tail truncation; global goal remains active.
+- The matched2048/mixed-off mean120 candidate now has a separate prepared
+  configuration and sequential position/formal queue in
+  experiments/reports/prefill2048_mean120_20261029. Actual CPU4810+6 passes,
+  retains all4760 prior identities,no failures/errors/skips,1952 bound inputs
+  and native source unchanged. Preserve preparation's CPU-only wrong-factory
+  refusal; it created no configurations or GPU process. Queue uses the existing
+  paper_environment for Thunder,original Full dispatch0,one fresh24-position/
+  session/stop and sampler1/8/24 qualification per method-specific native,
+  then complete Thunder before Full. It does not weaken same-policy
+  after-registration or promote500ms. Original mean120 arms and dispatch
+  candidate all independently prove3674 exact requests/drain/actual owned exit;
+  exact native rebinding also passes. Freeze committed sources before queue
+  registration; no2048 GPU or performance claim exists from these CPU checks.
+  Keep tool/frontier prefetch0,mean120 table/work/capacities/seeds/tails fixed
+  and Agentix/TokenCake deferred.

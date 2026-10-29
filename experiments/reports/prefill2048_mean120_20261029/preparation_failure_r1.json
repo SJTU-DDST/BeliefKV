@@ -1,0 +1,13 @@
+{
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "experiments/reports/prefill2048_mean120_20261029/prepare.py"
+  ],
+  "returncode": 1,
+  "error": "ValueError: unknown internal comparison: thunderagent_acting_decay",
+  "cause": "The profile validator initially called the internal-policy factory for a paper method.",
+  "repair": "Use the existing causal.paper_environment factory for paper methods, as the production comparison operator does.",
+  "configuration_files_created": false,
+  "GPU_experiment_started": false,
+  "performance_accepted": false
+}
