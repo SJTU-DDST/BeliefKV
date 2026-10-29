@@ -1,0 +1,30 @@
+{
+  "observed_at": "2026-10-29T05:00:46.545204+00:00",
+  "status": "preserved_formal_native_admission_hook_failure",
+  "original_returncode": 1,
+  "completed_receipts": 0,
+  "all_owned_processes_exited": true,
+  "GPU_compute_processes_absent": true,
+  "native_guard_hook_present": false,
+  "native_result_callback_present": true,
+  "root_cause": "The common scheduler reports native admission but never calls TokenCake's sequential capacity guard.",
+  "prior_cpu_and_gpu_scope": "Direct adapter and PrefillAdder components did not execute the actual scheduler candidate loop.",
+  "complete_baseline_or_performance_result": false,
+  "performance_accepted": false,
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_locobench_v230_v311_20261028_r1/tokencake_paper_observed/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 0,
+      "complete_prefix_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "first_read_limit_bytes": 0
+    }
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_radix_session_20261028/failure_review.py": "42692b952756e31aac445fb83a6f1fb5a21b1c0f7cc0007eabbfe14ce5efa177",
+    "/home/longhao/experiment/ops/tokencake_locobench_v230_v311_20261028_r1.registration.json": "748fb02f3903df67343f35444bbadd6221204348cfda861fdf0a8c0baf3f991e",
+    "/home/longhao/experiment/ops/tokencake_locobench_v230_v311_20261028_r1.registration.state.json": "cee252f15ffcd1ec56c343e8600b3cb41dad70841ce5585d805451651b0f9243",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_locobench_v230_v311_20261028_r1/tokencake_paper_observed/owned_process_cleanup.json": "64abc7625adf0ed1bd10b7c218a3a0f2fb78d8782b2d9e6371d4bf9157e20ce8",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_locobench_v230_v311_20261028_r1/tokencake_paper_observed/server.log": "84f92a0ec175eaa233b32c63026ac5a364ab29c4c2c199a8558f1b0e6002e900",
+    "/home/longhao/experiment/.worktrees/sglang-causal-11b84f7c3198-e182a24318b3/python/sglang/srt/managers/scheduler.py": "0a5a0bb77c99363a8b0146f63a8b2713ed7b90d0d66ddeebebf4534b4d9c1c53",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_radix_session_20261028/formal_registration_entry.json": "0641b47f687f01ed96a33070ef3ff6ffb338622c99193af3c9a80bcc01b51531"
+  }
+}

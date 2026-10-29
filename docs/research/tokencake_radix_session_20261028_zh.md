@@ -97,3 +97,21 @@ TokenCake参数及Full策略隔离。这里的CPU检查仍使用copy/event stand
 register_formal.py在冻结后核验组件、前驱实际退出及当前资源，再登记
 单独TokenCake；正式supervisor仍会在模型启动前重跑prefix和十二项
 生命周期组件，不继承这次组件的整模型/性能资格。
+
+## 首轮正式启动失败
+
+e182a243正式登记在18703启动模型前通过新的prefix及十二场景检查，
+随后实际请求触发 `TokenCake native admission bypassed its capacity guard`。
+原始失败、HTTP回执与owned cleanup保留；不得当作完整baseline结果。
+
+原因已从实际冻结原生源码确认：common11b84的scheduler有
+on_prefill_candidate_result回调，却没有逐候选调用
+allow_native_prefill_candidate。此前测试直接调用adapter/PrefillAdder，
+没有执行该scheduler循环，因此组件通过未覆盖这个缺口。另需恢复
+TokenCake独立引擎中原有的decode victim与释放前容量结清接线。
+
+接下来基于common创建单独的TokenCake原生变体，只加入这些既有策略
+必需的hook，并增加执行真实scheduler候选循环的拒绝/准入回归；
+不放宽“未经过容量检查不能准入”的保护。先做原生接线、GPU组件与
+有界实际模型检查，再用新登记重试完整工作量。当前TokenCake已退出，
+没有运行中的完整TokenCake或Agentix对照。

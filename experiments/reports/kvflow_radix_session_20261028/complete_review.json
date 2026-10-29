@@ -1,0 +1,293 @@
+{
+  "observed_at": "2026-10-29T04:52:38.263155+00:00",
+  "requests": 3674,
+  "prompt_tokens": 145565966,
+  "output_tokens": 549671,
+  "exact_complete_work_and_native_stopping_verified": true,
+  "all_normal_tails_retained": true,
+  "two_fresh_idle_snapshots_and_actual_owned_exit_verified": true,
+  "registered_configuration_observers": {
+    "KVFlow observed": {
+      "registration": "/home/longhao/experiment/ops/kvflow_locobench_v230_v311_20261028_r1.registration.json",
+      "code_commit": "6dc4b89223cddea44841aa1b7ae56d656fc0a20b",
+      "observer": "/home/longhao/experiment/.worktrees/beliefkv-causal-6dc4b89223cd/scripts/run_causal_comparison.py",
+      "observer_sha256": "b3554f3cf538df67cbd77e7bd190c34d1472d5580049db146135d0ddf3bc2046",
+      "actual_registered_configuration_verified": true
+    },
+    "Full ACK repair": {
+      "registration": "/home/longhao/experiment/ops/demand_prefill_ack_retry_20261028_r1.registration.json",
+      "code_commit": "5cf3bb8bf40daf48ee001988e60f46e517bdd345",
+      "observer": "/home/longhao/experiment/.worktrees/beliefkv-causal-5cf3bb8bf40d/scripts/run_causal_comparison.py",
+      "observer_sha256": "c5a405c08f3d5731b4d25d1d470f9ac79f36f300c77af158b957632d67f49cd6",
+      "actual_registered_configuration_verified": true
+    },
+    "ThunderAgent decay": {
+      "registration": "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.json",
+      "code_commit": "0b1ca5de0933ddc5ba20328fccbf013c998ef361",
+      "observer": "/home/longhao/experiment/.worktrees/beliefkv-causal-0b1ca5de0933/scripts/run_causal_comparison.py",
+      "observer_sha256": "d2673767bd6ed92d363ebeb3062b4a67889742bc11abc6d6d848827dcb4909c2",
+      "actual_registered_configuration_verified": true
+    }
+  },
+  "metrics": {
+    "Full ACK repair": {
+      "mean_jct_s": 1617.8967887447145,
+      "makespan_s": 2305.614371310234,
+      "end_to_end_output_tokens_per_s": 238.40543624284967,
+      "decode": {
+        "batches": 93505,
+        "request_steps": 549471,
+        "worker_ms": 1591371.9935044646,
+        "request_step_ms": 13317488.052340224,
+        "output_tokens": 545997,
+        "context_tokens": 30622223770,
+        "graph_batches": 93505,
+        "graph_request_steps": 549471,
+        "configured_bucket_rows": 633020,
+        "batches_needing_padding": 43683,
+        "worker_ms_in_batches_needing_padding": 1032836.3042613491,
+        "mean_batch": 5.876380942195604,
+        "worker_weighted_mean_batch": 8.368557513075816,
+        "worker_interval_sum_s": 1591.3719935044646,
+        "mean_worker_interval_ms": 17.019111208004542,
+        "output_tokens_per_worker_interval_second": 343.0982838887495,
+        "mean_observed_request_context_tokens": 55730.3729769178,
+        "graph_batch_fraction": 1.0,
+        "configured_padding_rows_per_real_graph_row": 0.1520535205679645
+      },
+      "streaming_response_metrics": {
+        "workflow_ttft_ms": {
+          "count": 18,
+          "mean": 132160.37377934984,
+          "p50": 101348.4670176506,
+          "p75": 185613.13590455055,
+          "p90": 234091.65515861512,
+          "p95": 254351.9515759944,
+          "p99": 301117.019546461,
+          "max": 312808.28653907776
+        },
+        "workflow_max_post_first_ready_output_gap_ms": {
+          "count": 18,
+          "mean": 83807.88857830895,
+          "p50": 50620.59534025192,
+          "p75": 76068.76867771149,
+          "p90": 169277.64381446844,
+          "p95": 235167.25471763595,
+          "p99": 308540.4491689299,
+          "max": 326883.74778175354
+        }
+      }
+    },
+    "KVFlow observed": {
+      "mean_jct_s": 1739.6266627809207,
+      "makespan_s": 2316.752379528046,
+      "end_to_end_output_tokens_per_s": 237.25927935033587,
+      "decode": {
+        "batches": 90414,
+        "request_steps": 549485,
+        "worker_ms": 1610369.0998088568,
+        "request_step_ms": 14042415.509477258,
+        "output_tokens": 545997,
+        "context_tokens": 30623120549,
+        "graph_batches": 90414,
+        "graph_request_steps": 549485,
+        "configured_bucket_rows": 632193,
+        "batches_needing_padding": 43519,
+        "worker_ms_in_batches_needing_padding": 1058997.3083594814,
+        "mean_batch": 6.0774326984759,
+        "worker_weighted_mean_batch": 8.719998111702482,
+        "worker_interval_sum_s": 1610.3690998088568,
+        "mean_worker_interval_ms": 17.81105912589706,
+        "output_tokens_per_worker_interval_second": 339.05084248375556,
+        "mean_observed_request_context_tokens": 55730.585091494766,
+        "graph_batch_fraction": 1.0,
+        "configured_padding_rows_per_real_graph_row": 0.15051912245102228
+      },
+      "streaming_response_metrics": {
+        "workflow_ttft_ms": {
+          "count": 18,
+          "mean": 110024.33962006039,
+          "p50": 106041.03081035614,
+          "p75": 140149.1364531517,
+          "p90": 178043.48827228547,
+          "p95": 185019.8396008968,
+          "p99": 195755.9527102184,
+          "max": 198439.98098754883
+        },
+        "workflow_max_post_first_ready_output_gap_ms": {
+          "count": 18,
+          "mean": 52058.39867957433,
+          "p50": 39651.573907375336,
+          "p75": 81414.67957663536,
+          "p90": 88667.19352350236,
+          "p95": 90071.95952305793,
+          "p99": 96216.06860978124,
+          "max": 97752.0958814621
+        }
+      }
+    },
+    "ThunderAgent decay": {
+      "mean_jct_s": 1697.5836446114117,
+      "makespan_s": 2355.3445512609483,
+      "end_to_end_output_tokens_per_s": 233.37180104105374,
+      "decode": {
+        "batches": 95635,
+        "request_steps": 549478,
+        "worker_ms": 1605126.1432459578,
+        "request_step_ms": 13014821.739329025,
+        "output_tokens": 545997,
+        "context_tokens": 30622786652,
+        "graph_batches": 95635,
+        "graph_request_steps": 549478,
+        "configured_bucket_rows": 635038,
+        "batches_needing_padding": 44660,
+        "worker_ms_in_batches_needing_padding": 1034827.5028280914,
+        "mean_batch": 5.745574319025462,
+        "worker_weighted_mean_batch": 8.108285940075632,
+        "worker_interval_sum_s": 1605.1261432459578,
+        "mean_worker_interval_ms": 16.78387769379367,
+        "output_tokens_per_worker_interval_second": 340.15831235286,
+        "mean_observed_request_context_tokens": 55730.687401497424,
+        "graph_batch_fraction": 1.0,
+        "configured_padding_rows_per_real_graph_row": 0.15571142065742394
+      },
+      "streaming_response_metrics": {
+        "workflow_ttft_ms": {
+          "count": 18,
+          "mean": 139028.4033548037,
+          "p50": 101804.63458967209,
+          "p75": 206657.0104496479,
+          "p90": 255089.30521106723,
+          "p95": 290016.01505255693,
+          "p99": 318113.38459239,
+          "max": 325137.7269773483
+        },
+        "workflow_max_post_first_ready_output_gap_ms": {
+          "count": 18,
+          "mean": 73449.10657278697,
+          "p50": 47096.99371767044,
+          "p75": 91929.44760537148,
+          "p90": 122965.2473207474,
+          "p95": 163231.7360606668,
+          "p99": 273821.28838873835,
+          "max": 301468.67647075653
+        }
+      }
+    }
+  },
+  "full_comparisons": {
+    "KVFlow observed": {
+      "full_mean_jct_reduction_percent": 6.997471160945079,
+      "full_output_throughput_increase_percent": 0.4830820087004417
+    },
+    "ThunderAgent decay": {
+      "full_mean_jct_reduction_percent": 4.694134284319052,
+      "full_output_throughput_increase_percent": 2.156916636603601
+    }
+  },
+  "kvflow_actual_paper_state": {
+    "policy": "kvflow_paper_observed_graph",
+    "program_identity": "invocation_id",
+    "cache_identity": "workflow_context_epoch",
+    "future_information_used": false,
+    "request_transport": "plain_tokens_or_full_prompt_native_radix_session",
+    "conversation_session_reconstruction_supported": false,
+    "native_capacity_authority_preserved": true,
+    "graph_information_source": "observed_events",
+    "fixed_prefix_source": "completed_same_context_input_lcp",
+    "application_declared_graph_equivalence_claimed": false,
+    "control_interval_ms": 200,
+    "prefetch_concurrency_limit": 4,
+    "path_checks_per_interval": 16,
+    "native_eviction_checks_per_interval": 16,
+    "path_node_limit": 1024,
+    "speculative_native_capacity_reserve": "unallocated_observed_admitted_input_plus_one_decode_step",
+    "contexts": 0,
+    "pending_requests": 0,
+    "inflight_prefetches": 0,
+    "counts": {
+      "graph_updates": 13369,
+      "graph_update_wall_ns": 3844212133,
+      "graph_update_max_wall_ns": 3561227,
+      "maintenance_ticks": 9799,
+      "native_growth_reserve_tokens": 0,
+      "native_growth_reserve_max_tokens": 141925,
+      "maintenance_path_checks": 0,
+      "maintenance_wall_ns": 436152055,
+      "maintenance_max_wall_ns": 228991,
+      "queue_plans": 4117,
+      "queue_plan_wall_ns": 7953673724,
+      "queue_plan_max_wall_ns": 12460256,
+      "registered": 3674,
+      "native_radix_session_requests": 3674,
+      "native_prefix_matches": 14104,
+      "maintenance_deferred_after_native_selection": 470,
+      "completed": 3674,
+      "contexts_retired": 3674,
+      "loading_requests_deferred": 1
+    },
+    "cache_counts": {
+      "step_updates": 13369,
+      "step_update_nodes": 0,
+      "priority_lookups": 119131
+    },
+    "transfer_counts": {
+      "native_commands_completed": 0
+    }
+  },
+  "fresh_prefix_component_validated": true,
+  "figures": [
+    "decode_timeline",
+    "decode_distributions"
+  ],
+  "inputs_sha256": {
+    "/home/longhao/experiment/ops/kvflow_locobench_v230_v311_20261028_r1.registration.json": "7ddd3e75e6a63366ea29f2ef244084a166a9ada65ca4277c1af85c9260525d48",
+    "/home/longhao/experiment/ops/kvflow_locobench_v230_v311_20261028_r1.registration.state.json": "56393e756aea264c19a11d23766da74377b8600cc6219d1b755fc481d73444fa",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/kvflow_locobench_v230_v311_20261028_r1/kvflow_observed_graph/replay/summary.json": "7d37cc123d2f8ecf90c1b11a84b186125d8d49f54c5ba2bf340c291956bee70f",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/kvflow_locobench_v230_v311_20261028_r1/kvflow_observed_graph/server/server_info.json": "1cbd4af0728c79e7436c9d9f62fe390476be6d6d41e57874550569d8055270b3",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/kvflow_locobench_v230_v311_20261028_r1/kvflow_observed_graph/telemetry_drain.json": "e4a131506f4c9dd0f8ca0c2fd208a07c0338109718fdbb47865f08404f0c0117",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/kvflow_locobench_v230_v311_20261028_r1/kvflow_observed_graph/owned_process_cleanup.json": "2e12f02c584ad846187daed73386f6dfb8c1eb3e5ccc4bb58a13dfd8fec831a4",
+    "/home/longhao/experiment/ops/demand_prefill_ack_retry_20261028_r1.registration.json": "fbfe3a62408e7d717a620f62ca609df795f3057a264bf47a4e294d375e8f70f7",
+    "/home/longhao/experiment/ops/demand_prefill_ack_retry_20261028_r1.registration.state.json": "9e1a21e9629770f75b8118e85a0724bad8e6d6d6999adf7046fe16f0d75a3b21",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_20261028_r1/full/replay/summary.json": "07d8b1dcff755a25d5d9025b6cbceb367ed086b1d4c5ef65d214e86ab8682d80",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_20261028_r1/full/server/server_info.json": "b4a77a88a7521f8cd5bfd9199f819535efb610142b93e053cd582fcd4fb9dfc7",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_20261028_r1/full/telemetry_drain.json": "38406ba57576a5453ddf1d34969e7bd4a11e6ca29b7b2a2b88b6b1368cd2b3b4",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_20261028_r1/full/owned_process_cleanup.json": "f6e4a58c8f53cf58408a34ff90e99fa8378f77fe20f50c6c11b7861593df6899",
+    "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.json": "66a5bac27ce8d8f70a91e5c45fcc377b7950db56bc3bd2a7588124fd5209902b",
+    "/home/longhao/experiment/ops/v345_locobench_categorized_thunder_decay_20261027.registration.state.json": "3160dca6a649c72ad6e4172c1b96d6f9d66d637af16425cf6e93c34d557c1e49",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/replay/summary.json": "3b9cdf028d27c6c5b5ed7004e401f18192bc518a4811e50103505cbfe39174a6",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/server_info.json": "d2fa80cb9272916c97f053d113fecb546840171b14c3aa2e5eacaa66aba50a42",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/telemetry_drain.json": "c943425208f021f403bd392ae6c4a0476254d739d4e32e511abb7b6ae5645fa2",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/owned_process_cleanup.json": "4e7c0bd7050a4ecacc70819785bd7492cc5d12794b58cc3127dae0b1d7162ad5",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_20261028_r1/full/server/native_telemetry_status.json": "b7c21d00357aba0bab12b3b618a958f7a89d530ba6d4657803dd7ef7245c67d7",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_20261028_r1/full/server/native_capacity_census.json": "4ccf676b0b9bd4d994a9e2e27c2f50bfc3422a403ceee692a5e83d332b629adb",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_20261028_r1/full/opportunities/admission_opportunities.jsonl": "d2c99bcce16b1d0088dfbd2df02496431c8c96d55fe86693e114d8770a6c9f3a",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/native_telemetry_status.json": "a2c597cf6d745ad728c7661bc961b39dc2256f2bbd3cbc3e88c6688cc7ee8a47",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/native_capacity_census.json": "c68ac3494755caf07860b503b60d00f733d8263298218c59caaceb2dd9a6578e",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/opportunities/admission_opportunities.jsonl": "053a1db66e1508b968aef559bd7a155672829836ef2a00a2ae9030791892d24e",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/kvflow_locobench_v230_v311_20261028_r1/kvflow_observed_graph/server/native_telemetry_status.json": "8fdb02607d3e7d511c69a9805e7cda42763fa235579901c6de9622713c564891",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/kvflow_locobench_v230_v311_20261028_r1/kvflow_observed_graph/server/native_capacity_census.json": "fc8f165413ac458ff558140ab1c85f7dc797404970b21ebb4561daf86cfa7dab",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/kvflow_locobench_v230_v311_20261028_r1/kvflow_observed_graph/opportunities/admission_opportunities.jsonl": "1a2a3431375b7a0a9c516a9fb3fa5880892fa01716f2863b5f7388e3a8113ca6",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/kvflow_radix_session_20261028/complete_review.py": "8fa46699244d9fe62bcd116c97bca107fa5d8e784cb160ac203380e56dc10fed",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/complete_review.py": "33368bdc003ea15908582a0cd598e1853114ad5646ed2877980b52b9aa84f81a",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/readmission_complete/final_index.json": "3a8e402c8ff4bb03b8f4cbc44676c9e00f9e186ba3896f235b1726de4ee83924",
+    "/home/longhao/experiment/BeliefKV/experiments/figures/demand_prefill_ack_retry_20261028_r1/evidence.json.gz": "4e8adbe1482d095ece9710ff9700082744dc96cbaa7b33ca5dd1115a822f2f3e",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/kvflow_locobench_v230_v311_20261028_r1/kvflow_observed_graph/native_prefix_qualification/summary.json": "8f88695c17d1ade2d075900e6f7aceab976ba0532aaa20a4cbb19c634d1f97f5",
+    "/home/longhao/experiment/BeliefKV/experiments/figures/kvflow_locobench_v230_v311_20261028_r1/decode_distributions.png": "22a41eb767e64904f57af9dae0340fef330badbbe7e29ddcaeaeff353765f651",
+    "/home/longhao/experiment/BeliefKV/experiments/figures/kvflow_locobench_v230_v311_20261028_r1/decode_timeline.pdf": "cddab29b08bd30fa69a154571b299c7fc7f17c95d5b935464e0066d5a3d40636",
+    "/home/longhao/experiment/BeliefKV/experiments/figures/kvflow_locobench_v230_v311_20261028_r1/decode_distributions.pdf": "0195dd408eb6fcbce4c8e36632bdaf75d56660276a18468e5d9d00c6e3508966",
+    "/home/longhao/experiment/BeliefKV/experiments/figures/kvflow_locobench_v230_v311_20261028_r1/decode_timeline.png": "28a8cbadc9fbbdfbe23b4e6068fd94e2d14c2d73a04ec406efe79565e0b1bb30",
+    "/home/longhao/experiment/BeliefKV/experiments/figures/kvflow_locobench_v230_v311_20261028_r1/evidence.json.gz": "b0827afdb61c4cb122d53e269d790aadf71068d88b2492e6494f048c9de28ea2",
+    "/home/longhao/experiment/BeliefKV/experiments/figures/kvflow_locobench_v230_v311_20261028_r1/geometry.csv": "88bf0e73298258109378de9216d6922f44ef4587aa440df86592173f1fc9ddc0",
+    "/home/longhao/experiment/BeliefKV/experiments/figures/kvflow_locobench_v230_v311_20261028_r1/time_bins.csv": "fd16f806c6424ce983c41ca4945fc0f31ae8e25ce15c3e125d11701e93012aa9"
+  },
+  "performance_accepted": false,
+  "limitations": [
+    "KVFlow uses already observed graph events and observed completed-input prefixes.",
+    "The shared V311 tool durations are synthetic observable-category timings.",
+    "Full has a different reviewed native engine; this is a combined-system comparison.",
+    "One KVFlow and one ThunderAgent control do not establish statistical significance.",
+    "TokenCake and Agentix complete formal results remain outstanding.",
+    "Decode worker intervals include runtime and waits, not pure kernel execution."
+  ]
+}
