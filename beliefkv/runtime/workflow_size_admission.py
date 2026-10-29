@@ -1,6 +1,7 @@
 """Full-only workflow remaining-work recovery, with observed JOIN siblings."""
 
 from dataclasses import asdict
+import os
 import time
 
 from beliefkv.core.events import RelationType
@@ -27,6 +28,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         self._work = WorkflowWorkWorker(
             runtime.workflow_work_model, runtime.workflow_work_model_sha256,
             tokenizer_path=getattr(runtime, "workflow_work_tokenizer_path", None),
+            execution_environment=os.environ,
         )
 
     def _prediction(self, invocation):

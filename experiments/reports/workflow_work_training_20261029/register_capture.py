@@ -23,6 +23,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cpu-evidence", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--workload", type=Path, default=ROOT / "configs/workloads/locobench_workflow_work_train8_20261029.json")
+    parser.add_argument("--configuration", type=Path, default=ROOT / "configs/migration/workflow_work_train8_native_20261029.json")
+    parser.add_argument("--registration", type=Path, default=OPS / "workflow_work_train8_source_20261029_r1.registration.json")
+    parser.add_argument("--run-root", type=Path, default=MAIN / "experiments/raw/workflow_work_train8_source_20261029_r1")
+    parser.add_argument("--port", type=int, default=18891)
     args = parser.parse_args()
     if git_source_state(ROOT)["dirty"] or os.getpriority(os.PRIO_PROCESS, os.getpid()) != 0:
         raise ValueError("native training capture requires clean committed sources and nice0")
@@ -55,12 +60,12 @@ def main():
         "--cpu-sources", cpu["source_manifest"]["path"],
         "--engine", str(engine), "--engine-report", proof["report"],
         "--engine-sources", str(native_sources),
-        "--registration", str(OPS / "workflow_work_train8_source_20261029_r1.registration.json"),
-        "--run-root", str(MAIN / "experiments/raw/workflow_work_train8_source_20261029_r1"),
-        "--port", "18891", "--source-profile", "nested_oneshot",
-        "--source-workload", str(ROOT / "configs/workloads/locobench_workflow_work_train8_20261029.json"),
+        "--registration", str(args.registration),
+        "--run-root", str(args.run_root),
+        "--port", str(args.port), "--source-profile", "nested_oneshot",
+        "--source-workload", str(args.workload),
         "--max-running-requests", "24", "--sampling-profile", "qwen3_coder",
-        "--experiment-config", str(ROOT / "configs/migration/workflow_work_train8_native_20261029.json"),
+        "--experiment-config", str(args.configuration),
         "--cuda-home", "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13",
         "--wait-for-gpu",
     ]

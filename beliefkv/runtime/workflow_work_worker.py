@@ -2,6 +2,7 @@
 
 from collections import Counter, deque
 from dataclasses import dataclass
+import hashlib
 import threading
 import time
 
@@ -25,8 +26,12 @@ class WorkflowWorkWorker:
     queue_limit = 4096
     workflow_limit = 256
 
-    def __init__(self, path, digest, *, tokenizer_path=None, model=None, autostart=True):
+    def __init__(
+        self, path, digest, *, tokenizer_path=None, model=None, autostart=True,
+        execution_environment=None,
+    ):
         self.model = model if model is not None else WorkflowWorkModel.load(path, digest)
+        self.task_prefix = self.model.task_input_prefix(execution_environment)
         self.digest = digest
         self.tokenizer_path = tokenizer_path
         self._tokenizer = None
@@ -123,9 +128,19 @@ class WorkflowWorkWorker:
 
     def process_pending(self):
         """Also used by deterministic CPU lifecycle checks, without a live thread."""
+        wall, cpu = time.perf_counter(), time.thread_time()
+        try:
+            self._process_pending()
+        finally:
+            self.counts["worker_cycles"] += 1
+            self.counts["worker_thread_cpu_us"] += (time.thread_time() - cpu) * 1e6
+            self.counts["worker_wall_us"] += (time.perf_counter() - wall) * 1e6
+
+    def _process_pending(self):
         with self._condition:
             rows = tuple(self._queue)
             self._queue.clear()
+        self.counts["worker_observations_processed"] += len(rows)
         self._consume(rows)
         for workflow in tuple(self._dirty):
             if self._stopped:
@@ -138,7 +153,7 @@ class WorkflowWorkWorker:
                 if not progress.text:
                     self.counts["task_unavailable"] += 1
                     continue
-                self._projections[workflow] = self.model.task_projection(progress.text)
+                self._projections[workflow] = self.model.task_projection(self.task_prefix + progress.text)
                 self.counts["task_encodings"] += 1
             projection = self._projections[workflow]
             if projection is None:
@@ -198,6 +213,9 @@ class WorkflowWorkWorker:
             "calibration_status": self.model.metadata.get("calibration_status"),
             "decision_eligible": self.model.metadata.get("decision_eligible", False),
             "validation_scope": self.model.metadata.get("validation_scope", "unseen_projects"),
+            "task_input_kind": self.model.task_input_kind,
+            "execution_controls": self.model.deployment_controls,
+            "task_prefix_sha256": hashlib.sha256(self.task_prefix.encode()).hexdigest(),
             "refresh_interval_ms": 200, "counts": dict(self.counts),
             "cached_workflows": len(self._predictions), "queue_depth": len(self._queue),
             "future_trace_used_online": False, "scheduler_waits_for_inference": False,

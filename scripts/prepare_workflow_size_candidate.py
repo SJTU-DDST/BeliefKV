@@ -51,6 +51,7 @@ def prepare(base, model, evaluation):
     else:
         raise ValueError("unknown workflow ranking split contract")
     env = declaration["common_environment"]
+    predictor.task_input_prefix(env)
     for name in (
         "LAYER_HANDOFF", "BELIEFKV_LAYER_HANDOFF", "BELIEFKV_LAYER_HANDOFF_FREE_EXTENT",
         "TOOL_PREFETCH", "BELIEFKV_ENABLE_TOOL_PREFETCH", "EXECUTION_FRONTIER_RESTORE",
@@ -83,6 +84,8 @@ def prepare(base, model, evaluation):
             "remaining_gpu_seconds_claimed": False,
             "validation_scope": predictor.metadata.get("validation_scope", "unseen_projects"),
             "split_contract": split,
+            "task_input_kind": predictor.task_input_kind,
+            "execution_controls": predictor.deployment_controls,
         },
         "candidate_provenance": {
             "base": str(base.resolve()), "base_sha256": sha256_file(base),

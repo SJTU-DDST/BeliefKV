@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from array import array
 from collections import Counter
 from dataclasses import dataclass, field
 import hashlib
@@ -21,6 +22,61 @@ FEATURES = (
     "completion_intents",
 )
 SCHEMA = "workflow_remaining_model_work_v1"
+EXECUTION_INPUT_KIND = "task_plus_declared_execution_instructions_v1"
+EXECUTION_CONTROL_FIELDS = frozenset((
+    "profile", "minimum_parallel_join", "child_soft_target",
+    "root_phase_target", "maximum_spawn_depth",
+))
+
+
+def execution_controls(values):
+    """Only declared instructions are accepted, never measured future work."""
+    from beliefkv.experiments.delegation_policy import SUBAGENT_FANOUT_PROFILES
+
+    if not isinstance(values, dict) or values.keys() != EXECUTION_CONTROL_FIELDS:
+        raise ValueError("workflow execution controls require exactly the declared fields")
+    result = dict(values)
+    if result["profile"] not in SUBAGENT_FANOUT_PROFILES:
+        raise ValueError("unknown workflow execution profile")
+    for name in ("child_soft_target", "root_phase_target"):
+        value = result[name]
+        if value == "not_configured":
+            continue
+        if (
+            type(value) is not str or not value.isascii() or not value.isdigit()
+            or len(value) > 5 or int(value) > 10000
+        ):
+            raise ValueError("invalid declared workflow soft budget")
+        result[name] = str(int(value))
+    for name in ("minimum_parallel_join", "maximum_spawn_depth"):
+        value = result[name]
+        if name == "minimum_parallel_join" and value == "not_required":
+            continue
+        if type(value) is not int or not 0 <= value <= 64:
+            raise ValueError("invalid declared workflow delegation limit")
+    return result
+
+
+def execution_control_text(values):
+    values = execution_controls(values)
+    return "Declared execution instructions: " + "; ".join(
+        f"{name}={value}" for name, value in sorted(values.items())
+    ) + "\n\n"
+
+
+def execution_controls_from_environment(environment):
+    from beliefkv.experiments.delegation_policy import delegation_contract
+
+    if environment is None:
+        raise ValueError("workflow work model requires declared runtime execution controls")
+    contract = delegation_contract(environment.get("FANOUT_PROFILE", ""))
+    return execution_controls({
+        "profile": contract["profile"],
+        "minimum_parallel_join": contract.get("minimum_completed_root_join_members", "not_required"),
+        "child_soft_target": environment.get("CHILD_WORK_BUDGET_TARGET_CALLS", "not_configured"),
+        "root_phase_target": environment.get("ROOT_WORK_BUDGET_TARGET_CALLS", "not_configured"),
+        "maximum_spawn_depth": contract["maximum_spawn_depth"],
+    })
 
 
 def task_requirements(text):
@@ -122,20 +178,28 @@ class WorkflowProgress:
         self._state(invocation, "running")
 
     def completed(self, request, invocation, context, prompt, output):
+        import numpy as np
+
         if request in self.seen_calls:
             return 0
         self.started(request, invocation, context, prompt)
         self.generated(request, len(output))
-        previous = self.histories.get(context, ())
-        common = 0
-        for left, right in zip(previous, prompt):
-            if left != right:
-                break
-            common += 1
-        necessary = len(prompt) - common
+        current = (
+            np.asarray(prompt, dtype=np.int64) if isinstance(prompt, (array, np.ndarray, memoryview))
+            else np.frombuffer(array("q", prompt), dtype=np.int64)
+        )
+        previous = np.asarray(self.histories.get(context, ()), dtype=np.int64)
+        count = min(len(previous), len(current))
+        common = count
+        if count:
+            different = previous[:count] != current[:count]
+            if different.any():
+                common = int(different.argmax())
+        necessary = len(current) - common
         self.counts["input_tokens"] += necessary
         self.counts["completed_calls"] += 1
-        self.histories[context] = tuple(prompt) + tuple(output)
+        # Keep an owned copy: native request buffers can outlive this callback.
+        self.histories[context] = np.concatenate((current, np.asarray(output, dtype=np.int64)))
         self.active_calls.pop(request, None)
         self.seen_calls.add(request)
         self._state(invocation, "idle")
@@ -167,6 +231,17 @@ class WorkflowWorkModel:
             raise ValueError("incompatible workflow work model")
         self.raw = raw
         self.metadata = raw["metadata"]
+        contract = self.metadata.get("task_input_contract")
+        self.task_input_kind, self.deployment_controls = "task_requirements_v1", None
+        if contract is not None:
+            if (
+                not isinstance(contract, dict)
+                or contract.keys() != {"kind", "deployment_controls"}
+                or contract["kind"] != EXECUTION_INPUT_KIND
+            ):
+                raise ValueError("unsupported workflow task input contract")
+            self.task_input_kind = contract["kind"]
+            self.deployment_controls = execution_controls(contract["deployment_controls"])
         self.thresholds = tuple(raw["work_thresholds"])
         if len(self.thresholds) != 2 or not 0 < self.thresholds[0] < self.thresholds[1]:
             raise ValueError("workflow work classes require two fixed positive thresholds")
@@ -210,6 +285,14 @@ class WorkflowWorkModel:
         values *= self.arrays["idf"][indices]
         values /= max(float(np.linalg.norm(values)), 1e-12)
         return np.einsum("i,ij->j", values, self.arrays["static_weight"][indices], optimize=False)
+
+    def task_input_prefix(self, environment=None):
+        if self.deployment_controls is None:
+            return ""
+        controls = execution_controls_from_environment(environment)
+        if controls != self.deployment_controls:
+            raise ValueError("workflow work model and runtime execution controls differ")
+        return execution_control_text(controls)
 
     def predict(self, projection, features):
         import numpy as np

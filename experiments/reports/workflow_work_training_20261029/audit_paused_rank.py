@@ -13,7 +13,7 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind as Kind
 from beliefkv.experiments.causal_replay_tokens import CapturedTokenCorpus
 from beliefkv.experiments.source_provenance import sha256_file
-from beliefkv.predictor.workflow_work import WorkflowProgress, WorkflowWorkModel
+from beliefkv.predictor.workflow_work import WorkflowProgress, WorkflowWorkModel, execution_control_text
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts.run_causal_gpu_replay import source_plan
 from scripts.train_workflow_work import write
@@ -66,6 +66,35 @@ def pair_metrics(samples):
     }
 
 
+def continuous_pair_metrics(samples):
+    counts = Counter()
+    distinct = set()
+    for sample in samples:
+        groups = defaultdict(dict)
+        for row in sample:
+            current = groups[row["category"]].get(row["workflow"])
+            if current is None or row["context_tokens"] < current["context_tokens"]:
+                groups[row["category"]][row["workflow"]] = row
+        for group in groups.values():
+            for left, right in combinations(group.values(), 2):
+                truth = left["remaining_logical_work"] - right["remaining_logical_work"]
+                original = left["context_tokens"] - right["context_tokens"]
+                if not truth or not original:
+                    continue
+                prediction = left["bucket"] - right["bucket"]
+                counts["comparable_pairs"] += 1
+                counts["context_order_correct"] += original * truth > 0
+                counts["combined_order_correct"] += (prediction or original) * truth > 0
+                distinct.add(tuple(sorted((
+                    left.get("request_id", left["workflow"]),
+                    right.get("request_id", right["workflow"]),
+                ))))
+    return {
+        **counts, "distinct_request_pairs": len(distinct),
+        "scope": "continuous logical remaining work; sampled pairs, not capacity feasibility or JCT",
+    }
+
+
 def audit(arm, source, dataset_path, model_path):
     import numpy as np
 
@@ -76,6 +105,10 @@ def audit(arm, source, dataset_path, model_path):
             "total": row["total_work"], "text": row["text"],
         }
     model = WorkflowWorkModel.load(model_path, sha256_file(model_path))
+    if model.deployment_controls is not None:
+        prefix = execution_control_text(model.deployment_controls)
+        if any(not row["text"].startswith(prefix) for row in labels.values()):
+            raise ValueError("paused audit dataset and model execution controls differ")
     if dataset["prefill_token_weight"] != model.metadata["prefill_token_weight"]:
         raise ValueError("work model and offline labels use different units")
     plan, expected, source_evidence = source_plan(source)
@@ -175,7 +208,8 @@ def audit(arm, source, dataset_path, model_path):
             records.extend(sample)
         source_evidence["token_source"] = corpus.evidence
     return {
-        "counts": dict(counts), "pair_metrics": pair_metrics(samples), "candidates": records,
+        "counts": dict(counts), "pair_metrics": pair_metrics(samples),
+        "continuous_pair_metrics": continuous_pair_metrics(samples), "candidates": records,
         "input_jsonl_prefixes": read.prefixes, "source_evidence": source_evidence,
         "model_sha256": sha256_file(model_path), "dataset_sha256": sha256_file(dataset_path),
         "scope": {

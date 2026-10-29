@@ -36,6 +36,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--configuration", type=Path)
     args = parser.parse_args()
     result = {
         "scope": "exclusive CPU microbenchmarks; no end-to-end CPU, GPU stall or JCT claim",
@@ -61,18 +62,28 @@ def main():
             pair[name] = measure(run)
         result["resume"][str(n)] = pair
     model = WorkflowWorkModel.load(args.model, sha256_file(args.model))
-    task = "Implement and validate a concurrent API endpoint with focused tests."
+    environment = (
+        json.loads(args.configuration.read_bytes())["common_environment"]
+        if args.configuration else None
+    )
+    task = model.task_input_prefix(environment) + (
+        "Implement and validate a concurrent API endpoint with focused tests."
+    )
     result["initial_task_projection"] = measure(lambda: model.task_projection(task), 40)
     projection = model.task_projection(task)
     result["cached_task_dynamic_inference"] = measure(
         lambda: model.predict(projection, [1.] * len(FEATURES)),
     )
     prefix = tuple(range(100000))
+    warm = WorkflowProgress()
+    warm.completed("warm", "agent", "context", prefix, ())
     def completed_prefix():
         progress = WorkflowProgress()
-        progress.histories["context"] = prefix
+        progress.histories["context"] = warm.histories["context"]
         progress.completed("request", "agent", "context", prefix + (100000,), (2, 3))
     result["background_100k_same_context_prefix_accounting"] = measure(completed_prefix, 40)
+    result["history_representation"] = "owned_contiguous_numpy_int64"
+    result["task_input_kind"] = model.task_input_kind
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("x") as handle:
         json.dump(result, handle, indent=2)

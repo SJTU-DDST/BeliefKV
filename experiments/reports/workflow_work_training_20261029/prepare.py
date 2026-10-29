@@ -78,11 +78,13 @@ def training_manifest(base, archive, references, *, count=8):
     return result
 
 
-def training_configuration(base):
+def training_configuration(base, *, count=8, workload=WORKLOAD):
+    if type(count) is not int or not 1 <= count <= 156:
+        raise ValueError("invalid native training population")
     env = deepcopy(base["common_environment"])
     env.update({
-        "ROOT_COUNT": "8", "MAX_RUNNING_REQUESTS": "24",
-        "WORKLOAD_MANIFEST": str(WORKLOAD.relative_to(ROOT)),
+        "ROOT_COUNT": str(count), "MAX_RUNNING_REQUESTS": "24",
+        "WORKLOAD_MANIFEST": str(workload.relative_to(ROOT)),
         "SGLANG_PATCH_FLAVOR": "staging",
         "WORKFLOW_SIZE_RESUME": "0", "BELIEFKV_WORKFLOW_SIZE_RESUME": "0",
         "WORKFLOW_WORK_MODEL": "", "BELIEFKV_WORKFLOW_WORK_MODEL": "",
@@ -104,7 +106,7 @@ def training_configuration(base):
         "common_environment": env, "order": ["native_matched"],
         "performance_accepted": False,
         "training_protocol": {
-            "extra_tasks": 8, "distinct_projects_per_capture": True,
+            "extra_tasks": count, "distinct_projects_per_capture": True,
             "same_model_and_prompt_budgets_as_current_workload": True,
             "child_warning_target": [4, 8], "root_warning_target": [8, 16],
             "normal_tool_times_retained": True, "tool_timing_overlay": None,

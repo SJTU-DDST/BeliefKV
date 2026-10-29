@@ -332,6 +332,7 @@ def preflight_runtime(settings, model_path):
         )
         if work_model.metadata.get("decision_eligible") is not True:
             raise ValueError("workflow work model has not passed held-out calibration for GPU comparison")
+        work_model.task_input_prefix(settings)
     expected = {
         "profile_shared_path": settings.get("BELIEFKV_PROFILE_SHARED_PATH", "0") == "1",
         "profile_shared_path_sample_every": 64,

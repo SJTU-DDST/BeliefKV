@@ -12,6 +12,7 @@ HERE = ROOT / "experiments/reports/workflow_work_training_20261029"
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import sha256_file
+from beliefkv.predictor.workflow_work import execution_control_text
 from scripts.train_workflow_work import write
 
 
@@ -27,9 +28,7 @@ def controls(capture):
         "root_phase_target": env.get("ROOT_WORK_BUDGET_TARGET_CALLS", "not_configured"),
         "maximum_spawn_depth": contract["maximum_spawn_depth"],
     }
-    prefix = "Declared execution instructions: " + "; ".join(
-        f"{name}={value}" for name, value in sorted(fields.items())
-    ) + "\n\n"
+    prefix = execution_control_text(fields)
     return prefix, fields, {
         str(path): sha256_file(path) for path in (plan_path, manifest_path)
     }
@@ -50,7 +49,8 @@ def augment(dataset):
         "kind": "task_plus_declared_execution_instructions",
         "controls_available_before_first_request": True, "profiles": profiles,
         "future_trace_or_total_work_in_input": False,
-        "CPU_pilot_only_runtime_prefix_not_yet_wired": True,
+        "runtime_prefix_supported_by_current_code": True,
+        "weight_artifact_requires_explicit_input_binding": True,
     }
     return result
 

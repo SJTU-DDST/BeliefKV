@@ -3613,3 +3613,33 @@
   prototype without matching the live prefix contract;collect matched-current
   task executions or qualify better prediction/ranking next. Keep the full
   performance goal active and tool/frontier prefetch/physical handoff off.
+- Declared execution instructions now have an explicit live input contract.
+  Legacy task-only weights keep their exact input;profile-bound weights require
+  the same5 declared fields at candidate preparation,formal preflight and Worker
+  creation. Shared formatter has no future work hints. input_contract_r1 binds
+  the unchanged numeric prototype and checks all18 actual root token tails,
+  first-submit features,task projections/probabilities exactly on CPU. It does
+  not qualify background-cache timing or GPU performance. Full-worker cycle CPU/
+  wall now includes event/task/prefix work. Owned vector histories preserve
+  all14458 serialized snapshots;retain initial tuple-vs-JSON-list check failure.
+  100k-prefix micro median improves5.33-to2.31ms,not measured JCT.
+- Input-bound profile model paused audit is negative:627/1027 combined-correct
+  vs628 original;103 corrected/104 harmed reversals. Do not call global F1 or
+  initial-accuracy gains a scheduler improvement. Continuous remaining-work
+  pair metrics are added for comparison across changed training quantile bins;
+  sampled call-boundary/post-control limitations remain. No Full performance
+  run is registered by these CPU changes.
+- A separately declared matched6 training capture keeps the first6 original
+  tasks/projects from the existing seeded18 pool,unchanged sources/tests/tools,
+  current4/8child and8/16root,2048/mixed-off,24running/decode,seed21 and real
+  tool times. Native/predictor flags remain isolated. Existing performance
+  workload/arrivals and all earlier captures are preserved. Expected registration
+  is ops/workflow_work_matched6_source_20261029.registration.json,port18892,
+  run experiments/raw/workflow_work_source_20261029_matched6 (unique capture
+  label avoids reusing the old r1 native worktree). CPU-only finish_matched
+  waits complete source/drain/actual exit then trains34 with unchanged22cal/
+  18development,predeclared compact16,live input binding and paused audit;it
+  registers no further GPU action. Fresh current-source CPU actually passes
+  4946+6,retains all4929 identities,no skips/errors/failures,2001 inputs/native
+  unchanged. Matched6 has15 verified tool/project inputs. Freeze committed
+  sources and recheck reservation/resources/sampler before actual collection.
