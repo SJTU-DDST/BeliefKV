@@ -144,7 +144,10 @@ def model_environment(plan, fixture, policy_path, run):
         flags[flags.index("--max-total-tokens") + 1] = str(fixture.device_tokens)
     else:
         flags += ["--max-total-tokens", str(fixture.device_tokens)]
-    flags += ["--enable-deterministic-inference", "--attention-backend", "fa3"]
+    flags += [
+        "--enable-deterministic-inference", "--attention-backend", "fa3",
+        "--skip-server-warmup",
+    ]
     inherited = prefix_qualification_environment(
         {"reference_environment": settings}, os.environ,
     )
@@ -318,6 +321,7 @@ def main():
                 "enable_custom_logit_processor": False, "enable_session_radix_cache": True,
                 "enable_deterministic_inference": True, "sampling_backend": "pytorch",
                 "attention_backend": "fa3", "enable_mixed_chunk": False,
+                "skip_server_warmup": True,
             }
             if any(info.get(name) != value for name, value in parameters.items()):
                 raise ValueError("actual Agentix model parameters differ from the declared fixture")

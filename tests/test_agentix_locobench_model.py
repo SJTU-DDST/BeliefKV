@@ -117,6 +117,7 @@ def test_model_environment_isolates_full_and_uses_actual_agentix_engine(tmp_path
     assert settings["SGLANG_PLUGINS"] == "" and settings["BELIEFKV_CAUSAL_REPLAY_BRIDGE"] == "0"
     assert "--enable-custom-logit-processor" not in flags
     assert "--enable-deterministic-inference" in flags and socket is not None
+    assert "--skip-server-warmup" in flags
 
 
 def test_model_probe_drives_six_http_calls_with_real_session_leases(tmp_path, monkeypatch):

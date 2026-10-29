@@ -1,0 +1,9 @@
+{
+  "checkout": "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-e5cf6233fc9f",
+  "engine_checkout": "/home/longhao/experiment/.worktrees/sglang-agentx-baseline-c489dbb85265-e5cf6233fc9f",
+  "application_commit": "e5cf6233fc9fa8eabf52bfbf02a2be7b4141a140",
+  "application_tree": "e32ba0006b1300ab57379222ce7c0c78522f7864",
+  "engine_tree": "c489dbb85265efce25622a52abfd698e9199688d",
+  "native_patch_sha256": "15fe59ebe16721e5ee07244d0d25381b0187b91b1afa57f8fd06281fe051cd09",
+  "development_branch_and_user_indexes_unchanged": true
+}

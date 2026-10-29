@@ -32,6 +32,17 @@ roomy_r2 在 GPU 启动前因 r1 遗留 event socket 拒绝，没有覆盖旧 so
 最大上下文的 backing 下界，避免每次验证分配 200GB。输入、Device 池、
 模型与输出检查不变；这是验证夹具的内存预算，正式比较仍用共同的 200GB。
 
+diagnostic_cycle_r1 的冻结应用 e5cf6233fc9f 实际通过 781 项 CPU、保留旧 762
+个字面用例，以及四组真实 GPU 字节/压力检查。模型阶段的详细失败显示
+未注册的随机 UUID 请求且 key=None，当次尚未执行受管 forward；结合原生
+启动代码，确认是 server 自己的无 metadata warmup 进入了严格 Agentix
+选批检查。较早 r3 中已有真实抢占后才遇到它，是 startup warmup 与探针
+启动竞争的时序差异，不能将该错误解释为受管请求恢复后身份已经损坏。
+
+新的操作入口明确使用 --skip-server-warmup，由六个受管模型探针完成实际
+模型检查，并核验真实 server_info 的该参数。物理 server 与四项 GPU 证据
+保持不变；没有放宽 Agentix 对未注册请求、sampler 或 namespace 的检查。
+
 ## 为什么 0.5 接近突发
 
 当前完整可比工作量是 18 个原项目、3674 请求、549671 个输出 token。
