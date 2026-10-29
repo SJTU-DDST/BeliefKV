@@ -3796,3 +3796,34 @@
   live_periodic_selection_r1 (200controls,0local selected-set changes) and all
   normal tails. No further GPU action or deferred baseline is authorized by
   these prefix observations alone.
+- Workflow-dispatch Full now completes the exact3674/18 workload,normal tails,
+  fresh drain and actual owned exit. MeanJCT1432.302431/output241.696602
+  versus original2sFull1439.457324/243.890996 gives only.4971% JCT gain and
+  .8997% throughput loss;do not promote workflow ranking/500ms dispatch.
+  Strict159grants/159distinct attempts all have following exact native service
+  and completion. Final1132controls change19local selected sets. Complete
+  decode plots are visually inspected. Preserve all results/normal tails.
+- Current34train/22calibration/18development workflows already include two
+  completed native training captures. User permits project/task overlap across
+  independent executions;do not require strict project holdout or split one
+  execution's snapshots. Current evaluation is adaptive development,not blind
+  generalization. No further data capture is needed solely for separation.
+- New complete prefill/decode-gap audits observe349.784501/305.164732/
+  304.991335 prefill worker seconds between quiet continuing decode bookends
+  for Thunder/originalFull/newFull,respectively;these are not removable JCT,
+  continuous admission,residency or pure kernels. The matched mixed candidate
+  uses original2sFull without workflow ranking/500ms dispatch and shared
+  mixed1/chunk2048 only. Keep tool/frontier prefetch and physical handoff0.
+  Each method needs fresh real24token/session/native-stop and1/8/24 sampler
+  qualification. Require positive actual decode output inside prefill and
+  all-mode output conservation after fresh idle drain/actual owned cleanup;
+  formal registration revalidates/seals journals. Reuse complete work/arrivals/
+  tools/capacities/seeds and sequence Thunder decay then Full;no extra native
+  baseline,other baseline or automatic retry. New CPU/GPU/performance binding
+  remains pending. See docs/research/workflow_dispatch_and_mixed_chunk_20261029_zh.md.
+- Mixed candidate current source-bound CPU actually passes5064+6,retains all
+  5008prior literal IDs,no failures/errors/skips,2016inputs/native unchanged.
+  Independent complete-work/profile/native-rebinding precheck passes both
+  retained methods and latest failed-gain candidate,with actual owned exit.
+  Freeze committed sources before fresh mixed GPU qualification;these checks
+  are not GPU/performance evidence or completion of the global goal.

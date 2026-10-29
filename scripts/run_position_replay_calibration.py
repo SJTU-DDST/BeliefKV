@@ -26,6 +26,7 @@ from scripts import run_causal_comparison as controls
 from scripts import run_causal_source_capture as capture
 from scripts.benchmark_causal_sampling import calibration_batch_sizes
 from scripts.audit_predictive_source import audit as audit_predictive_source
+from scripts.audit_mixed_position_outputs import mixed_output_evidence
 
 comparison, fresh, qualified, reservation, load = (
     controls.comparison, controls.fresh, controls.qualified, controls.reservation, controls.load,
@@ -569,9 +570,13 @@ def watch(registration):
                 plan, load(run / "smoke/summary.json"), run, parameters,
                 reservation.process(server.pid), scheduler,
             )
-            reservation.write_json(run / "gpu_smoke.json", result)
+            if parameters["enable_mixed_chunk"]:
+                controls.wait_for_telemetry_drain(run, server=server, pulse=pulse)
             controls.cleanup(run, identities, "position_gpu_microcheck_complete")
             identities = []
+            if parameters["enable_mixed_chunk"]:
+                result["mixed_chunk_output_conservation"] = mixed_output_evidence(run)
+            reservation.write_json(run / "gpu_smoke.json", result)
             while not qualified.resources(plan["port"])["ready"]:
                 pulse()
                 time.sleep(2.)

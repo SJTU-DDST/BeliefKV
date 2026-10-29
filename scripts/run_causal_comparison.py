@@ -1459,6 +1459,8 @@ def register(args):
     qualified_prefill = smoke_server["source_server_parameters"]
     if prefill_server_parameters(qualified_prefill, reference["arms"]["full"]) != qualified_prefill:
         raise ValueError("prefill candidate differs from the freshly GPU-checked serving profile")
+    from scripts.audit_mixed_position_outputs import verify_mixed_output_evidence
+    mixed_outputs = verify_mixed_output_evidence(smoke, qualified_prefill)
     original_prefill = load(args.source_arm / "server/server_info.json")
     if any(qualified_prefill.get(name) != original_prefill.get(name) for name in (
         "chunked_prefill_size", "enable_mixed_chunk",
@@ -1523,6 +1525,8 @@ def register(args):
         source_launch,
         Path(reservation.__file__),
     ]
+    if mixed_outputs is not None:
+        inputs.extend(Path(path) for path in mixed_outputs["input_jsonl_prefixes"])
     if overlay_path is not None:
         inputs.append(overlay_path)
     if arrival_path is not None:
@@ -1535,6 +1539,7 @@ def register(args):
     if qualified_prefill["enable_mixed_chunk"] and not {
         "beliefkv/runtime/v0520_native_telemetry.py",
         "scripts/audit_decode_batch_efficiency.py", "tests/test_native_mixed_service_accounting.py",
+        "scripts/audit_mixed_position_outputs.py", "tests/test_mixed_position_qualification.py",
     } <= sources.keys():
         raise ValueError("mixed serving output accounting lacks CPU qualification")
     if args.retention_config is not None:
