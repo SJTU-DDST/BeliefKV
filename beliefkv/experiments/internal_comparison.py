@@ -182,6 +182,17 @@ def arm_environment(
     ):
         raise ValueError("free continuation admission requires the reference Full core")
     continuation_free = continuation_free if agent_admission == "thunderagent_reference" else "0"
+    dispatch_interval = common.get(
+        "BELIEFKV_AGENT_FREE_DISPATCH_INTERVAL_MS",
+        common.get("AGENT_FREE_DISPATCH_INTERVAL_MS", "0"),
+    )
+    if (
+        not dispatch_interval.isascii() or not dispatch_interval.isdecimal()
+        or int(dispatch_interval) != 0 and not 100 <= int(dispatch_interval) <= 5000
+        or mode == "full" and int(dispatch_interval) and continuation_free != "1"
+    ):
+        raise ValueError("bounded free dispatch requires reference Full continuation and 100..5000 ms")
+    dispatch_interval = str(int(dispatch_interval)) if mode == "full" else "0"
     if early_tool_offload == "1" and (
         agent_admission != "thunderagent_reference" or tool_offload != "1"
         or common.get("BELIEFKV_TOOL_OFFLOAD_POLICY", "fixed") != "demand_cost"
@@ -322,6 +333,8 @@ def arm_environment(
         "BELIEFKV_AGENT_JOIN_BLOCKED_HANDOFF": join_handoff,
         "AGENT_FREE_CONTINUATION_ADMISSION": continuation_free,
         "BELIEFKV_AGENT_FREE_CONTINUATION_ADMISSION": continuation_free,
+        "AGENT_FREE_DISPATCH_INTERVAL_MS": dispatch_interval,
+        "BELIEFKV_AGENT_FREE_DISPATCH_INTERVAL_MS": dispatch_interval,
         "AGENT_COADMIT_JOIN_CHILDREN": siblings,
         "BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN": siblings,
         "AGENT_BLOCKED_LENDING": blocked_lending,

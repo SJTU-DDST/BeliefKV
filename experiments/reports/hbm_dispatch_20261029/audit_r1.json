@@ -1,0 +1,1740 @@
+{
+  "observed_at": "2026-10-29T14:14:34.382555+00:00",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_free_extent_20261029_r1/full",
+  "basis": "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/capacity_and_tick_audit_r2.json",
+  "basis_sha256": "ae8b8e2f0bcd51de236ed2e0ab476cb823655061a0d3f82b27cf8f9780feb954",
+  "memory": {
+    "complete": {
+      "duration_s": 2281.3544714355467,
+      "covered_s": 2049.754687255859,
+      "coverage_percent": 89.84814560474888,
+      "maximum_source_gap_s": 52.38599926757813,
+      "resident_at_least_95_percent_time_share": 83.18835859445313,
+      "resident_units_mean_percent": 96.42932768410905,
+      "resident_units_mean_GB": 76.32784765018695,
+      "free_units_mean_percent": 3.570672315890924,
+      "free_units_mean_GB": 2.826336541813054,
+      "evictable_units_mean_percent": 36.362953458318486,
+      "evictable_units_mean_GB": 28.78279915804865,
+      "non_evictable_units_mean_percent": 60.06637422579058,
+      "non_evictable_units_mean_GB": 47.5450484921383
+    },
+    "common_300_1800_s": {
+      "duration_s": 1500.0,
+      "covered_s": 1500.0,
+      "coverage_percent": 100.0,
+      "maximum_source_gap_s": 1.699628662109375,
+      "resident_at_least_95_percent_time_share": 98.82104977213541,
+      "resident_units_mean_percent": 99.34633658146896,
+      "resident_units_mean_GB": 78.63678224570019,
+      "free_units_mean_percent": 0.653663418531051,
+      "free_units_mean_GB": 0.517401946299792,
+      "evictable_units_mean_percent": 31.078723690095615,
+      "evictable_units_mean_GB": 24.600110194181024,
+      "non_evictable_units_mean_percent": 68.26761289137332,
+      "non_evictable_units_mean_GB": 54.03667205151918
+    }
+  },
+  "actual_backed_releases": {
+    "join_wait": {
+      "node_release_events": 747,
+      "full_tokens": 1768148,
+      "full_GB": 173.816020992
+    },
+    "tool_wait": {
+      "node_release_events": 912,
+      "full_tokens": 520321,
+      "full_GB": 51.149635584
+    }
+  },
+  "new_demand_backups": {
+    "issued_events": 76,
+    "commands": 76,
+    "beneficiary_requests": 70,
+    "acked_commands": 76,
+    "actual_acked_GB": 0.977534976,
+    "missing_acks": [],
+    "first_service_order": {
+      "backup_ack_before_consumer_first_service": 76
+    },
+    "same_owner_node_consumer_observed_backup_release_restore_sequences": [
+      {
+        "command_id": "beliefkv-shadow-34a38ecccaf74b3cb8e128f44a7fe10f-143bc9-210",
+        "beneficiary_request_id": "beliefkv:01a177b1-e50b-7830-b51d-5e60c0c09419",
+        "backup_ack_ts_ms": 1793278337821.2515,
+        "release_ts_ms": 1793278337828.1946,
+        "native_restore_submit_ts_ms": 1793278337849.78,
+        "first_service_ts_ms": 1793278337956.7168,
+        "backup_bytes": 5505024,
+        "released_full_tokens": 56
+      },
+      {
+        "command_id": "beliefkv-shadow-34a38ecccaf74b3cb8e128f44a7fe10f-143bc9-224",
+        "beneficiary_request_id": "beliefkv:01a177ae-7b2a-74b0-bef3-3554d9817e37",
+        "backup_ack_ts_ms": 1793278367642.7285,
+        "release_ts_ms": 1793278367706.2134,
+        "native_restore_submit_ts_ms": 1793278367875.1453,
+        "first_service_ts_ms": 1793278368078.3354,
+        "backup_bytes": 18186240,
+        "released_full_tokens": 185
+      },
+      {
+        "command_id": "beliefkv-shadow-34a38ecccaf74b3cb8e128f44a7fe10f-143bc9-249",
+        "beneficiary_request_id": "beliefkv:01a177b0-13fa-7743-bfd5-425364246132",
+        "backup_ack_ts_ms": 1793278423462.429,
+        "release_ts_ms": 1793278423481.3804,
+        "native_restore_submit_ts_ms": 1793278423529.3074,
+        "first_service_ts_ms": 1793278423667.077,
+        "backup_bytes": 3342336,
+        "released_full_tokens": 34
+      },
+      {
+        "command_id": "beliefkv-shadow-34a38ecccaf74b3cb8e128f44a7fe10f-143bc9-332",
+        "beneficiary_request_id": "beliefkv:01a177b3-f3fb-7f91-b427-bc824f161b05",
+        "backup_ack_ts_ms": 1793278638929.7214,
+        "release_ts_ms": 1793278638964.5095,
+        "native_restore_submit_ts_ms": 1793278639012.1086,
+        "first_service_ts_ms": 1793278639109.282,
+        "backup_bytes": 14155776,
+        "released_full_tokens": 144
+      },
+      {
+        "command_id": "beliefkv-shadow-34a38ecccaf74b3cb8e128f44a7fe10f-143bc9-3c5",
+        "beneficiary_request_id": "beliefkv:01a177ba-c220-7ba0-ac7a-725c0489a87c",
+        "backup_ack_ts_ms": 1793278828243.5552,
+        "release_ts_ms": 1793278828250.4604,
+        "native_restore_submit_ts_ms": 1793278828529.8862,
+        "first_service_ts_ms": 1793278829200.5906,
+        "backup_bytes": 84246528,
+        "released_full_tokens": 857
+      },
+      {
+        "command_id": "beliefkv-shadow-34a38ecccaf74b3cb8e128f44a7fe10f-143bc9-43d",
+        "beneficiary_request_id": "beliefkv:01a177bb-af04-7583-876c-5106e5463105",
+        "backup_ack_ts_ms": 1793278972700.4014,
+        "release_ts_ms": 1793278972709.7812,
+        "native_restore_submit_ts_ms": 1793278972805.2725,
+        "first_service_ts_ms": 1793278973109.132,
+        "backup_bytes": 3932160,
+        "released_full_tokens": 40
+      },
+      {
+        "command_id": "beliefkv-shadow-34a38ecccaf74b3cb8e128f44a7fe10f-143bc9-4d1",
+        "beneficiary_request_id": "beliefkv:01a177bb-c3b1-7f33-9a92-d9c422aeb8c1",
+        "backup_ack_ts_ms": 1793279120069.5107,
+        "release_ts_ms": 1793279120207.6077,
+        "native_restore_submit_ts_ms": 1793279120367.5117,
+        "first_service_ts_ms": 1793279120589.8953,
+        "backup_bytes": 11010048,
+        "released_full_tokens": 112
+      }
+    ],
+    "sequence_semantics": "Requires same owner/node/beneficiary, ACK before actual release, then a journalled native restore and actual first service. Missing such a chain is unknown, not proof of no release. No physical slot lineage or counterfactual mandatory-D2H proof.",
+    "semantics": "New backups issued for an actual demand-deficit consumer; ACK proves Host copy, not subsequent physical release, unique bytes, mandatory sequencing or benefit. Does not enumerate native LRU writebacks."
+  },
+  "join_physical_attempt_outcomes": {
+    "no_missing_prefix": 80,
+    "no_safe_donor": 50,
+    "consumer_not_live": 6,
+    "native_pages_released": 5,
+    "backup_issued_waiting_ack": 4,
+    "physical_capacity_already_fits": 1
+  },
+  "join_positive_capacity_deficit_attempts": 59,
+  "join_positive_capacity_deficit_requests": 54,
+  "fitting_paused_requests": 130,
+  "any_fitting_paused_request_sampled_seconds": 209.0147705078125,
+  "summed_overlapping_request_fit_seconds_not_JCT": 292.7149770507813,
+  "requests_by_sample_category_nonexclusive": {
+    "continuation_beyond_first_eight_live_requests": 90,
+    "first_call_excluded_by_legacy_continuation_filter": 40
+  },
+  "requests": [
+    {
+      "request_id": "beliefkv:01a177a8-8a28-7c02-ba32-f49d87820579",
+      "invocation_id": "deepagents-invocation:3584b8fc30f4d76f",
+      "submit_ts_ms": 1793277899392.464,
+      "prompt_tokens": 14132,
+      "ordinal": 11,
+      "fitting_sample_ms": 5637.24365234375,
+      "first_fitting_sample_ts_ms": 1793277900091.3093,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 5637.24365234375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a8-7f62-77b3-9975-48cf0b17a4b8",
+      "invocation_id": "deepagents-invocation:15415946e8089cac",
+      "submit_ts_ms": 1793277899690.6663,
+      "prompt_tokens": 16766,
+      "ordinal": 14,
+      "fitting_sample_ms": 5637.24365234375,
+      "first_fitting_sample_ts_ms": 1793277900091.3093,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 5637.24365234375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a2-301a-7640-a4e6-7f922397c54e",
+      "invocation_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46:root",
+      "submit_ts_ms": 1793277683223.8447,
+      "prompt_tokens": 60299,
+      "ordinal": 1,
+      "fitting_sample_ms": 5216.419189453125,
+      "first_fitting_sample_ts_ms": 1793277690173.3406,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 5216.419189453125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177ae-dea7-7210-9cf1-3d13cd977e88",
+      "invocation_id": "deepagents-invocation:03dc226027d7d5ff",
+      "submit_ts_ms": 1793278377092.8828,
+      "prompt_tokens": 6946,
+      "ordinal": 1,
+      "fitting_sample_ms": 5042.934814453125,
+      "first_fitting_sample_ts_ms": 1793278377719.3108,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 5042.934814453125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b1-b6a5-7810-8787-901749dff996",
+      "invocation_id": "deepagents-invocation:46e4ed5303d25a26",
+      "submit_ts_ms": 1793278468400.033,
+      "prompt_tokens": 6922,
+      "ordinal": 1,
+      "fitting_sample_ms": 5041.635498046875,
+      "first_fitting_sample_ts_ms": 1793278468606.2104,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 5041.635498046875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177ad-6f09-7c73-8418-dc9ff436a3d0",
+      "invocation_id": "deepagents-invocation:76aeaea63220d752",
+      "submit_ts_ms": 1793278160790.9565,
+      "prompt_tokens": 45272,
+      "ordinal": 33,
+      "fitting_sample_ms": 5031.750244140625,
+      "first_fitting_sample_ts_ms": 1793278166963.3433,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 5031.750244140625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b6-c65e-7531-a3b7-9bfec8ef48ab",
+      "invocation_id": "deepagents-invocation:14473377ff0e0097",
+      "submit_ts_ms": 1793278623435.6147,
+      "prompt_tokens": 10355,
+      "ordinal": 9,
+      "fitting_sample_ms": 4963.934814453125,
+      "first_fitting_sample_ts_ms": 1793278623717.3293,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 4963.934814453125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177ac-93fb-73d1-8fab-76e5d66bafa2",
+      "invocation_id": "deepagents-invocation:3f853992cbb7a61f",
+      "submit_ts_ms": 1793278045908.8137,
+      "prompt_tokens": 27301,
+      "ordinal": 23,
+      "fitting_sample_ms": 4855.1923828125,
+      "first_fitting_sample_ts_ms": 1793278046169.46,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 4855.1923828125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177be-16f0-7b53-95a7-3e2dd99e6642",
+      "invocation_id": "deepagents-invocation:f0cf842ea0905191",
+      "submit_ts_ms": 1793278959346.392,
+      "prompt_tokens": 6881,
+      "ordinal": 1,
+      "fitting_sample_ms": 4737.380126953125,
+      "first_fitting_sample_ts_ms": 1793278959916.2463,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 4737.380126953125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a2-407c-7ca0-b26a-eaf4494a1e8c",
+      "invocation_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c:root",
+      "submit_ts_ms": 1793277605608.1458,
+      "prompt_tokens": 122960,
+      "ordinal": 1,
+      "fitting_sample_ms": 4631.93994140625,
+      "first_fitting_sample_ts_ms": 1793277690173.3406,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 4631.93994140625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a2-3ebb-76e2-8940-876355eadaaa",
+      "invocation_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root",
+      "submit_ts_ms": 1793277615999.0808,
+      "prompt_tokens": 106480,
+      "ordinal": 1,
+      "fitting_sample_ms": 4631.93994140625,
+      "first_fitting_sample_ts_ms": 1793277690173.3406,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 4631.93994140625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a8-5d94-7980-804d-aef1d5f65724",
+      "invocation_id": "deepagents-invocation:91d928451415b917",
+      "submit_ts_ms": 1793277960269.2634,
+      "prompt_tokens": 6946,
+      "ordinal": 1,
+      "fitting_sample_ms": 4352.01611328125,
+      "first_fitting_sample_ts_ms": 1793277960555.4368,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 4352.01611328125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a8-bd13-7290-a156-d4b3f5253ef1",
+      "invocation_id": "deepagents-invocation:af08dcf882b2e452",
+      "submit_ts_ms": 1793277985568.8757,
+      "prompt_tokens": 17667,
+      "ordinal": 21,
+      "fitting_sample_ms": 4086.42626953125,
+      "first_fitting_sample_ts_ms": 1793277985952.8186,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 4086.42626953125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177aa-4424-7963-aba5-ecddbac7916b",
+      "invocation_id": "deepagents-invocation:3f853992cbb7a61f",
+      "submit_ts_ms": 1793277985015.4956,
+      "prompt_tokens": 6895,
+      "ordinal": 1,
+      "fitting_sample_ms": 4086.42626953125,
+      "first_fitting_sample_ts_ms": 1793277985952.8186,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 4086.42626953125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b1-f3a0-7352-9701-d76c363cfdec",
+      "invocation_id": "deepagents-invocation:c373adec8378be35",
+      "submit_ts_ms": 1793278494039.193,
+      "prompt_tokens": 19311,
+      "ordinal": 22,
+      "fitting_sample_ms": 4081.6884765625,
+      "first_fitting_sample_ts_ms": 1793278494067.8738,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 4081.6884765625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a9-1efb-7f53-9ae7-178ef8416a6a",
+      "invocation_id": "deepagents-invocation:75164210ec1e071c",
+      "submit_ts_ms": 1793278307643.7385,
+      "prompt_tokens": 6921,
+      "ordinal": 1,
+      "fitting_sample_ms": 4067.064453125,
+      "first_fitting_sample_ts_ms": 1793278308595.6174,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 4067.064453125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177aa-75e7-7250-bc7a-77c6fa2c50f7",
+      "invocation_id": "deepagents-invocation:82a3d7252ab98e78",
+      "submit_ts_ms": 1793278162868.3865,
+      "prompt_tokens": 12989,
+      "ordinal": 12,
+      "fitting_sample_ms": 4057.479248046875,
+      "first_fitting_sample_ts_ms": 1793278162905.864,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 4057.479248046875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177ad-89e2-7da3-b2df-585b80159909",
+      "invocation_id": "deepagents-invocation:76aeaea63220d752",
+      "submit_ts_ms": 1793278179951.2136,
+      "prompt_tokens": 45408,
+      "ordinal": 34,
+      "fitting_sample_ms": 4056.14453125,
+      "first_fitting_sample_ts_ms": 1793278182176.9136,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 4056.14453125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177bd-b079-7631-9c46-7b68fe91a43f",
+      "invocation_id": "deepagents-invocation:2a0b00f980f8d848",
+      "submit_ts_ms": 1793278894749.274,
+      "prompt_tokens": 28694,
+      "ordinal": 41,
+      "fitting_sample_ms": 4038.456298828125,
+      "first_fitting_sample_ts_ms": 1793278894909.1096,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 4038.456298828125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177af-ca8c-71f2-9e16-6ebc30ab2659",
+      "invocation_id": "deepagents-invocation:8f93a662a24419a6",
+      "submit_ts_ms": 1793278644848.694,
+      "prompt_tokens": 6919,
+      "ordinal": 1,
+      "fitting_sample_ms": 3924.89697265625,
+      "first_fitting_sample_ts_ms": 1793278645109.785,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 3924.89697265625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b7-1a80-7d01-8dc9-591d1451bbdb",
+      "invocation_id": "deepagents-invocation:2a0b00f980f8d848",
+      "submit_ts_ms": 1793278578957.545,
+      "prompt_tokens": 18379,
+      "ordinal": 20,
+      "fitting_sample_ms": 3651.2158203125,
+      "first_fitting_sample_ts_ms": 1793278579591.3123,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 3651.2158203125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a8-244e-7e82-9d5f-b032398e7c80",
+      "invocation_id": "deepagents-invocation:d467f49894387cc0",
+      "submit_ts_ms": 1793277925259.53,
+      "prompt_tokens": 6948,
+      "ordinal": 1,
+      "fitting_sample_ms": 3555.12646484375,
+      "first_fitting_sample_ts_ms": 1793277926175.7722,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 3555.12646484375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a7-5a6f-7f92-a122-0fa3e1e0b27d",
+      "invocation_id": "deepagents-invocation:5055fd56f6f9d254",
+      "submit_ts_ms": 1793277803666.7312,
+      "prompt_tokens": 10098,
+      "ordinal": 10,
+      "fitting_sample_ms": 3507.982421875,
+      "first_fitting_sample_ts_ms": 1793277804692.1335,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 3507.982421875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a9-64fe-7490-8de3-9dfdc62cdb65",
+      "invocation_id": "deepagents-invocation:ed7c58e8e023e49d",
+      "submit_ts_ms": 1793277996288.8328,
+      "prompt_tokens": 29482,
+      "ordinal": 36,
+      "fitting_sample_ms": 3470.018798828125,
+      "first_fitting_sample_ts_ms": 1793277996920.3276,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 3470.018798828125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a8-937a-7322-ba0e-fa3a72bde4a1",
+      "invocation_id": "deepagents-invocation:b1a5f9de38603272",
+      "submit_ts_ms": 1793277901901.1892,
+      "prompt_tokens": 20800,
+      "ordinal": 18,
+      "fitting_sample_ms": 3442.204345703125,
+      "first_fitting_sample_ts_ms": 1793277902286.3486,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 3442.204345703125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177ba-f05c-72b0-8345-5d1f4f54fa69",
+      "invocation_id": "deepagents-invocation:7d1cdfa261e93fa5",
+      "submit_ts_ms": 1793278834800.3005,
+      "prompt_tokens": 6955,
+      "ordinal": 1,
+      "fitting_sample_ms": 3215.87158203125,
+      "first_fitting_sample_ts_ms": 1793278835823.5828,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 3215.87158203125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a7-0ae1-7e23-8df8-56ccc9ddde30",
+      "invocation_id": "deepagents-invocation:5055fd56f6f9d254",
+      "submit_ts_ms": 1793277751247.608,
+      "prompt_tokens": 6894,
+      "ordinal": 1,
+      "fitting_sample_ms": 3127.953369140625,
+      "first_fitting_sample_ts_ms": 1793277751823.4277,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 3127.953369140625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b6-33f9-7332-82f6-9be1be9caa70",
+      "invocation_id": "deepagents-invocation:14473377ff0e0097",
+      "submit_ts_ms": 1793278604567.602,
+      "prompt_tokens": 6923,
+      "ordinal": 1,
+      "fitting_sample_ms": 3099.126708984375,
+      "first_fitting_sample_ts_ms": 1793278605044.134,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 3099.126708984375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a8-8ae2-7fa0-9346-0e0cb6bd1b97",
+      "invocation_id": "deepagents-invocation:5f1238807b639c1a",
+      "submit_ts_ms": 1793278107866.9526,
+      "prompt_tokens": 21673,
+      "ordinal": 27,
+      "fitting_sample_ms": 3079.215576171875,
+      "first_fitting_sample_ts_ms": 1793278108606.4731,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 3079.215576171875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177aa-8c24-7a92-a626-99de20ae84db",
+      "invocation_id": "deepagents-invocation:ed7c58e8e023e49d",
+      "submit_ts_ms": 1793278106006.196,
+      "prompt_tokens": 31741,
+      "ordinal": 44,
+      "fitting_sample_ms": 3068.8798828125,
+      "first_fitting_sample_ts_ms": 1793278106581.6177,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 3068.8798828125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a8-9643-7c81-a058-dc81576c2e98",
+      "invocation_id": "deepagents-invocation:5f1238807b639c1a",
+      "submit_ts_ms": 1793278121834.9626,
+      "prompt_tokens": 21778,
+      "ordinal": 28,
+      "fitting_sample_ms": 3059.156005859375,
+      "first_fitting_sample_ts_ms": 1793278122832.9216,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 3059.156005859375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177ad-da3f-7831-b8b5-e8e5bdf672ac",
+      "invocation_id": "deepagents-invocation:893664b32c440622",
+      "submit_ts_ms": 1793278163625.9788,
+      "prompt_tokens": 6939,
+      "ordinal": 1,
+      "fitting_sample_ms": 3049.818115234375,
+      "first_fitting_sample_ts_ms": 1793278163913.5251,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 3049.818115234375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b4-44dd-7751-aef2-b7ebbfae74a4",
+      "invocation_id": "deepagents-invocation:26e0500faee9bdaf",
+      "submit_ts_ms": 1793278608718.7617,
+      "prompt_tokens": 22468,
+      "ordinal": 28,
+      "fitting_sample_ms": 3048.401123046875,
+      "first_fitting_sample_ts_ms": 1793278609159.7537,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 3048.401123046875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b0-af26-71a1-a109-c33d5223b6f2",
+      "invocation_id": "deepagents-invocation:aba53624f7821978",
+      "submit_ts_ms": 1793278524844.773,
+      "prompt_tokens": 6900,
+      "ordinal": 1,
+      "fitting_sample_ms": 3047.5205078125,
+      "first_fitting_sample_ts_ms": 1793278525613.9785,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 3047.5205078125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b4-7ced-7bf0-ba45-4f75416200e5",
+      "invocation_id": "deepagents-invocation:47008839d27f2a7a",
+      "submit_ts_ms": 1793278528006.3518,
+      "prompt_tokens": 17562,
+      "ordinal": 17,
+      "fitting_sample_ms": 3039.244140625,
+      "first_fitting_sample_ts_ms": 1793278530693.9468,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 3039.244140625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a2-4010-7a00-9992-62a11e502757",
+      "invocation_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root",
+      "submit_ts_ms": 1793277801599.9285,
+      "prompt_tokens": 42952,
+      "ordinal": 1,
+      "fitting_sample_ms": 3036.89111328125,
+      "first_fitting_sample_ts_ms": 1793277805694.3442,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 3036.89111328125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a6-6c6a-71c2-a9ec-3a0d67cb1465",
+      "invocation_id": "deepagents-invocation:774c21d38b88ade0",
+      "submit_ts_ms": 1793277742426.9824,
+      "prompt_tokens": 7124,
+      "ordinal": 1,
+      "fitting_sample_ms": 3034.119873046875,
+      "first_fitting_sample_ts_ms": 1793277743190.7476,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 3034.119873046875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b6-4371-7c03-956e-289acc1604d3",
+      "invocation_id": "deepagents-invocation:03dc226027d7d5ff",
+      "submit_ts_ms": 1793278693495.4573,
+      "prompt_tokens": 32353,
+      "ordinal": 43,
+      "fitting_sample_ms": 3028.936279296875,
+      "first_fitting_sample_ts_ms": 1793278693943.4714,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 3028.936279296875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b8-2f22-77f2-91f6-a44ac7366961",
+      "invocation_id": "deepagents-invocation:ba8b9044ec066c89",
+      "submit_ts_ms": 1793278790863.9624,
+      "prompt_tokens": 16437,
+      "ordinal": 21,
+      "fitting_sample_ms": 2974.16455078125,
+      "first_fitting_sample_ts_ms": 1793278790980.0376,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2974.16455078125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177bb-6e38-7943-8b20-84d92953942b",
+      "invocation_id": "deepagents-invocation:5691d8592b9fe807",
+      "submit_ts_ms": 1793278990844.082,
+      "prompt_tokens": 20072,
+      "ordinal": 22,
+      "fitting_sample_ms": 2937.157958984375,
+      "first_fitting_sample_ts_ms": 1793278991060.146,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2937.157958984375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b4-25eb-7ce1-b82d-4a08353df4e1",
+      "invocation_id": "deepagents-invocation:8498e39022e89ead",
+      "submit_ts_ms": 1793278645431.9272,
+      "prompt_tokens": 20266,
+      "ordinal": 29,
+      "fitting_sample_ms": 2921.20458984375,
+      "first_fitting_sample_ts_ms": 1793278646113.4773,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2921.20458984375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a7-83bb-7e91-9c57-84574253c2d2",
+      "invocation_id": "deepagents-invocation:649818db6a48d692",
+      "submit_ts_ms": 1793277804693.1907,
+      "prompt_tokens": 25353,
+      "ordinal": 22,
+      "fitting_sample_ms": 2900.17724609375,
+      "first_fitting_sample_ts_ms": 1793277805694.3442,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2900.17724609375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a7-6b59-7aa3-98f0-b47d801a6d0d",
+      "invocation_id": "deepagents-invocation:76aeaea63220d752",
+      "submit_ts_ms": 1793277804950.072,
+      "prompt_tokens": 27636,
+      "ordinal": 18,
+      "fitting_sample_ms": 2900.17724609375,
+      "first_fitting_sample_ts_ms": 1793277805694.3442,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2900.17724609375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a7-1619-7030-82b0-a731e0d90d99",
+      "invocation_id": "deepagents-invocation:94cdd6e0338ac17a",
+      "submit_ts_ms": 1793277804895.3179,
+      "prompt_tokens": 7383,
+      "ordinal": 5,
+      "fitting_sample_ms": 2900.17724609375,
+      "first_fitting_sample_ts_ms": 1793277805694.3442,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2900.17724609375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a6-c387-7941-89cb-14f866dc5c23",
+      "invocation_id": "deepagents-invocation:94cdd6e0338ac17a",
+      "submit_ts_ms": 1793277784986.9822,
+      "prompt_tokens": 6881,
+      "ordinal": 1,
+      "fitting_sample_ms": 2827.138916015625,
+      "first_fitting_sample_ts_ms": 1793277785374.8262,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 2827.138916015625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b1-c76e-74b0-85da-de31fbac044e",
+      "invocation_id": "deepagents-invocation:db0dca7d9441ce9e",
+      "submit_ts_ms": 1793278337927.7065,
+      "prompt_tokens": 33661,
+      "ordinal": 31,
+      "fitting_sample_ms": 2808.789306640625,
+      "first_fitting_sample_ts_ms": 1793278339169.9917,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2808.789306640625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177af-b7e1-7a02-ba6e-6b8c5d834759",
+      "invocation_id": "deepagents-invocation:d469ce62b8941175",
+      "submit_ts_ms": 1793278338653.772,
+      "prompt_tokens": 21903,
+      "ordinal": 15,
+      "fitting_sample_ms": 2808.789306640625,
+      "first_fitting_sample_ts_ms": 1793278339169.9917,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2808.789306640625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a9-cca4-75b2-ade2-7ee06b10e45a",
+      "invocation_id": "deepagents-invocation:75164210ec1e071c",
+      "submit_ts_ms": 1793278338622.803,
+      "prompt_tokens": 14427,
+      "ordinal": 12,
+      "fitting_sample_ms": 2808.789306640625,
+      "first_fitting_sample_ts_ms": 1793278339169.9917,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2808.789306640625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177af-c593-7261-8a29-e0bd5f5e50b3",
+      "invocation_id": "deepagents-invocation:3e175d02425e2774",
+      "submit_ts_ms": 1793278338807.0825,
+      "prompt_tokens": 27889,
+      "ordinal": 15,
+      "fitting_sample_ms": 2808.789306640625,
+      "first_fitting_sample_ts_ms": 1793278339169.9917,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2808.789306640625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b8-b327-7031-931a-486cad3fc16c",
+      "invocation_id": "deepagents-invocation:8155941c08e44845",
+      "submit_ts_ms": 1793278961747.3713,
+      "prompt_tokens": 18555,
+      "ordinal": 12,
+      "fitting_sample_ms": 2715.358154296875,
+      "first_fitting_sample_ts_ms": 1793278961938.2683,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2715.358154296875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a6-4224-7cd2-8792-3d38325a87b5",
+      "invocation_id": "deepagents-invocation:76aeaea63220d752",
+      "submit_ts_ms": 1793277711789.0,
+      "prompt_tokens": 6942,
+      "ordinal": 1,
+      "fitting_sample_ms": 2634.015625,
+      "first_fitting_sample_ts_ms": 1793277712276.7078,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 2634.015625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a8-548c-7b50-b865-2ced4a464fd5",
+      "invocation_id": "deepagents-invocation:964a7e37cf0c3327",
+      "submit_ts_ms": 1793277921864.7646,
+      "prompt_tokens": 6870,
+      "ordinal": 1,
+      "fitting_sample_ms": 2622.388671875,
+      "first_fitting_sample_ts_ms": 1793277922142.219,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 2622.388671875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b7-685b-7150-a094-789e32bbce1b",
+      "invocation_id": "deepagents-invocation:ba8b9044ec066c89",
+      "submit_ts_ms": 1793278761166.9941,
+      "prompt_tokens": 14931,
+      "ordinal": 15,
+      "fitting_sample_ms": 2616.189453125,
+      "first_fitting_sample_ts_ms": 1793278761371.4663,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2616.189453125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a9-3877-72f3-9e56-8082692778d1",
+      "invocation_id": "deepagents-invocation:05a6601183c65949",
+      "submit_ts_ms": 1793277977323.592,
+      "prompt_tokens": 6911,
+      "ordinal": 1,
+      "fitting_sample_ms": 2598.6728515625,
+      "first_fitting_sample_ts_ms": 1793277977846.6968,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 2598.6728515625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b2-2918-7ea2-afb4-e6d4b2440e21",
+      "invocation_id": "deepagents-invocation:aba53624f7821978",
+      "submit_ts_ms": 1793278565388.1895,
+      "prompt_tokens": 16442,
+      "ordinal": 15,
+      "fitting_sample_ms": 2590.97509765625,
+      "first_fitting_sample_ts_ms": 1793278570447.2476,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2590.97509765625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177aa-26d8-7c62-8565-4b637828febb",
+      "invocation_id": "deepagents-invocation:61c6413bdc63294c",
+      "submit_ts_ms": 1793278047524.5344,
+      "prompt_tokens": 27427,
+      "ordinal": 21,
+      "fitting_sample_ms": 2564.3056640625,
+      "first_fitting_sample_ts_ms": 1793278048460.3467,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2564.3056640625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a8-4b09-7ae2-84d2-071c1e152642",
+      "invocation_id": "deepagents-invocation:774c21d38b88ade0",
+      "submit_ts_ms": 1793277997563.2292,
+      "prompt_tokens": 14468,
+      "ordinal": 24,
+      "fitting_sample_ms": 2449.170166015625,
+      "first_fitting_sample_ts_ms": 1793277997941.1763,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2449.170166015625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a7-a493-7cd0-8bee-dd5dcfd82a40",
+      "invocation_id": "deepagents-invocation:5f1238807b639c1a",
+      "submit_ts_ms": 1793277997397.3684,
+      "prompt_tokens": 6882,
+      "ordinal": 1,
+      "fitting_sample_ms": 2449.170166015625,
+      "first_fitting_sample_ts_ms": 1793277997941.1763,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 2449.170166015625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a8-693e-7582-9184-4a7d7b50c0d6",
+      "invocation_id": "deepagents-invocation:a9fdd146083bc610",
+      "submit_ts_ms": 1793278219588.286,
+      "prompt_tokens": 18544,
+      "ordinal": 31,
+      "fitting_sample_ms": 2232.57080078125,
+      "first_fitting_sample_ts_ms": 1793278219804.0764,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2232.57080078125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a6-5634-7f02-b757-a1e6225c90f6",
+      "invocation_id": "deepagents-invocation:c7ce1237385a8aa5",
+      "submit_ts_ms": 1793277713041.1418,
+      "prompt_tokens": 6884,
+      "ordinal": 1,
+      "fitting_sample_ms": 2124.089111328125,
+      "first_fitting_sample_ts_ms": 1793277713315.1575,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 2124.089111328125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a6-50f8-7a61-a0cf-a3a7313ce286",
+      "invocation_id": "deepagents-invocation:3584b8fc30f4d76f",
+      "submit_ts_ms": 1793277713234.4478,
+      "prompt_tokens": 6938,
+      "ordinal": 1,
+      "fitting_sample_ms": 2124.089111328125,
+      "first_fitting_sample_ts_ms": 1793277713315.1575,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 2124.089111328125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a7-1fff-7a22-b541-5b985475994f",
+      "invocation_id": "deepagents-invocation:15415946e8089cac",
+      "submit_ts_ms": 1793277811027.459,
+      "prompt_tokens": 6939,
+      "ordinal": 1,
+      "fitting_sample_ms": 2062.166748046875,
+      "first_fitting_sample_ts_ms": 1793277811759.191,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 2062.166748046875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177ae-bc07-7571-b7d3-f348ee49482a",
+      "invocation_id": "deepagents-invocation:a8a70d2f62f88b04",
+      "submit_ts_ms": 1793278475096.583,
+      "prompt_tokens": 20628,
+      "ordinal": 17,
+      "fitting_sample_ms": 2043.89013671875,
+      "first_fitting_sample_ts_ms": 1793278475688.7717,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2043.89013671875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b2-ff38-7051-b467-586c4c8a7162",
+      "invocation_id": "deepagents-invocation:7cf853377c1975dc",
+      "submit_ts_ms": 1793278829640.9368,
+      "prompt_tokens": 18737,
+      "ordinal": 20,
+      "fitting_sample_ms": 2039.85302734375,
+      "first_fitting_sample_ts_ms": 1793278831687.072,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2039.85302734375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b5-07e6-7242-bed7-ea3754a6f627",
+      "invocation_id": "deepagents-invocation:26e0500faee9bdaf",
+      "submit_ts_ms": 1793278666444.4883,
+      "prompt_tokens": 25064,
+      "ordinal": 35,
+      "fitting_sample_ms": 2038.71875,
+      "first_fitting_sample_ts_ms": 1793278666640.439,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2038.71875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a9-a39e-70c1-a7d9-136f2a5dd348",
+      "invocation_id": "deepagents-invocation:f35d6ad2e40f2a2c",
+      "submit_ts_ms": 1793278043234.286,
+      "prompt_tokens": 6880,
+      "ordinal": 1,
+      "fitting_sample_ms": 2031.6220703125,
+      "first_fitting_sample_ts_ms": 1793278044137.838,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 2031.6220703125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177ac-61cb-7f42-96d9-708afaee19ff",
+      "invocation_id": "deepagents-invocation:be5614e15c235933",
+      "submit_ts_ms": 1793278364527.7021,
+      "prompt_tokens": 28700,
+      "ordinal": 39,
+      "fitting_sample_ms": 2029.408447265625,
+      "first_fitting_sample_ts_ms": 1793278365529.5303,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2029.408447265625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b1-e50b-7830-b51d-5e60c0c09419",
+      "invocation_id": "deepagents-invocation:893664b32c440622",
+      "submit_ts_ms": 1793278332320.891,
+      "prompt_tokens": 22800,
+      "ordinal": 24,
+      "fitting_sample_ms": 2028.381103515625,
+      "first_fitting_sample_ts_ms": 1793278333078.3938,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2028.381103515625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177ae-cd56-7a42-bb8a-1f8d5370690e",
+      "invocation_id": "deepagents-invocation:a2cfb5f0bc8f46b4",
+      "submit_ts_ms": 1793278335508.5188,
+      "prompt_tokens": 22239,
+      "ordinal": 32,
+      "fitting_sample_ms": 2025.81982421875,
+      "first_fitting_sample_ts_ms": 1793278339169.9917,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2025.81982421875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a4-eeb1-71e1-9fe1-2aa3902d7c01",
+      "invocation_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a:root",
+      "submit_ts_ms": 1793277803878.488,
+      "prompt_tokens": 83596,
+      "ordinal": 4,
+      "fitting_sample_ms": 2022.552978515625,
+      "first_fitting_sample_ts_ms": 1793277806708.6824,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2022.552978515625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b8-3e7e-7243-b7eb-62025ca30f89",
+      "invocation_id": "deepagents-invocation:ba8b9044ec066c89",
+      "submit_ts_ms": 1793278803415.3145,
+      "prompt_tokens": 16543,
+      "ordinal": 22,
+      "fitting_sample_ms": 2021.776123046875,
+      "first_fitting_sample_ts_ms": 1793278807338.8413,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2021.776123046875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a7-fe24-7ee0-bb55-874c262c587c",
+      "invocation_id": "deepagents-invocation:af08dcf882b2e452",
+      "submit_ts_ms": 1793277890436.95,
+      "prompt_tokens": 6880,
+      "ordinal": 1,
+      "fitting_sample_ms": 2018.892822265625,
+      "first_fitting_sample_ts_ms": 1793277890943.0022,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 2018.892822265625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b9-8f8d-7783-a585-7dd2e9583853",
+      "invocation_id": "deepagents-invocation:e11d2f741ca17045",
+      "submit_ts_ms": 1793278934609.508,
+      "prompt_tokens": 26104,
+      "ordinal": 35,
+      "fitting_sample_ms": 2017.632080078125,
+      "first_fitting_sample_ts_ms": 1793278934951.9548,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2017.632080078125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a8-51b8-7e73-91a9-07269e4c31c9",
+      "invocation_id": "deepagents-invocation:2907efdaa9adfa07",
+      "submit_ts_ms": 1793278209623.2083,
+      "prompt_tokens": 33037,
+      "ordinal": 41,
+      "fitting_sample_ms": 2012.25927734375,
+      "first_fitting_sample_ts_ms": 1793278210703.1724,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2012.25927734375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b1-e374-7131-866c-f4ead2df718c",
+      "invocation_id": "deepagents-invocation:db0dca7d9441ce9e",
+      "submit_ts_ms": 1793278347744.1736,
+      "prompt_tokens": 33773,
+      "ordinal": 32,
+      "fitting_sample_ms": 2007.548095703125,
+      "first_fitting_sample_ts_ms": 1793278350363.0122,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 2007.548095703125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b0-d94c-7ca0-a702-6529b1730db4",
+      "invocation_id": "deepagents-invocation:be5614e15c235933",
+      "submit_ts_ms": 1793278550816.708,
+      "prompt_tokens": 36487,
+      "ordinal": 52,
+      "fitting_sample_ms": 1959.04638671875,
+      "first_fitting_sample_ts_ms": 1793278551179.7378,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 1959.04638671875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177bc-9f7f-7893-8c5b-b2d9d89e3fbe",
+      "invocation_id": "deepagents-invocation:663ee01513e5e7f8",
+      "submit_ts_ms": 1793279142369.6436,
+      "prompt_tokens": 6994,
+      "ordinal": 1,
+      "fitting_sample_ms": 1954.51025390625,
+      "first_fitting_sample_ts_ms": 1793279143089.1787,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 1954.51025390625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a5-d336-7120-8a9c-31554e396dc8",
+      "invocation_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709:root",
+      "submit_ts_ms": 1793277691962.3264,
+      "prompt_tokens": 105041,
+      "ordinal": 11,
+      "fitting_sample_ms": 1865.280517578125,
+      "first_fitting_sample_ts_ms": 1793277692197.5884,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 1865.280517578125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a5-cd14-7e63-a9ad-393f5b7be52a",
+      "invocation_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055:root",
+      "submit_ts_ms": 1793277691962.4214,
+      "prompt_tokens": 83901,
+      "ordinal": 11,
+      "fitting_sample_ms": 1865.280517578125,
+      "first_fitting_sample_ts_ms": 1793277692197.5884,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 1865.280517578125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a6-9b95-7a31-be68-b4c8423292f4",
+      "invocation_id": "deepagents-invocation:a9fdd146083bc610",
+      "submit_ts_ms": 1793278064381.1829,
+      "prompt_tokens": 6863,
+      "ordinal": 1,
+      "fitting_sample_ms": 1834.659912109375,
+      "first_fitting_sample_ts_ms": 1793278064620.0247,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 1834.659912109375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b7-11db-79e1-955f-8bb34ee49823",
+      "invocation_id": "deepagents-invocation:ba8b9044ec066c89",
+      "submit_ts_ms": 1793278729052.756,
+      "prompt_tokens": 7801,
+      "ordinal": 7,
+      "fitting_sample_ms": 1769.050537109375,
+      "first_fitting_sample_ts_ms": 1793278729463.0823,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 1769.050537109375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177bc-2a2c-7651-a2c7-244e28750eb3",
+      "invocation_id": "deepagents-invocation:7d1cdfa261e93fa5",
+      "submit_ts_ms": 1793278959139.233,
+      "prompt_tokens": 38743,
+      "ordinal": 36,
+      "fitting_sample_ms": 1746.342041015625,
+      "first_fitting_sample_ts_ms": 1793278959916.2463,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 1746.342041015625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b8-57a4-74c3-b2ac-ec2b92d97c19",
+      "invocation_id": "deepagents-invocation:ba8b9044ec066c89",
+      "submit_ts_ms": 1793278816246.6582,
+      "prompt_tokens": 17074,
+      "ordinal": 23,
+      "fitting_sample_ms": 1638.30712890625,
+      "first_fitting_sample_ts_ms": 1793278817456.944,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 1638.30712890625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b4-9d94-76a0-904b-8c24f332a944",
+      "invocation_id": "deepagents-invocation:0f31c59ecc26ad08",
+      "submit_ts_ms": 1793278859217.0298,
+      "prompt_tokens": 23339,
+      "ordinal": 24,
+      "fitting_sample_ms": 1600.774658203125,
+      "first_fitting_sample_ts_ms": 1793278860170.3076,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 1600.774658203125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a5-c024-7a02-9c4c-166a81e0d3d8",
+      "invocation_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root",
+      "submit_ts_ms": 1793277692998.4905,
+      "prompt_tokens": 100380,
+      "ordinal": 10,
+      "fitting_sample_ms": 1541.154541015625,
+      "first_fitting_sample_ts_ms": 1793277693264.126,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 1541.154541015625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177bc-a963-76d1-8cb1-37a65172af3e",
+      "invocation_id": "deepagents-invocation:70f2c6f7162c447b",
+      "submit_ts_ms": 1793278980256.8494,
+      "prompt_tokens": 18157,
+      "ordinal": 15,
+      "fitting_sample_ms": 1451.00927734375,
+      "first_fitting_sample_ts_ms": 1793278980721.787,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 1451.00927734375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b5-7fae-7b02-8c03-348a53478e90",
+      "invocation_id": "deepagents-invocation:b3251e1297c937d9",
+      "submit_ts_ms": 1793278689518.9539,
+      "prompt_tokens": 20159,
+      "ordinal": 27,
+      "fitting_sample_ms": 1385.724609375,
+      "first_fitting_sample_ts_ms": 1793278689910.8525,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 1385.724609375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a5-c07d-75a0-b2e7-cb33f45a81b1",
+      "invocation_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root",
+      "submit_ts_ms": 1793277689843.2175,
+      "prompt_tokens": 111518,
+      "ordinal": 11,
+      "fitting_sample_ms": 1309.226318359375,
+      "first_fitting_sample_ts_ms": 1793277690173.3406,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 1309.226318359375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a8-5770-7001-9f68-466b6127685c",
+      "invocation_id": "deepagents-invocation:a9fdd146083bc610",
+      "submit_ts_ms": 1793278208015.4092,
+      "prompt_tokens": 18094,
+      "ordinal": 30,
+      "fitting_sample_ms": 1270.08203125,
+      "first_fitting_sample_ts_ms": 1793278210703.1724,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 1270.08203125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a8-54cd-7853-9314-a66a36ef33df",
+      "invocation_id": "deepagents-invocation:61c6413bdc63294c",
+      "submit_ts_ms": 1793277938303.1355,
+      "prompt_tokens": 6926,
+      "ordinal": 1,
+      "fitting_sample_ms": 1232.226806640625,
+      "first_fitting_sample_ts_ms": 1793277938791.8296,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 1232.226806640625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a8-e663-7032-a462-b33b889dba85",
+      "invocation_id": "deepagents-invocation:8cf141e8950b45dd",
+      "submit_ts_ms": 1793277938770.2664,
+      "prompt_tokens": 6942,
+      "ordinal": 1,
+      "fitting_sample_ms": 1232.226806640625,
+      "first_fitting_sample_ts_ms": 1793277938791.8296,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 1232.226806640625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177af-88b9-7a22-bc9c-76e0b1d1ebdf",
+      "invocation_id": "deepagents-invocation:c373adec8378be35",
+      "submit_ts_ms": 1793278359085.873,
+      "prompt_tokens": 15415,
+      "ordinal": 14,
+      "fitting_sample_ms": 1231.9345703125,
+      "first_fitting_sample_ts_ms": 1793278359493.3735,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 1231.9345703125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177aa-b61d-7410-96a6-f5f46ff3a3a0",
+      "invocation_id": "deepagents-invocation:75164210ec1e071c",
+      "submit_ts_ms": 1793278405884.5288,
+      "prompt_tokens": 16108,
+      "ordinal": 18,
+      "fitting_sample_ms": 1117.2900390625,
+      "first_fitting_sample_ts_ms": 1793278406367.0686,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 1117.2900390625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177af-94fd-7292-985d-341ca68ce0cf",
+      "invocation_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055:root",
+      "submit_ts_ms": 1793278299625.7761,
+      "prompt_tokens": 97942,
+      "ordinal": 22,
+      "fitting_sample_ms": 1037.5419921875,
+      "first_fitting_sample_ts_ms": 1793278302475.5903,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 1037.5419921875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177ad-5a06-7753-9119-1b8e90e5cb45",
+      "invocation_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root",
+      "submit_ts_ms": 1793278300105.5962,
+      "prompt_tokens": 112991,
+      "ordinal": 35,
+      "fitting_sample_ms": 1037.5419921875,
+      "first_fitting_sample_ts_ms": 1793278302475.5903,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 1037.5419921875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a6-f8dd-73c2-bf8a-ddba173f84cc",
+      "invocation_id": "deepagents-invocation:3dffade2fc78cb6a",
+      "submit_ts_ms": 1793277857565.9216,
+      "prompt_tokens": 7015,
+      "ordinal": 1,
+      "fitting_sample_ms": 1031.43359375,
+      "first_fitting_sample_ts_ms": 1793277858055.9487,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 1031.43359375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b6-e344-7b70-89e5-e79dc7f9ec1b",
+      "invocation_id": "deepagents-invocation:ba8b9044ec066c89",
+      "submit_ts_ms": 1793278717751.794,
+      "prompt_tokens": 6899,
+      "ordinal": 1,
+      "fitting_sample_ms": 1015.969482421875,
+      "first_fitting_sample_ts_ms": 1793278718335.0442,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 1015.969482421875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177aa-918b-7a63-a293-5d603fd11484",
+      "invocation_id": "deepagents-invocation:d467f49894387cc0",
+      "submit_ts_ms": 1793278109966.1213,
+      "prompt_tokens": 18337,
+      "ordinal": 22,
+      "fitting_sample_ms": 1014.87646484375,
+      "first_fitting_sample_ts_ms": 1793278110670.8123,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 1014.87646484375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177ad-f643-7f71-b396-0e22a4b93530",
+      "invocation_id": "deepagents-invocation:be5614e15c235933",
+      "submit_ts_ms": 1793278449522.9321,
+      "prompt_tokens": 32237,
+      "ordinal": 43,
+      "fitting_sample_ms": 1010.724365234375,
+      "first_fitting_sample_ts_ms": 1793278450332.184,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 1010.724365234375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b1-f154-7cf2-9925-196dc0c53515",
+      "invocation_id": "deepagents-invocation:03dc226027d7d5ff",
+      "submit_ts_ms": 1793278449523.0332,
+      "prompt_tokens": 19239,
+      "ordinal": 23,
+      "fitting_sample_ms": 1010.724365234375,
+      "first_fitting_sample_ts_ms": 1793278450332.184,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 1010.724365234375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b0-a03b-7053-a125-dee2ca9f8d40",
+      "invocation_id": "deepagents-invocation:893664b32c440622",
+      "submit_ts_ms": 1793278269892.7693,
+      "prompt_tokens": 20606,
+      "ordinal": 17,
+      "fitting_sample_ms": 1004.89599609375,
+      "first_fitting_sample_ts_ms": 1793278270874.0986,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 1004.89599609375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b4-404b-7df3-a02d-b971da7b338a",
+      "invocation_id": "deepagents-invocation:8498e39022e89ead",
+      "submit_ts_ms": 1793278658526.5603,
+      "prompt_tokens": 20350,
+      "ordinal": 30,
+      "fitting_sample_ms": 1004.55126953125,
+      "first_fitting_sample_ts_ms": 1793278659544.005,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 1004.55126953125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b8-419b-7a50-8c1f-6bde2fe384d1",
+      "invocation_id": "deepagents-invocation:219c6e67f120f6d7",
+      "submit_ts_ms": 1793278733154.6738,
+      "prompt_tokens": 16891,
+      "ordinal": 16,
+      "fitting_sample_ms": 968.519287109375,
+      "first_fitting_sample_ts_ms": 1793278733514.2039,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 968.519287109375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b5-af27-7121-b1c9-1bcae7a65c7b",
+      "invocation_id": "deepagents-invocation:c839861ee808681b",
+      "submit_ts_ms": 1793278611907.117,
+      "prompt_tokens": 6907,
+      "ordinal": 1,
+      "fitting_sample_ms": 914.72216796875,
+      "first_fitting_sample_ts_ms": 1793278612208.1548,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 914.72216796875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b3-e17f-7f73-a9a8-1720a5886722",
+      "invocation_id": "deepagents-invocation:8498e39022e89ead",
+      "submit_ts_ms": 1793278627258.1228,
+      "prompt_tokens": 18818,
+      "ordinal": 26,
+      "fitting_sample_ms": 891.464111328125,
+      "first_fitting_sample_ts_ms": 1793278627789.8,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 891.464111328125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a6-a03d-7c40-9e57-2754396705c3",
+      "invocation_id": "deepagents-invocation:ed7c58e8e023e49d",
+      "submit_ts_ms": 1793277806790.4812,
+      "prompt_tokens": 6951,
+      "ordinal": 1,
+      "fitting_sample_ms": 865.274169921875,
+      "first_fitting_sample_ts_ms": 1793277807729.2473,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 865.274169921875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177bf-9ca1-73f2-9964-f5990af30439",
+      "invocation_id": "deepagents-invocation:19bd40946d553108",
+      "submit_ts_ms": 1793279158692.18,
+      "prompt_tokens": 6928,
+      "ordinal": 1,
+      "fitting_sample_ms": 785.547119140625,
+      "first_fitting_sample_ts_ms": 1793279159269.8484,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 785.547119140625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b0-40b1-7263-a70e-1aec5dd72ebf",
+      "invocation_id": "deepagents-invocation:a2cfb5f0bc8f46b4",
+      "submit_ts_ms": 1793278431642.2537,
+      "prompt_tokens": 23358,
+      "ordinal": 39,
+      "fitting_sample_ms": 703.117431640625,
+      "first_fitting_sample_ts_ms": 1793278431893.8577,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 703.117431640625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b7-5b1b-7ad3-a9f1-7424d99170f4",
+      "invocation_id": "deepagents-invocation:ba8b9044ec066c89",
+      "submit_ts_ms": 1793278751815.2012,
+      "prompt_tokens": 14651,
+      "ordinal": 14,
+      "fitting_sample_ms": 679.820556640625,
+      "first_fitting_sample_ts_ms": 1793278752242.2344,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 679.820556640625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b2-8a50-70e2-b6ae-73087fae4d78",
+      "invocation_id": "deepagents-invocation:7cf853377c1975dc",
+      "submit_ts_ms": 1793278773572.4531,
+      "prompt_tokens": 18176,
+      "ordinal": 18,
+      "fitting_sample_ms": 677.89013671875,
+      "first_fitting_sample_ts_ms": 1793278773600.6248,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 677.89013671875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a7-7da1-7c81-97e0-467376d8debf",
+      "invocation_id": "deepagents-invocation:fdb9d30c44b09665",
+      "submit_ts_ms": 1793277822946.4897,
+      "prompt_tokens": 6942,
+      "ordinal": 1,
+      "fitting_sample_ms": 675.32177734375,
+      "first_fitting_sample_ts_ms": 1793277823293.3687,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 675.32177734375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177bc-a892-77c1-90f9-879a3d3ba9b0",
+      "invocation_id": "deepagents-invocation:ec97bab6351688a7",
+      "submit_ts_ms": 1793278993694.696,
+      "prompt_tokens": 15392,
+      "ordinal": 15,
+      "fitting_sample_ms": 670.365966796875,
+      "first_fitting_sample_ts_ms": 1793278994258.9873,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 670.365966796875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a7-8752-7122-99fb-2726ca595cfd",
+      "invocation_id": "deepagents-invocation:94cdd6e0338ac17a",
+      "submit_ts_ms": 1793277844313.4194,
+      "prompt_tokens": 18494,
+      "ordinal": 16,
+      "fitting_sample_ms": 650.4658203125,
+      "first_fitting_sample_ts_ms": 1793277844877.7446,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 650.4658203125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a7-f282-7912-994f-3e3a7553d91b",
+      "invocation_id": "deepagents-invocation:774c21d38b88ade0",
+      "submit_ts_ms": 1793277954123.8,
+      "prompt_tokens": 12657,
+      "ordinal": 19,
+      "fitting_sample_ms": 623.137451171875,
+      "first_fitting_sample_ts_ms": 1793277954313.2712,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 623.137451171875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b3-2385-7ef2-902a-541a668bf209",
+      "invocation_id": "deepagents-invocation:c66969c98886ed53",
+      "submit_ts_ms": 1793278396719.1443,
+      "prompt_tokens": 25439,
+      "ordinal": 29,
+      "fitting_sample_ms": 575.321533203125,
+      "first_fitting_sample_ts_ms": 1793278397096.0002,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 575.321533203125
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b7-3976-7d51-8744-2c735f80f3a1",
+      "invocation_id": "deepagents-invocation:732fcd5f08495340",
+      "submit_ts_ms": 1793279057544.704,
+      "prompt_tokens": 23189,
+      "ordinal": 20,
+      "fitting_sample_ms": 573.6240234375,
+      "first_fitting_sample_ts_ms": 1793279057850.2932,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 573.6240234375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b4-c198-77d1-8848-317358e423a8",
+      "invocation_id": "deepagents-invocation:46e4ed5303d25a26",
+      "submit_ts_ms": 1793278576001.7664,
+      "prompt_tokens": 25661,
+      "ordinal": 22,
+      "fitting_sample_ms": 564.241943359375,
+      "first_fitting_sample_ts_ms": 1793278577544.269,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 564.241943359375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a5-c606-7701-aaf7-001934ae1002",
+      "invocation_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1:root",
+      "submit_ts_ms": 1793277691395.7544,
+      "prompt_tokens": 51863,
+      "ordinal": 11,
+      "fitting_sample_ms": 541.735107421875,
+      "first_fitting_sample_ts_ms": 1793277692197.5884,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 541.735107421875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b2-5cce-7f42-b7eb-1551878c54c1",
+      "invocation_id": "deepagents-invocation:0f31c59ecc26ad08",
+      "submit_ts_ms": 1793278760234.847,
+      "prompt_tokens": 20174,
+      "ordinal": 16,
+      "fitting_sample_ms": 534.594482421875,
+      "first_fitting_sample_ts_ms": 1793278760345.6619,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 534.594482421875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a9-2336-7700-a16e-45e73e1419d3",
+      "invocation_id": "deepagents-invocation:be5614e15c235933",
+      "submit_ts_ms": 1793278266146.5774,
+      "prompt_tokens": 6957,
+      "ordinal": 1,
+      "fitting_sample_ms": 531.199951171875,
+      "first_fitting_sample_ts_ms": 1793278266849.5427,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 531.199951171875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a5-bccc-77c2-96d0-19d87fcb038f",
+      "invocation_id": "deepagents-invocation:649818db6a48d692",
+      "submit_ts_ms": 1793277693978.7727,
+      "prompt_tokens": 6887,
+      "ordinal": 1,
+      "fitting_sample_ms": 485.492919921875,
+      "first_fitting_sample_ts_ms": 1793277694805.2805,
+      "sample_categories": {
+        "first_call_excluded_by_legacy_continuation_filter": 485.492919921875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177ba-3001-7eb0-9258-161a7c88d3f3",
+      "invocation_id": "deepagents-invocation:e11d2f741ca17045",
+      "submit_ts_ms": 1793278971137.4497,
+      "prompt_tokens": 27598,
+      "ordinal": 40,
+      "fitting_sample_ms": 468.97216796875,
+      "first_fitting_sample_ts_ms": 1793278973267.979,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 468.97216796875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b0-9cc2-7e33-a9ce-930a7dafa5d8",
+      "invocation_id": "deepagents-invocation:be5614e15c235933",
+      "submit_ts_ms": 1793278528803.9995,
+      "prompt_tokens": 35986,
+      "ordinal": 50,
+      "fitting_sample_ms": 445.715576171875,
+      "first_fitting_sample_ts_ms": 1793278538830.3367,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 445.715576171875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b3-0f73-7132-8b40-75e823a8b1fa",
+      "invocation_id": "deepagents-invocation:8498e39022e89ead",
+      "submit_ts_ms": 1793278585412.1052,
+      "prompt_tokens": 14618,
+      "ordinal": 19,
+      "fitting_sample_ms": 444.619873046875,
+      "first_fitting_sample_ts_ms": 1793278585661.3499,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 444.619873046875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b4-e163-7af3-81ad-5ed5a497096a",
+      "invocation_id": "deepagents-invocation:d03da39ef0461137",
+      "submit_ts_ms": 1793278592564.7827,
+      "prompt_tokens": 19574,
+      "ordinal": 18,
+      "fitting_sample_ms": 405.733154296875,
+      "first_fitting_sample_ts_ms": 1793278592769.0742,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 405.733154296875
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b6-c288-7092-bf84-bbf4c7d6ebbb",
+      "invocation_id": "deepagents-invocation:b3251e1297c937d9",
+      "submit_ts_ms": 1793278740590.647,
+      "prompt_tokens": 30138,
+      "ordinal": 38,
+      "fitting_sample_ms": 402.031005859375,
+      "first_fitting_sample_ts_ms": 1793278740872.0168,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 402.031005859375
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177a8-1675-7de0-be1e-1fedeb29b765",
+      "invocation_id": "deepagents-invocation:a9fdd146083bc610",
+      "submit_ts_ms": 1793278151818.881,
+      "prompt_tokens": 17508,
+      "ordinal": 25,
+      "fitting_sample_ms": 383.929931640625,
+      "first_fitting_sample_ts_ms": 1793278154706.9639,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 383.929931640625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177b2-bcf5-75c1-b89a-c47b6e673620",
+      "invocation_id": "deepagents-invocation:0f31c59ecc26ad08",
+      "submit_ts_ms": 1793278777691.9148,
+      "prompt_tokens": 21045,
+      "ordinal": 18,
+      "fitting_sample_ms": 286.2900390625,
+      "first_fitting_sample_ts_ms": 1793278778668.5833,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 286.2900390625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177af-2d10-7832-a705-46123d43c0a8",
+      "invocation_id": "deepagents-invocation:c373adec8378be35",
+      "submit_ts_ms": 1793278334350.9832,
+      "prompt_tokens": 14769,
+      "ordinal": 12,
+      "fitting_sample_ms": 281.164306640625,
+      "first_fitting_sample_ts_ms": 1793278335106.775,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 281.164306640625
+      }
+    },
+    {
+      "request_id": "beliefkv:01a177bb-7eb5-7ba1-8481-63a6bd60af5d",
+      "invocation_id": "deepagents-invocation:c839861ee808681b",
+      "submit_ts_ms": 1793278947727.8171,
+      "prompt_tokens": 38586,
+      "ordinal": 44,
+      "fitting_sample_ms": 55.51220703125,
+      "first_fitting_sample_ts_ms": 1793278949495.0261,
+      "sample_categories": {
+        "continuation_beyond_first_eight_live_requests": 55.51220703125
+      }
+    }
+  ],
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_free_extent_20261029_r1/full/server/runtime_events.sglang.jsonl": {
+      "complete_prefix_bytes": 9418619,
+      "complete_prefix_sha256": "ff8a5f8b17cb53ee71035551a7e99c5c2ce9ca40935cf60cb3fde0681264bcbc",
+      "first_read_limit_bytes": 9418619
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_free_extent_20261029_r1/full/server/runtime_audit.jsonl": {
+      "complete_prefix_bytes": 435851360,
+      "complete_prefix_sha256": "fd5d7e4a01e5efe437992ecb69705f93a7b5d7b446488bf653047018090c48df",
+      "first_read_limit_bytes": 435851360
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_free_extent_20261029_r1/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 140779315,
+      "complete_prefix_sha256": "1bb95ebcaff55f8ac7005986d7608de6a5c3019d1976821cedcd3b67393f393d",
+      "first_read_limit_bytes": 140779315
+    }
+  },
+  "operator_sha256": "619675f8e871d12716279678611a018443020143acd8f9a4512844e53ceb5505",
+  "limitations": [
+    "Raw logical fit does not establish physical allocation, safe cold donors or immediate GPU execution.",
+    "Snapshot values are held for at most two seconds; unknown intervals remain unobserved.",
+    "The first-eight reconstruction uses observed native worker completion, not exact dictionary removal timestamps; boundary positions are diagnostic.",
+    "Reasons describe existing filters and windows, not the causal JCT effect of changing them.",
+    "Backed releases and new-D2H backups are different events; neither enumerates all mandatory A-before-B dependencies.",
+    "Native evictability is not useful-agent residency, coldness, or SM utilization."
+  ]
+}

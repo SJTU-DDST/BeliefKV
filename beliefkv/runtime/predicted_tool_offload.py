@@ -270,6 +270,7 @@ class DemandAwareToolOffload(PredictedToolOffload):
         self.evicted_tokens = OrderedDict()
         self.action_detail = {}
         self._admission_seen = OrderedDict()
+        self._deficit_records = OrderedDict()
         self._dispatch_stage = "maintenance"
         self._admission_adder = None
 
@@ -367,6 +368,29 @@ class DemandAwareToolOffload(PredictedToolOffload):
             )
             if deficit <= 0 < old_needed - headroom.device_full_free_tokens:
                 runtime.counts["tool_offload_unnecessary_deficit_avoided"] += 1
+        if deficit > 0 and key not in self._deficit_records:
+            self._deficit_records[key] = None
+            if len(self._deficit_records) > 512:
+                self._deficit_records.popitem(last=False)
+            runtime.counts["tool_offload_capacity_deficit_observations"] += 1
+            if runtime._opportunity_writer is not None:
+                runtime._opportunity_writer.record({
+                    "event": "selected_consumer_capacity_shortfall",
+                    "ts_ms": time.time() * 1000.,
+                    "request_id": key.request_id,
+                    "workflow_id": key.root_workflow_id,
+                    "invocation_id": key.invocation_id,
+                    "context_id": key.context_id, "context_epoch": key.context_epoch,
+                    "attempt_id": key.attempt_id,
+                    "device_free_tokens": headroom.device_full_free_tokens,
+                    "missing_full_tokens": observation["missing_full_tokens"],
+                    "input_tokens": actual.input_tokens,
+                    "growth_reserve_tokens": actual.growth_tokens,
+                    "required_device_tokens": needed, "deficit_tokens": deficit,
+                    "dispatch_stage": self._dispatch_stage,
+                    "source": "predicted_tool_offload_consumer",
+                    "scope": "bounded_diagnostic;native_capacity_and_safe_donor_still_required",
+                })
         return (key, deficit, cost[0]) if deficit > 0 else None
 
     def _live_consumer(self, donor):

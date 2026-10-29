@@ -10,6 +10,7 @@ import torch
 from beliefkv.experiments.internal_comparison import MODES, arm_environment
 from beliefkv.experiments.paper_baselines import environment as paper_environment
 from beliefkv.runtime.layer_handoff import try_handoff
+from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from scripts.run_causal_comparison import preflight_runtime
 from tests.test_full_only_native_lifecycle import full_native
@@ -141,6 +142,39 @@ def test_runtime_host_budget_matches_only_the_smaller_private_donor(native_hando
     assert f.offloader.action_detail["restore_tokens_budgeted"] == 14
     assert f.allocator.available_size() == 2
     settle(f)
+
+
+def test_geometry_refusal_journals_actual_free_slots_and_private_path_without_copy(
+    native_handoff, monkeypatch,
+):
+    f = native_handoff
+    private_suffix(f)
+    f.runtime.layer_handoff_free_extent = True
+    f.runtime._host_demand_capacity = NS(ensure=Mock(return_value=True))
+    records = []
+    monkeypatch.setattr(f.runtime, "_opportunity_writer", NS(record=records.append, close=lambda: None))
+    monkeypatch.setattr(
+        f.runtime, "_current_residency_budget",
+        lambda **kwargs: PrefetchResidencyBudget(1, 1 << 30, reserve_full_tokens=3),
+    )
+    assert not try_handoff(
+        f.offloader, f.runtime.context_sessions["ctx-tool"],
+        NS(node_id=f.donor.id, creation_time=f.donor.creation_time),
+    )
+    assert f.runtime.counts["layer_handoff_refused:donor_smaller_than_restore"] == 1, ",".join(
+        name for name in f.runtime.counts if name.startswith("layer_handoff_refused:")
+    )
+    row, = [row for row in records if row["event"] == "layer_kv_handoff_geometry_shortfall"]
+    assert row["private_unbacked_donor_tokens"] == 14
+    assert row["minimum_donor_tokens"] == 16
+    assert row["device_free_tokens"] == 4
+    assert row["restore_tokens"] == 16
+    assert row["input_tokens"] == 1 and row["growth_reserve_tokens"] == 3
+    assert row["required_reserve_tokens"] == 4
+    f.runtime._host_demand_capacity.ensure.assert_not_called()
+    f.cache.cache_controller.l2_transfer_engine.submit_layer_handoff.assert_not_called()
+    assert f.allocator.available_size() == 4
+    assert not f.host_owned
 
 
 def test_runtime_rejects_unqualified_native_capability_and_binds_preflight(monkeypatch, tmp_path):

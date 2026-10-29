@@ -273,6 +273,30 @@ def test_unavailable_tool_source_skips_additional_candidate_inspection(demand_ru
     controller.before_admission.assert_not_called()
 
 
+def test_capacity_shortfall_journal_records_current_geometry_once_without_releasing_pages(
+    demand_runtime, monkeypatch,
+):
+    runtime, controller, _cache, allocator, donor, consumer, _writes = demand_runtime
+    enable_early(demand_runtime)
+    key = runtime.visible["consumer"]
+    records = []
+    monkeypatch.setattr(runtime, "_opportunity_writer", NS(record=records.append, close=lambda: None))
+    first = controller._demand(consumer, key)
+    assert first is not None and first[1] > 0
+    assert controller._demand(consumer, key) == first
+    rows = [row for row in records if row["event"] == "selected_consumer_capacity_shortfall"]
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["request_id"] == key.request_id
+    assert row["required_device_tokens"] == (
+        row["missing_full_tokens"] + row["input_tokens"] + row["growth_reserve_tokens"]
+    )
+    assert row["deficit_tokens"] == row["required_device_tokens"] - row["device_free_tokens"]
+    assert runtime.counts["tool_offload_capacity_deficit_observations"] == 1
+    assert allocator.available_size() == 4
+    assert donor.component_data[0].value is not None
+
+
 def test_existing_native_adder_and_load_see_only_actually_freed_capacity(demand_runtime):
     from sglang.srt.managers.schedule_policy import PrefillAdder
 

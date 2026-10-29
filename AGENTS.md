@@ -3358,3 +3358,25 @@
   with the existing cpu_plotting_20261027 env, without changing or restarting
   live GPU jobs. Do not promote a plotting failure to a GPU comparison failure.
   Keep Agentix/TokenCake deferred and the overall goal active.
+- Latest HBM/dispatch audit of the complete mean60 Full finds99.35% physical
+  KV-pool residency in300..1800s with100% two-second-capped coverage;68.27%
+  non-evictable is not GPU utilization or proof of the useful active set.
+  Actual shortfall releases1659 backed nodes;76 new predicted D2H commands
+  serve70 beneficiaries, only7 same-owner/node/consumer ACK-release-restore-
+  service chains are explicitly joined. None is an exhaustive mandatory
+  A-before-B census.130 pre-service paused requests show full raw logical fit:
+  40 first calls excluded by the continuation filter and90 continuations beyond
+  the first8 live-request scan. hbm_dispatch_20261029 adds default-off
+  AGENT_FREE_DISPATCH_INTERVAL_MS=500: event-driven complete-free-budget grants,
+  pending-only rotation8,known JOIN checks24,max4 grants and500ms fallback,
+  without replacing the five-second pressure tick, pausing peers or initiating
+  copies. Handoff preflight now excludes non-private/locked/branched ancestors
+  before Host budget checks; native guards and tree434c35dd remain unchanged.
+  Preserve failed telemetry fixtures and original auditR1/source plusR2.
+  CPU4760+6 retains all4734 previous IDs on1937 unchanged inputs; benchmark
+  ~7..32us thread CPU/pass is not full-run cost or JCT evidence. Original
+  mean120 Thunder completed; the separately frozen original Full is running
+  on18872. Preserve it and its CPU reviewer. Qualify/register the new candidate
+  separately after actual original Full completion, fresh drain and owned exit,
+  reuse the matched mean120 Thunder control, and keep all normal tails and
+  identical work/tools/arrivals/capacity/seeds. No superiority is established.

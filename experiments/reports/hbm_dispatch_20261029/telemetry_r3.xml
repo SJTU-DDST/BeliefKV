@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="8.353" timestamp="2026-10-29T07:16:43.437932-07:00" hostname="ddst-12"><testcase classname="tests.test_layer_handoff_free_extent" name="test_geometry_refusal_journals_actual_free_slots_and_private_path_without_copy" time="5.564"><failure message="AssertionError: layer_handoff_refused:native&#10;assert 0 == 1">tests/test_layer_handoff_free_extent.py:164: in test_geometry_refusal_journals_actual_free_slots_and_private_path_without_copy
+    assert f.runtime.counts["layer_handoff_refused:donor_smaller_than_restore"] == 1, ",".join(
+E   AssertionError: layer_handoff_refused:native
+E   assert 0 == 1</failure></testcase></testsuite></testsuites>

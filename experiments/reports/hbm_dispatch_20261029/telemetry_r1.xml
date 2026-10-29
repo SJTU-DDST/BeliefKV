@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="2" failures="1" skipped="0" tests="3" time="10.672" timestamp="2026-10-29T07:13:16.780266-07:00" hostname="ddst-12"><testcase classname="tests.test_layer_handoff_free_extent" name="test_geometry_refusal_journals_actual_free_slots_and_private_path_without_copy" time="6.822"><failure message="ValueError: not enough values to unpack (expected 1, got 0)">tests/test_layer_handoff_free_extent.py:164: in test_geometry_refusal_journals_actual_free_slots_and_private_path_without_copy
+    row, = [row for row in records if row["event"] == "layer_kv_handoff_geometry_shortfall"]
+    ^^^^
+E   ValueError: not enough values to unpack (expected 1, got 0)</failure></testcase><testcase classname="tests.test_layer_handoff_free_extent" name="test_geometry_refusal_journals_actual_free_slots_and_private_path_without_copy" time="0.001"><error message="failed on teardown with &quot;AttributeError: 'types.SimpleNamespace' object has no attribute 'close'&quot;">tests/test_tool_policy_adaptation.py:277: in demand_runtime
+    runtime.close()
+beliefkv/runtime/sglang_v0520_runtime.py:1281: in close
+    self._opportunity_writer.close()
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'types.SimpleNamespace' object has no attribute 'close'</error></testcase><testcase classname="tests.test_tool_offload_before_admission" name="test_capacity_shortfall_journal_records_current_geometry_once_without_releasing_pages" time="0.005"><error message="failed on teardown with &quot;AttributeError: 'types.SimpleNamespace' object has no attribute 'close'&quot;">tests/test_tool_policy_adaptation.py:277: in demand_runtime
+    runtime.close()
+beliefkv/runtime/sglang_v0520_runtime.py:1281: in close
+    self._opportunity_writer.close()
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'types.SimpleNamespace' object has no attribute 'close'</error></testcase></testsuite></testsuites>

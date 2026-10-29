@@ -131,6 +131,7 @@ def try_handoff(offloader, key, step):
     free_extent = getattr(runtime, "layer_handoff_free_extent", False)
     if manager is not None:
         minimum_donor = restore_tokens
+        available = None
         if free_extent:
             available = cache.cache_controller.mem_pool_device_allocator.available_size()
             minimum_donor = max(1, restore_tokens - max(0, available - reserve))
@@ -139,7 +140,17 @@ def try_handoff(offloader, key, step):
             if node is cache.tree_core.root_node:
                 break
             full = node.component_data[0]
-            if full.value is None or full.host_value is not None:
+            if (
+                full.value is None or full.host_value is not None
+                or full.session_ref != 1 or full.session_ids not in (None, {key.session_id})
+                or full.lock_ref or full.host_lock_ref
+                or node.write_through_pending_id is not None
+                or node.load_back_pending_id is not None
+                or node.id in cache.ongoing_write_through or node.id in cache.ongoing_load_back
+                or len(node.children) > 64
+                or any(child.component_data[0].value is not None and child.id not in donors
+                       for child in node.children.values())
+            ):
                 break
             donors.append(node.id)
             donor_tokens += len(full.value)
@@ -147,6 +158,24 @@ def try_handoff(offloader, key, step):
                 break
             node = node.parent
         if donor_tokens < minimum_donor:
+            if runtime._opportunity_writer is not None:
+                runtime._opportunity_writer.record({
+                    "event": "layer_kv_handoff_geometry_shortfall",
+                    "ts_ms": time.time() * 1000.,
+                    "beneficiary_request_id": consumer_key.request_id,
+                    "beneficiary_invocation_id": consumer_key.invocation_id,
+                    "donor_invocation_id": key.invocation_id,
+                    "donor_node_id": donor.id, "consumer_node_id": consumer.id,
+                    "private_unbacked_donor_tokens": donor_tokens,
+                    "minimum_donor_tokens": minimum_donor,
+                    "device_free_tokens": available,
+                    "restore_tokens": restore_tokens,
+                    "input_tokens": actual.input_tokens,
+                    "growth_reserve_tokens": actual.growth_tokens,
+                    "required_reserve_tokens": reserve,
+                    "scope": "one_private_path;not_all_available_donors_or_mandatory_D2H",
+                    **offloader._action_detail(),
+                })
             return refused("donor_smaller_than_restore")
         if not authorize(donor_tokens, restore_tokens):
             return refused("cost_or_authorization")

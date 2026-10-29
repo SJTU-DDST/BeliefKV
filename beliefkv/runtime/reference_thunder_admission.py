@@ -415,12 +415,19 @@ def validate_reference_admission(
     state, *, join_free_admission=False, coadmit_join_children=False,
     free_continuation_admission=False,
     join_blocked_handoff=False,
+    free_dispatch_interval_ms=0,
 ):
     if any(type(value) is not bool for value in (
         join_free_admission, coadmit_join_children, free_continuation_admission,
         join_blocked_handoff,
     )):
         raise ValueError("JOIN admission declarations must be booleans")
+    if (
+        type(free_dispatch_interval_ms) is not int
+        or free_dispatch_interval_ms != 0 and not 100 <= free_dispatch_interval_ms <= 5000
+        or free_dispatch_interval_ms and not free_continuation_admission
+    ):
+        raise ValueError("invalid bounded free dispatch declaration")
     admission_type = ReferenceThunderAdmission
     if free_continuation_admission:
         from beliefkv.runtime.reference_free_continuation import ReferenceFreeContinuationAdmission
@@ -472,6 +479,15 @@ def validate_reference_admission(
             "sibling_native_batch_max_members": 4,
             "sibling_admission_fitting_subset": True,
         })
+    if free_dispatch_interval_ms:
+        expected.update({
+            "free_dispatch_interval_ms": free_dispatch_interval_ms,
+            "free_dispatch_scan_order": "join_first_then_rotating_pending_agents",
+            "free_dispatch_replaces_pressure_tick": False,
+            "free_continuation_updates": "registration_native_completion_runtime_events_bounded_dispatch",
+            "free_continuation_max_grants_per_event": 4,
+            "free_continuation_new_programs": True,
+        })
     if join_blocked_handoff:
         expected.update({
             "join_blocked_handoff_authority": "observed_join_parent_complete_blocked_agent_budgets",
@@ -480,6 +496,7 @@ def validate_reference_admission(
         })
     if not isinstance(state, dict) or (
         state.get("join_free_admission", False) is not join_free_admission
+        or state.get("free_dispatch_interval_ms", 0) != free_dispatch_interval_ms
         or state.get("free_continuation_admission", False) is not free_continuation_admission
         or state.get("join_blocked_handoff", False) is not join_blocked_handoff
     ) or any(

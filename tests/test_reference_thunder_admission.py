@@ -29,6 +29,7 @@ def full_runtime(
     monkeypatch, tmp_path, *, capacity=1000, join_free_admission=False,
     coadmit_join_children=False, free_continuation_admission=False,
     join_blocked_handoff=False,
+    free_dispatch_interval_ms=0,
 ):
     settings = arm_environment({
         "AGENT_ADMISSION": "thunderagent_reference",
@@ -39,6 +40,7 @@ def full_runtime(
         "AGENT_JOIN_BLOCKED_HANDOFF": str(int(join_blocked_handoff)),
         "AGENT_COADMIT_JOIN_CHILDREN": str(int(coadmit_join_children)),
         "AGENT_FREE_CONTINUATION_ADMISSION": str(int(free_continuation_admission)),
+        "AGENT_FREE_DISPATCH_INTERVAL_MS": str(free_dispatch_interval_ms),
     }, "full")
     for name, value in settings.items():
         monkeypatch.setenv(name, value)

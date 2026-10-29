@@ -1062,6 +1062,14 @@ class NativeAdmissionRuntime:
         ):
             raise ValueError("free continuation admission requires the reference Full core")
         self.agent_free_continuation_admission = continuation_free == "1"
+        dispatch_interval = os.environ.get("BELIEFKV_AGENT_FREE_DISPATCH_INTERVAL_MS", "0")
+        if (
+            not dispatch_interval.isascii() or not dispatch_interval.isdecimal()
+            or int(dispatch_interval) != 0 and not 100 <= int(dispatch_interval) <= 5000
+            or int(dispatch_interval) and not self.agent_free_continuation_admission
+        ):
+            raise ValueError("bounded free dispatch requires reference Full continuation and 100..5000 ms")
+        self.agent_free_dispatch_interval_ms = int(dispatch_interval)
         sibling_setting = os.environ.get("BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN", "0")
         if sibling_setting not in ("0", "1") or (
             sibling_setting == "1"
@@ -2846,6 +2854,7 @@ class NativeAdmissionRuntime:
                 "agent_join_free_admission": self.agent_join_free_admission,
                 "agent_join_blocked_handoff": self.agent_join_blocked_handoff,
                 "agent_free_continuation_admission": self.agent_free_continuation_admission,
+                "agent_free_dispatch_interval_ms": self.agent_free_dispatch_interval_ms,
                 "full_prefix_migration": (
                     self._full_prefix_migration.status()
                     if self._full_prefix_migration is not None else None

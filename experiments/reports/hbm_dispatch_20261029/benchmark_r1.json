@@ -1,0 +1,30 @@
+{
+  "observed_at": "2026-10-29T14:13:18.085515+00:00",
+  "scenes": {
+    "no_raw_capacity": {
+      "passes": 10000,
+      "pending_agents": 24,
+      "thread_cpu_us_per_pass": 7.1282768,
+      "wall_us_per_pass": 7.1280643,
+      "candidate_checks": 0,
+      "logical_grants": 0,
+      "pressure_ticks": 0
+    },
+    "eight_unfitting_candidates": {
+      "passes": 10000,
+      "pending_agents": 24,
+      "thread_cpu_us_per_pass": 31.7089412,
+      "wall_us_per_pass": 31.7084206,
+      "candidate_checks": 80000,
+      "logical_grants": 0,
+      "pressure_ticks": 0
+    }
+  },
+  "operator_sha256": "39754b20b63f1d02674524050361fdfa57716d52ca6520e7ebd39934f52b33ae",
+  "runtime_sha256": "4bed24263e70bf6fa52105fa5ca11b60b03017ddf8c5853f45efdbb3e64aece9",
+  "semantics": [
+    "Actual Full Python runtime and graph, CPU-only logical capacity and native request fixtures.",
+    "Warm microbenchmark thread CPU excludes scheduling waits; wall includes them.",
+    "No GPU kernels, physical admission, migration, complete-run control cost or JCT gain is established."
+  ]
+}
