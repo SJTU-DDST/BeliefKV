@@ -72,7 +72,8 @@ def select_probe(index):
     return min(eligible)[2]
 
 
-def validate_swap(report, registration):
+def validate_swap(report, registration, *, require_native_sessions=False):
+    consumer = report.get("native_prefill_consumer") or {}
     if (
         report.get("status") != "native_kv_swap_interface_qualified"
         or report.get("native_engine", {}).get("actual_tree") != registration["engine_tree"]
@@ -80,6 +81,15 @@ def validate_swap(report, registration):
         or any(report.get(name) is not True for name in SWAP_PROPERTIES)
         or report.get("whole_llm_scheduler_or_baseline_qualified") is not False
         or report.get("performance_accepted") is not False
+        or consumer.get("native_prefill_admitted") is not True
+        or consumer.get("native_extend_allocation_tokens") != 1
+        or consumer.get("checkpoint_tokens") != 18
+        or consumer.get("uncomputed_fixture_tail_returned") is not True
+        or require_native_sessions and (
+            report.get("request_transport") != "full_prompt_native_radix"
+            or report.get("native_session_generation_preserved") is not True
+            or report.get("native_session_anchors_preserved") is not True
+        )
         or any(
             report.get("source_sha256", {}).get(name) != sha256_file(ROOT / name)
             for name in (

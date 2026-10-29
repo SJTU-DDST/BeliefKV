@@ -21,7 +21,7 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
 from beliefkv.runtime.agentix_capacity import AgentixHostBacking, AgentixNativeCapacity
 from beliefkv.runtime.agentix_swap import AgentixNativeSwap
-from scripts.qualify_agentix_swap import gpu_processes, poll_until
+from scripts.qualify_agentix_swap import gpu_processes, poll_until, restore_native_consumer
 from scripts import run_causal_comparison as controls
 from scripts.run_agentx_baseline import freeze, predecessor_finished, prefix_qualification_environment
 
@@ -47,9 +47,10 @@ PROPERTIES = (
 )
 
 
-def validate_report(report, *, engine_tree, patch_sha256):
+def validate_report(report, *, engine_tree, patch_sha256, require_native_sessions=False):
     swap = report.get("swap") or {}
     growth, refusal = report.get("backing_growth") or {}, report.get("host_refusal") or {}
+    consumers = report.get("native_prefill_consumers")
     if (
         report.get("status") != "agentix_native_pressure_components_qualified"
         or report.get("native_engine", {}).get("actual_tree") != engine_tree
@@ -70,6 +71,19 @@ def validate_report(report, *, engine_tree, patch_sha256):
         or swap.get("counts", {}).get("paused_requests") != 6
         or swap.get("counts", {}).get("resumed_requests") != 6
         or len(report.get("remaining_paused_requests_restored", ())) != 4
+        or type(consumers) is not list or len(consumers) != 6
+        or any(
+            item.get("native_prefill_admitted") is not True
+            or item.get("native_extend_allocation_tokens") != 1
+            or type(item.get("checkpoint_tokens")) is not int
+            or item["checkpoint_tokens"] <= 0
+            or item.get("uncomputed_fixture_tail_returned") is not True
+            for item in (consumers or ())
+        )
+        or require_native_sessions and (
+            report.get("request_transport") != "full_prompt_native_radix"
+            or report.get("native_session_generations_preserved") is not True
+        )
         or any(
             report.get(name) is not False for name in (
                 "whole_llm_pressure_progress_qualified", "model_numerical_equivalence_verified",
@@ -89,7 +103,7 @@ class NativePressureFixture:
 
     context_limit = 64
 
-    def __init__(self, engine):
+    def __init__(self, engine, *, native_radix_sessions=False):
         sys.path.insert(0, str(engine / "python"))
         import torch
         from sglang.srt.mem_cache.allocator import TokenToKVPoolAllocator
@@ -102,6 +116,8 @@ class NativePressureFixture:
         if torch.cuda.device_count() != 1:
             raise ValueError("Agentix pressure fixture requires one explicit visible GPU")
         self.torch = torch
+        self.native_radix_sessions = native_radix_sessions
+        self.native_consumers = []
         settings = ServerArgs(
             model_path="dummy", page_size=1, hicache_ratio=2.,
             hicache_io_backend="kernel", hicache_mem_layout="page_first",
@@ -151,14 +167,19 @@ class NativePressureFixture:
             origin_input_ids=array("q", range(1, prompt_tokens + 1)),
             extra_key=identity, cache_salt=identity,
             sampling_params=SamplingParams(
-                temperature=1., top_k=1, max_new_tokens=self.context_limit,
+                temperature=1., top_k=1,
+                max_new_tokens=self.context_limit - prompt_tokens,
             ),
+            session_id=("native-" + identity) if self.native_radix_sessions else None,
             beliefkv_metadata={
                 "root_workflow_id": "workflow:" + identity,
                 "invocation_id": "agent:" + identity,
                 "context_id": "context:" + identity, "context_epoch": 0,
+                "full_prompt_replay_guaranteed": True,
             },
         )
+        if self.native_radix_sessions:
+            req.session_generation = self.cache.ensure_session_generation(req.session_id)
         req.last_node = self.cache.root_node_handle()
         if running:
             req.output_ids.extend((101, 102))
@@ -205,6 +226,7 @@ class NativePressureFixture:
         ]
         self.original[req.rid] = (
             tuple(req.origin_input_ids), tuple(req.output_ids), req.sampling_params,
+            req.session_id, req.session_generation,
         )
 
     def preserved(self, req):
@@ -214,6 +236,7 @@ class NativePressureFixture:
             tuple(req.origin_input_ids) == original[0]
             and tuple(req.output_ids) == original[1]
             and req.sampling_params is original[2]
+            and (req.session_id, req.session_generation) == original[3:]
             and all(
                 self.torch.equal(key[indices], old_key)
                 and self.torch.equal(value[indices], old_value)
@@ -275,20 +298,8 @@ class NativePressureFixture:
         self.active.pop(req.rid)
 
     def restore(self, req):
-        pin = self.actor.paused[req.rid]
-        leaf = self.cache.tree_core.node_by_id(pin.leaf)
-        if not self.cache.load_back(leaf.id):
-            raise ValueError("native pressure fixture could not restore a paused checkpoint")
+        self.native_consumers.append(restore_native_consumer(self.cache, self.actor, req))
         self.cache.cache_controller.start_loading()
-        req.init_next_round_input(self.cache)
-        if len(req.prefix_indices) != req.seqlen - 1 or self.rows.alloc([req]) is None:
-            raise ValueError("native pressure resumption lost its complete computed prefix")
-        count = len(req.prefix_indices)
-        self.rows.write((req.kv.req_pool_idx, slice(0, count)), req.prefix_indices)
-        req.lock_receipt = self.cache.inc_lock_ref(req.last_node).to_dec_params()
-        req.kv.kv_committed_len = req.kv.kv_allocated_len = count
-        if not self.actor.resumed(req):
-            raise ValueError("native pressure resumption did not consume its Host ownership")
         poll_until(lambda: not self.cache.ongoing_load_back, self.cache.loading_check)
         self.active[req.rid] = req
         if not self.preserved(req):
@@ -386,13 +397,13 @@ def host_refusal(fixture):
     }
 
 
-def qualify(engine, canonical_patch):
+def qualify(engine, canonical_patch, *, native_radix_sessions=False):
     if gpu_processes():
         raise ValueError("GPU is occupied before the bounded Agentix pressure check")
     native = git_source_state(engine, canonical_patch=canonical_patch)["canonical_patch"]
     if not native["matches_worktree"]:
         raise ValueError("native tree differs from the canonical pressure-check patch")
-    fixture = NativePressureFixture(engine)
+    fixture = NativePressureFixture(engine, native_radix_sessions=native_radix_sessions)
     try:
         growth = backing_growth(fixture)
         refusal = host_refusal(fixture)
@@ -414,6 +425,9 @@ def qualify(engine, canonical_patch):
             "layers": len(fixture.pool.k_buffer),
             "backing_growth": growth, "host_refusal": refusal,
             "remaining_paused_requests_restored": restored,
+            "native_prefill_consumers": fixture.native_consumers,
+            "request_transport": "full_prompt_native_radix" if native_radix_sessions else "plain_tokens",
+            "native_session_generations_preserved": True if native_radix_sessions else None,
             **dict.fromkeys(PROPERTIES, True),
             "swap": fixture.actor.status(), "backing": fixture.backing.status(),
             "whole_llm_pressure_progress_qualified": False,
@@ -429,7 +443,10 @@ def run(args):
     args.output_dir.mkdir(parents=True, exist_ok=False)
     started = time.monotonic()
     try:
-        result = qualify(args.engine_checkout.resolve(), args.canonical_patch.resolve())
+        result = qualify(
+            args.engine_checkout.resolve(), args.canonical_patch.resolve(),
+            native_radix_sessions=getattr(args, "native_radix_sessions", False),
+        )
     except BaseException as error:
         result = {
             "status": "failed", "error_type": type(error).__name__, "error": str(error),
@@ -581,6 +598,7 @@ def main():
     direct = commands.add_parser("run")
     for name in ("engine-checkout", "canonical-patch", "output-dir"):
         direct.add_argument("--" + name, required=True, type=Path)
+    direct.add_argument("--native-radix-sessions", action="store_true")
     launch = commands.add_parser("start")
     for name in ("run-root", "reference", "engine-checkout", "canonical-patch", "after-run-root"):
         launch.add_argument("--" + name, required=True, type=Path)

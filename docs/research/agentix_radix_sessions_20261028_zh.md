@@ -57,3 +57,25 @@ confidence参数用例。独立review只接受这四个明确映射，并重新�
 不自动覆盖新session路径；必须扩展并执行它们，声明正式参数，再
 登记同完整工作量的Agentix。TokenCake完成前不启动另一GPU作业。
 当前TokenCake与完成的KVFlow/V345保持各自冻结来源，整体目标仍active。
+
+## 原生准入消费者与压力验证入口
+
+旧GPU swap和pressure夹具先手动load_back，再手工增加consumer锁。
+新入口统一使用真实PrefillAdder发起需求恢复并取得锁，再通过原生
+alloc_for_extend分配请求行和末token位置，最后由Agentix消费Host pin。
+字节夹具不执行这个末token的forward，因此消费后归还该未计算位置；
+恢复前已计算的完整KV、输入、输出与sampler逐项保持。没有把手工
+lock或fixture行分配描述为整模型执行。
+
+plain路径保留，同时增加显式`--native-radix-sessions`。小池压力检查
+覆盖同一组Host耗尽、拒绝、不提前释放Device、容量释放后重试及六个
+消费者完整恢复；session generation随每个请求核验。压力夹具的生成
+预算明确取64-token上下文减去prompt长度，避免旧夹具将64生成预算
+叠加到64上下文。正式workload和基线参数没有因此改变。
+
+native_consumer_cpu一次执行762项全部通过，无失败/跳过，严格保留
+此前752个字面ID，1879份来源前后一致，原生仍为c489。此前84项定向
+执行单独保存为native_consumers_r1_cpu.xml，不与762相加。
+校验器新增真实原生准入/分配回执要求；plain证据不能冒充session
+证据，缺一消费者或手工锁报告均拒绝。GPU复制和executor仍为CPU
+stand-in。新入口尚未完成真实GPU或整模型资格，Agentix仍未正式启用。

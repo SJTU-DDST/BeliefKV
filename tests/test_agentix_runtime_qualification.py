@@ -102,6 +102,10 @@ def swap_report():
         "status": "native_kv_swap_interface_qualified",
         "native_engine": {"actual_tree": "tree", "sha256": "patch"},
         **dict.fromkeys(qualifier.SWAP_PROPERTIES, True),
+        "native_prefill_consumer": {
+            "native_prefill_admitted": True, "native_extend_allocation_tokens": 1,
+            "checkpoint_tokens": 18, "uncomputed_fixture_tail_returned": True,
+        },
         "whole_llm_scheduler_or_baseline_qualified": False, "performance_accepted": False,
         "source_sha256": {
             name: sha256_file(qualifier.ROOT / name) for name in (
@@ -122,6 +126,29 @@ def test_each_native_byte_and_owner_property_is_required(field):
     del report[field]
     with pytest.raises(ValueError, match="missing, stale or overclaimed"):
         qualifier.validate_swap(report, {"engine_tree": "tree", "native_patch_sha256": "patch"})
+
+
+def test_plain_swap_evidence_cannot_qualify_native_session_transport():
+    evidence = swap_report()
+    registration = {"engine_tree": "tree", "native_patch_sha256": "patch"}
+    with pytest.raises(ValueError, match="missing, stale or overclaimed"):
+        qualifier.validate_swap(evidence, registration, require_native_sessions=True)
+    evidence.update(
+        request_transport="full_prompt_native_radix",
+        native_session_generation_preserved=True, native_session_anchors_preserved=True,
+    )
+    qualifier.validate_swap(evidence, registration, require_native_sessions=True)
+
+
+@pytest.mark.parametrize("field", (
+    "native_prefill_admitted", "native_extend_allocation_tokens",
+    "checkpoint_tokens", "uncomputed_fixture_tail_returned",
+))
+def test_manual_lock_or_incomplete_native_consumer_cannot_qualify_swap(field):
+    evidence = swap_report()
+    del evidence["native_prefill_consumer"][field]
+    with pytest.raises(ValueError, match="missing, stale or overclaimed"):
+        qualifier.validate_swap(evidence, {"engine_tree": "tree", "native_patch_sha256": "patch"})
 
 
 def test_probe_selection_has_enough_decode_work_for_actual_preemption():

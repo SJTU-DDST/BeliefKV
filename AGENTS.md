@@ -3093,3 +3093,12 @@
   This is not GPU/model/finite-pressure qualification or formal Agentix enablement,
   and it is absent from frozen TokenCake. See
   docs/research/agentix_radix_sessions_20261028_zh.md.
+- Agentix byte/pressure qualifiers now use the actual PrefillAdder lock and
+  native alloc_for_extend consumer before releasing paused Host ownership.
+  Plain and explicit native-radix modes remain separate; byte-only fixtures
+  return the uncomputed one-token extension without claiming a model forward.
+  One source-bound762-case CPU run retains every prior752 literal identity;
+  copy/executor stand-ins, real GPU/model and formal Agentix remain pending.
+  The new TokenCake complete reader's actual precheck accepts the three
+  completed controls and rejects its live2089-receipt prefix. Keep frozen
+  TokenCake22caa011/131d unchanged and do not overlap GPU work.

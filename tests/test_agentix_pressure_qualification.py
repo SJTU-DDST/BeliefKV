@@ -17,10 +17,14 @@ def pressure(full_native):
     from sglang.srt.mem_cache.memory_pool_host import LogicalHostPool
     from sglang.srt.server_args import ServerArgs, set_global_server_args_for_scheduler
 
-    set_global_server_args_for_scheduler(ServerArgs(model_path="dummy"))
+    set_global_server_args_for_scheduler(ServerArgs(
+        model_path="dummy", attention_backend="torch_native",
+    ))
     cache, allocator, _writes, _loads, _commits = full_native
     fixture = qualifier.NativePressureFixture.__new__(qualifier.NativePressureFixture)
     fixture.torch, fixture.cache, fixture.allocator = torch, cache, allocator
+    fixture.native_radix_sessions = False
+    fixture.native_consumers = []
     fixture.pool, fixture.rows = allocator._kvcache, cache.req_to_token_pool
     fixture.host = cache.host_pool_group.anchor_entry.host_pool
     slots = LogicalHostPool(size=257, page_size=1)
@@ -122,6 +126,27 @@ def test_pressure_scenarios_use_native_allocations_and_preserve_each_request(pre
         pressure.finish(req)
     assert not pressure.actor.paused and not pressure.actor.pending
     assert pressure.actor.counts["resumed_requests"] == 6
+    assert len(pressure.native_consumers) == 6
+    assert all(item["native_extend_allocation_tokens"] == 1 for item in pressure.native_consumers)
+
+
+@pytest.mark.parametrize("full_native", (128,), indirect=True)
+def test_native_session_pressure_preserves_generation_and_actual_consumer_handoff(pressure):
+    pressure.native_radix_sessions = True
+    qualifier.backing_growth(pressure)
+    qualifier.host_refusal(pressure)
+    for req in tuple(pressure.active.values()):
+        pressure.finish(req)
+    for pin in tuple(pressure.actor.paused.values()):
+        req = pin.proof.request
+        namespace = req.session_id, req.session_generation
+        pressure.restore(req)
+        assert (req.session_id, req.session_generation) == namespace
+        assert namespace[0] is not None
+        pressure.finish(req)
+    assert len(pressure.native_consumers) == 6
+    assert pressure.actor.counts["resumed_requests"] == 6
+    assert not pressure.actor.paused and not pressure.actor.pending
 
 
 @pytest.mark.parametrize("full_native", (128,), indirect=True)
@@ -153,6 +178,10 @@ def report():
             "counts": {"backup_declined": 1, "paused_requests": 6, "resumed_requests": 6},
         },
         "remaining_paused_requests_restored": ["a", "b", "c", "d"],
+        "native_prefill_consumers": [{
+            "native_prefill_admitted": True, "native_extend_allocation_tokens": 1,
+            "checkpoint_tokens": 27, "uncomputed_fixture_tail_returned": True,
+        } for _ in range(6)],
         "whole_llm_pressure_progress_qualified": False,
         "model_numerical_equivalence_verified": False,
         "complete_baseline_qualified": False, "performance_accepted": False,
@@ -175,6 +204,28 @@ def test_missing_evidence_and_whole_model_overclaim_are_rejected(field):
 def test_pressure_source_change_invalidates_gpu_evidence():
     evidence = report()
     evidence["source_sha256"]["beliefkv/runtime/agentix_capacity.py"] = "old"
+    with pytest.raises(ValueError, match="missing, stale or overclaimed"):
+        qualifier.validate_report(evidence, engine_tree="tree", patch_sha256="patch")
+
+
+def test_plain_pressure_proof_does_not_qualify_native_session_transport():
+    evidence = report()
+    with pytest.raises(ValueError, match="missing, stale or overclaimed"):
+        qualifier.validate_report(
+            evidence, engine_tree="tree", patch_sha256="patch", require_native_sessions=True,
+        )
+    evidence.update(
+        request_transport="full_prompt_native_radix", native_session_generations_preserved=True,
+    )
+    qualifier.validate_report(
+        evidence, engine_tree="tree", patch_sha256="patch", require_native_sessions=True,
+    )
+
+
+@pytest.mark.parametrize("consumers", ([], [{}], None))
+def test_manual_restores_without_native_prefill_consumption_cannot_qualify(consumers):
+    evidence = report()
+    evidence["native_prefill_consumers"] = consumers
     with pytest.raises(ValueError, match="missing, stale or overclaimed"):
         qualifier.validate_report(evidence, engine_tree="tree", patch_sha256="patch")
 

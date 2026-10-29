@@ -34,7 +34,49 @@ def poll_until(predicate, advance):
             time.sleep(.001)
 
 
-def qualify(engine, canonical_patch):
+def restore_native_consumer(cache, actor, req):
+    """Use native admission/allocation, returning the uncomputed fixture tail."""
+    import torch
+    from sglang.srt.managers.schedule_batch import ScheduleBatch
+    from sglang.srt.managers.schedule_policy import PrefillAdder
+    from sglang.srt.mem_cache.allocation import alloc_for_extend
+    from sglang.srt.model_executor.forward_batch_info import ForwardMode
+
+    committed = actor.paused[req.rid].proof.committed
+    allocator, rows = cache.token_to_kv_pool_allocator, cache.req_to_token_pool
+    req.init_next_round_input(cache, cow_mamba=False)
+    adder = PrefillAdder(
+        1, cache, allocator, None, 0., allocator.size, allocator.size,
+        max_running_requests=rows.size,
+    )
+    adder.add_one_req(req, has_chunked_req=False, truncation_align_size=None)
+    if adder.can_run_list != [req] or len(req.prefix_indices) != committed:
+        raise ValueError("native PrefillAdder did not admit the complete paused checkpoint")
+    count = req.extend_range.length
+    if count != 1:
+        raise ValueError("native resumed fixture must extend only its last uncomputed token")
+    seq_lens_cpu = torch.tensor([req.extend_range.end], dtype=torch.int64)
+    batch = ScheduleBatch(
+        reqs=[req], req_to_token_pool=rows, token_to_kv_pool_allocator=allocator,
+        tree_cache=cache, device=rows.device, forward_mode=ForwardMode.EXTEND,
+        prefix_lens=[committed], extend_lens=[count], extend_num_tokens=count,
+        seq_lens_cpu=seq_lens_cpu, seq_lens=seq_lens_cpu.to(rows.device),
+    )
+    extension, _, _ = alloc_for_extend(batch)
+    if not actor.resumed(req):
+        raise ValueError("native consumer did not consume its paused Host ownership")
+    # This byte fixture performs no forward for the newly allocated last token.
+    allocator.free(extension)
+    req.kv.kv_committed_len = req.kv.kv_allocated_len = committed
+    return {
+        "native_prefill_admitted": True,
+        "native_extend_allocation_tokens": len(extension),
+        "checkpoint_tokens": committed,
+        "uncomputed_fixture_tail_returned": True,
+    }
+
+
+def qualify(engine, canonical_patch, *, native_radix_sessions=False):
     if gpu_processes():
         raise ValueError("GPU is occupied before the bounded native KV check")
     state = git_source_state(engine, canonical_patch=canonical_patch)["canonical_patch"]
@@ -88,12 +130,16 @@ def qualify(engine, canonical_patch):
         req = Req(
             rid=identity, origin_input_text="",
             origin_input_ids=array("q", range(1, 17)),
-            sampling_params=SamplingParams(temperature=1., top_k=1, max_new_tokens=128),
+            sampling_params=SamplingParams(temperature=1., top_k=1, max_new_tokens=48),
+            session_id=("native-" + identity) if native_radix_sessions else None,
             beliefkv_metadata={
                 "root_workflow_id": "workflow", "invocation_id": identity,
                 "context_id": identity, "context_epoch": 0,
+                "full_prompt_replay_guaranteed": True,
             },
         )
+        if native_radix_sessions:
+            req.session_generation = cache.ensure_session_generation(req.session_id)
         req.output_ids.extend(outputs)
         count = req.seqlen - 1
         if rows.alloc([req]) is None:
@@ -137,6 +183,11 @@ def qualify(engine, canonical_patch):
         peer_expected, victim_expected = snapshot(peer_indices), snapshot(victim_indices)
         original_inputs, original_outputs = tuple(victim.origin_input_ids), tuple(victim.output_ids)
         sampler = victim.sampling_params
+        namespace = victim.session_id, victim.session_generation
+        anchors = (
+            cache.session_refs.snapshot_session_leaf_anchors(*namespace)
+            if native_radix_sessions else None
+        )
         # The explicit drain establishes safety for this stand-alone fixture.
         # The real scheduler must instead drain its native forward/result queue.
         drained.record(torch.cuda.current_stream())
@@ -172,22 +223,10 @@ def qualify(engine, canonical_patch):
         for key, value in zip(pool.k_buffer, pool.v_buffer, strict=True):
             key[tail] = -777.
             value[tail] = -777.
-        if not cache.load_back(leaf.id):
-            raise ValueError("native H2D restore did not start")
-        cache.cache_controller.start_loading()
-        victim.init_next_round_input(cache)
-        if len(victim.prefix_indices) != victim.seqlen - 1:
-            raise ValueError("native resumption did not match the complete computed prefix")
-        if rows.alloc([victim]) is None:
-            raise ValueError("restored native request row allocation failed")
-        rows.write(
-            (victim.kv.req_pool_idx, slice(0, len(victim.prefix_indices))),
-            victim.prefix_indices,
-        )
-        victim.lock_receipt = cache.inc_lock_ref(victim.last_node).to_dec_params()
-        victim.kv.kv_committed_len = victim.kv.kv_allocated_len = len(victim.prefix_indices)
-        if not actor.resumed(victim) or leaf.component_data[0].host_lock_ref < 1:
+        consumer = restore_native_consumer(cache, actor, victim)
+        if not cache.ongoing_load_back or leaf.component_data[0].host_lock_ref < 1:
             raise ValueError("native H2D lock did not survive the admission pin handoff")
+        cache.cache_controller.start_loading()
         poll_until(lambda: not cache.ongoing_load_back, cache.loading_check)
         restored = rows.req_to_token[victim.kv.req_pool_idx, :victim.seqlen - 1]
         if (
@@ -195,6 +234,10 @@ def qualify(engine, canonical_patch):
             or tuple(victim.origin_input_ids) != original_inputs
             or tuple(victim.output_ids) != original_outputs
             or victim.sampling_params is not sampler
+            or (victim.session_id, victim.session_generation) != namespace
+            or native_radix_sessions and (
+                cache.session_refs.snapshot_session_leaf_anchors(*namespace) != anchors
+            )
             or actor.paused or actor.pending
             or os.getpid() not in gpu_processes()
         ):
@@ -222,6 +265,10 @@ def qualify(engine, canonical_patch):
             "native_h2d_lock_survived_pin_handoff": True,
             "input_output_and_sampler_preserved": True,
             "native_transfer_acknowledgements": transfers, "actor": actor.status(),
+            "native_prefill_consumer": consumer,
+            "request_transport": "full_prompt_native_radix" if native_radix_sessions else "plain_tokens",
+            "native_session_generation_preserved": True if native_radix_sessions else None,
+            "native_session_anchors_preserved": True if native_radix_sessions else None,
             "whole_llm_scheduler_or_baseline_qualified": False,
             "performance_accepted": False,
         }
@@ -238,11 +285,15 @@ def main():
     parser.add_argument("--engine-checkout", required=True, type=Path)
     parser.add_argument("--canonical-patch", required=True, type=Path)
     parser.add_argument("--output-dir", required=True, type=Path)
+    parser.add_argument("--native-radix-sessions", action="store_true")
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=False)
     started = time.monotonic()
     try:
-        result = qualify(args.engine_checkout.resolve(), args.canonical_patch.resolve())
+        result = qualify(
+            args.engine_checkout.resolve(), args.canonical_patch.resolve(),
+            native_radix_sessions=args.native_radix_sessions,
+        )
     except BaseException as error:
         result = {
             "status": "failed", "error_type": type(error).__name__, "error": str(error),

@@ -86,3 +86,16 @@ server1123520、driver1124738和唯一GPU scheduler1123824，以及原生hook
 所有完整工作量、V311工具时间、容量、seed和普通数值设置保持原合同。
 原生tree不同于V345/KVFlow，比较时明确保留这个必要hook差异。
 main之后的Agentix CPU session适配没有进入此冻结TokenCake运行。
+
+## 等待期间的完整结果准备
+
+后续独立封存的collecting_during_agentix_consumers.json包含2089/3674
+精确完成回执，预算未知仍保留null；这是未匹配的运行前缀，不与完整
+Full/KVFlow/V345作JCT或吞吐优劣结论。运行及原始失败均保留。
+
+新增complete_review.py先核对完整源、工具时间、容量、seed和三种
+已审查引擎，再调用各实验自己的冻结configuration observer。实际
+`--precheck`接受三个完整control并拒绝仍在运行的TokenCake。
+完成后要求3674请求/精确token/原生停止、所有18个正常尾部、两次
+新鲜idle快照及实际进程退出，再生成Full/TokenCake/V345曲线；
+KVFlow的既有完整指标与独立图保留。尚未生成当前完整比较或性能结论。
