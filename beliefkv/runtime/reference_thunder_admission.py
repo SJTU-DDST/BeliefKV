@@ -1,4 +1,4 @@
-"""Full migration with the unchanged reference ThunderAgent decay scheduler."""
+"""Full migration with the reference ThunderAgent decay policy and declared timing."""
 
 from collections import Counter
 from dataclasses import asdict
@@ -44,6 +44,10 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         self.last_forced = set()
         self._capacity_snapshot = {}
         self.latest = {}
+        interval = getattr(runtime, "agent_control_interval_ms", 5000)
+        if type(interval) is not int or not 500 <= interval <= 5000:
+            raise ValueError("reference Full control interval requires 500..5000 ms")
+        self.control_interval_s = interval / 1000.
         self.join_free_admission = getattr(runtime, "agent_join_free_admission", False)
         self.coadmit_join_children = getattr(runtime, "coadmit_join_children", False)
         self._siblings = None
@@ -364,7 +368,7 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             **super().status(),
             "strategy": self.strategy,
             "identity": "invocation_id",
-            "control_interval_ms": 5000.,
+            "control_interval_ms": self.control_interval_s * 1000.,
             "blocked_lending": "disabled",
             "join_loan_recall": False,
             "tool_loan_return": False,
@@ -416,6 +420,7 @@ def validate_reference_admission(
     free_continuation_admission=False,
     join_blocked_handoff=False,
     free_dispatch_interval_ms=0,
+    control_interval_ms=5000,
 ):
     if any(type(value) is not bool for value in (
         join_free_admission, coadmit_join_children, free_continuation_admission,
@@ -428,6 +433,8 @@ def validate_reference_admission(
         or free_dispatch_interval_ms and not free_continuation_admission
     ):
         raise ValueError("invalid bounded free dispatch declaration")
+    if type(control_interval_ms) is not int or not 500 <= control_interval_ms <= 5000:
+        raise ValueError("invalid reference Full control interval declaration")
     admission_type = ReferenceThunderAdmission
     if free_continuation_admission:
         from beliefkv.runtime.reference_free_continuation import ReferenceFreeContinuationAdmission
@@ -448,7 +455,7 @@ def validate_reference_admission(
         "physical_capacity_credit": False,
         "native_capacity_authority_preserved": True,
         "future_information_used": False,
-        "control_interval_ms": 5000.,
+        "control_interval_ms": float(control_interval_ms),
         "blocked_lending": "disabled",
         "logical_borrowing_enabled": False,
         "join_loan_recall": False,

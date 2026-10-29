@@ -1070,6 +1070,14 @@ class NativeAdmissionRuntime:
         ):
             raise ValueError("bounded free dispatch requires reference Full continuation and 100..5000 ms")
         self.agent_free_dispatch_interval_ms = int(dispatch_interval)
+        control_interval = os.environ.get("BELIEFKV_AGENT_CONTROL_INTERVAL_MS", "5000")
+        if (
+            not control_interval.isascii() or not control_interval.isdecimal()
+            or not 500 <= int(control_interval) <= 5000
+            or int(control_interval) != 5000 and agent_policy != "thunderagent_reference"
+        ):
+            raise ValueError("configurable control interval requires reference Full and 500..5000 ms")
+        self.agent_control_interval_ms = int(control_interval)
         sibling_setting = os.environ.get("BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN", "0")
         if sibling_setting not in ("0", "1") or (
             sibling_setting == "1"
@@ -2855,6 +2863,7 @@ class NativeAdmissionRuntime:
                 "agent_join_blocked_handoff": self.agent_join_blocked_handoff,
                 "agent_free_continuation_admission": self.agent_free_continuation_admission,
                 "agent_free_dispatch_interval_ms": self.agent_free_dispatch_interval_ms,
+                "agent_control_interval_ms": self.agent_control_interval_ms,
                 "full_prefix_migration": (
                     self._full_prefix_migration.status()
                     if self._full_prefix_migration is not None else None

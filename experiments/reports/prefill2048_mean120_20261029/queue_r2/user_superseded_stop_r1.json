@@ -1,0 +1,20 @@
+{
+  "observed_at": "2026-10-30T00:14:34.928578+08:00",
+  "action": "SIGTERM CPU pair monitor only",
+  "actual_target": {
+    "pid": 1446109,
+    "state": "S",
+    "ppid": 1,
+    "start_ticks": "746036194",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-prefill2048-monitor-cc4fe928/experiments/reports/prefill2048_mean120_20261029/queue_pair.py",
+      "--watch",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/queue_r2/registration.json"
+    ]
+  },
+  "signal": "SIGTERM",
+  "reason": "latest user disables layer handoff in future experiments; replace unstarted Full plan",
+  "running_thunder_registration": "/home/longhao/experiment/ops/prefill2048_mean120_thunder_20261029_r1.registration.json",
+  "new_gpu_child_started": false
+}

@@ -3476,3 +3476,31 @@
   throughput,Full qualification or superiority. Keep both frozen roots and
   original CPU4810 evidence unchanged; queue2 waits complete control/drain/
   actual exit before the pending Full qualifier. Goal remains active.
+- Latest user asks to shorten the acting-decay control period and disables
+  physical layer handoff for every future experiment. Distinguish decay's
+  existing1s half-life,reference5s complete working-set tick,and the separate
+  optional500ms free-budget dispatcher (still off). A new Full-only explicit
+  AGENT_CONTROL_INTERVAL_MS/BELIEFKV_AGENT_CONTROL_INTERVAL_MS uses2000ms;
+  default and isolated paper/native controls remain5000ms,half-life/formula
+  and undiscounted/native physical capacity authority unchanged. Both layer
+  handoff flags/free extent are0 in the new candidate; retain logical JOIN
+  blocked eligibility/recovery,JOIN/EOS,tool offload,prepare_host and native
+  demand pipeline. Do not restart the running2048 Thunder control or edit
+  its frozen sources. Old queue2 CPU watcher1446109 was identity-checked,
+  SIGTERM'd and independently observed dead before either old Full registration.
+  Preserve its stale state and user_superseded_stop_r1 receipt. New named
+  config is configs/migration/predictive_decay_tick2s_no_handoff_20261030.json;
+  queue_full waits actual complete Thunder/drain/owned exit then freshly
+  qualifies current Full at18883. Focused447 pass; preserve initial fixture/
+  native-env skips and explicit-free-extent declaration refusal. Full retained
+  CPU qualification and GPU/model/performance remain pending. No default
+  layer-handoff re-enablement,new baseline,arrival sweep or tail truncation.
+- New Full control-period/no-layer-handoff actual CPU4859+6 now passes,
+  retains all4810 prior identities,no failures/errors/skips,1962 bound inputs
+  and native source unchanged. Tests observe a real2s policy boundary using
+  the unchanged1s decay and raw-pressure pause,while paper control stays5s.
+  Config/registration guards require both raw and effective physical-handoff
+  aliases0. Freeze committed sources before the separate queue_full registration;
+  current2048 Thunder continues unchanged and only its actual complete/drain/
+  owned exit may release fresh Full position/model checks. No new Full GPU
+  qualification or performance follows from these CPU results.

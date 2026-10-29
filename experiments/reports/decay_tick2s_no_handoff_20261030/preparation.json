@@ -1,0 +1,9 @@
+{
+  "configuration": "/home/longhao/experiment/BeliefKV/configs/migration/predictive_decay_tick2s_no_handoff_20261030.json",
+  "sha256": "217b603b6d502110f63b0d8def7a2b333605775fee76c2c18ba5f6a76c55c555",
+  "base": "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/full.json",
+  "base_sha256": "cd7f8d3e9adf9f11b8a30e4ab2ebfcdb34da6d05b944a8b1f1bb2a960008df2b",
+  "supersedes_unregistered_full_only": true,
+  "running_control_changed": false,
+  "GPU_experiment_started": false
+}

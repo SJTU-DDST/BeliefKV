@@ -46,6 +46,7 @@ class ThunderAgentAdapter:
     policy_name = "thunderagent_public_single_backend"
     author_commit = "7ddc8610270e56d3b109eed8796b3a4360fc67c9"
     working_set_type = ThunderWorkingSet
+    control_interval_s = 5.
 
     def __init__(self, runtime):
         _isolated(runtime)
@@ -118,7 +119,7 @@ class ThunderAgentAdapter:
             now = time.monotonic()
         if now < self.next_tick:
             return
-        self.next_tick = now + 5.
+        self.next_tick = now + self.control_interval_s
         # Both new-program arrival and the periodic tick decide capacity.
         self._refresh_streaming_progress()
         resumed = self.policy.tick(now=now)
@@ -222,7 +223,12 @@ class ThunderAgentAdapter:
             "program_identity": "invocation_id", "future_information_used": False,
             "native_capacity_authority_preserved": True,
             "scope": "single_backend_exact_token_ingress_policy_adaptation",
-            "streaming_context_accounting": "observed_native_outputs_at_arrival_and_five_second_control",
+            "streaming_context_accounting": (
+                "observed_native_outputs_at_arrival_and_five_second_control"
+                if self.control_interval_s == 5.
+                else "observed_native_outputs_at_arrival_and_configured_control"
+            ),
+            "control_interval_ms": self.control_interval_s * 1000.,
             "control_capacity_snapshot": dict(self._capacity_snapshot),
             "capacity_tokens": self.policy.capacity_tokens if self.policy is not None else None,
             "programs": len(self.workflows), "active_programs": active,

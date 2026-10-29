@@ -171,7 +171,7 @@ class ReferenceFreeContinuationAdmission(ReferenceThunderAdmission):
         if not self.dispatch_interval_ms or self.policy is None:
             return
         if self.counts["control_ticks"] != previous:
-            # The unchanged five-second policy can pause additional agents.
+            # The complete working-set control can pause additional agents.
             # Reindex only at that boundary, not on each decode step.
             for key, _arrived in self.requests.values():
                 self._remember_dispatch(key)

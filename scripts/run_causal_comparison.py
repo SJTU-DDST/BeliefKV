@@ -73,6 +73,7 @@ SERVER_FIELDS = (
     "AGENT_JOIN_BLOCKED_HANDOFF",
     "AGENT_FREE_CONTINUATION_ADMISSION",
     "AGENT_FREE_DISPATCH_INTERVAL_MS",
+    "AGENT_CONTROL_INTERVAL_MS",
     "DEMAND_PREFILL_PIPELINE",
     "FREE_PAGE_H2D_FENCE",
 )
@@ -346,6 +347,7 @@ def preflight_runtime(settings, model_path):
         "agent_free_dispatch_interval_ms": int(settings.get(
             "BELIEFKV_AGENT_FREE_DISPATCH_INTERVAL_MS", "0",
         )),
+        "agent_control_interval_ms": int(settings.get("BELIEFKV_AGENT_CONTROL_INTERVAL_MS", "5000")),
         "coadmit_join_children": settings.get("BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN", "0") == "1",
         "agent_join_dependency_admission": settings.get("BELIEFKV_AGENT_JOIN_DEPENDENCY_ADMISSION", "0") == "1",
         "agent_blocked_budget_proof": settings.get("BELIEFKV_AGENT_BLOCKED_BUDGET_PROOF", "predicted_pressure"),
@@ -959,6 +961,10 @@ def observed_configuration(plan, label, arm, *, final=False):
                     free_dispatch_interval_ms=int(common.get(
                         "BELIEFKV_AGENT_FREE_DISPATCH_INTERVAL_MS",
                         common.get("AGENT_FREE_DISPATCH_INTERVAL_MS", "0"),
+                    )),
+                    control_interval_ms=int(common.get(
+                        "BELIEFKV_AGENT_CONTROL_INTERVAL_MS",
+                        common.get("AGENT_CONTROL_INTERVAL_MS", "5000"),
                     )),
                 )
             if state.get("agent_join_free_admission", False) is not join_free:
