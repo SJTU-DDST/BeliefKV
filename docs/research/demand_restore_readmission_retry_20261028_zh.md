@@ -86,3 +86,13 @@ ACK后未达到批次构造。两份XML均保留，未将首个fixture错误冒�
 
 其他baseline与消融仍等待明确、可重复的双指标优势。R2只检验原冻结
 方案的重复性，不授予当前main修复的GPU资格或最终目标完成。
+
+## 独立冻结目录
+
+ACK重试修复另冻结为
+`/home/longhao/experiment/.worktrees/beliefkv-ack-readmission-5cf3bb8b-20261028`，
+与正在运行的R2目录分开。`readmission_source_check.py`核对该目录的
+完整1815个CPU-manifest文件、4102项通过报告与原生源码身份；它复用
+已有完整CPU执行的相同字节，不重新运行同一套测试，也不提供GPU证明。
+后续仍须等R2实际退出，并完成新源码的component、model和position
+验证后，才可登记修复后的正式FULL。

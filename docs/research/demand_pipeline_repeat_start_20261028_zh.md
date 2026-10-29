@@ -55,3 +55,17 @@ V345。关键路径若变化则按实际路径报告；固定历史工具后继�
 
 没有排队其他baseline、消融或新方案GPU实验。明确、可重复的双指标
 优势及所有baseline比较目标仍为active。
+
+## 完成审计入口
+
+`prefill_pipeline_20261028/repeat_complete_review.py`已补齐完整R1/R2
+比较入口。实际CPU预检查接受已完整退出的R1，拒绝仍运行中的R2，
+核对六项元数据之外完全相同，且没有生成完整结果或图。
+证明保存在`repeat_r2_complete_precheck.json`，预检查时R2仍在运行。
+
+完整入口必须等待R2实际结束并清理后再执行，重新检查全部请求、
+原始停止、配置、普通FA3/flashinfer、两次新鲜idle及owned退出。
+随后才输出`repeat_r2_complete/complete_review.json`和
+`experiments/figures/demand_prefill_pipeline_20261028_r2/`中的完整趋势、
+分布与geometry图。它对照同一封存V345，只报告重复表现，不因两次
+正收益自动宣布目标达成；需求恢复ACK/服务及JOIN/EOS机制另行审计。

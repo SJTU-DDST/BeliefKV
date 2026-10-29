@@ -1,0 +1,42 @@
+{
+  "observed_at": "2026-10-29T00:55:04.661272+00:00",
+  "scope": "Clean frozen ACK retry source equals all 1815 CPU-manifest files.",
+  "checkout": "/home/longhao/experiment/.worktrees/beliefkv-ack-readmission-5cf3bb8b-20261028",
+  "application": {
+    "commit": "5cf3bb8bf40daf48ee001988e60f46e517bdd345",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "44c75965395343d024972f038441f343c1b6cc8980180ab6057f8072f7e2018e"
+  },
+  "native_engine": {
+    "commit": "d3da19c1ca85581342a14b322fdc94cdc290654d",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "fc39cb9c2ff0b219a47539149f830c5d2bcdd5f6a45932606ba444f86668f21f"
+  },
+  "native_tree": "729aa0caa7a1ffac84463f46b3d1843d1a6a22e4",
+  "matched_cpu_manifest_files": 1815,
+  "existing_passing_unique_cpu_cases": 4102,
+  "cpu_tests_rerun": false,
+  "R2_frozen_source_modified": false,
+  "gpu_job_started": false,
+  "gpu_correctness_verified": false,
+  "performance_accepted": false,
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/readmission_source_check.py": "a1b48439bb5fafc47557947b926aff6b06d6815cf300e0e5d9ec7331a804dacd",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/admission_retry_shared_r1_cpu.evidence.json": "ea183927894d7aa0750315eb63d4f8525a568e52917dc504b394b7748af16b18",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/admission_retry_shared_r1_cpu.sources.json": "cedbf1ece2663533b6cbbd0da6e3222772a655a47466ea030f12d3c29f5b69b8",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/admission_retry_shared_r1_cpu.xml": "e27aea2b22e52771cb5d9e2319f97f95bdad79a19953f144c4eca182822abcd1"
+  },
+  "limitations": [
+    "Exact source reuse does not provide new GPU or model qualification.",
+    "The running R2 excludes this repair and cannot validate its performance.",
+    "Fresh component/model/position evidence is required before a repaired Full run."
+  ]
+}

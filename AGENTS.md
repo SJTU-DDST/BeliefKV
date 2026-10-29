@@ -2867,3 +2867,11 @@
   ablation/new-policy GPU is queued. Keep the full goal active and wait
   for actual completion/cleanup before complete repeated-metric review.
   See docs/research/demand_pipeline_repeat_start_20261028_zh.md.
+- R2 completion reader now has an actual CPU precheck accepting complete R1
+  and rejecting live R2, with metadata-only identity and no completed artifacts.
+  Run it only after real completion/cleanup; demand ACK/service and JOIN/EOS
+  audits remain separate. Keep its named reader/precheck distinct from the
+  immutable R1 operators and registered inputs. The ACK retry repair has a
+  separate clean5cf3bb8b checkout; exact CPU-manifest reuse is source evidence,
+  not fresh GPU/model/position or performance qualification. Do not launch a
+  competing GPU job while the frozen R2 is live.

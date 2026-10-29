@@ -1,0 +1,24 @@
+{
+  "observed_at": "2026-10-29T00:43:41.485539+00:00",
+  "scope": "Actual complete R1 acceptance, live R2 rejection and exact metadata identity.",
+  "actual_complete_R1_and_owned_exit_verified": true,
+  "actual_live_R2_rejected": "require complete successful work and actual owned process exit",
+  "changed_metadata_only": [
+    "after_registration",
+    "external_inputs",
+    "port",
+    "registered_at",
+    "repeat_of",
+    "run_root"
+  ],
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/repeat_complete_review.py": "6a58a51a2623256b5dcbd03948f0ca8808cbdcfe911fdad49e09078cc228f0d9",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/complete_review.py": "33368bdc003ea15908582a0cd598e1853114ad5646ed2877980b52b9aa84f81a",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/repeat_registration.py": "4172de33e79e49f6f56abb748c268e23161dde2e1877eb1db2fb160a1a4bd853",
+    "/home/longhao/experiment/ops/demand_prefill_pipeline_20261028_r1.registration.json": "59caf40545da12972b8affe70025fdca7790867e4c09db2359815043f8a2f74c",
+    "/home/longhao/experiment/ops/demand_prefill_pipeline_20261028_r2.registration.json": "8a557000d226ba1871a7b11b4d641ce7147745f5cad81f9509d1848e2f11928d",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/repeat_r2_entry_check.json": "899c39dd73cb9e924ead243deeee8afad63fe09bf67792d04e453a0ceda89b36"
+  },
+  "complete_performance_result_written": false,
+  "performance_accepted": false
+}
