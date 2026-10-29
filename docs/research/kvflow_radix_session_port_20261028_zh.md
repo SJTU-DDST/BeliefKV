@@ -66,9 +66,31 @@ H2D54 token，其中独立 session 场景分别为12/12；25份 paper 原生
 `gpu_components_r1.entry.json`、原始 log 和 `gpu_components_r1/summary.json`
 分别保存入口检查与原始组件结果；冻结工作区没有修改。
 
-正式模型/重放入口和整轮 KVFlow 仍未执行，因此没有新的 JCT/吞吐结论。
-现有 LoCoBench causal supervisor 还没有像 AgentX supervisor 那样绑定
-paper prefix 资格，下一步补齐这一启动衔接，并验证正常停止及完整对照。
+## 正式启动接线
+
+LoCoBench causal supervisor 现已复用 AgentX supervisor 的实际 paper
+prefix 资格入口，KVFlow 在启动模型前完成当前来源的组件验证；
+TokenCake 还必须按顺序完成自己的 lifecycle 资格。当前只接受已经
+审核的 common native tree；其他引擎不能静默沿用这一证明。
+组件失败、新预约或取消会进入原有停止和清理路径。
+
+实际 watch 红例证明旧入口会跳过组件进入模型设置；修复后红例通过。
+同时保持 owned 进程列表的对象身份，避免 callback 中一次状态刷新
+替换列表后，后续登记的组件子进程遗漏于清理。用两个跨刷新登记的
+子进程证明最终均进入 cleanup。第一份夹具缺字段红例单独保留。
+
+新聚焦回归353项通过；随后单次合并来源绑定回归726项全部通过，
+保留前379个独立用例并新增347个，1871个源码文件在执行前后相同。
+配置 `configs/baselines/kvflow_locobench_v230_v311_20261028.json`
+通过实际隔离 runtime 构造，明确关闭 FULL 调度、工具预取、预测
+卸载、prepare、layer handoff和需求恢复流水线，不改变 KVFlow 自身
+观察图与前缀策略。
+
+正式模型和整轮 KVFlow 尚未执行，因此仍没有新的 JCT/吞吐结论。
+独立 `register_formal.py` 先校验 frozen CPU 清单、已完成前任的实际退出、
+真实 session 组件、相同 native 内容和当前预约资源，再登记唯一 KVFlow。
+它不使用要求相同 reference_environment 的旧 after_registration 连接；
+前任退出与工作匹配分别核对，避免把 FULL 配置强加给 baseline。
 新实验继续保持同一完整 V230/V311、18 个不同项目、3674 请求、
 145565966 输入与 549671 输出 token、原始停止和全部正常长尾。
 其他 baseline 及全体优越性目标仍未完成。

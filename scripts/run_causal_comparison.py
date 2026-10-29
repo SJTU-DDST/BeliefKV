@@ -35,7 +35,7 @@ from beliefkv.experiments.subagent_retention import (
     ORDER as RETENTION_ORDER, environment as retention_environment,
 )
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
-from beliefkv.experiments.native_engine_variant import engine_patch
+from beliefkv.experiments.native_engine_variant import COMMON_TREE, engine_patch
 from scripts.run_causal_gpu_replay import source_plan
 from scripts.run_causal_source_capture import (
     comparison, engine_evidence, fresh, load, qualified, reservation, reusable_source,
@@ -51,6 +51,7 @@ DEFAULT_ORDER = ("full", "join_priority_only")
 CONTROLS = (*ORDER, "scheduler_only", "kv_only", "no_tool_prefetch")
 RETENTION_CONTROLS = {f"subagent_{policy}": policy for policy in RETENTION_ORDER}
 ALL_CONTROLS = (*CONTROLS, *RETENTION_CONTROLS, *PAPER_CONTROLS)
+PREFIX_PAPER_CONTROLS = frozenset({"kvflow_observed_graph", *TOKENCAKE_ARMS})
 METRIC_BOUNDARY = "workflow_start_to_workflow_end"
 REPLAY_REQUEST_TIMEOUT_S = 3600.
 SERVER_FIELDS = (
@@ -1527,6 +1528,24 @@ def wait_for_resources(plan, state, *, pulse):
             time.sleep(10.)
 
 
+def qualify_paper_components(plan, label, arm, *, pulse, owned):
+    if label not in PREFIX_PAPER_CONTROLS:
+        return None
+    if plan.get("engine_tree") != COMMON_TREE:
+        raise ValueError("paper prefix qualification requires the reviewed common native engine")
+    from scripts.run_agentx_baseline import qualify_native_prefix, qualify_native_tokencake
+
+    registered = {
+        **plan, "native_patch_sha256": sha256_file(engine_patch(ROOT, plan["engine_tree"])),
+    }
+    proofs = {"prefix": qualify_native_prefix(registered, arm, pulse=pulse, owned=owned)}
+    if label in TOKENCAKE_ARMS:
+        proofs["tokencake_lifecycle"] = qualify_native_tokencake(
+            registered, arm, pulse=pulse, owned=owned,
+        )
+    return proofs
+
+
 def watch(registration):
     plan = load(registration)
     state_path, run = registration.with_suffix(".state.json"), Path(plan["run_root"])
@@ -1551,7 +1570,7 @@ def watch(registration):
         if stopped:
             raise ValueError("comparison supervisor received a stop request")
         fresh.check_hold(plan, released=True)
-        identities = owned_processes(identities)
+        identities[:] = owned_processes(identities)
         state.update(checked_at=reservation.now().isoformat(), owned=identities)
         reservation.write_json(state_path, state)
 
@@ -1591,6 +1610,19 @@ def watch(registration):
                 arm = run / label
                 for name in ("server", "opportunities"):
                     (arm / name).mkdir(parents=True, exist_ok=False)
+                if label in PREFIX_PAPER_CONTROLS:
+                    state.update(status="qualifying_components_" + label)
+                    pulse()
+                    proofs = qualify_paper_components(
+                        plan, label, arm, pulse=pulse, owned=identities,
+                    )
+                    state.setdefault("paper_component_qualifications", {})[label] = {
+                        name: {field: proof[field] for field in ("report", "sha256")}
+                        for name, proof in proofs.items()
+                    }
+                    pulse()
+                    wait_for_resources(plan, state, pulse=pulse)
+                    comparison.verify_sources(plan)
                 env, flags, event_socket = environment(
                     {"arms": {"full": plan["reference_environment"]}}, label, ROOT,
                     Path(plan["engine_checkout"]), arm, plan["port"], run / "plugin",

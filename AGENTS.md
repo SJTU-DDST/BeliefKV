@@ -3002,3 +3002,19 @@
   supervisor, whose existing path lacks the AgentX supervisor's qualification
   hook, then qualify/execute formal KVFlow. No new Full/native/V345 run is
   implied; keep same complete work, all tails and the overall goal active.
+- The causal LoCoBench supervisor now runs the existing current-source paper
+  prefix qualifier before KVFlow/TokenCake model startup; TokenCake additionally
+  runs its lifecycle qualifier. Only reviewed common11b84f7c3198 is accepted
+  by this new entry. Preserve component owner-list identity across pulse so
+  subsequent child registrations remain cleanable; a real watch red/fixed case
+  proves failure before model setup and both owned children in cleanup.
+  One merged source-bound CPU run passes726 unique cases with no skips/failures,
+  retains all379 prior cases and binds1871 source files before/after. Formal
+  KVFlow configuration is configs/baselines/kvflow_locobench_v230_v311_20261028.json;
+  its real constructor verifies Full policies off, same18/running24.
+  Preserve the fixture/red reports. register_formal.py is the prepared separate
+  entry: freeze its committed application, verify current hold/resources and
+  actual predecessor exit, then register only KVFlow on completeV230/V311.
+  Reuse unchanged common-engine sampling proof only after exact module/native
+  source checks; its fresh paper components still run before the model.
+  No formal result is implied yet and the all-baseline goal remains active.
