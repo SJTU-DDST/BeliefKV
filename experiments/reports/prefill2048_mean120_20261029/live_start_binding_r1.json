@@ -1,0 +1,17 @@
+{
+  "observed_at": "2026-10-30T00:09:02.601592+08:00",
+  "reused_operator": "/home/longhao/experiment/BeliefKV/experiments/reports/arrival_mean120_20261029/observe_thunder.py",
+  "reused_operator_sha256": "2ba1340e8bbb7e33dc46bb4f8fefb18d16dd818b0f5aad2a8ced07ec9f3ca1ef",
+  "explicit_module_bindings": {
+    "REGISTRATION": "/home/longhao/experiment/ops/prefill2048_mean120_thunder_20261029_r1.registration.json",
+    "HERE": "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029"
+  },
+  "actual_serving_profile": {
+    "chunked_prefill_size": 2048,
+    "enable_mixed_chunk": false,
+    "max_running_requests": 24
+  },
+  "result": "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/thunder_live_start.json",
+  "result_sha256": "d82f2ce9d80b19eff37a9c02819479e2039ecf163a90a1f89dad968689604933",
+  "scope": "reuse unchanged observer with explicit new registration and output bindings; no complete performance claim"
+}

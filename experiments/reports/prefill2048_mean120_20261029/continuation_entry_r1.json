@@ -1,0 +1,18 @@
+{
+  "observed_at": "2026-10-30T00:08:18.925616+08:00",
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/.worktrees/beliefkv-prefill2048-monitor-cc4fe928/experiments/reports/prefill2048_mean120_20261029/continue_queue.py",
+    "--original-plan",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/queue_r1/registration.json",
+    "--operator-evidence",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/monitor_cpu_r1.evidence.json",
+    "--output-dir",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/queue_r2"
+  ],
+  "returncode": 0,
+  "stdout": "{'registration': '/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/queue_r2/registration.json', 'watcher': {'pid': 1446109, 'state': 'R', 'ppid': 1445925, 'start_ticks': '746036194', 'argv': ['/home/longhao/miniconda3/envs/beliefkv-next/bin/python', '/home/longhao/experiment/.worktrees/beliefkv-prefill2048-monitor-cc4fe928/experiments/reports/prefill2048_mean120_20261029/queue_pair.py', '--watch', '/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/queue_r2/registration.json']}}\n",
+  "stderr": "",
+  "scope": "replace CPU monitor; do not restart the live ThunderAgent control",
+  "performance_accepted": false
+}

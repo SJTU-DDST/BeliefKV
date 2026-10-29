@@ -3463,4 +3463,16 @@
   999.837GB/H2D2443.981GB includes native transfers beyond the.60585GB of new
   prediction-targeted backups. Current single-private-path handoff coverage
   and high physical residency are separate concerns. Preserve its report,
- 8 focused and120 source-bound checks; global optimization remains incomplete.
+  8 focused and120 source-bound checks; global optimization remains incomplete.
+- Replacement CPU monitor now actually runs from frozencc4fe928 at
+  prefill2048_mean120_20261029/queue_r2/registration.json,watcher1446109.
+  It adopts existing Thunder and preserves the original frozenf502 Full
+  position/formal command; do not restart or duplicate the control. Independent
+  2026-10-30 00:09:02 Asia/Shanghai live observer verifies608 exact completed
+  receipts/15 actual arrivals,original shared timing,actual2048/mixed-off/
+  running24,and nice0 watcher1441579/server1442091/driver1443621/sole native
+  GPU1442425 with actual identity/ownership. Explicit reused-observer bindings
+  are in live_start_binding_r1.json. This is a live prefix,not complete JCT,
+  throughput,Full qualification or superiority. Keep both frozen roots and
+  original CPU4810 evidence unchanged; queue2 waits complete control/drain/
+  actual exit before the pending Full qualifier. Goal remains active.

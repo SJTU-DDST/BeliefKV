@@ -1,0 +1,138 @@
+{
+  "registered_at": "2026-10-29T16:08:18.179668+00:00",
+  "application": {
+    "commit": "cc4fe92842f790651bc7b9b1195a94dacd8701f7",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "76416eb280e63d3db0646872521567fedd67c239ecdeee94afa43759bc439610"
+  },
+  "authorization": {
+    "hold_file": "/home/longhao/experiment/ops/gpu_hold_until_20261022_0600.json",
+    "hold_sha256": "57a02d25be864ec84fc1c4e6c0afba31b1282ce681e18f7c4dd6974f3f788f9d",
+    "checked_at": "2026-10-30T00:08:17.684563+08:00"
+  },
+  "order": [
+    "thunderagent_acting_decay",
+    "full"
+  ],
+  "entries": {
+    "thunderagent_acting_decay": {
+      "position_registration": "/home/longhao/experiment/ops/prefill2048_position_20261029_r1_common.registration.json",
+      "position_run": "/home/longhao/experiment/BeliefKV/experiments/raw/prefill2048_position_20261029_r1_common",
+      "comparison_registration": "/home/longhao/experiment/ops/prefill2048_mean120_thunder_20261029_r1.registration.json",
+      "comparison_run": "/home/longhao/experiment/BeliefKV/experiments/raw/prefill2048_mean120_20261029_r1_common",
+      "port": 18881
+    },
+    "full": {
+      "position_registration": "/home/longhao/experiment/ops/prefill2048_position_20261029_r1_full.registration.json",
+      "position_run": "/home/longhao/experiment/BeliefKV/experiments/raw/prefill2048_position_20261029_r1_full",
+      "comparison_registration": "/home/longhao/experiment/ops/prefill2048_mean120_full_20261029_r1.registration.json",
+      "comparison_run": "/home/longhao/experiment/BeliefKV/experiments/raw/prefill2048_mean120_20261029_r1_full",
+      "port": 18882
+    }
+  },
+  "commands": {
+    "thunderagent_acting_decay": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-prefill2048-f502f87d/scripts/run_position_replay_calibration.py",
+      "--source-registration",
+      "/home/longhao/experiment/ops/v230_locobench_parallel_retry_source_20261026.registration.json",
+      "--reference",
+      "/home/longhao/experiment/ops/v128_eos_seeded_modules_resume_20261022.registration.json",
+      "--cpu-report",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/cpu_r1/bound_cpu.xml",
+      "--cpu-sources",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/cpu_r1/sources.json",
+      "--engine",
+      "/home/longhao/experiment/.worktrees/sglang-causal-11b84f7c3198-622c5feb5280-9ed3f6f90664",
+      "--engine-report",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/v239b_free_page_fence_native_engine_bound_cpu_20261026.xml",
+      "--engine-sources",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/queue_r1/thunderagent_acting_decay.native_sources.json",
+      "--registration",
+      "/home/longhao/experiment/ops/prefill2048_position_20261029_r1_common.registration.json",
+      "--run-root",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/prefill2048_position_20261029_r1_common",
+      "--comparison-registration",
+      "/home/longhao/experiment/ops/prefill2048_mean120_thunder_20261029_r1.registration.json",
+      "--comparison-root",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/prefill2048_mean120_20261029_r1_common",
+      "--port",
+      "18881",
+      "--experiment-config",
+      "/home/longhao/experiment/.worktrees/beliefkv-prefill2048-f502f87d/experiments/reports/prefill2048_mean120_20261029/thunderagent_acting_decay.json"
+    ],
+    "full": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-prefill2048-f502f87d/scripts/run_position_replay_calibration.py",
+      "--source-registration",
+      "/home/longhao/experiment/ops/v230_locobench_parallel_retry_source_20261026.registration.json",
+      "--reference",
+      "/home/longhao/experiment/ops/v128_eos_seeded_modules_resume_20261022.registration.json",
+      "--cpu-report",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/cpu_r1/bound_cpu.xml",
+      "--cpu-sources",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/cpu_r1/sources.json",
+      "--engine",
+      "/home/longhao/experiment/.worktrees/sglang-causal-434c35dd6621-622c5feb5280-efce42459a53",
+      "--engine-report",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/native_cpu_r1/native_cpu.xml",
+      "--engine-sources",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/queue_r1/full.native_sources.json",
+      "--registration",
+      "/home/longhao/experiment/ops/prefill2048_position_20261029_r1_full.registration.json",
+      "--run-root",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/prefill2048_position_20261029_r1_full",
+      "--comparison-registration",
+      "/home/longhao/experiment/ops/prefill2048_mean120_full_20261029_r1.registration.json",
+      "--comparison-root",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/prefill2048_mean120_20261029_r1_full",
+      "--port",
+      "18882",
+      "--experiment-config",
+      "/home/longhao/experiment/.worktrees/beliefkv-prefill2048-f502f87d/experiments/reports/prefill2048_mean120_20261029/full.json"
+    ]
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/cpu_r1/evidence.json": "351201221a830f364a9671ff2e2b64b9d379e40cafeaa2172755a756e1e29774",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/cpu_r1/bound_cpu.xml": "547baab17c15873b80a89db130e8b8601090c2708029b37d9537e867555e53ee",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/cpu_r1/sources.json": "65221d1567c62a363502f788b7e96dc7b64121726260309ab3ef685f119c9c09",
+    "/home/longhao/experiment/ops/hbm_dispatch_mean120_20261029_r2.registration.json": "205442e5f0dcff9cf01765803b56e5def50bf1c243ea11869396fce6558859e2",
+    "/home/longhao/experiment/ops/arrival_mean120_thunder_20261029_r1.registration.json": "473dc9c10b07799773540f9d8618cf85f874a9bd315ae045096699b73672515d",
+    "/home/longhao/experiment/ops/arrival_mean120_full_20261029_r1.registration.json": "ead26b0149c2c5a7ee5c446eb43c6293af1ebe9abeb7ab58065aa51d6afae1a1",
+    "/home/longhao/experiment/.worktrees/beliefkv-prefill2048-f502f87d/experiments/reports/arrival_mean120_20261029/thunderagent_acting_decay.json": "dcaf184b3fb5690ad38e879d593f01657fe0fa45d39a29aff3f90fb54a162c79",
+    "/home/longhao/experiment/.worktrees/beliefkv-prefill2048-f502f87d/experiments/reports/arrival_mean120_20261029/full.json": "4ea83848d82bd1c83766ae3891b36d1b8929b08da5b8244d2d006becc8b9d911",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/arrival_mean120_20261029/arrivals.json": "155f5f5c9d8cc207c160656237722d77459eee5cedb89d20499bdd62d1528f61",
+    "/home/longhao/experiment/.worktrees/beliefkv-prefill2048-f502f87d/experiments/reports/prefill2048_mean120_20261029/thunderagent_acting_decay.json": "32abce78f866f326ccf6f0dead4a2bf3d0387278c340ac33c1cf028217f05923",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/queue_r1/thunderagent_acting_decay.native_sources.json": "ce09324398fa95a7220f86d7e3b776afe5a4b91db0187d9a52ffa0f51f4397ad",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/v239b_free_page_fence_native_engine_bound_cpu_20261026.xml": "b561cbceca6c0ebd08ebdbd0e0531ef9516146e3c9d06aa75c74bff20061bf0e",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/arrival_mean120_20261029/queue_r1/thunderagent_acting_decay.native_sources.json": "6427447e8ac299e1807d27a9467473b0a66c1afe7aae14ce111d59f4dcad865c",
+    "/home/longhao/experiment/.worktrees/beliefkv-prefill2048-f502f87d/experiments/reports/prefill2048_mean120_20261029/full.json": "cd7f8d3e9adf9f11b8a30e4ab2ebfcdb34da6d05b944a8b1f1bb2a960008df2b",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/queue_r1/full.native_sources.json": "500fe1d1aedd3e285370383c6bdabce9b3e302ece5fb3dfbfceab00d65c4635c",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/native_cpu_r1/native_cpu.xml": "06bb7dcf7576f720a835ec98dacd6b8d7126e7a68f10a7e955f885deb2709b5e",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/arrival_mean120_20261029/queue_r1/full.native_sources.json": "88abbccd22b57e6cc44a2635cc5e0d625fd174937e9748908b5feb6459d71fd6",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/queue_r1/registration.json": "ec39abe0ab2c007cabf365a5657afd84cad0baf55f7c88cf55eb01fd3a10ad72",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/queue_r1/registration.state.json": "61628c6b7f7fc65016bf5d66184a60f12e9fcf7dcfea2344d96b29d5e4707809",
+    "/home/longhao/experiment/ops/prefill2048_mean120_thunder_20261029_r1.registration.json": "e4821865066bab8ebdd4a28791ba9dcabd350fe6ce621a03985903fa13147ec4",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/monitor_cpu_r1.evidence.json": "5da684e60889c8d054d0500eed39013fc546e23b520094140e14645f5bae5ab7"
+  },
+  "native_capture_repeated": false,
+  "automatic_retry_after_failure": false,
+  "performance_accepted": false,
+  "adopt_existing_comparisons": [
+    "thunderagent_acting_decay"
+  ],
+  "source_formal_application": {
+    "commit": "f502f87ddd0cfecadc8a080780a040c2238ec72f",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "b48f4fee449c35a2d7f7e946b6c67181557d5696e6d3f45022414c6ea6127a8c"
+  },
+  "replacement_scope": "CPU_monitor_only;existing_control_and_pending_full_command_unchanged"
+}
