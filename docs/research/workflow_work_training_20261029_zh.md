@@ -217,3 +217,17 @@ seed 21 和真实工具时间；native 控制禁用 predictive、工作量排序
 4,929 个测试身份；无失败、错误或跳过，2,001 个绑定输入及原生引擎在执行中未变化。
 新六任务的 15 个项目/工具声明输入也已经过实际校验。GPU 启动及完整采集结果以
 其独立注册、进程和实际 token 记录为准。
+
+六任务采集现已从提交 `e3be927b` 的干净冻结副本启动，注册为
+`ops/workflow_work_matched6_source_20261029.registration.json`，端口 18892。
+`matched6_live_start_r1.json` 在 2026-10-29 19:58:01 UTC 独立验证全部冻结输入、
+唯一 GPU 所有者及 nice 0 的 watcher/driver/server/scheduler；实际服务参数为
+2048、mixed off、running 24、seed 21，agent admission off。此时有六个 workflow、
+63 份 prompt 及 57 份完整输出，57 次工具开始/结束。这只是运行中的前缀，不是完整
+自然采集、模型合格或性能证据。
+
+CPU 后处理进程独立运行在同提交的干净副本，nice 19，隐藏 CUDA 并限制数值库线程。
+其 `matched6_finish_r1.launch.json` 和 `matched6_finish_r1/state.json` 记录实际身份；
+仅等待完整采集及实际清理后导出、拟合和审计，不会自动启动新的 GPU 实验。
+当前训练/校准数据仍按整次 workflow 执行隔离，允许已知项目及任务重叠；当前开发集
+已经被多次诊断使用，不能将后续结果描述成未见任务或最终盲测。

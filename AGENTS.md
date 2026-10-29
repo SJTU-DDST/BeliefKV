@@ -3643,3 +3643,13 @@
   4946+6,retains all4929 identities,no skips/errors/failures,2001 inputs/native
   unchanged. Matched6 has15 verified tool/project inputs. Freeze committed
   sources and recheck reservation/resources/sampler before actual collection.
+- Matched6 native training now actually records from frozen e3be927b on18892,
+  ops/workflow_work_matched6_source_20261029.registration.json. Independent
+  matched6_live_start_r1 verifies6 workflows/57 complete outputs/57 completed
+  tools,all frozen inputs,actual2048/mixed-off/running24/seed21/admission-off,
+  nice0 watcher/driver/server/scheduler and sole GPU owner. Sampler1/8/24 passes.
+  CPU-only matched6_finish_r1 actually waits at nice19 from the same clean
+  commit with CUDA hidden,unchanged34train/22cal/18development plan and no
+  further GPU action. Preserve the live source,all normal tails and both
+  frozen roots;this live prefix is not completion,prediction or performance
+  qualification. Global goal remains active.
